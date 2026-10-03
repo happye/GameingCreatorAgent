@@ -23,6 +23,7 @@ $requiredPaths = @(
     'scripts/setup-env.ps1',
     'scripts/verify.ps1',
     'toolchain.json',
+    'docs/references/media-toolchain.json',
     'pyproject.toml',
     'uv.lock',
     'docs/exec-plans/phase-0-plan.md',
@@ -75,6 +76,10 @@ foreach ($mediaTool in @('ffmpeg.exe', 'ffprobe.exe')) {
     if (-not (Test-Path -LiteralPath (Join-Path $repositoryRoot ".tools/ffmpeg/bin/$mediaTool"))) {
         $missingTools += "project-local $mediaTool"
     }
+}
+if ($missingTools.Count -eq 0) {
+    try { Assert-ProjectMediaTools -RepositoryRoot $repositoryRoot }
+    catch { $missingTools += $_.Exception.Message }
 }
 
 if ($missingTools.Count -gt 0) {

@@ -5,6 +5,7 @@ artifacts/
 .tools/
 .venv/
 .cache/
+.worktrees/
 output/
 *.mp4
 *.mov

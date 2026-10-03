@@ -6,7 +6,7 @@ This repository is the starting point for a local-first game-content creation to
 
 ## Current state
 
-F000 review and F001 core are accepted. The installable Python package provides CLI input validation, domain records, Provider ports and automated checks. Media processing, models, SQLite and retrieval remain to be implemented; the real Phase 0 quality gate is unmeasured. Phase 0 uses Python, SQLite and FFmpeg; see the [language decision](./docs/design-docs/adr-001-phase-0-language.md). The later desktop UI remains undecided.
+F000 review, F001 core and F002 local media preprocessing are accepted. The package provides CLI contracts, source-time records, Provider ports, timestamped image/WAV evidence and safe Windows process cleanup. Models, SQLite and retrieval remain to be implemented; the real Phase 0 quality gate is unmeasured. Phase 0 uses Python, SQLite and FFmpeg; see the [language decision](./docs/design-docs/adr-001-phase-0-language.md). The later desktop UI remains undecided.
 
 ## Start here
 
@@ -15,13 +15,15 @@ F000 review and F001 core are accepted. The installable Python package provides 
 3. Run `./scripts/setup-env.ps1` to download hash-pinned portable uv/CPython and synchronize `uv.lock` into `.venv`. Use `-Offline` only when archives and packages are cached. Run `./scripts/init.ps1` to check exact tools and the separately prepared local FFmpeg. Follow the [isolated environment rules](./docs/references/isolated-environment.md); everything stays inside `.tools/`, `.venv/`, and `.cache/`.
 4. Resume your assigned task; review the [reverse review](./docs/exec-plans/reverse-review-2026-10-03.md), [engineering specification](./docs/design-docs/phase-0-engineering-spec.md), and [task dependencies](./docs/exec-plans/phase-0-plan.md). Record ownership and preserve a concrete handoff.
 
-Run `./scripts/verify.ps1` for Ruff, strict mypy, pytest, import boundaries, installed CLI smoke and two identical offline wheel builds. Details and recorded evidence: [F001](./docs/exec-plans/sprint-F001.md).
+Run `./scripts/verify.ps1` for Ruff, strict mypy, pytest (warnings are errors), import boundaries, CLI smoke and two identical offline wheel builds. Media integration tests need the pinned local FFmpeg and otherwise skip; inspect skip counts. Details: [F001](./docs/exec-plans/sprint-F001.md), [F002](./docs/exec-plans/sprint-F002.md).
 
 Inspect commands with `./.venv/Scripts/gamingcreator.exe --help`. `config.example.json` defines schema v1: non-secret vision provider/model and positive request/frame limits. New analysis also requires `--max-cost-cny`; resume forbids config/budget overrides. Valid analyze/search/benchmark currently return exit 3 with `feature.not_implemented` and create no project output. Decoding and full model configuration belong to F002/F003.
 
 ## Phase 0 validation utilities
 
 The [2026-10-03 validation report](./docs/exec-plans/phase-0-validation-2026-10-03.md) records real local media/DeepSeek experiments and their limits. Run `./scripts/test-media-spike.ps1 -Synthetic` for the local media smoke and `./scripts/test-retrieval-score.ps1` for fixed-denominator metric regression. `test-deepseek-vision.ps1 -SourcePath <video>` needs process-local `DEEPSEEK_API_KEY` and makes one paid request of five extracted frames. It is a limited experiment, not the final CLI or a passed retrieval benchmark.
+
+`./scripts/test-media.ps1 -SourcePath <local-video>` runs the implemented F002 service; `-AllLocal` processes current `GameVideos/**/*.mp4`. Results remain ignored in `artifacts/media-F002/<run>/`, with PTS/timebase, piecewise WAV sample mapping, source/artifact hashes, versions and a completed manifest after validation. No model request is made. Exact stream timing metadata is required; see [media processing](./docs/references/media-processing.md) for support limits.
 
 ## Tool adapters
 

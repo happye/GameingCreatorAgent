@@ -13,7 +13,7 @@ flowchart TD
     INFRA --> DOMAIN
 ```
 
-包为 `src/gamingcreator/{cli,application,domain,infrastructure}/`，测试在 `tests/test_*.py`。F001 已固定 CPython 3.13.16/build 20261001、uv 0.12.22 与 `.venv` 依赖，建立 pytest、Ruff、严格 mypy 和导入方向检查。CLI 输入、时间约束及 Provider DTO/ports 已实现；Media、ASR、Vision、Timeline、Retrieval 随特性加入，不提前拆服务或多语言核心。
+包为 `src/gamingcreator/{cli,application,domain,infrastructure}/`，测试在 `tests/test_*.py`。F001 固定 CPython 3.13.16/build 20261001、uv 0.12.22 与开发依赖，建立 pytest/Ruff/严格 mypy/导入检查。F002 实现媒体 port、整数 PTS/有理数源时钟、图片与分段 WAV 映射及 Windows Job 进程树管理。ASR、Vision、Timeline、Retrieval 随后加入，不提前拆服务或多语言核心。
 
 CLI 只解析输入、组装依赖和输出结果；Application 编排 stages、定义 Protocol ports；Domain 用类型化领域记录，无厂商 SDK、SQL 或进程调用；Infrastructure 实现 ports。正式桌面界面以后另作选型；通过 Application 或版本化 CLI/JSON 接入处理核心。
 

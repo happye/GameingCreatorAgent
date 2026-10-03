@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "provenance": "Copied project-local binaries and DLLs from an existing local installation during F000; no installer was run. Download/distribution provenance and GPL obligations must be resolved before packaging.",
+  "files": [
+    {
+      "path": "avcodec-62.dll",
+      "sha256": "64cffbcd72d2fc34228f283cc1c6b2565c6c41b9efbcc9935b9cec45e73dc5fd"
+    },
+    {
+      "path": "avdevice-62.dll",
+      "sha256": "ff2dee6076215395cfd4b077af420eda524ca8398b110d1aef57b9312b8d8dcd"
+    },
+    {
+      "path": "avfilter-11.dll",
+      "sha256": "aba6252cee805146002202cdd922596a1d0f6ba217130af7f8d820483b2ec33b"
+    },
+    {
+      "path": "avformat-62.dll",
+      "sha256": "70a12ed7b6b02fc4fea07734be9ff9e74ac3392fba88a81dc78fe2f66cc41d09"
+    },
+    {
+      "path": "avutil-60.dll",
+      "sha256": "9a909fa9611b5122c296bc3114a99799946932fc727d866a1201c65476fd9f87"
+    },
+    {
+      "path": "ffmpeg.exe",
+      "sha256": "fbf93c7f66b9194a236ecacbc2cb011ad91b704c87f7dba673efbf5800f8c67a"
+    },
+    {
+      "path": "ffprobe.exe",
+      "sha256": "837958d75a2b8640dd86117fe6c6ac4aedfdf8ef302d2753a4e4914f82c8e0f1"
+    },
+    {
+      "path": "swresample-6.dll",
+      "sha256": "a3998f5b07259584bceba0519d6d36f252879f796a1e09cf936157a0ee212997"
+    },
+    {
+      "path": "swscale-9.dll",
+      "sha256": "1d9816ece474e931f7a7d7b5ccc3912b5539961a2965a106bd64c9c588277170"
+    }
+  ],
+  "version": "N-123317-gc1be2107c9-20260310"
+}

@@ -33,9 +33,10 @@
       "name": "Local media preprocessing",
       "description": "Use FFmpeg locally to probe media and extract timestamped audio and visual evidence.",
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "test_criteria": "Representative and synthetic VFR/nonzero-PTS clips produce traceable source timecodes; no-audio, malformed input and cancellation are handled cleanly.",
-      "dependencies": ["F001"]
+      "dependencies": ["F001"],
+      "evidence": ["docs/exec-plans/sprint-F002.md", "docs/references/media-processing.md", "docs/references/media-toolchain.json", "scripts/test-media.ps1"]
     },
     {
       "id": "F003",

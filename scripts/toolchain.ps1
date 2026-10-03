@@ -37,3 +37,14 @@ if require_venv == 'yes':
   & $pythonPath -I -B -c $probe $RepositoryRoot $runtimeRoot $manifest.python.version $(if ($RequireVenv) { 'yes' } else { 'no' })
   if ($LASTEXITCODE -ne 0) { throw 'Project Python version, ABI or environment boundary is invalid.' }
 }
+
+function Assert-ProjectMediaTools {
+  param([string]$RepositoryRoot)
+  $manifest = Get-Content (Join-Path $RepositoryRoot 'docs/references/media-toolchain.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+  $binaryRoot = [IO.Path]::GetFullPath((Join-Path $RepositoryRoot '.tools/ffmpeg/bin'))
+  foreach ($file in $manifest.files) {
+    $filePath = [IO.Path]::GetFullPath((Join-Path $binaryRoot $file.path))
+    if (-not $filePath.StartsWith($binaryRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'Invalid media toolchain path.' }
+    if ((Get-FileHash -LiteralPath $filePath -Algorithm SHA256).Hash -ne $file.sha256) { throw 'Project FFmpeg binary/DLL differs from the pinned media toolchain.' }
+  }
+}

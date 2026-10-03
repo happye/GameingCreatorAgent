@@ -1,5 +1,14 @@
 # Progress Log
 
+## 2026-10-03 — F002 local media accepted
+
+- F001 integrated/pushed to main at `754125f`. Implemented local FFmpeg media port, exact PTS/Fraction/common origin, timestamped JPEG, 16k WAV with piecewise sample mapping, hashes and validated manifest publication.
+- Independent worktree worker delivered Windows Job containment; root integrated suspended-start/assign/resume and EOF drain. Fixed venv parent-only cancellation leaks, AAC samples beyond declared end, symmetric resampling boundary quantization and the final hash cancellation race.
+- Verification: 87 tests (0 skipped, warnings as errors), Ruff 27 files, strict mypy 21 files, import checks, CLI smoke and matching offline wheels passed. Four full local videos totaling 490.693314 seconds produced 492 images and mapped audio; no paid API calls.
+- Real recording has 12,928 audio PTS discontinuities, reinforcing the piecewise requirement. Completed media bundles do not mark a full AnalysisRun complete.
+- Tool/runtime isolation and specified host fingerprints remained unchanged. Recorded TD001 log cap, TD002 exact metadata support and TD003 media distribution provenance; hour-long/semantic quality remain unverified.
+- Shared docs/handoff updated for Codex/Claude/Grok; F000/F001/F002 true, F003–F006 false. Next independent work is F004 storage plus F003 model preparation.
+
 ## 2026-10-03 — F001 isolated Python core accepted
 
 - Installed hash-verified portable uv 0.12.22 and standard CPython 3.13.16/build 20261001 exclusively inside `.tools`; created `.venv` without system packages and pinned 17 package entries in `uv.lock`.

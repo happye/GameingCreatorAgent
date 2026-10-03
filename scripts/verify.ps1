@@ -11,7 +11,7 @@ try {
   $uvPath = Join-Path $repositoryRoot '.tools/uv/uv.exe'
   & $uvPath --no-config lock --check --offline --python $pythonPath --no-python-downloads
   if ($LASTEXITCODE -ne 0) { throw 'Dependency lock does not match the project.' }
-  foreach ($arguments in @(@('-m', 'ruff', 'format', '--check', 'src', 'tests'), @('-m', 'ruff', 'check', 'src', 'tests'), @('-m', 'mypy'), @('-m', 'pytest'))) {
+  foreach ($arguments in @(@('-m', 'ruff', 'format', '--check', 'src', 'tests', 'scripts/validate-media.py'), @('-m', 'ruff', 'check', 'src', 'tests', 'scripts/validate-media.py'), @('-m', 'mypy'), @('-m', 'pytest', '-W', 'error'))) {
     & $pythonPath @arguments
     if ($LASTEXITCODE -ne 0) { throw "Project check failed: $($arguments -join ' ')" }
   }
@@ -31,5 +31,5 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'CLI help failed.' }
   & (Join-Path $repositoryRoot '.venv/Scripts/gamingcreator.exe') --version
   if ($LASTEXITCODE -ne 0) { throw 'Installed console entry point failed.' }
-  Write-Host 'All F001 project checks passed.'
+  Write-Host 'All project checks passed. Media integration requires project-local FFmpeg; check pytest skip counts.'
 } finally { Pop-Location }

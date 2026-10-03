@@ -1,6 +1,6 @@
 # Phase 0 工程规格 v2
 
-状态：实施合同；F001 已实现输入/领域/Provider 合同基础，处理流水线仍待后续特性。来源：原总方案 §58–59、69–71；按用户补充使用 Python，见 [ADR-001](./adr-001-phase-0-language.md)；审查：[reverse-review](../exec-plans/reverse-review-2026-10-03.md)。目标是让多个 Agent 按相同合同实现和验证。
+状态：实施合同；F001 输入/领域/Provider 基础与 F002 媒体 service 已实现，完整分析流水线仍待后续特性。来源：原总方案 §58–59、69–71；按用户补充使用 Python，见 [ADR-001](./adr-001-phase-0-language.md)；审查：[reverse-review](../exec-plans/reverse-review-2026-10-03.md)。目标是让多个 Agent 按相同合同实现和验证。
 
 ## 1. CLI 与外部行为
 
@@ -26,6 +26,8 @@ stdout 为结果或 JSON；进度/JSON 诊断写 stderr。退出码：0 成功�
 ## 2. 时间与数据合同
 
 所有领域时间是从源视频规范化起点计量的 Int64 微秒 `[startUs,endUs)`；非负且小于等于源时长，Python int 必须校验不超过 `2^63-1`。格式化显示时间可以舍入，持久化不可用显示字符串反推。Evidence 另存原始 PTS、timebase、streamStart、切片偏移、音视频偏移和变换版本；模型局部时间由程序回映射并检查范围，VAD 必须有回映射。
+
+F002 采用最早选中流 presentation start 为共同 origin，精确 Fraction 先相减，点/起点 floor 到微秒，终点/时长 ceil。音频输出保留逐帧 sampleOffset/PTS/样本数；gap/overlap 与≤1输出样本的边界量化裁切均可追溯。按元信息音轨 end_pts 裁去本次解码观察到的越界样本。完成 bundle 不等于 Completed AnalysisRun。实现/支持范围见 [媒体合同](../references/media-processing.md)。
 
 | 记录 | 必需字段 |
 | --- | --- |
@@ -98,6 +100,6 @@ Ctrl+C 停止新任务、取消 Provider、保存状态；FFmpeg/ASR worker 要�
 
 质量协议见 [benchmark 规格](../references/phase-0-benchmark.md)。真实清晰机制查询仍须 Top10 独立可用结果 ≥70%；补齐人工标签前不可标 Phase 0 通过。速度报告墙钟/素材时长实时比与配置，原方案没有硬速度阈值，本轮不编造阈值。§44 整条创作时间节省在后续生成发布包阶段验证。
 
-开放实验项：本地 ASR 权重/运行时、完整采样配置、首个 embedding 实现、第二视觉 Provider、真实录制会话和标签、等待时间容忍。项目内 uv/Python 环境和 CLI 合同已验收 F001；媒体流水线、SQLite、ASR、检索尚未实现。工程合同和 spike 通过不替代这些条件。
+开放实验项：本地 ASR 权重/运行时、完整采样配置、首个 embedding 实现、第二视觉 Provider、独立录制会话/标签、等待时间容忍。环境/CLI 合同已验收 F001，局部媒体 service 已验收 F002；SQLite、ASR、检索和完整分析命令仍待实现。工程合同和 spike 通过不替代这些条件。
 
 实施依赖：F001 环境/合同工程 → F002 媒体映射 → F003 ASR/视觉与账本；F004 存储依赖 F001，可与 F002/F003 并行；F005 依赖 F003＋F004，包含 F002 的传递依赖；F006 独立标签准备可以先行，最终质量 gate 在集成后执行。详见 [开发任务](../exec-plans/phase-0-plan.md)。

@@ -5,6 +5,6 @@ Use `docs/references/agent-workflow.md` for assignment and transfer rules. This 
 | Feature | Owner / tool-session | Branch | Owned paths | State | Sprint record |
 | --- | --- | --- | --- | --- | --- |
 
-F001 is accepted; one writer and read-only contract/environment/final documentation reviews completed. Results are in sprint-F001 and feature_list. F002 design is read-only preparation; implementation remains unassigned and F002–F006 unverified.
+F001 and F002 are accepted. The Windows Job worker delivered its two files from an isolated worktree and root integrated/reviewed/tested them. No active writer remains; F003/F004 are next. Scratch branch/worktree is not a continuation point.
 
 Suggested states: `active`, `ready-for-handoff`, `blocked`, `ready-for-review`. Remove finished assignments after recording their result in `progress.md` and `feature_list.json`.
