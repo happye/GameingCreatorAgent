@@ -1,0 +1,63 @@
+{
+  "project": "Gaming Creator Agent",
+  "phase": "Phase 0",
+  "version": "0.1.0-planning",
+  "features": [
+    {
+      "id": "F000",
+      "name": "Technical reverse review",
+      "description": "Review the source plan for feasibility, architecture, model capability, video processing, cost, and one-person maintenance; refine the smallest Phase 0 loop.",
+      "priority": 0,
+      "passes": false,
+      "test_criteria": "A dated review in docs/exec-plans identifies key risks, evidence, decisions, and any changes to the Phase 0 scope."
+    },
+    {
+      "id": "F001",
+      "name": "CLI input and project skeleton",
+      "description": "Create the smallest buildable .NET CLI with analyze and search command contracts and local input validation.",
+      "priority": 1,
+      "passes": false,
+      "test_criteria": "Build and tests pass; a missing or unreadable video produces a clear error without creating output."
+    },
+    {
+      "id": "F002",
+      "name": "Local media preprocessing",
+      "description": "Use FFmpeg locally to probe media and extract timestamped audio and visual evidence.",
+      "priority": 2,
+      "passes": false,
+      "test_criteria": "A representative local clip produces reproducible evidence with source timecodes; malformed input fails cleanly."
+    },
+    {
+      "id": "F003",
+      "name": "Replaceable model analysis",
+      "description": "Define provider contracts and produce semantic events from selected evidence while recording model and cost metadata.",
+      "priority": 3,
+      "passes": false,
+      "test_criteria": "A provider can be swapped through configuration; each analysis records provider, model, prompt version, usage, estimated cost, and elapsed time."
+    },
+    {
+      "id": "F004",
+      "name": "Persistent semantic timeline",
+      "description": "Store media references, timestamped semantic events, and analysis metadata in SQLite.",
+      "priority": 4,
+      "passes": false,
+      "test_criteria": "A second process can reload the same timeline; full source video bytes are absent from the database."
+    },
+    {
+      "id": "F005",
+      "name": "Natural-language clip retrieval",
+      "description": "Rank timeline segments against a text query and return useful clip ranges with evidence.",
+      "priority": 5,
+      "passes": false,
+      "test_criteria": "A query returns ranked start/end timecodes linked to the original media, with deterministic behavior on a fixed fixture."
+    },
+    {
+      "id": "F006",
+      "name": "Retrieval benchmark and gate",
+      "description": "Evaluate ranked results against human judgments and report quality, runtime, and model cost.",
+      "priority": 6,
+      "passes": false,
+      "test_criteria": "A repeatable report shows query count, labels, Top-10 Useful Rate, misses, processing time, and cost; clear mechanic queries reach at least 70% useful results."
+    }
+  ]
+}

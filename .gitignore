@@ -1,0 +1,27 @@
+# User media, local data, and generated output
+data/
+artifacts/
+output/
+*.mp4
+*.mov
+*.mkv
+*.wav
+*.mp3
+*.db
+*.sqlite
+*.sqlite3
+
+# Secrets and local overrides
+.env
+.env.*
+!.env.example
+*.user
+*.suo
+
+# .NET and IDE output
+bin/
+obj/
+.vs/
+.vscode/
+TestResults/
+coverage/
