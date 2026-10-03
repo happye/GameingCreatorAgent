@@ -8,16 +8,23 @@
       "name": "Technical reverse review",
       "description": "Review the source plan for feasibility, architecture, model capability, video processing, cost, and one-person maintenance; refine the smallest Phase 0 loop.",
       "priority": 0,
-      "passes": false,
-      "test_criteria": "A dated review in docs/exec-plans identifies key risks, evidence, decisions, and any changes to the Phase 0 scope."
+      "passes": true,
+      "test_criteria": "A dated review in docs/exec-plans identifies key risks, evidence, decisions, and any changes to the Phase 0 scope.",
+      "evidence": [
+        "docs/exec-plans/reverse-review-2026-10-03.md",
+        "docs/exec-plans/phase-0-validation-2026-10-03.md",
+        "docs/design-docs/phase-0-engineering-spec.md",
+        "docs/exec-plans/sprint-F000.md"
+      ]
     },
     {
       "id": "F001",
       "name": "CLI input and project skeleton",
-      "description": "Create the smallest buildable .NET CLI with analyze and search command contracts and local input validation.",
+      "description": "Prepare isolated, pinned .NET 10 tools and the four-project CLI baseline with domain/provider contracts and local input validation.",
       "priority": 1,
       "passes": false,
-      "test_criteria": "Build and tests pass; a missing or unreadable video produces a clear error without creating output."
+      "test_criteria": "Build, format and dependency-direction checks pass using project-local tools/caches; a missing or unreadable video produces the specified input error without creating output.",
+      "dependencies": ["F000"]
     },
     {
       "id": "F002",
@@ -25,15 +32,17 @@
       "description": "Use FFmpeg locally to probe media and extract timestamped audio and visual evidence.",
       "priority": 2,
       "passes": false,
-      "test_criteria": "A representative local clip produces reproducible evidence with source timecodes; malformed input fails cleanly."
+      "test_criteria": "Representative and synthetic VFR/nonzero-PTS clips produce traceable source timecodes; no-audio, malformed input and cancellation are handled cleanly.",
+      "dependencies": ["F001"]
     },
     {
       "id": "F003",
       "name": "Replaceable model analysis",
-      "description": "Define provider contracts and produce semantic events from selected evidence while recording model and cost metadata.",
+      "description": "Implement local ASR and replaceable vision analysis, produce validated semantic events, and record per-attempt model, usage and cost metadata.",
       "priority": 3,
       "passes": false,
-      "test_criteria": "A provider can be swapped through configuration; each analysis records provider, model, prompt version, usage, estimated cost, and elapsed time."
+      "test_criteria": "Provider replacement is verified; ASR distinguishes no_audio/no_speech/failure; schema, usage, budget and retry checks pass with per-attempt model/prompt/cost/time records and unknown costs preserved.",
+      "dependencies": ["F002"]
     },
     {
       "id": "F004",
@@ -41,7 +50,8 @@
       "description": "Store media references, timestamped semantic events, and analysis metadata in SQLite.",
       "priority": 4,
       "passes": false,
-      "test_criteria": "A second process can reload the same timeline; full source video bytes are absent from the database."
+      "test_criteria": "A second process reloads the timeline; migrations/FKs and interrupted-stage/file-integrity recovery pass; unknown request costs survive recovery; full source video bytes are absent from SQLite.",
+      "dependencies": ["F001"]
     },
     {
       "id": "F005",
@@ -49,7 +59,8 @@
       "description": "Rank timeline segments against a text query and return useful clip ranges with evidence.",
       "priority": 5,
       "passes": false,
-      "test_criteria": "A query returns ranked start/end timecodes linked to the original media, with deterministic behavior on a fixed fixture."
+      "test_criteria": "A query returns stable, deduplicated source intervals with evidence from a Completed run; empty results are valid; lexical and semantic retrieval are compared on fixed fixtures.",
+      "dependencies": ["F003", "F004"]
     },
     {
       "id": "F006",
@@ -57,7 +68,8 @@
       "description": "Evaluate ranked results against human judgments and report quality, runtime, and model cost.",
       "priority": 6,
       "passes": false,
-      "test_criteria": "A repeatable report shows query count, labels, Top-10 Useful Rate, misses, processing time, and cost; clear mechanic queries reach at least 70% useful results."
+      "test_criteria": "A frozen independent human-labeled benchmark reports every query, fixed-denominator U10, misses/timecode errors, runtime and cold/hot cost; each main mechanic query reaches U10 >= 0.70; sparse/negative groups are separate and unverified cost gates remain null.",
+      "dependencies": ["F005"]
     }
   ]
 }

@@ -1,5 +1,7 @@
 # Gaming Creator Agent
 
+Version repository: [happye/GameingCreatorAgent](https://github.com/happye/GameingCreatorAgent), branch `main`. Keep media, keys, virtual environments, and runtime caches outside tracked files.
+
 This repository is the starting point for a local-first game-content creation tool. The source plan is [`游戏内容创作与商业化产品总方案 V1.0.txt`](./游戏内容创作与商业化产品总方案%20V1.0.txt). The first milestone validates whether a semantic timeline can find useful moments in local game footage before a desktop UI or commercial system is built.
 
 ## Current state
@@ -10,10 +12,14 @@ The repository contains planning documents, a shared workflow for Codex, Claude 
 
 1. Read [`AGENTS.md`](./AGENTS.md), [`HANDOFF.md`](./HANDOFF.md), and the [shared workflow](./docs/references/agent-workflow.md). Open the same repository or your assigned worktree in whichever tool is available.
 2. In PowerShell, run `./scripts/init.ps1 -CheckOnly` to verify scaffold files and `feature_list.json`.
-3. Run `./scripts/init.ps1` to check prerequisites for later Phase 0 development. Install a .NET SDK and FFmpeg if the script reports they are missing.
-4. Resume your assigned task; if none is active, F000 is next in `feature_list.json`. Record ownership before starting. Preserve a concrete handoff when switching tools.
+3. Run `./scripts/init.ps1` to check project-local prerequisites. Follow the [isolated environment rules](./docs/references/isolated-environment.md); all tools/packages stay inside `.tools/`, `.venv/`, and `.cache/`.
+4. Resume your assigned task; review the [reverse review](./docs/exec-plans/reverse-review-2026-10-03.md), [engineering specification](./docs/design-docs/phase-0-engineering-spec.md), and [task dependencies](./docs/exec-plans/phase-0-plan.md). Record ownership and preserve a concrete handoff.
 
 Build and test commands will be added after the first executable project is created.
+
+## Phase 0 validation utilities
+
+The [2026-10-03 validation report](./docs/exec-plans/phase-0-validation-2026-10-03.md) records real local media/DeepSeek experiments and their limits. Run `./scripts/test-media-spike.ps1 -Synthetic` for the local media smoke and `./scripts/test-retrieval-score.ps1` for fixed-denominator metric regression. `test-deepseek-vision.ps1 -SourcePath <video>` needs process-local `DEEPSEEK_API_KEY` and makes one paid request of five extracted frames. It is a limited experiment, not the final CLI or a passed retrieval benchmark.
 
 ## Tool adapters
 

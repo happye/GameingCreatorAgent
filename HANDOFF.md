@@ -1,25 +1,33 @@
 # 当前交接
 
-更新时间：2026-10-03（Asia/Hong_Kong）。本文件供 Codex、Claude Code、Grok Build 接续当前会话；历史记录见 `progress.md`，验收结果见 `feature_list.json`。
+更新时间：2026-10-03（Asia/Hong_Kong）。供 Codex、Claude Code、Grok Build 接续；历史见 `progress.md`，验收见 `feature_list.json`。
 
-## 当前项目状态
+## 当前状态
 
-- 已建立项目 harness，并扩展为共享规则和多工具协作入口。
-- 当前分支：`master`。最新提交与未提交文件以 `git log -1 --oneline` 和 `git status --short` 为准。
-- 应用代码、CLI、数据库和测试工程尚未实现。所有 Phase 0 特性仍为 `passes: false`。
-- 活跃开发任务：无；分工见 `docs/exec-plans/assignments.md`。
+- 版本库：`https://github.com/happye/GameingCreatorAgent`；远端 `origin`，主分支 `main`。提交及未提交变更以 `git log -1 --oneline`、`git status --short` 为准。
+- F000 六方向反向审查、架构与工程合同、任务依赖已验收；入口为 `docs/exec-plans/sprint-F000.md`。原产品总方案未改动。
+- F001–F006 未验收。没有应用 CLI、ASR、SQLite 或检索实现，完整 Phase 0 Top10 ≥70% gate 尚未测量。
+- 当前无活跃编码任务；下一项 F001。分配前更新 `docs/exec-plans/assignments.md`。
 
-## 下一项工作
+## 实测与限制
 
-接续 F000 技术反向审查：读取产品总方案和 `docs/product-specs/phase-0.md`，在 `docs/exec-plans/sprint-F000.md` 记录 owner 与计划，然后评审可行性、架构、模型能力、视频处理、成本和维护负担。输出带证据的风险、取舍与 Phase 0 最小闭环，必要时更新暂定规格。F000 尚未完成。
+用户授权 `GameVideos/` 测试。三段短视频共 214.862313 秒：两段 PV 和一段标为实机的剪辑；Atom 两段先按同源开发组处理。已验证短窗抽帧/音频提取、合成无音轨以及 DeepSeek `deepseek-flash` 三次五帧请求。15 帧费用上界估算合计 ¥0.024076，未账单确认，不代表源小时成本或事件识别质量。
 
-## 环境与验证
+详细配置、结果路径与限制见 `docs/exec-plans/phase-0-validation-2026-10-03.md`。媒体和响应保存在 Git 忽略的 `artifacts/`；换机器需自备授权素材并重建。仍缺小时级未剪辑录像、冻结独立主组与正式人工事件/片段评级。
 
-- 使用 Windows PowerShell；`./scripts/init.ps1 -CheckOnly` 检查共享骨架。
-- 上次完整环境检查发现缺少 .NET SDK；FFmpeg 可用。开始代码构建前重新检查。
-- 本机已发现 Claude Code 2.1.177 和 Grok Build 1.0.46。工具适配的验证记录见 `progress.md`；尚未运行这两款工具的模型开发会话。
-- 本次 `grok inspect --json` 返回 `projectTrusted: false`、空的 `projectInstructions`；因此尚未验证实际加载。首次从该仓库启动 Grok 时处理其仓库信任提示，再用 `grok inspect` 复查入口文件。
+## 环境与检查
 
-## 切换时保留的信息
+- 所有工具、包和缓存只用项目内 `.tools/`、`.venv/`、`.cache/`，禁止全局安装与修改用户/系统环境。先 `. ./scripts/env.ps1`；详细规则见 `docs/references/isolated-environment.md`。
+- FFmpeg/ffprobe 与 DLL 已复制到 `.tools/ffmpeg/bin`，脚本显式调用副本。该构建含 GPL 组件，正式分发前需评审；项目内 .NET 10 SDK、Python/ASR 仍待准备。
+- `./scripts/init.ps1 -CheckOnly`、媒体 smoke、计分回归、全部 PowerShell 语法及进程缓存/临时路径检查通过。完整 `init.ps1` 退出 1：缺项目内 .NET 10 SDK，不是已具备构建环境。
+- `./scripts/test-deepseek-vision.ps1` 会上传五张帧并发出一次付费请求；密钥只读进程 `DEEPSEEK_API_KEY`，不写文件，不自动重试。先前聊天中暴露的凭据应轮换，不得复制进交接或提交。
+- Claude Code 导入已配置；真实模型会话加载未测。上次 Grok 检查为 `projectTrusted:false`、空 instructions；首次使用处理信任提示后重查，不把适配文件存在当实际加载通过。
 
-有未完成工作时，用实际记录替换以上状态，并附上任务 ID、分支、修改文件、已验证结果、失败信息及下一步具体操作。并行 worker 使用自己的 sprint 文件交接，由集成负责人汇总本文件。
+## 下一 owner 的具体动作
+
+1. 读取共享规则、原总方案、工程规格和 `phase-0-plan.md`，检查工作树；在 `codex/F001-core` 或对应工具的独立分支/worktree 登记文件归属。
+2. 为 F001 准备项目内固定 .NET 10 SDK、下载校验清单、`global.json` 和包锁；仅用项目工具与缓存构建，不借系统 SDK 兜底。
+3. 建立 `GamingCreator.Cli/Application/Domain/Infrastructure` 四工程和最小测试、格式与引用方向检查；实现输入错误行为及时间/Provider/账本 DTO 合同。
+4. 合同集成后分配 F002 媒体映射与 F004 存储；F003 依赖 F002，再进入 F005/F006。正式人工标签准备可先行。每次交接记录实际命令和结果，未通过项保留 false。
+
+不得重复初始化、提前进入正式 UI/商业系统，或用合成计分与图像请求成功替代真实检索验收。

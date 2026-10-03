@@ -14,6 +14,10 @@ $requiredPaths = @(
     'progress.md',
     'docs/product-specs/phase-0.md',
     'docs/design-docs/architecture.md',
+    'docs/design-docs/phase-0-engineering-spec.md',
+    'docs/references/phase-0-benchmark.md',
+    'docs/references/isolated-environment.md',
+    'scripts/env.ps1',
     'docs/exec-plans/phase-0-plan.md',
     'docs/references/testing-guide.md',
     'docs/references/agent-workflow.md',
@@ -55,19 +59,28 @@ if ($CheckOnly) {
     return
 }
 
+. (Join-Path $PSScriptRoot 'env.ps1')
 $missingTools = @()
-$dotnetCommand = Get-Command dotnet -ErrorAction SilentlyContinue
-if ($null -eq $dotnetCommand -or @(& dotnet --list-sdks).Count -eq 0) {
-    $missingTools += '.NET SDK'
+$localDotnet = Join-Path $repositoryRoot '.tools/dotnet/dotnet.exe'
+if (Test-Path -LiteralPath $localDotnet) {
+    $localSdks = @(& $localDotnet --list-sdks)
+    $sdkCheckExit = $LASTEXITCODE
+    if ($sdkCheckExit -ne 0 -or -not ($localSdks -match '^10\.\d+\.\d+\s+\[')) {
+        $missingTools += 'working project-local .NET 10 SDK (.tools/dotnet)'
+    }
+} else {
+    $missingTools += 'project-local .NET 10 SDK (.tools/dotnet)'
 }
-if ($null -eq (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
-    $missingTools += 'FFmpeg'
+foreach ($mediaTool in @('ffmpeg.exe', 'ffprobe.exe')) {
+    if (-not (Test-Path -LiteralPath (Join-Path $repositoryRoot ".tools/ffmpeg/bin/$mediaTool"))) {
+        $missingTools += "project-local $mediaTool"
+    }
 }
 
 if ($missingTools.Count -gt 0) {
-    Write-Host "Missing Phase 0 prerequisites: $($missingTools -join ', ')."
-    Write-Host 'Install them and rerun this script before building the CLI.'
+    Write-Host "Missing core SDK/media prerequisites: $($missingTools -join ', ')."
+    Write-Host 'Prepare isolated tools under .tools; do not install packages or modify system configuration.'
     exit 1
 }
 
-Write-Host 'Phase 0 prerequisites are available. No application project has been created yet.'
+Write-Host 'Project-local .NET 10 SDK and media tools are available. Python/ASR readiness is not checked here; see F003.'

@@ -1,6 +1,10 @@
 # User media, local data, and generated output
 data/
+GameVideos/
 artifacts/
+.tools/
+.venv/
+.cache/
 output/
 *.mp4
 *.mov

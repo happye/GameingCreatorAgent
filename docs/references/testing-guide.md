@@ -4,6 +4,6 @@ No test framework is configured yet. F001 should establish a .NET test project a
 
 For retrieval quality, build a local benchmark from representative game recordings. The source plan suggests 10–20 recordings; keep raw footage outside Git. Store only permitted fixture metadata and human labels. Each benchmark case should capture a query, relevant time ranges, judged results, reviewer/date, provider/model/prompt version, runtime, and cost.
 
-Compute Top-10 Useful Rate as human-judged usable or highly relevant returned clips divided by returned clips among the top ten. Report the denominator, query count, empty results, and per-query scores so the 70% Phase 0 gate cannot be hidden by an aggregate. Track timecode errors and false positives as secondary evidence. If the gate fails, record the concrete failures before changing the pipeline.
+Compute Top-10 Useful Rate with a fixed denominator of ten; missing and duplicate-event slots count zero. Human-judged usable/highly relevant independent events count toward the numerator. Main, sparse-positive, and negative queries are frozen before inference and reported separately. Follow [phase-0-benchmark.md](./phase-0-benchmark.md) for full contracts and executable metric regression. Track timecode errors and false positives; report every query rather than hiding failures in an aggregate.
 
 Do not mark a feature passed because code compiles alone. Attach the feature's test evidence to `progress.md` or a sprint evaluation file.
