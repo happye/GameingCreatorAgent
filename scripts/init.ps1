@@ -19,6 +19,12 @@ $requiredPaths = @(
     'docs/references/phase-0-benchmark.md',
     'docs/references/isolated-environment.md',
     'scripts/env.ps1',
+    'scripts/toolchain.ps1',
+    'scripts/setup-env.ps1',
+    'scripts/verify.ps1',
+    'toolchain.json',
+    'pyproject.toml',
+    'uv.lock',
     'docs/exec-plans/phase-0-plan.md',
     'docs/references/testing-guide.md',
     'docs/references/agent-workflow.md',
@@ -61,29 +67,10 @@ if ($CheckOnly) {
 }
 
 . (Join-Path $PSScriptRoot 'env.ps1')
+. (Join-Path $PSScriptRoot 'toolchain.ps1')
 $missingTools = @()
-$localUv = Join-Path $repositoryRoot '.tools/uv/uv.exe'
-if (Test-Path -LiteralPath $localUv) {
-    $uvVersionText = (& $localUv --version) -join "`n"
-    $uvCheckExit = $LASTEXITCODE
-    if ($uvCheckExit -ne 0 -or $uvVersionText -notmatch '^uv (\d+\.\d+\.\d+)\b') {
-        $missingTools += 'working project-local uv >=0.11.8 (.tools/uv)'
-    } elseif ([version]$Matches[1] -lt [version]'0.11.8') {
-        $missingTools += 'uv >=0.11.8 supporting Python registry isolation'
-    }
-} else {
-    $missingTools += 'project-local uv (.tools/uv)'
-}
-$localPython = Join-Path $repositoryRoot '.venv/Scripts/python.exe'
-if (Test-Path -LiteralPath $localPython) {
-    $pythonCheckCode = 'import pathlib, sys, sysconfig; root = pathlib.Path(sys.argv[1]).resolve(); base = pathlib.Path(sys.base_prefix).resolve(); runtime = root / ".tools" / "python"; assert sys.implementation.name == "cpython" and sys.version_info[:2] == (3, 13); assert not sysconfig.get_config_var("Py_GIL_DISABLED"); assert pathlib.Path(sys.prefix).resolve() == root / ".venv"; assert base == runtime or runtime in base.parents; print(sys.version.split()[0])'
-    & $localPython -I -c $pythonCheckCode $repositoryRoot | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        $missingTools += 'CPython 3.13 venv backed by project-local runtime'
-    }
-} else {
-    $missingTools += 'project-local CPython 3.13 venv (.venv)'
-}
+try { Assert-ProjectToolchain -RepositoryRoot $repositoryRoot -RequireVenv }
+catch { $missingTools += $_.Exception.Message }
 foreach ($mediaTool in @('ffmpeg.exe', 'ffprobe.exe')) {
     if (-not (Test-Path -LiteralPath (Join-Path $repositoryRoot ".tools/ffmpeg/bin/$mediaTool"))) {
         $missingTools += "project-local $mediaTool"
@@ -96,4 +83,4 @@ if ($missingTools.Count -gt 0) {
     exit 1
 }
 
-Write-Host 'Project-local uv, CPython 3.13 venv and media tools are available. Locked package versions and ASR readiness require F001/F003 checks.'
+Write-Host 'Pinned project-local uv, CPython runtime/venv and media tools are available. Run scripts/verify.ps1 for F001 checks; ASR readiness requires F003.'

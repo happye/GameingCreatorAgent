@@ -1,7 +1,7 @@
 {
   "project": "Gaming Creator Agent",
   "phase": "Phase 0",
-  "version": "0.1.0-planning",
+  "version": "0.1.0",
   "features": [
     {
       "id": "F000",
@@ -23,9 +23,10 @@
       "name": "CLI input and project skeleton",
       "description": "Prepare isolated, pinned CPython 3.13/uv/venv tools and a four-layer Python CLI package with typed domain/provider contracts and local input validation.",
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "test_criteria": "Reproducible package build, pytest/Ruff/mypy and import-direction checks pass using project-local tools/caches, with no Windows Python registration or global links; missing/unreadable video returns the specified input error without output.",
-      "dependencies": ["F000"]
+      "dependencies": ["F000"],
+      "evidence": ["docs/exec-plans/sprint-F001.md", "toolchain.json", "uv.lock", "scripts/verify.ps1"]
     },
     {
       "id": "F002",

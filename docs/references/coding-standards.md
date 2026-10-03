@@ -1,6 +1,6 @@
 # Coding standards
 
-The repository has no application code or Python tooling configuration yet. Phase 0 follows [ADR-001](../design-docs/adr-001-phase-0-language.md). `.editorconfig` establishes UTF-8, final newlines, and four-space Python indentation. F001 must pin Ruff and mypy in the project environment and publish exact commands.
+Phase 0 follows [ADR-001](../design-docs/adr-001-phase-0-language.md). `.editorconfig` establishes UTF-8, final newlines and four-space Python indentation. `pyproject.toml` configures Ruff (100-column formatting) and strict mypy; `uv.lock` pins them. Run `./scripts/verify.ps1` before review, or dot-source `scripts/env.ps1` and invoke project Python for focused checks.
 
 - Use PascalCase for Python types, snake_case for modules/functions/variables, and UPPER_SNAKE_CASE for constants. Mirror domain concepts; explicitly map external JSON field names to internal names.
 - Type public contracts and domain logic; use dataclass records and Protocol ports with strict type checks. Validate external dictionaries at boundaries; do not pass unvalidated model output through the core.
@@ -10,4 +10,4 @@ The repository has no application code or Python tooling configuration yet. Phas
 - Prefer small cohesive files and functions. Split a file when its responsibility becomes hard to describe; do not force an arbitrary line-count limit.
 - Version prompt text and output schemas, and include the version in each stored analysis record.
 
-Keep these rules executable through tooling once code exists; until then, review them during each feature's verification.
+`tests/test_architecture.py` checks static package imports, including relative and package alias imports. This is an import guard, not a complete sandbox; avoid dynamic import workarounds and review new dependencies.

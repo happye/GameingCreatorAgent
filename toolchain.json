@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "platform": "windows-x86_64",
+  "uv": {
+    "version": "0.12.22",
+    "downloadUrl": "https://api.github.com/repos/astral-sh/uv/releases/assets/604418443",
+    "url": "https://github.com/astral-sh/uv/releases/download/0.12.22/uv-x86_64-pc-windows-msvc.zip",
+    "sha256": "ea1397797a0ca15f63516dd0f49c2dde9776db9be5861cab152ebe8ad199894d"
+  },
+  "python": {
+    "version": "3.13.16",
+    "downloadUrl": "https://api.github.com/repos/astral-sh/python-build-standalone/releases/assets/604267179",
+    "request": "cpython-3.13.16-windows-x86_64-none",
+    "build": "20261001",
+    "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261001/cpython-3.13.16%2B20261001-x86_64-pc-windows-msvc-install_only_stripped.tar.gz",
+    "sha256": "c402eb9a35aba90de319bbc87d23e6d887eca1551a05cfa80775f92dcf3ebc08",
+    "metadataSource": "https://raw.githubusercontent.com/astral-sh/uv/0.12.22/crates/uv-python/download-metadata.json"
+  }
+}

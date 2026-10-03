@@ -6,16 +6,18 @@ This repository is the starting point for a local-first game-content creation to
 
 ## Current state
 
-The repository contains planning documents, a shared workflow for Codex, Claude Code, and Grok Build, and empty source/test directories. There is no application or Python test runner yet. Phase 0 uses Python, SQLite, and FFmpeg; see the [language decision](./docs/design-docs/adr-001-phase-0-language.md). C# is optional and the later desktop UI remains undecided. Model providers must remain replaceable.
+F000 review and F001 core are accepted. The installable Python package provides CLI input validation, domain records, Provider ports and automated checks. Media processing, models, SQLite and retrieval remain to be implemented; the real Phase 0 quality gate is unmeasured. Phase 0 uses Python, SQLite and FFmpeg; see the [language decision](./docs/design-docs/adr-001-phase-0-language.md). The later desktop UI remains undecided.
 
 ## Start here
 
 1. Read [`AGENTS.md`](./AGENTS.md), [`HANDOFF.md`](./HANDOFF.md), and the [shared workflow](./docs/references/agent-workflow.md). Open the same repository or your assigned worktree in whichever tool is available.
 2. In PowerShell, run `./scripts/init.ps1 -CheckOnly` to verify scaffold files and `feature_list.json`.
-3. Run `./scripts/init.ps1` to check project-local prerequisites. Follow the [isolated environment rules](./docs/references/isolated-environment.md); all tools/packages stay inside `.tools/`, `.venv/`, and `.cache/`.
+3. Run `./scripts/setup-env.ps1` to download hash-pinned portable uv/CPython and synchronize `uv.lock` into `.venv`. Use `-Offline` only when archives and packages are cached. Run `./scripts/init.ps1` to check exact tools and the separately prepared local FFmpeg. Follow the [isolated environment rules](./docs/references/isolated-environment.md); everything stays inside `.tools/`, `.venv/`, and `.cache/`.
 4. Resume your assigned task; review the [reverse review](./docs/exec-plans/reverse-review-2026-10-03.md), [engineering specification](./docs/design-docs/phase-0-engineering-spec.md), and [task dependencies](./docs/exec-plans/phase-0-plan.md). Record ownership and preserve a concrete handoff.
 
-Build and test commands will be added after the first executable project is created.
+Run `./scripts/verify.ps1` for Ruff, strict mypy, pytest, import boundaries, installed CLI smoke and two identical offline wheel builds. Details and recorded evidence: [F001](./docs/exec-plans/sprint-F001.md).
+
+Inspect commands with `./.venv/Scripts/gamingcreator.exe --help`. `config.example.json` defines schema v1: non-secret vision provider/model and positive request/frame limits. New analysis also requires `--max-cost-cny`; resume forbids config/budget overrides. Valid analyze/search/benchmark currently return exit 3 with `feature.not_implemented` and create no project output. Decoding and full model configuration belong to F002/F003.
 
 ## Phase 0 validation utilities
 

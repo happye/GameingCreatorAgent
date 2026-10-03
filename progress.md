@@ -1,5 +1,14 @@
 # Progress Log
 
+## 2026-10-03 — F001 isolated Python core accepted
+
+- Installed hash-verified portable uv 0.12.22 and standard CPython 3.13.16/build 20261001 exclusively inside `.tools`; created `.venv` without system packages and pinned 17 package entries in `uv.lock`.
+- Added installable four-layer package, CLI input/config/resume checks, Int64 source-time records and typed Provider/usage/cancellation contracts. Processing remains explicitly unimplemented; no dummy run or database is created.
+- Validation: 50 pytest tests, Ruff formatting/lint, strict mypy for source/Provider fake and import boundaries pass. Two offline wheels have the same SHA256; only package/metadata entries are included. Installed CLI help/version pass.
+- Offline setup from another directory preserves caller location and rejects inherited external uv project settings. User/machine environment and three Python registry subtree fingerprints stayed unchanged; this checks those boundaries, not all system activity.
+- Fixed isolated Python probes rewriting local bytecode (`-I` ignores cache environment); use `-I -B` and restore from the verified archive. Read-only contract/environment reviewers found remaining pipeline checks belong to later features.
+- Shared entry rules, README, architecture, engineering/environment/testing docs and handoff reconciled. Only F000/F001 true; F002 media preprocessing is next. No paid API requests this round.
+
 ## 2026-10-03 — Language clarification and Phase 0 baseline v2
 
 - User clarified that C# is optional. A read-only language review selected Python for Phase 0 to directly use local ASR/embedding/evaluation tooling and reduce cross-language IPC; later desktop UI remains undecided. ADR-001 supersedes the initial .NET recommendation, not product scope or acceptance.

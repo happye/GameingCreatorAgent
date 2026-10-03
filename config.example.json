@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "vision": {"provider": "deepseek", "model": "deepseek-flash"},
+  "limits": {"maxRequests": 100, "maxInputFrames": 1000}
+}

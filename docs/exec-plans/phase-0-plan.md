@@ -1,6 +1,6 @@
 # Phase 0 开发任务与依赖
 
-依据 [反向审查](./reverse-review-2026-10-03.md)、[工程合同](../design-docs/phase-0-engineering-spec.md) 和原方案 §71。保持 F001–F006 ID，避免其他工具交接时重复创建特性。以下任务尚未实现；spike 仅为 F000 的证据。
+依据 [反向审查](./reverse-review-2026-10-03.md)、[工程合同](../design-docs/phase-0-engineering-spec.md) 和原方案 §71。保持 F001–F006 ID，避免交接时重复创建特性。F001 已验收（见 sprint-F001），F002–F006 待实现；旧 spike 仅为 F000 证据。
 
 ```mermaid
 flowchart LR
@@ -24,6 +24,6 @@ flowchart LR
 
 语言决策遵循 [ADR-001](../design-docs/adr-001-phase-0-language.md)：Phase 0 Python，未来 UI 另作选型。F003 内部可将 ASR 与视觉拆为两项 owner，前提 DTO 已集成并分别拥有文件。公共 domain/ports 由 F001 owner 集中落地；其他 Agent 不同时改共享接口。pyproject/uv.lock 的跨特性依赖变更由集成负责人串行更新。每个编码会话使用独立 branch/worktree，在 `assignments.md` 分配后开始；根 HANDOFF/progress/feature_list 由集成负责人汇总。
 
-人工标签准备：先在用户提供的三个短视频上形成开发事件表和查询，核对事件是否确实可见；收集小时级录像与 10–20 代表录制会话，再冻结最终主组。两段 Atom 先视为同源；测试集不能用模型生成标签代替人工。
+人工标签准备：先在用户提供素材上形成开发事件表和查询，核对事件是否确实可见；收集小时级录像与 10–20 代表录制会话，再冻结最终主组。F000 只测三段；后续发现另有一段约 275.831s Atom 录像，尚未完成媒体验收。同游戏/录制来源先放同组；测试集不能用模型生成标签代替人工。
 
 执行先后：F001 确认项目环境与合同编译；媒体／存储并行；随后模型／存储集成；检索；最后真实 gate。每个任务用 `sprint-template.md` 记录 owner、分支、验证和转交动作。正式 UI、Creative Planner、Rendering 与商业系统在原定质量门槛通过之后另立阶段任务。

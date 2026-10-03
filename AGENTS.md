@@ -2,11 +2,11 @@
 
 ## Project and source of truth
 
-Gaming Creator Agent aims to turn local game footage and a creative brief into publishable content. The current repository is a planning and harness scaffold; no application code exists yet. Read `游戏内容创作与商业化产品总方案 V1.0.txt` before changing scope. The immediate milestone is Phase 0: local video analysis, a semantic timeline, and natural-language clip search. See `docs/product-specs/phase-0.md` and `feature_list.json` for the executable scope.
+Gaming Creator Agent turns local game footage and a brief into content. Phase 0 validates video analysis, a semantic timeline, and clip search. Read `游戏内容创作与商业化产品总方案 V1.0.txt`, `docs/product-specs/phase-0.md`, and `feature_list.json` before changing scope. The Python package currently provides CLI input validation and typed contracts; processing and retrieval remain unimplemented.
 
 ## Repository map
 
-- `src/gamingcreator/`: planned Python CLI and four-layer core; `tests/`: future automated and benchmark tests.
+- `src/gamingcreator/{cli,application,domain,infrastructure}/`: four-layer Python core; `tests/test_*.py`: pytest behavior and architecture tests.
 - `docs/design-docs/`: architecture and decisions; `docs/product-specs/`: accepted scope.
 - `docs/exec-plans/`: reverse review, validation evidence, task plan, feedback, and debt; `docs/references/`: benchmark and environment rules.
 - `prompts/`, `templates/`, `music/`: future versioned assets. Do not commit user footage or credentials.
@@ -15,11 +15,17 @@ Gaming Creator Agent aims to turn local game footage and a creative brief into p
 
 ## Environment and commands
 
-Use Windows PowerShell. All runtimes/packages must be project-isolated: `.tools/` for portable SDKs/tools, `.venv/` for Python packages, `.cache/` for caches. Never install globally or change user/system environment. See `docs/references/isolated-environment.md`. Run `./scripts/init.ps1 -CheckOnly` for scaffold validation, `./scripts/init.ps1` for isolated prerequisites, `./scripts/test-media-spike.ps1 -Synthetic` for media smoke tests, and `./scripts/test-retrieval-score.ps1` for metric regression. There is no application build yet; planned `gamingcreator` commands remain unimplemented.
+Use Windows PowerShell. Keep runtimes in `.tools/`, packages in `.venv/`, and caches in `.cache/`; never install globally or change user/system configuration. `toolchain.json` pins portable uv and CPython. See `docs/references/isolated-environment.md`.
+
+- `./scripts/setup-env.ps1`: prepare verified tools and locked dependencies; `-Offline` reuses cached archives/packages.
+- `./scripts/init.ps1`: check scaffold, exact toolchain and media prerequisites; `-CheckOnly` checks scaffold.
+- `./scripts/verify.ps1`: format, lint, types, pytest, and reproducible offline wheel builds.
+- `./.venv/Scripts/gamingcreator.exe --help`: inspect CLI contracts.
+- `./scripts/test-retrieval-score.ps1`: fixed-slot metric regression.
 
 ## Architecture and coding rules
 
-Follow `docs/design-docs/architecture.md`, `phase-0-engineering-spec.md`, and `adr-001-phase-0-language.md`. C# is not mandatory: Phase 0 uses Python; future UI requires a separate decision. Keep video bytes local, providers replaceable, and versions/cost/timing traceable. Follow `.editorconfig` and `docs/references/coding-standards.md`; create only the active feature's modules.
+Follow `docs/design-docs/architecture.md`, `phase-0-engineering-spec.md`, and ADR-001. Phase 0 uses Python; future UI requires a separate decision. Use four-space indentation, snake_case functions/modules and PascalCase types; Ruff formats/lints and mypy checks contracts. Keep domain independent of I/O, video bytes local, and provider versions/cost/timing traceable.
 
 ## Testing and acceptance
 
@@ -27,4 +33,4 @@ Follow `docs/references/testing-guide.md` and `phase-0-benchmark.md`. Top-10 Use
 
 ## Changes, commits, and handoff
 
-Codex, Claude Code, and Grok Build share scope, architecture, and acceptance criteria. Read `HANDOFF.md` and `feature_list.json` at session start; use `docs/references/agent-workflow.md` for ownership, worktrees, and transfer steps. Each agent handles one assigned feature; parallel work needs separate worktrees and explicit file ownership. The integrator reconciles shared state after review. Record resumable work before switching tools. Use imperative commit subjects, such as `feat(F002): add local frame extraction`; PRs link a feature and verification evidence. Never commit secrets, raw footage, generated media, or local databases.
+Codex, Claude Code, and Grok Build share acceptance criteria. Read `HANDOFF.md` and the shared `docs/references/agent-workflow.md` at session start. Assign ownership; parallel writers use separate worktrees. Record verification and resumable work before transfer. Existing subjects use imperative `chore:`/`docs:`; feature commits use `feat(F002): add local frame extraction`. PRs describe behavior, link a feature and include evidence. Never commit secrets, footage, generated media or databases.

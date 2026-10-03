@@ -1,11 +1,20 @@
 # Dot-source only in the current process. No user/system environment changes.
 $projectEnvironmentRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-Remove-Item Env:PYTHONHOME, Env:PYTHONPATH -ErrorAction SilentlyContinue
+Remove-Item Env:PYTHONHOME, Env:PYTHONPATH, Env:UV_PYTHON, Env:UV_CONFIG_FILE, Env:VIRTUAL_ENV, Env:CONDA_PREFIX -ErrorAction SilentlyContinue
+Remove-Item Env:UV_PYTHON_DOWNLOADS_JSON_URL, Env:UV_PYTHON_INSTALL_MIRROR, Env:UV_PYTHON_CPYTHON_BUILD, Env:PIP_TARGET, Env:PIP_PREFIX, Env:PIP_USER -ErrorAction SilentlyContinue
+Remove-Item Env:UV_INDEX, Env:UV_EXTRA_INDEX_URL, Env:UV_DEFAULT_INDEX, Env:UV_INDEX_URL, Env:UV_FIND_LINKS, Env:UV_NO_INDEX -ErrorAction SilentlyContinue
+Remove-Item Env:UV_PROJECT, Env:UV_WORKING_DIR -ErrorAction SilentlyContinue
+$env:UV_PYTHON_DOWNLOADS = 'never'
+$env:PIP_CONFIG_FILE = 'NUL'
 $env:PIP_CACHE_DIR = Join-Path $projectEnvironmentRoot '.cache/pip'
 $env:PIP_REQUIRE_VIRTUALENV = '1'
 $env:PYTHONNOUSERSITE = '1'
+$env:PYTHONUTF8 = '1'
 $env:PYTHONPYCACHEPREFIX = Join-Path $projectEnvironmentRoot '.cache/pycache'
 $env:UV_CACHE_DIR = Join-Path $projectEnvironmentRoot '.cache/uv'
+$env:UV_PYTHON_CACHE_DIR = Join-Path $projectEnvironmentRoot '.cache/python-downloads'
+$env:UV_CREDENTIALS_DIR = Join-Path $projectEnvironmentRoot '.cache/uv-credentials'
+$env:UV_NO_CONFIG = '1'
 $env:UV_PYTHON_INSTALL_DIR = Join-Path $projectEnvironmentRoot '.tools/python'
 $env:UV_PYTHON_BIN_DIR = Join-Path $projectEnvironmentRoot '.tools/python-bin'
 $env:UV_PYTHON_INSTALL_BIN = '0'

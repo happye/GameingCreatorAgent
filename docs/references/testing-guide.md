@@ -1,6 +1,8 @@
 # Testing and benchmark guide
 
-No Python test framework is configured yet. F001 establishes pytest, Ruff, mypy and import-direction checks inside `.venv`, with fixed versions. Planned commands after F001: `./.venv/Scripts/python.exe -m pytest`, `-m ruff check .`, `-m ruff format --check .`, and `-m mypy src`. Configure pytest/type/format caches under `.cache`; these commands are not available before environment setup.
+Run `./scripts/setup-env.ps1`, then `./scripts/verify.ps1`. F001 pins pytest 9.1.1, Ruff 0.16.10 and mypy 2.4.0 in `uv.lock`. Verification checks source formatting/lint, strict types for source and Provider fake implementations, import direction, behavior tests, CLI entry points and two matching offline wheel builds. All caches/output stay under `.cache`.
+
+For focused checks, dot-source `./scripts/env.ps1` and use `./.venv/Scripts/python.exe -m pytest tests/test_cli.py`, `-m ruff check src tests`, `-m ruff format --check src tests`, or `-m mypy`. Tests assert input errors and no output creation, exact source-time bounds, cancellation and unknown cost semantics. They do not run real models or decode videos yet.
 
 Add domain/input unit tests, FFmpeg/SQLite integration tests and CLI smoke tests when commands exist. Use `tests/test_<module>.py` or mirrored subdirectories and behavior names such as `test_search_returns_source_intervals_for_mechanic_query`. Integration tests using real models are explicitly selected, never silently paid during ordinary unit runs. No percentage coverage target is set; failure behavior and declared feature criteria determine required checks.
 

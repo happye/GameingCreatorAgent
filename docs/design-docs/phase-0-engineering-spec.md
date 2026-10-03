@@ -1,12 +1,12 @@
 # Phase 0 工程规格 v2
 
-状态：实施合同，尚非已实现 API。来源：原总方案 §58–59、69–71；按用户补充使用 Python，见 [ADR-001](./adr-001-phase-0-language.md)；审查：[reverse-review](../exec-plans/reverse-review-2026-10-03.md)。目标是让多个 Agent 按相同合同实现和验证。
+状态：实施合同；F001 已实现输入/领域/Provider 合同基础，处理流水线仍待后续特性。来源：原总方案 §58–59、69–71；按用户补充使用 Python，见 [ADR-001](./adr-001-phase-0-language.md)；审查：[reverse-review](../exec-plans/reverse-review-2026-10-03.md)。目标是让多个 Agent 按相同合同实现和验证。
 
 ## 1. CLI 与外部行为
 
 用户硬约束：所有工具、包、模型权重和缓存隔离于本机系统。portable uv 放 `.tools/uv`，CPython 3.13 运行时放 `.tools/python`，应用/开发/ASR 包全部装入 `.venv`；FFmpeg 放 `.tools/ffmpeg/bin`，缓存放 `.cache`。仅使用进程环境，不写注册表、系统/用户 PATH 或全局包目录；uv 注册和全局链接显式禁用。版本固定及校验在 F001 完成，详见 [隔离环境](../references/isolated-environment.md)。
 
-以下是待实现命令，当前可运行实验脚本见 [验证记录](../exec-plans/phase-0-validation-2026-10-03.md)。
+以下命令入口和输入合同已建立，正常处理仍返回退出 3 / `feature.not_implemented`，不产生项目输出。实验脚本见 [验证记录](../exec-plans/phase-0-validation-2026-10-03.md)。
 
 ```text
 gamingcreator analyze <local-video> --project <directory> --config <json> --max-cost-cny <amount>
@@ -16,6 +16,8 @@ gamingcreator benchmark --input <frozen-manifest> --project <directory> --output
 ```
 
 `analyze` 校验文件、能力、预算和空间后创建 run。首次成功写 SQLite 与 `semantic_timeline.json`；失败或取消输出 run ID 和稳定错误码，保持已完成 checkpoint。resume 使用原配置，配置变更创建新 run，不能拼接不同版本结果。
+
+F001 配置边界：`config.example.json` 的 `schemaVersion=1`，仅接受 `vision.provider/model` 两个非空字符串、`limits.maxRequests/maxInputFrames` 两个正整数；未知字段（包括密钥）被拒绝。新分析费用上限由 CLI 传入有限正 Decimal；resume 不接受配置或预算覆盖。完整 ASR/采样/端点配置在相应特性扩展 schema，不能默默忽略旧字段。
 
 `search` 指定完整 run；找不到时返回明确错误。候选含 `candidateId, mediaId, eventId, startUs, endUs, sourceTimecode, score, scoreKind, evidenceIds`；时间采用半开区间，分数说明其语义，不表示事实成立的概率。稳定排序先 score，再 mediaId/startUs/candidateId。空结果合法并附原因，不编造镜头。保留 rank、去重和排除理由。
 
@@ -96,6 +98,6 @@ Ctrl+C 停止新任务、取消 Provider、保存状态；FFmpeg/ASR worker 要�
 
 质量协议见 [benchmark 规格](../references/phase-0-benchmark.md)。真实清晰机制查询仍须 Top10 独立可用结果 ≥70%；补齐人工标签前不可标 Phase 0 通过。速度报告墙钟/素材时长实时比与配置，原方案没有硬速度阈值，本轮不编造阈值。§44 整条创作时间节省在后续生成发布包阶段验证。
 
-开放实验项：本地 ASR 权重/运行时、完整采样配置、首个 embedding 实现、第二视觉 Provider、真实录制会话和标签、等待时间容忍。当前缺项目内 uv/Python 环境，CLI/SQLite/ASR/检索尚未实现。工程合同和 spike 通过不替代这些条件。
+开放实验项：本地 ASR 权重/运行时、完整采样配置、首个 embedding 实现、第二视觉 Provider、真实录制会话和标签、等待时间容忍。项目内 uv/Python 环境和 CLI 合同已验收 F001；媒体流水线、SQLite、ASR、检索尚未实现。工程合同和 spike 通过不替代这些条件。
 
 实施依赖：F001 环境/合同工程 → F002 媒体映射 → F003 ASR/视觉与账本；F004 存储依赖 F001，可与 F002/F003 并行；F005 依赖 F003＋F004，包含 F002 的传递依赖；F006 独立标签准备可以先行，最终质量 gate 在集成后执行。详见 [开发任务](../exec-plans/phase-0-plan.md)。

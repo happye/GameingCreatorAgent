@@ -13,7 +13,7 @@ flowchart TD
     INFRA --> DOMAIN
 ```
 
-初始包为 `src/gamingcreator/{cli,application,domain,infrastructure}/`，测试镜像组织。CPython 3.13 与 portable uv/`.venv` 为环境基线；F001 固定补丁、工具与依赖版本，建立 pytest、Ruff、mypy 和导入方向检查。Media、ASR、Vision、Timeline、Retrieval 作内部模块；先维持一个可安装的包，不提前拆服务或多语言核心。
+包为 `src/gamingcreator/{cli,application,domain,infrastructure}/`，测试在 `tests/test_*.py`。F001 已固定 CPython 3.13.16/build 20261001、uv 0.12.22 与 `.venv` 依赖，建立 pytest、Ruff、严格 mypy 和导入方向检查。CLI 输入、时间约束及 Provider DTO/ports 已实现；Media、ASR、Vision、Timeline、Retrieval 随特性加入，不提前拆服务或多语言核心。
 
 CLI 只解析输入、组装依赖和输出结果；Application 编排 stages、定义 Protocol ports；Domain 用类型化领域记录，无厂商 SDK、SQL 或进程调用；Infrastructure 实现 ports。正式桌面界面以后另作选型；通过 Application 或版本化 CLI/JSON 接入处理核心。
 

@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gamingcreator"
+version = "0.1.0"
+description = "Local game-footage analysis and semantic clip retrieval"
+requires-python = ">=3.13,<3.14"
+dependencies = []
+
+[project.scripts]
+gamingcreator = "gamingcreator.cli.main:main"
+
+[dependency-groups]
+dev = ["hatchling==1.32.4", "pytest==9.1.1", "ruff==0.16.10", "mypy==2.4.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gamingcreator"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/gamingcreator", "pyproject.toml", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --basetemp=.cache/pytest-tmp"
+cache_dir = ".cache/pytest"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+files = ["src", "tests/test_providers.py"]
+cache_dir = ".cache/mypy"
