@@ -5,6 +5,7 @@ from enum import StrEnum
 from math import isfinite
 from typing import Protocol
 
+from gamingcreator.domain.media import AudioEvidence, MediaAsset
 from gamingcreator.domain.models import (
     Embedding,
     EvidenceReference,
@@ -65,6 +66,7 @@ class InvocationMetadata:
     elapsed_ms: int | None = None
     price_version: str | None = None
     request_id: str | None = None
+    execution_details: str | None = None
 
 
 class ProviderStatus(StrEnum):
@@ -146,6 +148,8 @@ class AsrRequest:
     schema_version: str
     language: str = "zh"
     game_terms: tuple[str, ...] = ()
+    media_asset: MediaAsset | None = None
+    audio_clock: AudioEvidence | None = None
 
 
 @dataclass(frozen=True, slots=True)

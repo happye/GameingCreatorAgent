@@ -9,6 +9,9 @@ description = "Local game-footage analysis and semantic clip retrieval"
 requires-python = ">=3.13,<3.14"
 dependencies = []
 
+[project.optional-dependencies]
+asr = ["faster-whisper==1.2.1", "ctranslate2==4.8.2", "av==19.0.1", "onnxruntime==1.30.0"]
+
 [project.scripts]
 gamingcreator = "gamingcreator.cli.main:main"
 

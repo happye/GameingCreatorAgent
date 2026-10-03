@@ -115,7 +115,10 @@ def _invocation(connection: sqlite3.Connection, request: str = "window1") -> Non
 def test_migrate_is_idempotent_and_creates_strict_schema(db: sqlite3.Connection) -> None:
     migrate(db)
     assert db.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION
-    assert db.execute("SELECT version FROM schema_migrations").fetchall() == [(1,)]
+    assert db.execute("SELECT version FROM schema_migrations ORDER BY version").fetchall() == [
+        (1,),
+        (2,),
+    ]
     tables = [row for row in db.execute("PRAGMA table_list") if not row[1].startswith("sqlite_")]
     assert len(tables) == 9
     assert all(row[5] == 1 for row in tables)
@@ -142,9 +145,9 @@ def test_future_version_is_rejected_without_modification(
     db: sqlite3.Connection, change: str
 ) -> None:
     if change == "pragma":
-        db.execute("PRAGMA user_version = 2")
+        db.execute("PRAGMA user_version = 3")
     else:
-        db.execute("INSERT INTO schema_migrations VALUES (2, 'now')")
+        db.execute("INSERT INTO schema_migrations VALUES (3, 'now')")
     before = db.serialize()
     with pytest.raises(AppError) as caught:
         migrate(db)
@@ -156,6 +159,7 @@ def test_future_version_is_rejected_without_modification(
     "change",
     [
         "DELETE FROM schema_migrations",
+        "DELETE FROM schema_migrations WHERE version = 1",
         "PRAGMA user_version = 0",
         "DROP TRIGGER evidence_duration_insert",
     ],
@@ -242,10 +246,12 @@ def test_transcript_insert_and_update_check_duration(db: sqlite3.Connection) -> 
     _seed(db)
     with pytest.raises(sqlite3.IntegrityError):
         db.execute(
-            "INSERT INTO transcript_segments VALUES ('s', 'run1', 'media1', 'vision', 1, 101, 'text')"
+            "INSERT INTO transcript_segments VALUES "
+            "('s', 'run1', 'media1', 'vision', 1, 101, 'text', NULL)"
         )
     db.execute(
-        "INSERT INTO transcript_segments VALUES ('s', 'run1', 'media1', 'vision', 1, 100, 'text')"
+        "INSERT INTO transcript_segments VALUES "
+        "('s', 'run1', 'media1', 'vision', 1, 100, 'text', NULL)"
     )
     with pytest.raises(sqlite3.IntegrityError):
         db.execute("UPDATE transcript_segments SET end_us = 101")

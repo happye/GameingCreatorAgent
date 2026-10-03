@@ -22,6 +22,7 @@ class TranscriptSegment:
     media_id: str
     source_range: SourceRange
     text: str
+    uncertainty: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

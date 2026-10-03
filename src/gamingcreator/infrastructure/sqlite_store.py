@@ -780,7 +780,7 @@ class SqliteTimelineStore:
                     ):
                         raise _error("storage.invalid_transcript")
                     self._db.execute(
-                        "INSERT INTO transcript_segments VALUES (?,?,?,?,?,?,?)",
+                        "INSERT INTO transcript_segments VALUES (?,?,?,?,?,?,?,?)",
                         (
                             f"{run_id}:{stage_id}:{index:08d}",
                             run_id,
@@ -789,6 +789,7 @@ class SqliteTimelineStore:
                             segment.source_range.start_us,
                             segment.source_range.end_us,
                             segment.text,
+                            segment.uncertainty,
                         ),
                     )
                 self._finish_stage(run_id, stage_id, StageStatus.COMPLETED, output_hash, None)
@@ -1075,6 +1076,7 @@ class SqliteTimelineStore:
                     run.asset.media_id,
                     SourceRange(row["start_us"], row["end_us"], duration),
                     row["text"],
+                    row["uncertainty"],
                 )
                 for row in self._db.execute(
                     "SELECT * FROM transcript_segments WHERE run_id=? ORDER BY start_us,segment_id",

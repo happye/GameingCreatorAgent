@@ -50,8 +50,12 @@
 - Active feature: none. F000 is next and remains `passes: false`.
 - Verification: `./scripts/init.ps1 -CheckOnly` validates the scaffold; a full prerequisite check needs a .NET SDK before implementation can start.
 - Next: write the F000 reverse review in `docs/exec-plans/`, then revise provisional scope or architecture as the evidence requires.
-# 2026-10-04 F004 存储交付
+## 2026-10-04 F004 存储交付
 
 SQLite 专用线程、进程锁、九表迁移/组合 FK、媒体/语义 checkpoint 原子提交、逐 attempt Decimal/NULL 账本与完整性恢复已验收。两个独立 worktree workers 交付 schema/lock 和真实进程测试，root 集成，另有只读审查。完整 verify：147 passed（0skip，资源警告失败）、Ruff/mypy 与重复离线 wheel 同 hash；F004 新增60项。四段真实素材的492图片/4WAV和全部音频映射跨进程重读一致，media-only，无模型结果。证据 sprint-F004。
 
 修复旧媒体测试对 Windows 异步终止的立即句柄判断：保持原 interpreter 句柄，采用既有5s退出上限；独立50次均完成，无产品进程管理变更。F003/F005/F006仍false，人工Top10 gate未验证；后续工具不能将存储验收当模型/检索成功。所有包/工具/缓存继续项目隔离，无新安装或API请求。
+
+## 2026-10-04 F003 持续保存检查点（未验收）
+
+用户要求主动持久化，协作协议已补充每个实现/验证节点、失败和长任务前落盘及可恢复 Git 检查点，不等结束或用户提醒。root已有 ASR adapter/worker、固定模型/CRT准备、SQLite v2 uncertainty迁移；native探针与200项pytest回归（0skip，警告失败）通过。真实ASR首次失败原因已确定为PyAV19与faster-whisper1.2.1接口不兼容，完整实验保留；修正版本与视觉worker仍进行中。F003 false，尚无人工质量验收，本轮无付费调用；环境始终项目隔离。

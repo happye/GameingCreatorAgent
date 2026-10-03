@@ -5,7 +5,7 @@
 ## 当前状态
 
 - 版本库：`https://github.com/happye/GameingCreatorAgent`；远端 `origin`，主分支 `main`。提交及未提交变更以 `git log -1 --oneline`、`git status --short` 为准。
-- F001 `754125f` 已推送远端 `main`；F002 `45d3e42` 已整合本地 main，网络失败后 GitHub 同步待补。当前 root 在 `codex/F004-storage`；独立 schema worker 归属见 assignments。HTTPS 不稳时使用单次 HTTP/1.1，不改全局配置、不强推。
+- F001 `754125f` 已推送远端 `main`；F002 `45d3e42`、F004 `ca0394e` 已整合本地 main，再次推送443超时，GitHub仍待补。当前 root 在 `codex/F003-models`；ASR独立worker归属见 assignments。HTTPS 不稳时使用单次 HTTP/1.1，不改全局配置、不强推。
 - F000 六方向反向审查、架构与工程合同、任务依赖已验收；入口为 `docs/exec-plans/sprint-F000.md`。原产品总方案未改动。
 - F001/F002/F004 已验收：隔离工具、CLI/Provider、媒体及 SQLite service；147 个测试（0skip/资源警告失败）、Ruff/mypy 与重复离线构建通过。证据 sprint-F001/F002/F004。正常 analyze/search/benchmark 仍返回 `feature.not_implemented`；尚无模型/检索完整流水线。
 - F003/F005/F006 未验收，完整人工 Top10 gate 未测量。下一项 F003 模型分析；具体活跃归属看 assignments。
@@ -33,8 +33,16 @@ F004 四段真实媒体在 `artifacts/storage-F004/2f4b113a813448d5907e24c370b46
 ## 下一 owner 的具体动作
 
 1. 先检查 Git 与 assignments，运行 init/verify；登记分支/文件归属。不要重复创建已验收 F001/F002。
-2. F004已完成，不要重建。F003 先读 `docs/references/asr-readiness.md` 的固定wheel/model候选：尚未安装或推理；项目目前缺msvcp140，先验证/合法app-local准备，禁止系统安装器。
+2. F004已完成，不要重建。F003 已在项目内安装 ASR 包、官方 app-local CRT 和 tiny 固定模型，native/CPU/VAD probe 通过；首轮真实推理失败：PyAV19移除 `metadata_errors`，与 faster-whisper1.2.1 不兼容。先固定兼容 wheel、更新 lock/项目 venv，再运行 synthetic-only/真实素材；详见 sprint-F003，不能把 native probe 当成 ASR 成功。
 3. F003 使用现有媒体 namespace/piecewise mapping 和 TimelineStore；通过load_media_bundle续跑，不能直接按WAV秒数映射或私读DB。随后实现视觉schema/预算/逐attempt/retry；F005/F006仍依赖模型与独立人工gate。
 4. `.worktrees/f002-job`、`f004-schema`、`f004-process` 为已集成且冻结的worker scratch，不是接续点；具体源码以root分支/提交为准。每次转交保留实际证据和false未完成项。
 
 不得重复初始化、提前进入正式 UI/商业系统，或用合成计分与图像请求成功替代真实检索验收。
+
+## 持续检查点（2026-10-04）
+
+用户要求在额度耗尽前持续保存，已写入 `agent-workflow.md`：每个实现/验证节点、失败和长任务启动前落盘；不等用户提醒。F003 保持 false。root 未提交文件包括 ASR settings/worker/facade/37项测试、SQLite v2 uncertainty迁移、ASR准备/诊断脚本、pins、pyproject/lock、文档；以 `git status` 为准。当前完整 verify 尚未重跑，147项仅是已提交 F004 的历史证据。
+
+首轮失败报告 `artifacts/asr-F003/a38f832f10e540e4bc6075b9a660fe52/validation.json` 已保存，原生探针 `.cache/asr-native-probe.json` 已保存。它们被 Git 忽略，仅本机可用；固定版本/hash/失败原因在已跟踪文档中。Vision草稿在 `.worktrees/f003-vision`，未集成。现已重新委派兼容性只读研究及 Vision 审查；未收到验证结果前不能标记完成。其他旧ASR/SQLite worker停止且文件已归root集成，不再占用编辑任务。
+
+最新 root `pytest -W error`：200 passed/0 skip（17.86s），diff检查通过；完整 format/type/build 仍待重跑。提交检查点不等于 F003 验收，具体提交以 `git log` 为准。

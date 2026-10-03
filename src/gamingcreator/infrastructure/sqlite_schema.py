@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 
 from gamingcreator.domain.errors import AppError, ExitCode
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 _TABLES = (
     """CREATE TABLE schema_migrations (
@@ -179,6 +179,22 @@ _TRIGGERS = (
 
 _DDL = (*_TABLES, *_INDEXES, *_TRIGGERS)
 
+# Keep v1 immutable: existing databases must validate before this ALTER runs.
+_MIGRATION_2 = ("ALTER TABLE transcript_segments ADD COLUMN uncertainty TEXT",)
+
+
+def _ddl_for_version(version: int) -> tuple[str, ...]:
+    if version == 1:
+        return _DDL
+    # SQLite places an added column before the first table-level constraint.
+    # This reflects the SQL observed after the actual v1 -> v2 ALTER statement.
+    return tuple(
+        statement.replace("text TEXT NOT NULL,", "text TEXT NOT NULL, uncertainty TEXT,", 1)
+        if statement.startswith("CREATE TABLE transcript_segments ")
+        else statement
+        for statement in _DDL
+    )
+
 
 def _invalid_schema() -> AppError:
     return AppError("storage.schema_invalid", "数据库结构或迁移记录不匹配。", ExitCode.STORAGE)
@@ -194,8 +210,8 @@ def _normalize_sql(sql: str) -> str:
     )
 
 
-def _validate_schema(connection: sqlite3.Connection) -> None:
-    for statement in _DDL:
+def _validate_schema(connection: sqlite3.Connection, version: int) -> None:
+    for statement in _ddl_for_version(version):
         name = statement.split()[2]
         row = connection.execute("SELECT sql FROM sqlite_schema WHERE name = ?", (name,)).fetchone()
         if row is None or _normalize_sql(row[0]) != _normalize_sql(statement):
@@ -204,8 +220,7 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
         raise _invalid_schema()
 
 
-def validate_schema(connection: sqlite3.Connection) -> None:
-    """Validate an existing database without changing it (also for WAL readers)."""
+def _recorded_version(connection: sqlite3.Connection) -> int:
     version = connection.execute("PRAGMA user_version").fetchone()[0]
     if version > SCHEMA_VERSION:
         raise AppError(
@@ -219,13 +234,46 @@ def validate_schema(connection: sqlite3.Connection) -> None:
         raise AppError(
             "storage.schema_unsupported", "数据库版本高于当前程序支持版本。", ExitCode.STORAGE
         )
-    if version != SCHEMA_VERSION or versions != list(range(1, version + 1)):
+    if version < 1 or versions != list(range(1, version + 1)):
         raise _invalid_schema()
-    _validate_schema(connection)
+    return int(version)
+
+
+def validate_schema(connection: sqlite3.Connection) -> None:
+    """Validate the current schema without writes, including for read-only WAL readers."""
+    owns_transaction = not connection.in_transaction
+    try:
+        if owns_transaction:
+            connection.execute("BEGIN")
+        version = _recorded_version(connection)
+        _validate_schema(connection, version)
+        if version < SCHEMA_VERSION:
+            raise AppError(
+                "storage.migration_required", "数据库需要先由写入进程升级。", ExitCode.STORAGE
+            )
+        if owns_transaction:
+            connection.execute("COMMIT")
+    except (AppError, sqlite3.Error) as error:
+        if owns_transaction and connection.in_transaction:
+            try:
+                connection.execute("ROLLBACK")
+            except sqlite3.Error:
+                raise _invalid_schema() from None
+        if isinstance(error, AppError):
+            raise
+        raise _invalid_schema() from None
+
+
+def _record_migration(connection: sqlite3.Connection, version: int) -> None:
+    connection.execute(
+        "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
+        (version, datetime.now(UTC).isoformat()),
+    )
+    connection.execute(f"PRAGMA user_version = {version}")
 
 
 def migrate(connection: sqlite3.Connection) -> None:
-    """Create v1 atomically, or validate an already migrated v1 database.
+    """Create or upgrade a validated database to the current version atomically.
 
     The caller must use autocommit=True and enable foreign_keys before calling.
     No executescript(): it would implicitly commit a caller's transaction.
@@ -252,27 +300,16 @@ def migrate(connection: sqlite3.Connection) -> None:
                 raise _invalid_schema()
             for statement in _DDL:
                 connection.execute(statement)
-            connection.execute(
-                "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
-                (SCHEMA_VERSION, datetime.now(UTC).isoformat()),
-            )
-            connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+            _record_migration(connection, 1)
+            version = 1
         else:
-            versions = [
-                row[0]
-                for row in connection.execute(
-                    "SELECT version FROM schema_migrations ORDER BY version"
-                )
-            ]
-            if any(item > SCHEMA_VERSION for item in versions):
-                raise AppError(
-                    "storage.schema_unsupported",
-                    "数据库版本高于当前程序支持版本。",
-                    ExitCode.STORAGE,
-                )
-            if version != SCHEMA_VERSION or versions != list(range(1, version + 1)):
-                raise _invalid_schema()
-        _validate_schema(connection)
+            version = _recorded_version(connection)
+        _validate_schema(connection, version)
+        if version == 1:
+            for statement in _MIGRATION_2:
+                connection.execute(statement)
+            _record_migration(connection, 2)
+        validate_schema(connection)
         connection.execute("COMMIT")
     except (AppError, sqlite3.Error) as error:
         if connection.in_transaction:
