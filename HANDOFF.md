@@ -5,7 +5,7 @@
 ## 当前状态
 
 - 版本库：`https://github.com/happye/GameingCreatorAgent`；远端 `origin`，主分支 `main`。提交及未提交变更以 `git log -1 --oneline`、`git status --short` 为准。
-- 本轮首次推送因 GitHub 443 连接失败；接手检查远端是否含本轮提交，不默认本地提交已经同步，也不要强推。
+- 审查与 Python 决策已推送至远端 `main`。首次连接失败后，用单次 `git -c http.version=HTTP/1.1 push -u origin main` 成功，未改全局配置。接手仍检查同步状态，不强推。
 - F000 六方向反向审查、架构与工程合同、任务依赖已验收；入口为 `docs/exec-plans/sprint-F000.md`。原产品总方案未改动。
 - F001–F006 未验收。没有应用 CLI、ASR、SQLite 或检索实现，完整 Phase 0 Top10 ≥70% gate 尚未测量。
 - 当前无活跃编码任务；下一项 F001。分配前更新 `docs/exec-plans/assignments.md`。
