@@ -11,7 +11,7 @@ try {
   $uvPath = Join-Path $repositoryRoot '.tools/uv/uv.exe'
   & $uvPath --no-config lock --check --offline --python $pythonPath --no-python-downloads
   if ($LASTEXITCODE -ne 0) { throw 'Dependency lock does not match the project.' }
-  foreach ($arguments in @(@('-m', 'ruff', 'format', '--check', 'src', 'tests', 'scripts/validate-media.py'), @('-m', 'ruff', 'check', 'src', 'tests', 'scripts/validate-media.py'), @('-m', 'mypy'), @('-m', 'pytest', '-W', 'error'))) {
+  foreach ($arguments in @(@('-m', 'ruff', 'format', '--check', 'src', 'tests', 'scripts/validate-media.py', 'scripts/validate-storage.py'), @('-m', 'ruff', 'check', 'src', 'tests', 'scripts/validate-media.py', 'scripts/validate-storage.py'), @('-m', 'mypy'), @('-m', 'pytest', '-W', 'error'))) {
     & $pythonPath @arguments
     if ($LASTEXITCODE -ne 0) { throw "Project check failed: $($arguments -join ' ')" }
   }

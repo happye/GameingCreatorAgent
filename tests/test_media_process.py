@@ -10,14 +10,19 @@ from gamingcreator.domain.errors import AppError
 from gamingcreator.infrastructure.media_process import run_media_process
 
 
-def process_is_alive(pid: int) -> bool:
-    if sys.platform != "win32":
-        return Path(f"/proc/{pid}").exists()
+def process_kernel():
     kernel = ctypes.WinDLL("kernel32", use_last_error=True)
     kernel.OpenProcess.restype = ctypes.c_void_p
     kernel.OpenProcess.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_uint32]
     kernel.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
     kernel.CloseHandle.argtypes = [ctypes.c_void_p]
+    return kernel
+
+
+def process_is_alive(pid: int) -> bool:
+    if sys.platform != "win32":
+        return Path(f"/proc/{pid}").exists()
+    kernel = process_kernel()
     handle = kernel.OpenProcess(0x100000, False, pid)
     if not handle:
         return False
@@ -38,7 +43,11 @@ def test_process_cancellation_reaps_started_child(tmp_path: Path) -> None:
     pid_path = tmp_path / "中文 pid.txt"
     code = "import os,sys,time; from pathlib import Path; Path(sys.argv[1]).write_text(str(os.getpid())); time.sleep(30)"
 
+    kernel = process_kernel() if sys.platform == "win32" else None
+    original_handle = None
+
     async def scenario() -> None:
+        nonlocal original_handle
         context = CancellationContext("run", 5)
         task = asyncio.create_task(
             run_media_process([sys.executable, "-I", "-B", "-c", code, str(pid_path)], context)
@@ -48,12 +57,24 @@ def test_process_cancellation_reaps_started_child(tmp_path: Path) -> None:
                 break
             await asyncio.sleep(0.02)
         assert pid_path.exists()
+        if kernel is not None:
+            # Pin the interpreter itself; the venv launcher has a different PID.
+            original_handle = kernel.OpenProcess(0x100000, False, int(pid_path.read_text()))
+            assert original_handle
         context.cancelled.set()
         with pytest.raises(asyncio.CancelledError):
             await task
 
-    asyncio.run(scenario())
-    assert not process_is_alive(int(pid_path.read_text()))
+    try:
+        asyncio.run(scenario())
+        if kernel is not None:
+            # Job termination is asynchronous; pipe EOF can precede object signaling.
+            assert kernel.WaitForSingleObject(original_handle, 5000) == 0
+        else:
+            assert not process_is_alive(int(pid_path.read_text()))
+    finally:
+        if kernel is not None and original_handle:
+            kernel.CloseHandle(original_handle)
 
 
 def test_process_timeout_and_output_limit_are_bounded_and_sanitized() -> None:

@@ -52,9 +52,10 @@
       "name": "Persistent semantic timeline",
       "description": "Store media references, timestamped semantic events, and analysis metadata in SQLite.",
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "test_criteria": "A second process reloads the timeline; migrations/FKs and interrupted-stage/file-integrity recovery pass; unknown request costs survive recovery; full source video bytes are absent from SQLite.",
-      "dependencies": ["F001"]
+      "dependencies": ["F001"],
+      "evidence": ["docs/exec-plans/sprint-F004.md", "docs/references/timeline-storage.md", "scripts/test-storage.ps1", "scripts/verify.ps1"]
     },
     {
       "id": "F005",

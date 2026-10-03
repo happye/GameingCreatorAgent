@@ -1,6 +1,6 @@
 # Phase 0 开发任务与依赖
 
-依据 [反向审查](./reverse-review-2026-10-03.md)、[工程合同](../design-docs/phase-0-engineering-spec.md) 和原方案 §71。保持 F001–F006 ID，避免交接时重复创建特性。F001/F002 已验收（见对应 sprint），F003–F006 待实现；旧 spike 仅为 F000 证据。
+依据 [反向审查](./reverse-review-2026-10-03.md)、[工程合同](../design-docs/phase-0-engineering-spec.md) 和原方案 §71。保持 F001–F006 ID，避免交接时重复创建特性。F001/F002/F004 已验收（见对应 sprint），F003/F005/F006 待实现；旧 spike 仅为 F000 证据。
 
 ```mermaid
 flowchart LR

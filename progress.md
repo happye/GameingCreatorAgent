@@ -50,3 +50,8 @@
 - Active feature: none. F000 is next and remains `passes: false`.
 - Verification: `./scripts/init.ps1 -CheckOnly` validates the scaffold; a full prerequisite check needs a .NET SDK before implementation can start.
 - Next: write the F000 reverse review in `docs/exec-plans/`, then revise provisional scope or architecture as the evidence requires.
+# 2026-10-04 F004 存储交付
+
+SQLite 专用线程、进程锁、九表迁移/组合 FK、媒体/语义 checkpoint 原子提交、逐 attempt Decimal/NULL 账本与完整性恢复已验收。两个独立 worktree workers 交付 schema/lock 和真实进程测试，root 集成，另有只读审查。完整 verify：147 passed（0skip，资源警告失败）、Ruff/mypy 与重复离线 wheel 同 hash；F004 新增60项。四段真实素材的492图片/4WAV和全部音频映射跨进程重读一致，media-only，无模型结果。证据 sprint-F004。
+
+修复旧媒体测试对 Windows 异步终止的立即句柄判断：保持原 interpreter 句柄，采用既有5s退出上限；独立50次均完成，无产品进程管理变更。F003/F005/F006仍false，人工Top10 gate未验证；后续工具不能将存储验收当模型/检索成功。所有包/工具/缓存继续项目隔离，无新安装或API请求。

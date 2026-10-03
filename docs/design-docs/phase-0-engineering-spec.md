@@ -1,6 +1,6 @@
-# Phase 0 工程规格 v2
+# Phase 0 工程规格 v3
 
-状态：实施合同；F001 输入/领域/Provider 基础与 F002 媒体 service 已实现，完整分析流水线仍待后续特性。来源：原总方案 §58–59、69–71；按用户补充使用 Python，见 [ADR-001](./adr-001-phase-0-language.md)；审查：[reverse-review](../exec-plans/reverse-review-2026-10-03.md)。目标是让多个 Agent 按相同合同实现和验证。
+状态：实施合同；F001 输入/领域/Provider 基础、F002 媒体与 F004 SQLite service 已实现，完整分析流水线仍待模型/检索集成。来源：原总方案 §58–59、69–71；按用户补充使用 Python，见 [ADR-001](./adr-001-phase-0-language.md)；审查：[reverse-review](../exec-plans/reverse-review-2026-10-03.md)。目标是让多个 Agent 按相同合同实现和验证。
 
 ## 1. CLI 与外部行为
 
@@ -57,24 +57,24 @@ ASR 初始选本地 CPU 可运行方案，faster-whisper 为候选，FunASR 作�
 
 ## 4. SQLite v1 逻辑 schema 与迁移
 
-迁移表 `schema_migrations(version INTEGER PRIMARY KEY, applied_at TEXT)`；迁移有事务和集成测试。下面定义数据合同，物理 SQL 与索引在 F004 依据此表实现、验证并版本化。
+F004 v1 已落地九个 STRICT 表、四个索引、七个时间上界触发器，物理定义在 `infrastructure/sqlite_schema.py`，使用事务迁移和读写双方结构验证。迁移表 `schema_migrations(version INTEGER PRIMARY KEY, applied_at TEXT)` 与 user_version 一致；未来版本和定义漂移拒绝打开。使用方法见 [timeline-storage](../references/timeline-storage.md)。
 
 | 表 | 主键、关系及约束 |
 | --- | --- |
 | media_assets | media_id PK；content_hash、duration_us>0；同项目同内容去重 |
-| analysis_runs | run_id PK；配置/pipeline hash、status；绑定 media_id FK |
+| analysis_runs | run_id PK；配置/pipeline hash、required stages/status、manifest path/hash；UNIQUE(run_id,media_id)，绑定 media_id FK |
 | stage_checkpoints | (run_id,stage_id) PK；状态、输入/输出 hash、更新时间 |
 | evidence | evidence_id PK；media_id/run_id FK；有效源时间、artifact hash/path |
 | transcript_segments | id PK；media_id/run_id FK；区间、文本、状态/模型版本 |
 | semantic_events | event_id PK；media_id/run_id FK；有效区间、结构化事实与标签 |
-| event_evidence | (event_id,evidence_id) PK；两个 FK，不允许悬空证据 |
-| embeddings | (subject_id,provider,model,revision_scope,dimension,normalization,text_hash) 唯一；revision_scope 为已确认修订或隔离的 run ID；禁止不同向量空间混检 |
-| provider_invocations | invocation_id PK；attempt、状态、用量/价格快照/费用、unknown 字段可 null |
-| retrieval_runs/hits | query/runId、rank、candidateId、版本和排序参数；供复现和人工标注 |
+| event_evidence | (event_id,evidence_id) PK；两组包含 run_id/media_id 的组合 FK，不允许悬空或串 run 证据 |
+| provider_invocations | invocation_id PK；UNIQUE(run_id,stage_id,logical_request_id,attempt)，状态、模型/用量/价格快照；费用为 Decimal TEXT，unknown 为 NULL |
+
+embedding 和 retrieval_runs/hits 不在 v1 物理迁移中，随 F005 另加迁移。向量唯一键仍须含 subject/provider/model/revision_scope/dimension/normalization/text_hash，修订未确认按 run 隔离；检索记录须保留 query/rank/candidate/version/排序参数。
 
 使用标准库 `sqlite3`，连接启用 FK、WAL、`synchronous=FULL`；写事务短，有限 busy timeout；每项目一个分析写入者。连接在其所属线程创建和使用，不共享跨线程连接；明确配置事务行为，不依赖 Python 默认值。同步 DB 操作由受控单写队列/专用线程执行，不能阻塞网络事件循环或在事务内等待媒体/模型。WAL 仍是单写。[WAL](https://www.sqlite.org/wal.html)、[Python sqlite3](https://docs.python.org/3.13/library/sqlite3.html)
 
-文件先写临时路径、完成校验和最终落盘，再事务登记与 checkpoint；恢复检测数据库已登记但文件丢失/损坏、未登记孤立文件和 Running 未完成阶段。可重做本地阶段，网络 attempt 的 unknown 计费不能默认免费重放。只从一致且 Completed 的 run 搜索；备份使用 SQLite backup API，而非任意复制活动 DB/WAL。
+文件先写临时路径、完成校验和最终落盘，再将 bundle/语义输出及 Completed checkpoint 同事务登记。项目级非阻塞 OS 锁覆盖 writer 生命周期，读者可并行。恢复逐 run 报告文件/来源/快照损坏、孤儿/临时文件，把 Running 阶段/调用置 Interrupted，保留已完成记录和未知费用；不自动重放或删除。load_media_bundle 可重建未完成 run 已完成的媒体阶段，含完整音频分段映射。Completed 查询重新校验文件，损坏结果拒绝；备份以后使用 SQLite backup API，JSON 导出失败单独记录，不能冒称 DB 与导出同时原子。
 
 ## 5. 采样与检索实验
 
@@ -100,6 +100,6 @@ Ctrl+C 停止新任务、取消 Provider、保存状态；FFmpeg/ASR worker 要�
 
 质量协议见 [benchmark 规格](../references/phase-0-benchmark.md)。真实清晰机制查询仍须 Top10 独立可用结果 ≥70%；补齐人工标签前不可标 Phase 0 通过。速度报告墙钟/素材时长实时比与配置，原方案没有硬速度阈值，本轮不编造阈值。§44 整条创作时间节省在后续生成发布包阶段验证。
 
-开放实验项：本地 ASR 权重/运行时、完整采样配置、首个 embedding 实现、第二视觉 Provider、独立录制会话/标签、等待时间容忍。环境/CLI 合同已验收 F001，局部媒体 service 已验收 F002；SQLite、ASR、检索和完整分析命令仍待实现。工程合同和 spike 通过不替代这些条件。
+开放实验项：本地 ASR 权重/运行时、完整采样配置、首个 embedding 实现、第二视觉 Provider、独立录制会话/标签、等待时间容忍。F001/F002/F004 已验收；ASR、视觉适配、检索和完整分析命令仍待实现。工程合同和存储通过不替代模型/检索质量条件。
 
 实施依赖：F001 环境/合同工程 → F002 媒体映射 → F003 ASR/视觉与账本；F004 存储依赖 F001，可与 F002/F003 并行；F005 依赖 F003＋F004，包含 F002 的传递依赖；F006 独立标签准备可以先行，最终质量 gate 在集成后执行。详见 [开发任务](../exec-plans/phase-0-plan.md)。

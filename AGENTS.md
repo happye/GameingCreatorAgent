@@ -2,7 +2,7 @@
 
 ## Project and source of truth
 
-Gaming Creator Agent turns local game footage and a brief into content. Phase 0 validates video analysis, a semantic timeline, and clip search. Read `游戏内容创作与商业化产品总方案 V1.0.txt`, `docs/product-specs/phase-0.md`, and `feature_list.json` before changing scope. The Python package provides CLI contracts and local media preprocessing; models, storage and retrieval remain unimplemented.
+Gaming Creator Agent turns local game footage and a brief into content. Phase 0 validates video analysis, a semantic timeline, and clip search. Read `游戏内容创作与商业化产品总方案 V1.0.txt`, `docs/product-specs/phase-0.md`, and `feature_list.json` before changing scope. The Python package provides CLI contracts, media preprocessing and SQLite persistence; models and retrieval remain unimplemented.
 
 ## Repository map
 
@@ -22,6 +22,7 @@ Use Windows PowerShell. Keep runtimes in `.tools/`, packages in `.venv/`, and ca
 - `./scripts/verify.ps1`: format, lint, types, pytest, and reproducible offline wheel builds.
 - `./.venv/Scripts/gamingcreator.exe --help`: inspect CLI contracts.
 - `./scripts/test-media.ps1 -AllLocal`: validate footage in ignored `GameVideos/`.
+- `./scripts/test-storage.ps1 -AllLocal`: verify media persistence and a second process's reads.
 - `./scripts/test-retrieval-score.ps1`: fixed-slot metric regression.
 
 ## Architecture and coding rules
