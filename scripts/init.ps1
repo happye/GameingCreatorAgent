@@ -7,12 +7,17 @@ $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $requiredPaths = @(
     'AGENTS.md',
     'CODEX.md',
+    'CLAUDE.md',
+    '.grok/rules/project.md',
+    'HANDOFF.md',
     'feature_list.json',
     'progress.md',
     'docs/product-specs/phase-0.md',
     'docs/design-docs/architecture.md',
     'docs/exec-plans/phase-0-plan.md',
     'docs/references/testing-guide.md',
+    'docs/references/agent-workflow.md',
+    'docs/exec-plans/assignments.md',
     'src',
     'tests'
 )

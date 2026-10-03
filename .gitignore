@@ -17,6 +17,9 @@ output/
 !.env.example
 *.user
 *.suo
+CLAUDE.local.md
+.claude/settings.local.json
+.grok/settings.local.json
 
 # .NET and IDE output
 bin/

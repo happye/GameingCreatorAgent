@@ -10,11 +10,12 @@ Gaming Creator Agent aims to turn local game footage and a creative brief into p
 - `docs/design-docs/`: architecture and decisions; `docs/product-specs/`: accepted scope.
 - `docs/exec-plans/`: review, sprint, feedback, and debt records; `docs/references/`: development rules.
 - `prompts/`, `templates/`, `music/`: future versioned assets. Do not commit user footage or credentials.
-- `CODEX.md`: Codex-specific workflow; this file is the shared navigation guide.
+- `CODEX.md`, `CLAUDE.md`, `.grok/rules/project.md`: tool adapters; shared rules live here and in `docs/`.
+- `HANDOFF.md`: latest resumption snapshot; `progress.md`: historical work log.
 
 ## Environment and commands
 
-Use Windows PowerShell. Run `./scripts/init.ps1 -CheckOnly` to validate the scaffold. Run `./scripts/init.ps1` to check Phase 0 prerequisites; it currently requires a .NET SDK and FFmpeg. This machine has .NET runtimes but no SDK. There is no runnable app, build command, test command, or configured linter yet. The planned CLI examples `gamingcreator analyze gameplay.mp4` and `gamingcreator search "建筑破坏"` are not implemented. Add exact commands here when they work.
+Use Windows PowerShell. Run `./scripts/init.ps1 -CheckOnly` to validate the scaffold and `./scripts/init.ps1` to check .NET SDK and FFmpeg prerequisites. There is no runnable app, build command, test command, or configured linter yet. The planned `gamingcreator analyze gameplay.mp4` and `gamingcreator search "建筑破坏"` commands are not implemented. Add exact commands here when they work; keep machine-specific findings in `HANDOFF.md`.
 
 ## Architecture and coding rules
 
@@ -26,4 +27,4 @@ Follow `docs/references/testing-guide.md`. Phase 0 needs repeatable clips, queri
 
 ## Changes, commits, and handoff
 
-Work on one feature at a time. At session start, read `progress.md`, `feature_list.json`, and relevant docs. Before implementation, record the intended behavior and checks in `docs/exec-plans/`; after implementation, record results and next steps in `progress.md`. Use concise imperative commit subjects, such as `feat(F002): add local frame extraction`. PRs should link a feature or plan section, describe verification, and include sample output or screenshots when relevant. Never commit secrets, raw footage, generated media, or local databases.
+Codex, Claude Code, and Grok Build share scope, architecture, and acceptance criteria. Read `HANDOFF.md` and `feature_list.json` at session start; use `docs/references/agent-workflow.md` for ownership, worktrees, and transfer steps. Each agent handles one assigned feature; parallel work needs separate worktrees and explicit file ownership. The integrator reconciles shared state after review. Record resumable work before switching tools. Use imperative commit subjects, such as `feat(F002): add local frame extraction`; PRs link a feature and verification evidence. Never commit secrets, raw footage, generated media, or local databases.
