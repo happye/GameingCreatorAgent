@@ -1,10 +1,10 @@
-# Phase 0 工程规格 v1
+# Phase 0 工程规格 v2
 
-状态：实施合同，尚非已实现 API。来源：原总方案 §58–59、69–71；审查：[reverse-review](../exec-plans/reverse-review-2026-10-03.md)。目标是让多个 Agent 按相同合同实现和验证。
+状态：实施合同，尚非已实现 API。来源：原总方案 §58–59、69–71；按用户补充使用 Python，见 [ADR-001](./adr-001-phase-0-language.md)；审查：[reverse-review](../exec-plans/reverse-review-2026-10-03.md)。目标是让多个 Agent 按相同合同实现和验证。
 
 ## 1. CLI 与外部行为
 
-用户硬约束：所有 SDK、工具、包、模型权重和缓存隔离于本机系统。便携 .NET SDK 放 `.tools/dotnet`，FFmpeg 放 `.tools/ffmpeg/bin`，Python 运行时放 `.tools/python`、ASR 包装入 `.venv`；NuGet/模型缓存放 `.cache`。仅使用进程环境，不写注册表、系统/用户 PATH 或全局包目录。版本固定及校验在 F001 完成，详见 [隔离环境](../references/isolated-environment.md)。
+用户硬约束：所有工具、包、模型权重和缓存隔离于本机系统。portable uv 放 `.tools/uv`，CPython 3.13 运行时放 `.tools/python`，应用/开发/ASR 包全部装入 `.venv`；FFmpeg 放 `.tools/ffmpeg/bin`，缓存放 `.cache`。仅使用进程环境，不写注册表、系统/用户 PATH 或全局包目录；uv 注册和全局链接显式禁用。版本固定及校验在 F001 完成，详见 [隔离环境](../references/isolated-environment.md)。
 
 以下是待实现命令，当前可运行实验脚本见 [验证记录](../exec-plans/phase-0-validation-2026-10-03.md)。
 
@@ -23,7 +23,7 @@ stdout 为结果或 JSON；进度/JSON 诊断写 stderr。退出码：0 成功�
 
 ## 2. 时间与数据合同
 
-所有领域时间是从源视频规范化起点计量的 Int64 微秒 `[startUs,endUs)`；非负且小于等于源时长。格式化显示时间可以舍入，持久化不可用显示字符串反推。Evidence 另存原始 PTS、timebase、streamStart、切片偏移、音视频偏移和变换版本；模型局部时间由程序回映射并检查范围，VAD 必须有回映射。
+所有领域时间是从源视频规范化起点计量的 Int64 微秒 `[startUs,endUs)`；非负且小于等于源时长，Python int 必须校验不超过 `2^63-1`。格式化显示时间可以舍入，持久化不可用显示字符串反推。Evidence 另存原始 PTS、timebase、streamStart、切片偏移、音视频偏移和变换版本；模型局部时间由程序回映射并检查范围，VAD 必须有回映射。
 
 | 记录 | 必需字段 |
 | --- | --- |
@@ -41,7 +41,9 @@ stdout 为结果或 JSON；进度/JSON 诊断写 stderr。退出码：0 成功�
 
 ## 3. Provider ports 与首个实现
 
-Application 定义类型化 `Task<ProviderResult<T>>`，方法接收 `CancellationToken`。必须合同：`IVisionModel.Analyze(VisionRequest)`、`IASRModel.Transcribe(AsrRequest)`、`IEmbeddingModel.Embed(EmbeddingRequest)`；查询扩展/重排需要时使用 `ILLM.Complete(StructuredRequest)`。不创建 Phase 0 不用的 IImageModel 实现。
+Application 用 `typing.Protocol` 定义类型化 async ports，await 得到 `ProviderResult[T]`，请求携带明确取消/超时上下文。`VisionProvider.analyze(VisionRequest)`、`AsrProvider.transcribe(AsrRequest)`、`EmbeddingProvider.embed(EmbeddingRequest)` 对应原方案 IVisionModel/IASRModel/IEmbeddingModel；查询扩展/重排需要时用 `LlmProvider.complete(StructuredRequest)`。不创建 Phase 0 不用的 IImageModel 实现。
+
+同步 ASR/原生推理放可终止 worker，由异步 facade 收集完整结果并校验；不能仅用取消 await 或线程假装终止推理。faster-whisper segments 的惰性迭代必须在 worker 内完成，再返回可序列化段落。[官方运行语义](https://github.com/SYSTRAN/faster-whisper)
 
 请求含 runId、输入证据引用、语言/游戏词表、prompt/schema 版本、输出预算；结果含 typed output、usage、实际 model/revision、requestId、elapsed、状态与错误。Capabilities 声明图片序列/视频/音频、尺寸/数量限制、结构化输出和局部时间语义。Capability mismatch 在请求前失败。
 
@@ -66,7 +68,7 @@ ASR 初始选本地 CPU 可运行方案，faster-whisper 为候选，FunASR 作�
 | provider_invocations | invocation_id PK；attempt、状态、用量/价格快照/费用、unknown 字段可 null |
 | retrieval_runs/hits | query/runId、rank、candidateId、版本和排序参数；供复现和人工标注 |
 
-连接启用 FK、WAL、`synchronous=FULL`；写事务短，有限 busy timeout；每项目一个分析进程、独立连接。不能在 SQL 事务内等待媒体进程或网络。WAL 仍是单写，Microsoft.Data.Sqlite async 方法并不提供真正异步 I/O。[WAL](https://www.sqlite.org/wal.html)、[异步限制](https://learn.microsoft.com/dotnet/standard/data/sqlite/async)
+使用标准库 `sqlite3`，连接启用 FK、WAL、`synchronous=FULL`；写事务短，有限 busy timeout；每项目一个分析写入者。连接在其所属线程创建和使用，不共享跨线程连接；明确配置事务行为，不依赖 Python 默认值。同步 DB 操作由受控单写队列/专用线程执行，不能阻塞网络事件循环或在事务内等待媒体/模型。WAL 仍是单写。[WAL](https://www.sqlite.org/wal.html)、[Python sqlite3](https://docs.python.org/3.13/library/sqlite3.html)
 
 文件先写临时路径、完成校验和最终落盘，再事务登记与 checkpoint；恢复检测数据库已登记但文件丢失/损坏、未登记孤立文件和 Running 未完成阶段。可重做本地阶段，网络 attempt 的 unknown 计费不能默认免费重放。只从一致且 Completed 的 run 搜索；备份使用 SQLite backup API，而非任意复制活动 DB/WAL。
 
@@ -86,7 +88,7 @@ ASR 初始选本地 CPU 可运行方案，faster-whisper 为候选，FunASR 作�
 
 若实际修订 unresolved，`response.model` 别名不足以标识向量空间或长期缓存：缓存仅在同一 run 的 checkpoint/resume 复用，不跨 run 自动命中；该 run 的 embedding 禁止与其他 run 混检。冻结的实验响应可作离线 fixture 回放，必须标明 snapshot ID，不能声称新请求仍使用同一模型修订。
 
-Ctrl+C 停止新任务、取消 Provider、保存状态；FFmpeg 子进程要显式终止并限时回收，取消 WaitForExitAsync 仅停止等待。异常稳定分类：input/media/auth/rate-limit/network/schema/budget/storage/cancelled。[进程终止语义](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.process.kill?view=net-10.0)
+Ctrl+C 停止新任务、取消 Provider、保存状态；FFmpeg/ASR worker 要显式终止并限时回收，取消 asyncio 等待不保证终止 OS 进程。结构化参数、禁止 shell 拼接，Windows 使用隐藏子进程；逐进程登记生命周期。异常稳定分类：input/media/auth/rate-limit/network/schema/budget/storage/cancelled。[Python 子进程](https://docs.python.org/3.13/library/asyncio-subprocess.html)
 
 凭据从进程环境/本地密钥存储读取，不进入 Git、prompt、账本或错误输出。共享配置仅有 Provider 名、模型、端点及预算参数。结构化日志可关联 run/stage/invocation；计费账本不依赖采样日志。
 
@@ -94,6 +96,6 @@ Ctrl+C 停止新任务、取消 Provider、保存状态；FFmpeg 子进程要显
 
 质量协议见 [benchmark 规格](../references/phase-0-benchmark.md)。真实清晰机制查询仍须 Top10 独立可用结果 ≥70%；补齐人工标签前不可标 Phase 0 通过。速度报告墙钟/素材时长实时比与配置，原方案没有硬速度阈值，本轮不编造阈值。§44 整条创作时间节省在后续生成发布包阶段验证。
 
-开放实验项：本地 ASR 权重/运行时、完整采样配置、首个 embedding 实现、第二视觉 Provider、真实录制会话和标签、等待时间容忍。当前缺 SDK，CLI/SQLite/ASR/检索尚未实现。工程合同和 spike 通过不替代这些条件。
+开放实验项：本地 ASR 权重/运行时、完整采样配置、首个 embedding 实现、第二视觉 Provider、真实录制会话和标签、等待时间容忍。当前缺项目内 uv/Python 环境，CLI/SQLite/ASR/检索尚未实现。工程合同和 spike 通过不替代这些条件。
 
 实施依赖：F001 环境/合同工程 → F002 媒体映射 → F003 ASR/视觉与账本；F004 存储依赖 F001，可与 F002/F003 并行；F005 依赖 F003＋F004，包含 F002 的传递依赖；F006 独立标签准备可以先行，最终质量 gate 在集成后执行。详见 [开发任务](../exec-plans/phase-0-plan.md)。

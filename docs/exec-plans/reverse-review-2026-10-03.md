@@ -10,9 +10,9 @@ FFmpeg 本地预处理 → ASR/视觉证据 → SQLite 语义时间线 → 自�
 
 ## 2. 系统架构
 
-先采用 Cli、Application、Domain、Infrastructure 四个工程，Media、ASR、Vision、Timeline、Retrieval 作内部模块。原方案 §54 是长期组织方向，不需要 Phase 0 创建所有空工程。领域模型与 SDK、SQLite、FFmpeg 解耦；接口交换带源时间的证据和结构化结果。
+采用 Python 的 cli、application、domain、infrastructure 四层包，Media、ASR、Vision、Timeline、Retrieval 作内部模块；语言选择见 [ADR-001](../design-docs/adr-001-phase-0-language.md)。原方案 §54 是长期组织方向，不需要 Phase 0 创建所有空工程。领域模型与 SDK、SQLite、FFmpeg 解耦；接口交换带源时间的证据和结构化结果。
 
-新增必须合同：源 PTS 映射、Provider 能力声明、每次计费尝试账本、阶段 checkpoint、恢复策略、输出 schema、检索去重。SQLite 与文件系统没有跨系统原子事务；先完整写文件再事务登记并校验恢复。WAL 不允许多个同时写入者，模型调用不得跨越数据库写事务。[SQLite WAL](https://www.sqlite.org/wal.html)、[Microsoft.Data.Sqlite 异步限制](https://learn.microsoft.com/dotnet/standard/data/sqlite/async)
+新增必须合同：源 PTS 映射、Provider 能力声明、每次计费尝试账本、阶段 checkpoint、恢复策略、输出 schema、检索去重。SQLite 与文件系统没有跨系统原子事务；先完整写文件再事务登记并校验恢复。WAL 不允许多个同时写入者，模型调用不得跨越数据库写事务；同步 sqlite3 连接保持线程归属。[SQLite WAL](https://www.sqlite.org/wal.html)、[Python sqlite3](https://docs.python.org/3.13/library/sqlite3.html)
 
 ## 3. 模型能力
 
@@ -38,7 +38,7 @@ VFR、非零起点、音视频偏移、切片和 VAD 都可能让时间码失真
 
 ## 6. 工程风险与维护
 
-本机没有 .NET SDK；目标采用 .NET 10 LTS，尚未安装/构建。先冻结 CLI/DTO/账本和恢复合同，再拆分任务。避免一次维护多个 ASR、所有视觉厂商、独立服务或大量工程。[.NET 支持策略](https://dotnet.microsoft.com/en-us/platform/support/policy)
+用户明确 C# 不是硬约束后，将初版 .NET 建议改为 CPython 3.13 模块化核心：直接使用 ASR/评测生态，减少跨语言 IPC 与双运行时负担；Windows 正式 UI 后续另选。尚未安装项目 uv/Python 或构建应用。先冻结 CLI/DTO/账本和恢复合同，再拆任务，类型与导入检查约束多 Agent 开发。性能优势不能凭语言宣称，仍要测量；取舍与回退见 [ADR-001](../design-docs/adr-001-phase-0-language.md)。
 
 API 超时和取消可能已产生费用；调用发出前记录 attempt，恢复不能把 unknown 请求自动当免费重放。缓存必须包含内容、采样配置、Provider/模型修订、prompt/schema，不能只靠文件路径。模型浮动别名无法确认修订时限制长期缓存复用。
 
@@ -52,7 +52,7 @@ API 超时和取消可能已产生费用；调用发出前记录 attempt，恢�
 | 时间轴失真、ASR 静音误转写 | P1 | PTS/VFR/偏移/VAD 回映射测试 |
 | 断点、SQLite 和文件不一致 | P1 | 阶段故障注入和单写恢复测试 |
 | 重试、图片用量和价格变动 | P1 | attempt 账本、预算停止、未知成本阻止通过 |
-| 无 SDK/本地 ASR 权重 | P1 | 环境任务，不以文档假装构建通过 |
+| 无隔离 Python 环境/本地 ASR 权重 | P1 | 固定运行时与依赖，不以文档假装构建通过 |
 | 商业分发与多运行时负担 | P2 | 先外部 FFmpeg、一个本地 ASR；分发前评审 |
 
 ## 收敛决定

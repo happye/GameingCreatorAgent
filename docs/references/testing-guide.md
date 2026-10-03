@@ -1,6 +1,8 @@
 # Testing and benchmark guide
 
-No test framework is configured yet. F001 should establish a .NET test project and document the command that runs it. Add unit tests for domain logic and input validation, integration tests for FFmpeg/SQLite boundaries, and a CLI smoke test when the commands exist. Name tests by behavior, such as `Search_ReturnsTimestampedClips_ForMechanicQuery`.
+No Python test framework is configured yet. F001 establishes pytest, Ruff, mypy and import-direction checks inside `.venv`, with fixed versions. Planned commands after F001: `./.venv/Scripts/python.exe -m pytest`, `-m ruff check .`, `-m ruff format --check .`, and `-m mypy src`. Configure pytest/type/format caches under `.cache`; these commands are not available before environment setup.
+
+Add domain/input unit tests, FFmpeg/SQLite integration tests and CLI smoke tests when commands exist. Use `tests/test_<module>.py` or mirrored subdirectories and behavior names such as `test_search_returns_source_intervals_for_mechanic_query`. Integration tests using real models are explicitly selected, never silently paid during ordinary unit runs. No percentage coverage target is set; failure behavior and declared feature criteria determine required checks.
 
 For retrieval quality, build a local benchmark from representative game recordings. The source plan suggests 10–20 recordings; keep raw footage outside Git. Store only permitted fixture metadata and human labels. Each benchmark case should capture a query, relevant time ranges, judged results, reviewer/date, provider/model/prompt version, runtime, and cost.
 

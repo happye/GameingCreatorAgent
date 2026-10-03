@@ -1,6 +1,6 @@
 # Phase 0: semantic retrieval feasibility
 
-Status: engineering baseline after the 2026-10-03 reverse review; retrieval quality remains unverified. Source: product plan sections 58–59 and 69–71. Contracts: `docs/design-docs/phase-0-engineering-spec.md`; evidence: `docs/exec-plans/phase-0-validation-2026-10-03.md`.
+Status: engineering baseline after the 2026-10-03 review; retrieval quality remains unverified. Source: product plan sections 58–59 and 69–71. Python implementation follows `docs/design-docs/adr-001-phase-0-language.md`, superseding the optional C# recommendation. Contracts: `docs/design-docs/phase-0-engineering-spec.md`; evidence: `docs/exec-plans/phase-0-validation-2026-10-03.md`.
 
 ## Goal
 

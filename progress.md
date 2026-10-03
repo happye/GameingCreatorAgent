@@ -1,5 +1,14 @@
 # Progress Log
 
+## 2026-10-03 — Language clarification and Phase 0 baseline v2
+
+- User clarified that C# is optional. A read-only language review selected Python for Phase 0 to directly use local ASR/embedding/evaluation tooling and reduce cross-language IPC; later desktop UI remains undecided. ADR-001 supersedes the initial .NET recommendation, not product scope or acceptance.
+- Synchronized: AGENTS/CODEX/README/HANDOFF, architecture/engineering specs, feature/task lists, coding/testing/environment rules and prerequisite scripts. Shared Claude/Grok adapters inherit AGENTS rather than duplicating the language decision.
+- Isolation: portable uv and CPython under `.tools`, all packages in `.venv`, project caches/temp; uv Windows registry registration/global links explicitly disabled. F001 pins versions and verifies imports/build; no Python/uv or global packages were installed in this review.
+- Version checkpoint: F000 review saved in local commit `55d0fb1`; first push failed because GitHub HTTPS could not connect. Local evidence remains intact; remote synchronization must be verified after retry.
+- Acceptance: only F000 true. CLI/ASR/SQLite/search and formal human Top10 benchmark still unimplemented/unverified. Next task is Python F001, not .NET setup; earlier progress entries are historical evidence.
+- Verification after alignment: scaffold, PowerShell parsing, process paths and uv registry/link guard checks passed; media and metric smoke reruns passed. Full check correctly exits 1 for missing local uv/CPython venv. The language reviewer found no remaining contract conflict; no paid API rerun.
+
 ## 2026-10-03 — F000 review, limited Phase 0 experiments, and engineering baseline
 
 - Delivered: six-axis reverse review, four-project architecture, CLI/time/Provider/SQLite/cost/recovery contracts, fixed-slot benchmark rules, F001–F006 dependencies and explicit ownership. Original product plan unchanged; F000 accepted as a document review only.

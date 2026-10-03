@@ -18,7 +18,7 @@
 
 ## 验证计划
 
-1. 检查本地 SDK、FFmpeg/ffprobe 与现有素材。
+1. 检查项目内运行时、FFmpeg/ffprobe 与现有素材。
 2. 在本地合成媒体上验证探测、抽帧、音频提取和无音轨处理，保存结果与限制。
 3. 查证官方 Provider/ASR/存储行为；把支持能力与实测性能分开。
 4. 明确真实游戏录像、人工标签、可调用模型是端到端检索验收的必需条件。
@@ -28,17 +28,17 @@
 
 用户提供 `GameVideos/` 测试素材、DeepSeek 可调用能力、隔离环境要求与 GitHub 版本库。三个短视频共约 214.86 秒；无小时级原始录像和正式人工 benchmark 标签。凭据仅在请求进程使用，没有保存至文件。
 
-已交付 [六方向审查](./reverse-review-2026-10-03.md)、[工程合同](../design-docs/phase-0-engineering-spec.md)、[验证证据](./phase-0-validation-2026-10-03.md)、[开发依赖与文件归属](./phase-0-plan.md)。原方案及产品方向未改变。
+已交付 [六方向审查](./reverse-review-2026-10-03.md)、[工程合同](../design-docs/phase-0-engineering-spec.md)、[验证证据](./phase-0-validation-2026-10-03.md)、[开发依赖与文件归属](./phase-0-plan.md)。原方案文件及产品方向未改变；按用户语言补充采纳 [ADR-001 Python 基线](../design-docs/adr-001-phase-0-language.md)。
 
 ## 验证与评审处理
 
-- `./scripts/init.ps1 -CheckOnly`：通过，7 项特性；完整检查退出 1，缺项目内 .NET 10 SDK，未安装全局依赖。
+- `./scripts/init.ps1 -CheckOnly`：通过，7 项特性；完整检查从早期 .NET 检查改为 Python/uv/venv 检查，缺环境时退出 1，未安装全局依赖。
 - `./scripts/test-media-spike.ps1 -Synthetic`：项目内 FFmpeg 有音轨复测通过；无音轨及三个真实素材短窗实验通过。
 - `./scripts/test-retrieval-score.ps1`：固定分母、缺项、重复、负例与无效评级回归通过。合成报告仍为 `phase0QualityVerified=false`。
-- PowerShell AST 语法与 SDK/包/模型缓存及 TEMP/TMP 进程路径隔离检查通过。
-- 专项评审修复：严格整数评级及布尔值回归；NuGet/pip/模型/临时缓存全部归项目；完整检查只认 .NET 10；embedding 唯一键包含 Provider/模型/空间；未确认模型修订的缓存不跨 run 复用。
+- PowerShell AST 语法与包/模型缓存及 TEMP/TMP 进程路径隔离检查通过。
+- 专项评审修复：严格整数评级及布尔值回归；pip/uv/模型/临时缓存全部归项目；完整检查只认项目 CPython 3.13 venv；embedding 唯一键包含 Provider/模型/空间；未确认修订的缓存不跨 run 复用。补充只读语言评审选择 Python，并显式禁用 uv 注册与全局链接。
 - DeepSeek 三次请求、15 帧结构校验成功，估算上界合计 ¥0.024076；未将此视为检索质量、源小时成本或正式人工标签。
 
 ## 转交
 
-F000 `passes:true` 仅表示审查交付满足文档验收。F001–F006 `passes:false`；没有 CLI、ASR、SQLite 或检索实现。下一 owner 从 F001 开始：在独立 worktree 登记范围，固定项目内 .NET 10 SDK/缓存，建立四工程与合同/输入测试。详细入口见根 `HANDOFF.md`；本轮提交与文件状态以 Git 为准。
+F000 `passes:true` 仅表示审查交付满足文档验收。F001–F006 `passes:false`；没有 CLI、ASR、SQLite 或检索实现。下一 owner 从 F001 开始：在独立 worktree 登记范围，固定项目 uv/CPython 3.13/venv，建立四层包与合同/输入测试。详细入口见根 `HANDOFF.md`；本轮提交与文件状态以 Git 为准。

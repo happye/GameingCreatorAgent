@@ -6,7 +6,7 @@ This repository is the starting point for a local-first game-content creation to
 
 ## Current state
 
-The repository contains planning documents, a shared workflow for Codex, Claude Code, and Grok Build, and empty source/test directories. There is no application or test runner yet. The planned implementation uses C#/.NET, SQLite, and FFmpeg; model providers must remain replaceable.
+The repository contains planning documents, a shared workflow for Codex, Claude Code, and Grok Build, and empty source/test directories. There is no application or Python test runner yet. Phase 0 uses Python, SQLite, and FFmpeg; see the [language decision](./docs/design-docs/adr-001-phase-0-language.md). C# is optional and the later desktop UI remains undecided. Model providers must remain replaceable.
 
 ## Start here
 

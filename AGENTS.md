@@ -6,7 +6,7 @@ Gaming Creator Agent aims to turn local game footage and a creative brief into p
 
 ## Repository map
 
-- `src/`: future C#/.NET CLI and processing modules; `tests/`: future automated and benchmark tests.
+- `src/gamingcreator/`: planned Python CLI and four-layer core; `tests/`: future automated and benchmark tests.
 - `docs/design-docs/`: architecture and decisions; `docs/product-specs/`: accepted scope.
 - `docs/exec-plans/`: reverse review, validation evidence, task plan, feedback, and debt; `docs/references/`: benchmark and environment rules.
 - `prompts/`, `templates/`, `music/`: future versioned assets. Do not commit user footage or credentials.
@@ -19,7 +19,7 @@ Use Windows PowerShell. All runtimes/packages must be project-isolated: `.tools/
 
 ## Architecture and coding rules
 
-Follow `docs/design-docs/architecture.md` and `phase-0-engineering-spec.md` as the implementation baseline after F000 review. Keep video bytes local by default; model providers replaceable; versioned prompts and model/cost/timing records traceable. Follow `.editorconfig` and `docs/references/coding-standards.md`; create only the active feature's modules.
+Follow `docs/design-docs/architecture.md`, `phase-0-engineering-spec.md`, and `adr-001-phase-0-language.md`. C# is not mandatory: Phase 0 uses Python; future UI requires a separate decision. Keep video bytes local, providers replaceable, and versions/cost/timing traceable. Follow `.editorconfig` and `docs/references/coding-standards.md`; create only the active feature's modules.
 
 ## Testing and acceptance
 
