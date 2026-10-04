@@ -31,3 +31,7 @@
 复测显示/检索171passed/1skip，9.01s。只读复核发现V5正文可提到窗口里却未被事件引用的f8；已限制正文别名为该事件已验证引用（保留原窗口编号→真实时钟，不重排编号），新增facts/tags/uncertainty及区间内未引用/区间外6个回归案例。费用保护/旧512/raw身份未发现新增问题；复合属性AND匹配仍未实现。已确认DeepSeek API网络可达，GitHub443仍超时；不用失败模型请求探测网络。
 
 真实实验前完整verify通过：838passed/1 Windows文件symlink权限skip，81.70s；Ruff83文件、mypy49源、CLI与两次离线wheel通过，SHA74728027088611445833fc4cb8802dbcaec8ca1a255b8357e0f91917c6bc459e。日志.cache/detail-verify-before-pilot.log。Guard单独98passed；尚未新增API调用，真实细节效果待对照。
+
+预推理开发观察（不是独立humanLabels）：本地1280预处理已完成，artifacts/visual-detail-evidence-preview/receipt.json，未API。Atom35s画面有三位主体：左侧白发/单片眼镜/浅色上装/棕色短裤；中间红黑头发/头顶护目镜/红围巾与外套/深色手套；右侧较深肤色/红橙发/耳罩/蓝色图案上装。28s为蓝发角色/沙色石块平台/蓝色水面，手持蓝色扁平物的具体类别不确定。拟选28–32与35–39s对照，核对主体属性和动作是否绑定，不凭示例虚构权杖/冲击波/Boss。费用合计上限¥5：先pilot预算5，完整新run预算扣除pilot已知费用及未知承诺；全部失败/控制仍记录。
+
+detail_pilot944fb42已整合32fe12c，9离线合同root复测通过（0.62s），脚本Ruff/mypy通过。真实无API dry artifacts/visual-details-atom-dry冻结两窗口10cases，A/B九帧完全相同512，C同源时刻1280，两组证据runId/hash独立。下一步只在新visual-details-atom-execute执行8HTTP上限/¥5/90秒每case，倒序不发送；不覆盖dry或旧实验。

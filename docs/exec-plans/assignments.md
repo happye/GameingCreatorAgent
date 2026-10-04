@@ -6,9 +6,10 @@
 
 | Owner | Branch/worktree | 独占范围 | 状态 |
 | --- | --- | --- | --- |
-| root | codex/visual-details，root | analysis/config/store、真实对照、共享文档、集成验收 | 进行中；旧744测试不是本轮验证 |
-| detail_vision | codex/detail-vision，.worktrees/detail-vision | deepseek_vision.py、新 detailed tests、own sprint | 56b02e2 已冻结，待集成 |
-| detail_presentation | codex/detail-presentation，.worktrees/detail-presentation | observation_text.py、retrieval.py、ui/service.py、app.js、新 presentation tests、own sprint | 进行中；不得覆盖 root |
+| root | codex/visual-details，root | analysis/config/store、真实对照、共享文档、集成验收 | 7e3ee95；838测试通过，真实效果待验证 |
+| detail_vision | codex/detail-vision，.worktrees/detail-vision | deepseek_vision.py、新 detailed tests、own sprint | 56b02e2→903c9cc 已集成并冻结；root补证据范围保护 |
+| detail_presentation | codex/detail-presentation，.worktrees/detail-presentation | observation_text.py、retrieval.py、ui/service.py、app.js、新 presentation tests、own sprint | a160116→86c229c 已集成并冻结 |
+| detail_pilot | codex/detail-pilot，.worktrees/detail-pilot | validate-visual-details.py/new tests/own sprint | 验证中；root执行API，worker不发请求 |
 | detail_pipeline_audit | 只读 root | 根因/细节/旧数据身份审查 | 已完成，无编辑或 API 请求 |
 
 新 V5 衣着/持有物/外观/环境和动作绑定，不虚构模糊属性；历史帧编号只投影清理，原事实不重写。新证据目标宽1280，旧V1–V4保持512。F006/F009仍false。

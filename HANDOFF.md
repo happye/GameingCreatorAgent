@@ -4,6 +4,8 @@
 
 ## 当前状态
 
+**真实实验准备已保存**：detail_pilot944fb42→32fe12c已集成并冻结，9项root复测通过。无API dry `artifacts/visual-details-atom-dry`已冻结28–32和35–39s同源时刻对照；root即将执行新`artifacts/visual-details-atom-execute`（8HTTP/预算¥5，每case90s，含静帧/倒序，默认humanLabels/qualityGate=null）。paid开始前还无新费用；进度与逐case报告原子保存。完整新run待对照结果再做，总本轮实际/未知承诺上限¥5。恢复先查这两个report/invocations，勿重放已发请求。此前838verify是在新pilot集成前；新pilot9项另列。
+
 **最新检查点**：完整verify838passed/1权限skip（81.70s），Ruff83/mypy49/CLI/离线重复wheel通过，SHA74728027088611445833fc4cb8802dbcaec8ca1a255b8357e0f91917c6bc459e；此前252/171为定向验证。只读审查发现正文别名可能越出当前事件证据，root已限制为事件已引用的原窗口别名，新增6回归，98项通过。对照脚本仍worker验证中；未新API调用，8765未重启。GitHub包括进程内HTTP/1.1重试仍443超时，DeepSeek API已只读确认可达。
 
 **本轮集成快照（2026-10-05，覆盖下文旧744基线）**：rootcodex/visual-details，vision56b02e2→903c9cc、presentationa160116→86c229c已集成。V5prompt/hash、config.detailed.example.json、详细pipeline/1280宽/旧512隔离已实现；UI优先Completed V5并显示不确定性，旧事实/篮子raw校验不变，检索bm25-e5-rrf-v5。Provider/config/resume252项与显示/检索171项通过（另1权限skip）；完整verify/新真实API实验/新run未执行。detail_pilot.worktrees/detail-pilot独占新对照脚本和测试，root负责付费执行；其他新worker已冻结。首次浏览器ERR_UNSAFE_PORT由共享fixture高端口修复；171复测通过。GitHub443连接失败，工作分支远程同步待重试，本地进度已提交。当前8765仍旧进程，不代表新代码已上线；不能宣布细节效果或F006/F009/F010通过。
