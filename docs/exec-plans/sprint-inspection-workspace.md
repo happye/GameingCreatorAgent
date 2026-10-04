@@ -8,7 +8,7 @@
 
 root负责HTTP/媒体服务、公共storage port、集成、真实浏览器验证和共享文档；inspection_frontend在独立worktree只改ui/static三个文件及own sprint，ui_review只读审查。Grok改动全部保留；本轮workers已冻结。
 
-检查点：32d5a3b保留并验证Grok基线；82e4020后端；9fcbdec集成0d9e3c5页面；614c10d集成3e5c8e2前端修复。最终版本/推送状态见HANDOFF及git。
+检查点：32d5a3b保留并验证Grok基线；82e4020后端；9fcbdec集成0d9e3c5页面；614c10d集成3e5c8e2前端修复；24ded10真实浏览器脚本/URL修复/共享规格；2bb9848端口独占及最终验证。2bb9848已普通快进同步origin/main和origin/codex/inspection-workspace，root现main；末尾文档收尾提交见HANDOFF及git。
 
 ## 实现
 

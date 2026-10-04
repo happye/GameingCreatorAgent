@@ -8,7 +8,7 @@
 
 F000–F005及F007技术合同已验收；**F006独立人工U10仍false**。用户明确授权本地检查交互，依据ADR-002；正式桌面/商业阶段仍有原质量门槛。
 
-root当前分支 `codex/inspection-workspace`。已保存Grok基线32d5a3b、后端82e4020、前端9fcbdec/614c10d；真实浏览器验证、URL身份和同步文档24ded10已推送origin/codex/inspection-workspace。最终发现并修复Windows重复端口监听，待保存/推送该收尾检查点并快进main。远端main仍为此前CLI基线d6eb311；以git状态为准。所有本轮worker已冻结，归属见assignments。
+root当前分支 `main`，已验证交付代码 `2bb9848` 已同步origin/main及origin/codex/inspection-workspace。它包含Grok基线32d5a3b、后端82e4020、前端9fcbdec/614c10d、真实浏览器验证及文档24ded10、最终Windows端口修复。末尾文档收尾提交以git log为准；后续无需切历史F003分支。所有本轮worker已冻结，归属见assignments。
 
 ## 直接使用
 
@@ -39,7 +39,7 @@ root当前分支 `codex/inspection-workspace`。已保存Grok基线32d5a3b、后
 
 ## 下一步与恢复规则
 
-1. 本轮先保存最终检查点、普通推送origin/codex/inspection-workspace，再核对远端main并安全快进合并/推送；若网络失败记录准确本地提交和补推命令。
+1. 先核对 `git status --short`、当前分支及远端状态，再按以下剩余事项新建任务。当前交付已普通快进同步main，工作台8765已启动；会话/电脑关闭后用run-ui.ps1重新启动，不依赖Agent内存中的进程号。
 2. 后续优先F006：冻结独立录制会话和主/稀疏/负例人工标签，再校准召回/动作边界。已有4开发视频490.693314s且有同源分组，不等于10–20独立会话或小时级验收。
 3. TD001：长媒体showinfo/ashowinfo16MiB上限；TD005：1024文本请求上限（查询占1，最多1023文档）及长索引；TD006：非零PTS、不同音视频起点的浏览器currentTime映射/编码支持尚未验证。保持E5固定batch=1的空间身份和稳定性。
 4. 正式桌面、Creative Planner、MP4渲染/发布另立工程任务，勿以F007替代F006门槛。
