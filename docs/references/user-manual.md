@@ -6,6 +6,8 @@
 
 更短的演示步骤见 [Demo 快速开始](./demo-quickstart.md)。环境细则见 [隔离环境](./isolated-environment.md)。当前进度见仓库根目录的 `HANDOFF.md`。
 
+当前界面和处理服务都在本机，DeepSeek视觉分析使用必要抽样帧的云端推理，尚未打包EXE；详见[部署路线](./deployment-roadmap.md)。内容是否通过人工验收见[F006操作指南](./human-acceptance-guide.md)，不以页面好看或选片次数代替检索质量。
+
 ## 1. 你能做什么
 
 | 你想做的事 | 用什么 | 要不要密钥 | 会不会联网付费 |
@@ -238,7 +240,7 @@ $env:DEEPSEEK_API_KEY = "<你的密钥>"
 ./scripts/setup-demo.ps1 -Offline
 ./scripts/init.ps1
 
-# 打开可改查询的检查页
+# 打开本地检查工作台
 ./scripts/run-ui.ps1
 
 # 重放已完成 run
@@ -264,7 +266,9 @@ $env:DEEPSEEK_API_KEY = "<你的密钥>"
 | 最短演示 | [demo-quickstart.md](./demo-quickstart.md) |
 | 检查页为什么用 Python | [adr-002-local-inspection-ui.md](../design-docs/adr-002-local-inspection-ui.md) |
 | 工具为什么必须留在项目内 | [isolated-environment.md](./isolated-environment.md) |
+| 本地、云端与未来EXE是什么关系 | [deployment-roadmap.md](./deployment-roadmap.md) |
 | 抽帧、时间戳和音频映射 | [media-processing.md](./media-processing.md) |
 | 数据库和续跑存在哪里 | [timeline-storage.md](./timeline-storage.md) |
 | 人工标签和 U10 怎么算 | [benchmark-manifest-schema.md](./benchmark-manifest-schema.md)、[phase-0-benchmark.md](./phase-0-benchmark.md) |
+| 我该怎样进行F006人工验收 | [human-acceptance-guide.md](./human-acceptance-guide.md) |
 | 命令和数据的工程合同 | [phase-0-engineering-spec.md](../design-docs/phase-0-engineering-spec.md) |

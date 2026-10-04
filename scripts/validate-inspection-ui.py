@@ -21,6 +21,35 @@ def wait_for(page, expression: str, timeout: int = 30000) -> None:
         page.wait_for_timeout(50)
 
 
+def workspace_geometry(page, width: int, height: int, output: Path) -> dict[str, object]:
+    page.set_viewport_size({"width": width, "height": height})
+    page.wait_for_timeout(180)
+    geometry = page.evaluate(
+        """() => {
+            const areas = {};
+            for (const [name, selector] of Object.entries({
+                preview: '.video-wrap', timeline: '.timeline-panel', basket: '.selection-panel'
+            })) {
+                const rect = document.querySelector(selector).getBoundingClientRect();
+                areas[name] = {x:rect.x,y:rect.y,right:rect.right,bottom:rect.bottom,
+                    width:rect.width,height:rect.height};
+            }
+            return {width:innerWidth,height:innerHeight,scrollY,
+                documentHeight:document.scrollingElement.scrollHeight,
+                documentWidth:document.scrollingElement.scrollWidth,areas};
+        }"""
+    )
+    assert geometry["documentHeight"] <= height + 1, geometry
+    assert geometry["documentWidth"] <= width + 1, geometry
+    assert geometry["scrollY"] == 0, geometry
+    for name, area in geometry["areas"].items():
+        assert area["x"] >= 0 and area["y"] >= 0, (name, area)
+        assert area["right"] <= width + 1 and area["bottom"] <= height + 1, (name, area)
+        assert area["height"] >= (180 if name == "preview" else 160), (name, area)
+    page.screenshot(path=str(output / f"workspace-{width}x{height}.png"), full_page=True)
+    return geometry
+
+
 def validate(project: Path, run_id: str, output: Path, query: str) -> dict[str, object]:
     from playwright.sync_api import sync_playwright
 
@@ -38,7 +67,7 @@ def validate(project: Path, run_id: str, output: Path, query: str) -> dict[str, 
             browser = driver.chromium.launch(headless=True, channel="chromium")
             try:
                 context = browser.new_context(
-                    viewport={"width": 1600, "height": 1080}, accept_downloads=True
+                    viewport={"width": 1440, "height": 900}, accept_downloads=True
                 )
                 page = context.new_page()
                 page.on("pageerror", lambda error: errors.append(str(error)))
@@ -84,7 +113,10 @@ def validate(project: Path, run_id: str, output: Path, query: str) -> dict[str, 
                     page,
                     "Array.from(document.querySelectorAll('#evidence-list img')).some(image=>image.complete && image.naturalWidth>0)",
                 )
-                first.locator(".select-clip").click()
+                assert candidate_count == 3, "smoke expects three attack candidates"
+                # Deliberately select in descending source order, not rank order.
+                for index in (1, 2, 0):
+                    page.locator(".candidate-card").nth(index).locator(".select-clip").click()
                 wait_for(page, "!document.querySelector('#export-json').disabled")
                 with page.expect_download() as download:
                     page.locator("#export-json").click()
@@ -92,7 +124,21 @@ def validate(project: Path, run_id: str, output: Path, query: str) -> dict[str, 
                 download.value.save_as(json_path)
                 selected = json.loads(json_path.read_text(encoding="utf-8"))
                 assert selected["runId"] == run_id and selected["mediaSha256"]
-                assert len(selected["selectedClips"]) == 1
+                assert len(selected["selectedClips"]) == 3
+                starts = [row["startUs"] for row in selected["selectedClips"]]
+                assert starts == sorted(starts), "JSON export must use source order"
+                basket_labels = page.locator("#selection-list .clip-preview").all_text_contents()
+                assert basket_labels == [
+                    f"{row['startTimecode']} – {row['endTimecode']}"
+                    for row in selected["selectedClips"]
+                ], "basket and export order must agree"
+                stored_starts = page.evaluate(
+                    """({project,run}) => JSON.parse(localStorage.getItem(
+                        `gamingcreator.selection.v1:${encodeURIComponent(project)}:${encodeURIComponent(run)}`
+                    )).entries.map(entry=>entry.clip.startUs)""",
+                    {"project": project_reference, "run": run_id},
+                )
+                assert stored_starts == starts, "saved basket must use source order"
                 clip = selected["selectedClips"][0]
                 assert clip["evidenceIds"] and clip["startUs"] < clip["endUs"]
                 assert (
@@ -107,12 +153,45 @@ def validate(project: Path, run_id: str, output: Path, query: str) -> dict[str, 
                 download.value.save_as(csv_path)
                 with csv_path.open(encoding="utf-8-sig", newline="") as source:
                     rows = list(csv.DictReader(source))
-                assert len(rows) == 1 and int(rows[0]["startUs"]) == clip["startUs"]
+                assert len(rows) == 3 and [int(row["startUs"]) for row in rows] == starts
+                layouts = [
+                    workspace_geometry(page, width, height, output)
+                    for width, height in ((1440, 900), (1366, 768))
+                ]
+                # Click far down the independent timeline; preview and basket stay put.
+                page.locator("#timeline-list").evaluate(
+                    "node => node.scrollTop = node.scrollHeight"
+                )
+                timeline_scroll = page.locator("#timeline-list").evaluate("node => node.scrollTop")
+                assert timeline_scroll > 0, "the long timeline must have its own scroll"
+                page.locator(".timeline-row").last.locator(".clip-preview").click()
+                page.locator("#source-video").evaluate("video => video.pause()")
+                assert (
+                    abs(
+                        page.locator("#timeline-list").evaluate("node => node.scrollTop")
+                        - timeline_scroll
+                    )
+                    < 2
+                ), "preview rerender lost timeline position"
+                page.locator(".timeline-row").last.locator(".select-clip").click()
+                assert (
+                    abs(
+                        page.locator("#timeline-list").evaluate("node => node.scrollTop")
+                        - timeline_scroll
+                    )
+                    < 2
+                ), "selection rerender lost timeline position"
+                assert page.evaluate("scrollY") == 0, "selecting a deep event moved the page"
+                page.locator(".timeline-row").last.locator(".select-clip").click()
                 page.locator("#timeline-filter").fill("不存在的事件-UI验证")
                 assert page.locator(".timeline-row").count() == 0
                 assert page.locator(".candidate-card").count() == candidate_count
                 page.locator("#timeline-filter").fill("")
-                page.screenshot(path=str(output / "workspace.png"), full_page=True)
+                page.set_viewport_size({"width": 390, "height": 844})
+                page.wait_for_timeout(180)
+                assert page.evaluate("document.scrollingElement.scrollWidth <= innerWidth + 1")
+                page.screenshot(path=str(output / "workspace-mobile.png"), full_page=True)
+                page.set_viewport_size({"width": 1440, "height": 900})
                 page.locator("#query").fill("汽车修理工拆卸发动机维修车辆")
                 page.locator("#search-button").click()
                 wait_for(
@@ -128,7 +207,11 @@ def validate(project: Path, run_id: str, output: Path, query: str) -> dict[str, 
                 wait_for(page, "!document.querySelector('#run-select').disabled")
                 page.locator("#run-select").select_option(run_id)
                 wait_for(page, "!document.querySelector('#search-button').disabled")
-                assert page.locator("#selection-count").inner_text() == "1", "run basket lost"
+                assert page.locator("#selection-count").inner_text() == "3", "run basket lost"
+                assert (
+                    page.locator("#selection-list .clip-preview").all_text_contents()
+                    == basket_labels
+                )
                 assert not page.locator("#export-json").is_disabled()
                 assert not errors, errors
                 return {
@@ -144,6 +227,11 @@ def validate(project: Path, run_id: str, output: Path, query: str) -> dict[str, 
                     "filterPreservesRanking": True,
                     "negativeCandidates": 0,
                     "selectionSurvivesReload": True,
+                    "chronologicalBasket": True,
+                    "chronologicalExportsAndStorage": True,
+                    "deepTimelineScrollPreserved": True,
+                    "desktopLayouts": layouts,
+                    "mobileNoHorizontalOverflow": True,
                     "browserErrors": errors,
                     "browserVersion": browser.version,
                     "qualityGate": None,

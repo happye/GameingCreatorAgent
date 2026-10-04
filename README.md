@@ -20,6 +20,8 @@ See the [user manual](./docs/references/user-manual.md) for setup, analysis, sea
 
 Open `http://127.0.0.1:8765/`, choose a project and completed run, search, preview candidates, and add intervals to the clip basket. JSON/CSV preserve source identity, microsecond ranges and evidence; they are interval manifests. To analyze new footage, use the CLI first.
 
+The current browser workspace and backend run locally; DeepSeek vision uses remote inference on sampled frames. It is not yet packaged as an EXE. The source plan retains a future Windows desktop application with local media processing; see the [deployment roadmap](./docs/references/deployment-roadmap.md). Human content acceptance follows the [F006 guide](./docs/references/human-acceptance-guide.md), separately from UI usability.
+
 ## Start here
 
 1. Read [`AGENTS.md`](./AGENTS.md), [`HANDOFF.md`](./HANDOFF.md), and the [shared workflow](./docs/references/agent-workflow.md). Open the same repository or your assigned worktree in whichever tool is available.

@@ -27,7 +27,7 @@ Use Windows PowerShell. Keep runtimes in `.tools/`, packages in `.venv/`, and ca
 
 ## Architecture and coding rules
 
-Follow `docs/design-docs/architecture.md`, `phase-0-engineering-spec.md`, ADR-001 and ADR-002. Use four-space indentation, snake_case functions/modules and PascalCase types; Ruff formats/lints and mypy checks contracts. Keep domain independent of I/O, video bytes local, and provider versions/cost/timing traceable. Preserve prompt hashes, embedding-space identity and unknown-cost reservations on resume.
+Follow `docs/design-docs/architecture.md`, `phase-0-engineering-spec.md`, ADR-001 and ADR-002. Use four-space indentation, snake_case functions/modules and PascalCase types; Ruff formats/lints and mypy checks contracts. Keep domain free of I/O. Preserve local video bytes, source clocks, provider/prompt/embedding identities and unknown costs. Basket/export order follows source time; retrieval keeps rank.
 
 ## Testing and acceptance
 

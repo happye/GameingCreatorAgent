@@ -21,6 +21,8 @@ CLI 只解析输入、组装依赖和输出结果；Application 编排 stages、
 
 `ui/` 是第二个组合入口，提供本地标准库 HTTP 服务和打包的静态页面，共用 Application 检索与 SQLite ports。`/api/projects`、`runs`、`inspect` 读取已有运行；`media`、`evidence` 仅按注册身份提供经 hash 校验的文件和单段 Range/HEAD。单条证据读取不重扫源视频；文件身份变化使校验缓存失效。空查询不执行搜索，非空查询仍保存既有检索记录。页面选片只在浏览器按项目/run 保存，导出前重验当前区间，不写人工标签。详见 [ADR-002](./adr-002-local-inspection-ui.md) 与 [API 合同](./inspection-workspace-api.md)。
 
+本地页面不代表纯云服务，桌面EXE也不代表全离线推理；当前视频/ASR/SQLite/E5在本机，视觉证据必要图片发DeepSeek。未来Windows桌面封装遵循原本地优先方向，完整云端托管则需另作存储、任务与账号边界设计。详见[部署路线](../references/deployment-roadmap.md)。
+
 ## 数据流与状态
 
 本地源文件 → hash/probe → 带 PTS 的视觉证据＋音频 → 本地 ASR＋视觉 Provider → 校验后的 SemanticEvent → SQLite → 检索/重排/去重 → CandidateClip。

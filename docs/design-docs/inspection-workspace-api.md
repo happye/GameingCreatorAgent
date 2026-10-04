@@ -36,6 +36,6 @@ root：`ui/server.py`、`ui/service.py`、新 `ui/media.py`、HTTP行为测试�
 
 按原方案§12提供素材/视频/查询三个区域和下方时间轴。事件/候选可点击seek并播放到end自动暂停；证据图可查看源帧。文本全部用textContent等安全DOM API，不插入模型HTML。
 
-查询结果按rank保留，时间轴按源时间；时间轴文本/标签筛选不更改候选排名。页面可选择片段，按 project+run 隔离，localStorage只保存选中候选，不写密钥。切换run清空显示中旧结果。
+查询结果按rank保留，时间轴按源时间；时间轴文本/标签筛选不更改候选排名。页面可选择片段，按 project+run 隔离，localStorage只保存选中候选，不写密钥。片段篮显示、保存和JSON/CSV统一按startUs、endUs、稳定身份升序，保留每片原rank/查询来源。切换run清空旧显示；同run重绘保留列表scrollTop，改变时间轴筛选回到列表开头。
 
 导出仅用户已选区间的JSON/CSV，不渲染MP4。JSON含schemaVersion=1、project/run/media身份、retrievalVersion、query/mode、selectedClips（微秒、timecode、原证据、事实、rank/score）。导出前重新匹配当前run的事件或候选，拒绝过期区间；不得把选中状态当人工有用度或humanLabels.confirmed。
