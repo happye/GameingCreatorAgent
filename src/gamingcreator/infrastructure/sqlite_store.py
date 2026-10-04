@@ -162,10 +162,30 @@ def _config_json(config: RunConfiguration) -> str:
     _digest(config.pipeline_hash)
     for stage in config.required_stages:
         _id(stage)
+    analysis_data = asdict(analysis)
+    if analysis.schema_version == 1:
+        # Keep canonical v1 snapshots byte-for-byte compatible with existing databases.
+        analysis_data = {
+            key: analysis_data[key]
+            for key in ("provider", "model", "max_requests", "max_input_frames")
+        }
+    elif analysis.schema_version != 2 or (
+        not analysis.price_version
+        or type(analysis.sampling_interval_ms) is not int
+        or not 100 <= analysis.sampling_interval_ms <= 60000
+        or type(analysis.window_frames) is not int
+        or not 1 <= analysis.window_frames <= 5
+        or type(analysis.window_overlap) is not int
+        or not 0 <= analysis.window_overlap < analysis.window_frames
+        or type(analysis.max_output_tokens) is not int
+        or not 1 <= analysis.max_output_tokens <= 4096
+        or analysis.asr_language not in ("zh", "en", "auto")
+    ):
+        raise _error("storage.invalid_config")
     # Accept a typed allowlist, never arbitrary configuration dictionaries or credentials.
     return _json(
         {
-            "analysis": asdict(analysis),
+            "analysis": analysis_data,
             "max_cost_cny": str(config.max_cost_cny),
             "pipeline_version": config.pipeline_version,
             "pipeline_hash": config.pipeline_hash,
@@ -862,9 +882,19 @@ class SqliteTimelineStore:
                 "prompt_version",
                 "schema_version",
                 "attempt",
+                "model_revision",
+                "price_version",
             )
             if any(before[key] != after[key] for key in immutable):
                 raise _error("storage.invocation_identity")
+            if before["provider"] == "deepseek":
+                old_details = _object(before["execution_details"] or "{}")
+                new_details = _object(after["execution_details"] or "{}")
+                if any(
+                    old_details.get(key) != new_details.get(key)
+                    for key in ("reservationCny", "inputFrames", "evidenceIds")
+                ):
+                    raise _error("storage.invocation_identity")
             if not isinstance(status, InvocationStatus) or status == InvocationStatus.RUNNING:
                 raise _error("storage.invocation_state")
             failed = status in (
@@ -1056,11 +1086,42 @@ class SqliteTimelineStore:
         await self._call(stop)
 
     async def load_completed_timeline(self, run_id: str) -> StoredTimeline:
+        return await self.load_timeline(run_id)
+
+    async def prepare_resume(self, run_id: str) -> None:
+        """Explicitly reopen one run after taking the project writer lock; never replay requests."""
+
+        def prepare() -> None:
+            self._mutable(run_id)
+            if self._integrity(run_id):
+                raise _error("storage.integrity")
+            with self._transaction():
+                self._db.execute(
+                    "UPDATE stage_checkpoints SET status='interrupted',updated_at=? "
+                    "WHERE run_id=? AND status='running'",
+                    (_now(), run_id),
+                )
+                self._db.execute(
+                    "UPDATE provider_invocations SET status='interrupted',error_code='storage.interrupted',finished_at=? "
+                    "WHERE run_id=? AND status='running'",
+                    (_now(), run_id),
+                )
+                self._db.execute(
+                    "UPDATE analysis_runs SET status='running',error_code=NULL,updated_at=? WHERE run_id=?",
+                    (_now(), run_id),
+                )
+
+        await self._call(prepare)
+
+    async def load_timeline(self, run_id: str, *, require_completed: bool = True) -> StoredTimeline:
         def load() -> StoredTimeline:
             run = self._load_run(run_id)
-            if run.status != RunStatus.COMPLETED:
+            if require_completed and run.status != RunStatus.COMPLETED:
                 raise _error("storage.run_incomplete")
-            self._consistent(run_id)
+            if require_completed:
+                self._consistent(run_id)
+            elif self._integrity(run_id):
+                raise _error("storage.integrity")
             duration = run.asset.duration_us
             evidence = tuple(
                 EvidenceReference(

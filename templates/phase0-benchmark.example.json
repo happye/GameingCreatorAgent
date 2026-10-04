@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "datasetId": "replace-with-your-frozen-dataset-id",
+  "labelVersion": null,
+  "humanLabels": {
+    "confirmed": false,
+    "annotators": [],
+    "reviewed": false,
+    "frozenAt": null,
+    "independentTestSet": false
+  },
+  "media": [
+    {
+      "mediaId": "replace-with-media-id-from-completed-run",
+      "runId": "replace-with-completed-run-id",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "durationUs": 1000000
+    }
+  ],
+  "queries": [
+    {
+      "id": "main-001",
+      "text": "寻找使用闪避躲开敌人攻击的片段",
+      "kind": "main",
+      "mediaId": "replace-with-media-id-from-completed-run",
+      "runId": "replace-with-completed-run-id",
+      "referenceEvents": [],
+      "candidateLabels": []
+    },
+    {
+      "id": "sparse-001",
+      "text": "寻找首次打开技能界面的片段",
+      "kind": "sparse",
+      "mediaId": "replace-with-media-id-from-completed-run",
+      "runId": "replace-with-completed-run-id",
+      "referenceEvents": [],
+      "candidateLabels": []
+    },
+    {
+      "id": "negative-001",
+      "text": "寻找素材中不存在的水下驾驶潜艇片段",
+      "kind": "negative",
+      "mediaId": "replace-with-media-id-from-completed-run",
+      "runId": "replace-with-completed-run-id",
+      "referenceEvents": [],
+      "candidateLabels": []
+    }
+  ]
+}

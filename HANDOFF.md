@@ -2,6 +2,10 @@
 
 更新时间：2026-10-04（Asia/Hong_Kong）。供 Codex、Claude Code、Grok Build 接续；历史见 `progress.md`，验收见 `feature_list.json`。
 
+## 当前实施（优先于下方复核快照）
+
+用户已授权继续做完全可运行的Phase0 CLI Demo。root分支 `codex/phase0-demo` 基于 `dee146b`；计划和模块归属在 `docs/exec-plans/sprint-demo.md`。价格配置是待实现功能，非需要用户提供资料的阻碍；当前进程凭据存在，开发素材已授权，实际请求将受run预算限制。root负责全轴窗口/恢复和命令整合，三个独立worktree负责pricing、retrieval、benchmark。正式UI不提前开始，人工gate仍未验证。
+
 ## 最新复核（优先于下方历史结果）
 
 用户要求检查 Grok handoff；Codex 已核对代码/实测报告并复验，详见 `docs/exec-plans/review-F003-grok-2026-10-04.md`。最新 verify：332 passed/0 skip（20.06s）、Ruff/mypy/CLI通过，两次wheel SHA256 `91f5aa449372679014232e5c0a4319bae000b97e19af31eb742f6c984d4433b8`。补齐默认 HTTPX依赖；恢复24个漂移pyc（固定归档、收据不变）；verify采用每轮独立项目内pytest目录，旧目录不删除/接管。

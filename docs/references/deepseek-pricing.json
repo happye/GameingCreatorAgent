@@ -1,0 +1,33 @@
+{
+  "version": "deepseek-flash-cny-2026-10-04",
+  "sourceUrl": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+  "capturedDate": "2026-10-04",
+  "effectiveDate": null,
+  "effectiveDateNote": "The public page does not state a tariff effective date; capturedDate records observation only.",
+  "requestedModel": "deepseek-flash",
+  "modelVersion": "DeepSeek-V4.1-Flash",
+  "modelAliases": [
+    "deepseek-flash",
+    "deepseek-v4-flash",
+    "deepseek-v4-flash-vision-exp",
+    "DeepSeek-V4.1-Flash"
+  ],
+  "currency": "CNY",
+  "unitTokens": 1000000,
+  "contextLimitTokens": 1000000,
+  "rates": {
+    "peak": {"cachedInput": "0.04", "uncachedInput": "2", "output": "8"},
+    "offpeak": {"cachedInput": "0.02", "uncachedInput": "1", "output": "4"}
+  },
+  "periodTimezone": "UTC+08:00",
+  "weekdayPeakHours": ["09:00-12:00", "14:00-18:00"],
+  "weekendsOffpeak": true,
+  "chinaStatutoryHolidaysOffpeak": true,
+  "holidayCalendarAvailable": false,
+  "holidayPolicy": "During weekday peak hours, use peak conservatively because the local implementation has no verified holiday calendar.",
+  "reservationPolicy": "Use peak uncached-input and peak output tariffs with explicit ceilings. The default input ceiling is the full published context limit, not an inferred image-token estimate.",
+  "costStatus": "estimated",
+  "invoiceVerified": false,
+  "missingCachedUsagePolicy": "Preserve unknown cost and the entire reservation.",
+  "unknownActualModelPolicy": "Preserve unknown cost and the entire reservation."
+}

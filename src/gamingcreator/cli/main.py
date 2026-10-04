@@ -18,6 +18,7 @@ from gamingcreator.application.analysis import (
 from gamingcreator.application.asr import LocalAsrSettings, ModelFile
 from gamingcreator.application.budget import BudgetLedger, InvocationRecorder
 from gamingcreator.application.inputs import AnalyzeInput, PreparedAnalyze, prepare_analyze
+from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.storage import RunStatus
 from gamingcreator.domain.errors import AppError, ExitCode, invalid_config
@@ -44,6 +45,11 @@ def _parser() -> CliParser:
     analyze.add_argument("--config", type=Path)
     analyze.add_argument("--max-cost-cny")
     analyze.add_argument("--resume")
+    analyze.add_argument(
+        "--retry-uncertain",
+        action="store_true",
+        help="显式允许重试费用未确认的未完成窗口，预留费用继续计入原预算",
+    )
     search = commands.add_parser("search", help="查询时间线（检索链路待实现）")
     search.add_argument("query")
     search.add_argument("--project", type=Path, required=True)
@@ -126,9 +132,18 @@ def _pinned_asr_settings(repository: Path) -> LocalAsrSettings:
         ) from None
 
 
-def vision_for_run(recorder: InvocationRecorder, budget: BudgetLedger) -> DeepSeekVisionProvider:
-    # No price snapshot is configured. The ledger refuses the reservation before HTTP.
-    return DeepSeekVisionProvider(HttpxVisionTransport(), budget, None, recorder)
+def vision_for_run(
+    recorder: InvocationRecorder, budget: BudgetLedger, price_version: str | None = None
+) -> DeepSeekVisionProvider:
+    if price_version is not None and price_version != DEEPSEEK_FLASH_20261004.version:
+        raise invalid_config()
+    return DeepSeekVisionProvider(
+        HttpxVisionTransport(),
+        budget,
+        None,
+        recorder,
+        price_snapshot=DEEPSEEK_FLASH_20261004 if price_version else None,
+    )
 
 
 async def execute_analyze(prepared: PreparedAnalyze, repository: Path) -> AnalyzeOutcome:
@@ -146,7 +161,7 @@ async def execute_analyze(prepared: PreparedAnalyze, repository: Path) -> Analyz
                     error.code, error.message, error.exit_code, prepared.resume
                 ) from error
             ports = None
-            if stored.status in (RunStatus.PENDING, RunStatus.RUNNING):
+            if stored.status != RunStatus.COMPLETED:
                 if stored.asset.source_path.resolve() != prepared.video.resolve():
                     raise AppError(
                         "input.resume", "续跑视频与原运行不一致。", ExitCode.INPUT, prepared.resume
@@ -159,11 +174,15 @@ async def execute_analyze(prepared: PreparedAnalyze, repository: Path) -> Analyz
                     stored_config.max_requests,
                     stored_config.max_input_frames,
                 )
+                if stored_config.schema_version == 2:
+                    ledger.restore(await store.load_invocations(prepared.resume))
+                asr_provider = LocalAsrProvider(repository, _pinned_asr_settings(repository))
                 ports = AnalysisPorts(
                     FfmpegMediaProcessor(repository),
-                    LocalAsrProvider(repository, _pinned_asr_settings(repository)),
-                    vision_for_run(store, ledger),
+                    asr_provider,
+                    vision_for_run(store, ledger, stored_config.price_version),
                     store,
+                    asr_provider.describe_request,
                 )
             return await resume_analysis(prepared, store, project, ports)
         finally:
@@ -178,11 +197,13 @@ async def execute_analyze(prepared: PreparedAnalyze, repository: Path) -> Analyz
     store = await SqliteTimelineStore.open(project)
     try:
         ledger = BudgetLedger(budget, config.max_requests, config.max_input_frames)
+        asr_provider = LocalAsrProvider(repository, asr_settings)
         ports = AnalysisPorts(
             FfmpegMediaProcessor(repository),
-            LocalAsrProvider(repository, asr_settings),
-            vision_for_run(store, ledger),
+            asr_provider,
+            vision_for_run(store, ledger, config.price_version),
             store,
+            asr_provider.describe_request,
         )
         return await run_new_analysis(prepared, ports, asset, project, run_id=uuid4().hex)
     finally:
@@ -192,7 +213,14 @@ async def execute_analyze(prepared: PreparedAnalyze, repository: Path) -> Analyz
 def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | None:
     if args.command == "analyze":
         prepared = prepare_analyze(
-            AnalyzeInput(args.video, args.project, args.config, args.max_cost_cny, args.resume),
+            AnalyzeInput(
+                args.video,
+                args.project,
+                args.config,
+                args.max_cost_cny,
+                args.resume,
+                args.retry_uncertain,
+            ),
             LocalInputReader(),
         )
         return asyncio.run(execute_analyze(prepared, Path.cwd()))

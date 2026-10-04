@@ -139,6 +139,7 @@ class VisionRequest:
     max_output_tokens: int
     language: str = "zh"
     game_terms: tuple[str, ...] = ()
+    stage_id: str = "vision"
 
 
 @dataclass(frozen=True, slots=True)

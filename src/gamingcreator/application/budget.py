@@ -1,12 +1,13 @@
 """Conservative per-attempt reservations and durable invocation callbacks."""
 
+import json
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Protocol
 from uuid import uuid4
 
 from gamingcreator.application.providers import InvocationMetadata
-from gamingcreator.application.storage import InvocationStatus
+from gamingcreator.application.storage import InvocationStatus, StoredInvocation
 from gamingcreator.domain.errors import AppError, ExitCode
 
 
@@ -98,6 +99,38 @@ class BudgetLedger:
         self.requests += 1
         self.frames += frames
         return reservation
+
+    def restore(self, invocations: tuple[StoredInvocation, ...]) -> None:
+        """Restore prior remote attempts, preserving unknown charges and all consumed limits."""
+        if self.requests or self._reservations or self._settled or self.known_cost_cny:
+            raise ValueError("Only a fresh run ledger may restore persisted attempts.")
+        for item in invocations:
+            if item.metadata.provider != "deepseek":
+                continue
+            try:
+                details = json.loads(item.metadata.execution_details or "{}")
+                frames = details["inputFrames"]
+                reservation = Decimal(details["reservationCny"])
+                if type(frames) is not int or frames < 0:
+                    raise ValueError
+                _amount(reservation, positive=True)
+            except (ValueError, TypeError, KeyError, ArithmeticError):
+                raise AppError(
+                    "budget.resume_missing",
+                    "旧调用缺少费用预留记录，不能安全续跑。",
+                    ExitCode.BUDGET,
+                ) from None
+            self.requests += 1
+            self.frames += frames
+            cost = item.metadata.usage.cost_cny
+            if cost is None:
+                self._reservations[item.invocation_id] = BudgetReservation(
+                    item.invocation_id, frames, reservation
+                )
+                self._settled.add(item.invocation_id)
+            else:
+                _amount(cost, positive=False)
+                self.known_cost_cny += cost
 
     def settle(self, reservation: BudgetReservation, cost_cny: Decimal | None) -> None:
         if (

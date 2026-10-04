@@ -48,14 +48,51 @@ class LocalInputReader:
             raw: object = json.loads(content.decode("utf-8-sig"))
         except (OSError, UnicodeError, ValueError):
             raise invalid_config() from None
-        config = _object(raw, {"schemaVersion", "vision", "limits"})
-        if type(config["schemaVersion"]) is not int or config["schemaVersion"] != 1:
+        if not isinstance(raw, dict) or type(raw.get("schemaVersion")) is not int:
             raise invalid_config()
-        vision = _object(config["vision"], {"provider", "model"})
+        schema_version = raw["schemaVersion"]
+        if schema_version not in (1, 2):
+            raise invalid_config()
+        fields = {"schemaVersion", "vision", "limits"}
+        if schema_version == 2:
+            fields |= {"sampling", "asr"}
+        config = _object(raw, fields)
+        vision_fields = {"provider", "model"}
+        if schema_version == 2:
+            vision_fields |= {"priceVersion", "maxOutputTokens"}
+        vision = _object(config["vision"], vision_fields)
         limits = _object(config["limits"], {"maxRequests", "maxInputFrames"})
+        extra: dict[str, object] = {}
+        if schema_version == 2:
+            sampling = _object(config["sampling"], {"intervalMs", "windowFrames", "windowOverlap"})
+            asr = _object(config["asr"], {"language"})
+            interval = _positive_int(sampling["intervalMs"])
+            window = _positive_int(sampling["windowFrames"])
+            overlap = sampling["windowOverlap"]
+            output = _positive_int(vision["maxOutputTokens"])
+            language = _text(asr["language"])
+            if (
+                type(overlap) is not int
+                or not 0 <= overlap < window
+                or window > 5
+                or not 100 <= interval <= 60000
+                or output > 4096
+                or language not in ("zh", "en", "auto")
+            ):
+                raise invalid_config()
+            extra = {
+                "schema_version": 2,
+                "price_version": _text(vision["priceVersion"]),
+                "sampling_interval_ms": interval,
+                "window_frames": window,
+                "window_overlap": overlap,
+                "max_output_tokens": output,
+                "asr_language": language,
+            }
         return AnalysisConfig(
             provider=_text(vision["provider"]),
             model=_text(vision["model"]),
             max_requests=_positive_int(limits["maxRequests"]),
             max_input_frames=_positive_int(limits["maxInputFrames"]),
+            **extra,  # type: ignore[arg-type]
         )

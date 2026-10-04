@@ -1,5 +1,12 @@
 {
-  "schemaVersion": 1,
-  "vision": {"provider": "deepseek", "model": "deepseek-flash"},
-  "limits": {"maxRequests": 100, "maxInputFrames": 1000}
+  "schemaVersion": 2,
+  "vision": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "priceVersion": "deepseek-flash-cny-2026-10-04",
+    "maxOutputTokens": 2048
+  },
+  "limits": {"maxRequests": 500, "maxInputFrames": 5000},
+  "sampling": {"intervalMs": 1000, "windowFrames": 5, "windowOverlap": 1},
+  "asr": {"language": "zh"}
 }

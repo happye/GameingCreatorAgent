@@ -1,9 +1,11 @@
 import asyncio
 import hashlib
 import json
+import os
 import struct
 from collections.abc import AsyncIterator
 from dataclasses import replace
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -11,6 +13,7 @@ import httpx
 import pytest
 
 from gamingcreator.application.budget import BudgetLedger
+from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
 from gamingcreator.application.providers import (
     CancellationContext,
     CostStatus,
@@ -25,7 +28,7 @@ from gamingcreator.application.providers import (
 from gamingcreator.application.storage import InvocationStatus, StoredInvocation
 from gamingcreator.domain.models import EvidenceReference, SemanticEvent
 from gamingcreator.domain.time import SourceInstant
-from gamingcreator.infrastructure import http_transport
+from gamingcreator.infrastructure import deepseek_vision
 from gamingcreator.infrastructure.deepseek_vision import (
     MAX_IMAGES,
     PROMPT_VERSION,
@@ -44,6 +47,7 @@ from gamingcreator.infrastructure.http_transport import (
 class Recorder:
     def __init__(self) -> None:
         self.records: list[StoredInvocation] = []
+        self.begun_metadata: list[InvocationMetadata] = []
         self.finished = asyncio.Event()
 
     async def begin_invocation(
@@ -54,6 +58,7 @@ class Recorder:
         logical_request_id: str,
         metadata: InvocationMetadata,
     ) -> None:
+        self.begun_metadata.append(metadata)
         self.records.append(
             StoredInvocation(
                 invocation_id,
@@ -232,6 +237,201 @@ def test_selected_images_only_and_metadata_without_invented_costs(tmp_path: Path
     assert provider.capabilities.max_images == 5
     assert provider.capabilities.max_image_width == 512
     assert not provider.capabilities.native_video
+
+
+def test_snapshot_prices_usage_and_persists_reservation_before_send(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        deepseek_vision, "_request_time_utc", lambda: datetime(2026, 10, 4, 3, tzinfo=UTC)
+    )
+    recorder = Recorder()
+    transport = FakeTransport(
+        [
+            response_fixture(
+                usage={
+                    "prompt_tokens": 1000,
+                    "completion_tokens": 200,
+                    "prompt_cache_hit_tokens": 300,
+                }
+            )
+        ],
+        recorder,
+    )
+    ledger = BudgetLedger(Decimal(10), 10, 50)
+    provider = DeepSeekVisionProvider(
+        transport, ledger, None, recorder, price_snapshot=DEEPSEEK_FLASH_20261004
+    )
+    result = asyncio.run(
+        provider.analyze(request_fixture(tmp_path, frames=2), CancellationContext("run-1", 2))
+    )
+    assert result.status == ProviderStatus.COMPLETED
+    assert result.metadata.price_version == DEEPSEEK_FLASH_20261004.version
+    assert result.metadata.usage.cost_status == CostStatus.ESTIMATED
+    assert result.metadata.usage.cost_cny == ledger.known_cost_cny == Decimal("0.001506")
+    assert ledger.reserved_cny == 0 and ledger.unresolved_attempts == 0
+    begun = recorder.begun_metadata[0]
+    assert begun.price_version == result.metadata.price_version
+    assert begun.execution_details
+    details = json.loads(begun.execution_details)
+    assert details == {
+        "reservationCny": "2.008192",
+        "inputFrames": 2,
+        "evidenceIds": ["run-1:media-1:image:000000", "run-1:media-1:image:000001"],
+        "inputTokenCeiling": 1_000_000,
+        "period": "offpeak",
+        "periodBasis": "china_weekend",
+        "requestedAtUtc": "2026-10-04T03:00:00+00:00",
+    }
+    assert begun.usage.cost_cny is None and begun.actual_model is None
+
+
+@pytest.mark.parametrize("unknown", ["cached", "actual_model"])
+def test_snapshot_keeps_reservation_when_billing_input_is_unknown(
+    tmp_path: Path, unknown: str
+) -> None:
+    usage = {"prompt_tokens": 1000, "completion_tokens": 200}
+    if unknown != "cached":
+        usage["prompt_cache_hit_tokens"] = 300
+    response = response_fixture(usage=usage)
+    if unknown == "actual_model":
+        decoded = json.loads(response.body)
+        decoded["model"] = "future-new-model"
+        response = HttpResponse(200, json.dumps(decoded).encode())
+    recorder = Recorder()
+    transport = FakeTransport([response], recorder)
+    ledger = BudgetLedger(Decimal(10), 10, 50)
+    provider = DeepSeekVisionProvider(
+        transport, ledger, None, recorder, price_snapshot=DEEPSEEK_FLASH_20261004
+    )
+    result = asyncio.run(
+        provider.analyze(request_fixture(tmp_path), CancellationContext("run-1", 2))
+    )
+    assert result.status == ProviderStatus.COMPLETED
+    assert result.metadata.usage.cost_cny is None
+    assert result.metadata.usage.cost_status == CostStatus.UNVERIFIED
+    assert ledger.known_cost_cny == 0 and ledger.reserved_cny == Decimal("2.008192")
+
+
+def test_priced_retry_keeps_failed_unknown_reservation_and_independent_periods(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    times = iter((datetime(2026, 10, 4, 3, tzinfo=UTC), datetime(2026, 10, 5, 1, tzinfo=UTC)))
+    monkeypatch.setattr(deepseek_vision, "_request_time_utc", lambda: next(times))
+    recorder = Recorder()
+    transport = FakeTransport(
+        [
+            HttpResponse(503, b"private"),
+            response_fixture(
+                usage={
+                    "prompt_tokens": 1000,
+                    "completion_tokens": 200,
+                    "prompt_cache_hit_tokens": 300,
+                }
+            ),
+        ],
+        recorder,
+    )
+    ledger = BudgetLedger(Decimal(10), 10, 50)
+    provider = DeepSeekVisionProvider(
+        transport,
+        ledger,
+        None,
+        recorder,
+        price_snapshot=DEEPSEEK_FLASH_20261004,
+        retry_delays=(0, 0),
+    )
+    result = asyncio.run(
+        provider.analyze(request_fixture(tmp_path), CancellationContext("run-1", 2))
+    )
+    assert result.metadata.attempt == 2 and ledger.requests == 2
+    assert result.metadata.usage.cost_cny == Decimal("0.003012")
+    assert ledger.reserved_cny == Decimal("2.008192")
+    assert ledger.committed_cny == Decimal("2.011204")
+    assert recorder.records[0].metadata.usage.cost_cny is None
+    first, second = recorder.begun_metadata
+    assert first.execution_details and second.execution_details
+    assert json.loads(first.execution_details)["period"] == "offpeak"
+    assert json.loads(second.execution_details)["period"] == "peak"
+
+
+def test_snapshot_does_not_allow_undersized_manual_reservation_and_budget_stops_before_send(
+    tmp_path: Path,
+) -> None:
+    recorder = Recorder()
+    transport = FakeTransport([], recorder)
+    ledger = BudgetLedger(Decimal(1), 10, 50)
+    provider = DeepSeekVisionProvider(
+        transport, ledger, Decimal("0.01"), recorder, price_snapshot=DEEPSEEK_FLASH_20261004
+    )
+    result = asyncio.run(
+        provider.analyze(request_fixture(tmp_path), CancellationContext("run-1", 2))
+    )
+    assert result.error and result.error.code == "budget.exhausted"
+    assert not recorder.records and not transport.payloads
+    assert ledger.requests == 0
+
+
+def test_truncated_paid_response_settles_known_estimated_cost(tmp_path: Path) -> None:
+    recorder = Recorder()
+    transport = FakeTransport(
+        [
+            response_fixture(
+                finish_reason="length",
+                usage={
+                    "prompt_tokens": 1000,
+                    "completion_tokens": 200,
+                    "prompt_cache_hit_tokens": 300,
+                },
+            )
+        ],
+        recorder,
+    )
+    ledger = BudgetLedger(Decimal(10), 10, 50)
+    provider = DeepSeekVisionProvider(
+        transport, ledger, None, recorder, price_snapshot=DEEPSEEK_FLASH_20261004
+    )
+    result = asyncio.run(
+        provider.analyze(request_fixture(tmp_path), CancellationContext("run-1", 2))
+    )
+    assert result.error and result.error.code == "provider.response_limit"
+    assert result.metadata.usage.cost_status == CostStatus.ESTIMATED
+    assert result.metadata.usage.cost_cny == ledger.known_cost_cny
+    assert ledger.reserved_cny == 0 and len(recorder.records) == 1
+
+
+@pytest.mark.parametrize("ceiling", [0, -1, True, 1_000_001])
+def test_snapshot_rejects_invalid_input_token_ceiling(ceiling: int) -> None:
+    recorder = Recorder()
+    with pytest.raises(ValueError):
+        DeepSeekVisionProvider(
+            FakeTransport([], recorder),
+            BudgetLedger(Decimal(10), 10, 50),
+            None,
+            recorder,
+            price_snapshot=DEEPSEEK_FLASH_20261004,
+            input_token_ceiling=ceiling,
+        )
+
+
+@pytest.mark.parametrize("reservation", [Decimal(0), Decimal("NaN"), Decimal(-1)])
+def test_snapshot_rejects_invalid_manual_reservation_without_network(
+    tmp_path: Path, reservation: Decimal
+) -> None:
+    recorder = Recorder()
+    transport = FakeTransport([], recorder)
+    provider = DeepSeekVisionProvider(
+        transport,
+        BudgetLedger(Decimal(10), 10, 50),
+        reservation,
+        recorder,
+        price_snapshot=DEEPSEEK_FLASH_20261004,
+    )
+    result = asyncio.run(
+        provider.analyze(request_fixture(tmp_path), CancellationContext("run-1", 2))
+    )
+    assert result.error and result.error.code == "budget.estimate_invalid"
+    assert not transport.payloads and not recorder.records
 
 
 def test_empty_events_are_valid_and_ids_are_program_generated_stable(tmp_path: Path) -> None:
@@ -642,7 +842,7 @@ def test_httpx_uses_official_url_no_proxy_and_no_private_error_body(
 ) -> None:
     # Replace the environment object rather than reading any existing credential value.
     monkeypatch.setattr(
-        http_transport.os,
+        os,
         "environ",
         {
             "DEEPSEEK_API_KEY": "offline-test",
@@ -668,7 +868,7 @@ def test_httpx_uses_official_url_no_proxy_and_no_private_error_body(
 def test_httpx_bounded_body_and_response_cleanup(
     monkeypatch: pytest.MonkeyPatch, mode: str
 ) -> None:
-    monkeypatch.setattr(http_transport.os, "environ", {"DEEPSEEK_API_KEY": "offline-test"})
+    monkeypatch.setattr(os, "environ", {"DEEPSEEK_API_KEY": "offline-test"})
     stream = ResponseStream([b"x" * (MAX_RESPONSE_BYTES // 2 + 1)] * 2)
     headers = {"content-length": str(MAX_RESPONSE_BYTES + 1)} if mode == "header" else {}
     if mode == "compressed":
@@ -683,7 +883,7 @@ def test_httpx_bounded_body_and_response_cleanup(
 
 
 def test_httpx_network_error_never_contains_raw_exception(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(http_transport.os, "environ", {"DEEPSEEK_API_KEY": "offline-test"})
+    monkeypatch.setattr(os, "environ", {"DEEPSEEK_API_KEY": "offline-test"})
 
     def handler(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("private-error-body", request=request)
@@ -695,7 +895,7 @@ def test_httpx_network_error_never_contains_raw_exception(monkeypatch: pytest.Mo
 
 
 def test_httpx_missing_credential_fails_before_sending(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(http_transport.os, "environ", {})
+    monkeypatch.setattr(os, "environ", {})
 
     def handler(request: httpx.Request) -> httpx.Response:
         raise AssertionError("Credential failure cannot send requests.")
@@ -705,7 +905,7 @@ def test_httpx_missing_credential_fails_before_sending(monkeypatch: pytest.Monke
 
 
 def test_httpx_cancel_closes_active_response(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(http_transport.os, "environ", {"DEEPSEEK_API_KEY": "offline-test"})
+    monkeypatch.setattr(os, "environ", {"DEEPSEEK_API_KEY": "offline-test"})
 
     async def scenario() -> None:
         stream = ResponseStream([], block=True)

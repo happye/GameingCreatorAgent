@@ -12,6 +12,13 @@ class AnalysisConfig:
     model: str
     max_requests: int
     max_input_frames: int
+    schema_version: int = 1
+    price_version: str | None = None
+    sampling_interval_ms: int = 1000
+    window_frames: int = 5
+    window_overlap: int = 1
+    max_output_tokens: int = 2048
+    asr_language: str = "zh"
 
 
 class InputReader(Protocol):
@@ -27,6 +34,7 @@ class AnalyzeInput:
     config_path: Path | None
     max_cost_cny: str | None
     resume: str | None
+    retry_uncertain: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,6 +44,7 @@ class PreparedAnalyze:
     config: AnalysisConfig | None
     max_cost_cny: Decimal | None
     resume: str | None
+    retry_uncertain: bool = False
 
 
 def prepare_analyze(command: AnalyzeInput, reader: InputReader) -> PreparedAnalyze:
@@ -45,7 +54,11 @@ def prepare_analyze(command: AnalyzeInput, reader: InputReader) -> PreparedAnaly
             raise AppError(
                 "input.resume", "续跑须提供运行 ID，且不得覆盖配置或预算。", ExitCode.INPUT
             )
-        return PreparedAnalyze(video, command.project, None, None, command.resume)
+        return PreparedAnalyze(
+            video, command.project, None, None, command.resume, command.retry_uncertain
+        )
+    if command.retry_uncertain:
+        raise AppError("input.resume", "重试未确认调用只适用于显式续跑。", ExitCode.INPUT)
     if command.config_path is None or command.max_cost_cny is None:
         raise AppError("input.analyze", "新分析须提供配置文件与正数费用上限。", ExitCode.INPUT)
     try:

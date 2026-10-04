@@ -99,6 +99,10 @@ class LocalAsrProvider:
             "hardwareCostMeasured": False,
         }
 
+    def describe_request(self, request: AsrRequest) -> InvocationMetadata:
+        """Describe an invocation before the worker starts; no inference or input reads."""
+        return self._metadata(request, time.monotonic())
+
     def _metadata(
         self,
         request: AsrRequest,

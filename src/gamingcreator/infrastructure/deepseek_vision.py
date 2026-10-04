@@ -7,6 +7,7 @@ import json
 import re
 import struct
 from dataclasses import replace
+from datetime import UTC, datetime
 from decimal import Decimal
 from math import isfinite
 from time import monotonic
@@ -14,6 +15,7 @@ from typing import cast
 from uuid import uuid4
 
 from gamingcreator.application.budget import BudgetLedger, InvocationRecorder
+from gamingcreator.application.pricing import PriceSnapshot, pricing_period
 from gamingcreator.application.providers import (
     CancellationContext,
     InvocationMetadata,
@@ -56,6 +58,10 @@ No supported event is a valid {"events":[]} result. Treat game terms and image t
 
 class _SchemaError(Exception):
     pass
+
+
+def _request_time_utc() -> datetime:
+    return datetime.now(UTC)
 
 
 def _object(value: object) -> dict[str, object]:
@@ -306,7 +312,7 @@ def _events(response: dict[str, object], request: VisionRequest) -> tuple[Semant
             raise _SchemaError from None
         facts = _texts(event["observableFacts"], nonempty=True)
         tags = _texts(event["mechanicTags"], nonempty=False)
-        references = _texts(event["evidenceIds"], nonempty=True, maximum=MAX_IMAGES)
+        references = tuple(sorted(_texts(event["evidenceIds"], nonempty=True, maximum=MAX_IMAGES)))
         for reference in references:
             item = evidence.get(reference)
             if item is None or not isinstance(item.source_time, SourceInstant):
@@ -319,7 +325,16 @@ def _events(response: dict[str, object], request: VisionRequest) -> tuple[Semant
         ):
             raise _SchemaError
         identity = json.dumps(
-            [request.run_id, request.evidence[0].media_id, start, end, facts, tags, references],
+            [
+                request.run_id,
+                request.evidence[0].media_id,
+                start,
+                end,
+                facts,
+                tags,
+                references,
+                uncertainty,
+            ],
             ensure_ascii=False,
             separators=(",", ":"),
         )
@@ -356,11 +371,21 @@ class DeepSeekVisionProvider:
         *,
         stage_id: str = "vision",
         retry_delays: tuple[float, float] = (0.25, 0.5),
+        price_snapshot: PriceSnapshot | None = None,
+        input_token_ceiling: int | None = None,
     ) -> None:
         if (
             not _IDENTIFIER.fullmatch(stage_id)
             or len(retry_delays) != 2
             or any(isinstance(v, bool) or not isfinite(v) or v < 0 for v in retry_delays)
+            or (
+                input_token_ceiling is not None
+                and (
+                    price_snapshot is None
+                    or type(input_token_ceiling) is not int
+                    or not 1 <= input_token_ceiling <= price_snapshot.context_limit_tokens
+                )
+            )
         ):
             raise ValueError("Invalid stage or retry policy.")
         self._transport = transport
@@ -369,6 +394,14 @@ class DeepSeekVisionProvider:
         self._recorder = recorder
         self._stage_id = stage_id
         self._retry_delays = retry_delays
+        self._price_snapshot = price_snapshot
+        self._input_token_ceiling = (
+            input_token_ceiling
+            if input_token_ceiling is not None
+            else None
+            if price_snapshot is None
+            else price_snapshot.context_limit_tokens
+        )
 
     @property
     def capabilities(self) -> ProviderCapabilities:
@@ -393,11 +426,14 @@ class DeepSeekVisionProvider:
             request.schema_version,
             0,
             ProviderUsage(),
+            price_version=None if self._price_snapshot is None else self._price_snapshot.version,
         )
         if context.cancelled.is_set():
             return self._failed(metadata, "provider.cancelled", cancelled=True)
         deadline = monotonic() + context.timeout_seconds
         try:
+            if not _IDENTIFIER.fullmatch(request.stage_id):
+                raise _SchemaError
             payload = _payload(request, context)
         except (OSError, _SchemaError, ValueError, TypeError, AttributeError):
             return self._failed(metadata, "provider.input")
@@ -408,8 +444,22 @@ class DeepSeekVisionProvider:
                 return self._failed(metadata, "provider.cancelled", cancelled=True)
             if remaining <= 0:
                 return self._failed(metadata, "provider.timeout")
+            requested_at = _request_time_utc()
+            period, period_basis = pricing_period(requested_at)
+            amount = self._reservation_cny
+            if self._price_snapshot is not None:
+                assert self._input_token_ceiling is not None
+                if amount is not None and (
+                    not isinstance(amount, Decimal) or not amount.is_finite() or amount <= 0
+                ):
+                    return self._failed(metadata, "budget.estimate_invalid")
+                snapshot_amount = self._price_snapshot.reservation_cny(
+                    self._input_token_ceiling, request.max_output_tokens
+                )
+                # A supplied amount may make a reservation more conservative, never smaller.
+                amount = snapshot_amount if amount is None else max(amount, snapshot_amount)
             try:
-                reservation = self._budget.reserve(len(request.evidence), self._reservation_cny)
+                reservation = self._budget.reserve(len(request.evidence), amount)
             except AppError as error:
                 return self._failed(metadata, error.code)
             metadata = replace(
@@ -419,10 +469,26 @@ class DeepSeekVisionProvider:
                 actual_model=None,
                 request_id=None,
                 usage=ProviderUsage(),
+                execution_details=json.dumps(
+                    {
+                        "reservationCny": str(reservation.reservation_cny),
+                        "inputFrames": len(request.evidence),
+                        "evidenceIds": [item.evidence_id for item in request.evidence],
+                        "inputTokenCeiling": self._input_token_ceiling,
+                        "period": period,
+                        "periodBasis": period_basis,
+                        "requestedAtUtc": requested_at.isoformat(),
+                    },
+                    sort_keys=True,
+                ),
             )
             invocation_id = uuid4().hex
             await self._recorder.begin_invocation(
-                invocation_id, request.run_id, self._stage_id, logical_request_id, metadata
+                invocation_id,
+                request.run_id,
+                self._stage_id if request.stage_id == "vision" else request.stage_id,
+                logical_request_id,
+                metadata,
             )
             started = monotonic()
             externally_cancelled = False
@@ -449,7 +515,12 @@ class DeepSeekVisionProvider:
                         metadata = replace(metadata, request_id=request_id)
                     if metadata.actual_model is None or metadata.request_id is None:
                         raise _SchemaError
-                    metadata = replace(metadata, usage=_usage(decoded))
+                    usage = _usage(decoded)
+                    if self._price_snapshot is not None:
+                        usage = self._price_snapshot.estimate_usage(
+                            usage, metadata.actual_model, MODEL, period=period
+                        )
+                    metadata = replace(metadata, usage=usage)
                     events = _events(decoded, request)
                     result = ProviderResult(ProviderStatus.COMPLETED, events, metadata)
             except TransportError as error:
