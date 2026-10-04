@@ -8,7 +8,7 @@
 
 F000–F005及F007技术合同已验收；**F006独立人工U10仍false**。用户明确授权本地检查交互，依据ADR-002；正式桌面/商业阶段仍有原质量门槛。
 
-root当前分支 `main`，已验证交付代码 `2bb9848` 已同步origin/main及origin/codex/inspection-workspace。它包含Grok基线32d5a3b、后端82e4020、前端9fcbdec/614c10d、真实浏览器验证及文档24ded10、最终Windows端口修复。末尾文档收尾提交以git log为准；后续无需切历史F003分支。所有本轮worker已冻结，归属见assignments。
+最近已交付主线a019982（已推送）。用户追加视觉/布局/篮子排序反馈，root现codex/workspace-usability实施F008；workspace_layout独立worktree只改HTML/CSS，root只改JS/验证与公共记录。计划见sprint-workspace-usability，F008仍false。本轮尚未完整验证；不要覆盖已有F007媒体/费用/端口合同，后续无需切历史F003分支。
 
 ## 直接使用
 

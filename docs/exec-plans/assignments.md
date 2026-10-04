@@ -4,6 +4,8 @@
 
 ## 当前交付
 
+当前新增F008：root在codex/workspace-usability拥有app.js、验证脚本和共享记录；workspace_layout在.worktrees/workspace-layout/codex/workspace-layout拥有index.html/style.css及自己的sprint。acceptance_deployment只读核对。其余历史worker仍冻结；F008验收前不标true，见sprint-workspace-usability。
+
 | Feature / owner | Branch/worktree | Owned files | State / evidence |
 | --- | --- | --- | --- |
 | F007 / Codex root | main，root（origin/codex/inspection-workspace备份） | ui/server.py、service.py、media.py、storage port、HTTP测试、浏览器脚本及共享文档 | accepted / 2bb9848已同步main；sprint-inspection-workspace.md |

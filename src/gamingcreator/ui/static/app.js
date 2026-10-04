@@ -138,7 +138,7 @@
             if (!state.selections.length) localStorage.removeItem(storageKey());
             else localStorage.setItem(storageKey(), JSON.stringify({
                 schemaVersion: 1, project: state.project, runId: state.run,
-                mediaId: state.basketMediaId, entries: state.selections,
+                mediaId: state.basketMediaId, entries: orderedSelections(),
             }));
         } catch {
             storageWarning();
@@ -147,6 +147,11 @@
 
     function selectionKey(row) {
         return JSON.stringify([row.eventId ?? row.candidateId, row.startUs, row.endUs]);
+    }
+
+    function orderedSelections() {
+        return [...state.selections].sort((a, b) => a.clip.startUs - b.clip.startUs
+            || a.clip.endUs - b.clip.endUs || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
     }
 
     function clipMatches(saved, current) {
@@ -212,10 +217,11 @@
     }
 
     function renderSelections() {
+        const scrollTop = ui["selection-list"].scrollTop;
         ui["selection-count"].textContent = state.selections.length;
         ui["selection-list"].replaceChildren();
         let stale = 0;
-        for (const entry of state.selections) {
+        for (const entry of orderedSelections()) {
             const validated = validateSelection(entry);
             if (!validated) stale += 1;
             const item = element("li", validated ? "" : "stale");
@@ -239,6 +245,7 @@
             item.append(copy, remove);
             ui["selection-list"].append(item);
         }
+        ui["selection-list"].scrollTop = scrollTop;
         ui["clear-selection"].disabled = !state.selections.length;
         ui["export-json"].disabled = !state.selections.length || stale > 0 || state.busy;
         ui["export-csv"].disabled = ui["export-json"].disabled;
@@ -248,7 +255,7 @@
 
     function exportDocument() {
         if (!state.view || !state.selections.length || state.busy) throw new Error("请先读取素材并选择片段。");
-        const selectedClips = state.selections.map((entry) => {
+        const selectedClips = orderedSelections().map((entry) => {
             const validated = validateSelection(entry);
             if (!validated) throw new Error("片段篮中有尚未匹配当前结果的区间，请核对后再下载。");
             return {
@@ -572,6 +579,7 @@
     function renderCandidates() {
         const view = state.view;
         if (!view) return;
+        const scrollTop = ui["candidate-list"].scrollTop;
         ui["candidate-count"].textContent = view.candidates.length;
         ui["candidate-list"].replaceChildren();
         ui["search-context"].textContent = view.query ? `“${view.query}” · ${view.mode} · 分数是排序信号` : "输入你需要的动作、玩法或画面。";
@@ -595,6 +603,7 @@
             card.append(top, copy, meta);
             ui["candidate-list"].append(card);
         }
+        ui["candidate-list"].scrollTop = scrollTop;
     }
 
     function filteredTimeline() {
@@ -605,6 +614,7 @@
     }
 
     function renderTimeline() {
+        const scrollTop = ui["timeline-list"].scrollTop;
         const rows = filteredTimeline();
         ui["timeline-count"].textContent = state.view?.timeline.length || 0;
         ui["filter-summary"].textContent = `${rows.length} / ${state.view?.timeline.length || 0} 个事件 · 按源时间排列`;
@@ -626,6 +636,7 @@
             item.append(preview, copy, selectionButton("event", row));
             ui["timeline-list"].append(item);
         }
+        ui["timeline-list"].scrollTop = scrollTop;
         drawTimeline();
     }
 
@@ -642,17 +653,18 @@
         context.clearRect(0, 0, width, 40);
         const duration = state.view?.media?.durationUs;
         if (!duration) return;
-        context.strokeStyle = "#33444b";
+        const colors = getComputedStyle(canvas);
+        context.strokeStyle = colors.getPropertyValue("--line").trim() || "#33444b";
         context.lineWidth = 1;
         for (let index = 0; index <= 10; index += 1) {
             const x = width * index / 10;
             context.beginPath(); context.moveTo(x, 30); context.lineTo(x, 38); context.stroke();
         }
-        context.fillStyle = "#789f67";
+        context.fillStyle = colors.getPropertyValue("--accent").trim() || "#789f67";
         for (const row of filteredTimeline()) {
             if (validInterval(row)) context.fillRect(width * row.startUs / duration, 9, Math.max(2, width * (row.endUs - row.startUs) / duration), 16);
         }
-        context.fillStyle = "#e8efdc";
+        context.fillStyle = colors.getPropertyValue("--text").trim() || "#e8efdc";
         const position = Math.max(0, Math.min(duration, Math.round(ui["source-video"].currentTime * 1000000)));
         context.fillRect(width * position / duration, 3, 2, 32);
     }
@@ -823,8 +835,12 @@
     ui.query.addEventListener("keydown", (event) => {
         if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) { event.preventDefault(); ui["search-form"].requestSubmit(); }
     });
-    ui["timeline-filter"].addEventListener("input", renderTimeline);
-    ui["tag-filter"].addEventListener("change", renderTimeline);
+    function filterTimeline() {
+        ui["timeline-list"].scrollTop = 0;
+        renderTimeline();
+    }
+    ui["timeline-filter"].addEventListener("input", filterTimeline);
+    ui["tag-filter"].addEventListener("change", filterTimeline);
     ui["add-active"].addEventListener("click", () => { if (state.active) toggleSelection(state.active.kind, state.active.row); });
     ui["play-selection"].addEventListener("click", () => { if (state.active) void previewClip(state.active.kind, state.active.row); });
     ui["clear-selection"].addEventListener("click", () => {

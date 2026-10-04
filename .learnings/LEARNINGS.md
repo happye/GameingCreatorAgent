@@ -1,5 +1,9 @@
 # Learnings
 
+## 2026-10-04: 工作台必须验证完整交互路径
+
+用户反馈：上轮功能测试通过，但时间轴在预览和片段篮下方，选片需反复滚页面，篮子保留点击顺序导致乱序。仅验证按钮/播放/导出不足以证明工作台可用；桌面验收应同时检查三者在常见视口内可见、面板独立滚动和选择后的滚动保持，篮子及导出应明确排序合同。F006检索质量与UI可用性分别记录，不能相互替代。相关文件：ui/static、scripts/validate-inspection-ui.py、sprint-workspace-usability.md。
+
 Corrections, insights, and knowledge gaps captured during development.
 
 **Categories**: correction | insight | knowledge_gap | best_practice
