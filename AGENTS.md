@@ -20,6 +20,7 @@ Use Windows PowerShell. Keep runtimes in `.tools/`, packages in `.venv/`, and ca
 - `./scripts/setup-demo.ps1`: prepare isolated tools, dependencies, ASR and embedding models; `-Offline` requires cached assets.
 - `./scripts/run-demo.ps1 -Run <id>`: search an existing demo; `-Video <path>` starts paid vision analysis.
 - `./scripts/run-ui.ps1`: open local preview, evidence, search and interval exports.
+- `./Start-Workspace.cmd`: start the workspace and open a browser; reuse matching service. Logs stay in `.cache/workspace`; startup makes no paid requests.
 - `./scripts/init.ps1`: check scaffold, exact toolchain and media prerequisites; `-CheckOnly` checks scaffold.
 - `./scripts/verify.ps1`: format, lint, types, pytest, and reproducible offline wheel builds.
 - `./scripts/test-media.ps1 -AllLocal`: validate footage in ignored `GameVideos/`.

@@ -76,6 +76,7 @@ def validate(project: Path, run_id: str, output: Path, query: str) -> dict[str, 
                     page,
                     "!document.querySelector('#project-select').disabled && document.querySelector('#run-select').options.length > 0",
                 )
+                default_run = page.locator("#run-select").input_value()
                 page.locator("#project-select").select_option(project_reference)
                 wait_for(
                     page,
@@ -90,6 +91,7 @@ def validate(project: Path, run_id: str, output: Path, query: str) -> dict[str, 
                     page, "document.querySelector('#source-video').readyState >= 2", timeout=30000
                 )
                 event_count = page.locator(".timeline-row").count()
+                analysis_label = page.locator("#run-state").inner_text()
                 page.locator("#query").fill(query)
                 page.locator("#top").fill("3")
                 page.locator("#search-button").click()
@@ -113,7 +115,7 @@ def validate(project: Path, run_id: str, output: Path, query: str) -> dict[str, 
                     page,
                     "Array.from(document.querySelectorAll('#evidence-list img')).some(image=>image.complete && image.naturalWidth>0)",
                 )
-                assert candidate_count == 3, "smoke expects three attack candidates"
+                assert candidate_count == 3, "this basket smoke requires three query candidates"
                 # Deliberately select out of source order, independently of rank.
                 for index in (1, 2, 0):
                     page.locator(".candidate-card").nth(index).locator(".select-clip").click()
@@ -203,8 +205,8 @@ def validate(project: Path, run_id: str, output: Path, query: str) -> dict[str, 
                 assert page.locator(".candidate-card").count() == 0
                 page.reload(wait_until="domcontentloaded")
                 wait_for(page, "!document.querySelector('#search-button').disabled")
-                # The workspace defaults to the first completed run. Select the same
-                # identity before asserting that its isolated basket was restored.
+                # Select the same identity before asserting that its isolated basket
+                # was restored; a completed temporal run is preferred on fresh load.
                 page.locator("#project-select").select_option(project_reference)
                 wait_for(page, "!document.querySelector('#run-select').disabled")
                 page.locator("#run-select").select_option(run_id)
@@ -220,6 +222,9 @@ def validate(project: Path, run_id: str, output: Path, query: str) -> dict[str, 
                     "passed": True,
                     "runId": run_id,
                     "project": project_reference,
+                    "query": query,
+                    "defaultRunId": default_run,
+                    "analysisLabel": analysis_label,
                     "eventCount": event_count,
                     "candidateCount": candidate_count,
                     "preview": played,

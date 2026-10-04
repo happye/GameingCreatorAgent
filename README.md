@@ -13,10 +13,10 @@ On the prepared workstation, open the existing completed demo without API calls 
 ```powershell
 ./scripts/setup-demo.ps1 -Offline
 ./scripts/run-demo.ps1 -Run f76f5d6495314c04ae04083614d4afd6 -Query "寻找角色打斗和攻击的片段"
-./scripts/run-ui.ps1
+./Start-Workspace.cmd
 ```
 
-See the [user manual](./docs/references/user-manual.md) for setup, analysis, search, resume and the local inspection page (`./scripts/run-ui.ps1`), and the [demo quickstart](./docs/references/demo-quickstart.md) for the shortest replay. Local videos, models and the demo database are ignored and do not arrive with a Git clone.
+Double-click [Start-Workspace.cmd](./Start-Workspace.cmd) to start the local workspace and open the browser. Repeated launches reuse a matching repository service; conflicts report an error. Logs and PID state stay in `.cache/workspace`. No analysis or paid request occurs at startup. For another port use `./scripts/start-workspace.ps1 -Port 8766`; `run-ui.ps1` remains the foreground option. See the [user manual](./docs/references/user-manual.md) and [demo quickstart](./docs/references/demo-quickstart.md). Local videos, models and the demo database do not arrive with a Git clone.
 
 Open `http://127.0.0.1:8765/`, choose a project and completed run, search, preview candidates, and add intervals to the clip basket. JSON/CSV preserve source identity, microsecond ranges and evidence; they are interval manifests. Desktop preview, timeline and basket remain visible while their lists scroll independently. Basket/storage/export use source time order; retrieval preserves relevance rank. To analyze new footage, use the CLI first.
 
@@ -40,6 +40,8 @@ Inspect commands with `./.venv/Scripts/gamingcreator.exe --help`. `config.exampl
 ## Phase 0 validation utilities
 
 User acceptance on 2026-10-04 rejected gameplay retrieval: Boss, jumping and shooting queries have no usable results, and descriptions lack action continuity. F006 remains failed/pending formal U10. The temporal correction is an unaccepted F009 experiment; see [validation and resumption](./docs/references/temporal-gameplay-validation.md) and HANDOFF before reusing earlier smoke results as quality evidence.
+
+The prepared workstation now has a new completed Atom temporal trial, `96b5f01530ce43e2944828fb0520b9b4`: 54.743220 seconds, 16 windows, 40 events and estimated API cost ¥0.05029788 (not an invoice). The workspace prefers this completed temporal run and labels legacy frame observations separately. Use `config.temporal.example.json` explicitly for new v4 analysis: 2 FPS, nine ordered frames, two-frame overlap, program-derived frame boundaries. Action descriptions still need human review; static hallucinations, ambiguous tags, cuts and negated action matches were found in development comparisons. Boss and shooting retrieval are not established.
 
 The completed 95.175874-second manga PV demo produced 24 visual windows, 111 events and no transcript segments, with estimated API cost ¥0.06246088 for that run; this is not a confirmed invoice. An attack query returned intervals around 28–29, 31–32 and 30–31 seconds; its first hybrid search took 2574 ms. These are smoke results, not a measured human Top-10 pass or an hour-scale performance claim.
 

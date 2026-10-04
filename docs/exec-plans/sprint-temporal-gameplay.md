@@ -2,6 +2,10 @@
 
 ## Codex恢复复核与v4进行中
 
+最新完整交付基线：Atom run96b5f01530ce43e2944828fb0520b9b4已Completed（54.743220s、16窗口/40事件/0转录），API估价¥0.05029788、unknown0。完整verify668 passed/1权限skip（65.98s）、Ruff79/mypy48/CLI/匹配离线wheel通过；新Atom Chromium默认run/试验标签/播放至12.500001暂停/证据/选片排序与导出/桌面同屏与深滚动检查通过。启动器df475ef→0cc2c2f集成、5真实生命周期通过，root8765实际ready。
+
+检索诊断：跳跃hybrid3，但49–49.5s“无明确攻击、跳跃或交互动作”不应成为跳跃候选；Boss/射击/汽车维修hybrid0、移动10，pure semantic都10。已分retrieval_negation独占worktree修该否定锚点，禁止降阈值或改事件凑数量；当前浏览器3条检查是修复前界面合同，不能复用为质量通过。F006/F009仍false。
+
 最新实测：artifacts/temporal-v4-execute-0的0–4秒对照已completed，qualityGate=null。v2/A返回5个画面事件；v4/B密9帧返回2个变化过程，v4/C同5帧也返回2个过程；静帧0事件，倒序在发送前拒绝。4次已发送调用、28输入图，已知估价¥0.0093252、unknown=0、reserved=0，billingConfirmed=false。主要为建筑/竞技场转场和光效，不能据此证明打Boss、跳跃或射击检索。下一步实际动作窗口及新完整run；启动器正常4项真实生命周期已通过，失败清理补测中。
 
 动作实测：漫画28–32秒A/B/C输出通过，B描述持续伤害和少量位移，但static-B返回不支持的动作，被event_static_evidence拒绝，0接受事件；4次调用估价¥0.00974288。Atom8–12秒B输出3个过程，其中jump与“无法确认主动跳跃”矛盾；C边界证据被拒绝、static-B也被拒绝；4次调用估价¥0.01037184。两个报告completed_with_failures，不把管线阻止假动作误称模型控制通过。真实模型仍不稳定；所有质量门槛null、费用仅估计。

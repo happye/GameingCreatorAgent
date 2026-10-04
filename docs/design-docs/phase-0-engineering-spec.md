@@ -20,6 +20,8 @@ gamingcreator benchmark --input <frozen-manifest> --project <directory> --output
 
 `config.example.json` 使用 schema v2：vision 含 provider/model、priceVersion、maxOutputTokens（≤4096）、promptVersion/promptHash；limits 含正整数 maxRequests/maxInputFrames；sampling 含 intervalMs/windowFrames/windowOverlap；asr 含 language。未知字段（包括密钥）拒绝。默认每秒采样、5 帧/1 帧重叠、最多 2048 输出 token。新分析费用上限由 CLI 传入有限正 Decimal；resume 禁止配置/预算覆盖。旧 schema v1 仍可读，但没有完整窗口/价目配置。
 
+连续动作试验显式使用 `config.temporal.example.json`：schema仍为2，prompt为独立fingerprint的`phase0-vision-v4`，500ms采样、9帧/2帧重叠、独立pipeline `phase0-analyze-temporal-v1`。v1/v2仍最多5帧，v3/v4最多9帧；旧配置、prompt内容与run不改写。
+
 `search` 指定 Completed run；找不到或完整性失败时返回明确错误。默认 hybrid，也可 lexical/semantic；候选含 candidateId/mediaId/eventId、startUs/endUs、startTimecode/endTimecode、rank、score/scoreKind、evidenceIds、observableFacts/why。时间为半开区间，分数不是事实概率。排序确定，去重后保留排名和证据；空结果合法并附 abstentionReason。检索记录与向量在 schema v3 中保存，分析输出保持不可变。
 
 stdout 为结果或 JSON；进度/JSON 诊断写 stderr。退出码：0 成功，2 输入，3 环境/配置，4 Provider，5 存储/完整性，6 benchmark 未过门槛，7 预算停止，130 用户取消。JSON 错误含 code、runId、retryable、友好说明，不含凭据。
@@ -52,7 +54,9 @@ Application 用 `typing.Protocol` 定义类型化 async ports，await 得到 `Pr
 
 请求含 runId、输入证据引用、语言/游戏词表、prompt/schema 版本、输出预算；结果含 typed output、usage、实际 model/revision、requestId、elapsed、状态与错误。Capabilities 声明图片序列/视频/音频、尺寸/数量限制、结构化输出和局部时间语义。Capability mismatch 在请求前失败。
 
-首个视觉 Provider：DeepSeek `deepseek-flash`，`POST https://api.deepseek.com/chat/completions`，`user.content` 用带源时间的 text 与 `image_url`；只上传窗口证据，不上传整视频。禁用 thinking，使用 json_object。`phase0-vision-v2` 用 f0..f4 短别名，程序严格映射回原 evidenceId；prompt 给出窗口首末 sourceUs、整数微秒与半开边界要求，end 必须大于最晚引用时刻。字段/类型/证据/边界错误不修猜，返回 provider.schema；executionDetails 只记录有限 schemaError 诊断，不保存原响应。prompt 内容 hash 校验并写入快照。旧 v1 长 ID 协议仍可读。response.model 记录实际别名，供应商实际修订仍可能 unresolved。[官方 Vision](https://api-docs.deepseek.com/guides/vision/)
+首个视觉 Provider：DeepSeek `deepseek-flash`，`POST https://api.deepseek.com/chat/completions`，`user.content` 用带源时间的 text 与 `image_url`；只上传窗口证据，不上传整视频。禁用 thinking，使用 json_object。`phase0-vision-v2` 用 f0..f4 短别名，程序严格映射回原 evidenceId；prompt 给出窗口首末 sourceUs、整数微秒与半开边界要求，end 必须大于最晚引用时刻。字段/类型/证据/边界错误不修猜，返回 provider.schema；executionDetails保留有限schemaError枚举，可加schemaDetail白名单：eventIndex/startUs/endUs/sourceUs为Int64整数、frameAlias仅f0..f8，不保存原响应或任意文本。prompt内容hash校验并写入快照。旧v1长ID协议仍可读。response.model记录实际别名，供应商实际修订仍可能unresolved。[官方 Vision](https://api-docs.deepseek.com/guides/vision/)
+
+v4严格绑定`temporal-actions-v1`：每事件字段为startFrameId/endFrameId/observableFacts/mechanicTags/evidenceIds/uncertainty，最多3事件。程序由首尾帧sourceUs生成`[firstUs,lastUs+1)`；端点必须出现在有序引用内，至少两个不同时刻与不同图像hash。输入倒序/重复时刻、未知别名、单帧或复制图动作声明拒绝；空事件合法。v1/v2/v3仍用原schema。9帧多图与这些校验只是工程必要条件，不能证明动作/玩家控制/跨镜头因果理解；见[真实试验](../references/temporal-gameplay-validation.md)。
 
 ASR 使用本地 faster-whisper tiny，固定权重/运行库 hash 与 CPU int8。worker 开始前登记模型修订、参数和输入；`no_audio/no_speech/completed/failed/cancelled` 分开。源 hash、模型修订、schema 与稳定参数共同构成 v2 ASR stage 输入 hash。API 费用为本地零网络调用费用，硬件成本未测；中英文识别质量仍需人工参考。ChatGPT/开发工具额度不等于项目 API 配额。
 
@@ -86,7 +90,7 @@ embedding 唯一键包含 run、subject/provider/model/revision_scope/dimension/
 
 ## 5. 采样与检索实验
 
-当前 v2 每秒抽帧并用 5 帧/1 帧重叠覆盖全部抽取帧，最后窗口可不足 5 帧；每窗口独立 checkpoint。上传总帧数包含重叠和重试，与独立抽帧数区分；运行前预检最低请求/图片额度，仍保留每 attempt 的硬上限。全覆盖不保证漏检短动作。1 FPS/2 FPS、加密采样与强模型对照仍是后续冻结实验，不将未运行实验写成结果。
+旧v2每秒抽帧并用5帧/1帧重叠覆盖全部抽取帧；v4试验用2FPS、9帧/2帧重叠，均约4秒时间跨度，最后窗口可不足上限。每窗口独立checkpoint，上传总帧数含重叠/重试，运行前预检最低额度并保留每attempt硬上限。全覆盖不保证捕获短动作，不能无条件跨窗/跨镜头拼故事。有限1FPS/2FPS真实对照已记录，但独立精度/长动作/强模型对照仍待验证。
 
 当前检索对照 lexical BM25、local E5 cosine 和 hybrid RRF（`bm25-e5-rrf-v3`）。英文攻击类查询在词法侧补上中文机制词，避免与中文事件没有字符重叠时失去词法锚点。候选按证据/区间去重；模型 eventId 不等于人工独立动作身份，最终仍通过人工映射计分。默认 minSimilarity=0.80、semantic margin=0.02 尚未在真实独立标签集校准。文本 fixture 三组冷运行约1.65–1.87s、热缓存约0.11s，仅证明本地执行；负例改进不保证真实精度。测试集按录制会话隔离，同源 PV/剪辑不得跨开发和测试集。
 

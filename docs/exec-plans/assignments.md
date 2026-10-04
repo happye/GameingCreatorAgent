@@ -1,21 +1,24 @@
 # Active assignments
 
-协调规则见 `docs/references/agent-workflow.md`。2026-10-04用户否决玩法检索。root 已把 vision/pilot 的独占文件集成到 `codex/temporal-gameplay`，共享记录以 HANDOFF 和 sprint-temporal-gameplay 为准。两个 worker worktree 冻结，禁止再把它们覆盖回 root。本轮未提交、未推送。
+协调规则见 `docs/references/agent-workflow.md`。2026-10-04用户否决玩法检索。当前root分支`codex/temporal-gameplay`已保存Grok4c37a63、帧边界42604f9/b2daf1b与启动器0cc2c2f；共享记录以HANDOFF和sprint-temporal-gameplay为准。禁止旧worker覆盖root；推送状态以git核对。
 
 ## 当前交付
 
-Codex复核恢复已保存4c37a63。最新root拥有配置/store/analysis/pilot、health API、共享记录与实际实验；temporal_frame_contract仅拥有独立worktree的deepseek_vision.py/test_temporal_frame_contract/own sprint；workspace_launcher仅拥有独立worktree的Start-Workspace.cmd/start-workspace.ps1/test_workspace_launcher/own sprint。两个当前worker活动中，旧vision/pilot冻结。只读grok_temporal_review已完成，不写文件。顶部这段覆盖下表历史“未提交”状态，最新提交/检查见HANDOFF。
+最新完整新Atom run96b5f01530ce43e2944828fb0520b9b4已Completed，16窗口/40事件；verify668 passed/1权限skip，真实浏览器与启动器通过。jump3中的否定误召回由独立worker修正，当前质量F006/F009仍false。只读Grok复核与v4合同审查完成，无文件改动。
 
 | 当前 owner | Branch/worktree | 独占范围 | 状态 |
 | --- | --- | --- | --- |
-| root / F009 | codex/temporal-gameplay，root | provider、pilot、时序测试、config.temporal.example.json、公共文档 | 已集成并完成一次有界对照；F009 仍 false。verify 618 passed、1 skipped |
+| root / F009 | codex/temporal-gameplay，root | 集成、config/store/analysis/pilot、UI/API、共享文档 | 新run/3个有界对照/启动器已验证，质量未通过 |
+| temporal_frame_contract | codex/temporal-frame-contract，.worktrees/temporal-frame-contract | deepseek_vision.py、test_temporal_frame_contract、own sprint | d026103→42604f9；冻结 |
+| workspace_launcher | codex/workspace-launcher，.worktrees/workspace-launcher | Start-Workspace.cmd、start-workspace.ps1、test_workspace_launcher、own sprint | df475ef→0cc2c2f；冻结 |
+| retrieval_negation | codex/retrieval-negation，.worktrees/retrieval-negation | application/retrieval.py、test_retrieval_negation.py、own sprint | 活动，修明确否定动作误召回；不改源事件/阈值 |
 | temporal_vision | codex/temporal-vision，.worktrees/temporal-vision | 已交出 deepseek_vision.py、test_temporal_vision.py | 冻结在 bdf3861 加格式化差额；不要回写 root |
 | temporal_pilot | codex/temporal-pilot，.worktrees/temporal-pilot | 已交出 validate-temporal-gameplay.py、test_temporal_pilot.py | 冻结在 ca45f1d；不要回写 root |
 | temporal_audit / temporal_acceptance | 只读root | 根因、官方模型/价目、验收设计 | done，无文件改动 |
 
-磁盘复核：`config.temporal.example.json` 的 promptHash 等于 `vision_prompt_fingerprint("phase0-vision-v3")`；两次 dry-run 为 `frozen`，execute-1 为 `completed_with_failures`。
+当前config.temporal.example.json的promptHash与v4一致：9ea350e10eb028f1f5e2dc7d355ebd1d080ad8ae8397eb709705a25773323f48。旧v3实验/配置hash记录是历史证据，不用于新run。
 
-下一条工作：查看 `artifacts/temporal-gameplay-execute-1` 里 window-0-B 的 `evidence_outside_range` 拒绝，收紧 v3 提示让被引用帧落在半开区间内，先用离线视觉测试证明，再对同一个四秒窗口重跑一次有界 `--execute`。不要全量重分析 PV，不要把 F006 或 F009 标成通过，不要宣称打Boss、跳跃或射击已经修好。
+下一条工作：集成明确否定召回修正，重检5查询/3模式、界面和完整verify，保存文档/Git检查点；不把模型有效JSON、candidate数量或浏览器检查当玩法通过。长动作/切镜/强模型对照与独立U10仍待继续。
 
 下面F007/F008为已交付历史，不是本轮占用；恢复见sprint-temporal-gameplay。F006用户定性验收未通过，正式U10未运行；F009false。
 

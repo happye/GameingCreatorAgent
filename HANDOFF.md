@@ -1,74 +1,37 @@
 # 当前交接
 
-更新时间：2026-10-04（Asia/Hong_Kong）。Codex、Claude Code、Grok Build 共享此恢复入口；历史见 `progress.md`，验收见 `feature_list.json`。
+更新时间：2026-10-04（Asia/Hong_Kong）。Codex、Claude Code、Grok Build 共用此入口；历史见 progress.md，验收见 feature_list.json。
 
-## 当前任务：Grok复核与可测试版本
+## 当前状态
 
-最新检查点：b2daf1b；v4 profile与CLI联动、原schema兼容及HTTP联合测试217 passed/1权限skip、Ruff/mypy通过。artifacts/temporal-v4-execute-0真实0–4秒对照已completed：A/v2 5事件，B/v4密9帧2事件，C/v4同5帧2事件；静帧0事件、倒序发送前拒绝。4次HTTP、28输入图、已知估价¥0.0093252，无未知费用，未对账单，qualityGate=null。该段主要转场，不能证明玩法理解；下一步验证实际28–32秒动作及Atom片段。launcher worker仍活动，正常生命周期4项已通过，补测失败清理。28个项目stdlib pyc已从固定归档恢复、收据不变，init完整通过。
+用户要求复核 Grok、按 F006 连续玩法反馈修正并提供一键启动。本轮已保存 Grok 改动为4c37a63、集成v4帧边界合同42604f9/b2daf1b及启动器0cc2c2f。分支codex/temporal-gameplay；main仍为上一轮317b22d。最新远端检查点需以git核对，不能把本地commit当已推送。
 
-后续真实对照：temporal-v4-execute-28的A/B/C均completed，B描述持续伤害/轻微位移，静帧输出被event_static_evidence拒绝，报告completed_with_failures，4次HTTP估价¥0.00974288。temporal-v4-atom-8的B返回3个过程（含下落但jump标签与不确定性矛盾），C被event_frame_boundaries拒绝，静帧也被拒绝，4次HTTP估价¥0.01037184。两者均qualityGate=null、未知0、非账单。不得改写为模型静帧控制通过或跳跃已识别准确。已开始完整Atom新run 96b5f01530ce43e2944828fb0520b9b4，artifacts/demo-phase0，v4、16窗口、预算¥5；当前刚完成1窗口，需先核对run状态再续，不要重复创建。
+**F006仍未通过，F009仍false。** 新模型开始描述动作变化，但存在跨镜头关联、标签与不确定性矛盾、静帧幻觉；校验器拒绝非法事件不代表模型理解正确。独立人工固定十槽U10没有完成，不能由Agent代替。
 
-Codex已将Grok全部未提交集成保存为4c37a63（codex/temporal-gameplay），不回滚其实现或实验。只读复核确认费用/失败记录一致；v3旧响应未保存，无法断言具体坏端点。当前改用独立v4合同：模型选起止frame alias，程序用源时钟生成半开区间；保留v1/v2/v3内容/hash。root已接入配置/SQLite/analysis/pilot新版本，并新增/api/health；对应配置/pilot/HTTP定向检查通过，暂未新API调用。F006/F009仍false。
+## 用户现在可以测试
 
-活动worker：temporal_frame_contract在.worktrees/temporal-frame-contract拥有deepseek_vision.py/new test/own sprint；workspace_launcher在.worktrees/workspace-launcher拥有Start-Workspace.cmd、scripts/start-workspace.ps1、真实PowerShell生命周期测试/own sprint。都不得回写root其他文件。旧temporal-vision/pilot及全部历史scratch冻结。
+双击根目录Start-Workspace.cmd：隐藏启动项目内Python服务并自动打开浏览器；重复启动复用同仓库服务。启动不分析视频、不调用付费API。命令行可用 ./scripts/start-workspace.ps1 -NoBrowser 或 -Port 8766。日志/PID在.cache/workspace；端口被其他/旧服务占用时清楚报错，绝不停止它。
 
-provider worker已集成并冻结；配置v4 hash与旧测试已更新。下一步28–32秒动作窗口及同帧control，成功且内容合理后新完整run；集成launcher独占提交。旧run不会因改代码变成新理解。一键启动仅打开本地工作台，不自动收费或重新分析。最后完整verify、真实浏览器/启动器复核、公共记录与Git推送；未完成不称已修好。
+已启动本仓库工作台：http://127.0.0.1:8765/，health返回PID76732（helper103048，可能在后续已退出，必须重新核对）。默认项目demo-phase0、Completed连续动作试验run **96b5f01530ce43e2944828fb0520b9b4**。
 
-pytest初次使用嵌套basetemp未建父目录导致setup错误，创建独立.cache/pytest-runs目录后恢复；媒体stat回归在粗粒度时钟下两个同大小写入mtime不变，测试显式变更本地fixture mtime验证已有缓存失效合同，不改变生产缓存。该缓存依赖文件元数据变化，不能声称能检测元数据完全不变的外部篡改。
+新素材：Atom实机PV，54.743220s，SHA172e1139b477352db5e5fe2f3be3afb5171935c2edd8a2d0278a434212fd00fd；v4/2FPS/9帧/重叠2，16窗口、40事件、0转录，完整Completed。API估价¥0.05029788，unknown0，非账单。旧漫画run f76f5d6495314c04ae04083614d4afd6 的111条画面观察原样保留。
 
-## Grok集成与实验复核（历史基线）
+检索基线（artifacts/temporal-retrieval-atom-v4/report.json）：hybrid跳跃3，其中11.5–12.5s和0–2s为待人工判断候选，第三49–49.5s明说无跳跃，是确定的否定表述误召回；Boss/射击/汽车维修0，移动10。Pure semantic每条仍返回10，未校准。不要把候选数当有用事件数。
 
-**2026-10-04最新用户验收：F006玩法检索未通过。** 用户反馈打Boss、跳跃、射击找不到。本轮只集成时序分析合同，并完成一个四秒窗口的开发对照；这些查询没有修好。禁止把3条PV攻击候选或这次模型输出当玩法质量证据。`feature_list.json` 里 F006 与 F009 都保持 `passes: false`。
+## 验证与费用证据
 
-当前分支 `codex/temporal-gameplay`，HEAD 仍是 `e124abc`，集成改动未提交、未推送。root 已接入 temporal-vision 的 `deepseek_vision.py` 与 `tests/test_temporal_vision.py`（`bdf3861` 加上仅格式化的工作区差额），以及 temporal-pilot 的 `scripts/validate-temporal-gameplay.py` 与 `tests/test_temporal_pilot.py`（`ca45f1d`）。没有拷贝两个 worker 的 sprint，也没有用 worktree 覆盖 root。`config.example.json` 未改，v2 hash 仍是 `f9adb61a5be1dd03ca603c9515c5f6ffea3ae731b1f55a61332a23dd37383236`。新 `config.temporal.example.json` 为 500ms 采样、9 帧、重叠 2 帧，`promptHash` 是已交付 `phase0-vision-v3` 的真实 SHA-256：`27762b0b9d390c64d53ec4be815bd6e8ead4d249ec9864bb87735223b3ad1c4d`。Provider 对外 `max_images` 为 9；v1/v2 请求仍最多 5 张，旧 prompt hash 未变。
+- 完整verify：668 passed/1 Windows文件symlink权限skip，65.98s；Ruff79文件、mypy48、CLI与两次离线wheel通过，SHA ee68d460f9d4f02ff454ca206e009c4d2f9f0dd4b93c96fc7287de891bbf11ab。这是否定表述修正前基线，后续集成须重检。
+- 启动器5项真实PowerShell/CMD生命周期通过：任意cwd、复用/并发单PID、foreign端口保护、带空格路径/快速退出7、15秒超时清理本次venv父/子。不使用WMI/taskkill、安装包或全局配置。Worker证据sprint-workspace-launcher-worker.md；root实际8765启动通过。
+- Chromium真实新Atom跳跃查询检查通过，artifacts/temporal-workspace-atom-v4：默认新run/“连续动作（试验）”、40事件/3候选，rank1播放到12.500001暂停、图证据、乱序选择后篮子/存储/JSON/CSV源时间排序、两桌面同屏/深滚动保持、390px无横溢出、汽车维修0、无JS错。此报告包含否定误召回，证明界面合同，不证明玩法质量。
+- 有界真实实验：temporal-v4-execute-0 completed，A/B/C=5/2/2事件，static空、倒序本地拒绝；4次调用估价¥0.0093252。temporal-v4-execute-28 completed_with_failures，A/B/C通过、static幻觉被event_static_evidence拒绝；4次¥0.00974288。temporal-v4-atom-8 completed_with_failures，B3事件（jump/下落歧义），C边界证据失败、static被拒绝；4次¥0.01037184。均qualityGate=null/unknown0/非账单。三次pilot加完整run本轮已知API估价¥0.0797378；旧Grok v3试验¥0.0075876另列，不重复计入。
+- 工具receipt曾发现28个stdlib pyc漂移；仅从项目内固定SHA归档恢复这些文件，receipt/程序/DLL未改，完整init通过。始终env.ps1 + Python -B，禁止全局安装。
 
-开发对照用本地《漫画群星：大集结》PV，sha256 `e4ad1f974910639b7914fec1b668e6cbea3d331721b08b56268ee548f8b7619a`。两次不带 `--execute` 的目录是 `artifacts/temporal-gameplay-dry-1` 与 `artifacts/temporal-gameplay-dry-2`：状态都是 `frozen`，`executed` false，`qualityGate` null，采样 `1/2`，source sha256 相同。A 是 v2 每隔一帧的 5 张，B 是同一 0–4 秒的 v3 全部 9 张，另有静帧复制和倒序输入。两次 invocation 都为空，没有 provider HTTP。倒序是本地输入拒绝，不是反向播放理解证据。
+## 当前归属与下一步
 
-一次未提高脚本默认费用和请求上限的 `--execute` 写到 `artifacts/temporal-gameplay-execute-1`，进程退出码 4，报告 `completed_with_failures`，`qualityGate` null。window-0-A（v2）completed，5 条事件，估价 ¥0.0022108。window-0-B（v3）失败，`provider.schema` / `evidence_outside_range`，0 条接受事件，估价 ¥0.003524。static-B completed，0 条事件，`temporalControlPassed` true，没有确认连续动作。reversed-order-B 在发送前返回 `provider.input`，`cost_cny` 为 null，`cost_status` 为 unverified。三次已发送调用的已知估价合计 ¥0.0075876，`billingConfirmed` false，不是账单。密钥没有写入报告。
+root独占公共文档、UI/API、pilot、配置/存储/analysis和集成。temporal_frame_contract d026103已集成42604f9、workspace_launcher df475ef已集成0cc2c2f，worktree冻结；旧vision/pilot/workspace worktree也冻结，不覆盖root。两次只读复核未发现新增合同/兼容/安全缺陷，不是质量认可。
 
-下一条工作：查看 `artifacts/temporal-gameplay-execute-1` 里 window-0-B 的 `evidence_outside_range` 拒绝，收紧 v3 提示让被引用帧落在半开区间内，先用离线视觉测试证明，再对同一个四秒窗口重跑一次有界 `--execute`。不要全量重分析 PV，不要把 F006 或 F009 标成通过，不要宣称打Boss、跳跃或射击已经修好。
+retrieval_negation在.worktrees/retrieval-negation、codex/retrieval-negation拥有仅application/retrieval.py、test_retrieval_negation.py、own sprint，正在修明确否定表述产生正向动作锚点的问题。不降低阈值，不改源事件，不写root。先核对worker提交/实际结果，再集成。
 
-上一轮F007/F008本地检查工作台已交付固定桌面布局、预览/时间轴/篮子同屏、列表滚动保持和按源时间选片排序。既有能力：项目/run选择、原视频播放与区间结束暂停、证据图/音频与转录、描述/标签筛选、阶段/费用、按run隔离的片段篮、JSON/CSV区间清单。新视频仍用CLI分析；页面不触发付费分析、不生成MP4、不发布或结算。
+接续：完成并审查否定召回修正，记录版本与边界；复跑新Atom五查询三模式、播放/导出（篮子用至少3条移动查询，不能为测试硬凑跳跃数），完整verify/init；仅重启已核对health身份的本仓库服务；同步所有文档与Git。然后独立人评/更长动作与强模型对照，仍不能先转正式桌面/渲染/商业阶段。
 
-F000–F005、F007、F008技术合同已验收；**F006独立人工U10仍false**。用户明确授权本地检查交互，依据ADR-002；正式桌面/商业阶段仍有原质量门槛。
-
-上一轮已验证代码87637af与收尾文档317b22d已同步origin/main；origin/codex/workspace-usability保留87637af。HTML/CSS worker5a44dfd/7ad1321已集成1bf8881/600276e，上一轮worker冻结。计划/证据见sprint-workspace-usability；本轮改动仅在codex/temporal-gameplay，不从历史worktree覆盖root。
-
-上一轮 F008 页面记录曾提到 GitHub 443 后的重试；本轮时序改动没有推送，远端状态以 git 为准。F008 页面仍是：桌面各面板内滚动，源预览/时间轴/篮子同时可见。F006 是内容评级 0/1/2/3、每主查询前十槽至少 7 个独立可用事件，见 human-acceptance-guide。本地混合推理与未来 EXE 见 deployment-roadmap，当前并非全离线或已打包 EXE。
-
-## 直接使用
-
-在仓库根目录PowerShell：
-
-```powershell
-./scripts/run-ui.ps1
-```
-
-浏览器打开 `http://127.0.0.1:8765/`，选 `demo-phase0` 和 `f76f5d6495314c04ae04083614d4afd6`；输入「寻找角色打斗和攻击的片段」，候选条数3。点击候选预览、证据缩略图放大，点+选片并下载JSON/CSV。刷新后默认首个Completed run；重新选同一run可恢复其片段篮。另一个Completed run c6d93b984f374cd4aa755ed0c81e4d73不是此次真实PV验证对象。
-
-新机先 `./scripts/setup-demo.ps1`，另备固定FFmpeg；本机可用 `-Offline`。素材、DB、权重不随Git克隆。完整步骤见user-manual和demo-quickstart；CLI新分析用run-demo的-Video和进程密钥。
-
-## 最新验证
-
-- `./scripts/verify.ps1`退出0：**618 passed、1 skipped（34.28s）**；Ruff 76 文件、mypy 48 源文件、CLI 及两次离线 wheel 通过。跳过项仍是 Windows 文件 symlink 权限；canonical-path 回归通过。检查页 HTTP 测试改为不走进程代理，避免 `HTTP_PROXY` 把回环请求变成 502。
-- wheel SHA256：`b37b039a4c8688d9320b0bd8a29521306d57a970c26900660f951e679938f52f`；仍是 50 个条目。示例配置和 pilot 脚本不在 wheel 内。
-- 时序定向测试 151 passed（`test_deepseek_vision.py`、`test_temporal_vision.py`、`test_temporal_analysis.py`、`test_temporal_pilot.py`，`-W error`，缓存目录在 `.cache/pytest-runs`）。v1/v2 仍拒绝第 6 张图，对外上限是 9，v3 拒绝倒序、重复时间、复制图动作声明和单帧动作声明，旧 prompt hash 未变。
-- 磁盘复核：`config.temporal.example.json` 的 promptHash 等于已交付 `vision_prompt_fingerprint("phase0-vision-v3")`，同为 `27762b0b9d390c64d53ec4be815bd6e8ead4d249ec9864bb87735223b3ad1c4d`；`git diff -- config.example.json` 为空。root 上存在 `deepseek_vision.py`、`tests/test_temporal_vision.py`、`scripts/validate-temporal-gameplay.py`、`tests/test_temporal_pilot.py`。`artifacts/temporal-gameplay-dry-1` 与 `dry-2` 的报告都是 `frozen`、executed false、qualityGate null、invocation 0，source sha256 都是 `e4ad1f974910639b7914fec1b668e6cbea3d331721b08b56268ee548f8b7619a`。`artifacts/temporal-gameplay-execute-1` 是 `completed_with_failures`、executed true、qualityGate null；static-B 的 `temporalControlPassed` 为 true 且事件数为 0。
-- 项目内Chromium153.0.8010.12真实PV中文/英文各验证通过：111事件、3候选，实际rank1播放并自动停在结束（中文28–29s停29，英文此次31–32s停32），真实证据加载、JSON/CSV身份/微秒/证据、筛选不改排名、汽车维修hybrid空结果、同run篮子恢复、无JS错误。最新报告在ignored `artifacts/workspace-usability-validation/` 和英文目录；另验证两桌面视口无页面滚动、深列表预览/选择位置保持、乱序选3段后篮子/存储/JSON/CSV统一时间顺序及恢复3段。检索rank保留，不能由导出第一段反推；390px仅验无横向溢出，未声明手机同屏。旧初版记录不覆盖历史判定。
-- 前端worker21项合成浏览器交互检查通过（含跨run响应隔离、恶意文本、CSV防公式注入、转录、390px布局）。范围和局部报告位置见sprint-inspection-frontend。
-- 五项用户/系统环境及 Python 注册表指纹未在本轮复查。上面的 `--execute` 是本轮唯一付费调用，估价已写入实验报告，未对账单。
-- Windows服务使用独占端口，重复启动不再与旧页面同时监听；仅停止两项已核对本仓库命令行的旧UI进程。最终8765只剩一个监听，projects/inspect已返回新版111事件、videoUrl和费用字段。
-
-## 已有真实分析与质量边界
-
-完成run f76f...：漫画群星PV95.175874s、24窗口/111事件/0转录，API费用估算¥0.06246088，非账单。旧失败run823799e10a0440e8aec8b78b603bec57：2/24窗口、10事件、schema拒绝，估价¥0.01163912；旧响应未保存，不能补称失败字段。两次原分析估价合计¥0.0741。
-
-中文与英文攻击hybrid均返回28–29、31–32、30–31s；英文仅加有限attack/fight词法映射，并非通用翻译。汽车维修hybrid为空，pure semantic仍有误召回。开发报告qualityGate=null；未标注benchmark退出6是预期，不能由Agent代替独立人工标签。
-
-## 下一步与恢复规则
-
-本轮接续以顶部“当前任务”为准：v4帧边界合同、诊断、有限实测与一键启动。Grok原建议收紧v3提示仅是假设；旧响应没有具体错误值，不改写历史为已查明原因。F006仍未通过，内容实测前不全量重分析。
-
-恢复时先核对 `git status --short`、当前分支和未提交文件归属。F008 已在 main；本轮时序改动尚未提交，不要未经验证推 main。工作台 8765 可继续用旧结果；关闭后用 `run-ui.ps1` 重新启动。独立人工 U10、TD001/TD005/TD006、正式桌面、Creative Planner、MP4 渲染和发布都不是这件下一条工作。开发素材及这次四秒对照不等于 10–20 个独立会话。
-
-全部工具/包/模型/缓存仅在.tools/.venv/.cache；可选Playwright在ui-test extra，浏览器在.tools/browsers，不需要系统安装。密钥只走进程DEEPSEEK_API_KEY，不复制聊天密钥或写文档。开始会话读AGENTS、HANDOFF、feature_list和共享workflow，核对分支/未提交归属；旧scratch/worktrees冻结，不覆盖当前root。每个实现/验证节点主动更新sprint/交接并保存Git检查点，不等额度耗尽。
+恢复先读AGENTS、feature_list、shared workflow，检查git status/分支/文件归属、run状态、报告。素材/DB/模型在ignored目录，不随clone；配置更改创建新run，原run resume保留原prompt/预算/窗口。新分析显式config.temporal.example.json；默认config.example.json仍v2。密钥只使用现有进程DEEPSEEK_API_KEY，不打印/复制聊天密钥。每个实现/验证节点主动保存进度和Git检查点，不等额度提醒。

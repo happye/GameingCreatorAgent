@@ -29,7 +29,7 @@ CLI 只解析输入、组装依赖和输出结果；Application 编排 stages、
 
 阶段：`Probe → Evidence → ASR → Vision → Persist → Index`；状态 `Pending/Running/Completed/Failed/Cancelled/Interrupted`。无音轨/无语音是 ASR 的显式结果，不是异常终止。只从完整可用 run 搜索；每项目同时只允许一个分析写入者。
 
-证据和原始响应保存在本地项目工作目录；SQLite 存路径、hash、语义结果、版本、checkpoint 和调用账本。源视频保持原位。先完成临时文件写入并校验，再短事务登记；恢复时核对文件与数据库。任何模型或 FFmpeg 调用均不持有数据库写事务。
+证据与校验后的语义结果保存在本地项目工作目录；不保存视觉模型原响应。SQLite存路径、hash、版本、checkpoint和调用账本，失败仅保留白名单结构诊断。源视频保持原位。先完成临时文件写入并校验，再短事务登记；恢复时核对文件与数据库。任何模型或FFmpeg调用均不持有数据库写事务。
 
 ## 模型与检索边界
 

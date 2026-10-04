@@ -106,7 +106,7 @@
       "passes": false,
       "test_criteria": "A separately fingerprinted temporal prompt preserves legacy runs, rejects unordered or single-frame action claims, supports a denser source-clock-preserving profile and resumable windows, and records bounded real-video comparisons including static controls and all attempt costs. Independent action retrieval quality remains F006.",
       "dependencies": ["F003", "F004", "F005"],
-      "evidence": ["docs/exec-plans/sprint-temporal-gameplay.md"]
+      "evidence": ["docs/exec-plans/sprint-temporal-gameplay.md", "docs/exec-plans/sprint-temporal-frame-contract-worker.md", "docs/exec-plans/sprint-workspace-launcher-worker.md", "docs/references/temporal-gameplay-validation.md", "tests/test_temporal_frame_contract.py", "tests/test_temporal_analysis.py", "scripts/validate-temporal-gameplay.py"]
     }
   ]
 }

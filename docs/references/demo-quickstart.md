@@ -4,6 +4,10 @@
 
 ## 直接查看已有结果
 
+本工作站双击根目录`Start-Workspace.cmd`即可打开工作台，无API密钥或付费分析。默认优先新的Atom连续动作试验run `96b5f01530ce43e2944828fb0520b9b4`：54.743220s、16窗口/40事件，模型估价¥0.05029788（非账单）。查询「寻找跳跃玩法的片段」或「寻找角色奔跑和移动的片段」，逐个回看原视频；候选不等于通过F006。旧漫画run仍可从运行列表选择。
+
+重复启动复用同仓库服务；日志/PID在`.cache/workspace`。端口冲突可用`./scripts/start-workspace.ps1 -Port 8766`；前台用`run-ui.ps1`。启动不触发新分析。
+
 当前工作站已具备本地素材、模型和 `artifacts/demo-phase0/timeline.sqlite3`，可复制这两条命令；不需要 API 密钥或联网：
 
 ```powershell
@@ -36,6 +40,8 @@
 ```
 
 `config.example.json` 固定 schema v2、1 秒采样、5 帧窗口/1 帧重叠、视觉 prompt 内容 hash、CNY 价目和调用限制。覆盖的是抽取帧；不能据此保证捕获每个短动作。费用上限还包含未知调用的保守预留，因此可在实际估价很低时停止。
+
+新版连续动作试验需显式`-Config config.temporal.example.json`，v4/500ms/9帧/重叠2，用帧别名生成源时间区间；保持旧run不变。当前仍有模型判断与跨镜头问题，Boss/射击效果未建立，详见[时序验证](./temporal-gameplay-validation.md)。
 
 ## 续跑与结果文件
 
