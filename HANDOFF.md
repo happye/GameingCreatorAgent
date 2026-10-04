@@ -4,13 +4,15 @@
 
 ## 当前结果与版本
 
-**2026-10-04最新用户验收：F006玩法检索未通过。** 用户反馈打Boss、跳跃、射击找不到，现有描述缺动作过程与连续性。root在codex/temporal-gameplay，优先连续多帧分析与小范围新旧实测，计划见sprint-temporal-gameplay。此前技术合同通过不代表内容可用；禁止继续把3条PV攻击候选当玩法质量证据。
+**2026-10-04最新用户验收：F006玩法检索未通过。** 用户反馈打Boss、跳跃、射击找不到。本轮只集成时序分析合同，并完成一个四秒窗口的开发对照；这些查询没有修好。禁止把3条PV攻击候选或这次模型输出当玩法质量证据。`feature_list.json` 里 F006 与 F009 都保持 `passes: false`。
 
-当前保存：482e20e记录验收否决；1500db7包含v3配置/存储白名单、9帧/2帧重叠能力、独立pipeline身份和run-demo的-Config。定向39项通过（warnings=error）、mypy48源文件通过；新完整verify、联合provider和真实对照尚未运行，F009false，F006false。本轮未有新付费调用。进程key仅查存在性，不复制聊天/环境密钥。
+当前分支 `codex/temporal-gameplay`，HEAD 仍是 `e124abc`，集成改动未提交、未推送。root 已接入 temporal-vision 的 `deepseek_vision.py` 与 `tests/test_temporal_vision.py`（`bdf3861` 加上仅格式化的工作区差额），以及 temporal-pilot 的 `scripts/validate-temporal-gameplay.py` 与 `tests/test_temporal_pilot.py`（`ca45f1d`）。没有拷贝两个 worker 的 sprint，也没有用 worktree 覆盖 root。`config.example.json` 未改，v2 hash 仍是 `f9adb61a5be1dd03ca603c9515c5f6ffea3ae731b1f55a61332a23dd37383236`。新 `config.temporal.example.json` 为 500ms 采样、9 帧、重叠 2 帧，`promptHash` 是已交付 `phase0-vision-v3` 的真实 SHA-256：`27762b0b9d390c64d53ec4be815bd6e8ead4d249ec9864bb87735223b3ad1c4d`。Provider 对外 `max_images` 为 9；v1/v2 请求仍最多 5 张，旧 prompt hash 未变。
 
-活动worker：temporal_vision在.worktrees/temporal-vision拥有deepseek_vision.py、test_temporal_vision.py、own sprint；temporal_pilot在.worktrees/temporal-pilot拥有validate-temporal-gameplay.py、可选test_temporal_pilot.py、own sprint，已保存1fc13e0（当时未lint/type/test，后续修正见git）。都已要求保存可恢复提交，不覆盖root。root还拥有test_temporal_analysis.py及全部公共记录。接手先git status/worktree list，读worker sprint/commit，只cherry-pick独占提交，不移动旧scratch到root。
+开发对照用本地《漫画群星：大集结》PV，sha256 `e4ad1f974910639b7914fec1b668e6cbea3d331721b08b56268ee548f8b7619a`。两次不带 `--execute` 的目录是 `artifacts/temporal-gameplay-dry-1` 与 `artifacts/temporal-gameplay-dry-2`：状态都是 `frozen`，`executed` false，`qualityGate` null，采样 `1/2`，source sha256 相同。A 是 v2 每隔一帧的 5 张，B 是同一 0–4 秒的 v3 全部 9 张，另有静帧复制和倒序输入。两次 invocation 都为空，没有 provider HTTP。倒序是本地输入拒绝，不是反向播放理解证据。
 
-下一条工作：集成provider后更新旧capabilities测试的max_images=9并运行相关pytest；生成新prompt真实hash的config.temporal.example.json（旧config.example不变）；集成pilot先不带--execute准备manifest，再用有限预算小范围新旧/静帧对照，记录所有失败费用。实测改善前不全量分析/不宣称跳跃、射击、Boss已修复，不能用mock输出当内容质量。第一次推送1500db7因GitHub443失败；未称已上传，重试/最终状态以git为准。
+一次未提高脚本默认费用和请求上限的 `--execute` 写到 `artifacts/temporal-gameplay-execute-1`，进程退出码 4，报告 `completed_with_failures`，`qualityGate` null。window-0-A（v2）completed，5 条事件，估价 ¥0.0022108。window-0-B（v3）失败，`provider.schema` / `evidence_outside_range`，0 条接受事件，估价 ¥0.003524。static-B completed，0 条事件，`temporalControlPassed` true，没有确认连续动作。reversed-order-B 在发送前返回 `provider.input`，`cost_cny` 为 null，`cost_status` 为 unverified。三次已发送调用的已知估价合计 ¥0.0075876，`billingConfirmed` false，不是账单。密钥没有写入报告。
+
+下一条工作：查看 `artifacts/temporal-gameplay-execute-1` 里 window-0-B 的 `evidence_outside_range` 拒绝，收紧 v3 提示让被引用帧落在半开区间内，先用离线视觉测试证明，再对同一个四秒窗口重跑一次有界 `--execute`。不要全量重分析 PV，不要把 F006 或 F009 标成通过，不要宣称打Boss、跳跃或射击已经修好。
 
 上一轮F007/F008本地检查工作台已交付固定桌面布局、预览/时间轴/篮子同屏、列表滚动保持和按源时间选片排序。既有能力：项目/run选择、原视频播放与区间结束暂停、证据图/音频与转录、描述/标签筛选、阶段/费用、按run隔离的片段篮、JSON/CSV区间清单。新视频仍用CLI分析；页面不触发付费分析、不生成MP4、不发布或结算。
 
@@ -18,7 +20,7 @@ F000–F005、F007、F008技术合同已验收；**F006独立人工U10仍false**
 
 上一轮已验证代码87637af与收尾文档317b22d已同步origin/main；origin/codex/workspace-usability保留87637af。HTML/CSS worker5a44dfd/7ad1321已集成1bf8881/600276e，上一轮worker冻结。计划/证据见sprint-workspace-usability；本轮改动仅在codex/temporal-gameplay，不从历史worktree覆盖root。
 
-本轮GitHub443间歇连接失败，重试已成功完成最终推送，不改全局Git。最终新版可直接刷新8765页面：桌面各面板内滚动，源预览/时间轴/篮子同时可见；源码由main提供，最新页面HTTP200且含片段篮面板。F006是内容评级0/1/2/3、每主查询前十槽≥7独立可用事件，见human-acceptance-guide；本地混合推理与未来EXE见deployment-roadmap，当前并非全离线/已打包EXE。
+上一轮 F008 页面记录曾提到 GitHub 443 后的重试；本轮时序改动没有推送，远端状态以 git 为准。F008 页面仍是：桌面各面板内滚动，源预览/时间轴/篮子同时可见。F006 是内容评级 0/1/2/3、每主查询前十槽至少 7 个独立可用事件，见 human-acceptance-guide。本地混合推理与未来 EXE 见 deployment-roadmap，当前并非全离线或已打包 EXE。
 
 ## 直接使用
 
@@ -34,11 +36,13 @@ F000–F005、F007、F008技术合同已验收；**F006独立人工U10仍false**
 
 ## 最新验证
 
-- `./scripts/verify.ps1`退出0：**582 passed、1 skipped（33.37s）**；Ruff73文件、mypy48源文件、CLI及两次离线wheel通过。跳过项为Windows文件symlink权限，独立canonical-path回归已通过。
-- wheel SHA256：`36405a6c8f3b3ba88107db7d54d8fbe6bd253254a856a9fa0ac05b9d8a093b17`；50条目含全部3个静态资源，无模型、DLL、视频、DB或缓存。
+- `./scripts/verify.ps1`退出0：**618 passed、1 skipped（34.28s）**；Ruff 76 文件、mypy 48 源文件、CLI 及两次离线 wheel 通过。跳过项仍是 Windows 文件 symlink 权限；canonical-path 回归通过。检查页 HTTP 测试改为不走进程代理，避免 `HTTP_PROXY` 把回环请求变成 502。
+- wheel SHA256：`b37b039a4c8688d9320b0bd8a29521306d57a970c26900660f951e679938f52f`；仍是 50 个条目。示例配置和 pilot 脚本不在 wheel 内。
+- 时序定向测试 151 passed（`test_deepseek_vision.py`、`test_temporal_vision.py`、`test_temporal_analysis.py`、`test_temporal_pilot.py`，`-W error`，缓存目录在 `.cache/pytest-runs`）。v1/v2 仍拒绝第 6 张图，对外上限是 9，v3 拒绝倒序、重复时间、复制图动作声明和单帧动作声明，旧 prompt hash 未变。
+- 磁盘复核：`config.temporal.example.json` 的 promptHash 等于已交付 `vision_prompt_fingerprint("phase0-vision-v3")`，同为 `27762b0b9d390c64d53ec4be815bd6e8ead4d249ec9864bb87735223b3ad1c4d`；`git diff -- config.example.json` 为空。root 上存在 `deepseek_vision.py`、`tests/test_temporal_vision.py`、`scripts/validate-temporal-gameplay.py`、`tests/test_temporal_pilot.py`。`artifacts/temporal-gameplay-dry-1` 与 `dry-2` 的报告都是 `frozen`、executed false、qualityGate null、invocation 0，source sha256 都是 `e4ad1f974910639b7914fec1b668e6cbea3d331721b08b56268ee548f8b7619a`。`artifacts/temporal-gameplay-execute-1` 是 `completed_with_failures`、executed true、qualityGate null；static-B 的 `temporalControlPassed` 为 true 且事件数为 0。
 - 项目内Chromium153.0.8010.12真实PV中文/英文各验证通过：111事件、3候选，实际rank1播放并自动停在结束（中文28–29s停29，英文此次31–32s停32），真实证据加载、JSON/CSV身份/微秒/证据、筛选不改排名、汽车维修hybrid空结果、同run篮子恢复、无JS错误。最新报告在ignored `artifacts/workspace-usability-validation/` 和英文目录；另验证两桌面视口无页面滚动、深列表预览/选择位置保持、乱序选3段后篮子/存储/JSON/CSV统一时间顺序及恢复3段。检索rank保留，不能由导出第一段反推；390px仅验无横向溢出，未声明手机同屏。旧初版记录不覆盖历史判定。
 - 前端worker21项合成浏览器交互检查通过（含跨run响应隔离、恶意文本、CSV防公式注入、转录、390px布局）。范围和局部报告位置见sprint-inspection-frontend。
-- 五项用户/系统环境及Python注册表指纹未变；这是指定边界检查，不是全系统监控。本轮没有付费API请求。
+- 五项用户/系统环境及 Python 注册表指纹未在本轮复查。上面的 `--execute` 是本轮唯一付费调用，估价已写入实验报告，未对账单。
 - Windows服务使用独占端口，重复启动不再与旧页面同时监听；仅停止两项已核对本仓库命令行的旧UI进程。最终8765只剩一个监听，projects/inspect已返回新版111事件、videoUrl和费用字段。
 
 ## 已有真实分析与质量边界
@@ -49,9 +53,8 @@ F000–F005、F007、F008技术合同已验收；**F006独立人工U10仍false**
 
 ## 下一步与恢复规则
 
-1. 先核对 `git status --short`、当前分支及远端状态，接续顶部F009活动任务。F008已在main；当前时序改动勿未经验证推main。工作台8765可继续用旧结果；关闭后用run-ui.ps1重新启动，不依赖Agent内存中的进程号。
-2. 优先改善动作理解并小范围验证，然后F006冻结独立录制会话和主/稀疏/负例人工标签、校准召回/动作边界。已有开发素材及同源分组不等于10–20独立会话或小时级验收。
-3. TD001：长媒体showinfo/ashowinfo16MiB上限；TD005：1024文本请求上限（查询占1，最多1023文档）及长索引；TD006：非零PTS、不同音视频起点的浏览器currentTime映射/编码支持尚未验证。保持E5固定batch=1的空间身份和稳定性。
-4. 正式桌面、Creative Planner、MP4渲染/发布另立工程任务，勿以F007替代F006门槛。
+下一条工作只有这一件：查看 `artifacts/temporal-gameplay-execute-1` 里 window-0-B 的 `evidence_outside_range` 拒绝，收紧 v3 提示让被引用帧落在半开区间内，先用离线视觉测试证明，再对同一个四秒窗口重跑一次有界 `--execute`。不要全量重分析 PV，不要把 F006 或 F009 标成通过，不要宣称打Boss、跳跃或射击已经修好。
+
+恢复时先核对 `git status --short`、当前分支和未提交文件归属。F008 已在 main；本轮时序改动尚未提交，不要未经验证推 main。工作台 8765 可继续用旧结果；关闭后用 `run-ui.ps1` 重新启动。独立人工 U10、TD001/TD005/TD006、正式桌面、Creative Planner、MP4 渲染和发布都不是这件下一条工作。开发素材及这次四秒对照不等于 10–20 个独立会话。
 
 全部工具/包/模型/缓存仅在.tools/.venv/.cache；可选Playwright在ui-test extra，浏览器在.tools/browsers，不需要系统安装。密钥只走进程DEEPSEEK_API_KEY，不复制聊天密钥或写文档。开始会话读AGENTS、HANDOFF、feature_list和共享workflow，核对分支/未提交归属；旧scratch/worktrees冻结，不覆盖当前root。每个实现/验证节点主动更新sprint/交接并保存Git检查点，不等额度耗尽。

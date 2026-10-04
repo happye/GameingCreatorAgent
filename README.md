@@ -39,6 +39,8 @@ Inspect commands with `./.venv/Scripts/gamingcreator.exe --help`. `config.exampl
 
 ## Phase 0 validation utilities
 
+User acceptance on 2026-10-04 rejected gameplay retrieval: Boss, jumping and shooting queries have no usable results, and descriptions lack action continuity. F006 remains failed/pending formal U10. The temporal correction is an unaccepted F009 experiment; see [validation and resumption](./docs/references/temporal-gameplay-validation.md) and HANDOFF before reusing earlier smoke results as quality evidence.
+
 The completed 95.175874-second manga PV demo produced 24 visual windows, 111 events and no transcript segments, with estimated API cost ¥0.06246088 for that run; this is not a confirmed invoice. An attack query returned intervals around 28–29, 31–32 and 30–31 seconds; its first hybrid search took 2574 ms. These are smoke results, not a measured human Top-10 pass or an hour-scale performance claim.
 
 Offline validation repeated three queries in three modes with stable results and a second process's SQLite reads. On 2026-10-04 the default hybrid search returned evidence-bearing 28–32 second intervals for both the Chinese attack query and `Find clips of fighters attacking each other in the arena`; the car-repair query returned none in hybrid. Pure semantic still returns false car-repair candidates. Chinese attack results remain unjudged. See the local ignored report `artifacts/demo-phase0/demo-validation.json`; independent human labels and real bilingual threshold calibration are the next validation steps.

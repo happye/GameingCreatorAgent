@@ -8,7 +8,7 @@ from dataclasses import replace
 from decimal import Decimal
 from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlencode, urlparse
-from urllib.request import Request, urlopen
+from urllib.request import ProxyHandler, Request, build_opener
 
 import pytest
 from test_sqlite_store import CONFIG, bundle_fixture, event_fixture
@@ -38,8 +38,10 @@ def workspace(repository):
 
 def get(base, path, **kwargs):
     request = Request(base + path, **kwargs)
+    # The process proxy must not intercept the loopback inspection server.
+    opener = build_opener(ProxyHandler({}))
     try:
-        response = urlopen(request, timeout=10)
+        response = opener.open(request, timeout=10)
     except HTTPError as error:
         response = error
     with response:

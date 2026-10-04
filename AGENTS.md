@@ -31,7 +31,7 @@ Follow `docs/design-docs/architecture.md`, `phase-0-engineering-spec.md`, ADR-00
 
 ## Testing and acceptance
 
-Use pytest `tests/test_*.py`; follow `docs/references/testing-guide.md` and `phase-0-benchmark.md`. Top-10 Useful Rate has ten fixed slots: missing and duplicate events count zero; independent human-judged usable events must reach ≥70%. API success and synthetic scores do not prove quality. Mark `passes: true` only after recorded feature evidence. Benchmark exit 6 preserves its report when the gate fails or remains unverified.
+Use pytest `tests/test_*.py`; follow `docs/references/testing-guide.md` and `phase-0-benchmark.md`. Top-10 Useful Rate has ten fixed slots: missing and duplicate events count zero; independent human-judged usable events must reach ≥70%. Multi-frame inputs and index hits do not prove action understanding. Mark `passes: true` only after feature evidence. Benchmark exit 6 preserves its report when the gate fails or remains unverified.
 
 ## Changes, commits, and handoff
 

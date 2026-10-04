@@ -1,15 +1,19 @@
 # Active assignments
 
-协调规则见 `docs/references/agent-workflow.md`。2026-10-04用户否决玩法检索，当前root负责F009集成和共享记录。上一轮UI worker冻结，本轮temporal worker活动状态见下表；禁止从旧scratch覆盖root。分支/推送状态见HANDOFF及git。
+协调规则见 `docs/references/agent-workflow.md`。2026-10-04用户否决玩法检索。root 已把 vision/pilot 的独占文件集成到 `codex/temporal-gameplay`，共享记录以 HANDOFF 和 sprint-temporal-gameplay 为准。两个 worker worktree 冻结，禁止再把它们覆盖回 root。本轮未提交、未推送。
 
 ## 当前交付
 
 | 当前 owner | Branch/worktree | 独占范围 | 状态 |
 | --- | --- | --- | --- |
-| root / F009 | codex/temporal-gameplay，root | inputs/local_files、analysis、sqlite_store配置白名单、run-demo、test_temporal_analysis、公共文档/实验执行 | 1500db7；39项定向/mypy通过，未整体验证 |
-| temporal_vision | codex/temporal-vision，.worktrees/temporal-vision | deepseek_vision.py、test_temporal_vision.py、own sprint | 开发/要求保存检查点；不调用API |
-| temporal_pilot | codex/temporal-pilot，.worktrees/temporal-pilot | validate-temporal-gameplay.py、可选test_temporal_pilot.py、own sprint | 1fc13e0初始检查点，离线验证中；不调用API |
+| root / F009 | codex/temporal-gameplay，root | provider、pilot、时序测试、config.temporal.example.json、公共文档 | 已集成并完成一次有界对照；F009 仍 false。verify 618 passed、1 skipped |
+| temporal_vision | codex/temporal-vision，.worktrees/temporal-vision | 已交出 deepseek_vision.py、test_temporal_vision.py | 冻结在 bdf3861 加格式化差额；不要回写 root |
+| temporal_pilot | codex/temporal-pilot，.worktrees/temporal-pilot | 已交出 validate-temporal-gameplay.py、test_temporal_pilot.py | 冻结在 ca45f1d；不要回写 root |
 | temporal_audit / temporal_acceptance | 只读root | 根因、官方模型/价目、验收设计 | done，无文件改动 |
+
+磁盘复核：`config.temporal.example.json` 的 promptHash 等于 `vision_prompt_fingerprint("phase0-vision-v3")`；两次 dry-run 为 `frozen`，execute-1 为 `completed_with_failures`。
+
+下一条工作：查看 `artifacts/temporal-gameplay-execute-1` 里 window-0-B 的 `evidence_outside_range` 拒绝，收紧 v3 提示让被引用帧落在半开区间内，先用离线视觉测试证明，再对同一个四秒窗口重跑一次有界 `--execute`。不要全量重分析 PV，不要把 F006 或 F009 标成通过，不要宣称打Boss、跳跃或射击已经修好。
 
 下面F007/F008为已交付历史，不是本轮占用；恢复见sprint-temporal-gameplay。F006用户定性验收未通过，正式U10未运行；F009false。
 

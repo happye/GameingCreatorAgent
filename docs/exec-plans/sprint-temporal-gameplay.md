@@ -24,4 +24,14 @@ root在codex/temporal-gameplay拥有配置读取/analysis窗口、实验脚本�
 
 root配置/存储/窗口定向39项通过（独立pytest tmp/cache，warnings=error），mypy48源文件通过。新增pipeline身份phase0-analyze-temporal-v1，v3允许2–9帧，v1/v2仍5帧，旧schema/快照未重写；run-demo支持显式-Config。provider/实验worker尚未集成，无新API调用，F009false。
 
-起点317b22d：F008工作台技术验收已通过，F006仍false。进程DeepSeek key配置存在，仅检查布尔值；不读取到日志/文件，不复制聊天密钥。全依赖/工具继续项目隔离。本轮实现、实验与最终检查尚未完成，不能宣称玩法问题已解决。
+起点317b22d：F008工作台技术验收已通过，F006仍false。进程DeepSeek key配置存在，仅检查布尔值；不读取到日志/文件，不复制聊天密钥。全依赖/工具继续项目隔离。集成前的实现、实验与最终检查当时尚未完成。集成后的实测见下一节，仍不能宣称玩法问题已解决。
+
+## 2026-10-04 root 集成与一次有界对照
+
+root 接入 vision provider（对外 `max_images` 9，v1/v2 仍拒绝超过 5 张，旧 hash 不变）和 pilot。`config.temporal.example.json` 的 `promptHash` 是 `27762b0b9d390c64d53ec4be815bd6e8ead4d249ec9864bb87735223b3ad1c4d`。`config.example.json` 未改。时序定向 151 passed。`./scripts/verify.ps1` 退出 0：618 passed、1 skipped（34.28s），Ruff 76 文件，mypy 48 源文件，wheel `b37b039a4c8688d9320b0bd8a29521306d57a970c26900660f951e679938f52f`。F006 与 F009 仍 false。
+
+同一 PV（sha256 `e4ad1f974910639b7914fec1b668e6cbea3d331721b08b56268ee548f8b7619a`）两次无 `--execute` 冻结在 `artifacts/temporal-gameplay-dry-1` 与 `artifacts/temporal-gameplay-dry-2`：2 FPS，0–4 秒，A 为 v2 的 5 帧，B 为 v3 的 9 帧，加静帧和倒序；`qualityGate` null，无 HTTP。`--execute` 一次，目录 `artifacts/temporal-gameplay-execute-1`，退出码 4，`completed_with_failures`。v2 返回 5 条事件；v3 被 `evidence_outside_range` 拒绝并记录估价 ¥0.003524；静帧返回空事件，没有确认连续动作；倒序在发送前被本地拒绝，费用未知。已知估价合计 ¥0.0075876，未对账单。这不是玩法检索通过。
+
+磁盘复核：`config.temporal.example.json` 的 promptHash 等于 `vision_prompt_fingerprint("phase0-vision-v3")`；`git diff -- config.example.json` 为空。两次 dry-run 报告都是 `frozen`、executed false、qualityGate null。execute-1 报告是 `completed_with_failures`、executed true、qualityGate null。provider 与 pilot 文件在 root 工作区。
+
+下一条工作：查看 `artifacts/temporal-gameplay-execute-1` 里 window-0-B 的 `evidence_outside_range` 拒绝，收紧 v3 提示让被引用帧落在半开区间内，先用离线视觉测试证明，再对同一个四秒窗口重跑一次有界 `--execute`。不要全量重分析 PV，不要把 F006 或 F009 标成通过，不要宣称打Boss、跳跃或射击已经修好。
