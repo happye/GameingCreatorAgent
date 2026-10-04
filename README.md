@@ -60,6 +60,6 @@ Common resumption prompt for any of the three tools:
 读取 AGENTS.md、HANDOFF.md 和 feature_list.json，检查当前分支及未提交修改，按共享工作流接续已分配任务；把验证结果和下一步写入仓库交接记录。
 ```
 
-The local Grok inspection currently reports `projectTrusted: false` and no loaded project instructions. On first use, handle Grok's repository trust prompt, then rerun `grok inspect`. Claude's import is configured, but its live session loading has not been tested here.
+An earlier Grok inspection reported `projectTrusted: false` and no loaded instructions; later live loading has not been rechecked by Codex. Run `grok inspect` in the current workspace to confirm it. Claude's import is configured, but its live session loading has not been tested here.
 
 Loading behavior was checked against official documentation on 2026-10-03: [Codex project instructions](https://learn.chatgpt.com/docs/agent-configuration/agents-md), [Claude Code imports](https://code.claude.com/docs/en/memory#import-additional-files), and [Grok project rules](https://docs.x.ai/build/features/project-rules). Local account permissions and model execution are separate from repository adapter validation.

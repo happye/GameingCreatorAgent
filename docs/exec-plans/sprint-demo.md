@@ -30,3 +30,5 @@
 F003/F005依feature_list合同技术验收：真实视觉/ASR证据与Provider替换合同、unknown费用/逐次记录；Completed source区间/证据、稳定去重/合法空结果、固定词法/本地语义对照。此验收不声称人评≥70%。F006false：真实英文漏召回、puresemantic负例误召回和未知人工grade仍保留；未做独立会话冻结及小时级验证，不开始正式UI。
 
 API模型费用本轮总估算0.0741CNY（完成0.06246088+失败0.01163912），不含硬件/工具费用，未核账单。用户/系统环境及三处Python注册表5指纹与此前相同，证据.cache/demo-host-after.json；所有包/模型/运行库仅项目内。最终worker及文档已整合；下一owner按HANDOFF/TD004/TD005冻结人评集和改善检索，不重复搭建环境。
+
+代码与当前规格检查点19cfe58已成功推送origin/codex/phase0-demo，并快进同步到origin/main。接续直接使用main；旧F003/Grok分支为历史。核心代码和wheel未因交接记录更新而改变。

@@ -4,7 +4,7 @@
 
 | Feature | Owner / tool-session | Branch | Scope | State | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| Demo / F003 / F005 | Codex root | `codex/phase0-demo` | 全链路、配置/恢复/预算、CLI、SQL3、隔离依赖及共享记录 | accepted / ready-for-handoff | `sprint-demo.md` |
+| Demo / F003 / F005 | Codex root | `main`（代码检查点19cfe58；origin/codex/phase0-demo备份） | 全链路、配置/恢复/预算、CLI、SQL3、隔离依赖及共享记录 | accepted / ready-for-handoff | `sprint-demo.md` |
 | Pricing / vision / docs | Codex demo_pricing | 独立worker与root整合记录 | 价格/诊断/v2提示、README/AGENTS/规格/quickstart | frozen / integrated | `sprint-demo.md` |
 | Local retrieval | Codex demo_retrieval | `codex/demo-retrieval`，checkpoint `4b692d8` | E5/batch1/cache、BM25/cosine/hybrid与固定fixture | frozen / integrated | `sprint-F005-worker.md` |
 | F006 runner / SQL3 | Codex demo_benchmark | `codex/demo-benchmark` | 标签评分、schema3/向量/检索持久化、legacy测试修复 | frozen / integrated | `sprint-F006-worker.md`, `sprint-F005-persistence-worker.md` |

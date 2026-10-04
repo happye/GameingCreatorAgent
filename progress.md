@@ -69,3 +69,5 @@ SQLite 专用线程、进程锁、九表迁移/组合 FK、媒体/语义 checkpo
 ## 2026-10-04 Phase 0 CLI Demo整合
 
 价格快照、全时轴滑动窗口、显式失败/取消恢复与未知费用保留、ASR提前登记、本地E5语义/词法/混合检索、SQL3与人工评分CLI已完成。真实95.175874s PV得24窗口/111events/0transcripts，估算API0.06246088CNY；保留早期失败run0.01163912，总估算0.0741CNY。三查询三模式重复稳定/跨进程读取通过；英文漏召回、puresemantic负例误召回及未人评保持可见。F003/F005技术合同已验收，F006人工gate未过。完整verify557passed/0skip，Ruff/mypy42源文件、重复wheel90c27fba9af76a86a35c191d684d0c5160baf07b49a4e8e90eb0356bf6eb4a75通过，所有环境仍仅项目内。快速运行docs/references/demo-quickstart.md，证据docs/exec-plans/sprint-demo.md，下一步TD004/TD005+独立冻结标签；不开始GUI。
+
+版本同步：已验证代码19cfe58已推送origin/codex/phase0-demo和origin/main，root现main。main包含此前F003检查点及本轮Demo，接续不用再切历史模型分支。
