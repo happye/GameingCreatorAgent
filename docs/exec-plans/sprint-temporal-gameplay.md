@@ -2,6 +2,12 @@
 
 ## Codex恢复复核与v4进行中
 
+最新实测：artifacts/temporal-v4-execute-0的0–4秒对照已completed，qualityGate=null。v2/A返回5个画面事件；v4/B密9帧返回2个变化过程，v4/C同5帧也返回2个过程；静帧0事件，倒序在发送前拒绝。4次已发送调用、28输入图，已知估价¥0.0093252、unknown=0、reserved=0，billingConfirmed=false。主要为建筑/竞技场转场和光效，不能据此证明打Boss、跳跃或射击检索。下一步实际动作窗口及新完整run；启动器正常4项真实生命周期已通过，失败清理补测中。
+
+动作实测：漫画28–32秒A/B/C输出通过，B描述持续伤害和少量位移，但static-B返回不支持的动作，被event_static_evidence拒绝，0接受事件；4次调用估价¥0.00974288。Atom8–12秒B输出3个过程，其中jump与“无法确认主动跳跃”矛盾；C边界证据被拒绝、static-B也被拒绝；4次调用估价¥0.01037184。两个报告completed_with_failures，不把管线阻止假动作误称模型控制通过。真实模型仍不稳定；所有质量门槛null、费用仅估计。
+
+新完整Atom分析96b5f01530ce43e2944828fb0520b9b4已在artifacts/demo-phase0开始（16窗口、v4、预算¥5）；当前执行中，最终结果未知。先读run状态和时间线再续跑，旧run保持不变。
+
 provider d026103已集成为42604f9；最新配置真实hash为9ea350e10eb028f1f5e2dc7d355ebd1d080ad8ae8397eb709705a25773323f48。联合相关测试217 passed/1权限skip（5.48s）、Ruff/mypy48通过，旧v3 hash未变。即将运行同0–4秒的有界v4试验，输出全新artifacts/temporal-v4-execute-0，费用/新结果尚未知，F006/F009未验收。工具收据检查发现28个stdlib pyc漂移，仅从固定SHA归档恢复这些文件，receipt/程序/DLL未改，完整init随后通过。
 
 已将Grok集成全量保存4c37a63。费用/失败/冻结manifest与交接一致；v3只记录evidence_outside_range，缺原响应与坏区间，不能确定具体端点错误。新增v4设计用起止frame alias替代模型微秒算术，程序映射为SourceRange，旧v3保持不变；有限白名单结构诊断可定位新失败，不记录原模型文本。root已支持新配置/store/analysis/pilot（附同帧C对照），新增本地health识别给一键启动器；定向配置/pilot/HTTP已通过。本轮尚未执行新收费调用或宣称动作检索改善。

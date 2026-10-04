@@ -4,13 +4,15 @@
 
 ## 当前任务：Grok复核与可测试版本
 
-最新检查点：42604f9集成新frame合同；v4 profile与CLI联动、原schema兼容及HTTP联合测试217 passed/1权限skip、Ruff/mypy通过。现在准备同0–4秒有限v4真实重测（新目录artifacts/temporal-v4-execute-0），未记录新费用/效果；launcher worker仍活动。先核对实验report.json再继续，不能把启动试验当完成。28个项目stdlib pyc已从固定归档恢复、收据不变，init完整通过。
+最新检查点：b2daf1b；v4 profile与CLI联动、原schema兼容及HTTP联合测试217 passed/1权限skip、Ruff/mypy通过。artifacts/temporal-v4-execute-0真实0–4秒对照已completed：A/v2 5事件，B/v4密9帧2事件，C/v4同5帧2事件；静帧0事件、倒序发送前拒绝。4次HTTP、28输入图、已知估价¥0.0093252，无未知费用，未对账单，qualityGate=null。该段主要转场，不能证明玩法理解；下一步验证实际28–32秒动作及Atom片段。launcher worker仍活动，正常生命周期4项已通过，补测失败清理。28个项目stdlib pyc已从固定归档恢复、收据不变，init完整通过。
+
+后续真实对照：temporal-v4-execute-28的A/B/C均completed，B描述持续伤害/轻微位移，静帧输出被event_static_evidence拒绝，报告completed_with_failures，4次HTTP估价¥0.00974288。temporal-v4-atom-8的B返回3个过程（含下落但jump标签与不确定性矛盾），C被event_frame_boundaries拒绝，静帧也被拒绝，4次HTTP估价¥0.01037184。两者均qualityGate=null、未知0、非账单。不得改写为模型静帧控制通过或跳跃已识别准确。已开始完整Atom新run 96b5f01530ce43e2944828fb0520b9b4，artifacts/demo-phase0，v4、16窗口、预算¥5；当前刚完成1窗口，需先核对run状态再续，不要重复创建。
 
 Codex已将Grok全部未提交集成保存为4c37a63（codex/temporal-gameplay），不回滚其实现或实验。只读复核确认费用/失败记录一致；v3旧响应未保存，无法断言具体坏端点。当前改用独立v4合同：模型选起止frame alias，程序用源时钟生成半开区间；保留v1/v2/v3内容/hash。root已接入配置/SQLite/analysis/pilot新版本，并新增/api/health；对应配置/pilot/HTTP定向检查通过，暂未新API调用。F006/F009仍false。
 
 活动worker：temporal_frame_contract在.worktrees/temporal-frame-contract拥有deepseek_vision.py/new test/own sprint；workspace_launcher在.worktrees/workspace-launcher拥有Start-Workspace.cmd、scripts/start-workspace.ps1、真实PowerShell生命周期测试/own sprint。都不得回写root其他文件。旧temporal-vision/pilot及全部历史scratch冻结。
 
-下一步先集成两个worker独占提交；root更新旧测试“v4 unsupported”为v5，生成最新config.temporal.example的v4实际hash。运行针对合同/脚本检查，然后先同0–4秒有限对照，再28–32秒动作窗口及同帧control；成功且内容合理后才新完整run。旧run不会因改代码变成新理解。一键启动仅打开本地工作台，不自动收费或重新分析。最后完整verify、真实浏览器/启动器复核、公共记录与Git推送；未完成不称已修好。
+provider worker已集成并冻结；配置v4 hash与旧测试已更新。下一步28–32秒动作窗口及同帧control，成功且内容合理后新完整run；集成launcher独占提交。旧run不会因改代码变成新理解。一键启动仅打开本地工作台，不自动收费或重新分析。最后完整verify、真实浏览器/启动器复核、公共记录与Git推送；未完成不称已修好。
 
 pytest初次使用嵌套basetemp未建父目录导致setup错误，创建独立.cache/pytest-runs目录后恢复；媒体stat回归在粗粒度时钟下两个同大小写入mtime不变，测试显式变更本地fixture mtime验证已有缓存失效合同，不改变生产缓存。该缓存依赖文件元数据变化，不能声称能检测元数据完全不变的外部篡改。
 
