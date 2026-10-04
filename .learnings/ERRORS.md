@@ -1,5 +1,9 @@
 # Errors
 
+## 2026-10-04: Temporal configuration must be accepted consistently
+
+Initial temporal resumption test failed at storage.invalid_config: the input reader allowed nine-frame v3 but SQLite's independent typed allowlist still limited five and required a prompt hash. Aligned only the new version's constraints and supplied the fixture identity; 39 targeted tests then passed. Use unique pytest cache as well as basetemp to avoid other Windows sessions' locked cache. Diagnostic JPEG extraction also requires explicit full-range pixel format; use the existing media service for production rather than ad hoc FFmpeg flags. No global cache/permissions changes were made.
+
 ## 2026-10-04: 排序验收绑定错误的播放片段（已修复）
 
 新增源时间排序后，英文浏览器测试仍把JSON导出第一条当作刚播放的检索第一名，区间断言失败。两种排序是不同合同；测试改为找到实际rank1，保持JSON/CSV的源时间升序断言，随后中英文均通过。暂停待完成play会触发AbortError，UI忽略这种主动中断，避免假故障提示。相关文件：scripts/validate-inspection-ui.py、ui/static/app.js；证据sprint-workspace-usability.md。多文件patch须匹配当前整行文本，不能沿用旧CSS/段落上下文；失败时先确认未部分写入再修补。

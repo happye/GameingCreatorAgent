@@ -97,6 +97,16 @@
       "test_criteria": "Real browser checks show preview, timeline and basket together at 1440x900 and 1366x768 without page scrolling, keep a deep timeline position through selection, preserve all existing playback/evidence behavior, sort basket/storage/JSON/CSV by source start/end/identity and avoid mobile horizontal overflow.",
       "dependencies": ["F007"],
       "evidence": ["docs/exec-plans/sprint-workspace-usability.md", "docs/exec-plans/sprint-workspace-layout.md", "scripts/validate-inspection-ui.py"]
+    },
+    {
+      "id": "F009",
+      "name": "Temporal gameplay analysis correction",
+      "description": "Address rejected gameplay retrieval with ordered multi-frame action analysis, conservative action evidence and bounded real-video comparisons; this technical change does not pass F006.",
+      "priority": 9,
+      "passes": false,
+      "test_criteria": "A separately fingerprinted temporal prompt preserves legacy runs, rejects unordered or single-frame action claims, supports a denser source-clock-preserving profile and resumable windows, and records bounded real-video comparisons including static controls and all attempt costs. Independent action retrieval quality remains F006.",
+      "dependencies": ["F003", "F004", "F005"],
+      "evidence": ["docs/exec-plans/sprint-temporal-gameplay.md"]
     }
   ]
 }

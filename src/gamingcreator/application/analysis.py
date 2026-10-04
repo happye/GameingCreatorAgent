@@ -46,6 +46,7 @@ from gamingcreator.domain.models import EvidenceReference
 
 PIPELINE_VERSION = "phase0-analyze-v1"
 WINDOW_PIPELINE_VERSION = "phase0-analyze-v2"
+TEMPORAL_PIPELINE_VERSION = "phase0-analyze-temporal-v1"
 # These match the first vision provider. The provider rejects any other pair.
 VISION_PROMPT_VERSION = "phase0-vision-v1"
 VISION_SCHEMA_VERSION = "semantic-events-v1"
@@ -153,6 +154,8 @@ def vision_windows(
 
 
 def _pipeline_version(config: AnalysisConfig) -> str:
+    if config.schema_version == 2 and config.vision_prompt_version == "phase0-vision-v3":
+        return TEMPORAL_PIPELINE_VERSION
     return WINDOW_PIPELINE_VERSION if config.schema_version == 2 else PIPELINE_VERSION
 
 
@@ -346,6 +349,8 @@ async def _run_pipeline(
     timeout_seconds: float,
 ) -> AnalyzeOutcome:
     image_limit, image_width = _vision_limit(ports.vision)
+    if config.vision_prompt_version != "phase0-vision-v3":
+        image_limit = min(image_limit, 5)
     context = CancellationContext(run_id, timeout_seconds)
     deadline = monotonic() + timeout_seconds
 

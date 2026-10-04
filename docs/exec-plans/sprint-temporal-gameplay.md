@@ -20,4 +20,8 @@ v2每请求已有5张按sourceUs排列的图，1FPS/1帧重叠；不是每帧独
 
 root在codex/temporal-gameplay拥有配置读取/analysis窗口、实验脚本、共享规格/验收/HANDOFF。视觉provider worker须独立worktree，仅拥有deepseek_vision.py、新temporal测试及自己的sprint。只读audit/acceptance核对链路/官方限制/验收，不写root。
 
+实际分工：temporal_vision在.worktrees/temporal-vision实现provider；temporal_pilot在.worktrees/temporal-pilot拥有validate-temporal-gameplay.py/其测试/own sprint。root另拥有sqlite_store.py的配置白名单兼容（不改schema/旧快照）及test_temporal_analysis.py。初次定向测试暴露了存储白名单仍限5帧与fixture缺prompt hash，已定位补齐；pytest缓存改用独立目录，不处理其他用户锁定缓存。
+
+root配置/存储/窗口定向39项通过（独立pytest tmp/cache，warnings=error），mypy48源文件通过。新增pipeline身份phase0-analyze-temporal-v1，v3允许2–9帧，v1/v2仍5帧，旧schema/快照未重写；run-demo支持显式-Config。provider/实验worker尚未集成，无新API调用，F009false。
+
 起点317b22d：F008工作台技术验收已通过，F006仍false。进程DeepSeek key配置存在，仅检查布尔值；不读取到日志/文件，不复制聊天密钥。全依赖/工具继续项目隔离。本轮实现、实验与最终检查尚未完成，不能宣称玩法问题已解决。

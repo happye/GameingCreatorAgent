@@ -2,6 +2,7 @@
   [string]$Video,
   [string]$Run,
   [string]$Project = 'artifacts/demo-phase0',
+  [string]$Config = 'config.example.json',
   [string]$Query = '寻找角色打斗和攻击的片段',
   [ValidateSet('lexical', 'semantic', 'hybrid')][string]$Mode = 'hybrid',
   [ValidateRange(1, 100)][int]$TopK = 10,
@@ -18,7 +19,7 @@ if (([bool]$Video) -eq ([bool]$Run)) { throw 'Provide either -Video for a new an
 Push-Location $repositoryRoot
 try {
   if ($Video) {
-    $analysis = & $pythonPath -m gamingcreator analyze $Video --project $Project --config config.example.json --max-cost-cny $MaxCostCny
+    $analysis = & $pythonPath -m gamingcreator analyze $Video --project $Project --config $Config --max-cost-cny $MaxCostCny
     if ($LASTEXITCODE -ne 0) { throw 'Analysis stopped; its diagnostic contains the run ID and completed windows remain saved.' }
     $Run = ($analysis | ConvertFrom-Json).runId
   }
