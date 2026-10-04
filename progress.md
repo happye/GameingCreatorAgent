@@ -85,3 +85,11 @@ SQLite 专用线程、进程锁、九表迁移/组合 FK、媒体/语义 checkpo
 共享规格、架构、README/AGENTS、使用/测试手册、feature_list、assignments/HANDOFF已同步；工具适配器仍引用共享规则。TD006记录非零PTS/不同流起点及编码浏览器支持待验证。正式桌面/MP4渲染/商业流程未实施，下一优先F006独立冻结标签及TD001/TD005长素材验证。版本提交/推送见HANDOFF，未提交不当已推送。
 
 版本同步：24ded10已上传工作分支；最终2bb9848（含独占端口与582项验证）已普通快进合并并推送origin/main与origin/codex/inspection-workspace，root现main。首次GitHub连接失败后进程内HTTP/1.1重试成功，无全局Git配置修改。8765仅一个已核对本仓库新版监听，真实projects/inspect返回111事件、原视频URL和估价字段；后续可直接run-ui.ps1启动。收尾文档提交见git log。
+
+## 2026-10-04 F008 用户工作台反馈落地
+
+用户反馈UI简陋、预览/时间轴/篮子远、乱序。独立HTML/CSS worker重建深色固定视口工作台，root实现篮子显示/存储/JSON/CSV统一源时间排序、保留检索rank和列表滚动位置；只读视觉审查后扩大事件阅读区、事实12px/篮子11px并适配主题canvas。未来编排/成片和资源区诚实标待开放，未改变正式桌面/商业门槛。
+
+真实中英文PV浏览器增强回归均通过：1440×900/1366×768三区同屏、无body滚动，深列表预览/选择位置保持，倒序3段有序导出/恢复，负例空、证据正常、0JS错误；390px无横向溢出但仍纵向浏览。修正英文测试误把时间顺序第一段当检索rank1的比较；暂停触发AbortError不再报假播放故障。完整verify582passed/1权限skip（33.37s）、Ruff73/mypy48/CLI/重复wheel36405a6c8f3b3ba88107db7d54d8fbe6bd253254a856a9fa0ac05b9d8a093b17通过。
+
+F008true、F006false；人工质量标准和本地/云端/未来EXE说明分别落在human-acceptance-guide与deployment-roadmap。共享AGENTS/README/架构/API/使用/测试手册/feature_list/交接同步。本轮无新增依赖/付费API，五项指定宿主边界未变。检查点1684587/decf5b2、前端集成1bf8881/600276e持续保存；工作分支首次连接失败重试已上传，最终主线同步见HANDOFF和git。

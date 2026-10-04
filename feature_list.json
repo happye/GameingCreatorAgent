@@ -93,10 +93,10 @@
       "name": "Workspace layout and chronological clip basket",
       "description": "Apply user UI acceptance feedback: professional workstation layout with visible preview/timeline/basket, independent list scrolling and chronological selections without changing retrieval ranks.",
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "test_criteria": "Real browser checks show preview, timeline and basket together at 1440x900 and 1366x768 without page scrolling, keep a deep timeline position through selection, preserve all existing playback/evidence behavior, sort basket/storage/JSON/CSV by source start/end/identity and avoid mobile horizontal overflow.",
       "dependencies": ["F007"],
-      "evidence": ["docs/exec-plans/sprint-workspace-usability.md", "scripts/validate-inspection-ui.py"]
+      "evidence": ["docs/exec-plans/sprint-workspace-usability.md", "docs/exec-plans/sprint-workspace-layout.md", "scripts/validate-inspection-ui.py"]
     }
   ]
 }

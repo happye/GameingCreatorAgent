@@ -114,7 +114,7 @@ def validate(project: Path, run_id: str, output: Path, query: str) -> dict[str, 
                     "Array.from(document.querySelectorAll('#evidence-list img')).some(image=>image.complete && image.naturalWidth>0)",
                 )
                 assert candidate_count == 3, "smoke expects three attack candidates"
-                # Deliberately select in descending source order, not rank order.
+                # Deliberately select out of source order, independently of rank.
                 for index in (1, 2, 0):
                     page.locator(".candidate-card").nth(index).locator(".select-clip").click()
                 wait_for(page, "!document.querySelector('#export-json').disabled")
@@ -139,7 +139,9 @@ def validate(project: Path, run_id: str, output: Path, query: str) -> dict[str, 
                     {"project": project_reference, "run": run_id},
                 )
                 assert stored_starts == starts, "saved basket must use source order"
-                clip = selected["selectedClips"][0]
+                # Source order is independent of retrieval rank, especially for
+                # translated queries. Compare playback to the actual first hit.
+                clip = next(row for row in selected["selectedClips"] if row["rank"] == 1)
                 assert clip["evidenceIds"] and clip["startUs"] < clip["endUs"]
                 assert (
                     clip["startUs"] / 1_000_000

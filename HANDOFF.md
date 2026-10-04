@@ -4,11 +4,13 @@
 
 ## 当前结果与版本
 
-已保留并复核 Grok 改动，完成 F007 本地检查工作台：项目/run选择、原视频播放与区间结束暂停、证据图/音频与转录、描述/标签筛选、阶段/费用、按run隔离的片段篮、JSON/CSV区间清单。新视频仍用CLI分析；页面不触发付费分析、不生成MP4、不发布或结算。
+F007本地检查工作台已交付，本轮F008进一步完成固定桌面布局、预览/时间轴/篮子同屏、列表滚动保持和按源时间选片排序。既有能力：项目/run选择、原视频播放与区间结束暂停、证据图/音频与转录、描述/标签筛选、阶段/费用、按run隔离的片段篮、JSON/CSV区间清单。新视频仍用CLI分析；页面不触发付费分析、不生成MP4、不发布或结算。
 
-F000–F005及F007技术合同已验收；**F006独立人工U10仍false**。用户明确授权本地检查交互，依据ADR-002；正式桌面/商业阶段仍有原质量门槛。
+F000–F005、F007、F008技术合同已验收；**F006独立人工U10仍false**。用户明确授权本地检查交互，依据ADR-002；正式桌面/商业阶段仍有原质量门槛。
 
-最近已交付主线a019982（已推送）。用户追加视觉/布局/篮子排序反馈，root现codex/workspace-usability实施F008；workspace_layout独立worktree只改HTML/CSS，root只改JS/验证与公共记录。计划见sprint-workspace-usability，F008仍false。本轮尚未完整验证；不要覆盖已有F007媒体/费用/端口合同，后续无需切历史F003分支。
+最近已交付主线a019982（已推送）。root在codex/workspace-usability完成F008，工作检查点1684587/decf5b2已保存且decf5b2已上传origin/codex/workspace-usability；HTML/CSS worker5a44dfd/7ad1321已集成1bf8881/600276e，root最终字体/比例/canvas与排序回归通过。正在保存最终提交、普通推送并快进main；以git状态为准。计划/证据见sprint-workspace-usability，全部本轮worker已冻结。不要从历史worktree覆盖root。
+
+本轮首推因GitHub443失败，重试已成功，不改全局Git。最终新版可直接刷新8765页面：桌面各面板内滚动，源预览/时间轴/篮子同时可见；源码由当前分支提供。F006是内容评级0/1/2/3、每主查询前十槽≥7独立可用事件，见human-acceptance-guide；本地混合推理与未来EXE见deployment-roadmap，当前并非全离线/已打包EXE。
 
 ## 直接使用
 
@@ -24,9 +26,9 @@ F000–F005及F007技术合同已验收；**F006独立人工U10仍false**。用�
 
 ## 最新验证
 
-- `./scripts/verify.ps1`退出0：**582 passed、1 skipped（33.38s）**；Ruff73文件、mypy48源文件、CLI及两次离线wheel通过。跳过项为Windows文件symlink权限，独立canonical-path回归已通过。
-- wheel SHA256：`9af66ee95055d99d88caf56d299d6a1d2b9070ab451bbb00318ae2f48d378210`；50条目含全部3个静态资源，无模型、DLL、视频、DB或缓存。
-- 项目内Chromium153.0.8010.12真实PV中文/英文各验证通过：111事件、3候选、28–29s区间自动停在29s、真实证据加载、JSON/CSV身份/微秒/证据、筛选不改排名、汽车维修hybrid空结果、同run片段篮恢复、无JS pageerror。报告在ignored `artifacts/inspection-ui-validation/` 和 `artifacts/inspection-ui-validation-english/`。
+- `./scripts/verify.ps1`退出0：**582 passed、1 skipped（33.37s）**；Ruff73文件、mypy48源文件、CLI及两次离线wheel通过。跳过项为Windows文件symlink权限，独立canonical-path回归已通过。
+- wheel SHA256：`36405a6c8f3b3ba88107db7d54d8fbe6bd253254a856a9fa0ac05b9d8a093b17`；50条目含全部3个静态资源，无模型、DLL、视频、DB或缓存。
+- 项目内Chromium153.0.8010.12真实PV中文/英文各验证通过：111事件、3候选，实际rank1播放并自动停在结束（中文28–29s停29，英文此次31–32s停32），真实证据加载、JSON/CSV身份/微秒/证据、筛选不改排名、汽车维修hybrid空结果、同run篮子恢复、无JS错误。最新报告在ignored `artifacts/workspace-usability-validation/` 和英文目录；另验证两桌面视口无页面滚动、深列表预览/选择位置保持、乱序选3段后篮子/存储/JSON/CSV统一时间顺序及恢复3段。检索rank保留，不能由导出第一段反推；390px仅验无横向溢出，未声明手机同屏。旧初版记录不覆盖历史判定。
 - 前端worker21项合成浏览器交互检查通过（含跨run响应隔离、恶意文本、CSV防公式注入、转录、390px布局）。范围和局部报告位置见sprint-inspection-frontend。
 - 五项用户/系统环境及Python注册表指纹未变；这是指定边界检查，不是全系统监控。本轮没有付费API请求。
 - Windows服务使用独占端口，重复启动不再与旧页面同时监听；仅停止两项已核对本仓库命令行的旧UI进程。最终8765只剩一个监听，projects/inspect已返回新版111事件、videoUrl和费用字段。

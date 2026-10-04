@@ -647,9 +647,10 @@
         const width = canvas.clientWidth;
         if (!width) return;
         const ratio = Math.min(window.devicePixelRatio || 1, 2);
+        const height = canvas.clientHeight || 40;
         canvas.width = Math.round(width * ratio);
-        canvas.height = Math.round(40 * ratio);
-        context.scale(ratio, ratio);
+        canvas.height = Math.round(height * ratio);
+        context.scale(ratio, ratio * height / 40);
         context.clearRect(0, 0, width, 40);
         const duration = state.view?.media?.durationUs;
         if (!duration) return;
@@ -694,7 +695,8 @@
         const selected = state.active;
         try {
             await ui["source-video"].play();
-        } catch {
+        } catch (error) {
+            if (error.name === "AbortError") return;
             if (state.revision === revision && state.active === selected) notice("浏览器暂未开始播放，请使用视频播放按钮。若视频无法解码，请检查原视频格式。");
         }
     }
