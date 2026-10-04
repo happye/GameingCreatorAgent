@@ -40,8 +40,13 @@ from gamingcreator.infrastructure.ffmpeg_media import FfmpegMediaProcessor, hash
 from gamingcreator.infrastructure.http_transport import HttpxVisionTransport
 
 PROMPT_V3 = "phase0-vision-v3"  # Implemented by the provider owner, not duplicated here.
+PROMPT_V4 = "phase0-vision-v4"
 OUTPUT_TOKENS = 4096
 INPUT_TOKEN_CEILING = 1_000_000
+
+
+def response_schema(prompt_version: str) -> str:
+    return "temporal-actions-v1" if prompt_version == PROMPT_V4 else SCHEMA_VERSION
 
 
 def write_json(path: Path, value: object) -> None:
@@ -110,7 +115,12 @@ class PilotCase:
     expected: str
 
 
-def make_cases(media: MediaPreprocessingResult, starts_us: list[int]) -> tuple[PilotCase, ...]:
+def make_cases(
+    media: MediaPreprocessingResult,
+    starts_us: list[int],
+    temporal_prompt: str = PROMPT_V3,
+    same_frame_control: bool = False,
+) -> tuple[PilotCase, ...]:
     references = tuple(
         EvidenceReference(
             item.evidence_id,
@@ -142,9 +152,13 @@ def make_cases(media: MediaPreprocessingResult, starts_us: list[int]) -> tuple[P
         cases.extend(
             (
                 PilotCase(prefix + "-A", PROMPT_VERSION_V2, frames[::2], "development_observation"),
-                PilotCase(prefix + "-B", PROMPT_V3, frames, "development_observation"),
+                PilotCase(prefix + "-B", temporal_prompt, frames, "development_observation"),
             )
         )
+        if same_frame_control:
+            cases.append(
+                PilotCase(prefix + "-C", temporal_prompt, frames[::2], "same_frames_prompt_control")
+            )
     first = cases[1].frames
     static = tuple(
         replace(
@@ -156,8 +170,8 @@ def make_cases(media: MediaPreprocessingResult, starts_us: list[int]) -> tuple[P
         for item in first
     )
     return tuple(cases) + (
-        PilotCase("static-B", PROMPT_V3, static, "no_observed_temporal_action"),
-        PilotCase("reversed-order-B", PROMPT_V3, first[::-1], "provider.input_without_send"),
+        PilotCase("static-B", temporal_prompt, static, "no_observed_temporal_action"),
+        PilotCase("reversed-order-B", temporal_prompt, first[::-1], "provider.input_without_send"),
     )
 
 
@@ -203,6 +217,8 @@ async def run_pilot(
     max_cost_cny: Decimal,
     request_limit: int,
     execute: bool,
+    temporal_prompt: str = PROMPT_V3,
+    same_frame_control: bool = False,
 ) -> dict[str, Any]:
     repository, output = repository.resolve(), output.resolve()
     if not output.is_relative_to(repository / "artifacts"):
@@ -237,7 +253,7 @@ async def run_pilot(
             SamplingParameters(Fraction(1, 2), 512, (asset.duration_us + 499_999) // 500_000 + 1),
             CancellationContext(run_id, 300),
         )
-        cases = make_cases(media, starts_us)
+        cases = make_cases(media, starts_us, temporal_prompt, same_frame_control)
         frozen = {
             "schemaVersion": 1,
             "experiment": "temporal-gameplay-development-ab",
@@ -252,7 +268,9 @@ async def run_pilot(
             "imageMaxWidth": 512,
             "requestedWindowStartsUs": starts_us,
             "requestedModel": MODEL,
-            "schema": SCHEMA_VERSION,
+            "responseSchemas": {
+                case.prompt_version: response_schema(case.prompt_version) for case in cases
+            },
             "inputTokenCeiling": INPUT_TOKEN_CEILING,
             "maxOutputTokens": OUTPUT_TOKENS,
             "priceVersion": DEEPSEEK_FLASH_20261004.version,
@@ -270,6 +288,7 @@ async def run_pilot(
                     "id": case.case_id,
                     "promptVersion": case.prompt_version,
                     "promptSha256": prompt_hash(case.prompt_version),
+                    "responseSchema": response_schema(case.prompt_version),
                     "expected": case.expected,
                     "selectedFrames": [frame_record(item, output) for item in case.frames],
                 }
@@ -288,8 +307,10 @@ async def run_pilot(
         write_json(destination, report)
         if not execute:
             return report
-        if prompt_hash(PROMPT_V3) is None:
-            raise AppError("pilot.provider_version", "尚未集成 v3 Provider。", ExitCode.ENVIRONMENT)
+        if prompt_hash(temporal_prompt) is None:
+            raise AppError(
+                "pilot.provider_version", "尚未集成该时序 Provider。", ExitCode.ENVIRONMENT
+            )
         if "DEEPSEEK_API_KEY" not in os.environ:
             raise AppError("provider.auth", "当前进程未配置 API 凭据。", ExitCode.PROVIDER)
         provider = DeepSeekVisionProvider(
@@ -308,7 +329,7 @@ async def run_pilot(
                     run_id,
                     case.frames,
                     case.prompt_version,
-                    SCHEMA_VERSION,
+                    response_schema(case.prompt_version),
                     OUTPUT_TOKENS,
                     stage_id=case.case_id,
                 ),
@@ -368,6 +389,8 @@ def main() -> int:
     parser.add_argument("--window-start", type=Decimal, action="append", required=True)
     parser.add_argument("--max-cost-cny", type=Decimal, default=Decimal(5))
     parser.add_argument("--request-limit", type=int, default=12)
+    parser.add_argument("--temporal-prompt", choices=[PROMPT_V3, PROMPT_V4], default=PROMPT_V4)
+    parser.add_argument("--same-frame-control", action="store_true")
     parser.add_argument(
         "--execute", action="store_true", help="Explicitly allow billed API requests"
     )
@@ -384,6 +407,8 @@ def main() -> int:
                 args.max_cost_cny,
                 args.request_limit,
                 args.execute,
+                args.temporal_prompt,
+                args.same_frame_control,
             )
         )
         print(json.dumps({"report": str(args.output / "report.json"), "status": report["status"]}))

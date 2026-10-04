@@ -158,7 +158,7 @@ def _asset(value: str) -> MediaAsset:
 
 def _config_json(config: RunConfiguration) -> str:
     analysis = config.analysis
-    temporal = analysis.vision_prompt_version == "phase0-vision-v3"
+    temporal = analysis.vision_prompt_version in ("phase0-vision-v3", "phase0-vision-v4")
     if (
         not analysis.provider.strip()
         or not analysis.model.strip()
@@ -200,7 +200,7 @@ def _config_json(config: RunConfiguration) -> str:
         or not 1 <= analysis.max_output_tokens <= 4096
         or analysis.asr_language not in ("zh", "en", "auto")
         or analysis.vision_prompt_version
-        not in ("phase0-vision-v1", "phase0-vision-v2", "phase0-vision-v3")
+        not in ("phase0-vision-v1", "phase0-vision-v2", "phase0-vision-v3", "phase0-vision-v4")
         or (
             analysis.vision_prompt_hash is None
             and analysis.vision_prompt_version != "phase0-vision-v1"

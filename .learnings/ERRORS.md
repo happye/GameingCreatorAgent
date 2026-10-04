@@ -1,5 +1,9 @@
 # Errors
 
+## 2026-10-04: Prepare nested pytest directories and deterministic stat fixtures
+
+Resumption targeted pytest used a new nested basetemp whose parent did not exist; create the task-specific parent before running, without deleting another session's cache. A pre-existing same-size mutation test also retained identical mtime on this filesystem; explicitly change only the fixture's mtime to test stat invalidation. Production media cache intentionally relies on stat changes; unchanged metadata is a known limit, not proof of immutable bytes. Grok's v3 schema failure has no raw response, so exact malformed boundary remains unknown; use new versioned frame-alias boundaries and limited numeric diagnostics rather than inventing a cause.
+
 ## 2026-10-04: Temporal configuration must be accepted consistently
 
 Initial temporal resumption test failed at storage.invalid_config: the input reader allowed nine-frame v3 but SQLite's independent typed allowlist still limited five and required a prompt hash. Aligned only the new version's constraints and supplied the fixture identity; 39 targeted tests then passed. Use unique pytest cache as well as basetemp to avoid other Windows sessions' locked cache. Diagnostic JPEG extraction also requires explicit full-range pixel format; use the existing media service for production rather than ad hoc FFmpeg flags. No global cache/permissions changes were made.

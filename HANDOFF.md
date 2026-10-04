@@ -2,7 +2,17 @@
 
 更新时间：2026-10-04（Asia/Hong_Kong）。Codex、Claude Code、Grok Build 共享此恢复入口；历史见 `progress.md`，验收见 `feature_list.json`。
 
-## 当前结果与版本
+## 当前任务：Grok复核与可测试版本
+
+Codex已将Grok全部未提交集成保存为4c37a63（codex/temporal-gameplay），不回滚其实现或实验。只读复核确认费用/失败记录一致；v3旧响应未保存，无法断言具体坏端点。当前改用独立v4合同：模型选起止frame alias，程序用源时钟生成半开区间；保留v1/v2/v3内容/hash。root已接入配置/SQLite/analysis/pilot新版本，并新增/api/health；对应配置/pilot/HTTP定向检查通过，暂未新API调用。F006/F009仍false。
+
+活动worker：temporal_frame_contract在.worktrees/temporal-frame-contract拥有deepseek_vision.py/new test/own sprint；workspace_launcher在.worktrees/workspace-launcher拥有Start-Workspace.cmd、scripts/start-workspace.ps1、真实PowerShell生命周期测试/own sprint。都不得回写root其他文件。旧temporal-vision/pilot及全部历史scratch冻结。
+
+下一步先集成两个worker独占提交；root更新旧测试“v4 unsupported”为v5，生成最新config.temporal.example的v4实际hash。运行针对合同/脚本检查，然后先同0–4秒有限对照，再28–32秒动作窗口及同帧control；成功且内容合理后才新完整run。旧run不会因改代码变成新理解。一键启动仅打开本地工作台，不自动收费或重新分析。最后完整verify、真实浏览器/启动器复核、公共记录与Git推送；未完成不称已修好。
+
+pytest初次使用嵌套basetemp未建父目录导致setup错误，创建独立.cache/pytest-runs目录后恢复；媒体stat回归在粗粒度时钟下两个同大小写入mtime不变，测试显式变更本地fixture mtime验证已有缓存失效合同，不改变生产缓存。该缓存依赖文件元数据变化，不能声称能检测元数据完全不变的外部篡改。
+
+## Grok集成与实验复核（历史基线）
 
 **2026-10-04最新用户验收：F006玩法检索未通过。** 用户反馈打Boss、跳跃、射击找不到。本轮只集成时序分析合同，并完成一个四秒窗口的开发对照；这些查询没有修好。禁止把3条PV攻击候选或这次模型输出当玩法质量证据。`feature_list.json` 里 F006 与 F009 都保持 `passes: false`。
 
@@ -53,7 +63,7 @@ F000–F005、F007、F008技术合同已验收；**F006独立人工U10仍false**
 
 ## 下一步与恢复规则
 
-下一条工作只有这一件：查看 `artifacts/temporal-gameplay-execute-1` 里 window-0-B 的 `evidence_outside_range` 拒绝，收紧 v3 提示让被引用帧落在半开区间内，先用离线视觉测试证明，再对同一个四秒窗口重跑一次有界 `--execute`。不要全量重分析 PV，不要把 F006 或 F009 标成通过，不要宣称打Boss、跳跃或射击已经修好。
+本轮接续以顶部“当前任务”为准：v4帧边界合同、诊断、有限实测与一键启动。Grok原建议收紧v3提示仅是假设；旧响应没有具体错误值，不改写历史为已查明原因。F006仍未通过，内容实测前不全量重分析。
 
 恢复时先核对 `git status --short`、当前分支和未提交文件归属。F008 已在 main；本轮时序改动尚未提交，不要未经验证推 main。工作台 8765 可继续用旧结果；关闭后用 `run-ui.ps1` 重新启动。独立人工 U10、TD001/TD005/TD006、正式桌面、Creative Planner、MP4 渲染和发布都不是这件下一条工作。开发素材及这次四秒对照不等于 10–20 个独立会话。
 

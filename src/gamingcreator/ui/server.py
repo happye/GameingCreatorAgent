@@ -167,6 +167,17 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 name, mime = ASSETS[path]
                 self._send(200, (STATIC / name).read_bytes(), mime)
                 return
+            if path == "/api/health":
+                self._json(
+                    200,
+                    {
+                        "application": "gamingcreator-workspace",
+                        "apiVersion": 1,
+                        "repository": str(self.repository.resolve()),
+                        "pid": os.getpid(),
+                    },
+                )
+                return
             if path == "/api/projects":
                 self._json(200, {"projects": discover_projects(self.repository)})
                 return

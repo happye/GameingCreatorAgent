@@ -108,6 +108,22 @@ def test_valid_http_errors_and_local_access_boundary(tmp_path):
     assert error_status(AppError("storage.busy", "safe", ExitCode.STORAGE)) == 409
 
 
+def test_health_identifies_repository_and_pid_without_model_or_storage(tmp_path):
+    with workspace(tmp_path) as base:
+        status, headers, body = get(base, "/api/health")
+        assert status == 200 and headers["Cache-Control"] == "no-store"
+        assert json.loads(body) == {
+            "application": "gamingcreator-workspace",
+            "apiVersion": 1,
+            "repository": str(tmp_path.resolve()),
+            "pid": os.getpid(),
+        }
+        assert get(base, "/api/health", headers={"Host": "external.invalid"})[0] == 403
+        assert get(base, "/api/health", headers={"Origin": "https://external.invalid"})[0] == 403
+        status, head_headers, body = get(base, "/api/health", method="HEAD")
+        assert status == 200 and body == b"" and int(head_headers["Content-Length"]) > 0
+
+
 def test_registered_media_range_head_and_evidence(tmp_path):
     project, bundle = stored_project(tmp_path)
     query = urlencode({"project": str(project), "run": "run-1"})
@@ -162,7 +178,11 @@ def test_verified_media_invalidates_cached_stat(tmp_path):
     cache = VerifiedMediaCache()
     with cache.open(resource) as stream:
         assert stream.read() == b"original"
+    before = path.stat()
     path.write_bytes(b"mutation")
+    # Coarse filesystem clocks can preserve mtime for two immediate equal-size writes.
+    # This test checks invalidation when the registered stat identity changes.
+    os.utime(path, ns=(before.st_atime_ns, before.st_mtime_ns + 2_000_000_000))
     with pytest.raises(AppError, match="媒体已更改"):
         with cache.open(resource):
             pass

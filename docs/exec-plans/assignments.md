@@ -4,6 +4,8 @@
 
 ## 当前交付
 
+Codex复核恢复已保存4c37a63。最新root拥有配置/store/analysis/pilot、health API、共享记录与实际实验；temporal_frame_contract仅拥有独立worktree的deepseek_vision.py/test_temporal_frame_contract/own sprint；workspace_launcher仅拥有独立worktree的Start-Workspace.cmd/start-workspace.ps1/test_workspace_launcher/own sprint。两个当前worker活动中，旧vision/pilot冻结。只读grok_temporal_review已完成，不写文件。顶部这段覆盖下表历史“未提交”状态，最新提交/检查见HANDOFF。
+
 | 当前 owner | Branch/worktree | 独占范围 | 状态 |
 | --- | --- | --- | --- |
 | root / F009 | codex/temporal-gameplay，root | provider、pilot、时序测试、config.temporal.example.json、公共文档 | 已集成并完成一次有界对照；F009 仍 false。verify 618 passed、1 skipped |

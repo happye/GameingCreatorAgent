@@ -47,16 +47,25 @@ def test_dense_windows_cover_the_source_and_keep_temporal_overlap(tmp_path: Path
     )
 
 
+@pytest.mark.parametrize("prompt_version", ["phase0-vision-v3", "phase0-vision-v4"])
 def test_temporal_run_resumes_only_missing_windows_with_new_pipeline_identity(
     tmp_path: Path,
+    prompt_version: str,
 ) -> None:
+    profile = replace(TEMPORAL, vision_prompt_version=prompt_version)
+
     class TemporalVision(WindowVision):
         capabilities = ProviderCapabilities(
             image_sequence=True, structured_output=True, max_images=9, max_image_width=512
         )
 
         async def analyze(self, request, context):
-            assert request.prompt_version == "phase0-vision-v3"
+            assert request.prompt_version == prompt_version
+            assert request.schema_version == (
+                "temporal-actions-v1"
+                if prompt_version == "phase0-vision-v4"
+                else "semantic-events-v1"
+            )
             assert len(request.evidence) in (9, 6)
             return await super().analyze(request, context)
 
@@ -69,7 +78,7 @@ def test_temporal_run_resumes_only_missing_windows_with_new_pipeline_identity(
         try:
             with pytest.raises(AppError, match="视觉窗口"):
                 await run_new_analysis(
-                    PreparedAnalyze(source, project, TEMPORAL, Decimal(5), None),
+                    PreparedAnalyze(source, project, profile, Decimal(5), None),
                     AnalysisPorts(media, asr, vision, store, lambda request: asr_metadata()),
                     bundle.asset,
                     project,
@@ -77,7 +86,7 @@ def test_temporal_run_resumes_only_missing_windows_with_new_pipeline_identity(
                 )
             stored = await store.load_run(RUN_ID)
             assert stored.configuration.pipeline_version == "phase0-analyze-temporal-v1"
-            assert stored.configuration.analysis == TEMPORAL
+            assert stored.configuration.analysis == profile
             resumed = TemporalVision()
             result = await resume_analysis(
                 PreparedAnalyze(source, project, None, None, RUN_ID),
@@ -98,6 +107,8 @@ def test_temporal_run_resumes_only_missing_windows_with_new_pipeline_identity(
     ("prompt", "frames", "overlap", "accepted"),
     [
         ("phase0-vision-v3", 9, 2, True),
+        ("phase0-vision-v4", 9, 2, True),
+        ("phase0-vision-v4", 10, 2, False),
         ("phase0-vision-v3", 2, 1, True),
         ("phase0-vision-v3", 1, 0, False),
         ("phase0-vision-v3", 10, 2, False),

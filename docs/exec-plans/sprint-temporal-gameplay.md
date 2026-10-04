@@ -1,5 +1,11 @@
 # F006 玩法时序理解修正
 
+## Codex恢复复核与v4进行中
+
+已将Grok集成全量保存4c37a63。费用/失败/冻结manifest与交接一致；v3只记录evidence_outside_range，缺原响应与坏区间，不能确定具体端点错误。新增v4设计用起止frame alias替代模型微秒算术，程序映射为SourceRange，旧v3保持不变；有限白名单结构诊断可定位新失败，不记录原模型文本。root已支持新配置/store/analysis/pilot（附同帧C对照），新增本地health识别给一键启动器；定向配置/pilot/HTTP已通过。本轮尚未执行新收费调用或宣称动作检索改善。
+
+temporal_frame_contract/workspace_launcher在独立worktree实现各自独占文件。新完整verify和浏览器/真实API待集成后完成。根目录一键启动需求已分配，不再让用户仅手动起服务/复制URL。F006/F009仍false。
+
 日期：2026-10-04；owner：Codex root。用户明确否决当前截图式描述的玩法检索效果：打Boss、跳跃玩法、射击玩法均找不到。此为真实用户定性未通过反馈，不虚构为已录入独立固定十槽U10。
 
 ## 根因与范围

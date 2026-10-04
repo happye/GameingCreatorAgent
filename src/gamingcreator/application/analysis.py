@@ -154,7 +154,10 @@ def vision_windows(
 
 
 def _pipeline_version(config: AnalysisConfig) -> str:
-    if config.schema_version == 2 and config.vision_prompt_version == "phase0-vision-v3":
+    if config.schema_version == 2 and config.vision_prompt_version in (
+        "phase0-vision-v3",
+        "phase0-vision-v4",
+    ):
         return TEMPORAL_PIPELINE_VERSION
     return WINDOW_PIPELINE_VERSION if config.schema_version == 2 else PIPELINE_VERSION
 
@@ -349,7 +352,7 @@ async def _run_pipeline(
     timeout_seconds: float,
 ) -> AnalyzeOutcome:
     image_limit, image_width = _vision_limit(ports.vision)
-    if config.vision_prompt_version != "phase0-vision-v3":
+    if config.vision_prompt_version not in ("phase0-vision-v3", "phase0-vision-v4"):
         image_limit = min(image_limit, 5)
     context = CancellationContext(run_id, timeout_seconds)
     deadline = monotonic() + timeout_seconds
@@ -490,7 +493,9 @@ async def _run_pipeline(
                             run_id,
                             window,
                             config.vision_prompt_version,
-                            VISION_SCHEMA_VERSION,
+                            "temporal-actions-v1"
+                            if config.vision_prompt_version == "phase0-vision-v4"
+                            else VISION_SCHEMA_VERSION,
                             config.max_output_tokens,
                             stage_id=stage_id,
                         ),

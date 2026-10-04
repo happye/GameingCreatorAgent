@@ -111,6 +111,19 @@ def test_recorder_persists_start_finish_and_unknown_charge(tmp_path: Path) -> No
     assert not path.with_suffix(".json.tmp").exists()
 
 
+def test_frame_boundary_profile_and_same_frame_control_preserve_sampling(tmp_path: Path) -> None:
+    media = media_fixture(tmp_path)
+    a, b, c, static, reversed_case = pilot.make_cases(
+        media, [10_000_000], temporal_prompt="phase0-vision-v4", same_frame_control=True
+    )
+    assert a.frames == c.frames and len(b.frames) == 9
+    assert b.prompt_version == c.prompt_version == static.prompt_version == "phase0-vision-v4"
+    assert c.expected == "same_frames_prompt_control"
+    assert pilot.response_schema(b.prompt_version) == "temporal-actions-v1"
+    assert pilot.response_schema(a.prompt_version) == "semantic-events-v1"
+    assert reversed_case.frames == b.frames[::-1]
+
+
 def test_existing_evidence_directory_is_never_overwritten(tmp_path: Path) -> None:
     output = tmp_path / "artifacts/pilot"
     output.mkdir(parents=True)
