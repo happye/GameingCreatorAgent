@@ -35,3 +35,7 @@
 预推理开发观察（不是独立humanLabels）：本地1280预处理已完成，artifacts/visual-detail-evidence-preview/receipt.json，未API。Atom35s画面有三位主体：左侧白发/单片眼镜/浅色上装/棕色短裤；中间红黑头发/头顶护目镜/红围巾与外套/深色手套；右侧较深肤色/红橙发/耳罩/蓝色图案上装。28s为蓝发角色/沙色石块平台/蓝色水面，手持蓝色扁平物的具体类别不确定。拟选28–32与35–39s对照，核对主体属性和动作是否绑定，不凭示例虚构权杖/冲击波/Boss。费用合计上限¥5：先pilot预算5，完整新run预算扣除pilot已知费用及未知承诺；全部失败/控制仍记录。
 
 detail_pilot944fb42已整合32fe12c，9离线合同root复测通过（0.62s），脚本Ruff/mypy通过。真实无API dry artifacts/visual-details-atom-dry冻结两窗口10cases，A/B九帧完全相同512，C同源时刻1280，两组证据runId/hash独立。下一步只在新visual-details-atom-execute执行8HTTP上限/¥5/90秒每case，倒序不发送；不覆盖dry或旧实验。
+
+真实对照 `visual-details-atom-execute` completed：A/B/C两窗口均3事件，两static空、两倒序发送前provider.input。8HTTP/72图，估价¥0.03676864，unknown0/reserved0；非账单、人评gate仍null。V5增发色/衣着/持有物/环境/光效，正文无alias；1280减少一些512歧义，但未保证准确：35s护目镜仍描述角状发饰/围巾色可疑，38–39sC声称室内跑向室外连贯，实际有剪辑。28sC武器分类不确定但正面用了“武器”；parser有效不能证实细节。全部结果保留，不仅报告改进。
+
+下一步完整Atom新V5run，预算¥4.96323136（5减pilot已知及未知承诺），不重写V4。真实检索测试包含蓝发/白发/红外套/耳机/持有物/沙地平台与精确假设Boss负例，稀疏命中不计U10。后续候选精分析、切镜边界和装备消歧属于TD007/TD009。

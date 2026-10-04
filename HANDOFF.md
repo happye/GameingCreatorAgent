@@ -4,6 +4,8 @@
 
 ## 当前状态
 
+**最新真实对照**：visual-details-atom-execute完成，2窗口A/B/C均3事件、static均空、倒序均发送前拒绝；8HTTP/72图、估价¥0.03676864、unknown0，非账单。V5细节增加且无正文alias，仍有护目镜/发饰混淆、衣着色不准与跨切镜连贯误判，不能当质量通过。root开始完整新Atom V5run（预算¥4.96323136，合计本轮上限5元），新runId须由CLI落盘后更新；不要重跑旧run。完整verify含pilot正在.cache/detail-verify-final.log执行。8765还是旧代码，待新run及浏览器验证后匹配PID重启。
+
 **真实实验准备已保存**：detail_pilot944fb42→32fe12c已集成并冻结，9项root复测通过。无API dry `artifacts/visual-details-atom-dry`已冻结28–32和35–39s同源时刻对照；root即将执行新`artifacts/visual-details-atom-execute`（8HTTP/预算¥5，每case90s，含静帧/倒序，默认humanLabels/qualityGate=null）。paid开始前还无新费用；进度与逐case报告原子保存。完整新run待对照结果再做，总本轮实际/未知承诺上限¥5。恢复先查这两个report/invocations，勿重放已发请求。此前838verify是在新pilot集成前；新pilot9项另列。
 
 **最新检查点**：完整verify838passed/1权限skip（81.70s），Ruff83/mypy49/CLI/离线重复wheel通过，SHA74728027088611445833fc4cb8802dbcaec8ca1a255b8357e0f91917c6bc459e；此前252/171为定向验证。只读审查发现正文别名可能越出当前事件证据，root已限制为事件已引用的原窗口别名，新增6回归，98项通过。对照脚本仍worker验证中；未新API调用，8765未重启。GitHub包括进程内HTTP/1.1重试仍443超时，DeepSeek API已只读确认可达。
