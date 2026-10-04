@@ -22,7 +22,7 @@ HELPER = Path(__file__).with_name("storage_process_helper.py")
 
 def child(mode: str, project: Path, *, returncode: int = 0) -> dict[str, Any]:
     result = subprocess.run(
-        [sys.executable, "-I", "-B", "-W", "error", str(HELPER), mode, str(project)],
+        [sys.executable, "-I", "-B", "-X", "utf8", "-W", "error", str(HELPER), mode, str(project)],
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
@@ -48,6 +48,8 @@ def test_completed_timeline_survives_second_process(tmp_path: Path) -> None:
     assert result["checkpoints"] == {"media": "completed", "vision": "completed"}
     assert result["invocationId"] == "invocation-1"
     assert result["modelRevision"] == "fixture-revision-1"
+    assert result["priceVersion"] == "fixture-prices-v1"
+    assert result["actualModel"] == "fixture-resolved-model"
     assert result["cost"] == "0.01234567890123456789"
     assert result["costStatus"] == "confirmed"
     assert result["inputTokens"] == 17

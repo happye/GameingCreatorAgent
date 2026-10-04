@@ -201,12 +201,12 @@ def test_argument_error_is_json_and_never_echoes_unknown_values(
     assert "unexpected-secret-value" not in captured.err and captured.out == ""
 
 
-def test_search_and_benchmark_remain_unimplemented(
+def test_search_and_benchmark_require_an_existing_project(
     inputs: tuple[Path, Path, Path], capsys: pytest.CaptureFixture[str]
 ) -> None:
     _, _, project = inputs
-    assert main(["search", "机制", "--project", str(project), "--run", "run-1"]) == 3
-    assert json.loads(capsys.readouterr().err)["code"] == "feature.not_implemented"
+    assert main(["search", "机制", "--project", str(project), "--run", "run-1"]) == 2
+    assert json.loads(capsys.readouterr().err)["code"] == "input.project"
     assert (
         main(
             [
@@ -219,7 +219,7 @@ def test_search_and_benchmark_remain_unimplemented(
                 "out.json",
             ]
         )
-        == 3
+        == 2
     )
     assert not project.exists()
 

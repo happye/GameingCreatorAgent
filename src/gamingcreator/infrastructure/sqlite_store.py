@@ -19,6 +19,7 @@ from typing import Any, cast
 
 from gamingcreator.application.inputs import AnalysisConfig
 from gamingcreator.application.providers import CostStatus, InvocationMetadata, ProviderUsage
+from gamingcreator.application.retrieval import SearchResult
 from gamingcreator.application.storage import (
     IntegrityIssue,
     InvocationStatus,
@@ -40,8 +41,21 @@ from gamingcreator.domain.media import (
     MediaStream,
     VisualEvidence,
 )
-from gamingcreator.domain.models import EvidenceReference, SemanticEvent, TranscriptSegment
+from gamingcreator.domain.models import (
+    EmbeddingSpace,
+    EvidenceReference,
+    SemanticEvent,
+    TranscriptSegment,
+)
 from gamingcreator.domain.time import SourceInstant, SourceRange
+from gamingcreator.infrastructure.retrieval_persistence import (
+    PersistedRetrievalHit,
+    persist_embedding,
+    persist_retrieval,
+)
+from gamingcreator.infrastructure.retrieval_persistence import (
+    load_retrieval as read_retrieval,
+)
 from gamingcreator.infrastructure.sqlite_schema import migrate, validate_schema
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
 
@@ -163,6 +177,10 @@ def _config_json(config: RunConfiguration) -> str:
     for stage in config.required_stages:
         _id(stage)
     analysis_data = asdict(analysis)
+    if analysis.vision_prompt_hash is None and analysis.vision_prompt_version == "phase0-vision-v1":
+        # The first v2 snapshots predate explicit prompt pinning; preserve their bytes.
+        analysis_data.pop("vision_prompt_version")
+        analysis_data.pop("vision_prompt_hash")
     if analysis.schema_version == 1:
         # Keep canonical v1 snapshots byte-for-byte compatible with existing databases.
         analysis_data = {
@@ -180,8 +198,15 @@ def _config_json(config: RunConfiguration) -> str:
         or type(analysis.max_output_tokens) is not int
         or not 1 <= analysis.max_output_tokens <= 4096
         or analysis.asr_language not in ("zh", "en", "auto")
+        or analysis.vision_prompt_version not in ("phase0-vision-v1", "phase0-vision-v2")
+        or (
+            analysis.vision_prompt_hash is None
+            and analysis.vision_prompt_version != "phase0-vision-v1"
+        )
     ):
         raise _error("storage.invalid_config")
+    if analysis.vision_prompt_hash is not None:
+        _digest(analysis.vision_prompt_hash)
     # Accept a typed allowlist, never arbitrary configuration dictionaries or credentials.
     return _json(
         {
@@ -371,6 +396,59 @@ class SqliteTimelineStore:
 
     async def load_run(self, run_id: str) -> StoredRun:
         return await self._call(lambda: self._load_run(run_id))
+
+    async def persist_search(
+        self,
+        result: SearchResult,
+        document: dict[str, object],
+        *,
+        elapsed_ms: int,
+        top_k: int,
+        embedding_space: EmbeddingSpace | None = None,
+    ) -> str:
+        """Append retrieval provenance without changing immutable analysis results."""
+
+        def persist() -> str:
+            self._writer()
+            self._consistent(result.run_id)
+            hits = tuple(
+                PersistedRetrievalHit(
+                    rank,
+                    item.candidate_id,
+                    item.event_id,
+                    item.source_range.start_us,
+                    item.source_range.end_us,
+                    item.score,
+                    item.score_kind,
+                    item.evidence_ids,
+                )
+                for rank, item in enumerate(result.candidates, 1)
+            )
+            with self._transaction():
+                for embedding in result.event_embeddings:
+                    persist_embedding(self._db, result.run_id, embedding)
+                return persist_retrieval(
+                    self._db,
+                    result.run_id,
+                    query=result.query,
+                    retrieval_version=result.retrieval_version,
+                    parameters={
+                        "mode": result.mode,
+                        "topK": top_k,
+                        "minSimilarity": result.min_similarity,
+                        "minSemanticMargin": result.min_semantic_margin,
+                        "abstentionReason": result.abstention_reason,
+                    },
+                    elapsed_ms=elapsed_ms,
+                    hits=hits,
+                    result_json=document,
+                    embedding_space=embedding_space,
+                )
+
+        return await self._call(persist)
+
+    async def load_retrieval(self, retrieval_id: str) -> dict[str, object]:
+        return await self._call(lambda: read_retrieval(self._db, retrieval_id))
 
     async def load_checkpoints(self, run_id: str) -> tuple[StageCheckpoint, ...]:
         def load() -> tuple[StageCheckpoint, ...]:

@@ -1,25 +1,26 @@
-# Phase 0 工程规格 v3
+# Phase 0 工程规格 v4
 
-状态：实施合同；F001 输入/领域/Provider 基础、F002 媒体与 F004 SQLite service 已实现。`analyze` 已接媒体、本地 ASR、视觉账本和未完成 run 的续跑；检索与 F003 验收仍未完成。来源：原总方案 §58–59、69–71；按用户补充使用 Python，见 [ADR-001](./adr-001-phase-0-language.md)；审查：[reverse-review](../exec-plans/reverse-review-2026-10-03.md)。目标是让多个 Agent 按相同合同实现和验证。
+状态：2026-10-04 实施合同。CLI 已接媒体、本地 ASR、视觉窗口/账本、显式续跑、词法/本地语义检索和人工标签评测入口；F003/F005 技术合同已验收，F006独立人工质量gate未通过。557项测试（0skip）、Ruff/mypy和重复离线wheel通过，证据见sprint-demo。来源：原总方案 §58–59、69–71；语言见 [ADR-001](./adr-001-phase-0-language.md)，审查见 [reverse-review](../exec-plans/reverse-review-2026-10-03.md)。历史验证留在 sprint，当前运行入口见 [Demo](../references/demo-quickstart.md)。
 
 ## 1. CLI 与外部行为
 
 用户硬约束：所有工具、包、模型权重和缓存隔离于本机系统。portable uv 放 `.tools/uv`，CPython 3.13 运行时放 `.tools/python`，应用/开发/ASR 包全部装入 `.venv`；FFmpeg 放 `.tools/ffmpeg/bin`，缓存放 `.cache`。仅使用进程环境，不写注册表、系统/用户 PATH 或全局包目录；uv 注册和全局链接显式禁用。版本固定及校验在 F001 完成，详见 [隔离环境](../references/isolated-environment.md)。
 
-以下命令入口和输入合同已建立。`search` 与 `benchmark` 仍返回退出 3 / `feature.not_implemented`，不产生项目输出。`analyze` 会创建 run 并调用已实现的媒体、本地 ASR 和视觉账本；缺少请求费用上界时停止且不发送。实验脚本见 [验证记录](../exec-plans/phase-0-validation-2026-10-03.md)。
+以下命令已接入应用流水线。`analyze` 创建 run、逐窗口保存语义输出；`search` 查询 Completed run 并记录排名；`benchmark` 保存人工标签评测报告，gate 未过或未验证时退出 6。缺少视觉费用上界时停止且不发送。历史实验见 [验证记录](../exec-plans/phase-0-validation-2026-10-03.md)。
 
 ```text
 gamingcreator analyze <local-video> --project <directory> --config <json> --max-cost-cny <amount>
 gamingcreator analyze <local-video> --project <directory> --resume <run-id>
-gamingcreator search "机制描述" --project <directory> --run <completed-run-id> --top-k 10 --format json
+gamingcreator analyze <local-video> --project <directory> --resume <run-id> --retry-uncertain
+gamingcreator search "机制描述" --project <directory> --run <completed-run-id> --mode hybrid --top-k 10 --format json
 gamingcreator benchmark --input <frozen-manifest> --project <directory> --output <report.json>
 ```
 
-`analyze` 校验文件、能力、预算和空间后创建 run。首次成功写 SQLite 与 `semantic_timeline.json`；失败或取消输出 run ID 和稳定错误码，保持已完成 checkpoint。resume 使用原配置，配置变更创建新 run，不能拼接不同版本结果。找不到项目时不创建目录。已完成 run 只重读已有时间线。失败、取消或中断的 run 不自动重放。尚未做完、且已记录阶段全部完成的 run 从这些 checkpoint 续跑，不重做已完成阶段。仍有进行中阶段时返回 `storage.run_incomplete`。没有价目快照时视觉阶段返回 `budget.estimate_missing`，不把未知费用写成 0，也不发送请求。
+`analyze` 校验文件、能力、预算和空间后创建 run。成功写 SQLite 与 `semantic_timeline.json`；失败或取消输出 run ID 和稳定错误码，保留已完成 checkpoint。显式 v2 resume 使用原配置/预算，跳过完成的 media、asr 和 `vision-000000` 等窗口；进行中记录转 Interrupted 后重开，不自动重放。未提交的远端调用可能已有费用，须 `--retry-uncertain` 才重试，原费用/未知预留继续计入预算。已完成 run 只重读。旧 v1 保留原有限续跑行为；配置、prompt 内容或 ASR 稳定参数不匹配时拒绝恢复。
 
-F001 配置边界：`config.example.json` 的 `schemaVersion=1`，仅接受 `vision.provider/model` 两个非空字符串、`limits.maxRequests/maxInputFrames` 两个正整数；未知字段（包括密钥）被拒绝。新分析费用上限由 CLI 传入有限正 Decimal；resume 不接受配置或预算覆盖。完整 ASR/采样/端点配置在相应特性扩展 schema，不能默默忽略旧字段。
+`config.example.json` 使用 schema v2：vision 含 provider/model、priceVersion、maxOutputTokens（≤4096）、promptVersion/promptHash；limits 含正整数 maxRequests/maxInputFrames；sampling 含 intervalMs/windowFrames/windowOverlap；asr 含 language。未知字段（包括密钥）拒绝。默认每秒采样、5 帧/1 帧重叠、最多 2048 输出 token。新分析费用上限由 CLI 传入有限正 Decimal；resume 禁止配置/预算覆盖。旧 schema v1 仍可读，但没有完整窗口/价目配置。
 
-`search` 指定完整 run；找不到时返回明确错误。候选含 `candidateId, mediaId, eventId, startUs, endUs, sourceTimecode, score, scoreKind, evidenceIds`；时间采用半开区间，分数说明其语义，不表示事实成立的概率。稳定排序先 score，再 mediaId/startUs/candidateId。空结果合法并附原因，不编造镜头。保留 rank、去重和排除理由。
+`search` 指定 Completed run；找不到或完整性失败时返回明确错误。默认 hybrid，也可 lexical/semantic；候选含 candidateId/mediaId/eventId、startUs/endUs、startTimecode/endTimecode、rank、score/scoreKind、evidenceIds、observableFacts/why。时间为半开区间，分数不是事实概率。排序确定，去重后保留排名和证据；空结果合法并附 abstentionReason。检索记录与向量在 schema v3 中保存，分析输出保持不可变。
 
 stdout 为结果或 JSON；进度/JSON 诊断写 stderr。退出码：0 成功，2 输入，3 环境/配置，4 Provider，5 存储/完整性，6 benchmark 未过门槛，7 预算停止，130 用户取消。JSON 错误含 code、runId、retryable、友好说明，不含凭据。
 
@@ -33,13 +34,13 @@ F002 采用最早选中流 presentation start 为共同 origin，精确 Fraction
 | --- | --- |
 | MediaAsset | mediaId、源路径（本地）、SHA256、durationUs、streams、probeVersion |
 | Evidence | evidenceId、mediaId、kind、源区间/时刻、PTS/timebase、artifactPath、hash、transformVersion |
-| TranscriptSegment | mediaId、源区间、text、词级时间可选、ASR 模型/版本、状态 |
+| TranscriptSegment | mediaId、源区间、text、uncertainty；ASR 模型/版本/状态由调用账本关联 |
 | SemanticEvent | eventId、mediaId、源区间、observableFacts、mechanicTags、evidenceIds、modality、uncertainty、runId |
-| Embedding | subjectId、provider/model/revision、dimension、normalization、vector、textHash |
+| Embedding | subjectId、provider/model/revisionScope、dimension、normalization、vector、textHash |
 | CandidateClip | candidateId、eventId、源区间、rank、scoreKind/score、证据与排除原因 |
 | AnalysisRun | runId、配置快照/hash、pipelineVersion、状态、开始/结束/错误 |
 | StageCheckpoint | runId/stageId、输入/输出 hash、状态、attempt、错误 |
-| ProviderInvocation | invocationId、run/stage、attempt、Provider/模型、用量、价格/币种、费用状态、耗时、requestId |
+| ProviderInvocation | invocationId、run/stage、attempt、Provider/模型、用量、价格/币种、费用状态、耗时、requestId、executionDetails |
 
 `confidence`、GPU 时间和供应商未提供用量可以 null；未知不是 0。推断机制与可观察事实分开。没有足够证据的动作边界存不确定性，不允许模型输出越界时间或编造 evidenceId。OCR/情绪等后续字段可缺失，未测量值不能虚填。
 
@@ -51,26 +52,33 @@ Application 用 `typing.Protocol` 定义类型化 async ports，await 得到 `Pr
 
 请求含 runId、输入证据引用、语言/游戏词表、prompt/schema 版本、输出预算；结果含 typed output、usage、实际 model/revision、requestId、elapsed、状态与错误。Capabilities 声明图片序列/视频/音频、尺寸/数量限制、结构化输出和局部时间语义。Capability mismatch 在请求前失败。
 
-首个视觉 Provider：DeepSeek `deepseek-flash`，`POST https://api.deepseek.com/chat/completions`，`user.content` 用带时间说明的 text 与 `image_url`；只上传选定证据，不上传整视频。禁用 thinking 的对照使用 `json_object`，输出经过字段、证据和时间校验，`finish_reason=length` 不算成功。当前模型别名可浮动，记录 response.model；不能识别修订时明确 unresolved，而不是假装固定版本。[官方 Vision](https://api-docs.deepseek.com/guides/vision/)
+首个视觉 Provider：DeepSeek `deepseek-flash`，`POST https://api.deepseek.com/chat/completions`，`user.content` 用带源时间的 text 与 `image_url`；只上传窗口证据，不上传整视频。禁用 thinking，使用 json_object。`phase0-vision-v2` 用 f0..f4 短别名，程序严格映射回原 evidenceId；prompt 给出窗口首末 sourceUs、整数微秒与半开边界要求，end 必须大于最晚引用时刻。字段/类型/证据/边界错误不修猜，返回 provider.schema；executionDetails 只记录有限 schemaError 诊断，不保存原响应。prompt 内容 hash 校验并写入快照。旧 v1 长 ID 协议仍可读。response.model 记录实际别名，供应商实际修订仍可能 unresolved。[官方 Vision](https://api-docs.deepseek.com/guides/vision/)
 
-ASR 初始选本地 CPU 可运行方案，faster-whisper 为候选，FunASR 作中文/热词对照；先验证运行时和权重再锁实现。`no_audio/no_speech/completed/failed` 分开。本地模型也记录模型、权重 hash、耗时与计量；ChatGPT/开发工具额度不等于项目模型 API 配额。
+ASR 使用本地 faster-whisper tiny，固定权重/运行库 hash 与 CPU int8。worker 开始前登记模型修订、参数和输入；`no_audio/no_speech/completed/failed/cancelled` 分开。源 hash、模型修订、schema 与稳定参数共同构成 v2 ASR stage 输入 hash。API 费用为本地零网络调用费用，硬件成本未测；中英文识别质量仍需人工参考。ChatGPT/开发工具额度不等于项目 API 配额。
 
-## 4. SQLite v1 逻辑 schema 与迁移
+Embedding 使用固定 `Xenova/multilingual-e5-small` ONNX 权重，384 维、attention-mask mean pooling、L2，query/passages 分别用 `query: `/`passage: ` 前缀；最多 512 token，v2 推理 batch=1。空间身份包含权重修订、文件 hash、推理合同/pooling/maxTokens/batchSize；缓存不跨不一致空间混用。同步推理同样通过可终止本地 worker 执行，不下载未知模型。
 
-F004 v1 已落地九个 STRICT 表、四个索引、七个时间上界触发器，物理定义在 `infrastructure/sqlite_schema.py`，使用事务迁移和读写双方结构验证。迁移表 `schema_migrations(version INTEGER PRIMARY KEY, applied_at TEXT)` 与 user_version 一致；未来版本和定义漂移拒绝打开。使用方法见 [timeline-storage](../references/timeline-storage.md)。
+## 4. SQLite schema v3 与迁移
+
+当前 schema v3 共 13 个 STRICT 表；物理定义在 `infrastructure/sqlite_schema.py`，使用事务迁移和读写双方结构验证。v1 的九表定义保持原样，v2 为 transcript_segments 添加 uncertainty，v3 加 embedding/检索四表。迁移历史与 user_version 一致；未来版本、版本断层和定义漂移拒绝打开。只由 writer 升级，read-only 不自动迁移。详见 [timeline-storage](../references/timeline-storage.md)。
 
 | 表 | 主键、关系及约束 |
 | --- | --- |
+| schema_migrations | version PK；连续迁移历史/时间，与 user_version 一致 |
 | media_assets | media_id PK；content_hash、duration_us>0；同项目同内容去重 |
 | analysis_runs | run_id PK；配置/pipeline hash、required stages/status、manifest path/hash；UNIQUE(run_id,media_id)，绑定 media_id FK |
 | stage_checkpoints | (run_id,stage_id) PK；状态、输入/输出 hash、更新时间 |
 | evidence | evidence_id PK；media_id/run_id FK；有效源时间、artifact hash/path |
-| transcript_segments | id PK；media_id/run_id FK；区间、文本、状态/模型版本 |
+| transcript_segments | segment_id PK；media_id/run_id/stage FK；区间、文本、uncertainty |
 | semantic_events | event_id PK；media_id/run_id FK；有效区间、结构化事实与标签 |
 | event_evidence | (event_id,evidence_id) PK；两组包含 run_id/media_id 的组合 FK，不允许悬空或串 run 证据 |
 | provider_invocations | invocation_id PK；UNIQUE(run_id,stage_id,logical_request_id,attempt)，状态、模型/用量/价格快照；费用为 Decimal TEXT，unknown 为 NULL |
+| embeddings | 每 run/subject/完整 embedding-space/text_hash 唯一；向量维数与关联事件/证据校验 |
+| retrieval_runs | retrieval_id PK；query/hash、retrieval version、参数、embedding space、耗时与结果快照 |
+| retrieval_hits | (retrieval_id,rank) PK；candidate/event/run/media、区间与 score/score_kind |
+| retrieval_hit_evidence | (retrieval_id,rank,evidence_id) PK；组合 FK 绑定相同 run/media 及事件引用 |
 
-embedding 和 retrieval_runs/hits 不在 v1 物理迁移中，随 F005 另加迁移。向量唯一键仍须含 subject/provider/model/revision_scope/dimension/normalization/text_hash，修订未确认按 run 隔离；检索记录须保留 query/rank/candidate/version/排序参数。
+embedding 唯一键包含 run、subject/provider/model/revision_scope/dimension/normalization/text_hash；未知修订不得混用向量。检索表仅追加 Completed 分析的检索结果，不重写分析事件；事件向量、结果/rank 与证据关联按一次检索原子登记。query/rank/candidate/version/阈值与空间身份可回读。
 
 使用标准库 `sqlite3`，连接启用 FK、WAL、`synchronous=FULL`；写事务短，有限 busy timeout；每项目一个分析写入者。连接在其所属线程创建和使用，不共享跨线程连接；明确配置事务行为，不依赖 Python 默认值。同步 DB 操作由受控单写队列/专用线程执行，不能阻塞网络事件循环或在事务内等待媒体/模型。WAL 仍是单写。[WAL](https://www.sqlite.org/wal.html)、[Python sqlite3](https://docs.python.org/3.13/library/sqlite3.html)
 
@@ -78,17 +86,19 @@ embedding 和 retrieval_runs/hits 不在 v1 物理迁移中，随 F005 另加迁
 
 ## 5. 采样与检索实验
 
-保持全时轴覆盖而非先挑高光。冻结素材后对照：1 FPS、2 FPS、低密度覆盖＋候选加密、小样本强模型/高密度基线；评测短事件漏检和被过滤窗口。窗口大小、重叠、分辨率、场景触发阈值是配置并写入缓存键，先小规模找到质量/成本可接受组合，不将 90/10 写死。
+当前 v2 每秒抽帧并用 5 帧/1 帧重叠覆盖全部抽取帧，最后窗口可不足 5 帧；每窗口独立 checkpoint。上传总帧数包含重叠和重试，与独立抽帧数区分；运行前预检最低请求/图片额度，仍保留每 attempt 的硬上限。全覆盖不保证漏检短动作。1 FPS/2 FPS、加密采样与强模型对照仍是后续冻结实验，不将未运行实验写成结果。
 
-检索先建立词法基线，再对照语义扩展/embedding 与重排，记录采用方案。事件是去重单位：同一动作切成不同片段仍属一个事件。模型识别 eventId 和人工 benchmark 事件归属分开，通过人工匹配评价。冷运行与缓存运行分开，测试集按录制会话隔离，同源 PV/剪辑不得跨开发和测试集。
+当前检索对照 lexical BM25、local E5 cosine 和 hybrid RRF（`bm25-e5-rrf-v2`）。候选按证据/区间去重；模型 eventId 不等于人工独立动作身份，最终仍通过人工映射计分。默认 minSimilarity=0.80、semantic margin=0.02 尚未在真实独立标签集校准。文本 fixture 三组冷运行约1.65–1.87s、热缓存约0.11s，仅证明本地执行；负例改进不保证真实精度。测试集按录制会话隔离，同源 PV/剪辑不得跨开发和测试集。
+
+真实 PV 的离线三查询×三模式重复稳定，检索/向量写入和第二进程回读成功；报告位于本机 ignored `artifacts/demo-phase0/demo-validation.json`。中文攻击 hybrid 返回10个未人评候选；英文攻击 query 三模式均零命中；汽车维修负例在 lexical/hybrid 为零，pure semantic 错返10个。这些是实际缺口，不能用文本 fixture 双语 top1 替代真实召回/拒答校准。
 
 ## 6. 成本、缓存、恢复与取消
 
-每个网络 attempt 在发送前登记，重试有独立记录。仅限流、可恢复网络/服务端错误有限退避（初版最多两次重试）；认证、预算、领域校验错误不无限重试。配置 `maxCostCny`、`maxRequests`、`maxInputFrames`，发新请求前预留保守预算，无法估计时停下来记录缺口。价目时段改变要换版本。
+每个网络 attempt 在发送前登记到具体窗口，重试有独立记录。仅限流、可恢复网络/服务端错误最多两次重试；认证、预算、schema 错误不自动重试。账本限制 maxCostCny/maxRequests/maxInputFrames（含重复上传），发送前预留保守预算。当前快照 `deepseek-flash-cny-2026-10-04` 保存高峰/闲时 CNY 价格及官方来源，捕获日期不是账单或声明生效日。默认用 1M 输入上界、高峰缓存未命中价与输出上限预留；缓存用量完整且模型别名已知时结算 estimated，缺失则保留整个未知预留。请求时段按 UTC+8 周末/高峰判定，法定节假日未知时采用保守高峰价。
 
 冷成本/小时 = 所有计费尝试的原币费用按冻结汇率折算人民币 / 冻结素材时长小时。人民币定价无需汇率；其他币种缺汇率则 unknown。缺计费用量、价格、失败是否计费等证据时 `cost_status=unverified`、门槛 null。估算 estimated、账单核对 confirmed，赠送余额不抵消可规模化单位成本。GPU 秒、墙钟时间、人工主动分钟另报。§51 `<¥5/h` 作为建议成本目标，不能用热缓存通过。[DeepSeek 价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/)
 
-缓存键包含源/证据 hash、源区间、预处理配置/版本、Provider/实际模型修订、prompt 内容 hash、schema、生成参数；embedding 再含文本 hash、维数/归一化。仅复用成功且完整校验结果；模型、采样或 prompt 变化失效。哈希读源文件采用流式，不把大视频读入内存。
+复用只限成功且完整校验的 checkpoint 或固定本地 embedding 缓存。配置/输入 hash 包含源/证据、预处理、模型/修订、prompt 内容 hash、schema 和稳定参数；embedding 再含文本 hash、维数/归一化/推理空间身份。ASR 或 prompt 变化拒绝原 run 续跑，修改配置创建新 run。哈希读源文件采用流式，不把大视频读入内存。
 
 若实际修订 unresolved，`response.model` 别名不足以标识向量空间或长期缓存：缓存仅在同一 run 的 checkpoint/resume 复用，不跨 run 自动命中；该 run 的 embedding 禁止与其他 run 混检。冻结的实验响应可作离线 fixture 回放，必须标明 snapshot ID，不能声称新请求仍使用同一模型修订。
 
@@ -100,6 +110,10 @@ Ctrl+C 停止新任务、取消 Provider、保存状态；FFmpeg/ASR worker 要�
 
 质量协议见 [benchmark 规格](../references/phase-0-benchmark.md)。真实清晰机制查询仍须 Top10 独立可用结果 ≥70%；补齐人工标签前不可标 Phase 0 通过。速度报告墙钟/素材时长实时比与配置，原方案没有硬速度阈值，本轮不编造阈值。§44 整条创作时间节省在后续生成发布包阶段验证。
 
-开放实验项：本地 ASR 权重/运行时、完整采样配置、首个 embedding 实现、第二视觉 Provider、独立录制会话/标签、等待时间容忍。F001/F002/F004 已验收；ASR、视觉适配、检索和完整分析命令仍待实现。工程合同和存储通过不替代模型/检索质量条件。
+当前真实 PV Demo（95.175874s）完成24窗口/111事件/0转录，run `f76f5d6495314c04ae04083614d4afd6` API 估价 ¥0.06246088，未账单确认。早期 run `823799e10a0440e8aec8b78b603bec57` 在2/24窗口后因 provider.schema 停止，原响应未保存，不能声称已查明具体模型错误。新 prompt 成功不抹去该失败。
+
+早期失败 run 估价 ¥0.01163912、10事件、0未知调用；两 run 本轮 API 估价合计 ¥0.0741，不能只把成功 run 费用当全轮成本。实际完整 run 的运行成功和离线重读仍不代表人评验收。
+
+开放实验项：人工 ASR/机制标签、独立录制会话、小时级素材性能/成本、第二真实视觉 Provider、采样密度与检索阈值。F001/F002/F004 已验收；F003/F005 的当前实现待整体验收，F006 人评 gate 仍未验证。CLI 可用不等于质量通过，正式 UI 与商业系统尚未实现。
 
 实施依赖：F001 环境/合同工程 → F002 媒体映射 → F003 ASR/视觉与账本；F004 存储依赖 F001，可与 F002/F003 并行；F005 依赖 F003＋F004，包含 F002 的传递依赖；F006 独立标签准备可以先行，最终质量 gate 在集成后执行。详见 [开发任务](../exec-plans/phase-0-plan.md)。

@@ -43,9 +43,10 @@
       "name": "Replaceable model analysis",
       "description": "Implement local ASR and replaceable vision analysis, produce validated semantic events, and record per-attempt model, usage and cost metadata.",
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "test_criteria": "Provider replacement is verified; ASR distinguishes no_audio/no_speech/failure; schema, usage, budget and retry checks pass with per-attempt model/prompt/cost/time records and unknown costs preserved.",
-      "dependencies": ["F002"]
+      "dependencies": ["F002"],
+      "evidence": ["docs/exec-plans/sprint-demo.md", "docs/exec-plans/sprint-F003.md", "docs/references/deepseek-pricing.json", "tests/test_analyze_v2.py", "scripts/validate-demo.py", "scripts/verify.ps1"]
     },
     {
       "id": "F004",
@@ -62,9 +63,10 @@
       "name": "Natural-language clip retrieval",
       "description": "Rank timeline segments against a text query and return useful clip ranges with evidence.",
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "test_criteria": "A query returns stable, deduplicated source intervals with evidence from a Completed run; empty results are valid; lexical and semantic retrieval are compared on fixed fixtures.",
-      "dependencies": ["F003", "F004"]
+      "dependencies": ["F003", "F004"],
+      "evidence": ["docs/exec-plans/sprint-demo.md", "docs/exec-plans/sprint-F005-worker.md", "docs/exec-plans/sprint-F005-persistence-worker.md", "tests/test_retrieval.py", "tests/test_search_cli.py", "scripts/validate-demo.py"]
     },
     {
       "id": "F006",
@@ -73,7 +75,8 @@
       "priority": 6,
       "passes": false,
       "test_criteria": "A frozen independent human-labeled benchmark reports every query, fixed-denominator U10, misses/timecode errors, runtime and cold/hot cost; each main mechanic query reaches U10 >= 0.70; sparse/negative groups are separate and unverified cost gates remain null.",
-      "dependencies": ["F005"]
+      "dependencies": ["F005"],
+      "evidence": ["docs/exec-plans/sprint-F006-worker.md", "docs/references/benchmark-manifest-schema.md", "tests/test_benchmark.py", "docs/exec-plans/sprint-demo.md"]
     }
   ]
 }

@@ -188,6 +188,15 @@ def _document(timeline: StoredTimeline) -> dict[str, object]:
         "schemaVersion": 1,
         "runId": timeline.run.run_id,
         "mediaId": timeline.run.asset.media_id,
+        "media": {
+            "sourcePath": str(timeline.run.asset.source_path),
+            "sha256": timeline.run.asset.sha256,
+            "durationUs": timeline.run.asset.duration_us,
+            "originSeconds": {
+                "numerator": timeline.run.asset.origin_seconds.numerator,
+                "denominator": timeline.run.asset.origin_seconds.denominator,
+            },
+        },
         "status": "completed",
         "events": [
             {
@@ -223,18 +232,45 @@ def _document(timeline: StoredTimeline) -> dict[str, object]:
                 if item.metadata.usage.cost_cny is None
                 else str(item.metadata.usage.cost_cny),
                 "costStatus": str(item.metadata.usage.cost_status),
+                "status": str(item.status),
+                "modelRevision": item.metadata.model_revision,
+                "promptVersion": item.metadata.prompt_version,
+                "schemaVersion": item.metadata.schema_version,
+                "priceVersion": item.metadata.price_version,
+                "elapsedMs": item.metadata.elapsed_ms,
+                "requestId": item.metadata.request_id,
+                "inputTokens": item.metadata.usage.input_tokens,
+                "cachedInputTokens": item.metadata.usage.cached_input_tokens,
+                "outputTokens": item.metadata.usage.output_tokens,
+                "executionDetails": json.loads(item.metadata.execution_details or "{}"),
             }
             for item in timeline.invocations
         ],
-        "processingTimeMs": sum(item.metadata.elapsed_ms or 0 for item in timeline.invocations),
+        "providerElapsedMs": sum(item.metadata.elapsed_ms or 0 for item in timeline.invocations),
         "modelApiCost": {
-            "estimatedCny": str(
+            "knownEstimatedCny": str(
+                sum((item.metadata.usage.cost_cny or 0 for item in timeline.invocations), start=0)
+            ),
+            "totalCny": None
+            if any(item.metadata.usage.cost_cny is None for item in timeline.invocations)
+            else str(
                 sum((item.metadata.usage.cost_cny or 0 for item in timeline.invocations), start=0)
             ),
             "unknownAttempts": sum(
                 item.metadata.usage.cost_cny is None for item in timeline.invocations
             ),
             "billingConfirmed": False,
+        },
+        "configuration": {
+            "configHash": timeline.run.config_hash,
+            "pipelineVersion": timeline.run.configuration.pipeline_version,
+            "pipelineHash": timeline.run.configuration.pipeline_hash,
+            "maxCostCny": str(timeline.run.configuration.max_cost_cny),
+            "samplingIntervalMs": timeline.run.configuration.analysis.sampling_interval_ms,
+            "windowFrames": timeline.run.configuration.analysis.window_frames,
+            "windowOverlap": timeline.run.configuration.analysis.window_overlap,
+            "visionPromptVersion": timeline.run.configuration.analysis.vision_prompt_version,
+            "visionPromptHash": timeline.run.configuration.analysis.vision_prompt_hash,
         },
     }
 
@@ -448,7 +484,7 @@ async def _run_pipeline(
                         VisionRequest(
                             run_id,
                             window,
-                            VISION_PROMPT_VERSION,
+                            config.vision_prompt_version,
                             VISION_SCHEMA_VERSION,
                             config.max_output_tokens,
                             stage_id=stage_id,

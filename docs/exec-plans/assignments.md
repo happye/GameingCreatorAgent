@@ -1,16 +1,14 @@
 # Active assignments
 
-Use `docs/references/agent-workflow.md` for assignment and transfer rules. This table records coordination, not automated locks. A designated coordinator reconciles it before parallel work starts; workers keep detailed evidence in their own sprint record.
+协调规则见 `docs/references/agent-workflow.md`。2026-10-04本轮所有worker已冻结并由root整合；无活动并行写入。root后续接手时仍须先查分支与未提交状态。
 
-| Feature | Owner / tool-session | Branch | Owned paths | State | Sprint record |
+| Feature | Owner / tool-session | Branch | Scope | State | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| Demo integration | Codex root | `codex/phase0-demo` | config v2, store extensions, analysis windows/resume, CLI, dependencies, demos and shared docs | active | `sprint-demo.md` |
-| F003 pricing | Codex `demo_pricing` | `codex/demo-pricing` / `.worktrees/demo-pricing` | pricing.py, deepseek_vision.py, their tests and price JSON | active | root consolidates into `sprint-demo.md` |
-| F005 retrieval | Codex `demo_retrieval` | `codex/demo-retrieval` / `.worktrees/demo-retrieval` | retrieval.py, local embedding adapter/tests/asset script/model JSON | active | `sprint-F005-worker.md` |
-| F006 benchmark | Codex `demo_benchmark` | `codex/demo-benchmark` / `.worktrees/demo-benchmark` | benchmark.py/tests, manifest template/schema | active | `sprint-F006-worker.md` |
+| Demo / F003 / F005 | Codex root | `codex/phase0-demo` | 全链路、配置/恢复/预算、CLI、SQL3、隔离依赖及共享记录 | accepted / ready-for-handoff | `sprint-demo.md` |
+| Pricing / vision / docs | Codex demo_pricing | 独立worker与root整合记录 | 价格/诊断/v2提示、README/AGENTS/规格/quickstart | frozen / integrated | `sprint-demo.md` |
+| Local retrieval | Codex demo_retrieval | `codex/demo-retrieval`，checkpoint `4b692d8` | E5/batch1/cache、BM25/cosine/hybrid与固定fixture | frozen / integrated | `sprint-F005-worker.md` |
+| F006 runner / SQL3 | Codex demo_benchmark | `codex/demo-benchmark` | 标签评分、schema3/向量/检索持久化、legacy测试修复 | frozen / integrated | `sprint-F006-worker.md`, `sprint-F005-persistence-worker.md` |
 
-F001/F002/F004 are accepted. Grok's ASR/vision/analyze delivery was reviewed by Codex. Scratch worktrees are frozen; root is the source. Local main and origin/main are `ca0394e`; checkpoint `377bb68` is pushed to origin/codex/F003-models. Worker assignments are released; the next owner records takeover here. F003 stays `passes: false`.
+F000–F005技术合同已验收，整体557passed/0skip、Ruff/mypy/离线wheel通过。F006工具有合同测试，独立人工quality gate仍未通过。英文实视频漏召回、puresemantic负例误召回和小时级资源边界为接续优先项，见TD004/TD005。新owner需登记接手，不重复初始化或重做已完成模型/CLI。
 
-下一步按复核记录：价目/费用预留配置、完整滑窗、显式恢复与持久化预算、ASR开始前账本登记及中英参考。然后推进F005/F006，GUI未开始。最新完整verify：332 passed/0skip（20.06s）、Ruff/mypy/CLI及重复wheel通过；技术Demo命令在README。原Grok证据保留在sprint中。
-
-Suggested states: `active`, `ready-for-handoff`, `blocked`, `ready-for-review`. Remove finished assignments after recording their result in `progress.md` and `feature_list.json`.
+当前本地/远端提交以HANDOFF和git为准。旧Grok/F003 scratch worktrees保留历史，已冻结；不要从旧分支覆盖当前源码。

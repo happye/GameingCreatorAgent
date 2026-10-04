@@ -4,9 +4,20 @@
     "provider": "deepseek",
     "model": "deepseek-flash",
     "priceVersion": "deepseek-flash-cny-2026-10-04",
-    "maxOutputTokens": 2048
+    "maxOutputTokens": 2048,
+    "promptVersion": "phase0-vision-v2",
+    "promptHash": "f9adb61a5be1dd03ca603c9515c5f6ffea3ae731b1f55a61332a23dd37383236"
   },
-  "limits": {"maxRequests": 500, "maxInputFrames": 5000},
-  "sampling": {"intervalMs": 1000, "windowFrames": 5, "windowOverlap": 1},
-  "asr": {"language": "zh"}
+  "limits": {
+    "maxRequests": 500,
+    "maxInputFrames": 5000
+  },
+  "sampling": {
+    "intervalMs": 1000,
+    "windowFrames": 5,
+    "windowOverlap": 1
+  },
+  "asr": {
+    "language": "zh"
+  }
 }

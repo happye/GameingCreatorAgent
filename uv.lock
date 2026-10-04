@@ -181,6 +181,11 @@ asr = [
     { name = "faster-whisper" },
     { name = "onnxruntime" },
 ]
+retrieval = [
+    { name = "numpy" },
+    { name = "onnxruntime" },
+    { name = "tokenizers" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -196,9 +201,12 @@ requires-dist = [
     { name = "ctranslate2", marker = "extra == 'asr'", specifier = "==4.8.2" },
     { name = "faster-whisper", marker = "extra == 'asr'", specifier = "==1.2.1" },
     { name = "httpx", specifier = "==0.28.1" },
+    { name = "numpy", marker = "extra == 'retrieval'", specifier = "==2.5.3" },
     { name = "onnxruntime", marker = "extra == 'asr'", specifier = "==1.30.0" },
+    { name = "onnxruntime", marker = "extra == 'retrieval'", specifier = "==1.30.0" },
+    { name = "tokenizers", marker = "extra == 'retrieval'", specifier = "==0.23.2" },
 ]
-provides-extras = ["asr"]
+provides-extras = ["asr", "retrieval"]
 
 [package.metadata.requires-dev]
 dev = [

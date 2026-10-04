@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 from typing import cast
 
@@ -60,6 +61,8 @@ class LocalInputReader:
         vision_fields = {"provider", "model"}
         if schema_version == 2:
             vision_fields |= {"priceVersion", "maxOutputTokens"}
+            if isinstance(config["vision"], dict) and "promptVersion" in config["vision"]:
+                vision_fields |= {"promptVersion", "promptHash"}
         vision = _object(config["vision"], vision_fields)
         limits = _object(config["limits"], {"maxRequests", "maxInputFrames"})
         extra: dict[str, object] = {}
@@ -89,6 +92,15 @@ class LocalInputReader:
                 "max_output_tokens": output,
                 "asr_language": language,
             }
+            if "promptVersion" in vision:
+                prompt_version = _text(vision["promptVersion"])
+                prompt_hash = _text(vision["promptHash"])
+                if prompt_version not in (
+                    "phase0-vision-v1",
+                    "phase0-vision-v2",
+                ) or not re.fullmatch(r"[a-f0-9]{64}", prompt_hash):
+                    raise invalid_config()
+                extra.update(vision_prompt_version=prompt_version, vision_prompt_hash=prompt_hash)
         return AnalysisConfig(
             provider=_text(vision["provider"]),
             model=_text(vision["model"]),

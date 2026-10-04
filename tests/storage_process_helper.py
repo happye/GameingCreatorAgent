@@ -62,11 +62,12 @@ def fixture_metadata() -> InvocationMetadata:
         "fixture-provider",
         "fixture-model",
         None,
-        None,
+        "fixture-revision-1",
         "prompt-v1",
         "schema-v1",
         1,
         ProviderUsage(),
+        price_version="fixture-prices-v1",
     )
 
 
@@ -99,49 +100,51 @@ async def prepare(project: Path, *, completed: bool) -> None:
     asset = fixture_asset(project)
     bundle = fixture_bundle(project, asset)
     store = await SqliteTimelineStore.open(project)
-    await store.create_run(RUN_ID, asset, fixture_configuration())
-    await store.begin_stage(RUN_ID, "media", asset.sha256)
-    await store.persist_media_bundle(RUN_ID, bundle)
-    await store.begin_stage(RUN_ID, "vision", PIPELINE_HASH)
-    await store.begin_invocation("invocation-1", RUN_ID, "vision", "window-1", fixture_metadata())
-    if not completed:
-        # Skip all Python cleanup, including the executor and SQLite connection.
-        os._exit(42)
-    metadata = replace(
-        fixture_metadata(),
-        actual_model="fixture-resolved-model",
-        model_revision="fixture-revision-1",
-        usage=ProviderUsage(
-            input_tokens=17,
-            output_tokens=5,
-            cached_input_tokens=0,
-            original_cost=Decimal("0.01234567890123456789"),
-            currency="CNY",
-            cost_cny=Decimal("0.01234567890123456789"),
-            cost_status=CostStatus.CONFIRMED,
-        ),
-        elapsed_ms=123,
-        price_version="fixture-prices-v1",
-        request_id="request-1",
-    )
-    await store.finish_invocation("invocation-1", InvocationStatus.COMPLETED, metadata)
-    event = SemanticEvent(
-        "event-1",
-        asset.media_id,
-        RUN_ID,
-        SourceRange(500_000, 1_500_000, asset.duration_us),
-        ("storage fixture action",),
-        ("fixture-mechanic",),
-        (bundle.images[0].evidence_id,),
-        "visual",
-        None,
-    )
-    transcript = TranscriptSegment(
-        asset.media_id, SourceRange(250_000, 750_000, asset.duration_us), "fixture transcript"
-    )
-    await store.persist_timeline(RUN_ID, "vision", (event,), (transcript,), "b" * 64)
-    await store.complete_run(RUN_ID)
-    await store.close()
+    try:
+        await store.create_run(RUN_ID, asset, fixture_configuration())
+        await store.begin_stage(RUN_ID, "media", asset.sha256)
+        await store.persist_media_bundle(RUN_ID, bundle)
+        await store.begin_stage(RUN_ID, "vision", PIPELINE_HASH)
+        await store.begin_invocation(
+            "invocation-1", RUN_ID, "vision", "window-1", fixture_metadata()
+        )
+        if not completed:
+            # os._exit bypasses finally, preserving a real unclean process exit.
+            os._exit(42)
+        metadata = replace(
+            fixture_metadata(),
+            actual_model="fixture-resolved-model",
+            usage=ProviderUsage(
+                input_tokens=17,
+                output_tokens=5,
+                cached_input_tokens=0,
+                original_cost=Decimal("0.01234567890123456789"),
+                currency="CNY",
+                cost_cny=Decimal("0.01234567890123456789"),
+                cost_status=CostStatus.CONFIRMED,
+            ),
+            elapsed_ms=123,
+            request_id="request-1",
+        )
+        await store.finish_invocation("invocation-1", InvocationStatus.COMPLETED, metadata)
+        event = SemanticEvent(
+            "event-1",
+            asset.media_id,
+            RUN_ID,
+            SourceRange(500_000, 1_500_000, asset.duration_us),
+            ("storage fixture action",),
+            ("fixture-mechanic",),
+            (bundle.images[0].evidence_id,),
+            "visual",
+            None,
+        )
+        transcript = TranscriptSegment(
+            asset.media_id, SourceRange(250_000, 750_000, asset.duration_us), "fixture transcript"
+        )
+        await store.persist_timeline(RUN_ID, "vision", (event,), (transcript,), "b" * 64)
+        await store.complete_run(RUN_ID)
+    finally:
+        await store.close()
 
 
 async def read_completed(project: Path) -> dict[str, object]:
@@ -164,6 +167,8 @@ async def read_completed(project: Path) -> dict[str, object]:
             "checkpoints": {item.stage_id: str(item.status) for item in timeline.checkpoints},
             "invocationId": invocation.invocation_id,
             "modelRevision": invocation.metadata.model_revision,
+            "priceVersion": invocation.metadata.price_version,
+            "actualModel": invocation.metadata.actual_model,
             "cost": str(invocation.metadata.usage.cost_cny),
             "costStatus": str(invocation.metadata.usage.cost_status),
             "inputTokens": invocation.metadata.usage.input_tokens,

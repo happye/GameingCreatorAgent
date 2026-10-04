@@ -65,3 +65,7 @@ SQLite 专用线程、进程锁、九表迁移/组合 FK、媒体/语义 checkpo
 已核对Grok整合的Vision/budget/analyze与有限续跑、129段ASR及真实取消/超时报告。修正默认安装缺HTTPX及verify复用不可访问pytest目录；仅从固定归档恢复24个stdib pyc，收据/程序/DLL不变。最新完整verify：332 passed/0skip（20.06s）、Ruff/mypy/CLI与重复离线wheel通过，SHA `91f5aa449372679014232e5c0a4319bae000b97e19af31eb742f6c984d4433b8`。复核记录和README给出技术Demo命令；analyze仍缺视觉费用快照，search未实现，无GUI/完整产品Demo。已写具体后续工程缺口，F003/F005/F006false，未发付费请求；保存本地检查点以便直接接力。
 
 版本持久化：检查点 `377bb68` 已推送 `origin/codex/F003-models`，本地与远端main同步 `ca0394e`。正常HTTP/1.1推送成功，未强推/修改全局网络配置。后续模型开发从F003分支接续，main仍是已验收F004基线。
+
+## 2026-10-04 Phase 0 CLI Demo整合
+
+价格快照、全时轴滑动窗口、显式失败/取消恢复与未知费用保留、ASR提前登记、本地E5语义/词法/混合检索、SQL3与人工评分CLI已完成。真实95.175874s PV得24窗口/111events/0transcripts，估算API0.06246088CNY；保留早期失败run0.01163912，总估算0.0741CNY。三查询三模式重复稳定/跨进程读取通过；英文漏召回、puresemantic负例误召回及未人评保持可见。F003/F005技术合同已验收，F006人工gate未过。完整verify557passed/0skip，Ruff/mypy42源文件、重复wheel90c27fba9af76a86a35c191d684d0c5160baf07b49a4e8e90eb0356bf6eb4a75通过，所有环境仍仅项目内。快速运行docs/references/demo-quickstart.md，证据docs/exec-plans/sprint-demo.md，下一步TD004/TD005+独立冻结标签；不开始GUI。

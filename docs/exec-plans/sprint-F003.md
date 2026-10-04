@@ -1,5 +1,9 @@
 # F003 模型分析与替换
 
+**当前状态（2026-10-04最终整合）**：F003技术合同已验收，证据见[sprint-demo](./sprint-demo.md)。完整PV的24窗口/111events、ASR提前登记、价格快照/逐attempt费用、替换合同、未知账本恢复及显式续跑通过；整体557passed/0skip。F005检索技术实现也已验收，F006人评gate仍未通过。下文保留此前Grok/Codex的历史检查点，历史“下一步/不要开始F005”不得当作当前指令；接续看根HANDOFF。
+
+## 历史实施记录
+
 状态：实施中，`passes: false`。2026-10-04 Grok Build 从 `dd44284` 接续，随后Codex复核并保存交接检查点；工作目录 `G:\Tools\ChatGPTRepo\GameingCreatorAgent`，分支 `codex/F003-models`。最新HEAD/未提交状态以Git为准，分工见 assignments。
 
 最新：用户要求 Codex 复核 Grok交接；复核记录 `review-F003-grok-2026-10-04.md` 优先于历史下一步。补齐HTTPX正式依赖及独立pytest目录，恢复24个pyc漂移后完整verify通过：332 passed/0skip（20.06s）、Ruff/mypy与两次同hashwheel。没有GUI/检索产品Demo，CLI视觉仍因费用快照缺失停止，F003false。工作已准备为本地可恢复检查点，不等额度耗尽才记录。

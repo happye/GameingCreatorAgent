@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 
 from gamingcreator.domain.errors import AppError, ExitCode
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 _TABLES = (
     """CREATE TABLE schema_migrations (
@@ -182,18 +182,146 @@ _DDL = (*_TABLES, *_INDEXES, *_TRIGGERS)
 # Keep v1 immutable: existing databases must validate before this ALTER runs.
 _MIGRATION_2 = ("ALTER TABLE transcript_segments ADD COLUMN uncertainty TEXT",)
 
+# Keep both earlier versions immutable. Retrieval never rewrites an analysis run.
+_MIGRATION_3 = (
+    """CREATE TABLE embeddings (
+        embedding_id TEXT PRIMARY KEY NOT NULL,
+        run_id TEXT NOT NULL,
+        media_id TEXT NOT NULL,
+        subject_id TEXT NOT NULL,
+        subject_kind TEXT NOT NULL CHECK(subject_kind IN ('event','evidence')),
+        event_id TEXT,
+        evidence_id TEXT,
+        provider TEXT NOT NULL CHECK(length(trim(provider)) > 0),
+        model TEXT NOT NULL CHECK(length(trim(model)) > 0),
+        revision_scope TEXT NOT NULL CHECK(length(trim(revision_scope)) > 0),
+        dimension INTEGER NOT NULL CHECK(dimension > 0),
+        normalization TEXT NOT NULL CHECK(normalization IN ('none','l2')),
+        text_hash TEXT NOT NULL CHECK(length(text_hash) = 64
+            AND text_hash NOT GLOB '*[^0-9a-f]*'),
+        vector_json TEXT CHECK(vector_json IS NULL OR CASE WHEN json_valid(vector_json)
+            THEN json_type(vector_json) = 'array' AND json_array_length(vector_json) = dimension
+            ELSE 0 END),
+        created_at TEXT NOT NULL,
+        UNIQUE(run_id, subject_kind, subject_id, provider, model, revision_scope,
+            dimension, normalization, text_hash),
+        FOREIGN KEY(run_id, media_id) REFERENCES analysis_runs(run_id, media_id),
+        FOREIGN KEY(event_id, run_id, media_id)
+            REFERENCES semantic_events(event_id, run_id, media_id),
+        FOREIGN KEY(evidence_id, run_id, media_id)
+            REFERENCES evidence(evidence_id, run_id, media_id),
+        CHECK((subject_kind = 'event' AND event_id IS NOT NULL AND subject_id = event_id
+                AND evidence_id IS NULL)
+            OR (subject_kind = 'evidence' AND evidence_id IS NOT NULL
+                AND subject_id = evidence_id AND event_id IS NULL))
+    ) STRICT""",
+    """CREATE TABLE retrieval_runs (
+        retrieval_id TEXT PRIMARY KEY NOT NULL,
+        run_id TEXT NOT NULL,
+        media_id TEXT NOT NULL,
+        query TEXT NOT NULL CHECK(length(trim(query)) > 0),
+        query_hash TEXT NOT NULL CHECK(length(query_hash) = 64
+            AND query_hash NOT GLOB '*[^0-9a-f]*'),
+        retrieval_version TEXT NOT NULL CHECK(length(trim(retrieval_version)) > 0),
+        parameters_json TEXT NOT NULL CHECK(json_valid(parameters_json)
+            AND json_type(parameters_json) = 'object'),
+        embedding_space_json TEXT CHECK(embedding_space_json IS NULL
+            OR (json_valid(embedding_space_json) AND json_type(embedding_space_json) = 'object')),
+        elapsed_ms REAL NOT NULL CHECK(elapsed_ms >= 0 AND elapsed_ms <= 1.7976931348623157e308),
+        result_json TEXT NOT NULL CHECK(json_valid(result_json) AND json_type(result_json) = 'object'),
+        created_at TEXT NOT NULL,
+        UNIQUE(retrieval_id, run_id, media_id),
+        FOREIGN KEY(run_id, media_id) REFERENCES analysis_runs(run_id, media_id)
+    ) STRICT""",
+    """CREATE TABLE retrieval_hits (
+        retrieval_id TEXT NOT NULL,
+        rank INTEGER NOT NULL CHECK(rank > 0),
+        candidate_id TEXT NOT NULL CHECK(length(trim(candidate_id)) > 0),
+        event_id TEXT,
+        run_id TEXT NOT NULL,
+        media_id TEXT NOT NULL,
+        start_us INTEGER NOT NULL CHECK(start_us >= 0),
+        end_us INTEGER NOT NULL CHECK(end_us > start_us),
+        score REAL NOT NULL CHECK(abs(score) <= 1.7976931348623157e308),
+        score_kind TEXT NOT NULL CHECK(length(trim(score_kind)) > 0),
+        PRIMARY KEY(retrieval_id, rank),
+        UNIQUE(retrieval_id, candidate_id),
+        UNIQUE(retrieval_id, rank, event_id, run_id, media_id),
+        UNIQUE(retrieval_id, rank, run_id, media_id),
+        FOREIGN KEY(retrieval_id, run_id, media_id)
+            REFERENCES retrieval_runs(retrieval_id, run_id, media_id),
+        FOREIGN KEY(event_id, run_id, media_id)
+            REFERENCES semantic_events(event_id, run_id, media_id)
+    ) STRICT""",
+    """CREATE TABLE retrieval_hit_evidence (
+        retrieval_id TEXT NOT NULL,
+        rank INTEGER NOT NULL,
+        event_id TEXT,
+        evidence_id TEXT NOT NULL,
+        run_id TEXT NOT NULL,
+        media_id TEXT NOT NULL,
+        PRIMARY KEY(retrieval_id, rank, evidence_id),
+        FOREIGN KEY(retrieval_id, rank, event_id, run_id, media_id)
+            REFERENCES retrieval_hits(retrieval_id, rank, event_id, run_id, media_id),
+        FOREIGN KEY(retrieval_id, rank, run_id, media_id)
+            REFERENCES retrieval_hits(retrieval_id, rank, run_id, media_id),
+        FOREIGN KEY(event_id, run_id, media_id)
+            REFERENCES semantic_events(event_id, run_id, media_id),
+        FOREIGN KEY(evidence_id, run_id, media_id)
+            REFERENCES evidence(evidence_id, run_id, media_id),
+        FOREIGN KEY(event_id, evidence_id) REFERENCES event_evidence(event_id, evidence_id)
+    ) STRICT""",
+    "CREATE INDEX embeddings_by_run_space ON embeddings(run_id, provider, model, revision_scope)",
+    "CREATE INDEX retrieval_runs_by_source ON retrieval_runs(run_id, created_at)",
+    *_range_triggers("retrieval_hits"),
+    """CREATE TRIGGER retrieval_media_duration_update BEFORE UPDATE OF duration_us ON media_assets
+        WHEN EXISTS(SELECT 1 FROM retrieval_hits WHERE media_id = NEW.media_id
+            AND end_us > NEW.duration_us)
+        BEGIN SELECT RAISE(ABORT, 'media duration excludes retrieval hits'); END""",
+    *(
+        f"""CREATE TRIGGER {table}_completed_{operation.lower()} BEFORE {operation} ON {table}
+            WHEN COALESCE((SELECT status FROM analysis_runs WHERE run_id = NEW.run_id), '')
+                <> 'completed'
+            BEGIN SELECT RAISE(ABORT, 'retrieval requires completed analysis'); END"""
+        for table in ("embeddings", "retrieval_runs")
+        for operation in ("INSERT", "UPDATE")
+    ),
+    *(
+        f"""CREATE TRIGGER embeddings_vector_{operation.lower()} BEFORE {operation} ON embeddings
+            WHEN NEW.vector_json IS NOT NULL AND json_valid(NEW.vector_json)
+                AND EXISTS(SELECT 1 FROM json_each(NEW.vector_json)
+                    WHERE type NOT IN ('integer','real') OR abs(value) > 1.7976931348623157e308)
+            BEGIN SELECT RAISE(ABORT, 'embedding vector must contain finite numbers'); END"""
+        for operation in ("INSERT", "UPDATE")
+    ),
+    *(
+        f"""CREATE TRIGGER retrieval_evidence_event_{operation.lower()}
+            BEFORE {operation} ON retrieval_hit_evidence
+            WHEN NEW.event_id IS NOT (SELECT event_id FROM retrieval_hits
+                WHERE retrieval_id = NEW.retrieval_id AND rank = NEW.rank)
+            BEGIN SELECT RAISE(ABORT, 'retrieval evidence event mismatch'); END"""
+        for operation in ("INSERT", "UPDATE")
+    ),
+    """CREATE TRIGGER retrieval_hit_event_update BEFORE UPDATE OF event_id ON retrieval_hits
+        WHEN EXISTS(SELECT 1 FROM retrieval_hit_evidence
+            WHERE retrieval_id = OLD.retrieval_id AND rank = OLD.rank
+                AND event_id IS NOT NEW.event_id)
+        BEGIN SELECT RAISE(ABORT, 'retrieval hit event has attached evidence'); END""",
+)
+
 
 def _ddl_for_version(version: int) -> tuple[str, ...]:
     if version == 1:
         return _DDL
     # SQLite places an added column before the first table-level constraint.
     # This reflects the SQL observed after the actual v1 -> v2 ALTER statement.
-    return tuple(
+    version_2 = tuple(
         statement.replace("text TEXT NOT NULL,", "text TEXT NOT NULL, uncertainty TEXT,", 1)
         if statement.startswith("CREATE TABLE transcript_segments ")
         else statement
         for statement in _DDL
     )
+    return version_2 if version == 2 else (*version_2, *_MIGRATION_3)
 
 
 def _invalid_schema() -> AppError:
@@ -309,6 +437,11 @@ def migrate(connection: sqlite3.Connection) -> None:
             for statement in _MIGRATION_2:
                 connection.execute(statement)
             _record_migration(connection, 2)
+            version = 2
+        if version == 2:
+            for statement in _MIGRATION_3:
+                connection.execute(statement)
+            _record_migration(connection, 3)
         validate_schema(connection)
         connection.execute("COMMIT")
     except (AppError, sqlite3.Error) as error:

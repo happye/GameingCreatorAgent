@@ -32,6 +32,7 @@ from gamingcreator.infrastructure import deepseek_vision
 from gamingcreator.infrastructure.deepseek_vision import (
     MAX_IMAGES,
     PROMPT_VERSION,
+    PROMPT_VERSION_V2,
     SCHEMA_VERSION,
     DeepSeekVisionProvider,
 )
@@ -237,6 +238,175 @@ def test_selected_images_only_and_metadata_without_invented_costs(tmp_path: Path
     assert provider.capabilities.max_images == 5
     assert provider.capabilities.max_image_width == 512
     assert not provider.capabilities.native_video
+
+
+@pytest.mark.parametrize("language", ["zh", "en"])
+def test_v2_aliases_have_source_bounds_and_remap_to_original_evidence(
+    tmp_path: Path, language: str
+) -> None:
+    event = valid_event()
+    event["evidenceIds"] = ["f1", "f0"]
+    event["observableFacts"] = [
+        "角色向侧面移动。" if language == "zh" else "Character moves sideways."
+    ]
+    provider, transport, recorder, _ = provider_fixture([response_fixture(events=[event])])
+    request = replace(
+        request_fixture(tmp_path, frames=2),
+        prompt_version=PROMPT_VERSION_V2,
+        language=language,
+        stage_id="vision-000004",
+    )
+    result = asyncio.run(provider.analyze(request, CancellationContext("run-1", 2)))
+    assert result.status == ProviderStatus.COMPLETED and result.output
+    assert result.output[0].evidence_ids == tuple(item.evidence_id for item in request.evidence)
+    assert recorder.records[0].stage_id == "vision-000004"
+    assert result.metadata.prompt_version == PROMPT_VERSION_V2
+    payload = transport.payloads[0]
+    serialized = json.dumps(payload)
+    assert "run-1:media-1:image:" not in serialized
+    messages = payload["messages"]
+    assert isinstance(messages, list)
+    system, user = messages
+    assert "strictly greater" in system["content"]
+    blocks = user["content"]
+    info = json.loads(blocks[0]["text"])
+    assert info["windowFirstSourceUs"] == 1_000_000
+    assert info["windowLastSourceUs"] == 1_100_000
+    assert info["language"] == language
+    assert json.loads(blocks[1]["text"])["evidenceId"] == "f0"
+    assert json.loads(blocks[3]["text"])["evidenceId"] == "f1"
+
+
+@pytest.mark.parametrize("reference", ["f2", "f00", "F0", "run-1:media-1:image:000000"])
+def test_v2_never_guesses_or_accepts_foreign_frame_aliases(tmp_path: Path, reference: str) -> None:
+    event = valid_event()
+    event["evidenceIds"] = [reference]
+    provider, _, recorder, _ = provider_fixture([response_fixture(events=[event])])
+    request = replace(request_fixture(tmp_path, frames=2), prompt_version=PROMPT_VERSION_V2)
+    result = asyncio.run(provider.analyze(request, CancellationContext("run-1", 2)))
+    assert result.error and result.error.code == "provider.schema"
+    assert result.metadata.execution_details
+    assert json.loads(result.metadata.execution_details)["schemaError"] == "evidence_unknown"
+    assert recorder.records[0].metadata == result.metadata
+
+
+@pytest.mark.parametrize("version", [PROMPT_VERSION, PROMPT_VERSION_V2])
+def test_half_open_boundary_error_has_safe_diagnostic_and_never_adjusts_time(
+    tmp_path: Path, version: str
+) -> None:
+    event = valid_event()
+    event["endUs"] = 1_000_000
+    if version == PROMPT_VERSION_V2:
+        event["evidenceIds"] = ["f0"]
+    event["observableFacts"] = ["private-untrusted-response-text"]
+    provider, _, recorder, ledger = provider_fixture([response_fixture(events=[event])])
+    request = replace(request_fixture(tmp_path), prompt_version=version)
+    result = asyncio.run(provider.analyze(request, CancellationContext("run-1", 2)))
+    assert result.error and result.error.code == "provider.schema" and not result.error.retryable
+    assert result.output is None
+    assert result.metadata.execution_details
+    details = json.loads(result.metadata.execution_details)
+    assert details["schemaError"] == "evidence_outside_range"
+    assert details["reservationCny"] == "0.1" and details["inputFrames"] == 1
+    assert details["evidenceIds"] == [request.evidence[0].evidence_id]
+    assert "private-untrusted-response-text" not in repr(result)
+    assert ledger.reserved_cny == Decimal("0.1")
+    assert recorder.records[0].status == InvocationStatus.FAILED
+    assert recorder.begun_metadata[0].execution_details
+    assert "schemaError" not in json.loads(recorder.begun_metadata[0].execution_details)
+
+
+@pytest.mark.parametrize(
+    "field,value,diagnostic",
+    [
+        ("startUs", True, "time_type"),
+        ("startUs", -1, "time_range"),
+        ("endUs", 900_000, "time_range"),
+        ("endUs", 5_000_001, "time_range"),
+        ("confidence", 0.9, "event_fields"),
+        ("observableFacts", [], "event_facts"),
+        ("mechanicTags", "dodge", "event_tags"),
+        ("evidenceIds", [], "event_evidence"),
+        ("uncertainty", False, "uncertainty"),
+    ],
+)
+def test_event_schema_diagnostics_use_finite_codes(
+    tmp_path: Path, field: str, value: object, diagnostic: str
+) -> None:
+    event = valid_event()
+    event[field] = value
+    provider, _, _, _ = provider_fixture([response_fixture(events=[event])])
+    result = asyncio.run(
+        provider.analyze(request_fixture(tmp_path), CancellationContext("run-1", 2))
+    )
+    assert result.metadata.execution_details
+    assert json.loads(result.metadata.execution_details)["schemaError"] == diagnostic
+
+
+@pytest.mark.parametrize(
+    "content,diagnostic",
+    [
+        ("private-invalid-json", "json_invalid"),
+        ('{"events":[],"events":[]}', "json_duplicate"),
+        ('{"events":NaN}', "json_nonfinite"),
+        ('{"unexpected":[]}', "event_collection"),
+    ],
+)
+def test_model_json_schema_diagnostic_never_contains_response(
+    tmp_path: Path, content: str, diagnostic: str
+) -> None:
+    provider, _, _, _ = provider_fixture([response_fixture(content=content)])
+    result = asyncio.run(
+        provider.analyze(request_fixture(tmp_path), CancellationContext("run-1", 2))
+    )
+    assert result.error and result.error.code == "provider.schema"
+    assert result.metadata.execution_details
+    assert json.loads(result.metadata.execution_details)["schemaError"] == diagnostic
+    assert "private-invalid-json" not in repr(result)
+
+
+def test_finish_reason_schema_diagnostic_keeps_known_price_estimate(tmp_path: Path) -> None:
+    recorder = Recorder()
+    transport = FakeTransport(
+        [
+            response_fixture(
+                finish_reason="content_filter",
+                usage={
+                    "prompt_tokens": 1000,
+                    "completion_tokens": 200,
+                    "prompt_cache_hit_tokens": 300,
+                },
+            )
+        ],
+        recorder,
+    )
+    ledger = BudgetLedger(Decimal(10), 10, 50)
+    provider = DeepSeekVisionProvider(
+        transport, ledger, None, recorder, price_snapshot=DEEPSEEK_FLASH_20261004
+    )
+    result = asyncio.run(
+        provider.analyze(request_fixture(tmp_path), CancellationContext("run-1", 2))
+    )
+    assert result.error and result.error.code == "provider.schema"
+    assert result.metadata.execution_details
+    assert json.loads(result.metadata.execution_details)["schemaError"] == "finish_reason"
+    assert result.metadata.usage.cost_status == CostStatus.ESTIMATED
+    assert result.metadata.usage.cost_cny == ledger.known_cost_cny
+    assert ledger.reserved_cny == 0
+
+
+def test_v2_zero_events_and_one_microsecond_final_frame_are_valid(tmp_path: Path) -> None:
+    request = request_fixture(tmp_path)
+    item = replace(request.evidence[0], source_time=SourceInstant(4_999_999, 5_000_000))
+    request = replace(request, evidence=(item,), prompt_version=PROMPT_VERSION_V2)
+    event = valid_event()
+    event.update(startUs=4_999_999, endUs=5_000_000, evidenceIds=["f0"])
+    provider, _, _, _ = provider_fixture([response_fixture(events=[event])])
+    result = asyncio.run(provider.analyze(request, CancellationContext("run-1", 2)))
+    assert result.output and result.output[0].source_range.end_us == 5_000_000
+    provider, _, _, _ = provider_fixture([response_fixture(events=[])])
+    result = asyncio.run(provider.analyze(request, CancellationContext("run-1", 2)))
+    assert result.status == ProviderStatus.COMPLETED and result.output == ()
 
 
 def test_snapshot_prices_usage_and_persists_reservation_before_send(

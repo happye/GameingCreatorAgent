@@ -23,8 +23,8 @@ def prepare(repository: Path, offline: bool) -> Path:
     pin: dict[str, Any] = json.loads(
         (repository / "docs/references/embedding-model.json").read_text(encoding="utf-8")
     )
-    revision = pin["revision"]
-    if not re.fullmatch(r"[a-f0-9]{40}", revision):
+    revision: str = pin["revision"]
+    if not isinstance(revision, str) or not re.fullmatch(r"[a-f0-9]{40}", revision):
         raise ValueError("Invalid model revision")
     root = repository.resolve()
     directory = root / ".cache/models/multilingual-e5-small" / revision
@@ -48,7 +48,10 @@ def prepare(repository: Path, offline: bool) -> Path:
         url = f"https://huggingface.co/{pin['model']}/resolve/{revision}/{artifact['name']}"
         request = urllib.request.Request(url, headers={"User-Agent": "GamingCreator-Phase0"})
         received = 0
-        with urllib.request.urlopen(request, timeout=60) as response, temporary.open("wb") as output:
+        with (
+            urllib.request.urlopen(request, timeout=60) as response,
+            temporary.open("wb") as output,
+        ):
             while chunk := response.read(1024 * 1024):
                 received += len(chunk)
                 if received > size:

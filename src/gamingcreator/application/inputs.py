@@ -19,6 +19,8 @@ class AnalysisConfig:
     window_overlap: int = 1
     max_output_tokens: int = 2048
     asr_language: str = "zh"
+    vision_prompt_version: str = "phase0-vision-v1"
+    vision_prompt_hash: str | None = None
 
 
 class InputReader(Protocol):

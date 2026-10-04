@@ -9,7 +9,7 @@ import pytest
 
 from gamingcreator.domain.errors import AppError
 from gamingcreator.infrastructure import sqlite_schema
-from gamingcreator.infrastructure.sqlite_schema import migrate, validate_schema
+from gamingcreator.infrastructure.sqlite_schema import SCHEMA_VERSION, migrate, validate_schema
 
 
 def _open(path: Path, *, readonly: bool = False) -> sqlite3.Connection:
@@ -59,7 +59,7 @@ def test_v1_transcripts_upgrade_without_rewriting_existing_data(
     assert connection.execute("SELECT * FROM transcript_segments").fetchone() == (*before, None)
     assert connection.execute(
         "SELECT version FROM schema_migrations ORDER BY version"
-    ).fetchall() == [(1,), (2,)]
+    ).fetchall() == [(version,) for version in range(1, SCHEMA_VERSION + 1)]
     assert (
         connection.execute("SELECT applied_at FROM schema_migrations WHERE version = 1").fetchone()[
             0
@@ -158,7 +158,7 @@ def test_v1_foreign_key_violation_is_rejected_before_alter(
     assert connection.serialize() == before
 
 
-def test_v2_column_drift_and_future_version_are_rejected_for_readers(
+def test_current_column_drift_and_future_version_are_rejected_for_readers(
     v1_database: tuple[Path, sqlite3.Connection],
 ) -> None:
     _, connection = v1_database
@@ -167,7 +167,7 @@ def test_v2_column_drift_and_future_version_are_rejected_for_readers(
     with pytest.raises(AppError) as drift:
         validate_schema(connection)
     assert drift.value.code == "storage.schema_invalid"
-    connection.execute("PRAGMA user_version = 3")
+    connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION + 1}")
     before = connection.serialize()
     with pytest.raises(AppError) as future:
         validate_schema(connection)
@@ -175,14 +175,14 @@ def test_v2_column_drift_and_future_version_are_rejected_for_readers(
     assert connection.serialize() == before
 
 
-def test_fresh_database_has_two_migrations_and_nullable_text_column(tmp_path: Path) -> None:
+def test_fresh_database_has_all_migrations_and_nullable_text_column(tmp_path: Path) -> None:
     connection = _open(tmp_path / "fresh.sqlite3")
     try:
         migrate(connection)
         validate_schema(connection)
         assert connection.execute(
             "SELECT version FROM schema_migrations ORDER BY version"
-        ).fetchall() == [(1,), (2,)]
+        ).fetchall() == [(version,) for version in range(1, SCHEMA_VERSION + 1)]
         columns = connection.execute("PRAGMA table_info(transcript_segments)").fetchall()
         assert columns[-1][1:4] == ("uncertainty", "TEXT", 0)
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
@@ -243,4 +243,4 @@ def test_read_validation_uses_one_snapshot_during_concurrent_migration(
         assert not reader.in_transaction
         reader.set_trace_callback(None)
         validate_schema(reader)
-    assert connection.execute("PRAGMA user_version").fetchone() == (2,)
+    assert connection.execute("PRAGMA user_version").fetchone() == (SCHEMA_VERSION,)

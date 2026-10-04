@@ -2,7 +2,7 @@
 
 ## Project and source of truth
 
-Gaming Creator Agent turns local game footage and a brief into content. Phase 0 validates video analysis, a semantic timeline, and clip search. Read `游戏内容创作与商业化产品总方案 V1.0.txt`, `docs/product-specs/phase-0.md`, and `feature_list.json` before changing scope. Python provides media, local ASR, SQLite and partial analyze integration; vision acceptance and retrieval remain unfinished.
+Gaming Creator Agent turns local game footage and a brief into content. Phase 0's CLI analyzes footage and searches a semantic timeline; human retrieval acceptance remains pending. Read `游戏内容创作与商业化产品总方案 V1.0.txt`, `docs/product-specs/phase-0.md`, and `feature_list.json` before changing scope.
 
 ## Repository map
 
@@ -17,21 +17,20 @@ Gaming Creator Agent turns local game footage and a brief into content. Phase 0 
 
 Use Windows PowerShell. Keep runtimes in `.tools/`, packages in `.venv/`, and caches in `.cache/`; never install globally or change user/system configuration. `toolchain.json` pins portable uv and CPython. See `docs/references/isolated-environment.md`.
 
-- `./scripts/setup-env.ps1`: prepare verified tools and locked dependencies; `-Offline` reuses cached archives/packages.
+- `./scripts/setup-demo.ps1`: prepare isolated tools, dependencies, ASR and embedding models; `-Offline` requires cached assets.
+- `./scripts/run-demo.ps1 -Run <id>`: search an existing demo; `-Video <path>` starts paid vision analysis.
 - `./scripts/init.ps1`: check scaffold, exact toolchain and media prerequisites; `-CheckOnly` checks scaffold.
 - `./scripts/verify.ps1`: format, lint, types, pytest, and reproducible offline wheel builds.
-- `./.venv/Scripts/gamingcreator.exe --help`: inspect CLI contracts.
 - `./scripts/test-media.ps1 -AllLocal`: validate footage in ignored `GameVideos/`.
 - `./scripts/test-storage.ps1 -AllLocal`: verify media persistence and a second process's reads.
-- `./scripts/test-retrieval-score.ps1`: fixed-slot metric regression.
 
 ## Architecture and coding rules
 
-Follow `docs/design-docs/architecture.md`, `phase-0-engineering-spec.md`, and ADR-001. Phase 0 uses Python; future UI requires a separate decision. Use four-space indentation, snake_case functions/modules and PascalCase types; Ruff formats/lints and mypy checks contracts. Keep domain independent of I/O, video bytes local, and provider versions/cost/timing traceable.
+Follow `docs/design-docs/architecture.md`, `phase-0-engineering-spec.md`, and ADR-001. Use four-space indentation, snake_case functions/modules and PascalCase types; Ruff formats/lints and mypy checks contracts. Keep domain independent of I/O, video bytes local, and provider versions/cost/timing traceable. Preserve prompt hashes, embedding-space identity and unknown-cost reservations on resume.
 
 ## Testing and acceptance
 
-Follow `docs/references/testing-guide.md` and `phase-0-benchmark.md`. Top-10 Useful Rate uses ten fixed slots: missing and duplicate events count zero; human-judged usable independent events count toward ≥70%. Synthetic tests and image API smoke success do not prove retrieval quality. Mark `passes: true` only after the feature criteria have recorded evidence.
+Use pytest `tests/test_*.py`; follow `docs/references/testing-guide.md` and `phase-0-benchmark.md`. Top-10 Useful Rate has ten fixed slots: missing and duplicate events count zero; independent human-judged usable events must reach ≥70%. API success and synthetic scores do not prove quality. Mark `passes: true` only after recorded feature evidence. Benchmark exit 6 preserves its report when the gate fails or remains unverified.
 
 ## Changes, commits, and handoff
 

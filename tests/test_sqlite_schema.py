@@ -118,9 +118,10 @@ def test_migrate_is_idempotent_and_creates_strict_schema(db: sqlite3.Connection)
     assert db.execute("SELECT version FROM schema_migrations ORDER BY version").fetchall() == [
         (1,),
         (2,),
+        (3,),
     ]
     tables = [row for row in db.execute("PRAGMA table_list") if not row[1].startswith("sqlite_")]
-    assert len(tables) == 9
+    assert len(tables) == 13
     assert all(row[5] == 1 for row in tables)
     assert not db.in_transaction
 
@@ -145,9 +146,9 @@ def test_future_version_is_rejected_without_modification(
     db: sqlite3.Connection, change: str
 ) -> None:
     if change == "pragma":
-        db.execute("PRAGMA user_version = 3")
+        db.execute("PRAGMA user_version = 4")
     else:
-        db.execute("INSERT INTO schema_migrations VALUES (3, 'now')")
+        db.execute("INSERT INTO schema_migrations VALUES (4, 'now')")
     before = db.serialize()
     with pytest.raises(AppError) as caught:
         migrate(db)
