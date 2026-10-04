@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>游戏创作工作台 · Gaming Creator Agent</title>
+    <link rel="stylesheet" href="/assets/style.css">
+    <script src="/assets/app.js" defer></script>
+</head>
+<body>
+    <header class="app-header">
+        <div class="brand-mark" aria-hidden="true">G</div>
+        <div class="brand-copy"><h1>游戏创作工作台</h1><p>Gaming Creator Agent</p></div>
+        <div class="header-meta"><span class="local-badge">本地工作台</span><span>视频分析 · 语义检索</span></div>
+        <button id="refresh-view" class="button secondary compact" disabled>刷新时间轴</button>
+    </header>
+
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+
+    <main class="workspace">
+        <aside class="panel library-panel" aria-label="项目与素材">
+            <div class="panel-heading"><div><span class="eyebrow">LIBRARY</span><h2>项目与素材</h2></div><button id="refresh-projects" class="icon-button" aria-label="刷新项目列表" title="刷新项目列表">↻</button></div>
+            <label class="field-label" for="project-select">项目</label>
+            <select id="project-select"><option value="">正在读取项目…</option></select>
+            <details class="manual-project">
+                <summary>打开其他项目目录</summary>
+                <form id="project-form">
+                    <label class="sr-only" for="project-path">仓库内的项目目录</label>
+                    <input id="project-path" placeholder="artifacts/demo-phase0" autocomplete="off" spellcheck="false">
+                    <button class="button secondary" type="submit">打开</button>
+                </form>
+                <p class="muted small">填写仓库内已有的项目目录。</p>
+            </details>
+            <div class="section-heading"><label class="field-label" for="run-select">分析运行</label><button id="refresh-runs" class="text-button" disabled>重新读取</button></div>
+            <select id="run-select" disabled><option value="">先选择项目</option></select>
+            <p id="run-state" class="run-state muted">尚未选择素材</p>
+            <div class="source-summary">
+                <div class="source-icon" aria-hidden="true">▶</div>
+                <div><h3 id="source-name">选择一份分析结果</h3><p id="source-duration" class="muted small">源视频保留在本机</p></div>
+            </div>
+            <dl class="run-stats"><div><dt>视觉事件</dt><dd id="event-count">—</dd></div><div><dt>语音转录</dt><dd id="transcript-count">—</dd></div></dl>
+            <section class="cost-card" aria-label="分析费用"><span class="field-label">分析费用估算</span><strong id="cost-known">未读取</strong><p id="cost-detail" class="muted small">估价与账单确认分开记录</p></section>
+            <details class="stage-details"><summary>分析阶段 <span id="stage-summary" class="muted">—</span></summary><ul id="stage-list" class="stage-list"></ul></details>
+            <p class="library-note">浏览与检索使用已有分析结果，不发送付费视觉请求。</p>
+        </aside>
+
+        <section class="panel preview-panel" aria-label="视频预览与证据">
+            <div class="panel-heading"><div><span class="eyebrow">PREVIEW</span><h2>源视频预览</h2></div><span id="preview-badge" class="pill">等待素材</span></div>
+            <div class="video-wrap">
+                <video id="source-video" controls preload="metadata" playsinline aria-label="源视频预览"></video>
+                <div id="video-empty" class="video-empty"><span aria-hidden="true">▷</span><h3>从左侧打开分析结果</h3><p>点选事件或检索候选，回看原视频中的对应区间。</p></div>
+            </div>
+            <div class="playback-toolbar"><div><span class="current-time" id="current-time">00:00:00.000</span><span class="muted" id="total-time"> / —</span></div><button id="play-selection" class="button secondary compact" disabled>播放选中区间</button></div>
+            <section class="active-clip" aria-label="当前片段"><div class="section-heading"><h3 id="active-title">尚未选中片段</h3><button id="add-active" class="text-button" disabled>＋ 加入片段篮</button></div><p id="active-range" class="accent small">选择事件或候选后显示源时间区间</p><p id="active-facts" class="muted">模型观察、原始证据与视频可以在这里对照查看。</p></section>
+            <div class="tab-bar" role="tablist" aria-label="证据和转录"><button id="evidence-tab" class="tab active" role="tab" aria-selected="true" aria-controls="evidence-panel">画面与音频证据 <span id="evidence-count">0</span></button><button id="transcript-tab" class="tab" role="tab" aria-selected="false" aria-controls="transcript-panel" tabindex="-1">语音转录 <span id="transcript-tab-count">0</span></button></div>
+            <section id="evidence-panel" class="evidence-panel" role="tabpanel" aria-labelledby="evidence-tab"><div id="evidence-list" class="evidence-list"><p class="empty-state">选中片段后查看对应证据。</p></div></section>
+            <section id="transcript-panel" class="transcript-panel" role="tabpanel" aria-labelledby="transcript-tab" hidden><div id="transcript-list"><p class="empty-state">尚未读取转录。</p></div></section>
+        </section>
+
+        <aside class="panel search-panel" aria-label="自然语言片段检索">
+            <div class="panel-heading"><div><span class="eyebrow">SEARCH</span><h2>你想找什么片段？</h2></div><span class="pill">本地检索</span></div>
+            <form id="search-form">
+                <label class="sr-only" for="query">自然语言查询</label>
+                <textarea id="query" rows="3" maxlength="4096" placeholder="例如：寻找角色打斗和攻击的片段" disabled></textarea>
+                <div class="search-options"><div><label class="field-label" for="mode">检索方式</label><select id="mode" disabled><option value="hybrid">混合检索</option><option value="lexical">词法检索</option><option value="semantic">语义检索</option></select></div><div><label class="field-label" for="top">候选条数</label><input id="top" type="number" min="1" max="100" value="10" disabled></div></div>
+                <button id="search-button" class="button primary" type="submit" disabled>查找片段 <span aria-hidden="true">↗</span></button>
+            </form>
+            <div class="results-heading"><h3>检索候选 <span id="candidate-count" class="count">0</span></h3><span class="muted small">保留检索排名</span></div>
+            <p id="search-context" class="muted small">打开已完成的运行后即可查询。</p>
+            <div id="candidate-list" class="candidate-list" aria-live="polite"><p class="empty-state">输入你需要的动作、玩法或画面。</p></div>
+            <section class="selection-section" aria-label="片段篮"><div class="section-heading"><h3>片段篮 <span id="selection-count" class="count">0</span></h3><button id="clear-selection" class="text-button" disabled>清空</button></div><p class="muted small">选择保存在此浏览器，按项目与运行分别管理。</p><ul id="selection-list" class="selection-list"></ul><p id="selection-warning" class="small warning" hidden></p><div class="export-actions"><button id="export-json" class="button secondary compact" disabled>下载 JSON</button><button id="export-csv" class="button secondary compact" disabled>下载 CSV</button></div><p class="muted small">下载区间和来源清单，不生成视频。</p></section>
+        </aside>
+
+        <section class="panel timeline-panel" aria-label="源视频语义时间轴">
+            <div class="panel-heading"><div><span class="eyebrow">TIMELINE</span><h2>语义时间轴 <span id="timeline-count" class="count">0</span></h2></div><div class="timeline-filters"><label class="sr-only" for="timeline-filter">筛选事件事实</label><input id="timeline-filter" type="search" placeholder="筛选画面描述…" disabled><label class="sr-only" for="tag-filter">筛选玩法标签</label><select id="tag-filter" disabled><option value="">全部玩法标签</option></select></div></div>
+            <div class="timeline-ruler"><span>00:00</span><canvas id="timeline-map" height="40" role="img" aria-label="事件在源视频上的位置"></canvas><span id="timeline-end">—</span></div>
+            <label class="sr-only" for="video-scrubber">源视频播放位置</label><input id="video-scrubber" class="video-scrubber" type="range" min="0" max="1" step="0.001" value="0" disabled>
+            <div class="timeline-table-heading"><span>源区间</span><span>可观察事实 / 玩法标签</span><span>选片</span></div>
+            <div id="timeline-list" class="timeline-list"><p class="empty-state">时间轴按源视频时间排列。请选择一份分析结果。</p></div>
+            <div class="timeline-footer"><span id="filter-summary" class="muted small">0 个事件</span><span class="muted small">候选仍需人工核对；选择片段不代表质量验收。</span></div>
+        </section>
+    </main>
+
+    <dialog id="evidence-dialog"><div class="dialog-heading"><h2 id="evidence-dialog-title">源帧证据</h2><button id="close-evidence" class="icon-button" aria-label="关闭证据查看">×</button></div><img id="evidence-full" alt="当前片段的源帧证据"><p id="evidence-dialog-detail" class="muted small"></p></dialog>
+</body>
+</html>
