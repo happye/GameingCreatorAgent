@@ -21,7 +21,7 @@ from gamingcreator.domain.models import Embedding, EvidenceReference
 from gamingcreator.domain.time import SourceInstant, SourceRange
 
 RetrievalMode = Literal["lexical", "semantic", "hybrid"]
-RETRIEVAL_VERSION = "bm25-e5-rrf-v3"
+RETRIEVAL_VERSION = "bm25-e5-rrf-v4"
 _STOP_WORDS = frozenset(
     "a an and are at avatar character characters clip find for from game gameplay in is me of on player please show the to video with".split()
 )
@@ -53,6 +53,61 @@ _CROSS_LINGUAL_TERMS = (
     ("fights", "战斗"),
     ("fight", "战斗"),
     ("combat", "战斗"),
+)
+# A small explicit-language guard, not a language model. Keep passage text intact
+# for embedding identity and apply this only to positive action queries.
+_ACTION_TERMS = {
+    "jump": ("跳跃", "跳起", "起跳", "jump", "jumps", "jumping", "jumped"),
+    "shoot": ("射击", "开枪", "shoot", "shoots", "shooting"),
+    "attack": ("攻击", "attack", "attacks", "attacking", "attacked"),
+    "fight": ("战斗", "打斗", "fight", "fights", "fighting", "combat"),
+    "interact": (
+        "交互",
+        "互动",
+        "interact",
+        "interacts",
+        "interacting",
+        "interaction",
+        "interactions",
+    ),
+    "move": ("移动", "move", "moves", "moving", "movement"),
+}
+_ACTION_BY_TERM = {term: action for action, terms in _ACTION_TERMS.items() for term in terms}
+_ACTION_PATTERN = (
+    "(?:"
+    + "|".join(
+        rf"\b{re.escape(term)}\b" if term.isascii() else re.escape(term)
+        for term in sorted(_ACTION_BY_TERM, key=len, reverse=True)
+    )
+    + ")"
+)
+_ACTION_MENTION = re.compile(_ACTION_PATTERN)
+_CHINESE_ACTION_ITEM = _ACTION_PATTERN + r"(?:动作|行为|迹象)?"
+_EXPLICIT_DENIAL = re.compile(
+    r"(?:未观察到|未见|没有|无)(?:(?:明确|明显|可见|实际|任何)的?)*"
+    r"(?:(?:玩家角色|玩家|角色)(?:正在|进行)?)?"
+    + _CHINESE_ACTION_ITEM
+    + r"(?:\s*(?:、|，|,|和|或|与|以及|及)\s*"
+    + _CHINESE_ACTION_ITEM
+    + r")*"
+    + r"|\b(?:no(?:\s+evidence\s+of)?|without|(?:do|does|did)\s+not|"
+    r"(?:do|does|did)n't|not)\s+"
+    r"(?:(?:clear|visible|obvious|actual|any|clearly|visibly)\s+)*"
+    + _ACTION_PATTERN
+    + r"(?:(?:,\s*(?:(?:or|and)\s+)?|\s+(?:or|and)\s+)"
+    + _ACTION_PATTERN
+    + r")*"
+)
+_UNCERTAIN_DENIAL_PREFIX = re.compile(
+    r"(?:可能|或许|也许|似乎|不确定(?:是否)?|无法确认(?:是否)?|不能确认(?:是否)?|"
+    r"无法确定(?:是否)?|不能确定(?:是否)?|不知道(?:是否)?|"
+    r"并非|并不是|不是|不一定|未必|\b(?:maybe|possibly|perhaps|not|never|"
+    r"unclear whether|unclear if|cannot confirm|may be|might be))(?:并|也|仍|还)?\s*$|"
+    r"(?:是否|有)\s*$"
+)
+_NEGATIVE_QUERY_INTENT = re.compile(
+    r"没有|未见|未观察到|无|不|避免|禁止|排除|不要|"
+    r"\b(?:no|not|without|avoid|exclude|excluding|except|never)\b|\b(?:do|does|did)n't\b"
 )
 
 
@@ -230,6 +285,41 @@ def _lexical_query(query: str) -> str:
     return query + "\n" + " ".join(dict.fromkeys(extras))
 
 
+def _denied_action_documents(documents: tuple[_Document, ...], query: str) -> frozenset[str]:
+    """Reject only recognized query actions mentioned exclusively in explicit denials.
+
+    Unknown wording stays eligible. Any unnegated occurrence, including a separate
+    affirmative clause, defeats exclusion. Absence queries retain existing ranking;
+    this guard does not implement negative-query semantics.
+    """
+    folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
+    if _NEGATIVE_QUERY_INTENT.search(folded_query):
+        return frozenset()
+    actions = {_ACTION_BY_TERM[match.group()] for match in _ACTION_MENTION.finditer(folded_query)}
+    if not actions:
+        return frozenset()
+    denied = set()
+    for document in documents:
+        text = unicodedata.normalize("NFKC", document.text).casefold().replace("’", "'")
+        spans = tuple(
+            match.span()
+            for match in _EXPLICIT_DENIAL.finditer(text)
+            if not _UNCERTAIN_DENIAL_PREFIX.search(text[max(0, match.start() - 32) : match.start()])
+        )
+        negative_actions, other_actions = set(), set()
+        for match in _ACTION_MENTION.finditer(text):
+            action = _ACTION_BY_TERM[match.group()]
+            if action not in actions:
+                continue
+            if any(start <= match.start() and match.end() <= end for start, end in spans):
+                negative_actions.add(action)
+            else:
+                other_actions.add(action)
+        if negative_actions and not other_actions:
+            denied.add(document.identifier)
+    return frozenset(denied)
+
+
 def _lexical_scores(documents: tuple[_Document, ...], query: str) -> dict[str, float]:
     terms = frozenset(_tokens(_lexical_query(query)))
     counters = [Counter(_tokens(item.text)) for item in documents]
@@ -353,7 +443,16 @@ async def search_timeline(
             min_similarity=min_similarity,
             min_semantic_margin=min_semantic_margin,
         )
-    lexical = _lexical_scores(documents, query) if mode != "semantic" else {}
+    denied_actions = _denied_action_documents(documents, query)
+    lexical = (
+        {
+            identifier: score
+            for identifier, score in _lexical_scores(documents, query).items()
+            if identifier not in denied_actions
+        }
+        if mode != "semantic"
+        else {}
+    )
     semantic = {}
     metadata = None
     abstention_reason = None
@@ -396,7 +495,7 @@ async def search_timeline(
         )
         for document, embedding in zip(documents, embeddings[1:], strict=True):
             similarity = _cosine(embeddings[0], embedding)
-            if similarity >= min_similarity:
+            if similarity >= min_similarity and document.identifier not in denied_actions:
                 semantic[document.identifier] = similarity
         if mode == "hybrid" and semantic:
             # An uncalibrated candidate truncation window limits E5's high-cosine tail.
@@ -412,6 +511,8 @@ async def search_timeline(
             # descriptions, grouping repeated independent occurrences for this check.
             groups: dict[str, float] = {}
             for document, embedding in zip(documents, embeddings[1:], strict=True):
+                if document.identifier in denied_actions:
+                    continue
                 description = (
                     unicodedata.normalize("NFKC", "\n".join(document.facts)).casefold().strip()
                 )
