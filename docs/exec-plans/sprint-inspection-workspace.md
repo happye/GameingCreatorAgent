@@ -27,10 +27,12 @@ Range缓存初测发现Windows CRT fstat丢失亚秒精度且读取会改变atim
 
 初次真实浏览器由于absolute project URL与前端relative身份不一致拒绝视频，已修并有HTTP回归。严格CSP下字符串wait_for_function触发unsafe-eval，测试采用debugger轮询，没有放宽页面CSP。片段篮reload初测失败原因是页面默认另一Completed run；重选原run后恢复通过，不跨run混用片段。
 
+最终启动发现Windows默认SO_REUSEADDR允许两项旧/新HTTP服务同时监听8765，浏览器仍命中旧模块。核对两项本仓库UI进程身份后重启，仅停止这些预览；服务增加SO_EXCLUSIVEADDRUSE与重复监听回归。最终端口仅一个监听，projects/inspect返回新版真实视频URL及费用字段。GitHub首次连接失败，进程内HTTP/1.1重试成功，未修改全局Git配置。
+
 ## 最终验证
 
-- `./scripts/verify.ps1`：581 passed、1 skipped（36.96s），Ruff73文件、mypy48文件、CLI和重复离线wheel通过。Windows缺文件symlink权限跳过该真实链接fixture，另有canonical实际路径回归通过。
-- wheel SHA256 `9364955fd0ead454a244a69ed2defea7ace4e0e0c8462f4aa1eb3acb5335c467`，50项包含app.js/index.html/style.css，无模型、DLL、源视频、DB/缓存。
+- `./scripts/verify.ps1`：582 passed、1 skipped（33.38s），Ruff73文件、mypy48文件、CLI和重复离线wheel通过。Windows缺文件symlink权限跳过该真实链接fixture，另有canonical实际路径回归通过。
+- wheel SHA256 `9af66ee95055d99d88caf56d299d6a1d2b9070ab451bbb00318ae2f48d378210`，50项包含app.js/index.html/style.css，无模型、DLL、源视频、DB/缓存。
 - 前端独立Chromium21项合成交互检查通过；详细范围见sprint-inspection-frontend。390px移动页面无横向溢出，缩略图限制高度。
 - `scripts/validate-inspection-ui.py --project artifacts/demo-phase0 --run f76f5d6495314c04ae04083614d4afd6`及英文查询各通过：真实95.175874s PV加载，111事件/3候选，28–29s准确暂停在29s，证据图自然宽度非零，JSON/CSV区间/身份/证据匹配，筛选不改rank，无关hybrid为空，同run篮子恢复，0 JS错误。Chromium153.0.8010.12；报告/下载/截图在ignored artifacts/inspection-ui-validation和英文目录。qualityGate=null。
 - 五项用户/系统环境和Python注册表指纹不变；本轮没有付费API请求。可选Playwright1.63.0/锁41包在.venv，浏览器及工具在.tools/browsers；未安装系统依赖/浏览器或使用用户profile。

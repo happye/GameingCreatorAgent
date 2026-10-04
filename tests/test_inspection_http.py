@@ -171,6 +171,15 @@ def test_workspace_cannot_bind_public_interface(tmp_path):
         create_server("0.0.0.0", 0, tmp_path)
 
 
+def test_workspace_cannot_share_a_live_port_with_another_preview(tmp_path):
+    first = create_server("127.0.0.1", 0, tmp_path)
+    try:
+        with pytest.raises(OSError):
+            create_server("127.0.0.1", first.server_port, tmp_path)
+    finally:
+        first.server_close()
+
+
 def test_project_database_link_cannot_escape_repository(tmp_path):
     repository = tmp_path / "repository"
     project = repository / "artifacts" / "linked"

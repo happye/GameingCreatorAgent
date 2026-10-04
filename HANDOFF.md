@@ -8,7 +8,7 @@
 
 F000–F005及F007技术合同已验收；**F006独立人工U10仍false**。用户明确授权本地检查交互，依据ADR-002；正式桌面/商业阶段仍有原质量门槛。
 
-root当前分支 `codex/inspection-workspace`。已保存Grok基线32d5a3b、后端82e4020、前端9fcbdec及修复614c10d；最后的URL身份修复、浏览器脚本和同步文档待本轮最终提交/推送。远端main仍为此前CLI基线d6eb311；以git状态为准，不把本地修改当已推送。所有本轮worker已冻结，归属见assignments。
+root当前分支 `codex/inspection-workspace`。已保存Grok基线32d5a3b、后端82e4020、前端9fcbdec/614c10d；真实浏览器验证、URL身份和同步文档24ded10已推送origin/codex/inspection-workspace。最终发现并修复Windows重复端口监听，待保存/推送该收尾检查点并快进main。远端main仍为此前CLI基线d6eb311；以git状态为准。所有本轮worker已冻结，归属见assignments。
 
 ## 直接使用
 
@@ -24,11 +24,12 @@ root当前分支 `codex/inspection-workspace`。已保存Grok基线32d5a3b、后
 
 ## 最新验证
 
-- `./scripts/verify.ps1`退出0：**581 passed、1 skipped（36.96s）**；Ruff73文件、mypy48源文件、CLI及两次离线wheel通过。跳过项为Windows文件symlink权限，独立canonical-path回归已通过。
-- wheel SHA256：`9364955fd0ead454a244a69ed2defea7ace4e0e0c8462f4aa1eb3acb5335c467`；50条目含全部3个静态资源，无模型、DLL、视频、DB或缓存。
+- `./scripts/verify.ps1`退出0：**582 passed、1 skipped（33.38s）**；Ruff73文件、mypy48源文件、CLI及两次离线wheel通过。跳过项为Windows文件symlink权限，独立canonical-path回归已通过。
+- wheel SHA256：`9af66ee95055d99d88caf56d299d6a1d2b9070ab451bbb00318ae2f48d378210`；50条目含全部3个静态资源，无模型、DLL、视频、DB或缓存。
 - 项目内Chromium153.0.8010.12真实PV中文/英文各验证通过：111事件、3候选、28–29s区间自动停在29s、真实证据加载、JSON/CSV身份/微秒/证据、筛选不改排名、汽车维修hybrid空结果、同run片段篮恢复、无JS pageerror。报告在ignored `artifacts/inspection-ui-validation/` 和 `artifacts/inspection-ui-validation-english/`。
 - 前端worker21项合成浏览器交互检查通过（含跨run响应隔离、恶意文本、CSV防公式注入、转录、390px布局）。范围和局部报告位置见sprint-inspection-frontend。
 - 五项用户/系统环境及Python注册表指纹未变；这是指定边界检查，不是全系统监控。本轮没有付费API请求。
+- Windows服务使用独占端口，重复启动不再与旧页面同时监听；仅停止两项已核对本仓库命令行的旧UI进程。最终8765只剩一个监听，projects/inspect已返回新版111事件、videoUrl和费用字段。
 
 ## 已有真实分析与质量边界
 

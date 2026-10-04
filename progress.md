@@ -80,6 +80,6 @@ SQLite 专用线程、进程锁、九表迁移/组合 FK、媒体/语义 checkpo
 
 已集成前端9fcbdec/614c10d，完成本地项目/run选择、原视频Range播放、区间跳转/结束暂停、证据帧/音频/转录、描述/标签筛选、阶段/费用和隔离片段篮JSON/CSV清单。修复HTTP错误码、DB实际路径边界、证据逐图全源hash、未知价目计费、相对project URL身份及取消连接。F007技术验收true；F006人工gate保持false。
 
-最终verify581passed/1symlink权限skip（36.96s）、Ruff73/mypy48/CLI/重复wheel通过；SHA9364955fd0ead454a244a69ed2defea7ace4e0e0c8462f4aa1eb3acb5335c467，50项含3静态资源无媒体/模型/DB。真实PV中英文浏览器检查均通过：111事件/3候选、28–29s停29s、证据、微秒/身份导出、筛选、负例空结果、同run恢复、0JS错误。worker21项合成浏览器交互通过。Playwright/Chromium全在项目内，五项指定宿主边界指纹未变，无新付费API。
+最终启动时发现Windows旧/新UI进程同时监听8765；仅核对并重启本仓库预览，新增独占端口与重复启动回归。最终verify582passed/1symlink权限skip（33.38s）、Ruff73/mypy48/CLI/重复wheel通过；SHA9af66ee95055d99d88caf56d299d6a1d2b9070ab451bbb00318ae2f48d378210，50项含3静态资源无媒体/模型/DB。真实PV中英文浏览器检查均通过：111事件/3候选、28–29s停29s、证据、微秒/身份导出、筛选、负例空结果、同run恢复、0JS错误。worker21项合成浏览器交互通过。Playwright/Chromium全在项目内，五项指定宿主边界指纹未变，无新付费API。
 
 共享规格、架构、README/AGENTS、使用/测试手册、feature_list、assignments/HANDOFF已同步；工具适配器仍引用共享规则。TD006记录非零PTS/不同流起点及编码浏览器支持待验证。正式桌面/MP4渲染/商业流程未实施，下一优先F006独立冻结标签及TD001/TD005长素材验证。版本提交/推送见HANDOFF，未提交不当已推送。

@@ -3,6 +3,7 @@
 import asyncio
 import json
 import os
+import socket
 from collections.abc import Sequence
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -71,6 +72,16 @@ def error_status(error: AppError) -> int:
         ExitCode.BUDGET: 402,
         ExitCode.CANCELLED: 409,
     }.get(error.exit_code, 500)
+
+
+class WorkspaceServer(ThreadingHTTPServer):
+    def server_bind(self) -> None:
+        # Windows SO_REUSEADDR permits two live listeners on the same endpoint.
+        # Use exclusive ownership so a stale preview cannot serve the new URL.
+        if os.name == "nt":
+            self.allow_reuse_address = False
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
 
 
 class InspectionHandler(BaseHTTPRequestHandler):
@@ -226,7 +237,7 @@ def create_server(host: str, port: int, repository: Path) -> ThreadingHTTPServer
             "media_cache": VerifiedMediaCache(),
         },
     )
-    return ThreadingHTTPServer((host, port), handler)
+    return WorkspaceServer((host, port), handler)
 
 
 def serve(host: str, port: int, repository: Path) -> None:
