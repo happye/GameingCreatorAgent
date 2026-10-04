@@ -4,6 +4,8 @@
 
 ## 当前状态
 
+**本轮集成快照（2026-10-05，覆盖下文旧744基线）**：rootcodex/visual-details，vision56b02e2→903c9cc、presentationa160116→86c229c已集成。V5prompt/hash、config.detailed.example.json、详细pipeline/1280宽/旧512隔离已实现；UI优先Completed V5并显示不确定性，旧事实/篮子raw校验不变，检索bm25-e5-rrf-v5。Provider/config/resume252项与显示/检索171项通过（另1权限skip）；完整verify/新真实API实验/新run未执行。detail_pilot.worktrees/detail-pilot独占新对照脚本和测试，root负责付费执行；其他新worker已冻结。首次浏览器ERR_UNSAFE_PORT由共享fixture高端口修复；171复测通过。GitHub443连接失败，工作分支远程同步待重试，本地进度已提交。当前8765仍旧进程，不代表新代码已上线；不能宣布细节效果或F006/F009/F010通过。
+
 **新任务进行中（2026-10-05）**：用户要求可检索的衣着/装备/外观/背景/招式细节，以及修正文中的f0/f1。root已从72d692b切codex/visual-details，计划见sprint-visual-details。detail_vision/detail_presentation在各自独立worktree拥有provider与显示/索引独占文件；不可覆盖root。新V5/1280宽/可见细节绑定与旧文本投影正在开发，尚无新API调用、尚无新效果。以下72d692b与744项检查是上一轮基线，不替代本轮验证。
 
 用户要求复核Grok、按F006连续玩法反馈修正并提供一键启动。本轮已保存Grok改动4c37a63、v4帧边界42604f9/b2daf1b、启动器0cc2c2f与否定召回5f15bab。root分支codex/temporal-gameplay；收尾文档提交见git log，已验证代码可正常fast-forward同步main，远端状态以git核对，不能把本地commit当已推送。之前GitHub443一次失败后，f3e98e8检查点重试推送成功。

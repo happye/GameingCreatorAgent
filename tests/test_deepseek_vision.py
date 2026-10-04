@@ -236,7 +236,7 @@ def test_selected_images_only_and_metadata_without_invented_costs(tmp_path: Path
     assert str(tmp_path) not in serialized
     assert "sourceUs" in serialized and "durationUs" in serialized
     assert provider.capabilities.max_images == 9
-    assert provider.capabilities.max_image_width == 512
+    assert provider.capabilities.max_image_width == 1280
     assert not provider.capabilities.native_video
 
 

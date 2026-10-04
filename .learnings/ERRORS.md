@@ -1,5 +1,9 @@
 # Errors
 
+## 2026-10-05: Windows port zero may allocate a browser-restricted port
+
+Merged browser regression failed at page.goto with ERR_UNSAFE_PORT on127.0.0.1:1723; no application JavaScript ran. The shared test fixture now directly reserves a random free port in20000–59999, with bounded collision retries, instead of relying on port0. This only changes isolated test listeners, not Windows configuration. Root verification must rerun; do not claim the initial170passed/1skip/1failure as complete. GitHub push also failed with443connection timeout; local commits are durable, remote synchronization requires a later retry.
+
 ## 2026-10-04: Prepare nested pytest directories and deterministic stat fixtures
 
 Resumption targeted pytest used a new nested basetemp whose parent did not exist; create the task-specific parent before running, without deleting another session's cache. A pre-existing same-size mutation test also retained identical mtime on this filesystem; explicitly change only the fixture's mtime to test stat invalidation. Production media cache intentionally relies on stat changes; unchanged metadata is a known limit, not proof of immutable bytes. Grok's v3 schema failure has no raw response, so exact malformed boundary remains unknown; use new versioned frame-alias boundaries and limited numeric diagnostics rather than inventing a cause.

@@ -107,6 +107,16 @@
       "test_criteria": "A separately fingerprinted temporal prompt preserves legacy runs, rejects unordered or single-frame action claims, supports a denser source-clock-preserving profile and resumable windows, and records bounded real-video comparisons including static controls and all attempt costs. Independent action retrieval quality remains F006.",
       "dependencies": ["F003", "F004", "F005"],
       "evidence": ["docs/exec-plans/sprint-temporal-gameplay.md", "docs/exec-plans/sprint-temporal-frame-contract-worker.md", "docs/exec-plans/sprint-workspace-launcher-worker.md", "docs/exec-plans/sprint-retrieval-negation-worker.md", "docs/references/temporal-gameplay-validation.md", "tests/test_temporal_frame_contract.py", "tests/test_temporal_analysis.py", "tests/test_retrieval_negation.py", "scripts/validate-temporal-gameplay.py"]
+    },
+    {
+      "id": "F010",
+      "name": "Actor-bound visual detail retrieval and clean descriptions",
+      "description": "Address user feedback with visible appearance, clothing, held items, environment and action effects bound to their actors; remove internal frame aliases from human-facing descriptions while preserving frozen source facts.",
+      "priority": 10,
+      "passes": false,
+      "test_criteria": "Versioned V5 detailed analysis and higher-resolution evidence preserve legacy contracts and resumable runs; uncertain attributes are displayed without positive indexing; original stored facts and basket validation remain intact. Real-video comparisons record all costs and controls, and independent human judgments confirm useful detail queries; F006 remains separate.",
+      "dependencies": ["F009", "F007"],
+      "evidence": ["docs/exec-plans/sprint-visual-details.md", "docs/exec-plans/sprint-detail-vision-worker.md", "docs/exec-plans/sprint-detail-presentation-worker.md", "tests/test_detailed_vision.py", "tests/test_observation_presentation.py", "config.detailed.example.json"]
     }
   ]
 }

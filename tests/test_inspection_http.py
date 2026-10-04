@@ -2,6 +2,7 @@ import asyncio
 import hashlib
 import json
 import os
+import secrets
 import threading
 from contextlib import contextmanager
 from dataclasses import replace
@@ -24,7 +25,16 @@ from gamingcreator.ui.service import cost_payload, registered_media
 
 @contextmanager
 def workspace(repository):
-    server = create_server("127.0.0.1", 0, repository)
+    # Windows may allocate a low port (e.g. 1723) that Chromium blocks.
+    # Reserve the listening socket directly in a browser-safe high range.
+    for _ in range(32):
+        try:
+            server = create_server("127.0.0.1", 20000 + secrets.randbelow(40000), repository)
+            break
+        except OSError:
+            continue
+    else:
+        raise RuntimeError("No free browser-safe test port.")
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:

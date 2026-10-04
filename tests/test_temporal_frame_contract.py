@@ -404,4 +404,4 @@ def test_all_previous_prompt_hashes_are_frozen_and_v4_has_new_identity() -> None
         "9ea350e10eb028f1f5e2dc7d355ebd1d080ad8ae8397eb709705a25773323f48"
     )
     with pytest.raises(ValueError, match="Unsupported vision prompt version"):
-        vision_prompt_fingerprint("phase0-vision-v5")
+        vision_prompt_fingerprint("phase0-vision-v6")

@@ -47,7 +47,9 @@ def test_dense_windows_cover_the_source_and_keep_temporal_overlap(tmp_path: Path
     )
 
 
-@pytest.mark.parametrize("prompt_version", ["phase0-vision-v3", "phase0-vision-v4"])
+@pytest.mark.parametrize(
+    "prompt_version", ["phase0-vision-v3", "phase0-vision-v4", "phase0-vision-v5"]
+)
 def test_temporal_run_resumes_only_missing_windows_with_new_pipeline_identity(
     tmp_path: Path,
     prompt_version: str,
@@ -56,14 +58,14 @@ def test_temporal_run_resumes_only_missing_windows_with_new_pipeline_identity(
 
     class TemporalVision(WindowVision):
         capabilities = ProviderCapabilities(
-            image_sequence=True, structured_output=True, max_images=9, max_image_width=512
+            image_sequence=True, structured_output=True, max_images=9, max_image_width=1280
         )
 
         async def analyze(self, request, context):
             assert request.prompt_version == prompt_version
             assert request.schema_version == (
                 "temporal-actions-v1"
-                if prompt_version == "phase0-vision-v4"
+                if prompt_version in ("phase0-vision-v4", "phase0-vision-v5")
                 else "semantic-events-v1"
             )
             assert len(request.evidence) in (9, 6)
@@ -72,7 +74,15 @@ def test_temporal_run_resumes_only_missing_windows_with_new_pipeline_identity(
     async def scenario() -> None:
         bundle, project, source = window_bundle(tmp_path)
         store = await SqliteTimelineStore.open(project)
-        media = WindowMedia(bundle)
+
+        class CheckedMedia(WindowMedia):
+            async def preprocess(self, source, output, parameters, context):
+                assert parameters.max_width == (
+                    1280 if prompt_version == "phase0-vision-v5" else 512
+                )
+                return await super().preprocess(source, output, parameters, context)
+
+        media = CheckedMedia(bundle)
         asr = ScriptedAsr(asr_result(ProviderStatus.NO_AUDIO))
         vision = TemporalVision("vision-000001")
         try:
@@ -85,7 +95,11 @@ def test_temporal_run_resumes_only_missing_windows_with_new_pipeline_identity(
                     run_id=RUN_ID,
                 )
             stored = await store.load_run(RUN_ID)
-            assert stored.configuration.pipeline_version == "phase0-analyze-temporal-v1"
+            assert stored.configuration.pipeline_version == (
+                "phase0-analyze-detailed-v1"
+                if prompt_version == "phase0-vision-v5"
+                else "phase0-analyze-temporal-v1"
+            )
             assert stored.configuration.analysis == profile
             resumed = TemporalVision()
             result = await resume_analysis(
@@ -109,6 +123,9 @@ def test_temporal_run_resumes_only_missing_windows_with_new_pipeline_identity(
         ("phase0-vision-v3", 9, 2, True),
         ("phase0-vision-v4", 9, 2, True),
         ("phase0-vision-v4", 10, 2, False),
+        ("phase0-vision-v5", 9, 2, True),
+        ("phase0-vision-v5", 1, 0, False),
+        ("phase0-vision-v5", 10, 2, False),
         ("phase0-vision-v3", 2, 1, True),
         ("phase0-vision-v3", 1, 0, False),
         ("phase0-vision-v3", 10, 2, False),
@@ -142,3 +159,16 @@ def test_config_enables_larger_windows_only_for_temporal_prompt(
     else:
         with pytest.raises(AppError, match="配置文件无效"):
             LocalInputReader().load_config(path)
+
+
+def test_detailed_profile_pins_a_new_prompt_and_preserves_previous_example() -> None:
+    from gamingcreator.infrastructure.deepseek_vision import vision_prompt_fingerprint
+
+    repository = Path(__file__).resolve().parents[1]
+    detailed = LocalInputReader().load_config(repository / "config.detailed.example.json")
+    legacy = LocalInputReader().load_config(repository / "config.temporal.example.json")
+    assert detailed.vision_prompt_version == "phase0-vision-v5"
+    assert detailed.vision_prompt_hash == vision_prompt_fingerprint("phase0-vision-v5")
+    assert detailed.max_output_tokens == 4096
+    assert legacy.vision_prompt_version == "phase0-vision-v4"
+    assert legacy.vision_prompt_hash == vision_prompt_fingerprint("phase0-vision-v4")

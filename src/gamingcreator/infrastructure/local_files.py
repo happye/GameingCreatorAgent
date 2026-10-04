@@ -75,7 +75,11 @@ class LocalInputReader:
             output = _positive_int(vision["maxOutputTokens"])
             language = _text(asr["language"])
             prompt_version = _text(vision.get("promptVersion", "phase0-vision-v1"))
-            temporal = prompt_version in ("phase0-vision-v3", "phase0-vision-v4")
+            temporal = prompt_version in (
+                "phase0-vision-v3",
+                "phase0-vision-v4",
+                "phase0-vision-v5",
+            )
             if (
                 type(overlap) is not int
                 or not 0 <= overlap < window
@@ -103,6 +107,7 @@ class LocalInputReader:
                     "phase0-vision-v2",
                     "phase0-vision-v3",
                     "phase0-vision-v4",
+                    "phase0-vision-v5",
                 ) or not re.fullmatch(r"[a-f0-9]{64}", prompt_hash):
                     raise invalid_config()
                 extra.update(vision_prompt_version=prompt_version, vision_prompt_hash=prompt_hash)

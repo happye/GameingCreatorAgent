@@ -287,7 +287,7 @@ def test_legacy_prompt_hashes_remain_frozen_and_v3_has_independent_identity() ->
     }
     assert len(fingerprints) == 3
     with pytest.raises(ValueError, match="Unsupported vision prompt version"):
-        vision_prompt_fingerprint("phase0-vision-v5")
+        vision_prompt_fingerprint("phase0-vision-v6")
 
 
 def test_temporal_example_pins_the_shipped_frame_boundary_prompt_hash() -> None:
@@ -311,5 +311,5 @@ def test_provider_reports_expanded_implementation_limit() -> None:
         FakeTransport([], recorder), BudgetLedger(Decimal("1"), 3, 40), Decimal("0.1"), recorder
     )
     assert provider.capabilities.max_images == MAX_IMAGES_V3 == 9
-    assert provider.capabilities.max_image_width == 512
+    assert provider.capabilities.max_image_width == 1280
     assert provider.capabilities.image_sequence and not provider.capabilities.native_video

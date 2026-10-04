@@ -21,3 +21,9 @@
 先验证旧hash/512输入行为、V5宽度/输出/schema、真实alias映射和拒绝未知编号、主体细节提示、旧事实不可变/展示不泄漏/不确定性/检索hash。然后新有界真实窗口对照（冻结源/evidence/配置，预算¥5、费用全尝试记录），检验衣服/持有物/外观/背景与动作是否实际增加，不能把不存在的用户举例当素材真值。
 
 小范围通过再创建完整新run供工作台测试，旧Atom/漫画保留。完整verify、真实浏览器/JSON/CSV、health匹配服务重启、跨工具文档/Git检查点。所有依赖只在项目.tools/.venv/.cache；当前未新API调用，无完成或效果声明。每个实现/失败/长任务前主动更新此记录与HANDOFF。
+
+## 集成检查点
+
+481d747保存计划，vision56b02e2已整合903c9cc，presentationa160116已整合86c229c。Root已补V5配置/SQLite白名单、独立phase0-analyze-detailed-v1与1280宽采样；V1–V4仍512。旧功能预期更新为V6未支持、能力1280；temporal/config/provider/resume联合252项通过，Ruff/mypy通过。
+
+旧事实/别名/篮子/检索联合初次170passed/1skip/1failed：Windows随机端口1723被Chromium拒绝，未执行JS。修正共享测试listener为安全高端口后待复测，不隐去失败。detail_pilot独立.worktrees/detail-pilot负责新的同源时刻V4/512、V5/512、V5/1280与静图/倒序对照；root执行付费请求。仍未新API调用。GitHub443超时，工作分支远程尚未同步；本地commit已持久化。
