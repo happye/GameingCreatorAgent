@@ -4,6 +4,8 @@
 
 ## 当前交付
 
+最新活动任务：F006玩法时序修正 / root / codex/temporal-gameplay，拥有配置读取、analysis窗口、实验与公共文档。新视觉worker限独立worktree的deepseek_vision.py、新temporal测试及自己的sprint。temporal_audit和temporal_acceptance仅只读。下面F007/F008为已交付历史，不是本轮占用；恢复见sprint-temporal-gameplay。
+
 F008当前技术验收已通过：root负责app.js、验证/共享记录和冻结后的细化，已验证87637af同步origin/main与origin/codex/workspace-usability，root当前main；workspace_layout在独立worktree交付HTML/CSS，5a44dfd/7ad1321已集成1bf8881/600276e并冻结。acceptance_deployment/visual_review只读核对已完成。无活动并行写入；最终版本见HANDOFF。F006仍false，证据sprint-workspace-usability。
 
 | Feature / owner | Branch/worktree | Owned files | State / evidence |
