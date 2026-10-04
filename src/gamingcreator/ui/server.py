@@ -1,6 +1,8 @@
-"""Local page for choosing a run, typing a query, and reading store-backed results."""
+"""Loopback workspace backed by registered timelines, media and local search."""
 
+import asyncio
 import json
+import os
 from collections.abc import Sequence
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -8,212 +10,227 @@ from urllib.parse import parse_qs, urlparse
 
 from gamingcreator.application.retrieval import RetrievalMode
 from gamingcreator.domain.errors import AppError, ExitCode
-from gamingcreator.ui.service import inspect_run, list_project_runs
+from gamingcreator.ui.media import VerifiedMediaCache, byte_range
+from gamingcreator.ui.service import inspect_run, project_runs_payload, registered_media
 
-PAGE = """<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<title>时间线检查</title>
-<style>
-  body { font-family: "Segoe UI", sans-serif; margin: 24px; color: #1c1c1c; }
-  form { display: grid; grid-template-columns: 8em 1fr; gap: 8px 12px; max-width: 52em; }
-  label { align-self: center; }
-  input, select, button { font: inherit; padding: 6px 8px; }
-  button { width: fit-content; }
-  section { margin-top: 24px; }
-  table { border-collapse: collapse; width: 100%; }
-  th, td { border-bottom: 1px solid #ccc; text-align: left; vertical-align: top; padding: 6px; }
-  .note { color: #444; }
-  .empty { color: #666; }
-</style>
-</head>
-<body>
-<h1>时间线检查</h1>
-<p class="note">这是本地检查页，不是成片编辑器，也不是人工质量验收。检索排名按分数，不是按时间轴。</p>
-<form id="inspect">
-  <label for="project">项目目录</label>
-  <input id="project" name="project" value="artifacts/demo-phase0">
-  <label for="run">运行</label>
-  <span>
-    <select id="run" name="run"></select>
-    <button type="button" id="load-runs">读取运行</button>
-  </span>
-  <label for="query">查询</label>
-  <input id="query" name="query" value="寻找角色打斗和攻击的片段">
-  <label for="mode">模式</label>
-  <select id="mode" name="mode">
-    <option value="hybrid" selected>hybrid</option>
-    <option value="lexical">lexical</option>
-    <option value="semantic">semantic</option>
-  </select>
-  <label for="top">条数</label>
-  <input id="top" name="top" type="number" min="1" max="100" value="3">
-  <span></span>
-  <button type="submit">查看</button>
-</form>
-<p id="status" class="note"></p>
-<p id="artifact"></p>
-<section>
-  <h2>时间轴（源时间）</h2>
-  <div id="timeline"></div>
-</section>
-<section>
-  <h2>检索排名（分数，然后时间）</h2>
-  <div id="ranked"></div>
-</section>
-<script>
-const status = document.querySelector("#status");
-const timeline = document.querySelector("#timeline");
-const ranked = document.querySelector("#ranked");
-function params() {
-  return new URLSearchParams({
-    project: document.querySelector("#project").value,
-    run: document.querySelector("#run").value,
-    query: document.querySelector("#query").value,
-    mode: document.querySelector("#mode").value,
-    top: document.querySelector("#top").value
-  });
+STATIC = Path(__file__).with_name("static")
+ASSETS = {
+    "/": ("index.html", "text/html; charset=utf-8"),
+    "/assets/app.js": ("app.js", "text/javascript; charset=utf-8"),
+    "/assets/style.css": ("style.css", "text/css; charset=utf-8"),
 }
-function table(rows, rankedRows) {
-  if (!rows.length) return "<p class=\\"empty\\">没有记录。</p>";
-  const head = rankedRows
-    ? "<tr><th>名次</th><th>开始</th><th>结束</th><th>可观察事实</th><th>证据</th></tr>"
-    : "<tr><th>开始</th><th>结束</th><th>可观察事实</th><th>证据</th></tr>";
-  const body = rows.map(row => {
-    const facts = (row.observableFacts || []).join("；");
-    const evidence = (row.evidenceIds || []).join(", ");
-    const times = `<td>${row.startTimecode}</td><td>${row.endTimecode}</td><td>${facts}</td><td>${evidence}</td>`;
-    return rankedRows ? `<tr><td>${row.rank}</td>${times}</tr>` : `<tr>${times}</tr>`;
-  }).join("");
-  return `<table>${head}${body}</table>`;
-}
-async function loadRuns() {
-  const project = document.querySelector("#project").value;
-  const response = await fetch("/api/runs?" + new URLSearchParams({project}));
-  const payload = await response.json();
-  const select = document.querySelector("#run");
-  select.innerHTML = "";
-  for (const run of payload.runs || []) {
-    const option = document.createElement("option");
-    option.value = run.id;
-    option.textContent = run.id + " (" + run.status + ")";
-    select.appendChild(option);
-  }
-  if (!select.options.length) status.textContent = payload.message || "这个项目里没有运行。";
-}
-async function inspect() {
-  status.textContent = "正在读取数据库…";
-  const response = await fetch("/api/inspect?" + params());
-  const payload = await response.json();
-  if (!response.ok) {
-    status.textContent = payload.message || "读取失败。";
-    return;
-  }
-  document.querySelector("#artifact").textContent = "读取自 " + payload.artifact;
-  timeline.innerHTML = table(payload.timeline || [], false);
-  ranked.innerHTML = table(payload.candidates || [], true);
-  const reason = payload.abstentionReason ? " 检索说明：" + payload.abstentionReason : "";
-  status.textContent = "运行 " + payload.runId + " 状态 " + payload.runStatus + "。" + reason
-    + " 再次点击「查看」会重新读取数据库，不必重启本页。";
-}
-document.querySelector("#load-runs").addEventListener("click", () => loadRuns().catch(error => {
-  status.textContent = String(error);
-}));
-document.querySelector("#inspect").addEventListener("submit", event => {
-  event.preventDefault();
-  inspect().catch(error => { status.textContent = String(error); });
-});
-loadRuns().catch(() => { status.textContent = "填写项目目录后点击「读取运行」。"; });
-</script>
-</body>
-</html>
-"""
 
 
 def _query(path: str) -> dict[str, str]:
-    parsed = urlparse(path)
-    values = parse_qs(parsed.query, keep_blank_values=True)
-    return {key: items[0] for key, items in values.items() if items}
+    values = parse_qs(urlparse(path).query, keep_blank_values=True, max_num_fields=16)
+    if any(len(items) != 1 for items in values.values()):
+        raise ValueError("Duplicate parameter")
+    return {key: items[0] for key, items in values.items()}
+
+
+def resolve_project(repository: Path, value: str) -> Path:
+    project = Path(value)
+    if not project.is_absolute():
+        project = repository / project
+    project = project.resolve()
+    if not project.is_relative_to(repository.resolve()):
+        raise AppError("input.project", "项目必须位于当前仓库内。", ExitCode.INPUT)
+    database = project / "timeline.sqlite3"
+    if not database.resolve().is_relative_to(repository.resolve()):
+        raise AppError("input.project", "项目数据库必须位于当前仓库内。", ExitCode.INPUT)
+    if not database.is_file():
+        raise AppError("input.project", "这个目录没有已分析的项目数据库。", ExitCode.INPUT)
+    return project
+
+
+def discover_projects(repository: Path) -> list[dict[str, str]]:
+    artifacts = repository / "artifacts"
+    if not artifacts.is_dir():
+        return []
+    projects = []
+    for database in sorted(artifacts.glob("*/timeline.sqlite3")):
+        directory = database.parent.resolve()
+        if directory.is_relative_to(repository.resolve()) and database.resolve().is_relative_to(
+            repository.resolve()
+        ):
+            projects.append(
+                {"path": directory.relative_to(repository).as_posix(), "name": directory.name}
+            )
+    return projects
+
+
+def error_status(error: AppError) -> int:
+    if error.code in {"input.evidence", "storage.run_missing", "storage.run_not_found"}:
+        return 404
+    return {
+        ExitCode.INPUT: 400,
+        ExitCode.ENVIRONMENT: 503,
+        ExitCode.PROVIDER: 502,
+        ExitCode.STORAGE: 409,
+        ExitCode.BENCHMARK: 422,
+        ExitCode.BUDGET: 402,
+        ExitCode.CANCELLED: 409,
+    }.get(error.exit_code, 500)
 
 
 class InspectionHandler(BaseHTTPRequestHandler):
     repository = Path.cwd()
+    media_cache = VerifiedMediaCache()
 
     def log_message(self, format: str, *args: object) -> None:
         return
 
-    def _send(self, status: int, body: bytes, content_type: str) -> None:
+    def _headers(self, status: int, length: int, content_type: str) -> None:
         self.send_response(status)
         self.send_header("Content-Type", content_type)
-        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Content-Length", str(length))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header(
+            "Content-Security-Policy",
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; media-src 'self'; object-src 'none'; "
+            "frame-ancestors 'none'; base-uri 'none'",
+        )
+
+    def _send(self, status: int, body: bytes, content_type: str) -> None:
+        self._headers(status, len(body), content_type)
         self.end_headers()
-        self.wfile.write(body)
+        if self.command != "HEAD":
+            self.wfile.write(body)
 
     def _json(self, status: int, payload: dict[str, object]) -> None:
         self._send(
             status,
-            json.dumps(payload, ensure_ascii=False).encode(),
+            json.dumps(payload, ensure_ascii=False, allow_nan=False).encode(),
             "application/json; charset=utf-8",
         )
 
-    def do_GET(self) -> None:  # noqa: N802 - stdlib handler name
-        import asyncio
+    def _local_request(self) -> bool:
+        host = self.headers.get("Host", "")
+        hostname = urlparse("http://" + host).hostname
+        origin = self.headers.get("Origin")
+        return (
+            hostname in {"127.0.0.1", "localhost"}
+            and self.headers.get("Sec-Fetch-Site") != "cross-site"
+            and (origin is None or origin == "http://" + host)
+        )
 
-        path = urlparse(self.path).path
-        if path == "/":
-            self._send(200, PAGE.encode(), "text/html; charset=utf-8")
-            return
-        query = _query(self.path)
-        try:
-            if path == "/api/runs":
-                project = Path(query.get("project", "")).expanduser()
-                runs = asyncio.run(list_project_runs(project.resolve()))
-                self._json(
-                    200,
-                    {"runs": [{"id": run_id, "status": status} for run_id, status in runs]},
-                )
+    def _media(self, project: Path, run_id: str, evidence_id: str | None = None) -> None:
+        resource = asyncio.run(registered_media(project, run_id, evidence_id))
+        with self.media_cache.open(resource) as source:
+            size = os.fstat(source.fileno()).st_size
+            try:
+                offset, length, partial = byte_range(self.headers.get("Range"), size)
+            except ValueError:
+                self._headers(416, 0, resource.content_type)
+                self.send_header("Content-Range", f"bytes */{size}")
+                self.end_headers()
                 return
-            if path == "/api/inspect":
+            self._headers(206 if partial else 200, length, resource.content_type)
+            self.send_header("Accept-Ranges", "bytes")
+            if partial:
+                self.send_header("Content-Range", f"bytes {offset}-{offset + length - 1}/{size}")
+            self.end_headers()
+            if self.command == "HEAD":
+                return
+            source.seek(offset)
+            remaining = length
+            while remaining:
+                chunk = source.read(min(256 * 1024, remaining))
+                if not chunk:
+                    break
+                self.wfile.write(chunk)
+                remaining -= len(chunk)
+
+    def do_HEAD(self) -> None:  # noqa: N802 - stdlib handler name
+        self.do_GET()
+
+    def do_GET(self) -> None:  # noqa: N802 - stdlib handler name
+        try:
+            if not self._local_request():
+                self._json(403, {"code": "input.origin", "message": "请从本机工作台访问。"})
+                return
+            path = urlparse(self.path).path
+            if path in ASSETS:
+                name, mime = ASSETS[path]
+                self._send(200, (STATIC / name).read_bytes(), mime)
+                return
+            if path == "/api/projects":
+                self._json(200, {"projects": discover_projects(self.repository)})
+                return
+            query = _query(self.path)
+            if path not in {"/api/runs", "/api/inspect", "/api/media", "/api/evidence"}:
+                self._json(404, {"code": "input.route", "message": "没有这个页面。"})
+                return
+            project = resolve_project(self.repository, query.get("project", ""))
+            if path == "/api/runs":
+                self._json(200, asyncio.run(project_runs_payload(project)))
+            elif path in {"/api/media", "/api/evidence"}:
+                evidence_id = query.get("id", "") if path == "/api/evidence" else None
+                self._media(project, query.get("run", ""), evidence_id)
+            else:
                 modes: dict[str, RetrievalMode] = {
                     "lexical": "lexical",
                     "semantic": "semantic",
                     "hybrid": "hybrid",
                 }
-                requested = query.get("mode", "hybrid")
-                if requested not in modes:
+                mode, top = query.get("mode", "hybrid"), int(query.get("top", "10"))
+                if mode not in modes or not 1 <= top <= 100:
                     raise AppError(
-                        "retrieval.configuration", "检索模式无效。", ExitCode.ENVIRONMENT
+                        "retrieval.configuration", "检索模式或条数无效。", ExitCode.INPUT
                     )
-                mode = modes[requested]
                 payload = asyncio.run(
                     inspect_run(
-                        Path(query.get("project", "")).expanduser().resolve(),
+                        project,
                         query.get("run", ""),
                         query.get("query", ""),
                         self.repository,
-                        mode=mode,
-                        top_k=int(query.get("top", "10")),
+                        mode=modes[mode],
+                        top_k=top,
                     )
                 )
                 self._json(200, payload)
-                return
         except AppError as error:
             self._json(
-                error.exit_code,
-                {"code": error.code, "runId": error.run_id, "message": error.message},
+                error_status(error),
+                {
+                    "code": error.code,
+                    "runId": error.run_id,
+                    "message": error.message,
+                    "exitCode": int(error.exit_code),
+                },
             )
+        except (BrokenPipeError, ConnectionResetError):
             return
-        except (OSError, ValueError) as error:
-            self._json(400, {"code": "input.project", "message": str(error)})
-            return
-        self._json(404, {"code": "input.route", "message": "没有这个页面。"})
+        except (OSError, ValueError):
+            self._json(
+                400,
+                {
+                    "code": "input.request",
+                    "message": "读取失败，请检查项目、运行和本地文件。",
+                    "exitCode": 2,
+                },
+            )
+
+
+def create_server(host: str, port: int, repository: Path) -> ThreadingHTTPServer:
+    if host != "127.0.0.1":
+        raise ValueError("The inspection workspace only binds to 127.0.0.1")
+    handler = type(
+        "WorkspaceHandler",
+        (InspectionHandler,),
+        {
+            "repository": repository.resolve(),
+            "media_cache": VerifiedMediaCache(),
+        },
+    )
+    return ThreadingHTTPServer((host, port), handler)
 
 
 def serve(host: str, port: int, repository: Path) -> None:
-    InspectionHandler.repository = repository.resolve()
-    server = ThreadingHTTPServer((host, port), InspectionHandler)
-    print(f"Inspection UI: http://{host}:{port}/", flush=True)
+    server = create_server(host, port, repository)
+    print(f"Inspection UI: http://{host}:{server.server_port}/", flush=True)
     try:
         server.serve_forever()
     finally:
@@ -223,8 +240,8 @@ def serve(host: str, port: int, repository: Path) -> None:
 def main(argv: Sequence[str] | None = None) -> int:
     import argparse
 
-    parser = argparse.ArgumentParser(description="打开本地时间线检查页")
-    parser.add_argument("--host", default="127.0.0.1")
+    parser = argparse.ArgumentParser(description="打开本地素材检查工作台")
+    parser.add_argument("--host", choices=("127.0.0.1",), default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--repository", type=Path, default=Path.cwd())
     args = parser.parse_args(list(argv) if argv is not None else None)

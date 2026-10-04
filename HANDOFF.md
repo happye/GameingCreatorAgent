@@ -6,7 +6,7 @@
 
 Phase 0 CLI 闭环已实测：本地视频 → FFmpeg/ASR → 逐窗口视觉事件 → SQLite/semantic_timeline.json → 词法/本地 E5 语义检索 → 时间码和人工评测报告。本地检查页用 `./scripts/run-ui.ps1`，不是商业编辑器。价格快照配置已实现，不需要用户另找价目；搜索现有 Completed run 不需要密钥或联网。
 
-当前root在 `main`。已验证代码检查点 `19cfe58` 成功推送 `origin/main` 与 `origin/codex/phase0-demo`；main已从ca0394e快进整合模型与Demo，不覆盖远端其他修改。最新文档提交/工作树以 `git log -1` 和 `git status --short` 为准；旧F003分支仅为历史。F003/F005技术合同已验收；F006工具已实现，独立人工U10尚未通过。
+当前root在 `codex/inspection-workspace`；Grok基线与初步工作台计划已保存检查点 `32d5a3b`（561pass）。完整CLI代码检查点 `19cfe58` 及文档 `d6eb311` 已在origin/main；本轮工作台功能仍在实现，远端状态以 `git log -1` 和 `git status --short` 为准。旧F003分支仅为历史。F003/F005技术合同已验收；F006工具已实现，独立人工U10尚未通过。
 
 ## 真实证据
 

@@ -408,6 +408,41 @@ class SqliteTimelineStore:
 
         return await self._call(load)
 
+    async def load_evidence_reference(
+        self, run_id: str, evidence_id: str
+    ) -> EvidenceReference | None:
+        """Read one registered reference; the media reader must verify its bytes.
+
+        This avoids scanning the entire video for each thumbnail. It does not
+        replace load_timeline's complete integrity validation.
+        """
+
+        def load() -> EvidenceReference | None:
+            run = self._load_run(run_id)
+            if not evidence_id or len(evidence_id) > 512:
+                return None
+            row = self._db.execute(
+                "SELECT * FROM evidence WHERE run_id=? AND evidence_id=?",
+                (run_id, evidence_id),
+            ).fetchone()
+            if row is None:
+                return None
+            if row["media_id"] != run.asset.media_id:
+                raise _error("storage.integrity")
+            return EvidenceReference(
+                row["evidence_id"],
+                run.asset.media_id,
+                row["kind"],
+                SourceInstant(row["start_us"], run.asset.duration_us)
+                if row["kind"] == "image"
+                else SourceRange(row["start_us"], row["end_us"], run.asset.duration_us),
+                self._stored_artifact(run_id, row["artifact_path"]),
+                row["content_hash"],
+                row["transform_version"],
+            )
+
+        return await self._call(load)
+
     async def persist_search(
         self,
         result: SearchResult,

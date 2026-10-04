@@ -29,4 +29,8 @@
 
 ## 恢复入口
 
+后端已实现并通过21项HTTP/既有检查页行为测试，1项真实文件symlink测试因当前Windows权限跳过（另有可移植canonical-path边界回归已通过）。包括正确HTTP状态、单Range/HEAD、只按run/evidence提供媒体、缓存变更复验、localhost访问限制；证据单条读取不再扫描源视频，缺DeepSeek价目/非空unverified金额继续unknown。修复Windows CRT fstat亚秒精度不足及读访问时间变更导致的缓存判断，使用高精度Path.stat与句柄身份比对。
+
+静态前端检查点 `0d9e3c5` 待root串行集成；前后端此节点尚未做完整/真实浏览器验收。内置node_repl的Playwright导入失败，已准备固定版本可选ui-test（Playwright1.63.0、锁41包）；Chromium v1243/153.0.8010.12及工具均在 `.tools/browsers`，不安装系统依赖。用户运行页面不需要安装ui-test。
+
 先看 `git status --short` 与本文件，保留 Grok 改动。下一步完成基线复核及检查点，冻结 UI API 后分别实现后端与静态页面；每个节点更新此记录和 HANDOFF。

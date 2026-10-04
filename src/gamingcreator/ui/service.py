@@ -1,14 +1,18 @@
 """One read of a project run: source-time events plus an optional shipped search."""
 
+import mimetypes
+from decimal import Decimal
 from pathlib import Path
+from urllib.parse import urlencode
 
 from gamingcreator.application.inspection import InspectionView, inspection_view
-from gamingcreator.application.retrieval import CandidateClip, RetrievalMode
-from gamingcreator.application.storage import RunStatus
+from gamingcreator.application.retrieval import RETRIEVAL_VERSION, CandidateClip, RetrievalMode
+from gamingcreator.application.storage import RunStatus, StoredInvocation
 from gamingcreator.cli.main import execute_search
 from gamingcreator.domain.errors import AppError, ExitCode
-from gamingcreator.domain.time import SourceRange
+from gamingcreator.domain.time import SourceInstant, SourceRange
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
+from gamingcreator.ui.media import MediaResource
 
 
 def _timecode(microseconds: int) -> str:
@@ -111,6 +115,70 @@ async def list_project_runs(project: Path) -> tuple[tuple[str, str], ...]:
         await store.close()
 
 
+async def project_runs_payload(project: Path) -> dict[str, object]:
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    try:
+        rows: list[dict[str, object]] = []
+        for run_id, status in await store.list_runs():
+            run = await store.load_run(run_id)
+            rows.append(
+                {
+                    "id": run_id,
+                    "status": status,
+                    "sourceName": run.asset.source_path.name,
+                    "durationUs": run.asset.duration_us,
+                    "errorCode": run.error_code,
+                }
+            )
+        return {"runs": rows}
+    finally:
+        await store.close()
+
+
+async def registered_media(
+    project: Path, run_id: str, evidence_id: str | None = None
+) -> MediaResource:
+    """Resolve database identities, never a client file path."""
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    try:
+        if evidence_id is None:
+            run = await store.load_run(run_id)
+            path, digest = run.asset.source_path, run.asset.sha256
+        else:
+            evidence = await store.load_evidence_reference(run_id, evidence_id)
+            if evidence is None:
+                raise AppError("input.evidence", "这个运行没有该证据。", ExitCode.INPUT, run_id)
+            path, digest = evidence.artifact_path, evidence.sha256
+            if not path.resolve().is_relative_to(project.resolve()):
+                raise AppError("storage.integrity", "证据路径校验失败。", ExitCode.STORAGE)
+        mime = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        if not mime.startswith(("video/", "image/", "audio/")):
+            mime = "application/octet-stream"
+        return MediaResource(path, digest, mime)
+    finally:
+        await store.close()
+
+
+def cost_payload(invocations: tuple[StoredInvocation, ...]) -> dict[str, object]:
+    known, unknown = Decimal(0), 0
+    for invocation in invocations:
+        metadata, usage = invocation.metadata, invocation.metadata.usage
+        if (
+            usage.cost_cny is None
+            or usage.cost_status.value == "unverified"
+            or metadata.provider == "deepseek"
+            and not metadata.price_version
+        ):
+            unknown += 1
+        else:
+            known += usage.cost_cny
+    return {
+        "knownCny": str(known),
+        "unknownAttempts": unknown,
+        "status": "unverified" if unknown else "estimated",
+    }
+
+
 async def inspect_run(
     project: Path,
     run_id: str,
@@ -136,6 +204,61 @@ async def inspect_run(
         candidates = _candidates(document, timeline.run.asset.duration_us)
         reason = document["abstentionReason"]
         abstention = None if reason is None else str(reason)
-    return view_payload(
+    payload = view_payload(
         inspection_view(timeline, candidates, artifact, abstention_reason=abstention)
     )
+    identity = {"project": str(project.resolve()), "run": run_id}
+    asset = timeline.run.asset
+    event_tags = {event.event_id: event.mechanic_tags for event in timeline.events}
+    rows = payload["timeline"]
+    assert isinstance(rows, list)
+    for row in rows:
+        row["mechanicTags"] = list(event_tags[row["eventId"]])
+    payload.update(
+        {
+            "media": {
+                "id": asset.media_id,
+                "name": asset.source_path.name,
+                "durationUs": asset.duration_us,
+                "sha256": asset.sha256,
+                "videoUrl": "/api/media?" + urlencode(identity),
+            },
+            "evidence": [
+                {
+                    "id": item.evidence_id,
+                    "kind": item.kind,
+                    "startUs": item.source_time.time_us
+                    if isinstance(item.source_time, SourceInstant)
+                    else item.source_time.start_us,
+                    "endUs": item.source_time.time_us
+                    if isinstance(item.source_time, SourceInstant)
+                    else item.source_time.end_us,
+                    "url": "/api/evidence?" + urlencode({**identity, "id": item.evidence_id}),
+                }
+                for item in timeline.evidence
+            ],
+            "transcripts": [
+                {
+                    "startUs": item.source_range.start_us,
+                    "endUs": item.source_range.end_us,
+                    "text": item.text,
+                    "uncertainty": item.uncertainty,
+                }
+                for item in timeline.transcripts
+            ],
+            "stages": [
+                {
+                    "id": stage.stage_id,
+                    "status": stage.status.value,
+                    "errorCode": stage.error_code,
+                }
+                for stage in timeline.checkpoints
+            ],
+            "cost": cost_payload(timeline.invocations),
+            "retrievalVersion": RETRIEVAL_VERSION,
+            "configHash": timeline.run.config_hash,
+            "query": query,
+            "mode": mode,
+        }
+    )
+    return payload

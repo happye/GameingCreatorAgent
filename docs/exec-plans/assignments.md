@@ -14,3 +14,13 @@ F000–F005技术合同已验收。F006工具有合同测试，独立人工 qual
 2026-10-04 用户重新指定 Codex 接续基础功能；Grok 留下的未提交源码全部保留，基线完整verify561passed/0skip。Codex root负责检查工作台后端/集成/共享记录，只读 ui_review负责风险复核。页面静态资源若另派worker，先建立独立worktree并冻结API；旧worktrees不能覆盖本轮。任务见 `sprint-inspection-workspace.md`。
 
 当前本地/远端提交以HANDOFF和git为准。旧Grok/F003 scratch worktrees保留历史，已冻结；不要从旧分支覆盖当前源码。
+
+## 检查工作台本轮归属
+
+| Owner | Branch/worktree | Owned files | State |
+| --- | --- | --- | --- |
+| Codex root | `codex/inspection-workspace`，root | ui/server.py、ui/service.py、ui/media.py、tests/test_inspection_http.py及共享文档 | implementing；Grok基线checkpoint32d5a3b |
+| Codex inspection_frontend | `codex/inspection-frontend`，`.worktrees/inspection-frontend` | ui/static/{index.html,app.js,style.css}、sprint-inspection-frontend.md | implementing；API合同已冻结 |
+| Codex ui_review | 只读root | HTTP错误/注入/状态与范围审查 | done；发现已纳入root修复 |
+
+前后端按 `docs/design-docs/inspection-workspace-api.md` 集成。worker只提交拥有文件，公共记录由root更新；不得从旧scratch覆盖当前源码。

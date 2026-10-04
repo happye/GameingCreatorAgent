@@ -26,3 +26,5 @@ uv 注册/链接仍以 `UV_PYTHON_INSTALL_REGISTRY=0`、`UV_PYTHON_INSTALL_BIN=0
 F001 前后核对的用户/系统环境变量及三处 Python 注册表子树指纹均未变化。这是指定边界的检查，不是全系统变更监控。不得自动安装 VC++ 运行库、CUDA 或驱动；F003 原生库缺依赖时记录失败，使用合法项目内方案或替换实现。
 
 禁止全局安装、自动改系统 PATH、改用户工具配置或自动安装 GPU 驱动。先用项目内 CPU ASR 验证；`pyproject.toml`、`uv.lock`、`.python-version` 和校验清单跟代码维护，密钥只走进程环境或忽略的本地存储。Phase 0 不需要 .NET，依据 [ADR-001](../design-docs/adr-001-phase-0-language.md)。
+
+检查工作台运行只需标准库和既有检索依赖。可选浏览器验证使用 `ui-test` extra 的 [Playwright 1.63.0](https://pypi.org/project/playwright/1.63.0/)（含锁定依赖）；`env.ps1` 将 `PLAYWRIGHT_BROWSERS_PATH` 固定为 `.tools/browsers`。仅执行 `python -B -m playwright install chromium`，禁止 `install-deps`/`--with-deps`、安装系统浏览器或使用用户浏览器profile。验证时临时profile、截图和下载都在项目缓存或ignored artifacts中。该工具不属于用户启动页面的必需依赖。

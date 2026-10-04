@@ -71,3 +71,7 @@ SQLite 专用线程、进程锁、九表迁移/组合 FK、媒体/语义 checkpo
 价格快照、全时轴滑动窗口、显式失败/取消恢复与未知费用保留、ASR提前登记、本地E5语义/词法/混合检索、SQL3与人工评分CLI已完成。真实95.175874s PV得24窗口/111events/0transcripts，估算API0.06246088CNY；保留早期失败run0.01163912，总估算0.0741CNY。三查询三模式重复稳定/跨进程读取通过；英文漏召回、puresemantic负例误召回及未人评保持可见。F003/F005技术合同已验收，F006人工gate未过。完整verify557passed/0skip，Ruff/mypy42源文件、重复wheel90c27fba9af76a86a35c191d684d0c5160baf07b49a4e8e90eb0356bf6eb4a75通过，所有环境仍仅项目内。快速运行docs/references/demo-quickstart.md，证据docs/exec-plans/sprint-demo.md，下一步TD004/TD005+独立冻结标签；不开始GUI。
 
 版本同步：已验证代码19cfe58已推送origin/codex/phase0-demo和origin/main，root现main。main包含此前F003检查点及本轮Demo，接续不用再切历史模型分支。
+
+## 2026-10-04 本地检查工作台持续检查点
+
+用户在Grok新增检查页后要求Codex接续基础功能。保留其全部未提交改动，复核后保存 `32d5a3b`：561passed/0skip、mypy47/Ruff/重复wheel通过。恢复28个项目内stdlib pyc的归档hash，未改收据或系统配置。root分支 `codex/inspection-workspace`、前端独立worktree；后端Range/HEAD、注册媒体/证据、HTTP错误/访问范围、来源/费用/转录/标签读取已实现，定向21passed/1symlink权限skip。页面worker交付0d9e3c5待集成；尚未宣称新工作台完整验收。可选浏览器测试工具固定锁并安装在.venv/.tools/.cache；没有新的付费模型调用。下一条操作集成前端、真实PV浏览器验证与全量verify；详情sprint-inspection-workspace。

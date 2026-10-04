@@ -2,7 +2,7 @@
 
 ## 使用与结果
 
-先准备项目隔离工具并运行 `scripts/init.ps1`。`scripts/test-media.ps1 -SourcePath <video>` 处理单段；`-AllLocal` 顺序处理当前授权 `GameVideos/**/*.mp4`，不联网、不调用模型。应用接口是 `MediaProcessor.probe/preprocess`，采样参数为 Fraction 间隔、最大宽度、最大帧数；处理结果只证明媒体 bundle 完成，`gamingcreator analyze` 仍未集成模型/存储。
+先准备项目隔离工具并运行 `scripts/init.ps1`。`scripts/test-media.ps1 -SourcePath <video>` 处理单段；`-AllLocal` 顺序处理当前授权 `GameVideos/**/*.mp4`，不联网、不调用模型。应用接口是 `MediaProcessor.probe/preprocess`，采样参数为 Fraction 间隔、最大宽度、最大帧数；这些处理结果只证明媒体 bundle 完成。`gamingcreator analyze` 已另行集成ASR、视觉与存储，验收见 `sprint-demo.md`。
 
 新目录内输出 JPEG、16kHz/16bit/单声道 WAV、`media-manifest.json`。文件与时间映射核验、源文件重新 hash 及取消检查成功后，才 `fsync` 临时 manifest 并原子替换。失败目录无完成 manifest，留给 F004 恢复；不自动删除用户路径。证据 ID 使用 run/media 命名空间。
 

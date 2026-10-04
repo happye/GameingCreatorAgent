@@ -30,6 +30,7 @@ $env:RUFF_CACHE_DIR = Join-Path $projectEnvironmentRoot '.cache/ruff'
 $env:MYPY_CACHE_DIR = Join-Path $projectEnvironmentRoot '.cache/mypy'
 $env:HF_HOME = Join-Path $projectEnvironmentRoot '.cache/huggingface'
 $env:TORCH_HOME = Join-Path $projectEnvironmentRoot '.cache/torch'
+$env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $projectEnvironmentRoot '.tools/browsers'
 $env:XDG_CACHE_HOME = Join-Path $projectEnvironmentRoot '.cache/xdg'
 $env:TEMP = Join-Path $projectEnvironmentRoot '.cache/tmp'
 $env:TMP = $env:TEMP
