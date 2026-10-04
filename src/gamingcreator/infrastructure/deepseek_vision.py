@@ -674,8 +674,7 @@ def _events(response: dict[str, object], request: VisionRequest) -> tuple[Semant
             raise _SchemaError("uncertainty")
         if prompt_v5:
             source_times = {
-                alias: cast(SourceInstant, item.source_time).time_us
-                for alias, item in evidence.items()
+                alias: cast(SourceInstant, evidence[alias].source_time).time_us for alias in aliases
             }
             facts = tuple(_resolve_prose_aliases(fact, source_times, detail) for fact in facts)
             tags = tuple(_resolve_prose_aliases(tag, source_times, detail) for tag in tags)

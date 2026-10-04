@@ -43,6 +43,8 @@
 
 新版连续动作试验需显式`-Config config.temporal.example.json`，v4/500ms/9帧/重叠2，用帧别名生成源时间区间；保持旧run不变。当前仍有模型判断与跨镜头问题，Boss/射击效果未建立，详见[时序验证](./temporal-gameplay-validation.md)。
 
+2026-10-05可见细节优化用 `-Config config.detailed.example.json`：V5保持多帧动作，输入宽上限1280，要求衣着/持有物/人物外观/环境/效果与主体关联。看不清或身份不确定在“待核对”显示，不进入正面检索；不会凭外观命名官方装备或Boss。旧f0/f1为内部图片编号，显示/导出已清理，数据库原事实保留。真实新run与比较状态见HANDOFF和[sprint-visual-details](../exec-plans/sprint-visual-details.md)，不能把新配置存在当已验证效果。
+
 ## 续跑与结果文件
 
 ```powershell

@@ -22,6 +22,8 @@ gamingcreator benchmark --input <frozen-manifest> --project <directory> --output
 
 连续动作试验显式使用 `config.temporal.example.json`：schema仍为2，prompt为独立fingerprint的`phase0-vision-v4`，500ms采样、9帧/2帧重叠、独立pipeline `phase0-analyze-temporal-v1`。v1/v2仍最多5帧，v3/v4最多9帧；旧配置、prompt内容与run不改写。
 
+2026-10-05细节优化显式用 `config.detailed.example.json`：V5 hash为c64c644e9889fcfd91cc0e9a26d8bf1b9546ce73c548e6ac056a5067498ff98a，pipeline `phase0-analyze-detailed-v1`，500ms/9帧/重叠2、输出4096token。V5采样宽上限1280（原源更小不放大），每图3MiB、detail=original；旧V1–V4仍512/1MiB，管线hash与配置身份分别钉住版本和prompt。新配置创建新run，恢复不得提升旧证据尺寸。
+
 `search` 指定 Completed run；找不到或完整性失败时返回明确错误。默认 hybrid，也可 lexical/semantic；候选含 candidateId/mediaId/eventId、startUs/endUs、startTimecode/endTimecode、rank、score/scoreKind、evidenceIds、observableFacts/why。时间为半开区间，分数不是事实概率。排序确定，去重后保留排名和证据；空结果合法并附 abstentionReason。检索记录与向量在 schema v3 中保存，分析输出保持不可变。
 
 stdout 为结果或 JSON；进度/JSON 诊断写 stderr。退出码：0 成功，2 输入，3 环境/配置，4 Provider，5 存储/完整性，6 benchmark 未过门槛，7 预算停止，130 用户取消。JSON 错误含 code、runId、retryable、友好说明，不含凭据。
@@ -58,6 +60,8 @@ Application 用 `typing.Protocol` 定义类型化 async ports，await 得到 `Pr
 
 v4严格绑定`temporal-actions-v1`：每事件字段为startFrameId/endFrameId/observableFacts/mechanicTags/evidenceIds/uncertainty，最多3事件。程序由首尾帧sourceUs生成`[firstUs,lastUs+1)`；端点必须出现在有序引用内，至少两个不同时刻与不同图像hash。输入倒序/重复时刻、未知别名、单帧或复制图动作声明拒绝；空事件合法。v1/v2/v3仍用原schema。9帧多图与这些校验只是工程必要条件，不能证明动作/玩家控制/跨镜头因果理解；见[真实试验](../references/temporal-gameplay-validation.md)。
 
+V5沿用v4六字段与动作证据保护，每事件最多6条事实/总1000字符（提示目标约250中文字），首句先绑定主体→外观/衣着/持有物→动作，再补其他角色、环境、目标和可见效果。官方装备/角色/技能名、Boss身份无证据不推断；看不清的细节入uncertainty，不加入正面索引。新正文泄漏f0..f8时，只用完整请求映射转为真实时间再生成eventId；未知准确小写编号拒绝。旧冻结事实不改写，以legacy-frame-alias-neutral-v1作显示/视觉索引投影；键盘F1、普通复合标识保留。静态外观独立索引和通用复合条件匹配尚未实现，不删除静帧动作保护。
+
 ASR 使用本地 faster-whisper tiny，固定权重/运行库 hash 与 CPU int8。worker 开始前登记模型修订、参数和输入；`no_audio/no_speech/completed/failed/cancelled` 分开。源 hash、模型修订、schema 与稳定参数共同构成 v2 ASR stage 输入 hash。API 费用为本地零网络调用费用，硬件成本未测；中英文识别质量仍需人工参考。ChatGPT/开发工具额度不等于项目 API 配额。
 
 Embedding 使用固定 `Xenova/multilingual-e5-small` ONNX 权重，384 维、attention-mask mean pooling、L2，query/passages 分别用 `query: `/`passage: ` 前缀；最多 512 token，v2 推理 batch=1。空间身份包含权重修订、文件 hash、推理合同/pooling/maxTokens/batchSize；缓存不跨不一致空间混用。同步推理同样通过可终止本地 worker 执行，不下载未知模型。
@@ -92,7 +96,7 @@ embedding 唯一键包含 run、subject/provider/model/revision_scope/dimension/
 
 旧v2每秒抽帧并用5帧/1帧重叠覆盖全部抽取帧；v4试验用2FPS、9帧/2帧重叠，均约4秒时间跨度，最后窗口可不足上限。每窗口独立checkpoint，上传总帧数含重叠/重试，运行前预检最低额度并保留每attempt硬上限。全覆盖不保证捕获短动作，不能无条件跨窗/跨镜头拼故事。有限1FPS/2FPS真实对照已记录，但独立精度/长动作/强模型对照仍待验证。
 
-当前检索对照lexical BM25、local E5 cosine和hybrid RRF（`bm25-e5-rrf-v4`）。英文攻击类查询在词法侧补中文机制词；v4对已识别动作的正向查询排除仅明确否认该动作的事件，保留肯定/不确定描述及普通查询。否定意图查询绕过该有限规则，仅保持兼容；不是通用语言理解。原事实、embedding文本/hash、旧搜索记录不变，阈值仍0.80/0.02、未经独立校准。候选按证据/区间去重，模型eventId不等于人工独立动作。文本fixture冷约1.65–1.87s/热约0.11s不证明真实精度；测试集按会话隔离，同源PV/剪辑不得跨开发与测试集。
+当前检索对照lexical BM25、local E5 cosine和hybrid RRF（`bm25-e5-rrf-v5`）。英文攻击类查询在词法侧补中文机制词；沿用v4正向动作否定过滤，保留肯定/不确定描述及普通查询。否定意图查询绕过该有限规则，仅保持兼容。v5仅为旧视觉正文清理图片编号，passage文本hash变化生成独立embedding缓存；原事实/CandidateClip身份、旧搜索记录、向量空间与阈值0.80/0.02不改写。uncertainty不索引为正面证据，RRF不保证任意复合属性同属一人；512token输入要求紧凑事实优先。候选按证据/区间去重，模型eventId不等于人工独立动作。文本fixture冷约1.65–1.87s/热约0.11s不证明真实精度；测试集按会话隔离，同源PV/剪辑不得跨开发与测试集。
 
 真实 PV 的离线三查询×三模式重复稳定，检索/向量写入和第二进程回读成功；报告位于本机 ignored `artifacts/demo-phase0/demo-validation.json`。2026-10-04 默认 hybrid 对中文攻击查询和英文 `Find clips of fighters attacking each other in the arena` 都返回 28–29、31–32、30–31 秒带证据区间；汽车维修查询 hybrid 为 0 条。pure semantic 对汽车维修负例的误召回仍在。不能用这些观察替代真实召回校准或 U10。
 

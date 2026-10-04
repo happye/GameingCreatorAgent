@@ -27,3 +27,7 @@
 481d747保存计划，vision56b02e2已整合903c9cc，presentationa160116已整合86c229c。Root已补V5配置/SQLite白名单、独立phase0-analyze-detailed-v1与1280宽采样；V1–V4仍512。旧功能预期更新为V6未支持、能力1280；temporal/config/provider/resume联合252项通过，Ruff/mypy通过。
 
 旧事实/别名/篮子/检索联合初次170passed/1skip/1failed：Windows随机端口1723被Chromium拒绝，未执行JS。修正共享测试listener为安全高端口后待复测，不隐去失败。detail_pilot独立.worktrees/detail-pilot负责新的同源时刻V4/512、V5/512、V5/1280与静图/倒序对照；root执行付费请求。仍未新API调用。GitHub443超时，工作分支远程尚未同步；本地commit已持久化。
+
+复测显示/检索171passed/1skip，9.01s。只读复核发现V5正文可提到窗口里却未被事件引用的f8；已限制正文别名为该事件已验证引用（保留原窗口编号→真实时钟，不重排编号），新增facts/tags/uncertainty及区间内未引用/区间外6个回归案例。费用保护/旧512/raw身份未发现新增问题；复合属性AND匹配仍未实现。已确认DeepSeek API网络可达，GitHub443仍超时；不用失败模型请求探测网络。
+
+真实实验前完整verify通过：838passed/1 Windows文件symlink权限skip，81.70s；Ruff83文件、mypy49源、CLI与两次离线wheel通过，SHA74728027088611445833fc4cb8802dbcaec8ca1a255b8357e0f91917c6bc459e。日志.cache/detail-verify-before-pilot.log。Guard单独98passed；尚未新增API调用，真实细节效果待对照。

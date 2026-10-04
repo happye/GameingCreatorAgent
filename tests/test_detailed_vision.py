@@ -289,6 +289,20 @@ def test_v5_rejects_unknown_prose_alias_without_recording_arbitrary_text(
     assert "secret-model-text" not in (result.metadata.execution_details or "")
 
 
+@pytest.mark.parametrize("field", ["observableFacts", "mechanicTags", "uncertainty"])
+@pytest.mark.parametrize("alias", ["f1", "f8"])
+def test_v5_prose_cannot_reference_uncited_or_outside_event_frames(
+    tmp_path: Path, field: str, alias: str
+) -> None:
+    # f1 is inside the interval but not cited; f8 is supplied outside the event.
+    event = dict(action_event(), evidenceIds=["f0", "f2"])
+    prose = f"{alias}中角色持有权杖"
+    event[field] = prose if field == "uncertainty" else [prose]
+    result, _, _, _ = analyze(detailed_request(tmp_path, frames=9), [event])
+    detail = schema_detail(result, "event_prose_alias")
+    assert detail["frameAlias"] == alias
+
+
 def test_v5_checks_fact_bound_after_alias_expansion(tmp_path: Path) -> None:
     event = dict(action_event(), observableFacts=["细" * 995 + "f0"])
     result, _, _, _ = analyze(detailed_request(tmp_path), [event])

@@ -10,7 +10,7 @@ v4要求主体→动作变化→可见结果，不把枪、大怪、空中姿态
 
 试验profile为2FPS、9帧、重叠2帧，覆盖首末约4秒；比旧1FPS/5帧增加密度，没有增加时间跨度。跨镜头不能推断连续故事，窗口结果不无条件合并。完整动作片段整合、候选精分析、长Boss遭遇仍需后续验证。
 
-[DeepSeek官方多图合同](https://api-docs.deepseek.com/guides/vision/)允许flash接收9张512宽图，但没有游戏动作准确率承诺；[价目](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/)仍匹配2026-10-04快照。官方Pro不支持图片，不能用名称推断能精分析视频。用量/失败/重试按现有账本记录，不降低1M输入保守预留，unknown不当零。
+[DeepSeek官方多图合同](https://api-docs.deepseek.com/guides/vision/)支持图像，9张/512宽是本项目旧版本保护上限，并非供应商上限。2026-10-05复核：detail=low缩到512×512，original/high/auto保留原图；内联请求体限48MiB，像素仍由供应商统一预处理。V5项目上限1280宽/9图/每图3MiB，总base64约36MiB，保留请求余量；更大图不保证细节正确。[价目](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/)缓存/非缓存/输出高峰0.04/2/8元每百万token，空闲减半，匹配2026-10-04快照。Pro仍不支持图片。用量/失败/重试按现有账本记录，不降低1M输入保守预留，unknown不当零。
 
 ## 接手顺序
 
