@@ -8,9 +8,9 @@ F007本地检查工作台已交付，本轮F008进一步完成固定桌面布局
 
 F000–F005、F007、F008技术合同已验收；**F006独立人工U10仍false**。用户明确授权本地检查交互，依据ADR-002；正式桌面/商业阶段仍有原质量门槛。
 
-最近已交付主线a019982（已推送）。root在codex/workspace-usability完成F008，工作检查点1684587/decf5b2已保存且decf5b2已上传origin/codex/workspace-usability；HTML/CSS worker5a44dfd/7ad1321已集成1bf8881/600276e，root最终字体/比例/canvas与排序回归通过。正在保存最终提交、普通推送并快进main；以git状态为准。计划/证据见sprint-workspace-usability，全部本轮worker已冻结。不要从历史worktree覆盖root。
+已验证代码87637af已普通快进同步并推送origin/main和origin/codex/workspace-usability；root当前main，后续交接文档提交见git log。工作检查点1684587/decf5b2已保存；HTML/CSS worker5a44dfd/7ad1321已集成1bf8881/600276e，root最终字体/比例/canvas与排序回归通过。计划/证据见sprint-workspace-usability，全部本轮worker已冻结。不要从历史worktree覆盖root。
 
-本轮首推因GitHub443失败，重试已成功，不改全局Git。最终新版可直接刷新8765页面：桌面各面板内滚动，源预览/时间轴/篮子同时可见；源码由当前分支提供。F006是内容评级0/1/2/3、每主查询前十槽≥7独立可用事件，见human-acceptance-guide；本地混合推理与未来EXE见deployment-roadmap，当前并非全离线/已打包EXE。
+本轮GitHub443间歇连接失败，重试已成功完成最终推送，不改全局Git。最终新版可直接刷新8765页面：桌面各面板内滚动，源预览/时间轴/篮子同时可见；源码由main提供，最新页面HTTP200且含片段篮面板。F006是内容评级0/1/2/3、每主查询前十槽≥7独立可用事件，见human-acceptance-guide；本地混合推理与未来EXE见deployment-roadmap，当前并非全离线/已打包EXE。
 
 ## 直接使用
 

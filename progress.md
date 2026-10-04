@@ -93,3 +93,5 @@ SQLite 专用线程、进程锁、九表迁移/组合 FK、媒体/语义 checkpo
 真实中英文PV浏览器增强回归均通过：1440×900/1366×768三区同屏、无body滚动，深列表预览/选择位置保持，倒序3段有序导出/恢复，负例空、证据正常、0JS错误；390px无横向溢出但仍纵向浏览。修正英文测试误把时间顺序第一段当检索rank1的比较；暂停触发AbortError不再报假播放故障。完整verify582passed/1权限skip（33.37s）、Ruff73/mypy48/CLI/重复wheel36405a6c8f3b3ba88107db7d54d8fbe6bd253254a856a9fa0ac05b9d8a093b17通过。
 
 F008true、F006false；人工质量标准和本地/云端/未来EXE说明分别落在human-acceptance-guide与deployment-roadmap。共享AGENTS/README/架构/API/使用/测试手册/feature_list/交接同步。本轮无新增依赖/付费API，五项指定宿主边界未变。检查点1684587/decf5b2、前端集成1bf8881/600276e持续保存；工作分支首次连接失败重试已上传，最终主线同步见HANDOFF和git。
+
+版本同步：已验证87637af已上传origin/codex/workspace-usability并普通快进同步origin/main，root现main。GitHub443间歇失败重试成功，无强推或全局配置修改。8765实际页面HTTP200并包含新版片段篮布局；交接/任务归属同步已推送主线状态，最终文档提交见git log。

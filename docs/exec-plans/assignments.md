@@ -4,7 +4,7 @@
 
 ## 当前交付
 
-F008当前技术验收已通过：root在codex/workspace-usability负责app.js、验证/共享记录和冻结后的细化；workspace_layout在独立worktree交付HTML/CSS，5a44dfd/7ad1321已集成1bf8881/600276e并冻结。acceptance_deployment/visual_review只读核对已完成。无活动并行写入；最终版本见HANDOFF。F006仍false，证据sprint-workspace-usability。
+F008当前技术验收已通过：root负责app.js、验证/共享记录和冻结后的细化，已验证87637af同步origin/main与origin/codex/workspace-usability，root当前main；workspace_layout在独立worktree交付HTML/CSS，5a44dfd/7ad1321已集成1bf8881/600276e并冻结。acceptance_deployment/visual_review只读核对已完成。无活动并行写入；最终版本见HANDOFF。F006仍false，证据sprint-workspace-usability。
 
 | Feature / owner | Branch/worktree | Owned files | State / evidence |
 | --- | --- | --- | --- |
