@@ -1,6 +1,6 @@
 # Phase 0 命令行 Demo
 
-当前可完成本地视频分析、语义时间线保存与自然语言片段检索。没有 GUI，候选还未经独立人工质量验收。所有命令在仓库根目录的 Windows PowerShell 执行，环境、包、模型和缓存均留在项目内。
+当前可完成本地视频分析、语义时间线保存与自然语言片段检索。没有 GUI，候选还未经独立人工质量验收。所有命令在仓库根目录的 Windows PowerShell 执行，环境、包、模型和缓存均留在项目内。完整步骤、退出码和结果文件见 [使用手册](./user-manual.md)。
 
 ## 直接查看已有结果
 
@@ -15,7 +15,9 @@
 
 本地验证素材是 95.175874 秒的《漫画群星：大集结》PV，run `f76f5d6495314c04ae04083614d4afd6` 有 24 个视觉窗口、111 个事件、0 段转录。该 run 的 API 费用估算为 ¥0.06246088，未核对账单。上述查询曾返回 28–29、31–32、30–31 秒等候选，首次 hybrid 检索为 2574 ms；结果不证明 U10 或小时级性能。
 
-离线验证报告 `artifacts/demo-phase0/demo-validation.json` 记录三查询×三模式重复稳定、检索/向量入库与第二进程回读。当前真实视频的限制是：中文攻击查询 hybrid 返回10个未人评候选；英文 `Find clips of fighters attacking each other in the arena` 在所有模式均为零命中；汽车维修负例在 hybrid/lexical 为零，pure semantic 却错返10个候选。文本 fixture 的双语表现不能替代这些真实结果。
+2026-10-04 用 `-TopK 3` 复跑上述中文查询，连续两次都打印 00:00:28.000–00:00:29.000、00:00:31.000–00:00:32.000、00:00:30.000–00:00:31.000 和对应可观察事实。默认 hybrid 对 `Find clips of fighters attacking each other in the arena` 返回这三段带证据区间。汽车维修查询 hybrid 为 0 条。pure semantic 对汽车维修负例仍会误召回。这些不是人工 U10。早先全模式报告仍在 ignored `artifacts/demo-phase0/demo-validation.json`。
+
+下一步：Owner 是 G: 根目录上的 Grok Build。启动检查页用 `./scripts/run-ui.ps1`，浏览器打开 `http://127.0.0.1:8765/`。同一进程里再次点击「查看」会重新读取 `timeline.sqlite3`，未完成 run 的新事件不必等 `semantic_timeline.json`。时间轴按源时间排序，检索结果按分数而不是时间排序。独立人工 U10 仍未完成，不要把 F006 标成通过。下一位冻结独立录制会话和主/稀疏/负例人工标签，再测固定十槽 U10。
 
 早期 run `823799e10a0440e8aec8b78b603bec57` 在2/24窗口后因 schema 失败停止，原响应未保存，未确定具体原因。该失败 run 估价 ¥0.01163912；与完成 run 合计本轮模型 API 估价 ¥0.0741，均非账单确认，不含硬件或开发工具费用。
 

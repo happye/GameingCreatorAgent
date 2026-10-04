@@ -195,6 +195,33 @@ def test_negative_semantic_query_below_cutoff_does_not_pad_results():
     )
 
 
+def test_english_attack_query_keeps_evidence_and_repair_query_abstains():
+    events = (
+        event("strike", 0, 1, "角色发出攻击并造成伤害", "攻击"),
+        event("menu", 3, 4, "画面打开游戏设置菜单", "菜单"),
+    )
+
+    class Ambiguous(SynonymFixture):
+        async def embed(self, request, context):
+            result = await super().embed(request, context)
+            output = [replace(result.output[0], vector=(1.0, 0.0))]
+            for index, item in enumerate(result.output[1:]):
+                value = 0.85 - index * 0.01
+                output.append(replace(item, vector=(value, (1 - value * value) ** 0.5)))
+            return replace(result, output=tuple(output))
+
+    data = timeline(events)
+    english = "Find clips of fighters attacking each other in the arena"
+    found = search(data, english, embedding_provider=Ambiguous())
+    assert any(
+        item.event_id == "strike" and item.evidence_ids and item.observable_facts
+        for item in found.candidates
+    )
+    repair = search(data, "汽车修理工拆卸发动机维修车辆", embedding_provider=Ambiguous())
+    assert repair.candidates == ()
+    assert repair.abstention_reason == "semantic_ambiguity_without_lexical_anchor"
+
+
 def test_ambiguous_high_cosines_abstain_in_hybrid_and_remain_visible_in_baseline():
     class Ambiguous(SynonymFixture):
         async def embed(self, request, context):

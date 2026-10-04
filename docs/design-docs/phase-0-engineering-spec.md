@@ -88,9 +88,9 @@ embedding 唯一键包含 run、subject/provider/model/revision_scope/dimension/
 
 当前 v2 每秒抽帧并用 5 帧/1 帧重叠覆盖全部抽取帧，最后窗口可不足 5 帧；每窗口独立 checkpoint。上传总帧数包含重叠和重试，与独立抽帧数区分；运行前预检最低请求/图片额度，仍保留每 attempt 的硬上限。全覆盖不保证漏检短动作。1 FPS/2 FPS、加密采样与强模型对照仍是后续冻结实验，不将未运行实验写成结果。
 
-当前检索对照 lexical BM25、local E5 cosine 和 hybrid RRF（`bm25-e5-rrf-v2`）。候选按证据/区间去重；模型 eventId 不等于人工独立动作身份，最终仍通过人工映射计分。默认 minSimilarity=0.80、semantic margin=0.02 尚未在真实独立标签集校准。文本 fixture 三组冷运行约1.65–1.87s、热缓存约0.11s，仅证明本地执行；负例改进不保证真实精度。测试集按录制会话隔离，同源 PV/剪辑不得跨开发和测试集。
+当前检索对照 lexical BM25、local E5 cosine 和 hybrid RRF（`bm25-e5-rrf-v3`）。英文攻击类查询在词法侧补上中文机制词，避免与中文事件没有字符重叠时失去词法锚点。候选按证据/区间去重；模型 eventId 不等于人工独立动作身份，最终仍通过人工映射计分。默认 minSimilarity=0.80、semantic margin=0.02 尚未在真实独立标签集校准。文本 fixture 三组冷运行约1.65–1.87s、热缓存约0.11s，仅证明本地执行；负例改进不保证真实精度。测试集按录制会话隔离，同源 PV/剪辑不得跨开发和测试集。
 
-真实 PV 的离线三查询×三模式重复稳定，检索/向量写入和第二进程回读成功；报告位于本机 ignored `artifacts/demo-phase0/demo-validation.json`。中文攻击 hybrid 返回10个未人评候选；英文攻击 query 三模式均零命中；汽车维修负例在 lexical/hybrid 为零，pure semantic 错返10个。这些是实际缺口，不能用文本 fixture 双语 top1 替代真实召回/拒答校准。
+真实 PV 的离线三查询×三模式重复稳定，检索/向量写入和第二进程回读成功；报告位于本机 ignored `artifacts/demo-phase0/demo-validation.json`。2026-10-04 默认 hybrid 对中文攻击查询和英文 `Find clips of fighters attacking each other in the arena` 都返回 28–29、31–32、30–31 秒带证据区间；汽车维修查询 hybrid 为 0 条。pure semantic 对汽车维修负例的误召回仍在。不能用这些观察替代真实召回校准或 U10。
 
 ## 6. 成本、缓存、恢复与取消
 

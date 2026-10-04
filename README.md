@@ -15,7 +15,7 @@ On the prepared workstation, open the existing completed demo without API calls 
 ./scripts/run-demo.ps1 -Run f76f5d6495314c04ae04083614d4afd6 -Query "寻找角色打斗和攻击的片段"
 ```
 
-See the [demo quickstart](./docs/references/demo-quickstart.md) for new footage, explicit resume and result files. Local videos, models and the demo database are ignored and do not arrive with a Git clone.
+See the [user manual](./docs/references/user-manual.md) for setup, analysis, search, resume and the local inspection page (`./scripts/run-ui.ps1`), and the [demo quickstart](./docs/references/demo-quickstart.md) for the shortest replay. Local videos, models and the demo database are ignored and do not arrive with a Git clone.
 
 ## Start here
 
@@ -36,7 +36,7 @@ Inspect commands with `./.venv/Scripts/gamingcreator.exe --help`. `config.exampl
 
 The completed 95.175874-second manga PV demo produced 24 visual windows, 111 events and no transcript segments, with estimated API cost ¥0.06246088 for that run; this is not a confirmed invoice. An attack query returned intervals around 28–29, 31–32 and 30–31 seconds; its first hybrid search took 2574 ms. These are smoke results, not a measured human Top-10 pass or an hour-scale performance claim.
 
-Offline validation repeated three queries in three modes with stable results and a second process's SQLite reads. Real-video quality still has clear gaps: the English attack query returned no candidates in any mode; a car-repair negative query returned none in lexical/hybrid but ten false candidates in pure semantic mode. Chinese attack results remain unjudged. See the local ignored report `artifacts/demo-phase0/demo-validation.json`; independent human labels and real bilingual threshold calibration are the next validation steps.
+Offline validation repeated three queries in three modes with stable results and a second process's SQLite reads. On 2026-10-04 the default hybrid search returned evidence-bearing 28–32 second intervals for both the Chinese attack query and `Find clips of fighters attacking each other in the arena`; the car-repair query returned none in hybrid. Pure semantic still returns false car-repair candidates. Chinese attack results remain unjudged. See the local ignored report `artifacts/demo-phase0/demo-validation.json`; independent human labels and real bilingual threshold calibration are the next validation steps.
 
 The earlier local ASR utility remains available: `. ./scripts/env.ps1`, then `./.venv/Scripts/python.exe -B ./scripts/validate-asr.py --input "GameVideos/2025-08-17 15-26-27.mp4"`. It makes no API calls and saves each result immediately; transcripts remain ungraded. The [Grok handoff review](./docs/exec-plans/review-F003-grok-2026-10-04.md) documents the earlier integration state, not today's feature availability.
 

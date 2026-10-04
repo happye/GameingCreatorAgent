@@ -397,6 +397,17 @@ class SqliteTimelineStore:
     async def load_run(self, run_id: str) -> StoredRun:
         return await self._call(lambda: self._load_run(run_id))
 
+    async def list_runs(self) -> tuple[tuple[str, str], ...]:
+        def load() -> tuple[tuple[str, str], ...]:
+            return tuple(
+                (row["run_id"], row["status"])
+                for row in self._db.execute(
+                    "SELECT run_id, status FROM analysis_runs ORDER BY run_id"
+                )
+            )
+
+        return await self._call(load)
+
     async def persist_search(
         self,
         result: SearchResult,

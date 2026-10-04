@@ -21,7 +21,7 @@ from gamingcreator.domain.models import Embedding, EvidenceReference
 from gamingcreator.domain.time import SourceInstant, SourceRange
 
 RetrievalMode = Literal["lexical", "semantic", "hybrid"]
-RETRIEVAL_VERSION = "bm25-e5-rrf-v2"
+RETRIEVAL_VERSION = "bm25-e5-rrf-v3"
 _STOP_WORDS = frozenset(
     "a an and are at avatar character characters clip find for from game gameplay in is me of on player please show the to video with".split()
 )
@@ -39,6 +39,20 @@ _CHINESE_FILLER = (
     "角色",
     "玩家",
     "游戏",
+)
+# English mechanic words share no characters with Chinese observable facts.
+# Longer words come first so a shorter stem does not also match inside them.
+_CROSS_LINGUAL_TERMS = (
+    ("attacking", "攻击"),
+    ("attacker", "攻击"),
+    ("attacks", "攻击"),
+    ("attack", "攻击"),
+    ("fighters", "战斗"),
+    ("fighter", "战斗"),
+    ("fighting", "战斗"),
+    ("fights", "战斗"),
+    ("fight", "战斗"),
+    ("combat", "战斗"),
 )
 
 
@@ -205,8 +219,19 @@ def _documents(timeline: StoredTimeline) -> tuple[_Document, ...]:
     return tuple(sorted(documents, key=lambda item: (item.source_range.start_us, item.identifier)))
 
 
+def _lexical_query(query: str) -> str:
+    folded = unicodedata.normalize("NFKC", query).casefold()
+    extras: list[str] = []
+    for word, term in _CROSS_LINGUAL_TERMS:
+        if re.search(rf"(?<![a-z0-9]){re.escape(word)}(?![a-z0-9])", folded):
+            extras.append(term)
+    if not extras:
+        return query
+    return query + "\n" + " ".join(dict.fromkeys(extras))
+
+
 def _lexical_scores(documents: tuple[_Document, ...], query: str) -> dict[str, float]:
-    terms = frozenset(_tokens(query))
+    terms = frozenset(_tokens(_lexical_query(query)))
     counters = [Counter(_tokens(item.text)) for item in documents]
     average = sum(map(lambda counter: sum(counter.values()), counters)) / len(documents)
     if not terms or average == 0:

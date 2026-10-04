@@ -379,7 +379,11 @@ class LocalEmbeddingProvider:
                             context.check_cancelled()
                             vectors[index] = vector
                             if self.use_cache:
-                                self._cache(request.texts[index], vector)
+                                try:
+                                    self._cache(request.texts[index], vector)
+                                except OSError:
+                                    # A locked stale cache file must not discard a verified vector.
+                                    pass
                 context.check_cancelled()
                 output_embeddings = tuple(
                     Embedding(

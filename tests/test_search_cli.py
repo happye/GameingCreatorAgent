@@ -9,11 +9,17 @@ from pathlib import Path
 
 from test_sqlite_store import CONFIG, bundle_fixture
 
-from gamingcreator.application.providers import InvocationMetadata, ProviderUsage
+from gamingcreator.application.providers import (
+    InvocationMetadata,
+    ProviderResult,
+    ProviderStatus,
+    ProviderUsage,
+)
 from gamingcreator.application.storage import InvocationStatus
 from gamingcreator.cli.main import execute_benchmark, execute_search
-from gamingcreator.domain.models import TranscriptSegment
+from gamingcreator.domain.models import Embedding, EmbeddingSpace, SemanticEvent, TranscriptSegment
 from gamingcreator.domain.time import SourceRange
+from gamingcreator.infrastructure.local_embeddings import LocalEmbeddingProvider
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 
 
@@ -71,6 +77,105 @@ def test_audio_search_has_nullable_event_and_round_trips_storage(tmp_path):
             assert not (await store.load_completed_timeline("run-1")).events
         finally:
             await store.close()
+
+    asyncio.run(scenario())
+
+
+def test_shipped_hybrid_search_finds_english_attack_and_abstains_on_repair(tmp_path, monkeypatch):
+    fixture_space = EmbeddingSpace(
+        "fixture", "controlled-semantic-fixture", "fixed-test-only", 2, "l2"
+    )
+
+    class Ambiguous:
+        space = fixture_space
+
+        async def embed(self, request, context):
+            output = []
+            for index, text in enumerate(request.texts):
+                value = 1.0 if index == 0 else 0.85 - (index - 1) * 0.01
+                output.append(
+                    Embedding(
+                        f"{request.run_id}:{index}",
+                        fixture_space,
+                        (value, (1 - value * value) ** 0.5),
+                        hashlib.sha256(text.encode()).hexdigest(),
+                    )
+                )
+            return ProviderResult(
+                ProviderStatus.COMPLETED,
+                tuple(output),
+                InvocationMetadata(
+                    "fixture",
+                    "fixture",
+                    "fixture",
+                    "v1",
+                    "test",
+                    "embedding-v1",
+                    1,
+                    ProviderUsage(),
+                ),
+            )
+
+    monkeypatch.setattr(
+        LocalEmbeddingProvider,
+        "from_manifest",
+        staticmethod(lambda repository: Ambiguous()),
+    )
+
+    async def scenario():
+        bundle = bundle_fixture(tmp_path)
+        project = tmp_path / "project"
+        attack = SemanticEvent(
+            "strike",
+            bundle.asset.media_id,
+            "run-1",
+            SourceRange(0, 800_000, bundle.asset.duration_us),
+            ("角色发出攻击并造成伤害",),
+            ("攻击",),
+            (bundle.images[0].evidence_id,),
+            "visual",
+            None,
+        )
+        menu = SemanticEvent(
+            "menu",
+            bundle.asset.media_id,
+            "run-1",
+            SourceRange(100_000, 1_500_000, bundle.asset.duration_us),
+            ("画面打开游戏设置菜单",),
+            ("菜单",),
+            (bundle.images[0].evidence_id,),
+            "visual",
+            None,
+        )
+        store = await SqliteTimelineStore.open(project)
+        try:
+            await store.create_run("run-1", bundle.asset, CONFIG)
+            await store.begin_stage("run-1", "media", bundle.asset.sha256)
+            await store.persist_media_bundle("run-1", bundle)
+            await store.begin_stage("run-1", "vision", bundle.asset.sha256)
+            await store.persist_timeline(
+                "run-1",
+                "vision",
+                (attack, menu),
+                (),
+                hashlib.sha256(b"events").hexdigest(),
+            )
+            await store.complete_run("run-1")
+        finally:
+            await store.close()
+        english = await execute_search(
+            project,
+            "run-1",
+            "Find clips of fighters attacking each other in the arena",
+            tmp_path,
+        )
+        repair = await execute_search(project, "run-1", "汽车修理工拆卸发动机维修车辆", tmp_path)
+        assert any(
+            item["eventId"] == "strike" and item["evidenceIds"] and item["observableFacts"]
+            for item in english["candidates"]
+        )
+        assert repair["candidates"] == []
+        assert repair["abstentionReason"] == "semantic_ambiguity_without_lexical_anchor"
 
     asyncio.run(scenario())
 

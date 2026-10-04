@@ -176,6 +176,18 @@ def test_text_change_reuses_only_matching_vectors(provider, monkeypatch):
     assert calls[1]["texts"] == ["query: 跳跃"]
 
 
+def test_locked_cache_file_does_not_discard_a_computed_vector(provider, monkeypatch):
+    install_fake(monkeypatch, [])
+
+    def locked(self, text, vector):
+        raise PermissionError("cache file is locked")
+
+    monkeypatch.setattr(LocalEmbeddingProvider, "_cache", locked)
+    result = embed(provider)
+    assert result.status == ProviderStatus.COMPLETED
+    assert result.output is not None and result.output[0].vector[0] == 1.0
+
+
 def test_corrupted_cache_is_recomputed(provider, monkeypatch):
     calls = []
     install_fake(monkeypatch, calls)

@@ -1,4 +1,4 @@
-param(
+﻿param(
   [string]$Video,
   [string]$Run,
   [string]$Project = 'artifacts/demo-phase0',
@@ -11,6 +11,8 @@ $ErrorActionPreference = 'Stop'
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 . (Join-Path $PSScriptRoot 'env.ps1')
 $pythonPath = Join-Path $repositoryRoot '.venv/Scripts/python.exe'
+$previousOutputEncoding = [Console]::OutputEncoding
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
 if (-not (Test-Path -LiteralPath $pythonPath)) { throw 'Run scripts/setup-demo.ps1 first.' }
 if (([bool]$Video) -eq ([bool]$Run)) { throw 'Provide either -Video for a new analysis or -Run for an existing completed run.' }
 Push-Location $repositoryRoot
@@ -28,4 +30,7 @@ try {
   Write-Output ("Timeline: " + (Join-Path $Project "runs/$Run/semantic_timeline.json"))
   Write-Output ("Search record: " + $result.retrievalId + '; JSON files are saved under runs/<run>/searches/.')
   Write-Output 'These are model observations and candidate intervals. Human Top-10 quality remains unverified.'
-} finally { Pop-Location }
+} finally {
+  [Console]::OutputEncoding = $previousOutputEncoding
+  Pop-Location
+}

@@ -114,3 +114,38 @@ Point `--basetemp` at `.cache/pytest-tmp-run`. Do not point it back at `.cache/p
 - **Notes**: `addopts` now uses `--basetemp=.cache/pytest-tmp-run`. That directory can be created and deleted by the current user. `./scripts/verify.ps1` then exited 0. `.cache/pytest-tmp` remains locked. Not promoted to AGENTS.md.
 
 ---
+
+## [ERR-20261004-004] embedding_cache_replace_winerror_5
+
+**Logged**: 2026-10-04T12:50:00+08:00
+**Priority**: high
+**Status**: resolved
+**Area**: infra
+
+### Summary
+Hybrid demo search failed with `embedding.response_invalid` because replacing a stale `.cache/embeddings/*.json` raised WinError 5.
+
+### Error
+```
+PermissionError: [WinError 5] 拒绝访问。
+.cache/embeddings/write-*/vector.json -> .cache/embeddings/<hash>.json
+```
+
+### Context
+- The computed vector was valid. The failure happened only while writing the cache.
+- Same permission family as ERR-20261004-001. The current user cannot delete the locked file.
+
+### Suggested Fix
+Ignore `OSError` from the cache write and return the verified vector. Do not delete the locked file with takeown.
+
+### Metadata
+- Reproducible: yes
+- Related Files: src/gamingcreator/infrastructure/local_embeddings.py
+- See Also: ERR-20261004-001
+
+### Resolution
+- **Resolved**: 2026-10-04T13:05:00+08:00
+- **Commit/PR**: uncommitted
+- **Notes**: `embed` now keeps the vector when the cache file cannot be replaced. The demo search then completed. Not promoted to AGENTS.md.
+
+---
