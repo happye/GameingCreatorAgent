@@ -100,10 +100,10 @@ video { width: 100%; height: 100%; object-fit: contain; }
 .tab span { font-size: 10px; margin-left: 5px; opacity: .65; }
 .tab.active { color: var(--accent); box-shadow: inset 0 -2px var(--accent); }
 .evidence-panel, .transcript-panel { padding: 15px 0 18px; min-height: 130px; }
-.evidence-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.evidence-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 10px; }
 .evidence-card { border: 1px solid var(--line); background: #161e22; border-radius: 7px; overflow: hidden; color: #d7e1e5; text-align: left; }
 button.evidence-card { padding: 0; }
-.evidence-card img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #11191d; }
+.evidence-card img { display: block; width: 100%; height: 100px; object-fit: cover; background: #11191d; }
 .evidence-caption { display: block; padding: 7px 9px; font-size: 10px; }
 .evidence-card.audio-card { padding: 10px; grid-column: 1 / -1; }
 .audio-card audio { width: 100%; margin-top: 7px; }

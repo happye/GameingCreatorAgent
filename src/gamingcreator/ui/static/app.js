@@ -326,6 +326,10 @@
         ui["video-empty"].hidden = false;
         ui["video-empty"].querySelector("h3").textContent = "从左侧打开分析结果";
         ui["video-empty"].querySelector("p").textContent = "点选事件或检索候选，回看原视频中的对应区间。";
+        ui["source-name"].textContent = "选择一份分析结果";
+        ui["source-duration"].textContent = "源视频保留在本机";
+        ui["run-state"].className = "run-state muted";
+        ui["run-state"].textContent = "尚未选择运行";
         for (const id of ["event-count", "transcript-count", "stage-summary"]) ui[id].textContent = "—";
         for (const id of ["candidate-count", "timeline-count", "evidence-count", "transcript-tab-count"]) ui[id].textContent = "0";
         ui["cost-known"].textContent = "未读取";
@@ -489,7 +493,11 @@
             if (error.name === "AbortError" || state.revision !== revision || state.inspectController !== controller) return;
             notice(error.message);
             if (query) {
-                if (state.view) state.view = { ...state.view, candidates: [], query, mode: ui.mode.value };
+                if (state.view) state.view = { ...state.view, candidates: [] };
+                state.active = null;
+                state.playbackEndUs = null;
+                updateActive();
+                renderEvidence();
                 empty(ui["candidate-list"], "检索失败，请查看提示后重试。");
                 ui["candidate-count"].textContent = "0";
                 ui["search-context"].textContent = `查询未完成：${query}`;
