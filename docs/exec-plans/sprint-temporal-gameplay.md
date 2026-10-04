@@ -1,55 +1,51 @@
 # F006 玩法时序理解修正
 
-## Codex恢复复核与v4进行中
+日期：2026-10-04；owner：Codex root，分支codex/temporal-gameplay。用户否决截图式描述的打Boss、跳跃、射击检索；这是定性失败，不虚构为独立固定十槽U10。F006/F009仍false。
 
-最新完整交付基线：Atom run96b5f01530ce43e2944828fb0520b9b4已Completed（54.743220s、16窗口/40事件/0转录），API估价¥0.05029788、unknown0。完整verify668 passed/1权限skip（65.98s）、Ruff79/mypy48/CLI/匹配离线wheel通过；新Atom Chromium默认run/试验标签/播放至12.500001暂停/证据/选片排序与导出/桌面同屏与深滚动检查通过。启动器df475ef→0cc2c2f集成、5真实生命周期通过，root8765实际ready。
+## 问题与工程修正
 
-检索诊断：跳跃hybrid3，但49–49.5s“无明确攻击、跳跃或交互动作”不应成为跳跃候选；Boss/射击/汽车维修hybrid0、移动10，pure semantic都10。已分retrieval_negation独占worktree修该否定锚点，禁止降阈值或改事件凑数量；当前浏览器3条检查是修复前界面合同，不能复用为质量通过。F006/F009仍false。
+旧v2一次请求已有5帧，但允许单帧事实/单帧事件，不能证明动作理解。保持旧prompt/config/run不可变，不靠降低检索阈值补理解缺失。
 
-最新实测：artifacts/temporal-v4-execute-0的0–4秒对照已completed，qualityGate=null。v2/A返回5个画面事件；v4/B密9帧返回2个变化过程，v4/C同5帧也返回2个过程；静帧0事件，倒序在发送前拒绝。4次已发送调用、28输入图，已知估价¥0.0093252、unknown=0、reserved=0，billingConfirmed=false。主要为建筑/竞技场转场和光效，不能据此证明打Boss、跳跃或射击检索。下一步实际动作窗口及新完整run；启动器正常4项真实生命周期已通过，失败清理补测中。
+v3先要求主体→动作变化→可见结果、不同时间/不同图像证据、未知动作保守处理。Grok已集成并记录有限真实试验，root保留其全量未提交改动为4c37a63；只读复核确认报告与费用一致。旧v3漫画0–4s的B因evidence_outside_range被拒绝，原响应未保存，具体坏端点未知，不编造根因。
 
-动作实测：漫画28–32秒A/B/C输出通过，B描述持续伤害和少量位移，但static-B返回不支持的动作，被event_static_evidence拒绝，0接受事件；4次调用估价¥0.00974288。Atom8–12秒B输出3个过程，其中jump与“无法确认主动跳跃”矛盾；C边界证据被拒绝、static-B也被拒绝；4次调用估价¥0.01037184。两个报告completed_with_failures，不把管线阻止假动作误称模型控制通过。真实模型仍不稳定；所有质量门槛null、费用仅估计。
+独立v4合同（d026103→42604f9，root联动b2daf1b）：模型用startFrameId/endFrameId与f0..f8引用，程序生成[firstUs,lastUs+1)；端点必须出现在有序证据内，至少两个不同时间和图像hash，最多3事件，静帧/单帧/乱序/未知/倒序边界拒绝。错误只有有限schemaError与整数/别名schemaDetail，不保存原响应。v1/v2/v3原prompt/hash保留，v4绑定temporal-actions-v1。
 
-新完整Atom分析96b5f01530ce43e2944828fb0520b9b4已在artifacts/demo-phase0开始（16窗口、v4、预算¥5）；当前执行中，最终结果未知。先读run状态和时间线再续跑，旧run保持不变。
+config.temporal.example.json显式使用v4（hash9ea350e10eb028f1f5e2dc7d355ebd1d080ad8ae8397eb709705a25773323f48），500ms/9帧/重叠2，仍约4秒跨度。config/SQLite白名单、独立pipeline、逐窗口checkpoint和恢复已接入，不改DB schema。默认config.example.json仍v2，run-demo通过-Config选择新版本。不能跨切镜或跨窗口无条件拼故事。
 
-provider d026103已集成为42604f9；最新配置真实hash为9ea350e10eb028f1f5e2dc7d355ebd1d080ad8ae8397eb709705a25773323f48。联合相关测试217 passed/1权限skip（5.48s）、Ruff/mypy48通过，旧v3 hash未变。即将运行同0–4秒的有界v4试验，输出全新artifacts/temporal-v4-execute-0，费用/新结果尚未知，F006/F009未验收。工具收据检查发现28个stdlib pyc漂移，仅从固定SHA归档恢复这些文件，receipt/程序/DLL未改，完整init随后通过。
+## 真实对照与费用
 
-已将Grok集成全量保存4c37a63。费用/失败/冻结manifest与交接一致；v3只记录evidence_outside_range，缺原响应与坏区间，不能确定具体端点错误。新增v4设计用起止frame alias替代模型微秒算术，程序映射为SourceRange，旧v3保持不变；有限白名单结构诊断可定位新失败，不记录原模型文本。root已支持新配置/store/analysis/pilot（附同帧C对照），新增本地health识别给一键启动器；定向配置/pilot/HTTP已通过。本轮尚未执行新收费调用或宣称动作检索改善。
+所有报告qualityGate=null、unknown0、非账单；输出目录均在ignored artifacts/，源视频留本地。仅选定图片送API，预发送账本保守预留1M输入/4096输出；默认试验预算¥5、请求上限不提升。
 
-temporal_frame_contract/workspace_launcher在独立worktree实现各自独占文件。新完整verify和浏览器/真实API待集成后完成。根目录一键启动需求已分配，不再让用户仅手动起服务/复制URL。F006/F009仍false。
+| 目录/案例 | 结果 | 已知API估价 |
+| --- | --- | --- |
+| temporal-gameplay-dry-1/2 | 旧v3两次冻结，无HTTP | 不计费 |
+| temporal-gameplay-execute-1（Grok） | v2/A5事件，v3/B范围拒绝，static空，倒序本地拒绝；3次HTTP/23图 | ¥0.0075876 |
+| temporal-v4-execute-0 | 0–4s A/v2稀5、B/v4密9、C/v4同5帧分别5/2/2事件，static空、倒序本地拒绝 | ¥0.0093252 |
+| temporal-v4-execute-28 | 漫画28–32s A/B/C通过，B描述持续伤害/轻微位移；static幻觉被event_static_evidence拒绝 | ¥0.00974288 |
+| temporal-v4-atom-8 | Atom8–12s B3个过程，jump与主动跳跃不确定性矛盾；C端点证据失败，static幻觉被拒绝 | ¥0.01037184 |
 
-日期：2026-10-04；owner：Codex root。用户明确否决当前截图式描述的玩法检索效果：打Boss、跳跃玩法、射击玩法均找不到。此为真实用户定性未通过反馈，不虚构为已录入独立固定十槽U10。
+三个v4对照各4次HTTP/28图；合计¥0.02943992。A/B同时改变合同和密度，C控制同帧减少混淆。校验器拒绝假动作不是模型静帧控制通过；0–4s主要转场也不能证明玩法准确。
 
-## 根因与范围
+## 工作台可用新run
 
-v2每请求已有5张按sourceUs排列的图，1FPS/1帧重叠；不是每帧独立API。但提示允许单帧事实与[T,T+1)事件，校验只验证引用/时间/JSON，没有要求多帧动作依据。事件索引因此可能是“有什么”而非“正在做什么”。检索改词/降阈值不能产生缺失的动作理解。
+Atom实机PV54.743220s，SHA172e1139b477352db5e5fe2f3be3afb5171935c2edd8a2d0278a434212fd00fd。新run96b5f01530ce43e2944828fb0520b9b4在artifacts/demo-phase0完整Completed：16窗口/40事件/0转录，估价¥0.05029788。本轮3个v4对照加完整run¥0.0797378，不包含旧Grok试验。旧漫画111事件run f76f...不重写。
 
-本轮优先修正分析：新增独立版本的连续动作prompt、9帧有序窗口与密采样试验，要求变化过程、多时间证据与保守机制判断。枪/巨型敌人/空中姿态不能单独证明射击/Boss战/跳跃。旧run与prompt保持不可变，新配置创建新run。保留Provider调用前账本、预算、取消、成本未知与已有预览/选片合同。
+UI增加analysisKind身份，初次优先Completed temporal并标“连续动作（试验）”，旧run标“画面观察”。Start-Workspace.cmd（df475ef→0cc2c2f）默认隐藏启动本地Python -B并打开浏览器；health仓库/pid/parentPid判定就绪和复用，异仓库/旧端口不停止，15秒失败仅清理本次助手，日志/PID留.cache/workspace。正常启动不调用模型。运行方式/限制与共享指南已同步。
 
-## 可验证目标
+## 检查与未通过项
 
-- 新prompt按整段序列描述主体→动作变化→可观察结果，避免逐图清单；不足证据允许空事件。
-- 动作事件至少引用两个不同源时间的有效证据；同图复制、倒序/重复时间、未见时间范围、单帧机制断言须拒绝。
-- 正式API支持多图不等于有可靠时序理解；先小范围原PV新旧对照，记录全尝试用量、费用、输出、错误与边界。
-- 冻结同时间覆盖的v2稀疏5帧、v3稀疏/密采样9帧对照；开发诊断不代替独立F006。
-- 不无条件跨窗拼接动作，不跨镜头伪造故事；独立动作分段/候选精分析根据实测再展开。
+集成合同定向217 passed/1权限skip；否定修正前完整verify668 passed/1权限skip（65.98s）。最终5f15bab集成后完整verify **744 passed/1 Windows symlink权限skip（75.43s）**，Ruff80/mypy48/CLI/两次匹配离线wheel通过，SHA9f7160995598854ce863d91c1290931ee26552ff048b3462f45d8048d2aca166。启动器5项真实CMD/PowerShell生命周期通过，root实际8765 ready。工具收据曾仅有28stdlib pyc漂移，已从固定SHA项目归档恢复，receipt/程序/DLL未变，完整init通过。
 
-## 任务归属与恢复
+真实Chromium报告temporal-workspace-atom-v4通过新run默认/标签、rank1播放至12.500001暂停、图片证据、乱序选片后的篮子/存储/JSON/CSV源时间排序、两桌面同屏/深滚动保持、390px无横溢出、汽车维修hybrid0和无JS错。只是界面合同，不是玩法质量。
 
-root在codex/temporal-gameplay拥有配置读取/analysis窗口、实验脚本、共享规格/验收/HANDOFF。视觉provider worker须独立worktree，仅拥有deepseek_vision.py、新temporal测试及自己的sprint。只读audit/acceptance核对链路/官方限制/验收，不写root。
+初始检索诊断temporal-retrieval-atom-v4：jump hybrid3，其中49–49.5s明确说无跳跃。retrieval_negation b1e33a5→5f15bab修正为bm25-e5-rrf-v4：在排名时排除仅明确否认查询动作的事件，肯定/不确定描述和普通查询保留，否定意图查询只绕过规则保持兼容；原事实/embedding文本/hash/阈值不变。不是通用语义理解，worker167项行为/持久化/CLI通过。
 
-实际分工：temporal_vision在.worktrees/temporal-vision实现provider；temporal_pilot在.worktrees/temporal-pilot拥有validate-temporal-gameplay.py/其测试/own sprint。root另拥有sqlite_store.py的配置白名单兼容（不改schema/旧快照）及test_temporal_analysis.py。初次定向测试暴露了存储白名单仍限5帧与fixture缺prompt hash，已定位补齐；pytest缓存改用独立目录，不处理其他用户锁定缓存。
+修正后temporal-retrieval-atom-v4-negation五查询/三模式：jump lexical/hybrid2（11.5–12.5s、0–2s），49s否定事件排除；Boss/射击/汽车维修hybrid0、移动10，pure semantic各10。temporal-workspace-atom-v4-negation真实Chromium复测通过，使用3条移动候选验证同样界面合同，导出版本v4。生产8765 health匹配本仓库状态后重启到PID36692，HTTP jump2且版本v4；不将原jump3浏览器报告冒称修正后质量证据。
 
-root配置/存储/窗口定向39项通过（独立pytest tmp/cache，warnings=error），mypy48源文件通过。新增pipeline身份phase0-analyze-temporal-v1，v3允许2–9帧，v1/v2仍5帧，旧schema/快照未重写；run-demo支持显式-Config。provider/实验worker尚未集成，无新API调用，F009false。
+## 接手与后续
 
-起点317b22d：F008工作台技术验收已通过，F006仍false。进程DeepSeek key配置存在，仅检查布尔值；不读取到日志/文件，不复制聊天密钥。全依赖/工具继续项目隔离。集成前的实现、实验与最终检查当时尚未完成。集成后的实测见下一节，仍不能宣称玩法问题已解决。
+全部worker与旧worktree已冻结，不覆盖root；root独占集成/共享记录。完整verify、实际五查询/三模式、浏览器和健康匹配服务重启已完成。后续新任务先分配独占范围；篮子fixture不要求跳跃固定返回3条。每个节点同步HANDOFF/progress/assignments与Git，不等额度提醒。
 
-## 2026-10-04 root 集成与一次有界对照
+10月5日收尾补查：完整init再次通过固定工具/运行库/media收据；默认Start-Workspace.cmd（未带-NoBrowser）实际退出0、复用新版PID36692并调用默认浏览器，工作台已可直接重测。发布目标为正常fast-forward的main与任务分支，先fetch确认origin/main仍317b22d且为祖先，禁止强推或覆盖其他Agent提交。
 
-root 接入 vision provider（对外 `max_images` 9，v1/v2 仍拒绝超过 5 张，旧 hash 不变）和 pilot。`config.temporal.example.json` 的 `promptHash` 是 `27762b0b9d390c64d53ec4be815bd6e8ead4d249ec9864bb87735223b3ad1c4d`。`config.example.json` 未改。时序定向 151 passed。`./scripts/verify.ps1` 退出 0：618 passed、1 skipped（34.28s），Ruff 76 文件，mypy 48 源文件，wheel `b37b039a4c8688d9320b0bd8a29521306d57a970c26900660f951e679938f52f`。F006 与 F009 仍 false。
-
-同一 PV（sha256 `e4ad1f974910639b7914fec1b668e6cbea3d331721b08b56268ee548f8b7619a`）两次无 `--execute` 冻结在 `artifacts/temporal-gameplay-dry-1` 与 `artifacts/temporal-gameplay-dry-2`：2 FPS，0–4 秒，A 为 v2 的 5 帧，B 为 v3 的 9 帧，加静帧和倒序；`qualityGate` null，无 HTTP。`--execute` 一次，目录 `artifacts/temporal-gameplay-execute-1`，退出码 4，`completed_with_failures`。v2 返回 5 条事件；v3 被 `evidence_outside_range` 拒绝并记录估价 ¥0.003524；静帧返回空事件，没有确认连续动作；倒序在发送前被本地拒绝，费用未知。已知估价合计 ¥0.0075876，未对账单。这不是玩法检索通过。
-
-磁盘复核：`config.temporal.example.json` 的 promptHash 等于 `vision_prompt_fingerprint("phase0-vision-v3")`；`git diff -- config.example.json` 为空。两次 dry-run 报告都是 `frozen`、executed false、qualityGate null。execute-1 报告是 `completed_with_failures`、executed true、qualityGate null。provider 与 pilot 文件在 root 工作区。
-
-下一条工作：查看 `artifacts/temporal-gameplay-execute-1` 里 window-0-B 的 `evidence_outside_range` 拒绝，收紧 v3 提示让被引用帧落在半开区间内，先用离线视觉测试证明，再对同一个四秒窗口重跑一次有界 `--execute`。不要全量重分析 PV，不要把 F006 或 F009 标成通过，不要宣称打Boss、跳跃或射击已经修好。
+明确否定修正是有限语言规则，不能代替模型动作质量；下一步验证切镜/跨窗口/下落与跳跃区别、长动作和更合适视觉模型，冻结独立10–20会话人评后执行F006。正式桌面、渲染/发布/商业阶段不能由此次开发对照提前验收。工具/包/缓存保持项目隔离，密钥只在现有进程环境，素材/账本/DB不进Git。

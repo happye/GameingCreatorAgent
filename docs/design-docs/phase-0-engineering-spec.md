@@ -1,4 +1,4 @@
-# Phase 0 工程规格 v4
+# Phase 0 工程规格 v5
 
 状态：2026-10-04 实施合同。CLI 已接媒体、本地 ASR、视觉窗口/账本、显式续跑、词法/本地语义检索和人工标签评测入口；F003/F005 技术合同已验收，F006独立人工质量gate未通过。CLI证据见sprint-demo；本地工作台及最新完整验证见 [sprint-inspection-workspace](../exec-plans/sprint-inspection-workspace.md)。来源：原总方案 §58–59、69–71；语言见 [ADR-001](./adr-001-phase-0-language.md)，审查见 [reverse-review](../exec-plans/reverse-review-2026-10-03.md)。当前运行入口见 [Demo](../references/demo-quickstart.md)。
 
@@ -92,7 +92,7 @@ embedding 唯一键包含 run、subject/provider/model/revision_scope/dimension/
 
 旧v2每秒抽帧并用5帧/1帧重叠覆盖全部抽取帧；v4试验用2FPS、9帧/2帧重叠，均约4秒时间跨度，最后窗口可不足上限。每窗口独立checkpoint，上传总帧数含重叠/重试，运行前预检最低额度并保留每attempt硬上限。全覆盖不保证捕获短动作，不能无条件跨窗/跨镜头拼故事。有限1FPS/2FPS真实对照已记录，但独立精度/长动作/强模型对照仍待验证。
 
-当前检索对照 lexical BM25、local E5 cosine 和 hybrid RRF（`bm25-e5-rrf-v3`）。英文攻击类查询在词法侧补上中文机制词，避免与中文事件没有字符重叠时失去词法锚点。候选按证据/区间去重；模型 eventId 不等于人工独立动作身份，最终仍通过人工映射计分。默认 minSimilarity=0.80、semantic margin=0.02 尚未在真实独立标签集校准。文本 fixture 三组冷运行约1.65–1.87s、热缓存约0.11s，仅证明本地执行；负例改进不保证真实精度。测试集按录制会话隔离，同源 PV/剪辑不得跨开发和测试集。
+当前检索对照lexical BM25、local E5 cosine和hybrid RRF（`bm25-e5-rrf-v4`）。英文攻击类查询在词法侧补中文机制词；v4对已识别动作的正向查询排除仅明确否认该动作的事件，保留肯定/不确定描述及普通查询。否定意图查询绕过该有限规则，仅保持兼容；不是通用语言理解。原事实、embedding文本/hash、旧搜索记录不变，阈值仍0.80/0.02、未经独立校准。候选按证据/区间去重，模型eventId不等于人工独立动作。文本fixture冷约1.65–1.87s/热约0.11s不证明真实精度；测试集按会话隔离，同源PV/剪辑不得跨开发与测试集。
 
 真实 PV 的离线三查询×三模式重复稳定，检索/向量写入和第二进程回读成功；报告位于本机 ignored `artifacts/demo-phase0/demo-validation.json`。2026-10-04 默认 hybrid 对中文攻击查询和英文 `Find clips of fighters attacking each other in the arena` 都返回 28–29、31–32、30–31 秒带证据区间；汽车维修查询 hybrid 为 0 条。pure semantic 对汽车维修负例的误召回仍在。不能用这些观察替代真实召回校准或 U10。
 

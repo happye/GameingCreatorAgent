@@ -4,21 +4,21 @@
 
 ## 当前交付
 
-最新完整新Atom run96b5f01530ce43e2944828fb0520b9b4已Completed，16窗口/40事件；verify668 passed/1权限skip，真实浏览器与启动器通过。jump3中的否定误召回由独立worker修正，当前质量F006/F009仍false。只读Grok复核与v4合同审查完成，无文件改动。
+最新Atom run96b5f01530ce43e2944828fb0520b9b4已Completed，16窗口/40事件；最新verify744 passed/1权限skip，启动器与修正后真实浏览器通过。否定误召回已修，jump hybrid2，仍待人工判断；F006/F009仍false。只读Grok复核与v4合同审查完成，无文件改动。
 
 | 当前 owner | Branch/worktree | 独占范围 | 状态 |
 | --- | --- | --- | --- |
 | root / F009 | codex/temporal-gameplay，root | 集成、config/store/analysis/pilot、UI/API、共享文档 | 新run/3个有界对照/启动器已验证，质量未通过 |
 | temporal_frame_contract | codex/temporal-frame-contract，.worktrees/temporal-frame-contract | deepseek_vision.py、test_temporal_frame_contract、own sprint | d026103→42604f9；冻结 |
 | workspace_launcher | codex/workspace-launcher，.worktrees/workspace-launcher | Start-Workspace.cmd、start-workspace.ps1、test_workspace_launcher、own sprint | df475ef→0cc2c2f；冻结 |
-| retrieval_negation | codex/retrieval-negation，.worktrees/retrieval-negation | application/retrieval.py、test_retrieval_negation.py、own sprint | 活动，修明确否定动作误召回；不改源事件/阈值 |
+| retrieval_negation | codex/retrieval-negation，.worktrees/retrieval-negation | application/retrieval.py、test_retrieval_negation.py、own sprint | b1e33a5→5f15bab；冻结；原事件/embedding/阈值不变 |
 | temporal_vision | codex/temporal-vision，.worktrees/temporal-vision | 已交出 deepseek_vision.py、test_temporal_vision.py | 冻结在 bdf3861 加格式化差额；不要回写 root |
 | temporal_pilot | codex/temporal-pilot，.worktrees/temporal-pilot | 已交出 validate-temporal-gameplay.py、test_temporal_pilot.py | 冻结在 ca45f1d；不要回写 root |
 | temporal_audit / temporal_acceptance | 只读root | 根因、官方模型/价目、验收设计 | done，无文件改动 |
 
 当前config.temporal.example.json的promptHash与v4一致：9ea350e10eb028f1f5e2dc7d355ebd1d080ad8ae8397eb709705a25773323f48。旧v3实验/配置hash记录是历史证据，不用于新run。
 
-下一条工作：集成明确否定召回修正，重检5查询/3模式、界面和完整verify，保存文档/Git检查点；不把模型有效JSON、candidate数量或浏览器检查当玩法通过。长动作/切镜/强模型对照与独立U10仍待继续。
+下一条工作：用户回看新试验；冻结真实动作/切镜/长窗口/强模型对照，继续TD004/TD007与独立U10。当前worker全部冻结，新任务重新分配；不把有效JSON、candidate数量或浏览器检查当玩法通过。
 
 下面F007/F008为已交付历史，不是本轮占用；恢复见sprint-temporal-gameplay。F006用户定性验收未通过，正式U10未运行；F009false。
 
