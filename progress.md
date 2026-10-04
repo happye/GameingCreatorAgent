@@ -63,3 +63,5 @@ SQLite 专用线程、进程锁、九表迁移/组合 FK、媒体/语义 checkpo
 ## 2026-10-04 Grok交接后Codex复核
 
 已核对Grok整合的Vision/budget/analyze与有限续跑、129段ASR及真实取消/超时报告。修正默认安装缺HTTPX及verify复用不可访问pytest目录；仅从固定归档恢复24个stdib pyc，收据/程序/DLL不变。最新完整verify：332 passed/0skip（20.06s）、Ruff/mypy/CLI与重复离线wheel通过，SHA `91f5aa449372679014232e5c0a4319bae000b97e19af31eb742f6c984d4433b8`。复核记录和README给出技术Demo命令；analyze仍缺视觉费用快照，search未实现，无GUI/完整产品Demo。已写具体后续工程缺口，F003/F005/F006false，未发付费请求；保存本地检查点以便直接接力。
+
+版本持久化：检查点 `377bb68` 已推送 `origin/codex/F003-models`，本地与远端main同步 `ca0394e`。正常HTTP/1.1推送成功，未强推/修改全局网络配置。后续模型开发从F003分支接续，main仍是已验收F004基线。

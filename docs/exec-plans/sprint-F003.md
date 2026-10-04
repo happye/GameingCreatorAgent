@@ -4,6 +4,8 @@
 
 最新：用户要求 Codex 复核 Grok交接；复核记录 `review-F003-grok-2026-10-04.md` 优先于历史下一步。补齐HTTPX正式依赖及独立pytest目录，恢复24个pyc漂移后完整verify通过：332 passed/0skip（20.06s）、Ruff/mypy与两次同hashwheel。没有GUI/检索产品Demo，CLI视觉仍因费用快照缺失停止，F003false。工作已准备为本地可恢复检查点，不等额度耗尽才记录。
 
+检查点 `377bb68` 已成功推送 `origin/codex/F003-models`；`main`/`origin/main` 已同步 `ca0394e`。下方先前网络失败是历史结果，当前无需重做实现；接续模型任务使用F003分支。
+
 已落地、不要重做：项目内 ASR wheels 与 tiny 模型、`av==16.1.0`、四段运行时、129/129 uncertainty 回读、readiness 后的真实取消/超时，以及 root 上的视觉 schema、逐 attempt 用量、未知费用、预算、重试和可替换 Provider。本地 ASR 仍区分 `no_audio` / `no_speech` / failure。WAV 时间只经 F002 piecewise mapping 回到源时钟一次。未知费用保持未知。候选来源见 `docs/references/asr-readiness.md`。
 
 `gamingcreator analyze` 已接到媒体预处理、本地 ASR 和 root 的 `DeepSeekVisionProvider` / `BudgetLedger`。没有请求费用上界时返回 `budget.estimate_missing`，不发付费请求。已完成 run 可以 resume 重读。未完成且各阶段均已完成的 run 从 checkpoint 续跑，不重做已完成的 media/asr；进行中的阶段返回 `storage.run_incomplete`。失败、取消或中断不自动重放。`search` / `benchmark` 仍是 `feature.not_implemented`。中英参考未人工确认，三支 PV 为 `no_speech`，U10 未测。F005/F006 和正式 UI 未开始。

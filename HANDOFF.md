@@ -8,12 +8,12 @@
 
 只有命令行技术Demo（媒体/ASR/SQLite），没有GUI或自然语言检索完整Demo。实际analyze因CLI尚无费用快照以 `budget.estimate_missing` 停止；search未实现。F003/F005/F006仍false。本次无付费请求。
 
-下一步按复核记录补价目/费用预留配置、全时轴滑窗、显式中断恢复与预算账本恢复、ASR开始前调用登记，确认中英参考后推进F005/F006。Grok已完成接续交接；旧worker worktrees保持冻结，本轮Codex复核完成，待下一owner接续。当前源码及复核文档将保存本地检查点；具体SHA以 `git log -1` 为准。
+下一步按复核记录补价目/费用预留配置、全时轴滑窗、显式中断恢复与预算账本恢复、ASR开始前调用登记，确认中英参考后推进F005/F006。Grok已完成接续交接；旧worker worktrees保持冻结，本轮Codex复核完成，待下一owner接续。源码及复核检查点 `377bb68` 已推送 `origin/codex/F003-models`；`main`/`origin/main` 已同步 `ca0394e`。接手当前模型进度须用F003分支，不要只拉main。
 
 ## 当前状态
 
 - 版本库：`https://github.com/happye/GameingCreatorAgent`；远端 `origin`，主分支 `main`。提交及未提交变更以 `git log -1 --oneline`、`git status --short` 为准。
-- F001 `754125f` 已推送远端 `main`；F002 `45d3e42`、F004 `ca0394e` 已整合本地 main，再次推送443超时，GitHub仍待补。当前 root 在 `codex/F003-models`；ASR独立worker归属见 assignments。HTTPS 不稳时使用单次 HTTP/1.1，不改全局配置、不强推。
+- F001/F002/F004 已推送远端 `main`，最新 `ca0394e`；当前 root 在 `codex/F003-models`，检查点 `377bb68` 已推送同名远端分支。早先443超时已恢复，未改全局配置或强推。归属及交接状态见 assignments。
 - F000 六方向反向审查、架构与工程合同、任务依赖已验收；入口为 `docs/exec-plans/sprint-F000.md`。原产品总方案未改动。
 - F001/F002/F004 已验收：隔离工具、CLI/Provider、媒体及 SQLite service；147 个测试（0skip/资源警告失败）、Ruff/mypy 与重复离线构建通过。证据 sprint-F001/F002/F004。`search` / `benchmark` 仍返回 `feature.not_implemented`。`analyze` 已接到媒体预处理、本地 ASR 和 root 的 `DeepSeekVisionProvider` / `BudgetLedger`。未完成且各阶段均已完成的 run 从 checkpoint 续跑，不重做已完成的 media/asr；进行中的阶段返回 `storage.run_incomplete`。没有请求费用上界时以 `budget.estimate_missing` 停止，不发付费请求。检索流水线仍未做。
 - F003/F005/F006 未验收，完整人工 Top10 gate 未测量。F003 的 ASR 运行时、root 视觉切片、analyze 接线和未完成 run 续跑已有证据，`passes` 仍是 false。具体归属看 assignments。
