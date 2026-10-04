@@ -58,7 +58,25 @@
     }
 
     function facts(row) {
-        return Array.isArray(row.observableFacts) ? row.observableFacts.filter((text) => typeof text === "string") : [];
+        const texts = Array.isArray(row.displayFacts) ? row.displayFacts : row.observableFacts;
+        return Array.isArray(texts) ? texts.filter((text) => typeof text === "string").map(cleanObservationText) : [];
+    }
+
+    function cleanObservationText(text) {
+        // Legacy aliases refer to model windows. Their source times cannot be
+        // recovered from the smaller evidence subset belonging to an event.
+        return text.replace(/(?<![A-Za-z0-9_:/.-])f[0-8](?:\s*(?:[-–—→~～至到、，,/与和])\s*f[0-8])*(?!(?:[A-Za-z0-9_:/]|[.-][A-Za-z0-9_]))/g,
+            (aliases) => (aliases.match(/f[0-8]/g).length > 1 ? "对应画面序列" : "对应画面"));
+    }
+
+    function uncertaintyOf(row) {
+        return typeof row?.uncertainty === "string" && row.uncertainty.trim()
+            ? cleanObservationText(row.uncertainty) : "";
+    }
+
+    function appendUncertainty(container, row) {
+        const uncertainty = uncertaintyOf(row);
+        if (uncertainty) container.append(element("p", "warning small", `待核对 · ${uncertainty}`));
     }
 
     function validInterval(row, durationUs = state.view?.media?.durationUs) {
@@ -174,7 +192,9 @@
         if (entry.clip.eventId) {
             const current = state.view.timeline.find((row) => row.eventId === entry.clip.eventId);
             if (current && clipMatches(entry.clip, current)) {
-                return { clip: entry.kind === "event" ? current : entry.clip, against: "timeline" };
+                return { clip: entry.kind === "event" ? current : {
+                    ...entry.clip, displayFacts: current.displayFacts, uncertainty: current.uncertainty,
+                }, against: "timeline" };
             }
         }
         return null;
@@ -230,7 +250,8 @@
             preview.type = "button";
             preview.disabled = !validated;
             preview.addEventListener("click", () => previewClip(entry.kind, validated.clip));
-            copy.append(preview, element("p", "", validated ? facts(entry.clip).join("；") : "待重新核对：此区间尚未在当前结果中匹配"));
+            copy.append(preview, element("p", "", validated ? facts(validated.clip).join("；") : "待重新核对：此区间尚未在当前结果中匹配"));
+            if (validated) appendUncertainty(copy, validated.clip);
             const remove = element("button", "remove-selection", "×");
             remove.type = "button";
             remove.setAttribute("aria-label", `移除 ${intervalLabel(entry.clip)}`);
@@ -260,12 +281,16 @@
             if (!validated) throw new Error("片段篮中有尚未匹配当前结果的区间，请核对后再下载。");
             return {
                 ...JSON.parse(JSON.stringify(validated.clip)),
+                observableFacts: facts(validated.clip),
+                displayFacts: facts(validated.clip),
+                uncertainty: uncertaintyOf(validated.clip) || null,
                 selectionOrigin: { kind: entry.kind, ...entry.source },
                 validatedAgainst: validated.against,
             };
         });
         return {
             schemaVersion: 1, project: state.project, runId: state.run, mediaId: state.view.media.id,
+            factsProjectionVersion: state.view.factsProjectionVersion ?? "legacy-frame-alias-neutral-v1",
             mediaSha256: state.view.media.sha256 ?? null, configHash: state.view.configHash ?? null,
             retrievalVersion: state.view.retrievalVersion, query: state.view.query,
             mode: state.view.mode, selectedClips,
@@ -279,14 +304,14 @@
     }
 
     function exportCsv(doc) {
-        const headers = ["project", "runId", "mediaId", "selectionKind", "candidateId", "eventId", "startUs", "endUs", "startTimecode", "endTimecode", "rank", "score", "scoreKind", "evidenceIds", "observableFacts", "mechanicTags", "retrievalVersion", "query", "mode", "validatedAgainst"];
+        const headers = ["project", "runId", "mediaId", "selectionKind", "candidateId", "eventId", "startUs", "endUs", "startTimecode", "endTimecode", "rank", "score", "scoreKind", "evidenceIds", "observableFacts", "mechanicTags", "retrievalVersion", "query", "mode", "validatedAgainst", "uncertainty", "factsProjectionVersion"];
         const rows = doc.selectedClips.map((clip) => [
             doc.project, doc.runId, doc.mediaId, clip.selectionOrigin.kind, clip.candidateId,
             clip.eventId, clip.startUs, clip.endUs, clip.startTimecode, clip.endTimecode,
             clip.rank, clip.score, clip.scoreKind, JSON.stringify(clip.evidenceIds),
             JSON.stringify(clip.observableFacts), JSON.stringify(clip.mechanicTags ?? []),
             clip.selectionOrigin.retrievalVersion, clip.selectionOrigin.query,
-            clip.selectionOrigin.mode, clip.validatedAgainst,
+            clip.selectionOrigin.mode, clip.validatedAgainst, clip.uncertainty, doc.factsProjectionVersion,
         ]);
         return `\uFEFF${[headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n")}\r\n`;
     }
@@ -409,7 +434,8 @@
             state.runs = payload.runs.filter((run) => typeof run.id === "string" && typeof run.status === "string");
             ui["run-select"].replaceChildren();
             for (const run of state.runs) {
-                const analysis = run.analysisKind === "temporal" ? "连续动作（试验）" : "画面观察";
+                const analysis = run.analysisProfile === "detailed" ? "细节动作（试验）"
+                    : run.analysisKind === "temporal" ? "连续动作（试验）" : "画面观察";
                 const option = element("option", "", `${statusLabels[run.status] || run.status} · ${analysis} · ${run.sourceName || run.id}`);
                 option.value = run.id;
                 ui["run-select"].append(option);
@@ -422,6 +448,7 @@
             }
             ui["run-select"].disabled = false;
             const selected = state.runs.find((run) => run.id === preferredRun)
+                || state.runs.find((run) => run.status === "completed" && run.analysisProfile === "detailed")
                 || state.runs.find((run) => run.status === "completed" && run.analysisKind === "temporal")
                 || state.runs.find((run) => run.status === "completed") || state.runs[0];
             ui["run-select"].value = selected.id;
@@ -521,7 +548,8 @@
         ui["source-name"].textContent = view.media.name || "源视频";
         ui["source-duration"].textContent = `源时长 ${timecode(view.media.durationUs)}`;
         ui["run-state"].className = `run-state ${view.runStatus}`;
-        const analysis = view.analysisKind === "temporal" ? "连续动作分析（试验）" : "旧画面观察";
+        const analysis = view.analysisProfile === "detailed" ? "细节动作分析（试验）"
+            : view.analysisKind === "temporal" ? "连续动作分析（试验）" : "旧画面观察";
         ui["run-state"].textContent = `${statusLabels[view.runStatus] || view.runStatus} · ${analysis} · ${state.run}`;
         ui["event-count"].textContent = view.timeline.length;
         const transcripts = Array.isArray(view.transcripts) ? view.transcripts : [];
@@ -604,6 +632,7 @@
             const meta = element("div", "candidate-meta");
             meta.append(element("span", "", `${Array.isArray(row.evidenceIds) ? row.evidenceIds.length : 0} 份证据`), element("span", "", `${row.scoreKind || "score"} · ${typeof row.score === "number" && Number.isFinite(row.score) ? row.score.toFixed(4) : "—"}`));
             card.append(top, copy, meta);
+            appendUncertainty(card, row);
             ui["candidate-list"].append(card);
         }
         ui["candidate-list"].scrollTop = scrollTop;
@@ -631,6 +660,7 @@
             preview.setAttribute("aria-label", `播放事件，${intervalLabel(row)}`);
             preview.addEventListener("click", () => previewClip("event", row));
             const copy = element("div", "timeline-facts", facts(row).join("；"));
+            appendUncertainty(copy, row);
             if (Array.isArray(row.mechanicTags) && row.mechanicTags.length) {
                 const tags = element("div", "tag-list");
                 for (const tag of row.mechanicTags) if (typeof tag === "string") tags.append(element("span", "tag", tag));
@@ -715,6 +745,8 @@
         ui["active-title"].textContent = row ? (state.active.kind === "candidate" ? `候选 #${row.rank}` : "时间轴事件") : "尚未选中片段";
         ui["active-range"].textContent = row ? intervalLabel(row) : "选择事件或候选后显示源时间区间";
         ui["active-facts"].textContent = row ? facts(row).join("；") : "模型观察、原始证据与视频可以在这里对照查看。";
+        const uncertainty = uncertaintyOf(row);
+        if (uncertainty) ui["active-facts"].append(element("br"), element("span", "warning small", `待核对 · ${uncertainty}`));
         ui["play-selection"].disabled = !row || !state.sourceUrl;
         updateActiveButton();
     }

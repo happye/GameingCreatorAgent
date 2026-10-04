@@ -8,6 +8,7 @@ from collections import Counter
 from dataclasses import dataclass, replace
 from typing import Literal
 
+from gamingcreator.application.observation_text import display_facts
 from gamingcreator.application.providers import (
     CancellationContext,
     EmbeddingProvider,
@@ -21,7 +22,7 @@ from gamingcreator.domain.models import Embedding, EvidenceReference
 from gamingcreator.domain.time import SourceInstant, SourceRange
 
 RetrievalMode = Literal["lexical", "semantic", "hybrid"]
-RETRIEVAL_VERSION = "bm25-e5-rrf-v4"
+RETRIEVAL_VERSION = "bm25-e5-rrf-v5"
 _STOP_WORDS = frozenset(
     "a an and are at avatar character characters clip find for from game gameplay in is me of on player please show the to video with".split()
 )
@@ -54,8 +55,8 @@ _CROSS_LINGUAL_TERMS = (
     ("fight", "战斗"),
     ("combat", "战斗"),
 )
-# A small explicit-language guard, not a language model. Keep passage text intact
-# for embedding identity and apply this only to positive action queries.
+# A small explicit-language guard, not a language model. Apply this only to
+# positive action queries; passage identities follow the observation projection.
 _ACTION_TERMS = {
     "jump": ("跳跃", "跳起", "起跳", "jump", "jumps", "jumping", "jumped"),
     "shoot": ("射击", "开枪", "shoot", "shoots", "shooting"),
@@ -225,7 +226,9 @@ def _documents(timeline: StoredTimeline) -> tuple[_Document, ...]:
             for segment in timeline.transcripts
             if _overlap(segment.source_range, event.source_range) > 0
         )
-        text = "\n".join((*event.observable_facts, *event.mechanic_tags, *transcripts)).strip()
+        text = "\n".join(
+            (*display_facts(event.observable_facts), *event.mechanic_tags, *transcripts)
+        ).strip()
         if text:
             documents.append(
                 _Document(
@@ -380,8 +383,8 @@ def _duplicate(left: _Document, right: _Document) -> bool:
     if not intersection or intersection / minimum < 0.5:
         return False
     left_terms, right_terms = (
-        set(_tokens(" ".join(left.facts))),
-        set(_tokens(" ".join(right.facts))),
+        set(_tokens(" ".join(display_facts(left.facts)))),
+        set(_tokens(" ".join(display_facts(right.facts)))),
     )
     union = left_terms | right_terms
     similarity = len(left_terms & right_terms) / len(union) if union else 0

@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 from gamingcreator.application.inspection import InspectionView, inspection_view
+from gamingcreator.application.observation_text import FACTS_PROJECTION_VERSION, display_facts
 from gamingcreator.application.retrieval import RETRIEVAL_VERSION, CandidateClip, RetrievalMode
 from gamingcreator.application.storage import RunStatus, StoredInvocation
 from gamingcreator.cli.main import execute_search
@@ -23,11 +24,20 @@ def _timecode(microseconds: int) -> str:
     return f"{hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
 
 
+def _analysis_profile(prompt_version: str) -> str:
+    if prompt_version == "phase0-vision-v5":
+        return "detailed"
+    if prompt_version in ("phase0-vision-v3", "phase0-vision-v4"):
+        return "temporal"
+    return "frame_observations"
+
+
 def view_payload(view: InspectionView) -> dict[str, object]:
     return {
         "artifact": view.artifact,
         "runId": view.run_id,
         "runStatus": view.run_status,
+        "factsProjectionVersion": FACTS_PROJECTION_VERSION,
         "timeline": [
             {
                 "eventId": row.event_id,
@@ -36,6 +46,8 @@ def view_payload(view: InspectionView) -> dict[str, object]:
                 "startTimecode": _timecode(row.start_us),
                 "endTimecode": _timecode(row.end_us),
                 "observableFacts": list(row.facts),
+                "displayFacts": list(display_facts(row.facts)),
+                "uncertainty": None,
                 "evidenceIds": list(row.evidence_ids),
             }
             for row in view.timeline
@@ -50,6 +62,8 @@ def view_payload(view: InspectionView) -> dict[str, object]:
                 "startTimecode": _timecode(row.start_us),
                 "endTimecode": _timecode(row.end_us),
                 "observableFacts": list(row.facts),
+                "displayFacts": list(display_facts(row.facts)),
+                "uncertainty": None,
                 "evidenceIds": list(row.evidence_ids),
                 "score": row.score,
                 "scoreKind": row.score_kind,
@@ -121,6 +135,7 @@ async def project_runs_payload(project: Path) -> dict[str, object]:
         rows: list[dict[str, object]] = []
         for run_id, status in await store.list_runs():
             run = await store.load_run(run_id)
+            profile = _analysis_profile(run.configuration.analysis.vision_prompt_version)
             rows.append(
                 {
                     "id": run_id,
@@ -129,9 +144,9 @@ async def project_runs_payload(project: Path) -> dict[str, object]:
                     "durationUs": run.asset.duration_us,
                     "errorCode": run.error_code,
                     "analysisKind": "temporal"
-                    if run.configuration.analysis.vision_prompt_version
-                    in ("phase0-vision-v3", "phase0-vision-v4")
+                    if profile in ("temporal", "detailed")
                     else "frame_observations",
+                    "analysisProfile": profile,
                 }
             )
         return {"runs": rows}
@@ -214,11 +229,18 @@ async def inspect_run(
     )
     identity = {"project": project_reference or str(project.resolve()), "run": run_id}
     asset = timeline.run.asset
+    profile = _analysis_profile(timeline.run.configuration.analysis.vision_prompt_version)
     event_tags = {event.event_id: event.mechanic_tags for event in timeline.events}
+    event_uncertainty = {event.event_id: event.uncertainty for event in timeline.events}
     rows = payload["timeline"]
     assert isinstance(rows, list)
     for row in rows:
         row["mechanicTags"] = list(event_tags[row["eventId"]])
+        row["uncertainty"] = event_uncertainty[row["eventId"]]
+    candidate_rows = payload["candidates"]
+    assert isinstance(candidate_rows, list)
+    for row in candidate_rows:
+        row["uncertainty"] = event_uncertainty.get(row["eventId"])
     payload.update(
         {
             "media": {
@@ -263,9 +285,9 @@ async def inspect_run(
             "retrievalVersion": RETRIEVAL_VERSION,
             "configHash": timeline.run.config_hash,
             "analysisKind": "temporal"
-            if timeline.run.configuration.analysis.vision_prompt_version
-            in ("phase0-vision-v3", "phase0-vision-v4")
+            if profile in ("temporal", "detailed")
             else "frame_observations",
+            "analysisProfile": profile,
             "query": query,
             "mode": mode,
         }
