@@ -45,3 +45,10 @@ PowerShell script switches must be forwarded as named typed values (for example 
 Known model revision and pricing pins belong in the presend fixture metadata. Strict finish_invocation correctly rejected fixtures that changed them after sending. For -I Windows child tests, use explicit -X utf8 rather than assuming PYTHONUTF8 is honored; never hide a decode error with ignore. Keep normal finally-close and intentional os._exit crash behavior distinct.
 
 Parallel follow-up workers must remain in separate worktrees. Preserve newly integrated root edits by giving workers the current checkpoint and copying only owned file diffs back; do not solve ownership conflicts by moving active writers into root.
+# [LRN-20261005-001] correction: detailed actor observations and alias leakage
+
+- User accepted better action descriptions but rejected missing appearance/equipment/background/skill detail and visible f0/f1 protocol aliases.
+- V4 prompt prioritized actions, input width512 hid small objects, and free-form facts had no alias projection; 16/40 existing Atom events leaked aliases. Do not treat more frames or valid JSON as complete visual understanding.
+- Bind visible attributes to their actor and action, preserve uncertainty, validate higher-resolution evidence with versioned profiles, and keep descriptions compact for512-token embeddings. Window-local aliases cannot be mapped from an event's cited subset. Preserve frozen source facts; version any presentation/index projection.
+- Shared specification and current work: docs/exec-plans/sprint-visual-details.md. Not a new gameplay quality pass.
+

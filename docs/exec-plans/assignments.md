@@ -1,5 +1,18 @@
 # Active assignments
 
+## 2026-10-05 当前细节优化
+
+当前 root `codex/visual-details`，起点72d692b；以下覆盖旧任务的当前占用。共享证据见 `sprint-visual-details.md` 与 HANDOFF。
+
+| Owner | Branch/worktree | 独占范围 | 状态 |
+| --- | --- | --- | --- |
+| root | codex/visual-details，root | analysis/config/store、真实对照、共享文档、集成验收 | 进行中；旧744测试不是本轮验证 |
+| detail_vision | codex/detail-vision，.worktrees/detail-vision | deepseek_vision.py、新 detailed tests、own sprint | 56b02e2 已冻结，待集成 |
+| detail_presentation | codex/detail-presentation，.worktrees/detail-presentation | observation_text.py、retrieval.py、ui/service.py、app.js、新 presentation tests、own sprint | 进行中；不得覆盖 root |
+| detail_pipeline_audit | 只读 root | 根因/细节/旧数据身份审查 | 已完成，无编辑或 API 请求 |
+
+新 V5 衣着/持有物/外观/环境和动作绑定，不虚构模糊属性；历史帧编号只投影清理，原事实不重写。新证据目标宽1280，旧V1–V4保持512。F006/F009仍false。
+
 协调规则见 `docs/references/agent-workflow.md`。2026-10-04用户否决玩法检索。当前root分支`codex/temporal-gameplay`已保存Grok4c37a63、帧边界42604f9/b2daf1b与启动器0cc2c2f；共享记录以HANDOFF和sprint-temporal-gameplay为准。禁止旧worker覆盖root；推送状态以git核对。
 
 ## 当前交付
