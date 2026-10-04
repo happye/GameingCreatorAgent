@@ -10,6 +10,8 @@ $env:PIP_CACHE_DIR = Join-Path $projectEnvironmentRoot '.cache/pip'
 $env:PIP_REQUIRE_VIRTUALENV = '1'
 $env:PYTHONNOUSERSITE = '1'
 $env:PYTHONUTF8 = '1'
+# The toolchain receipt hashes stdlib bytecode. Writing it back makes verify fail.
+$env:PYTHONDONTWRITEBYTECODE = '1'
 $env:PYTHONPYCACHEPREFIX = Join-Path $projectEnvironmentRoot '.cache/pycache'
 $env:UV_CACHE_DIR = Join-Path $projectEnvironmentRoot '.cache/uv'
 $env:UV_PYTHON_CACHE_DIR = Join-Path $projectEnvironmentRoot '.cache/python-downloads'

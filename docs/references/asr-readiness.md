@@ -2,7 +2,7 @@
 
 2026-10-03 只读研究，供后续 owner 接续；**没有安装 ASR 包、下载权重或运行推理，F003 仍 false**。Windows 标准 x64/GIL CPython 3.13 已有官方 wheel 候选，不能把元数据兼容当成 native import 成功。
 
-2026-10-04 更新：下表保留首轮研究候选；现在 ASR wheels、项目内 CRT 和 tiny 四文件已安装/下载并校验，native/CPU int8/Silero探针通过。PyAV19.0.1 实际转录失败，因为19版移除了 faster-whisper1.2.1仍调用的 `av.open(metadata_errors=...)`。该候选不得视为可用推理组合；兼容版本固定与复验进行中，当前固定版本以 pyproject/uv.lock 为准。实际失败报告和后续证据见 `docs/exec-plans/sprint-F003.md`。不改写昨日只读研究为昨日已验证。
+2026-10-04 更新：下表保留首轮研究候选；现在 ASR wheels、项目内 CRT 和 tiny 四文件已安装/下载并校验，native/CPU int8/Silero探针通过。PyAV19.0.1 实际转录失败，因为19版移除了 faster-whisper1.2.1仍调用的 `av.open(metadata_errors=...)`。该候选不得视为可用推理组合。root 已把运行时固定为 `av==16.1.0`，并以该组合完成 synthetic 与四段本地运行时复验；当前固定版本以 pyproject/uv.lock 为准。实际失败报告、四段结果和后续证据见 `docs/exec-plans/sprint-F003.md`。不改写昨日只读研究为昨日已验证。readiness 握手后的真实取消/超时已有本机报告，见 sprint-F003 中的 `34e9c47a2fff470a8e665f7a9ce537e5`。该报告和四段 `validationPassed` 都不是 F003 验收。
 
 ## 固定候选
 

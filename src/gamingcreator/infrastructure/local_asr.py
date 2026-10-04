@@ -27,6 +27,7 @@ from gamingcreator.application.providers import (
 from gamingcreator.domain.errors import AppError
 from gamingcreator.domain.models import TranscriptSegment
 from gamingcreator.domain.time import SourceRange
+from gamingcreator.infrastructure.asr_runtime import verify_native
 from gamingcreator.infrastructure.media_process import run_media_process
 
 MODEL_FILES = frozenset({"config.json", "model.bin", "tokenizer.json", "vocabulary.txt"})
@@ -56,14 +57,14 @@ def _object(value: object) -> dict[str, object]:
     return cast(dict[str, object], value)
 
 
-def _sample(seconds: object, rate: int, rounding: str, max_samples: int) -> int:
+def _seconds(seconds: object, rate: int, max_samples: int) -> Decimal:
     if type(seconds) not in (str, int, float):
         raise _AsrFailure("asr.response_invalid")
     try:
         value = Decimal(str(seconds))
         if not value.is_finite() or value < 0 or value > Decimal(max_samples) / rate:
             raise _AsrFailure("asr.response_invalid")
-        return int((value * rate).to_integral_value(rounding=rounding))
+        return value
     except (ArithmeticError, ValueError):
         raise _AsrFailure("asr.response_invalid") from None
 
@@ -106,6 +107,7 @@ class LocalAsrProvider:
         actual_model: str | None = None,
         worker_elapsed_ms: int | None = None,
         language: str | None = None,
+        native_libraries: list[dict[str, str]] | None = None,
     ) -> InvocationMetadata:
         details = self._execution()
         details["workerElapsedMs"] = worker_elapsed_ms
@@ -113,6 +115,7 @@ class LocalAsrProvider:
         details["requestedLanguage"] = request.language
         details["gameTerms"] = list(request.game_terms)
         details["modelIntegrityVerified"] = actual_model is not None
+        details["nativeLibraries"] = native_libraries
         return InvocationMetadata(
             provider="faster-whisper-local",
             requested_model=self.settings.model_name,
@@ -155,6 +158,14 @@ class LocalAsrProvider:
             native is not None and not native.is_dir()
         ):
             raise _AsrFailure("asr.runtime_unavailable")
+        if native is not None:
+            try:
+                await asyncio.to_thread(
+                    verify_native, native, settings.native_library_files, self.repository
+                )
+            except (OSError, ValueError):
+                raise _AsrFailure("asr.runtime_integrity") from None
+            context.check_cancelled()
         for item in settings.model_files:
             if (
                 type(item.size) is not int
@@ -187,6 +198,12 @@ class LocalAsrProvider:
             or not any(stream.kind == "audio" for stream in asset.streams)
         ):
             raise _AsrFailure("asr.audio_identity")
+        try:
+            coverage = clock.map_interval(0, clock.sample_count, asset).source_range
+        except ValueError:
+            raise _AsrFailure("asr.audio_identity") from None
+        if evidence.source_time != coverage:
+            raise _AsrFailure("asr.audio_identity")
         if (
             await _hash(asset.source_path, context) != asset.sha256
             or await _hash(clock.path, context) != clock.sha256
@@ -207,7 +224,7 @@ class LocalAsrProvider:
 
     def _parse_output(
         self, output: bytes, request: AsrRequest
-    ) -> tuple[tuple[TranscriptSegment, ...], int, str]:
+    ) -> tuple[tuple[TranscriptSegment, ...], int, str, list[dict[str, str]]]:
         try:
             result = _object(json.loads(output))
         except (ValueError, UnicodeError):
@@ -231,6 +248,7 @@ class LocalAsrProvider:
             "language",
             "elapsedMs",
             "segments",
+            "nativeLibraries",
         }:
             raise _AsrFailure("asr.response_invalid")
         rows, elapsed, language = result["segments"], result["elapsedMs"], result["language"]
@@ -247,6 +265,21 @@ class LocalAsrProvider:
         ):
             raise _AsrFailure("asr.response_invalid")
         assert request.audio_clock is not None and request.media_asset is not None
+        libraries = result["nativeLibraries"]
+        if not isinstance(libraries, list) or (sys.platform == "win32" and not libraries):
+            raise _AsrFailure("asr.response_invalid")
+        native_libraries: list[dict[str, str]] = []
+        for library in libraries:
+            entry = _object(library)
+            if (
+                set(entry) != {"name", "path", "sha256"}
+                or any(not isinstance(value, str) for value in entry.values())
+                or not re.fullmatch(r"[a-f0-9]{64}", cast(str, entry["sha256"]))
+                or not Path(cast(str, entry["path"])).is_absolute()
+                or not Path(cast(str, entry["path"])).resolve().is_relative_to(self.repository)
+            ):
+                raise _AsrFailure("asr.runtime_integrity")
+            native_libraries.append(cast(dict[str, str], entry))
         clock, asset = request.audio_clock, request.media_asset
         segments = []
         previous_start = -1
@@ -255,8 +288,12 @@ class LocalAsrProvider:
             if set(row) != {"start", "end", "text"} or not isinstance(row["text"], str):
                 raise _AsrFailure("asr.response_invalid")
             text = row["text"].strip()
-            start = _sample(row["start"], clock.sample_rate, ROUND_FLOOR, clock.sample_count)
-            end = _sample(row["end"], clock.sample_rate, ROUND_CEILING, clock.sample_count)
+            start_seconds = _seconds(row["start"], clock.sample_rate, clock.sample_count)
+            end_seconds = _seconds(row["end"], clock.sample_rate, clock.sample_count)
+            if start_seconds >= end_seconds:
+                raise _AsrFailure("asr.response_invalid")
+            start = int((start_seconds * clock.sample_rate).to_integral_value(rounding=ROUND_FLOOR))
+            end = int((end_seconds * clock.sample_rate).to_integral_value(rounding=ROUND_CEILING))
             if not text or len(text) > 16384 or start < previous_start or end > clock.sample_count:
                 raise _AsrFailure("asr.response_invalid")
             try:
@@ -278,7 +315,7 @@ class LocalAsrProvider:
                 TranscriptSegment(asset.media_id, mapping.source_range, text, uncertainty)
             )
             previous_start = start
-        return tuple(segments), elapsed, language
+        return tuple(segments), elapsed, language, native_libraries
 
     async def transcribe(
         self, request: AsrRequest, context: CancellationContext
@@ -324,6 +361,11 @@ class LocalAsrProvider:
                                     if self.settings.native_library_directory is not None
                                     else None
                                 ),
+                                "repository": str(self.repository),
+                                "nativeFiles": [
+                                    {"name": item.name, "size": item.size, "sha256": item.sha256}
+                                    for item in self.settings.native_library_files
+                                ],
                                 "computeType": self.settings.compute_type,
                                 "cpuThreads": self.settings.cpu_threads,
                                 "beamSize": self.settings.beam_size,
@@ -348,7 +390,9 @@ class LocalAsrProvider:
                         max_stdout_bytes=4 * 1024 * 1024,
                         max_stderr_bytes=1024 * 1024,
                     )
-                    segments, elapsed, language = self._parse_output(result.stdout, request)
+                    segments, elapsed, language, libraries = self._parse_output(
+                        result.stdout, request
+                    )
                 await self._validate_audio(request, context)
                 context.check_cancelled()
             return ProviderResult(
@@ -360,6 +404,7 @@ class LocalAsrProvider:
                     actual_model=self.settings.model_name,
                     worker_elapsed_ms=elapsed,
                     language=language,
+                    native_libraries=libraries,
                 ),
             )
         except asyncio.CancelledError:

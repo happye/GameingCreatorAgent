@@ -2,7 +2,7 @@
 
 ## Project and source of truth
 
-Gaming Creator Agent turns local game footage and a brief into content. Phase 0 validates video analysis, a semantic timeline, and clip search. Read `游戏内容创作与商业化产品总方案 V1.0.txt`, `docs/product-specs/phase-0.md`, and `feature_list.json` before changing scope. The Python package provides CLI contracts, media preprocessing and SQLite persistence; models and retrieval remain unimplemented.
+Gaming Creator Agent turns local game footage and a brief into content. Phase 0 validates video analysis, a semantic timeline, and clip search. Read `游戏内容创作与商业化产品总方案 V1.0.txt`, `docs/product-specs/phase-0.md`, and `feature_list.json` before changing scope. Python provides media, local ASR, SQLite and partial analyze integration; vision acceptance and retrieval remain unfinished.
 
 ## Repository map
 

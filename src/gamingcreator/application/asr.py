@@ -20,3 +20,4 @@ class LocalAsrSettings:
     cpu_threads: int = 2
     beam_size: int = 5
     vad_filter: bool = True
+    native_library_files: tuple[ModelFile, ...] = ()

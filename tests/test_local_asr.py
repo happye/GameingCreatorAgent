@@ -80,8 +80,20 @@ def fixture(tmp_path: Path):
         model_files.append(ModelFile(name, len(content), hashlib.sha256(content).hexdigest()))
     native_directory = repository / ".tools/native/fake"
     native_directory.mkdir(parents=True)
+    native_files = []
+    from gamingcreator.infrastructure.asr_runtime import NATIVE_FILES
+
+    for name in sorted(NATIVE_FILES):
+        content = name.encode()
+        (native_directory / name).write_bytes(content)
+        native_files.append(ModelFile(name, len(content), hashlib.sha256(content).hexdigest()))
     settings = LocalAsrSettings(
-        model_directory, "fake-tiny", "a" * 40, tuple(model_files), native_directory
+        model_directory,
+        "fake-tiny",
+        "a" * 40,
+        tuple(model_files),
+        native_directory,
+        native_library_files=tuple(native_files),
     )
     request = AsrRequest("run", reference, "transcript-v1", media_asset=asset, audio_clock=clock)
     return repository, settings, request
@@ -96,6 +108,14 @@ def worker_output(settings, segments=(), **overrides):
         "language": "zh",
         "elapsedMs": 17,
         "segments": list(segments),
+        "nativeLibraries": [
+            {
+                "name": item.name,
+                "path": str(settings.native_library_directory / item.name),
+                "sha256": item.sha256,
+            }
+            for item in settings.native_library_files
+        ],
     }
     value.update(overrides)
     return ProcessOutput(json.dumps(value).encode(), b"")
@@ -213,6 +233,15 @@ def test_outward_sample_quantization_does_not_restore_vad_twice(fixture, monkeyp
 def test_overlap_or_clamping_is_retained_as_uncertainty(fixture, monkeypatch, clock_frames):
     repository, settings, request = fixture
     request = replace(request, audio_clock=replace(request.audio_clock, frames=clock_frames))
+    request = replace(
+        request,
+        audio_evidence=replace(
+            request.audio_evidence,
+            source_time=request.audio_clock.map_interval(
+                0, request.audio_clock.sample_count, request.media_asset
+            ).source_range,
+        ),
+    )
     install_fake(monkeypatch, worker_output(settings, [{"start": "0", "end": "1", "text": "A"}]))
     result = asyncio.run(
         LocalAsrProvider(repository, settings).transcribe(request, CancellationContext("run", 5))
@@ -297,6 +326,8 @@ def test_model_directory_must_be_project_local(fixture, monkeypatch, tmp_path):
         {"start": "NaN", "end": "1", "text": "A"},
         {"start": "-0.1", "end": "1", "text": "A"},
         {"start": "1", "end": "0", "text": "A"},
+        {"start": "0.19", "end": "0.11", "text": "A"},
+        {"start": "0.15", "end": "0.15", "text": "A"},
         {"start": "0", "end": "2", "text": "A"},
         {"start": "0", "end": "1", "text": " "},
         {"start": True, "end": "1", "text": "A"},
@@ -426,6 +457,8 @@ def test_total_timeout_bounds_a_controlled_worker(fixture, monkeypatch):
 
 
 def test_fake_model_is_cpu_offline_and_generator_is_fully_materialized(monkeypatch, tmp_path):
+    monkeypatch.setattr(asr_worker, "verify_native", lambda *args: None)
+    monkeypatch.setattr(asr_worker, "loaded_runtime_libraries", lambda *args: [])
     monkeypatch.setattr(
         asr_worker.os, "add_dll_directory", lambda path: nullcontext(), raising=False
     )
@@ -438,13 +471,15 @@ def test_fake_model_is_cpu_offline_and_generator_is_fully_materialized(monkeypat
             calls.append((directory, kwargs))
 
         def transcribe(self, audio, **kwargs):
-            ready = json.loads((tmp_path / "ready.json").read_text())
-            assert ready["schema"] == local_asr.WORKER_SCHEMA
-            assert ready["stage"] == "inference_started" and type(ready["pid"]) is int
+            assert not (tmp_path / "ready.json").exists()
             calls.append((audio, kwargs))
 
             def lazy():
                 yield types.SimpleNamespace(start=0.1, end=0.2, text="fake")
+                ready = json.loads((tmp_path / "ready.json").read_text())
+                assert ready["schema"] == local_asr.WORKER_SCHEMA
+                assert ready["stage"] == "inference_started" and type(ready["pid"]) is int
+                assert ready["completedSegments"] == 1
                 completed.append(True)
 
             return lazy(), types.SimpleNamespace(language="en")
@@ -458,6 +493,8 @@ def test_fake_model_is_cpu_offline_and_generator_is_fully_materialized(monkeypat
         "model": "fake",
         "revision": "a" * 40,
         "nativeDirectory": "fake-native",
+        "nativeFiles": [],
+        "repository": str(tmp_path),
         "cpuThreads": 2,
         "beamSize": 5,
         "vadFilter": True,
@@ -477,6 +514,8 @@ def test_fake_model_is_cpu_offline_and_generator_is_fully_materialized(monkeypat
 
 
 def test_fake_lazy_failure_is_sanitized_and_discards_partial_segments(monkeypatch):
+    monkeypatch.setattr(asr_worker, "verify_native", lambda *args: None)
+    monkeypatch.setattr(asr_worker, "loaded_runtime_libraries", lambda *args: [])
     monkeypatch.setattr(
         asr_worker.os, "add_dll_directory", lambda path: nullcontext(), raising=False
     )
@@ -499,6 +538,8 @@ def test_fake_lazy_failure_is_sanitized_and_discards_partial_segments(monkeypatc
     result = asr_worker._infer(
         {
             "nativeDirectory": "fake-native",
+            "nativeFiles": [],
+            "repository": "fake-repository",
             "modelDirectory": "fake",
             "cpuThreads": 2,
             "audioPath": "fake.wav",

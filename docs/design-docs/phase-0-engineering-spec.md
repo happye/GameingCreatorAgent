@@ -1,12 +1,12 @@
 # Phase 0 工程规格 v3
 
-状态：实施合同；F001 输入/领域/Provider 基础、F002 媒体与 F004 SQLite service 已实现，完整分析流水线仍待模型/检索集成。来源：原总方案 §58–59、69–71；按用户补充使用 Python，见 [ADR-001](./adr-001-phase-0-language.md)；审查：[reverse-review](../exec-plans/reverse-review-2026-10-03.md)。目标是让多个 Agent 按相同合同实现和验证。
+状态：实施合同；F001 输入/领域/Provider 基础、F002 媒体与 F004 SQLite service 已实现。`analyze` 已接媒体、本地 ASR、视觉账本和未完成 run 的续跑；检索与 F003 验收仍未完成。来源：原总方案 §58–59、69–71；按用户补充使用 Python，见 [ADR-001](./adr-001-phase-0-language.md)；审查：[reverse-review](../exec-plans/reverse-review-2026-10-03.md)。目标是让多个 Agent 按相同合同实现和验证。
 
 ## 1. CLI 与外部行为
 
 用户硬约束：所有工具、包、模型权重和缓存隔离于本机系统。portable uv 放 `.tools/uv`，CPython 3.13 运行时放 `.tools/python`，应用/开发/ASR 包全部装入 `.venv`；FFmpeg 放 `.tools/ffmpeg/bin`，缓存放 `.cache`。仅使用进程环境，不写注册表、系统/用户 PATH 或全局包目录；uv 注册和全局链接显式禁用。版本固定及校验在 F001 完成，详见 [隔离环境](../references/isolated-environment.md)。
 
-以下命令入口和输入合同已建立，正常处理仍返回退出 3 / `feature.not_implemented`，不产生项目输出。实验脚本见 [验证记录](../exec-plans/phase-0-validation-2026-10-03.md)。
+以下命令入口和输入合同已建立。`search` 与 `benchmark` 仍返回退出 3 / `feature.not_implemented`，不产生项目输出。`analyze` 会创建 run 并调用已实现的媒体、本地 ASR 和视觉账本；缺少请求费用上界时停止且不发送。实验脚本见 [验证记录](../exec-plans/phase-0-validation-2026-10-03.md)。
 
 ```text
 gamingcreator analyze <local-video> --project <directory> --config <json> --max-cost-cny <amount>
@@ -15,7 +15,7 @@ gamingcreator search "机制描述" --project <directory> --run <completed-run-i
 gamingcreator benchmark --input <frozen-manifest> --project <directory> --output <report.json>
 ```
 
-`analyze` 校验文件、能力、预算和空间后创建 run。首次成功写 SQLite 与 `semantic_timeline.json`；失败或取消输出 run ID 和稳定错误码，保持已完成 checkpoint。resume 使用原配置，配置变更创建新 run，不能拼接不同版本结果。
+`analyze` 校验文件、能力、预算和空间后创建 run。首次成功写 SQLite 与 `semantic_timeline.json`；失败或取消输出 run ID 和稳定错误码，保持已完成 checkpoint。resume 使用原配置，配置变更创建新 run，不能拼接不同版本结果。找不到项目时不创建目录。已完成 run 只重读已有时间线。失败、取消或中断的 run 不自动重放。尚未做完、且已记录阶段全部完成的 run 从这些 checkpoint 续跑，不重做已完成阶段。仍有进行中阶段时返回 `storage.run_incomplete`。没有价目快照时视觉阶段返回 `budget.estimate_missing`，不把未知费用写成 0，也不发送请求。
 
 F001 配置边界：`config.example.json` 的 `schemaVersion=1`，仅接受 `vision.provider/model` 两个非空字符串、`limits.maxRequests/maxInputFrames` 两个正整数；未知字段（包括密钥）被拒绝。新分析费用上限由 CLI 传入有限正 Decimal；resume 不接受配置或预算覆盖。完整 ASR/采样/端点配置在相应特性扩展 schema，不能默默忽略旧字段。
 

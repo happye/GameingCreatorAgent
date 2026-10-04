@@ -352,6 +352,13 @@ class SqliteTimelineStore:
     async def load_run(self, run_id: str) -> StoredRun:
         return await self._call(lambda: self._load_run(run_id))
 
+    async def load_checkpoints(self, run_id: str) -> tuple[StageCheckpoint, ...]:
+        def load() -> tuple[StageCheckpoint, ...]:
+            self._run_row(run_id)
+            return self._checkpoints(run_id)
+
+        return await self._call(load)
+
     def _mutable(self, run_id: str) -> sqlite3.Row:
         self._writer()
         row = self._run_row(run_id)

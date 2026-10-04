@@ -4,8 +4,10 @@ import argparse
 import asyncio
 import hashlib
 import json
+import os
 import uuid
 from decimal import Decimal
+from importlib.metadata import version
 from pathlib import Path
 
 from gamingcreator.application.asr import LocalAsrSettings, ModelFile
@@ -26,15 +28,47 @@ from gamingcreator.infrastructure.media_process import run_media_process
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 
 
+def write_report(report: Path, cases: list[dict[str, object]], *, completed: bool) -> None:
+    expected = {"synthetic-silence": "no_speech", "synthetic-no-audio": "no_audio"}
+    passed = all(
+        case["status"] == expected[case["label"]]
+        if case["label"] in expected
+        else case["status"] in ("completed", "no_speech")
+        for case in cases
+    )
+    payload = {
+        "feature": "F003-ASR",
+        "scope": "runtime/storage validation, ungraded transcripts",
+        "state": "completed" if completed else "running",
+        "validationPassed": passed if completed else None,
+        "packageVersions": {
+            package: version(package)
+            for package in ("faster-whisper", "ctranslate2", "av", "onnxruntime")
+        },
+        "cases": cases,
+    }
+    temporary = report.with_suffix(".tmp")
+    with temporary.open("w", encoding="utf-8") as output:
+        output.write(json.dumps(payload, ensure_ascii=False, indent=2))
+        output.flush()
+        os.fsync(output.fileno())
+    temporary.replace(report)
+
+
 def settings(repository: Path) -> LocalAsrSettings:
     pin = json.loads((repository / "docs/references/asr-models.json").read_text())
     native = json.loads((repository / "docs/references/asr-native-toolchain.json").read_text())
+    native_directory = repository / ".tools/native/msvc" / native["version"]
     return LocalAsrSettings(
         repository / ".cache/models/faster-whisper/tiny" / pin["revision"],
         pin["model"],
         pin["revision"],
         tuple(ModelFile(**file) for file in pin["files"]),
-        repository / ".tools/native/msvc" / native["version"],
+        native_directory,
+        native_library_files=tuple(
+            ModelFile(name, (native_directory / name).stat().st_size, sha)
+            for name, sha in native["files"].items()
+        ),
     )
 
 
@@ -62,6 +96,9 @@ async def synthetic(repository: Path, directory: Path, *, audio: bool) -> Path:
 async def validate(repository: Path, sources: list[Path], *, include_fixtures: bool) -> Path:
     project = repository / "artifacts/asr-F003" / uuid.uuid4().hex
     project.mkdir(parents=True)
+    report = project / "validation.json"
+    cases: list[dict[str, object]] = []
+    write_report(report, cases, completed=False)
     labeled_sources = [(source.name, source, "auto") for source in sources]
     if include_fixtures:
         for label, has_audio in (("synthetic-silence", True), ("synthetic-no-audio", False)):
@@ -79,7 +116,6 @@ async def validate(repository: Path, sources: list[Path], *, include_fixtures: b
         hashlib.sha256(b"F003-ASR-validation-v1").hexdigest(),
         ("media", "asr"),
     )
-    cases: list[dict[str, object]] = []
     try:
         for index, (label, source, language) in enumerate(labeled_sources):
             run_id = f"asr-{index:03d}"
@@ -172,6 +208,7 @@ async def validate(repository: Path, sources: list[Path], *, include_fixtures: b
                 "billingScope": "zero network API charge; hardware cost not measured",
             }
             cases.append(summary)
+            write_report(report, cases, completed=False)
             print(
                 json.dumps(
                     {
@@ -179,26 +216,15 @@ async def validate(repository: Path, sources: list[Path], *, include_fixtures: b
                         "status": result.status.value,
                         "segments": len(payload),
                         "elapsedMs": result.metadata.elapsed_ms,
+                        "error": summary["error"],
                     },
-                    ensure_ascii=False,
+                    ensure_ascii=True,
                 ),
                 flush=True,
             )
     finally:
         await store.close()
-    report = project / "validation.json"
-    report.write_text(
-        json.dumps(
-            {
-                "feature": "F003-ASR",
-                "scope": "runtime/storage validation, ungraded transcripts",
-                "cases": cases,
-            },
-            ensure_ascii=False,
-            indent=2,
-        ),
-        encoding="utf-8",
-    )
+    write_report(report, cases, completed=True)
     return report
 
 
@@ -217,7 +243,7 @@ def main() -> int:
     )
     report = asyncio.run(validate(repository, sources, include_fixtures=True))
     print(json.dumps({"report": str(report)}, ensure_ascii=False))
-    return 0
+    return 0 if json.loads(report.read_text(encoding="utf-8"))["validationPassed"] else 1
 
 
 if __name__ == "__main__":

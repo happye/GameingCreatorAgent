@@ -19,12 +19,12 @@ F004 的实现入口为 `application/storage.py` 的 `TimelineStore` port 与 `i
 5. `persist_timeline` 将事件、证据链接、转录及 checkpoint 整批原子写入；任意无效链接回滚整批。
 6. `complete_run` 检查声明阶段、账本与文件。完成后语义输出不可修改；`load_completed_timeline` 每次重新校验来源和已登记文件，拒绝非 Completed 或损坏结果。
 
-`load_media_bundle` 可以重建 Interrupted run 已完成的媒体阶段，包括全部 PTS/音频映射；不要求整个 run 完成。F003 可据此接续，不能私读 SQL 或按 WAV 秒数假定源视频秒数。
+`load_media_bundle` 可以重建未完成或 Interrupted run 已完成的媒体阶段，包括全部 PTS/音频映射；不要求整个 run 完成。`analyze --resume` 只对 pending 或 running、且已有阶段全部完成的 run 调用它，并跳过已完成的 asr。失败、取消、中断的 run 不自动重放。进行中的阶段也不重做。不能私读 SQL 或按 WAV 秒数假定源视频秒数。
 
 ## 恢复与实际边界
 
 `recover` 将 Running run/stage/调用置 Interrupted，保留完成阶段和账本；未知费用不改零，也不重放请求。逐 run 报告来源/证据/快照损坏，受损 Completed run 改为 Failed；一个坏记录不阻止其他运行恢复。只在受管 runs 目录报告孤儿和临时文件，不遍历 junction/symlink、不自动删除。
 
-哈希读取在事务外，但完整性查询会重新读源文件；小时级素材的 I/O 性能尚未测量。数据库不存视频或音频 bytes。embedding/检索表与 JSON 导出仍未实现；后续导出失败不能冒称与 DB 同时原子。CLI 全流程仍待模型/检索集成。
+哈希读取在事务外，但完整性查询会重新读源文件；小时级素材的 I/O 性能尚未测量。数据库不存视频或音频 bytes。embedding 与检索表仍未实现。语义时间线 JSON 由 analyze 在 run 完成后单独导出，导出失败不能冒称与数据库同时原子。CLI 的 search 与 benchmark 仍未实现。
 
 `./scripts/test-storage.ps1 -AllLocal` 验证四段本地素材的完整 bundle 跨进程重读；该工具只要求 media 阶段，没有模型调用或语义质量结论。普通 pytest 的真实进程测试覆盖事件/账本、中断/回滚、并发锁、损坏与关闭行为，见 sprint-F004。

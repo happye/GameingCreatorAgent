@@ -15,11 +15,18 @@ class ExitCode(IntEnum):
 class AppError(Exception):
     """A safe diagnostic constructed by the application, never from raw input."""
 
-    def __init__(self, code: str, message: str, exit_code: ExitCode) -> None:
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        exit_code: ExitCode,
+        run_id: str | None = None,
+    ) -> None:
         super().__init__(message)
         self.code = code
         self.message = message
         self.exit_code = exit_code
+        self.run_id = run_id
 
 
 def invalid_video() -> AppError:

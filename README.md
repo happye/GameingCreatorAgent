@@ -6,7 +6,7 @@ This repository is the starting point for a local-first game-content creation to
 
 ## Current state
 
-F000 review, F001 core, F002 media preprocessing and F004 SQLite persistence are accepted. The package provides CLI/Provider contracts, source-time evidence, Windows process cleanup, atomic checkpoints, per-attempt billing records and integrity recovery. Models and retrieval remain to be implemented; the real Phase 0 quality gate is unmeasured. Phase 0 uses Python, SQLite and FFmpeg; see the [language decision](./docs/design-docs/adr-001-phase-0-language.md). The later desktop UI remains undecided.
+F000 review, F001 core, F002 media preprocessing and F004 SQLite persistence are accepted. The package provides CLI/Provider contracts, source-time evidence, Windows process cleanup, atomic checkpoints, per-attempt billing records and integrity recovery. Local ASR, vision budgeting, and analyze resume from completed checkpoints are wired. Retrieval is not implemented, and F003 stays unaccepted. The real Phase 0 quality gate is unmeasured. Phase 0 uses Python, SQLite and FFmpeg; see the [language decision](./docs/design-docs/adr-001-phase-0-language.md). The later desktop UI remains undecided.
 
 ## Start here
 
@@ -19,9 +19,11 @@ Run `./scripts/verify.ps1` for Ruff, strict mypy, pytest (warnings are errors), 
 
 F004 evidence is in [sprint-F004](./docs/exec-plans/sprint-F004.md). `./scripts/test-storage.ps1 -AllLocal` round-trips real media bundles through SQLite and a separate reader process. It makes no model calls; runs explicitly require only the media stage. See [storage contracts](./docs/references/timeline-storage.md) for writer locks, recovery, and future integration.
 
-Inspect commands with `./.venv/Scripts/gamingcreator.exe --help`. `config.example.json` defines schema v1: non-secret vision provider/model and positive request/frame limits. New analysis also requires `--max-cost-cny`; resume forbids config/budget overrides. Valid analyze/search/benchmark currently return exit 3 with `feature.not_implemented` and create no project output. Decoding and full model configuration belong to F002/F003.
+Inspect commands with `./.venv/Scripts/gamingcreator.exe --help`. `config.example.json` defines schema v1: non-secret vision provider/model and positive request/frame limits. New analysis also requires `--max-cost-cny`; resume forbids config/budget overrides. `search` and `benchmark` still return exit 3 with `feature.not_implemented`. `analyze` runs media preprocessing, local ASR, and the DeepSeek vision budget path; without a request price snapshot it stops with `budget.estimate_missing` and does not send a paid request. F003 remains unaccepted.
 
 ## Phase 0 validation utilities
+
+The initial technical demo runs locally without API calls: load the process environment with `. ./scripts/env.ps1`, then run `./.venv/Scripts/python.exe -B ./scripts/validate-asr.py --input "GameVideos/2025-08-17 15-26-27.mp4"`. It extracts evidence, transcribes audio and round-trips results through SQLite; the report path is printed and each case is saved immediately. Current transcripts are ungraded. A complete natural-language clip-search demo and a UI are not available yet. See the [handoff review](./docs/exec-plans/review-F003-grok-2026-10-04.md).
 
 The [2026-10-03 validation report](./docs/exec-plans/phase-0-validation-2026-10-03.md) records real local media/DeepSeek experiments and their limits. Run `./scripts/test-media-spike.ps1 -Synthetic` for the local media smoke and `./scripts/test-retrieval-score.ps1` for fixed-denominator metric regression. `test-deepseek-vision.ps1 -SourcePath <video>` needs process-local `DEEPSEEK_API_KEY` and makes one paid request of five extracted frames. It is a limited experiment, not the final CLI or a passed retrieval benchmark.
 

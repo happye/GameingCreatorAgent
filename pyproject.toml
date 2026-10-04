@@ -7,10 +7,10 @@ name = "gamingcreator"
 version = "0.1.0"
 description = "Local game-footage analysis and semantic clip retrieval"
 requires-python = ">=3.13,<3.14"
-dependencies = []
+dependencies = ["httpx==0.28.1"]
 
 [project.optional-dependencies]
-asr = ["faster-whisper==1.2.1", "ctranslate2==4.8.2", "av==19.0.1", "onnxruntime==1.30.0"]
+asr = ["faster-whisper==1.2.1", "ctranslate2==4.8.2", "av==16.1.0", "onnxruntime==1.30.0"]
 
 [project.scripts]
 gamingcreator = "gamingcreator.cli.main:main"
@@ -26,8 +26,8 @@ include = ["src/gamingcreator", "pyproject.toml", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q --basetemp=.cache/pytest-tmp"
-cache_dir = ".cache/pytest"
+addopts = "-q --basetemp=.cache/pytest-tmp-run"
+cache_dir = ".cache/pytest-cache"
 markers = ["media: integration tests using project-local FFmpeg/ffprobe"]
 
 [tool.ruff]

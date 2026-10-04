@@ -135,7 +135,10 @@ def test_completed_timeline_and_immutable_configuration(tmp_path):
             )
             event = event_fixture(bundle)
             segment = TranscriptSegment(
-                bundle.asset.media_id, event.source_range, "fixture transcript"
+                bundle.asset.media_id,
+                event.source_range,
+                "fixture transcript",
+                '{"reason":"piecewise_audio_clock","discontinuitySampleOffsets":[16000]}',
             )
             await store.persist_timeline("run-1", "vision", (event,), (segment,), HASH)
             await store.complete_run("run-1")
@@ -154,7 +157,9 @@ def test_completed_timeline_and_immutable_configuration(tmp_path):
                 assert immutable.value.code == "storage.run_immutable"
             reader = await SqliteTimelineStore.open(tmp_path / "project", read_only=True)
             try:
-                assert (await reader.load_completed_timeline("run-1")).events == (event,)
+                reloaded = await reader.load_completed_timeline("run-1")
+                assert reloaded.events == (event,)
+                assert reloaded.transcripts == (segment,)
                 with pytest.raises(AppError) as read_only:
                     await reader.recover()
                 assert read_only.value.code == "storage.read_only"

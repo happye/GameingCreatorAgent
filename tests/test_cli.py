@@ -41,7 +41,7 @@ def analyze_args(video: Path, config: Path, project: Path, budget: str = "1.00")
     ]
 
 
-def test_module_cli_is_installed_and_does_not_claim_processing_success(
+def test_module_cli_rejects_undecodable_video_without_creating_project(
     inputs: tuple[Path, Path, Path],
 ) -> None:
     video, config, project = inputs
@@ -53,9 +53,9 @@ def test_module_cli_is_installed_and_does_not_claim_processing_success(
         check=False,
         env=os.environ | {"PYTHONUTF8": "1"},
     )
-    assert result.returncode == 3
+    assert result.returncode == 2
     assert result.stdout == ""
-    assert json.loads(result.stderr)["code"] == "feature.not_implemented"
+    assert json.loads(result.stderr)["code"] == "input.media_decode"
     assert not project.exists()
 
 
@@ -162,10 +162,8 @@ def test_resume_only_obeys_contract_without_creating_project(
 ) -> None:
     video, _, project = inputs
     result = main(["analyze", str(video), "--project", str(project), "--resume", resume])
-    assert result == (3 if resume.strip() else 2)
-    assert json.loads(capsys.readouterr().err)["code"] == (
-        "feature.not_implemented" if resume.strip() else "input.resume"
-    )
+    assert result == 2
+    assert json.loads(capsys.readouterr().err)["code"] == "input.resume"
     assert not project.exists()
 
 
@@ -201,6 +199,29 @@ def test_argument_error_is_json_and_never_echoes_unknown_values(
     captured = capsys.readouterr()
     assert json.loads(captured.err)["code"] == "input.arguments"
     assert "unexpected-secret-value" not in captured.err and captured.out == ""
+
+
+def test_search_and_benchmark_remain_unimplemented(
+    inputs: tuple[Path, Path, Path], capsys: pytest.CaptureFixture[str]
+) -> None:
+    _, _, project = inputs
+    assert main(["search", "机制", "--project", str(project), "--run", "run-1"]) == 3
+    assert json.loads(capsys.readouterr().err)["code"] == "feature.not_implemented"
+    assert (
+        main(
+            [
+                "benchmark",
+                "--input",
+                "labels.json",
+                "--project",
+                str(project),
+                "--output",
+                "out.json",
+            ]
+        )
+        == 3
+    )
+    assert not project.exists()
 
 
 def test_help_and_version_are_successful(capsys: pytest.CaptureFixture[str]) -> None:

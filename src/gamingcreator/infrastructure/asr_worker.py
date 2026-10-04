@@ -9,6 +9,9 @@ from contextlib import ExitStack, redirect_stdout
 from pathlib import Path
 from typing import cast
 
+from gamingcreator.application.asr import ModelFile
+from gamingcreator.infrastructure.asr_runtime import loaded_runtime_libraries, verify_native
+
 WORKER_SCHEMA = "local-asr-worker-v1"
 MAX_SEGMENTS = 10000
 
@@ -24,6 +27,8 @@ def _read_request(path: Path) -> dict[str, object]:
         "model",
         "revision",
         "nativeDirectory",
+        "nativeFiles",
+        "repository",
         "computeType",
         "cpuThreads",
         "beamSize",
@@ -37,7 +42,14 @@ def _read_request(path: Path) -> dict[str, object]:
         request["schema"] != WORKER_SCHEMA
         or any(
             not isinstance(request[key], str) or not request[key]
-            for key in ("audioPath", "modelDirectory", "model", "revision", "language")
+            for key in (
+                "audioPath",
+                "modelDirectory",
+                "model",
+                "revision",
+                "language",
+                "repository",
+            )
         )
         or request["computeType"] != "int8"
         or type(request["cpuThreads"]) is not int
@@ -46,6 +58,11 @@ def _read_request(path: Path) -> dict[str, object]:
         or not 0 < request["beamSize"] <= 100
         or type(request["vadFilter"]) is not bool
         or not isinstance(request["gameTerms"], list)
+        or not isinstance(request["nativeFiles"], list)
+        or any(
+            not isinstance(item, dict) or set(item) != {"name", "size", "sha256"}
+            for item in request["nativeFiles"]
+        )
         or any(not isinstance(term, str) for term in cast(list[object], request["gameTerms"]))
         or (
             request["nativeDirectory"] is not None
@@ -66,6 +83,17 @@ def _infer(request: dict[str, object], readiness_path: Path | None = None) -> di
     with ExitStack() as stack, redirect_stdout(sys.stderr):
         try:
             if sys.platform == "win32" and isinstance(native, str):
+                files: list[ModelFile] = []
+                for item in cast(list[dict[str, object]], request["nativeFiles"]):
+                    name, size, digest = item["name"], item["size"], item["sha256"]
+                    if (
+                        not isinstance(name, str)
+                        or type(size) is not int
+                        or not isinstance(digest, str)
+                    ):
+                        raise ValueError("Native file record.")
+                    files.append(ModelFile(name, size, digest))
+                verify_native(Path(native), tuple(files), Path(str(request["repository"])))
                 stack.enter_context(os.add_dll_directory(native))
                 # Load before any C++ package; keep both objects alive until iteration completes.
                 native_runtime = ctypes.WinDLL(str(Path(native) / "msvcp140.dll"))
@@ -73,7 +101,9 @@ def _infer(request: dict[str, object], readiness_path: Path | None = None) -> di
             elif sys.platform == "win32":
                 raise OSError("Project-local CRT directory required")
             from faster_whisper import WhisperModel  # type: ignore[import-untyped]
-        except (ImportError, OSError):
+
+            libraries = loaded_runtime_libraries(Path(str(request["repository"])))
+        except (ImportError, OSError, ValueError):
             return {"schema": WORKER_SCHEMA, "status": "failed", "code": "asr.runtime_unavailable"}
         try:
             model = WhisperModel(
@@ -87,15 +117,6 @@ def _infer(request: dict[str, object], readiness_path: Path | None = None) -> di
         except Exception:
             return {"schema": WORKER_SCHEMA, "status": "failed", "code": "asr.model_load"}
         try:
-            if readiness_path is not None:
-                temporary = readiness_path.with_suffix(".tmp")
-                temporary.write_text(
-                    json.dumps(
-                        {"schema": WORKER_SCHEMA, "pid": os.getpid(), "stage": "inference_started"}
-                    ),
-                    encoding="utf-8",
-                )
-                temporary.replace(readiness_path)
             segments, information = model.transcribe(
                 str(request["audioPath"]),
                 language=None if request["language"] == "auto" else str(request["language"]),
@@ -110,7 +131,22 @@ def _infer(request: dict[str, object], readiness_path: Path | None = None) -> di
                 rows.append(
                     {"start": str(segment.start), "end": str(segment.end), "text": segment.text}
                 )
+                if len(rows) == 1 and readiness_path is not None:
+                    temporary = readiness_path.with_suffix(".tmp")
+                    temporary.write_text(
+                        json.dumps(
+                            {
+                                "schema": WORKER_SCHEMA,
+                                "pid": os.getpid(),
+                                "stage": "inference_started",
+                                "completedSegments": 1,
+                            }
+                        ),
+                        encoding="utf-8",
+                    )
+                    temporary.replace(readiness_path)
             language = information.language
+            libraries = loaded_runtime_libraries(Path(str(request["repository"])))
         except Exception:
             return {"schema": WORKER_SCHEMA, "status": "failed", "code": "asr.inference"}
     return {
@@ -121,6 +157,7 @@ def _infer(request: dict[str, object], readiness_path: Path | None = None) -> di
         "language": language,
         "elapsedMs": max(0, int((time.monotonic() - started) * 1000)),
         "segments": rows,
+        "nativeLibraries": libraries,
     }
 
 
