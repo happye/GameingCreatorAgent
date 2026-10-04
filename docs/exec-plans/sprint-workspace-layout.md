@@ -1,6 +1,6 @@
 # 工作台布局与视觉迭代
 
-日期：2026-10-04。Owner：Codex workspace_layout，分支 `codex/workspace-layout`。当前状态：实施中，未验收。主任务由 root 集成；不修改 JS、共享交接或 feature_list。
+日期：2026-10-04。Owner：Codex workspace_layout，分支 `codex/workspace-layout`。当前状态：布局实测完成，联合行为验收由 root 记录。主任务由 root 集成；不修改 JS、共享交接或 feature_list。
 
 ## 用户反馈与实施范围
 
@@ -12,4 +12,10 @@ root 同时实施片段篮时间排序和 JS 重绘滚动保持；候选仍保�
 
 ## 当前检查点
 
-已读取 AGENTS、HANDOFF、原方案第12节、Phase0规格与 ADR-002；创建隔离 worktree，以 a019982 为基线。HTML/CSS 已完成第一版；待真实浏览器视口测量、截图检查和 root 集成验证。无新增依赖、无付费模型调用。
+已读取 AGENTS、HANDOFF、原方案第12节、Phase0规格与 ADR-002；创建隔离 worktree，以 a019982 为基线。首版提交 `5a44dfd`。`./scripts/init.ps1 -CheckOnly` 和 `git diff --check` 通过。无新增依赖、无付费模型调用。
+
+使用 root 的只读 `.venv`/Chromium 153 工具、worktree 内临时目录启动独立 loopback 服务；服务读 root 的真实漫画群星PV项目，静态 HTML/CSS 来自本 worktree。真实视频和证据显示正常，无 JS pageerror。1440×900、1366×768、1920×1080 的 document 高度等于视口高度，预览/时间轴/篮子/导出均在视口内；390×844 的 document 宽度等于390，无横向溢出，允许页面纵向滚动。
+
+截图与测量报告保存在 ignored `.cache/layout-browser/`。在1366×768人工看图后减少时间轴装饰占高、调整上下区域比例，时间轴可滚动列表从94px增至139px，完整显示三条实际事件；视频仍为562×266px、片段篮279px。1440×900的时间轴列表196px、视频636×341px。候选区域同步紧凑调整，保留独立列表滚动。证据图限制高度且详情内滚动，不挤出时间轴；片段篮导出固定，不被选片列表推走。
+
+本 worktree 保留基线 JS，所以独立截图中的片段篮顺序和旧绿色canvas不代表最终行为；root 整合的新 JS 实施时间排序、主题颜色和重绘滚动保持，根 sprint 的联合实测为最终依据。布局验收不表示 F006 人工质量门槛通过。
