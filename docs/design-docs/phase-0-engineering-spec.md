@@ -1,6 +1,6 @@
 # Phase 0 工程规格 v4
 
-状态：2026-10-04 实施合同。CLI 已接媒体、本地 ASR、视觉窗口/账本、显式续跑、词法/本地语义检索和人工标签评测入口；F003/F005 技术合同已验收，F006独立人工质量gate未通过。557项测试（0skip）、Ruff/mypy和重复离线wheel通过，证据见sprint-demo。来源：原总方案 §58–59、69–71；语言见 [ADR-001](./adr-001-phase-0-language.md)，审查见 [reverse-review](../exec-plans/reverse-review-2026-10-03.md)。历史验证留在 sprint，当前运行入口见 [Demo](../references/demo-quickstart.md)。
+状态：2026-10-04 实施合同。CLI 已接媒体、本地 ASR、视觉窗口/账本、显式续跑、词法/本地语义检索和人工标签评测入口；F003/F005 技术合同已验收，F006独立人工质量gate未通过。CLI证据见sprint-demo；本地工作台及最新完整验证见 [sprint-inspection-workspace](../exec-plans/sprint-inspection-workspace.md)。来源：原总方案 §58–59、69–71；语言见 [ADR-001](./adr-001-phase-0-language.md)，审查见 [reverse-review](../exec-plans/reverse-review-2026-10-03.md)。当前运行入口见 [Demo](../references/demo-quickstart.md)。
 
 ## 1. CLI 与外部行为
 
@@ -114,6 +114,6 @@ Ctrl+C 停止新任务、取消 Provider、保存状态；FFmpeg/ASR worker 要�
 
 早期失败 run 估价 ¥0.01163912、10事件、0未知调用；两 run 本轮 API 估价合计 ¥0.0741，不能只把成功 run 费用当全轮成本。实际完整 run 的运行成功和离线重读仍不代表人评验收。
 
-开放实验项：人工 ASR/机制标签、独立录制会话、小时级素材性能/成本、第二真实视觉 Provider、采样密度与检索阈值。F001/F002/F004 已验收；F003/F005 的当前实现待整体验收，F006 人评 gate 仍未验证。CLI 可用不等于质量通过，正式 UI 与商业系统尚未实现。
+开放实验项：人工 ASR/机制标签、独立录制会话、小时级素材性能/成本、第二真实视觉 Provider、采样密度与检索阈值。F001–F005技术合同已验收，F006 人评 gate 仍未验证。用户授权的本地检查工作台遵循 [ADR-002](./adr-002-local-inspection-ui.md) 和 [API合同](./inspection-workspace-api.md)，提供注册视频/证据预览、查询、筛选和区间清单导出。其浏览器时间映射只在现有PV验证，非零PTS/音视频起点不同的容器须另测。正式桌面、MP4渲染与商业系统尚未实现。
 
 实施依赖：F001 环境/合同工程 → F002 媒体映射 → F003 ASR/视觉与账本；F004 存储依赖 F001，可与 F002/F003 并行；F005 依赖 F003＋F004，包含 F002 的传递依赖；F006 独立标签准备可以先行，最终质量 gate 在集成后执行。详见 [开发任务](../exec-plans/phase-0-plan.md)。

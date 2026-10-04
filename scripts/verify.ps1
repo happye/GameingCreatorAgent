@@ -15,7 +15,7 @@ try {
   $testRunRoot = Join-Path $repositoryRoot ('.cache/pytest-runs/' + [guid]::NewGuid().ToString('N'))
   New-Item -ItemType Directory -Path $testRunRoot -Force | Out-Null
   $pytestArguments = @('-m', 'pytest', '-W', 'error', '--basetemp', (Join-Path $testRunRoot 'tmp'), '-o', ('cache_dir=' + (Join-Path $testRunRoot 'cache')))
-  foreach ($arguments in @(@('-m', 'ruff', 'format', '--check', 'src', 'tests', 'scripts/validate-media.py', 'scripts/validate-storage.py'), @('-m', 'ruff', 'check', 'src', 'tests', 'scripts/validate-media.py', 'scripts/validate-storage.py'), @('-m', 'mypy'), $pytestArguments)) {
+  foreach ($arguments in @(@('-m', 'ruff', 'format', '--check', 'src', 'tests', 'scripts/validate-media.py', 'scripts/validate-storage.py', 'scripts/validate-inspection-ui.py'), @('-m', 'ruff', 'check', 'src', 'tests', 'scripts/validate-media.py', 'scripts/validate-storage.py', 'scripts/validate-inspection-ui.py'), @('-m', 'mypy'), $pytestArguments)) {
     & $pythonPath @arguments
     if ($LASTEXITCODE -ne 0) { throw "Project check failed: $($arguments -join ' ')" }
   }

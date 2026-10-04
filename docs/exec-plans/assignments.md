@@ -1,26 +1,26 @@
 # Active assignments
 
-协调规则见 `docs/references/agent-workflow.md`。2026-10-04本轮所有worker已冻结并由root整合；无活动并行写入。root后续接手时仍须先查分支与未提交状态。
+协调规则见 `docs/references/agent-workflow.md`。2026-10-04用户指定Codex接续Grok检查页，当前root负责最终集成和共享记录。所有本轮worker已冻结，禁止从旧scratch覆盖root；当前分支/推送状态见HANDOFF及git。
 
-| Feature | Owner / tool-session | Branch | Scope | State | Evidence |
-| --- | --- | --- | --- | --- | --- |
-| Demo / F003 / F005 | Codex root | `main`（代码检查点19cfe58；origin/codex/phase0-demo备份） | 全链路、配置/恢复/预算、CLI、SQL3、隔离依赖及共享记录 | accepted / ready-for-handoff | `sprint-demo.md` |
-| Pricing / vision / docs | Codex demo_pricing | 独立worker与root整合记录 | 价格/诊断/v2提示、README/AGENTS/规格/quickstart | frozen / integrated | `sprint-demo.md` |
-| Local retrieval | Codex demo_retrieval | `codex/demo-retrieval`，checkpoint `4b692d8` | E5/batch1/cache、BM25/cosine/hybrid与固定fixture | frozen / integrated | `sprint-F005-worker.md` |
-| F006 runner / SQL3 | Codex demo_benchmark | `codex/demo-benchmark` | 标签评分、schema3/向量/检索持久化、legacy测试修复 | frozen / integrated | `sprint-F006-worker.md`, `sprint-F005-persistence-worker.md` |
+## 当前交付
 
-F000–F005技术合同已验收。F006工具有合同测试，独立人工 quality gate 仍未通过。2026-10-04 起 Demo 可用性由 Grok Build 在 G: 根目录的 `main` 接手；不要从已冻结 worker 覆盖源码。
-
-2026-10-04 用户重新指定 Codex 接续基础功能；Grok 留下的未提交源码全部保留，基线完整verify561passed/0skip。Codex root负责检查工作台后端/集成/共享记录，只读 ui_review负责风险复核。页面静态资源若另派worker，先建立独立worktree并冻结API；旧worktrees不能覆盖本轮。任务见 `sprint-inspection-workspace.md`。
-
-当前本地/远端提交以HANDOFF和git为准。旧Grok/F003 scratch worktrees保留历史，已冻结；不要从旧分支覆盖当前源码。
-
-## 检查工作台本轮归属
-
-| Owner | Branch/worktree | Owned files | State |
+| Feature / owner | Branch/worktree | Owned files | State / evidence |
 | --- | --- | --- | --- |
-| Codex root | `codex/inspection-workspace`，root | ui/server.py、ui/service.py、ui/media.py、tests/test_inspection_http.py及共享文档 | implementing；Grok基线checkpoint32d5a3b |
-| Codex inspection_frontend | `codex/inspection-frontend`，`.worktrees/inspection-frontend` | ui/static/{index.html,app.js,style.css}、sprint-inspection-frontend.md | implementing；API合同已冻结 |
-| Codex ui_review | 只读root | HTTP错误/注入/状态与范围审查 | done；发现已纳入root修复 |
+| F007 / Codex root | codex/inspection-workspace，root | ui/server.py、service.py、media.py、storage port、HTTP测试、浏览器脚本及共享文档 | accepted / sprint-inspection-workspace.md |
+| F007 / inspection_frontend | codex/inspection-frontend，.worktrees/inspection-frontend | ui/static/{index.html,app.js,style.css}、sprint-inspection-frontend.md | frozen / integrated：0d9e3c5→9fcbdec，3e5c8e2→614c10d |
+| UI / ui_review | 只读root | HTTP/路径/证据I/O/费用复核 | done；3项发现均修复并回归 |
+| Docs / docs_audit | 只读root | 根指南/规格/手册/架构一致性审查 | done；过期状态由root修正 |
 
-前后端按 `docs/design-docs/inspection-workspace-api.md` 集成。worker只提交拥有文件，公共记录由root更新；不得从旧scratch覆盖当前源码。
+F000–F005及F007技术合同已验收。F006工具已实现，独立人工quality gate仍false；选片篮不替代humanLabels。
+
+## 已整合历史任务
+
+| Feature | Owner | Historical branch/checkpoint | Evidence |
+| --- | --- | --- | --- |
+| Demo / F003 / F005 | Codex root | main：19cfe58，origin/codex/phase0-demo备份 | sprint-demo.md |
+| Pricing / vision / docs | demo_pricing | worker整合进root | sprint-demo.md |
+| Local retrieval | demo_retrieval | codex/demo-retrieval：4b692d8 | sprint-F005-worker.md |
+| F006 runner / SQL3 | demo_benchmark | codex/demo-benchmark | sprint-F006-worker.md、sprint-F005-persistence-worker.md |
+| Retrieval v3 / initial UI | Grok Build | 未提交修改由root保留在32d5a3b | sprint-inspection-workspace.md |
+
+旧Grok/F003及其他scratch worktrees仅保留历史、已冻结。新并行任务须先登记独占文件并建立独立worktree；公共规格、依赖和交接由root串行整合。接手不得把历史owner当当前占用，先核对git和HANDOFF。

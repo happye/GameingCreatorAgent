@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from dataclasses import replace
 from decimal import Decimal
 from urllib.error import HTTPError
-from urllib.parse import urlencode
+from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
 
 import pytest
@@ -133,7 +133,8 @@ def test_registered_media_range_head_and_evidence(tmp_path):
 
 def test_inspect_empty_query_is_a_read_with_metadata(tmp_path):
     project, _ = stored_project(tmp_path)
-    query = urlencode({"project": str(project), "run": "run-1", "query": "", "mode": "lexical"})
+    reference = project.relative_to(tmp_path).as_posix()
+    query = urlencode({"project": reference, "run": "run-1", "query": "", "mode": "lexical"})
     with workspace(tmp_path) as base:
         status, _, body = get(base, "/api/inspect?" + query)
         payload = json.loads(body)
@@ -143,6 +144,10 @@ def test_inspect_empty_query_is_a_read_with_metadata(tmp_path):
         assert payload["evidence"][0]["startUs"] == 100_000
         assert payload["stages"][0]["status"] == "completed"
         assert payload["retrievalVersion"] and payload["configHash"]
+        for media_url in (payload["media"]["videoUrl"], payload["evidence"][0]["url"]):
+            identity = parse_qs(urlparse(media_url).query)
+            assert identity["project"] == [reference] and identity["run"] == ["run-1"]
+            assert get(base, media_url)[0] == 200
         assert get(base, "/api/inspect?" + query + "&top=101")[0] == 400
         status, _, runs = get(base, "/api/runs?" + urlencode({"project": str(project)}))
         assert status == 200 and json.loads(runs)["runs"][0]["sourceName"] == "source.fixture"

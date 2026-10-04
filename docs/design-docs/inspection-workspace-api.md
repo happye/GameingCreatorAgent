@@ -17,20 +17,20 @@ root：`ui/server.py`、`ui/service.py`、新 `ui/media.py`、HTTP行为测试�
 - `/api/evidence?project=...&run=...&id=...` → 当前run已登记的图片或WAV，GET/HEAD。
 - `/assets/app.js`、`/assets/style.css` → 固定静态资源；`/` → index.html。
 
-项目只允许当前仓库内已存在的数据库。媒体只通过run/evidence身份映射，不接受任意文件路径。所有错误使用有效HTTP状态，JSON包含 `code,message,exitCode,runId`；前端显示message。检查/查询不调用远端API。
+项目目录和数据库真实路径都必须位于当前仓库。已注册原视频可保留在原本的本地路径。媒体只通过run/evidence身份映射，不接受任意文件路径。inspect生成的URL保留请求的project表示（例如仓库相对路径），前端核对项目/run身份后才加载。应用错误使用有效HTTP状态，JSON包含 `code,message,exitCode,runId`；请求/访问边界错误至少有code/message。检查/查询不调用远端API。
 
 ## inspect 视图
 
 保留已有 `artifact,runId,runStatus,timeline,candidates,abstentionReason,ordering`。
 
-- `media:{id,name,durationUs,videoUrl}`。
+- `media:{id,name,durationUs,sha256,videoUrl}`。
 - timeline行保留 `eventId,startUs,endUs,startTimecode,endTimecode,observableFacts,evidenceIds`，新增 `mechanicTags`。
 - candidate行保留 `rank,eventId,candidateId,startUs,endUs,startTimecode,endTimecode,observableFacts,evidenceIds,score,scoreKind`。
 - `evidence:[{id,kind,startUs,endUs,url}]`，图片start=end，音频为源区间。
 - `transcripts:[{startUs,endUs,text,uncertainty}]`。
 - `stages:[{id,status,errorCode}]`。
-- `cost:{knownCny,unknownAttempts,status}`；knownCny是Decimal字符串，未知项单独计数，金额不是账单。
-- `retrievalVersion`、`query`、`mode`，用于导出来源追踪。
+- `cost:{knownCny,unknownAttempts,status}`；knownCny是已知部分的Decimal字符串，未知项单独计数，缺DeepSeek价格版本或unverified记录不得算零/已知金额，估价不是账单。
+- `retrievalVersion`、`configHash`、`query`、`mode`，用于导出来源追踪。
 
 ## 页面行为与导出
 

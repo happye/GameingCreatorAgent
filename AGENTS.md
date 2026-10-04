@@ -6,7 +6,7 @@ Gaming Creator Agent turns local game footage and a brief into content. Phase 0'
 
 ## Repository map
 
-- `src/gamingcreator/{cli,application,domain,infrastructure}/`: four-layer Python core; `tests/test_*.py`: pytest behavior and architecture tests.
+- `src/gamingcreator/{cli,application,domain,infrastructure}/`: four-layer Python core; `ui/`: local inspection workspace; `tests/test_*.py`: pytest behavior and architecture tests.
 - `docs/design-docs/`: architecture and decisions; `docs/product-specs/`: accepted scope.
 - `docs/exec-plans/`: reverse review, validation evidence, task plan, feedback, and debt; `docs/references/`: benchmark and environment rules.
 - `prompts/`, `templates/`, `music/`: future versioned assets. Do not commit user footage or credentials.
@@ -19,6 +19,7 @@ Use Windows PowerShell. Keep runtimes in `.tools/`, packages in `.venv/`, and ca
 
 - `./scripts/setup-demo.ps1`: prepare isolated tools, dependencies, ASR and embedding models; `-Offline` requires cached assets.
 - `./scripts/run-demo.ps1 -Run <id>`: search an existing demo; `-Video <path>` starts paid vision analysis.
+- `./scripts/run-ui.ps1`: open local preview, evidence, search and interval exports.
 - `./scripts/init.ps1`: check scaffold, exact toolchain and media prerequisites; `-CheckOnly` checks scaffold.
 - `./scripts/verify.ps1`: format, lint, types, pytest, and reproducible offline wheel builds.
 - `./scripts/test-media.ps1 -AllLocal`: validate footage in ignored `GameVideos/`.
@@ -26,7 +27,7 @@ Use Windows PowerShell. Keep runtimes in `.tools/`, packages in `.venv/`, and ca
 
 ## Architecture and coding rules
 
-Follow `docs/design-docs/architecture.md`, `phase-0-engineering-spec.md`, and ADR-001. Use four-space indentation, snake_case functions/modules and PascalCase types; Ruff formats/lints and mypy checks contracts. Keep domain independent of I/O, video bytes local, and provider versions/cost/timing traceable. Preserve prompt hashes, embedding-space identity and unknown-cost reservations on resume.
+Follow `docs/design-docs/architecture.md`, `phase-0-engineering-spec.md`, ADR-001 and ADR-002. Use four-space indentation, snake_case functions/modules and PascalCase types; Ruff formats/lints and mypy checks contracts. Keep domain independent of I/O, video bytes local, and provider versions/cost/timing traceable. Preserve prompt hashes, embedding-space identity and unknown-cost reservations on resume.
 
 ## Testing and acceptance
 
@@ -34,4 +35,4 @@ Use pytest `tests/test_*.py`; follow `docs/references/testing-guide.md` and `pha
 
 ## Changes, commits, and handoff
 
-Codex, Claude Code, and Grok Build share acceptance criteria. Read `HANDOFF.md` and the shared `docs/references/agent-workflow.md` at session start. Assign ownership; parallel writers use separate worktrees. Record verification and resumable work before transfer. Existing subjects use imperative `chore:`/`docs:`; feature commits use `feat(F002): add local frame extraction`. PRs describe behavior, link a feature and include evidence. Never commit secrets, footage, generated media or databases.
+All agents share acceptance criteria; start with `HANDOFF.md` and `docs/references/agent-workflow.md`. Assign ownership; parallel writers use separate worktrees. Record verification and resumable work before transfer. Use imperative `chore:`/`docs:` subjects or `feat(F002): add local frame extraction`. PRs describe behavior, link a feature and include evidence. Never commit secrets, footage, generated media or databases.

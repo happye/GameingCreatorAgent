@@ -8,14 +8,18 @@
 flowchart TD
     CLI[Cli 组合入口] --> APP[Application 用例与 Provider 合同]
     CLI --> INFRA[Infrastructure 媒体、模型和 SQLite 适配]
+    UI[UI 本地检查入口] --> APP
+    UI --> INFRA
     APP --> DOMAIN[Domain 领域记录与时间约束]
     INFRA --> APP
     INFRA --> DOMAIN
 ```
 
-包为 `src/gamingcreator/{cli,application,domain,infrastructure}/`，测试在 `tests/test_*.py`。F001 固定 CPython 3.13.16/build 20261001、uv 0.12.22 与开发依赖，建立 pytest/Ruff/严格 mypy/导入检查。F002 实现媒体 port、整数 PTS/有理数源时钟、图片与分段 WAV 映射及 Windows Job 进程树管理。F004 实现 TimelineStore、sqlite3 单线程/进程锁、迁移/组合 FK、checkpoint/账本与完整性恢复。ASR、Vision、Retrieval 随后加入，不提前拆服务或多语言核心。
+包为 `src/gamingcreator/{cli,application,domain,infrastructure}/`，测试在 `tests/test_*.py`。F001 固定 CPython 3.13.16/build 20261001、uv 0.12.22 与开发依赖，建立 pytest/Ruff/严格 mypy/导入检查。F002 实现媒体 port、整数 PTS/有理数源时钟、图片与分段 WAV 映射及 Windows Job 进程树管理。F004 实现 TimelineStore、sqlite3 单线程/进程锁、迁移/组合 FK、checkpoint/账本与完整性恢复。F003/F005 已接本地 ASR、视觉 Provider、账本和本地混合检索，不拆服务或多语言核心。
 
 CLI 只解析输入、组装依赖和输出结果；Application 编排 stages、定义 Protocol ports；Domain 用类型化领域记录，无厂商 SDK、SQL 或进程调用；Infrastructure 实现 ports。正式桌面界面以后另作选型；通过 Application 或版本化 CLI/JSON 接入处理核心。
+
+`ui/` 是第二个组合入口，提供本地标准库 HTTP 服务和打包的静态页面，共用 Application 检索与 SQLite ports。`/api/projects`、`runs`、`inspect` 读取已有运行；`media`、`evidence` 仅按注册身份提供经 hash 校验的文件和单段 Range/HEAD。单条证据读取不重扫源视频；文件身份变化使校验缓存失效。空查询不执行搜索，非空查询仍保存既有检索记录。页面选片只在浏览器按项目/run 保存，导出前重验当前区间，不写人工标签。详见 [ADR-002](./adr-002-local-inspection-ui.md) 与 [API 合同](./inspection-workspace-api.md)。
 
 ## 数据流与状态
 

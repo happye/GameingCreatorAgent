@@ -1,36 +1,42 @@
 # 本地检查工作台基础功能
 
-更新时间：2026-10-04（Asia/Hong_Kong）。状态：进行中，尚未验收。
+更新时间：2026-10-04（Asia/Hong_Kong）。状态：技术验收通过，F007 true；F006人工质量门槛仍false。
 
-## 归属与范围
+## 范围与归属
 
-- 用户明确要求接续 Grok 已有交互界面并补齐基础功能；保留原分析链路与 F006 人工门槛。
-- Codex root 接手集成、HTTP/媒体服务、验证与共享文档。Grok 未提交的查询、缓存和检查页改动全部保留，先复核再保存检查点。
-- 当前分支 `main`，已提交基线 `d6eb311`；新实现不重复初始化环境。并行编码只在独立 worktree，具体文件归属登记在 assignments。
-- 本轮交付：项目/运行选择、原视频预览、片段跳转与区间播放、证据帧查看、时间轴筛选、片段选择及 JSON/CSV 清单导出。
-- 页面继续作为本地技术验证工具。自动剪辑成片、发布、商业结算与正式桌面 EXE 不属于本轮验收。
+用户要求Codex接续Grok已有界面并补齐基础功能。按原总方案§12实现素材/视频/查询三栏及源时间轴，依据ADR-002授权；新分析仍通过CLI。没有加入MP4渲染、发布、商业结算或正式桌面EXE。
 
-## 已检查及待修复
+root负责HTTP/媒体服务、公共storage port、集成、真实浏览器验证和共享文档；inspection_frontend在独立worktree只改ui/static三个文件及own sprint，ui_review只读审查。Grok改动全部保留；本轮workers已冻结。
 
-- Grok 加入英文 attack/fight 词法映射（retrieval v3），保留 pure semantic 负例问题；技术命中不代表独立人评通过。
-- 现有页面只有时间轴/排名表，没有视频预览、证据查看或导出。
-- HTTP 服务把 CLI 退出码当 HTTP 状态码，须改为有效 4xx/5xx 并单独保留 exitCode。
-- 模型文本经 innerHTML 插入，须改为安全 DOM 文本写入。
-- 初次 verify 因项目内 Python 收据不符停止；28 个 stdlib `.pyc` 已从 hash 验证归档逐项恢复，未改收据、解释器或系统设置。恢复后 Grok 基线完整 verify 通过：561 passed/0skip、mypy47文件、Ruff、重复 wheel hash `67a5dce0059863cfc5a226621ac2b9698c0b943edaa4fa6aaebea0ea049e3e8b`。HTTP 错误已单独复现，仍待本轮修复；测试通过不等于页面基础功能已验收。
+检查点：32d5a3b保留并验证Grok基线；82e4020后端；9fcbdec集成0d9e3c5页面；614c10d集成3e5c8e2前端修复。最终版本/推送状态见HANDOFF及git。
 
-## 验收
+## 实现
 
-1. 使用本机 Completed run 打开界面，中文/英文查询可显示真实候选；无关查询显示合法空结果。
-2. 点击候选或时间轴事件可定位原视频，显示起止和原始证据；区间播放到结束自动暂停。
-3. 切换项目/run 清空过期结果，片段选择按 run 隔离，导出包含真实源身份、微秒区间和版本。
-4. 文件路由仅使用数据库关联的源/证据；Range/HEAD、坏范围、错误状态、恶意文本、缺文件与跨项目路径有行为验证。
-5. 保持所有工具/包/缓存在项目内；普通验证和回放不调用付费 API。
-6. 完整 verify、离线真实 run/HTTP 冒烟、必要浏览器验证之后记录结果。F006 仍 false，人工标签不得由 Agent 冒充。
+- 项目/运行发现、已完成/失败状态、源名/时长、阶段和费用。缺价目或unverified调用保留unknown，已知部分不冒充全额。
+- 原视频GET/HEAD及单Range/416；只通过run/evidence登记身份映射文件，项目目录及DB实际路径留在仓库，文件SHA校验缓存随身份变化失效。
+- 证据单条SQL读取避免每张图片重扫源视频；完整时间线校验不削弱。媒体URL保留相对project表示，前端准确核对身份。
+- 候选/事件定位和源区间结束暂停，证据缩略图/弹窗、WAV、转录、文本/标签过滤；候选rank和源时间排序分别保留。
+- 片段篮按project/run保存于localStorage，跨查询保留来源，导出前匹配当前run事件/候选。JSON/CSV保留SHA/configHash、微秒、事实、证据、原查询/模式/版本；拒绝过期区间且防CSV公式注入。
+- 安全DOM文本、严格CSP、请求取消/版本核对避免旧响应覆盖；取消连接正常关闭，不重复写错误响应。静态资源随wheel打包，运行页面不需Node或浏览器测试包。
 
-## 恢复入口
+## 修复与失败证据
 
-后端已实现并通过21项HTTP/既有检查页行为测试，1项真实文件symlink测试因当前Windows权限跳过（另有可移植canonical-path边界回归已通过）。包括正确HTTP状态、单Range/HEAD、只按run/evidence提供媒体、缓存变更复验、localhost访问限制；证据单条读取不再扫描源视频，缺DeepSeek价目/非空unverified金额继续unknown。修复Windows CRT fstat亚秒精度不足及读访问时间变更导致的缓存判断，使用高精度Path.stat与句柄身份比对。
+Grok基线verify先因运行时收据漂移失败：28个stdlib pyc从已验证归档逐项恢复，收据/解释器/系统设置未改；恢复后561passed/0skip。原HTTP错误将CLI ExitCode写为HTTP状态，已复现并修复为有效4xx/5xx+JSON exitCode。
 
-静态前端检查点 `0d9e3c5` 待root串行集成；前后端此节点尚未做完整/真实浏览器验收。内置node_repl的Playwright导入失败，已准备固定版本可选ui-test（Playwright1.63.0、锁41包）；Chromium v1243/153.0.8010.12及工具均在 `.tools/browsers`，不安装系统依赖。用户运行页面不需要安装ui-test。
+Range缓存初测发现Windows CRT fstat丢失亚秒精度且读取会改变atime；改为高精度Path.stat加句柄dev/ino/size比对，忽略atime，立即等长变更回归通过。只读审查指出DB链接越界、证据99次hash和未知价格错计，均修复并加入测试。
 
-先看 `git status --short` 与本文件，保留 Grok 改动。下一步完成基线复核及检查点，冻结 UI API 后分别实现后端与静态页面；每个节点更新此记录和 HANDOFF。
+初次真实浏览器由于absolute project URL与前端relative身份不一致拒绝视频，已修并有HTTP回归。严格CSP下字符串wait_for_function触发unsafe-eval，测试采用debugger轮询，没有放宽页面CSP。片段篮reload初测失败原因是页面默认另一Completed run；重选原run后恢复通过，不跨run混用片段。
+
+## 最终验证
+
+- `./scripts/verify.ps1`：581 passed、1 skipped（36.96s），Ruff73文件、mypy48文件、CLI和重复离线wheel通过。Windows缺文件symlink权限跳过该真实链接fixture，另有canonical实际路径回归通过。
+- wheel SHA256 `9364955fd0ead454a244a69ed2defea7ace4e0e0c8462f4aa1eb3acb5335c467`，50项包含app.js/index.html/style.css，无模型、DLL、源视频、DB/缓存。
+- 前端独立Chromium21项合成交互检查通过；详细范围见sprint-inspection-frontend。390px移动页面无横向溢出，缩略图限制高度。
+- `scripts/validate-inspection-ui.py --project artifacts/demo-phase0 --run f76f5d6495314c04ae04083614d4afd6`及英文查询各通过：真实95.175874s PV加载，111事件/3候选，28–29s准确暂停在29s，证据图自然宽度非零，JSON/CSV区间/身份/证据匹配，筛选不改rank，无关hybrid为空，同run篮子恢复，0 JS错误。Chromium153.0.8010.12；报告/下载/截图在ignored artifacts/inspection-ui-validation和英文目录。qualityGate=null。
+- 五项用户/系统环境和Python注册表指纹不变；本轮没有付费API请求。可选Playwright1.63.0/锁41包在.venv，浏览器及工具在.tools/browsers；未安装系统依赖/浏览器或使用用户profile。
+
+## 接续
+
+使用run-ui.ps1与user-manual；运行不需要ui-test，验证脚本为显式可选检查。新机不含ignored素材/DB/权重。浏览器原视频编码支持和非零PTS/不同音视频起点尚未联调（TD006）；现有PV通过不能证明全部容器时钟准确。
+
+F007只是本地检查技术合同。F006仍需独立人工U10、长会话性能/成本及pure semantic负例校准；TD001/TD005仍open。来源和边界已同步README、AGENTS、工程/产品规格、架构、quickstart、testing-guide、API、feature_list、assignments和HANDOFF。工具适配器通过共享AGENTS读取，不重复复制状态。

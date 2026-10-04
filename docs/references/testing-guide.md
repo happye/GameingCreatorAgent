@@ -14,4 +14,17 @@ Compute Top-10 Useful Rate with a fixed denominator of ten; missing and duplicat
 
 Do not mark a feature passed because code compiles alone. Attach the feature's test evidence to `progress.md` or a sprint evaluation file.
 
-The CLI demo's integrated verification is 557 passed/0 skip; its real-video evidence is in `sprint-demo.md`. `test_analyze_v2.py` covers partial window recovery, presend ASR identity and unknown-charge consent; `test_search_cli.py` covers nullable audio-only candidates and unverified billing. `test_retrieval_persistence.py` covers schema3 vector identity, foreign keys and transaction rollback. Run `scripts/validate-demo.py --project <project> --run <completed-run>` explicitly for offline real-model comparisons and another process's reads; it makes no paid requests and keeps the human gate null for unlabelled inputs.
+The CLI demo's historical verification and real-video evidence are in `sprint-demo.md`; current integrated results are in `sprint-inspection-workspace.md`. `test_analyze_v2.py` covers partial window recovery, presend ASR identity and unknown-charge consent; `test_search_cli.py` covers nullable audio-only candidates and unverified billing. `test_retrieval_persistence.py` covers schema3 vector identity, foreign keys and transaction rollback. Run `scripts/validate-demo.py --project <project> --run <completed-run>` explicitly for offline real-model comparisons and another process's reads; it makes no paid requests and keeps the human gate null for unlabelled inputs.
+
+`test_inspection_http.py` covers registered media/evidence, relative URL identity, Range/HEAD/416, file changes, valid HTTP errors, project/database boundaries and unknown costs. The real file-symlink check may skip on Windows without symlink privilege; a separate portable canonical-path regression still runs. Check the actual skip reason.
+
+Browser validation is opt-in and needs the locked `ui-test` extra. On a prepared repository:
+
+```powershell
+. ./scripts/env.ps1
+./.tools/uv/uv.exe --no-config sync --locked --extra asr --extra retrieval --extra ui-test --python ./.venv/Scripts/python.exe --no-python-downloads
+./.venv/Scripts/python.exe -B -m playwright install chromium
+./.venv/Scripts/python.exe -B scripts/validate-inspection-ui.py --project artifacts/demo-phase0 --run f76f5d6495314c04ae04083614d4afd6
+```
+
+Tools stay in `.venv`/`.tools/browsers`; temporary profiles use project TEMP. The script starts its own loopback server, checks real playback/seek, images, filter isolation, empty negative search, JSON/CSV identity and basket restoration, and writes ignored `artifacts/inspection-ui-validation/`. Add `--query "Find clips of fighters attacking each other in the arena" --output artifacts/inspection-ui-validation-english` for the English smoke. Existing source files, database and local E5 weights are required. No analysis or paid API occurs. Browser success and selected clips do not pass F006.

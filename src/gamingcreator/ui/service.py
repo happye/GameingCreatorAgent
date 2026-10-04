@@ -187,6 +187,7 @@ async def inspect_run(
     *,
     mode: RetrievalMode = "hybrid",
     top_k: int = 10,
+    project_reference: str | None = None,
 ) -> dict[str, object]:
     """Read events from SQLite, then search only when that run is already completed."""
     artifact = str((project / "timeline.sqlite3").resolve())
@@ -207,7 +208,7 @@ async def inspect_run(
     payload = view_payload(
         inspection_view(timeline, candidates, artifact, abstention_reason=abstention)
     )
-    identity = {"project": str(project.resolve()), "run": run_id}
+    identity = {"project": project_reference or str(project.resolve()), "run": run_id}
     asset = timeline.run.asset
     event_tags = {event.event_id: event.mechanic_tags for event in timeline.events}
     rows = payload["timeline"]

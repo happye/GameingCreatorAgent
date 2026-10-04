@@ -77,6 +77,16 @@
       "test_criteria": "A frozen independent human-labeled benchmark reports every query, fixed-denominator U10, misses/timecode errors, runtime and cold/hot cost; each main mechanic query reaches U10 >= 0.70; sparse/negative groups are separate and unverified cost gates remain null.",
       "dependencies": ["F005"],
       "evidence": ["docs/exec-plans/sprint-F006-worker.md", "docs/references/benchmark-manifest-schema.md", "tests/test_benchmark.py", "docs/exec-plans/sprint-demo.md"]
+    },
+    {
+      "id": "F007",
+      "name": "Local inspection workspace",
+      "description": "User-authorized local project/run inspection, source playback, evidence, filtered timeline and selected-interval manifests; does not replace the F006 human gate or implement video rendering.",
+      "priority": 7,
+      "passes": true,
+      "test_criteria": "Registered source/evidence HTTP boundaries and Range/HEAD/errors pass; real existing footage supports search, seek/end pause, evidence preview, isolated basket restoration and identity-preserving JSON/CSV export; browser behavior checks cover stale responses and text safety using project-isolated tools.",
+      "dependencies": ["F004", "F005"],
+      "evidence": ["docs/design-docs/adr-002-local-inspection-ui.md", "docs/design-docs/inspection-workspace-api.md", "docs/exec-plans/sprint-inspection-workspace.md", "docs/exec-plans/sprint-inspection-frontend.md", "tests/test_inspection_http.py", "scripts/validate-inspection-ui.py"]
     }
   ]
 }

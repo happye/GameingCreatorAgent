@@ -4,7 +4,7 @@ Status: engineering baseline after the 2026-10-03 review; retrieval quality rema
 
 ## Goal
 
-Given a local game video, create a `Video Semantic Timeline` and return timestamped clips for a natural-language query. The prototype is a developer-facing CLI. Do not build the desktop UI, publishing flow, billing, or a general video editor in this phase.
+Given a local game video, create a `Video Semantic Timeline` and return timestamped clips for a natural-language query. Analysis and benchmarking use the developer-facing CLI. On 2026-10-04 the user authorized an existing local inspection workspace with preview, evidence, filtering and selected-interval JSON/CSV exports; see [ADR-002](../design-docs/adr-002-local-inspection-ui.md). The formal desktop UI, publishing flow, billing and general video editor remain outside this phase.
 
 ## Required behavior
 
@@ -17,6 +17,6 @@ Given a local game video, create a `Video Semantic Timeline` and return timestam
 
 ## Go / no-go
 
-For clear game-mechanic queries, at least 70% of ten ranked slots must contain independent clips judged usable or highly relevant by a human. Missing or duplicate-event slots count zero. Freeze main queries with enough labeled events before inference; report sparse and negative queries separately. Follow `docs/references/phase-0-benchmark.md`. Report queries, labels, misses, timecode errors, runtime, and cold model cost. If quality fails, improve understanding/retrieval before starting the UI.
+For clear game-mechanic queries, at least 70% of ten ranked slots must contain independent clips judged usable or highly relevant by a human. Missing or duplicate-event slots count zero. Freeze main queries with enough labeled events before inference; report sparse and negative queries separately. Follow `docs/references/phase-0-benchmark.md`. Report queries, labels, misses, timecode errors, runtime, and cold model cost. If quality fails, improve understanding/retrieval before starting the formal desktop and commercial stages. The authorized local inspection workspace helps inspect evidence; its selections do not constitute human quality labels.
 
 All packages and runtimes must be project-isolated under `.tools/`, `.venv/`, and `.cache/`; never install into the host system. F000 records review decisions; its document acceptance does not mark F001–F006 or the Phase 0 gate passed.

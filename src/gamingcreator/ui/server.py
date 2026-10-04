@@ -188,6 +188,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                         self.repository,
                         mode=modes[mode],
                         top_k=top,
+                        project_reference=query.get("project"),
                     )
                 )
                 self._json(200, payload)
@@ -201,7 +202,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     "exitCode": int(error.exit_code),
                 },
             )
-        except (BrokenPipeError, ConnectionResetError):
+        except ConnectionError:
             return
         except (OSError, ValueError):
             self._json(

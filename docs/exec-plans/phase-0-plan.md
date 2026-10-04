@@ -22,7 +22,7 @@ flowchart LR
 | F005 | `application/retrieval`、检索适配、`tests/retrieval`、CLI组合更新 | 前提 F003＋F004。固定run检索、词法与语义方案对照、去重/排序/证据/源时间；无片段合法、相同配置可复现 |
 | F006 | benchmark执行器/人工标签清单、`tests/benchmark`、go/no-go报告 | 前提 F005；标签准备可先行。主组逐查询≥70%、少例/负例、独立测试集、时间误差、冷/热成本与长素材速度；不达标保留未通过 |
 
-语言决策遵循 [ADR-001](../design-docs/adr-001-phase-0-language.md)：Phase 0 Python，未来 UI 另作选型。F003 内部可将 ASR 与视觉拆为两项 owner，前提 DTO 已集成并分别拥有文件。公共 domain/ports 由 F001 owner 集中落地；其他 Agent 不同时改共享接口。pyproject/uv.lock 的跨特性依赖变更由集成负责人串行更新。每个编码会话使用独立 branch/worktree，在 `assignments.md` 分配后开始；根 HANDOFF/progress/feature_list 由集成负责人汇总。
+语言决策遵循 [ADR-001](../design-docs/adr-001-phase-0-language.md)：Phase 0 Python，未来正式桌面 UI 另作选型。2026-10-04 用户授权的 F007 本地检查工作台按 [ADR-002](../design-docs/adr-002-local-inspection-ui.md) 复用 Python 和零依赖静态页面，技术验收见 [sprint-inspection-workspace](./sprint-inspection-workspace.md)；它不改变 F006。F003 内部可将 ASR 与视觉拆为两项 owner，前提 DTO 已集成并分别拥有文件。公共 domain/ports 由 F001 owner 集中落地；其他 Agent 不同时改共享接口。pyproject/uv.lock 的跨特性依赖变更由集成负责人串行更新。每个编码会话使用独立 branch/worktree，在 `assignments.md` 分配后开始；根 HANDOFF/progress/feature_list 由集成负责人汇总。
 
 人工标签准备：先在用户素材上形成开发事件表和查询，人工核对可见性；收集小时级录像与10–20代表会话后冻结主组。F000仅测三段；F002已完整处理额外275.831s Atom录像在内的四段，但不证明模型质量。同录制来源先放同组；模型标签不能代替独立人工标签。
 

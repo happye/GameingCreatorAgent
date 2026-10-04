@@ -74,4 +74,12 @@ SQLite 专用线程、进程锁、九表迁移/组合 FK、媒体/语义 checkpo
 
 ## 2026-10-04 本地检查工作台持续检查点
 
-用户在Grok新增检查页后要求Codex接续基础功能。保留其全部未提交改动，复核后保存 `32d5a3b`：561passed/0skip、mypy47/Ruff/重复wheel通过。恢复28个项目内stdlib pyc的归档hash，未改收据或系统配置。root分支 `codex/inspection-workspace`、前端独立worktree；后端Range/HEAD、注册媒体/证据、HTTP错误/访问范围、来源/费用/转录/标签读取已实现，定向21passed/1symlink权限skip。页面worker交付0d9e3c5待集成；尚未宣称新工作台完整验收。可选浏览器测试工具固定锁并安装在.venv/.tools/.cache；没有新的付费模型调用。下一条操作集成前端、真实PV浏览器验证与全量verify；详情sprint-inspection-workspace。
+用户在Grok新增检查页后要求Codex接续基础功能。保留其全部未提交改动，复核后保存 `32d5a3b`：561passed/0skip、mypy47/Ruff/重复wheel通过。恢复28个项目内stdlib pyc的归档hash，未改收据或系统配置。该中间节点后端定向21passed/1symlink权限skip、前端待集成；随后结果见下面交付记录。
+
+## 2026-10-04 F007 检查工作台交付
+
+已集成前端9fcbdec/614c10d，完成本地项目/run选择、原视频Range播放、区间跳转/结束暂停、证据帧/音频/转录、描述/标签筛选、阶段/费用和隔离片段篮JSON/CSV清单。修复HTTP错误码、DB实际路径边界、证据逐图全源hash、未知价目计费、相对project URL身份及取消连接。F007技术验收true；F006人工gate保持false。
+
+最终verify581passed/1symlink权限skip（36.96s）、Ruff73/mypy48/CLI/重复wheel通过；SHA9364955fd0ead454a244a69ed2defea7ace4e0e0c8462f4aa1eb3acb5335c467，50项含3静态资源无媒体/模型/DB。真实PV中英文浏览器检查均通过：111事件/3候选、28–29s停29s、证据、微秒/身份导出、筛选、负例空结果、同run恢复、0JS错误。worker21项合成浏览器交互通过。Playwright/Chromium全在项目内，五项指定宿主边界指纹未变，无新付费API。
+
+共享规格、架构、README/AGENTS、使用/测试手册、feature_list、assignments/HANDOFF已同步；工具适配器仍引用共享规则。TD006记录非零PTS/不同流起点及编码浏览器支持待验证。正式桌面/MP4渲染/商业流程未实施，下一优先F006独立冻结标签及TD001/TD005长素材验证。版本提交/推送见HANDOFF，未提交不当已推送。

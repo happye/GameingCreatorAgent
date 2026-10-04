@@ -6,16 +6,19 @@ This repository is the starting point for a local-first game-content creation to
 
 ## Current state
 
-The command-line demo now analyzes local footage, stores a semantic timeline, and finds candidate clips from a natural-language query. It combines local ASR, sampled-frame DeepSeek vision, SQLite, lexical search and local multilingual E5 embeddings. F000–F005 meet their technical acceptance criteria; F006's independent human quality gate remains unverified. The integrated checks passed 557 tests with no skips, Ruff/mypy and matching offline wheel builds. There is no GUI or complete commercial content-production workflow. Phase 0 uses Python, SQLite and FFmpeg; see the [language decision](./docs/design-docs/adr-001-phase-0-language.md).
+The command-line demo analyzes local footage, stores a semantic timeline, and finds candidate clips using local ASR, sampled-frame DeepSeek vision, SQLite, lexical search and local multilingual E5 embeddings. The local inspection workspace adds video preview, evidence, timeline filtering and selected-interval JSON/CSV exports. F000–F005 meet their technical criteria; F006's independent human quality gate remains unverified. The workspace has passed real-video browser validation and integrated checks; see the [verification record](./docs/exec-plans/sprint-inspection-workspace.md). Video rendering and the commercial workflow remain future work. Phase 0 uses Python, SQLite and FFmpeg; see [ADR-001](./docs/design-docs/adr-001-phase-0-language.md) and the [workspace decision](./docs/design-docs/adr-002-local-inspection-ui.md).
 
 On the prepared workstation, open the existing completed demo without API calls or network access:
 
 ```powershell
 ./scripts/setup-demo.ps1 -Offline
 ./scripts/run-demo.ps1 -Run f76f5d6495314c04ae04083614d4afd6 -Query "寻找角色打斗和攻击的片段"
+./scripts/run-ui.ps1
 ```
 
 See the [user manual](./docs/references/user-manual.md) for setup, analysis, search, resume and the local inspection page (`./scripts/run-ui.ps1`), and the [demo quickstart](./docs/references/demo-quickstart.md) for the shortest replay. Local videos, models and the demo database are ignored and do not arrive with a Git clone.
+
+Open `http://127.0.0.1:8765/`, choose a project and completed run, search, preview candidates, and add intervals to the clip basket. JSON/CSV preserve source identity, microsecond ranges and evidence; they are interval manifests. To analyze new footage, use the CLI first.
 
 ## Start here
 
