@@ -1,12 +1,19 @@
 # Active assignments
 
-协调规则见 `docs/references/agent-workflow.md`。2026-10-04用户指定Codex接续Grok检查页，当前root负责最终集成和共享记录。所有本轮worker已冻结，禁止从旧scratch覆盖root；当前分支/推送状态见HANDOFF及git。
+协调规则见 `docs/references/agent-workflow.md`。2026-10-04用户否决玩法检索，当前root负责F009集成和共享记录。上一轮UI worker冻结，本轮temporal worker活动状态见下表；禁止从旧scratch覆盖root。分支/推送状态见HANDOFF及git。
 
 ## 当前交付
 
-最新活动任务：F006玩法时序修正 / root / codex/temporal-gameplay，拥有配置读取、analysis窗口、实验与公共文档。新视觉worker限独立worktree的deepseek_vision.py、新temporal测试及自己的sprint。temporal_audit和temporal_acceptance仅只读。下面F007/F008为已交付历史，不是本轮占用；恢复见sprint-temporal-gameplay。
+| 当前 owner | Branch/worktree | 独占范围 | 状态 |
+| --- | --- | --- | --- |
+| root / F009 | codex/temporal-gameplay，root | inputs/local_files、analysis、sqlite_store配置白名单、run-demo、test_temporal_analysis、公共文档/实验执行 | 1500db7；39项定向/mypy通过，未整体验证 |
+| temporal_vision | codex/temporal-vision，.worktrees/temporal-vision | deepseek_vision.py、test_temporal_vision.py、own sprint | 开发/要求保存检查点；不调用API |
+| temporal_pilot | codex/temporal-pilot，.worktrees/temporal-pilot | validate-temporal-gameplay.py、可选test_temporal_pilot.py、own sprint | 1fc13e0初始检查点，离线验证中；不调用API |
+| temporal_audit / temporal_acceptance | 只读root | 根因、官方模型/价目、验收设计 | done，无文件改动 |
 
-F008当前技术验收已通过：root负责app.js、验证/共享记录和冻结后的细化，已验证87637af同步origin/main与origin/codex/workspace-usability，root当前main；workspace_layout在独立worktree交付HTML/CSS，5a44dfd/7ad1321已集成1bf8881/600276e并冻结。acceptance_deployment/visual_review只读核对已完成。无活动并行写入；最终版本见HANDOFF。F006仍false，证据sprint-workspace-usability。
+下面F007/F008为已交付历史，不是本轮占用；恢复见sprint-temporal-gameplay。F006用户定性验收未通过，正式U10未运行；F009false。
+
+F008技术验收已通过：87637af同步origin/main与origin/codex/workspace-usability，317b22d为主线交接；workspace_layout的5a44dfd/7ad1321已集成1bf8881/600276e并冻结。acceptance_deployment/visual_review只读核对已完成。证据sprint-workspace-usability。
 
 | Feature / owner | Branch/worktree | Owned files | State / evidence |
 | --- | --- | --- | --- |

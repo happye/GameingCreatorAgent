@@ -4,13 +4,19 @@
 
 ## 当前结果与版本
 
-**2026-10-04最新用户验收：F006玩法检索未通过。** 用户反馈打Boss、跳跃、射击找不到，现有描述缺动作过程与连续性。root已切codex/temporal-gameplay，优先连续多帧分析与小范围新旧实测，计划见sprint-temporal-gameplay。此前技术合同通过不代表内容可用；禁止继续把3条PV攻击候选当玩法质量证据。起点317b22d，当前实现与实验待完成，恢复先核对git和该sprint。
+**2026-10-04最新用户验收：F006玩法检索未通过。** 用户反馈打Boss、跳跃、射击找不到，现有描述缺动作过程与连续性。root在codex/temporal-gameplay，优先连续多帧分析与小范围新旧实测，计划见sprint-temporal-gameplay。此前技术合同通过不代表内容可用；禁止继续把3条PV攻击候选当玩法质量证据。
 
-F007本地检查工作台已交付，本轮F008进一步完成固定桌面布局、预览/时间轴/篮子同屏、列表滚动保持和按源时间选片排序。既有能力：项目/run选择、原视频播放与区间结束暂停、证据图/音频与转录、描述/标签筛选、阶段/费用、按run隔离的片段篮、JSON/CSV区间清单。新视频仍用CLI分析；页面不触发付费分析、不生成MP4、不发布或结算。
+当前保存：482e20e记录验收否决；1500db7包含v3配置/存储白名单、9帧/2帧重叠能力、独立pipeline身份和run-demo的-Config。定向39项通过（warnings=error）、mypy48源文件通过；新完整verify、联合provider和真实对照尚未运行，F009false，F006false。本轮未有新付费调用。进程key仅查存在性，不复制聊天/环境密钥。
+
+活动worker：temporal_vision在.worktrees/temporal-vision拥有deepseek_vision.py、test_temporal_vision.py、own sprint；temporal_pilot在.worktrees/temporal-pilot拥有validate-temporal-gameplay.py、可选test_temporal_pilot.py、own sprint，已保存1fc13e0（当时未lint/type/test，后续修正见git）。都已要求保存可恢复提交，不覆盖root。root还拥有test_temporal_analysis.py及全部公共记录。接手先git status/worktree list，读worker sprint/commit，只cherry-pick独占提交，不移动旧scratch到root。
+
+下一条工作：集成provider后更新旧capabilities测试的max_images=9并运行相关pytest；生成新prompt真实hash的config.temporal.example.json（旧config.example不变）；集成pilot先不带--execute准备manifest，再用有限预算小范围新旧/静帧对照，记录所有失败费用。实测改善前不全量分析/不宣称跳跃、射击、Boss已修复，不能用mock输出当内容质量。第一次推送1500db7因GitHub443失败；未称已上传，重试/最终状态以git为准。
+
+上一轮F007/F008本地检查工作台已交付固定桌面布局、预览/时间轴/篮子同屏、列表滚动保持和按源时间选片排序。既有能力：项目/run选择、原视频播放与区间结束暂停、证据图/音频与转录、描述/标签筛选、阶段/费用、按run隔离的片段篮、JSON/CSV区间清单。新视频仍用CLI分析；页面不触发付费分析、不生成MP4、不发布或结算。
 
 F000–F005、F007、F008技术合同已验收；**F006独立人工U10仍false**。用户明确授权本地检查交互，依据ADR-002；正式桌面/商业阶段仍有原质量门槛。
 
-已验证代码87637af已普通快进同步并推送origin/main和origin/codex/workspace-usability；root当前main，后续交接文档提交见git log。工作检查点1684587/decf5b2已保存；HTML/CSS worker5a44dfd/7ad1321已集成1bf8881/600276e，root最终字体/比例/canvas与排序回归通过。计划/证据见sprint-workspace-usability，全部本轮worker已冻结。不要从历史worktree覆盖root。
+上一轮已验证代码87637af与收尾文档317b22d已同步origin/main；origin/codex/workspace-usability保留87637af。HTML/CSS worker5a44dfd/7ad1321已集成1bf8881/600276e，上一轮worker冻结。计划/证据见sprint-workspace-usability；本轮改动仅在codex/temporal-gameplay，不从历史worktree覆盖root。
 
 本轮GitHub443间歇连接失败，重试已成功完成最终推送，不改全局Git。最终新版可直接刷新8765页面：桌面各面板内滚动，源预览/时间轴/篮子同时可见；源码由main提供，最新页面HTTP200且含片段篮面板。F006是内容评级0/1/2/3、每主查询前十槽≥7独立可用事件，见human-acceptance-guide；本地混合推理与未来EXE见deployment-roadmap，当前并非全离线/已打包EXE。
 
@@ -43,8 +49,8 @@ F000–F005、F007、F008技术合同已验收；**F006独立人工U10仍false**
 
 ## 下一步与恢复规则
 
-1. 先核对 `git status --short`、当前分支及远端状态，再按以下剩余事项新建任务。当前交付已普通快进同步main，工作台8765已启动；会话/电脑关闭后用run-ui.ps1重新启动，不依赖Agent内存中的进程号。
-2. 后续优先F006：冻结独立录制会话和主/稀疏/负例人工标签，再校准召回/动作边界。已有4开发视频490.693314s且有同源分组，不等于10–20独立会话或小时级验收。
+1. 先核对 `git status --short`、当前分支及远端状态，接续顶部F009活动任务。F008已在main；当前时序改动勿未经验证推main。工作台8765可继续用旧结果；关闭后用run-ui.ps1重新启动，不依赖Agent内存中的进程号。
+2. 优先改善动作理解并小范围验证，然后F006冻结独立录制会话和主/稀疏/负例人工标签、校准召回/动作边界。已有开发素材及同源分组不等于10–20独立会话或小时级验收。
 3. TD001：长媒体showinfo/ashowinfo16MiB上限；TD005：1024文本请求上限（查询占1，最多1023文档）及长索引；TD006：非零PTS、不同音视频起点的浏览器currentTime映射/编码支持尚未验证。保持E5固定batch=1的空间身份和稳定性。
 4. 正式桌面、Creative Planner、MP4渲染/发布另立工程任务，勿以F007替代F006门槛。
 

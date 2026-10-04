@@ -1,5 +1,11 @@
 # Progress Log
 
+## 2026-10-04 用户否决F006玩法理解，提前交接检查点
+
+确认v2一次已发5图，但截图事实/单帧事件合同无法证明动作。已记录用户打Boss/跳跃/射击不可用的定性失败，F006false；root切codex/temporal-gameplay，482e20e保存根因/计划，1500db7保存v3配置/SQLite白名单、9帧/2帧重叠、新pipeline和run-demo显式配置。39项定向测试与mypy48通过；首次测试的存储白名单/fixture hash缺口已修，独立pytest缓存避开Windows锁。
+
+temporal_vision与temporal_pilot在各自worktree开发独占provider及有限新旧对照脚本，已要求立即保存commit/证据，不写root。尚未集成、没有新付费API、未跑新完整verify、不宣称时序质量改好；F009false。用户提醒额度近时已提前同步HANDOFF、assignments、验收/恢复指南。首次推送GitHub443失败，真实推送状态见HANDOFF/git；绝不把本地检查点称已上传。
+
 ## 2026-10-03 — F002 local media accepted
 
 - F001 integrated/pushed to main at `754125f`. Implemented local FFmpeg media port, exact PTS/Fraction/common origin, timestamped JPEG, 16k WAV with piecewise sample mapping, hashes and validated manifest publication.
