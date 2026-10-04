@@ -4,6 +4,8 @@
 
 ## 当前任务：Grok复核与可测试版本
 
+最新检查点：42604f9集成新frame合同；v4 profile与CLI联动、原schema兼容及HTTP联合测试217 passed/1权限skip、Ruff/mypy通过。现在准备同0–4秒有限v4真实重测（新目录artifacts/temporal-v4-execute-0），未记录新费用/效果；launcher worker仍活动。先核对实验report.json再继续，不能把启动试验当完成。28个项目stdlib pyc已从固定归档恢复、收据不变，init完整通过。
+
 Codex已将Grok全部未提交集成保存为4c37a63（codex/temporal-gameplay），不回滚其实现或实验。只读复核确认费用/失败记录一致；v3旧响应未保存，无法断言具体坏端点。当前改用独立v4合同：模型选起止frame alias，程序用源时钟生成半开区间；保留v1/v2/v3内容/hash。root已接入配置/SQLite/analysis/pilot新版本，并新增/api/health；对应配置/pilot/HTTP定向检查通过，暂未新API调用。F006/F009仍false。
 
 活动worker：temporal_frame_contract在.worktrees/temporal-frame-contract拥有deepseek_vision.py/new test/own sprint；workspace_launcher在.worktrees/workspace-launcher拥有Start-Workspace.cmd、scripts/start-workspace.ps1、真实PowerShell生命周期测试/own sprint。都不得回写root其他文件。旧temporal-vision/pilot及全部历史scratch冻结。

@@ -287,17 +287,17 @@ def test_legacy_prompt_hashes_remain_frozen_and_v3_has_independent_identity() ->
     }
     assert len(fingerprints) == 3
     with pytest.raises(ValueError, match="Unsupported vision prompt version"):
-        vision_prompt_fingerprint("phase0-vision-v4")
+        vision_prompt_fingerprint("phase0-vision-v5")
 
 
-def test_temporal_example_pins_the_shipped_v3_prompt_hash() -> None:
+def test_temporal_example_pins_the_shipped_frame_boundary_prompt_hash() -> None:
     root = Path(__file__).resolve().parents[1]
     temporal = json.loads((root / "config.temporal.example.json").read_text(encoding="utf-8"))
     legacy = json.loads((root / "config.example.json").read_text(encoding="utf-8"))
-    v3_hash = vision_prompt_fingerprint(PROMPT_VERSION_V3)
-    assert temporal["vision"]["promptVersion"] == PROMPT_VERSION_V3
-    assert temporal["vision"]["promptHash"] == v3_hash
-    assert len(v3_hash) == 64 and set(v3_hash) <= set("0123456789abcdef")
+    latest_hash = vision_prompt_fingerprint("phase0-vision-v4")
+    assert temporal["vision"]["promptVersion"] == "phase0-vision-v4"
+    assert temporal["vision"]["promptHash"] == latest_hash
+    assert len(latest_hash) == 64 and set(latest_hash) <= set("0123456789abcdef")
     assert temporal["sampling"] == {"intervalMs": 500, "windowFrames": 9, "windowOverlap": 2}
     assert legacy["vision"]["promptVersion"] == PROMPT_VERSION_V2
     assert legacy["vision"]["promptHash"] == (

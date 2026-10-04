@@ -128,6 +128,10 @@ async def project_runs_payload(project: Path) -> dict[str, object]:
                     "sourceName": run.asset.source_path.name,
                     "durationUs": run.asset.duration_us,
                     "errorCode": run.error_code,
+                    "analysisKind": "temporal"
+                    if run.configuration.analysis.vision_prompt_version
+                    in ("phase0-vision-v3", "phase0-vision-v4")
+                    else "frame_observations",
                 }
             )
         return {"runs": rows}
@@ -258,6 +262,10 @@ async def inspect_run(
             "cost": cost_payload(timeline.invocations),
             "retrievalVersion": RETRIEVAL_VERSION,
             "configHash": timeline.run.config_hash,
+            "analysisKind": "temporal"
+            if timeline.run.configuration.analysis.vision_prompt_version
+            in ("phase0-vision-v3", "phase0-vision-v4")
+            else "frame_observations",
             "query": query,
             "mode": mode,
         }

@@ -409,7 +409,8 @@
             state.runs = payload.runs.filter((run) => typeof run.id === "string" && typeof run.status === "string");
             ui["run-select"].replaceChildren();
             for (const run of state.runs) {
-                const option = element("option", "", `${statusLabels[run.status] || run.status} · ${run.sourceName || run.id}`);
+                const analysis = run.analysisKind === "temporal" ? "连续动作（试验）" : "画面观察";
+                const option = element("option", "", `${statusLabels[run.status] || run.status} · ${analysis} · ${run.sourceName || run.id}`);
                 option.value = run.id;
                 ui["run-select"].append(option);
             }
@@ -421,6 +422,7 @@
             }
             ui["run-select"].disabled = false;
             const selected = state.runs.find((run) => run.id === preferredRun)
+                || state.runs.find((run) => run.status === "completed" && run.analysisKind === "temporal")
                 || state.runs.find((run) => run.status === "completed") || state.runs[0];
             ui["run-select"].value = selected.id;
             switchRun(selected.id);
@@ -519,7 +521,8 @@
         ui["source-name"].textContent = view.media.name || "源视频";
         ui["source-duration"].textContent = `源时长 ${timecode(view.media.durationUs)}`;
         ui["run-state"].className = `run-state ${view.runStatus}`;
-        ui["run-state"].textContent = `${statusLabels[view.runStatus] || view.runStatus} · ${state.run}`;
+        const analysis = view.analysisKind === "temporal" ? "连续动作分析（试验）" : "旧画面观察";
+        ui["run-state"].textContent = `${statusLabels[view.runStatus] || view.runStatus} · ${analysis} · ${state.run}`;
         ui["event-count"].textContent = view.timeline.length;
         const transcripts = Array.isArray(view.transcripts) ? view.transcripts : [];
         ui["transcript-count"].textContent = transcripts.length;

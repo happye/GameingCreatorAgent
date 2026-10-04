@@ -5,8 +5,8 @@
     "model": "deepseek-flash",
     "priceVersion": "deepseek-flash-cny-2026-10-04",
     "maxOutputTokens": 2048,
-    "promptVersion": "phase0-vision-v3",
-    "promptHash": "27762b0b9d390c64d53ec4be815bd6e8ead4d249ec9864bb87735223b3ad1c4d"
+    "promptVersion": "phase0-vision-v4",
+    "promptHash": "9ea350e10eb028f1f5e2dc7d355ebd1d080ad8ae8397eb709705a25773323f48"
   },
   "limits": {
     "maxRequests": 500,

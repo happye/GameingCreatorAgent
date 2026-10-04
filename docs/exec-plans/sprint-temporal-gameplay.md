@@ -2,6 +2,8 @@
 
 ## Codex恢复复核与v4进行中
 
+provider d026103已集成为42604f9；最新配置真实hash为9ea350e10eb028f1f5e2dc7d355ebd1d080ad8ae8397eb709705a25773323f48。联合相关测试217 passed/1权限skip（5.48s）、Ruff/mypy48通过，旧v3 hash未变。即将运行同0–4秒的有界v4试验，输出全新artifacts/temporal-v4-execute-0，费用/新结果尚未知，F006/F009未验收。工具收据检查发现28个stdlib pyc漂移，仅从固定SHA归档恢复这些文件，receipt/程序/DLL未改，完整init随后通过。
+
 已将Grok集成全量保存4c37a63。费用/失败/冻结manifest与交接一致；v3只记录evidence_outside_range，缺原响应与坏区间，不能确定具体端点错误。新增v4设计用起止frame alias替代模型微秒算术，程序映射为SourceRange，旧v3保持不变；有限白名单结构诊断可定位新失败，不记录原模型文本。root已支持新配置/store/analysis/pilot（附同帧C对照），新增本地health识别给一键启动器；定向配置/pilot/HTTP已通过。本轮尚未执行新收费调用或宣称动作检索改善。
 
 temporal_frame_contract/workspace_launcher在独立worktree实现各自独占文件。新完整verify和浏览器/真实API待集成后完成。根目录一键启动需求已分配，不再让用户仅手动起服务/复制URL。F006/F009仍false。

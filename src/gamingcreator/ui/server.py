@@ -175,6 +175,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                         "apiVersion": 1,
                         "repository": str(self.repository.resolve()),
                         "pid": os.getpid(),
+                        "parentPid": os.getppid(),
                     },
                 )
                 return

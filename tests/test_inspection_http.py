@@ -117,6 +117,7 @@ def test_health_identifies_repository_and_pid_without_model_or_storage(tmp_path)
             "apiVersion": 1,
             "repository": str(tmp_path.resolve()),
             "pid": os.getpid(),
+            "parentPid": os.getppid(),
         }
         assert get(base, "/api/health", headers={"Host": "external.invalid"})[0] == 403
         assert get(base, "/api/health", headers={"Origin": "https://external.invalid"})[0] == 403
@@ -158,6 +159,7 @@ def test_inspect_empty_query_is_a_read_with_metadata(tmp_path):
         payload = json.loads(body)
         assert status == 200 and payload["candidates"] == []
         assert payload["media"]["durationUs"] == 2_000_000
+        assert payload["analysisKind"] == "frame_observations"
         assert payload["timeline"][0]["mechanicTags"] == ["fixture-mechanic"]
         assert payload["evidence"][0]["startUs"] == 100_000
         assert payload["stages"][0]["status"] == "completed"
