@@ -1,5 +1,9 @@
 # Errors
 
+## 2026-10-05: Wait for the selected run, and preserve the workspace CSP
+
+The first real V6 browser report captured the loading option as defaultRunId because it only waited for a nonempty select. The validator now waits for an enabled run/search and populated timeline; the repeated report and fresh production browser both confirmed the V6 default. An ad hoc diagnostic used Playwright wait_for_function and hit unsafe-eval CSP rejection; use the established debugger-evaluate polling helper rather than weakening CSP. Launching the user's browser from the filesystem sandbox failed with Access denied; the authorized escalated Start-Workspace.cmd reused the same owned local service and succeeded. GitHub push still timed out after21s; save local commits and record pending remote synchronization.
+
 ## 2026-10-05: Persist worker state before usage exhaustion and distinguish valid segments
 
 The V6 worker exhausted its usage allowance before sending a final report/commit. Its isolated worktree already contained implementation, tests and a sprint note; a fresh worker can continue those exact files rather than restarting. Root checkpoints must include resumable unfinished changes and a concise current HANDOFF, not stacks of contradictory current-status paragraphs. Real V5 twice produced identical start/end clocks in window31.5–35.5; strict rejection is correct. Do not relax the parser or repeatedly spend on the same frozen prompt; qualify multi-frame actions before adding visual detail in a separately fingerprinted revision.
