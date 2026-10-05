@@ -20,8 +20,8 @@ attempt-v2保存完整InvocationMetadata、usage、状态/错误、promptHash及
 - init完整工具链检查通过；Ruff check和mypy56 source files通过。
 - 第一轮定向143通过；追加完整取消传播/损坏记录/Completed准入及现有UI回归后，**167 passed，15.00s**。
 - 测试为transport fixture，无真实HTTP；覆盖未知费用、网络失败、恢复各写入边界、重复/越界/跨镜头帧、主体隔离、同图动作拒绝、外部cancel持久化后传播、schema降级/重复键拒绝。
-- 即将运行完整scripts/verify.ps1（含离线重复wheel），最新完整结果仍是基线999/1skip，不能提前宣称本轮完整通过。
+- 完整scripts/verify.ps1通过：**1043 passed / 1 Windows文件symlink权限skip，91.11s**；Ruff100文件、mypy56、CLI入口通过，两次离线wheel同SHA `7d8e9515442f9e66f6a43637404017d42884cec9690ae873d81f7c3c1076a753`。日志`.cache/detail-provider-verify.log`。
 
-待完成：全量验证与证据/交接同步；本切片未接CLI/UI付费动作或typed查询manifest，检查视图默认v1身份保持原合同，v2调用显式选择identity。下一切片将接typed查询和精分析profile选择。
+实现检查点23d8422；本切片已验证完成，未接CLI/UI付费动作或typed查询manifest，检查视图默认v1身份保持原合同，v2调用显式选择identity。顺序继续typed查询和精分析profile选择。
 
 无新付费API；旧漫画未知预留¥4.065536及总承诺¥4.29637520保留。F006/F009/F010=false；结构fixture不作为真实精分析或独立人评。

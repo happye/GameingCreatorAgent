@@ -1,6 +1,6 @@
 # Active assignments
 
-2026-10-05继续开发：root / Codex在codex/visual-details独占新增detail Provider/record codec、sidecar预算恢复、相关测试与共享文档；见sprint-detail-provider.md。当前基线8bcf1ae；先离线验证，不发新付费API。此前检查视图任务已完成，历史worktree仍冻结。
+2026-10-06继续开发：root / Codex在codex/visual-details完成detail Provider/record codec和sidecar恢复，实现23d8422、完整verify1043/1skip。现在独占typed query codec/离线CLI/match侧车、检查profile参数、相关测试与共享文档，见sprint-detail-query.md；历史worktree仍冻结，无新付费API。
 
 ## 2026-10-05 当前细节优化
 
