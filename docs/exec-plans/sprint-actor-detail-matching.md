@@ -35,3 +35,13 @@ CLI显示/不确定性与benchmark map已由root修正；raw篮子校验、投�
 只读子Agent复核后补共同支持帧、未知主体、跨key预算锁与ports依赖；两文件139行、相对链接全部有效、`git diff --cached --check`通过，暂存仅两新文件。
 接手先核对root全检与已集成任务1，再从任务2的ports骨架/规范hash开始；勿重复合同或创建新的prompt修旧run。V6 Demo和追加漫画网络失败/unknown预算以HANDOFF为准，不续跑旧failed V5或清零未知费用。
 所有实现、独立人评与质量验收完成前，禁止将F010或相关待验特性`passes`改为true。
+
+## 合同实施已冻结，下一步交接
+
+root已集成2e95485→bb05b66实现、410bb245→cd1810c独立测试，两个worktree干净并冻结。schema/词表/query schema/query/matcher五版本均为v1；query canonical JSON与固定SHA `1342b945da41cb36d95f3d6d825d99aba126caf753db55347210ebf8cf736ad8`，供ports复用。新的ConstraintSupport、AttributeConflict、ActorMatch和DetailMatch保留满足/缺失/不确定/反证与共享帧/时钟证明，未接自由文本或UI。
+
+审查修复：现有CandidateClip采用run:event:完整event ID生成，不能自造相似公式；黑发只在f0不反证f1白发，蓝围巾不反证未知外套，属性不越支持范围延续。旧facts/配置/检索/篮子没有迁移。最终独立73domain+18matcher+3architecture=94passed/0skip（0.32s），root完整verify收尾以HANDOFF与.cache/detail-actor-final-verify.log为准。
+
+用户额度9%提示后进入交接。下一Agent按任务2只先交Application request/result/Provider/Store ports和canonical requestHash，重验当前Completed run的raw candidate/事件fingerprint/注册证据/hash/源时钟；接口冻结后才能并行Provider预算与sidecar。继承旧原始数据，缺结构必须unverified。两候选精分析前处理网络/未知预算：追加第二PV两provider.network造成¥4.065536未确认预留，总本轮承诺¥4.29637520，不能换目录或重试清账；详见HANDOFF。没有新的human labels，F006/F009/F010仍false。
+
+root最终完整verify967passed/1 Windows权限skip（71.87s）、Ruff90/mypy51/CLI/两离线wheel通过，SHA79504099f604bc33810b4bc880ec2f05bf9096fd0b70347019163b02cf80e57d。任务1和独立tests技术合同已整合，任务2开始前以HANDOFF检查当前分支和预算；F006/F009/F010仍false。

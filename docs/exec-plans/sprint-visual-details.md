@@ -77,3 +77,11 @@ CLI实际脚本补验：run-demo -Run新V6 -Query指挥棒 -TopK3已返回真实
 当前所有已知/未知承诺合¥0.23083920/unknown0。利用用户提供的第二段95.175874s漫画PV，在新项目artifacts/demo-visual-manga创建V6 run，明确使用config.detailed-v6.example.json、同hash/detailed-v2与隔离模型。新run最大预算¥4.76916080=本轮5减既有全部费用；含失败/unknown，不能跨项目重置总上限。原demo-phase0漫画V2、AtomV4/V6及其篮子不改；项目默认仍demo-phase0。仅补现有细节试验覆盖，不证明人评或新增渲染功能。分析日志.cache/detail-v6-manga-analyze.log；如失败先记有限错误，不盲目重试同窗口。
 
 追加漫画V6 run `0ba106578bc7435c8689d12892a35dfb` failed：media/asr完成，第一窗口attempt1/2均provider.network（207ms/21ms，无actual model/usage/cost），第三次发送前budget.exhausted，0事件。两次unverified预留各¥2.032768，合¥4.065536；不是实际扣费确认，不能置零。本轮已知¥0.23083920 + 未知承诺¥4.065536 = ¥4.29637520，余¥0.70362480不足下次保守预留，故停止API调用，不改预算或新建run清零。原日志/SQLite保存；网络限制具体成因未有可核实诊断，不臆测原服务故障或已扣费。现有Atom新Demo和旧漫画正常。后续合同/ports/sidecar可离线继续；真实精分析试验先处理网络与未知费用/明确新预算。
+
+## 2026-10-05 最终收尾与交接（用户额度9%提示）
+
+主体合同2e95485→bb05b66、独立测试410bb245→cd1810c已整合，两个worktree干净冻结。root完整verify **967 passed / 1 Windows symlink权限skip，71.87s**，Ruff90文件、mypy51、CLI、两次离线wheel通过；SHA `79504099f604bc33810b4bc880ec2f05bf9096fd0b70347019163b02cf80e57d`，日志.cache/detail-actor-final-verify.log。旧基线876仅历史。CLI长事实已用Format-List保留待核对列，实际新run命令通过。
+
+新demo-phase0 Atom默认f601.../33事件/profile detailed，已有真实浏览器和旧数据字节验证；typed matcher供结构化调用者使用，未接自由长句、精分析Provider/sidecar或UI，不宣称F010/F006通过。下一Agent先做Application精分析request/result/ports及规范hash，接口冻结后再拆Provider预算与Store/UI；详见sprint-actor-detail-matching与HANDOFF。
+
+追加漫画V6网络失败、unknown2/预留¥4.065536已记录model-budget-summary.json；已知¥0.23083920/总承诺¥4.29637520，禁止新目录清账或擅自重试。GitHub常规push仍443连接超时，本地提交已持久化，远端待同步，最新远端main仅最后已知72d692b。用户额度提醒后不启动新任务/API；共享文档与feature_list保持false，恢复步骤已具体落盘。

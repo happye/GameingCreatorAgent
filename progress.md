@@ -123,3 +123,11 @@ F008true、F006false；人工质量标准和本地/云端/未来EXE说明分别�
 30组离线查询和真实工作台播放/证据/篮子源序/JSON/CSV/桌面与手机布局通过；启动脚本实际复用，生产默认新V6/33事件，旧两timeline bytes不变。描述f0/f1清理并展示待核对；仍有物品误认、待机和跨切镜问题，恶魔领主复合例hybrid8只是局部召回，同主体AND尚未接入。F006/F009/F010仍false。
 
 证据artifacts/visual-detail-v6-delivery与sprint-visual-details；合同Agent在独立actor-detail-contract工作树继续类型/同主体同部件/共同证据纯匹配。环境全项目隔离，无新增依赖。GitHub443仍未连通，远端同步待正常push，不把本地commit称为已推送。
+
+## 2026-10-05 — 主体/部件纯匹配器集成并完成额度收尾
+
+工程规格a7789b4、实现2e95485→bb05b66、独立测试410bb245→cd1810c已整合：同actor/同part/共同支持帧AND、逐帧反证、互斥与unknown保护；修复真实candidate ID兼容。两独立worktree冻结。最后完整verify967passed/1 Windows权限skip（71.87s）、Ruff90/mypy51/CLI/两离线wheel通过，SHA79504099f604bc33810b4bc880ec2f05bf9096fd0b70347019163b02cf80e57d。typed匹配尚未接自由文本、精分析与UI；下一步Application ports/hash后Provider和sidecar。
+
+追加95s漫画V6在新项目第一窗口两次provider.network，run0ba106578bc7435c8689d12892a35dfb failed/0事件，原媒体/ASR保留；第三次发送前budget.exhausted。两次未知预留合¥4.065536，已知¥0.23083920，总承诺¥4.29637520，不是账单，停止新API并保留原账本。Atom细节Demo继续默认可用，旧两snapshot bytes不变。GitHub443仍超时，正常工作分支push未完成。
+
+用户提醒五小时额度剩9%后主动完成交接、规格/分工/feature_list与历史同步，不再开新实验。HANDOFF列下个Agent的具体ports任务、源码/测试检查点、失败日志和预算限制；F006/F009/F010仍false。
