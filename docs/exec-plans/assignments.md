@@ -2,6 +2,8 @@
 
 ## 2026-10-06 用户反馈与持久汇报
 
+新编码切片见sprint-detail-temporal.md：detail_parts_v3使用新 `.worktrees/detail-temporal-entities` / `codex/detail-temporal-entities`，独占新temporal_entities领域合同、temporal_entity_projection/temporal_scene_codec应用模块、新测试与own sprint；旧parts worktree冻结。root独占现有共享合同/codec/sidecar和v4 Provider、profile/API/UI整合及公共验证。只做离线开发，不新增HTTP。接口先由worker提交，root再串行整合，不以fixtures证明模型理解已修好。
+
 root负责所有现有项目 Agent 规则/记忆入口的持久汇报偏好、独立用户反馈和共享交接；detail_workspace_review只读核对28–29s实际输入与模型主体/切镜误认，detail_cost_history只读盘点记忆入口与文档一致性，两者均无文件写入或API调用。最新优先工作以用户标错的近镜头物品为反例；下一编码切片须先登记独占新worktree。已接收用户反馈，不再把这两项明确结论称为待标；F006/F009/F010保持false。
 
 ## 2026-10-06 断网接续：离线部件、条件页面与费用历史
