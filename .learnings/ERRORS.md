@@ -4,6 +4,8 @@
 
 自动审核明确允许范围清晰的本地提交，但拒绝同一命令向尚未由可信用户内容明确授权的origin推送；整个命令未执行。继续单独保存本地检查点并报告远端未同步，最终请求具体分支/目标授权。不得通过工具切换或间接执行绕过外传拒绝。
 
+后续用户明确允许仅推送codex/visual-details到GitHub既有仓库，普通push成功上传00f2796；紧随ls-remote再次出现443连接超时，推送确认与独立查询结果需分别记录，不把查询失败误报为推送未成功。
+
 ## 2026-10-05: 交接哈希应与已保存源码和真实对象复算
 
 生产读取断言沿用旧sprint的requestHash `6e9ee8...` 后失败。只读加载同一个V6事件，用继承检查点16f727f的精分析模块和当前模块分别计算，canonical request逐字段相同，两者hash均为 `229a8bcb9bee1f017854108751d89840f458040fd14cdd3490e5c2fd56d00279`；旧文档值无法复现。修正文档/断言，不改源事件或hash算法。比较证据保存在ignored artifacts/detail-inspection-validation/request-identity-comparison.json。

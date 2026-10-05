@@ -139,3 +139,5 @@ F008true、F006false；人工质量标准和本地/云端/未来EXE说明分别�
 最终定向88 passed/1 Windows权限skip，完整verify999 passed/1权限skip（142.12s）、Ruff96/mypy54/CLI与重复离线wheel通过，SHA431d9f32f5c774ffecb351d2d55f50a4a7a1fbdd72bc9787cb7c40c4efc05b0e。真实V6/33事件浏览器播放/证据/篮子/导出/两桌面与手机布局通过；新生产PID49020/parent35808身份核对后启动并复用，旧V2/V4/V6快照及sidecar文件未变。保存生产读取报告与hash基线比较，修正旧交接中无法复现的requestHash，继承与当前canonical request完全相同。
 
 证据sprint-detail-inspection与ignored artifacts/detail-inspection-validation。真实素材尚无主体精分析结构，reused只在合成fixture验证；自由复合查询仍未解决。F006/F009/F010false；未知预留¥4.065536保持，不重试漫画run。下一步独立精分析Provider完整metadata/恢复与typed匹配入口先离线推进；远端同步结果见sprint/HANDOFF。
+
+用户随后明确授权仅推送当前工作分支。00f2796已普通推送到origin/codex/visual-details，未更新main；独立ls-remote首次因443间歇连接失败，最终同步记录和核对见sprint/HANDOFF。

@@ -52,6 +52,6 @@ V5 run c78f204907e04eb3a2ac97a9017dcad9 保留 failed / 9 of 16窗口 / 24事件
 
 恢复时先核对status/HEAD。继承ports/sidecar已保存16f727f，检查视图实现96f6c82；不要强推。未知预留¥4.065536仍在，禁止retry漫画0ba106578bc7435c8689d12892a35dfb或换目录清账。默认开页、查询和刷新仍是0付费API；本轮远端同步结果见sprint-detail-inspection，不改main或合并未验收特性。
 
-远端最新状态未确认。历史GitHub连接失败之外，本轮含push的组合命令被自动审批审核拒绝，因当前用户内容未明确授权向origin外传；命令未启动。本地提交仍保存，只有取得用户明确授权后再常规推送codex/visual-details；禁止绕过拒绝、强推、修改全局网络配置或合并main。
+用户随后明确授权仅推送codex/visual-details到https://github.com/happye/GameingCreatorAgent。普通HTTP/1.1 push已成功，新建远端工作分支并上传00f2796；未更新main或强推。紧随的独立ls-remote因GitHub443间歇连接失败未确认，后续同步记录提交后再次核对；最终状态以Git和sprint-detail-inspection为准。先前自动审批拒绝已通过用户明确授权解决，没有绕过审核或改全局网络配置。
 
 环境只用.tools/.venv/.cache，先env.ps1+Python -B；密钥只使用既有进程DEEPSEEK_API_KEY，不打印或复制聊天密钥。每个验证节点及长任务前更新sprint/HANDOFF并提交检查点，不能等额度提醒。详细失败记录见docs/exec-plans/sprint-visual-details.md。
