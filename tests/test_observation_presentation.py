@@ -85,11 +85,13 @@ def test_cli_search_projects_facts_without_rewriting_canonical_candidate():
 
     observed = event("jump", 0, 1, "f0到f8角色跳跃落地", "jump")
     result = search(timeline((observed,)), "跳跃", mode="lexical")
-    document = _search_document(result, 1)
+    document = _search_document(result, 1, {observed.event_id: "f1持有物类别不明确"})
     candidate = document["candidates"][0]
     assert candidate["observableFacts"] == list(observed.observable_facts)
     assert candidate["displayFacts"] == ["对应画面序列角色跳跃落地"]
     assert document["factsProjectionVersion"] == FACTS_PROJECTION_VERSION
+    assert candidate["uncertainty"] == "f1持有物类别不明确"
+    assert candidate["displayUncertainty"] == "对应画面持有物类别不明确"
     assert result.candidates[0].observable_facts == observed.observable_facts
 
 

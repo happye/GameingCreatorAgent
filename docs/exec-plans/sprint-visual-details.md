@@ -45,3 +45,7 @@ detail_pilot944fb42已整合32fe12c，9离线合同root复测通过（0.62s）�
 resume1补到9/16窗口、24事件后vision-000009的event_frame_boundaries失败；累计11HTTP估价¥0.07086276/unknown0，前3窗口没有重发。缺失端点/同帧/逆序具体值未保存，不臆测。继续显式resume2，合同保护和已完成窗口不改；本轮总已知pilot+run为¥0.10763140。
 
 resume2同窗口再失败，有限数值诊断两次都startUs31500000/endUs31500001/eventIndex0，证实模型选择同一源时刻为首尾；不是未知坏值。停止重复V5，保留failed24事件/12HTTP总估价¥0.07282904/unknown0。新detail_v6 worker在.worktrees/detail-v6从e9183b3独占provider、新eligibility tests/own sprint，新增独立V6提示：先多帧主体动作后外观，单帧外观与纯切镜省略，输出前检查不同端点与引用。原V1–V5及parser保护冻结。root负责V6配置/独立detailed-v2/UI/pilot支持，新的V6run预算¥4.89040232（总5减pilot和失败V5承诺）。不把半成品V5设为默认Completed。
+
+额度恢复接续：e26956a已保存未提交集成并将HANDOFF整理为单一当前快照。detail_v6_completion接着原worktree实现，dff948e→02cb7b2已集成；V6最终hash a60d114d9dd8bf82c5d2ea62c30c4cfe2b4316b08de34ade3cba883d6de9ea00，V1–V5不变，provider联合264passed/3旧版本断言排除（root均改V7）。Root合同/配置/恢复/pilot174passed（2.56s），真实dry visual-details-v6-atom-dry已冻结31.5–35.5s；尚无V6API。CLI普通/benchmark输出rawuncertainty+displayUncertainty、run-demo待核对列补齐，raw事实不变；定向94项先通过，benchmark新增持久化合同另测。
+
+只读复核真实35s文本对“白发 穿红色外套”仍匹配（特征来自不同人物），证实TD009；uncertainty中孤立“权杖”不索引，但facts已误写“武器”时不会被不确定性自动纠正。后续须候选主体局部ID、observed/uncertain属性与证据、同人AND合同，不能用事件全文AND假装已解。GitHub本次只读重试仍443超时，尚无远端同步。

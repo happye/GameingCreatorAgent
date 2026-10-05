@@ -104,17 +104,28 @@ def fake_processor(monkeypatch: pytest.MonkeyPatch, repository: Path) -> None:
     monkeypatch.setattr(pilot, "FfmpegMediaProcessor", Processor)
 
 
-def test_three_profiles_share_nine_source_instants_with_distinct_variants(tmp_path: Path) -> None:
+@pytest.mark.parametrize("detail_prompt", ["phase0-vision-v5", "phase0-vision-v6"])
+def test_three_profiles_share_nine_source_instants_with_distinct_variants(
+    tmp_path: Path, detail_prompt: str
+) -> None:
     low, high = (
         media_fixture(tmp_path / "low", 512, "low"),
         media_fixture(tmp_path / "high", 1280, "high"),
     )
-    a, b, c, static, reverse = pilot.make_cases(low, high, [10_000_000], "low", "high")
+    a, b, c, static, reverse = pilot.make_cases(
+        low, high, [10_000_000], "low", "high", detail_prompt
+    )
     assert a.frames == b.frames and len(a.frames) == 9
     assert [item.source_time for item in b.frames] == [item.source_time for item in c.frames]
     assert [item.sha256 for item in b.frames] != [item.sha256 for item in c.frames]
     assert a.prompt_version == "phase0-vision-v4"
-    assert b.prompt_version == c.prompt_version == "phase0-vision-v5"
+    assert (
+        b.prompt_version
+        == c.prompt_version
+        == static.prompt_version
+        == reverse.prompt_version
+        == detail_prompt
+    )
     assert a.image_max_width == b.image_max_width == 512 and c.image_max_width == 1280
     assert [item.source_time for item in static.frames] == [item.source_time for item in c.frames]
     assert len({item.sha256 for item in static.frames}) == 1
@@ -123,6 +134,14 @@ def test_three_profiles_share_nine_source_instants_with_distinct_variants(tmp_pa
     with pytest.raises(AppError) as caught:
         pilot.make_cases(low, high, [10_250_000], "low", "high")
     assert caught.value.code == "detail_pilot.window_frames"
+
+
+def test_detail_prompt_control_rejects_unsupported_revision(tmp_path: Path) -> None:
+    low = media_fixture(tmp_path / "low", 512, "low")
+    high = media_fixture(tmp_path / "high", 1280, "high")
+    with pytest.raises(AppError) as caught:
+        pilot.make_cases(low, high, [10_000_000], "low", "high", "phase0-vision-v999")
+    assert caught.value.code == "detail_pilot.prompt_version"
 
 
 @pytest.mark.parametrize("mutation", ["source", "clock"])

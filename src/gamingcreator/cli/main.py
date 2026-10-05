@@ -30,7 +30,11 @@ from gamingcreator.application.benchmark import (
 )
 from gamingcreator.application.budget import BudgetLedger, InvocationRecorder
 from gamingcreator.application.inputs import AnalyzeInput, PreparedAnalyze, prepare_analyze
-from gamingcreator.application.observation_text import FACTS_PROJECTION_VERSION, display_facts
+from gamingcreator.application.observation_text import (
+    FACTS_PROJECTION_VERSION,
+    clean_observation_text,
+    display_facts,
+)
 from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
 from gamingcreator.application.providers import CancellationContext, CostStatus
 from gamingcreator.application.retrieval import (
@@ -99,7 +103,12 @@ def _timecode(microseconds: int) -> str:
     return f"{hours:02d}:{minutes:02d}:{seconds:02d}.{ms:03d}"
 
 
-def _search_document(result: SearchResult, elapsed_ms: int) -> dict[str, object]:
+def _search_document(
+    result: SearchResult,
+    elapsed_ms: int,
+    event_uncertainty: dict[str, str | None] | None = None,
+) -> dict[str, object]:
+    doubts = event_uncertainty or {}
     return {
         "schemaVersion": 1,
         "runId": result.run_id,
@@ -130,6 +139,9 @@ def _search_document(result: SearchResult, elapsed_ms: int) -> dict[str, object]
                 "evidenceIds": list(item.evidence_ids),
                 "observableFacts": list(item.observable_facts),
                 "displayFacts": list(display_facts(item.observable_facts)),
+                "uncertainty": doubts.get(item.event_id or ""),
+                "displayUncertainty": clean_observation_text(doubts.get(item.event_id or "") or "")
+                or None,
                 "why": item.why,
             }
             for rank, item in enumerate(result.candidates, 1)
@@ -178,7 +190,11 @@ async def execute_search(
             embedding_provider=provider,
             min_similarity=min_similarity,
         )
-        document = _search_document(result, round((perf_counter() - started) * 1000))
+        document = _search_document(
+            result,
+            round((perf_counter() - started) * 1000),
+            {event.event_id: event.uncertainty for event in timeline.events},
+        )
         document["retrievalId"] = await store.persist_search(
             result,
             document,
@@ -234,7 +250,11 @@ async def execute_benchmark(
             elapsed = round((perf_counter() - began) * 1000)
             await store.persist_search(
                 result,
-                _search_document(result, elapsed),
+                _search_document(
+                    result,
+                    elapsed,
+                    {event.event_id: event.uncertainty for event in timeline.events},
+                ),
                 elapsed_ms=elapsed,
                 top_k=10,
                 embedding_space=provider.space if provider else None,

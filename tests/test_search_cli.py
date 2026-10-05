@@ -3,6 +3,8 @@
 import asyncio
 import hashlib
 import json
+import sqlite3
+from contextlib import closing
 from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
@@ -23,7 +25,9 @@ from gamingcreator.infrastructure.local_embeddings import LocalEmbeddingProvider
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 
 
-async def audio_project(root: Path, *, unverified_cost: bool = False):
+async def audio_project(
+    root: Path, *, unverified_cost: bool = False, visual_uncertainty: str | None = None
+):
     bundle = bundle_fixture(root, audio=True)
     project = root / "project"
     store = await SqliteTimelineStore.open(project)
@@ -52,8 +56,25 @@ async def audio_project(root: Path, *, unverified_cost: bool = False):
             SourceRange(100_000, 500_000, bundle.asset.duration_us),
             "玩家正在开启设置菜单",
         )
+        visual = (
+            (
+                SemanticEvent(
+                    "settings",
+                    bundle.asset.media_id,
+                    "run-1",
+                    segment.source_range,
+                    (segment.text,),
+                    ("菜单",),
+                    (bundle.images[0].evidence_id,),
+                    "visual",
+                    visual_uncertainty,
+                ),
+            )
+            if visual_uncertainty is not None
+            else ()
+        )
         await store.persist_timeline(
-            "run-1", "vision", (), (segment,), hashlib.sha256(b"audio").hexdigest()
+            "run-1", "vision", visual, (segment,), hashlib.sha256(b"audio").hexdigest()
         )
         await store.complete_run("run-1")
     finally:
@@ -68,6 +89,7 @@ def test_audio_search_has_nullable_event_and_round_trips_storage(tmp_path):
         assert len(result["candidates"]) == 1
         candidate = result["candidates"][0]
         assert candidate["eventId"] is None
+        assert candidate["uncertainty"] is candidate["displayUncertainty"] is None
         store = await SqliteTimelineStore.open(project, read_only=True)
         try:
             reloaded = await store.load_retrieval(result["retrievalId"])
@@ -182,7 +204,9 @@ def test_shipped_hybrid_search_finds_english_attack_and_abstains_on_repair(tmp_p
 
 def test_benchmark_cannot_promote_an_unverified_nonempty_cost(tmp_path):
     async def scenario():
-        bundle, project = await audio_project(tmp_path, unverified_cost=True)
+        bundle, project = await audio_project(
+            tmp_path, unverified_cost=True, visual_uncertainty="f0中菜单文字无法完整辨认"
+        )
         manifest = {
             "schemaVersion": 1,
             "datasetId": "development-fixture",
@@ -222,5 +246,14 @@ def test_benchmark_cannot_promote_an_unverified_nonempty_cost(tmp_path):
         assert report["cost"]["coldCny"] is None
         assert report["cost"]["coldCostGateUnder5CnyPerHour"] is None
         assert output_path.is_file()
+        uri = "file:" + (project / "timeline.sqlite3").resolve().as_posix() + "?mode=ro"
+        with closing(sqlite3.connect(uri, uri=True)) as connection:
+            stored = json.loads(
+                connection.execute("SELECT result_json FROM retrieval_runs").fetchone()[0]
+            )
+        candidate = stored["candidates"][0]
+        assert candidate["eventId"] == "settings"
+        assert candidate["uncertainty"] == "f0中菜单文字无法完整辨认"
+        assert candidate["displayUncertainty"] == "对应画面中菜单文字无法完整辨认"
 
     asyncio.run(scenario())

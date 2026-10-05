@@ -287,7 +287,7 @@ def test_legacy_prompt_hashes_remain_frozen_and_v3_has_independent_identity() ->
     }
     assert len(fingerprints) == 3
     with pytest.raises(ValueError, match="Unsupported vision prompt version"):
-        vision_prompt_fingerprint("phase0-vision-v6")
+        vision_prompt_fingerprint("phase0-vision-v7")
 
 
 def test_temporal_example_pins_the_shipped_frame_boundary_prompt_hash() -> None:

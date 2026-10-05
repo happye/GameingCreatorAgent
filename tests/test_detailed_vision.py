@@ -73,7 +73,7 @@ def test_v5_is_new_identity_with_all_legacy_prompt_bytes_frozen() -> None:
     assert fingerprint == "c64c644e9889fcfd91cc0e9a26d8bf1b9546ce73c548e6ac056a5067498ff98a"
     assert fingerprint not in expected.values()
     with pytest.raises(ValueError, match="Unsupported"):
-        vision_prompt_fingerprint("phase0-vision-v6")
+        vision_prompt_fingerprint("phase0-vision-v7")
 
 
 @pytest.mark.parametrize("language", ["zh", "en"])

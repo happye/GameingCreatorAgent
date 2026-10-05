@@ -170,9 +170,13 @@ def test_detailed_profile_pins_a_new_prompt_and_preserves_previous_example() -> 
 
     repository = Path(__file__).resolve().parents[1]
     detailed = LocalInputReader().load_config(repository / "config.detailed.example.json")
+    action_first = LocalInputReader().load_config(repository / "config.detailed-v6.example.json")
     legacy = LocalInputReader().load_config(repository / "config.temporal.example.json")
     assert detailed.vision_prompt_version == "phase0-vision-v5"
     assert detailed.vision_prompt_hash == vision_prompt_fingerprint("phase0-vision-v5")
     assert detailed.max_output_tokens == 4096
+    assert action_first.vision_prompt_version == "phase0-vision-v6"
+    assert action_first.vision_prompt_hash == vision_prompt_fingerprint("phase0-vision-v6")
+    assert action_first.window_frames == 9
     assert legacy.vision_prompt_version == "phase0-vision-v4"
     assert legacy.vision_prompt_hash == vision_prompt_fingerprint("phase0-vision-v4")
