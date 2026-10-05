@@ -2,7 +2,7 @@
 
 2026-10-05；owner：detail_retrieval_audit；branch `codex/actor-detail-spec`；worktree `.worktrees/actor-detail-spec`；base `c400188`。
 本任务独占新 `actor-detail-matching-spec.md` 与本 sprint；不是唯一开发者，不回写root或覆盖其他Agent变更。
-状态：工程规格待root集成，代码/新实验尚未实现。合同见 [工程规格](../design-docs/actor-detail-matching-spec.md)。
+状态：规格b1d91bc→a7789b4已集成，typed合同与纯matcher2e95485→bb05b66已集成；独立合同测试root正在合并/全检。精分析ports/Provider/sidecar/UI与两候选新实验待实现。合同见 [工程规格](../design-docs/actor-detail-matching-spec.md)。
 
 ## 已确认问题
 
@@ -33,5 +33,5 @@ CLI显示/不确定性与benchmark map已由root修正；raw篮子校验、投�
 从c400188创建独立worktree；默认Git写锁被sandbox拒绝，授权范围内升级调用创建成功；没有改用户/系统配置。
 `./scripts/init.ps1 -CheckOnly`通过，11项feature；本次仅文档，不安装、不调用API、不重复跑代码测试。
 只读子Agent复核后补共同支持帧、未知主体、跨key预算锁与ports依赖；两文件139行、相对链接全部有效、`git diff --cached --check`通过，暂存仅两新文件。
-接手先读工程规格并分配任务1；已有V6真实试验/demo进度以root HANDOFF为准，不续跑旧failed V5。
+接手先核对root全检与已集成任务1，再从任务2的ports骨架/规范hash开始；勿重复合同或创建新的prompt修旧run。V6 Demo和追加漫画网络失败/unknown预算以HANDOFF为准，不续跑旧failed V5或清零未知费用。
 所有实现、独立人评与质量验收完成前，禁止将F010或相关待验特性`passes`改为true。

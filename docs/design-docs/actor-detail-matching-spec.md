@@ -1,7 +1,7 @@
 # F010：候选主体细节与复合匹配工程规格
 
-2026-10-05；状态：待实现。依据 [F010计划](../exec-plans/sprint-visual-details.md)、[TD009](../exec-plans/tech-debt.md)、[Phase 0](../product-specs/phase-0.md) 与现有四层架构。
-这是 F010/TD009 的最小切片；以下类型、文件和入口是实施合同，不表示已有功能或新增 HTTP API。
+2026-10-05；状态：typed合同/纯matcher已实现，精分析与界面接入待实现。依据 [F010计划](../exec-plans/sprint-visual-details.md)、[TD009](../exec-plans/tech-debt.md)、[Phase 0](../product-specs/phase-0.md) 与四层架构。
+已有 [domain合同](../../src/gamingcreator/domain/actor_details.py) 与 [纯匹配器](../../src/gamingcreator/application/actor_detail_matching.py)，供typed调用者离线使用；下文ports/sidecar/Provider/UI为后续实施合同，没有新HTTP API或自由文本解析。
 F006/F009/F010 继续 `passes: false`；有效 JSON、固定模板和开发实验均不代替独立人工验收。
 
 ## 目标与不变量
