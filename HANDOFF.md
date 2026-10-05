@@ -19,6 +19,8 @@ root 分支 codex/visual-details，代码检查点 c400188、规格 a7789b4。�
 
 本轮细节任务全部成功、失败及控制请求合计估价 **¥0.23083920 / unknown 0**，上限 ¥5。组成：V5对照 ¥0.03676864、失败V5 run ¥0.07282904、V6对照 ¥0.01854028、新V6完整run ¥0.10270124。费用不含旧V4历史实验，不是账单；全部证据目录保持 ignored。
 
+root即将对第二段95.175874s漫画PV在**新项目artifacts/demo-visual-manga**执行独立V6，最大预算¥4.76916080（5减上项全部承诺）；日志.cache/detail-v6-manga-analyze.log。尚未有新run结果；失败须保留费用/错误，不盲目重试。demo-phase0原数据和默认Atom保持，后续恢复先查该日志再决定是否继续，不能重复创建付费run。
+
 V5对照 artifacts/visual-details-atom-execute：28–32和35–39s，A=V4/512、B=V5/512同九帧，C=V5/1280同源时刻；8HTTP/72图。V6对照 artifacts/visual-details-v6-atom-execute：31.5–35.5s，A=V4/512、B=V6/512、C=V6/1280；4HTTP/36图。两组静图控制空、倒序发送前拒绝；V6跳过31.5s单帧首尾，轻微待机仍可能被算事件。
 
 V5 run c78f204907e04eb3a2ac97a9017dcad9 保留 failed / 9 of 16窗口 / 24事件：uncertainty错误及两次相同端点错误，已停止重发，未放松parser。新V6仍有配饰/持有物分类和跨切镜连续性错误，例如28s将蓝色物体写为武器、38–39s声称切镜前后同一角色；不得据此确认具体武器、角色或技能名称。

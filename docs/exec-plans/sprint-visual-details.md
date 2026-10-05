@@ -71,3 +71,7 @@ V6真实31.5–35.5对照 `visual-details-v6-atom-execute` completed：A/B/C均3
 主体规格b1d91bc→a7789b4已集成；新actor-detail-contract worktree从00bc88f由detail_v6_completion独占5新文件，开发typed合同和纯同actor/part AND，不接UI/Provider、不调用API。需再验证共同支持帧、互斥冲突、unknown不作no_match和旧数据兼容；公共文档由root更新，F006/F009/F010仍false。
 
 CLI实际脚本补验：run-demo -Run新V6 -Query指挥棒 -TopK3已返回真实前三候选，但PowerShell默认宽度把表格末尾“待核对”整列隐藏。改Format-List确保长事实和待核对均显示，TopK1实际复跑通过，无API/索引行为变化。此为可逆输出修正，未添加镜像格式测试；最终与新合同完整verify一起验。
+
+## 第二段PV的独立V6细节分析（执行前检查点）
+
+当前所有已知/未知承诺合¥0.23083920/unknown0。利用用户提供的第二段95.175874s漫画PV，在新项目artifacts/demo-visual-manga创建V6 run，明确使用config.detailed-v6.example.json、同hash/detailed-v2与隔离模型。新run最大预算¥4.76916080=本轮5减既有全部费用；含失败/unknown，不能跨项目重置总上限。原demo-phase0漫画V2、AtomV4/V6及其篮子不改；项目默认仍demo-phase0。仅补现有细节试验覆盖，不证明人评或新增渲染功能。分析日志.cache/detail-v6-manga-analyze.log；如失败先记有限错误，不盲目重试同窗口。
