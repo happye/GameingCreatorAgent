@@ -132,6 +132,20 @@ def test_missing_structure_returns_unverified_without_creating_a_sidecar(tmp_pat
     assert not (project / "detail-refinement-budgets").exists()
 
 
+def test_v3_does_not_borrow_frozen_v2_results(tmp_path, monkeypatch):
+    project, _, timeline = seed_project(tmp_path)
+    publish_v2_fixture(project, timeline)
+    refuse_sends(monkeypatch)
+    before = snapshot(project)
+    with workspace(tmp_path) as base:
+        status, _, raw = post(base, body(project, timeline, profile="v3"))
+        report = json.loads(raw)
+        assert status == 200 and report["refinementProfile"] == "v3"
+        assert report["result"]["status"] == "unverified"
+        assert report["refinementPayloadHash"] is None
+    assert snapshot(project) == before
+
+
 @pytest.mark.parametrize(
     "damage",
     [

@@ -1,5 +1,9 @@
 # Progress Log
 
+2026-10-06持久模式与用户人工反馈：所有项目 Agent 的规则及 Codex/Claude/Grok 入口已保存关键改动后的详细通俗汇报协议，恢复时继续加载。用户接受35–36s三个描述，指出28–29s s1/a2将抵镜头并遮挡人物的持有物误认成人物；独立反馈保存detail-human-feedback-2026-10-06.md，未改冻结模型结果，F006/F009/F010仍false。已向用户解释并优先安排连续主体/物品及镜头边界诊断，随后再继续条件草稿；没有新Provider调用。
+
+2026-10-06断网接续：严格AND条件弹窗/POST、v1/v2/v3明确profile、完整request/payload核对、v3嵌套part及只读成本历史已实现。root a59a85e、worker整合d3aedff/877d7d8，最终源码验证1184 passed/1 Windows文件symlink权限skip（124.87s），Ruff109/mypy60/CLI/重复离线wheel SHA fc1106a422692842c64eb1a1399969b776d729b3c1b3c8cbe569092a8546ecec。真实两候选partial/v3missingunverified、成本弹窗及桌面/手机通过，原源表/sidecarSHA不变，0新ProviderHTTP/外部浏览器请求；生产服务52144/52764仅快照。F006/F009/F010与未知¥4.065536保留，下一步受控草稿/独立人工反馈。证据sprint-detail-workspace和ignored artifacts/detail-workspace-validation。
+
 ## 2026-10-04–05 明确否定召回修正与最终复测
 
 retrieval_negation b1e33a5集成5f15bab，检索版本bm25-e5-rrf-v4；有限动作否定规则排除仅否认查询动作的事件，保留肯定/不确定/普通描述及原事实、embedding文本/hash和阈值。实际Atom跳跃hybrid由3变2，排除49s“无跳跃”事件，保留11.5–12.5s与0–2s；Boss/射击/汽车维修0、移动10，pure semantic仍各10。两个jump候选不是人工质量确认。

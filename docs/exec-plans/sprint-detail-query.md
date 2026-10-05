@@ -1,5 +1,7 @@
 # 结构化条件查询接入
 
+本记录保留该切片历史。后续页面条件、v3部件与费用历史已实现，用户明确条目反馈已收到；最新接续见HANDOFF.md、sprint-detail-workspace.md和detail-human-feedback-2026-10-06.md，不把末尾旧下一步当作当前缺口。
+
 2026-10-06，root / Codex，codex/visual-details；接续已验证精分析Provider23d8422。
 
 root独占typed query JSON codec/离线CLI与match侧车、检查profile参数、对应测试和共享交接；其他worktree冻结。遵循actor-detail-matching-spec，先实现明确typed manifest，不猜自由查询约束。

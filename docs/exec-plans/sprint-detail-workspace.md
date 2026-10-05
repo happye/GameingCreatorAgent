@@ -1,5 +1,13 @@
 # F010：断网接续的严格条件工作台
 
+2026-10-06关键改动已按用户要求作通俗详细汇报：页面可编辑同主体条件并查支持/不确定项，费用入口显示独立精分析估价与未知预留；没有新增付费调用。持久汇报规则已写入所有现有 Agent 的项目入口与共享记忆。用户人工反馈见detail-human-feedback-2026-10-06.md；下一步优先查明28–29s近镜头物品被认作人物及假切镜原因，再继续受控条件草稿，不能把本轮工程检查称为模型质量通过。
+
+本切片最终工程验证：**1184 passed / 1 Windows文件symlink权限skip，124.87s**；Ruff109/mypy60/CLI/两次相同离线wheel通过，SHA fc1106a422692842c64eb1a1399969b776d729b3c1b3c8cbe569092a8546ecec。日志.cache/detail-workspace-verify.log。下方过程中的pending/失败均为历史，已修复。F006/F009/F010仍false，v3未真实调用，humanLabels/qualityGate仍null。
+
+真实QA：artifacts/detail-workspace-validation/browser-report.json及两组桌面/手机条件与费用截图。35–36s白发+红外套、28–29s白发+蓝扁平持有物均partial；精确v3缺结果unverified、不借用v2。两个费用摘要为¥0.008513/¥0.00999312，共享¥0.01850612，旧unknown留在独立基础账本；原源表与侧车哈希不变、0外部请求/页面错误/新Provider调用。实际QA首轮删除动态nth locator后索引变化超时，改为每次删除first后通过，不修改产品。
+
+生产部署：health/保存状态/CIM路径/命令/父PID重新核对，只停止匹配的36320/24836，NoBrowser隐藏启动新版52144/52764；真实8765 API返回33事件、8kind、v2及正确费用。完整verify最初检查到10个stdlib .pyc drift，全部从SHA固定缓存Python归档恢复，源码/EXE/receipt未改，再次init与verify通过。后续所有Python必须env.ps1+ -B。
+
 2026-10-06；owner root / Codex，codex/visual-details；接续998bc2d。
 
 ## 目标与范围

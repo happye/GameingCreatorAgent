@@ -20,6 +20,7 @@ from gamingcreator.application.storage import RunStatus, StoredInvocation, Store
 from gamingcreator.cli.main import execute_search
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.time import SourceInstant, SourceRange
+from gamingcreator.infrastructure.detail_cost_history import refinement_cost_history
 from gamingcreator.infrastructure.detail_query_sidecar import (
     match_refinement,
     refinement_identity_for_profile,
@@ -388,3 +389,12 @@ async def match_details(
     if not any(event.event_id == event_id for event in timeline.events):
         raise AppError("input.detail_event", "当前运行没有这个片段。", ExitCode.INPUT, run_id)
     return match_refinement(project, timeline, event_id, constraint, profile=profile, save=False)
+
+
+async def detail_costs(project: Path, run_id: str) -> dict[str, object]:
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    try:
+        await store.load_run(run_id)
+    finally:
+        await store.close()
+    return refinement_cost_history(project, run_id)

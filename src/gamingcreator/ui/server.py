@@ -13,6 +13,7 @@ from gamingcreator.application.retrieval import RetrievalMode
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.ui.media import VerifiedMediaCache, byte_range
 from gamingcreator.ui.service import (
+    detail_costs,
     inspect_run,
     match_details,
     project_runs_payload,
@@ -259,12 +260,20 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(200, {"projects": discover_projects(self.repository)})
                 return
             query = _query(self.path)
-            if path not in {"/api/runs", "/api/inspect", "/api/media", "/api/evidence"}:
+            if path not in {
+                "/api/runs",
+                "/api/inspect",
+                "/api/media",
+                "/api/evidence",
+                "/api/detail-cost-history",
+            }:
                 self._json(404, {"code": "input.route", "message": "没有这个页面。"})
                 return
             project = resolve_project(self.repository, query.get("project", ""))
             if path == "/api/runs":
                 self._json(200, asyncio.run(project_runs_payload(project)))
+            elif path == "/api/detail-cost-history":
+                self._json(200, asyncio.run(detail_costs(project, query.get("run", ""))))
             elif path in {"/api/media", "/api/evidence"}:
                 evidence_id = query.get("id", "") if path == "/api/evidence" else None
                 self._media(project, query.get("run", ""), evidence_id)

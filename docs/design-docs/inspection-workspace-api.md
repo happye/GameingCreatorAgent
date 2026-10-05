@@ -36,11 +36,19 @@ root：`ui/server.py`、`ui/service.py`、新 `ui/media.py`、HTTP行为测试�
 - `cost:{knownCny,unknownAttempts,status}`；knownCny是已知部分的Decimal字符串，未知项单独计数，缺DeepSeek价格版本或unverified记录不得算零/已知金额，估价不是账单。
 - `retrievalVersion`、`configHash`、`query`、`mode`，用于导出来源追踪。
 
-2026-10-06版本选择：`/api/inspect`新增可选`detailProfile=v1|v2`，默认v1保持旧合同，未知值为400/input.detail_profile。顶层`detailRefinementProfile:{version:"actor-detail-inspection-v1",profile,settingsHash,schemaVersion,promptVersion,promptHash,provider,requestedModel}`使用固定RefinementSettings与所选独立身份：v1为既有冻结骨架，v2为新独立Provider提示词。精确key缺失返回unverified，不借用其他版本；不接受任意路径、不扫描mtime、不自动解析自由查询约束。当前页面继续默认v1，显式profile读取由API或CLI完成。
+2026-10-06版本选择：`/api/inspect`可选`detailProfile=v1|v2|v3`，API默认v1保持旧合同，页面默认v2并显式选择版本，未知值为400/input.detail_profile。顶层`detailRefinementProfile:{version:"actor-detail-inspection-v1",profile,settingsHash,schemaVersion,promptVersion,promptHash,provider,requestedModel}`使用固定RefinementSettings与所选独立身份：v1为冻结骨架、v2独立Provider、v3嵌套部件Provider。精确key缺失返回unverified，不借用其他版本；不接受任意路径、不扫描mtime、不自动解析自由查询约束。v3只有离线合同验证，没有新真实模型输出。
 
 timeline/candidate行新增 `detailRefinement:{status:"unverified",availability,requestHash,detail}`。availability为 `missing`（该冻结key未发布结果）、`reused`（完整校验后复用）、`unsupported`（无视觉事件或旧数据缺合同兼容的版本/身份）、`run_incomplete`。非事件音频候选requestHash为null。detail缺失为null；复用时为actor-details-v1规范主体结构并增加计算出的unassignedEvidenceIds，保留镜头、主体、部件、observed/uncertain、原候选区间与支持源帧，不覆盖observableFacts或rank。没有typed QueryConstraint时status始终unverified，reused不等于full或人工认可。
 
-读取先重验Completed timeline/source/evidence，再按计算出的requestHash检查不可变request、base prompt、schema、canonical payload/hash和来源。损坏/错身份/未知版本/越界路径或符号链接为明确409/refinement错误，不退成空详情；每JSON最多1MiB。缺侧车不建目录，刷新/查询不写侧车、不预留预算、不实例化Provider。非空查询仍可追加原检索记录。`cost`继续表示base run的账本，精分析历史费用不在本切片合并；只读复用不产生新推理费用。
+读取先重验Completed timeline/source/evidence，再按计算出的requestHash检查不可变request、base prompt、schema、canonical payload/hash和来源；reused增加`payloadHash`供页面比对匹配内容。损坏/错身份/未知版本/越界路径或符号链接为明确409/refinement错误，不退成空详情；每JSON最多1MiB。缺侧车不建目录，刷新不写侧车、不预留预算、不实例化Provider。非空查询仍可追加原检索记录。`cost`继续表示base run账本，精分析费用由独立接口读取；只读复用不产生新推理费用。
+
+## 明确条件与费用接口
+
+`POST /api/match-details`仅接受JSON `{project,run,event,profile,constraint}`，constraint为query-v1显式正向AND清单，字段版本见detail-query.example.json；请求正文最多64KiB，拒绝重复字段、额外字段、非JSON、Transfer-Encoding或重复Content-Length。只接受本机Host/Origin，读取有界body后拒绝外部Origin，避免Windows未读正文导致TCPreset。Completed及event归属校验后，调用`match_refinement(save=False)`，缺结构返回unverified，损坏报错；不会保存match、预留预算或实例化Provider。
+
+`inspect.detailQueryOptions`从冻结词表给出kind/value标签、query/schema/vocabulary版本和条件上限。页面弹窗允许显式AND/部件组，显示满足、缺失、不确定、冲突和支持帧；requestHash、payloadHash、run/event/profile须同时对应当前片段。编辑、关闭、切run/profile或刷新会取消迟到请求并清理旧显示。full仅指结构条件有共同支持，humanLabels/qualityGate仍null；自由检索结果不自动按typed约束过滤。
+
+`GET /api/detail-cost-history?project=...&run=...`先只读确认run已登记（允许失败/进行中），再返回`detail-refinement-cost-history-v1`的summary、sharedCommitment、attempts、totalAttemptCount/attemptsTruncated。金额为Decimal字符串，已知估价与unknown预留分列；sharedCommitment只统计本项目全部run/budget精分析，基础分析与其他项目不包含。最多200条attempt展示/1MiB响应，摘要覆盖全部；planned丢ledger和result未settle仍保留unknown，legacy缺metadata为null。坏账本/路径报409，不创建目录/锁、不恢复/结算/发布、不返回原响应/提示词。页面只在点击费用入口后读取。
 
 ## 页面行为与导出
 

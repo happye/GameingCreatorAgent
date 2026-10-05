@@ -1,5 +1,9 @@
 # Active assignments
 
+## 2026-10-06 用户反馈与持久汇报
+
+root负责所有现有项目 Agent 规则/记忆入口的持久汇报偏好、独立用户反馈和共享交接；detail_workspace_review只读核对28–29s实际输入与模型主体/切镜误认，detail_cost_history只读盘点记忆入口与文档一致性，两者均无文件写入或API调用。最新优先工作以用户标错的近镜头物品为反例；下一编码切片须先登记独占新worktree。已接收用户反馈，不再把这两项明确结论称为待标；F006/F009/F010保持false。
+
 ## 2026-10-06 断网接续：离线部件、条件页面与费用历史
 
 | Owner | Branch/worktree | 独占范围 | 当前状态 |
@@ -7,6 +11,8 @@
 | root / Codex | codex/visual-details，root | UI/service/server/static、typed HTTP、页面集成测试、共享文档、最终整合 | 接续998bc2d；页面明确条件匹配及profile选择，零Provider调用 |
 | detail_parts_v3 | codex/detail-parts-v3，.worktrees/detail-parts-v3 | 独立v3精分析prompt/parser/provider模块、新v3测试、own sprint | 新嵌套part合同；v2模块/冻结结果不改，不发送HTTP |
 | detail_cost_history | codex/detail-cost-history，.worktrees/detail-cost-history | 新只读精分析费用历史模块/测试、own sprint | 恢复planned承诺，未知不清零；不改UI/service或账本，不发送HTTP |
+
+整合结果：root typed页面a59a85e，parts worker b5543c3→d3aedff，cost worker3fb5111→877d7d8；两worker已冻结，root串行整合profile/HTTP/费用弹窗。完整verify1184/1文件symlink权限skip、124.87s，真实两个已有候选及生产服务读取通过，0新付费HTTP，见sprint-detail-workspace。后续受控条件草稿任务需新独占worktree，不回写已冻结worker。
 
 旧worktrees保持冻结，编码worker仅在各自worktree写入。root串行整合profile及API，不降低验收门槛；原两个真实调用次数已用完。当前远端已核对30c44ae，998bc2d为本地状态记录，后续按实际Git同步。
 

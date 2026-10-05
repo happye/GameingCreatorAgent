@@ -20,6 +20,7 @@
         "detail-profile", "open-detail-query", "detail-query-dialog", "close-detail-query",
         "detail-query-target", "detail-query-form", "detail-conditions", "add-detail-condition",
         "match-detail-query", "detail-match-result",
+        "open-detail-costs", "detail-cost-dialog", "close-detail-costs", "detail-cost-content",
     ].map((id) => [id, byId(id)]));
     const state = {
         project: "", run: "", revision: 0, runs: [], view: null, active: null,
@@ -27,6 +28,7 @@
         projectsController: null, busy: false, playbackEndUs: null, pendingSeekUs: null,
         frameRequest: null, sourceUrl: "", storageWarningShown: false,
         matchController: null, matchRevision: 0, matching: false,
+        costController: null, costRevision: 0,
     };
     const statusLabels = {
         pending: "等待分析", running: "分析中", completed: "已完成", failed: "失败",
@@ -303,6 +305,75 @@
         }
     }
 
+    function money(value) {
+        return typeof value === "string" && /^\d+(?:\.\d+)?$/.test(value) ? `¥${value}` : "未知";
+    }
+
+    function clearDetailCosts() {
+        state.costController?.abort();
+        state.costController = null;
+        state.costRevision += 1;
+        if (ui["detail-cost-dialog"].open) ui["detail-cost-dialog"].close();
+        ui["detail-cost-content"].replaceChildren();
+    }
+
+    function renderDetailCosts(history) {
+        const container = ui["detail-cost-content"];
+        container.replaceChildren();
+        const summary = (title, data) => {
+            const section = element("section", "detail-cost-summary");
+            section.append(element("h3", "", title));
+            section.append(element("p", "", `已知估价 ${money(data.knownEstimatedCostCny)} · ${data.attemptCount} 次尝试`));
+            section.append(element("p", data.unknownCostCount ? "warning" : "muted small", `未知费用 ${data.unknownCostCount} 次 · 保留预留 ${money(data.unknownReservedCny)}`));
+            section.append(element("p", "accent", `承诺金额 ${money(data.commitmentCny)}`));
+            container.append(section);
+        };
+        summary("当前运行的精分析", history.summary);
+        summary("本项目全部精分析（含其他运行）", history.sharedCommitment);
+        container.append(element("p", "muted small", "这里只汇总精分析。基础分析与其他项目的费用不包含在内。"));
+        if (!history.attempts.length) container.append(element("p", "muted", "当前运行尚无已登记的精分析尝试。"));
+        if (history.attemptsTruncated) container.append(element("p", "warning small", `共 ${history.totalAttemptCount} 次尝试，仅展示 ${history.attempts.length} 条；上方金额已包含全部记录。`));
+        const labels = { planned: "已计划，发送状态待核对", completed: "已完成", failed: "失败", cancelled: "已取消", recorded: "已登记历史" };
+        for (const attempt of history.attempts) {
+            const section = element("details", "detail-cost-attempt");
+            section.append(element("summary", "", `${labels[attempt.status] || "状态待核对"} · 尝试 ${attempt.attemptNo} · 估价 ${money(attempt.estimatedCostCny)}`));
+            section.append(element("p", "muted small", `预算 ${attempt.budgetId} · 原预留 ${money(attempt.reservationCny)}`));
+            if (attempt.errorCode) section.append(element("p", "warning small", `错误 ${attempt.errorCode}`));
+            if (attempt.settlementPending) section.append(element("p", "warning small", "已返回用量但账本尚未结算，继续保留未知费用预留。"));
+            const metadata = attempt.metadata;
+            if (metadata) {
+                const usage = metadata.usage;
+                section.append(element("p", "small", `模型 ${metadata.actualModel || "未知"} · 请求模型 ${metadata.requestedModel} · 修订 ${metadata.modelRevision || "未知"}`));
+                section.append(element("p", "muted small", `提示词 ${metadata.promptVersion} · 计价版本 ${metadata.priceVersion || "未知"}`));
+                section.append(element("p", "muted small", `输入 ${usage.inputTokens ?? "未知"} / 缓存 ${usage.cachedInputTokens ?? "未知"} / 输出 ${usage.outputTokens ?? "未知"} tokens`));
+                section.append(element("p", "muted small", `耗时 ${metadata.elapsedMs === null ? "未知" : `${metadata.elapsedMs} ms`} · 请求时间 ${metadata.requestedAtUtc || "未记录"}`));
+                if (metadata.requestId) section.append(element("p", "muted small", `请求编号 ${metadata.requestId}`));
+            } else section.append(element("p", "muted small", "历史记录未包含完整调用信息，缺失字段保持未知。"));
+            section.append(element("p", "muted small", `请求指纹 ${attempt.requestHash}`));
+            container.append(section);
+        }
+    }
+
+    async function openDetailCosts() {
+        if (!state.run || state.busy) return;
+        clearDetailCosts();
+        const controller = new AbortController();
+        state.costController = controller;
+        const revision = state.costRevision;
+        const run = state.run;
+        empty(ui["detail-cost-content"], "正在读取已有精分析记录…");
+        ui["detail-cost-dialog"].showModal();
+        try {
+            const history = await request("/api/detail-cost-history", { project: state.project, run }, controller.signal);
+            if (revision !== state.costRevision || state.costController !== controller) return;
+            if (history.schemaVersion !== "detail-refinement-cost-history-v1" || history.runId !== run
+                || !history.summary || !history.sharedCommitment || !Array.isArray(history.attempts)) throw new Error("费用记录与当前运行不一致。");
+            renderDetailCosts(history);
+        } catch (error) {
+            if (error.name !== "AbortError" && revision === state.costRevision) empty(ui["detail-cost-content"], error.message);
+        }
+    }
+
     function storageKey() {
         return `gamingcreator.selection.v1:${encodeURIComponent(state.project)}:${encodeURIComponent(state.run)}`;
     }
@@ -538,11 +609,13 @@
         ui["timeline-filter"].disabled = !state.view;
         ui["tag-filter"].disabled = !state.view;
         ui["detail-profile"].disabled = busy || !state.view;
+        ui["open-detail-costs"].disabled = busy || !state.run;
         updateDetailQueryButton();
         renderSelections();
     }
 
     function resetView() {
+        clearDetailCosts();
         clearDetailMatch();
         if (ui["detail-query-dialog"].open) ui["detail-query-dialog"].close();
         state.view = null;
@@ -1157,6 +1230,9 @@
     ui["detail-query-dialog"].addEventListener("close", clearDetailMatch);
     ui["add-detail-condition"].addEventListener("click", () => addDetailCondition());
     ui["detail-query-form"].addEventListener("submit", (event) => { event.preventDefault(); void matchDetailQuery(); });
+    ui["open-detail-costs"].addEventListener("click", () => { void openDetailCosts(); });
+    ui["close-detail-costs"].addEventListener("click", () => ui["detail-cost-dialog"].close());
+    ui["detail-cost-dialog"].addEventListener("close", () => { state.costController?.abort(); state.costRevision += 1; });
     ui["refresh-projects"].addEventListener("click", () => { void loadProjects(); });
     ui["refresh-runs"].addEventListener("click", () => { void loadRuns(state.project, state.run); });
     ui["refresh-view"].addEventListener("click", () => { void inspect(""); });

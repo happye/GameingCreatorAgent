@@ -11,6 +11,7 @@ from gamingcreator.application.detail_refinement import (
 from gamingcreator.application.storage import RunStatus, StoredTimeline
 from gamingcreator.domain.actor_details import MATCHER_VERSION, QueryConstraint, constraint_hash
 from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.infrastructure.deepseek_detail_parts import provider_parts_identity
 from gamingcreator.infrastructure.deepseek_detail_refinement import provider_refinement_identity
 from gamingcreator.infrastructure.detail_refinement_sidecar import (
     RefinementWriterLock,
@@ -27,7 +28,9 @@ def refinement_identity_for_profile(profile: str) -> RefinementIdentity:
         return default_refinement_identity()
     if profile == "v2":
         return provider_refinement_identity()
-    raise AppError("input.detail_profile", "精分析版本只能为v1或v2。", ExitCode.INPUT)
+    if profile == "v3":
+        return provider_parts_identity()
+    raise AppError("input.detail_profile", "精分析版本只能为v1、v2或v3。", ExitCode.INPUT)
 
 
 def match_refinement(

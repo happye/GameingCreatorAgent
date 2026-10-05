@@ -1,7 +1,7 @@
 # F010：候选主体细节与复合匹配工程规格
 
 2026-10-06；状态：typed合同/纯matcher、request/ports、sidecar/共享预算/恢复、独立v2精分析Provider及离线CLI条件匹配已实现；两个授权真实候选已完成精分析，均partial，独立人评仍待完成。依据 [F010计划](../exec-plans/sprint-visual-details.md)、[TD009](../exec-plans/tech-debt.md)、[Phase 0](../product-specs/phase-0.md) 与四层架构。
-已有 [domain合同](../../src/gamingcreator/domain/actor_details.py) 与 [纯匹配器](../../src/gamingcreator/application/actor_detail_matching.py)。`match-details`读取明确query-v1清单及v1/v2冻结结果，报告同主体/部件的full/partial/no_match/unverified，可独立保存match记录；缺结构不发送Provider。检查HTTP支持detailProfile=v1/v2（默认v1），见 [检查API](./inspection-workspace-api.md)、[Provider记录](../exec-plans/sprint-detail-provider.md) 和 [查询记录](../exec-plans/sprint-detail-query.md)。页面付费入口、typed条件交互和自由文本解析仍待接；只复用结构不标full。
+已有 [domain合同](../../src/gamingcreator/domain/actor_details.py) 与 [纯匹配器](../../src/gamingcreator/application/actor_detail_matching.py)。`match-details`读取明确query-v1清单及v1/v2/v3冻结结果，报告同主体/部件的full/partial/no_match/unverified，可独立保存match记录；缺结构不发送Provider。检查HTTP支持detailProfile=v1/v2/v3（默认v1），见 [检查API](./inspection-workspace-api.md)、[Provider记录](../exec-plans/sprint-detail-provider.md) 和 [查询记录](../exec-plans/sprint-detail-query.md)。页面typed条件弹窗（默认v2）、v3嵌套part合同和只读成本历史已实现，见sprint-detail-workspace；付费入口与自由文本解析待接。v3只经离线fixture验证，不修改冻结v2真实结果；只复用结构不标full。
 F006/F009/F010 继续 `passes: false`；有效 JSON、固定模板和开发实验均不代替独立人工验收。
 
 ## 目标与不变量

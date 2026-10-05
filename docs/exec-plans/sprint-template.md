@@ -29,6 +29,12 @@
 - Retrieval quality, runtime, and cost when relevant:
 - Failures and concrete next fixes:
 
+## Report to the user after each key change
+
+- Result explained in plain language and the concrete user benefit:
+- Actual verification, unresolved problems, and limits explained:
+- Next concrete action explained:
+
 ## Transfer to another tool
 
 - Last commit and uncommitted files:

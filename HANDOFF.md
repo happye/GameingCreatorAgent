@@ -2,17 +2,19 @@
 
 更新时间：2026-10-06（Asia/Hong_Kong）。Codex、Claude Code、Grok Build 共用；历史见 progress.md，验收见 feature_list.json。
 
+持久工作模式：所有 Agent 每次关键改动后给出不那么技术味的详细汇报，说明使用效果、用户收益、验证范围和剩余问题，以及下一步具体工作。跨会话/工具/子任务生效，恢复先读 AGENTS.md 与 agent-workflow.md；不是本次聊天的临时约定。
+
 ## 当前结论
 
-2026-10-06断网接续已开始新离线切片：root实现严格typed条件POST/页面弹窗、v1/v2选择（页面默认v2、API默认v1）、共同支持帧与完整request/payload身份核对。定向新22项中21通过，剩余浏览器篮子/源表检查因测试连接未显式close已修并单项通过；mypy58/Ruff通过。旧99项/1symlink skip在前轮定向已通过。完整集成verify尚待运行，详见sprint-detail-workspace；两个worker独立worktree负责v3部件合同与只读费用历史，均零真实HTTP。当前生产服务仍旧版快照，下次部署需先重验health/进程身份。F006/F009/F010false、人工反馈与费用限制保留。
+2026-10-06断网接续离线切片已完成：root页面typed AND/POST与request/payload核对a59a85e，v3嵌套part d3aedff、只读费用历史877d7d8已整合，CLI/API/页面可选v1/v2/v3（页面/CLI默认v2、inspect API默认v1）。最新完整verify **1184 passed / 1 Windows文件symlink权限skip，124.87s**，Ruff109/mypy60/CLI与两次离线wheel通过，SHA fc1106a422692842c64eb1a1399969b776d729b3c1b3c8cbe569092a8546ecec，日志.cache/detail-workspace-verify.log。真实两候选页面partial、v3缺结构unverified、费用弹窗及桌面/手机通过，0页面错误/外部请求；原源表与侧车SHA不变，证据artifacts/detail-workspace-validation。生产服务重验身份后更新为PID52144/parent52764，仅快照，下次再验。v3仅fixture工程验证，未发送真实HTTP；F006/F009/F010false、独立人工反馈和旧预留仍保留。
 
-当前root codex/visual-details，实现23d8422（独立精分析/恢复）与a6eb196（typed query CLI/profile）。完整verify **1062 passed / 1 Windows文件symlink权限skip（93.59s）**，Ruff103/mypy58/CLI与重复离线wheel通过，日志.cache/detail-query-verify.log。定向Provider167、query82通过。后续仅文档/本地证据更新，无源码再改。
+当前root codex/visual-details；前一切片23d8422（独立精分析/恢复）与a6eb196（typed query CLI/profile）的历史完整verify1062/1skip在.cache/detail-query-verify.log。最新工程结果见本轮段落；仅公共记录/ignored证据在完整verify后更新，无再改源码。
 
 用户追加最高¥4.04，并明确允许共6张注册源帧/帧ID/提示词参数发送至DeepSeek chat/completions；仅两候选各1次、总2次、无retry，均Completed。合计估价 **¥0.01850612，新增unknown0**；旧未知¥4.065536保留，全任务已知¥0.24934532/总承诺¥4.31488132。两个复合条件均partial，不宣称内容已通过。真实v2结果已发布，旧base事件/证据/调用账本不变；humanLabels/qualityGate=null，F006/F009/F010=false。
 
-人工核对入口 **artifacts/detail-query-validation/human-review.html**（6帧，桌面/手机无横溢、0页面错误）；完整结果pilot-report.json、请求proposal、real-read-report.json。35–36s三个主体未跨actor拼接；但模型把同衣物形状/颜色分成不同partId，后续需独立新版本纠正，不修改已冻结v2结果。28–29s模型记录蓝发/蓝色扁平物并拆成三个shot，白发条件未满足；武器类别仍无支持，待用户核对。
+人工核对入口 **artifacts/detail-query-validation/human-review.html**（6帧，桌面/手机无横溢、0页面错误）；完整结果pilot-report.json、请求proposal、real-read-report.json。2026-10-06用户已接受第一组35–36s三个描述；指出第二组28–29s s1/a2错误：角色突然拿出的物品正抵镜头，挡住人物并占据大部分画面，不能认作新人物。仅这些明确条目为人工结论，其他条目不推断通过。独立反馈记录见docs/exec-plans/detail-human-feedback-2026-10-06.md；冻结模型结果与原报告不改，原报告null不是反馈尚未收到。v2把同衣物拆成不同part已由v3工程合同处理；此处优先诊断物品/主体与真实镜头连续性。
 
-match-details已接严格query-v1清单与独立match记录，CLI默认v2，检查API detailProfile默认v1；页面仍v1/自由查询无严格AND。新版生产服务PID36320/parent24836仅快照，已验证v2 API/33事件，重启前须重验身份。前两次push因GitHub443超时，第三次正常push成功上传30c44ae；独立ls-remote与本地HEAD一致，未更新main或强推。后续仅同步状态文档，最新HEAD以git核对为准。
+match-details读取严格query-v1并可保存独立match；页面用明确条件弹窗但自由查询仍无严格AND。费用入口只读本项目精分析汇总，基础/其他项目账本独立；旧unknown¥4.065536不变。本轮之前普通push上传并独立核对30c44ae，998bc2d等本地后续提交待正常补推，未更新main/强推；最新HEAD及远端以git核对为准。
 
 2026-10-05 Codex已顺序接续Grok，继承检查点16f727f、实现96f6c82；最新HEAD见git log。只读sidecar已接到/api/inspect，UI证据页显示未验证或按镜头/主体/部件展开已保存结构。复用不表示复合条件full；旧短ID/无base prompt hash数据为unsupported/unverified，原事实/排名/篮子/导出保留。最新完整verify：999 passed / 1 Windows文件symlink权限skip（142.12s），Ruff96文件、mypy54、CLI和两次离线wheel通过，SHA 431d9f32f5c774ffecb351d2d55f50a4a7a1fbdd72bc9787cb7c40c4efc05b0e。新17项及相关定向回归88 passed/1skip。真实V6浏览器smoke和生产读取通过，默认33事件；V2/V4/V6快照及sidecar文件未变。证据artifacts/detail-inspection-validation和.cache/detail-inspection-verify.log；无新付费API，未知预留与F006/F009/F010不变。
 
@@ -27,7 +29,7 @@ match-details已接严格query-v1清单与独立match记录，CLI默认v2，检�
 - V5/V6：1280 宽 / 9 图 / 3MiB / detail=original；V1–V4 保持 512 / 1MiB，旧 hash/parser 不变。衣着、外观、持有物、环境、效果写成紧凑事实；V6 先判断连续动作资格，要求不同源时刻和正确边界。
 - 新事实的编号只允许当前事件已引用的原窗口帧，映射真实源时间；未引用或越界编号拒绝。旧事实不重写，用 legacy-frame-alias-neutral-v1 清理显示、视觉索引和下载；保留键盘 F1 与普通标识。
 - UI 显示待核对、Completed detailed 优先；原始事实与旧篮子身份校验保留。检索 bm25-e5-rrf-v5，新 passage 文本 hash 隔离旧向量缓存，阈值及明确动作否定保护不改。CLI 普通/benchmark 保存 uncertainty/displayUncertainty，run-demo 显示待核对。
-- 检查视图基线999 passed/1权限skip及142.12s为历史；最新完整1062/1skip见当前结论。当前两个wheel同SHA `f4282ed7b02c315a3d2cb6c8acd16d8cd4bddd2ada9c655cda9970123a1be799`；未改基础vision/检索/导出源码。
+- 检查视图999 passed/1权限skip及142.12s、随后CLI切片1062/1skip均为历史；1062切片两个wheel同SHA `f4282ed7b02c315a3d2cb6c8acd16d8cd4bddd2ada9c655cda9970123a1be799`。最新1184及wheel见当前结论；基础vision/检索/导出源码未改。
 
 ## 实验、费用和限制
 
@@ -58,7 +60,7 @@ typed合同/纯matcher、独立Provider、持久侧车和match-details CLI已接
 - detail_retrieval_audit新测试：.worktrees/actor-detail-tests / codex/actor-detail-tests，410bb245已集成冻结；最终钉2e95485联合94passed/0skip，73新domain反例，own sprint已在root。旧spec worktree冻结，禁止共享writer。
 - 其他V5 vision/presentation/pilot worktrees全部冻结。
 
-下一任务：接收两样本独立人工反馈；离线改进同一衣物/持有物part绑定合同，用新版本保留v2冻结身份；再接页面typed条件与只读成本历史。两次授权调用额度已按“次数”用完，不能因剩余预算再发第三次或retry；新实验须另明确候选/目的地/预算。不要宣称Boss、跳跃、射击或复合主体质量已通过。
+下一任务：优先以用户已标错的28–29s为反例，核对实际输入、基础窗口上下文、物品靠近镜头的连续变化与假切镜，设计独立版本的连续主体/持有物证据合同并离线开发；随后继续受控自然语言条件草稿与明确确认，不默默忽略不支持词或宣称原查询全部满足。v3部件、页面typed入口和只读成本历史已实现，真实模型改进仍须独立新实验验证。两次授权调用额度按“次数”用完，不能因剩余预算再发第三次/retry；新实验须明确候选/目的地/预算。Boss、跳跃、射击与复合主体质量均未通过。
 
 恢复时先核对status/HEAD。继承ports/sidecar已保存16f727f，检查视图实现96f6c82；不要强推。未知预留¥4.065536仍在，禁止retry漫画0ba106578bc7435c8689d12892a35dfb或换目录清账。默认开页、查询和刷新仍是0付费API；本轮远端同步结果见sprint-detail-inspection，不改main或合并未验收特性。
 

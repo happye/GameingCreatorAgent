@@ -2,7 +2,7 @@
 
 2026-10-05；owner：detail_retrieval_audit；branch `codex/actor-detail-spec`；worktree `.worktrees/actor-detail-spec`；base `c400188`。
 本任务独占新 `actor-detail-matching-spec.md` 与本 sprint；不是唯一开发者，不回写root或覆盖其他Agent变更。
-状态：规格/typed合同/纯matcher、request/ports、sidecar/共享预算与只读检查UI已整合。独立Provider HTTP、typed查询匹配及两候选真实精分析/人评未完成；当前接续见sprint-detail-inspection。
+历史状态（2026-10-05）：规格/typed合同/纯matcher、request/ports、sidecar/共享预算与只读检查UI已整合。之后独立Provider、typed查询、两候选调用与明确条目人工反馈已落盘；最新状态见HANDOFF.md、sprint-detail-workspace.md及detail-human-feedback-2026-10-06.md，不把下方计划视为当前缺口。整体人评门槛仍未通过。
 
 ## 已确认问题
 

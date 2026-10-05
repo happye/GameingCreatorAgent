@@ -23,6 +23,8 @@ CLI 只解析输入、组装依赖和输出结果；Application 编排 stages、
 
 本地页面不代表纯云服务，桌面EXE也不代表全离线推理；当前视频/ASR/SQLite/E5在本机，视觉证据必要图片发DeepSeek。未来Windows桌面封装遵循原本地优先方向，完整云端托管则需另作存储、任务与账号边界设计。详见[部署路线](../references/deployment-roadmap.md)。
 
+主体细节是独立精分析 sidecar，不重写基础事件。`/api/inspect` 显式选择 v1/v2/v3 并返回条件词表与已保存结果身份；`POST /api/match-details` 只读匹配用户确认的同主体/同部件 AND 条件，页面按当前 request/payload 身份接收结果。`GET /api/detail-cost-history` 只读独立精分析的 planned/result/预算记录，显示本 run 与全项目已知估价及未知预留，不执行恢复、结算或模型调用。v3 将一个实际部件的属性嵌套后验证，再投影到冻结领域结构；它尚无真实模型验证。自由查询仍走原检索，不能据候选局部条件宣称整句满足。细节合同与版本边界见 [主体细节规格](./actor-detail-matching-spec.md) 和 [API 合同](./inspection-workspace-api.md)。
+
 ## 数据流与状态
 
 本地源文件 → hash/probe → 带 PTS 的视觉证据＋音频 → 本地 ASR＋视觉 Provider → 校验后的 SemanticEvent → SQLite → 检索/重排/去重 → CandidateClip。

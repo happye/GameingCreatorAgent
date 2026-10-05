@@ -213,6 +213,12 @@ dialog::backdrop { background: #030713d9; }
 #detail-profile { margin-bottom: 12px; }
 #open-detail-query { margin-top: 5px; font-size: 10px; }
 #detail-query-dialog { width: min(680px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); overflow-y: auto; }
+#detail-cost-dialog { width: min(680px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); overflow-y: auto; }
+#open-detail-costs { margin-top: 8px; font-size: 10px; }
+.detail-cost-summary { margin: 12px 0; padding: 10px; border: 1px solid var(--line); border-radius: 6px; }
+.detail-cost-summary p, .detail-cost-attempt p { margin: 5px 0; overflow-wrap: anywhere; }
+.detail-cost-attempt { border-top: 1px solid var(--line); padding: 10px 0; }
+.detail-cost-attempt summary { overflow-wrap: anywhere; cursor: pointer; }
 #detail-query-dialog p { margin: 8px 0; overflow-wrap: anywhere; }
 .detail-condition { display: grid; grid-template-columns: 1fr 1fr 1fr 28px; gap: 8px; align-items: end; margin: 12px 0; }
 .detail-condition select { min-width: 0; }

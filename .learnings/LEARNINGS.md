@@ -1,5 +1,13 @@
 # Learnings
 
+## 2026-10-06: 所有 Agent 的持久汇报偏好
+
+用户明确要求每次关键改动后给出不那么技术味的详细汇报，并说明接下来要做什么。适用本项目所有 Agent、子任务、工具切换与会话恢复。先解释使用效果和用户收益，再说明验证证据、剩余问题和下一项具体行动；技术名词和测试数量不能代替说明。规则已提升到 AGENTS.md、各工具入口和 docs/references/agent-workflow.md；持续遵守，不需重复询问。
+
+## 2026-10-06: 近镜头持有物不能被认成人物
+
+用户人工核对接受 detail-query-validation 第一组35–36秒的三个主体描述；指出第二组28–29秒 s1/a2 错误：角色突然拿出物品，物品正抵镜头、遮挡人物并占据大部分画面。这是物品，不是新人物。多帧输入仍可能逐帧误认或把遮挡误作切镜；须核对实际上下文、物品与持有人关系及镜头连续性，不得把输入帧数当作理解正确的证据。反馈只覆盖用户明确核对的条目，不推断其他条目已通过；旧模型结果保持冻结。
+
 ## 2026-10-04: Gameplay retrieval must identify temporal actions
 
 User acceptance rejected Boss/jump/shoot search: multi-image inputs produced image inventories instead of action episodes. Existing v2 already sends five frames together, but permits single-frame micro-events. Multiple images, valid JSON, index hits and a usable UI do not prove gameplay understanding. Require source-ordered change evidence and action-level descriptions, distinguish weapon/enemy/pose presence from shooting/Boss fights/jumping, and test static/reversed/cut/unknown controls. Preserve F006 failure and validate new footage results before claiming a fix.

@@ -1,5 +1,14 @@
 # Errors
 
+## [ERR-20261006-006] isolated_runtime_bytecode_drift_recurs
+
+**Logged**: 2026-10-06
+**Priority**: medium
+**Status**: resolved
+**Area**: infra
+
+只读评审的Decimal小样本裸Python调用再次改写10个stdlib .pyc，完整verify在receipt检查停止。仅.pyc漂移，源码/EXE/DLL未变；从核对toolchain.json SHA的本地缓存Python tar归档逐文件恢复原receipt哈希，receipt不改。env.ps1+ -B要求同样适用于所有只读worker/临时样本。后续init/fullverify通过1184/1skip。See Also: ERR-20261004-002。
+
 ## [ERR-20261006-005] standalone_pytest_basetemp_parent
 
 **Logged**: 2026-10-06

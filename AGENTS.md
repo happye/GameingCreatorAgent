@@ -37,3 +37,11 @@ Use pytest `tests/test_*.py`; follow `docs/references/testing-guide.md` and `pha
 ## Changes, commits, and handoff
 
 All agents share acceptance criteria; start with `HANDOFF.md` and `docs/references/agent-workflow.md`. Assign ownership; parallel writers use separate worktrees. Record verification and resumable work before transfer. Use imperative `chore:`/`docs:` subjects or `feat(F002): add local frame extraction`. PRs describe behavior, link a feature and include evidence. Never commit secrets, footage, generated media or databases.
+
+## Persistent reporting mode
+
+用户要求所有项目 Agent 在每次关键改动后给出不那么技术味的详细汇报，并说明接下来要做什么。此偏好跨会话、工具切换和子任务持续生效，恢复工作时必须加载。
+
+先解释现在能做什么、对用户的使用有什么帮助，再说明实际验证结果、仍存在的问题和下一步具体动作。用用户熟悉的例子；提交号、测试数量和内部实现仅作必要证据，不能代替使用效果说明。关键改动包括功能或使用流程变化、模型理解或费用行为变化，以及影响验收的发现。
+
+按 `docs/references/agent-workflow.md` 的汇报协议执行；将本次已汇报的结论及下一步写入任务 sprint 和 `HANDOFF.md`。Worker 向集成负责人提供同样内容，由负责人汇总给用户；已有授权内的工作继续推进。
