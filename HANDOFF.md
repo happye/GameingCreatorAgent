@@ -17,9 +17,9 @@ root 分支 codex/visual-details，代码检查点 c400188、规格 a7789b4。�
 
 ## 实验、费用和限制
 
-本轮细节任务全部成功、失败及控制请求合计估价 **¥0.23083920 / unknown 0**，上限 ¥5。组成：V5对照 ¥0.03676864、失败V5 run ¥0.07282904、V6对照 ¥0.01854028、新V6完整run ¥0.10270124。费用不含旧V4历史实验，不是账单；全部证据目录保持 ignored。
+本轮已知估价 **¥0.23083920**，上限¥5；V5对照¥0.03676864、失败V5 ¥0.07282904、V6对照¥0.01854028、Atom V6完整run ¥0.10270124均unknown0。追加漫画PV后有**2次网络失败/用量未确认**，保留未知预留¥4.065536；本轮总承诺¥4.29637520，余¥0.70362480，不足单次保守预留¥2.032768，停止新API请求。未知预留不是实际账单，不得擅自当零或换项目清账。全部证据保持ignored。
 
-root即将对第二段95.175874s漫画PV在**新项目artifacts/demo-visual-manga**执行独立V6，最大预算¥4.76916080（5减上项全部承诺）；日志.cache/detail-v6-manga-analyze.log。尚未有新run结果；失败须保留费用/错误，不盲目重试。demo-phase0原数据和默认Atom保持，后续恢复先查该日志再决定是否继续，不能重复创建付费run。
+追加漫画V6新项目artifacts/demo-visual-manga / run**0ba106578bc7435c8689d12892a35dfb**，95.175874s，原预算¥4.76916080。media/asr完成，第一vision窗口2次provider.network失败无usage，第三次被budget.exhausted本地阻止，0事件。日志.cache/detail-v6-manga-analyze.log及原SQLite账本保留。**不得再次创建run或retry清除未知承诺**；先厘清网络与费用/获得明确新预算。现有demo-phase0漫画V2、AtomV4/V6及默认Atom继续可用。后续纯合同/ports/sidecar开发不需要新API。
 
 V5对照 artifacts/visual-details-atom-execute：28–32和35–39s，A=V4/512、B=V5/512同九帧，C=V5/1280同源时刻；8HTTP/72图。V6对照 artifacts/visual-details-v6-atom-execute：31.5–35.5s，A=V4/512、B=V6/512、C=V6/1280；4HTTP/36图。两组静图控制空、倒序发送前拒绝；V6跳过31.5s单帧首尾，轻微待机仍可能被算事件。
 

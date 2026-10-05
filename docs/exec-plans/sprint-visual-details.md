@@ -75,3 +75,5 @@ CLI实际脚本补验：run-demo -Run新V6 -Query指挥棒 -TopK3已返回真实
 ## 第二段PV的独立V6细节分析（执行前检查点）
 
 当前所有已知/未知承诺合¥0.23083920/unknown0。利用用户提供的第二段95.175874s漫画PV，在新项目artifacts/demo-visual-manga创建V6 run，明确使用config.detailed-v6.example.json、同hash/detailed-v2与隔离模型。新run最大预算¥4.76916080=本轮5减既有全部费用；含失败/unknown，不能跨项目重置总上限。原demo-phase0漫画V2、AtomV4/V6及其篮子不改；项目默认仍demo-phase0。仅补现有细节试验覆盖，不证明人评或新增渲染功能。分析日志.cache/detail-v6-manga-analyze.log；如失败先记有限错误，不盲目重试同窗口。
+
+追加漫画V6 run `0ba106578bc7435c8689d12892a35dfb` failed：media/asr完成，第一窗口attempt1/2均provider.network（207ms/21ms，无actual model/usage/cost），第三次发送前budget.exhausted，0事件。两次unverified预留各¥2.032768，合¥4.065536；不是实际扣费确认，不能置零。本轮已知¥0.23083920 + 未知承诺¥4.065536 = ¥4.29637520，余¥0.70362480不足下次保守预留，故停止API调用，不改预算或新建run清零。原日志/SQLite保存；网络限制具体成因未有可核实诊断，不臆测原服务故障或已扣费。现有Atom新Demo和旧漫画正常。后续合同/ports/sidecar可离线继续；真实精分析试验先处理网络与未知费用/明确新预算。
