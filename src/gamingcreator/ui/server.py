@@ -212,6 +212,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                         mode=modes[mode],
                         top_k=top,
                         project_reference=query.get("project"),
+                        detail_profile=query.get("detailProfile", "v1"),
                     )
                 )
                 self._json(200, payload)

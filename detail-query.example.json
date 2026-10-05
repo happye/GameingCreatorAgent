@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "actor-detail-query-schema-v1",
+  "version": "actor-detail-query-v1",
+  "vocabularyVersion": "actor-detail-vocabulary-v1",
+  "actorAll": [
+    {"kind": "hair_color", "value": "white", "partGroup": "hair"},
+    {"kind": "held_shape", "value": "blue_flat_object", "partGroup": "held_item"}
+  ],
+  "environmentAll": []
+}

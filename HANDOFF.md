@@ -4,6 +4,8 @@
 
 ## 当前结论
 
+typed查询切片实施节点：已接match-details离线CLI/query-v1 codec/独立match记录，以及检查API的detailProfile参数；默认CLI=v2、检查API=v1。定向82 passed（13.08s）、mypy58/Ruff通过，完整验证待运行，见sprint-detail-query.md。23d8422/3b09081在本地；本轮push因GitHub443超时失败，远端尚未更新到这两个提交，后续重试。没有新付费调用；现有真实run精分析仍缺失，复合自然语言检索未验收。
+
 2026-10-06跨日接续：独立v2精分析适配器/完整attempt记录/本地恢复/两级锁与planned预留补偿已完成，实现23d8422，计划sprint-detail-provider.md。最新完整verify **1043 passed / 1 Windows文件symlink权限skip（91.11s）**；Ruff100/mypy56/CLI、重复离线wheel通过，SHA7d8e9515442f9e66f6a43637404017d42884cec9690ae873d81f7c3c1076a753。定向167通过，日志.cache/detail-provider-verify.log。下方999为检查视图历史基线。未启新付费API，失败/未知预留不清零。v1检查profile保留，v2显式选择；root顺序继续typed查询manifest/profile，见sprint-detail-query.md。接手先核对git diff与sprint。
 
 2026-10-05 Codex已顺序接续Grok，继承检查点16f727f、实现96f6c82；最新HEAD见git log。只读sidecar已接到/api/inspect，UI证据页显示未验证或按镜头/主体/部件展开已保存结构。复用不表示复合条件full；旧短ID/无base prompt hash数据为unsupported/unverified，原事实/排名/篮子/导出保留。最新完整verify：999 passed / 1 Windows文件symlink权限skip（142.12s），Ruff96文件、mypy54、CLI和两次离线wheel通过，SHA 431d9f32f5c774ffecb351d2d55f50a4a7a1fbdd72bc9787cb7c40c4efc05b0e。新17项及相关定向回归88 passed/1skip。真实V6浏览器smoke和生产读取通过，默认33事件；V2/V4/V6快照及sidecar文件未变。证据artifacts/detail-inspection-validation和.cache/detail-inspection-verify.log；无新付费API，未知预留与F006/F009/F010不变。

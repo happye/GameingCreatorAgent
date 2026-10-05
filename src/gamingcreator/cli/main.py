@@ -29,6 +29,7 @@ from gamingcreator.application.benchmark import (
     run_benchmark,
 )
 from gamingcreator.application.budget import BudgetLedger, InvocationRecorder
+from gamingcreator.application.detail_query import MAX_MANIFEST_BYTES, loads_constraint
 from gamingcreator.application.inputs import AnalyzeInput, PreparedAnalyze, prepare_analyze
 from gamingcreator.application.observation_text import (
     FACTS_PROJECTION_VERSION,
@@ -50,6 +51,7 @@ from gamingcreator.infrastructure.deepseek_vision import (
     DeepSeekVisionProvider,
     vision_prompt_fingerprint,
 )
+from gamingcreator.infrastructure.detail_query_sidecar import match_refinement
 from gamingcreator.infrastructure.ffmpeg_media import FfmpegMediaProcessor
 from gamingcreator.infrastructure.http_transport import HttpxVisionTransport
 from gamingcreator.infrastructure.local_asr import LocalAsrProvider
@@ -92,6 +94,15 @@ def _parser() -> CliParser:
     benchmark.add_argument("--output", type=Path, required=True)
     benchmark.add_argument("--mode", choices=("lexical", "semantic", "hybrid"), default="hybrid")
     benchmark.add_argument("--min-similarity", type=float, default=0.80)
+    detail = commands.add_parser("match-details", help="离线匹配同主体属性条件清单")
+    detail.add_argument("--project", type=Path, required=True)
+    detail.add_argument("--run", required=True)
+    detail.add_argument("--event", required=True)
+    detail.add_argument("--input", type=Path, required=True)
+    detail.add_argument("--profile", choices=("v1", "v2"), default="v2")
+    detail.add_argument(
+        "--save-match", action="store_true", help="在已发布精分析旁保存独立匹配记录"
+    )
     return parser
 
 
@@ -204,6 +215,34 @@ async def execute_search(
         )
         _write_json(project / "runs" / run_id / "searches" / (uuid4().hex + ".json"), document)
         return document
+    finally:
+        await store.close()
+
+
+async def execute_detail_match(
+    project: Path,
+    run_id: str,
+    event_id: str,
+    input_path: Path,
+    *,
+    profile: str = "v2",
+    save: bool = False,
+) -> dict[str, object]:
+    _require_project(project)
+    try:
+        with input_path.open("rb") as source:
+            content = source.read(MAX_MANIFEST_BYTES + 1)
+        if len(content) > MAX_MANIFEST_BYTES:
+            raise ValueError("Oversized query.")
+        constraint = loads_constraint(content.decode("utf-8"))
+    except (OSError, UnicodeError, ValueError):
+        raise AppError(
+            "input.detail_query", "属性条件清单无效或超过1MiB。", ExitCode.INPUT
+        ) from None
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    try:
+        timeline = await store.load_completed_timeline(run_id)
+        return match_refinement(project, timeline, event_id, constraint, profile=profile, save=save)
     finally:
         await store.close()
 
@@ -480,6 +519,17 @@ async def execute_analyze(prepared: PreparedAnalyze, repository: Path) -> Analyz
 
 
 def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | None:
+    if args.command == "match-details":
+        return asyncio.run(
+            execute_detail_match(
+                args.project.resolve(),
+                args.run,
+                args.event,
+                args.input,
+                profile=args.profile,
+                save=args.save_match,
+            )
+        )
     if args.command == "analyze":
         prepared = prepare_analyze(
             AnalyzeInput(

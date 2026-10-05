@@ -9,7 +9,6 @@ from urllib.parse import urlencode
 from gamingcreator.application.detail_refinement import (
     RefinementIdentity,
     RefinementSettings,
-    default_refinement_identity,
     refinement_settings_hash,
 )
 from gamingcreator.application.detail_refinement_budget import canonical_detail_json
@@ -20,6 +19,7 @@ from gamingcreator.application.storage import RunStatus, StoredInvocation, Store
 from gamingcreator.cli.main import execute_search
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.time import SourceInstant, SourceRange
+from gamingcreator.infrastructure.detail_query_sidecar import refinement_identity_for_profile
 from gamingcreator.infrastructure.detail_refinement_sidecar import reuse_or_refuse
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 from gamingcreator.ui.media import MediaResource
@@ -249,8 +249,10 @@ async def inspect_run(
     mode: RetrievalMode = "hybrid",
     top_k: int = 10,
     project_reference: str | None = None,
+    detail_profile: str = "v1",
 ) -> dict[str, object]:
     """Read events from SQLite, then search only when that run is already completed."""
+    refinement_identity = refinement_identity_for_profile(detail_profile)
     artifact = str((project / "timeline.sqlite3").resolve())
     store = await SqliteTimelineStore.open(project, read_only=True)
     try:
@@ -278,7 +280,6 @@ async def inspect_run(
     event_tags = {event.event_id: event.mechanic_tags for event in timeline.events}
     event_uncertainty = {event.event_id: event.uncertainty for event in timeline.events}
     settings = RefinementSettings()
-    refinement_identity = default_refinement_identity()
     refinements = {
         event.event_id: _refinement_payload(
             project, timeline, event.event_id, settings, refinement_identity
@@ -343,6 +344,7 @@ async def inspect_run(
             "cost": cost_payload(timeline.invocations),
             "retrievalVersion": RETRIEVAL_VERSION,
             "detailRefinementProfile": {
+                "profile": detail_profile,
                 "version": DETAIL_INSPECTION_VERSION,
                 "settingsHash": refinement_settings_hash(settings),
                 "schemaVersion": refinement_identity.schema_version,
