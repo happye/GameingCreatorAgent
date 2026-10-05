@@ -28,4 +28,4 @@ root独占typed query JSON codec/离线CLI与match侧车、检查profile参数�
 
 完成后以拒绝Provider fixture再次send这两key，均reused/0新调用，sidecar与ledger哈希完全不变；reuse-report.json保存真实复用证据。每key只有attempt1，没有清除预留或覆盖immutable结果。
 
-两次授权调用次数已用完；无第三次或retry。下一步独立人评、离线新版本part绑定和页面typed入口/成本历史。GitHub两次push超时，a6eb196与前序提交暂只在本地，最终同步状态以后续Git核对为准。
+两次授权调用次数已用完；无第三次或retry。下一步独立人评、离线新版本part绑定和页面typed入口/成本历史。GitHub前两次push超时后，第三次正常push成功上传30c44ae；独立ls-remote核对远端与本地30c44aef85ff56396d10124e6685ce76275a9dc0一致，工作树干净，不更新main。后续仅状态文档同步，最新HEAD以Git为准。

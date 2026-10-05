@@ -150,4 +150,4 @@ F008true、F006false；人工质量标准和本地/云端/未来EXE说明分别�
 
 用户追加最多¥4.04/2候选，随后明确授权共6注册画面及帧ID/提示词参数发送DeepSeek。自动审批首拒发生在执行前；授权补齐后同一脚本只调用2次，无retry，两次Completed，估价合¥0.01850612/新增unknown0，旧未知¥4.065536保留。两复合查询均partial；模型同衣物partId分散与蓝发/白发条件差异仍待纠正/人评，不修改已发布v2。再读两个key均reused/0新调用，侧车/账本哈希不变。
 
-人评报告artifacts/detail-query-validation/human-review.html内嵌6帧，1366/390宽验证无横溢/0页面错误；模型描述已转义，qualityGate/humanLabels=null。F006/F009/F010false。下一步用户核对、离线新版本part绑定/页面typed入口/费用历史。GitHub两次连接超时，本地提交保存，最后推送状态以sprint/HANDOFF为准，不更新main。
+人评报告artifacts/detail-query-validation/human-review.html内嵌6帧，1366/390宽验证无横溢/0页面错误；模型描述已转义，qualityGate/humanLabels=null。F006/F009/F010false。下一步用户核对、离线新版本part绑定/页面typed入口/费用历史。GitHub前两次连接超时后，正常push上传30c44ae，独立远端/本地SHA一致，不更新main；后续仅状态文档同步。

@@ -10,7 +10,7 @@
 
 人工核对入口 **artifacts/detail-query-validation/human-review.html**（6帧，桌面/手机无横溢、0页面错误）；完整结果pilot-report.json、请求proposal、real-read-report.json。35–36s三个主体未跨actor拼接；但模型把同衣物形状/颜色分成不同partId，后续需独立新版本纠正，不修改已冻结v2结果。28–29s模型记录蓝发/蓝色扁平物并拆成三个shot，白发条件未满足；武器类别仍无支持，待用户核对。
 
-match-details已接严格query-v1清单与独立match记录，CLI默认v2，检查API detailProfile默认v1；页面仍v1/自由查询无严格AND。新版生产服务PID36320/parent24836仅快照，已验证v2 API/33事件，重启前须重验身份。最新远端push两次GitHub443超时，暂只有本地a6eb196，后续正常推送，不改main；最终以git核对和sprint-detail-query为准。
+match-details已接严格query-v1清单与独立match记录，CLI默认v2，检查API detailProfile默认v1；页面仍v1/自由查询无严格AND。新版生产服务PID36320/parent24836仅快照，已验证v2 API/33事件，重启前须重验身份。前两次push因GitHub443超时，第三次正常push成功上传30c44ae；独立ls-remote与本地HEAD一致，未更新main或强推。后续仅同步状态文档，最新HEAD以git核对为准。
 
 2026-10-05 Codex已顺序接续Grok，继承检查点16f727f、实现96f6c82；最新HEAD见git log。只读sidecar已接到/api/inspect，UI证据页显示未验证或按镜头/主体/部件展开已保存结构。复用不表示复合条件full；旧短ID/无base prompt hash数据为unsupported/unverified，原事实/排名/篮子/导出保留。最新完整verify：999 passed / 1 Windows文件symlink权限skip（142.12s），Ruff96文件、mypy54、CLI和两次离线wheel通过，SHA 431d9f32f5c774ffecb351d2d55f50a4a7a1fbdd72bc9787cb7c40c4efc05b0e。新17项及相关定向回归88 passed/1skip。真实V6浏览器smoke和生产读取通过，默认33事件；V2/V4/V6快照及sidecar文件未变。证据artifacts/detail-inspection-validation和.cache/detail-inspection-verify.log；无新付费API，未知预留与F006/F009/F010不变。
 

@@ -1,6 +1,6 @@
 # Active assignments
 
-2026-10-06 root / Codex完成Provider/record codec/sidecar恢复23d8422、typed query CLI/match侧车/profile a6eb196；最新完整verify1062/1权限skip，定向167与82通过。两个明确授权真实候选各1次均Completed/partial，合估价¥0.01850612/unknown0；旧预留¥4.065536保留。人工核对入口artifacts/detail-query-validation/human-review.html，见sprint-detail-query。root继续负责离线part合同/页面typed入口与成本历史；历史worktree冻结，禁止额外API或retry，F006/F009/F010false。当前GitHub推送连接失败，最终核对见HANDOFF/sprint。
+2026-10-06 root / Codex完成Provider/record codec/sidecar恢复23d8422、typed query CLI/match侧车/profile a6eb196；最新完整verify1062/1权限skip，定向167与82通过。两个明确授权真实候选各1次均Completed/partial，合估价¥0.01850612/unknown0；旧预留¥4.065536保留。人工核对入口artifacts/detail-query-validation/human-review.html，见sprint-detail-query。root继续负责离线part合同/页面typed入口与成本历史；历史worktree冻结，禁止额外API或retry，F006/F009/F010false。30c44ae已正常push并独立核对远端SHA，main不改，后续仅状态文档同步。
 
 ## 2026-10-05 当前细节优化
 
