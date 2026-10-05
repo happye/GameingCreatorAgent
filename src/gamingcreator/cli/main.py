@@ -30,6 +30,7 @@ from gamingcreator.application.benchmark import (
 )
 from gamingcreator.application.budget import BudgetLedger, InvocationRecorder
 from gamingcreator.application.inputs import AnalyzeInput, PreparedAnalyze, prepare_analyze
+from gamingcreator.application.observation_text import FACTS_PROJECTION_VERSION, display_facts
 from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
 from gamingcreator.application.providers import CancellationContext, CostStatus
 from gamingcreator.application.retrieval import (
@@ -105,6 +106,7 @@ def _search_document(result: SearchResult, elapsed_ms: int) -> dict[str, object]
         "query": result.query,
         "mode": result.mode,
         "retrievalVersion": result.retrieval_version,
+        "factsProjectionVersion": FACTS_PROJECTION_VERSION,
         "minSimilarity": result.min_similarity,
         "minSemanticMargin": result.min_semantic_margin,
         "abstentionReason": result.abstention_reason,
@@ -127,6 +129,7 @@ def _search_document(result: SearchResult, elapsed_ms: int) -> dict[str, object]
                 "scoreKind": item.score_kind,
                 "evidenceIds": list(item.evidence_ids),
                 "observableFacts": list(item.observable_facts),
+                "displayFacts": list(display_facts(item.observable_facts)),
                 "why": item.why,
             }
             for rank, item in enumerate(result.candidates, 1)

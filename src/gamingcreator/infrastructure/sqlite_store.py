@@ -162,6 +162,7 @@ def _config_json(config: RunConfiguration) -> str:
         "phase0-vision-v3",
         "phase0-vision-v4",
         "phase0-vision-v5",
+        "phase0-vision-v6",
     )
     if (
         not analysis.provider.strip()
@@ -210,6 +211,7 @@ def _config_json(config: RunConfiguration) -> str:
             "phase0-vision-v3",
             "phase0-vision-v4",
             "phase0-vision-v5",
+            "phase0-vision-v6",
         )
         or (
             analysis.vision_prompt_hash is None

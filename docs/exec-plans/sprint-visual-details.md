@@ -39,3 +39,9 @@ detail_pilot944fb42已整合32fe12c，9离线合同root复测通过（0.62s）�
 真实对照 `visual-details-atom-execute` completed：A/B/C两窗口均3事件，两static空、两倒序发送前provider.input。8HTTP/72图，估价¥0.03676864，unknown0/reserved0；非账单、人评gate仍null。V5增发色/衣着/持有物/环境/光效，正文无alias；1280减少一些512歧义，但未保证准确：35s护目镜仍描述角状发饰/围巾色可疑，38–39sC声称室内跑向室外连贯，实际有剪辑。28sC武器分类不确定但正面用了“武器”；parser有效不能证实细节。全部结果保留，不仅报告改进。
 
 下一步完整Atom新V5run，预算¥4.96323136（5减pilot已知及未知承诺），不重写V4。真实检索测试包含蓝发/白发/红外套/耳机/持有物/沙地平台与精确假设Boss负例，稀疏命中不计U10。后续候选精分析、切镜边界和装备消歧属于TD007/TD009。
+
+完整verify含pilot847passed/1权限skip，82.21s，Ruff85/mypy49/CLI/重复wheel同747280...通过。首次完整V5run c78f204907e04eb3a2ac97a9017dcad9 在3/16窗口、8事件后因uncertainty字段合同错误停止；4HTTP估价¥0.0296662/unknown0，诊断仅有限枚举，无原响应，不能断言具体坏值。已完成窗口保留。按原配置/预算显式resume只重做缺失窗口，不放松事实/动作或猜修字段；失败费用留账本。
+
+resume1补到9/16窗口、24事件后vision-000009的event_frame_boundaries失败；累计11HTTP估价¥0.07086276/unknown0，前3窗口没有重发。缺失端点/同帧/逆序具体值未保存，不臆测。继续显式resume2，合同保护和已完成窗口不改；本轮总已知pilot+run为¥0.10763140。
+
+resume2同窗口再失败，有限数值诊断两次都startUs31500000/endUs31500001/eventIndex0，证实模型选择同一源时刻为首尾；不是未知坏值。停止重复V5，保留failed24事件/12HTTP总估价¥0.07282904/unknown0。新detail_v6 worker在.worktrees/detail-v6从e9183b3独占provider、新eligibility tests/own sprint，新增独立V6提示：先多帧主体动作后外观，单帧外观与纯切镜省略，输出前检查不同端点与引用。原V1–V5及parser保护冻结。root负责V6配置/独立detailed-v2/UI/pilot支持，新的V6run预算¥4.89040232（总5减pilot和失败V5承诺）。不把半成品V5设为默认Completed。

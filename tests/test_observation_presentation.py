@@ -55,6 +55,7 @@ def test_projection_is_immutable_and_idempotent():
     ("prompt", "profile"),
     [
         ("phase0-vision-v5", "detailed"),
+        ("phase0-vision-v6", "detailed"),
         ("phase0-vision-v4", "temporal"),
         ("phase0-vision-v3", "temporal"),
         ("phase0-vision-v2", "frame_observations"),
@@ -77,6 +78,19 @@ def test_retrieval_does_not_match_internal_alias_and_keeps_raw_candidate_identit
     assert candidate.source_range == observed.source_range
     assert candidate.event_id == observed.event_id
     assert candidate.evidence_ids == observed.evidence_ids
+
+
+def test_cli_search_projects_facts_without_rewriting_canonical_candidate():
+    from gamingcreator.cli.main import _search_document
+
+    observed = event("jump", 0, 1, "f0到f8角色跳跃落地", "jump")
+    result = search(timeline((observed,)), "跳跃", mode="lexical")
+    document = _search_document(result, 1)
+    candidate = document["candidates"][0]
+    assert candidate["observableFacts"] == list(observed.observable_facts)
+    assert candidate["displayFacts"] == ["对应画面序列角色跳跃落地"]
+    assert document["factsProjectionVersion"] == FACTS_PROJECTION_VERSION
+    assert result.candidates[0].observable_facts == observed.observable_facts
 
 
 def test_embedding_passage_hash_tracks_projection_but_subject_stays_event():

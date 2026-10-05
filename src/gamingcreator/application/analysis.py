@@ -48,6 +48,7 @@ PIPELINE_VERSION = "phase0-analyze-v1"
 WINDOW_PIPELINE_VERSION = "phase0-analyze-v2"
 TEMPORAL_PIPELINE_VERSION = "phase0-analyze-temporal-v1"
 DETAILED_PIPELINE_VERSION = "phase0-analyze-detailed-v1"
+DETAILED_ACTION_PIPELINE_VERSION = "phase0-analyze-detailed-v2"
 # These match the first vision provider. The provider rejects any other pair.
 VISION_PROMPT_VERSION = "phase0-vision-v1"
 VISION_SCHEMA_VERSION = "semantic-events-v1"
@@ -155,6 +156,8 @@ def vision_windows(
 
 
 def _pipeline_version(config: AnalysisConfig) -> str:
+    if config.schema_version == 2 and config.vision_prompt_version == "phase0-vision-v6":
+        return DETAILED_ACTION_PIPELINE_VERSION
     if config.schema_version == 2 and config.vision_prompt_version == "phase0-vision-v5":
         return DETAILED_PIPELINE_VERSION
     if config.schema_version == 2 and config.vision_prompt_version in (
@@ -357,12 +360,14 @@ async def _run_pipeline(
     image_limit, image_width = _vision_limit(ports.vision)
     # Preserve the extraction identity of historical prompts after capability growth.
     image_width = min(
-        image_width, 1280 if config.vision_prompt_version == "phase0-vision-v5" else 512
+        image_width,
+        1280 if config.vision_prompt_version in ("phase0-vision-v5", "phase0-vision-v6") else 512,
     )
     if config.vision_prompt_version not in (
         "phase0-vision-v3",
         "phase0-vision-v4",
         "phase0-vision-v5",
+        "phase0-vision-v6",
     ):
         image_limit = min(image_limit, 5)
     context = CancellationContext(run_id, timeout_seconds)
@@ -506,7 +511,7 @@ async def _run_pipeline(
                             config.vision_prompt_version,
                             "temporal-actions-v1"
                             if config.vision_prompt_version
-                            in ("phase0-vision-v4", "phase0-vision-v5")
+                            in ("phase0-vision-v4", "phase0-vision-v5", "phase0-vision-v6")
                             else VISION_SCHEMA_VERSION,
                             config.max_output_tokens,
                             stage_id=stage_id,

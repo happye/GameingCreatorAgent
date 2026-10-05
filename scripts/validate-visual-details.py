@@ -79,7 +79,10 @@ def make_cases(
     starts_us: list[int],
     low_run_id: str,
     high_run_id: str,
+    detail_prompt: str = PROMPT_VERSION_V5,
 ) -> tuple[DetailCase, ...]:
+    if detail_prompt not in (PROMPT_VERSION_V5, "phase0-vision-v6"):
+        raise AppError("detail_pilot.prompt_version", "未支持该细节提示版本。", ExitCode.INPUT)
     if (
         low.asset.media_id != high.asset.media_id
         or low.asset.sha256 != high.asset.sha256
@@ -135,7 +138,7 @@ def make_cases(
                 DetailCase(
                     prefix + "-B",
                     low_run_id,
-                    PROMPT_VERSION_V5,
+                    detail_prompt,
                     512,
                     low_frames,
                     "same_frames_prompt_control",
@@ -143,7 +146,7 @@ def make_cases(
                 DetailCase(
                     prefix + "-C",
                     high_run_id,
-                    PROMPT_VERSION_V5,
+                    detail_prompt,
                     1280,
                     high_frames,
                     "same_source_instants_resolution_control",
@@ -151,7 +154,7 @@ def make_cases(
                 DetailCase(
                     prefix + "-static-C",
                     high_run_id,
-                    PROMPT_VERSION_V5,
+                    detail_prompt,
                     1280,
                     static,
                     "no_observed_temporal_action",
@@ -159,7 +162,7 @@ def make_cases(
                 DetailCase(
                     prefix + "-reversed-C",
                     high_run_id,
-                    PROMPT_VERSION_V5,
+                    detail_prompt,
                     1280,
                     high_frames[::-1],
                     "provider.input_without_send",
@@ -214,6 +217,7 @@ async def run_pilot(
     max_cost_cny: Decimal = Decimal(5),
     request_limit: int = 8,
     execute: bool = False,
+    detail_prompt: str = PROMPT_VERSION_V5,
 ) -> dict[str, Any]:
     repository, output = repository.resolve(), output.resolve()
     if not output.is_relative_to(repository / "artifacts"):
@@ -255,7 +259,9 @@ async def run_pilot(
                     CancellationContext(variant_run, 300),
                 )
             )
-        cases = make_cases(variants[0], variants[1], starts_us, low_run_id, high_run_id)
+        cases = make_cases(
+            variants[0], variants[1], starts_us, low_run_id, high_run_id, detail_prompt
+        )
         frozen = {
             "schemaVersion": 1,
             "experiment": "visual-details-development-abc-v1",
@@ -304,7 +310,9 @@ async def run_pilot(
                     "promptSha256": vision_prompt_fingerprint(case.prompt_version),
                     "responseSchema": SCHEMA_VERSION_V4,
                     "imageMaxWidth": case.image_max_width,
-                    "imageDetail": "original" if case.prompt_version == PROMPT_VERSION_V5 else None,
+                    "imageDetail": "original"
+                    if case.prompt_version in (PROMPT_VERSION_V5, "phase0-vision-v6")
+                    else None,
                     "expected": case.expected,
                     "selectedFrames": [frame_record(item, output) for item in case.frames],
                 }
@@ -405,6 +413,11 @@ def main() -> int:
     parser.add_argument("--window-start", type=Decimal, action="append", required=True)
     parser.add_argument("--max-cost-cny", type=Decimal, default=Decimal(5))
     parser.add_argument("--request-limit", type=int, default=8)
+    parser.add_argument(
+        "--detail-prompt",
+        choices=[PROMPT_VERSION_V5, "phase0-vision-v6"],
+        default=PROMPT_VERSION_V5,
+    )
     parser.add_argument("--execute", action="store_true", help="Allow billed API requests")
     args = parser.parse_args()
     if any(not start.is_finite() or start < 0 for start in args.window_start):
@@ -419,6 +432,7 @@ def main() -> int:
                 args.max_cost_cny,
                 args.request_limit,
                 args.execute,
+                args.detail_prompt,
             )
         )
         print(json.dumps({"report": str(args.output / "report.json"), "status": report["status"]}))

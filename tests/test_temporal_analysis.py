@@ -48,7 +48,8 @@ def test_dense_windows_cover_the_source_and_keep_temporal_overlap(tmp_path: Path
 
 
 @pytest.mark.parametrize(
-    "prompt_version", ["phase0-vision-v3", "phase0-vision-v4", "phase0-vision-v5"]
+    "prompt_version",
+    ["phase0-vision-v3", "phase0-vision-v4", "phase0-vision-v5", "phase0-vision-v6"],
 )
 def test_temporal_run_resumes_only_missing_windows_with_new_pipeline_identity(
     tmp_path: Path,
@@ -65,7 +66,7 @@ def test_temporal_run_resumes_only_missing_windows_with_new_pipeline_identity(
             assert request.prompt_version == prompt_version
             assert request.schema_version == (
                 "temporal-actions-v1"
-                if prompt_version in ("phase0-vision-v4", "phase0-vision-v5")
+                if prompt_version in ("phase0-vision-v4", "phase0-vision-v5", "phase0-vision-v6")
                 else "semantic-events-v1"
             )
             assert len(request.evidence) in (9, 6)
@@ -78,7 +79,7 @@ def test_temporal_run_resumes_only_missing_windows_with_new_pipeline_identity(
         class CheckedMedia(WindowMedia):
             async def preprocess(self, source, output, parameters, context):
                 assert parameters.max_width == (
-                    1280 if prompt_version == "phase0-vision-v5" else 512
+                    1280 if prompt_version in ("phase0-vision-v5", "phase0-vision-v6") else 512
                 )
                 return await super().preprocess(source, output, parameters, context)
 
@@ -95,11 +96,11 @@ def test_temporal_run_resumes_only_missing_windows_with_new_pipeline_identity(
                     run_id=RUN_ID,
                 )
             stored = await store.load_run(RUN_ID)
-            assert stored.configuration.pipeline_version == (
-                "phase0-analyze-detailed-v1"
-                if prompt_version == "phase0-vision-v5"
-                else "phase0-analyze-temporal-v1"
-            )
+            expected_version = {
+                "phase0-vision-v5": "phase0-analyze-detailed-v1",
+                "phase0-vision-v6": "phase0-analyze-detailed-v2",
+            }.get(prompt_version, "phase0-analyze-temporal-v1")
+            assert stored.configuration.pipeline_version == expected_version
             assert stored.configuration.analysis == profile
             resumed = TemporalVision()
             result = await resume_analysis(
@@ -126,6 +127,9 @@ def test_temporal_run_resumes_only_missing_windows_with_new_pipeline_identity(
         ("phase0-vision-v5", 9, 2, True),
         ("phase0-vision-v5", 1, 0, False),
         ("phase0-vision-v5", 10, 2, False),
+        ("phase0-vision-v6", 9, 2, True),
+        ("phase0-vision-v6", 1, 0, False),
+        ("phase0-vision-v6", 10, 2, False),
         ("phase0-vision-v3", 2, 1, True),
         ("phase0-vision-v3", 1, 0, False),
         ("phase0-vision-v3", 10, 2, False),

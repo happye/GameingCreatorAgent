@@ -6,13 +6,15 @@
 
 | Owner | Branch/worktree | 独占范围 | 状态 |
 | --- | --- | --- | --- |
-| root | codex/visual-details，root | analysis/config/store、真实对照、共享文档、集成验收 | 7e3ee95；838测试通过，真实效果待验证 |
+| root | codex/visual-details，root | analysis/config/store/CLI/UIprofile、真实对照、共享文档、集成验收 | e9183b3；V5基线847项通过，恢复V6集成进行中 |
 | detail_vision | codex/detail-vision，.worktrees/detail-vision | deepseek_vision.py、新 detailed tests、own sprint | 56b02e2→903c9cc 已集成并冻结；root补证据范围保护 |
 | detail_presentation | codex/detail-presentation，.worktrees/detail-presentation | observation_text.py、retrieval.py、ui/service.py、app.js、新 presentation tests、own sprint | a160116→86c229c 已集成并冻结 |
-| detail_pilot | codex/detail-pilot，.worktrees/detail-pilot | validate-visual-details.py/new tests/own sprint | 验证中；root执行API，worker不发请求 |
+| detail_pilot | codex/detail-pilot，.worktrees/detail-pilot | validate-visual-details.py/new tests/own sprint | 944fb42→32fe12c 已集成并冻结，真实V5对照完成 |
+| detail_v6_completion | codex/detail-v6，.worktrees/detail-v6 | deepseek_vision.py/new eligibility tests/own sprint | 接着断额度前未提交V6实现验证；禁止松动作保护 |
+| detail_retrieval_audit | 只读 root | CLI投影/旧篮子/向量身份与后续设计复核 | 进行中，无编辑/API |
 | detail_pipeline_audit | 只读 root | 根因/细节/旧数据身份审查 | 已完成，无编辑或 API 请求 |
 
-新 V5 衣着/持有物/外观/环境和动作绑定，不虚构模糊属性；历史帧编号只投影清理，原事实不重写。新证据目标宽1280，旧V1–V4保持512。F006/F009仍false。
+V5细节对照完成，完整V5run在9/16窗口因单帧动作停止；保留原run和费用，V6另起版本/新run。历史帧编号只投影清理，原事实不重写；旧V1–V4保持512。F006/F009/F010仍false。以下“当前交付”为旧V4基线历史，当前占用与进度以上表/HANDOFF为准。
 
 协调规则见 `docs/references/agent-workflow.md`。2026-10-04用户否决玩法检索。当前root分支`codex/temporal-gameplay`已保存Grok4c37a63、帧边界42604f9/b2daf1b与启动器0cc2c2f；共享记录以HANDOFF和sprint-temporal-gameplay为准。禁止旧worker覆盖root；推送状态以git核对。
 

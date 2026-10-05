@@ -1,5 +1,9 @@
 # Errors
 
+## 2026-10-05: Persist worker state before usage exhaustion and distinguish valid segments
+
+The V6 worker exhausted its usage allowance before sending a final report/commit. Its isolated worktree already contained implementation, tests and a sprint note; a fresh worker can continue those exact files rather than restarting. Root checkpoints must include resumable unfinished changes and a concise current HANDOFF, not stacks of contradictory current-status paragraphs. Real V5 twice produced identical start/end clocks in window31.5–35.5; strict rejection is correct. Do not relax the parser or repeatedly spend on the same frozen prompt; qualify multi-frame actions before adding visual detail in a separately fingerprinted revision.
+
 ## 2026-10-05: Windows port zero may allocate a browser-restricted port
 
 Merged browser regression failed at page.goto with ERR_UNSAFE_PORT on127.0.0.1:1723; no application JavaScript ran. The shared test fixture now directly reserves a random free port in20000–59999, with bounded collision retries, instead of relying on port0. This only changes isolated test listeners, not Windows configuration. Root verification must rerun; do not claim the initial170passed/1skip/1failure as complete. GitHub push also failed with443connection timeout; local commits are durable, remote synchronization requires a later retry.

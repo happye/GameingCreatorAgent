@@ -25,7 +25,7 @@ def _timecode(microseconds: int) -> str:
 
 
 def _analysis_profile(prompt_version: str) -> str:
-    if prompt_version == "phase0-vision-v5":
+    if prompt_version in ("phase0-vision-v5", "phase0-vision-v6"):
         return "detailed"
     if prompt_version in ("phase0-vision-v3", "phase0-vision-v4"):
         return "temporal"

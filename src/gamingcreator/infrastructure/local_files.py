@@ -79,6 +79,7 @@ class LocalInputReader:
                 "phase0-vision-v3",
                 "phase0-vision-v4",
                 "phase0-vision-v5",
+                "phase0-vision-v6",
             )
             if (
                 type(overlap) is not int
@@ -108,6 +109,7 @@ class LocalInputReader:
                     "phase0-vision-v3",
                     "phase0-vision-v4",
                     "phase0-vision-v5",
+                    "phase0-vision-v6",
                 ) or not re.fullmatch(r"[a-f0-9]{64}", prompt_hash):
                     raise invalid_config()
                 extra.update(vision_prompt_version=prompt_version, vision_prompt_hash=prompt_hash)
