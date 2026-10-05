@@ -4,11 +4,11 @@
 
 ## 当前结论
 
-2026-10-05 Codex 已顺序接续 Grok，并保存继承检查点 `16f727f`。只读 sidecar 已接到 `/api/inspect`，timeline/candidates新增版本化detailRefinement；UI证据页显示未验证或按镜头/主体/部件展开已保存结构，复用不表示复合条件full。旧短ID/无base prompt hash数据为unsupported/unverified，原事实/排名/篮子/导出保留。新17项测试与相关回归 **88 passed / 1 Windows文件symlink权限skip（18.18s）**，Ruff/mypy54通过。完整verify与真实V6 smoke待执行；恢复以 `docs/exec-plans/sprint-detail-inspection.md` 为准。无新API，未知预留/F006/F009/F010不变。
+2026-10-05 Codex已顺序接续Grok，继承检查点16f727f、实现96f6c82；最新HEAD见git log。只读sidecar已接到/api/inspect，UI证据页显示未验证或按镜头/主体/部件展开已保存结构。复用不表示复合条件full；旧短ID/无base prompt hash数据为unsupported/unverified，原事实/排名/篮子/导出保留。最新完整verify：999 passed / 1 Windows文件symlink权限skip（142.12s），Ruff96文件、mypy54、CLI和两次离线wheel通过，SHA 431d9f32f5c774ffecb351d2d55f50a4a7a1fbdd72bc9787cb7c40c4efc05b0e。新17项及相关定向回归88 passed/1skip。真实V6浏览器smoke和生产读取通过，默认33事件；V2/V4/V6快照及sidecar文件未变。证据artifacts/detail-inspection-validation和.cache/detail-inspection-verify.log；无新付费API，未知预留与F006/F009/F010不变。
 
 以下为接续基线与已有实验记录，最新验证以本轮段落和sprint为准。
 
-root分支codex/visual-details，HEAD `8b71c38`。精分析 sidecar 与共享预算会话已在 root 落地，未调用 API，未改 vision prompt、raw events 或 SQL。侧车按冻结 requestHash 保存不可变 request、追加 attempts 和原子 result；缺记录为 unverified。同一预算账本里的未知预留在恢复和另一个 budget 目录下仍然占额度。未完成尝试的检查在预算锁内再次执行，重叠的两次 `send_refinement` 只有一次调用 provider。定向 `tests/test_detail_budget_sidecar.py` 连续两次都是 9 passed（0.34s）。`tests/test_detail_refinement.py` 复核 6 passed（0.32s），Completed run `f601fb9b3e734d5ea188fc15c790acbb` 的事件 `0b8be73b204cceb6f0e37c7d` 仍保持原区间、证据 id、图像 hash 和整数源微秒；非视觉候选仍 unverified。新鲜进程两次 reuse-or-refuse 都是 unverified、provider 调用 0，request hash `6e9ee8f0c25212e7bd7c401a6dcfa972544e4121494100a7083a2270604c480f`。最新完整 verify **982 passed / 1 Windows 文件 symlink 权限 skip，68.06s**；Ruff 95 文件、mypy 54 源文件、CLI 与两次离线 wheel 通过。wheel SHA `cf3574ff00d50ffc4df52f0652921ee6fa34160e48b0356aba47320a5fe79330`。F006/F009/F010 保持 false。没有 retry 漫画 run `0ba106578bc7435c8689d12892a35dfb`。打Boss、跳跃、射击和复合主体查询都没有修好。
+接续基线8b71c38及Grok未提交的request/sidecar/共享预算已保存16f727f。未知预留在恢复/跨budget目录仍占额度，锁内复查阻止重叠发送。原982项验证是历史。V6目标事件0b8be73b204cceb6f0e37c7d实际requestHash为229a8bcb9bee1f017854108751d89840f458040fd14cdd3490e5c2fd56d00279；16f727f模块与当前模块canonical request逐字段相同，旧文档6e9ee8...无法复现，已更正。真实数据尚无已保存主体结构，页面显示未验证；reused展示由合成侧车验证，不冒充真实精分析。没有retry漫画失败run或玩法/复合检索人评通过。
 
 新 Completed run **f601fb9b3e734d5ea188fc15c790acbb**：artifacts/demo-phase0，54.743220s / 16 窗口 / 33 事件 / 0 转录；16 个视觉窗口首次尝试全部完成。prompt phase0-vision-v6 / hash a60d114d9dd8bf82c5d2ea62c30c4cfe2b4316b08de34ade3cba883d6de9ea00；pipeline phase0-analyze-detailed-v2。配置 config.detailed-v6.example.json。正文及 uncertainty 未发现独立 fN；18 个事件含待核对。模型估价 ¥0.10270124，unknown 0，providerElapsedMs 42467；不是账单。
 
@@ -17,7 +17,7 @@ root分支codex/visual-details，HEAD `8b71c38`。精分析 sidecar 与共享预
 - V5/V6：1280 宽 / 9 图 / 3MiB / detail=original；V1–V4 保持 512 / 1MiB，旧 hash/parser 不变。衣着、外观、持有物、环境、效果写成紧凑事实；V6 先判断连续动作资格，要求不同源时刻和正确边界。
 - 新事实的编号只允许当前事件已引用的原窗口帧，映射真实源时间；未引用或越界编号拒绝。旧事实不重写，用 legacy-frame-alias-neutral-v1 清理显示、视觉索引和下载；保留键盘 F1 与普通标识。
 - UI 显示待核对、Completed detailed 优先；原始事实与旧篮子身份校验保留。检索 bm25-e5-rrf-v5，新 passage 文本 hash 隔离旧向量缓存，阈值及明确动作否定保护不改。CLI 普通/benchmark 保存 uncertainty/displayUncertainty，run-demo 显示待核对。
-- **最新完整verify：982 passed / 1 Windows文件symlink权限skip，68.06s**；Ruff 95 文件、mypy 54 源文件、CLI与两次离线wheel通过。wheel SHA `cf3574ff00d50ffc4df52f0652921ee6fa34160e48b0356aba47320a5fe79330`。先前 981/973/967 是历史，不是未验证当前代码。
+- **最新完整verify：999 passed / 1 Windows文件symlink权限skip，142.12s**；Ruff96、mypy54、CLI和两次离线wheel通过。SHA 431d9f32f5c774ffecb351d2d55f50a4a7a1fbdd72bc9787cb7c40c4efc05b0e；此前982/981/973/967均为历史。
 
 ## 实验、费用和限制
 
@@ -37,7 +37,7 @@ V5 run c78f204907e04eb3a2ac97a9017dcad9 保留 failed / 9 of 16窗口 / 24事件
 
 双击 Start-Workspace.cmd 打开 http://127.0.0.1:8765/；已实际验证脚本复用服务，启动不分析或付费。生产默认已确认是新V6 / 33事件 / detailed。真实浏览器验证播放15.5–17s结束暂停、证据加载、筛选、篮子恢复/源序排序、JSON/CSV、两桌面尺寸同屏和手机无横溢。
 
-服务已核对health/保存状态/项目内Python后停止旧PID2548，重新启动为PID38364 / parent27896；.cache/workspace/port-8765.json一致。**下次操作前重新核对health和状态，仅停止匹配的自有进程**。旧Atom V4及漫画snapshot SHA前后相同，原数据保留。
+生产服务已重新核对health、保存状态、父PID、项目Python路径与命令；仅停止匹配旧PID42408，启动新版PID49020/parent35808，.cache/workspace/port-8765.json一致，启动器已复用。真实浏览器默认V6/33事件并显示主体详情未验证。下次重新核对health和状态，仅停止匹配的自有进程。V2/V4/V6快照SHA及sidecar文件前后一致。
 
 证据在artifacts/visual-detail-v6-delivery：retrieval-matrix.json（10查询×3模式）；browser-verified/browser-report.json（修正启动等待后defaultRunId也正确）、production-report.json、screenshots及两旧timeline SHA。查询无API：jump hybrid2；心形墨镜/指挥棒/场景均有候选；汽车维修hybrid0而semantic10；用户恶魔领主复合例hybrid8，属于证据不足的局部召回，不能宣称该内容存在。旧首次browser报告default值是读取占位符，验证脚本已改等时间轴加载，无产品逻辑变化。
 
@@ -48,10 +48,10 @@ V5 run c78f204907e04eb3a2ac97a9017dcad9 保留 failed / 9 of 16窗口 / 24事件
 - detail_retrieval_audit新测试：.worktrees/actor-detail-tests / codex/actor-detail-tests，410bb245已集成冻结；最终钉2e95485联合94passed/0skip，73新domain反例，own sprint已在root。旧spec worktree冻结，禁止共享writer。
 - 其他V5 vision/presentation/pilot worktrees全部冻结。
 
-本轮正在完成只读检查接入的完整verify与真实V6复测。下一开发任务：独立精分析Provider的冻结prompt/parser与完整attempt metadata、取消/中断恢复合同先做离线fixture；随后按typed QueryConstraint接纯matcher，继续显式版本读取。未知预留得到处理/明确新预算前不要发新API；不要宣称打Boss、跳跃、射击或复合主体查询已修好。
+本轮只读检查接入、完整verify和真实V6复测已完成。下一任务：独立精分析Provider的冻结prompt/parser和完整attempt metadata、取消/中断恢复合同先做离线fixture；随后按typed QueryConstraint接纯matcher，继续显式版本读取。未知预留处理/明确新预算前不要发新API；不要宣称打Boss、跳跃、射击或复合主体查询已修好。
 
-恢复时先核对 status/HEAD。本轮 ports 改动尚未提交，不要强推。未知预留 ¥4.065536 仍在，禁止 retry `0ba106578bc7435c8689d12892a35dfb` 或换目录清账。默认开页、查询和刷新仍是 0 API。远端 main 仍只记录到最后已知 `72d692b`，未再确认。
+恢复时先核对status/HEAD。继承ports/sidecar已保存16f727f，检查视图实现96f6c82；不要强推。未知预留¥4.065536仍在，禁止retry漫画0ba106578bc7435c8689d12892a35dfb或换目录清账。默认开页、查询和刷新仍是0付费API；本轮远端同步结果见sprint-detail-inspection，不改main或合并未验收特性。
 
-GitHub github.com:443多次连接失败，远端最新状态未确认；本地提交不等于远端同步。完成后重试命令级HTTP/1.1常规push，禁止强推或改全局网络配置。
+远端最新状态未确认。历史GitHub连接失败之外，本轮含push的组合命令被自动审批审核拒绝，因当前用户内容未明确授权向origin外传；命令未启动。本地提交仍保存，只有取得用户明确授权后再常规推送codex/visual-details；禁止绕过拒绝、强推、修改全局网络配置或合并main。
 
 环境只用.tools/.venv/.cache，先env.ps1+Python -B；密钥只使用既有进程DEEPSEEK_API_KEY，不打印或复制聊天密钥。每个验证节点及长任务前更新sprint/HANDOFF并提交检查点，不能等额度提醒。详细失败记录见docs/exec-plans/sprint-visual-details.md。

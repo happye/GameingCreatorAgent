@@ -20,6 +20,8 @@ Double-click [Start-Workspace.cmd](./Start-Workspace.cmd) to start the local wor
 
 Open `http://127.0.0.1:8765/`, choose a project and completed run, search, preview candidates, and add intervals to the clip basket. JSON/CSV preserve source identity, microsecond ranges and evidence; they are interval manifests. Desktop preview, timeline and basket remain visible while their lists scroll independently. Basket/storage/export use source time order; retrieval preserves relevance rank. To analyze new footage, use the CLI first.
 
+The evidence panel also reads saved actor details for the exact refinement version. Missing details show as unverified; saved details can be expanded by shot, actor and part with supporting source frames and uncertain attributes. Opening, refreshing and searching do not send refinement requests. Compound query matching and independent human acceptance remain pending; see the [inspection record](./docs/exec-plans/sprint-detail-inspection.md).
+
 The current browser workspace and backend run locally; DeepSeek vision uses remote inference on sampled frames. It is not yet packaged as an EXE. The source plan retains a future Windows desktop application with local media processing; see the [deployment roadmap](./docs/references/deployment-roadmap.md). Human content acceptance follows the [F006 guide](./docs/references/human-acceptance-guide.md), separately from UI usability.
 
 ## Start here

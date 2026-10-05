@@ -1,5 +1,13 @@
 # Errors
 
+## 2026-10-05: 组合本地提交与远端push被自动审批拒绝
+
+自动审核明确允许范围清晰的本地提交，但拒绝同一命令向尚未由可信用户内容明确授权的origin推送；整个命令未执行。继续单独保存本地检查点并报告远端未同步，最终请求具体分支/目标授权。不得通过工具切换或间接执行绕过外传拒绝。
+
+## 2026-10-05: 交接哈希应与已保存源码和真实对象复算
+
+生产读取断言沿用旧sprint的requestHash `6e9ee8...` 后失败。只读加载同一个V6事件，用继承检查点16f727f的精分析模块和当前模块分别计算，canonical request逐字段相同，两者hash均为 `229a8bcb9bee1f017854108751d89840f458040fd14cdd3490e5c2fd56d00279`；旧文档值无法复现。修正文档/断言，不改源事件或hash算法。比较证据保存在ignored artifacts/detail-inspection-validation/request-identity-comparison.json。
+
 ## 2026-10-05: 精分析的窄身份合同不能破坏旧检查数据
 
 本轮首个检查集成回归出现 19 failed/69 passed/1权限skip（18.42s）：新 fixture 使用 schema1，SQLite 按旧合同省略 base prompt hash，不能假设其会持久化；旧检查 fixture 的事件/证据短 ID 也不符合 actor-details-v1 的局部身份格式。修复方向是新侧车 fixture 显式 schema2/价格身份，旧数据缺精分析身份时返回 unsupported/unverified，保留原展示/检索/篮子，不能改写旧 ID 或放松 domain 合同。后续复测结果见 sprint-detail-inspection。

@@ -8,7 +8,7 @@
 
 | Owner | Branch/worktree | 独占范围 | 状态 |
 | --- | --- | --- | --- |
-| root / Codex顺序接续Grok | codex/visual-details，root | analysis/config/store/CLI/UIprofile、detail sidecar/budget、只读检查UI/测试、共享文档 | 继承检查点16f727f；只读详情接入完成，定向88 passed/1权限skip；完整verify与真实V6 smoke待执行。无新API |
+| root / Codex顺序接续Grok | codex/visual-details，root | analysis/config/store/CLI/UIprofile、detail sidecar/budget、只读检查UI/测试、共享文档 | 继承16f727f/实现96f6c82；只读详情接入完成，定向88 passed/1权限skip；完整verify999 passed/1skip，真实V6浏览器与生产读取通过。无新API |
 | detail_vision | codex/detail-vision，.worktrees/detail-vision | deepseek_vision.py、新 detailed tests、own sprint | 56b02e2→903c9cc 已集成并冻结；root补证据范围保护 |
 | detail_presentation | codex/detail-presentation，.worktrees/detail-presentation | observation_text.py、retrieval.py、ui/service.py、app.js、新 presentation tests、own sprint | a160116→86c229c 已集成并冻结 |
 | detail_pilot | codex/detail-pilot，.worktrees/detail-pilot | validate-visual-details.py/new tests/own sprint | 944fb42→32fe12c 已集成并冻结，真实V5对照完成 |
@@ -18,9 +18,9 @@
 | detail_retrieval_audit：合同反例 | codex/actor-detail-tests，.worktrees/actor-detail-tests | 新test_actor_details.py、own测试sprint | 410bb245已集成冻结；73domain+18matcher+3architecture=94通过/0skip |
 | detail_pipeline_audit | 只读 root | 根因/细节/旧数据身份审查 | 已完成，无编辑或 API 请求 |
 
-Atom新V6 f601fb9b3e734d5ea188fc15c790acbb Completed：16窗口/33事件/估价¥0.10270124。查询30组合、真实浏览器及一键复用已验证；PID38364/parent27896是快照，操作前重验health。全任务已知¥0.23083920；追加漫画run0ba106...两网络失败未知预留¥4.065536，总承诺¥4.29637520，已停API。typed matcher与精分析 request/ports/hash 已在 root，仍未接自由查询、Provider HTTP 或 sidecar。旧run和rawfacts不改；F006/F009/F010仍false。
+Atom新V6 f601fb9b3e734d5ea188fc15c790acbb Completed：16窗口/33事件/估价¥0.10270124。查询/浏览器及新版启动器复用已验证，当前PID49020/parent35808仅快照，下次重验health。全任务已知¥0.23083920；漫画run0ba106...两网络失败未知预留¥4.065536，总承诺¥4.29637520，已停API。typed matcher/request/ports、sidecar/共享预算与只读检查视图已实现；Provider HTTP、typed查询匹配与自由查询约束未接。旧rawfacts不改；F006/F009/F010仍false。
 
-下一条工作：完成本轮只读检查完整verify/真实V6复测后，离线实现独立精分析Provider及完整attempt metadata/恢复合同；typed查询匹配随后接入。未知预留处理/明确新预算前不得新API，不宣称玩法/复合检索质量已通过。当前记录见sprint-detail-inspection。
+下一条工作：离线实现独立精分析Provider及完整attempt metadata/恢复合同；typed查询匹配随后接入。未知预留处理/明确新预算前不得新API，不宣称玩法/复合检索质量已通过。当前记录见sprint-detail-inspection。
 
 协调规则见 `docs/references/agent-workflow.md`。2026-10-04用户否决玩法检索。当前root分支`codex/temporal-gameplay`已保存Grok4c37a63、帧边界42604f9/b2daf1b与启动器0cc2c2f；共享记录以HANDOFF和sprint-temporal-gameplay为准。禁止旧worker覆盖root；推送状态以git核对。
 

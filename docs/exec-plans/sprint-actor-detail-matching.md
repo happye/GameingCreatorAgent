@@ -2,7 +2,7 @@
 
 2026-10-05；owner：detail_retrieval_audit；branch `codex/actor-detail-spec`；worktree `.worktrees/actor-detail-spec`；base `c400188`。
 本任务独占新 `actor-detail-matching-spec.md` 与本 sprint；不是唯一开发者，不回写root或覆盖其他Agent变更。
-状态：规格b1d91bc→a7789b4已集成，typed合同与纯matcher2e95485→bb05b66已集成；独立合同测试root正在合并/全检。精分析ports/Provider/sidecar/UI与两候选新实验待实现。合同见 [工程规格](../design-docs/actor-detail-matching-spec.md)。
+状态：规格/typed合同/纯matcher、request/ports、sidecar/共享预算与只读检查UI已整合。独立Provider HTTP、typed查询匹配及两候选真实精分析/人评未完成；当前接续见sprint-detail-inspection。
 
 ## 已确认问题
 
@@ -52,10 +52,16 @@ root 在 `codex/visual-details` 新增 `application/detail_refinement.py` 与 `t
 
 定向 6 passed（0.37s，`-W error`，缓存在 `.cache/pytest-runs`）。相同输入 hash 相同；改区间或证据 hash 后 requestHash 改变。base prompt version/hash 留在请求旁，不进入精分析 prompt hash，且该 hash 不等于 V5/V6。Completed run `f601fb9b3e734d5ea188fc15c790acbb` 的 `0b8be73b204cceb6f0e37c7d` 保持原区间、注册证据 id、图像 hash 和整数源微秒。非视觉候选 status 为 unverified，shots 为空。旧事件仍进入 inspection 对齐。`init -CheckOnly` 通过。完整 verify 973 passed / 1 权限 skip（69.05s），Ruff 92，mypy 52，wheel `bcc19772b5fe2c85a4c228a5690dce51f48d1a96bfcea756e39b06053edb03a8`。F006/F009/F010 仍 false。没有新 API。
 
-下一条工作：只读把 sidecar 的 unverified 或复用结果接到检查接口，在未知预留得到处理之前不要发起新的 API 调用；不要宣称打Boss、跳跃、射击或复合主体查询已修好。
+本条历史下一步已完成：sidecar只读详情已接检查接口/UI；后续Provider metadata/恢复与typed查询匹配见sprint-detail-inspection。未知预留处理前不发新API，不宣称玩法/复合检索质量通过。
 
 ## 2026-10-05 sidecar 与共享预算
 
 root 新增 `application/detail_refinement_budget.py` 与 `infrastructure/detail_refinement_sidecar.py`。侧车目录是 `runs/<runId>/detail-refinements/<requestHash>/`：不可变 `request.json`、追加 `attempts/<n>-planned.json` 与 `<n>-result.json`、原子 `result.json`。缺侧车为 unverified，不发明属性。哈希、指纹、来源不一致、另一 run 的结果、路径或符号链接逃逸都明确失败，不当成 full，也不删账本。预算在 `detail-refinement-budgets/<budgetId>/ledger.jsonl`，锁只包住恢复、上限检查和预留，发送前释放。未知费用写成 null；恢复和另一个 budget 目录仍计入这笔预留。同 key 已发布结果复用时不再调用 provider，也不再记一笔推理费。显式 retry 保留旧 attempt。没有 SQL migration，没有改 vision prompt 或 raw events，没有 API，没有 retry `0ba106578bc7435c8689d12892a35dfb`。
 
 未完成尝试的判断在 `BudgetWriterLock` 内再次执行。重叠的两次 `send_refinement`（retry 为 false）只有先进入 provider 的那一次继续，另一次是 `budget.interrupted`，不会写下第二个 planned attempt。`tests/test_detail_budget_sidecar.py` 两次都是 9 passed（0.34s）。`tests/test_detail_refinement.py` 6 passed（0.32s），含 Completed 事件 `0b8be73b204cceb6f0e37c7d` 的原时钟。新鲜进程两次 `reuse_or_refuse` 都是 unverified、provider 调用 0，hash `6e9ee8f0c25212e7bd7c401a6dcfa972544e4121494100a7083a2270604c480f`。verify 982 passed / 1 权限 skip（68.06s），Ruff 95，mypy 54，wheel `cf3574ff00d50ffc4df52f0652921ee6fa34160e48b0356aba47320a5fe79330`。F006/F009/F010 仍 false。
+
+## 2026-10-05 Codex接续完成只读检查
+
+继承16f727f、实现96f6c82；sidecar按固定settings/schema/hash接/api/inspect和UI证据页，缺失/旧不兼容数据未验证，已保存结构只展示不标full。新增17项及相关定向88 passed/1权限skip；完整verify999 passed/1skip（142.12s），真实V6浏览器/生产读取通过，0新付费API。完整证据和下一步见sprint-detail-inspection，F006/F009/F010仍false。
+
+更正上一历史节点的目标requestHash：实际为 `229a8bcb9bee1f017854108751d89840f458040fd14cdd3490e5c2fd56d00279`；16f727f模块与当前模块计算完全一致，canonical request无字段差异。此前6e9ee8...无法复现，不能当冻结身份使用；源事件/证据/快照未改，比较报告在ignored artifacts/detail-inspection-validation。

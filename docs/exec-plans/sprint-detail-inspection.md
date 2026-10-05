@@ -31,3 +31,16 @@
 ## 恢复
 
 先核对 Git 与本 sprint；本轮 API/UI 切片完成后补验证和 HANDOFF，保存本地检查点。未知费用与独立人工质量验收仍需后续处理，不发新推理。
+
+## 最终评价与交接
+
+- 实现保存于96f6c82，继承Grok实现保存于16f727f；共享记录另存docs检查点，最新HEAD以git log为准。
+- `./scripts/verify.ps1`（本机回环授权，Start-Transcript记录）：**999 passed / 1 Windows文件symlink权限skip，142.12s**；Ruff96文件、mypy54源文件、锁/工具收据、CLI和两次离线wheel通过。wheel SHA `431d9f32f5c774ffecb351d2d55f50a4a7a1fbdd72bc9787cb7c40c4efc05b0e`。日志 `.cache/detail-inspection-verify.log`。uv提示缓存位于源码目录，wheel仅打包src规则与既有隔离合同保留，没有新增依赖。
+- `python -B scripts/validate-inspection-ui.py --project artifacts/demo-phase0 --run f601fb9b3e734d5ea188fc15c790acbb --query "黑色高礼帽白色面具角色挥动指挥棒" --output artifacts/detail-inspection-validation/browser`：passed；33事件/3候选，播放结束暂停、源图、筛选、篮子源序/恢复、JSON/CSV、1440×900/1366×768三区同屏及390px无横溢，0JS错误。
+- 只在health/保存状态/父PID/项目Python路径与命令一致后停旧服务42408，启动新版49020/parent35808；`.cache/workspace/port-8765.json`一致，`start-workspace.ps1 -NoBrowser`已复用。该PID是快照，下次重验，未开用户浏览器或发推理。
+- 生产只读报告 `artifacts/detail-inspection-validation/production-read-report.json`：旧V2/111、V4/40、新V6/33事件均读取新版本详情字段，真实数据尚无精分析结构，全部missing/unverified；默认V6，选片显示未验证提示，0JS错误。三份semantic timeline快照与sidecar文件前后相同，原事件区间/证据保留。截图production-detail-status.png。
+- 真实目标事件requestHash与旧交接值不一致，经只读加载16f727f源码与当前源码比较，canonical request逐字段相同，两者均为 `229a8bcb9bee1f017854108751d89840f458040fd14cdd3490e5c2fd56d00279`；旧6e9ee8...无法复现，文档更正，未改变源事件或hash算法。证据request-identity-comparison.json。
+- 未验证：真实精分析Provider HTTP、完整每attempt metadata/发布恢复与typed QueryConstraint匹配入口、独立人工细节/玩法质量。reused只由合成侧车验证，不能说真实主体精分析已完成。F006/F009/F010仍false，¥4.065536未知预留和漫画failed run保持原账。
+- 下一条具体任务：独立精分析Provider的冻结prompt/parser与完整metadata、取消/中断恢复先做离线fixture；随后typed matcher接入。真实调用先处理未知预留/网络或得到明确新预算，不自动重试或換目录清账。
+
+远端同步未执行：自动审批审核拒绝包含push的组合命令，指出当前用户内容未明确授权向origin外传，目标信任与载荷未确认；整个命令未启动，因此先单独完成本地文档提交。等待用户明确授权仅推送codex/visual-details，不绕过拒绝、不强推、不改全局网络配置、不合并main。本地提交不等于远端同步。

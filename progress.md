@@ -131,3 +131,11 @@ F008true、F006false；人工质量标准和本地/云端/未来EXE说明分别�
 追加95s漫画V6在新项目第一窗口两次provider.network，run0ba106578bc7435c8689d12892a35dfb failed/0事件，原媒体/ASR保留；第三次发送前budget.exhausted。两次未知预留合¥4.065536，已知¥0.23083920，总承诺¥4.29637520，不是账单，停止新API并保留原账本。Atom细节Demo继续默认可用，旧两snapshot bytes不变。GitHub443仍超时，正常工作分支push未完成。
 
 用户提醒五小时额度剩9%后主动完成交接、规格/分工/feature_list与历史同步，不再开新实验。HANDOFF列下个Agent的具体ports任务、源码/测试检查点、失败日志和预算限制；F006/F009/F010仍false。
+
+## 2026-10-05 — Codex接续Grok：只读主体详情检查
+
+读取记忆资产、工具适配器与harness规则后保存Grok未提交request/sidecar/预算实现16f727f，在96f6c82完成检查API/UI接入：固定版本读取、缺结构未验证、已保存结果按镜头/主体/部件显示支持帧与uncertain；损坏/错身份/未知版本/逃逸明确失败。旧短ID或无prompt hash保持可浏览，原facts/区间/排名/篮子和schema1导出不变。无依赖/SQL变化、无新付费请求。
+
+最终定向88 passed/1 Windows权限skip，完整verify999 passed/1权限skip（142.12s）、Ruff96/mypy54/CLI与重复离线wheel通过，SHA431d9f32f5c774ffecb351d2d55f50a4a7a1fbdd72bc9787cb7c40c4efc05b0e。真实V6/33事件浏览器播放/证据/篮子/导出/两桌面与手机布局通过；新生产PID49020/parent35808身份核对后启动并复用，旧V2/V4/V6快照及sidecar文件未变。保存生产读取报告与hash基线比较，修正旧交接中无法复现的requestHash，继承与当前canonical request完全相同。
+
+证据sprint-detail-inspection与ignored artifacts/detail-inspection-validation。真实素材尚无主体精分析结构，reused只在合成fixture验证；自由复合查询仍未解决。F006/F009/F010false；未知预留¥4.065536保持，不重试漫画run。下一步独立精分析Provider完整metadata/恢复与typed匹配入口先离线推进；远端同步结果见sprint/HANDOFF。
