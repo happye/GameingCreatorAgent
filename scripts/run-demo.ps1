@@ -27,7 +27,7 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'Search did not complete; inspect the CLI diagnostic.' }
   $result = $search | ConvertFrom-Json
   Write-Output ("Run: $Run; mode: $Mode; candidates: " + $result.candidates.Count)
-  $result.candidates | Select-Object rank,startTimecode,endTimecode,@{Name='facts';Expression={if ($_.displayFacts) { $_.displayFacts -join '；' } else { $_.observableFacts -join '；' }}},@{Name='待核对';Expression={if ($_.displayUncertainty) { $_.displayUncertainty } else { $_.uncertainty }}} | Format-Table -Wrap
+  $result.candidates | Select-Object rank,startTimecode,endTimecode,@{Name='facts';Expression={if ($_.displayFacts) { $_.displayFacts -join '；' } else { $_.observableFacts -join '；' }}},@{Name='待核对';Expression={if ($_.displayUncertainty) { $_.displayUncertainty } else { $_.uncertainty }}} | Format-List
   Write-Output ("Timeline: " + (Join-Path $Project "runs/$Run/semantic_timeline.json"))
   Write-Output ("Search record: " + $result.retrievalId + '; JSON files are saved under runs/<run>/searches/.')
   Write-Output 'These are model observations and candidate intervals. Human Top-10 quality remains unverified.'

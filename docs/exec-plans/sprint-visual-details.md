@@ -69,3 +69,5 @@ V6真实31.5–35.5对照 `visual-details-v6-atom-execute` completed：A/B/C均3
 生产服务先重验health/状态与项目Python，只停止旧2548后启动38364/parent27896；Start-Workspace.cmd实际复用并打开浏览器成功。sandbox内打开浏览器曾Access denied，授权范围内升级重试成功；未改用户系统配置。生产fresh Chrome默认f601.../33事件/profile detailed，证据 `production-report.json`。临时诊断最初用了wait_for_function触发CSP unsafe-eval拒绝；已按现有脚本改调试器evaluate轮询，不放松页面CSP。旧V4及漫画timeline snapshot的SHA前后相同。
 
 主体规格b1d91bc→a7789b4已集成；新actor-detail-contract worktree从00bc88f由detail_v6_completion独占5新文件，开发typed合同和纯同actor/part AND，不接UI/Provider、不调用API。需再验证共同支持帧、互斥冲突、unknown不作no_match和旧数据兼容；公共文档由root更新，F006/F009/F010仍false。
+
+CLI实际脚本补验：run-demo -Run新V6 -Query指挥棒 -TopK3已返回真实前三候选，但PowerShell默认宽度把表格末尾“待核对”整列隐藏。改Format-List确保长事实和待核对均显示，TopK1实际复跑通过，无API/索引行为变化。此为可逆输出修正，未添加镜像格式测试；最终与新合同完整verify一起验。
