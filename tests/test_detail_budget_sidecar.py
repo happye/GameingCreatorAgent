@@ -401,7 +401,7 @@ def test_overlapping_sends_recheck_the_open_attempt_inside_the_lock(tmp_path: Pa
         return blocked
 
     blocked = asyncio.run(overlap())
-    assert blocked.code == "budget.interrupted"
+    assert blocked.code == "storage.writer_busy"
     assert provider.calls == 1
     prepared = prepare_refinement(stored, EVENT)
     assert prepared.request_hash is not None
