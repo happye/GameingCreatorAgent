@@ -17,12 +17,16 @@
         "timeline-end", "video-scrubber", "timeline-list", "filter-summary",
         "evidence-dialog", "evidence-dialog-title", "close-evidence", "evidence-full",
         "evidence-dialog-detail", "detail-status", "actor-details", "actor-detail-list",
+        "detail-profile", "open-detail-query", "detail-query-dialog", "close-detail-query",
+        "detail-query-target", "detail-query-form", "detail-conditions", "add-detail-condition",
+        "match-detail-query", "detail-match-result",
     ].map((id) => [id, byId(id)]));
     const state = {
         project: "", run: "", revision: 0, runs: [], view: null, active: null,
         selections: [], basketMediaId: null, inspectController: null, runsController: null,
         projectsController: null, busy: false, playbackEndUs: null, pendingSeekUs: null,
         frameRequest: null, sourceUrl: "", storageWarningShown: false,
+        matchController: null, matchRevision: 0, matching: false,
     };
     const statusLabels = {
         pending: "等待分析", running: "分析中", completed: "已完成", failed: "失败",
@@ -100,10 +104,13 @@
         }
     }
 
-    async function request(endpoint, parameters, signal) {
+    async function request(endpoint, parameters, signal, body = null) {
         const url = new URL(endpoint, window.location.origin);
         for (const [name, value] of Object.entries(parameters)) url.searchParams.set(name, String(value));
-        const response = await fetch(url, { signal, cache: "no-store", credentials: "same-origin" });
+        const response = await fetch(url, {
+            signal, cache: "no-store", credentials: "same-origin",
+            ...(body === null ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
+        });
         let payload;
         try {
             payload = await response.json();
@@ -112,6 +119,188 @@
         }
         if (!response.ok) throw new Error(typeof payload.message === "string" ? payload.message : `请求失败（HTTP ${response.status}）。`);
         return payload;
+    }
+
+    function canMatchDetails() {
+        return !state.busy && state.view?.runStatus === "completed" && Boolean(state.active?.row.eventId)
+            && state.view?.detailRefinementProfile?.profile === ui["detail-profile"].value;
+    }
+
+    function updateDetailQueryButton() {
+        const available = canMatchDetails();
+        ui["open-detail-query"].disabled = !available;
+        ui["match-detail-query"].disabled = !available || state.matching;
+        ui["match-detail-query"].textContent = state.matching ? "正在本地核对…" : "核对已保存结果";
+        ui["add-detail-condition"].disabled = !available || ui["detail-conditions"].children.length >= 16;
+        ui["detail-query-target"].textContent = state.active
+            ? `${intervalLabel(state.active.row)} · 精分析 ${ui["detail-profile"].value}` : "先选择一个已完成运行中的片段。";
+    }
+
+    function clearDetailMatch() {
+        state.matchController?.abort();
+        state.matchController = null;
+        state.matchRevision += 1;
+        state.matching = false;
+        empty(ui["detail-match-result"], "选择条件后，核对当前片段的已保存结果。");
+        updateDetailQueryButton();
+    }
+
+    function conditionGroups(kind) {
+        if (kind.startsWith("clothing_")) return [["clothing1", "衣物 1"], ["clothing2", "衣物 2"], ["clothing3", "衣物 3"]];
+        if (kind.startsWith("held_")) return [["held1", "持有物 1"], ["held2", "持有物 2"], ["held3", "持有物 3"]];
+        return [[kind === "hair_color" ? "hair" : kind, { hair_color: "头发", action: "动作", effect: "效果", environment: "环境" }[kind]]];
+    }
+
+    function addDetailCondition(kind = "hair_color", value = "white") {
+        const options = state.view?.detailQueryOptions?.kinds;
+        if (!Array.isArray(options) || ui["detail-conditions"].children.length >= 16) return;
+        const row = element("div", "detail-condition");
+        const field = (text, className) => {
+            const label = element("label", "", text);
+            const select = element("select", className);
+            label.append(select);
+            row.append(label);
+            return select;
+        };
+        const kinds = field("属性", "condition-kind");
+        const values = field("值", "condition-value");
+        const groups = field("部件组", "condition-group");
+        const fill = (select, entries) => {
+            select.replaceChildren();
+            for (const [token, label] of entries) {
+                const option = element("option", "", label);
+                option.value = token;
+                select.append(option);
+            }
+        };
+        fill(kinds, options.map((item) => [item.kind, item.label]));
+        kinds.value = kind;
+        const updateValues = () => {
+            const definition = options.find((item) => item.kind === kinds.value);
+            fill(values, definition.values.map((item) => [item.value, item.label]));
+            fill(groups, conditionGroups(kinds.value));
+        };
+        updateValues();
+        if ([...values.options].some((item) => item.value === value)) values.value = value;
+        kinds.addEventListener("change", () => { updateValues(); clearDetailMatch(); });
+        values.addEventListener("change", clearDetailMatch);
+        groups.addEventListener("change", clearDetailMatch);
+        const remove = element("button", "icon-button", "×");
+        remove.type = "button";
+        remove.setAttribute("aria-label", "移除此条件");
+        remove.addEventListener("click", () => { row.remove(); clearDetailMatch(); });
+        row.append(remove);
+        ui["detail-conditions"].append(row);
+        clearDetailMatch();
+    }
+
+    function detailConstraint() {
+        const options = state.view.detailQueryOptions;
+        const constraint = {
+            schemaVersion: options.schemaVersion, version: options.version, vocabularyVersion: options.vocabularyVersion,
+            actorAll: [], environmentAll: [],
+        };
+        for (const row of ui["detail-conditions"].children) {
+            const condition = {
+                kind: row.querySelector(".condition-kind").value,
+                value: row.querySelector(".condition-value").value,
+                partGroup: row.querySelector(".condition-group").value,
+            };
+            constraint[condition.kind === "environment" ? "environmentAll" : "actorAll"].push(condition);
+        }
+        if (!constraint.actorAll.length) throw new Error("至少选择一个主体属性条件。");
+        return constraint;
+    }
+
+    function conditionLabel(condition) {
+        const definition = state.view.detailQueryOptions.kinds.find((item) => item.kind === condition.kind);
+        const value = definition?.values.find((item) => item.value === condition.value);
+        const group = conditionGroups(condition.kind).find(([token]) => token === condition.partGroup);
+        return `${definition?.label || condition.kind}：${value?.label || condition.value} · ${group?.[1] || condition.partGroup}`;
+    }
+
+    function appendSupportFrames(container, ids, label = "支持帧") {
+        const list = element("div", "detail-support-frames");
+        for (const id of ids || []) {
+            const item = state.view.evidence.find((frame) => frame.id === id && frame.kind === "image");
+            if (!item || !state.active?.row.evidenceIds.includes(id)) continue;
+            const url = safeMediaUrl(item.url, "/api/evidence", id);
+            if (!url) continue;
+            const button = element("button", "text-button", `${label} ${timecode(item.startUs)}`);
+            button.type = "button";
+            button.addEventListener("click", () => {
+                ui["evidence-dialog-title"].textContent = `源帧 · ${timecode(item.startUs)}`;
+                ui["evidence-full"].src = url;
+                ui["evidence-dialog-detail"].textContent = `证据 ${item.id} · 来源 ${state.view.media.name}`;
+                ui["evidence-dialog"].showModal();
+            });
+            list.append(button);
+        }
+        container.append(list);
+    }
+
+    function renderDetailMatch(report) {
+        const result = report.result;
+        const labels = { full: "全部条件有共同支持 · 待人工核对", partial: "部分条件有支持", no_match: "已有证据排除条件", unverified: "条件未验证" };
+        ui["detail-match-result"].replaceChildren(element("h3", result.status === "full" ? "accent" : "warning", labels[result.status]));
+        if (!result.matches.length) ui["detail-match-result"].append(element("p", "muted small", "所选版本尚无可匹配的主体结构。未发起精分析。"));
+        const detail = state.active.row.detailRefinement?.detail;
+        for (const match of result.matches) {
+            const actor = detail?.shots.find((shot) => shot.shotId === match.shotId)?.actors.find((item) => item.actorId === match.actorId);
+            const section = element("section", "detail-match-actor");
+            section.append(element("p", "", actor ? cleanObservationText(actor.description) : "已保存主体"));
+            const list = element("ul");
+            for (const [key, text] of [["satisfied", "有支持"], ["uncertain", "不确定"], ["opposed", "有相反证据"]]) {
+                for (const support of match[key]) {
+                    const entry = element("li", key === "satisfied" ? "" : "warning", `${text} · ${conditionLabel(support.condition)}`);
+                    appendSupportFrames(entry, support.evidenceIds);
+                    list.append(entry);
+                }
+            }
+            for (const condition of match.missing) list.append(element("li", "muted", `缺少支持 · ${conditionLabel(condition)}`));
+            section.append(list);
+            if (match.conflicts.length) section.append(element("p", "warning small", "同一部件的观察属性有冲突，不能确认全部条件。"));
+            if (match.sharedEvidenceIds.length) appendSupportFrames(section, match.sharedEvidenceIds, "共同支持帧");
+            else section.append(element("p", "muted small", "没有共同支持全部条件的源帧。"));
+            if (match.counterEvidence.length) {
+                section.append(element("p", "warning small", "此主体存在排除条件的证据："));
+                appendSupportFrames(section, [...new Set(match.counterEvidence.flatMap((item) => item.evidenceIds))], "排除证据");
+            }
+            ui["detail-match-result"].append(section);
+        }
+        const notes = { detail_missing: "缺少已保存的主体详情。", unassigned_evidence: "部分帧尚未归属镜头。", observed_attribute_conflict: "观察属性存在冲突。" };
+        for (const note of result.notes) ui["detail-match-result"].append(element("p", "warning small", notes[note] || cleanObservationText(note)));
+    }
+
+    async function matchDetailQuery() {
+        if (!canMatchDetails() || state.matching) return;
+        let constraint;
+        try { constraint = detailConstraint(); } catch (error) { return empty(ui["detail-match-result"], error.message); }
+        clearDetailMatch();
+        const controller = new AbortController();
+        state.matchController = controller;
+        const revision = state.matchRevision;
+        const eventId = state.active.row.eventId;
+        const profile = ui["detail-profile"].value;
+        const digest = state.active.row.detailRefinement?.requestHash;
+        const detailDigest = state.active.row.detailRefinement?.payloadHash || null;
+        state.matching = true;
+        updateDetailQueryButton();
+        try {
+            const report = await request("/api/match-details", {}, controller.signal, {
+                project: state.project, run: state.run, event: eventId, profile, constraint,
+            });
+            if (revision !== state.matchRevision || state.matchController !== controller) return;
+            if (report.runId !== state.run || report.eventId !== eventId || report.refinementProfile !== profile
+                || report.refinementRequestHash !== digest || !["full", "partial", "no_match", "unverified"].includes(report.result?.status)
+                || report.refinementPayloadHash !== detailDigest
+                || !Array.isArray(report.result.matches)) throw new Error("条件结果与当前片段的身份不一致，请刷新后重试。");
+            renderDetailMatch(report);
+        } catch (error) {
+            if (error.name !== "AbortError" && revision === state.matchRevision) empty(ui["detail-match-result"], error.message);
+        } finally {
+            if (revision === state.matchRevision) { state.matching = false; updateDetailQueryButton(); }
+        }
     }
 
     function storageKey() {
@@ -348,10 +537,14 @@
         for (const id of ["query", "mode", "top"]) ui[id].disabled = !completed;
         ui["timeline-filter"].disabled = !state.view;
         ui["tag-filter"].disabled = !state.view;
+        ui["detail-profile"].disabled = busy || !state.view;
+        updateDetailQueryButton();
         renderSelections();
     }
 
     function resetView() {
+        clearDetailMatch();
+        if (ui["detail-query-dialog"].open) ui["detail-query-dialog"].close();
         state.view = null;
         state.active = null;
         renderActorDetails();
@@ -509,9 +702,11 @@
         }
     }
 
-    async function inspect(query) {
+    async function inspect(query, preserveActive = false) {
         if (!state.project || !state.run) return;
         state.inspectController?.abort();
+        clearDetailMatch();
+        const previousActive = preserveActive ? state.active : null;
         const controller = new AbortController();
         state.inspectController = controller;
         const revision = state.revision;
@@ -521,14 +716,16 @@
         setBusy(true, Boolean(query));
         try {
             const payload = await request("/api/inspect", {
-                project: state.project, run: state.run, query, mode: ui.mode.value, top,
+                project: state.project, run: state.run, query, mode: ui.mode.value, top, detailProfile: ui["detail-profile"].value,
             }, controller.signal);
             if (state.revision !== revision || state.inspectController !== controller) return;
             if (payload.runId !== state.run || !Array.isArray(payload.timeline) || !Array.isArray(payload.candidates)
                 || !payload.media || typeof payload.media.id !== "string"
                 || !Number.isSafeInteger(payload.media.durationUs) || payload.media.durationUs <= 0) throw new Error("分析视图的素材或运行身份不一致。");
             state.view = payload;
-            state.active = null;
+            const activeRow = previousActive && (previousActive.kind === "candidate" ? payload.candidates : payload.timeline)
+                .find((row) => selectionKey(row) === selectionKey(previousActive.row));
+            state.active = activeRow ? { kind: previousActive.kind, row: activeRow } : null;
             state.playbackEndUs = null;
             renderView();
         } catch (error) {
@@ -723,6 +920,7 @@
 
     async function previewClip(kind, row) {
         if (!validInterval(row) || !state.sourceUrl) return notice("这个区间目前无法播放，请刷新素材。");
+        clearDetailMatch();
         state.active = { kind, row };
         state.playbackEndUs = row.endUs;
         seek(row.startUs);
@@ -755,6 +953,7 @@
         if (uncertainty) ui["active-facts"].append(element("br"), element("span", "warning small", `待核对 · ${uncertainty}`));
         ui["play-selection"].disabled = !row || !state.sourceUrl;
         updateActiveButton();
+        updateDetailQueryButton();
     }
 
     function renderEvidence() {
@@ -947,6 +1146,17 @@
         void loadRuns(project);
     });
     ui["run-select"].addEventListener("change", () => switchRun(ui["run-select"].value));
+    ui["detail-profile"].addEventListener("change", () => { void inspect(state.view?.query || "", true); });
+    ui["open-detail-query"].addEventListener("click", () => {
+        if (!canMatchDetails()) return;
+        clearDetailMatch();
+        if (!ui["detail-conditions"].children.length) addDetailCondition();
+        ui["detail-query-dialog"].showModal();
+    });
+    ui["close-detail-query"].addEventListener("click", () => ui["detail-query-dialog"].close());
+    ui["detail-query-dialog"].addEventListener("close", clearDetailMatch);
+    ui["add-detail-condition"].addEventListener("click", () => addDetailCondition());
+    ui["detail-query-form"].addEventListener("submit", (event) => { event.preventDefault(); void matchDetailQuery(); });
     ui["refresh-projects"].addEventListener("click", () => { void loadProjects(); });
     ui["refresh-runs"].addEventListener("click", () => { void loadRuns(state.project, state.run); });
     ui["refresh-view"].addEventListener("click", () => { void inspect(""); });

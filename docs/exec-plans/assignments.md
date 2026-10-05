@@ -1,5 +1,15 @@
 # Active assignments
 
+## 2026-10-06 断网接续：离线部件、条件页面与费用历史
+
+| Owner | Branch/worktree | 独占范围 | 当前状态 |
+| --- | --- | --- | --- |
+| root / Codex | codex/visual-details，root | UI/service/server/static、typed HTTP、页面集成测试、共享文档、最终整合 | 接续998bc2d；页面明确条件匹配及profile选择，零Provider调用 |
+| detail_parts_v3 | codex/detail-parts-v3，.worktrees/detail-parts-v3 | 独立v3精分析prompt/parser/provider模块、新v3测试、own sprint | 新嵌套part合同；v2模块/冻结结果不改，不发送HTTP |
+| detail_cost_history | codex/detail-cost-history，.worktrees/detail-cost-history | 新只读精分析费用历史模块/测试、own sprint | 恢复planned承诺，未知不清零；不改UI/service或账本，不发送HTTP |
+
+旧worktrees保持冻结，编码worker仅在各自worktree写入。root串行整合profile及API，不降低验收门槛；原两个真实调用次数已用完。当前远端已核对30c44ae，998bc2d为本地状态记录，后续按实际Git同步。
+
 2026-10-06 root / Codex完成Provider/record codec/sidecar恢复23d8422、typed query CLI/match侧车/profile a6eb196；最新完整verify1062/1权限skip，定向167与82通过。两个明确授权真实候选各1次均Completed/partial，合估价¥0.01850612/unknown0；旧预留¥4.065536保留。人工核对入口artifacts/detail-query-validation/human-review.html，见sprint-detail-query。root继续负责离线part合同/页面typed入口与成本历史；历史worktree冻结，禁止额外API或retry，F006/F009/F010false。30c44ae已正常push并独立核对远端SHA，main不改，后续仅状态文档同步。
 
 ## 2026-10-05 当前细节优化

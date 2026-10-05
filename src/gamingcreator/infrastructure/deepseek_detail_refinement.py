@@ -171,6 +171,10 @@ def parse_detail(content: str, request: DetailRefinementRequest) -> CandidateDet
 
 
 class DeepSeekDetailRefinementProvider:
+    _prompt = PROMPT
+    _identity = staticmethod(provider_refinement_identity)
+    _parse = staticmethod(parse_detail)
+
     def __init__(
         self,
         transport: VisionTransport,
@@ -183,7 +187,7 @@ class DeepSeekDetailRefinementProvider:
         self._price_snapshot = price_snapshot
 
     def _payload(self, request: DetailRefinementRequest) -> dict[str, object]:
-        if request.identity != provider_refinement_identity():
+        if request.identity != self._identity():
             raise ValueError("Unsupported refinement prompt identity.")
         source_range_for_evidence(request.evidence)
         media_id = request.event_id.split(":")[1]
@@ -227,7 +231,7 @@ class DeepSeekDetailRefinementProvider:
         return {
             "model": request.identity.requested_model,
             "messages": [
-                {"role": "system", "content": PROMPT},
+                {"role": "system", "content": self._prompt},
                 {"role": "user", "content": blocks},
             ],
             "thinking": {"type": "disabled"},
@@ -333,7 +337,7 @@ class DeepSeekDetailRefinementProvider:
                 message = choice["message"]
                 if message.get("role") != "assistant" or type(message.get("content")) is not str:
                     raise ValueError("Invalid response message.")
-                output = parse_detail(message["content"], request)
+                output = self._parse(message["content"], request)
         except asyncio.CancelledError:
             status, error = ProviderStatus.CANCELLED, ProviderFailure("provider.cancelled", False)
         except TransportError as failure:

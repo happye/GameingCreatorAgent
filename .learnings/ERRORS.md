@@ -1,5 +1,17 @@
 # Errors
 
+## [ERR-20261006-005] standalone_pytest_basetemp_parent
+
+**Logged**: 2026-10-06
+**Priority**: low
+**Status**: resolved
+**Area**: tests
+
+### Summary
+
+定向pytest指定嵌套basetemp时未先创建父目录，75个fixture报WinError3。预建.cache/pytest-detail-workspace与cache后重跑；沿用verify.ps1的独立临时目录流程，勿将此误报产品回归。
+
+
 ## 2026-10-06: 付费素材传输需明确具体目的地
 
 自动审批拒绝run-pilot.py的首次执行：可信用户回复只明确候选/¥4.04预算，未明确允许将本地画面传往DeepSeek。拒绝发生在CreateProcess前，0请求。向用户原样解释目的地/数据范围缺口并询问共6张注册画面、帧ID、提示词/参数发送至https://api.deepseek.com/chat/completions；用户明确允许后才按同一命令执行，2次成功，无retry。后续预算审批应在一次问题中同时包含具体目的地、数据范围、次数和费用上限，不用间接脚本绕过拒绝。

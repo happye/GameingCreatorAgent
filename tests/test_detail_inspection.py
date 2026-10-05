@@ -317,6 +317,8 @@ def test_browser_details_are_safe_and_basket_exports_remain_original(tmp_path, r
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.goto(base)
             playwright.expect(page.locator("#timeline-count")).to_have_text("1")
+            page.locator("#detail-profile").select_option("v1")
+            playwright.expect(page.locator("#detail-profile")).to_be_enabled()
             page.locator("#timeline-list .clip-preview").click()
             playwright.expect(page.locator("#detail-status")).to_contain_text(
                 "复合条件匹配未验证" if reused else "主体详情未验证"
@@ -331,6 +333,8 @@ def test_browser_details_are_safe_and_basket_exports_remain_original(tmp_path, r
             page.locator("#add-active").click()
             page.reload()
             playwright.expect(page.locator("#export-json")).to_be_enabled()
+            page.locator("#detail-profile").select_option("v1")
+            playwright.expect(page.locator("#detail-profile")).to_be_enabled()
             page.locator("#selection-list .clip-preview").click()
             playwright.expect(page.locator("#detail-status")).to_contain_text(
                 "复合条件匹配未验证" if reused else "主体详情未验证"

@@ -6,12 +6,13 @@ from decimal import Decimal
 from pathlib import Path
 from urllib.parse import urlencode
 
+from gamingcreator.application.detail_query import loads_constraint, query_options
 from gamingcreator.application.detail_refinement import (
     RefinementIdentity,
     RefinementSettings,
     refinement_settings_hash,
 )
-from gamingcreator.application.detail_refinement_budget import canonical_detail_json
+from gamingcreator.application.detail_refinement_budget import canonical_detail_json, payload_hash
 from gamingcreator.application.inspection import InspectionView, inspection_view
 from gamingcreator.application.observation_text import FACTS_PROJECTION_VERSION, display_facts
 from gamingcreator.application.retrieval import RETRIEVAL_VERSION, CandidateClip, RetrievalMode
@@ -19,7 +20,10 @@ from gamingcreator.application.storage import RunStatus, StoredInvocation, Store
 from gamingcreator.cli.main import execute_search
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.time import SourceInstant, SourceRange
-from gamingcreator.infrastructure.detail_query_sidecar import refinement_identity_for_profile
+from gamingcreator.infrastructure.detail_query_sidecar import (
+    match_refinement,
+    refinement_identity_for_profile,
+)
 from gamingcreator.infrastructure.detail_refinement_sidecar import reuse_or_refuse
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 from gamingcreator.ui.media import MediaResource
@@ -52,6 +56,7 @@ def _refinement_payload(
         "reused" if outcome.reused else "missing" if outcome.request is not None else "unsupported"
     )
     if outcome.detail is not None:
+        payload["payloadHash"] = payload_hash(outcome.detail)
         detail = json.loads(canonical_detail_json(outcome.detail))
         detail["unassignedEvidenceIds"] = list(outcome.detail.unassigned_evidence_ids)
         payload["detail"] = detail
@@ -342,6 +347,7 @@ async def inspect_run(
                 for stage in timeline.checkpoints
             ],
             "cost": cost_payload(timeline.invocations),
+            "detailQueryOptions": query_options(),
             "retrievalVersion": RETRIEVAL_VERSION,
             "detailRefinementProfile": {
                 "profile": detail_profile,
@@ -363,3 +369,22 @@ async def inspect_run(
         }
     )
     return payload
+
+
+async def match_details(
+    project: Path, run_id: str, event_id: str, manifest: str, *, profile: str
+) -> dict[str, object]:
+    """Match explicit positive conditions against an exact saved key, without writes."""
+    try:
+        constraint = loads_constraint(manifest)
+    except ValueError:
+        raise AppError("input.detail_query", "复合条件格式或词表无效。", ExitCode.INPUT) from None
+    refinement_identity_for_profile(profile)
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    try:
+        timeline = await store.load_timeline(run_id, require_completed=True)
+    finally:
+        await store.close()
+    if not any(event.event_id == event_id for event in timeline.events):
+        raise AppError("input.detail_event", "当前运行没有这个片段。", ExitCode.INPUT, run_id)
+    return match_refinement(project, timeline, event_id, constraint, profile=profile, save=False)

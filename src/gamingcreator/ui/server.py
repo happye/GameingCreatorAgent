@@ -12,7 +12,12 @@ from urllib.parse import parse_qs, urlparse
 from gamingcreator.application.retrieval import RetrievalMode
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.ui.media import VerifiedMediaCache, byte_range
-from gamingcreator.ui.service import inspect_run, project_runs_payload, registered_media
+from gamingcreator.ui.service import (
+    inspect_run,
+    match_details,
+    project_runs_payload,
+    registered_media,
+)
 
 STATIC = Path(__file__).with_name("static")
 ASSETS = {
@@ -156,6 +161,77 @@ class InspectionHandler(BaseHTTPRequestHandler):
 
     def do_HEAD(self) -> None:  # noqa: N802 - stdlib handler name
         self.do_GET()
+
+    def do_POST(self) -> None:  # noqa: N802 - stdlib handler name
+        try:
+            if (
+                self.headers.get_content_type() != "application/json"
+                or self.headers.get("Transfer-Encoding") is not None
+                or len(self.headers.get_all("Content-Length", [])) != 1
+            ):
+                raise ValueError("Expected a bounded JSON body.")
+            length = int(self.headers["Content-Length"])
+            if not 0 < length <= 65536:
+                raise ValueError("Request is too large.")
+            # Socket read timeout prevents a partial body from retaining a handler indefinitely.
+            self.connection.settimeout(10)
+            body = self.rfile.read(length)
+            if len(body) != length:
+                raise ValueError("Incomplete JSON body.")
+            # Drain the bounded body before rejection: closing a Windows socket with
+            # unread request bytes can reset the connection before the 403 arrives.
+            if not self._local_request():
+                self._json(403, {"code": "input.origin", "message": "请从本机工作台访问。"})
+                return
+            if urlparse(self.path).path != "/api/match-details":
+                self._json(404, {"code": "input.route", "message": "没有这个操作。"})
+                return
+
+            def unique(pairs: list[tuple[str, object]]) -> dict[str, object]:
+                result: dict[str, object] = {}
+                for key, value in pairs:
+                    if key in result:
+                        raise ValueError("Duplicate request field.")
+                    result[key] = value
+                return result
+
+            value = json.loads(body, object_pairs_hook=unique)
+            if (
+                type(value) is not dict
+                or set(value) != {"project", "run", "event", "profile", "constraint"}
+                or any(
+                    type(value[key]) is not str for key in ("project", "run", "event", "profile")
+                )
+                or type(value["constraint"]) is not dict
+            ):
+                raise ValueError("Invalid match request fields.")
+            project = resolve_project(self.repository, value["project"])
+            payload = asyncio.run(
+                match_details(
+                    project,
+                    value["run"],
+                    value["event"],
+                    json.dumps(value["constraint"], ensure_ascii=False, allow_nan=False),
+                    profile=value["profile"],
+                )
+            )
+            self._json(200, payload)
+        except AppError as error:
+            self._json(
+                error_status(error),
+                {
+                    "code": error.code,
+                    "message": error.message,
+                    "runId": error.run_id,
+                    "exitCode": int(error.exit_code),
+                },
+            )
+        except ConnectionError:
+            return
+        except (OSError, ValueError, RecursionError):
+            self._json(
+                400, {"code": "input.request", "message": "复合条件请求无效。", "exitCode": 2}
+            )
 
     def do_GET(self) -> None:  # noqa: N802 - stdlib handler name
         try:

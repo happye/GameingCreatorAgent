@@ -153,6 +153,13 @@ def normalize_attribute_value(kind: AttributeKind, value: str) -> str:
     raise ValueError("Unsupported attribute value in this vocabulary version.")
 
 
+def attribute_value_options(kind: AttributeKind) -> tuple[tuple[str, str], ...]:
+    """Canonical values and display aliases from the frozen query vocabulary."""
+    if type(kind) is not AttributeKind:
+        raise ValueError("Expected a typed attribute kind.")
+    return tuple((value, aliases[0]) for value, aliases in _VALUES[kind].items())
+
+
 def values_are_exclusive(kind: AttributeKind, left: str, right: str) -> bool:
     """Explicit visual alternatives; different mechanics or shapes are not negations."""
     if (

@@ -4,6 +4,8 @@
 
 ## 当前结论
 
+2026-10-06断网接续已开始新离线切片：root实现严格typed条件POST/页面弹窗、v1/v2选择（页面默认v2、API默认v1）、共同支持帧与完整request/payload身份核对。定向新22项中21通过，剩余浏览器篮子/源表检查因测试连接未显式close已修并单项通过；mypy58/Ruff通过。旧99项/1symlink skip在前轮定向已通过。完整集成verify尚待运行，详见sprint-detail-workspace；两个worker独立worktree负责v3部件合同与只读费用历史，均零真实HTTP。当前生产服务仍旧版快照，下次部署需先重验health/进程身份。F006/F009/F010false、人工反馈与费用限制保留。
+
 当前root codex/visual-details，实现23d8422（独立精分析/恢复）与a6eb196（typed query CLI/profile）。完整verify **1062 passed / 1 Windows文件symlink权限skip（93.59s）**，Ruff103/mypy58/CLI与重复离线wheel通过，日志.cache/detail-query-verify.log。定向Provider167、query82通过。后续仅文档/本地证据更新，无源码再改。
 
 用户追加最高¥4.04，并明确允许共6张注册源帧/帧ID/提示词参数发送至DeepSeek chat/completions；仅两候选各1次、总2次、无retry，均Completed。合计估价 **¥0.01850612，新增unknown0**；旧未知¥4.065536保留，全任务已知¥0.24934532/总承诺¥4.31488132。两个复合条件均partial，不宣称内容已通过。真实v2结果已发布，旧base事件/证据/调用账本不变；humanLabels/qualityGate=null，F006/F009/F010=false。

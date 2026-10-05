@@ -7,15 +7,49 @@ from gamingcreator.application.actor_detail_matching import match_actor_details
 from gamingcreator.application.detail_refinement import DetailRefinementRequest
 from gamingcreator.application.detail_refinement_budget import payload_hash
 from gamingcreator.domain.actor_details import (
+    DETAIL_VOCABULARY_VERSION,
+    QUERY_SCHEMA_VERSION,
+    QUERY_VERSION,
     AttributeConstraint,
     AttributeKind,
     CandidateDetail,
     QueryConstraint,
+    attribute_value_options,
     canonical_constraint_json,
 )
 
 MATCH_REPORT_VERSION = "actor-detail-match-report-v1"
 MAX_MANIFEST_BYTES = 1_048_576
+
+
+def query_options() -> dict[str, object]:
+    labels = {
+        AttributeKind.HAIR_COLOR: "发色",
+        AttributeKind.CLOTHING_COLOR: "衣物颜色",
+        AttributeKind.CLOTHING_SHAPE: "衣物形状",
+        AttributeKind.HELD_SHAPE: "持有物形状",
+        AttributeKind.HELD_CLASS: "持有物类别",
+        AttributeKind.ACTION: "动作",
+        AttributeKind.EFFECT: "效果",
+        AttributeKind.ENVIRONMENT: "环境",
+    }
+    return {
+        "schemaVersion": QUERY_SCHEMA_VERSION,
+        "version": QUERY_VERSION,
+        "vocabularyVersion": DETAIL_VOCABULARY_VERSION,
+        "maxConditions": 16,
+        "kinds": [
+            {
+                "kind": kind.value,
+                "label": labels[kind],
+                "values": [
+                    {"value": value, "label": label}
+                    for value, label in attribute_value_options(kind)
+                ],
+            }
+            for kind in AttributeKind
+        ],
+    }
 
 
 def loads_constraint(text: str) -> QueryConstraint:
