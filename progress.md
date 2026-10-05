@@ -115,3 +115,11 @@ SQLite 专用线程、进程锁、九表迁移/组合 FK、媒体/语义 checkpo
 F008true、F006false；人工质量标准和本地/云端/未来EXE说明分别落在human-acceptance-guide与deployment-roadmap。共享AGENTS/README/架构/API/使用/测试手册/feature_list/交接同步。本轮无新增依赖/付费API，五项指定宿主边界未变。检查点1684587/decf5b2、前端集成1bf8881/600276e持续保存；工作分支首次连接失败重试已上传，最终主线同步见HANDOFF和git。
 
 版本同步：已验证87637af已上传origin/codex/workspace-usability并普通快进同步origin/main，root现main。GitHub443间歇失败重试成功，无强推或全局配置修改。8765实际页面HTTP200并包含新版片段篮布局；交接/任务归属同步已推送主线状态，最终文档提交见git log。
+
+## 2026-10-05 — V6细节Demo完成技术验证，主体匹配合同继续开发
+
+额度恢复后核对旧提交/未提交工作，保存00bc88f检查点并集成a7789b4主体匹配规格。完整Atom V6 run f601fb9b3e734d5ea188fc15c790acbb完成16窗口/33事件/0转录，首次视觉请求全部成功，估价¥0.10270124/unknown0；本轮V5/V6所有成功失败及控制合¥0.23083920（非账单）。最新完整verify876passed/1 Windows权限skip，CLI/类型/离线重复wheel通过。
+
+30组离线查询和真实工作台播放/证据/篮子源序/JSON/CSV/桌面与手机布局通过；启动脚本实际复用，生产默认新V6/33事件，旧两timeline bytes不变。描述f0/f1清理并展示待核对；仍有物品误认、待机和跨切镜问题，恶魔领主复合例hybrid8只是局部召回，同主体AND尚未接入。F006/F009/F010仍false。
+
+证据artifacts/visual-detail-v6-delivery与sprint-visual-details；合同Agent在独立actor-detail-contract工作树继续类型/同主体同部件/共同证据纯匹配。环境全项目隔离，无新增依赖。GitHub443仍未连通，远端同步待正常push，不把本地commit称为已推送。

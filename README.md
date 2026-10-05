@@ -12,7 +12,7 @@ On the prepared workstation, open the existing completed demo without API calls 
 
 ```powershell
 ./scripts/setup-demo.ps1 -Offline
-./scripts/run-demo.ps1 -Run f76f5d6495314c04ae04083614d4afd6 -Query "寻找角色打斗和攻击的片段"
+./scripts/run-demo.ps1 -Run f601fb9b3e734d5ea188fc15c790acbb -Query "黑色高礼帽白色面具角色挥动指挥棒"
 ./Start-Workspace.cmd
 ```
 
@@ -41,7 +41,9 @@ Inspect commands with `./.venv/Scripts/gamingcreator.exe --help`. `config.exampl
 
 User acceptance on 2026-10-04 rejected gameplay retrieval: Boss, jumping and shooting queries have no usable results, and descriptions lack action continuity. F006 remains failed/pending formal U10. The temporal correction is an unaccepted F009 experiment; see [validation and resumption](./docs/references/temporal-gameplay-validation.md) and HANDOFF before reusing earlier smoke results as quality evidence.
 
-The prepared workstation now has a new completed Atom temporal trial, `96b5f01530ce43e2944828fb0520b9b4`: 54.743220 seconds, 16 windows, 40 events and estimated API cost ¥0.05029788 (not an invoice). The workspace prefers this completed temporal run and labels legacy frame observations separately. Use `config.temporal.example.json` explicitly for new v4 analysis: 2 FPS, nine ordered frames, two-frame overlap, program-derived frame boundaries. Retrieval v4 removes recognized explicit action denials from positive action matches, leaving two jump candidates at 11.5–12.5 and 0–2 seconds. Action descriptions still need human review: static hallucinations, ambiguous tags and cuts remain issues. Boss and shooting retrieval are not established.
+The prepared workstation's current default is completed Atom detail trial `f601fb9b3e734d5ea188fc15c790acbb`: 54.743220 seconds, 16 windows, 33 events and estimated API cost ¥0.10270124 (not an invoice). Explicit `config.detailed-v6.example.json` uses V6, 2 FPS, nine ordered images, two-frame overlap and a 1280-pixel width limit. Descriptions include clothing, held items, scenery and effects; uncertain observations appear separately. Existing facts, run configurations and basket identities remain unchanged. Internal frame aliases are cleaned for display, indexing and exports. See the [detail evidence](./docs/exec-plans/sprint-visual-details.md).
+
+Real browser checks verified the new default, playback, evidence, chronological baskets and JSON/CSV exports. Offline retrieval v5 returns two jump candidates at 0–2 and 11.5–12.5 seconds, and detail candidates for heart-shaped glasses, scenery and a character with a conductor's baton. These remain unjudged. Long queries can match only some words or combine different actors' attributes; the demon-lord/armor/staff/shockwave example still returns unsupported partial candidates. Appearance errors, idle poses and cross-cut continuity remain unresolved. [Actor-detail matching](./docs/design-docs/actor-detail-matching-spec.md) specifies the next implementation; its availability must be checked in HANDOFF. Earlier V4 and manga runs remain available.
 
 The completed 95.175874-second manga PV demo produced 24 visual windows, 111 events and no transcript segments, with estimated API cost ¥0.06246088 for that run; this is not a confirmed invoice. An attack query returned intervals around 28–29, 31–32 and 30–31 seconds; its first hybrid search took 2574 ms. These are smoke results, not a measured human Top-10 pass or an hour-scale performance claim.
 

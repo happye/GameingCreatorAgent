@@ -74,7 +74,10 @@ def validate(project: Path, run_id: str, output: Path, query: str) -> dict[str, 
                 page.goto(url, wait_until="domcontentloaded")
                 wait_for(
                     page,
-                    "!document.querySelector('#project-select').disabled && document.querySelector('#run-select').options.length > 0",
+                    "!document.querySelector('#project-select').disabled && "
+                    "!document.querySelector('#run-select').disabled && "
+                    "!document.querySelector('#search-button').disabled && "
+                    "document.querySelectorAll('.timeline-row').length > 0",
                 )
                 default_run = page.locator("#run-select").input_value()
                 page.locator("#project-select").select_option(project_reference)

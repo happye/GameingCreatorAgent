@@ -114,9 +114,9 @@
       "description": "Address user feedback with visible appearance, clothing, held items, environment and action effects bound to their actors; remove internal frame aliases from human-facing descriptions while preserving frozen source facts.",
       "priority": 10,
       "passes": false,
-      "test_criteria": "Versioned V5 detailed analysis and higher-resolution evidence preserve legacy contracts and resumable runs; uncertain attributes are displayed without positive indexing; original stored facts and basket validation remain intact. Real-video comparisons record all costs and controls, and independent human judgments confirm useful detail queries; F006 remains separate.",
+      "test_criteria": "Versioned V5/V6 detailed analysis and higher-resolution evidence preserve legacy contracts and resumable runs; uncertainty stays outside positive indexing and facts require review. Actor/part-bound observed attributes with shared supporting evidence must satisfy all strict compound constraints; unknown or cross-actor facts cannot be full matches. Original facts/basket validation remain intact; bounded real-video comparisons record every cost/control and independent human judgments confirm useful detail queries. F006 remains separate.",
       "dependencies": ["F009", "F007"],
-      "evidence": ["docs/exec-plans/sprint-visual-details.md", "docs/exec-plans/sprint-detail-vision-worker.md", "docs/exec-plans/sprint-detail-presentation-worker.md", "tests/test_detailed_vision.py", "tests/test_observation_presentation.py", "config.detailed.example.json"]
+      "evidence": ["docs/exec-plans/sprint-visual-details.md", "docs/exec-plans/sprint-detail-vision-worker.md", "docs/exec-plans/sprint-detail-presentation-worker.md", "docs/exec-plans/sprint-detail-v6-worker.md", "docs/design-docs/actor-detail-matching-spec.md", "docs/exec-plans/sprint-actor-detail-matching.md", "tests/test_detailed_vision.py", "tests/test_detail_action_eligibility.py", "tests/test_observation_presentation.py", "config.detailed.example.json", "config.detailed-v6.example.json"]
     }
   ]
 }

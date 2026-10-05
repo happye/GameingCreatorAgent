@@ -59,3 +59,13 @@ V6真实31.5–35.5对照 `visual-details-v6-atom-execute` completed：A/B/C均3
 最新完整 verify：876 passed / 1 Windows 文件 symlink权限skip，78.81s；Ruff86文件、mypy49、CLI、两次离线wheel。wheel SHA `5fc900a156bf27011c648f26b0c60ab4a944f6eaafc4396d24f6efd6614c7836`；日志 `.cache/detail-v6-verify.log`，分析日志 `.cache/detail-v6-atom-analyze.log`。代码c400188；查询/浏览器/生产服务刷新尚在补验收。
 
 真实V6仍有问题：28s蓝色物体断言“武器”、32s轻微待机写成事件、38–39s切镜声称同一角色持续跑动。自由文本检索不能保证多属性同一主体（TD009）；actor-detail-spec worktree只写两篇新规格/任务文档。不放松动作/证据parser，不改旧run/facts/config；F006/F009/F010仍false。
+
+## 2026-10-05 实际检索、工作台与下一合同
+
+无API的10查询×lexical/semantic/hybrid已保存 `artifacts/visual-detail-v6-delivery/retrieval-matrix.json`，检索v5/投影v1；全部显示事实和待核对均无独立fN。jump hybrid2（0–2s/11.5–12.5s），指挥棒hybrid前3为15.5–17s/17.5–18s/17.5–19.5s；墨镜和场景有候选，汽车维修lexical/hybrid0而semantic10。用户恶魔领主/铠甲/权杖/冲击波复合例hybrid8，白发+红外套hybrid10：这是部分关键词召回/跨主体风险，不证明所有特征成立或U10通过。
+
+真实Chrome验证：新run播放结束暂停、证据加载、篮子按时间排序、刷新恢复、JSON/CSV与1440×900/1366×768同屏、手机无横溢；`browser-verified/browser-report.json` passed/default新V6/33事件，无JS错误。首次报告default读到“正在读取运行…”；脚本已改为等待run/搜索/时间轴都加载后捕获，复测通过，无产品代码改变。
+
+生产服务先重验health/状态与项目Python，只停止旧2548后启动38364/parent27896；Start-Workspace.cmd实际复用并打开浏览器成功。sandbox内打开浏览器曾Access denied，授权范围内升级重试成功；未改用户系统配置。生产fresh Chrome默认f601.../33事件/profile detailed，证据 `production-report.json`。临时诊断最初用了wait_for_function触发CSP unsafe-eval拒绝；已按现有脚本改调试器evaluate轮询，不放松页面CSP。旧V4及漫画timeline snapshot的SHA前后相同。
+
+主体规格b1d91bc→a7789b4已集成；新actor-detail-contract worktree从00bc88f由detail_v6_completion独占5新文件，开发typed合同和纯同actor/part AND，不接UI/Provider、不调用API。需再验证共同支持帧、互斥冲突、unknown不作no_match和旧数据兼容；公共文档由root更新，F006/F009/F010仍false。

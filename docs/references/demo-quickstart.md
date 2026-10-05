@@ -4,7 +4,7 @@
 
 ## 直接查看已有结果
 
-本工作站双击根目录`Start-Workspace.cmd`即可打开工作台，无API密钥或付费分析。默认优先新的Atom连续动作试验run `96b5f01530ce43e2944828fb0520b9b4`：54.743220s、16窗口/40事件，模型估价¥0.05029788（非账单）。查询「寻找跳跃玩法的片段」或「寻找角色奔跑和移动的片段」，逐个回看原视频；候选不等于通过F006。旧漫画run仍可从运行列表选择。
+本工作站双击根目录`Start-Workspace.cmd`即可打开工作台，无API密钥或付费分析。默认Atom细节动作试验run `f601fb9b3e734d5ea188fc15c790acbb`：54.743220s、16窗口/33事件，模型估价¥0.10270124（非账单）。可试「黑色高礼帽白色面具角色挥动指挥棒」「粉色心形墨镜」「沙地石板蓝色水域」「寻找跳跃玩法的片段」，回看原视频和证据；候选不等于通过F006，长句仍可能只命中部分条件。旧V4及漫画run仍在运行列表。
 
 重复启动复用同仓库服务；日志/PID在`.cache/workspace`。端口冲突可用`./scripts/start-workspace.ps1 -Port 8766`；前台用`run-ui.ps1`。启动不触发新分析。
 
@@ -12,7 +12,7 @@
 
 ```powershell
 ./scripts/setup-demo.ps1 -Offline
-./scripts/run-demo.ps1 -Run f76f5d6495314c04ae04083614d4afd6 -Query "寻找角色打斗和攻击的片段"
+./scripts/run-demo.ps1 -Run f601fb9b3e734d5ea188fc15c790acbb -Query "黑色高礼帽白色面具角色挥动指挥棒" -TopK 3
 ```
 
 脚本打印候选起止时间、可观察事实、时间线与检索记录位置。也可加 `-Mode lexical` 或 `-Mode semantic`；默认 `hybrid`。词法检索不需要 E5，语义与混合检索使用本地模型，不调用远端 API。
@@ -21,7 +21,7 @@
 
 2026-10-04 用 `-TopK 3` 复跑上述中文查询，连续两次都打印 00:00:28.000–00:00:29.000、00:00:31.000–00:00:32.000、00:00:30.000–00:00:31.000 和对应可观察事实。默认 hybrid 对 `Find clips of fighters attacking each other in the arena` 返回这三段带证据区间。汽车维修查询 hybrid 为 0 条。pure semantic 对汽车维修负例仍会误召回。这些不是人工 U10。早先全模式报告仍在 ignored `artifacts/demo-phase0/demo-validation.json`。
 
-启动工作台用 `./scripts/run-ui.ps1`，浏览器打开 `http://127.0.0.1:8765/`。选择 `demo-phase0` 和完整 run `f76f5d6495314c04ae04083614d4afd6`；点击候选播放源区间，点击证据缩略图放大，使用描述/标签筛选时间轴，点「+」选片并下载 JSON/CSV。片段篮按项目/run 隔离，刷新后重新选择同一 run 可恢复；清单不生成 MP4。同一进程点击「刷新时间轴」重读数据库，无需等待 snapshot 文件。时间轴按源时间，候选保持检索排名。最新归属与下一步见根 `HANDOFF.md`；F006 人工 U10 仍未通过。
+启动工作台用 `./Start-Workspace.cmd`，浏览器打开 `http://127.0.0.1:8765/`；前台调试用 `./scripts/run-ui.ps1`。选择 `demo-phase0`，默认完整run `f601fb9b3e734d5ea188fc15c790acbb`；点击候选播放源区间，点击证据缩略图放大，使用描述/标签筛选时间轴，点「+」选片并下载 JSON/CSV。片段篮按项目/run隔离，刷新后重新选择同一run可恢复；清单不生成MP4。点击「刷新时间轴」重读数据库。时间轴按源时间，候选保持检索排名。最新归属与下一步见根 `HANDOFF.md`；F006人工U10仍未通过。
 
 桌面工作台中央预览与下方时间轴、右下片段篮同时可见，长列表各自滚动。选片按源开始/结束时间自动排序，保存和导出一致，不改变候选相关性rank。窄屏按纵向排列。人工内容验收见[human-acceptance-guide.md](./human-acceptance-guide.md)，本地/云端/未来EXE见[deployment-roadmap.md](./deployment-roadmap.md)。
 
@@ -43,7 +43,7 @@
 
 新版连续动作试验需显式`-Config config.temporal.example.json`，v4/500ms/9帧/重叠2，用帧别名生成源时间区间；保持旧run不变。当前仍有模型判断与跨镜头问题，Boss/射击效果未建立，详见[时序验证](./temporal-gameplay-validation.md)。
 
-2026-10-05可见细节优化用 `-Config config.detailed.example.json`：V5保持多帧动作，输入宽上限1280，要求衣着/持有物/人物外观/环境/效果与主体关联。看不清或身份不确定在“待核对”显示，不进入正面检索；不会凭外观命名官方装备或Boss。旧f0/f1为内部图片编号，显示/导出已清理，数据库原事实保留。真实新run与比较状态见HANDOFF和[sprint-visual-details](../exec-plans/sprint-visual-details.md)，不能把新配置存在当已验证效果。
+当前新分析显式用 `-Config config.detailed-v6.example.json`：V6保持多帧动作，输入宽上限1280，要求衣着/持有物/人物外观/环境/效果与主体关联，并先核对动作资格。历史V5配置保留，不用于续跑时升级prompt。不确定信息显示为“待核对”，该字段不作正面索引；但模型仍会在肯定事实里误认物品类别，不能保证武器或Boss身份。旧f0/f1是内部图片编号，显示/导出已清理，原事实保留。新的33事件已通过真实播放/证据/篮子/导出检查，细节正确性未独立验收；复合同主体匹配状态见HANDOFF与[sprint-visual-details](../exec-plans/sprint-visual-details.md)。
 
 ## 续跑与结果文件
 

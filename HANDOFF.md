@@ -4,7 +4,7 @@
 
 ## 当前结论
 
-root 分支 codex/visual-details，代码检查点 c400188。额度中断后已核对并继续：V6 完整 Atom 分析已完成，正在补实际查询、浏览器和启动验收。F006/F009/F010 保持 false；工程检查、JSON 合法及命中数不替代独立人评。
+root 分支 codex/visual-details，代码检查点 c400188、规格 a7789b4。额度中断后已核对并继续：V6完整分析、30组离线查询、真实浏览器和启动验收已完成，主体/部件AND合同在独立worktree开发。F006/F009/F010保持false；工程检查、JSON合法及命中数不替代独立人评。
 
 新 Completed run **f601fb9b3e734d5ea188fc15c790acbb**：artifacts/demo-phase0，54.743220s / 16 窗口 / 33 事件 / 0 转录；16 个视觉窗口首次尝试全部完成。prompt phase0-vision-v6 / hash a60d114d9dd8bf82c5d2ea62c30c4cfe2b4316b08de34ade3cba883d6de9ea00；pipeline phase0-analyze-detailed-v2。配置 config.detailed-v6.example.json。正文及 uncertainty 未发现独立 fN；18 个事件含待核对。模型估价 ¥0.10270124，unknown 0，providerElapsedMs 42467；不是账单。
 
@@ -27,19 +27,22 @@ V5 run c78f204907e04eb3a2ac97a9017dcad9 保留 failed / 9 of 16窗口 / 24事件
 
 ## 工作台与恢复顺序
 
-双击 Start-Workspace.cmd 打开 http://127.0.0.1:8765/；重复启动复用匹配服务，启动不分析或付费。新V6已在数据库，前端优先 Completed detailed；实际默认、播放、证据和导出待本轮核对。
+双击 Start-Workspace.cmd 打开 http://127.0.0.1:8765/；已实际验证脚本复用服务，启动不分析或付费。生产默认已确认是新V6 / 33事件 / detailed。真实浏览器验证播放15.5–17s结束暂停、证据加载、筛选、篮子恢复/源序排序、JSON/CSV、两桌面尺寸同屏和手机无横溢。
 
-服务最后核对为本仓库 PID2548 / parent34124，与 .cache/workspace/port-8765.json 一致；这是旧进程快照，**重启前重新核对health和状态，仅停止匹配的自有进程**。旧Atom V4 run96b5f01530ce43e2944828fb0520b9b4和漫画f76f5d6495314c04ae04083614d4afd6原数据保留。
+服务已核对health/保存状态/项目内Python后停止旧PID2548，重新启动为PID38364 / parent27896；.cache/workspace/port-8765.json一致。**下次操作前重新核对health和状态，仅停止匹配的自有进程**。旧Atom V4及漫画snapshot SHA前后相同，原数据保留。
+
+证据在artifacts/visual-detail-v6-delivery：retrieval-matrix.json（10查询×3模式）；browser-verified/browser-report.json（修正启动等待后defaultRunId也正确）、production-report.json、screenshots及两旧timeline SHA。查询无API：jump hybrid2；心形墨镜/指挥棒/场景均有候选；汽车维修hybrid0而semantic10；用户恶魔领主复合例hybrid8，属于证据不足的局部召回，不能宣称该内容存在。旧首次browser报告default值是读取占位符，验证脚本已改等时间轴加载，无产品逻辑变化。
 
 - root：config/store/analysis/CLI/UIprofile、真实调用、查询/浏览器、共享文档与集成。
 - detail_v6_completion：dff948e→02cb7b2已集成并冻结；.worktrees/detail-v6勿回写root。
-- detail_retrieval_audit：.worktrees/actor-detail-spec / codex/actor-detail-spec，仅新增actor-detail-matching-spec.md与sprint-actor-detail-matching.md；规格与任务拆分进行中，无API。
+- detail_retrieval_audit：.worktrees/actor-detail-spec / codex/actor-detail-spec，两篇规格b1d91bc→a7789b4已集成冻结，无API。
+- detail_v6_completion新任务：.worktrees/actor-detail-contract / codex/actor-detail-contract，独占新domain/actor_details.py、application/actor_detail_matching.py、两test及own sprint；纯合同/匹配器进行中，不修改CLI/UI/provider/store。
 - 其他V5 vision/presentation/pilot worktrees全部冻结。
 
 1. 核对status/HEAD/owner；新run与完整verify已落盘，不重复付费分析。
-2. 新V6跑lexical/semantic/hybrid细节查询，保存实际命中、时间、待核对与负例；质量保持未评。
-3. scripts/validate-inspection-ui.py验证播放/证据/细节标签/旧篮子/JSON/CSV；核对health再重启自有服务，实际运行Start-Workspace.cmd。
-4. 集成主体精确匹配规格，同步手册/feature_list/分工/progress并保存提交，后续按新sprint接续。
+2. 查询/浏览器/启动已完成，不重复付费分析。查当前actor-detail-contract状态，复核同人/同部件/共同支持帧与unknown规则，集成独占提交。
+3. 合同定型后按sprint-actor-detail-matching做独立精分析ports，再拆Provider/预算与sidecar；普通搜索仍离线，完整复合匹配未接入工作台。
+4. 新合同集成后跑相关与完整verify，同步规格/手册/feature_list/分工/progress，保存本地提交；GitHub恢复时常规补推。
 
 GitHub github.com:443多次连接失败，远端最新状态未确认；本地提交不等于远端同步。完成后重试命令级HTTP/1.1常规push，禁止强推或改全局网络配置。
 
