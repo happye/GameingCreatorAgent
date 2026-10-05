@@ -42,6 +42,7 @@ PROMPT_VERSION_V2 = "phase0-vision-v2"
 PROMPT_VERSION_V3 = "phase0-vision-v3"
 PROMPT_VERSION_V4 = "phase0-vision-v4"
 PROMPT_VERSION_V5 = "phase0-vision-v5"
+PROMPT_VERSION_V6 = "phase0-vision-v6"
 SCHEMA_VERSION = "semantic-events-v1"
 SCHEMA_VERSION_V4 = "temporal-actions-v1"
 MODEL = "deepseek-flash"
@@ -188,6 +189,33 @@ If static, single-frame, or no multi-frame action is supported, return {"events"
 Write facts and uncertainty in requested language (zh: Chinese; en: English).
 Do not invent confidence, IDs or extra fields; do not wrap JSON in Markdown.
 """
+_SYSTEM_PROMPT_V6 = (
+    """FIRST determine whether each candidate segment contains a visible subject ACTION
+supported across multiple ordered frames. ONLY AFTER it qualifies, add that actor's
+visible attributes and environment to the action description. Rich appearance alone
+is never enough: a character visible in one frame, a static inventory or a pure camera
+cut/transition is NOT an action event. Different image content alone does not prove
+that a subject acted. Omit such unsupported segments, but keep other independently
+supported multi-frame actions in the same window. Do not invent a spanning action
+merely to include a visually detailed character or join unrelated shots.
+"""
+    + _SYSTEM_PROMPT_V5
+    + """Before returning JSON, check EACH event against the actual supplied observations:
+1. startFrameId and endFrameId are different supplied aliases; their source times
+   strictly increase. Single-frame startFrameId="f0", endFrameId="f0" is INVALID,
+   even when the first frame contains a richly detailed large enemy or character.
+2. evidenceIds include both boundaries and at least TWO different source instants
+   with different image content, in supplied order, inside those boundaries.
+3. The cited observations actually show the subject's action progressing; one
+   appearance followed only by a shot change cannot establish an action segment.
+4. Each event has exactly the six documented fields. uncertainty is either null
+   or a nonempty, non-whitespace string; never an empty string, false, a number,
+   an object or an array. Do not emit extra fields.
+If ANY check fails, REMOVE that event. Never guess or stretch its boundaries, cite
+unrelated frames, or manufacture motion to pass the check. Return other valid events,
+or {"events":[]} when none qualify. These checks precede visual-detail completeness.
+"""
+)
 
 
 def vision_prompt_fingerprint(version: str) -> str:
@@ -197,10 +225,13 @@ def vision_prompt_fingerprint(version: str) -> str:
         PROMPT_VERSION_V3,
         PROMPT_VERSION_V4,
         PROMPT_VERSION_V5,
+        PROMPT_VERSION_V6,
     ):
         raise ValueError("Unsupported vision prompt version.")
     prompt = (
-        _SYSTEM_PROMPT_V5
+        _SYSTEM_PROMPT_V6
+        if version == PROMPT_VERSION_V6
+        else _SYSTEM_PROMPT_V5
         if version == PROMPT_VERSION_V5
         else _SYSTEM_PROMPT_V4
         if version == PROMPT_VERSION_V4
@@ -362,12 +393,12 @@ def _jpeg_width(data: bytes) -> int:
 def _payload(request: VisionRequest, context: CancellationContext) -> dict[str, object]:
     prompt_v3 = request.prompt_version == PROMPT_VERSION_V3
     prompt_v4 = request.prompt_version == PROMPT_VERSION_V4
-    prompt_v5 = request.prompt_version == PROMPT_VERSION_V5
-    frame_boundaries = prompt_v4 or prompt_v5
+    detailed = request.prompt_version in (PROMPT_VERSION_V5, PROMPT_VERSION_V6)
+    frame_boundaries = prompt_v4 or detailed
     temporal = prompt_v3 or frame_boundaries
     max_images = MAX_IMAGES_V3 if temporal else MAX_IMAGES
-    max_image_bytes = MAX_IMAGE_BYTES_V5 if prompt_v5 else MAX_IMAGE_BYTES
-    max_image_width = MAX_IMAGE_WIDTH_V5 if prompt_v5 else MAX_IMAGE_WIDTH
+    max_image_bytes = MAX_IMAGE_BYTES_V5 if detailed else MAX_IMAGE_BYTES
+    max_image_width = MAX_IMAGE_WIDTH_V5 if detailed else MAX_IMAGE_WIDTH
     if (
         request.run_id != context.run_id
         or not _IDENTIFIER.fullmatch(request.run_id)
@@ -378,6 +409,7 @@ def _payload(request: VisionRequest, context: CancellationContext) -> dict[str, 
             PROMPT_VERSION_V3,
             PROMPT_VERSION_V4,
             PROMPT_VERSION_V5,
+            PROMPT_VERSION_V6,
         )
         or request.schema_version != (SCHEMA_VERSION_V4 if frame_boundaries else SCHEMA_VERSION)
         or type(request.max_output_tokens) is not int
@@ -468,7 +500,7 @@ def _payload(request: VisionRequest, context: CancellationContext) -> dict[str, 
                 "image_url": {
                     "url": "data:image/jpeg;base64,"
                     + base64.b64encode(image_bytes).decode("ascii"),
-                    **({"detail": "original"} if prompt_v5 else {}),
+                    **({"detail": "original"} if detailed else {}),
                 },
             }
         )
@@ -477,8 +509,10 @@ def _payload(request: VisionRequest, context: CancellationContext) -> dict[str, 
         "messages": [
             {
                 "role": "system",
-                "content": _SYSTEM_PROMPT_V5
-                if prompt_v5
+                "content": _SYSTEM_PROMPT_V6
+                if request.prompt_version == PROMPT_VERSION_V6
+                else _SYSTEM_PROMPT_V5
+                if detailed
                 else _SYSTEM_PROMPT_V4
                 if prompt_v4
                 else _SYSTEM_PROMPT_V3
@@ -557,8 +591,8 @@ def _resolve_prose_aliases(
 def _events(response: dict[str, object], request: VisionRequest) -> tuple[SemanticEvent, ...]:
     prompt_v3 = request.prompt_version == PROMPT_VERSION_V3
     prompt_v4 = request.prompt_version == PROMPT_VERSION_V4
-    prompt_v5 = request.prompt_version == PROMPT_VERSION_V5
-    frame_boundaries = prompt_v4 or prompt_v5
+    detailed = request.prompt_version in (PROMPT_VERSION_V5, PROMPT_VERSION_V6)
+    frame_boundaries = prompt_v4 or detailed
     temporal = prompt_v3 or frame_boundaries
     max_images = MAX_IMAGES_V3 if temporal else MAX_IMAGES
     choices = response.get("choices")
@@ -633,7 +667,7 @@ def _events(response: dict[str, object], request: VisionRequest) -> tuple[Semant
         facts = _texts(
             event["observableFacts"],
             nonempty=True,
-            maximum=MAX_FACTS_V5 if prompt_v5 else 20,
+            maximum=MAX_FACTS_V5 if detailed else 20,
             code="event_facts",
         )
         tags = _texts(event["mechanicTags"], nonempty=False, code="event_tags")
@@ -672,7 +706,7 @@ def _events(response: dict[str, object], request: VisionRequest) -> tuple[Semant
             not isinstance(uncertainty, str) or not uncertainty.strip() or len(uncertainty) > 2000
         ):
             raise _SchemaError("uncertainty")
-        if prompt_v5:
+        if detailed:
             source_times = {
                 alias: cast(SourceInstant, evidence[alias].source_time).time_us for alias in aliases
             }
