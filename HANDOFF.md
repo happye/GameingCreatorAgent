@@ -36,7 +36,8 @@ V5 run c78f204907e04eb3a2ac97a9017dcad9 保留 failed / 9 of 16窗口 / 24事件
 - root：config/store/analysis/CLI/UIprofile、真实调用、查询/浏览器、共享文档与集成。
 - detail_v6_completion：dff948e→02cb7b2已集成并冻结；.worktrees/detail-v6勿回写root。
 - detail_retrieval_audit：.worktrees/actor-detail-spec / codex/actor-detail-spec，两篇规格b1d91bc→a7789b4已集成冻结，无API。
-- detail_v6_completion新任务：.worktrees/actor-detail-contract / codex/actor-detail-contract，独占新domain/actor_details.py、application/actor_detail_matching.py、两test及own sprint；纯合同/匹配器进行中，不修改CLI/UI/provider/store。
+- detail_v6_completion新任务：.worktrees/actor-detail-contract / codex/actor-detail-contract，独占新domain/actor_details.py、application/actor_detail_matching.py、test_actor_detail_matching.py及own sprint；纯合同/匹配器进行中，不修改CLI/UI/provider/store。
+- detail_retrieval_audit新测试：.worktrees/actor-detail-tests / codex/actor-detail-tests，独占test_actor_details.py与own sprint；先读合同草稿，冻结后联合复测。旧spec worktree保持冻结，禁止共享writer。
 - 其他V5 vision/presentation/pilot worktrees全部冻结。
 
 1. 核对status/HEAD/owner；新run与完整verify已落盘，不重复付费分析。

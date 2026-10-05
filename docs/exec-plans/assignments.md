@@ -11,8 +11,9 @@
 | detail_presentation | codex/detail-presentation，.worktrees/detail-presentation | observation_text.py、retrieval.py、ui/service.py、app.js、新 presentation tests、own sprint | a160116→86c229c 已集成并冻结 |
 | detail_pilot | codex/detail-pilot，.worktrees/detail-pilot | validate-visual-details.py/new tests/own sprint | 944fb42→32fe12c 已集成并冻结，真实V5对照完成 |
 | detail_v6_completion：旧任务 | codex/detail-v6，.worktrees/detail-v6 | deepseek_vision.py/new eligibility tests/own sprint | dff948e→02cb7b2已集成冻结，禁止回写root |
-| detail_v6_completion：新合同 | codex/actor-detail-contract，.worktrees/actor-detail-contract | 新domain/actor_details.py、application/actor_detail_matching.py、两新test、own sprint | 进行中，按主体/部件AND规格，无API或UI接入 |
+| detail_v6_completion：新合同 | codex/actor-detail-contract，.worktrees/actor-detail-contract | 新domain/actor_details.py、application/actor_detail_matching.py、test_actor_detail_matching.py、own sprint | 进行中，按主体/部件AND规格，无API或UI接入 |
 | detail_retrieval_audit | codex/actor-detail-spec，.worktrees/actor-detail-spec | 新actor-detail-matching-spec.md、sprint-actor-detail-matching.md | b1d91bc→a7789b4已集成冻结；只读复核完成 |
+| detail_retrieval_audit：合同反例 | codex/actor-detail-tests，.worktrees/actor-detail-tests | 新test_actor_details.py、own测试sprint | owner确认拆分；独立typed合同/真实candidate identity测试，先读实现草稿，冻结后复测 |
 | detail_pipeline_audit | 只读 root | 根因/细节/旧数据身份审查 | 已完成，无编辑或 API 请求 |
 
 V5细节对照完成，完整V5run在9/16窗口因单帧动作停止；保留run和费用。新V6 f601fb9b3e734d5ea188fc15c790acbb已Completed：16窗口/33事件/估价¥0.10270124，本轮全部尝试合¥0.23083920/unknown0。查询30组合、真实浏览器及一键复用已验证；生产服务PID38364/parent27896只是快照，操作前重验health。历史帧编号只投影清理，原事实不重写；旧V1–V4保持512。F006/F009/F010仍false。以下旧V4占用与“当前交付”为历史，当前以上表/HANDOFF为准。
