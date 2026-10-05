@@ -24,6 +24,8 @@ gamingcreator benchmark --input <frozen-manifest> --project <directory> --output
 
 2026-10-05细节优化显式用 `config.detailed.example.json`：V5 hash为c64c644e9889fcfd91cc0e9a26d8bf1b9546ce73c548e6ac056a5067498ff98a，pipeline `phase0-analyze-detailed-v1`，500ms/9帧/重叠2、输出4096token。V5采样宽上限1280（原源更小不放大），每图3MiB、detail=original；旧V1–V4仍512/1MiB，管线hash与配置身份分别钉住版本和prompt。新配置创建新run，恢复不得提升旧证据尺寸。
 
+同日V5在31.5s单帧外观重复作动作后，新增 `config.detailed-v6.example.json` / phase0-vision-v6 / pipeline `phase0-analyze-detailed-v2`，hash a60d114d9dd8bf82c5d2ea62c30c4cfe2b4316b08de34ade3cba883d6de9ea00。能力/六字段/事实限制与V5一致；提示先确认多帧主体动作再补外观，输出前自检不同端点/引用和uncertainty类型，单帧/纯切镜省略。Parser保护不松、V1–V5字节冻结，失败V5不换prompt续跑；V6另起run。细节准确性及轻微待机/静态边缘仍须人评。
+
 `search` 指定 Completed run；找不到或完整性失败时返回明确错误。默认 hybrid，也可 lexical/semantic；候选含 candidateId/mediaId/eventId、startUs/endUs、startTimecode/endTimecode、rank、score/scoreKind、evidenceIds、observableFacts/why。时间为半开区间，分数不是事实概率。排序确定，去重后保留排名和证据；空结果合法并附 abstentionReason。检索记录与向量在 schema v3 中保存，分析输出保持不可变。
 
 stdout 为结果或 JSON；进度/JSON 诊断写 stderr。退出码：0 成功，2 输入，3 环境/配置，4 Provider，5 存储/完整性，6 benchmark 未过门槛，7 预算停止，130 用户取消。JSON 错误含 code、runId、retryable、友好说明，不含凭据。

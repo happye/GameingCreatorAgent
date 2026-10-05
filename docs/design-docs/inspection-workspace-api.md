@@ -24,7 +24,7 @@ root：`ui/server.py`、`ui/service.py`、新 `ui/media.py`、HTTP行为测试�
 
 保留已有 `artifact,runId,runStatus,timeline,candidates,abstentionReason,ordering`。
 
-`analysisKind/analysisProfile`与runs同义。V5为“细节动作（试验）”，v3/v4为“连续动作（试验）”，旧run为“画面观察”。初次打开优先Completed detailed，其次Completed temporal；显式选择或刷新保持所选run。标签表示管线身份，不表示F006通过。
+`analysisKind/analysisProfile`与runs同义。V5/V6为“细节动作（试验）”，v3/v4为“连续动作（试验）”，旧run为“画面观察”。初次打开优先Completed detailed，其次Completed temporal；显式选择或刷新保持所选run。标签表示管线身份，不表示F006通过。
 
 - `media:{id,name,durationUs,sha256,videoUrl}`。
 - timeline行保留 `eventId,startUs,endUs,startTimecode,endTimecode,observableFacts,evidenceIds`，新增 `mechanicTags`。
@@ -45,3 +45,5 @@ root：`ui/server.py`、`ui/service.py`、新 `ui/media.py`、HTTP行为测试�
 导出仅用户已选区间的JSON/CSV，不渲染MP4。JSON含schemaVersion=1、project/run/media身份、retrievalVersion、query/mode、selectedClips（微秒、timecode、原证据、事实、rank/score）。导出前重新匹配当前run的事件或候选，拒绝过期区间；不得把选中状态当人工有用度或humanLabels.confirmed。
 
 2026-10-05导出仍schemaVersion=1，增加factsProjectionVersion；selectedClips.observableFacts仅在身份校验后复制为显示投影，增加uncertainty，CSV相应增加两列。localStorage和原数据库事实不重写，旧篮子恢复时重新从当前事件取得显示/不确定性；改写rawfacts冒充投影会被拒。技术evidenceIds仍完整保留。
+
+普通CLI与benchmark的持久化search JSON同样带factsProjectionVersion、displayFacts、事件原uncertainty和清理后的displayUncertainty；run-demo表格使用投影并显示待核对列。原observableFacts和CandidateClip身份不改，uncertainty不加入正面索引，audio-only候选目前无事件不确定性映射。

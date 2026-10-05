@@ -49,3 +49,13 @@ resume2同窗口再失败，有限数值诊断两次都startUs31500000/endUs3150
 额度恢复接续：e26956a已保存未提交集成并将HANDOFF整理为单一当前快照。detail_v6_completion接着原worktree实现，dff948e→02cb7b2已集成；V6最终hash a60d114d9dd8bf82c5d2ea62c30c4cfe2b4316b08de34ade3cba883d6de9ea00，V1–V5不变，provider联合264passed/3旧版本断言排除（root均改V7）。Root合同/配置/恢复/pilot174passed（2.56s），真实dry visual-details-v6-atom-dry已冻结31.5–35.5s；尚无V6API。CLI普通/benchmark输出rawuncertainty+displayUncertainty、run-demo待核对列补齐，raw事实不变；定向94项先通过，benchmark新增持久化合同另测。
 
 只读复核真实35s文本对“白发 穿红色外套”仍匹配（特征来自不同人物），证实TD009；uncertainty中孤立“权杖”不索引，但facts已误写“武器”时不会被不确定性自动纠正。后续须候选主体局部ID、observed/uncertain属性与证据、同人AND合同，不能用事件全文AND假装已解。GitHub本次只读重试仍443超时，尚无远端同步。
+
+V6真实31.5–35.5对照 `visual-details-v6-atom-execute` completed：A/B/C均3事件，B/C跳过此前单帧31.5s事件，起止至少32–32.5s；static空、倒序发送前拒绝。4HTTP/36图估价¥0.01854028/unknown0。仍有待机/静态边缘：B第一段事实称没有明显动作，仅静态展示，C称轻微晃动，属性仍有颜色/配饰误认；不把格式成功当动作理解。Root继续完整新V6run，预算¥4.87186204（总5减两pilot与failedV5，已知合¥0.12813796），全部旧run保持不变。
+
+## 2026-10-05 完整 V6 已完成；补交付验收
+
+新 Completed Atom run `f601fb9b3e734d5ea188fc15c790acbb`，54.743220s，16/16窗口首次完成，33事件、0转录；V6 hash `a60d114d9dd8bf82c5d2ea62c30c4cfe2b4316b08de34ade3cba883d6de9ea00`，detailed-v2。模型估价 ¥0.10270124、unknown0、providerElapsedMs42467。本轮所有成功/失败/控制费用合 ¥0.23083920，在5元总上限内，不是账单。正文/uncertainty未发现独立fN，18事件有待核对。
+
+最新完整 verify：876 passed / 1 Windows 文件 symlink权限skip，78.81s；Ruff86文件、mypy49、CLI、两次离线wheel。wheel SHA `5fc900a156bf27011c648f26b0c60ab4a944f6eaafc4396d24f6efd6614c7836`；日志 `.cache/detail-v6-verify.log`，分析日志 `.cache/detail-v6-atom-analyze.log`。代码c400188；查询/浏览器/生产服务刷新尚在补验收。
+
+真实V6仍有问题：28s蓝色物体断言“武器”、32s轻微待机写成事件、38–39s切镜声称同一角色持续跑动。自由文本检索不能保证多属性同一主体（TD009）；actor-detail-spec worktree只写两篇新规格/任务文档。不放松动作/证据parser，不改旧run/facts/config；F006/F009/F010仍false。

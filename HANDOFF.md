@@ -1,44 +1,46 @@
 # 当前交接
 
-更新时间：2026-10-05（Asia/Hong_Kong）。Codex、Claude Code、Grok Build共用；历史见progress.md，验收见feature_list.json。
+更新时间：2026-10-05（Asia/Hong_Kong）。Codex、Claude Code、Grok Build 共用；历史见 progress.md，验收见 feature_list.json。
 
 ## 当前结论
 
-root分支codex/visual-details，已提交检查点e9183b3；额度中断后用户授权继续。本轮F010可见细节和图片编号修正尚未完整交付。F006/F009/F010保持false，不能把JSON合法、命中数或UI测试当独立人评。
+root 分支 codex/visual-details，代码检查点 c400188。额度中断后已核对并继续：V6 完整 Atom 分析已完成，正在补实际查询、浏览器和启动验收。F006/F009/F010 保持 false；工程检查、JSON 合法及命中数不替代独立人评。
 
-V5完整Atom运行c78f204907e04eb3a2ac97a9017dcad9保留failed：9/16窗口、24事件。31.5–35.5s两次出现同一时刻31500000us首尾，parser正确拒绝单帧动作。已停止重复V5；V6新增动作优先、自检不同端点及省略单帧外观的提示，仍在独立worker实现，不能松保护或改旧prompt。
+新 Completed run **f601fb9b3e734d5ea188fc15c790acbb**：artifacts/demo-phase0，54.743220s / 16 窗口 / 33 事件 / 0 转录；16 个视觉窗口首次尝试全部完成。prompt phase0-vision-v6 / hash a60d114d9dd8bf82c5d2ea62c30c4cfe2b4316b08de34ade3cba883d6de9ea00；pipeline phase0-analyze-detailed-v2。配置 config.detailed-v6.example.json。正文及 uncertainty 未发现独立 fN；18 个事件含待核对。模型估价 ¥0.10270124，unknown 0，providerElapsedMs 42467；不是账单。
 
 ## 已实现与验证
 
-- V5独立prompt/hash与1280宽/9图/3MiB/detailoriginal；V1–V4仍512/1MiB，旧hash/parser不变。主体衣着/外观/持有物/环境/效果写成紧凑事实，不确定属性不作正面索引。
-- 新正文alias仅能用当前事件已引用的原窗口编号映射真实源时间；未引用/越界编号拒绝。历史事实不重写，用legacy-frame-alias-neutral-v1清理显示/视觉索引/下载；键盘F1和普通标识保留。
-- UI显示待核对信息、Completed detailed优先；raw事实与旧篮子身份校验不改。检索bm25-e5-rrf-v5，新passage文本hash与旧向量缓存分开；阈值/否定保护保留。
-- 完整verify847passed/1Windows文件symlink权限skip，82.21s；Ruff85/mypy49/CLI/两次离线wheel通过，SHA74728027088611445833fc4cb8802dbcaec8ca1a255b8357e0f91917c6bc459e，日志.cache/detail-verify-final.log。这是V6集成前基线。
-- root恢复中的改动包括V6config/store/analysis白名单、detailed-v2、UIprofile、pilot可选V6和CLI displayFacts/run-demo投影；定向66passed（7.92s），真实V6provider/config/hash尚未集成，不是完整验证。
+- V5/V6：1280 宽 / 9 图 / 3MiB / detail=original；V1–V4 保持 512 / 1MiB，旧 hash/parser 不变。衣着、外观、持有物、环境、效果写成紧凑事实；V6 先判断连续动作资格，要求不同源时刻和正确边界。
+- 新事实的编号只允许当前事件已引用的原窗口帧，映射真实源时间；未引用或越界编号拒绝。旧事实不重写，用 legacy-frame-alias-neutral-v1 清理显示、视觉索引和下载；保留键盘 F1 与普通标识。
+- UI 显示待核对、Completed detailed 优先；原始事实与旧篮子身份校验保留。检索 bm25-e5-rrf-v5，新 passage 文本 hash 隔离旧向量缓存，阈值及明确动作否定保护不改。CLI 普通/benchmark 保存 uncertainty/displayUncertainty，run-demo 显示待核对。
+- **完整 verify：876 passed / 1 Windows 文件 symlink 权限 skip，78.81s**；Ruff86文件、mypy49源文件、CLI与两次离线wheel通过。wheel SHA 5fc900a156bf27011c648f26b0c60ab4a944f6eaafc4396d24f6efd6614c7836；日志 .cache/detail-v6-verify.log。
 
-## 真实记录与费用
+## 实验、费用和限制
 
-artifacts/visual-details-atom-execute已完成：28–32及35–39s，A=V4/512、B=V5/512同九帧，C=V5/1280同源时刻。A/B/C均3事件，两静图空、两倒序发送前拒绝；8HTTP/72图，估价¥0.03676864，unknown0。全部冻结源/hash/配置/费用；dry和1280证据预览保留在独立目录。
+本轮细节任务全部成功、失败及控制请求合计估价 **¥0.23083920 / unknown 0**，上限 ¥5。组成：V5对照 ¥0.03676864、失败V5 run ¥0.07282904、V6对照 ¥0.01854028、新V6完整run ¥0.10270124。费用不含旧V4历史实验，不是账单；全部证据目录保持 ignored。
 
-V5部分运行共12HTTP、估价¥0.07282904、unknown0，含一次uncertainty错误与两次同端点错误。合计本轮¥0.10959768，非账单；后续合计实际及未知承诺上限¥5，不能重置失败费用。下一V6run最多¥4.89040232，若先做V6pilot需再扣其承诺。
+V5对照 artifacts/visual-details-atom-execute：28–32和35–39s，A=V4/512、B=V5/512同九帧，C=V5/1280同源时刻；8HTTP/72图。V6对照 artifacts/visual-details-v6-atom-execute：31.5–35.5s，A=V4/512、B=V6/512、C=V6/1280；4HTTP/36图。两组静图控制空、倒序发送前拒绝；V6跳过31.5s单帧首尾，轻微待机仍可能被算事件。
 
-细节增加已观察到，但35s护目镜/发饰、围巾色、28s持有物分类仍可能误判；38–39sC跨剪辑声称连续移动。任意复合属性AND/同一主体保证、静态外观独立索引未实现，见TD007/TD009。
+V5 run c78f204907e04eb3a2ac97a9017dcad9 保留 failed / 9 of 16窗口 / 24事件：uncertainty错误及两次相同端点错误，已停止重发，未放松parser。新V6仍有配饰/持有物分类和跨切镜连续性错误，例如28s将蓝色物体写为武器、38–39s声称切镜前后同一角色；不得据此确认具体武器、角色或技能名称。
 
-## 当前可用Demo
+**任意复合属性AND / 同一主体保证尚未实现（TD009）**：自由文本BM25/RRF可能把不同人物的白发、红衣组合命中；不索引uncertainty也不能抵消事实中误认的物品类别。下一步采用独立精分析记录、主体属性及证据绑定、严格匹配和显式部分匹配，不以事件关键词AND冒充解决。
 
-双击Start-Workspace.cmd隐藏启动项目内Python并打开浏览器；重复启动复用，启动不分析或付费。http://127.0.0.1:8765/已只读核对本仓库health PID2548/parent34124，与.cache/workspace/port-8765.json一致（重启前必须重新核对）。用户在额度中断期间已启动新代码，旧PID36692记录过期。
+## 工作台与恢复顺序
 
-当前可检索Completed Atom仍为96b5f01530ce43e2944828fb0520b9b4：54.743220s/V4/16窗口40事件，估价¥0.05029788。旧漫画f76f5d6495314c04ae04083614d4afd6保留。失败V5可查看已完成时间轴，但不能当完整检索demo。新V6完成且浏览器验证后再设为默认。
+双击 Start-Workspace.cmd 打开 http://127.0.0.1:8765/；重复启动复用匹配服务，启动不分析或付费。新V6已在数据库，前端优先 Completed detailed；实际默认、播放、证据和导出待本轮核对。
 
-## 归属与恢复顺序
+服务最后核对为本仓库 PID2548 / parent34124，与 .cache/workspace/port-8765.json 一致；这是旧进程快照，**重启前重新核对health和状态，仅停止匹配的自有进程**。旧Atom V4 run96b5f01530ce43e2944828fb0520b9b4和漫画f76f5d6495314c04ae04083614d4afd6原数据保留。
 
-- detail_v6_completion：现有.worktrees/detail-v6/codex/detail-v6，独占deepseek_vision.py、test_detail_action_eligibility.py、sprint-detail-v6-worker.md；接着断额度前未提交实现，禁止回退root的事件引用保护。
-- root：配置/SQLite/analysis/CLI/UIprofile、pilot版本支持、真实调用、共享文档及集成。其余V5vision/presentation/pilot worktree冻结，禁止覆盖root。
-- detail_retrieval_audit：只读CLI/旧篮子/向量身份复核和后续精分析建议，无编辑/API。
+- root：config/store/analysis/CLI/UIprofile、真实调用、查询/浏览器、共享文档与集成。
+- detail_v6_completion：dff948e→02cb7b2已集成并冻结；.worktrees/detail-v6勿回写root。
+- detail_retrieval_audit：.worktrees/actor-detail-spec / codex/actor-detail-spec，仅新增actor-detail-matching-spec.md与sprint-actor-detail-matching.md；规格与任务拆分进行中，无API。
+- 其他V5 vision/presentation/pilot worktrees全部冻结。
 
-1. 先核对git status/HEAD/owner与worker未提交状态，保存当前改动，集成V6独占提交并钉实际promptHash；旧V5及failedrun不改。
-2. 验证V6合同、配置与续跑，冻结31.5–35.5s真实对照（含静图/倒序）；所有尝试逐case记录，修复单帧误报才生成完整新run，不重放旧请求碰运气。
-3. 完整新run后查细节查询三模式、真实浏览器播放/证据/显示/下载/旧数据不变；核对当前health与PID记录再重启自有服务，启动脚本仍不付费。
-4. 完整verify、规格/API/手册/feature_list/assignments/progress/HANDOFF同步。GitHub上次443超时，当前只读重试中；本地commit不等于远端已同步，禁止强推或全局网络配置。
+1. 核对status/HEAD/owner；新run与完整verify已落盘，不重复付费分析。
+2. 新V6跑lexical/semantic/hybrid细节查询，保存实际命中、时间、待核对与负例；质量保持未评。
+3. scripts/validate-inspection-ui.py验证播放/证据/细节标签/旧篮子/JSON/CSV；核对health再重启自有服务，实际运行Start-Workspace.cmd。
+4. 集成主体精确匹配规格，同步手册/feature_list/分工/progress并保存提交，后续按新sprint接续。
 
-环境只能在.tools/.venv/.cache，先env.ps1+Python -B；密钥只使用现有进程DEEPSEEK_API_KEY，不打印/复制聊天密钥。长任务和每个验证节点主动落盘/提交，不等额度提醒。完整实现历史与失败明细见docs/exec-plans/sprint-visual-details.md；旧V4记录见sprint-temporal-gameplay.md。
+GitHub github.com:443多次连接失败，远端最新状态未确认；本地提交不等于远端同步。完成后重试命令级HTTP/1.1常规push，禁止强推或改全局网络配置。
+
+环境只用.tools/.venv/.cache，先env.ps1+Python -B；密钥只使用既有进程DEEPSEEK_API_KEY，不打印或复制聊天密钥。每个验证节点及长任务前更新sprint/HANDOFF并提交检查点，不能等额度提醒。详细失败记录见docs/exec-plans/sprint-visual-details.md。
