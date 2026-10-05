@@ -1,19 +1,61 @@
 """One read of a project run: source-time events plus an optional shipped search."""
 
+import json
 import mimetypes
 from decimal import Decimal
 from pathlib import Path
 from urllib.parse import urlencode
 
+from gamingcreator.application.detail_refinement import (
+    RefinementIdentity,
+    RefinementSettings,
+    default_refinement_identity,
+    refinement_settings_hash,
+)
+from gamingcreator.application.detail_refinement_budget import canonical_detail_json
 from gamingcreator.application.inspection import InspectionView, inspection_view
 from gamingcreator.application.observation_text import FACTS_PROJECTION_VERSION, display_facts
 from gamingcreator.application.retrieval import RETRIEVAL_VERSION, CandidateClip, RetrievalMode
-from gamingcreator.application.storage import RunStatus, StoredInvocation
+from gamingcreator.application.storage import RunStatus, StoredInvocation, StoredTimeline
 from gamingcreator.cli.main import execute_search
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.time import SourceInstant, SourceRange
+from gamingcreator.infrastructure.detail_refinement_sidecar import reuse_or_refuse
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 from gamingcreator.ui.media import MediaResource
+
+DETAIL_INSPECTION_VERSION = "actor-detail-inspection-v1"
+
+
+def _refinement_payload(
+    project: Path,
+    timeline: StoredTimeline,
+    event_id: str | None,
+    settings: RefinementSettings,
+    identity: RefinementIdentity,
+) -> dict[str, object]:
+    """Read a frozen key. Availability does not establish a compound query match."""
+    payload: dict[str, object] = {
+        "status": "unverified",
+        "availability": "run_incomplete",
+        "requestHash": None,
+        "detail": None,
+    }
+    if timeline.run.status != RunStatus.COMPLETED:
+        return payload
+    if event_id is None:
+        payload["availability"] = "unsupported"
+        return payload
+    outcome = reuse_or_refuse(project, timeline, event_id, settings=settings, identity=identity)
+    payload["requestHash"] = outcome.request_hash
+    payload["availability"] = (
+        "reused" if outcome.reused else "missing" if outcome.request is not None else "unsupported"
+    )
+    if outcome.detail is not None:
+        detail = json.loads(canonical_detail_json(outcome.detail))
+        detail["unassignedEvidenceIds"] = list(outcome.detail.unassigned_evidence_ids)
+        payload["detail"] = detail
+    return payload
 
 
 def _timecode(microseconds: int) -> str:
@@ -212,7 +254,10 @@ async def inspect_run(
     artifact = str((project / "timeline.sqlite3").resolve())
     store = await SqliteTimelineStore.open(project, read_only=True)
     try:
-        timeline = await store.load_timeline(run_id, require_completed=False)
+        run = await store.load_run(run_id)
+        timeline = await store.load_timeline(
+            run_id, require_completed=run.status == RunStatus.COMPLETED
+        )
     finally:
         await store.close()
     candidates: tuple[CandidateClip, ...] = ()
@@ -232,15 +277,29 @@ async def inspect_run(
     profile = _analysis_profile(timeline.run.configuration.analysis.vision_prompt_version)
     event_tags = {event.event_id: event.mechanic_tags for event in timeline.events}
     event_uncertainty = {event.event_id: event.uncertainty for event in timeline.events}
+    settings = RefinementSettings()
+    refinement_identity = default_refinement_identity()
+    refinements = {
+        event.event_id: _refinement_payload(
+            project, timeline, event.event_id, settings, refinement_identity
+        )
+        for event in timeline.events
+    }
     rows = payload["timeline"]
     assert isinstance(rows, list)
     for row in rows:
         row["mechanicTags"] = list(event_tags[row["eventId"]])
         row["uncertainty"] = event_uncertainty[row["eventId"]]
+        row["detailRefinement"] = refinements[row["eventId"]]
     candidate_rows = payload["candidates"]
     assert isinstance(candidate_rows, list)
     for row in candidate_rows:
         row["uncertainty"] = event_uncertainty.get(row["eventId"])
+        row["detailRefinement"] = (
+            refinements[row["eventId"]]
+            if row["eventId"] is not None
+            else _refinement_payload(project, timeline, None, settings, refinement_identity)
+        )
     payload.update(
         {
             "media": {
@@ -283,6 +342,15 @@ async def inspect_run(
             ],
             "cost": cost_payload(timeline.invocations),
             "retrievalVersion": RETRIEVAL_VERSION,
+            "detailRefinementProfile": {
+                "version": DETAIL_INSPECTION_VERSION,
+                "settingsHash": refinement_settings_hash(settings),
+                "schemaVersion": refinement_identity.schema_version,
+                "promptVersion": refinement_identity.prompt_version,
+                "promptHash": refinement_identity.prompt_hash,
+                "provider": refinement_identity.provider,
+                "requestedModel": refinement_identity.requested_model,
+            },
             "configHash": timeline.run.config_hash,
             "analysisKind": "temporal"
             if profile in ("temporal", "detailed")

@@ -21,7 +21,12 @@
 - `git status`/branch/log 已核对，继承的未提交代码归属已确认。
 - `./scripts/init.ps1 -CheckOnly`：11 features，通过。
 - `./scripts/init.ps1`：固定项目工具与媒体环境可用；Python 打印既有 real-location 诊断，后续以完整 verify 为准。
-- 继承的 `test_detail_refinement.py` + `test_detail_budget_sidecar.py` 定向复测运行中；完成后补结果。
+- 继承的 `test_detail_refinement.py` + `test_detail_budget_sidecar.py` 连同本轮读取补充定向复测：15 passed/0skip（0.75s）。沙箱内首跑卡在 asyncio 本机 socketpair 初始化，faulthandler 已定位；中断两次本工具启动的测试后允许本机回环重跑成功，未改产品事件循环。
+- 已保存继承检查点 `16f727f`。检查接口/UI与17项新回归已实现；Ruff与mypy 54源文件通过。首个集成回归发现旧短ID兼容和schema1 fixture丢hash，已修正，保留旧合同。后续新测试15项读取/坏hash/未知版本/设置隔离/源篡改/逃逸已通过；最后两项浏览器fixture原放在发现层级之外，已调整为既有 `artifacts/*/timeline.sqlite3` 深度，待复测。
+- 一次复测在sessionfinish碰到Windows pytest cache临时目录rename权限失败，已改为预建本轮独立cache目录，不删除/改权限、不忽略warnings。完整verify前保留此失败证据。
+- 修正后集成复测：86 passed/1 Windows文件symlink权限skip/2 failed（18.07s）；最后两个浏览器检查发现JSON导出原有spread会夹带新增detailRefinement，已显式剔除。UI仍从当前视图读取详情，篮子持久化和schema1导出不携带结构，待最终复测。
+- 最终相关定向回归 **88 passed/1 Windows文件symlink权限skip（18.18s）**，其中本轮新增17项全部通过，含真实浏览器安全文本、已保存属性/uncertain与支持帧、同run篮子恢复及原事实导出。Ruff格式/检查与mypy54源文件通过。
+- `scripts/verify.ps1`补预建本轮cache目录，防止本次实测的pytest cache rename权限故障；只改项目临时目录准备，不降检查或改宿主配置。完整verify与真实V6 smoke即将运行，结果待补。
 
 ## 恢复
 

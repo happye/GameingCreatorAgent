@@ -14,6 +14,8 @@ from typing import BinaryIO
 from gamingcreator.application.detail_refinement import (
     DetailRefinementProvider,
     DetailRefinementRequest,
+    RefinementIdentity,
+    RefinementSettings,
     canonical_request_json,
     event_fingerprint,
     prepare_refinement,
@@ -56,10 +58,10 @@ def _confined(root: Path, path: Path) -> Path:
     if _linked(resolved_root):
         raise _fail("refinement.path", "项目目录不能是符号链接。")
     current = path
-    if current.exists() and _linked(current):
+    if _linked(current):
         raise _fail("refinement.path", "精分析路径拒绝符号链接。")
     while True:
-        if current.exists() and _linked(current):
+        if _linked(current):
             raise _fail("refinement.path", "精分析路径拒绝符号链接。")
         if current == resolved_root:
             break
@@ -107,7 +109,8 @@ def _read_bytes(path: Path, root: Path) -> bytes:
     confined = _confined(root, path)
     if _linked(confined) or not confined.is_file():
         raise _fail("refinement.damaged", "精分析记录不是项目内的普通文件。")
-    data = confined.read_bytes()
+    with confined.open("rb") as handle:
+        data = handle.read(_MAX_JSON_BYTES + 1)
     if len(data) > _MAX_JSON_BYTES:
         raise _fail("refinement.too_large", "精分析记录超过 1MiB。")
     return data
@@ -311,6 +314,7 @@ def freeze_request(project: Path, request: DetailRefinementRequest) -> str:
 def _published(project: Path, request: DetailRefinementRequest) -> CandidateDetail | None:
     directory = sidecar_directory(project, request.run_id, request_hash(request))
     target = directory / "result.json"
+    _confined(project.resolve(), target)
     if not target.exists():
         return None
     document = _loads(target, project.resolve())
@@ -329,10 +333,12 @@ def _published(project: Path, request: DetailRefinementRequest) -> CandidateDeta
         raise _fail("refinement.hash_mismatch", "已发布结果的载荷哈希不匹配。", request.run_id)
     try:
         detail = detail_from_canonical(payload_json)
-    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+    except (KeyError, TypeError, ValueError, AttributeError):
         raise _fail(
             "refinement.damaged", "已发布结果不是有效的主体结构。", request.run_id
         ) from None
+    if canonical_detail_json(detail) != payload_json:
+        raise _fail("refinement.damaged", "已发布结果不是冻结的规范格式。", request.run_id)
     if not detail_matches_request(detail, request):
         raise _fail("refinement.source_mismatch", "已发布结果与当前候选不一致。", request.run_id)
     if document.get("modelRevision") is not None and type(document.get("modelRevision")) is not str:
@@ -364,9 +370,16 @@ def _event(timeline: StoredTimeline, event_id: str) -> SemanticEvent:
     return event
 
 
-def reuse_or_refuse(project: Path, timeline: StoredTimeline, event_id: str) -> RefinementOutcome:
+def reuse_or_refuse(
+    project: Path,
+    timeline: StoredTimeline,
+    event_id: str,
+    *,
+    settings: RefinementSettings | None = None,
+    identity: RefinementIdentity | None = None,
+) -> RefinementOutcome:
     """Read a sidecar or return unverified. This never calls a provider."""
-    prepared = prepare_refinement(timeline, event_id)
+    prepared = prepare_refinement(timeline, event_id, settings=settings, identity=identity)
     event = _event(timeline, event_id)
     if prepared.request is None or prepared.request_hash is None:
         return RefinementOutcome(MatchStatus.UNVERIFIED, None, None, None, False)
@@ -380,7 +393,11 @@ def reuse_or_refuse(project: Path, timeline: StoredTimeline, event_id: str) -> R
     stored = _loads(directory / "request.json", project.resolve())
     canonical = stored.get("canonicalJson")
     if (
-        stored.get("runId") != prepared.request.run_id
+        type(stored.get("schemaVersion")) is not int
+        or stored.get("schemaVersion") != 1
+        or stored.get("basePromptVersion") != prepared.request.base_prompt_version
+        or stored.get("basePromptHash") != prepared.request.base_prompt_hash
+        or stored.get("runId") != prepared.request.run_id
         or stored.get("requestHash") != prepared.request_hash
         or stored.get("eventFingerprint") != prepared.request.event_fingerprint
         or type(canonical) is not str

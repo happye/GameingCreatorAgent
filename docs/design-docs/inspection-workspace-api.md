@@ -36,11 +36,19 @@ root：`ui/server.py`、`ui/service.py`、新 `ui/media.py`、HTTP行为测试�
 - `cost:{knownCny,unknownAttempts,status}`；knownCny是已知部分的Decimal字符串，未知项单独计数，缺DeepSeek价格版本或unverified记录不得算零/已知金额，估价不是账单。
 - `retrievalVersion`、`configHash`、`query`、`mode`，用于导出来源追踪。
 
+2026-10-05只读精分析接入：顶层新增 `detailRefinementProfile:{version:"actor-detail-inspection-v1",settingsHash,schemaVersion,promptVersion,promptHash,provider,requestedModel}`，固定为当前 Application 的 `RefinementSettings()` 与独立 `default_refinement_identity()`；不接受任意侧车路径，不扫描mtime选版本，不自动解析自由查询约束。
+
+timeline/candidate行新增 `detailRefinement:{status:"unverified",availability,requestHash,detail}`。availability为 `missing`（该冻结key未发布结果）、`reused`（完整校验后复用）、`unsupported`（无视觉事件或旧数据缺合同兼容的版本/身份）、`run_incomplete`。非事件音频候选requestHash为null。detail缺失为null；复用时为actor-details-v1规范主体结构并增加计算出的unassignedEvidenceIds，保留镜头、主体、部件、observed/uncertain、原候选区间与支持源帧，不覆盖observableFacts或rank。没有typed QueryConstraint时status始终unverified，reused不等于full或人工认可。
+
+读取先重验Completed timeline/source/evidence，再按计算出的requestHash检查不可变request、base prompt、schema、canonical payload/hash和来源。损坏/错身份/未知版本/越界路径或符号链接为明确409/refinement错误，不退成空详情；每JSON最多1MiB。缺侧车不建目录，刷新/查询不写侧车、不预留预算、不实例化Provider。非空查询仍可追加原检索记录。`cost`继续表示base run的账本，精分析历史费用不在本切片合并；只读复用不产生新推理费用。
+
 ## 页面行为与导出
 
 按原方案§12提供素材/视频/查询三个区域和下方时间轴。事件/候选可点击seek并播放到end自动暂停；证据图可查看源帧。文本全部用textContent等安全DOM API，不插入模型HTML。
 
 查询结果按rank保留，时间轴按源时间；时间轴文本/标签筛选不更改候选排名。页面可选择片段，按 project+run 隔离，localStorage只保存选中候选，不写密钥。片段篮显示、保存和JSON/CSV统一按startUs、endUs、稳定身份升序，保留每片原rank/查询来源。切换run清空旧显示；同run重绘保留列表scrollTop，改变时间轴筛选回到列表开头。
+
+选中片段时证据页显示主体详情未验证原因，复用结构可展开按镜头/主体/部件查看属性及支持帧，uncertain明确标待核对。所有模型描述用textContent；详情从当前检查视图读取，不写入localStorage篮子或schema1 JSON/CSV导出，旧篮子仍按rawfacts/区间/证据验证。点击、打开、刷新、搜索均不发精分析请求。
 
 导出仅用户已选区间的JSON/CSV，不渲染MP4。JSON含schemaVersion=1、project/run/media身份、retrievalVersion、query/mode、selectedClips（微秒、timecode、原证据、事实、rank/score）。导出前重新匹配当前run的事件或候选，拒绝过期区间；不得把选中状态当人工有用度或humanLabels.confirmed。
 

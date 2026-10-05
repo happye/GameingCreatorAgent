@@ -14,6 +14,8 @@ try {
   # Separate verification runs never reuse another Windows user's locked pytest directories.
   $testRunRoot = Join-Path $repositoryRoot ('.cache/pytest-runs/' + [guid]::NewGuid().ToString('N'))
   New-Item -ItemType Directory -Path $testRunRoot -Force | Out-Null
+  # Avoid pytest's temporary cache-directory rename on Windows filesystem locks.
+  New-Item -ItemType Directory -Path (Join-Path $testRunRoot 'cache') -Force | Out-Null
   $pytestArguments = @('-m', 'pytest', '-W', 'error', '--basetemp', (Join-Path $testRunRoot 'tmp'), '-o', ('cache_dir=' + (Join-Path $testRunRoot 'cache')))
   foreach ($arguments in @(@('-m', 'ruff', 'format', '--check', 'src', 'tests', 'scripts/validate-media.py', 'scripts/validate-storage.py', 'scripts/validate-inspection-ui.py', 'scripts/validate-temporal-gameplay.py', 'scripts/validate-visual-details.py'), @('-m', 'ruff', 'check', 'src', 'tests', 'scripts/validate-media.py', 'scripts/validate-storage.py', 'scripts/validate-inspection-ui.py', 'scripts/validate-temporal-gameplay.py', 'scripts/validate-visual-details.py'), @('-m', 'mypy'), $pytestArguments)) {
     & $pythonPath @arguments

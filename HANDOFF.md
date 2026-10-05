@@ -4,6 +4,10 @@
 
 ## 当前结论
 
+2026-10-05 Codex 已顺序接续 Grok，并保存继承检查点 `16f727f`。只读 sidecar 已接到 `/api/inspect`，timeline/candidates新增版本化detailRefinement；UI证据页显示未验证或按镜头/主体/部件展开已保存结构，复用不表示复合条件full。旧短ID/无base prompt hash数据为unsupported/unverified，原事实/排名/篮子/导出保留。新17项测试与相关回归 **88 passed / 1 Windows文件symlink权限skip（18.18s）**，Ruff/mypy54通过。完整verify与真实V6 smoke待执行；恢复以 `docs/exec-plans/sprint-detail-inspection.md` 为准。无新API，未知预留/F006/F009/F010不变。
+
+以下为接续基线与已有实验记录，最新验证以本轮段落和sprint为准。
+
 root分支codex/visual-details，HEAD `8b71c38`。精分析 sidecar 与共享预算会话已在 root 落地，未调用 API，未改 vision prompt、raw events 或 SQL。侧车按冻结 requestHash 保存不可变 request、追加 attempts 和原子 result；缺记录为 unverified。同一预算账本里的未知预留在恢复和另一个 budget 目录下仍然占额度。未完成尝试的检查在预算锁内再次执行，重叠的两次 `send_refinement` 只有一次调用 provider。定向 `tests/test_detail_budget_sidecar.py` 连续两次都是 9 passed（0.34s）。`tests/test_detail_refinement.py` 复核 6 passed（0.32s），Completed run `f601fb9b3e734d5ea188fc15c790acbb` 的事件 `0b8be73b204cceb6f0e37c7d` 仍保持原区间、证据 id、图像 hash 和整数源微秒；非视觉候选仍 unverified。新鲜进程两次 reuse-or-refuse 都是 unverified、provider 调用 0，request hash `6e9ee8f0c25212e7bd7c401a6dcfa972544e4121494100a7083a2270604c480f`。最新完整 verify **982 passed / 1 Windows 文件 symlink 权限 skip，68.06s**；Ruff 95 文件、mypy 54 源文件、CLI 与两次离线 wheel 通过。wheel SHA `cf3574ff00d50ffc4df52f0652921ee6fa34160e48b0356aba47320a5fe79330`。F006/F009/F010 保持 false。没有 retry 漫画 run `0ba106578bc7435c8689d12892a35dfb`。打Boss、跳跃、射击和复合主体查询都没有修好。
 
 新 Completed run **f601fb9b3e734d5ea188fc15c790acbb**：artifacts/demo-phase0，54.743220s / 16 窗口 / 33 事件 / 0 转录；16 个视觉窗口首次尝试全部完成。prompt phase0-vision-v6 / hash a60d114d9dd8bf82c5d2ea62c30c4cfe2b4316b08de34ade3cba883d6de9ea00；pipeline phase0-analyze-detailed-v2。配置 config.detailed-v6.example.json。正文及 uncertainty 未发现独立 fN；18 个事件含待核对。模型估价 ¥0.10270124，unknown 0，providerElapsedMs 42467；不是账单。
@@ -44,7 +48,7 @@ V5 run c78f204907e04eb3a2ac97a9017dcad9 保留 failed / 9 of 16窗口 / 24事件
 - detail_retrieval_audit新测试：.worktrees/actor-detail-tests / codex/actor-detail-tests，410bb245已集成冻结；最终钉2e95485联合94passed/0skip，73新domain反例，own sprint已在root。旧spec worktree冻结，禁止共享writer。
 - 其他V5 vision/presentation/pilot worktrees全部冻结。
 
-下一条工作：只读把 sidecar 的 unverified 或复用结果接到检查接口，在未知预留得到处理之前不要发起新的 API 调用；不要宣称打Boss、跳跃、射击或复合主体查询已修好。
+本轮正在完成只读检查接入的完整verify与真实V6复测。下一开发任务：独立精分析Provider的冻结prompt/parser与完整attempt metadata、取消/中断恢复合同先做离线fixture；随后按typed QueryConstraint接纯matcher，继续显式版本读取。未知预留得到处理/明确新预算前不要发新API；不要宣称打Boss、跳跃、射击或复合主体查询已修好。
 
 恢复时先核对 status/HEAD。本轮 ports 改动尚未提交，不要强推。未知预留 ¥4.065536 仍在，禁止 retry `0ba106578bc7435c8689d12892a35dfb` 或换目录清账。默认开页、查询和刷新仍是 0 API。远端 main 仍只记录到最后已知 `72d692b`，未再确认。
 

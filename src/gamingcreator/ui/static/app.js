@@ -16,7 +16,7 @@
         "export-csv", "timeline-count", "timeline-filter", "tag-filter", "timeline-map",
         "timeline-end", "video-scrubber", "timeline-list", "filter-summary",
         "evidence-dialog", "evidence-dialog-title", "close-evidence", "evidence-full",
-        "evidence-dialog-detail",
+        "evidence-dialog-detail", "detail-status", "actor-details", "actor-detail-list",
     ].map((id) => [id, byId(id)]));
     const state = {
         project: "", run: "", revision: 0, runs: [], view: null, active: null,
@@ -194,6 +194,7 @@
             if (current && clipMatches(entry.clip, current)) {
                 return { clip: entry.kind === "event" ? current : {
                     ...entry.clip, displayFacts: current.displayFacts, uncertainty: current.uncertainty,
+                    detailRefinement: current.detailRefinement,
                 }, against: "timeline" };
             }
         }
@@ -220,8 +221,10 @@
             if (state.selections.length >= 500) return notice("片段篮已达到 500 条，请先移除一些片段。");
             if (state.selections.length && state.basketMediaId !== state.view.media.id) return notice("已保存的片段来自不同素材，请先清空片段篮。");
             state.basketMediaId = state.view.media.id;
+            const clip = JSON.parse(JSON.stringify(row));
+            delete clip.detailRefinement;
             state.selections.push({
-                key, kind, clip: JSON.parse(JSON.stringify(row)),
+                key, kind, clip,
                 source: {
                     query: kind === "candidate" ? state.view.query : null,
                     mode: kind === "candidate" ? state.view.mode : null,
@@ -279,8 +282,10 @@
         const selectedClips = orderedSelections().map((entry) => {
             const validated = validateSelection(entry);
             if (!validated) throw new Error("片段篮中有尚未匹配当前结果的区间，请核对后再下载。");
+            const clip = JSON.parse(JSON.stringify(validated.clip));
+            delete clip.detailRefinement;
             return {
-                ...JSON.parse(JSON.stringify(validated.clip)),
+                ...clip,
                 observableFacts: facts(validated.clip),
                 displayFacts: facts(validated.clip),
                 uncertainty: uncertaintyOf(validated.clip) || null,
@@ -349,6 +354,7 @@
     function resetView() {
         state.view = null;
         state.active = null;
+        renderActorDetails();
         state.playbackEndUs = null;
         state.pendingSeekUs = null;
         state.sourceUrl = "";
@@ -752,6 +758,7 @@
     }
 
     function renderEvidence() {
+        renderActorDetails();
         const ids = state.active?.row.evidenceIds || [];
         const evidence = (Array.isArray(state.view?.evidence) ? state.view.evidence : []).filter((item) => ids.includes(item.id));
         ui["evidence-count"].textContent = evidence.length;
@@ -791,6 +798,88 @@
                 ui["evidence-list"].append(card);
             }
         }
+    }
+
+    function renderActorDetails() {
+        const row = state.active?.row;
+        const refinement = row?.detailRefinement;
+        const details = refinement?.detail;
+        ui["detail-status"].hidden = !row;
+        ui["actor-details"].hidden = true;
+        ui["actor-details"].open = false;
+        ui["actor-detail-list"].replaceChildren();
+        if (!row) return;
+        const unavailable = {
+            missing: "主体详情未验证：尚无已保存的精分析结果。",
+            unsupported: "主体详情未验证：此片段缺少可用的视觉事件证据或版本身份。",
+            run_incomplete: "主体详情未验证：分析运行尚未完成。",
+        };
+        ui["detail-status"].textContent = unavailable[refinement?.availability]
+            || "主体详情未验证：尚无可用结构。";
+        if (refinement?.availability !== "reused" || refinement.status !== "unverified"
+            || !details || details.runId !== state.run || details.eventId !== row.eventId
+            || details.sourceRange?.startUs !== row.startUs || details.sourceRange?.endUs !== row.endUs
+            || !Array.isArray(details.shots)) return;
+        ui["detail-status"].textContent = "已读取保存的主体详情；复合条件匹配未验证。";
+        ui["actor-details"].hidden = false;
+        const kinds = {
+            hair_color: "发色", clothing_color: "衣着颜色", clothing_shape: "衣着形状",
+            held_shape: "持有物形状", held_class: "持有物类别", action: "动作",
+            effect: "可见效果", environment: "环境",
+        };
+        const values = {
+            white: "白色", black: "黑色", red: "红色", blue: "蓝色", brown: "棕色",
+            orange: "橙色", gray: "灰色", green: "绿色", yellow: "黄色", purple: "紫色",
+            light: "浅色", dark: "深色", upper_garment: "上装", coat: "外套", scarf: "围巾",
+            shorts: "短裤", trousers: "长裤", armor: "盔甲", gloves: "手套",
+            flat_object: "扁平物体", blue_flat_object: "蓝色扁平物体", long_rod: "长杆",
+            curved_object: "弯曲物体", weapon: "武器", staff: "权杖", tool: "工具",
+            look_up: "抬头", move: "移动", run: "奔跑", jump: "跳跃", raise_item: "举起持有物",
+            shoot: "射击", light_arc: "光弧", light_ring: "光环", projectile: "投射物",
+            water: "水面", stone_platform: "石块平台", sandy_ground: "沙地",
+            indoors: "室内", outdoors: "室外",
+        };
+        const evidence = new Map((state.view.evidence || []).map((item) => [item.id, item]));
+        const addAttributes = (container, attributes) => {
+            for (const attribute of attributes) {
+                const pending = attribute.status !== "observed";
+                const label = `${pending ? "待核对" : "已观察"} · ${kinds[attribute.kind] || attribute.kind}：${values[attribute.value] || attribute.value}`;
+                const item = element("li", pending ? "warning" : "", label);
+                const frames = (attribute.evidenceIds || []).map((id) => evidence.get(id))
+                    .filter(Boolean).map((frame) => timecode(frame.startUs));
+                item.append(element("span", "muted detail-support", `支持源帧 · ${frames.join(" / ")}`));
+                container.append(item);
+            }
+        };
+        for (const [shotIndex, shot] of details.shots.entries()) {
+            const section = element("section", "detail-shot");
+            section.append(element("h4", "", `镜头 ${shotIndex + 1} · ${timecode(shot.sourceRange.startUs)} – ${timecode(shot.sourceRange.endUs)}`));
+            for (const [actorIndex, actor] of shot.actors.entries()) {
+                section.append(element("p", "", `主体 ${actorIndex + 1} · ${cleanObservationText(actor.description)}`));
+                const parts = new Map();
+                for (const attribute of actor.attributes) {
+                    if (!parts.has(attribute.partId)) parts.set(attribute.partId, []);
+                    parts.get(attribute.partId).push(attribute);
+                }
+                for (const [index, attributes] of [...parts.values()].entries()) {
+                    section.append(element("p", "muted", `部件 ${index + 1}`));
+                    const list = element("ul");
+                    addAttributes(list, attributes);
+                    section.append(list);
+                }
+                if (!actor.attributes.length) section.append(element("p", "muted", "此主体尚无可核对属性。"));
+            }
+            if (shot.environment.length) {
+                section.append(element("p", "", "当前镜头环境"));
+                const list = element("ul");
+                addAttributes(list, shot.environment);
+                section.append(list);
+            }
+            ui["actor-detail-list"].append(section);
+        }
+        if (!details.shots.length) ui["actor-detail-list"].append(element("p", "muted", "没有已确认的镜头和主体结构。"));
+        for (const note of details.notes || []) ui["actor-detail-list"].append(element("p", "warning", `待核对 · ${cleanObservationText(note)}`));
+        if (details.unassignedEvidenceIds?.length) ui["actor-detail-list"].append(element("p", "warning", "部分源帧尚未归属镜头，不能合并主体属性。"));
     }
 
     function renderTranscripts() {

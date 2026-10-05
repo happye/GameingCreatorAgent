@@ -1,5 +1,13 @@
 # Errors
 
+## 2026-10-05: 精分析的窄身份合同不能破坏旧检查数据
+
+本轮首个检查集成回归出现 19 failed/69 passed/1权限skip（18.42s）：新 fixture 使用 schema1，SQLite 按旧合同省略 base prompt hash，不能假设其会持久化；旧检查 fixture 的事件/证据短 ID 也不符合 actor-details-v1 的局部身份格式。修复方向是新侧车 fixture 显式 schema2/价格身份，旧数据缺精分析身份时返回 unsupported/unverified，保留原展示/检索/篮子，不能改写旧 ID 或放松 domain 合同。后续复测结果见 sprint-detail-inspection。
+
+## 2026-10-05: 沙箱里的 asyncio 回环初始化可能挂起
+
+本轮定向 pytest 在第三项停住，`faulthandler_timeout=20` 定位到 `socket._fallback_socketpair -> accept -> asyncio.ProactorEventLoop`，尚未执行检索逻辑。中断本工具启动的两次测试后，允许本机回环的升级调用 15 passed/0skip（0.75s）；没有真实 Provider 请求。后续 HTTP/浏览器/asyncio 验证使用相同授权，不能通过改产品事件循环或放松测试绕过。初始源码定位沿用 docs 中 `ui/` 简写造成路径缺失；实际路径为 `src/gamingcreator/ui/`，应先用 `rg --files` 定位后读取。
+
 ## 2026-10-05: Wait for the selected run, and preserve the workspace CSP
 
 The first real V6 browser report captured the loading option as defaultRunId because it only waited for a nonempty select. The validator now waits for an enabled run/search and populated timeline; the repeated report and fresh production browser both confirmed the V6 default. An ad hoc diagnostic used Playwright wait_for_function and hit unsafe-eval CSP rejection; use the established debugger-evaluate polling helper rather than weakening CSP. Launching the user's browser from the filesystem sandbox failed with Access denied; the authorized escalated Start-Workspace.cmd reused the same owned local service and succeeded. GitHub push still timed out after21s; save local commits and record pending remote synchronization.

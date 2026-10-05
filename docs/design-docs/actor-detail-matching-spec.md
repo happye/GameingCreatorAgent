@@ -1,7 +1,7 @@
 # F010：候选主体细节与复合匹配工程规格
 
-2026-10-05；状态：typed合同/纯matcher已实现，精分析与界面接入待实现。依据 [F010计划](../exec-plans/sprint-visual-details.md)、[TD009](../exec-plans/tech-debt.md)、[Phase 0](../product-specs/phase-0.md) 与四层架构。
-已有 [domain合同](../../src/gamingcreator/domain/actor_details.py) 与 [纯匹配器](../../src/gamingcreator/application/actor_detail_matching.py)，供typed调用者离线使用；下文ports/sidecar/Provider/UI为后续实施合同，没有新HTTP API或自由文本解析。
+2026-10-05；状态：typed合同/纯matcher、request/ports、sidecar/共享预算及只读检查视图已实现；真实精分析Provider与查询匹配接入待实现。依据 [F010计划](../exec-plans/sprint-visual-details.md)、[TD009](../exec-plans/tech-debt.md)、[Phase 0](../product-specs/phase-0.md) 与四层架构。
+已有 [domain合同](../../src/gamingcreator/domain/actor_details.py) 与 [纯匹配器](../../src/gamingcreator/application/actor_detail_matching.py)，供typed调用者离线使用；检查HTTP复用原 `/api/inspect` 添加版本化详情，见 [检查API](./inspection-workspace-api.md) 和 [本轮记录](../exec-plans/sprint-detail-inspection.md)。精分析发送、typed约束匹配和自由文本解析尚未接入页面；缺结构或仅复用结构均不标full。
 F006/F009/F010 继续 `passes: false`；有效 JSON、固定模板和开发实验均不代替独立人工验收。
 
 ## 目标与不变量

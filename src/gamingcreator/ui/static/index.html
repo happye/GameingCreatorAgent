@@ -45,7 +45,7 @@
                 <aside class="clip-inspector" aria-label="选中片段详情">
                     <section class="active-clip" aria-label="当前片段"><span class="eyebrow">当前片段</span><div class="section-heading"><h3 id="active-title">尚未选中片段</h3><button id="add-active" class="text-button" disabled title="将当前片段加入片段篮">＋ 选片</button></div><p id="active-range" class="accent small">选择后显示源时间区间</p><p id="active-facts" class="muted">选中时间轴或候选，对照原视频和源帧证据。</p></section>
                     <div class="tab-bar" role="tablist" aria-label="证据和转录"><button id="evidence-tab" class="tab active" role="tab" aria-selected="true" aria-controls="evidence-panel">证据 <span id="evidence-count">0</span></button><button id="transcript-tab" class="tab" role="tab" aria-selected="false" aria-controls="transcript-panel" tabindex="-1">转录 <span id="transcript-tab-count">0</span></button></div>
-                    <section id="evidence-panel" class="evidence-panel" role="tabpanel" aria-labelledby="evidence-tab"><div id="evidence-list" class="evidence-list"><p class="empty-state">点选片段，查看对应源帧。</p></div></section>
+                    <section id="evidence-panel" class="evidence-panel" role="tabpanel" aria-labelledby="evidence-tab"><p id="detail-status" class="muted small" hidden></p><div id="evidence-list" class="evidence-list"><p class="empty-state">点选片段，查看对应源帧。</p></div><details id="actor-details" hidden><summary>查看主体详情与支持帧</summary><div id="actor-detail-list"></div></details></section>
                     <section id="transcript-panel" class="transcript-panel" role="tabpanel" aria-labelledby="transcript-tab" hidden><div id="transcript-list"><p class="empty-state">尚未读取转录。</p></div></section>
                 </aside>
             </div>

@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
@@ -91,6 +92,23 @@ class RefinementSettings:
             or self.version != REFINEMENT_SETTINGS_VERSION
         ):
             raise ValueError("Refinement settings are outside the frozen image contract.")
+
+
+def _settings_payload(settings: RefinementSettings) -> dict[str, object]:
+    return {
+        "version": settings.version,
+        "maxImages": settings.max_images,
+        "maxImageWidth": settings.max_image_width,
+        "maxImageBytes": settings.max_image_bytes,
+        "imageDetail": settings.image_detail,
+        "timeoutSeconds": settings.timeout_seconds,
+        "maxOutputTokens": settings.max_output_tokens,
+    }
+
+
+def refinement_settings_hash(settings: RefinementSettings) -> str:
+    """Identify the exact settings used by a reader, independently of a candidate."""
+    return hashlib.sha256(_canonical(_settings_payload(settings)).encode("utf-8")).hexdigest()
 
 
 @dataclass(frozen=True, slots=True)
@@ -192,15 +210,7 @@ def canonical_request_json(request: DetailRefinementRequest) -> str:
                 }
                 for item in request.evidence
             ],
-            "settings": {
-                "version": settings.version,
-                "maxImages": settings.max_images,
-                "maxImageWidth": settings.max_image_width,
-                "maxImageBytes": settings.max_image_bytes,
-                "imageDetail": settings.image_detail,
-                "timeoutSeconds": settings.timeout_seconds,
-                "maxOutputTokens": settings.max_output_tokens,
-            },
+            "settings": _settings_payload(settings),
             "promptVersion": identity.prompt_version,
             "promptHash": identity.prompt_hash,
             "schemaVersion": identity.schema_version,
@@ -278,6 +288,10 @@ def _images(timeline: StoredTimeline, event: SemanticEvent) -> tuple[DetailEvide
             continue
         if not event.source_range.start_us <= item.source_time.time_us < event.source_range.end_us:
             continue
+        if not re.fullmatch(
+            re.escape(f"{event.run_id}:{event.media_id}:image:") + r"[0-9]{6}", evidence_id
+        ):
+            continue
         selected.append(DetailEvidence(item.evidence_id, item.sha256, item.source_time))
     selected.sort(key=lambda item: (item.source_time.time_us, item.evidence_id))
     return tuple(selected)
@@ -297,10 +311,14 @@ def prepare_refinement(
     if event is None or event.run_id != timeline.run.run_id:
         raise ValueError("Refinement candidate is not in this timeline.")
     fingerprint = event_fingerprint(event)
+    analysis = timeline.run.configuration.analysis
+    if analysis.vision_prompt_hash is None or not re.fullmatch(
+        re.escape(f"{event.run_id}:{event.media_id}:event:") + r"[0-9a-f]{24}", event.event_id
+    ):
+        return DetailRefinementResult(MatchStatus.UNVERIFIED, fingerprint)
     images = _images(timeline, event)
     if event.modality != "visual" or not images:
         return DetailRefinementResult(MatchStatus.UNVERIFIED, fingerprint)
-    analysis = timeline.run.configuration.analysis
     request = DetailRefinementRequest(
         timeline.run.run_id,
         timeline.run.asset.sha256,

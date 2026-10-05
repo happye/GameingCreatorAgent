@@ -8,7 +8,7 @@
 
 | Owner | Branch/worktree | 独占范围 | 状态 |
 | --- | --- | --- | --- |
-| root | codex/visual-details，root | analysis/config/store/CLI/UIprofile、detail sidecar/budget、共享文档 | sidecar 与共享预算已落地；未完成尝试在锁内复查；预算测试两次 9 passed；verify 982 passed/1 权限 skip。无新 API |
+| root / Codex顺序接续Grok | codex/visual-details，root | analysis/config/store/CLI/UIprofile、detail sidecar/budget、只读检查UI/测试、共享文档 | 继承检查点16f727f；只读详情接入完成，定向88 passed/1权限skip；完整verify与真实V6 smoke待执行。无新API |
 | detail_vision | codex/detail-vision，.worktrees/detail-vision | deepseek_vision.py、新 detailed tests、own sprint | 56b02e2→903c9cc 已集成并冻结；root补证据范围保护 |
 | detail_presentation | codex/detail-presentation，.worktrees/detail-presentation | observation_text.py、retrieval.py、ui/service.py、app.js、新 presentation tests、own sprint | a160116→86c229c 已集成并冻结 |
 | detail_pilot | codex/detail-pilot，.worktrees/detail-pilot | validate-visual-details.py/new tests/own sprint | 944fb42→32fe12c 已集成并冻结，真实V5对照完成 |
@@ -20,7 +20,7 @@
 
 Atom新V6 f601fb9b3e734d5ea188fc15c790acbb Completed：16窗口/33事件/估价¥0.10270124。查询30组合、真实浏览器及一键复用已验证；PID38364/parent27896是快照，操作前重验health。全任务已知¥0.23083920；追加漫画run0ba106...两网络失败未知预留¥4.065536，总承诺¥4.29637520，已停API。typed matcher与精分析 request/ports/hash 已在 root，仍未接自由查询、Provider HTTP 或 sidecar。旧run和rawfacts不改；F006/F009/F010仍false。
 
-下一条工作：只读把 sidecar 的 unverified 或复用结果接到检查接口，在未知预留得到处理之前不要发起新的 API 调用；不要宣称打Boss、跳跃、射击或复合主体查询已修好。
+下一条工作：完成本轮只读检查完整verify/真实V6复测后，离线实现独立精分析Provider及完整attempt metadata/恢复合同；typed查询匹配随后接入。未知预留处理/明确新预算前不得新API，不宣称玩法/复合检索质量已通过。当前记录见sprint-detail-inspection。
 
 协调规则见 `docs/references/agent-workflow.md`。2026-10-04用户否决玩法检索。当前root分支`codex/temporal-gameplay`已保存Grok4c37a63、帧边界42604f9/b2daf1b与启动器0cc2c2f；共享记录以HANDOFF和sprint-temporal-gameplay为准。禁止旧worker覆盖root；推送状态以git核对。
 
