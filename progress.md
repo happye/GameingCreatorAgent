@@ -141,3 +141,13 @@ F008true、F006false；人工质量标准和本地/云端/未来EXE说明分别�
 证据sprint-detail-inspection与ignored artifacts/detail-inspection-validation。真实素材尚无主体精分析结构，reused只在合成fixture验证；自由复合查询仍未解决。F006/F009/F010false；未知预留¥4.065536保持，不重试漫画run。下一步独立精分析Provider完整metadata/恢复与typed匹配入口先离线推进；远端同步结果见sprint/HANDOFF。
 
 用户随后明确授权仅推送当前工作分支。00f2796已普通推送到origin/codex/visual-details，未更新main；独立ls-remote首次因443间歇连接失败，最终同步记录和核对见sprint/HANDOFF。
+
+## 2026-10-06 — 独立精分析、typed查询及两次真实候选
+
+在23d8422完成actor-detail-refinement-v2独立Provider和attempt-v2完整metadata/typed载荷：单次发送、同key锁、项目预算锁、planned落盘补偿，失败/取消不自动重试，成功响应中断可不重发恢复。a6eb196接match-details、严格query-v1 manifest、同主体/部件/共同帧报告与immutable匹配记录；检查API显式v1/v2 profile，默认页面v1。既有v1请求哈希、基础V1–V6提示词、raw facts/检索/篮子/导出保持。
+
+定向167与82通过；完整verify1062 passed/1 Windows文件symlink权限skip（93.59s）、Ruff103/mypy58/CLI/重复离线wheel通过，SHA f4282ed7b02c315a3d2cb6c8acd16d8cd4bddd2ada9c655cda9970123a1be799。真实V6只读CLI的33事件/证据/文件未变；生产重新核对身份后加载v2 API，新PID36320/parent24836仅快照。
+
+用户追加最多¥4.04/2候选，随后明确授权共6注册画面及帧ID/提示词参数发送DeepSeek。自动审批首拒发生在执行前；授权补齐后同一脚本只调用2次，无retry，两次Completed，估价合¥0.01850612/新增unknown0，旧未知¥4.065536保留。两复合查询均partial；模型同衣物partId分散与蓝发/白发条件差异仍待纠正/人评，不修改已发布v2。再读两个key均reused/0新调用，侧车/账本哈希不变。
+
+人评报告artifacts/detail-query-validation/human-review.html内嵌6帧，1366/390宽验证无横溢/0页面错误；模型描述已转义，qualityGate/humanLabels=null。F006/F009/F010false。下一步用户核对、离线新版本part绑定/页面typed入口/费用历史。GitHub两次连接超时，本地提交保存，最后推送状态以sprint/HANDOFF为准，不更新main。

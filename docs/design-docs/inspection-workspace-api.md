@@ -36,7 +36,7 @@ root：`ui/server.py`、`ui/service.py`、新 `ui/media.py`、HTTP行为测试�
 - `cost:{knownCny,unknownAttempts,status}`；knownCny是已知部分的Decimal字符串，未知项单独计数，缺DeepSeek价格版本或unverified记录不得算零/已知金额，估价不是账单。
 - `retrievalVersion`、`configHash`、`query`、`mode`，用于导出来源追踪。
 
-2026-10-05只读精分析接入：顶层新增 `detailRefinementProfile:{version:"actor-detail-inspection-v1",settingsHash,schemaVersion,promptVersion,promptHash,provider,requestedModel}`，固定为当前 Application 的 `RefinementSettings()` 与独立 `default_refinement_identity()`；不接受任意侧车路径，不扫描mtime选版本，不自动解析自由查询约束。
+2026-10-06版本选择：`/api/inspect`新增可选`detailProfile=v1|v2`，默认v1保持旧合同，未知值为400/input.detail_profile。顶层`detailRefinementProfile:{version:"actor-detail-inspection-v1",profile,settingsHash,schemaVersion,promptVersion,promptHash,provider,requestedModel}`使用固定RefinementSettings与所选独立身份：v1为既有冻结骨架，v2为新独立Provider提示词。精确key缺失返回unverified，不借用其他版本；不接受任意路径、不扫描mtime、不自动解析自由查询约束。当前页面继续默认v1，显式profile读取由API或CLI完成。
 
 timeline/candidate行新增 `detailRefinement:{status:"unverified",availability,requestHash,detail}`。availability为 `missing`（该冻结key未发布结果）、`reused`（完整校验后复用）、`unsupported`（无视觉事件或旧数据缺合同兼容的版本/身份）、`run_incomplete`。非事件音频候选requestHash为null。detail缺失为null；复用时为actor-details-v1规范主体结构并增加计算出的unassignedEvidenceIds，保留镜头、主体、部件、observed/uncertain、原候选区间与支持源帧，不覆盖observableFacts或rank。没有typed QueryConstraint时status始终unverified，reused不等于full或人工认可。
 

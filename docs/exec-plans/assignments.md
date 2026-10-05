@@ -1,6 +1,6 @@
 # Active assignments
 
-2026-10-06继续开发：root / Codex在codex/visual-details完成detail Provider/record codec和sidecar恢复，实现23d8422、完整verify1043/1skip。现在独占typed query codec/离线CLI/match侧车、检查profile参数、相关测试与共享文档，见sprint-detail-query.md；历史worktree仍冻结，无新付费API。
+2026-10-06 root / Codex完成Provider/record codec/sidecar恢复23d8422、typed query CLI/match侧车/profile a6eb196；最新完整verify1062/1权限skip，定向167与82通过。两个明确授权真实候选各1次均Completed/partial，合估价¥0.01850612/unknown0；旧预留¥4.065536保留。人工核对入口artifacts/detail-query-validation/human-review.html，见sprint-detail-query。root继续负责离线part合同/页面typed入口与成本历史；历史worktree冻结，禁止额外API或retry，F006/F009/F010false。当前GitHub推送连接失败，最终核对见HANDOFF/sprint。
 
 ## 2026-10-05 当前细节优化
 
