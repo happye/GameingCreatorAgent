@@ -42,6 +42,20 @@ root已集成2e95485→bb05b66实现、410bb245→cd1810c独立测试，两个wo
 
 审查修复：现有CandidateClip采用run:event:完整event ID生成，不能自造相似公式；黑发只在f0不反证f1白发，蓝围巾不反证未知外套，属性不越支持范围延续。旧facts/配置/检索/篮子没有迁移。最终独立73domain+18matcher+3architecture=94passed/0skip（0.32s），root完整verify收尾以HANDOFF与.cache/detail-actor-final-verify.log为准。
 
-用户额度9%提示后进入交接。下一Agent按任务2只先交Application request/result/Provider/Store ports和canonical requestHash，重验当前Completed run的raw candidate/事件fingerprint/注册证据/hash/源时钟；接口冻结后才能并行Provider预算与sidecar。继承旧原始数据，缺结构必须unverified。两候选精分析前处理网络/未知预算：追加第二PV两provider.network造成¥4.065536未确认预留，总本轮承诺¥4.29637520，不能换目录或重试清账；详见HANDOFF。没有新的human labels，F006/F009/F010仍false。
+用户额度9%提示后进入交接。任务2的 request/result/ports/requestHash 已由 root 冻结。Provider 预算与 sidecar 已在文末落地。继承旧原始数据，缺结构必须 unverified。两候选精分析前处理网络/未知预算：追加第二PV两 provider.network 造成 ¥4.065536 未确认预留，总本轮承诺 ¥4.29637520，不能换目录或重试清账；详见 HANDOFF。没有新的 human labels，F006/F009/F010 仍 false。
 
 root最终完整verify967passed/1 Windows权限skip（71.87s）、Ruff90/mypy51/CLI/两离线wheel通过，SHA79504099f604bc33810b4bc880ec2f05bf9096fd0b70347019163b02cf80e57d。任务1和独立tests技术合同已整合，任务2开始前以HANDOFF检查当前分支和预算；F006/F009/F010仍false。
+
+## 2026-10-05 任务2接口冻结
+
+root 在 `codex/visual-details` 新增 `application/detail_refinement.py` 与 `tests/test_detail_refinement.py`。内容只包括 request/result、`DetailRefinementProvider`/`DetailRefinementStore` ports、event fingerprint 和 canonical requestHash。没有 HTTP、SQLite 或 sidecar 写入，没有改 vision prompt 或 raw events。`git diff` 不含 `deepseek_vision.py`。
+
+定向 6 passed（0.37s，`-W error`，缓存在 `.cache/pytest-runs`）。相同输入 hash 相同；改区间或证据 hash 后 requestHash 改变。base prompt version/hash 留在请求旁，不进入精分析 prompt hash，且该 hash 不等于 V5/V6。Completed run `f601fb9b3e734d5ea188fc15c790acbb` 的 `0b8be73b204cceb6f0e37c7d` 保持原区间、注册证据 id、图像 hash 和整数源微秒。非视觉候选 status 为 unverified，shots 为空。旧事件仍进入 inspection 对齐。`init -CheckOnly` 通过。完整 verify 973 passed / 1 权限 skip（69.05s），Ruff 92，mypy 52，wheel `bcc19772b5fe2c85a4c228a5690dce51f48d1a96bfcea756e39b06053edb03a8`。F006/F009/F010 仍 false。没有新 API。
+
+下一条工作：只读把 sidecar 的 unverified 或复用结果接到检查接口，在未知预留得到处理之前不要发起新的 API 调用；不要宣称打Boss、跳跃、射击或复合主体查询已修好。
+
+## 2026-10-05 sidecar 与共享预算
+
+root 新增 `application/detail_refinement_budget.py` 与 `infrastructure/detail_refinement_sidecar.py`。侧车目录是 `runs/<runId>/detail-refinements/<requestHash>/`：不可变 `request.json`、追加 `attempts/<n>-planned.json` 与 `<n>-result.json`、原子 `result.json`。缺侧车为 unverified，不发明属性。哈希、指纹、来源不一致、另一 run 的结果、路径或符号链接逃逸都明确失败，不当成 full，也不删账本。预算在 `detail-refinement-budgets/<budgetId>/ledger.jsonl`，锁只包住恢复、上限检查和预留，发送前释放。未知费用写成 null；恢复和另一个 budget 目录仍计入这笔预留。同 key 已发布结果复用时不再调用 provider，也不再记一笔推理费。显式 retry 保留旧 attempt。没有 SQL migration，没有改 vision prompt 或 raw events，没有 API，没有 retry `0ba106578bc7435c8689d12892a35dfb`。
+
+未完成尝试的判断在 `BudgetWriterLock` 内再次执行。重叠的两次 `send_refinement`（retry 为 false）只有先进入 provider 的那一次继续，另一次是 `budget.interrupted`，不会写下第二个 planned attempt。`tests/test_detail_budget_sidecar.py` 两次都是 9 passed（0.34s）。`tests/test_detail_refinement.py` 6 passed（0.32s），含 Completed 事件 `0b8be73b204cceb6f0e37c7d` 的原时钟。新鲜进程两次 `reuse_or_refuse` 都是 unverified、provider 调用 0，hash `6e9ee8f0c25212e7bd7c401a6dcfa972544e4121494100a7083a2270604c480f`。verify 982 passed / 1 权限 skip（68.06s），Ruff 95，mypy 54，wheel `cf3574ff00d50ffc4df52f0652921ee6fa34160e48b0356aba47320a5fe79330`。F006/F009/F010 仍 false。

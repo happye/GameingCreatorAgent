@@ -4,9 +4,11 @@
 
 当前 root `codex/visual-details`，起点72d692b；以下覆盖旧任务的当前占用。共享证据见 `sprint-visual-details.md` 与 HANDOFF。
 
+2026-10-05 Codex 顺序接续 Grok 未提交的 sidecar/预算实现；新增只读检查视图任务归 root，独占 UI/service/static、读取接口补充、新集成测试及共享记录，见 `sprint-detail-inspection.md`。其他 worktree 保持冻结；无新 API，F006/F009/F010 仍 false。
+
 | Owner | Branch/worktree | 独占范围 | 状态 |
 | --- | --- | --- | --- |
-| root | codex/visual-details，root | analysis/config/store/CLI/UIprofile、真实对照、共享文档、集成验收 | Demo412729d/6730edc、合同bb05b66、独立测试cd1810c已集成；967pass/1权限skip全检通过，交接完成 |
+| root | codex/visual-details，root | analysis/config/store/CLI/UIprofile、detail sidecar/budget、共享文档 | sidecar 与共享预算已落地；未完成尝试在锁内复查；预算测试两次 9 passed；verify 982 passed/1 权限 skip。无新 API |
 | detail_vision | codex/detail-vision，.worktrees/detail-vision | deepseek_vision.py、新 detailed tests、own sprint | 56b02e2→903c9cc 已集成并冻结；root补证据范围保护 |
 | detail_presentation | codex/detail-presentation，.worktrees/detail-presentation | observation_text.py、retrieval.py、ui/service.py、app.js、新 presentation tests、own sprint | a160116→86c229c 已集成并冻结 |
 | detail_pilot | codex/detail-pilot，.worktrees/detail-pilot | validate-visual-details.py/new tests/own sprint | 944fb42→32fe12c 已集成并冻结，真实V5对照完成 |
@@ -16,7 +18,9 @@
 | detail_retrieval_audit：合同反例 | codex/actor-detail-tests，.worktrees/actor-detail-tests | 新test_actor_details.py、own测试sprint | 410bb245已集成冻结；73domain+18matcher+3architecture=94通过/0skip |
 | detail_pipeline_audit | 只读 root | 根因/细节/旧数据身份审查 | 已完成，无编辑或 API 请求 |
 
-Atom新V6 f601fb9b3e734d5ea188fc15c790acbb Completed：16窗口/33事件/估价¥0.10270124。查询30组合、真实浏览器及一键复用已验证；PID38364/parent27896是快照，操作前重验health。全任务已知¥0.23083920；追加漫画run0ba106...两网络失败未知预留¥4.065536，总承诺¥4.29637520，已停API。typed matcher已实现但未接自由查询/精分析/UI。旧run和rawfacts不改；F006/F009/F010仍false。当前workers全部冻结，下一轮先分配精分析ports，以下V4“当前交付”为历史。
+Atom新V6 f601fb9b3e734d5ea188fc15c790acbb Completed：16窗口/33事件/估价¥0.10270124。查询30组合、真实浏览器及一键复用已验证；PID38364/parent27896是快照，操作前重验health。全任务已知¥0.23083920；追加漫画run0ba106...两网络失败未知预留¥4.065536，总承诺¥4.29637520，已停API。typed matcher与精分析 request/ports/hash 已在 root，仍未接自由查询、Provider HTTP 或 sidecar。旧run和rawfacts不改；F006/F009/F010仍false。
+
+下一条工作：只读把 sidecar 的 unverified 或复用结果接到检查接口，在未知预留得到处理之前不要发起新的 API 调用；不要宣称打Boss、跳跃、射击或复合主体查询已修好。
 
 协调规则见 `docs/references/agent-workflow.md`。2026-10-04用户否决玩法检索。当前root分支`codex/temporal-gameplay`已保存Grok4c37a63、帧边界42604f9/b2daf1b与启动器0cc2c2f；共享记录以HANDOFF和sprint-temporal-gameplay为准。禁止旧worker覆盖root；推送状态以git核对。
 
@@ -36,7 +40,7 @@ Atom新V6 f601fb9b3e734d5ea188fc15c790acbb Completed：16窗口/33事件/估价�
 
 当前config.temporal.example.json的promptHash与v4一致：9ea350e10eb028f1f5e2dc7d355ebd1d080ad8ae8397eb709705a25773323f48。旧v3实验/配置hash记录是历史证据，不用于新run。
 
-下一条工作：用户回看新试验；冻结真实动作/切镜/长窗口/强模型对照，继续TD004/TD007与独立U10。当前worker全部冻结，新任务重新分配；不把有效JSON、candidate数量或浏览器检查当玩法通过。
+历史下一句已由上面的精分析端口任务取代。不把有效 JSON、candidate 数量或浏览器检查当玩法通过。
 
 下面F007/F008为已交付历史，不是本轮占用；恢复见sprint-temporal-gameplay。F006用户定性验收未通过，正式U10未运行；F009false。
 

@@ -4,7 +4,7 @@
 
 ## 当前结论
 
-root分支codex/visual-details；Demo412729d/CLI修正6730edc，主体合同2e95485→bb05b66、独立测试410bb245→cd1810c均已集成；最后完整verify967passed/1权限skip。用户提醒五小时额度剩9%，本轮已完成交接收尾，workers全部冻结，不启动新模型实验。F006/F009/F010保持false；工程检查、JSON和命中数不替代独立人评。
+root分支codex/visual-details，HEAD `8b71c38`。精分析 sidecar 与共享预算会话已在 root 落地，未调用 API，未改 vision prompt、raw events 或 SQL。侧车按冻结 requestHash 保存不可变 request、追加 attempts 和原子 result；缺记录为 unverified。同一预算账本里的未知预留在恢复和另一个 budget 目录下仍然占额度。未完成尝试的检查在预算锁内再次执行，重叠的两次 `send_refinement` 只有一次调用 provider。定向 `tests/test_detail_budget_sidecar.py` 连续两次都是 9 passed（0.34s）。`tests/test_detail_refinement.py` 复核 6 passed（0.32s），Completed run `f601fb9b3e734d5ea188fc15c790acbb` 的事件 `0b8be73b204cceb6f0e37c7d` 仍保持原区间、证据 id、图像 hash 和整数源微秒；非视觉候选仍 unverified。新鲜进程两次 reuse-or-refuse 都是 unverified、provider 调用 0，request hash `6e9ee8f0c25212e7bd7c401a6dcfa972544e4121494100a7083a2270604c480f`。最新完整 verify **982 passed / 1 Windows 文件 symlink 权限 skip，68.06s**；Ruff 95 文件、mypy 54 源文件、CLI 与两次离线 wheel 通过。wheel SHA `cf3574ff00d50ffc4df52f0652921ee6fa34160e48b0356aba47320a5fe79330`。F006/F009/F010 保持 false。没有 retry 漫画 run `0ba106578bc7435c8689d12892a35dfb`。打Boss、跳跃、射击和复合主体查询都没有修好。
 
 新 Completed run **f601fb9b3e734d5ea188fc15c790acbb**：artifacts/demo-phase0，54.743220s / 16 窗口 / 33 事件 / 0 转录；16 个视觉窗口首次尝试全部完成。prompt phase0-vision-v6 / hash a60d114d9dd8bf82c5d2ea62c30c4cfe2b4316b08de34ade3cba883d6de9ea00；pipeline phase0-analyze-detailed-v2。配置 config.detailed-v6.example.json。正文及 uncertainty 未发现独立 fN；18 个事件含待核对。模型估价 ¥0.10270124，unknown 0，providerElapsedMs 42467；不是账单。
 
@@ -13,7 +13,7 @@ root分支codex/visual-details；Demo412729d/CLI修正6730edc，主体合同2e95
 - V5/V6：1280 宽 / 9 图 / 3MiB / detail=original；V1–V4 保持 512 / 1MiB，旧 hash/parser 不变。衣着、外观、持有物、环境、效果写成紧凑事实；V6 先判断连续动作资格，要求不同源时刻和正确边界。
 - 新事实的编号只允许当前事件已引用的原窗口帧，映射真实源时间；未引用或越界编号拒绝。旧事实不重写，用 legacy-frame-alias-neutral-v1 清理显示、视觉索引和下载；保留键盘 F1 与普通标识。
 - UI 显示待核对、Completed detailed 优先；原始事实与旧篮子身份校验保留。检索 bm25-e5-rrf-v5，新 passage 文本 hash 隔离旧向量缓存，阈值及明确动作否定保护不改。CLI 普通/benchmark 保存 uncertainty/displayUncertainty，run-demo 显示待核对。
-- **最新完整verify：967 passed / 1 Windows文件symlink权限skip，71.87s**；Ruff90文件、mypy51源文件、CLI与两次离线wheel通过。wheel SHA 79504099f604bc33810b4bc880ec2f05bf9096fd0b70347019163b02cf80e57d；日志.cache/detail-actor-final-verify.log。先前V6基线876项是历史，不是未验证当前代码。
+- **最新完整verify：982 passed / 1 Windows文件symlink权限skip，68.06s**；Ruff 95 文件、mypy 54 源文件、CLI与两次离线wheel通过。wheel SHA `cf3574ff00d50ffc4df52f0652921ee6fa34160e48b0356aba47320a5fe79330`。先前 981/973/967 是历史，不是未验证当前代码。
 
 ## 实验、费用和限制
 
@@ -25,7 +25,7 @@ V5对照 artifacts/visual-details-atom-execute：28–32和35–39s，A=V4/512�
 
 V5 run c78f204907e04eb3a2ac97a9017dcad9 保留 failed / 9 of 16窗口 / 24事件：uncertainty错误及两次相同端点错误，已停止重发，未放松parser。新V6仍有配饰/持有物分类和跨切镜连续性错误，例如28s将蓝色物体写为武器、38–39s声称切镜前后同一角色；不得据此确认具体武器、角色或技能名称。
 
-**工作台自由长句尚无完整同主体保证（TD009）**：BM25/RRF可能把不同人物的白发、红衣组合命中；不索引uncertainty也不能抵消facts误认类别。纯typed AND已实现，下一步接独立精分析、sidecar与显式匹配结果；不以事件关键词AND冒充解决。
+**工作台自由长句尚无完整同主体保证（TD009）**：BM25/RRF可能把不同人物的白发、红衣组合命中；不索引uncertainty也不能抵消facts误认类别。纯typed AND和精分析 request/ports 已实现，自由长句仍无严格保证；不以事件关键词AND冒充解决。
 
 纯typed合同和离线matcher已实现：domain/actor_details.py与application/actor_detail_matching.py，同actor/同part_group/共同支持帧AND；属性仅在引用时钟内有效，未知不是否定，跨镜头不合并，单帧/同图不能变动作。schema actor-details-v1，词表actor-detail-vocabulary-v1，query schema actor-detail-query-schema-v1，query actor-detail-query-v1，matcher actor-detail-matcher-v1。canonical_constraint_json/constraint_hash供后续ports复用，未知词条明确拒绝。独立73domain+18matcher+3architecture联合94passed（0.32s）；**该matcher尚未接自由文本、CLI/UI、Provider或sidecar，因此工作台长句检索仍无严格保证**。
 
@@ -44,11 +44,9 @@ V5 run c78f204907e04eb3a2ac97a9017dcad9 保留 failed / 9 of 16窗口 / 24事件
 - detail_retrieval_audit新测试：.worktrees/actor-detail-tests / codex/actor-detail-tests，410bb245已集成冻结；最终钉2e95485联合94passed/0skip，73新domain反例，own sprint已在root。旧spec worktree冻结，禁止共享writer。
 - 其他V5 vision/presentation/pilot worktrees全部冻结。
 
-1. 核对status/HEAD/owner；新run与完整verify已落盘，不重复付费分析。
-2. 最新全检已完成967pass/1权限skip，日志.cache/detail-actor-final-verify.log。接手仍先运行init -CheckOnly并核对工作树；未改源码不重复全套。查询/浏览器/启动已完成，不重复分析。
-3. 下一开发任务：按sprint-actor-detail-matching任务2，在独立worktree新增application/detail_refinement.py，先冻结request/result、Provider/Store ports及canonical requestHash/event fingerprint。从Completed timeline验证raw candidate、原区间/证据/hash/源时钟和五项版本，兼容旧篮子；复用已集成typed合同，不重发旧run。
-4. ports集成后再并行Provider/跨key预算与sidecar；UI附加full/partial/unverified及证据由root串行接。缺精分析结果应unverified，不拿自由文本做actor结构，不悄悄扩词表或自动推理。执行两真实候选试验前先处理网络与未知预算，默认开页/查询/刷新仍0API。
-5. 同步HANDOFF/分工/feature_list/自身sprint，每验证节点提交。GitHub恢复后常规git push -u origin codex/visual-details；远端main仍仅最后已知72d692b，未确认最新状态，禁止强推。
+下一条工作：只读把 sidecar 的 unverified 或复用结果接到检查接口，在未知预留得到处理之前不要发起新的 API 调用；不要宣称打Boss、跳跃、射击或复合主体查询已修好。
+
+恢复时先核对 status/HEAD。本轮 ports 改动尚未提交，不要强推。未知预留 ¥4.065536 仍在，禁止 retry `0ba106578bc7435c8689d12892a35dfb` 或换目录清账。默认开页、查询和刷新仍是 0 API。远端 main 仍只记录到最后已知 `72d692b`，未再确认。
 
 GitHub github.com:443多次连接失败，远端最新状态未确认；本地提交不等于远端同步。完成后重试命令级HTTP/1.1常规push，禁止强推或改全局网络配置。
 
