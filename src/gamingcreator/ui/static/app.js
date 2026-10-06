@@ -355,6 +355,7 @@
             const actor = detail?.shots.find((shot) => shot.shotId === match.shotId)?.actors.find((item) => item.actorId === match.actorId);
             const section = element("section", "detail-match-actor");
             section.append(element("p", "", actor ? cleanObservationText(actor.description) : "已保存主体"));
+            if (actor) appendDescriptionReview(section, match.shotId, match.actorId);
             const list = element("ul");
             for (const [key, text] of [["satisfied", "有支持"], ["uncertain", "不确定"], ["opposed", "有相反证据"]]) {
                 for (const support of match[key]) {
@@ -1179,6 +1180,50 @@
         }
     }
 
+    function appendDescriptionReview(container, shotId, actorId) {
+        const row = state.active?.row;
+        const refinement = row?.detailRefinement;
+        const feedback = refinement?.descriptionFeedback;
+        const marker = element("div", "detail-description-review");
+        if (!feedback) {
+            marker.append(element("p", "muted small", "描述待人工核对 · 尚无已登记反馈"));
+            container.append(marker);
+            return;
+        }
+        const targets = new Set((refinement.detail?.shots || []).flatMap((shot) => shot.actors.map((actor) => `${shot.shotId}/${actor.actorId}`)));
+        const seen = new Set();
+        const valid = feedback.schemaVersion === "actor-description-feedback-inspection-v1"
+            && feedback.scope === "actor-description" && feedback.phase0QualityGate === null
+            && feedback.runId === state.run && feedback.eventId === row.eventId
+            && feedback.requestHash === refinement.requestHash
+            && feedback.refinementPayloadHash === refinement.payloadHash
+            && typeof feedback.pilotReportSha256 === "string" && /^[0-9a-f]{64}$/.test(feedback.pilotReportSha256)
+            && Array.isArray(feedback.reviews)
+            && feedback.status === (feedback.reviews.length ? "reviewed" : "unreviewed")
+            && feedback.reviews.every((review) => {
+                if (!review || typeof review !== "object") return false;
+                const target = `${review.shotId}/${review.actorId}`;
+                if (!targets.has(target) || seen.has(target) || review.scope !== "actor-description"
+                    || review.source !== "direct-project-user-feedback" || !["accepted", "rejected"].includes(review.verdict)
+                    || typeof review.statement !== "string" || !review.statement.trim()
+                    || typeof review.recordedOn !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(review.recordedOn)) return false;
+                seen.add(target);
+                return true;
+            });
+        if (!valid) {
+            marker.append(element("p", "warning small", "人工反馈与当前结果不一致，未应用；描述仍待核对。"));
+        } else {
+            const review = feedback.reviews.find((item) => item.shotId === shotId && item.actorId === actorId);
+            if (review) {
+                marker.append(element("p", review.verdict === "accepted" ? "accent small" : "warning small",
+                    review.verdict === "accepted" ? "用户已确认此描述" : "用户已指出此描述有误"));
+                marker.append(element("p", "small", review.statement));
+                marker.append(element("p", "muted small", `用户反馈 · ${review.recordedOn} · 仅针对描述，属性和检索质量仍须独立核对。`));
+            } else marker.append(element("p", "muted small", "此描述尚未人工核对；不从其他条目推断通过。"));
+        }
+        container.append(marker);
+    }
+
     function renderActorDetails() {
         const row = state.active?.row;
         const refinement = row?.detailRefinement;
@@ -1286,6 +1331,7 @@
             section.append(element("h4", "", `镜头 ${shotIndex + 1} · ${timecode(shot.sourceRange.startUs)} – ${timecode(shot.sourceRange.endUs)}`));
             for (const [actorIndex, actor] of shot.actors.entries()) {
                 section.append(element("p", "", `主体 ${actorIndex + 1} · ${cleanObservationText(actor.description)}`));
+                appendDescriptionReview(section, shot.shotId, actor.actorId);
                 const parts = new Map();
                 for (const attribute of actor.attributes) {
                     if (!parts.has(attribute.partId)) parts.set(attribute.partId, []);

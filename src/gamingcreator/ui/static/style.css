@@ -232,6 +232,8 @@ dialog::backdrop { background: #030713d9; }
 .detail-condition .icon-button { margin-bottom: 4px; }
 .detail-query-actions { display: flex; gap: 10px; justify-content: space-between; margin: 12px 0; }
 .detail-match-actor { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 8px; }
+.detail-description-review { border-left: 2px solid var(--line); padding-left: 8px; margin: 8px 0; overflow-wrap: anywhere; }
+.detail-description-review p { margin: 4px 0; }
 .detail-match-actor ul { padding-left: 18px; font-size: 11px; }
 .detail-support-frames { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 @media (max-width: 680px) {

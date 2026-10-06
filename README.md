@@ -24,6 +24,8 @@ The evidence panel reads saved actor details for the selected refinement version
 
 The current browser workspace and backend run locally; DeepSeek vision uses remote inference on sampled frames. It is not yet packaged as an EXE. The source plan retains a future Windows desktop application with local media processing; see the [deployment roadmap](./docs/references/deployment-roadmap.md). Human content acceptance follows the [F006 guide](./docs/references/human-acceptance-guide.md), separately from UI usability.
 
+Registered human feedback appears beside the exact saved actor description and its condition matches. Accepted or rejected descriptions retain the user's words and the original model output; other descriptions remain unreviewed. Feedback cannot carry over to another analysis result or count as attribute, action or retrieval acceptance. See the [description feedback report](./docs/exec-plans/report-2026-10-06-description-feedback.md).
+
 ## Start here
 
 1. Read [`AGENTS.md`](./AGENTS.md), [`HANDOFF.md`](./HANDOFF.md), and the [shared workflow](./docs/references/agent-workflow.md). Open the same repository or your assigned worktree in whichever tool is available.

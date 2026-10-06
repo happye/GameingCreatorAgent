@@ -1,5 +1,23 @@
 # Errors
 
+## [ERR-20261006-007] description_feedback_directory_rename
+
+**Logged**: 2026-10-06
+**Priority**: medium
+**Status**: resolved
+**Area**: infra
+
+本地登记旧反馈的临时目录 rename 遇到 Windows WinError 5；旧报告、反馈、数据库与账本未改。改用新命名空间独占创建，先原字节写报告再写反馈，不覆盖已有文件、不修改ACL。后续 reader 核验与真实桌面/手机检查通过。失败暂存目录保留为 ignored，无递归删除。见 sprint-detail-feedback-surface.md。See Also: ERR-20261004-001。
+
+## [ERR-20261006-008] guessed_patch_context_recurs
+
+**Logged**: 2026-10-06
+**Priority**: medium
+**Status**: resolved
+**Area**: workflow
+
+批量 apply_patch 再次夹带未经读取的 Markdown 标题上下文，导致整批原子校验失败、没有落盘。随后先 rg 读取准确标题，按实际短上下文分批成功。即便只想占位，也不能向 patch 加未经验证的 hunk；格式或文档尾部猜测同样适用。此错误消耗额度，后续禁止无效占位补丁。
+
 ## [ERR-20261006-006] isolated_runtime_bytecode_drift_recurs
 
 **Logged**: 2026-10-06

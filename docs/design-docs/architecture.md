@@ -25,6 +25,8 @@ CLI 只解析输入、组装依赖和输出结果；Application 编排 stages、
 
 主体细节是独立精分析 sidecar，不重写基础事件。`/api/inspect` 显式选择 v1/v2/v3/v4 并返回条件词表与已保存结果身份；`POST /api/match-details` 只读匹配用户确认的同主体/同部件 AND 条件，页面按当前 request/payload 身份接收结果。`POST /api/draft-detail-query` 使用纯Application有限语法把描述变成可编辑清单，保留全部原文与未处理要求；不读项目或调用模型，未完整理解时须明确确认子集，不能替代自由查询的整句语义。`GET /api/detail-cost-history` 只读独立精分析的 planned/result/预算记录，显示本 run 与全项目已知估价及未知预留，不执行恢复、结算或模型调用。v3 将一个实际部件的属性嵌套后验证，再投影到冻结领域结构；v4保存连续实体、遮挡和持有关系证据，两者尚无真实模型验证。自由查询仍走原检索，不能据候选局部条件宣称整句满足。细节合同与版本边界见 [主体细节规格](./actor-detail-matching-spec.md) 和 [API 合同](./inspection-workspace-api.md)。
 
+已登记人工反馈由纯Application解码、原报告候选来源验证和精确结果投影组成；Infrastructure只读项目内独立 `detail-description-feedback` 文件，UI在描述及条件结果旁显示原话。报告原始SHA、case/run/event/request/payload及shot/actor须一致，更换模型结果不继承确认。反馈仅针对描述，不重写事实、属性、匹配结果或U10；不存在记录为未核对，损坏记录明确报错。
+
 ## 数据流与状态
 
 v4精分析新增独立实体连续性证据：注册帧及源时钟→角色/物品/未知分类、逐帧可见性、相邻边界及持有关系→temporal-scene-v1→确定性actor投影→原词表的AND匹配。actor-details-v2将scene与投影共同保存；Application每次序列化、恢复、读取和匹配比较重新计算的投影，合法scene不能配合伪造的actor属性。unknown边界不连接身份，不确定实体/持有关系阻止全局no_match。新schema-v2/matcher-v2及v4请求哈希隔离旧数据，旧payload不新增null字段；v4沿用原单次HTTP、费用和取消路径，仍需真实模型验证。

@@ -68,6 +68,14 @@ timeline/candidate行新增 `detailRefinement:{status:"unverified",availability,
 
 普通CLI与benchmark的持久化search JSON同样带factsProjectionVersion、displayFacts、事件原uncertainty和清理后的displayUncertainty；run-demo表格使用投影并显示待核对列。原observableFacts和CandidateClip身份不改，uncertainty不加入正面索引，audio-only候选目前无事件不确定性映射。
 
+## 已登记的人工描述反馈
+
+2026-10-06，inspect 在有已校验 detail 的 refinement 行增加可选 `descriptionFeedback`；不存在项目内 `detail-description-feedback` 命名空间时为 null。固定只读文件为 `feedback.json` 与 `reports/<pilotReportSha256>.json`，普通有界文件，沿用侧车的链接/目录逃逸保护。命名空间已存在但文件缺失、损坏、重复或来源不一致时返回409/`detail_feedback.damaged`，不会无声当作没有反馈。
+
+反馈 schema 为 `detail-pilot-human-feedback-v1`，仅接受 `actor-description` 和 `direct-project-user-feedback`。报告原始字节 SHA 必须正确，其 `actor-detail-pilot-report-v1` 候选记录还须与反馈的 case/run/event/request、已完成 attempt 的 request/payload 相同；报告 payload 文本的 SHA、run/event 和明确 shot/actor 目标也须一致。随后对当前 CandidateDetail 重新计算 payloadHash，只投影同一 request/payload 下的目标；更换结果或版本不继承旧反馈。读取不写反馈、模型结果、基础事件、排名或费用，没有网页写反馈接口。
+
+返回 envelope 为 `actor-description-feedback-inspection-v1`，含 scope、status reviewed/unreviewed、runId/eventId/requestHash/refinementPayloadHash、pilotReportSha256、recordedOn、phase0QualityGate=null，和 reviews 的 caseId/shotId/actorId/verdict/scope/source/statement/recordedOn。未明确评判的主体仍为 unreviewed。页面在主体描述和条件匹配旁用普通文字显示确认/判错及原话；不覆盖原模型描述、不把描述反馈扩展成结构属性、动作或检索验收，也不修改 full/partial 等程序判断。旧审核报告与反馈以原始字节独立登记，仍不进Git。
+
 ## 连续实体精分析v4
 
 显式detailProfile=v4读取新schema-v2身份和4096输出token设置；页面默认v2、inspect默认v1继续保留。reused详情为actor-details-v2，增加temporalScene（temporal-scene-v1）：注册evidence、实体classification/observations/parts、相邻帧transitions、owners、environment和notes。返回前完整校验scene与确定性shots投影一致；unknown实体或关系不得通过遗漏变成no_match。匹配结果使用actor-detail-matcher-v2，保存文件名也按此版本隔离。缺该精确key为unverified，不借用v2/v3或发送模型请求。页面提供分类、遮挡、持有、切镜依据与注册帧回看；不确定实体的属性明确待核对，所有文本用textContent。真实v4识别效果尚未验证，原模型结果和基础账本保持。

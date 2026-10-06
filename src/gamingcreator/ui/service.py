@@ -21,6 +21,11 @@ from gamingcreator.cli.main import execute_search
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.time import SourceInstant, SourceRange
 from gamingcreator.infrastructure.detail_cost_history import refinement_cost_history
+from gamingcreator.infrastructure.detail_description_feedback import (
+    DescriptionFeedbackSnapshot,
+    description_feedback_payload,
+    read_description_feedback,
+)
 from gamingcreator.infrastructure.detail_query_sidecar import (
     match_refinement,
     refinement_identity_for_profile,
@@ -39,6 +44,7 @@ def _refinement_payload(
     event_id: str | None,
     settings: RefinementSettings,
     identity: RefinementIdentity,
+    description_feedback: DescriptionFeedbackSnapshot | None = None,
 ) -> dict[str, object]:
     """Read a frozen key. Availability does not establish a compound query match."""
     payload: dict[str, object] = {
@@ -62,6 +68,10 @@ def _refinement_payload(
         detail = json.loads(canonical_detail_json(outcome.detail))
         detail["unassignedEvidenceIds"] = list(outcome.detail.unassigned_evidence_ids)
         payload["detail"] = detail
+        assert outcome.request_hash is not None
+        payload["descriptionFeedback"] = description_feedback_payload(
+            description_feedback, outcome.detail, outcome.request_hash
+        )
     return payload
 
 
@@ -287,9 +297,10 @@ async def inspect_run(
     event_tags = {event.event_id: event.mechanic_tags for event in timeline.events}
     event_uncertainty = {event.event_id: event.uncertainty for event in timeline.events}
     settings = refinement_settings_for_profile(detail_profile)
+    description_feedback = read_description_feedback(project)
     refinements = {
         event.event_id: _refinement_payload(
-            project, timeline, event.event_id, settings, refinement_identity
+            project, timeline, event.event_id, settings, refinement_identity, description_feedback
         )
         for event in timeline.events
     }
