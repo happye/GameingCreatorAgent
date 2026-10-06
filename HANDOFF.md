@@ -6,6 +6,8 @@
 
 ## 当前成果与验证
 
+新切片已登记：sprint-retrieval-diagnostics.md。root顺序负责固定十位只读Application投影、/api/inspect附加诊断和UI弹窗/下载/预览及测试，旧worker冻结。开始0ae1a68干净、scaffold通过；1745为上轮完整基线，当前尚无新实现/验证。下一动作先完成纯投影，再接UI和实际Boss/跳跃/射击诊断；新真实模型授权仍待答，0付费。正常查询会保存搜索记录，不能据数据库SHA变化误报模型源事实改动。
+
 - 分支codex/visual-details；最新源码检查点c759450。本地对照页、描述反馈、可编辑查询草稿、只读费用历史已接入；新人工记录页和归档入口现已完成，执行记录sprint-detail-pilot-review.md。
 - 人工记录入口artifacts/detail-pilot-review-20261006/review-editor.html；可填写／下载／重新载入，四维分别记录。归档--review-file先重新核对原候选、精确请求/结果、注册帧和冻结资料，再独占写新目录五文件；原输入字节、规范记录、comparison快照、summary及provenance均保存。
 - 当前v4两个请求没有真实结果，表单相关判断/说明禁填。真实空记录保存、重新读取和1366/390下载/载入/再下载字节一致已验证，summary八项未核对；错误载入拒绝且原表单保留。原六图字节/尺寸、旧描述及意见可读，无页面错误/外部请求/横向溢出，源DB/侧车/账本/原报告/反馈/proposal不变。非空交互仅由工程fixture证明，新增真实人工结论0。
