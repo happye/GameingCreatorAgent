@@ -23,6 +23,8 @@ root在codex/visual-details顺序开发；独占新application/detail_pilot_revi
 
 ## 已实现节点：定向与真实资料往返通过
 
+发布核对：普通HTTP/1.1 push成功，随后独立ls-remote确认0b6c10b0a014ccc64079c054ac69e114ffd7905b与本地一致；只更新codex/visual-details，没有main/强推。结论文档后续保存并普通补推，最终核对记录.cache/detail-pilot-review-publication.json。当前完整验证后只改文档。
+
 最终完整verify源码检查点c759450：**1745 passed/1 Windows文件symlink权限skip，186.58s**；Ruff133/mypy71/CLI及两个同SHA离线wheel 65126fc5e6f7dea0867672063d52e9fa2800c08353a4196629d696b4345d8b54通过，日志.cache/detail-pilot-review-verify.log，最终输出摘要.cache/detail-pilot-review-verify-summary.json。完整检查后只改文档；旧1683和下方“待完整检查”是此前节点，不能覆盖本段最终结果。新JS及三个Python模块已在wheel内逐字节核对匹配源码。
 
 root纯合同、独立文件包、UI renderer/static JS及原生成器显式--review-editor/--review-file模式已完成。定向87 passed/11.66s（62新记录行为、22原对照、3架构），Ruff/strict mypy四文件通过；记录界面使用限定hash脚本CSP，无外部连接，所有旧描述和说明按文字展示。错误载入先整体验证，不覆盖原表单；重复JSON字段、来源变化、无新结果打分、错实体、非法日期/类型/说明均拒绝。
