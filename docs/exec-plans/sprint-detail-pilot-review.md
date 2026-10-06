@@ -23,6 +23,8 @@ root在codex/visual-details顺序开发；独占新application/detail_pilot_revi
 
 ## 已实现节点：定向与真实资料往返通过
 
+最终完整verify源码检查点c759450：**1745 passed/1 Windows文件symlink权限skip，186.58s**；Ruff133/mypy71/CLI及两个同SHA离线wheel 65126fc5e6f7dea0867672063d52e9fa2800c08353a4196629d696b4345d8b54通过，日志.cache/detail-pilot-review-verify.log，最终输出摘要.cache/detail-pilot-review-verify-summary.json。完整检查后只改文档；旧1683和下方“待完整检查”是此前节点，不能覆盖本段最终结果。新JS及三个Python模块已在wheel内逐字节核对匹配源码。
+
 root纯合同、独立文件包、UI renderer/static JS及原生成器显式--review-editor/--review-file模式已完成。定向87 passed/11.66s（62新记录行为、22原对照、3架构），Ruff/strict mypy四文件通过；记录界面使用限定hash脚本CSP，无外部连接，所有旧描述和说明按文字展示。错误载入先整体验证，不覆盖原表单；重复JSON字段、来源变化、无新结果打分、错实体、非法日期/类型/说明均拒绝。
 
 真实editor产物artifacts/detail-pilot-review-20261006/review-editor.html；原comparison HTML/JSON/template SHA仍分别4323e6e8b2f1b2f8a5792f613487dade9f6514ffd9f806f0116a63a03ded971f / a41f686bdc158e20e36a1b1973a42ca367f2fde973148941f1779e8309c4250d / ad78d358cc0a855fe639d051144146631aab0d541f49fc498561bdecdf99b666。新editor SHA34f1ed097c5fcf105cb1aca3f82f38dd0dda78ea201894900a7d2d7872fea092。

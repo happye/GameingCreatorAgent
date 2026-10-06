@@ -1,5 +1,14 @@
 # Errors
 
+## [ERR-20261006-011] pilot_review_initial_check_contracts
+
+**Logged**: 2026-10-06
+**Priority**: low
+**Status**: resolved
+**Area**: tests
+
+新记录合同初次strict mypy需要显式dict[str, tuple[str, ...]]，新pytest复用fixture须先赋值而非直接未用导入，并显式绑定循环回调收集容器。浏览器首次1 failed/84 passed：fieldset已有disabled但Playwright容器to_be_disabled不按交互控件判断；改为实际select/textarea禁用核验。最终87定向和1745完整通过，真实双尺寸控件禁用/空记录往返亦通过；不把测试适配问题误报为真实模型结果变化。
+
 ## [ERR-20261006-009] comparison_render_label_map_reuse
 
 **Logged**: 2026-10-06

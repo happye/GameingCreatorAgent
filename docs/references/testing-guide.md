@@ -22,6 +22,8 @@ The CLI demo's historical verification and real-video evidence are in `sprint-de
 
 Browser validation is opt-in and needs the locked `ui-test` extra. On a prepared repository:
 
+`test_detail_pilot_review.py` checks the exact frozen record anchors, independent nullable judgments, absent-result barriers, original-input preservation and new-directory protection. Its real file:// browser cases cover blank and saved fixture results, actual download/load, duplicate-key refusal and preserving the form after invalid input. Actual-source smoke records six-frame hashes/dimensions and keeps all new real judgments empty; neither fixture success nor a saved record passes F006.
+
 ```powershell
 . ./scripts/env.ps1
 ./.tools/uv/uv.exe --no-config sync --locked --extra asr --extra retrieval --extra ui-test --python ./.venv/Scripts/python.exe --no-python-downloads

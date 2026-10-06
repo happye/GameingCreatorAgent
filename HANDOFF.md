@@ -1,44 +1,40 @@
 # 当前交接
 
-更新时间：2026-10-06（Asia/Hong_Kong）。Codex、Claude Code、Grok Build 共用；历史见 progress.md 和各 sprint，验收见 feature_list.json。
+更新时间：2026-10-06（Asia/Hong_Kong）。Codex、Claude Code、Grok Build共用；历史见progress.md及各sprint，验收见feature_list.json。
 
-所有项目 Agent 每次关键改动后用通俗中文详细汇报：现在能做什么、使用帮助、实际验证与剩余问题、下一项具体工作。此模式跨会话、工具和子任务持续生效，恢复先读 AGENTS.md 和 docs/references/agent-workflow.md；worker向负责人提供同样结论。
+所有项目Agent每次关键改动后用通俗中文详细汇报：现在能做什么、使用帮助、实际验证与剩余问题、下一项具体工作。跨会话、工具、子任务持续生效；恢复先读AGENTS.md和docs/references/agent-workflow.md。
 
-## 当前可恢复状态
+## 当前成果与验证
 
-新切片：同候选对照人工记录，sprint-detail-pilot-review.md。root顺序完成纯Application合同、Infrastructure独占五文件包、UI renderer/static JS及原生成器--review-editor/--review-file入口，旧worker冻结。定向87/11.66s、Ruff/strict mypy通过；真实六图1366/390编辑页禁填缺结果、空记录下载/载入/再次下载字节一致、错判断拒绝不改表单、空记录包再读/summary八项未核对通过。源DB/侧车/账本/原资料不变，0模型/预算/新人工结论。实际入口artifacts/detail-pilot-review-20261006/review-editor.html和detail-pilot-review-blank-record-20261006/review-summary.html。最新源码将保存下一检查点；新完整verify尚未运行，1683仍上次基线。下一动作完整验证、同步指南与通俗报告、普通分支发布。
+- 分支codex/visual-details；最新源码检查点c759450。本地对照页、描述反馈、可编辑查询草稿、只读费用历史已接入；新人工记录页和归档入口现已完成，执行记录sprint-detail-pilot-review.md。
+- 人工记录入口artifacts/detail-pilot-review-20261006/review-editor.html；可填写／下载／重新载入，四维分别记录。归档--review-file先重新核对原候选、精确请求/结果、注册帧和冻结资料，再独占写新目录五文件；原输入字节、规范记录、comparison快照、summary及provenance均保存。
+- 当前v4两个请求没有真实结果，表单相关判断/说明禁填。真实空记录保存、重新读取和1366/390下载/载入/再下载字节一致已验证，summary八项未核对；错误载入拒绝且原表单保留。原六图字节/尺寸、旧描述及意见可读，无页面错误/外部请求/横向溢出，源DB/侧车/账本/原报告/反馈/proposal不变。非空交互仅由工程fixture证明，新增真实人工结论0。
+- 最新完整verify **1745 passed/1 Windows文件symlink权限skip，186.58s**；Ruff133/mypy71/CLI和两个同SHA离线wheel 65126fc5e6f7dea0867672063d52e9fa2800c08353a4196629d696b4345d8b54通过，新JS及三个模块在wheel内逐字节匹配源码。定向87/11.66s、额外脚本strict mypy通过。完整验证后只改文档；旧1683为之前对照切片基线。
+- 本轮0Provider/预留/费用变化，新版理解与独立检索质量未验收；F006/F009/F010保持false，humanLabels/qualityGate为null。普通自由搜索尚不能保证长句全部条件或同主体满足。
+- 生产服务最后核对快照52396/parent49720，旧35992/35892不存在；当前新工具不改工作台运行路径，无需重启。PID仅快照，操作前核对health、命令及项目身份，不能盲停。
+- 上一阶段远端独立核对5bc70298ff40fa3037f0139613edc0ad074db15e；本轮c759450及报告尚待普通补推，最终以Git及.cache/detail-pilot-review-publication.json为准。已授权只推当前工作分支到https://github.com/happye/GameingCreatorAgent，不更新main/强推。
 
-- 当前分支 codex/visual-details；最新源码检查点0a9c4af。worker对照生成器b58159d已整合4e2829a，再由root修复本地文件下载、条件标签及中文说明；worker原worktree冻结。
-- 同候选旧版／新版对照页已可直接打开：artifacts/detail-pilot-comparison-20261006-final/comparison.html。原六张画面、旧描述、三个确认与一个判错均保留；新版两个精确请求没有结果，明确显示“未执行／暂无结果”，不继承旧人工结论。
-- 定向116 passed，其中生成器22项；脚本Ruff及strict mypy通过。真实1366/390浏览器核对原六图hash/尺寸、旧反馈隔离、空人工结论和模板实际下载通过，无页面错误、外部请求或横向溢出。0Provider/预留变更，源DB/侧车/账本及冻结资料保持原值。
-- 最新完整verify 1683 passed/1 Windows文件symlink权限skip、177.18s；Ruff129/mypy68/CLI及两个同SHA离线wheel b64c37f66b09620ac1ff5ac574c44c1d8aa32676422c9f3050ab203652bcfc26均通过。.cache/detail-pilot-comparison-verify.log及summary记录本轮结果；1683替代旧1661基线。
-- 用户最新提醒额度15%、要求准备汇报；继续开发Goal仍active，未要求暂停。先保存检查点和报告、完成当前验证，不把额度比例当作新增模型授权。
-- 最新生产服务核对快照PID52396、parent49720，启动身份/health/原三确认与一判错/v4missing/查询草稿已验证；旧35992/35892不存在，未停止任何未知进程。生产源码此切片未改，无需重启；PID只是历史快照，下次操作先重新核对。
-- 本轮实现、完整验证和报告已普通push成功，紧随独立ls-remote确认1472222eb511fb3d1eb477c5523fab082e7e5fa5与当时本地HEAD一致；旧连接失败已恢复。此后同步结论文档也须普通推送，最终HEAD以Git和.cache/detail-pilot-comparison-publication.json为准。只推授权工作分支，不更新main或强推。
+## 下一工作
 
-## 下一动作
+1. 保存当前1745验证、指南和通俗汇报，普通push当前分支并独立核对远端；失败保留本地检查点和实际原因。
+2. 沿Phase 0准备已有视频的固定十槽检索开发诊断，优先Boss、跳跃、射击等被否决的查询；保留缺位、重复与未判定，回看源片段。先检查已有验收资料和素材，不重复已实现工具。
+3. 开发PV已用于调参，不得当独立最终测试集。正式F006需10–20段代表录像、分会话独立测试、事前冻结查询与人工参考事件；每个主查询至少十个独立可用参考事件，前十固定槽至少七个不同真实事件获2/3。现有两描述对照和空记录不代替此门槛。
+4. 新v4真实对照待对应新授权答复；获明确答复后按冻结两例各一次、最多两次、无自动重试，再判断物品误认和切镜是否改善。授权未到仍可继续离线开发，Goal active；额度提醒和恢复不构成新增模型许可。
 
-1. 本轮完整检查已通过，源码未再改；完善带来源身份的人工记录本地核验及单独使用说明，先登记新任务分工，旧worktree保持冻结。
-2. 已同步对照页指南、阶段与专项通俗报告、sprint、assignments和本交接；向用户汇报实际入口、可用效果、1683完整检查及真实识别尚未验证的边界。
-3. 本轮普通推送与独立核对已成功；恢复时重新读取本地/远端HEAD，不把本文1472222快照当未来最新提交。
-4. 沿Phase 0路径继续离线验收准备，优先让同画面人工记录能可靠绑定结果并保留不同判断维度；新增真实v4请求必须等对应新授权答复，再按已冻结两候选执行最多两次、每例一次、无自动重试。两个描述例子不能替代独立Top-10十固定槽、至少七个独立有用事件的检索门槛。
+## 费用、授权和已收到的人评
 
-## 费用、授权与验收边界
+原两次精分析／最高¥4.04／原六帧传输授权已执行完，共估价¥0.01850612，新增unknown0；全任务已知¥0.24934532、总承诺¥4.31488132。旧未知预留¥4.065536继续保留，禁止重试漫画run 0ba106578bc7435c8689d12892a35dfb或换目录清账。
 
-原两次精分析／最高¥4.04／原六帧发送授权已执行完，共估价¥0.01850612，新增unknown0。全任务已知¥0.24934532、总承诺¥4.31488132；旧未知预留¥4.065536继续保留。禁止重试漫画run 0ba106578bc7435c8689d12892a35dfb或换目录清账。
+新v4proposal路径artifacts/detail-temporal-validation/pilot-proposal.json，SHA06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6。新两次／最高¥4.07／同六帧到DeepSeek chat/completions的对应问题已提出，尚未收到答复：executionAuthorized=false、paidRequestsSent=0，新增实验费用未预留。旧预算余量不等于新增次数。
 
-新v4冻结proposal：artifacts/detail-temporal-validation/pilot-proposal.json，SHA 06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6。新两次／最高¥4.07／同六帧到DeepSeek chat/completions的授权问题已提出，未收到答复；executionAuthorized=false，paidRequestsSent=0，尚未预留新增实验费用。额度恢复或旧预算余量不构成该新授权。
+用户只确认35–36秒三个描述；拒绝28–29秒s1/a2：物品正抵镜头遮住人物，它是物品而不是新人物。其他描述、属性、动作和检索质量未确认。旧确认仅跟随原report/request/payload/shot/actor，不自动成为新版结论。
 
-人工反馈仅确认35–36秒三个描述；拒绝28–29秒s1/a2：物品正抵镜头并遮挡人物，它是物品而不是新人物。其他描述、属性、动作和检索质量未获确认。原报告、模型结果和反馈不能覆盖；更换request/payload/shot/actor后不能自动继承确认。
+## 分工与位置
 
-v4连续实体合同、v3同部件合同、受控自然语言清单、只读费用历史与描述反馈已工程接入；真实v4理解改善未验证。F006/F009/F010继续false，humanLabels/qualityGate默认null。普通自由搜索仍不能保证长句全部条件或同主体满足。
+root在当前分支顺序开发记录合同、文件I/O、UI renderer/static JS、生成器和测试/公共文档；所有旧worker及worktree冻结，无并行writer。四层核心保持，UI负责呈现、Infrastructure负责文件；无新HTTP API或付费入口。
 
-## 位置、分工与证据
-
-- 核心四层：src/gamingcreator/{cli,application,domain,infrastructure}；工作台ui；范围以总方案、docs/product-specs/phase-0.md和feature_list.json为准。
-- root负责最终集成、真实页面验证及公共文档；detail_parts_v3的.worktrees/detail-pilot-compare/codex/detail-pilot-compare已冻结，旧parts/temporal/proposal及其他worker worktrees也冻结。query_draft_review只读复核，无共享文件写入。
-- 当前执行记录：docs/exec-plans/sprint-detail-pilot-comparison.md；已有通俗阶段报告：docs/exec-plans/report-2026-10-06-stage-progress.md；专项报告report-2026-10-06-pilot-comparison.md及docs/references/detail-pilot-comparison-guide.md已齐。
-- 真实证据：artifacts/detail-temporal-validation/pilot-comparison-browser-report.json、comparison-source-audit.json、pilot-comparison-1366.png、pilot-comparison-390.png；生成日志.cache/detail-pilot-comparison-final-release-generate.log。
-- 对照HTML SHA4323e6e8b2f1b2f8a5792f613487dade9f6514ffd9f806f0116a63a03ded971f；comparison.json SHAa41f686bdc158e20e36a1b1973a42ca367f2fde973148941f1779e8309c4250d；template SHAad78d358cc0a855fe639d051144146631aab0d541f49fc498561bdecdf99b666。
-- 先前描述反馈、查询草稿、连续实体验证分别见sprint-detail-feedback-surface.md、sprint-detail-query-draft.md、sprint-detail-temporal.md；旧媒体与费用实验见sprint-visual-details.md，勿把历史成功视为当前验收。
-- 双击Start-Workspace.cmd；启动、读取已有结果、查询和刷新不发付费请求。只用.tools/.venv/.cache；Python先加载scripts/env.ps1并加-B。密钥只使用现有进程环境，不打印或复制。
+- 最新详细报告docs/exec-plans/report-2026-10-06-pilot-review.md，阶段总览report-2026-10-06-stage-progress.md；使用方法docs/references/detail-pilot-review-guide.md。
+- 当前执行记录docs/exec-plans/sprint-detail-pilot-review.md；来源对照与历史反馈见sprint-detail-pilot-comparison.md和sprint-detail-feedback-surface.md。
+- 真实证据artifacts/detail-temporal-validation/pilot-review-browser-report.json及review-editor/review-summary双尺寸截图；空记录包artifacts/detail-pilot-review-blank-record-20261006。
+- 完整日志.cache/detail-pilot-review-verify.log及summary JSON；生成、保存和再读日志.cache/detail-pilot-review-editor-generate.log、detail-pilot-review-blank-save.log、detail-pilot-review-readback.log。
+- 双击Start-Workspace.cmd继续使用已有分析；启动、读取、检索和刷新无新精分析。只用.tools/.venv/.cache，先env.ps1、Python加-B；密钥只用原进程环境，不打印或复制。

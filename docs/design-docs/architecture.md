@@ -31,6 +31,8 @@ CLI 只解析输入、组装依赖和输出结果；Application 编排 stages、
 
 离线对照生成器从冻结proposal、原报告/人工反馈和当前精确版本侧车读取同候选资料，复核注册帧、原结果和旧匹配逐项一致；输出新目录内的HTML、来源JSON及默认空值的人工记录模板。画面与下载JSON内嵌静态页面，无脚本/外部连接；不存在v4结果就保留no_saved_result，不调用Provider、预留预算或写源数据库。详情见[使用指南](../references/detail-pilot-comparison-guide.md)。
 
+人工记录由Application纯解码和来源绑定，UI生成独立本地表单（hash限定脚本CSP、无外部连接），Infrastructure有界读取并独占写新记录目录。script先重跑原对照的来源核对，再验证四维bool/null、元数据、原帧和当前scene实体；缺结果不可判断。归档保留原输入字节、规范记录、完整comparison、汇总和摘要，不写模型侧车或U10标签。见[记录指南](../references/detail-pilot-review-guide.md)。
+
 v4精分析新增独立实体连续性证据：注册帧及源时钟→角色/物品/未知分类、逐帧可见性、相邻边界及持有关系→temporal-scene-v1→确定性actor投影→原词表的AND匹配。actor-details-v2将scene与投影共同保存；Application每次序列化、恢复、读取和匹配比较重新计算的投影，合法scene不能配合伪造的actor属性。unknown边界不连接身份，不确定实体/持有关系阻止全局no_match。新schema-v2/matcher-v2及v4请求哈希隔离旧数据，旧payload不新增null字段；v4沿用原单次HTTP、费用和取消路径，仍需真实模型验证。
 
 本地源文件 → hash/probe → 带 PTS 的视觉证据＋音频 → 本地 ASR＋视觉 Provider → 校验后的 SemanticEvent → SQLite → 检索/重排/去重 → CandidateClip。
