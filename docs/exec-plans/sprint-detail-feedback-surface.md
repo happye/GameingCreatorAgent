@@ -27,6 +27,8 @@
 
 ## 已汇报与下一步
 
+最新Git与接续：最终报告/验证交接a424ef4已本地保存；普通HTTP/1.1 push目标同一授权GitHub仓库和codex/visual-details，21.085秒GitHub443连接失败，远端新HEAD未确认，最后确认e7dab08。未改main、强推、remote或全局网络。已向用户汇报实际生产读取成功、无新增费用，下一步同候选人工对照页已开新独占worktree，见sprint-detail-pilot-comparison.md；新真实发送许可继续待答。
+
 最终完整verify **1661 passed/1 skip，152.15s**，Ruff128/mypy68/CLI/console通过，两次离线wheel同SHA `b64c37f66b09620ac1ff5ac574c44c1d8aa32676422c9f3050ab203652bcfc26`；.cache/detail-description-feedback-verify.log，观察结果与检查点另存verify-summary.json。源码自ad43251后未再改，后续只有交接/报告更新。原F006/F009/F010继续false；人工描述确认不等于动作或U10通过。
 
 生产服务health/状态/CIM命令/精确仓库和工具链EXE全部匹配后，仅停止旧自有child12980，父38700自然结束；新35992/parent35892 NoBrowser启动并重验，production-description-feedback-report.json。实际HTTP原40事件run读出3 accepted，原33事件run读出1 rejected，v4missing无旧反馈，草稿ready。重启前后源表/侧车/人工记录/冻结proposal SHA不变、0Provider/预算变更，PID只是本次快照。

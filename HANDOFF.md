@@ -6,6 +6,10 @@
 
 ## 当前结论
 
+当前下一离线切片：同候选v2/v4人工对照页，见sprint-detail-pilot-comparison.md。detail_parts_v3在新.worktrees/detail-pilot-compare/codex/detail-pilot-compare（a424ef4基线）独占新生成脚本/新tests/own sprint；root负责实际生成/桌面手机及公共记录，其他workers冻结。对照原六图和已有描述反馈，v4缺结果明确未执行，新人工记录默认null、不能替代U10；不发送、不预留、不覆盖源数据。worker进行中，接手先检查其commit/定向结果，再串行整合；本轮原工作台1661完整验证与production已通过，不重复实现。Goal持续开发仍active，不把额度提醒当停工。
+
+最新Git：本地a424ef4包含ad43251描述反馈交付与最终报告。一次普通HTTP/1.1 push因GitHub443连接失败21.085秒，未改main或强推；新远端未独立读到，最后已确认e7dab08。URL的可选.git后缀已按相同授权仓库规范化，未改变remote或全局网络。网络恢复后补推当前codex/visual-details并独立核对HEAD。
+
 当前描述反馈切片已完成，root实现ad43251，worker09dae6f→fb77ab5与6aa603c→18fddea整合冻结。完整verify **1661 passed/1 skip，152.15s**，Ruff128/mypy68/CLI及两次同SHA离线wheel `b64c37f66b09620ac1ff5ac574c44c1d8aa32676422c9f3050ab203652bcfc26`；.cache/detail-description-feedback-verify.log，最终定向244 passed/44.26s。反馈只读且描述级，原报告候选/attempt/payload及当前result/shot/actor完整核验，独立review确认来源缺口已堵。真实3 accepted/1 rejected、原描述、桌面/手机、匹配旁标记、v4隔离重验通过，0新HTTP/费用，源表/旧侧车/账本/原报告/反馈/冻结proposal SHA不变。旧12980及38700的health/状态/CIM命令/仓库身份匹配后仅停止自有子PID；新版35992/parent35892已health/状态/命令核对，并重新读取40事件原三确认与33事件原单判错、v4missing、querydraft ready；production-description-feedback-report.json，PID仅快照。最新详细汇报report-2026-10-06-description-feedback.md已补齐。Git待普通push后独立核对；新v4授权仍待答，F006/F009/F010和旧unknown不变，下一步沿原路线准备真实对照与人工质量核对，不冒称识别已修好。
 
 本切片起始计划（已完成）：已有人工描述反馈的只读工作台标记，见sprint-detail-feedback-surface.md。原三个接受和一个拒绝已给过，无需重复人评；查询草稿交付也已完成，勿重复实现。后续不把描述确认扩大为属性、动作或U10标签。
