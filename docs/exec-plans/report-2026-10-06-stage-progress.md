@@ -24,6 +24,6 @@
 
 你已经给出的三个正确、一个错误都已登记，当前无需重复标注这四条。后续需要核对的是新的实际对照结果和独立检索可用性。所有Agent恢复时仍须按同一规则，用通俗语言说明关键变化、验证范围和下一步。
 
-代码、详细报告和可恢复交接已提交到本地 `codex/visual-details`。普通推送遇到GitHub443连接失败，最新远端尚未确认；没有更新main或强推。网络恢复后补推并独立核对。
+代码、详细报告和可恢复交接已提交并普通推送到 `codex/visual-details`，随后独立核对远端与本地提交一致。此前GitHub连接失败已恢复；main保持原值，没有强推。生成页面和原画面仍只保存在本机。
 
 细分证据见 [同画面对照汇报](./report-2026-10-06-pilot-comparison.md)、[对照页使用指南](../references/detail-pilot-comparison-guide.md)、[描述反馈汇报](./report-2026-10-06-description-feedback.md)、[查询草稿汇报](./report-2026-10-06-query-draft.md) 和 [连续实体汇报](./report-2026-10-06-temporal-details.md)。下一任务见 [对照页计划](./sprint-detail-pilot-comparison.md)；恢复入口为 [HANDOFF](../../HANDOFF.md)。F006、F009、F010继续保持未验收。
