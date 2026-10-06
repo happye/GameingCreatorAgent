@@ -6,39 +6,37 @@
 
 ## 当前成果与验证
 
-断网恢复实现检查点：固定十位诊断Application／inspect／弹窗及当前查询下载回看已实现，定向71 passed／1原Windows权限skip、mypy72通过。新来源替换／切项目／HTML反例待再跑，真实录像、完整verify和发布待做；尚不能称本轮交付。已汇报缺位／重复保留、旧查询失效，下一动作真实Boss／跳跃／射击查询与桌面手机对应源片段核对，无新模型请求。
+分支codex/visual-details；最新源码检查点b2c2a13，固定十位检索诊断已完成。工作台在成功非空查询后显示原排名、缺位及已知重复，支持当前上下文下载和原片回看；空／incomplete为null，失败／迟到响应／查询方式条数／项目run变更使旧诊断失效，低top限制明确提示。所有人评／有用率／质量门槛为空，未改排名和检索阈值。
 
-新切片已登记：sprint-retrieval-diagnostics.md。root顺序负责固定十位只读Application投影、/api/inspect附加诊断和UI弹窗/下载/预览及测试，旧worker冻结。开始0ae1a68干净、scaffold通过；1745为上轮完整基线，当前尚无新实现/验证。下一动作先完成纯投影，再接UI和实际Boss/跳跃/射击诊断；新真实模型授权仍待答，0付费。正常查询会保存搜索记录，不能据数据库SHA变化误报模型源事实改动。
-
-- 分支codex/visual-details；最新源码检查点c759450。本地对照页、描述反馈、可编辑查询草稿、只读费用历史已接入；新人工记录页和归档入口现已完成，执行记录sprint-detail-pilot-review.md。
-- 人工记录入口artifacts/detail-pilot-review-20261006/review-editor.html；可填写／下载／重新载入，四维分别记录。归档--review-file先重新核对原候选、精确请求/结果、注册帧和冻结资料，再独占写新目录五文件；原输入字节、规范记录、comparison快照、summary及provenance均保存。
-- 当前v4两个请求没有真实结果，表单相关判断/说明禁填。真实空记录保存、重新读取和1366/390下载/载入/再下载字节一致已验证，summary八项未核对；错误载入拒绝且原表单保留。原六图字节/尺寸、旧描述及意见可读，无页面错误/外部请求/横向溢出，源DB/侧车/账本/原报告/反馈/proposal不变。非空交互仅由工程fixture证明，新增真实人工结论0。
-- 最新完整verify **1745 passed/1 Windows文件symlink权限skip，186.58s**；Ruff133/mypy71/CLI和两个同SHA离线wheel 65126fc5e6f7dea0867672063d52e9fa2800c08353a4196629d696b4345d8b54通过，新JS及三个模块在wheel内逐字节匹配源码。定向87/11.66s、额外脚本strict mypy通过。完整验证后只改文档；旧1683为之前对照切片基线。
-- 本轮0Provider/预留/费用变化，新版理解与独立检索质量未验收；F006/F009/F010保持false，humanLabels/qualityGate为null。普通自由搜索尚不能保证长句全部条件或同主体满足。
-- 生产服务最后核对快照52396/parent49720，旧35992/35892不存在；当前新工具不改工作台运行路径，无需重启。PID仅快照，操作前核对health、命令及项目身份，不能盲停。
-- 本轮普通push成功，紧随独立ls-remote确认0b6c10b0a014ccc64079c054ac69e114ffd7905b与当时本地HEAD相同，源码和1745报告均已同步。后续发布结论文档单独补推，最终以Git及.cache/detail-pilot-review-publication.json为准。只推已授权分支到https://github.com/happye/GameingCreatorAgent，不更新main/强推。
+- 真实Atom录像f601fb9b3e734d5ea188fc15c790acbb（54.743秒／33事件）：跳跃lexical/hybrid各2、缺8；semantic10仍未人评；复合Boss hybrid8、缺2、整句条件未证明；射击两模式0、缺10；汽车维修负例hybrid0。零命中不证明录像没有对应动作。
+- 新30行为反例23.96s通过；完整verify **1775 passed／1 Windows文件symlink权限skip，215.71s**，Ruff135、mypy72、CLI及双离线wheel同SHA **75bd3e39a7b4c571fb92bacc1d9dc1d67346a48b73ebf70bfaf73f6ed7a1b55e**。包内71项目文件逐字节同源码，含新诊断及UI。1745为上一人工记录切片完整基线。
+- 实际1366/390十位、下载与响应一致、第二候选11.5秒非零seek和注册证据通过，无页面错误／外部请求／横溢。打开／下载／回看0额外检索；普通查询照常追加搜索记录，不能据DB字节变化误报基础分析变更。
+- 源基础表、注册视频／证据、原精分析／反馈／预算及冻结proposal经快照核对保持。真实8组查询、两轮双尺寸浏览器及更新服务读验共新增普通检索；不删首次实测初始化失败前已保存的8次查询。本切片0Provider／预算／新真实人工评分。
+- 生产在健康／state／CIM／父子身份／仓库／exe／命令匹配后更新；最新快照 **36484／parent55324**。新字段、跳跃2／缺8、旧v2三个确认+一个纠错、v4缺失及反馈不跨版本通过。旧52396/49720已替换，PID仅快照，操作前重新核对，不能盲停。
+- 实现和详细报告已落盘，网络已恢复，远端读取当时为0ae1a687976abc1bdded8eae782702c1622a5479；本轮发布尚待普通push及独立ls-remote，不冒称已同步。只推已授权https://github.com/happye/GameingCreatorAgent的当前分支，不更新main／强推；最终以Git及.cache/retrieval-diagnostics-publication.json为准。
+- 已向用户按持续规则详细汇报诊断能力、真实查询不足、验证范围、零新费用及下一步，报告report-2026-10-06-retrieval-diagnostics.md。独立检索质量、新v4真实理解仍未验收；F006/F009/F010 false。
 
 ## 下一工作
 
-1. 当前1745验证、指南、通俗汇报和远端核对已保存；恢复先查本地/远端Git及来源，不重复已通过完整检查。
-2. 沿Phase 0准备已有视频的固定十槽检索开发诊断，优先Boss、跳跃、射击等被否决的查询；保留缺位、重复与未判定，回看源片段。先检查已有验收资料和素材，不重复已实现工具。
-3. 开发PV已用于调参，不得当独立最终测试集。正式F006需10–20段代表录像、分会话独立测试、事前冻结查询与人工参考事件；每个主查询至少十个独立可用参考事件，前十固定槽至少七个不同真实事件获2/3。现有两描述对照和空记录不代替此门槛。
-4. 新v4真实对照待对应新授权答复；获明确答复后按冻结两例各一次、最多两次、无自动重试，再判断物品误认和切镜是否改善。授权未到仍可继续离线开发，Goal active；额度提醒和恢复不构成新增模型许可。
+1. 保存当前最终文档和发布检查点，普通push后独立比对远端。恢复先核对Git及来源，不重复已通过完整验证。
+2. root顺序登记下一离线审计：追踪射击零命中是否基础描述缺动作、词法用词差异或检索漏掉已有记录；逐条件核对Boss候选，先用现有事件／证据／原片，不新增模型请求。
+3. 开发PV已用于调参，不作独立最终测试集。正式F006需10–20段代表录像、分会话独立测试、事前冻结查询和人工参考事件；每个主查询至少十个独立可用参考事件，十固定槽至少七个不同真实事件获2/3。诊断数量和两个描述对照不替代此门槛。
+4. 新v4真实对照待对应新授权答复。获明确答复后按冻结两例各一次、最多两次、无自动重试，再判断物品误认和切镜是否改善。授权未到继续离线工作，Goal active；额度提醒／网络恢复不构成新增模型许可。
 
 ## 费用、授权和已收到的人评
 
-原两次精分析／最高¥4.04／原六帧传输授权已执行完，共估价¥0.01850612，新增unknown0；全任务已知¥0.24934532、总承诺¥4.31488132。旧未知预留¥4.065536继续保留，禁止重试漫画run 0ba106578bc7435c8689d12892a35dfb或换目录清账。
+原两次精分析／最高¥4.04／原六帧传输授权已执行完，共估价¥0.01850612，新增unknown0；全任务已知¥0.24934532、总承诺¥4.31488132。旧未知预留¥4.065536保留，禁止重试漫画run 0ba106578bc7435c8689d12892a35dfb或换目录清账。
 
-新v4proposal路径artifacts/detail-temporal-validation/pilot-proposal.json，SHA06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6。新两次／最高¥4.07／同六帧到DeepSeek chat/completions的对应问题已提出，尚未收到答复：executionAuthorized=false、paidRequestsSent=0，新增实验费用未预留。旧预算余量不等于新增次数。
+新v4proposal为artifacts/detail-temporal-validation/pilot-proposal.json，SHA06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6。新两次／最高¥4.07／同六帧到DeepSeek chat/completions的对应问题已提出，尚未收到答复：executionAuthorized=false、paidRequestsSent=0，新增实验费用未预留。旧预算余量不等于新增次数。
 
 用户只确认35–36秒三个描述；拒绝28–29秒s1/a2：物品正抵镜头遮住人物，它是物品而不是新人物。其他描述、属性、动作和检索质量未确认。旧确认仅跟随原report/request/payload/shot/actor，不自动成为新版结论。
 
 ## 分工与位置
 
-root在当前分支顺序开发记录合同、文件I/O、UI renderer/static JS、生成器和测试/公共文档；所有旧worker及worktree冻结，无并行writer。四层核心保持，UI负责呈现、Infrastructure负责文件；无新HTTP API或付费入口。
+root在当前分支顺序负责Application诊断、UI/service、静态页面和测试／公共记录。旧worker/worktree全部冻结，无并行writer；无新HTTP路由／付费入口。
 
-- 最新详细报告docs/exec-plans/report-2026-10-06-pilot-review.md，阶段总览report-2026-10-06-stage-progress.md；使用方法docs/references/detail-pilot-review-guide.md。
-- 当前执行记录docs/exec-plans/sprint-detail-pilot-review.md；来源对照与历史反馈见sprint-detail-pilot-comparison.md和sprint-detail-feedback-surface.md。
-- 真实证据artifacts/detail-temporal-validation/pilot-review-browser-report.json及review-editor/review-summary双尺寸截图；空记录包artifacts/detail-pilot-review-blank-record-20261006。
-- 完整日志.cache/detail-pilot-review-verify.log及summary JSON；生成、保存和再读日志.cache/detail-pilot-review-editor-generate.log、detail-pilot-review-blank-save.log、detail-pilot-review-readback.log。
-- 双击Start-Workspace.cmd继续使用已有分析；启动、读取、检索和刷新无新精分析。只用.tools/.venv/.cache，先env.ps1、Python加-B；密钥只用原进程环境，不打印或复制。
+- 当前执行与详细报告：docs/exec-plans/sprint-retrieval-diagnostics.md、report-2026-10-06-retrieval-diagnostics.md；阶段总览report-2026-10-06-stage-progress.md；操作docs/references/retrieval-diagnostics-guide.md。
+- 真实证据artifacts/retrieval-diagnostics-validation/report.json、nonzero-preview-report.json、production-report.json、diagnostics-1366/390截图及只读验证脚本；均ignored。
+- 完整日志.cache/retrieval-diagnostics-verify.log、summary JSON、wheel-receipt JSON；旧／新进程身份receipts在.cache，密钥不打印、不复制。
+- 既有人工记录入口artifacts/detail-pilot-review-20261006/review-editor.html；归档--review-file核对冻结源后独占新目录五文件。当前新版缺结果禁填四维判断；实际只完成空记录往返，无新真实结论，见sprint-detail-pilot-review.md和对应guide/report。
+- 双击Start-Workspace.cmd继续使用已有分析，启动／读取／检索／刷新不新增精分析。仅.tools/.venv/.cache，先env.ps1，Python加-B，保存未知成本。
