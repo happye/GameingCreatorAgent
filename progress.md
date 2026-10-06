@@ -1,5 +1,7 @@
 # Progress Log
 
+2026-10-06同源旧版／新版对照交付：worker b58159d→4e2829a，root修复直接本地文件JSON下载和条件/实体标签0a9c4af，长检查前保存ba676ff。真实最终页面在artifacts/detail-pilot-comparison-20261006-final，原六图/三个描述确认/一个纠错可同页查看，两版使用同一查询；新v4暂无结果且人工模板各维度null。定向116、完整1683 passed/1 Windows权限skip（177.18s）、Ruff129/mypy68/CLI及双离线wheel同SHA b64c37f66b09620ac1ff5ac574c44c1d8aa32676422c9f3050ab203652bcfc26通过。1366/390实际图字节尺寸、反馈隔离、模板下载、无脚本错误/外部请求/横溢通过；0Provider/预算变化，源DB/侧车/账本/原资料不变。专项/阶段通俗报告、指南与全部共享恢复记录已同步；新实验授权待答，旧unknown与F006/F009/F010不变，下一步优先本地人工记录核验。远端以HANDOFF实际核对为准。
+
 2026-10-06人工描述反馈回工作台：已有35–36s三条接受、28–29s s1/a2物品误认拒绝作为独立只读标记显示在主体描述与条件结果旁，其他条目仍未核对，原模型输出保留。纯feedback fb77ab5、报告来源核验18fddea和root接入ad43251完成；定向244、完整1661 passed/1skip（152.15s）、Ruff128/mypy68/CLI/双离线wheel同SHA b64c37f66b09620ac1ff5ac574c44c1d8aa32676422c9f3050ab203652bcfc26。真实桌面/手机、原描述逐条、v4隔离及生产35992/35892重验通过，源记录/账本/冻结方案不变，0Provider/费用。详细汇报report-2026-10-06-description-feedback.md和恢复sprint/HANDOFF已保存；不代表物品误认已修好或U10通过，新v4授权仍待答。
 
 2026-10-06用户物品误认反馈后，连续实体v4离线工程整合完成：actor/object/unknown、逐帧遮挡、连续/cut/unknown边界、owner共同帧、完整scene保存与投影核对、新版本身份及页面依据回看。worker211bbf7→3278895；最终1283 passed/1 Windows文件symlink权限skip、126.74s，Ruff118/mypy64/CLI/重复wheel SHA0cebff7f7ea68863d8df7a93f38f1d03aeb54041e1897f9b2e82bfe70a4c7e15。桌面/手机、安全文本、保存恢复、未知屏障通过；真实两旧payload和源表/侧车不变、0新HTTP。新版服务16808/54620仅快照。已通俗详细汇报效果/验证限度与下一步：准备新v4真实对照，而非宣称模型误认已修复。F006/F009/F010及旧unknown保持；恢复见HANDOFF与sprint-detail-temporal。

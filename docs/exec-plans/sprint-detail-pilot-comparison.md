@@ -19,6 +19,14 @@
 
 ## 验证与恢复
 
+### 最终交付与完整验证
+
+最新源码0a9c4af、长验证前交接检查点ba676ff。完整verify **1683 passed/1 Windows文件symlink权限skip，177.18s**；Ruff129文件、mypy68 source、CLI/已安装入口及两次同SHA离线wheel b64c37f66b09620ac1ff5ac574c44c1d8aa32676422c9f3050ab203652bcfc26通过。日志.cache/detail-pilot-comparison-verify.log；工具输出及summary保存最终pytest数字。后续只改文档，不重复全量检查。
+
+1366/390真实最终页、六图原字节/尺寸、3确认1判错、新版空值、模板实际下载通过；生成器22回归中两份JSON下载逐字节一致。只读review确认标签及静态下载无阻断，提出阶段报告旧状态已由root修正。已同步对照指南、README、user manual、architecture、专项和阶段报告、assignments及HANDOFF；持久汇报规则无变化。用户可同页查看原例和下载资料，新版识别仍未执行，0新费用。下一步先完善本地人工记录核验，再按新授权答复进行冻结真实实验；F006/F009/F010和旧unknown保留。
+
+Git普通推送与独立远端核对结果在完成后记录；不能把本地提交当已同步。
+
 ### 最新检查点：真实对照页已可用，全项目检查待运行
 
 worker b58159d已串行整合为4e2829a，其原worktree冻结。root完成中文条件标签和同部件规则说明、查询/实体标签映射隔离，以及直接打开file://时的静态JSON下载修复。新增真实浏览器下载回归，两份下载均与落盘文件逐字节一致；最新定向116 passed（生成器22、proposal18、原报告验证76），生成脚本Ruff和strict mypy通过。1661/1skip仍是之前描述反馈切片的完整基线，本次全项目检查尚未运行。

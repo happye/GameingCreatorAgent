@@ -1,6 +1,8 @@
 # Active assignments
 
-当前新离线切片为同候选v2/v4人工对照，见sprint-detail-pilot-comparison.md。detail_parts_v3新`.worktrees/detail-pilot-compare` / `codex/detail-pilot-compare`（a424ef4）独占新prepare-detail-pilot-comparison.py、新tests/own sprint；root审核整合、真实页面和共享记录。其余worker冻结，reviewer只读无写入。v4仍缺真实结果，授权待答；人工模板各维度默认null，不调用或覆盖原冻结材料，不代替U10。
+当前同候选v2/v4人工对照切片已交付，见sprint-detail-pilot-comparison.md和report-2026-10-06-pilot-comparison.md。detail_parts_v3在独占.worktrees/detail-pilot-compare/codex/detail-pilot-compare的b58159d已整合4e2829a，原tree冻结；root下载与标签修复0a9c4af完成。定向116、完整verify1683/1权限skip及真实1366/390六图/反馈/模板下载通过，0Provider/预算/源数据变更。query_draft_review只读复核通过，root负责报告与普通分支同步；其他worker冻结。v4仍无真实结果、新授权待答；模板空值、U10和费用边界不变。下一切片先登记新的人工记录本地核验分工，不回写已冻结worker。
+
+以下为历史任务与验证基线；生产当前快照52396/parent49720，旧PID和旧验证数字不能当现状，详见HANDOFF。
 
 描述反馈切片已完成：detail_cost_history `.worktrees/detail-feedback` / `codex/detail-feedback` 的09dae6f与6aa603c已整合fb77ab5/18fddea并冻结；root reader/service/UI/17 HTTP-browser实现ad43251。query_draft_review只读确认来源反例已堵。最终定向244、完整verify1661/1skip通过，真实桌面/手机/原描述保留及生产35992/35892读取重验通过；见sprint-detail-feedback-surface与详细report。detail_workspace_review只读核对下一离线小切片，不写文件/不调用模型。只描述级反馈，F006/F009/F010和unknown不变，新付费授权仍待答。
 

@@ -1,5 +1,23 @@
 # Errors
 
+## [ERR-20261006-009] comparison_render_label_map_reuse
+
+**Logged**: 2026-10-06
+**Priority**: medium
+**Status**: resolved
+**Area**: ui
+
+查询条件标签与实体分类标签复用同一局部映射，第二个候选渲染触发hair_color KeyError。分离query_kind_labels后由带scene的fixture及定向116/完整1683回归验证；多候选不同状态渲染须保留此覆盖，不能只检查首个缺结果候选。
+
+## [ERR-20261006-010] comparison_file_uri_download
+
+**Logged**: 2026-10-06
+**Priority**: medium
+**Status**: resolved
+**Area**: ui
+
+HTML直接file://打开时，相邻JSON相对链接未产生下载，实际点击超时。改用静态内嵌UTF8 JSON data URL与明确download文件名，无脚本或外部请求；浏览器回归验证两份下载逐字节等于落盘文件，真实1366/390模板下载亦通过。查看链接不能代替实际下载验收；原失败目录保留。
+
 ## [ERR-20261006-007] description_feedback_directory_rename
 
 **Logged**: 2026-10-06
