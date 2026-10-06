@@ -14,6 +14,8 @@ v4只读方案worker ac72b4d已整合34135cc并冻结；root dry-run重验原两
 
 Git：持久汇报规则/工作台检查点766a80a已普通push并独立ls-remote核对；随后60869d5计划与3278895合同、root整合及本交接共同保存为本轮检查点，最新HEAD/远端以Git核对为准。只推codex/visual-details，不改main或强推。下方1184及更早验证是历史切片记录。
 
+最新Git同步：查询草稿实现f32e45e及1457验证交接05b0e2e已本地保存。两次普通HTTP/1.1 push、随后独立ls-remote均GitHub443连接失败约21秒；新远端未确认，最后确认过的是上一切片e7dab08。未改main/强推/全局网络；网络恢复后补推当前分支并独立比较HEAD，不把待推当已同步。
+
 面向用户的详细汇报已保存docs/exec-plans/report-2026-10-06-temporal-details.md，覆盖使用效果、人工反馈、九帧仍误认的根因、v4规则、1283工程验证的边界、零新增费用及下一步。用户要求补出未显示的汇报并持续开发；下一离线任务为受控查询草稿，真实v4对照方案先冻结但不发送。
 
 2026-10-06断网接续离线切片已完成：root页面typed AND/POST与request/payload核对a59a85e，v3嵌套part d3aedff、只读费用历史877d7d8已整合，CLI/API/页面可选v1/v2/v3（页面/CLI默认v2、inspect API默认v1）。最新完整verify **1184 passed / 1 Windows文件symlink权限skip，124.87s**，Ruff109/mypy60/CLI与两次离线wheel通过，SHA fc1106a422692842c64eb1a1399969b776d729b3c1b3c8cbe569092a8546ecec，日志.cache/detail-workspace-verify.log。真实两候选页面partial、v3缺结构unverified、费用弹窗及桌面/手机通过，0页面错误/外部请求；原源表与侧车SHA不变，证据artifacts/detail-workspace-validation。生产服务重验身份后更新为PID52144/parent52764，仅快照，下次再验。v3仅fixture工程验证，未发送真实HTTP；F006/F009/F010false、独立人工反馈和旧预留仍保留。

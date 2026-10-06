@@ -25,6 +25,8 @@
 
 最终完整verify：**1457 passed/1 Windows文件symlink权限skip，131.50s**；Ruff122文件/mypy65源文件、CLI/console及两次同SHA离线wheel通过，SHA `4e3722043e682da1c37370121a415d589b685c9d4e5dccd0132621c84ad241f9`，日志.cache/detail-query-draft-verify.log。verify后只改文档，未再改源码。旧1283是连续实体切片证据。
 
+Git检查点f32e45e及验证交接05b0e2e已本地保存。两次普通HTTP/1.1 push以及独立ls-remote均因GitHub443约21秒连接失败，不能声称远端已同步；没有改main、强推或全局网络。最后独立确认的旧远端为e7dab08，新当前远端状态未读到。后续网络恢复后普通补推当前分支并核对HEAD。
+
 本地服务原16808/54620已不存在，未停止任意进程；验证后NoBrowser启动12980/parent38700，health/状态/CIM命令/仓库身份及草稿正向ready/否定unsupported+null核对通过，production-query-draft-report.json，PID仅快照。原有真实结果继续读取，无新Provider/费用。工作分支最终推送状态在本记录后补；不更新main或强推。
 
 测试覆盖未处理名字/技能、否定/OR/多个角色/时序、环境-only、未知颜色/部件、重复/条件上限、同衣物绑定、不同衣物不拼接、Unicode/安全文字和稳定accounting。浏览器验证编辑/确认/部分要求提醒、迟到响应隔离、手动条件兼容、零Provider/账本写入。实际用户长句语义覆盖仍有限，F006/F009/F010不能由这些测试转true。
