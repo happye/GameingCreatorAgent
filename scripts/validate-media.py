@@ -15,18 +15,26 @@ from gamingcreator.domain.errors import AppError
 from gamingcreator.infrastructure.ffmpeg_media import FfmpegMediaProcessor, hash_file
 
 
-async def validate(sources: list[Path], repository: Path) -> Path:
+async def validate(
+    sources: list[Path],
+    repository: Path,
+    *,
+    max_frames: int = 1000,
+    interval_ms: int = 1000,
+    timeout_seconds: int = 180,
+) -> Path:
     run_id = uuid.uuid4().hex
     output = repository / "artifacts" / "media-F002" / run_id
     processor = FfmpegMediaProcessor(repository)
+    parameters = SamplingParameters(Fraction(interval_ms, 1000), max_frames=max_frames)
     cases = []
     for index, source in enumerate(sources):
         started = time.perf_counter()
         result = await processor.preprocess(
             source,
             output / str(index),
-            SamplingParameters(Fraction(1)),
-            CancellationContext(run_id, 180),
+            parameters,
+            CancellationContext(run_id, timeout_seconds),
         )
         audio = result.audio
         summary = {
@@ -50,7 +58,16 @@ async def validate(sources: list[Path], repository: Path) -> Path:
     report = output / "validation.json"
     report.write_text(
         json.dumps(
-            {"feature": "F002", "status": "completed", "cases": cases}, ensure_ascii=False, indent=2
+            {
+                "feature": "F002",
+                "status": "completed",
+                "samplingIntervalMs": interval_ms,
+                "maxFrames": max_frames,
+                "timeoutSeconds": timeout_seconds,
+                "cases": cases,
+            },
+            ensure_ascii=False,
+            indent=2,
         ),
         encoding="utf-8",
     )
@@ -63,7 +80,12 @@ def main() -> int:
     selection = parser.add_mutually_exclusive_group(required=True)
     selection.add_argument("--input", type=Path)
     selection.add_argument("--all-local", action="store_true")
+    parser.add_argument("--max-frames", type=int, default=1000)
+    parser.add_argument("--interval-ms", type=int, default=1000)
+    parser.add_argument("--timeout-seconds", type=int, default=180)
     args = parser.parse_args()
+    if args.max_frames <= 0 or args.interval_ms <= 0 or args.timeout_seconds <= 0:
+        parser.error("帧数上限、采样间隔和处理期限须为正整数。")
     sources = (
         sorted((repository / "GameVideos").rglob("*.mp4"))
         if args.all_local
@@ -73,7 +95,15 @@ def main() -> int:
         print("No local videos found.", file=sys.stderr)
         return 2
     try:
-        report = asyncio.run(validate(sources, repository))
+        report = asyncio.run(
+            validate(
+                sources,
+                repository,
+                max_frames=args.max_frames,
+                interval_ms=args.interval_ms,
+                timeout_seconds=args.timeout_seconds,
+            )
+        )
         print(json.dumps({"report": str(report)}, ensure_ascii=False))
         return 0
     except AppError as error:

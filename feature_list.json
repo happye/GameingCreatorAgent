@@ -36,7 +36,7 @@
       "passes": true,
       "test_criteria": "Representative and synthetic VFR/nonzero-PTS clips produce traceable source timecodes; no-audio, malformed input and cancellation are handled cleanly.",
       "dependencies": ["F001"],
-      "evidence": ["docs/exec-plans/sprint-F002.md", "docs/references/media-processing.md", "docs/references/media-toolchain.json", "scripts/test-media.ps1"]
+      "evidence": ["docs/exec-plans/sprint-F002.md", "docs/references/media-processing.md", "docs/references/media-toolchain.json", "scripts/test-media.ps1", "docs/exec-plans/sprint-long-footage-media.md", "tests/test_streamed_media_logs.py", "tests/test_media_integration.py"]
     },
     {
       "id": "F003",
@@ -56,7 +56,7 @@
       "passes": true,
       "test_criteria": "A second process reloads the timeline; migrations/FKs and interrupted-stage/file-integrity recovery pass; unknown request costs survive recovery; full source video bytes are absent from SQLite.",
       "dependencies": ["F001"],
-      "evidence": ["docs/exec-plans/sprint-F004.md", "docs/references/timeline-storage.md", "scripts/test-storage.ps1", "scripts/verify.ps1"]
+      "evidence": ["docs/exec-plans/sprint-F004.md", "docs/references/timeline-storage.md", "scripts/test-storage.ps1", "scripts/verify.ps1", "docs/exec-plans/sprint-long-footage-media.md"]
     },
     {
       "id": "F005",

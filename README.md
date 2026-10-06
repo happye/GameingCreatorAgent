@@ -73,6 +73,8 @@ The [2026-10-03 validation report](./docs/exec-plans/phase-0-validation-2026-10-
 
 `./scripts/test-media.ps1 -SourcePath <local-video>` runs the implemented F002 service; `-AllLocal` processes current `GameVideos/**/*.mp4`. Results remain ignored in `artifacts/media-F002/<run>/`, with PTS/timebase, piecewise WAV sample mapping, source/artifact hashes, versions and a completed manifest after validation. No model request is made. Exact stream timing metadata is required; see [media processing](./docs/references/media-processing.md) for support limits.
 
+For longer footage, set explicit local limits, such as `-MaxFrames 4000 -SamplingIntervalMs 1000 -TimeoutSeconds 600` for one frame per second. Timing logs are consumed incrementally while unknown output and individual lines remain bounded. A synthetic one-hour media/storage check passes; real gameplay performance and understanding still need validation. The prepared PowerShell 7 entry is verified; Windows PowerShell 5 compatibility is deferred in TD011.
+
 ## Tool adapters
 
 | Tool | Repository entry | Loading check |

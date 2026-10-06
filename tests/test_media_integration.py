@@ -1,5 +1,6 @@
 import asyncio
 import json
+import shutil
 import subprocess
 import sys
 from collections.abc import Callable
@@ -219,9 +220,12 @@ def test_cancellation_after_frames_never_publishes_manifest(
     context = CancellationContext("run", 15)
 
     async def cancel_after_frames(
-        arguments: list[str], active: CancellationContext
+        arguments: list[str],
+        active: CancellationContext,
+        *,
+        stderr_line_consumer: Callable[[str], bool] | None = None,
     ) -> ProcessOutput:
-        result = await original(arguments, active)
+        result = await original(arguments, active, stderr_line_consumer=stderr_line_consumer)
         if any("frame-%06d.jpg" in argument for argument in arguments):
             active.cancelled.set()
         return result
@@ -266,3 +270,42 @@ def test_cancellation_after_final_hash_never_publishes_manifest(
             )
         )
     assert not (output / "media-manifest.json").exists()
+
+
+def test_offline_media_entry_point_uses_explicit_sampling_and_limits(
+    make_video: Callable[..., Path],
+) -> None:
+    source = make_video("中文 显式采样.mp4")
+    result = subprocess.run(
+        [
+            shutil.which("pwsh") or "powershell.exe",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(REPOSITORY / "scripts/test-media.ps1"),
+            "-SourcePath",
+            str(source),
+            "-MaxFrames",
+            "20",
+            "-SamplingIntervalMs",
+            "200",
+            "-TimeoutSeconds",
+            "30",
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+        timeout=60,
+        creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+    )
+    assert result.returncode == 0, result.stderr
+    rows = [json.loads(line) for line in result.stdout.splitlines() if line.startswith("{")]
+    report_path = Path(rows[-1]["report"])
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report["samplingIntervalMs"] == 200 and report["maxFrames"] == 20
+    assert report["timeoutSeconds"] == 30
+    assert 2 < report["cases"][0]["images"] <= 20
+    assert report["cases"][0]["sourceSha256"] == hash_file(source)
+    assert Path(report["cases"][0]["source"]).name == source.name

@@ -1,5 +1,7 @@
 # Active assignments
 
+root已交付[sprint-long-footage-media](sprint-long-footage-media.md)，接94d5f29。F002／F004／TD001：流式时间记录、源时钟／裁切、限流／回收，一小时合成媒体保存／第二进程回读及显式离线采样入口；41定向＋1入口、完整1912／1权限skip、实际小时13715ms预处理／11725ms保存通过。0新付费调用，原开发DB保持。TD001resolved，TD010／TD011延期，旧worker冻结。下一root独立离线素材准备／保存任务入口及显式分析续跑，先登记范围；下方长事件检索为上一交付。
+
 root已顺序交付[sprint-long-footage-retrieval](sprint-long-footage-retrieval.md)，接565d80f：Phase 0／F005／TD005长录像本地检索规模。独占local_embeddings.py、分批行为与长事件CLI集成测试、规格及公共交接；有界顺序worker、原缓存空间／身份、完整成功后原子保存。29定向、完整1898／1权限skip与真实本地模型1281文本18.6s／2.6s通过；工作台fresh身份更新至61720／52996，一普通hybrid搜索／9基础表保持通过。0新付费调用。下一主线长录像分析→索引→搜索全链路与恢复，先登记；旧worker冻结，下方任务为历史；action-tag-support已归档TD010。
 
 ## 历史记录（已归档，非当前任务）

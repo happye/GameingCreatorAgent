@@ -1,6 +1,7 @@
 import asyncio
 import subprocess
 import sys
+from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import dataclass
 
@@ -25,11 +26,45 @@ async def _read_bounded(reader: asyncio.StreamReader, limit: int, overflow: asyn
     return bytes(chunks)
 
 
+async def _read_consumed_lines(
+    reader: asyncio.StreamReader,
+    limit: int,
+    overflow: asyncio.Event,
+    consumer: Callable[[str], bool],
+) -> bytes:
+    """Consume known records incrementally; bound each line and remaining diagnostics."""
+    pending, diagnostics = bytearray(), bytearray()
+
+    def consume(line: bytes) -> None:
+        if len(line) > 65536:
+            overflow.set()
+        elif not overflow.is_set() and not consumer(line.decode("utf-8", "replace")):
+            if len(diagnostics) + len(line) > limit:
+                overflow.set()
+            else:
+                diagnostics.extend(line)
+
+    while chunk := await reader.read(65536):
+        pending.extend(chunk)
+        while (boundary := pending.find(b"\n")) >= 0:
+            line = bytes(pending[: boundary + 1])
+            del pending[: boundary + 1]
+            consume(line)
+        if len(pending) > 65536:
+            overflow.set()
+            pending.clear()
+    if pending:
+        consume(bytes(pending))
+    return bytes(diagnostics)
+
+
 async def run_media_process(
     arguments: list[str],
     context: CancellationContext,
     max_stdout_bytes: int = 4 * 1024 * 1024,
     max_stderr_bytes: int = 16 * 1024 * 1024,
+    *,
+    stderr_line_consumer: Callable[[str], bool] | None = None,
 ) -> ProcessOutput:
     context.check_cancelled()
     job = None
@@ -61,7 +96,11 @@ async def run_media_process(
     assert process.stdout is not None and process.stderr is not None
     overflow = asyncio.Event()
     stdout_task = asyncio.create_task(_read_bounded(process.stdout, max_stdout_bytes, overflow))
-    stderr_task = asyncio.create_task(_read_bounded(process.stderr, max_stderr_bytes, overflow))
+    stderr_task = asyncio.create_task(
+        _read_bounded(process.stderr, max_stderr_bytes, overflow)
+        if stderr_line_consumer is None
+        else _read_consumed_lines(process.stderr, max_stderr_bytes, overflow, stderr_line_consumer)
+    )
     wait_task = asyncio.create_task(process.wait())
 
     async def collect() -> ProcessOutput:

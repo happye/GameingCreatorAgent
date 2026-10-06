@@ -96,42 +96,82 @@ def parse_probe(raw: bytes, source: Path, source_hash: str, version: str) -> Med
         ) from None
 
 
-def parse_visual_log(log: str) -> tuple[Fraction, tuple[int, ...]]:
-    clocks = re.findall(r"\[Parsed_showinfo_\d+[^\]]*\] config in time_base:\s*(\d+/\d+)", log)
-    pts = tuple(
-        int(p)
-        for p in re.findall(
+class VisualLogParser:
+    def __init__(self) -> None:
+        self._clocks: set[str] = set()
+        self._pts: list[int] = []
+
+    def consume(self, log: str) -> bool:
+        clocks = re.findall(r"\[Parsed_showinfo_\d+[^\]]*\] config in time_base:\s*(\d+/\d+)", log)
+        timestamps = re.findall(
             r"\[Parsed_showinfo_\d+[^\]]*\]\s+n:\s*\d+\s+pts:\s*(-?\d+)\s+pts_time:", log
         )
-    )
-    if (
-        len(set(clocks)) != 1
-        or not pts
-        or any(current <= previous for previous, current in zip(pts, pts[1:], strict=False))
-    ):
-        raise AppError("media.frame_mapping", "图片时间戳缺失、重复或倒退。", ExitCode.INPUT)
-    return Fraction(clocks[0]), pts
+        self._clocks.update(clocks)
+        for timestamp in timestamps:
+            pts = int(timestamp)
+            if self._pts and pts <= self._pts[-1]:
+                raise AppError(
+                    "media.frame_mapping", "图片时间戳缺失、重复或倒退。", ExitCode.INPUT
+                )
+            self._pts.append(pts)
+        if len(self._clocks) > 1:
+            raise AppError("media.frame_mapping", "图片时间戳缺失、重复或倒退。", ExitCode.INPUT)
+        return bool(clocks or timestamps)
+
+    def finish(self) -> tuple[Fraction, tuple[int, ...]]:
+        if len(self._clocks) != 1 or not self._pts:
+            raise AppError("media.frame_mapping", "图片时间戳缺失、重复或倒退。", ExitCode.INPUT)
+        return Fraction(next(iter(self._clocks))), tuple(self._pts)
+
+
+def parse_visual_log(log: str) -> tuple[Fraction, tuple[int, ...]]:
+    parser = VisualLogParser()
+    parser.consume(log)
+    return parser.finish()
+
+
+class AudioLogParser:
+    def __init__(
+        self, sample_rate: int, filter_name: str | None = None, *, retain_frames: bool = True
+    ) -> None:
+        prefix = (
+            r"Parsed_ashowinfo_\d+"
+            if filter_name is None
+            else re.escape("ashowinfo@" + filter_name)
+        )
+        self._pattern = re.compile(
+            r"\[" + prefix + r"[^\]]*\].*?\bpts:(-?\d+)\b.*?\brate:(\d+)\b.*?\bnb_samples:(\d+)\b"
+        )
+        self._sample_rate = sample_rate
+        self._retain_frames = retain_frames
+        self._frames: list[AudioFrameMapping] = []
+        self.sample_count = 0
+
+    def consume(self, log: str) -> bool:
+        records = self._pattern.findall(log)
+        for pts, rate, samples in records:
+            if int(rate) != self._sample_rate:
+                raise AppError("media.audio_mapping", "音频输出采样率不一致。", ExitCode.INPUT)
+            frame = AudioFrameMapping(
+                self.sample_count, int(samples), int(pts), Fraction(1, self._sample_rate)
+            )
+            if self._retain_frames:
+                self._frames.append(frame)
+            self.sample_count += frame.sample_count
+        return bool(records)
+
+    def finish(self) -> tuple[AudioFrameMapping, ...]:
+        if not self.sample_count:
+            raise AppError("media.audio_mapping", "音频样本映射缺失。", ExitCode.INPUT)
+        return tuple(self._frames)
 
 
 def parse_audio_log(
     log: str, sample_rate: int, filter_name: str | None = None
 ) -> tuple[AudioFrameMapping, ...]:
-    frames = []
-    offset = 0
-    prefix = (
-        r"Parsed_ashowinfo_\d+" if filter_name is None else re.escape("ashowinfo@" + filter_name)
-    )
-    for pts, rate, samples in re.findall(
-        r"\[" + prefix + r"[^\]]*\].*?\bpts:(-?\d+)\b.*?\brate:(\d+)\b.*?\bnb_samples:(\d+)\b", log
-    ):
-        if int(rate) != sample_rate:
-            raise AppError("media.audio_mapping", "音频输出采样率不一致。", ExitCode.INPUT)
-        frame = AudioFrameMapping(offset, int(samples), int(pts), Fraction(1, sample_rate))
-        frames.append(frame)
-        offset += frame.sample_count
-    if not frames:
-        raise AppError("media.audio_mapping", "音频样本映射缺失。", ExitCode.INPUT)
-    return tuple(frames)
+    parser = AudioLogParser(sample_rate, filter_name)
+    parser.consume(log)
+    return parser.finish()
 
 
 def _clock_json(value: Fraction) -> dict[str, int]:
@@ -293,7 +333,8 @@ class FfmpegMediaProcessor:
                 f"{parameters.interval_seconds.numerator}/{parameters.interval_seconds.denominator}"
             )
             filters = f"select='isnan(prev_selected_t)+gte(t-prev_selected_t,{interval})',scale=w='min({parameters.max_width},iw)':h=-2,showinfo"
-            frames_output = await run_media_process(
+            visual_parser = VisualLogParser()
+            await run_media_process(
                 [
                     *common,
                     "-map",
@@ -308,8 +349,9 @@ class FfmpegMediaProcessor:
                     str(output / "frame-%06d.jpg"),
                 ],
                 context,
+                stderr_line_consumer=visual_parser.consume,
             )
-            time_base, pts = parse_visual_log(frames_output.stderr.decode("utf-8", "replace"))
+            time_base, pts = visual_parser.finish()
             images = sorted(output.glob("frame-*.jpg"))
             if len(images) != len(pts) or len(images) > parameters.max_frames:
                 raise AppError(
@@ -335,7 +377,13 @@ class FfmpegMediaProcessor:
                 sample_rate = 16000
                 trim_end_pts = (audio_stream.end_seconds * sample_rate).__ceil__()
                 audio_filters = f"aresample=16000,aformat=channel_layouts=mono,ashowinfo@decoded,atrim=end_pts={trim_end_pts},ashowinfo@mapped"
-                audio_output = await run_media_process(
+                mapped_parser = AudioLogParser(sample_rate, "mapped")
+                decoded_parser = AudioLogParser(sample_rate, "decoded", retain_frames=False)
+
+                def consume_audio_line(line: str) -> bool:
+                    return mapped_parser.consume(line) or decoded_parser.consume(line)
+
+                await run_media_process(
                     [
                         *common,
                         "-map",
@@ -350,10 +398,10 @@ class FfmpegMediaProcessor:
                         str(audio_path),
                     ],
                     context,
+                    stderr_line_consumer=consume_audio_line,
                 )
-                audio_log = audio_output.stderr.decode("utf-8", "replace")
-                mapping = parse_audio_log(audio_log, sample_rate, "mapped")
-                decoded = parse_audio_log(audio_log, sample_rate, "decoded")
+                mapping = mapped_parser.finish()
+                decoded_parser.finish()
                 with wave.open(str(audio_path), "rb") as wav:
                     if (
                         wav.getnchannels() != 1
@@ -371,7 +419,7 @@ class FfmpegMediaProcessor:
                         wav.getnframes(),
                         mapping,
                         trim_end_pts,
-                        sum(frame.sample_count for frame in decoded),
+                        decoded_parser.sample_count,
                     )
                 if (
                     abs(mapping[0].pts * mapping[0].time_base - audio_stream.start_seconds)

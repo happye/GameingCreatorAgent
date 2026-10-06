@@ -1,6 +1,14 @@
 # 当前交接
 
-2026-10-07，root已交付[sprint-long-footage-retrieval](docs/exec-plans/sprint-long-footage-retrieval.md)，接565d80f；[通俗汇报](docs/exec-plans/report-2026-10-07-long-footage.md)。Phase 0／F005／TD005：超过1023事件的语义／混合搜索自动按有界worker分批，原向量空间／顺序／缓存与成功后原子保存保持。2051文本身份及1280事件搜索／后批失败续算／热搜／第二进程通过；真实本地E5 1281合成文本冷18581ms／热2597ms、跨批边界单独计算一致。0新付费／预留／人评。TD010延期，旧worker冻结。
+2026-10-07，root已交付[sprint-long-footage-media](docs/exec-plans/sprint-long-footage-media.md)，接94d5f29；[通俗汇报](docs/exec-plans/report-2026-10-07-long-media.md)。Phase 0／F002／F004／TD001：有界逐行读取长录像时间记录，保留原PTS／音频分段／裁切、transform／manifest原子发布与取消回收。离线脚本新增显式采样间隔／帧数／单次工具期限，真实PowerShell 7中文入口通过；Windows PowerShell 5兼容记录TD011后延期，不改全局环境。
+
+41定向12.728s／真实入口1项通过；一次完整verify1912passed／1 Windows文件symlink权限skip，331.50s，140格式／72类型／lint／CLI／双离线wheel通过。SHA8f2507f3ed38c36764834af51f9470abadbcc12a18b7593c28f95383c4b520a7，71包文件等于源码且不含素材／缓存／DB；JUnit1913／0fail／0error／1skip，回执.cache/long-media-targeted.xml、entry.xml、tests.xml／verify.log／package.json。之后仅文档／ignored回执，不重复完整检查。
+
+一小时32×32／1FPS合成带48kHz音轨、视频起点5秒／音画异步：旧无consumer日志实触media.output_limit；新预处理13715ms、3600图0–3599秒／168752音频分段，63,231,864bytes音频时间记录逐行消费、1578bytes余诊断。media阶段保存11725ms，另一进程真实SqliteTimelineStore重建摘要／hash／映射一致；run仍running，仅media完成，0ASR／视觉／费用预留／人评。主验证进程peak working set235,360,256bytes、重读进程165,101,568bytes，FFmpeg及全进程总峰值未测。原开发DB SHA保持，证据ignored artifacts/long-media-validation/check-hour-media.py／hour-report.json；合成不是独立游戏会话。TD001resolved，真实游戏小时性能等继续TD005，F006/F009/F010false。
+
+已向用户通俗汇报一小时预处理／保存／重读、14秒／12秒及低分辨率合成范围。下一root主线是独立离线素材准备入口：抽帧／提音轨／保存media阶段及原配置，随后显式分析从已完成阶段继续，准备时不需要API凭据或付费。先登记范围／验收并核对run_new_analysis／resume_analysis和原来源／费用合同；TD010／TD011继续延期、旧worker冻结。当前工作台fresh health61720／parent52996正常，新功能在独立本地入口加载，不需为本轮重启或新增普通查询；PID仅快照。发布以.cache/long-media-publication.json及Git为准，普通push原授权分支可尝试一次，不改main或强推。
+
+上一交付：2026-10-07，root已交付[sprint-long-footage-retrieval](docs/exec-plans/sprint-long-footage-retrieval.md)，接565d80f；[通俗汇报](docs/exec-plans/report-2026-10-07-long-footage.md)。Phase 0／F005／TD005：超过1023事件的语义／混合搜索自动按有界worker分批，原向量空间／顺序／缓存与成功后原子保存保持。2051文本身份及1280事件搜索／后批失败续算／热搜／第二进程通过；真实本地E5 1281合成文本冷18581ms／热2597ms、跨批边界单独计算一致。0新付费／预留／人评。TD010延期，旧worker冻结。
 
 一次完整verify1898passed／1 Windows文件symlink权限skip，331.95s；139格式文件／72类型文件、lint／CLI／双离线wheel通过。Wheel SHA4dc4350d0e70d8ac5e252a9cbca4db6ed2daab5e6edfee04132709e6550a6735，71项目文件等于源码且不含素材／缓存／DB，JUnit1899／0fail／0error／1skip。回执.cache/long-footage-targeted.xml、tests.xml、verify.log、package.json；之后仅文档／ignored回执，不重复完整测试。
 

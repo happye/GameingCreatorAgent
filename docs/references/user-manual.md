@@ -59,6 +59,8 @@ FFmpeg 和 ffprobe 不在这个脚本里下载。把固定副本放到 `.tools/f
 
 `env.ps1` 只改当前 PowerShell 进程，关掉窗口就失效。不要改系统 PATH，也不要改用电脑上另装的 Python。
 
+只想先在本地抽帧和提取音轨，可使用`./scripts/test-media.ps1 -SourcePath "GameVideos/你的长录像.mp4" -MaxFrames 4000 -SamplingIntervalMs 1000 -TimeoutSeconds 600`。这组参数允许最多4000张、每秒一张；它不启动付费视觉分析。默认仍最多1000张，较长素材需要明确设置容量。时间记录会边处理边解析，结果保留原视频时间码；完整合成一小时的处理／保存／重读已验证，真实游戏录像速度及理解另测。当前用已准备的PowerShell 7执行，详见[媒体处理](./media-processing.md)。
+
 ## 3. 在工作台预览、查询和选片
 
 工作台可选择项目与运行、回看原视频、查询片段和查看原始证据：

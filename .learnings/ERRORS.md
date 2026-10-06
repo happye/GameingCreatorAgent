@@ -1,5 +1,13 @@
 # Errors
 
+## [ERR-20261007-018] media_wrapper_types_and_shell_host
+
+**Logged**: 2026-10-07
+**Status**: resolved; Windows PowerShell 5 compatibility deferred as TD011
+**Area**: tests
+
+流式接口初次适配的测试wrapper漏标注kwargs，strict mypy直接报错；改为明确Callable参数转发。真实离线入口测试在Windows PowerShell 5子环境因Get-FileHash不可用失败，UTF-8读取旧shell错误还产生线程解码警告；移除继承模块路径后仍失败。按用户优先级停止该局部兼容调查，记录TD011，使用工作站已有且完整环境检查通过的PowerShell 7验证入口，不改全局配置或安装组件；脚本输出UTF-8仅当前进程，测试失败直接显示stderr。Core7入口本身首次已成功，但新断言误把仓库内临时源的相对路径当仅文件名；按实际支持两种来源的输出合同检查末级中文文件名后通过，未改报告来源身份。
+
 ## [ERR-20261006-017] long_retrieval_fixture_boundaries
 
 **Logged**: 2026-10-06
