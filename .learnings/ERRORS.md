@@ -1,5 +1,14 @@
 # Errors
 
+## [ERR-20261006-013] diagnostics_remote_connection
+
+**Logged**: 2026-10-06
+**Priority**: low
+**Status**: pending
+**Area**: integration
+
+独立ls-remote曾成功读到0ae1a68，但随后两次普通分支push均在约21秒后因github.com:443连接失败。只读成功不代表写入可达，不报告远端已同步；保留本地b2c2a13实现和42afbb0完整验证报告，并写待发布receipt与HANDOFF。停止循环重试，网络稳定后补推当前已授权分支，独立读远端再比对，不变更代理或全局Git配置，不强推／更新main。
+
 ## [ERR-20261006-012] diagnostics_validation_setup
 
 **Logged**: 2026-10-06
