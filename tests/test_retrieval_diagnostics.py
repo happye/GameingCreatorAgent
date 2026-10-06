@@ -28,7 +28,7 @@ def row(rank, event_id, candidate_id=None):
     )
 
 
-def diagnose(rows=(), *, query="跳跃", status="completed", top=10, reason=None):
+def diagnose(rows=(), *, query="跳跃", status="completed", top=10, reason=None, evidence=()):
     return retrieval_diagnostics(
         InspectionView("unused.sqlite3", "run-1", status, (), tuple(rows), reason),
         project="artifacts/project",
@@ -40,6 +40,7 @@ def diagnose(rows=(), *, query="跳跃", status="completed", top=10, reason=None
         duration_us=2_000_000,
         config_hash="b" * 64,
         retrieval_version="test-version",
+        evidence=evidence,
     )
 
 
@@ -147,9 +148,14 @@ def test_http_projects_saved_search_without_changing_source_facts(tmp_path, monk
             assert doc["limitedByRequestedTopK"]
             assert doc["mediaSha256"] == payload["media"]["sha256"]
             assert doc["configHash"] == payload["configHash"]
+            assert doc["schemaVersion"] == "retrieval-diagnostics-v2"
             for slot, candidate in zip(doc["slots"], payload["candidates"], strict=False):
                 for key in ("candidateId", "eventId", "startUs", "endUs", "rank", "evidenceIds"):
                     assert slot["candidate"][key] == candidate[key]
+                evidence = slot["candidate"]["evidenceSummary"]
+                assert evidence["status"] == "registered_single_frame"
+                assert evidence["registeredImageCount"] == 1
+                assert evidence["actionUnderstandingVerified"] is None
     assert base_rows(project) == before
     assert len(list(project.glob("runs/run-1/searches/*.json"))) == 2
 
@@ -206,6 +212,12 @@ def test_browser_diagnostic_download_preview_and_no_extra_search(
             page.locator("#open-retrieval-diagnostics").click()
             playwright.expect(page.locator(".diagnostics-slot")).to_have_count(10)
             playwright.expect(page.locator(".diagnostics-slot.missing")).to_have_count(9)
+            playwright.expect(page.locator(".diagnostics-evidence")).to_contain_text(
+                "已登记 1 张画面"
+            )
+            playwright.expect(page.locator(".diagnostics-evidence")).to_contain_text(
+                "不能据此确认动作过程"
+            )
             playwright.expect(page.locator("#retrieval-diagnostics-summary")).to_contain_text(
                 "本次只请求 2 条"
             )

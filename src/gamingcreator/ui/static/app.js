@@ -711,7 +711,7 @@
         const view = state.view;
         const doc = view?.retrievalDiagnostics;
         if (state.busy || view?.runStatus !== "completed" || !doc
-            || doc.schemaVersion !== "retrieval-diagnostics-v1"
+            || doc.schemaVersion !== "retrieval-diagnostics-v2"
             || doc.project !== state.project || doc.runId !== state.run
             || doc.mediaId !== view.media.id || doc.mediaSha256 !== view.media.sha256
             || doc.durationUs !== view.media.durationUs || doc.configHash !== view.configHash
@@ -750,6 +750,19 @@
             && context.revision === state.revision && context.doc === currentDiagnostics();
     }
 
+    function evidenceSummaryText(summary) {
+        if (!summary || summary.status === "unavailable") return "登记证据不完整，无法列出画面对照。";
+        if (summary.status === "registered_audio_only") return "只登记了音频，没有登记画面；请核对原片和音频证据。";
+        if (summary.status === "registered_single_frame") return "已登记 1 张画面，只有一个时刻；不能据此确认动作过程。";
+        const count = summary.registeredImageCount;
+        const times = summary.distinctImageSourceTimeCount;
+        const seconds = Number.isFinite(summary.imageSpanUs) ? (summary.imageSpanUs / 1000000).toFixed(3) : "未知";
+        const prefix = `已登记 ${count} 张画面，来自 ${times} 个时刻，跨 ${seconds} 秒。`;
+        if (summary.status === "registered_same_instant") return `${prefix}这些画面属于同一时刻，无法对照动作变化。`;
+        if (summary.status === "registered_repeated_content") return `${prefix}画面文件内容相同，不能作为动作变化依据。`;
+        return `${prefix}多图不等于动作成立，请回看主体和镜头变化。`;
+    }
+
     function openRetrievalDiagnostics() {
         const doc = currentDiagnostics();
         if (!doc) return notice("请先完成当前查询，再查看检索诊断。");
@@ -768,6 +781,7 @@
                 const row = context.view.candidates[slot.position - 1];
                 item.append(element("p", "accent small", `原排名 #${row.rank} · ${intervalLabel(row)}`));
                 item.append(element("p", "diagnostics-facts", facts(row).join(" ") || "没有保存可观察描述。"));
+                item.append(element("p", "muted small diagnostics-evidence", evidenceSummaryText(slot.candidate.evidenceSummary)));
                 const preview = element("button", "button secondary compact diagnostics-preview", "回看这个片段");
                 preview.type = "button";
                 preview.addEventListener("click", () => {

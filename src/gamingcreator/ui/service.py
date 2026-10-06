@@ -384,6 +384,7 @@ async def inspect_run(
                 duration_us=asset.duration_us,
                 config_hash=timeline.run.config_hash,
                 retrieval_version=RETRIEVAL_VERSION,
+                evidence=timeline.evidence,
             ),
             "analysisKind": "temporal"
             if profile in ("temporal", "detailed")

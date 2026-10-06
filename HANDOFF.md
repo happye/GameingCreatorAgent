@@ -1,10 +1,18 @@
 # 当前交接
 
+当前root顺序完成已有动作依据核对与diagnostics v2登记证据摘要，见docs/exec-plans/sprint-retrieval-action-evidence.md和report-2026-10-06-action-evidence.md。接3136895，旧worker／worktree冻结；下一工作为动作起止帧／过程覆盖核对，先登记任务。Goal active，0新付费／预算／真实人评，F006/F009/F010 false。
+
+本轮检索仍v7、原候选排名／事实／源时钟保持；摘要显示候选自己的登记图片数、时刻／内容数和跨度，单图／重复／音频／资料不完整分清，动作判断null。新增20反例、50定向24.623s／完整1882 passed／1 Windows权限skip（220.34s）、Ruff137／mypy72／CLI／双离线wheel SHAc1f22b3b0c585fcdb02c52fd0645504c6cd8fa6da49f03bfca216ebbbf3664e4通过；71包文件同源码，JUnit1883零失败错误。24同查询只读原排名／来源保持，全项目字节／预算不变。实际1366／390单图与四图1.5秒／下载／29和21秒回看通过；正常页面4查询＋生产2查询，基础资料／精分析反馈预算／冻结方案保持。
+
+生产新鲜health／state／CIM／exe／完整命令／仓库／父子匹配后替换61396／56740，当前快照30440／parent46168；v2诊断／旧PV单图／新多图、旧三个确认＋一个拒绝及精分析v4缺失隔离重验通过。操作前重新核对，PID不能盲用。已向用户通俗汇报新增能力、单图／跨切镜不足及下一步。提交与授权分支同步以Git和.cache/retrieval-action-evidence-publication.json为准；原3136895已推送并独立核对。
+
+当前证据为ignored artifacts/retrieval-action-evidence/audit.json（24词法／10帧索引，root查看9帧）、projection-report.json、browser-report.json、production-report.json、单／多图四截图及脚本；.cache/retrieval-action-evidence-verify.log、tests.xml、targeted-final.xml、package-receipt.json和previous/current-processes.json。完整检查后只有文档／ignored证据变化，不重复无变化验证。画面核对是Agent排查，不能替代独立人评。
+
 更新时间：2026-10-06（Asia/Hong_Kong）。Codex、Claude Code、Grok Build共用；恢复先核对Git和实际证据。历史见progress.md，各特性验收见feature_list.json。
 
 所有项目Agent持续遵守AGENTS.md和docs/references/agent-workflow.md的通俗详细汇报规则：每次关键改动后说明现在能做什么、使用帮助、真实验证与不足、下一具体动作；跨会话／工具／子任务有效。规则已写入各工具记忆入口，不重复询问。
 
-## 当前成果
+## 前一轮检索与授权基线（仍有效）
 
 分支codex/visual-details；root顺序完成已有录像来源审计及中文动作别称修复，检索bm25-e5-rrf-v7。正向中英文动作仅补既有中文别称：跳跃／跳起／起跳、射击／开枪、战斗／打斗、交互／互动；未追加English jump给中文或jumping，避免JUMP标题成为动作依据。原v6英文边界／NFKC／否认规则保留，否定意图保持原词法行为，不实现一般缺席语义。源事实、passage哈希、缓存身份、候选ID、证据时钟及0.80／0.02阈值不变。
 
@@ -20,7 +28,7 @@
 
 ## 下一工作
 
-1. root顺序登记并检查已有候选的主体／镜头连续性／动作文字依据，区分标题、特效、物体存在与真实动作；实际漏检确认后才改检索，不新增分析，不重试unknown run。
+1. root顺序登记并核对已有动作候选的起止帧与动作过程覆盖，重点跳跃／光束；不根据半空姿势、特效或跨镜头文字推断完整动作。已确认旧单图及跨场景记录的限制，并提供登记证据提示；0新增模型请求，不重试unknown run。
 2. F006仍需10–20段代表录像、按原录制会话划分独立测试、事前冻结查询与人工参考事件；主查询至少十个独立可用参考事件，十固定槽至少七个不同事件获人工2/3。开发PV与同视频多版本不能替代独立测试，描述确认不等于检索评级。
 3. 网络已恢复，源码／报告6763484a67035fc8aa5f26fb7d595880f5b6afcc已普通push到已授权https://github.com/happye/GameingCreatorAgent的codex/visual-details，独立ls-remote同SHA；此前0ae1a68后的积压提交也已同步。当前仅更新本交接同步记录，最终文档checkpoint及远端核对以.cache/retrieval-corpus-publication.json和Git为准；不更新main／强推，不循环联网或改全局配置。
 4. 新精分析v4仍待对应新授权；未答复继续离线，Goal active。额度／网络恢复不构成新增模型许可。完整检查已通过，恢复不要无变化重复验证，先读Git和证据。

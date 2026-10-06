@@ -1,5 +1,11 @@
 # Active assignments
 
+当前action-evidence切片已交付：diagnostics v2登记依据摘要，新20反例、50定向／完整1882 passed／1权限skip、24相同真实查询投影与双尺寸单／多图下载／29、21秒回看及生产30440／46168通过；检索v7与原排名／事实／源时钟保持。0Provider／预留／人评，源基础资料／费用保持，普通页面4查询＋生产2查询。root已保存详细报告、sprint和HANDOFF；下一条为动作起止帧／过程覆盖核对，开始前登记范围。旧worker冻结；下方为本轮开始时记录。
+
+当前root顺序任务为sprint-retrieval-action-evidence.md：接3136895，拥有ignored主体／镜头／动作依据审计与公共记录；先核对已有moving等候选完整原文和注册画面，证据确认后再登记源码范围。旧worker／worktree冻结，0新模型请求／预算／人评／普通查询；1862／1权限skip为最近完整检查。下方corpus任务已交付并推送，不再作为进行中任务。
+
+已确认旧PV移动／战斗前十均单张登记图片，root新增独占retrieval_diagnostics.py／ui service／app.js／证据摘要与现有诊断测试及公共文档。仅把已登记图片数、不同来源时刻／内容数、跨度与音频状态加入诊断和下载，不自动标动作成立、不改变检索。24词法及9张注册图Agent核对已有证据，无新付费／人评。
+
 当前任务为sprint-retrieval-corpus-audit.md：root / Codex在codex/visual-details顺序负责已有完成录像的素材／版本／同源分组与Boss、跳跃、射击检索缺口审计，拥有ignored审计脚本和证据及公共记录；实际缺口确认后再登记必要retrieval／行为反例修改。旧worker／worktree冻结，无新付费请求、预算、人评或普通查询记录。1c7c278为起点，1823／1权限skip为最近完整验证；网络中断不阻塞本地工作。
 
 本任务最终已交付bm25-e5-rrf-v7中文别称修复：新增39反例、237定向／完整1862 passed／1权限skip、同源108词法＋24混合A/B、真实双尺寸与生产61396／56740通过。起跳实机0→2，交互找回互动原文；JUMP标题非动作的误报已纠正，旧v4两个jumping混合事件重排保留。纯审计全项目字节不变，真实页面普通4搜索＋生产1搜索，0Provider／预算／人评；上述“1823／尚未修复”是开始时基线。报告和HANDOFF已保存，下一项root顺序登记已有主体／镜头／动作依据检查，不开并行writer；旧worker冻结。
