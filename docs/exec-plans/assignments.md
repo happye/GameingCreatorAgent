@@ -1,8 +1,8 @@
 # Active assignments
 
-受控查询草稿当前占用：detail_cost_history在新 `.worktrees/detail-query-draft` / `codex/detail-query-draft` 独占application/detail_query_draft.py、test_detail_query_draft.py及own sprint；root独占server/service/static和新HTTP/浏览器测试、共享记录。基线e7dab08，见sprint-detail-query-draft.md；旧worktrees冻结。纯离线零Provider，不把未知要求丢弃后称原句满足。
+受控查询草稿：detail_cost_history在`.worktrees/detail-query-draft` / `codex/detail-query-draft`的623fca1及f5aef6f已整合f30e812/85fa5a0并冻结；root API/static/22 HTTP-browser及共享记录保存f32e45e。定向197通过、真实桌面/手机只读浏览通过，完整verify运行中；见sprint-detail-query-draft.md。纯离线零Provider，不把未知要求丢弃后称原句满足。
 
-v4只读对照方案准备：detail_parts_v3在新`.worktrees/detail-v4-proposal` / `codex/detail-v4-proposal`独占prepare-detail-temporal-pilot.py、新proposal测试和own sprint，基线4a84c40。仅重验原两候选六帧并冻结新v4请求，不发送、预留或重试；新授权状态为未批准。query_draft_review只读审查root确认与响应隔离流程，不写文件。
+v4只读对照方案：detail_parts_v3 `.worktrees/detail-v4-proposal` / `codex/detail-v4-proposal`的ac72b4d已整合34135cc并冻结。原两候选六帧新v4请求与审核页在artifacts/detail-temporal-validation，18 tests及实际dry-run/桌面手机6图检查通过，不发送、预留或重试。新授权问题已提出但未收到，仍未批准。query_draft_review只读审查的提前确认、null保留手动行及语义歧义均已修复并回归，无自身文件修改。
 
 2026-10-06当前：连续实体v4 worker211bbf7已整合3278895并冻结；root Provider/版本化保存、匹配和页面已通过1283/1权限skip完整验证，见sprint-detail-temporal.md。对用户的详细汇报已生成report-2026-10-06-temporal-details.md。下一离线切片为受控查询草稿，先写范围和新独占worktree；真实v4对照仍需新的冻结请求及预算/次数授权，不复用旧两次调用。
 
