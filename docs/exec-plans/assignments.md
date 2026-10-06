@@ -1,5 +1,7 @@
 # Active assignments
 
+受控查询草稿当前占用：detail_cost_history在新 `.worktrees/detail-query-draft` / `codex/detail-query-draft` 独占application/detail_query_draft.py、test_detail_query_draft.py及own sprint；root独占server/service/static和新HTTP/浏览器测试、共享记录。基线e7dab08，见sprint-detail-query-draft.md；旧worktrees冻结。纯离线零Provider，不把未知要求丢弃后称原句满足。
+
 2026-10-06当前：连续实体v4 worker211bbf7已整合3278895并冻结；root Provider/版本化保存、匹配和页面已通过1283/1权限skip完整验证，见sprint-detail-temporal.md。对用户的详细汇报已生成report-2026-10-06-temporal-details.md。下一离线切片为受控查询草稿，先写范围和新独占worktree；真实v4对照仍需新的冻结请求及预算/次数授权，不复用旧两次调用。
 
 ## 2026-10-06 用户反馈与持久汇报
