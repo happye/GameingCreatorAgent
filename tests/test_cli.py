@@ -115,6 +115,43 @@ def test_invalid_budget_does_not_create_project(
     assert not inputs[2].exists()
 
 
+@pytest.mark.parametrize("timeout", ["0", "-1", "NaN", "Infinity"])
+def test_preparation_rejects_invalid_deadline_without_project_side_effects(inputs, timeout, capsys):
+    arguments = analyze_args(*inputs)
+    arguments[0] = "prepare-media"
+    assert main([*arguments, "--timeout-seconds", timeout]) == 2
+    assert json.loads(capsys.readouterr().err)["code"] == "input.prepare"
+    assert not inputs[2].exists()
+
+
+@pytest.mark.parametrize("mutation", ["schema", "provider", "model", "price", "prompt"])
+def test_preparation_rejects_non_resumable_config_before_media_probe(inputs, mutation, capsys):
+    video, config, project = inputs
+    content = json.loads(
+        (Path(__file__).resolve().parents[1] / "config.example.json").read_text(encoding="utf-8")
+    )
+    if mutation == "schema":
+        content = {
+            "schemaVersion": 1,
+            "vision": {"provider": "deepseek", "model": "deepseek-flash"},
+            "limits": {"maxRequests": 2, "maxInputFrames": 5},
+        }
+    elif mutation == "provider":
+        content["vision"]["provider"] = "unsupported"
+    elif mutation == "model":
+        content["vision"]["model"] = "unsupported"
+    elif mutation == "price":
+        content["vision"]["priceVersion"] = "unknown-price"
+    else:
+        content["vision"]["promptHash"] = "0" * 64
+    config.write_text(json.dumps(content), encoding="utf-8")
+    arguments = analyze_args(video, config, project)
+    arguments[0] = "prepare-media"
+    assert main(arguments) == 3
+    assert json.loads(capsys.readouterr().err)["code"] == "configuration.invalid"
+    assert not project.exists()
+
+
 @pytest.mark.parametrize(
     "content",
     ["", "{", "[]", '{"schemaVersion":true}', '{"apiKey":"secret-value"}'],

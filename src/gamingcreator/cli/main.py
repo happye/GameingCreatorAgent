@@ -6,6 +6,7 @@ import sys
 from collections.abc import Sequence
 from dataclasses import asdict
 from decimal import Decimal
+from math import isfinite
 from pathlib import Path
 from time import perf_counter
 from typing import Never, cast
@@ -15,6 +16,7 @@ from gamingcreator import __version__
 from gamingcreator.application.analysis import (
     AnalysisPorts,
     AnalyzeOutcome,
+    prepare_media,
     resume_analysis,
     run_new_analysis,
 )
@@ -47,6 +49,7 @@ from gamingcreator.application.retrieval import (
 from gamingcreator.application.storage import RunStatus
 from gamingcreator.domain.errors import AppError, ExitCode, invalid_config
 from gamingcreator.infrastructure.deepseek_vision import (
+    MAX_IMAGE_WIDTH_V5,
     MODEL,
     DeepSeekVisionProvider,
     vision_prompt_fingerprint,
@@ -80,6 +83,13 @@ def _parser() -> CliParser:
         action="store_true",
         help="显式允许重试费用未确认的未完成窗口，预留费用继续计入原预算",
     )
+    prepare = commands.add_parser("prepare-media", help="离线准备素材，保存后等待显式分析")
+    prepare.add_argument("video", type=Path)
+    prepare.add_argument("--project", type=Path, required=True)
+    prepare.add_argument("--config", type=Path)
+    prepare.add_argument("--max-cost-cny", help="保存后续分析的费用上限；准备不会调用模型")
+    prepare.add_argument("--resume", help="按原配置续准备，只接受尚未开始模型分析的任务")
+    prepare.add_argument("--timeout-seconds", type=float, default=3600)
     search = commands.add_parser("search", help="用自然语言检索已完成的时间线")
     search.add_argument("query")
     search.add_argument("--project", type=Path, required=True)
@@ -518,6 +528,94 @@ async def execute_analyze(prepared: PreparedAnalyze, repository: Path) -> Analyz
         await store.close()
 
 
+async def execute_prepare_media(
+    prepared: PreparedAnalyze, repository: Path, *, timeout_seconds: float = 3600
+) -> dict[str, object]:
+    if not isfinite(timeout_seconds) or timeout_seconds <= 0:
+        raise AppError("input.prepare", "素材准备期限必须是有限正数。", ExitCode.INPUT)
+    project = prepared.project.resolve()
+    _require_space(project)
+    media = FfmpegMediaProcessor(repository)
+    started = perf_counter()
+    asset = None
+    if prepared.resume is None:
+        config = prepared.config
+    else:
+        _require_project(project)
+        preview = await SqliteTimelineStore.open(project, read_only=True)
+        try:
+            config = (await preview.load_run(prepared.resume)).configuration.analysis
+        finally:
+            await preview.close()
+    if (
+        config is None
+        or config.schema_version != 2
+        or config.provider != "deepseek"
+        or config.model != MODEL
+        or config.price_version != DEEPSEEK_FLASH_20261004.version
+        or (
+            config.vision_prompt_hash is not None
+            and config.vision_prompt_hash != vision_prompt_fingerprint(config.vision_prompt_version)
+        )
+    ):
+        raise invalid_config()
+    if prepared.resume is None:
+        asset = await media.probe(
+            prepared.video, CancellationContext("probe", min(120, timeout_seconds))
+        )
+    remaining = timeout_seconds - (perf_counter() - started)
+    if remaining <= 0:
+        raise AppError("media.timeout", "素材准备达到时间上限。", ExitCode.INPUT)
+    store = await SqliteTimelineStore.open(project)
+    try:
+        result = await prepare_media(
+            prepared,
+            media,
+            store,
+            project,
+            run_id=prepared.resume or uuid4().hex,
+            asset=asset,
+            max_image_width=MAX_IMAGE_WIDTH_V5,
+            timeout_seconds=remaining,
+        )
+        stored = await store.load_run(result.run_id)
+        return {
+            "schemaVersion": 1,
+            "runId": result.run_id,
+            "mediaId": result.media_id,
+            "status": "media_prepared",
+            "runStatus": str(stored.status),
+            "sourceSha256": stored.asset.sha256,
+            "durationUs": stored.asset.duration_us,
+            "samplingIntervalMs": config.sampling_interval_ms,
+            "imageCount": result.image_count,
+            "audioAvailable": result.audio_available,
+            "plannedWindows": result.window_count,
+            "plannedUploadFrames": result.upload_frame_count,
+            "coverageFits": result.coverage_fits,
+            "maxRequests": config.max_requests,
+            "maxInputFrames": config.max_input_frames,
+            "savedMaxCostCny": str(stored.configuration.max_cost_cny),
+            "modelInvocations": 0,
+            "message": "素材已准备，等待显式分析。"
+            if result.coverage_fits
+            else "素材已准备，但原配置无法覆盖全部窗口；尚未调用模型。请调整配置后准备新任务。",
+            "nextCommand": [
+                "gamingcreator",
+                "analyze",
+                str(prepared.video),
+                "--project",
+                str(project),
+                "--resume",
+                result.run_id,
+            ]
+            if result.coverage_fits
+            else None,
+        }
+    finally:
+        await store.close()
+
+
 def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | None:
     if args.command == "match-details":
         return asyncio.run(
@@ -530,7 +628,7 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
                 save=args.save_match,
             )
         )
-    if args.command == "analyze":
+    if args.command in ("analyze", "prepare-media"):
         prepared = prepare_analyze(
             AnalyzeInput(
                 args.video,
@@ -538,10 +636,14 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
                 args.config,
                 args.max_cost_cny,
                 args.resume,
-                args.retry_uncertain,
+                args.retry_uncertain if args.command == "analyze" else False,
             ),
             LocalInputReader(),
         )
+        if args.command == "prepare-media":
+            return asyncio.run(
+                execute_prepare_media(prepared, Path.cwd(), timeout_seconds=args.timeout_seconds)
+            )
         return asyncio.run(execute_analyze(prepared, Path.cwd()))
     if args.command == "search" and (
         not args.query.strip() or not args.run.strip() or args.top_k <= 0

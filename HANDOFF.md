@@ -1,5 +1,11 @@
 # 当前交接
 
+2026-10-07，root接c2b4f14已交付[sprint-media-preparation](docs/exec-plans/sprint-media-preparation.md)：prepare-media CLI／scripts/prepare-media.ps1独立本地抽帧／提音轨，保存原配置和费用上限／media阶段，任务pending等待显式analyze --resume；不构造ASR／视觉／HTTP／预算账本或读取密钥。续准备仅接受未开始模型工作任务，原身份与旧unknown保持，0新付费。65定向passed（20.53s），一次完整1942passed／1 Windows文件symlink权限skip，301.42s，141格式／72类型／lint／CLI／双离线wheel通过。SHA10497aac761d0a919546998f2168e6a28aaf7eae2e7376a1379c3b10b6ea9a45，71包文件同源码且不含素材／缓存／DB；JUnit1943／0fail／0error／1权限skip。回执.cache/media-preparation-final-targeted.xml／tests.xml／verify.log／package.json；之后仅文档／ignored证据，不重复完整检查。
+
+实际一小时合成源新入口32761ms准备／保存3600图、900窗口／4499含重叠上传帧、168752音频映射；续准备禁止preprocess仍通过25067ms原文件核对／重建，独立进程完整摘要一致。run26a49c8e606446c5a2e971bf1bb9724f pending／media completed attempt1／0invocations／无完成时间线；原开发DB SHA保持，报告ignored artifacts/media-preparation-validation/hour-report.json。仅合成容量／本地保存，未真实一小时ASR／视觉或人评；配置¥5只是保存后续上限，不是费用授权／预留，未执行nextCommand。已向用户详细汇报这一流程、实际33秒／25秒和未验证范围。
+
+本次完整验证和交付已向用户汇报，保存后下一主线素材任务清单与阶段／原配置／费用状态查看，先登记范围，便于找回准备与未完成任务、选择显式续跑；25秒核对耗时归入已有TD005后续资源项，不做局部性能循环。TD010／TD011延期，旧worker冻结，新付费授权仍未答复。c2b4f14工作分支普通push一次网络速度超时失败，.cache/long-media-publication.json为回执；本交付未再次联网，本地HEAD见Git及.cache/media-preparation-publication.json，待补推；工作台无UI改动无需重启。
+
 2026-10-07，root已交付[sprint-long-footage-media](docs/exec-plans/sprint-long-footage-media.md)，接94d5f29；[通俗汇报](docs/exec-plans/report-2026-10-07-long-media.md)。Phase 0／F002／F004／TD001：有界逐行读取长录像时间记录，保留原PTS／音频分段／裁切、transform／manifest原子发布与取消回收。离线脚本新增显式采样间隔／帧数／单次工具期限，真实PowerShell 7中文入口通过；Windows PowerShell 5兼容记录TD011后延期，不改全局环境。
 
 41定向12.728s／真实入口1项通过；一次完整verify1912passed／1 Windows文件symlink权限skip，331.50s，140格式／72类型／lint／CLI／双离线wheel通过。SHA8f2507f3ed38c36764834af51f9470abadbcc12a18b7593c28f95383c4b520a7，71包文件等于源码且不含素材／缓存／DB；JUnit1913／0fail／0error／1skip，回执.cache/long-media-targeted.xml、entry.xml、tests.xml／verify.log／package.json。之后仅文档／ignored回执，不重复完整检查。

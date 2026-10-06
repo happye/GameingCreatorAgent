@@ -73,6 +73,17 @@ class AnalyzeOutcome:
     transcript_count: int
 
 
+@dataclass(frozen=True, slots=True)
+class MediaPreparationOutcome:
+    run_id: str
+    media_id: str
+    image_count: int
+    audio_available: bool
+    window_count: int
+    upload_frame_count: int
+    coverage_fits: bool
+
+
 def _exit_for(code: str) -> ExitCode:
     if code == "operation.cancelled" or code.endswith(".cancelled"):
         return ExitCode.CANCELLED
@@ -166,6 +177,150 @@ def _pipeline_version(config: AnalysisConfig) -> str:
     ):
         return TEMPORAL_PIPELINE_VERSION
     return WINDOW_PIPELINE_VERSION if config.schema_version == 2 else PIPELINE_VERSION
+
+
+def _run_configuration(prepared: PreparedAnalyze) -> RunConfiguration:
+    config, budget = prepared.config, prepared.max_cost_cny
+    if config is None or budget is None or prepared.resume is not None:
+        raise AppError("input.analyze", "新任务须提供配置文件与正数费用上限。", ExitCode.INPUT)
+    version = _pipeline_version(config)
+    return RunConfiguration(
+        config, budget, version, hashlib.sha256(version.encode()).hexdigest(), REQUIRED_STAGES
+    )
+
+
+def _media_width(config: AnalysisConfig, maximum: int) -> int:
+    return min(
+        maximum,
+        1280 if config.vision_prompt_version in ("phase0-vision-v5", "phase0-vision-v6") else 512,
+    )
+
+
+async def _prepare_media_bundle(
+    prepared: PreparedAnalyze,
+    media: MediaProcessor,
+    store: TimelineStore,
+    asset: MediaAsset,
+    config: AnalysisConfig,
+    project: Path,
+    *,
+    run_id: str,
+    completed_stages: frozenset[str],
+    image_width: int,
+    context: CancellationContext,
+) -> MediaPreprocessingResult:
+    if "media" in completed_stages:
+        return await store.load_media_bundle(run_id)
+    await store.begin_stage(run_id, "media", asset.sha256)
+    directory = project / "runs" / run_id / "media"
+    if config.schema_version == 2 and directory.exists():
+        directory = directory.with_name("media-retry-" + uuid4().hex[:12])
+    bundle = await media.preprocess(
+        prepared.video,
+        directory,
+        SamplingParameters(
+            Fraction(config.sampling_interval_ms, 1000), image_width, config.max_input_frames
+        ),
+        context,
+    )
+    if bundle.asset.sha256 != asset.sha256 or not bundle.images:
+        raise AppError("media.no_frames", "没有可分析的画面证据。", ExitCode.INPUT, run_id)
+    await store.persist_media_bundle(run_id, bundle)
+    return bundle
+
+
+async def prepare_media(
+    prepared: PreparedAnalyze,
+    media: MediaProcessor,
+    store: TimelineStore,
+    project: Path,
+    *,
+    run_id: str,
+    asset: MediaAsset | None = None,
+    max_image_width: int = 1280,
+    timeout_seconds: float = 3600,
+) -> MediaPreparationOutcome:
+    """Prepare a window-analysis run without constructing any model or cost ports."""
+    completed = frozenset[str]()
+    if prepared.resume is None:
+        configuration = _run_configuration(prepared)
+        if configuration.analysis.schema_version != 2:
+            raise AppError(
+                "input.prepare", "素材准备需要schemaVersion 2窗口分析配置。", ExitCode.INPUT
+            )
+        if asset is None:
+            raise AppError("input.prepare", "新素材准备需要已核验的视频。", ExitCode.INPUT)
+        await store.create_run(run_id, asset, configuration)
+    else:
+        if prepared.resume != run_id or prepared.retry_uncertain:
+            raise AppError("input.prepare", "素材准备不重试远端分析。", ExitCode.INPUT, run_id)
+        stored = await store.load_run(run_id)
+        configuration, asset = stored.configuration, stored.asset
+        version = _pipeline_version(configuration.analysis)
+        if (
+            configuration.analysis.schema_version != 2
+            or configuration.pipeline_version != version
+            or configuration.pipeline_hash != hashlib.sha256(version.encode()).hexdigest()
+            or configuration.required_stages != REQUIRED_STAGES
+            or stored.status == RunStatus.COMPLETED
+            or asset.source_path.resolve() != prepared.video.resolve()
+            or prepared.config is not None
+            or prepared.max_cost_cny is not None
+        ):
+            raise AppError("input.prepare", "续准备须保持原素材与配置。", ExitCode.INPUT, run_id)
+        checkpoints = await store.load_checkpoints(run_id)
+        if any(row.stage_id != "media" for row in checkpoints) or await store.load_invocations(
+            run_id
+        ):
+            raise AppError(
+                "input.prepare",
+                "该任务已开始模型分析，请使用analyze --resume。",
+                ExitCode.INPUT,
+                run_id,
+            )
+        completed = frozenset(
+            row.stage_id for row in checkpoints if row.status == StageStatus.COMPLETED
+        )
+        await store.prepare_resume(run_id)
+    try:
+        bundle = await _prepare_media_bundle(
+            prepared,
+            media,
+            store,
+            asset,
+            configuration.analysis,
+            project,
+            run_id=run_id,
+            completed_stages=completed,
+            image_width=_media_width(configuration.analysis, max_image_width),
+            context=CancellationContext(run_id, timeout_seconds),
+        )
+        windows = vision_windows(bundle, configuration.analysis)
+        upload_frames = sum(len(window) for window in windows)
+        await store.finish_media_preparation(run_id)
+        return MediaPreparationOutcome(
+            run_id,
+            bundle.asset.media_id,
+            len(bundle.images),
+            bundle.audio is not None,
+            len(windows),
+            upload_frames,
+            len(windows) <= configuration.analysis.max_requests
+            and upload_frames <= configuration.analysis.max_input_frames,
+        )
+    except AppError as error:
+        await _abort(store, run_id, True, False, error.code)
+        if error.run_id is None:
+            raise AppError(error.code, error.message, error.exit_code, run_id) from error
+        raise
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        await _abort(store, run_id, True, False, "operation.cancelled")
+        raise
+    except Exception:
+        await _abort(store, run_id, True, False, "media.unexpected")
+        raise AppError(
+            "media.unexpected", "素材准备停止，可按原任务ID续准备。", ExitCode.INPUT, run_id
+        ) from None
 
 
 def _digest(payload: object) -> str:
@@ -359,10 +514,7 @@ async def _run_pipeline(
 ) -> AnalyzeOutcome:
     image_limit, image_width = _vision_limit(ports.vision)
     # Preserve the extraction identity of historical prompts after capability growth.
-    image_width = min(
-        image_width,
-        1280 if config.vision_prompt_version in ("phase0-vision-v5", "phase0-vision-v6") else 512,
-    )
+    image_width = _media_width(config, image_width)
     if config.vision_prompt_version not in (
         "phase0-vision-v3",
         "phase0-vision-v4",
@@ -386,26 +538,18 @@ async def _run_pipeline(
 
     finished = False
     try:
-        if "media" in completed_stages:
-            bundle = await ports.store.load_media_bundle(run_id)
-        else:
-            await ports.store.begin_stage(run_id, "media", asset.sha256)
-            media_directory = project / "runs" / run_id / "media"
-            if config.schema_version == 2 and media_directory.exists():
-                media_directory = media_directory.with_name("media-retry-" + uuid4().hex[:12])
-            bundle = await ports.media.preprocess(
-                prepared.video,
-                media_directory,
-                SamplingParameters(
-                    Fraction(config.sampling_interval_ms, 1000),
-                    image_width,
-                    config.max_input_frames,
-                ),
-                remaining(),
-            )
-            if bundle.asset.sha256 != asset.sha256 or not bundle.images:
-                raise AppError("media.no_frames", "没有可分析的画面证据。", ExitCode.INPUT, run_id)
-            await ports.store.persist_media_bundle(run_id, bundle)
+        bundle = await _prepare_media_bundle(
+            prepared,
+            ports.media,
+            ports.store,
+            asset,
+            config,
+            project,
+            run_id=run_id,
+            completed_stages=completed_stages,
+            image_width=image_width,
+            context=remaining(),
+        )
         if "asr" not in completed_stages:
             if config.schema_version == 2:
                 windows = vision_windows(bundle, config)
@@ -618,21 +762,9 @@ async def run_new_analysis(
     run_id: str,
     timeout_seconds: float = 3600,
 ) -> AnalyzeOutcome:
-    config = prepared.config
-    budget = prepared.max_cost_cny
-    if config is None or budget is None or prepared.resume is not None:
-        raise AppError("input.analyze", "新分析须提供配置文件与正数费用上限。", ExitCode.INPUT)
-    await ports.store.create_run(
-        run_id,
-        asset,
-        RunConfiguration(
-            config,
-            budget,
-            _pipeline_version(config),
-            hashlib.sha256(_pipeline_version(config).encode()).hexdigest(),
-            REQUIRED_STAGES,
-        ),
-    )
+    configuration = _run_configuration(prepared)
+    config = configuration.analysis
+    await ports.store.create_run(run_id, asset, configuration)
     return await _run_pipeline(
         prepared,
         ports,

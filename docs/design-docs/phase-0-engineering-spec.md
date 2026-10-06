@@ -12,11 +12,15 @@
 gamingcreator analyze <local-video> --project <directory> --config <json> --max-cost-cny <amount>
 gamingcreator analyze <local-video> --project <directory> --resume <run-id>
 gamingcreator analyze <local-video> --project <directory> --resume <run-id> --retry-uncertain
+gamingcreator prepare-media <local-video> --project <directory> --config <json> --max-cost-cny <amount> --timeout-seconds 3600
+gamingcreator prepare-media <local-video> --project <directory> --resume <run-id>
 gamingcreator search "机制描述" --project <directory> --run <completed-run-id> --mode hybrid --top-k 10 --format json
 gamingcreator benchmark --input <frozen-manifest> --project <directory> --output <report.json>
 ```
 
 `analyze` 校验文件、能力、预算和空间后创建 run。成功写 SQLite 与 `semantic_timeline.json`；失败或取消输出 run ID 和稳定错误码，保留已完成 checkpoint。显式 v2 resume 使用原配置/预算，跳过完成的 media、asr 和 `vision-000000` 等窗口；进行中记录转 Interrupted 后重开，不自动重放。未提交的远端调用可能已有费用，须 `--retry-uncertain` 才重试，原费用/未知预留继续计入预算。已完成 run 只重读。旧 v1 保留原有限续跑行为；配置、prompt 内容或 ASR 稳定参数不匹配时拒绝恢复。
+
+`prepare-media`仅支持原schemaVersion 2窗口合同，保存与analyze相同的配置／pipeline／required stages，复用原512或1280抽帧宽度和媒体发布逻辑。单独组合MediaProcessor／TimelineStore，不构造ASR／Vision／HTTP或预算账本，不读取密钥。media完成且无其他阶段／调用时finish_media_preparation把run置pending；原分析显式resume跳过media。续准备拒绝源变化、配置／预算覆盖及已开始模型工作，不触及旧未知费用。JSON区分status=media_prepared与runStatus=pending，显示imageCount／audioAvailable／plannedWindows／含重叠的plannedUploadFrames／coverageFits；不足只保存，不输出启动命令。这不是费用估价或内容理解。超时只约束探测与提取工具执行，不包括SQLite保存／完整性检查。
 
 `config.example.json` 使用 schema v2：vision 含 provider/model、priceVersion、maxOutputTokens（≤4096）、promptVersion/promptHash；limits 含正整数 maxRequests/maxInputFrames；sampling 含 intervalMs/windowFrames/windowOverlap；asr 含 language。未知字段（包括密钥）拒绝。默认每秒采样、5 帧/1 帧重叠、最多 2048 输出 token。新分析费用上限由 CLI 传入有限正 Decimal；resume 禁止配置/预算覆盖。旧 schema v1 仍可读，但没有完整窗口/价目配置。
 

@@ -1251,6 +1251,31 @@ class SqliteTimelineStore:
 
         await self._call(prepare)
 
+    async def finish_media_preparation(self, run_id: str) -> None:
+        """Leave a media-only checkpoint waiting for explicit analysis."""
+
+        def finish() -> None:
+            self._mutable(run_id)
+            checkpoints = self._checkpoints(run_id)
+            if (
+                len(checkpoints) != 1
+                or checkpoints[0].stage_id != "media"
+                or checkpoints[0].status != StageStatus.COMPLETED
+                or self._db.execute(
+                    "SELECT 1 FROM provider_invocations WHERE run_id=? LIMIT 1", (run_id,)
+                ).fetchone()
+            ):
+                raise _error("storage.stage_state")
+            if self._integrity(run_id):
+                raise _error("storage.integrity")
+            with self._transaction():
+                self._db.execute(
+                    "UPDATE analysis_runs SET status='pending',error_code=NULL,updated_at=? WHERE run_id=?",
+                    (_now(), run_id),
+                )
+
+        await self._call(finish)
+
     async def load_timeline(self, run_id: str, *, require_completed: bool = True) -> StoredTimeline:
         def load() -> StoredTimeline:
             run = self._load_run(run_id)

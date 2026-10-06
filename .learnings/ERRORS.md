@@ -1,5 +1,13 @@
 # Errors
 
+## [ERR-20261007-019] media_preparation_test_contracts
+
+**Logged**: 2026-10-07
+**Status**: resolved; focused65 and full1942/one permission skip passed
+**Area**: tests
+
+新离线准备测试最初遗漏非v1 prompt hash、把SamplingParameters.interval_seconds写成interval、把已结束metadata用于begin_invocation，并错误预期configuration.invalid为输入退出2（原合同为环境退出3）。按已存在类型／保存／调用合同直接修正测试，不放宽生产校验。CLI首次read_only参数拼写由mypy直接纠正。一次定向运行全部用例结束后因未预建新cache目录触发已知Windows pytest目录rename权限错误；直接按verify已有做法创建当前新目录，未调查权限或删除旧目录。后续定向65passed（20.53s），更早95passed／5错误断言及cache失败回执保留。所有后续独立测试先建cache目录；不在旧问题上反复排查。
+
 ## [ERR-20261007-018] media_wrapper_types_and_shell_host
 
 **Logged**: 2026-10-07

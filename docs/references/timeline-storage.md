@@ -22,6 +22,8 @@ F004 的实现入口为 `application/storage.py` 的 `TimelineStore` port 与 `i
 
 `load_media_bundle` 重建未完成或 Interrupted run 的已完成媒体阶段，包括全部 PTS/音频映射。v2 `analyze --resume` 是显式操作：在 writer 锁下校验来源/文件/原配置，将进行中记录标记 Interrupted，再恢复 run；跳过已完成 media/asr/视觉窗口，不自动发请求。逐窗口 `vision-000000` 等 checkpoint 与输出原子提交，父 vision 完成后再 finalize run；所有 checkpoint 已完成的恢复无需重跑模型。
 
+独立`prepare-media`完成后用`finish_media_preparation`等待显式分析：只接受唯一Completed media checkpoint且没有任何Provider调用的可变run，重新校验来源及注册文件后把状态置Pending，不改变配置／预算／已完成checkpoint或required-stages。不新增数据库状态或迁移；Pending媒体准备任务不被recover当作执行中断。准备结果不代表Completed时间线，搜索仍拒绝。续准备一旦已有其他阶段或调用即拒绝，不允许隐藏账本或把分析任务降回等待。行为证据见[sprint-media-preparation](../exec-plans/sprint-media-preparation.md)。
+
 未完成窗口存在可能已计费的远端调用时，要求 `--retry-uncertain`；恢复账本累计所有尝试的请求数、上传图片数和已知费用，未知费用保留原 reservation。原预算不能覆盖增大，重试仍受硬上限。旧 v1 维持有限 checkpoint 续跑。ASR 输入 hash 含权重修订/稳定参数，视觉配置固定 prompt 内容 hash；变化拒绝续跑。不能私读 SQL 或按 WAV 秒数假定源视频秒数。
 
 ## 向量与检索记录

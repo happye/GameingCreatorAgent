@@ -19,6 +19,7 @@
 | 你想做的事 | 用什么 | 要不要密钥 | 会不会联网付费 |
 | --- | --- | --- | --- |
 | 重放本机已经分析完的视频 | `run-demo.ps1 -Run <id>` | 不要 | 不要 |
+| 先抽帧和提取音轨，保存后等待分析 | `prepare-media.ps1 -Video <文件>` | 不要 | 不要；后续分析须单独启动 |
 | 分析一段新视频 | `run-demo.ps1 -Video <文件>` | 要 `DEEPSEEK_API_KEY` | 会上传抽到的帧，按次计费 |
 | 只做词法检索 | `search --mode lexical` | 不要 | 不要 |
 | 语义或混合检索 | 默认 `hybrid`，或 `--mode semantic` | 不要 | 不要；使用项目内 E5 模型 |
@@ -96,6 +97,35 @@ V5/V6运行标为“细节动作（试验）”，默认优先已完成细节run
 左侧显示阶段、已记录费用估算和未知计费次数。浏览器不支持原视频编码或源文件已移动时会显示错误；证据和源时间仍以数据库为准，不据浏览器播放推导原始PTS。
 
 常见桌面1440×900、1366×768已验证无需页面往返滚动；窄屏/手机改为纵向排列，只保证无横向溢出。顶部编排/成片与侧边资源「待开放」是后续位置，目前不能操作；区间清单与未来创意编排顺序分开。
+
+## 先准备素材，再明确启动分析
+
+准备录像时可以先完成本地工作，不必立刻开始模型分析。在仓库根目录执行：
+
+```powershell
+./scripts/prepare-media.ps1 -Video "GameVideos/你的录像.mp4" -Project artifacts/demo-phase0 -Config config.example.json -MaxCostCny 5
+```
+
+这一步把画面、音轨和原配置保存在任务中，任务状态是等待分析。无需API密钥或ASR权重，不会调用模型、上传画面或预留费用。`MaxCostCny`只保存以后分析的上限，本次准备费用为零；模型理解尚未发生，因此还不能检索这个任务。
+
+输出里的`runId`用于后续操作。`coverageFits`说明请求次数和上传帧上限能否覆盖全部窗口；相邻窗口的重叠图片也计入上传帧数。若为false，素材仍保存，但不会给出启动分析的下一条命令。调整配置后准备新任务，原任务的配置和上限不覆盖。它检查帧数／请求次数，不保证费用上限足够支付所有窗口。
+
+准备超时或取消后，使用错误信息中的任务ID续准备；已完成的媒体步骤直接复用：
+
+```powershell
+./scripts/prepare-media.ps1 -Video "GameVideos/你的录像.mp4" -Project artifacts/demo-phase0 -Resume <run-id> -TimeoutSeconds 3600
+```
+
+续准备不接受新的配置或费用上限。已经开始语音／视觉分析的任务使用原`analyze --resume`，不能改回待准备状态。当前入口支持schemaVersion 2窗口配置；旧分析照原入口恢复。`TimeoutSeconds`约束探测和提取的工具执行时间，SQLite保存／文件完整性检查不在这个工具计时内。
+
+需要开始分析时，单独执行输出的`nextCommand`，或在本地环境已就绪、密钥已设置时执行下列命令。这一步会按原配置上传必要画面并可能产生费用，接着已完成媒体阶段运行：
+
+```powershell
+. ./scripts/env.ps1
+./.venv/Scripts/python.exe -B -m gamingcreator analyze "GameVideos/你的录像.mp4" --project artifacts/demo-phase0 --resume <run-id>
+```
+
+一小时32×32低分辨率合成录像已验证准备／保存／另一进程读回；真实长游戏录像速度、完整模型分析和人工检索质量仍待验证。素材准备也不会自动确认费用未定的旧调用或改变它们的预留。
 
 ## 4. 看已经分析好的结果
 
