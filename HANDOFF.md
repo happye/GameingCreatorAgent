@@ -6,41 +6,39 @@
 
 ## 当前成果与验证
 
-新当前任务已登记sprint-retrieval-query-audit.md：root顺序追踪射击零命中与Boss局部条件命中，先读取两个完成v6 run的原事实并审计分词／词法支持／否认过滤／语义回退，再凭证据决定修复。只读store+纯search_timeline，不走execute_search／不写普通查询记录，0视觉或精分析／人评／预算。当前尚无新修复；以下1775为上一诊断切片完整基线，远端待补推状态保留。
+分支codex/visual-details；英文有限动作修复已完成，源码b7723aa，版本断言／规格检查点20c227c，检索版本bm25-e5-rrf-v6。正向英文jump／shoot／move／interact及attack／fight变体补已有中文规范词；扩展和明确否认共用ASCII字母／数字／下划线边界，支持中英文相邻、NFKC／大小写。弯／直引号一致，否定意图保持原词法行为，不实现一般缺席语义。原文／标签／证据／passage文本哈希／候选身份／阈值保持，未重新分析视频。
 
-审计发现已汇报：两个run实际同一Atom录像v6／33与v4／40，原任务误写素材／版本已纠正。正向英文jumping／move/moving缺中文规范扩展，已有中文跳跃2／移动10可词法找到；两run射击／开枪／发射无文字支持，Boss缺铠甲／领主／权杖支持，不能放宽门槛凑数。已开始bm25-e5-rrf-v6有限正向英文动作修复，尚待新反例／同源只读复测／完整验证。48词法+10混合审计项目DB和全文件字节不变，0新记录／Provider／预算，证据before-fix.json。
-
-分支codex/visual-details；最新源码检查点b2c2a13，固定十位检索诊断已完成。工作台在成功非空查询后显示原排名、缺位及已知重复，支持当前上下文下载和原片回看；空／incomplete为null，失败／迟到响应／查询方式条数／项目run变更使旧诊断失效，低top限制明确提示。所有人评／有用率／质量门槛为空，未改排名和检索阈值。
-
-- 真实Atom录像f601fb9b3e734d5ea188fc15c790acbb（54.743秒／33事件）：跳跃lexical/hybrid各2、缺8；semantic10仍未人评；复合Boss hybrid8、缺2、整句条件未证明；射击两模式0、缺10；汽车维修负例hybrid0。零命中不证明录像没有对应动作。
-- 新30行为反例23.96s通过；完整verify **1775 passed／1 Windows文件symlink权限skip，215.71s**，Ruff135、mypy72、CLI及双离线wheel同SHA **75bd3e39a7b4c571fb92bacc1d9dc1d67346a48b73ebf70bfaf73f6ed7a1b55e**。包内71项目文件逐字节同源码，含新诊断及UI。1745为上一人工记录切片完整基线。
-- 实际1366/390十位、下载与响应一致、第二候选11.5秒非零seek和注册证据通过，无页面错误／外部请求／横溢。打开／下载／回看0额外检索；普通查询照常追加搜索记录，不能据DB字节变化误报基础分析变更。
-- 源基础表、注册视频／证据、原精分析／反馈／预算及冻结proposal经快照核对保持。真实8组查询、两轮双尺寸浏览器及更新服务读验共新增普通检索；不删首次实测初始化失败前已保存的8次查询。本切片0Provider／预算／新真实人工评分。
-- 生产在健康／state／CIM／父子身份／仓库／exe／命令匹配后更新；最新快照 **36484／parent55324**。新字段、跳跃2／缺8、旧v2三个确认+一个纠错、v4缺失及反馈不跨版本通过。旧52396/49720已替换，PID仅快照，操作前重新核对，不能盲停。
-- 实现和详细报告已落盘。远端读取曾成功，当时为0ae1a687976abc1bdded8eae782702c1622a5479；随后两次普通push均在约21秒后因github.com:443连接失败，未同步。源码b2c2a13、验证报告42afbb008fcc4f1d5bcd974e50984439267dfbac已在本地，后续交接状态另存提交，不再循环联网。本轮发布待网络稳定后普通push及独立ls-remote。只推已授权https://github.com/happye/GameingCreatorAgent的当前分支，不更新main／强推；最终以Git及.cache/retrieval-diagnostics-publication.json为准。
-- 已向用户按持续规则详细汇报诊断能力、真实查询不足、验证范围、零新费用及下一步，报告report-2026-10-06-retrieval-diagnostics.md。独立检索质量、新v4真实理解仍未验收；F006/F009/F010 false。
+- 数据库证实两个对照run均为同一54.743秒Atom录像：f601fb9b3e734d5ea188fc15c790acbb是基础视觉v6／33事件，96b5f01530ce43e2944828fb0520b9b4是基础视觉v4／40事件。不能误写漫画／两个v6／两个独立视频；基础视觉版本与待授权精分析v4是不同合同。
+- 真实对照：新版jumping lexical0→2／hybrid1→2；旧版jump/jumping lexical0→2／jumping hybrid0→2；move/moving两版lexical0→10。对应相同中文事件ID和源时钟；30中文查询内容／排序信号逐项不变。两版射击／开枪／发射无文字支持，shooting仍0；新Boss全文仅boss标签及冲击波分别来自不同事件，铠甲／领主／权杖无支持，hybrid8不证整句。旧Boss hybrid10也未证实。
+- 最新完整verify **1823 passed／1 Windows文件symlink权限skip，218.11s**，Ruff136、mypy72、CLI和双离线wheel同SHA **116b0225be43375e8ad503ff857cdf18028391da4c9e06b0676d54b7d5c5a46c**；包内71文件同源码，JUnit1824 tests／0 failures／0 errors／1 skip。48新行为反例在完整检查中运行；104定向27.66s通过。1775为上一诊断完整基线。
+- 首轮完整2 failed／1821 passed／1skip：旧v5断言漏同步已更新，content_type输入检查单独／104定向及最终完整复跑通过，首次详细native错误未完整保留、原因未确认，不猜 transport 因果；最终已保存JUnit。
+- 修改前后各48词法+10混合纯审计，项目全文件／DB／侧车／预算及查询记录字节不变，0新增搜索记录。真实1366/390英文jumping2／moving10、十位下载与响应相同、11.5秒源回看及证据通过，无页面错误／外部请求／横溢。正常UI追加4次搜索、生产读验追加1次；不称整个DB字节不变，基础表／注册视频证据／精分析反馈预算／冻结proposal保持。
+- 生产在health／state／CIM／父子身份／仓库／exe／命令匹配后更新；最新快照 **51180／parent46444**。v6版本、英文jumping2／缺8、旧v2三个描述确认+一个纠错、精分析v4缺失及不跨版本反馈通过。旧36484/55324已替换，PID仅快照，操作前重新核对，不能盲停。
+- 本轮0远程视觉／精分析请求、0预留／新增费用／真实人评；仅使用已有本地E5与缓存。F006/F009/F010 false，质量／人评为空。已向用户按持续规则详细汇报能力、真实不足、验证、费用和下一步。
+- 网络仍不稳定：上一诊断两次push约21秒连接失败；本轮一次独立ls-remote为连接重置，未尝试push。本地实现／报告待补推，不循环联网，不更新main／强推；只推已授权https://github.com/happye/GameingCreatorAgent的当前分支。最后独立读到0ae1a687976abc1bdded8eae782702c1622a5479；当前发布receipt在.cache/retrieval-query-audit-publication.json，恢复以Git为准。
 
 ## 下一工作
 
-1. 网络稳定后补推本地当前分支，独立比对远端；现两次push失败已保存，不重复长时间联网。恢复先核对Git及来源，不重复已通过完整验证。
-2. root顺序登记下一离线审计：追踪射击零命中是否基础描述缺动作、词法用词差异或检索漏掉已有记录；逐条件核对Boss候选，先用现有事件／证据／原片，不新增模型请求。
-3. 开发PV已用于调参，不作独立最终测试集。正式F006需10–20段代表录像、分会话独立测试、事前冻结查询和人工参考事件；每个主查询至少十个独立可用参考事件，十固定槽至少七个不同真实事件获2/3。诊断数量和两个描述对照不替代此门槛。
-4. 新v4真实对照待对应新授权答复。获明确答复后按冻结两例各一次、最多两次、无自动重试，再判断物品误认和切镜是否改善。授权未到继续离线工作，Goal active；额度提醒／网络恢复不构成新增模型许可。
+1. root顺序登记已有完成录像的素材／源分组与查询原因审计。核对其他录像中的射击／Boss／跳跃：没有动作记录、否认误命中、文字漏检、纯语义误返须分清，先读已有结果，不重试unknown run或新增分析。
+2. 正式F006仍需10–20段代表录像、按原录制会话划分独立测试、事前冻结查询与人工参考事件；每个主查询至少十个独立可用参考事件，十固定槽至少七个不同真实事件获2/3。开发PV与同视频多版本不能作独立最终测试；描述确认不等于检索评级。
+3. 网络稳定后补推当前分支并独立比对远端。恢复不要重跑已通过完整验证，除非有新改动／失败／未解决风险；先核对本地工作树和证据。
+4. 新精分析v4真实对照仍待对应新授权。获明确答复后只冻结两例各一次、最多两次、无自动重试；授权未到继续离线，Goal active。额度／网络恢复不构成新增模型许可。
 
 ## 费用、授权和已收到的人评
 
 原两次精分析／最高¥4.04／原六帧传输授权已执行完，共估价¥0.01850612，新增unknown0；全任务已知¥0.24934532、总承诺¥4.31488132。旧未知预留¥4.065536保留，禁止重试漫画run 0ba106578bc7435c8689d12892a35dfb或换目录清账。
 
-新v4proposal为artifacts/detail-temporal-validation/pilot-proposal.json，SHA06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6。新两次／最高¥4.07／同六帧到DeepSeek chat/completions的对应问题已提出，尚未收到答复：executionAuthorized=false、paidRequestsSent=0，新增实验费用未预留。旧预算余量不等于新增次数。
+新v4proposal为artifacts/detail-temporal-validation/pilot-proposal.json，SHA06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6。新两次／最高¥4.07／同六帧到DeepSeek chat/completions的对应问题已提出但未收到答复：executionAuthorized=false、paidRequestsSent=0，新增实验费用未预留。旧预算余量不等于新增次数。
 
 用户只确认35–36秒三个描述；拒绝28–29秒s1/a2：物品正抵镜头遮住人物，它是物品而不是新人物。其他描述、属性、动作和检索质量未确认。旧确认仅跟随原report/request/payload/shot/actor，不自动成为新版结论。
 
 ## 分工与位置
 
-root在当前分支顺序负责Application诊断、UI/service、静态页面和测试／公共记录。旧worker/worktree全部冻结，无并行writer；无新HTTP路由／付费入口。
+root顺序负责Application retrieval／新行为测试／只读审计／公共文档。所有旧worker/worktree冻结，无并行writer；无新HTTP路由／付费入口。
 
-- 当前执行与详细报告：docs/exec-plans/sprint-retrieval-diagnostics.md、report-2026-10-06-retrieval-diagnostics.md；阶段总览report-2026-10-06-stage-progress.md；操作docs/references/retrieval-diagnostics-guide.md。
-- 真实证据artifacts/retrieval-diagnostics-validation/report.json、nonzero-preview-report.json、production-report.json、diagnostics-1366/390截图及只读验证脚本；均ignored。
-- 完整日志.cache/retrieval-diagnostics-verify.log、summary JSON、wheel-receipt JSON；旧／新进程身份receipts在.cache，密钥不打印、不复制。
-- 既有人工记录入口artifacts/detail-pilot-review-20261006/review-editor.html；归档--review-file核对冻结源后独占新目录五文件。当前新版缺结果禁填四维判断；实际只完成空记录往返，无新真实结论，见sprint-detail-pilot-review.md和对应guide/report。
-- 双击Start-Workspace.cmd继续使用已有分析，启动／读取／检索／刷新不新增精分析。仅.tools/.venv/.cache，先env.ps1，Python加-B，保存未知成本。
+- 当前sprint／详细报告：docs/exec-plans/sprint-retrieval-query-audit.md、report-2026-10-06-retrieval-query-audit.md；阶段总览report-2026-10-06-stage-progress.md，操作见user-manual.md。
+- 真实证据artifacts/retrieval-query-audit/before-fix.json、after-fix.json、comparison.json、browser-report.json、production-report.json、english-jumping双尺寸截图及只读验证脚本，均ignored。
+- 完整日志.cache/retrieval-query-audit-verify-final.log、tests.xml、targeted.xml、verify-summary.json、package-receipt.json和previous/current-processes身份receipt；首次失败日志verify.log不含完整native细节。
+- 固定十位诊断b2c2a13与sprint-retrieval-diagnostics.md仍已完成；查看缺位／重复、当前查询下载及回看不额外检索，低top上限说明，旧上下文失效，所有人评字段为空。
+- 既有人工记录入口artifacts/detail-pilot-review-20261006/review-editor.html；归档--review-file核对冻结源后独占新目录五文件。当前精分析v4缺结果禁填四维判断，实际只空记录往返，无新增真实结论。
+- 双击Start-Workspace.cmd继续使用；启动／读取／搜索／刷新不新增付费视觉分析。仅.tools/.venv/.cache，先env.ps1，Python加-B，密钥不打印／复制，保留未知成本。

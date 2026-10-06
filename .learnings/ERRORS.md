@@ -2,6 +2,8 @@
 
 ## [ERR-20261006-014] retrieval_alias_boundary_consistency
 
+最终104定向及1823完整／1权限skip通过，JUnit0 failures／0 errors。首次完整另有presentation旧v5断言遗漏，需全repo rg版本引用；content_type用例首次失败但单独／104定向／完整复跑通过，初次native细节未完整保留，原因不明。不把复测通过写成已证明的socket原因；长验证保留JUnit。A/B别名比较事件ID和源时钟，原英文tag可能额外计BM25分，不要求不同查询的why字串完全相同。
+
 **Logged**: 2026-10-06
 **Priority**: medium
 **Status**: resolved
