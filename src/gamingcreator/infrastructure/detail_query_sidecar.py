@@ -6,13 +6,23 @@ from pathlib import Path
 from gamingcreator.application.detail_query import MAX_MANIFEST_BYTES, match_report
 from gamingcreator.application.detail_refinement import (
     RefinementIdentity,
+    RefinementSettings,
     default_refinement_identity,
 )
 from gamingcreator.application.storage import RunStatus, StoredTimeline
-from gamingcreator.domain.actor_details import MATCHER_VERSION, QueryConstraint, constraint_hash
+from gamingcreator.domain.actor_details import (
+    MATCHER_VERSION,
+    TEMPORAL_MATCHER_VERSION,
+    QueryConstraint,
+    constraint_hash,
+)
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.deepseek_detail_parts import provider_parts_identity
 from gamingcreator.infrastructure.deepseek_detail_refinement import provider_refinement_identity
+from gamingcreator.infrastructure.deepseek_detail_temporal import (
+    provider_temporal_identity,
+    temporal_refinement_settings,
+)
 from gamingcreator.infrastructure.detail_refinement_sidecar import (
     RefinementWriterLock,
     _atomic,
@@ -30,7 +40,14 @@ def refinement_identity_for_profile(profile: str) -> RefinementIdentity:
         return provider_refinement_identity()
     if profile == "v3":
         return provider_parts_identity()
-    raise AppError("input.detail_profile", "精分析版本只能为v1、v2或v3。", ExitCode.INPUT)
+    if profile == "v4":
+        return provider_temporal_identity()
+    raise AppError("input.detail_profile", "精分析版本只能为v1、v2、v3或v4。", ExitCode.INPUT)
+
+
+def refinement_settings_for_profile(profile: str) -> RefinementSettings:
+    refinement_identity_for_profile(profile)
+    return temporal_refinement_settings() if profile == "v4" else RefinementSettings()
 
 
 def match_refinement(
@@ -50,7 +67,8 @@ def match_refinement(
             timeline.run.run_id,
         )
     identity = refinement_identity_for_profile(profile)
-    outcome = reuse_or_refuse(project, timeline, event_id, identity=identity)
+    settings = refinement_settings_for_profile(profile)
+    outcome = reuse_or_refuse(project, timeline, event_id, identity=identity, settings=settings)
 
     def report() -> dict[str, object]:
         document = match_report(
@@ -74,7 +92,7 @@ def match_refinement(
     if not save or outcome.detail is None or outcome.request is None:
         return report()
     with RefinementWriterLock(project, outcome.request):
-        outcome = reuse_or_refuse(project, timeline, event_id, identity=identity)
+        outcome = reuse_or_refuse(project, timeline, event_id, identity=identity, settings=settings)
         if outcome.detail is None or outcome.request_hash is None:
             raise AppError(
                 "refinement.source_mismatch",
@@ -84,7 +102,8 @@ def match_refinement(
             )
         document = report()
         directory = sidecar_directory(project, timeline.run.run_id, outcome.request_hash)
-        target = directory / "matches" / f"{constraint_hash(constraint)}-{MATCHER_VERSION}.json"
+        matcher_version = TEMPORAL_MATCHER_VERSION if profile == "v4" else MATCHER_VERSION
+        target = directory / "matches" / f"{constraint_hash(constraint)}-{matcher_version}.json"
         _confined(project.resolve(), target)
         if target.exists():
             if _loads(target, project.resolve()) != document:

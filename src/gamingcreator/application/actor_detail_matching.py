@@ -342,6 +342,14 @@ def match_actor_details(detail: CandidateDetail | None, constraint: QueryConstra
     identity = constraint_hash(constraint)
     if detail is None:
         return DetailMatch(MatchStatus.UNVERIFIED, identity, (), ("detail_missing",))
+    unresolved_entities = False
+    if detail.temporal_scene is not None:
+        from gamingcreator.application.temporal_entity_projection import project_temporal_scene
+
+        projection = project_temporal_scene(detail.temporal_scene)
+        if detail.shots != projection.shots or detail.notes != projection.notes:
+            raise ValueError("Temporal matching requires the exact saved scene projection.")
+        unresolved_entities = projection.has_unresolved_entities
     order = {item.evidence_id: index for index, item in enumerate(detail.evidence)}
     count = len(constraint.actor_all) + len(constraint.environment_all)
     matches = []
@@ -393,6 +401,7 @@ def match_actor_details(detail: CandidateDetail | None, constraint: QueryConstra
         and all(ruled_out)
         and not detail.unassigned_evidence_ids
         and not notes
+        and not unresolved_entities
         and all(shot.actors for shot in detail.shots)
     ):
         status = MatchStatus.NO_MATCH
@@ -402,6 +411,22 @@ def match_actor_details(detail: CandidateDetail | None, constraint: QueryConstra
         status = MatchStatus.UNVERIFIED
     if detail.unassigned_evidence_ids:
         notes += ("unassigned_evidence",)
+    if unresolved_entities:
+        notes += ("unresolved_entity",)
     if any(item.conflicts for item in result):
         notes += ("observed_attribute_conflict",)
+    if detail.temporal_scene is not None:
+        from gamingcreator.domain.actor_details import (
+            DETAIL_TEMPORAL_SCHEMA_VERSION,
+            TEMPORAL_MATCHER_VERSION,
+        )
+
+        return DetailMatch(
+            status,
+            identity,
+            result,
+            notes,
+            schema_version=DETAIL_TEMPORAL_SCHEMA_VERSION,
+            matcher_version=TEMPORAL_MATCHER_VERSION,
+        )
     return DetailMatch(status, identity, result, notes)

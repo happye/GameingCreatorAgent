@@ -1,5 +1,11 @@
 # F010：连续实体、持有物与切镜证据
 
+本切片工程已验证：完整verify **1283 passed / 1 Windows文件symlink权限skip，126.74s**，Ruff118文件/mypy64/CLI通过；两次离线wheel同SHA `0cebff7f7ea68863d8df7a93f38f1d03aeb54041e1897f9b2e82bfe70a4c7e15`，日志 `.cache/detail-temporal-verify.log`。Worker81新测试包含实体/遮挡/owner/切镜；root新Provider与HTTP/桌面1366/手机390集成覆盖保存恢复、旧hash、费用/失败metadata、伪造投影拒绝、安全文本和证据回看。定向日志detail-temporal-targeted.log首轮测试snapshot导入及版本切换等待错误已修，不是模型效果证据。
+
+集成：worker211bbf7→3278895；root添加v4 Provider、actor-details-v2/请求schema-v2/匹配matcher-v2、新4096-token settings与精确profile、完整scene持久和投影核对。旧v2/v3prompt/hash保持；真实两冻结候选v2 payloadHash不变，v4缺结果unverified，SQLite源表/侧车SHA不变、0新HTTP，证明见本地v4-read-report.json。生产旧PID已不存在，不停任意服务；启动当前新版16808/parent54620并核对api/health、状态和命令身份，真实33事件、v4新schema及旧v2payload读取正确，见production-v4-report.json。PID仅快照，下次须重验。
+
+真实模型改进仍**未验证**；两次旧调用授权已用完、unknown ¥4.065536保留，F006/F009/F010仍false。原人工核对页面已展示用户反馈，不重新覆盖模型观察。
+
 2026-10-06，root / Codex，`codex/visual-details`，基线766a80a。用户反馈见detail-human-feedback-2026-10-06.md；此前两个付费请求次数已用完，本切片仅离线开发，不新增HTTP或更改未知费用预留。
 
 ## 问题与预期使用效果
@@ -34,4 +40,4 @@
 
 ## 已向用户汇报与下一步
 
-已说明九帧基础分析也存在实体和切镜误认，已将反馈写入独立记录并更新原人工核对页。下一步实现上述新合同与Provider，再验证保存/读取/页面能保留依据；真实效果仍须后续对照。
+已向用户详细说明九帧基础分析也存在实体和切镜误认、用户反馈已独立保存，以及新页面可核对分类/遮挡/持有/切镜依据、未知不会当作已排除人物。本轮工程已通过，仍不能称真实误认已修复。下一步先冻结v4正反例对照请求与费用/次数上限，获新实验授权后验证真实模型；其间继续受控查询草稿。独立真实切镜对照需要合法原候选或另行版本化context-only请求，不能扩大当前28–29秒区间偷借29.5秒画面。

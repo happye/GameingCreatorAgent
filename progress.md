@@ -1,5 +1,7 @@
 # Progress Log
 
+2026-10-06用户物品误认反馈后，连续实体v4离线工程整合完成：actor/object/unknown、逐帧遮挡、连续/cut/unknown边界、owner共同帧、完整scene保存与投影核对、新版本身份及页面依据回看。worker211bbf7→3278895；最终1283 passed/1 Windows文件symlink权限skip、126.74s，Ruff118/mypy64/CLI/重复wheel SHA0cebff7f7ea68863d8df7a93f38f1d03aeb54041e1897f9b2e82bfe70a4c7e15。桌面/手机、安全文本、保存恢复、未知屏障通过；真实两旧payload和源表/侧车不变、0新HTTP。新版服务16808/54620仅快照。已通俗详细汇报效果/验证限度与下一步：准备新v4真实对照，而非宣称模型误认已修复。F006/F009/F010及旧unknown保持；恢复见HANDOFF与sprint-detail-temporal。
+
 2026-10-06持久模式与用户人工反馈：所有项目 Agent 的规则及 Codex/Claude/Grok 入口已保存关键改动后的详细通俗汇报协议，恢复时继续加载。用户接受35–36s三个描述，指出28–29s s1/a2将抵镜头并遮挡人物的持有物误认成人物；独立反馈保存detail-human-feedback-2026-10-06.md，未改冻结模型结果，F006/F009/F010仍false。已向用户解释并优先安排连续主体/物品及镜头边界诊断，随后再继续条件草稿；没有新Provider调用。
 
 2026-10-06断网接续：严格AND条件弹窗/POST、v1/v2/v3明确profile、完整request/payload核对、v3嵌套part及只读成本历史已实现。root a59a85e、worker整合d3aedff/877d7d8，最终源码验证1184 passed/1 Windows文件symlink权限skip（124.87s），Ruff109/mypy60/CLI/重复离线wheel SHA fc1106a422692842c64eb1a1399969b776d729b3c1b3c8cbe569092a8546ecec。真实两候选partial/v3missingunverified、成本弹窗及桌面/手机通过，原源表/sidecarSHA不变，0新ProviderHTTP/外部浏览器请求；生产服务52144/52764仅快照。F006/F009/F010与未知¥4.065536保留，下一步受控草稿/独立人工反馈。证据sprint-detail-workspace和ignored artifacts/detail-workspace-validation。

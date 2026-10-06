@@ -99,7 +99,7 @@ def _parser() -> CliParser:
     detail.add_argument("--run", required=True)
     detail.add_argument("--event", required=True)
     detail.add_argument("--input", type=Path, required=True)
-    detail.add_argument("--profile", choices=("v1", "v2", "v3"), default="v2")
+    detail.add_argument("--profile", choices=("v1", "v2", "v3", "v4"), default="v2")
     detail.add_argument(
         "--save-match", action="store_true", help="在已发布精分析旁保存独立匹配记录"
     )

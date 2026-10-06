@@ -6,6 +6,12 @@
 
 ## 当前结论
 
+2026-10-06最新接续为连续实体v4：独立Provider/actor-details-v2/请求schema-v2/matcher-v2、完整scene证据保存与确定性投影核对、未知no_match屏障、CLI/API/profile和页面分类/遮挡/持有/切镜依据已整合。Worker211bbf7→3278895；完整verify **1283 passed/1 Windows文件symlink权限skip（126.74s）**，Ruff118/mypy64/CLI及两次同SHA离线wheel `0cebff7f7ea68863d8df7a93f38f1d03aeb54041e1897f9b2e82bfe70a4c7e15`。日志.cache/detail-temporal-verify.log；真实两旧v2payloadHash、源表/侧车不变，v4缺结果unverified，0新HTTP，证据artifacts/detail-query-validation/v4-read-report.json。生产旧52144/52764已不存在，未停止任意进程；新版16808/parent54620经api/health/状态/命令身份及33事件/旧payload校验，production-v4-report.json；PID只是快照。真实v4视觉理解仍未验证，F006/F009/F010与旧unknown继续保留。下一步见sprint-detail-temporal.md，先冻结新v4对照方案，不复用已执行完的两次授权发送。
+
+Git：持久汇报规则/工作台检查点766a80a已普通push并独立ls-remote核对；随后60869d5计划与3278895合同、root整合及本交接共同保存为本轮检查点，最新HEAD/远端以Git核对为准。只推codex/visual-details，不改main或强推。下方1184及更早验证是历史切片记录。
+
+面向用户的详细汇报已保存docs/exec-plans/report-2026-10-06-temporal-details.md，覆盖使用效果、人工反馈、九帧仍误认的根因、v4规则、1283工程验证的边界、零新增费用及下一步。用户要求补出未显示的汇报并持续开发；下一离线任务为受控查询草稿，真实v4对照方案先冻结但不发送。
+
 2026-10-06断网接续离线切片已完成：root页面typed AND/POST与request/payload核对a59a85e，v3嵌套part d3aedff、只读费用历史877d7d8已整合，CLI/API/页面可选v1/v2/v3（页面/CLI默认v2、inspect API默认v1）。最新完整verify **1184 passed / 1 Windows文件symlink权限skip，124.87s**，Ruff109/mypy60/CLI与两次离线wheel通过，SHA fc1106a422692842c64eb1a1399969b776d729b3c1b3c8cbe569092a8546ecec，日志.cache/detail-workspace-verify.log。真实两候选页面partial、v3缺结构unverified、费用弹窗及桌面/手机通过，0页面错误/外部请求；原源表与侧车SHA不变，证据artifacts/detail-workspace-validation。生产服务重验身份后更新为PID52144/parent52764，仅快照，下次再验。v3仅fixture工程验证，未发送真实HTTP；F006/F009/F010false、独立人工反馈和旧预留仍保留。
 
 当前root codex/visual-details；前一切片23d8422（独立精分析/恢复）与a6eb196（typed query CLI/profile）的历史完整verify1062/1skip在.cache/detail-query-verify.log。最新工程结果见本轮段落；仅公共记录/ignored证据在完整verify后更新，无再改源码。

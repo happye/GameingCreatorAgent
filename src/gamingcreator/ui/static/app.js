@@ -270,7 +270,7 @@
             }
             ui["detail-match-result"].append(section);
         }
-        const notes = { detail_missing: "缺少已保存的主体详情。", unassigned_evidence: "部分帧尚未归属镜头。", observed_attribute_conflict: "观察属性存在冲突。" };
+        const notes = { detail_missing: "缺少已保存的主体详情。", unassigned_evidence: "部分帧尚未归属镜头。", observed_attribute_conflict: "观察属性存在冲突。", unresolved_entity: "还有实体、持有关系或画面连续性未确定，不能据此排除所有人物。" };
         for (const note of result.notes) ui["detail-match-result"].append(element("p", "warning small", notes[note] || cleanObservationText(note)));
     }
 
@@ -1112,10 +1112,11 @@
             indoors: "室内", outdoors: "室外",
         };
         const evidence = new Map((state.view.evidence || []).map((item) => [item.id, item]));
-        const addAttributes = (container, attributes) => {
+        const addAttributes = (container, attributes, entityUncertain = false) => {
             for (const attribute of attributes) {
-                const pending = attribute.status !== "observed";
-                const label = `${pending ? "待核对" : "已观察"} · ${kinds[attribute.kind] || attribute.kind}：${values[attribute.value] || attribute.value}`;
+                const pending = entityUncertain || attribute.status !== "observed";
+                const status = entityUncertain ? "实体未确定 · 模型观察待核对" : pending ? "待核对" : "已观察";
+                const label = `${status} · ${kinds[attribute.kind] || attribute.kind}：${values[attribute.value] || attribute.value}`;
                 const item = element("li", pending ? "warning" : "", label);
                 const frames = (attribute.evidenceIds || []).map((id) => evidence.get(id))
                     .filter(Boolean).map((frame) => timecode(frame.startUs));
@@ -1123,6 +1124,56 @@
                 container.append(item);
             }
         };
+        const scene = details.temporalScene;
+        if (scene?.schemaVersion === "temporal-scene-v1") {
+            const proof = element("details", "detail-temporal");
+            proof.append(element("summary", "", "角色、物品和画面变化的判断依据（待核对）"));
+            proof.append(element("p", "muted small", "以下为模型的视觉判断。引用和时间已校验，识别是否正确仍需回看画面；遮挡区域不会自动补出人物特征。"));
+            const entityKinds = { actor: "角色", object: "物品", unknown: "无法判断的实体" };
+            const visibility = { visible: "可见", partially_occluded: "部分被遮挡", occluded: "被完全遮挡", unknown: "可见性无法判断" };
+            const basis = { character_structure: "可见角色结构", independent_agency: "独立行为", carried_object: "可见被持有的物品", rigid_object: "物体结构", insufficient_evidence: "依据不足", visual_continuity: "连续画面依据", scene_change: "场景变化依据" };
+            const names = new Map(scene.entities.map((entity, index) => [entity.entityId, `${entityKinds[entity.classification.kind]} ${index + 1}`]));
+            for (const entity of scene.entities) {
+                const section = element("section", "detail-shot");
+                const classification = entity.classification;
+                section.append(element("h4", "", `${names.get(entity.entityId)} · ${classification.status === "observed" ? "模型判断" : "尚未确定"}`));
+                section.append(element("p", "", cleanObservationText(entity.description)));
+                section.append(element("p", "small", `${basis[classification.basis]}：${cleanObservationText(classification.reason)}`));
+                appendSupportFrames(section, classification.evidenceIds, "分类依据");
+                const observations = element("ul");
+                for (const observation of entity.observations) {
+                    const frame = evidence.get(observation.evidenceId);
+                    const item = element("li", "small", `${frame ? timecode(frame.startUs) : "源帧"} · ${visibility[observation.visibility]} · ${cleanObservationText(observation.location)}`);
+                    appendSupportFrames(item, [observation.evidenceId], "回看");
+                    observations.append(item);
+                }
+                section.append(observations);
+                for (const part of entity.parts) {
+                    const attributes = element("ul");
+                    addAttributes(attributes, part.attributes, classification.status !== "observed");
+                    section.append(attributes);
+                }
+                proof.append(section);
+            }
+            for (const relation of scene.owners) {
+                const section = element("section", "detail-shot");
+                section.append(element("h4", "", `${names.get(relation.actorId)} 与 ${names.get(relation.objectId)} · ${relation.status === "observed" ? "模型判断有持有关系" : "持有关系未确定"}`));
+                section.append(element("p", "small", cleanObservationText(relation.reason)));
+                appendSupportFrames(section, relation.evidenceIds, "关系依据");
+                proof.append(section);
+            }
+            const transitionLabels = { continuous: "画面连续", cut: "发生切镜", unknown: "连续性未确定" };
+            for (const transition of scene.transitions) {
+                const section = element("section", "detail-shot");
+                const before = evidence.get(transition.beforeId);
+                const after = evidence.get(transition.afterId);
+                section.append(element("h4", "", `${before ? timecode(before.startUs) : "前一帧"} → ${after ? timecode(after.startUs) : "后一帧"} · ${transitionLabels[transition.state]}`));
+                section.append(element("p", "small", `${basis[transition.basis]}：${cleanObservationText(transition.reason)}`));
+                appendSupportFrames(section, [transition.beforeId, transition.afterId], "两侧画面");
+                proof.append(section);
+            }
+            ui["actor-detail-list"].append(proof);
+        }
         for (const [shotIndex, shot] of details.shots.entries()) {
             const section = element("section", "detail-shot");
             section.append(element("h4", "", `镜头 ${shotIndex + 1} · ${timecode(shot.sourceRange.startUs)} – ${timecode(shot.sourceRange.endUs)}`));

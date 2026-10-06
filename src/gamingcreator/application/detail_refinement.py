@@ -14,6 +14,7 @@ from gamingcreator.domain.time import SourceInstant, SourceRange
 
 REFINEMENT_PROMPT_VERSION = "actor-detail-refinement-v1"
 REFINEMENT_SCHEMA_VERSION = "actor-detail-refinement-schema-v1"
+REFINEMENT_TEMPORAL_SCHEMA_VERSION = "actor-detail-refinement-schema-v2"
 REFINEMENT_SETTINGS_VERSION = "actor-detail-refinement-settings-v1"
 REFINEMENT_PROMPT = """Observe only the supplied candidate interval and its registered image ids.
 Record visible actor and environment attributes supported by those frames.
@@ -125,7 +126,8 @@ class RefinementIdentity:
             or not self.prompt_version
             or self.prompt_version.startswith("phase0-vision-")
             or type(self.schema_version) is not str
-            or self.schema_version != REFINEMENT_SCHEMA_VERSION
+            or self.schema_version
+            not in {REFINEMENT_SCHEMA_VERSION, REFINEMENT_TEMPORAL_SCHEMA_VERSION}
             or type(self.provider) is not str
             or not self.provider
             or type(self.requested_model) is not str

@@ -6,10 +6,19 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from gamingcreator.application.budget import BudgetLedger
-from gamingcreator.application.detail_refinement import DetailRefinementRequest, request_hash
+from gamingcreator.application.detail_refinement import (
+    REFINEMENT_SCHEMA_VERSION,
+    REFINEMENT_TEMPORAL_SCHEMA_VERSION,
+    DetailRefinementRequest,
+    request_hash,
+)
 from gamingcreator.application.providers import CostStatus, InvocationMetadata, ProviderUsage
 from gamingcreator.application.storage import InvocationStatus, StoredInvocation
+from gamingcreator.application.temporal_entity_projection import project_temporal_scene
+from gamingcreator.application.temporal_scene_codec import scene_from_payload, scene_payload
 from gamingcreator.domain.actor_details import (
+    DETAIL_SCHEMA_VERSION,
+    DETAIL_TEMPORAL_SCHEMA_VERSION,
     ActorDetail,
     AttributeKind,
     AttributeStatus,
@@ -93,33 +102,47 @@ def canonical_detail_json(detail: CandidateDetail) -> str:
             "actors": [actor(entry) for entry in item.actors],
         }
 
-    return _canonical(
-        {
-            "runId": detail.run_id,
-            "mediaId": detail.media_id,
-            "eventId": detail.event_id,
-            "candidateId": detail.candidate_id,
-            "eventFingerprint": detail.event_fingerprint,
-            "mediaSha256": detail.media_sha256,
-            "configurationHash": detail.configuration_hash,
-            "pipelineVersion": detail.pipeline_version,
-            "basePromptVersion": detail.base_prompt_version,
-            "basePromptHash": detail.base_prompt_hash,
-            "detailIdentityHash": detail.detail_identity_hash,
-            "sourceRange": _interval(detail.source_range),
-            "evidence": [evidence(item) for item in detail.evidence],
-            "shots": [shot(item) for item in detail.shots],
-            "notes": list(detail.notes),
-            "schemaVersion": detail.schema_version,
-            "vocabularyVersion": detail.vocabulary_version,
-        }
-    )
+    value: dict[str, object] = {
+        "runId": detail.run_id,
+        "mediaId": detail.media_id,
+        "eventId": detail.event_id,
+        "candidateId": detail.candidate_id,
+        "eventFingerprint": detail.event_fingerprint,
+        "mediaSha256": detail.media_sha256,
+        "configurationHash": detail.configuration_hash,
+        "pipelineVersion": detail.pipeline_version,
+        "basePromptVersion": detail.base_prompt_version,
+        "basePromptHash": detail.base_prompt_hash,
+        "detailIdentityHash": detail.detail_identity_hash,
+        "sourceRange": _interval(detail.source_range),
+        "evidence": [evidence(item) for item in detail.evidence],
+        "shots": [shot(item) for item in detail.shots],
+        "notes": list(detail.notes),
+        "schemaVersion": detail.schema_version,
+        "vocabularyVersion": detail.vocabulary_version,
+    }
+    if detail.temporal_scene is not None:
+        _validate_temporal_projection(detail)
+        value["temporalScene"] = scene_payload(detail.temporal_scene)
+    return _canonical(value)
+
+
+def _validate_temporal_projection(detail: CandidateDetail) -> None:
+    if detail.temporal_scene is not None:
+        projection = project_temporal_scene(detail.temporal_scene)
+        if detail.shots != projection.shots or detail.notes != projection.notes:
+            raise ValueError("Temporal actor projection disagrees with its saved scene.")
 
 
 def detail_from_canonical(payload: str) -> CandidateDetail:
     value = json.loads(payload)
     if type(value) is not dict:
         raise ValueError("A detail payload must be an object.")
+    temporal_scene = None
+    if value.get("schemaVersion") == DETAIL_TEMPORAL_SCHEMA_VERSION:
+        temporal_scene = scene_from_payload(value["temporalScene"])
+    elif "temporalScene" in value:
+        raise ValueError("Legacy details cannot contain a temporal scene.")
     evidence = tuple(
         DetailEvidence(
             item["evidenceId"],
@@ -146,7 +169,7 @@ def detail_from_canonical(payload: str) -> CandidateDetail:
         )
         for item in value["shots"]
     )
-    return CandidateDetail(
+    detail = CandidateDetail(
         value["runId"],
         value["mediaId"],
         value["eventId"],
@@ -164,12 +187,27 @@ def detail_from_canonical(payload: str) -> CandidateDetail:
         tuple(value["notes"]),
         schema_version=value["schemaVersion"],
         vocabulary_version=value["vocabularyVersion"],
+        temporal_scene=temporal_scene,
     )
+    _validate_temporal_projection(detail)
+    return detail
 
 
 def detail_matches_request(detail: CandidateDetail, request: DetailRefinementRequest) -> bool:
+    try:
+        _validate_temporal_projection(detail)
+    except ValueError:
+        return False
+    expected_schema = (
+        DETAIL_TEMPORAL_SCHEMA_VERSION
+        if request.identity.schema_version == REFINEMENT_TEMPORAL_SCHEMA_VERSION
+        else DETAIL_SCHEMA_VERSION
+    )
     return (
-        detail.run_id == request.run_id
+        request.identity.schema_version
+        in {REFINEMENT_SCHEMA_VERSION, REFINEMENT_TEMPORAL_SCHEMA_VERSION}
+        and detail.schema_version == expected_schema
+        and detail.run_id == request.run_id
         and detail.event_id == request.event_id
         and detail.candidate_id == request.candidate_id
         and detail.event_fingerprint == request.event_fingerprint

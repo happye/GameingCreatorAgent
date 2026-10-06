@@ -36,7 +36,7 @@ root：`ui/server.py`、`ui/service.py`、新 `ui/media.py`、HTTP行为测试�
 - `cost:{knownCny,unknownAttempts,status}`；knownCny是已知部分的Decimal字符串，未知项单独计数，缺DeepSeek价格版本或unverified记录不得算零/已知金额，估价不是账单。
 - `retrievalVersion`、`configHash`、`query`、`mode`，用于导出来源追踪。
 
-2026-10-06版本选择：`/api/inspect`可选`detailProfile=v1|v2|v3`，API默认v1保持旧合同，页面默认v2并显式选择版本，未知值为400/input.detail_profile。顶层`detailRefinementProfile:{version:"actor-detail-inspection-v1",profile,settingsHash,schemaVersion,promptVersion,promptHash,provider,requestedModel}`使用固定RefinementSettings与所选独立身份：v1为冻结骨架、v2独立Provider、v3嵌套部件Provider。精确key缺失返回unverified，不借用其他版本；不接受任意路径、不扫描mtime、不自动解析自由查询约束。v3只有离线合同验证，没有新真实模型输出。
+2026-10-06版本选择：`/api/inspect`可选`detailProfile=v1|v2|v3|v4`，API默认v1保持旧合同，页面默认v2并显式选择版本，未知值为400/input.detail_profile。顶层`detailRefinementProfile:{version:"actor-detail-inspection-v1",profile,settingsHash,schemaVersion,promptVersion,promptHash,provider,requestedModel}`使用固定RefinementSettings与所选独立身份：v1为冻结骨架、v2独立Provider、v3嵌套部件Provider。精确key缺失返回unverified，不借用其他版本；不接受任意路径、不扫描mtime、不自动解析自由查询约束。v3只有离线合同验证，没有新真实模型输出。
 
 timeline/candidate行新增 `detailRefinement:{status:"unverified",availability,requestHash,detail}`。availability为 `missing`（该冻结key未发布结果）、`reused`（完整校验后复用）、`unsupported`（无视觉事件或旧数据缺合同兼容的版本/身份）、`run_incomplete`。非事件音频候选requestHash为null。detail缺失为null；复用时为actor-details-v1规范主体结构并增加计算出的unassignedEvidenceIds，保留镜头、主体、部件、observed/uncertain、原候选区间与支持源帧，不覆盖observableFacts或rank。没有typed QueryConstraint时status始终unverified，reused不等于full或人工认可。
 
@@ -63,3 +63,7 @@ timeline/candidate行新增 `detailRefinement:{status:"unverified",availability,
 2026-10-05导出仍schemaVersion=1，增加factsProjectionVersion；selectedClips.observableFacts仅在身份校验后复制为显示投影，增加uncertainty，CSV相应增加两列。localStorage和原数据库事实不重写，旧篮子恢复时重新从当前事件取得显示/不确定性；改写rawfacts冒充投影会被拒。技术evidenceIds仍完整保留。
 
 普通CLI与benchmark的持久化search JSON同样带factsProjectionVersion、displayFacts、事件原uncertainty和清理后的displayUncertainty；run-demo表格使用投影并显示待核对列。原observableFacts和CandidateClip身份不改，uncertainty不加入正面索引，audio-only候选目前无事件不确定性映射。
+
+## 连续实体精分析v4
+
+显式detailProfile=v4读取新schema-v2身份和4096输出token设置；页面默认v2、inspect默认v1继续保留。reused详情为actor-details-v2，增加temporalScene（temporal-scene-v1）：注册evidence、实体classification/observations/parts、相邻帧transitions、owners、environment和notes。返回前完整校验scene与确定性shots投影一致；unknown实体或关系不得通过遗漏变成no_match。匹配结果使用actor-detail-matcher-v2，保存文件名也按此版本隔离。缺该精确key为unverified，不借用v2/v3或发送模型请求。页面提供分类、遮挡、持有、切镜依据与注册帧回看；不确定实体的属性明确待核对，所有文本用textContent。真实v4识别效果尚未验证，原模型结果和基础账本保持。

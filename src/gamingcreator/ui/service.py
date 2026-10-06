@@ -24,6 +24,7 @@ from gamingcreator.infrastructure.detail_cost_history import refinement_cost_his
 from gamingcreator.infrastructure.detail_query_sidecar import (
     match_refinement,
     refinement_identity_for_profile,
+    refinement_settings_for_profile,
 )
 from gamingcreator.infrastructure.detail_refinement_sidecar import reuse_or_refuse
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
@@ -285,7 +286,7 @@ async def inspect_run(
     profile = _analysis_profile(timeline.run.configuration.analysis.vision_prompt_version)
     event_tags = {event.event_id: event.mechanic_tags for event in timeline.events}
     event_uncertainty = {event.event_id: event.uncertainty for event in timeline.events}
-    settings = RefinementSettings()
+    settings = refinement_settings_for_profile(detail_profile)
     refinements = {
         event.event_id: _refinement_payload(
             project, timeline, event.event_id, settings, refinement_identity

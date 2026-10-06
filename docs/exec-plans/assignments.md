@@ -1,5 +1,7 @@
 # Active assignments
 
+2026-10-06当前：连续实体v4 worker211bbf7已整合3278895并冻结；root Provider/版本化保存、匹配和页面已通过1283/1权限skip完整验证，见sprint-detail-temporal.md。对用户的详细汇报已生成report-2026-10-06-temporal-details.md。下一离线切片为受控查询草稿，先写范围和新独占worktree；真实v4对照仍需新的冻结请求及预算/次数授权，不复用旧两次调用。
+
 ## 2026-10-06 用户反馈与持久汇报
 
 新编码切片见sprint-detail-temporal.md：detail_parts_v3使用新 `.worktrees/detail-temporal-entities` / `codex/detail-temporal-entities`，独占新temporal_entities领域合同、temporal_entity_projection/temporal_scene_codec应用模块、新测试与own sprint；旧parts worktree冻结。root独占现有共享合同/codec/sidecar和v4 Provider、profile/API/UI整合及公共验证。只做离线开发，不新增HTTP。接口先由worker提交，root再串行整合，不以fixtures证明模型理解已修好。

@@ -5,14 +5,20 @@ import json
 import re
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from gamingcreator.domain.time import SourceInstant, SourceRange
 
+if TYPE_CHECKING:
+    from gamingcreator.domain.temporal_entities import TemporalScene
+
 DETAIL_SCHEMA_VERSION = "actor-details-v1"
+DETAIL_TEMPORAL_SCHEMA_VERSION = "actor-details-v2"
 DETAIL_VOCABULARY_VERSION = "actor-detail-vocabulary-v1"
 QUERY_SCHEMA_VERSION = "actor-detail-query-schema-v1"
 QUERY_VERSION = "actor-detail-query-v1"
 MATCHER_VERSION = "actor-detail-matcher-v1"
+TEMPORAL_MATCHER_VERSION = "actor-detail-matcher-v2"
 MAX_DETAIL_FRAMES = 9
 MAX_DETAIL_SHOTS = 9
 MAX_SHOT_ACTORS = 8
@@ -293,6 +299,7 @@ class CandidateDetail:
     unassigned_evidence_ids: tuple[str, ...] = ()
     schema_version: str = DETAIL_SCHEMA_VERSION
     vocabulary_version: str = DETAIL_VOCABULARY_VERSION
+    temporal_scene: "TemporalScene | None" = None
 
     def __post_init__(self) -> None:
         for identity in (
@@ -320,7 +327,16 @@ class CandidateDetail:
         )
         if type(self.candidate_id) is not str or self.candidate_id != candidate_id:
             raise ValueError("Detail candidate identity does not match the registered event.")
-        _version(self.schema_version, DETAIL_SCHEMA_VERSION)
+        if self.temporal_scene is None:
+            _version(self.schema_version, DETAIL_SCHEMA_VERSION)
+        else:
+            from gamingcreator.domain.temporal_entities import TemporalScene
+
+            _version(self.schema_version, DETAIL_TEMPORAL_SCHEMA_VERSION)
+            if type(self.temporal_scene) is not TemporalScene:
+                raise ValueError("Temporal details require a validated scene.")
+            if self.temporal_scene.evidence != self.evidence:
+                raise ValueError("Temporal scene must use the exact candidate evidence.")
         _version(self.vocabulary_version, DETAIL_VOCABULARY_VERSION)
         if type(self.source_range) is not SourceRange:
             raise ValueError("Candidate details require the original typed source range.")
@@ -585,12 +601,16 @@ class DetailMatch:
         _items(self.notes, str, MAX_ACTOR_ATTRIBUTES + 2)
         if any(not item.strip() or len(item) > 500 for item in self.notes):
             raise ValueError("Invalid bounded match note.")
+        temporal = self.matcher_version == TEMPORAL_MATCHER_VERSION
+        _version(
+            self.schema_version,
+            DETAIL_TEMPORAL_SCHEMA_VERSION if temporal else DETAIL_SCHEMA_VERSION,
+        )
+        _version(self.matcher_version, TEMPORAL_MATCHER_VERSION if temporal else MATCHER_VERSION)
         for value, expected in (
-            (self.schema_version, DETAIL_SCHEMA_VERSION),
             (self.query_schema_version, QUERY_SCHEMA_VERSION),
             (self.query_version, QUERY_VERSION),
             (self.vocabulary_version, DETAIL_VOCABULARY_VERSION),
-            (self.matcher_version, MATCHER_VERSION),
         ):
             _version(value, expected)
         if len({(item.shot_id, item.actor_id) for item in self.matches}) != len(self.matches):

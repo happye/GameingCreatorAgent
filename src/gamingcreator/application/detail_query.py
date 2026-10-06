@@ -1,15 +1,20 @@
 """Explicit query manifests and evidence reports. No free-text constraint inference or I/O."""
 
 import json
-from dataclasses import asdict
+from dataclasses import asdict, replace
 
 from gamingcreator.application.actor_detail_matching import match_actor_details
-from gamingcreator.application.detail_refinement import DetailRefinementRequest
+from gamingcreator.application.detail_refinement import (
+    REFINEMENT_TEMPORAL_SCHEMA_VERSION,
+    DetailRefinementRequest,
+)
 from gamingcreator.application.detail_refinement_budget import payload_hash
 from gamingcreator.domain.actor_details import (
+    DETAIL_TEMPORAL_SCHEMA_VERSION,
     DETAIL_VOCABULARY_VERSION,
     QUERY_SCHEMA_VERSION,
     QUERY_VERSION,
+    TEMPORAL_MATCHER_VERSION,
     AttributeConstraint,
     AttributeKind,
     CandidateDetail,
@@ -123,6 +128,16 @@ def match_report(
     event_id: str,
     request_digest: str | None,
 ) -> dict[str, object]:
+    result = match_actor_details(detail, constraint)
+    if (
+        request is not None
+        and request.identity.schema_version == REFINEMENT_TEMPORAL_SCHEMA_VERSION
+    ):
+        result = replace(
+            result,
+            schema_version=DETAIL_TEMPORAL_SCHEMA_VERSION,
+            matcher_version=TEMPORAL_MATCHER_VERSION,
+        )
     return {
         "schemaVersion": MATCH_REPORT_VERSION,
         "runId": run_id,
@@ -133,7 +148,7 @@ def match_report(
         "refinementRequestHash": request_digest,
         "refinementPayloadHash": None if detail is None else payload_hash(detail),
         "constraintJson": canonical_constraint_json(constraint),
-        "result": _camel_payload(asdict(match_actor_details(detail, constraint))),
+        "result": _camel_payload(asdict(result)),
         "humanLabels": None,
         "qualityGate": None,
     }
