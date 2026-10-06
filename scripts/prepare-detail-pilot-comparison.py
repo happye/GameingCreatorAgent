@@ -410,6 +410,13 @@ def render_html(comparison: dict[str, object]) -> str:
     def details(title: str, value: object) -> str:
         return f"<details><summary>{escape(title)}</summary><pre>{escape(json.dumps(value, ensure_ascii=False, indent=2))}</pre></details>"
 
+    def download(name: str, label: str, value: object) -> str:
+        data = (json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n").encode(
+            "utf-8"
+        )
+        href = "data:application/json;base64," + base64.b64encode(data).decode("ascii")
+        return f'<a download="{escape(name)}" href="{href}">{escape(label)}</a>'
+
     def matching_summary(report: dict[str, object]) -> str:
         result = _object(report["result"])
         labels = {
@@ -421,10 +428,16 @@ def render_html(comparison: dict[str, object]) -> str:
         status = str(result["status"])  # Fresh match reports retain a typed StrEnum until encoding.
         return f"<p><b>这次查询：{labels[status]}</b>（程序判断，未替代人工确认）</p>"
 
+    kinds = cast(list[dict[str, object]], query_options()["kinds"])
+    query_kind_labels = {_string(kind["kind"]): _string(kind["label"]) for kind in kinds}
     value_labels = {
         (_string(kind["kind"]), _string(value["value"])): _string(value["label"])
-        for kind in cast(list[dict[str, object]], query_options()["kinds"])
+        for kind in kinds
         for value in cast(list[dict[str, object]], kind["values"])
+    }
+    case_titles = {
+        "actor-separation": "三个角色的描述保留正例",
+        "held-item-shape": "物品靠近镜头的误认反例",
     }
     sections = []
     for raw in cast(list[object], comparison["cases"]):
@@ -433,12 +446,14 @@ def render_html(comparison: dict[str, object]) -> str:
         old_match = _object(legacy["match"])
         constraint = loads_constraint(_string(old_match["constraintJson"]))
         query_label = " + ".join(
-            value_labels[(condition.kind.value, condition.value)]
+            query_kind_labels[condition.kind.value]
+            + "："
+            + value_labels[(condition.kind.value, condition.value)]
             for condition in (*constraint.actor_all, *constraint.environment_all)
         )
         interval = _object(case["sourceRange"])
         frames = "".join(
-            f'<figure><img src="{escape(frame["imageDataUrl"])}" alt="{escape(frame["sourceUs"])} 微秒原图"><figcaption>{cast(int, frame["sourceUs"]) / 1_000_000:g} 秒</figcaption>{details("画面身份", {key: value for key, value in frame.items() if key != "imageDataUrl"})}</figure>'
+            f'<figure><img src="{escape(frame["imageDataUrl"])}" alt="源视频 {cast(int, frame["sourceUs"]) / 1_000_000:g} 秒原画面"><figcaption>{cast(int, frame["sourceUs"]) / 1_000_000:g} 秒</figcaption>{details("画面身份", {key: value for key, value in frame.items() if key != "imageDataUrl"})}</figure>'
             for frame in cast(list[dict[str, object]], case["frames"])
         )
         descriptions = []
@@ -483,10 +498,16 @@ def render_html(comparison: dict[str, object]) -> str:
                 + details("完整新版画面记录", scene)
             )
         sections.append(
-            f'<section><h2>{escape(case["caseId"])} · {cast(int, interval["startUs"]) / 1_000_000:g}–{(cast(int, interval["endUs"]) - 1) / 1_000_000:g} 秒</h2><p>{escape(case["reviewPurpose"])}</p><p>两版对照使用同一个查询：{escape(query_label)}。条件须由同一角色、同一部件及共同画面支持。</p><div class="frames">{frames}</div><div class="versions"><article><h3>旧版 v2</h3><ul>{"".join(descriptions)}</ul>{matching_summary(old_match)}{details("旧版当时的检索结果（仅程序判断）", old_match)}</article><article><h3>新版 v4</h3>{new_text}{matching_summary(_object(temporal["match"]))}{details("同一查询的新版检索结果（仅程序判断）", temporal["match"])}</article></div>{details("本候选精确绑定身份", {"runId": case["runId"], "eventId": case["eventId"], "legacyRequestHash": legacy["requestHash"], "legacyPayloadHash": legacy["payloadHash"], "temporalRequestHash": temporal["requestHash"], "temporalPayloadHash": temporal["payloadHash"]})}</section>'
+            f'<section><h2>{escape(case_titles[_string(case["caseId"])])} · {cast(int, interval["startUs"]) / 1_000_000:g}–{(cast(int, interval["endUs"]) - 1) / 1_000_000:g} 秒</h2><p>{escape(case["reviewPurpose"])}</p><p>两版对照使用同一个查询：{escape(query_label)}。角色条件须由同一角色和共同画面支持；同组衣物或持有物的形状、颜色还须属于同一部件。</p><div class="frames">{frames}</div><div class="versions"><article><h3>旧版 v2</h3><ul>{"".join(descriptions)}</ul>{matching_summary(old_match)}{details("旧版当时的检索结果（仅程序判断）", old_match)}</article><article><h3>新版 v4</h3>{new_text}{matching_summary(_object(temporal["match"]))}{details("同一查询的新版检索结果（仅程序判断）", temporal["match"])}</article></div>{details("本候选精确绑定身份", {"runId": case["runId"], "eventId": case["eventId"], "legacyRequestHash": legacy["requestHash"], "legacyPayloadHash": legacy["payloadHash"], "temporalRequestHash": temporal["requestHash"], "temporalPayloadHash": temporal["payloadHash"]})}</section>'
         )
+    downloads = download(
+        "human-review-template.json", "下载人工记录模板", review_template(comparison)
+    )
+    downloads += " · " + download("comparison.json", "下载对照数据", comparison)
     return (
-        '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data:; style-src \'unsafe-inline\'; script-src \'none\'; connect-src \'none\'; object-src \'none\'; base-uri \'none\'; form-action \'none\'"><title>同源画面 · v2/v4 人工对照</title><style>body{margin:0;background:#f4f7fb;color:#203047;font:16px/1.65 system-ui,sans-serif}main{max-width:1200px;margin:auto;padding:24px}h1{font-size:28px}section,header{background:white;border:1px solid #dce3ee;border-radius:14px;padding:24px;margin-bottom:24px}.frames{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.versions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}figure{margin:0}img{width:100%;height:auto;border-radius:8px}figcaption,.label{font-weight:600}.notice,.feedback{background:#fff5d8;padding:12px;border-radius:6px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;background:#f3f6fa;padding:12px}details{margin:12px 0}summary{cursor:pointer}article{min-width:0}li{margin-bottom:16px;overflow-wrap:anywhere}a{color:#1758a8}@media(max-width:700px){main{padding:12px}section,header{padding:16px}.versions,.frames{grid-template-columns:1fr}h1{font-size:23px}}</style></head><body><main><header><h1>同源画面 · v2/v4 人工对照</h1><p>两版共用每组原来的三张画面。旧反馈只评价旧版对应的描述，新版人工结论全部留空。</p><p>本次只读本地已保存资料，发送请求 0 次。新版无保存结果时无法判断识别是否改好；此页不代表整体检索质量或 U10 通过。</p><p><a download href="human-review-template.json">下载人工记录模板</a> · <a download href="comparison.json">下载对照数据</a></p><p>请分别核对：物品是否被误当角色、切镜是否真实、原来的正确描述是否保留、同一查询找到的片段是否可用。未看过或没有新版结果的项目保持 null。</p></header>'
+        "<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'none'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'\"><title>同源画面 · v2/v4 人工对照</title><style>body{margin:0;background:#f4f7fb;color:#203047;font:16px/1.65 system-ui,sans-serif}main{max-width:1200px;margin:auto;padding:24px}h1{font-size:28px}section,header{background:white;border:1px solid #dce3ee;border-radius:14px;padding:24px;margin-bottom:24px}.frames{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.versions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}figure{margin:0}img{width:100%;height:auto;border-radius:8px}figcaption,.label{font-weight:600}.notice,.feedback{background:#fff5d8;padding:12px;border-radius:6px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;background:#f3f6fa;padding:12px}details{margin:12px 0}summary{cursor:pointer}article{min-width:0}li{margin-bottom:16px;overflow-wrap:anywhere}a{color:#1758a8}@media(max-width:700px){main{padding:12px}section,header{padding:16px}.versions,.frames{grid-template-columns:1fr}h1{font-size:23px}}</style></head><body><main><header><h1>同源画面 · v2/v4 人工对照</h1><p>两版共用每组原来的三张画面。旧反馈只评价旧版对应的描述，新版人工结论全部留空。</p><p>本次只读本地已保存资料，发送请求 0 次。新版无保存结果时无法判断识别是否改好；检索质量仍需独立人工验收。</p><p>"
+        + downloads
+        + "</p><p>请分别核对：物品是否被误当角色、切镜是否真实、原来的正确描述是否保留、同一查询找到的片段是否可用。尚未核对或没有新版结果的项目请留空。</p></header>"
         + "".join(sections)
         + "</main></body></html>"
     )

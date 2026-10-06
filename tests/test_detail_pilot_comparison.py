@@ -425,3 +425,36 @@ def test_source_changes_during_preparation_and_absent_database_are_refused(fixtu
     (fixture["args"][0] / "timeline.sqlite3").unlink()
     with pytest.raises(FileNotFoundError):
         prepare(fixture)
+
+
+def test_template_and_data_download_from_a_direct_local_file(fixture):
+    playwright = pytest.importorskip("playwright.sync_api")
+    result = prepare(fixture)
+    output = fixture["tmp"] / "browser-review"
+    script.write_comparison(result, output)
+    with playwright.sync_playwright() as runtime:
+        browser = runtime.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(viewport={"width": 390, "height": 844}, accept_downloads=True)
+            external = []
+            page.on(
+                "request",
+                lambda request: (
+                    external.append(request.url)
+                    if request.url.startswith(("http:", "https:"))
+                    else None
+                ),
+            )
+            page.goto((output / "comparison.html").as_uri())
+            for label, filename in (
+                ("下载人工记录模板", "human-review-template.json"),
+                ("下载对照数据", "comparison.json"),
+            ):
+                with page.expect_download(timeout=5000) as pending:
+                    page.get_by_text(label, exact=True).click()
+                downloaded = pending.value
+                assert downloaded.suggested_filename == filename
+                assert Path(downloaded.path()).read_bytes() == (output / filename).read_bytes()
+            assert not external
+        finally:
+            browser.close()

@@ -19,6 +19,18 @@
 
 ## 验证与恢复
 
+### 最新检查点：真实对照页已可用，全项目检查待运行
+
+worker b58159d已串行整合为4e2829a，其原worktree冻结。root完成中文条件标签和同部件规则说明、查询/实体标签映射隔离，以及直接打开file://时的静态JSON下载修复。新增真实浏览器下载回归，两份下载均与落盘文件逐字节一致；最新定向116 passed（生成器22、proposal18、原报告验证76），生成脚本Ruff和strict mypy通过。1661/1skip仍是之前描述反馈切片的完整基线，本次全项目检查尚未运行。
+
+最终真实产物位于ignored `artifacts/detail-pilot-comparison-20261006-final/`，保留先前产物而不覆盖。1366/390页面均实读六张原图、原尺寸和逐字节hash；三个确认、一个判错只贴旧结果，新版两个候选均no_saved_result；人工维度保持null，模板实际点击下载与落盘一致，无页面错误、外部请求和横向溢出。原报告、反馈、冻结proposal、源DB/侧车/账本前后不变，0Provider/预留变更；独立来源审计与旧partial重算亦通过。
+
+HTML SHA4323e6e8b2f1b2f8a5792f613487dade9f6514ffd9f806f0116a63a03ded971f，comparison.json SHAa41f686bdc158e20e36a1b1973a42ca367f2fde973148941f1779e8309c4250d，template SHAad78d358cc0a855fe639d051144146631aab0d541f49fc498561bdecdf99b666。证据 `artifacts/detail-temporal-validation/pilot-comparison-browser-report.json`、1366/390截图和 `.cache/detail-pilot-comparison-final-release-generate.log`；生产工作台未改源码，无需重启。
+
+已向用户汇报现在可同页核对原两例和下载记录、新版暂无真实结果、无新增费用；下一动作保存此源码/验证检查点，运行一次完整verify，更新通俗报告和使用指南，再普通推送已授权分支并独立核对远端。旧unknown与F006/F009/F010不变；新v4授权待答，额度提醒不构成发送或新增预算授权。
+
+以下是此前节点记录，不能代替本段最新状态。
+
 额度恢复接续：用户新Goal明确继续开发迭代；上个worker因usage limit终止但已落script/tests/own sprint，未提交。root重新核对worktree原基线a424ef4与三个未提交文件，恢复同agent完成最终验证/提交，不重启任务或覆盖源代码。当前源码包含旧同版matcher完整result一致性和report/case/match null质量字段，但该新补丁不得引用首次16通过作为最终结果。root源码初审反例已交worker，reviewer在只读复核。根源数据来源审计重新通过，仍旧partial/new unverified、3 accept+1 reject仅旧描述、0发送/预算变更；浏览器核对脚本已准备在ignored artifacts/detail-temporal-validation/check-pilot-comparison-browser.py，待生成真实产物后运行。生产原PID均不存在，正常恢复服务并实读原结果，不盲停进程；最终验证节点另补。
 
 2026-10-06用户最新额度提示15%，要求准备阶段汇报，未要求停工。root已核对工作树0a97abb干净、冻结proposal SHA不变、0新paidRequests、executionAuthorized=false、原report SHA不变和生产35992健康；上一goal turn为已验证功能交付的实际进展。当前worker接口已定，尚无可用生成结果/新验证，不能写成页面已完成；阶段报告report-2026-10-06-stage-progress.md按此事实保存。下一节点等worker提交其独占文件后审核/定向/实际生成，不复制未验收口头结果为通过。
