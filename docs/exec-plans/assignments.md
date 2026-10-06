@@ -1,5 +1,7 @@
 # Active assignments
 
+当前root顺序任务为sprint-retrieval-query-audit.md：射击／跳跃／Boss中英文与原事实离线原因审计，拥有ignored审计脚本／证据、如经证据确认则Application retrieval及行为反例、公共文档。先读只读store并调用纯search_timeline，不写普通搜索记录、基础数据／账本或人评；旧worker/worktree冻结。1775为上轮基线，当前尚无新修复；网络待补推不阻塞本地工作。
+
 固定十位工作台诊断已交付源码b2c2a13：新30行为回归、完整1775/1权限skip、135格式检查／72类型文件、相同离线wheel及实际八组查询／1366/390下载／11.5秒回看通过。生产36484/55324经身份核对已更新，新诊断／旧3确认+1纠错／v4缺结果重验通过；0Provider／预算／人工评分。下一动作root顺序离线排查射击零命中与Boss条件部分命中，先登记审计范围、不新增模型调用。以下计划段为本切片开始时记录，旧worker／worktree冻结，正式F006仍未验收。
 
 新当前任务为固定十位的工作台检索开发诊断，见sprint-retrieval-diagnostics.md。root顺序负责新Application诊断投影、UI/service及新HTTP-browser测试和公共记录；旧worker/worktrees全部冻结。只展示已完成查询原排名/缺位/已知重复，不计算未人评的质量；低top上限明确标记，空/失败/迟到结果不冒作零命中。打开弹窗无额外查询或Provider；实际查询仍按原路径记录，不改源事实/账本。
