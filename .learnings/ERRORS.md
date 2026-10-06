@@ -1,5 +1,14 @@
 # Errors
 
+## [ERR-20261006-014] retrieval_alias_boundary_consistency
+
+**Logged**: 2026-10-06
+**Priority**: medium
+**Status**: resolved
+**Area**: retrieval
+
+首轮英文动作扩展使用ASCII边界，而既有否认过滤使用Unicode词边界，中英文混写“寻找jumping片段”会补跳跃但不认出查询动作，让“未观察到跳跃”漏过滤（2 failures）。统一复用_ACTION_MENTION的ASCII字母／数字／下划线边界，同时识别“未见jumping”，不要另建一套查询识别逻辑。另一failure为误期待“没有shooting”零候选，实际原BM25会匹配“没有”；负意图保持既有行为，不能在有限修复中虚构缺席语义。修正后243相关回归通过，弯／直引号反例另加，最终完整证据见本轮sprint。Ruff格式后的源码锚点需重新读取，避免陈旧补丁失败。
+
 ## [ERR-20261006-013] diagnostics_remote_connection
 
 **Logged**: 2026-10-06

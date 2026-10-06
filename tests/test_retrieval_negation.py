@@ -124,7 +124,7 @@ def test_denied_action_cannot_supply_positive_hit(
 ) -> None:
     result = search(timeline(denial, positive), query, mode)
     assert [item.event_id for item in result.candidates] == ["event-1"]
-    assert result.retrieval_version == "bm25-e5-rrf-v5"
+    assert result.retrieval_version == "bm25-e5-rrf-v6"
 
 
 @pytest.mark.parametrize("mode", ["lexical", "hybrid"])

@@ -22,7 +22,7 @@ from gamingcreator.domain.models import Embedding, EvidenceReference
 from gamingcreator.domain.time import SourceInstant, SourceRange
 
 RetrievalMode = Literal["lexical", "semantic", "hybrid"]
-RETRIEVAL_VERSION = "bm25-e5-rrf-v5"
+RETRIEVAL_VERSION = "bm25-e5-rrf-v6"
 _STOP_WORDS = frozenset(
     "a an and are at avatar character characters clip find for from game gameplay in is me of on player please show the to video with".split()
 )
@@ -77,7 +77,7 @@ _ACTION_BY_TERM = {term: action for action, terms in _ACTION_TERMS.items() for t
 _ACTION_PATTERN = (
     "(?:"
     + "|".join(
-        rf"\b{re.escape(term)}\b" if term.isascii() else re.escape(term)
+        rf"(?<![a-z0-9_]){re.escape(term)}(?![a-z0-9_])" if term.isascii() else re.escape(term)
         for term in sorted(_ACTION_BY_TERM, key=len, reverse=True)
     )
     + ")"
@@ -278,11 +278,18 @@ def _documents(timeline: StoredTimeline) -> tuple[_Document, ...]:
 
 
 def _lexical_query(query: str) -> str:
-    folded = unicodedata.normalize("NFKC", query).casefold()
+    folded = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
     extras: list[str] = []
     for word, term in _CROSS_LINGUAL_TERMS:
         if re.search(rf"(?<![a-z0-9]){re.escape(word)}(?![a-z0-9])", folded):
             extras.append(term)
+    # Reuse the bounded action vocabulary; negative-intent queries retain their
+    # previous lexical behavior rather than acquiring new absence semantics.
+    if not _NEGATIVE_QUERY_INTENT.search(folded):
+        for match in _ACTION_MENTION.finditer(folded):
+            word = match.group()
+            if word.isascii():
+                extras.append(_ACTION_TERMS[_ACTION_BY_TERM[word]][0])
     if not extras:
         return query
     return query + "\n" + " ".join(dict.fromkeys(extras))
