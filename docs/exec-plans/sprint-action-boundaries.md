@@ -37,3 +37,5 @@ UI入口、实际范围显示、源头尾截止、原区间恢复及自由回看
 已向用户通俗详细汇报回看的用处、原边界不变、Atom物品／主体和切镜风险、光束非枪械射击、实际验证与零费用。report-2026-10-06-action-boundaries.md、阶段报告、手册／指南／API说明／架构、HANDOFF与assignments已同步，工具持续汇报入口保留。下一项root顺序先登记动作标签与原文支持一致性核对，重点起跳／上升、射击／光效，不新增模型调用或人工标签。
 
 本轮待保存本地检查点，用户报告断网，不作网络重试；最后独立确认远端3136895，旧c5c1ae4／8b2c8fc及本轮待普通补推，禁止main／强推。发布回执以.cache/action-boundaries-publication.json和Git为准。证据在ignored artifacts/action-boundaries，完整检查／JUnit／包回执及两失败在.cache/action-boundaries-*，不提交素材／生成媒体／DB／凭据。
+
+实现／报告已一起提交 **c430b22d829d807bb99a5d40145a16f7f5c18841**，工作树曾干净；最后仅更新本同步状态，不改源码、不重复完整验证。16文档／80本地链接、与上切片相同的受保护基础表／文件及本轮总六搜索核对通过，冻结proposal SHA／F006/F009/F010 false保持。本轮0push／远端读取，pending_network，继续下一本地任务；最终文档head和待推回执以Git及.cache/action-boundaries-publication.json为准。
