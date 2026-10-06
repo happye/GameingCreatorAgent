@@ -2,6 +2,8 @@
 
 当前root顺序完成已有动作依据核对与diagnostics v2登记证据摘要，见docs/exec-plans/sprint-retrieval-action-evidence.md和report-2026-10-06-action-evidence.md。接3136895，旧worker／worktree冻结；下一工作为动作起止帧／过程覆盖核对，先登记任务。Goal active，0新付费／预算／真实人评，F006/F009/F010 false。
 
+源码与报告本地检查点c5c1ae4ed270a44c61aca30e254f89333a5b82ea。一次普通push连接github.com:443约21秒失败，未独立读取／重试，本轮待补推；最后已确认远端仍为上一轮3136895b7408c34623e9040bd5fa4e9de7298557，不能称本轮已同步。最终文档检查点及待发布状态见.cache/retrieval-action-evidence-publication.json；网络不阻塞本地下一任务，不改全局配置／main／强推。
+
 本轮检索仍v7、原候选排名／事实／源时钟保持；摘要显示候选自己的登记图片数、时刻／内容数和跨度，单图／重复／音频／资料不完整分清，动作判断null。新增20反例、50定向24.623s／完整1882 passed／1 Windows权限skip（220.34s）、Ruff137／mypy72／CLI／双离线wheel SHAc1f22b3b0c585fcdb02c52fd0645504c6cd8fa6da49f03bfca216ebbbf3664e4通过；71包文件同源码，JUnit1883零失败错误。24同查询只读原排名／来源保持，全项目字节／预算不变。实际1366／390单图与四图1.5秒／下载／29和21秒回看通过；正常页面4查询＋生产2查询，基础资料／精分析反馈预算／冻结方案保持。
 
 生产新鲜health／state／CIM／exe／完整命令／仓库／父子匹配后替换61396／56740，当前快照30440／parent46168；v2诊断／旧PV单图／新多图、旧三个确认＋一个拒绝及精分析v4缺失隔离重验通过。操作前重新核对，PID不能盲用。已向用户通俗汇报新增能力、单图／跨切镜不足及下一步。提交与授权分支同步以Git和.cache/retrieval-action-evidence-publication.json为准；原3136895已推送并独立核对。
