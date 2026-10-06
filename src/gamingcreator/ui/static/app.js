@@ -20,6 +20,8 @@
         "detail-profile", "open-detail-query", "detail-query-dialog", "close-detail-query",
         "detail-query-target", "detail-query-form", "detail-conditions", "add-detail-condition",
         "match-detail-query", "detail-match-result",
+        "detail-draft-text", "generate-detail-draft", "detail-draft-status",
+        "detail-draft-gaps", "detail-draft-confirmation", "detail-draft-subset",
         "open-detail-costs", "detail-cost-dialog", "close-detail-costs", "detail-cost-content",
     ].map((id) => [id, byId(id)]));
     const state = {
@@ -29,6 +31,7 @@
         frameRequest: null, sourceUrl: "", storageWarningShown: false,
         matchController: null, matchRevision: 0, matching: false,
         costController: null, costRevision: 0,
+        draftController: null, draftRevision: 0, drafting: false, draftScope: "manual",
     };
     const statusLabels = {
         pending: "等待分析", running: "分析中", completed: "已完成", failed: "失败",
@@ -131,9 +134,12 @@
     function updateDetailQueryButton() {
         const available = canMatchDetails();
         ui["open-detail-query"].disabled = !available;
-        ui["match-detail-query"].disabled = !available || state.matching;
+        ui["match-detail-query"].disabled = !available || state.matching || !draftScopeConfirmed();
         ui["match-detail-query"].textContent = state.matching ? "正在本地核对…" : "核对已保存结果";
         ui["add-detail-condition"].disabled = !available || ui["detail-conditions"].children.length >= 16;
+        ui["generate-detail-draft"].disabled = !available || state.drafting || !ui["detail-draft-text"].value.trim();
+        ui["generate-detail-draft"].textContent = state.drafting ? "正在整理条件…" : "生成可编辑条件";
+        ui["detail-draft-subset"].disabled = state.drafting;
         ui["detail-query-target"].textContent = state.active
             ? `${intervalLabel(state.active.row)} · 精分析 ${ui["detail-profile"].value}` : "先选择一个已完成运行中的片段。";
     }
@@ -148,12 +154,12 @@
     }
 
     function conditionGroups(kind) {
-        if (kind.startsWith("clothing_")) return [["clothing1", "衣物 1"], ["clothing2", "衣物 2"], ["clothing3", "衣物 3"]];
-        if (kind.startsWith("held_")) return [["held1", "持有物 1"], ["held2", "持有物 2"], ["held3", "持有物 3"]];
+        if (kind.startsWith("clothing_")) return Array.from({ length: 16 }, (_, i) => [`clothing${i + 1}`, `衣物 ${i + 1}`]);
+        if (kind.startsWith("held_")) return Array.from({ length: 16 }, (_, i) => [`held${i + 1}`, `持有物 ${i + 1}`]);
         return [[kind === "hair_color" ? "hair" : kind, { hair_color: "头发", action: "动作", effect: "效果", environment: "环境" }[kind]]];
     }
 
-    function addDetailCondition(kind = "hair_color", value = "white") {
+    function addDetailCondition(kind = "hair_color", value = "white", partGroup = null) {
         const options = state.view?.detailQueryOptions?.kinds;
         if (!Array.isArray(options) || ui["detail-conditions"].children.length >= 16) return;
         const row = element("div", "detail-condition");
@@ -184,16 +190,110 @@
         };
         updateValues();
         if ([...values.options].some((item) => item.value === value)) values.value = value;
-        kinds.addEventListener("change", () => { updateValues(); clearDetailMatch(); });
-        values.addEventListener("change", clearDetailMatch);
-        groups.addEventListener("change", clearDetailMatch);
+        if (partGroup !== null) groups.value = partGroup;
+        kinds.addEventListener("change", () => { updateValues(); detailConditionsChanged(); });
+        values.addEventListener("change", detailConditionsChanged);
+        groups.addEventListener("change", detailConditionsChanged);
         const remove = element("button", "icon-button", "×");
         remove.type = "button";
         remove.setAttribute("aria-label", "移除此条件");
-        remove.addEventListener("click", () => { row.remove(); clearDetailMatch(); });
+        remove.addEventListener("click", () => { row.remove(); detailConditionsChanged(); });
         row.append(remove);
         ui["detail-conditions"].append(row);
+        detailConditionsChanged();
+    }
+
+    function draftScopeConfirmed() {
+        return !state.drafting && (["manual", "ready"].includes(state.draftScope) || ui["detail-draft-subset"].checked);
+    }
+
+    function invalidateDetailDraft(reset = false) {
+        state.draftController?.abort();
+        state.draftController = null;
+        state.draftRevision += 1;
+        state.drafting = false;
+        if (reset) ui["detail-draft-text"].value = "";
+        state.draftScope = ui["detail-draft-text"].value.trim() ? "pending" : "manual";
+        ui["detail-draft-subset"].checked = false;
+        ui["detail-draft-confirmation"].hidden = state.draftScope === "manual";
+        ui["detail-draft-gaps"].replaceChildren();
+        ui["detail-draft-status"].textContent = state.draftScope === "manual"
+            ? "可以直接编辑条件，也可以填写描述后生成草稿。"
+            : "描述已修改，尚未整理。生成草稿后检查遗漏，或明确只核对下方手动条件。";
+        updateDetailQueryButton();
+    }
+
+    function detailConditionsChanged() {
+        if (state.drafting) invalidateDetailDraft();
         clearDetailMatch();
+    }
+
+    function validateDetailDraft(report, originalText) {
+        if (report.schemaVersion !== "actor-detail-query-draft-v1" || report.originalText !== originalText
+            || report.spanOffsetUnit !== "unicode-code-point" || !["ready", "needs_review", "unsupported"].includes(report.status)
+            || !Array.isArray(report.spans) || !Array.isArray(report.unparsed)
+            || report.spans.some((span) => typeof span.text !== "string" || typeof span.reason !== "string")
+            || report.spans.map((span) => span.text).join("") !== originalText
+            || report.unparsed.some((span) => span.kind !== "unparsed" || typeof span.text !== "string" || typeof span.reason !== "string")) {
+            throw new Error("草稿与当前描述不一致，请重新生成。");
+        }
+        const constraint = report.constraint;
+        if (constraint === null) {
+            if (report.status === "ready") throw new Error("完整草稿缺少条件。");
+            return [];
+        }
+        const options = state.view.detailQueryOptions;
+        if (report.status === "unsupported" || constraint.schemaVersion !== options.schemaVersion
+            || constraint.version !== options.version || constraint.vocabularyVersion !== options.vocabularyVersion
+            || !Array.isArray(constraint.actorAll) || !Array.isArray(constraint.environmentAll) || !constraint.actorAll.length) {
+            throw new Error("草稿条件版本无效。");
+        }
+        const conditions = [...constraint.actorAll, ...constraint.environmentAll];
+        if (conditions.length > 16 || conditions.some((condition) => {
+            const definition = options.kinds.find((item) => item.kind === condition.kind);
+            return !definition?.values.some((item) => item.value === condition.value)
+                || !conditionGroups(condition.kind).some(([group]) => group === condition.partGroup);
+        }) || (report.status === "ready" && report.unparsed.length)) throw new Error("草稿含有无法编辑的条件。");
+        return conditions;
+    }
+
+    async function generateDetailDraft() {
+        if (!canMatchDetails() || state.drafting) return;
+        const originalText = ui["detail-draft-text"].value;
+        if (!originalText.trim()) return;
+        invalidateDetailDraft();
+        clearDetailMatch();
+        const controller = new AbortController();
+        state.draftController = controller;
+        const revision = state.draftRevision;
+        state.drafting = true;
+        updateDetailQueryButton();
+        try {
+            const report = await request("/api/draft-detail-query", {}, controller.signal, { text: originalText });
+            if (revision !== state.draftRevision || state.draftController !== controller || ui["detail-draft-text"].value !== originalText) return;
+            const conditions = validateDetailDraft(report, originalText);
+            state.drafting = false;
+            state.draftScope = report.status === "ready" ? "ready" : "subset";
+            ui["detail-draft-subset"].checked = false;
+            if (report.constraint !== null) {
+                ui["detail-conditions"].replaceChildren();
+                for (const condition of conditions) addDetailCondition(condition.kind, condition.value, condition.partGroup);
+            }
+            ui["detail-draft-status"].textContent = report.status === "ready"
+                ? "已生成可编辑条件。请检查后点击核对；结果只针对下方当前条件。"
+                : report.status === "unsupported"
+                    ? "这段描述含有暂不支持的要求，未自动转换；已保留原先的手动条件。可以修改描述，或编辑条件并明确确认核对范围。"
+                    : "还有要求未能处理，请查看下方原文。你可以修改描述，或明确只核对已列出的条件。";
+            ui["detail-draft-confirmation"].hidden = report.status === "ready";
+            ui["detail-draft-gaps"].replaceChildren();
+            for (const span of report.unparsed) {
+                ui["detail-draft-gaps"].append(element("li", "warning small", `未核对：${span.text} · ${span.reason}`));
+            }
+        } catch (error) {
+            if (error.name !== "AbortError" && revision === state.draftRevision) ui["detail-draft-status"].textContent = error.message;
+        } finally {
+            if (revision === state.draftRevision) { state.drafting = false; updateDetailQueryButton(); }
+        }
     }
 
     function detailConstraint() {
@@ -244,7 +344,11 @@
     function renderDetailMatch(report) {
         const result = report.result;
         const labels = { full: "全部条件有共同支持 · 待人工核对", partial: "部分条件有支持", no_match: "已有证据排除条件", unverified: "条件未验证" };
+        if (state.draftScope !== "manual") labels.full = "当前条件有共同支持 · 待人工核对";
         ui["detail-match-result"].replaceChildren(element("h3", result.status === "full" ? "accent" : "warning", labels[result.status]));
+        if (state.draftScope !== "manual") ui["detail-match-result"].append(element("p", "warning small",
+            state.draftScope === "ready" ? "仅核对下方当前条件；生成后可编辑，结果不代表原描述的所有要求。"
+                : "仅核对下方当前条件。原描述的其他要求尚未核对，不能确认整句满足。"));
         if (!result.matches.length) ui["detail-match-result"].append(element("p", "muted small", "所选版本尚无可匹配的主体结构。未发起精分析。"));
         const detail = state.active.row.detailRefinement?.detail;
         for (const match of result.matches) {
@@ -262,7 +366,7 @@
             for (const condition of match.missing) list.append(element("li", "muted", `缺少支持 · ${conditionLabel(condition)}`));
             section.append(list);
             if (match.conflicts.length) section.append(element("p", "warning small", "同一部件的观察属性有冲突，不能确认全部条件。"));
-            if (match.sharedEvidenceIds.length) appendSupportFrames(section, match.sharedEvidenceIds, "共同支持帧");
+            if (match.sharedEvidenceIds.length) appendSupportFrames(section, match.sharedEvidenceIds, "上方有支持条件的共同帧");
             else section.append(element("p", "muted small", "没有共同支持全部条件的源帧。"));
             if (match.counterEvidence.length) {
                 section.append(element("p", "warning small", "此主体存在排除条件的证据："));
@@ -275,7 +379,7 @@
     }
 
     async function matchDetailQuery() {
-        if (!canMatchDetails() || state.matching) return;
+        if (!canMatchDetails() || state.matching || !draftScopeConfirmed()) return;
         let constraint;
         try { constraint = detailConstraint(); } catch (error) { return empty(ui["detail-match-result"], error.message); }
         clearDetailMatch();
@@ -615,6 +719,7 @@
     }
 
     function resetView() {
+        invalidateDetailDraft(true);
         clearDetailCosts();
         clearDetailMatch();
         if (ui["detail-query-dialog"].open) ui["detail-query-dialog"].close();
@@ -778,6 +883,7 @@
     async function inspect(query, preserveActive = false) {
         if (!state.project || !state.run) return;
         state.inspectController?.abort();
+        invalidateDetailDraft(true);
         clearDetailMatch();
         const previousActive = preserveActive ? state.active : null;
         const controller = new AbortController();
@@ -993,6 +1099,7 @@
 
     async function previewClip(kind, row) {
         if (!validInterval(row) || !state.sourceUrl) return notice("这个区间目前无法播放，请刷新素材。");
+        invalidateDetailDraft(true);
         clearDetailMatch();
         state.active = { kind, row };
         state.playbackEndUs = row.endUs;
@@ -1278,7 +1385,10 @@
         ui["detail-query-dialog"].showModal();
     });
     ui["close-detail-query"].addEventListener("click", () => ui["detail-query-dialog"].close());
-    ui["detail-query-dialog"].addEventListener("close", clearDetailMatch);
+    ui["detail-query-dialog"].addEventListener("close", () => { invalidateDetailDraft(true); clearDetailMatch(); });
+    ui["detail-draft-text"].addEventListener("input", () => { invalidateDetailDraft(); clearDetailMatch(); });
+    ui["generate-detail-draft"].addEventListener("click", () => { void generateDetailDraft(); });
+    ui["detail-draft-subset"].addEventListener("change", clearDetailMatch);
     ui["add-detail-condition"].addEventListener("click", () => addDetailCondition());
     ui["detail-query-form"].addEventListener("submit", (event) => { event.preventDefault(); void matchDetailQuery(); });
     ui["open-detail-costs"].addEventListener("click", () => { void openDetailCosts(); });

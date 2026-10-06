@@ -222,6 +222,12 @@ dialog::backdrop { background: #030713d9; }
 #detail-query-dialog p { margin: 8px 0; overflow-wrap: anywhere; }
 .detail-condition { display: grid; grid-template-columns: 1fr 1fr 1fr 28px; gap: 8px; align-items: end; margin: 12px 0; }
 .detail-condition select { min-width: 0; }
+.detail-draft { border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+.detail-draft textarea { width: 100%; box-sizing: border-box; margin: 6px 0 8px; resize: vertical; }
+#detail-draft-gaps { padding-left: 18px; overflow-wrap: anywhere; }
+.detail-draft-confirmation { display: flex; align-items: flex-start; gap: 8px; color: var(--muted); }
+.detail-draft-confirmation[hidden] { display: none; }
+.detail-draft-confirmation input { width: auto; margin: 3px 0 0; flex-shrink: 0; }
 .detail-condition label { display: block; font-size: 10px; color: var(--muted); }
 .detail-condition .icon-button { margin-bottom: 4px; }
 .detail-query-actions { display: flex; gap: 10px; justify-content: space-between; margin: 12px 0; }

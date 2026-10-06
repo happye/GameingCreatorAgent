@@ -6,6 +6,10 @@
 
 ## 当前结论
 
+最新接续为受控查询草稿：worker623fca1→f30e812、语义修复f5aef6f→85fa5a0已整合；root本地draft API、可编辑条件/未处理原文/明确子集确认及迟到响应隔离已完成。定向197 passed/39.23s（包括134解析反例）；真实28–29秒v2结果/草稿子集提醒与v4缺结果，桌面1366/手机390检查通过，0页面错误/外部请求/新Provider，源表/侧车/proposal SHA不变。证据artifacts/detail-temporal-validation/query-draft-browser-report.json；完整verify待本检查点后运行，旧1283是上一切片结果。最新详细汇报report-2026-10-06-query-draft.md。用户提醒额度剩8%，优先验证与可恢复检查点，不自行推断停工。
+
+v4只读方案worker ac72b4d已整合34135cc并冻结；root dry-run重验原两候选六帧、新requestHash和源DB/侧车/预算不变，0HTTP。artifacts/detail-temporal-validation/pilot-proposal.json SHA06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6；新增保守预留¥4.065536，共享精分析上限至少¥4.08404212，旧task unknown另保留。审核页pilot-review.html在桌面/手机6图全加载、无横溢/外部请求，旧报告/反馈与冻结清单均不改。已询问新两次v4/最高¥4.07/DeepSeek原6帧新提示参数的授权，答复尚未收到；executionAuthorized=false，不可使用旧两次许可执行。生产16808/54620在本次核对均已不存在、8765连接拒绝，未停止任何PID；完整验证后再启动新版并验身份。
+
 2026-10-06最新接续为连续实体v4：独立Provider/actor-details-v2/请求schema-v2/matcher-v2、完整scene证据保存与确定性投影核对、未知no_match屏障、CLI/API/profile和页面分类/遮挡/持有/切镜依据已整合。Worker211bbf7→3278895；完整verify **1283 passed/1 Windows文件symlink权限skip（126.74s）**，Ruff118/mypy64/CLI及两次同SHA离线wheel `0cebff7f7ea68863d8df7a93f38f1d03aeb54041e1897f9b2e82bfe70a4c7e15`。日志.cache/detail-temporal-verify.log；真实两旧v2payloadHash、源表/侧车不变，v4缺结果unverified，0新HTTP，证据artifacts/detail-query-validation/v4-read-report.json。生产旧52144/52764已不存在，未停止任意进程；新版16808/parent54620经api/health/状态/命令身份及33事件/旧payload校验，production-v4-report.json；PID只是快照。真实v4视觉理解仍未验证，F006/F009/F010与旧unknown继续保留。下一步见sprint-detail-temporal.md，先冻结新v4对照方案，不复用已执行完的两次授权发送。
 
 Git：持久汇报规则/工作台检查点766a80a已普通push并独立ls-remote核对；随后60869d5计划与3278895合同、root整合及本交接共同保存为本轮检查点，最新HEAD/远端以Git核对为准。只推codex/visual-details，不改main或强推。下方1184及更早验证是历史切片记录。

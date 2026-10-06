@@ -75,7 +75,21 @@
     </main>
     <footer class="workspace-status"><span><span class="local-dot" aria-hidden="true"></span>本地素材 · 本地工作台</span><span>当前：检索与选片 <span class="status-divider">/</span> 候选需人工核对</span><span>区间清单导出 · 暂不生成成片</span></footer>
     <dialog id="evidence-dialog"><div class="dialog-heading"><h2 id="evidence-dialog-title">源帧证据</h2><button id="close-evidence" class="icon-button" aria-label="关闭证据查看">×</button></div><img id="evidence-full" alt="当前片段的源帧证据"><p id="evidence-dialog-detail" class="muted small"></p></dialog>
-    <dialog id="detail-query-dialog" aria-labelledby="detail-query-title"><div class="dialog-heading"><h2 id="detail-query-title">核对同主体条件</h2><button id="close-detail-query" class="icon-button" aria-label="关闭条件核对">×</button></div><p id="detail-query-target" class="accent small"></p><p class="muted small">所有条件须由同镜头、同主体和共同支持帧满足。同一衣物或持有物请选择相同部件组。</p><form id="detail-query-form"><div id="detail-conditions"></div><div class="detail-query-actions"><button id="add-detail-condition" type="button" class="button secondary compact">＋ 条件</button><button id="match-detail-query" type="submit" class="button primary compact">核对已保存结果</button></div></form><p class="muted small">仅本地核对，不发起精分析。条件满足仍需人工确认；未知属性不补全。</p><section id="detail-match-result" aria-live="polite"></section></dialog>
+    <dialog id="detail-query-dialog" aria-labelledby="detail-query-title">
+        <div class="dialog-heading"><h2 id="detail-query-title">核对同主体条件</h2><button id="close-detail-query" class="icon-button" aria-label="关闭条件核对">×</button></div>
+        <p id="detail-query-target" class="accent small"></p>
+        <p class="muted small">所有条件须由同镜头、同主体和共同支持帧满足。同一衣物或持有物请选择相同部件组。</p>
+        <section class="detail-draft" aria-label="从描述生成条件">
+            <label class="field-label" for="detail-draft-text">用一句话描述条件（可选）</label>
+            <textarea id="detail-draft-text" rows="2" maxlength="2048" placeholder="例如：白发，穿红色外套，拿着蓝色扁平物体"></textarea>
+            <button id="generate-detail-draft" type="button" class="button secondary compact">生成可编辑条件</button>
+            <p id="detail-draft-status" class="muted small" aria-live="polite">可以直接编辑条件，也可以填写描述后生成草稿。</p>
+            <ul id="detail-draft-gaps"></ul>
+            <label id="detail-draft-confirmation" class="detail-draft-confirmation small" hidden><input id="detail-draft-subset" type="checkbox">仅核对下方条件，原描述的其他要求尚未核对</label>
+        </section>
+        <form id="detail-query-form"><div id="detail-conditions"></div><div class="detail-query-actions"><button id="add-detail-condition" type="button" class="button secondary compact">＋ 条件</button><button id="match-detail-query" type="submit" class="button primary compact">核对已保存结果</button></div></form>
+        <p class="muted small">仅本地核对，不发起精分析。条件满足仍需人工确认；未知属性不补全。</p><section id="detail-match-result" aria-live="polite"></section>
+    </dialog>
     <dialog id="detail-cost-dialog" aria-labelledby="detail-cost-title"><div class="dialog-heading"><h2 id="detail-cost-title">精分析费用与调用</h2><button id="close-detail-costs" class="icon-button" aria-label="关闭费用记录">×</button></div><p class="muted small">仅查看已有记录。估价不是账单；未知费用预留继续占用承诺金额。</p><div id="detail-cost-content" aria-live="polite"></div></dialog>
 </body>
 </html>

@@ -27,4 +27,10 @@
 
 ## 已汇报与下一步
 
+整合检查点：worker623fca1→f30e812及语义修复f5aef6f→85fa5a0已整合。定向197 passed/39.23s，.cache/detail-query-draft-final-targeted.log；init完整环境检查通过，.cache/detail-query-draft-init.log。只读审查发现生成响应前可提前确认遗漏的问题，已禁止生成期间确认并在新结果清零；null/unsupported保留原手动条件与组，不丢用户编辑。“没/未/doesn't/instead of”、前后时序不产肯定条件，同一长杆武器不拆组；新28反例在134解析tests中。root22 HTTP/browser与旧queryHTTP、18proposal组成联合检查，未知Unicode/HTML原文、组保留、提前确认、迟到草稿和零写/零发送通过。完整verify待本检查点后运行。
+
+真实已有28–29秒片段：桌面1366/手机390生成蓝发/红外套/蓝扁平物体，旧v2匹配partial；未知“恶魔领主”保留原文并需明确确认，v4缺结果unverified，0页面错误/外部请求/Provider。源表/侧车/proposal SHA不变，query-draft-browser-report.json与两截图在artifacts/detail-temporal-validation；已视觉核对桌面图。结果范围持续说明仅当前条件，支持帧按钮也限定“上方有支持条件”，不暗示部分命中满足全部要求。
+
+已向用户说明生成只填条件、不自动匹配；未处理原文和子集范围持续可见，下一步检查编辑/关闭/切run/profile与迟到响应。同步说明v4对照清单已冻结但不发送，旧许可耗尽且无新费用。方案worker ac72b4d→34135cc，root本地dry-run再验通过，见own sprint与.cache/detail-temporal-proposal-read.log。
+
 已向用户生成并链接上轮详细报告，解释本轮目标是减少手动加条件而保留未处理要求。下一步实现纯草稿及本地确认流程；v4真实对照仅准备方案，旧两次调用授权已用完，不额外发送。

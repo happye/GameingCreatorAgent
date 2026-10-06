@@ -44,6 +44,10 @@ timeline/candidate行新增 `detailRefinement:{status:"unverified",availability,
 
 ## 明确条件与费用接口
 
+`POST /api/draft-detail-query`仅接受JSON `{text}`，使用与match相同的本机Host/Origin、64KiB正文及唯一字段检查；text必须为字符串且不超过2048 Unicode code points。返回独立`actor-detail-query-draft-v1`：`originalText,status,spanOffsetUnit, constraint,spans,unparsed`，偏移单位为`unicode-code-point`，spans原文拼接严格等于originalText。ready表示有限正向同主体语法完全解析；未知文字为needs_review；否定、OR、多主体关系、时序或条件超限为unsupported且constraint=null，不将原句降级为肯定AND。纯Application解析不读取项目、数据库、文件或Provider；无预算/侧车写入。
+
+页面生成后只填入可编辑条件，不自动匹配。未处理要求展示原文和原因，必须明确勾选仅核对当前条件后才能做子集匹配，结果继续显示原描述尚有未核对要求。任何草稿匹配均仅针对当前可编辑清单；编辑/生成/关闭/切run/profile取消旧响应，不按JavaScript UTF-16切分服务器片段。手动条件入口继续保留，自由检索候选不自动按草稿过滤。
+
 `POST /api/match-details`仅接受JSON `{project,run,event,profile,constraint}`，constraint为query-v1显式正向AND清单，字段版本见detail-query.example.json；请求正文最多64KiB，拒绝重复字段、额外字段、非JSON、Transfer-Encoding或重复Content-Length。只接受本机Host/Origin，读取有界body后拒绝外部Origin，避免Windows未读正文导致TCPreset。Completed及event归属校验后，调用`match_refinement(save=False)`，缺结构返回unverified，损坏报错；不会保存match、预留预算或实例化Provider。
 
 `inspect.detailQueryOptions`从冻结词表给出kind/value标签、query/schema/vocabulary版本和条件上限。页面弹窗允许显式AND/部件组，显示满足、缺失、不确定、冲突和支持帧；requestHash、payloadHash、run/event/profile须同时对应当前片段。编辑、关闭、切run/profile或刷新会取消迟到请求并清理旧显示。full仅指结构条件有共同支持，humanLabels/qualityGate仍null；自由检索结果不自动按typed约束过滤。

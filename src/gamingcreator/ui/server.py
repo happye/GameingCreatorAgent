@@ -9,6 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+from gamingcreator.application.detail_query_draft import draft_detail_query
 from gamingcreator.application.retrieval import RetrievalMode
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.ui.media import VerifiedMediaCache, byte_range
@@ -184,7 +185,8 @@ class InspectionHandler(BaseHTTPRequestHandler):
             if not self._local_request():
                 self._json(403, {"code": "input.origin", "message": "请从本机工作台访问。"})
                 return
-            if urlparse(self.path).path != "/api/match-details":
+            path = urlparse(self.path).path
+            if path not in {"/api/match-details", "/api/draft-detail-query"}:
                 self._json(404, {"code": "input.route", "message": "没有这个操作。"})
                 return
 
@@ -197,6 +199,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return result
 
             value = json.loads(body, object_pairs_hook=unique)
+            if path == "/api/draft-detail-query":
+                if type(value) is not dict or set(value) != {"text"}:
+                    raise ValueError("Invalid draft request fields.")
+                self._json(200, draft_detail_query(value["text"]))
+                return
             if (
                 type(value) is not dict
                 or set(value) != {"project", "run", "event", "profile", "constraint"}
