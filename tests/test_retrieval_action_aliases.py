@@ -1,4 +1,4 @@
-"""English gameplay actions can retrieve existing Chinese descriptions."""
+"""Known gameplay aliases retrieve Chinese descriptions without inventing actions."""
 
 import hashlib
 
@@ -39,7 +39,7 @@ def test_positive_action_alias_keeps_chinese_evidence_and_excludes_denials(
     assert candidate.source_range == data.events[0].source_range
     assert data.events[1].observable_facts == (denial,)
     assert result.query == query
-    assert result.retrieval_version == "bm25-e5-rrf-v6"
+    assert result.retrieval_version == "bm25-e5-rrf-v7"
     assert result.min_similarity == 0.80 and result.min_semantic_margin == 0.02
     if mode == "hybrid":
         assert {item.text_hash for item in result.event_embeddings} == {
@@ -96,3 +96,57 @@ def test_action_alias_does_not_assert_all_conditions_of_a_long_query():
     assert len(result.candidates) == 1
     assert result.candidates[0].observable_facts == ("角色跳跃并落地。",)
     assert "ranking signal, not probability" in result.candidates[0].why
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize(
+    "query,positive,denial",
+    [
+        ("起跳", "角色跳跃并落地。", "没有跳跃。"),
+        ("跳起", "角色跳跃并落地。", "未见起跳。"),
+        ("跳跃", "角色起跳并落地。", "没有跳起。"),
+        ("jumping", "角色跳起并落地。", "没有起跳。"),
+        ("jump", "角色起跳并落地。", "未见跳起。"),
+        ("开枪", "角色射击目标。", "没有射击。"),
+        ("射击", "角色开枪命中目标。", "没有开枪。"),
+        ("shooting", "角色开枪命中目标。", "未见开枪。"),
+        ("打斗", "角色与敌人战斗。", "没有战斗。"),
+        ("战斗", "角色与敌人打斗。", "没有打斗。"),
+        ("fighting", "角色与敌人打斗。", "未见战斗。"),
+        ("互动", "角色与按钮交互。", "没有交互。"),
+        ("交互", "角色与按钮互动。", "没有互动。"),
+        ("interacting", "角色与按钮互动。", "未见互动。"),
+    ],
+)
+def test_known_chinese_action_aliases_preserve_evidence_and_denial_guard(
+    mode, query, positive, denial
+):
+    data = timeline(positive, denial)
+    result = search(data, query, mode)
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    candidate = result.candidates[0]
+    assert candidate.observable_facts == (positive,)
+    assert candidate.evidence_ids == data.events[0].evidence_ids
+    assert candidate.source_range == data.events[0].source_range
+    assert result.query == query
+    assert result.min_similarity == 0.80 and result.min_semantic_margin == 0.02
+    assert data.events[1].observable_facts == (denial,)
+    if mode == "hybrid":
+        assert {item.text_hash for item in result.event_embeddings} == {
+            hashlib.sha256(f"passage: {fact}".encode()).hexdigest() for fact in (positive, denial)
+        }
+
+
+@pytest.mark.parametrize("query", ["跳跃", "起跳", "跳起", "jumping", "jumped"])
+def test_jump_game_titles_do_not_become_translated_action_evidence(query):
+    data = timeline("画面显示“JUMP明星大乱斗”标题。", "画面显示“JUMP ASSEMBLE”游戏标志。")
+    assert search(data, query, "lexical").candidates == ()
+
+
+@pytest.mark.parametrize(
+    "query",
+    ["没有起跳", "不要跳起", "没有开枪", "不要打斗", "未见互动", "without jumping"],
+)
+def test_negative_intent_does_not_translate_chinese_aliases(query):
+    data = timeline("角色跳跃。", "角色射击。", "角色战斗。", "角色交互。")
+    assert search(data, query, "lexical").candidates == ()

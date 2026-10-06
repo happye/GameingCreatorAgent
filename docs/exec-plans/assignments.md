@@ -1,5 +1,11 @@
 # Active assignments
 
+当前任务为sprint-retrieval-corpus-audit.md：root / Codex在codex/visual-details顺序负责已有完成录像的素材／版本／同源分组与Boss、跳跃、射击检索缺口审计，拥有ignored审计脚本和证据及公共记录；实际缺口确认后再登记必要retrieval／行为反例修改。旧worker／worktree冻结，无新付费请求、预算、人评或普通查询记录。1c7c278为起点，1823／1权限skip为最近完整验证；网络中断不阻塞本地工作。
+
+本任务最终已交付bm25-e5-rrf-v7中文别称修复：新增39反例、237定向／完整1862 passed／1权限skip、同源108词法＋24混合A/B、真实双尺寸与生产61396／56740通过。起跳实机0→2，交互找回互动原文；JUMP标题非动作的误报已纠正，旧v4两个jumping混合事件重排保留。纯审计全项目字节不变，真实页面普通4搜索＋生产1搜索，0Provider／预算／人评；上述“1823／尚未修复”是开始时基线。报告和HANDOFF已保存，下一项root顺序登记已有主体／镜头／动作依据检查，不开并行writer；旧worker冻结。
+
+已确认“起跳”漏掉实机已有两条“跳跃”，root增加独占retrieval.py／action_aliases行为测试及版本断言／规格更新，仅追加既有中文动作别称，禁止把JUMP标题当动作扩展。108词法＋24混合审计／来源清单已保存，0模型调用／源字节改动；详细范围见当前sprint。
+
 本轮离线检索原因审计／英文有限动作修复已交付：b7723aa／20c227c，新48反例、104定向、完整1823／1权限skip及真实同源A/B／30中文不变／双尺寸英文下载和11.5秒回看／生产51180/46444通过，0Provider／预算／人评。下一步root顺序扩大到其他已有完成分析的素材／源分组和查询缺口，先登记范围。下方为历史开始时记录，旧worker/worktree均冻结，F006/F009/F010 false。
 
 当前root顺序任务为sprint-retrieval-query-audit.md：射击／跳跃／Boss中英文与原事实离线原因审计，拥有ignored审计脚本／证据、如经证据确认则Application retrieval及行为反例、公共文档。先读只读store并调用纯search_timeline，不写普通搜索记录、基础数据／账本或人评；旧worker/worktree冻结。1775为上轮基线，当前尚无新修复；网络待补推不阻塞本地工作。

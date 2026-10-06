@@ -98,7 +98,7 @@ embedding 唯一键包含 run、subject/provider/model/revision_scope/dimension/
 
 旧v2每秒抽帧并用5帧/1帧重叠覆盖全部抽取帧；v4试验用2FPS、9帧/2帧重叠，均约4秒时间跨度，最后窗口可不足上限。每窗口独立checkpoint，上传总帧数含重叠/重试，运行前预检最低额度并保留每attempt硬上限。全覆盖不保证捕获短动作，不能无条件跨窗/跨镜头拼故事。有限1FPS/2FPS真实对照已记录，但独立精度/长动作/强模型对照仍待验证。
 
-当前检索对照lexical BM25、local E5 cosine和hybrid RRF（`bm25-e5-rrf-v6`）。正向英文动作复用有限词表补中文规范词，覆盖jump／shoot／move／interact及attack／fight变体，NFKC／大小写及中英文相邻边界一致；不将movie／jumpsuit或摄影shot扩展为动作。扩展与明确否认过滤共用ASCII字母／数字／下划线边界；英文弯／直引号一致，否定意图查询保持原词法行为，不实现缺席语义。v5正文清理仍保留，v6仅改变查询扩展及有限词边界，passage文本／哈希与缓存、源事实、CandidateClip身份、旧搜索记录、向量空间及阈值0.80/0.02不改写。uncertainty不索引为正面证据，RRF不保证任意复合属性同属一人；512token输入要求紧凑事实优先。候选按证据/区间去重，模型eventId不等于人工独立动作。实际同一Atom v6／v4开发分析的中英文对照说明文字检索缺口，不能当独立检索质量或真实动作人评；测试集仍按录制会话隔离。
+当前检索对照lexical BM25、local E5 cosine和hybrid RRF（`bm25-e5-rrf-v7`）。正向中英文动作复用有限词表补已知中文别称，覆盖jump／shoot／move／interact及attack／fight变体，以及跳跃／跳起／起跳、射击／开枪、战斗／打斗、交互／互动；NFKC／大小写及中英文相邻边界一致。不追加英文动作词到中文或其他英文别称查询，避免JUMP游戏标题被翻译成跳跃；直接jump查询仍可命中同名字词，不证明动作。不将movie／jumpsuit或摄影shot扩展为动作。扩展与明确否认过滤共用ASCII字母／数字／下划线边界；英文弯／直引号一致，否定意图查询保持原词法行为，不实现缺席语义。v5正文清理及v6有限英文词边界仍保留，v7仅追加既有中文动作别称；passage文本／哈希与缓存、源事实、CandidateClip身份、旧搜索记录、向量空间及阈值0.80/0.02不改写。uncertainty不索引为正面证据，RRF不保证任意复合属性同属一人；512token输入要求紧凑事实优先。候选按证据/区间去重，模型eventId不等于人工独立动作。已有四份完成分析／三个视频SHA只供开发审计，Atom不同文件可能同源，不能当独立检索质量或真实动作人评；测试集仍按录制会话隔离。
 
 真实 PV 的离线三查询×三模式重复稳定，检索/向量写入和第二进程回读成功；报告位于本机 ignored `artifacts/demo-phase0/demo-validation.json`。2026-10-04 默认 hybrid 对中文攻击查询和英文 `Find clips of fighters attacking each other in the arena` 都返回 28–29、31–32、30–31 秒带证据区间；汽车维修查询 hybrid 为 0 条。pure semantic 对汽车维修负例的误召回仍在。不能用这些观察替代真实召回校准或 U10。
 

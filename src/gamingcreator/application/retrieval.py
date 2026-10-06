@@ -22,7 +22,7 @@ from gamingcreator.domain.models import Embedding, EvidenceReference
 from gamingcreator.domain.time import SourceInstant, SourceRange
 
 RetrievalMode = Literal["lexical", "semantic", "hybrid"]
-RETRIEVAL_VERSION = "bm25-e5-rrf-v6"
+RETRIEVAL_VERSION = "bm25-e5-rrf-v7"
 _STOP_WORDS = frozenset(
     "a an and are at avatar character characters clip find for from game gameplay in is me of on player please show the to video with".split()
 )
@@ -283,13 +283,14 @@ def _lexical_query(query: str) -> str:
     for word, term in _CROSS_LINGUAL_TERMS:
         if re.search(rf"(?<![a-z0-9]){re.escape(word)}(?![a-z0-9])", folded):
             extras.append(term)
-    # Reuse the bounded action vocabulary; negative-intent queries retain their
-    # previous lexical behavior rather than acquiring new absence semantics.
+    # Reuse only the known Chinese action aliases. Expanding English words such
+    # as "jump" would also match game titles like JUMP ASSEMBLE. Negative-intent
+    # queries retain their previous behavior, without new absence semantics.
     if not _NEGATIVE_QUERY_INTENT.search(folded):
         for match in _ACTION_MENTION.finditer(folded):
-            word = match.group()
-            if word.isascii():
-                extras.append(_ACTION_TERMS[_ACTION_BY_TERM[word]][0])
+            extras.extend(
+                term for term in _ACTION_TERMS[_ACTION_BY_TERM[match.group()]] if not term.isascii()
+            )
     if not extras:
         return query
     return query + "\n" + " ".join(dict.fromkeys(extras))
