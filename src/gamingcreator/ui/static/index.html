@@ -56,6 +56,7 @@
             <form id="search-form"><label class="sr-only" for="query">自然语言查询</label><textarea id="query" rows="2" maxlength="4096" placeholder="例如：寻找角色打斗和攻击的片段" disabled></textarea><div class="search-options"><div><label class="field-label" for="mode">检索方式</label><select id="mode" disabled><option value="hybrid">混合检索</option><option value="lexical">词法检索</option><option value="semantic">语义检索</option></select></div><div><label class="field-label" for="top">候选条数</label><input id="top" type="number" min="1" max="100" value="10" disabled></div></div><button id="search-button" class="button primary" type="submit" disabled>查找片段 <span aria-hidden="true">↗</span></button></form>
             <div class="results-heading"><h3>检索候选 <span id="candidate-count" class="count">0</span></h3><span class="muted small">按相关性排名</span></div>
             <p id="search-context" class="muted small">打开已完成的运行后即可查询。</p>
+            <button id="open-retrieval-diagnostics" class="text-button diagnostics-open" type="button" disabled>查看检索诊断 · 前十位</button>
             <div id="candidate-list" class="candidate-list" aria-live="polite"><p class="empty-state">描述动作、玩法或画面，<br>从已有素材中发现可用片段。</p></div>
         </aside>
         <section class="panel timeline-panel" aria-label="源视频语义时间轴">
@@ -91,5 +92,13 @@
         <p class="muted small">仅本地核对，不发起精分析。条件满足仍需人工确认；未知属性不补全。</p><section id="detail-match-result" aria-live="polite"></section>
     </dialog>
     <dialog id="detail-cost-dialog" aria-labelledby="detail-cost-title"><div class="dialog-heading"><h2 id="detail-cost-title">精分析费用与调用</h2><button id="close-detail-costs" class="icon-button" aria-label="关闭费用记录">×</button></div><p class="muted small">仅查看已有记录。估价不是账单；未知费用预留继续占用承诺金额。</p><div id="detail-cost-content" aria-live="polite"></div></dialog>
+    <dialog id="retrieval-diagnostics-dialog" aria-labelledby="retrieval-diagnostics-title">
+        <div class="dialog-heading"><h2 id="retrieval-diagnostics-title">检索诊断 · 固定十位</h2><button id="close-retrieval-diagnostics" class="icon-button" aria-label="关闭检索诊断">×</button></div>
+        <p id="retrieval-diagnostics-summary"></p>
+        <p class="muted small">缺位和已知重复保留原位置，不用后面的结果补位。不同事件也可能来自同一个动作，仍需回看核对；候选数量和排序分数不能说明片段有用。</p>
+        <ol id="retrieval-diagnostics-slots" class="diagnostics-slots"></ol>
+        <p class="muted small">尚未人工评分，不计算有用率或验收结果。打开和下载仅使用本次已有检索结果。</p>
+        <button id="download-retrieval-diagnostics" class="button secondary compact" type="button">下载本次诊断</button>
+    </dialog>
 </body>
 </html>

@@ -23,6 +23,8 @@
         "detail-draft-text", "generate-detail-draft", "detail-draft-status",
         "detail-draft-gaps", "detail-draft-confirmation", "detail-draft-subset",
         "open-detail-costs", "detail-cost-dialog", "close-detail-costs", "detail-cost-content",
+        "open-retrieval-diagnostics", "retrieval-diagnostics-dialog", "close-retrieval-diagnostics",
+        "retrieval-diagnostics-summary", "retrieval-diagnostics-slots", "download-retrieval-diagnostics",
     ].map((id) => [id, byId(id)]));
     const state = {
         project: "", run: "", revision: 0, runs: [], view: null, active: null,
@@ -32,6 +34,7 @@
         matchController: null, matchRevision: 0, matching: false,
         costController: null, costRevision: 0,
         draftController: null, draftRevision: 0, drafting: false, draftScope: "manual",
+        diagnosticsContext: null,
     };
     const statusLabels = {
         pending: "等待分析", running: "分析中", completed: "已完成", failed: "失败",
@@ -704,8 +707,107 @@
         }
     }
 
+    function currentDiagnostics() {
+        const view = state.view;
+        const doc = view?.retrievalDiagnostics;
+        if (state.busy || view?.runStatus !== "completed" || !doc
+            || doc.schemaVersion !== "retrieval-diagnostics-v1"
+            || doc.project !== state.project || doc.runId !== state.run
+            || doc.mediaId !== view.media.id || doc.mediaSha256 !== view.media.sha256
+            || doc.durationUs !== view.media.durationUs || doc.configHash !== view.configHash
+            || doc.retrievalVersion !== view.retrievalVersion
+            || !doc.query.trim() || doc.query !== view.query || doc.query !== ui.query.value.trim()
+            || doc.mode !== view.mode || doc.mode !== ui.mode.value
+            || doc.requestedTopK !== Number(ui.top.value)
+            || !Array.isArray(doc.slots) || doc.slots.length !== 10) return null;
+        for (const [index, slot] of doc.slots.entries()) {
+            const row = view.candidates[index];
+            if (slot.position !== index + 1) return null;
+            if (!row) {
+                if (slot.status !== "missing" || slot.candidate !== null) return null;
+            } else if (!validInterval(row) || !slot.candidate
+                || !["candidate", "known_duplicate"].includes(slot.status)
+                || ["rank", "candidateId", "eventId", "startUs", "endUs"].some((key) => slot.candidate[key] !== row[key])
+                || JSON.stringify(slot.candidate.evidenceIds) !== JSON.stringify(row.evidenceIds)) return null;
+        }
+        return doc;
+    }
+
+    function updateDiagnosticsButton() {
+        ui["open-retrieval-diagnostics"].disabled = !currentDiagnostics();
+    }
+
+    function clearRetrievalDiagnostics() {
+        state.diagnosticsContext = null;
+        if (ui["retrieval-diagnostics-dialog"].open) ui["retrieval-diagnostics-dialog"].close();
+        ui["retrieval-diagnostics-slots"].replaceChildren();
+        ui["retrieval-diagnostics-summary"].textContent = "";
+        ui["download-retrieval-diagnostics"].disabled = true;
+    }
+
+    function diagnosticsStillCurrent(context) {
+        return context && context === state.diagnosticsContext && context.view === state.view
+            && context.revision === state.revision && context.doc === currentDiagnostics();
+    }
+
+    function openRetrievalDiagnostics() {
+        const doc = currentDiagnostics();
+        if (!doc) return notice("请先完成当前查询，再查看检索诊断。");
+        clearRetrievalDiagnostics();
+        const context = { doc, view: state.view, revision: state.revision };
+        state.diagnosticsContext = context;
+        const mode = { lexical: "词法检索", semantic: "语义检索", hybrid: "混合检索" }[doc.mode] || doc.mode;
+        const summary = [`“${doc.query}” · ${mode} · 返回 ${doc.returnedCount} 条，前十位缺 ${doc.missingCount} 位，已知重复 ${doc.knownDuplicateCount} 位。`];
+        if (doc.limitedByRequestedTopK) summary.push(`本次只请求 ${doc.requestedTopK} 条，缺位包含条数限制。请设置至少 10 条后重新检索，再检查召回。`);
+        if (doc.abstentionReason) summary.push(`检索保留的未返回原因：${doc.abstentionReason}`);
+        ui["retrieval-diagnostics-summary"].textContent = summary.join(" ");
+        for (const slot of doc.slots) {
+            const item = element("li", `diagnostics-slot ${slot.status}`);
+            item.append(element("h3", "", `第 ${slot.position} 位 · ${slot.status === "missing" ? "缺位" : slot.status === "known_duplicate" ? `已知重复第 ${slot.duplicateOfPosition} 位` : "待人工核对"}`));
+            if (slot.candidate) {
+                const row = context.view.candidates[slot.position - 1];
+                item.append(element("p", "accent small", `原排名 #${row.rank} · ${intervalLabel(row)}`));
+                item.append(element("p", "diagnostics-facts", facts(row).join(" ") || "没有保存可观察描述。"));
+                const preview = element("button", "button secondary compact diagnostics-preview", "回看这个片段");
+                preview.type = "button";
+                preview.addEventListener("click", () => {
+                    if (!diagnosticsStillCurrent(context)) {
+                        clearRetrievalDiagnostics();
+                        return notice("查询已经变化，请重新打开当前诊断。");
+                    }
+                    clearRetrievalDiagnostics();
+                    void previewClip("candidate", row);
+                });
+                item.append(preview);
+            } else item.append(element("p", "muted small", "这个位置没有候选。"));
+            ui["retrieval-diagnostics-slots"].append(item);
+        }
+        ui["download-retrieval-diagnostics"].disabled = false;
+        ui["retrieval-diagnostics-dialog"].showModal();
+    }
+
+    function downloadRetrievalDiagnostics() {
+        const context = state.diagnosticsContext;
+        if (!diagnosticsStillCurrent(context)) {
+            clearRetrievalDiagnostics();
+            return notice("查询已经变化，请重新打开当前诊断。");
+        }
+        const blob = new Blob([`${JSON.stringify(context.doc, null, 2)}\n`], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = element("a");
+        link.href = url;
+        link.download = `retrieval-diagnostics-${state.run.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40)}.json`;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        notice("已下载本次检索诊断，人工评分仍为空。", true);
+    }
+
     function setBusy(busy, searching = false) {
         state.busy = busy;
+        if (busy) clearRetrievalDiagnostics();
+        updateDiagnosticsButton();
         const completed = state.view?.runStatus === "completed";
         ui["search-button"].disabled = busy || !completed;
         ui["search-button"].textContent = busy ? (searching ? "正在本地检索…" : "正在读取…") : "查找片段 ↗";
@@ -720,6 +822,7 @@
     }
 
     function resetView() {
+        clearRetrievalDiagnostics();
         invalidateDetailDraft(true);
         clearDetailCosts();
         clearDetailMatch();
@@ -898,7 +1001,7 @@
             const payload = await request("/api/inspect", {
                 project: state.project, run: state.run, query, mode: ui.mode.value, top, detailProfile: ui["detail-profile"].value,
             }, controller.signal);
-            if (state.revision !== revision || state.inspectController !== controller) return;
+            if (controller.signal.aborted || state.revision !== revision || state.inspectController !== controller) return;
             if (payload.runId !== state.run || !Array.isArray(payload.timeline) || !Array.isArray(payload.candidates)
                 || !payload.media || typeof payload.media.id !== "string"
                 || !Number.isSafeInteger(payload.media.durationUs) || payload.media.durationUs <= 0) throw new Error("分析视图的素材或运行身份不一致。");
@@ -912,7 +1015,7 @@
             if (error.name === "AbortError" || state.revision !== revision || state.inspectController !== controller) return;
             notice(error.message);
             if (query) {
-                if (state.view) state.view = { ...state.view, candidates: [] };
+                if (state.view) state.view = { ...state.view, candidates: [], retrievalDiagnostics: null };
                 state.active = null;
                 state.playbackEndUs = null;
                 updateActive();
@@ -1439,6 +1542,18 @@
     ui["detail-query-form"].addEventListener("submit", (event) => { event.preventDefault(); void matchDetailQuery(); });
     ui["open-detail-costs"].addEventListener("click", () => { void openDetailCosts(); });
     ui["close-detail-costs"].addEventListener("click", () => ui["detail-cost-dialog"].close());
+    ui["open-retrieval-diagnostics"].addEventListener("click", openRetrievalDiagnostics);
+    ui["close-retrieval-diagnostics"].addEventListener("click", clearRetrievalDiagnostics);
+    ui["download-retrieval-diagnostics"].addEventListener("click", downloadRetrievalDiagnostics);
+    ui["retrieval-diagnostics-dialog"].addEventListener("close", () => { state.diagnosticsContext = null; });
+    for (const id of ["query", "mode", "top"]) {
+        ui[id].addEventListener(id === "mode" ? "change" : "input", () => {
+            state.inspectController?.abort();
+            if (state.view) state.view = { ...state.view, retrievalDiagnostics: null };
+            clearRetrievalDiagnostics();
+            updateDiagnosticsButton();
+        });
+    }
     ui["detail-cost-dialog"].addEventListener("close", () => { state.costController?.abort(); state.costRevision += 1; });
     ui["refresh-projects"].addEventListener("click", () => { void loadProjects(); });
     ui["refresh-runs"].addEventListener("click", () => { void loadRuns(state.project, state.run); });

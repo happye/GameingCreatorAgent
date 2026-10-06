@@ -10,6 +10,8 @@ root：`ui/server.py`、`ui/service.py`、新 `ui/media.py`、HTTP行为测试�
 
 ## GET 接口
 
+2026-10-06，`GET /api/inspect` 增加 `retrievalDiagnostics`：空查询或非completed运行时为null；非空搜索成功后为`retrieval-diagnostics-v1`。失败沿原HTTP错误路径返回，没有“成功零命中”诊断。字段绑定project/run、mediaId/mediaSha256/durationUs、configHash、retrievalVersion、原query/mode/requestedTopK；slots固定十位按已返回候选顺序保留position和原rank，candidate含ID／event／原区间／证据／事实／排序分数。缺位为missing，已见过同eventId（无event时同candidateId）为known_duplicate并引用首次位置。不同ID仍须人工核对独立性；不从十一位补位。returnedCount、missingCount、knownDuplicateCount、limitedByRequestedTopK和abstentionReason保留诊断上下文，humanGrade／humanLabels／usefulRate／qualityGate均为null。无新路由或持久化合同，非空搜索仍保存原有retrieval记录；弹窗及JSON下载使用已有响应并重验当前上下文。
+
 - `/api/health` → `{application:"gamingcreator-workspace",apiVersion:1,repository,pid,parentPid}`；GET/HEAD，不访问模型或项目数据库，no-store。启动器用仓库真实路径与进程身份判断ready/复用，不能仅凭端口打开认作本服务。
 - `/api/projects` → `{projects:[{path,name}]}`；path为仓库内相对路径，发现 `artifacts/` 下现有数据库。
 - `/api/runs?project=...` → `{runs:[{id,status,sourceName,durationUs,errorCode,analysisKind,analysisProfile}]}`；analysisKind为temporal或frame_observations，analysisProfile为detailed/temporal/frame_observations，来自固定prompt配置。

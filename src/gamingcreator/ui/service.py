@@ -16,6 +16,7 @@ from gamingcreator.application.detail_refinement_budget import canonical_detail_
 from gamingcreator.application.inspection import InspectionView, inspection_view
 from gamingcreator.application.observation_text import FACTS_PROJECTION_VERSION, display_facts
 from gamingcreator.application.retrieval import RETRIEVAL_VERSION, CandidateClip, RetrievalMode
+from gamingcreator.application.retrieval_diagnostics import retrieval_diagnostics
 from gamingcreator.application.storage import RunStatus, StoredInvocation, StoredTimeline
 from gamingcreator.cli.main import execute_search
 from gamingcreator.domain.errors import AppError, ExitCode
@@ -288,9 +289,8 @@ async def inspect_run(
         candidates = _candidates(document, timeline.run.asset.duration_us)
         reason = document["abstentionReason"]
         abstention = None if reason is None else str(reason)
-    payload = view_payload(
-        inspection_view(timeline, candidates, artifact, abstention_reason=abstention)
-    )
+    view = inspection_view(timeline, candidates, artifact, abstention_reason=abstention)
+    payload = view_payload(view)
     identity = {"project": project_reference or str(project.resolve()), "run": run_id}
     asset = timeline.run.asset
     profile = _analysis_profile(timeline.run.configuration.analysis.vision_prompt_version)
@@ -373,6 +373,18 @@ async def inspect_run(
                 "requestedModel": refinement_identity.requested_model,
             },
             "configHash": timeline.run.config_hash,
+            "retrievalDiagnostics": retrieval_diagnostics(
+                view,
+                project=identity["project"],
+                query=query,
+                mode=mode,
+                requested_top_k=top_k,
+                media_id=asset.media_id,
+                media_sha256=asset.sha256,
+                duration_us=asset.duration_us,
+                config_hash=timeline.run.config_hash,
+                retrieval_version=RETRIEVAL_VERSION,
+            ),
             "analysisKind": "temporal"
             if profile in ("temporal", "detailed")
             else "frame_observations",

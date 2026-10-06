@@ -6,6 +6,8 @@ This repository is the starting point for a local-first game-content creation to
 
 ## Current state
 
+Completed searches now expose an unscored ten-slot diagnostic in the local workspace, with original ranks, missing positions, known duplicates, source preview and a bound JSON snapshot. See the [diagnostic guide](./docs/references/retrieval-diagnostics-guide.md). It does not establish human retrieval acceptance.
+
 The command-line demo analyzes local footage, stores a semantic timeline, and finds candidate clips using local ASR, sampled-frame DeepSeek vision, SQLite, lexical search and local multilingual E5 embeddings. The local inspection workspace adds video preview, evidence, timeline filtering and selected-interval JSON/CSV exports. F000–F005 meet their technical criteria; F006's independent human quality gate remains unverified. The workspace has passed real-video browser validation and integrated checks; see the [verification record](./docs/exec-plans/sprint-workspace-usability.md). Video rendering and the commercial workflow remain future work. Phase 0 uses Python, SQLite and FFmpeg; see [ADR-001](./docs/design-docs/adr-001-phase-0-language.md) and the [workspace decision](./docs/design-docs/adr-002-local-inspection-ui.md).
 
 On the prepared workstation, open the existing completed demo without API calls or network access:

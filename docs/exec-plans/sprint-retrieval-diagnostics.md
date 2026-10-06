@@ -20,3 +20,7 @@ root在codex/visual-details顺序负责新application/retrieval_diagnostics.py�
 现有开发PV用于调参，诊断不是独立最终F006人评；主组资格、人工参考事件和独立素材仍不足。实际非空查询沿已有搜索路径保存检索记录，属于原授权本地使用，不冒称整个数据库字节不变；基础事件、证据、调用/预算及原精分析结果须保持。新v4付费授权待答，0新模型请求，旧unknown保留，F006/F009/F010 false。
 
 恢复：开始时0ae1a68工作树干净、scaffold通过。已有retrieval矩阵30组覆盖跳跃/复合Boss/负例但未包含射击；不能把旧矩阵口头复用当新界面验证。先实现纯投影，再接UI和实际查询验证，长任务前保存检查点。
+
+实现检查点：Application投影、inspect字段、十位弹窗、当前上下文下载／回看已落地。空或incomplete为null，失败清除旧诊断；输入修改会取消旧响应并关闭弹窗。首轮标题预期误写“检索候选”已改为原页面“候选 #1”。定向71 passed／1现有Windows权限skip，37.16s，mypy72通过；新增来源替换、切项目和HTML文字反例后待重新运行。当前尚未完整verify、真实录像和发布；网络断开时先做本地。已向用户说明十位缺位／重复规则和失效保护，下一步实际Boss／跳跃／射击回看及快照核对，0新Provider。
+
+真实检查点：新30行为反例23.96s通过；含切项目／run、来源替换和HTML文字。真实f601fb9b…33事件的8组查询及1366/390诊断／下载同响应／原视频回看／证据／无溢出通过，artifacts/retrieval-diagnostics-validation/report.json。跳跃lexical/hybrid各2／缺8，semantic10仍未判；复合Boss hybrid8／缺2，整句条件未证明；射击lexical/hybrid0／缺10；汽车维修负例hybrid0。成功轮追加10条普通搜索，打开／下载／预览0额外搜索，源表、已注册视频／证据、精分析／反馈／预算／proposal文件逐字节未改，0Provider。首次实测初始化失败前另有8次已保存普通检索，不删记录／不说整个DB不变。已向用户通俗汇报这些发现，下一步完整verify和诊断射击的基础描述／检索缺口。

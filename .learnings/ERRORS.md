@@ -1,5 +1,14 @@
 # Errors
 
+## [ERR-20261006-012] diagnostics_validation_setup
+
+**Logged**: 2026-10-06
+**Priority**: low
+**Status**: resolved
+**Area**: tests
+
+新浏览器测试误猜已有预览标题，实际为“候选 #1”；切项目脚本试图填写尚未展开的details输入，须先展开“打开其他项目目录”，真实页面可直接选择已有项目。只读证据路径从DB取得时可能相对project，必须按持久化合同解析，不能按进程cwd读取。嵌套PowerShell／python -c引号曾导致SyntaxError，改用落盘脚本；不以最后一个命令exit0覆盖先前错误。修正后新30行为回归及真实1366/390十位／下载／源回看通过，原失败无新Provider或预算变化。另一次文档批次因猜架构标题未写入；已读取精确标题重做，见ERR-20261006-008，禁止未核对末尾hunk。
+
 ## [ERR-20261006-011] pilot_review_initial_check_contracts
 
 **Logged**: 2026-10-06

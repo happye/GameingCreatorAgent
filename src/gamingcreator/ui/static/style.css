@@ -317,3 +317,13 @@ dialog::backdrop { background: #030713d9; }
     .notice { top: 70px; width: calc(100vw - 24px); font-size: 11px; }
 }
 @media (prefers-reduced-motion: no-preference) { button { transition: filter .15s, background .15s; } }
+.diagnostics-open { align-self: flex-start; margin-bottom: 6px; flex-shrink: 0; }
+#retrieval-diagnostics-dialog { width: min(880px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; }
+#retrieval-diagnostics-summary { overflow-wrap: anywhere; line-height: 1.6; }
+.diagnostics-slots { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.diagnostics-slot { border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-width: 0; overflow-wrap: anywhere; }
+.diagnostics-slot h3 { margin: 0 0 8px; font-size: 13px; }
+.diagnostics-slot.missing { opacity: .75; }
+.diagnostics-slot.known_duplicate { border-color: #d1a252; }
+.diagnostics-facts { font-size: 12px; line-height: 1.65; }
+@media (max-width: 600px) { .diagnostics-slots { grid-template-columns: minmax(0, 1fr); } }

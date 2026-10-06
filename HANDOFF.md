@@ -6,6 +6,8 @@
 
 ## 当前成果与验证
 
+断网恢复实现检查点：固定十位诊断Application／inspect／弹窗及当前查询下载回看已实现，定向71 passed／1原Windows权限skip、mypy72通过。新来源替换／切项目／HTML反例待再跑，真实录像、完整verify和发布待做；尚不能称本轮交付。已汇报缺位／重复保留、旧查询失效，下一动作真实Boss／跳跃／射击查询与桌面手机对应源片段核对，无新模型请求。
+
 新切片已登记：sprint-retrieval-diagnostics.md。root顺序负责固定十位只读Application投影、/api/inspect附加诊断和UI弹窗/下载/预览及测试，旧worker冻结。开始0ae1a68干净、scaffold通过；1745为上轮完整基线，当前尚无新实现/验证。下一动作先完成纯投影，再接UI和实际Boss/跳跃/射击诊断；新真实模型授权仍待答，0付费。正常查询会保存搜索记录，不能据数据库SHA变化误报模型源事实改动。
 
 - 分支codex/visual-details；最新源码检查点c759450。本地对照页、描述反馈、可编辑查询草稿、只读费用历史已接入；新人工记录页和归档入口现已完成，执行记录sprint-detail-pilot-review.md。
