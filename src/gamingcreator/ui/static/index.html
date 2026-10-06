@@ -42,6 +42,7 @@
                 <div class="monitor-column">
                     <div class="video-wrap"><video id="source-video" controls preload="metadata" playsinline aria-label="源视频预览"></video><div id="video-empty" class="video-empty"><span aria-hidden="true">▷</span><h3>从左侧打开分析结果</h3><p>点选事件或检索候选，回看原视频中的对应区间。</p></div></div>
                     <div class="playback-toolbar"><div><span class="current-time" id="current-time">00:00:00.000</span><span class="muted" id="total-time"> / —</span></div><button id="play-selection" class="button secondary compact" disabled><span aria-hidden="true">▷</span>播放区间</button></div>
+                    <div class="context-playback"><button id="play-context" class="text-button" disabled>前后各1秒回看</button><span id="playback-range" class="muted small" aria-live="polite"></span></div>
                 </div>
                 <aside class="clip-inspector" aria-label="选中片段详情">
                     <section class="active-clip" aria-label="当前片段"><span class="eyebrow">当前片段</span><div class="section-heading"><h3 id="active-title">尚未选中片段</h3><button id="add-active" class="text-button" disabled title="将当前片段加入片段篮">＋ 选片</button></div><p id="active-range" class="accent small">选择后显示源时间区间</p><p id="active-facts" class="muted">选中时间轴或候选，对照原视频和源帧证据。</p><button id="open-detail-query" class="text-button" disabled>核对同主体条件 ↗</button></section>

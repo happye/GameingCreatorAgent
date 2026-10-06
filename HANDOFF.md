@@ -1,54 +1,45 @@
 # 当前交接
 
-当前root顺序完成已有动作依据核对与diagnostics v2登记证据摘要，见docs/exec-plans/sprint-retrieval-action-evidence.md和report-2026-10-06-action-evidence.md。接3136895，旧worker／worktree冻结；下一工作为动作起止帧／过程覆盖核对，先登记任务。Goal active，0新付费／预算／真实人评，F006/F009/F010 false。
+2026-10-06，root / Codex在codex/visual-details顺序完成动作边界核对及本地“前后各1秒回看”，接8b2c8fc。见[当前sprint](docs/exec-plans/sprint-action-boundaries.md)与[通俗汇报](docs/exec-plans/report-2026-10-06-action-boundaries.md)。旧worker／worktree冻结，无并行writer。Goal active；F006/F009/F010仍false。
 
-源码与报告本地检查点c5c1ae4ed270a44c61aca30e254f89333a5b82ea。一次普通push连接github.com:443约21秒失败，未独立读取／重试，本轮待补推；最后已确认远端仍为上一轮3136895b7408c34623e9040bd5fa4e9de7298557，不能称本轮已同步。最终文档检查点及待发布状态见.cache/retrieval-action-evidence-publication.json；网络不阻塞本地下一任务，不改全局配置／main／强推。
+## 当前能力与实际证据
 
-本轮检索仍v7、原候选排名／事实／源时钟保持；摘要显示候选自己的登记图片数、时刻／内容数和跨度，单图／重复／音频／资料不完整分清，动作判断null。新增20反例、50定向24.623s／完整1882 passed／1 Windows权限skip（220.34s）、Ruff137／mypy72／CLI／双离线wheel SHAc1f22b3b0c585fcdb02c52fd0645504c6cd8fa6da49f03bfca216ebbbf3664e4通过；71包文件同源码，JUnit1883零失败错误。24同查询只读原排名／来源保持，全项目字节／预算不变。实际1366／390单图与四图1.5秒／下载／29和21秒回看通过；正常页面4查询＋生产2查询，基础资料／精分析反馈预算／冻结方案保持。
+回看入口按原候选／事件区间临时增加前后各1秒，截到源视频有效首尾，显示实际回看范围；原区间播放、候选事实／排名／证据、片段篮／JSON／CSV边界保持。拖动时间条改为自由回看，切项目／run或失去有效选择后禁用。检索仍bm25-e5-rrf-v7、diagnostics仍v2，无新API或持久化合同。
 
-生产新鲜health／state／CIM／exe／完整命令／仓库／父子匹配后替换61396／56740，当前快照30440／parent46168；v2诊断／旧PV单图／新多图、旧三个确认＋一个拒绝及精分析v4缺失隔离重验通过。操作前重新核对，PID不能盲用。已向用户通俗汇报新增能力、单图／跨切镜不足及下一步。提交与授权分支同步以Git和.cache/retrieval-action-evidence-publication.json为准；原3136895已推送并独立核对。
+只读三run／九候选、注册图片重新核对hash，项目全文件／DB／侧车／账本／搜索记录字节保持；root观看18张已有注册图。Atom11.5–12.5秒近处绿色物体遮着蓝发人物，原“绿色角色”描述有主体误认风险；11与11.5秒、12.5与13秒有场景／镜头变化。0–2秒有姿态／位置变化；漫画84–88秒可见光束和数字，精确发射边界／枪械类型／动作完整性仍未验证。周边图片不是原候选引用，Agent核对不是独立人评，不改冻结事实。
 
-当前证据为ignored artifacts/retrieval-action-evidence/audit.json（24词法／10帧索引，root查看9帧）、projection-report.json、browser-report.json、production-report.json、单／多图四截图及脚本；.cache/retrieval-action-evidence-verify.log、tests.xml、targeted-final.xml、package-receipt.json和previous/current-processes.json。完整检查后只有文档／ignored证据变化，不重复无变化验证。画面核对是Agent排查，不能替代独立人评。
+新9行为回归；定向39 passed／0 failure／0 error，43.845s。完整verify **1891 passed／1 Windows文件symlink权限skip，195.56s**，Ruff138／mypy72／CLI／双离线wheel SHA **67e96a135bbfd5961e05d7395efb42b9a83fccfc027aebda184e18c33763c7e6**。JUnit1892／0 failures／0 errors／1skip，包内71项目文件同源码，无素材／缓存／数据库。之后仅文档／ignored证据变化，不重复无变化验证。
 
-更新时间：2026-10-06（Asia/Hong_Kong）。Codex、Claude Code、Grok Build共用；恢复先核对Git和实际证据。历史见progress.md，各特性验收见feature_list.json。
+真实1366／390共10组原MP4回看／自然结束暂停／原区间恢复／下载／原引用数量保持通过：0–2秒→0–3秒、11.5–12.5→10.5–13.5、84–88→83–89、64秒单瞬→63–65、尾段截至95.175874秒。root看双尺寸截图。正式浏览器追加4条普通本地搜索；首两次核验脚本参数／CSP形式错误各追加1条（失败回执保留），本轮总6条。源八基础表／注册资料／精分析／预算保持；0付费／预留／人评。不能称全部DB字节在普通搜索后不变。
 
-所有项目Agent持续遵守AGENTS.md和docs/references/agent-workflow.md的通俗详细汇报规则：每次关键改动后说明现在能做什么、使用帮助、真实验证与不足、下一具体动作；跨会话／工具／子任务有效。规则已写入各工具记忆入口，不重复询问。
+当前生产新鲜health与state一致 **30440／parent46168**，三份网页资源逐字节等于已验证源码；静态资源按请求读取，无需重启。只读重验旧3确认＋1拒绝、精分析v4仍missing且不继承旧反馈，生产检查0新搜索、837项目文件字节保持。PID仅快照，任何停／启前重验exe／完整命令／父子／仓库，不能盲停。
 
-## 前一轮检索与授权基线（仍有效）
+## 已汇报结论与下一动作
 
-分支codex/visual-details；root顺序完成已有录像来源审计及中文动作别称修复，检索bm25-e5-rrf-v7。正向中英文动作仅补既有中文别称：跳跃／跳起／起跳、射击／开枪、战斗／打斗、交互／互动；未追加English jump给中文或jumping，避免JUMP标题成为动作依据。原v6英文边界／NFKC／否认规则保留，否定意图保持原词法行为，不实现一般缺席语义。源事实、passage哈希、缓存身份、候选ID、证据时钟及0.80／0.02阈值不变。
+已向用户说明临时回看的作用、Atom主体误认／前后切镜与光束不能等同枪械射击、真实验证范围及费用。所有Agent持续遵守[汇报协议](docs/references/agent-workflow.md)：关键改动后通俗详细说明使用效果、实际验证与不足、下一具体动作；AGENTS.md、CODEX.md、CLAUDE.md、.grok/rules/project.md已持久引用，不重复询问。
 
-- 四份完成分析、三个视频SHA、260事件：实机54.743220秒Atom同源v4 96b5f01530ce43e2944828fb0520b9b4／40、v6 f601fb9b3e734d5ea188fc15c790acbb／33；64.943220秒Atom PV v2 c6d93b984f374cd4aa755ed0c81e4d73／76；95.175874秒漫画PV v2 f76f5d6495314c04ae04083614d4afd6／111。Atom的不同文件仍可能同录制组，非独立最终验收素材。
-- 每侧108词法＋24混合只读审计。起跳实机v4／v6 0→2；交互／interacting在v4 1→3、Atom PVv2 0→4、v6 1→2。97词法和22混合结果／信号逐项不变；旧v4 jumping混合两个原事件顺序改变、跳跃BM25变化，原cosine／源身份不变，不声称全部排序相同。
-- 漫画jump五条为90–95秒游戏标题／版权文字，不是动作标签；root最初误报已依据完整原文向用户纠正。跳跃／jumping仍0。四run射击／开枪均无文字支持；漫画发射1／爆炸6不等于射击。Boss复合句部分字词命中不證同一主体全条件成立，质量仍未通过。
-- 新39行为反例，定向237 passed（JUnit6.331s）；完整verify **1862 passed／1 Windows文件symlink权限skip，220.13s**，Ruff136／mypy72／CLI／双离线wheel SHA **51c1b484e3c03b211c09f9d47e00dbcbda9ed347036a985c872caf9d4ddb59e6**。包内71项目文件同源码，无素材／缓存／DB；JUnit1863 tests／0 failures／0 errors／1 skip。上一1823为历史基线。
-- 首次定向233 passed／4 setup errors由root未建新basetemp父目录触发WinError3，创建独占父目录／cache后全通过，首次JUnit保留。比较脚本原强求混合why全相同已纠正，实际旧v4两原事件排序变化已披露。
-- 真实1366／390起跳2／互动2、十槽缺8、下载同当前响应、第二候选实际11.5秒回看／证据、无页面错误／外部请求／横溢通过，root查看双图。第一browser-report.json回看字段残留英文名称写null，实际断言通过；生成器已修，未覆盖原证据。
-- 纯审计两个项目全文件／DB／侧车／预算／原查询记录字节不变，0普通搜索。真实浏览器沿普通API追加4次、生产追加1次；基础表／注册视频证据／精分析反馈预算／冻结proposal保持，不能把普通UI测试称整个DB字节不变。
-- 生产health／state／CIM／父子exe／完整命令／仓库身份匹配后替换旧51180／46444。最新快照 **61396／parent56740**，新v7／起跳2、旧v2三个确认＋一个纠错、精分析v4缺失及不跨版本反馈重验通过。PID仅快照，任何操作前重新核对，不能盲停。
-- 本轮0远程视觉／精分析请求、0预留／新增费用／真实人评。F006/F009/F010 false，人工质量字段为空。已按持续规则汇报作用、实际不足、JUMP误报纠正、验证和下一步。
+下一项root顺序先登记动作标签与原文支持一致性核对，重点起跳与上升、射击与光效／物品；不根据计数或合法多帧JSON改判动作。实际确认合同缺口后再登记源码范围。新模型调用仍待精确授权，不因此阻塞已有授权内的离线工作。
 
-## 下一工作
+正式F006仍需10–20代表录像、按原录制会话划分独立测试、事前冻结查询／人工参考；主查询至少十个独立可用参考事件，十固定槽至少七个不同事件获人工2/3。开发PV／同视频多版本／描述确认不代替独立检索验收。F009/F010真实理解未通过。
 
-1. root顺序登记并核对已有动作候选的起止帧与动作过程覆盖，重点跳跃／光束；不根据半空姿势、特效或跨镜头文字推断完整动作。已确认旧单图及跨场景记录的限制，并提供登记证据提示；0新增模型请求，不重试unknown run。
-2. F006仍需10–20段代表录像、按原录制会话划分独立测试、事前冻结查询与人工参考事件；主查询至少十个独立可用参考事件，十固定槽至少七个不同事件获人工2/3。开发PV与同视频多版本不能替代独立测试，描述确认不等于检索评级。
-3. 网络已恢复，源码／报告6763484a67035fc8aa5f26fb7d595880f5b6afcc已普通push到已授权https://github.com/happye/GameingCreatorAgent的codex/visual-details，独立ls-remote同SHA；此前0ae1a68后的积压提交也已同步。当前仅更新本交接同步记录，最终文档checkpoint及远端核对以.cache/retrieval-corpus-publication.json和Git为准；不更新main／强推，不循环联网或改全局配置。
-4. 新精分析v4仍待对应新授权；未答复继续离线，Goal active。额度／网络恢复不构成新增模型许可。完整检查已通过，恢复不要无变化重复验证，先读Git和证据。
+## 保存与网络状态
 
-## 费用、授权与实际人评
+本轮实现／报告正在保存本地检查点；提交及当前工作树以Git为准，发布回执见.cache/action-boundaries-publication.json。用户报告网络中断，本轮不循环联网或改变代理／全局设置；上一轮c5c1ae4／8b2c8fc及本轮改动均待授权分支补推。最后独立确认远端为 **3136895b7408c34623e9040bd5fa4e9de7298557**，不是当前远端新鲜查询；不称已同步。不更新main／强推，已有普通push codex/visual-details授权继续有效。
 
-原两次／最高¥4.04／原六帧到DeepSeek授权已全部执行，估价¥0.01850612、新unknown0；全任务已知¥0.24934532、总承诺¥4.31488132。旧unknown预留¥4.065536保留，禁止重试漫画run 0ba106578bc7435c8689d12892a35dfb或换目录清账。
+本轮ignored artifacts/action-boundaries：audit.py／audit.json、check-browser.py／browser-report.json、context-1366.png／context-390.png、check-production.py／production-report.json、check-package.py；.cache/action-boundaries-verify.log／tests.xml／targeted.xml／package-receipt.json及两次browser失败回执。这些本机证据不会随Git传输，视频／凭据／生成媒体／DB不可提交。
 
-新artifacts/detail-temporal-validation/pilot-proposal.json SHA **06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6**。对应新两次／最高¥4.07／同六帧到DeepSeek chat/completions问题未收到答复：executionAuthorized=false、paidRequestsSent=0，新实验未预留。旧预算余量不等于新次数。
+历史见progress.md、[动作依据切片](docs/exec-plans/sprint-retrieval-action-evidence.md)、[来源／别称切片](docs/exec-plans/sprint-retrieval-corpus-audit.md)、[阶段汇报](docs/exec-plans/report-2026-10-06-stage-progress.md)。完整1882与1862、旧生产PID及旧网络恢复记录均为历史基线，当前1891与上述新鲜资源验证有效。
 
-用户只确认35–36秒三个描述，拒绝28–29秒s1/a2：近镜头物品遮住人物，它是物品，不是新人物。其他描述、属性、动作及检索质量未确认；旧意见只随原report/request/payload/shot/actor，不自动成为新版结论。基础视觉v4与精分析v4为不同合同。
+## 费用、授权及原人工意见（仍有效）
 
-## 恢复位置
+原两次／最高¥4.04／原六帧发DeepSeek授权已全部执行，估价¥0.01850612、新unknown0；全任务已知¥0.24934532、总承诺¥4.31488132。旧unknown预留 **¥4.065536**保留，禁止重试漫画run **0ba106578bc7435c8689d12892a35dfb**或换目录清账。
 
-root顺序拥有retrieval、action_aliases行为测试、只读证据和公共文档；旧worker／worktree均冻结，无并行writer。
+新artifacts/detail-temporal-validation/pilot-proposal.json SHA **06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6**。对应新两次／最高¥4.07／同六帧到DeepSeek chat/completions问题仍未收到答复：executionAuthorized=false、paidRequestsSent=0、新实验未预留；旧余量、Goal／额度／网络恢复均不扩大授权。
 
-- 当前docs/exec-plans/sprint-retrieval-corpus-audit.md、report-2026-10-06-retrieval-corpus-audit.md和stage-progress；旧英文修复b7723aa／20c227c／1c7c278及对应query-audit报告保留历史。
-- ignored artifacts/retrieval-corpus-audit/inventory.json、audit.json、after-fix.json、comparison.json、browser-report.json、production-report.json、双尺寸截图及脚本。comparison前后SHA a78cebdc68226c7f67fa106386e2be6c2613c56bd1ce4a05ddb7f38435cc42cf／ab4d8060d6fd6193229bb093c15c16d2e829144d4c42a7c2ba2a085d9a9f58b7。
-- .cache/retrieval-corpus-verify.log、tests.xml、targeted.xml（首错误）、targeted-final.xml、package-receipt.json和previous/current-processes.json。包、JUnit和源码相符；ignore证据不可当远端已保存。
-- 固定十位诊断b2c2a13已交付：原排名／缺位／已知重复、回看／下载不额外检索；上下文变化失效，人评字段为空。旧人工记录c759450及artifacts/detail-pilot-review-20261006/review-editor.html可用，归档新目录五文件；新精分析v4缺结果禁填，只有空记录往返，无新增人评。
-- 双击Start-Workspace.cmd继续使用；启动／读取／搜索／刷新不新增付费分析。工具只在.tools/.venv/.cache，先env.ps1，Python -B；密钥／视频／生成媒体／数据库不入Git，保留未知成本。
+用户只确认35–36秒三个主体描述，拒绝28–29秒s1/a2：近镜头物品遮住人物，它是物品，不是新人物。其他描述／属性／动作／检索质量未确认；旧意见只随原report/request/payload/shot/actor，不自动成为新版结论。基础视觉v4与精分析v4不同，当前精分析v4无真实结果。
+
+## 来源与恢复规则
+
+四份完成分析／三个视频SHA／260事件：实机54.743220秒Atom同源v4 96b5f01530ce43e2944828fb0520b9b4／40、v6 f601fb9b3e734d5ea188fc15c790acbb／33；64.943220秒Atom PV v2 c6d93b984f374cd4aa755ed0c81e4d73／76；95.175874秒漫画PV v2 f76f5d6495314c04ae04083614d4afd6／111。Atom不同文件仍可能同录制组，非独立验收样本。正文原JUMP命中为游戏标题，不是动作；中文扩展不加English jump。
+
+双击Start-Workspace.cmd继续使用；刷新页面获取本轮入口，启动／读取／搜索／刷新不新增付费分析。工具仅.tools/.venv/.cache，Python前env.ps1并使用项目Python -B。恢复先读Git、HANDOFF与当前sprint；不重复初始化，不改冻结worker树，不重跑已有通过的无变化检查。

@@ -7,7 +7,7 @@
         "run-select", "refresh-runs", "refresh-view", "run-state", "source-name",
         "source-duration", "event-count", "transcript-count", "cost-known", "cost-detail",
         "stage-summary", "stage-list", "source-video", "video-empty", "preview-badge",
-        "current-time", "total-time", "play-selection", "add-active", "active-title",
+        "current-time", "total-time", "play-selection", "play-context", "playback-range", "add-active", "active-title",
         "active-range", "active-facts", "evidence-tab", "transcript-tab", "evidence-panel",
         "transcript-panel", "evidence-count", "evidence-list", "transcript-tab-count",
         "transcript-list", "search-form", "query", "mode", "top", "search-button",
@@ -867,6 +867,8 @@
         ui["active-range"].textContent = "选择事件或候选后显示源时间区间";
         ui["active-facts"].textContent = "模型观察、原始证据与视频可以在这里对照查看。";
         ui["play-selection"].disabled = true;
+        ui["play-context"].disabled = true;
+        ui["playback-range"].textContent = "";
         ui["add-active"].disabled = true;
         ui["current-time"].textContent = "00:00:00.000";
         ui["total-time"].textContent = " / —";
@@ -1215,14 +1217,17 @@
         ui["current-time"].textContent = timecode(Math.round(position));
     }
 
-    async function previewClip(kind, row) {
+    async function previewClip(kind, row, withContext = false) {
         if (!validInterval(row) || !state.sourceUrl) return notice("这个区间目前无法播放，请刷新素材。");
         invalidateDetailDraft(true);
         clearDetailMatch();
         state.active = { kind, row };
-        state.playbackEndUs = row.endUs;
-        seek(row.startUs);
+        const startUs = withContext ? Math.max(0, row.startUs - 1000000) : row.startUs;
+        const endUs = withContext ? Math.min(state.view.media.durationUs, row.endUs + 1000000) : row.endUs;
+        state.playbackEndUs = endUs;
+        seek(startUs);
         updateActive();
+        ui["playback-range"].textContent = `${withContext ? "前后文" : "原区间"} · ${timecode(startUs)} – ${timecode(endUs)}`;
         renderCandidates();
         renderTimeline();
         renderEvidence();
@@ -1250,6 +1255,8 @@
         const uncertainty = uncertaintyOf(row);
         if (uncertainty) ui["active-facts"].append(element("br"), element("span", "warning small", `待核对 · ${uncertainty}`));
         ui["play-selection"].disabled = !row || !state.sourceUrl;
+        ui["play-context"].disabled = !validInterval(row) || !state.sourceUrl;
+        ui["playback-range"].textContent = row ? `原区间 · ${intervalLabel(row)}` : "";
         updateActiveButton();
         updateDetailQueryButton();
     }
@@ -1487,6 +1494,7 @@
             preview.addEventListener("click", () => {
                 state.playbackEndUs = row.endUs;
                 seek(row.startUs);
+                ui["playback-range"].textContent = `转录区间 · ${timecode(row.startUs)} – ${timecode(row.endUs)}`;
                 ui["source-video"].play().catch(() => notice("请使用视频播放按钮开始播放。"));
             });
             const copy = element("div");
@@ -1591,6 +1599,7 @@
     ui["tag-filter"].addEventListener("change", filterTimeline);
     ui["add-active"].addEventListener("click", () => { if (state.active) toggleSelection(state.active.kind, state.active.row); });
     ui["play-selection"].addEventListener("click", () => { if (state.active) void previewClip(state.active.kind, state.active.row); });
+    ui["play-context"].addEventListener("click", () => { if (state.active) void previewClip(state.active.kind, state.active.row, true); });
     ui["clear-selection"].addEventListener("click", () => {
         state.selections = [];
         persistSelections(); renderSelections(); renderCandidates(); renderTimeline(); updateActiveButton();
@@ -1632,12 +1641,13 @@
         ui["video-empty"].querySelector("p").textContent = "请确认素材仍在原处且浏览器支持其编码。时间轴和片段清单仍可使用。";
         ui["preview-badge"].textContent = "播放失败";
     });
-    ui["video-scrubber"].addEventListener("input", () => { state.playbackEndUs = null; seek(Math.round(Number(ui["video-scrubber"].value) * 1000000)); });
+    ui["video-scrubber"].addEventListener("input", () => { state.playbackEndUs = null; ui["playback-range"].textContent = "自由回看"; seek(Math.round(Number(ui["video-scrubber"].value) * 1000000)); });
     ui["timeline-map"].addEventListener("click", (event) => {
         if (!state.view || !state.sourceUrl) return;
         const bounds = ui["timeline-map"].getBoundingClientRect();
         if (!bounds.width) return;
         state.playbackEndUs = null;
+        ui["playback-range"].textContent = "自由回看";
         seek(Math.round(Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width)) * state.view.media.durationUs));
     });
     window.addEventListener("resize", drawTimeline);

@@ -1,5 +1,23 @@
 # Errors
 
+## [ERR-20261006-016] browser_wait_keyword_argument
+
+第二次核验又因非函数形式wait_for_function被页面CSP禁止动态eval中断，追加1普通搜索，0Provider；改为函数表达式，不放宽生产CSP／bypassCSP。两次失败分别保留回执，正式四搜索另计。真实浏览器核验脚本先用明确函数及arg=，复用实际已通过的调用形式。
+
+**Logged**: 2026-10-06
+**Status**: resolved
+**Area**: tests
+
+动作前后文真实播放脚本首次把wait_for_function的arg当位置参数传入，TypeError发生于首个Atom查询后；evaluate允许位置参数，wait_for_function使用arg=关键字。修正实际调用，首次新增1条普通本地搜索，无Provider／费用。保留失败记录；最终实测的4条搜索与首轮1条分开计数，不声称所有检查首次通过。
+
+## [ERR-20261006-015] guessed_source_filename
+
+**Logged**: 2026-10-06
+**Status**: resolved
+**Area**: workflow
+
+动作边界恢复时直接搜索猜测的deepseek.py／app.css／browser测试和guide文件名，实际名称为deepseek_vision.py／style.css，导致只读搜索失败。先rg --files对应目录确认真实文件，再按返回路径读／搜；不要仅凭上一轮概念名称猜路径。无源码或源数据改动。
+
 ## [ERR-20261006-014] retrieval_alias_boundary_consistency
 
 最终104定向及1823完整／1权限skip通过，JUnit0 failures／0 errors。首次完整另有presentation旧v5断言遗漏，需全repo rg版本引用；content_type用例首次失败但单独／104定向／完整复跑通过，初次native细节未完整保留，原因不明。不把复测通过写成已证明的socket原因；长验证保留JUnit。A/B别名比较事件ID和源时钟，原英文tag可能额外计BM25分，不要求不同查询的why字串完全相同。

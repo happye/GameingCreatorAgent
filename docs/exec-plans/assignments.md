@@ -1,5 +1,13 @@
 # Active assignments
 
+当前action-boundaries切片已交付，root / Codex在codex/visual-details顺序拥有UI static app.js／index.html／style.css、新context playback测试、ignored证据及公共文档。临时前后各1秒回看、实际范围与源首尾截止，原候选／篮子／导出／证据保持；检索v7、diagnostics v2不变。旧worker／worktree冻结，无并行writer。
+
+新9行为回归、39定向／完整1891 passed／1权限skip、真实1366／390十组MP4回看／暂停／下载／原引用及生产资源／旧反馈隔离通过，见sprint-action-boundaries.md与report-2026-10-06-action-boundaries.md。只读审计三run九候选／root看18注册图、源字节不变；普通浏览器正式4搜索＋首次两脚本失败各1搜索，共6，0Provider／预留／人评。生产只读0搜索，无需重启。
+
+当前保存本地检查点，用户报告断网，本轮不重试远端；最后确认远端3136895，旧c5c1ae4／8b2c8fc及本轮待补推。下一项root顺序先登记动作标签与原文支持一致性核对，重点起跳／上升与射击／光效。新源码范围待真实证据确认；F006/F009/F010 false、新v4授权待答／旧unknown保留。已汇报结论及下一步在HANDOFF。
+
+## 历史任务记录（以下不是当前任务）
+
 当前action-evidence切片已交付：diagnostics v2登记依据摘要，新20反例、50定向／完整1882 passed／1权限skip、24相同真实查询投影与双尺寸单／多图下载／29、21秒回看及生产30440／46168通过；检索v7与原排名／事实／源时钟保持。0Provider／预留／人评，源基础资料／费用保持，普通页面4查询＋生产2查询。root已保存详细报告、sprint和HANDOFF；下一条为动作起止帧／过程覆盖核对，开始前登记范围。旧worker冻结；下方为本轮开始时记录。
 
 本地实现c5c1ae4；一次push连接失败，待补推，不重试；最后确认远端3136895。完整验证1882仍有效，最终同步记录只改文档，root继续下一本地任务。

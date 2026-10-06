@@ -2,6 +2,8 @@
 
 工作台检索诊断由纯Application `retrieval_diagnostics`投影已有InspectionView；UI/service附加十个固定位置，静态页面负责显示、当前查询身份核对、下载和原区间预览。投影不重排、不调用模型、不评分，检索保存仍走已有execute_search。没有人工标签时质量字段为空；正式计分继续由benchmark处理。使用步骤见[检索诊断指南](../references/retrieval-diagnostics-guide.md)。
 
+静态页面提供临时“前后各1秒回看”：根据当前有效行与已校验media.durationUs计算源时钟范围，复用源视频seek／结束暂停，不生成新Candidate或修改行对象。原区间播放、选片篮／导出与证据引用保持；拖动时间条释放临时停止点，切项目／run或丢失选择时禁用。回看显示实际范围，仅本地媒体读取，无新API／Provider／检索记录。
+
 状态：2026-10-03 实施基线，按用户解除语言限制的补充采用 Python；性能和检索质量仍待实测。依据原方案 §15–20、49–56、69–71；详见 [语言决策](./adr-001-phase-0-language.md)、[审查报告](../exec-plans/reverse-review-2026-10-03.md) 与 [工程合同](./phase-0-engineering-spec.md)。
 
 ## 包结构与依赖
