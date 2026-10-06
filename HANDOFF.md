@@ -1,5 +1,9 @@
 # 当前交接
 
+用户于2026-10-06纠正优先级：按总方案推进主要阶段交付，小bug能快速修就修，需要反复定位则记录后继续主线，不再把微修／诊断增强／重复验证当项目进展。已持久到AGENTS／CODEX／CLAUDE／Grok和agent-workflow，所有Agent恢复须加载，原通俗详细汇报规则继续有效。
+
+action-tag-support归档为deferred／TD010：四run／260事件／80只读探针项目字节保持，裸标签盖过否认的人工红测17失败／1通过仅作复现，已移到ignored artifacts/action-tag-support/tag-denial-repro.py，默认测试树恢复。生产源码从未修改，检索仍v7／完整1891＋1skip有效，0Provider／预算／人评／普通搜索。下一主线核对Phase 0／TD005长录像1024文本规模限制并登记分批本地索引交付，旧worker冻结；下方前后文能力仍有效。
+
 2026-10-06，root / Codex在codex/visual-details顺序完成动作边界核对及本地“前后各1秒回看”，接8b2c8fc。见[当前sprint](docs/exec-plans/sprint-action-boundaries.md)与[通俗汇报](docs/exec-plans/report-2026-10-06-action-boundaries.md)。旧worker／worktree冻结，无并行writer。Goal active；F006/F009/F010仍false。
 
 ## 当前能力与实际证据
@@ -18,7 +22,7 @@
 
 已向用户说明临时回看的作用、Atom主体误认／前后切镜与光束不能等同枪械射击、真实验证范围及费用。所有Agent持续遵守[汇报协议](docs/references/agent-workflow.md)：关键改动后通俗详细说明使用效果、实际验证与不足、下一具体动作；AGENTS.md、CODEX.md、CLAUDE.md、.grok/rules/project.md已持久引用，不重复询问。
 
-下一项root顺序先登记动作标签与原文支持一致性核对，重点起跳与上升、射击与光效／物品；不根据计数或合法多帧JSON改判动作。实际确认合同缺口后再登记源码范围。新模型调用仍待精确授权，不因此阻塞已有授权内的离线工作。
+下一主线是Phase 0长录像的本地语义检索规模：解除超过1023事件时整次请求失败的限制，按现有模型空间分批计算，保留取消、缓存与原子持久化。动作标签局部问题已归档TD010，不继续反复修；新模型调用仍待精确授权，离线开发继续。
 
 正式F006仍需10–20代表录像、按原录制会话划分独立测试、事前冻结查询／人工参考；主查询至少十个独立可用参考事件，十固定槽至少七个不同事件获人工2/3。开发PV／同视频多版本／描述确认不代替独立检索验收。F009/F010真实理解未通过。
 

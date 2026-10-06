@@ -1,5 +1,11 @@
 # Active assignments
 
+用户已将优先级改为按总方案主要阶段交付；所有Agent持久记忆已同步。action-tag-support及其裸标签／否认bug停止修复，归档TD010，复现移出默认tests，retrieval源码未改，1891／1skip基线有效。下一主线为Phase 0长录像检索规模支持，先核对TD005／1024文本限制再登记主要交付；下方action-tag-support记录为历史，不再活跃。
+
+action-tag-support四run／260事件／80词法探针已保存，源全字节保持。发现裸动作标签可盖过正文同动作明确否认，root登记独占application/retrieval.py、新test_retrieval_tag_denial.py、相关版本断言和合同／报告；先红测再修，仅解决该冲突，保留其他动作／真实肯定／模糊与负意图行为、原索引文本／缓存／源身份。旧worker冻结，0Provider／预留／人评。
+
+当前root顺序任务为sprint-action-tag-support.md，接65a523c；独占ignored四run动作标签／原文只读核对与公共记录，实际源码范围待证据确认。先检查字词来源和否认保护，纯词法内存去标签对照不改原资料，0Provider／上传／预留／人评／普通搜索。旧worker冻结，1891／1权限skip基线仍有效；网络中断继续本地任务，下方为已交付前后文切片。
+
 当前action-boundaries切片已交付，root / Codex在codex/visual-details顺序拥有UI static app.js／index.html／style.css、新context playback测试、ignored证据及公共文档。临时前后各1秒回看、实际范围与源首尾截止，原候选／篮子／导出／证据保持；检索v7、diagnostics v2不变。旧worker／worktree冻结，无并行writer。
 
 新9行为回归、39定向／完整1891 passed／1权限skip、真实1366／390十组MP4回看／暂停／下载／原引用及生产资源／旧反馈隔离通过，见sprint-action-boundaries.md与report-2026-10-06-action-boundaries.md。只读审计三run九候选／root看18注册图、源字节不变；普通浏览器正式4搜索＋首次两脚本失败各1搜索，共6，0Provider／预留／人评。生产只读0搜索，无需重启。

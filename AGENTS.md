@@ -38,6 +38,10 @@ Use pytest `tests/test_*.py`; follow `docs/references/testing-guide.md` and `pha
 
 All agents share acceptance criteria; start with `HANDOFF.md` and `docs/references/agent-workflow.md`. Assign ownership; parallel writers use separate worktrees. Record verification and resumable work before transfer. Use imperative `chore:`/`docs:` subjects or `feat(F002): add local frame extraction`. PRs describe behavior, link a feature and include evidence. Never commit secrets, footage, generated media or databases.
 
+## Persistent delivery priority
+
+用户要求按总方案和设计好的开发路径推进大方向，优先阶段性交付，不在同一个小bug上反复消耗时间和tokens。每轮先明确所属阶段与主要交付；小问题能直接修就修，需要持续定位／试错就记录到docs/exec-plans/tech-debt.md，保存复现与影响后继续主线。只有阻断当前主要交付或影响数据／费用等关键边界的问题才优先处理。不得把连续微修、诊断增强、报告数量或重复完整测试代替计划中的实际开发进展。此规则适用于所有项目Agent、子任务、会话恢复和工具切换，与下方通俗汇报规则共同持续生效。
+
 ## Persistent reporting mode
 
 用户要求所有项目 Agent 在每次关键改动后给出不那么技术味的详细汇报，并说明接下来要做什么。此偏好跨会话、工具切换和子任务持续生效，恢复工作时必须加载。
