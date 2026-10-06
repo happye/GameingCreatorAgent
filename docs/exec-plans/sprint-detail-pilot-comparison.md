@@ -19,6 +19,8 @@
 
 ## 验证与恢复
 
+额度恢复接续：用户新Goal明确继续开发迭代；上个worker因usage limit终止但已落script/tests/own sprint，未提交。root重新核对worktree原基线a424ef4与三个未提交文件，恢复同agent完成最终验证/提交，不重启任务或覆盖源代码。当前源码包含旧同版matcher完整result一致性和report/case/match null质量字段，但该新补丁不得引用首次16通过作为最终结果。root源码初审反例已交worker，reviewer在只读复核。根源数据来源审计重新通过，仍旧partial/new unverified、3 accept+1 reject仅旧描述、0发送/预算变更；浏览器核对脚本已准备在ignored artifacts/detail-temporal-validation/check-pilot-comparison-browser.py，待生成真实产物后运行。生产原PID均不存在，正常恢复服务并实读原结果，不盲停进程；最终验证节点另补。
+
 2026-10-06用户最新额度提示15%，要求准备阶段汇报，未要求停工。root已核对工作树0a97abb干净、冻结proposal SHA不变、0新paidRequests、executionAuthorized=false、原report SHA不变和生产35992健康；上一goal turn为已验证功能交付的实际进展。当前worker接口已定，尚无可用生成结果/新验证，不能写成页面已完成；阶段报告report-2026-10-06-stage-progress.md按此事实保存。下一节点等worker提交其独占文件后审核/定向/实际生成，不复制未验收口头结果为通过。
 
 必要反例：错误proposal SHA/case/run/request/帧ID源时间hash拒绝；v4缺结果保持未执行；旧反馈仅贴原结果；HTML文字安全；输出不覆盖来源；人工字段默认null；真实源表/侧车/账本/反馈/proposal前后不变。生成页面在1366桌面/390手机核对原六图和布局。相同query的新匹配只有新结果存在时计算，不能用模型工程fixture替代真实效果。

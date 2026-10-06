@@ -6,6 +6,8 @@
 
 ## 当前结论
 
+2026-10-06用户已恢复额度并要求继续迭代到额度用光，新Goal active。中断前对照worker已落三个未提交owned文件（script/tests/own sprint），旧result逐项一致/null人工质量补丁已写但未最终验证；同一agent已在原tree复工，root不抢写。root独立comparison-source-audit重验原两case六帧/报告/反馈/current request/payload通过，旧partial、新v4无结果，0Provider/预算/source变更；scaffold检查通过。旧35992/35892 health不通且CIM均不存在，未停止任意PID，正常NoBrowser启动52396/parent49720并health/状态/CIM命令/实际3accepted+1rejected/v4missing/querydraft重验，production-description-feedback-report.json；PID仍仅快照。下一步worker提交后整合、实际新目录生成和1366/390/模板下载核对。额度恢复不构成新DeepSeek授权，旧unknown保留。
+
 用户最新提示额度剩15%并要求准备汇报（不是暂停/停止）。完整阶段通俗报告已保存report-2026-10-06-stage-progress.md，汇总现在可用工作台、描述反馈与条件草稿、真实理解未验证、费用与下一三步。对照worker目前接口已定但生成结果尚未验证；CLI计划--project/--proposal/--proposal-sha256/--legacy-report/--feedback，--dry-run或--output-dir，输出comparison.html/comparison.json/human-review-template.json。沿原授权继续离线，不把额度百分比推断成新增发送授权或停工。
 
 当前下一离线切片：同候选v2/v4人工对照页，见sprint-detail-pilot-comparison.md。detail_parts_v3在新.worktrees/detail-pilot-compare/codex/detail-pilot-compare（a424ef4基线）独占新生成脚本/新tests/own sprint；root负责实际生成/桌面手机及公共记录，其他workers冻结。对照原六图和已有描述反馈，v4缺结果明确未执行，新人工记录默认null、不能替代U10；不发送、不预留、不覆盖源数据。worker进行中，接手先检查其commit/定向结果，再串行整合；本轮原工作台1661完整验证与production已通过，不重复实现。Goal持续开发仍active，不把额度提醒当停工。
