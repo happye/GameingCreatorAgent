@@ -1,10 +1,18 @@
 # 当前交接
 
+2026-10-07，root已交付[sprint-long-footage-retrieval](docs/exec-plans/sprint-long-footage-retrieval.md)，接565d80f；[通俗汇报](docs/exec-plans/report-2026-10-07-long-footage.md)。Phase 0／F005／TD005：超过1023事件的语义／混合搜索自动按有界worker分批，原向量空间／顺序／缓存与成功后原子保存保持。2051文本身份及1280事件搜索／后批失败续算／热搜／第二进程通过；真实本地E5 1281合成文本冷18581ms／热2597ms、跨批边界单独计算一致。0新付费／预留／人评。TD010延期，旧worker冻结。
+
+一次完整verify1898passed／1 Windows文件symlink权限skip，331.95s；139格式文件／72类型文件、lint／CLI／双离线wheel通过。Wheel SHA4dc4350d0e70d8ac5e252a9cbca4db6ed2daab5e6edfee04132709e6550a6735，71项目文件等于源码且不含素材／缓存／DB，JUnit1899／0fail／0error／1skip。回执.cache/long-footage-targeted.xml、tests.xml、verify.log、package.json；之后仅文档／ignored回执，不重复完整测试。
+
+本地工作台已在fresh health／state／CIM父子exe及完整命令一致后更新：新PID61720／parent52996。实际Atom v6一次hybrid搜索返回2候选，模型新workerBatches字段存在／34文本／0缓存／1本地worker，0API费用；9基础表逐行hash保持，新增1正常检索记录。回执.cache/long-footage-live.json／live-health.json；PID只为快照，不得盲停。下方1891／旧服务PID与前后文回看证据为上一切片历史能力。
+
+已向用户汇报持久规则、长事件搜索的使用效果、实际18.6秒／2.6秒及验证不足。下一主线继续长录像分析→索引→搜索全链路和可恢复处理，先登记范围；真实小时素材／峰值内存／source hash I/O仍待测，TD005 partial，F006/F009/F010仍false。网络中断期间本轮0push／远端读取，普通授权分支待补推，不更新main／强推；本地checkpoint以Git为准。
+
 用户于2026-10-06纠正优先级：按总方案推进主要阶段交付，小bug能快速修就修，需要反复定位则记录后继续主线，不再把微修／诊断增强／重复验证当项目进展。已持久到AGENTS／CODEX／CLAUDE／Grok和agent-workflow，所有Agent恢复须加载，原通俗详细汇报规则继续有效。
 
-action-tag-support归档为deferred／TD010：四run／260事件／80只读探针项目字节保持，裸标签盖过否认的人工红测17失败／1通过仅作复现，已移到ignored artifacts/action-tag-support/tag-denial-repro.py，默认测试树恢复。生产源码从未修改，检索仍v7／完整1891＋1skip有效，0Provider／预算／人评／普通搜索。下一主线核对Phase 0／TD005长录像1024文本规模限制并登记分批本地索引交付，旧worker冻结；下方前后文能力仍有效。
+action-tag-support归档为deferred／TD010：四run／260事件／80只读探针项目字节保持，裸标签盖过否认的人工红测17失败／1通过仅作复现，已移到ignored artifacts/action-tag-support/tag-denial-repro.py，默认测试树恢复。该归档切片未修改生产源码，1891＋1skip为恢复基线，0Provider／预算／人评／普通搜索；后续长录像主线已交付见上方。
 
-2026-10-06，root / Codex在codex/visual-details顺序完成动作边界核对及本地“前后各1秒回看”，接8b2c8fc。见[当前sprint](docs/exec-plans/sprint-action-boundaries.md)与[通俗汇报](docs/exec-plans/report-2026-10-06-action-boundaries.md)。旧worker／worktree冻结，无并行writer。Goal active；F006/F009/F010仍false。
+上一交付：2026-10-06，root / Codex在codex/visual-details顺序完成动作边界核对及本地“前后各1秒回看”，接8b2c8fc。见[上一sprint](docs/exec-plans/sprint-action-boundaries.md)与[上一通俗汇报](docs/exec-plans/report-2026-10-06-action-boundaries.md)。旧worker／worktree冻结，无并行writer。Goal active；F006/F009/F010仍false。
 
 ## 当前能力与实际证据
 

@@ -1,6 +1,10 @@
 # Active assignments
 
-用户已将优先级改为按总方案主要阶段交付；所有Agent持久记忆已同步。action-tag-support及其裸标签／否认bug停止修复，归档TD010，复现移出默认tests，retrieval源码未改，1891／1skip基线有效。下一主线为Phase 0长录像检索规模支持，先核对TD005／1024文本限制再登记主要交付；下方action-tag-support记录为历史，不再活跃。
+root已顺序交付[sprint-long-footage-retrieval](sprint-long-footage-retrieval.md)，接565d80f：Phase 0／F005／TD005长录像本地检索规模。独占local_embeddings.py、分批行为与长事件CLI集成测试、规格及公共交接；有界顺序worker、原缓存空间／身份、完整成功后原子保存。29定向、完整1898／1权限skip与真实本地模型1281文本18.6s／2.6s通过；工作台fresh身份更新至61720／52996，一普通hybrid搜索／9基础表保持通过。0新付费调用。下一主线长录像分析→索引→搜索全链路与恢复，先登记；旧worker冻结，下方任务为历史；action-tag-support已归档TD010。
+
+## 历史记录（已归档，非当前任务）
+
+用户已将优先级改为按总方案主要阶段交付；所有Agent持久记忆已同步。action-tag-support及其裸标签／否认bug停止修复，归档TD010，复现移出默认tests，retrieval源码未改；1891／1skip是其恢复基线。长录像检索已登记于上方当前任务，下方action-tag-support记录不再活跃。
 
 action-tag-support四run／260事件／80词法探针已保存，源全字节保持。发现裸动作标签可盖过正文同动作明确否认，root登记独占application/retrieval.py、新test_retrieval_tag_denial.py、相关版本断言和合同／报告；先红测再修，仅解决该冲突，保留其他动作／真实肯定／模糊与负意图行为、原索引文本／缓存／源身份。旧worker冻结，0Provider／预留／人评。
 

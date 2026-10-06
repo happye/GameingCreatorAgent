@@ -29,3 +29,5 @@ flowchart LR
 执行先后：F001 确认项目环境与合同编译；媒体／存储并行；随后模型／存储集成；检索；最后真实 gate。每个任务用 `sprint-template.md` 记录 owner、分支、验证和转交动作。正式 UI、Creative Planner、Rendering 与商业系统在原定质量门槛通过之后另立阶段任务。
 
 用户反馈后的当前纠正任务是F009连续动作与F010主体细节；已有V6分析Demo并不解除F006。接续按[sprint-actor-detail-matching](./sprint-actor-detail-matching.md)：先冻结主体/部件/证据合同和纯AND匹配，随后Application ports，再并行Provider/共享预算与sidecar持久化，最后由root接CLI/UI并做两候选有界试验。自由文本检索不自动得到严格复合保证，默认查询仍离线；具体归属、实现状态和检查点以HANDOFF及assignments为准。
+
+2026-10-06用户要求主线交付优先，非阻断小bug归档后继续阶段任务，见agent-workflow。当前离线主线补齐F005／F006的长录像检索规模与全链路验证，见[sprint-long-footage-retrieval](./sprint-long-footage-retrieval.md)；F009/F010真实理解门槛及待授权调用保持未通过。按总方案推进，不用诊断微修替代阶段功能，也不越过原独立质量gate进入正式桌面／商业阶段。

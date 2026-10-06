@@ -264,3 +264,124 @@ def test_external_model_path_is_refused(provider, monkeypatch, tmp_path):
         result.status == ProviderStatus.FAILED and result.error.code == "embedding.assets_invalid"
     )
     assert not calls
+
+
+def test_large_request_keeps_global_vector_identity_and_reuses_cache(provider, monkeypatch):
+    calls = []
+
+    async def indexed_worker(arguments, context, **kwargs):
+        value = json.loads(Path(arguments[-1]).read_text())
+        calls.append(value["texts"])
+        vectors = []
+        for text in value["texts"]:
+            position = int(text.rsplit(" ", 1)[1]) % 384
+            vectors.append([float(index == position) for index in range(384)])
+        return ProcessOutput(
+            json.dumps(
+                {"schema": WORKER_SCHEMA, "vectors": vectors, "nativeLibraries": []}
+            ).encode(),
+            b"",
+        )
+
+    monkeypatch.setattr(
+        "gamingcreator.infrastructure.local_embeddings.run_media_process", indexed_worker
+    )
+    texts = tuple(f"passage: indexed observation {index}" for index in range(2051))
+    first = embed(provider, request(texts), timeout=120)
+    assert first.status == ProviderStatus.COMPLETED
+    assert [len(batch) for batch in calls] == [1024, 1024, 3]
+    for index, item in enumerate(first.output):
+        assert item.subject_id == f"run:{index}"
+        assert item.text_hash == hashlib.sha256(texts[index].encode()).hexdigest()
+        assert item.vector[index % 384] == 1.0 and item.space == provider.space
+    reordered = tuple(reversed(texts))
+    second = embed(provider, request(reordered), timeout=120)
+    assert second.status == ProviderStatus.COMPLETED
+    assert len(calls) == 3
+    for index, item in enumerate(second.output):
+        original = first.output[len(texts) - index - 1]
+        assert item.subject_id == f"run:{index}"
+        assert (item.vector, item.space, item.text_hash) == (
+            original.vector,
+            original.space,
+            original.text_hash,
+        )
+    details = json.loads(second.metadata.execution_details)
+    assert details["cachedTexts"] == 2051 and details["workerBatches"] == 0
+    assert json.loads(first.metadata.execution_details)["workerBatches"] == 3
+
+
+def test_large_escaped_texts_stay_within_worker_input_limit(provider, monkeypatch):
+    calls = []
+    install_fake(monkeypatch, calls)
+    provider.use_cache = False
+    texts = tuple(f"passage: {index} " + "界" * 8000 for index in range(400))
+    result = embed(provider, request(texts))
+    assert result.status == ProviderStatus.COMPLETED
+    assert len(result.output) == 400 and len(calls) > 1
+    assert [text for batch in calls for text in batch["texts"]] == list(texts)
+    assert all(
+        len(json.dumps(batch, ensure_ascii=True).encode()) < 16 * 1024 * 1024 for batch in calls
+    )
+
+
+def test_cancel_between_batches_returns_no_partial_output(provider, monkeypatch):
+    calls = []
+    install_fake(monkeypatch, calls)
+    context = CancellationContext("run", 10)
+    original_cache = provider._cache
+
+    def cache_then_cancel(text, vector):
+        original_cache(text, vector)
+        if text == "passage: observation 1023":
+            context.cancelled.set()
+
+    monkeypatch.setattr(provider, "_cache", cache_then_cancel)
+    texts = tuple(f"passage: observation {index}" for index in range(1025))
+    result = asyncio.run(provider.embed(request(texts), context))
+    assert result.status == ProviderStatus.CANCELLED and result.output is None
+    assert result.error.code == "embedding.cancelled" and len(calls) == 1
+    assert provider._cached(texts[1023]) is not None
+    assert provider._cached(texts[1024]) is None
+    assert list((provider.repository / ".cache/embedding-requests").iterdir()) == []
+
+
+def test_one_deadline_covers_all_batches(provider, monkeypatch):
+    calls = []
+    monkeypatch.setattr("gamingcreator.infrastructure.local_embeddings.MAX_TEXTS", 1)
+
+    async def slow_worker(arguments, context, **kwargs):
+        calls.append(arguments)
+        await asyncio.sleep(0.35)
+        return ProcessOutput(
+            json.dumps(
+                {"schema": WORKER_SCHEMA, "vectors": [[1.0] + [0.0] * 383], "nativeLibraries": []}
+            ).encode(),
+            b"",
+        )
+
+    monkeypatch.setattr(
+        "gamingcreator.infrastructure.local_embeddings.run_media_process", slow_worker
+    )
+    result = embed(provider, timeout=0.6)
+    assert result.status == ProviderStatus.FAILED and result.output is None
+    assert result.error.code == "embedding.timeout" and len(calls) == 2
+    assert provider._cached(request().texts[0]) is not None
+    assert provider._cached(request().texts[1]) is None
+    assert list((provider.repository / ".cache/embedding-requests").iterdir()) == []
+
+
+def test_model_change_in_later_batch_discards_that_batch(provider, monkeypatch):
+    calls = []
+    texts = tuple(f"passage: observation {index}" for index in range(1025))
+
+    def change_model(response):
+        if len(calls) == 2:
+            (provider.settings.model_directory / "tokenizer.json").write_bytes(b"changed model")
+
+    install_fake(monkeypatch, calls, malformed=change_model)
+    result = embed(provider, request(texts))
+    assert result.status == ProviderStatus.FAILED and result.output is None
+    assert result.error.code == "embedding.model_integrity" and len(calls) == 2
+    assert provider._cached(texts[1023]) is not None
+    assert provider._cached(texts[1024]) is None

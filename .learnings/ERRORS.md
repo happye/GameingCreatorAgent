@@ -1,5 +1,13 @@
 # Errors
 
+## [ERR-20261006-017] long_retrieval_fixture_boundaries
+
+**Logged**: 2026-10-06
+**Status**: resolved
+**Area**: tests
+
+长事件首轮定向检查四失败：2051向量写入Windows真实缓存超过测试helper的10秒默认期限；65ms跨批超时测试被文件I/O提前消耗；1280短区间却复用100ms图片，违反原证据重叠合同。测试使用120秒容量期限／留充分余量的总超时对照，并为每个合成事件注册对应时间证据，不放宽生产取消或证据规则。二轮定向全部通过。源路径检索再次猜测不存在的文件，已有ERR-015规则仍适用：先rg --files后读取。
+
 ## [ERR-20261006-016] browser_wait_keyword_argument
 
 第二次核验又因非函数形式wait_for_function被页面CSP禁止动态eval中断，追加1普通搜索，0Provider；改为函数表达式，不放宽生产CSP／bypassCSP。两次失败分别保留回执，正式四搜索另计。真实浏览器核验脚本先用明确函数及arg=，复用实际已通过的调用形式。

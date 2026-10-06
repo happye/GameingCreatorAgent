@@ -39,7 +39,7 @@ REQUIRED_FILES = frozenset(
         "special_tokens_map.json",
     }
 )
-MAX_TEXTS = 1024
+MAX_TEXTS = 1024  # Per worker request, not per complete search.
 
 
 @dataclass(frozen=True, slots=True)
@@ -162,6 +162,7 @@ class LocalEmbeddingProvider:
         complete: bool,
         cached: int,
         native: object = None,
+        worker_batches: int = 0,
     ) -> InvocationMetadata:
         return InvocationMetadata(
             provider=self.space.provider,
@@ -189,6 +190,7 @@ class LocalEmbeddingProvider:
                     "cachedTexts": cached,
                     "cacheEnabled": self.use_cache,
                     "totalTexts": len(request.texts),
+                    "workerBatches": worker_batches,
                     "apiCostOnly": True,
                     "hardwareCostMeasured": False,
                     "nativeLibraries": native,
@@ -297,14 +299,14 @@ class LocalEmbeddingProvider:
     async def embed(
         self, request: EmbeddingRequest, context: CancellationContext
     ) -> ProviderResult[tuple[Embedding, ...]]:
-        started, cached_count = time.monotonic(), 0
+        started, cached_count, worker_batches = time.monotonic(), 0, 0
         try:
             context.check_cancelled()
             if (
                 request.run_id != context.run_id
                 or not request.run_id
                 or request.schema_version != "embedding-v1"
-                or not 1 <= len(request.texts) <= MAX_TEXTS
+                or not request.texts
                 or any(
                     not isinstance(text, str)
                     or not 1 <= len(text) <= 8192
@@ -327,63 +329,76 @@ class LocalEmbeddingProvider:
                     interpreter = (self.repository / ".venv/Scripts/python.exe").resolve()
                     if not interpreter.is_relative_to(self.repository) or not interpreter.is_file():
                         raise ValueError("embedding.runtime_missing")
-                    with TemporaryDirectory(prefix="embed-", dir=cache) as directory:
-                        path = Path(directory) / "request.json"
-                        path.write_bytes(
-                            _canonical(
-                                {
-                                    "schema": WORKER_SCHEMA,
-                                    "repository": str(self.repository),
-                                    "modelDirectory": str(self.settings.model_directory.resolve()),
-                                    "modelFiles": [
-                                        asdict(item) for item in self.settings.model_files
-                                    ],
-                                    "nativeDirectory": None
-                                    if self.settings.native_library_directory is None
-                                    else str(self.settings.native_library_directory.resolve()),
-                                    "nativeFiles": [
-                                        asdict(item) for item in self.settings.native_files
-                                    ],
-                                    "texts": [request.texts[index] for index in missing],
-                                    "cpuThreads": self.settings.cpu_threads,
-                                }
+                    # Bound both worker output count and escaped JSON input bytes.
+                    # Reserve 1 MiB of the worker's 16 MiB input cap for its manifest.
+                    batch_size = min(
+                        MAX_TEXTS,
+                        (15 * 1024 * 1024)
+                        // max(len(_canonical(request.texts[index])) + 1 for index in missing),
+                    )
+                    for start in range(0, len(missing), batch_size):
+                        context.check_cancelled()
+                        batch = missing[start : start + batch_size]
+                        worker_batches += 1
+                        with TemporaryDirectory(prefix="embed-", dir=cache) as directory:
+                            path = Path(directory) / "request.json"
+                            path.write_bytes(
+                                _canonical(
+                                    {
+                                        "schema": WORKER_SCHEMA,
+                                        "repository": str(self.repository),
+                                        "modelDirectory": str(
+                                            self.settings.model_directory.resolve()
+                                        ),
+                                        "modelFiles": [
+                                            asdict(item) for item in self.settings.model_files
+                                        ],
+                                        "nativeDirectory": None
+                                        if self.settings.native_library_directory is None
+                                        else str(self.settings.native_library_directory.resolve()),
+                                        "nativeFiles": [
+                                            asdict(item) for item in self.settings.native_files
+                                        ],
+                                        "texts": [request.texts[index] for index in batch],
+                                        "cpuThreads": self.settings.cpu_threads,
+                                    }
+                                )
                             )
-                        )
-                        output = await run_media_process(
-                            [
-                                str(interpreter),
-                                "-I",
-                                "-B",
-                                str(Path(__file__).with_name("embedding_worker.py")),
-                                str(path),
-                            ],
-                            context,
-                            max_stdout_bytes=16 * 1024 * 1024,
-                            max_stderr_bytes=1024 * 1024,
-                        )
-                        response = json.loads(output.stdout)
-                        if (
-                            not isinstance(response, dict)
-                            or response.get("schema") != WORKER_SCHEMA
-                            or set(response) != {"schema", "vectors", "nativeLibraries"}
-                        ):
-                            raise ValueError("embedding.response_invalid")
-                        values = response["vectors"]
-                        if not isinstance(values, list) or len(values) != len(missing):
-                            raise ValueError("embedding.response_invalid")
-                        native = response["nativeLibraries"]
-                        decoded = [self._vector(value) for value in values]
-                        # Do not cache a response from weights modified during native inference.
-                        await self._verify(context)
-                        for index, vector in zip(missing, decoded, strict=True):
-                            context.check_cancelled()
-                            vectors[index] = vector
-                            if self.use_cache:
-                                try:
-                                    self._cache(request.texts[index], vector)
-                                except OSError:
-                                    # A locked stale cache file must not discard a verified vector.
-                                    pass
+                            output = await run_media_process(
+                                [
+                                    str(interpreter),
+                                    "-I",
+                                    "-B",
+                                    str(Path(__file__).with_name("embedding_worker.py")),
+                                    str(path),
+                                ],
+                                context,
+                                max_stdout_bytes=16 * 1024 * 1024,
+                                max_stderr_bytes=1024 * 1024,
+                            )
+                            response = json.loads(output.stdout)
+                            if (
+                                not isinstance(response, dict)
+                                or response.get("schema") != WORKER_SCHEMA
+                                or set(response) != {"schema", "vectors", "nativeLibraries"}
+                            ):
+                                raise ValueError("embedding.response_invalid")
+                            values = response["vectors"]
+                            if not isinstance(values, list) or len(values) != len(batch):
+                                raise ValueError("embedding.response_invalid")
+                            native = response["nativeLibraries"]
+                            decoded = [self._vector(value) for value in values]
+                            # Do not cache a response from weights modified during native inference.
+                            await self._verify(context)
+                            for index, vector in zip(batch, decoded, strict=True):
+                                context.check_cancelled()
+                                vectors[index] = vector
+                                if self.use_cache:
+                                    try:
+                                        self._cache(request.texts[index], vector)
+                                    except OSError:
+                                        # A locked stale cache file must not discard a verified vector.
+                                        pass
                 context.check_cancelled()
                 output_embeddings = tuple(
                     Embedding(
@@ -397,7 +412,14 @@ class LocalEmbeddingProvider:
             return ProviderResult(
                 ProviderStatus.COMPLETED,
                 output_embeddings,
-                self._metadata(request, started, complete=True, cached=cached_count, native=native),
+                self._metadata(
+                    request,
+                    started,
+                    complete=True,
+                    cached=cached_count,
+                    native=native,
+                    worker_batches=worker_batches,
+                ),
             )
         except asyncio.CancelledError:
             code, status = "embedding.cancelled", ProviderStatus.CANCELLED
@@ -422,6 +444,8 @@ class LocalEmbeddingProvider:
         return ProviderResult(
             status,
             None,
-            self._metadata(request, started, complete=False, cached=cached_count),
+            self._metadata(
+                request, started, complete=False, cached=cached_count, worker_batches=worker_batches
+            ),
             ProviderFailure(code, False),
         )

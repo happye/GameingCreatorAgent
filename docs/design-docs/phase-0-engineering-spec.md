@@ -68,6 +68,8 @@ ASR 使用本地 faster-whisper tiny，固定权重/运行库 hash 与 CPU int8�
 
 Embedding 使用固定 `Xenova/multilingual-e5-small` ONNX 权重，384 维、attention-mask mean pooling、L2，query/passages 分别用 `query: `/`passage: ` 前缀；最多 512 token，v2 推理 batch=1。空间身份包含权重修订、文件 hash、推理合同/pooling/maxTokens/batchSize；缓存不跨不一致空间混用。同步推理同样通过可终止本地 worker 执行，不下载未知模型。
 
+完整搜索不再受1024文本请求上限限制：本地Provider将缺失向量按每worker最多1024文本及转义JSON字节容量顺序拆分，固定单文本推理合同／空间／text hash保持。每批完整校验输出与模型文件后才缓存，结果subjectId仍按整次请求编号；全批共享一个取消／超时期。仅全部成功后返回向量并由原事务保存全部事件索引与搜索，失败不返回部分搜索；已校验缓存可供后续重算复用。executionDetails的workerBatches记录实际worker尝试数，热缓存为0，不代表API请求。真实小时级素材全链路／峰值内存仍需另测。
+
 ## 4. SQLite schema v3 与迁移
 
 当前 schema v3 共 13 个 STRICT 表；物理定义在 `infrastructure/sqlite_schema.py`，使用事务迁移和读写双方结构验证。v1 的九表定义保持原样，v2 为 transcript_segments 添加 uncertainty，v3 加 embedding/检索四表。迁移历史与 user_version 一致；未来版本、版本断层和定义漂移拒绝打开。只由 writer 升级，read-only 不自动迁移。详见 [timeline-storage](../references/timeline-storage.md)。
