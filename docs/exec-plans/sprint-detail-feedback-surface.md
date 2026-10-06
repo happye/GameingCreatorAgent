@@ -27,6 +27,12 @@
 
 ## 已汇报与下一步
 
+最终完整verify **1661 passed/1 skip，152.15s**，Ruff128/mypy68/CLI/console通过，两次离线wheel同SHA `b64c37f66b09620ac1ff5ac574c44c1d8aa32676422c9f3050ab203652bcfc26`；.cache/detail-description-feedback-verify.log，观察结果与检查点另存verify-summary.json。源码自ad43251后未再改，后续只有交接/报告更新。原F006/F009/F010继续false；人工描述确认不等于动作或U10通过。
+
+生产服务health/状态/CIM命令/精确仓库和工具链EXE全部匹配后，仅停止旧自有child12980，父38700自然结束；新35992/parent35892 NoBrowser启动并重验，production-description-feedback-report.json。实际HTTP原40事件run读出3 accepted，原33事件run读出1 rejected，v4missing无旧反馈，草稿ready。重启前后源表/侧车/人工记录/冻结proposal SHA不变、0Provider/预算变更，PID只是本次快照。
+
+面向用户最终报告report-2026-10-06-description-feedback.md已补完整结果，说明现在能同时看原描述和确认/判错原因、其他仍待核对、换版本隔离及真实模型限制。下一步按总路线准备失败案例的真实v4对照与独立人评；新两次/¥4.07/原6图DeepSeek授权继续待明确答复，未新增请求或动旧unknown。
+
 最终定向补强：报告worker6aa603c→18fddea已整合，76新报告反例+111纯反馈+17 HTTP/browser与相关旧检查联合 **244 passed/44.26s**，.cache/detail-description-feedback-final-targeted.log；Ruff全src/tests及reader/service mypy通过。报告validator用原始UTF8文本核验完整来源链，reader已hook；新HTTP反例正确重绑报告SHA但候选不同仍409。独立review确认来源缺口已堵，未引用的报告case不获得确认。真实probe补逐条原描述可见性后重验通过，截图已视觉核对，0调用/写账本。接下来先保存当前实现，再运行完整verify；不复用历史1457结果。
 
 ## 2026-10-06 接入检查点

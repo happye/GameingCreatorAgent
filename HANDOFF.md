@@ -6,9 +6,9 @@
 
 ## 当前结论
 
-当前切片为已有描述反馈回工作台：worker纯codec09dae6f→fb77ab5、报告validator6aa603c→18fddea已整合；root reader/service/UI与17 HTTP/browser完成，补来源检查后联合244 passed/44.26s、Ruff/mypy通过。原报告SHA之外，还逐层核对case/run/event/request/completed attempt/payload及shot/actor，reviewer确认先前来源缺口已堵。真实旧反馈3 accepted/1 rejected已原字节登记新ignored命名空间，桌面1366/手机390、逐条原描述、匹配旁反馈及v4隔离重验通过；源表/旧侧车/账本/原报告/反馈/新proposal SHA不变，0新HTTP/费用。完整verify待当前实现检查点后运行，随后核验自有服务身份并更新、补最终报告与普通push；见sprint-detail-feedback-surface.md。新详细报告已生成report-2026-10-06-description-feedback.md，完整结果待补；新v4授权仍待答。
+当前描述反馈切片已完成，root实现ad43251，worker09dae6f→fb77ab5与6aa603c→18fddea整合冻结。完整verify **1661 passed/1 skip，152.15s**，Ruff128/mypy68/CLI及两次同SHA离线wheel `b64c37f66b09620ac1ff5ac574c44c1d8aa32676422c9f3050ab203652bcfc26`；.cache/detail-description-feedback-verify.log，最终定向244 passed/44.26s。反馈只读且描述级，原报告候选/attempt/payload及当前result/shot/actor完整核验，独立review确认来源缺口已堵。真实3 accepted/1 rejected、原描述、桌面/手机、匹配旁标记、v4隔离重验通过，0新HTTP/费用，源表/旧侧车/账本/原报告/反馈/冻结proposal SHA不变。旧12980及38700的health/状态/CIM命令/仓库身份匹配后仅停止自有子PID；新版35992/parent35892已health/状态/命令核对，并重新读取40事件原三确认与33事件原单判错、v4missing、querydraft ready；production-description-feedback-report.json，PID仅快照。最新详细汇报report-2026-10-06-description-feedback.md已补齐。Git待普通push后独立核对；新v4授权仍待答，F006/F009/F010和旧unknown不变，下一步沿原路线准备真实对照与人工质量核对，不冒称识别已修好。
 
-接下来的离线任务是已有人工描述反馈的只读工作台标记，见sprint-detail-feedback-surface.md：新worker纯codec/projection先行，root后续reader/UI；必须绑定原报告SHA和run/event/request/payload/shot/actor，描述级接受/拒绝不能扩大成属性或U10标签。原三个接受和一个拒绝已给过，无需重复人评；新v4授权仍待答。查询草稿交付已完成，勿重复实现。
+本切片起始计划（已完成）：已有人工描述反馈的只读工作台标记，见sprint-detail-feedback-surface.md。原三个接受和一个拒绝已给过，无需重复人评；查询草稿交付也已完成，勿重复实现。后续不把描述确认扩大为属性、动作或U10标签。
 
 最新接续为受控查询草稿：worker623fca1→f30e812、语义修复f5aef6f→85fa5a0已整合；root本地draft API、可编辑条件/未处理原文/明确子集确认及迟到响应隔离保存f32e45e。最新完整verify **1457 passed/1 Windows文件symlink权限skip，131.50s**，Ruff122/mypy65/CLI及两个同SHA离线wheel `4e3722043e682da1c37370121a415d589b685c9d4e5dccd0132621c84ad241f9`；.cache/detail-query-draft-verify.log。定向197 passed/39.23s（包括134解析反例）；真实28–29秒v2结果/草稿子集提醒与v4缺结果，桌面1366/手机390检查通过，0页面错误/外部请求/新Provider，源表/侧车/proposal SHA不变。证据artifacts/detail-temporal-validation/query-draft-browser-report.json；生产12980/parent38700经health/状态/命令身份及正向ready/否定unsupported+null重验，production-query-draft-report.json，PID仅快照。最新详细汇报report-2026-10-06-query-draft.md。F006/F009/F010继续false，真实v4识别未验证；用户提醒额度剩8%，优先保存检查点，不自行推断停工。
 

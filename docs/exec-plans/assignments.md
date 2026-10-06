@@ -1,8 +1,8 @@
 # Active assignments
 
-当前描述反馈切片：detail_cost_history `.worktrees/detail-feedback` / `codex/detail-feedback` 的09dae6f纯codec与6aa603c报告来源validator已整合fb77ab5/18fddea并冻结；root独占reader/service/UI、17 HTTP/browser与共享记录。query_draft_review只读复核确认报告来源反例已堵，无写入。最终定向244通过、真实桌面/手机及原描述保留重验通过；完整verify待实现检查点后运行，见sprint-detail-feedback-surface.md。只描述级反馈，F006/F009/F010不变，旧结果不覆盖，新付费授权仍待答。
+描述反馈切片已完成：detail_cost_history `.worktrees/detail-feedback` / `codex/detail-feedback` 的09dae6f与6aa603c已整合fb77ab5/18fddea并冻结；root reader/service/UI/17 HTTP-browser实现ad43251。query_draft_review只读确认来源反例已堵。最终定向244、完整verify1661/1skip通过，真实桌面/手机/原描述保留及生产35992/35892读取重验通过；见sprint-detail-feedback-surface与详细report。detail_workspace_review只读核对下一离线小切片，不写文件/不调用模型。只描述级反馈，F006/F009/F010和unknown不变，新付费授权仍待答。
 
-受控查询草稿：detail_cost_history在`.worktrees/detail-query-draft` / `codex/detail-query-draft`的623fca1及f5aef6f已整合f30e812/85fa5a0并冻结；root API/static/22 HTTP-browser及共享记录保存f32e45e。定向197通过、真实桌面/手机只读浏览通过，完整verify运行中；见sprint-detail-query-draft.md。纯离线零Provider，不把未知要求丢弃后称原句满足。
+受控查询草稿已完成：detail_cost_history在`.worktrees/detail-query-draft` / `codex/detail-query-draft`的623fca1及f5aef6f已整合f30e812/85fa5a0并冻结；root API/static/22 HTTP-browser保存f32e45e。定向197、完整verify1457/1skip和真实桌面/手机通过；见sprint-detail-query-draft.md。本切片1661完整回归亦通过。纯离线零Provider，不把未知要求丢弃后称原句满足。
 
 v4只读对照方案：detail_parts_v3 `.worktrees/detail-v4-proposal` / `codex/detail-v4-proposal`的ac72b4d已整合34135cc并冻结。原两候选六帧新v4请求与审核页在artifacts/detail-temporal-validation，18 tests及实际dry-run/桌面手机6图检查通过，不发送、预留或重试。新授权问题已提出但未收到，仍未批准。query_draft_review只读审查的提前确认、null保留手动行及语义歧义均已修复并回归，无自身文件修改。
 
