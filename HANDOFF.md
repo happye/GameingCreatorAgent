@@ -6,6 +6,8 @@
 
 ## 当前结论
 
+接下来的离线任务是已有人工描述反馈的只读工作台标记，见sprint-detail-feedback-surface.md：新worker纯codec/projection先行，root后续reader/UI；必须绑定原报告SHA和run/event/request/payload/shot/actor，描述级接受/拒绝不能扩大成属性或U10标签。原三个接受和一个拒绝已给过，无需重复人评；新v4授权仍待答。查询草稿交付已完成，勿重复实现。
+
 最新接续为受控查询草稿：worker623fca1→f30e812、语义修复f5aef6f→85fa5a0已整合；root本地draft API、可编辑条件/未处理原文/明确子集确认及迟到响应隔离保存f32e45e。最新完整verify **1457 passed/1 Windows文件symlink权限skip，131.50s**，Ruff122/mypy65/CLI及两个同SHA离线wheel `4e3722043e682da1c37370121a415d589b685c9d4e5dccd0132621c84ad241f9`；.cache/detail-query-draft-verify.log。定向197 passed/39.23s（包括134解析反例）；真实28–29秒v2结果/草稿子集提醒与v4缺结果，桌面1366/手机390检查通过，0页面错误/外部请求/新Provider，源表/侧车/proposal SHA不变。证据artifacts/detail-temporal-validation/query-draft-browser-report.json；生产12980/parent38700经health/状态/命令身份及正向ready/否定unsupported+null重验，production-query-draft-report.json，PID仅快照。最新详细汇报report-2026-10-06-query-draft.md。F006/F009/F010继续false，真实v4识别未验证；用户提醒额度剩8%，优先保存检查点，不自行推断停工。
 
 v4只读方案worker ac72b4d已整合34135cc并冻结；root dry-run重验原两候选六帧、新requestHash和源DB/侧车/预算不变，0HTTP。artifacts/detail-temporal-validation/pilot-proposal.json SHA06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6；新增保守预留¥4.065536，共享精分析上限至少¥4.08404212，旧task unknown另保留。审核页pilot-review.html在桌面/手机6图全加载、无横溢/外部请求，旧报告/反馈与冻结清单均不改。已询问新两次v4/最高¥4.07/DeepSeek原6帧新提示参数的授权，答复尚未收到；executionAuthorized=false，不可使用旧两次许可执行。生产旧16808/54620均已不存在、未停止任何PID；验证后新版启动及核对通过见上一段。Git最终远端状态见sprint，不能把历史记录当当前HEAD。
