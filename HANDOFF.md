@@ -6,7 +6,7 @@
 
 ## 当前可恢复状态
 
-新切片已开始：同候选对照人工记录，sprint-detail-pilot-review.md。root顺序负责纯Application记录合同、Infrastructure独立记录包/本地记录页、新测试和现有生成器集成，旧worker冻结。目标为可填写／载入／下载及来源重验，缺v4结果禁填，日期/填写人不是验收。开始时5bc7029干净、scaffold通过；本切片尚无新实现/验证，1683为上一完整基线。先完成合同，再接页面并实际验证；0模型/预算。
+新切片：同候选对照人工记录，sprint-detail-pilot-review.md。root顺序完成纯Application合同、Infrastructure独占五文件包、UI renderer/static JS及原生成器--review-editor/--review-file入口，旧worker冻结。定向87/11.66s、Ruff/strict mypy通过；真实六图1366/390编辑页禁填缺结果、空记录下载/载入/再次下载字节一致、错判断拒绝不改表单、空记录包再读/summary八项未核对通过。源DB/侧车/账本/原资料不变，0模型/预算/新人工结论。实际入口artifacts/detail-pilot-review-20261006/review-editor.html和detail-pilot-review-blank-record-20261006/review-summary.html。最新源码将保存下一检查点；新完整verify尚未运行，1683仍上次基线。下一动作完整验证、同步指南与通俗报告、普通分支发布。
 
 - 当前分支 codex/visual-details；最新源码检查点0a9c4af。worker对照生成器b58159d已整合4e2829a，再由root修复本地文件下载、条件标签及中文说明；worker原worktree冻结。
 - 同候选旧版／新版对照页已可直接打开：artifacts/detail-pilot-comparison-20261006-final/comparison.html。原六张画面、旧描述、三个确认与一个判错均保留；新版两个精确请求没有结果，明确显示“未执行／暂无结果”，不继承旧人工结论。

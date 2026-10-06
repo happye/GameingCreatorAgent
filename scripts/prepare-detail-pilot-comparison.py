@@ -17,6 +17,7 @@ from gamingcreator.application.detail_description_feedback import (
     project_description_feedback,
 )
 from gamingcreator.application.detail_description_report import validate_description_report
+from gamingcreator.application.detail_pilot_review import review_entity_ids, validate_pilot_review
 from gamingcreator.application.detail_query import loads_constraint, match_report, query_options
 from gamingcreator.application.detail_refinement import canonical_request_json
 from gamingcreator.application.detail_refinement_budget import canonical_detail_json, payload_hash
@@ -30,8 +31,13 @@ from gamingcreator.infrastructure.deepseek_detail_temporal import (
     temporal_refinement_settings,
 )
 from gamingcreator.infrastructure.deepseek_vision import _jpeg_width, _json, _SchemaError
+from gamingcreator.infrastructure.detail_pilot_review_files import (
+    read_pilot_review_file,
+    write_pilot_review_bundle,
+)
 from gamingcreator.infrastructure.detail_refinement_sidecar import reuse_or_refuse
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
+from gamingcreator.ui.pilot_review import render_review_editor, render_review_summary
 
 _MAX_JSON_BYTES = 1_048_576
 _CASES = {"actor-separation", "held-item-shape"}
@@ -551,7 +557,12 @@ def main(argv: list[str] | None = None) -> int:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--dry-run", action="store_true")
     mode.add_argument("--output-dir", type=Path)
+    review_mode = parser.add_mutually_exclusive_group()
+    review_mode.add_argument("--review-editor", action="store_true")
+    review_mode.add_argument("--review-file", type=Path)
     args = parser.parse_args(argv)
+    if args.review_editor and args.dry_run:
+        parser.error("--review-editor requires --output-dir.")
     try:
         comparison = asyncio.run(
             prepare_comparison(
@@ -567,8 +578,37 @@ def main(argv: list[str] | None = None) -> int:
                 for case in cast(list[dict[str, object]], comparison["cases"])
             ],
         }
-        if args.output_dir is not None:
+        if args.review_file is not None:
+            input_bytes = read_pilot_review_file(args.review_file)
+            template = review_template(comparison)
+            review = validate_pilot_review(
+                input_bytes.decode("utf-8-sig"),
+                expected_template=template,
+                entity_ids_by_case=review_entity_ids(comparison),
+            )
+            summary["judgedCaseIds"] = list(review.judged_case_ids)
+            summary["phase0QualityGate"] = None
+            if args.output_dir is not None:
+                summary["outputs"] = write_pilot_review_bundle(
+                    comparison=comparison,
+                    expected_template=template,
+                    input_path=args.review_file,
+                    input_bytes=input_bytes,
+                    output_dir=args.output_dir,
+                    summary_html=render_review_summary(comparison, review),
+                )
+        elif args.output_dir is not None:
+            editor = (
+                render_review_editor(comparison, review_template(comparison))
+                if args.review_editor
+                else None
+            )
             summary["outputs"] = write_comparison(comparison, args.output_dir)
+            if editor is not None:
+                path = args.output_dir / "review-editor.html"
+                with path.open("xb") as stream:
+                    stream.write(editor.encode("utf-8"))
+                summary["outputs"][str(path)] = _sha(editor.encode("utf-8"))
         print(json.dumps(summary, ensure_ascii=False, indent=2))
         return 0
     except (OSError, UnicodeError, ValueError, KeyError, AppError, _SchemaError) as error:
