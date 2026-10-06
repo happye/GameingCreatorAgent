@@ -72,7 +72,7 @@ def test_retrieval_does_not_match_internal_alias_and_keeps_raw_candidate_identit
     assert search(data, "f0", mode="lexical").candidates == ()
     assert search(data, "f8", mode="lexical").candidates == ()
     result = search(data, "跳跃", mode="lexical")
-    assert result.retrieval_version == RETRIEVAL_VERSION == "bm25-e5-rrf-v5"
+    assert result.retrieval_version == RETRIEVAL_VERSION == "bm25-e5-rrf-v6"
     candidate = result.candidates[0]
     assert candidate.observable_facts == observed.observable_facts
     assert candidate.source_range == observed.source_range

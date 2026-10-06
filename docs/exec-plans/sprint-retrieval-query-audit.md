@@ -16,3 +16,9 @@ root顺序负责本轮审计脚本／证据（ignored artifacts/retrieval-query-
 据此实施有限修复：复用既有动作词表为正向英文jump／shoot／move／interact及已有attack／fight变体补中文规范词。扩展与否认过滤共用同一ASCII字母／数字／下划线边界，支持中英文相邻、NFKC／大小写；明确“未见jumping”不会作为正向命中，包含词片段的标识符不扩展。否定意图仅保留原行为，不声称支持缺席语义；英文弯引号与直引号一致。版本bm25-e5-rrf-v6，原文／标签／passage哈希／候选身份／模型阈值不变，现有有限否认合同继续生效。首轮3 failed／157 passed暴露混写边界不一致及测试误把原“没有”词法命中当应为空；修正后243定向通过，另新增弯引号反例待最终完整验证。
 
 同源复测已生成after-fix.json：新版jump/jumping词法均2、jumping混合1→2；move/moving词法0→10。旧版jump/jumping0→2，jumping混合0→2，move/moving0→10。射击中英文及完整Boss原查询保持0和8（旧版Boss10）边界，无新识别能力或人评；项目全文件／DB／侧车／预算前后相同。下一步逐项比较中文原查询与源事实身份、浏览器英文查询验证和完整verify。
+
+源码检查点b7723aa。comparison.json已验证30中文查询逐项原结果／信号相同，中英文别名对应同eventId和源时钟；原English jump标签另有词法得分，不能强求不同原查询的BM25 why字符串相同。源项目全字节和查询记录不变，前／后JSON摘要480858c48b52783d16c1c9b41aba5f0e737e7c41365cb08b1c060b424b7e221d／601e015179023e1781631b5bb8d2d35880fa247b738064511089255d26c9ced5。
+
+真实1366/390英文jumping2／moving10、十位下载与当前响应一致、11.5秒回看／证据／无溢出／无外部请求通过，browser-report.json。此浏览器沿普通API追加4次检索记录，源基础表／证据／精分析／预算保持；与纯审计0记录的范围区分。已向用户详细汇报中英文恢复与仍未证明射击／Boss条件。
+
+首轮完整verify 2 failed／1821 passed／1权限skip，199.42s：presentation测试还有一处v5常量未同步，已全球rg后更新为v6；content_type错误输入测试单独复测通过，首轮详细native输出未被Transcript完整保留，原因未确认，下一完整运行增加JUnit文件保存失败详情，不能称已全部通过。当前0新付费／人评，48新行为测试、完整验证与生产更新仍待最终确认。
