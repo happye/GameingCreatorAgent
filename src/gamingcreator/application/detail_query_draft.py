@@ -111,6 +111,13 @@ def _pattern(value: str) -> re.Pattern[str]:
     return re.compile(r"(?<![A-Za-z0-9_])(?:" + value + r")(?![A-Za-z0-9_])", re.IGNORECASE)
 
 
+def _logic_pattern(chinese: str, english: str) -> re.Pattern[str]:
+    return re.compile(
+        r"(?:" + chinese + r")|(?<![A-Za-z0-9_])(?:" + english + r")(?![A-Za-z0-9_])",
+        re.IGNORECASE,
+    )
+
+
 def _chinese(value: str) -> bool:
     return any("\u4e00" <= character <= "\u9fff" for character in value)
 
@@ -192,42 +199,48 @@ _AND = _pattern(r"以及|并且|而且|和|且|与|并|and")
 _DE = re.compile("的")
 _FORBIDDEN = (
     (
-        _pattern(
-            r"不是|不要|没有|并非|而非|不|无|非|without|not|no|never|neither|nor|isn't|is not|don't"
+        _logic_pattern(
+            r"不是|不要|没有|并非|而非|不|没|未(?!知)|无|非",
+            r"without|not|no|never|neither|nor|isn['’]t|is\s+not|don['’]t|doesn['’]t|didn['’]t"
+            r"|instead\s+of|rather\s+than",
         ),
-        "否定条件尚未支持，不能转换为肯定条件。",
+        "否定或替代条件尚未支持，不能转换为肯定条件。",
     ),
     (
-        _pattern(r"或者|或是|或|还是|任一|其中之一|or|and/or|either|/|／|\|"),
+        _logic_pattern(r"或者|或是|或|还是|任一|其中之一|(?<!<)/|／|\|", r"or|and/or|either"),
         "或者/任选条件尚未支持，不能转换为全部满足。",
     ),
     (
-        _pattern(
-            r"先|然后|随后|之后|之前|再|接着|同时|一直|全程|持续|逐渐|突然|then|before|after|while|followed by|always"
+        _logic_pattern(
+            r"先|然后|随后|之后|之前|后|前|时|再|接着|同时|一直|全程|持续|逐渐|突然",
+            r"then|before|after|while|followed\s+by|always",
         ),
         "先后、持续或同时关系尚未支持。",
     ),
     (
-        _pattern(
-            r"旁边|身后|前面|后面|左侧|右侧|对面|之间|靠近|面对|朝着|对着|跟着|攻击|击中|追着|一起|beside|behind|in front of|next to|near|facing|towards|attacking|chasing|together with"
+        _logic_pattern(
+            r"旁边|身后|前面|后面|左侧|右侧|对面|之间|靠近|面对|朝着|对着|跟着|攻击|击中|追着|一起",
+            r"beside|behind|in\s+front\s+of|next\s+to|near|facing|towards|attacking|chasing|together\s+with",
         ),
         "人物之间、位置或交互关系尚未支持。",
     ),
     (
-        _pattern(
-            r"(?:两个|两名|三个|三名|多个|多名|另一个|另一名|不同|其他)(?=.{0,30}(?:角色|人物|人))|(?:two|three|both|multiple|several|another|other)(?=.{0,60}\b(?:characters?|persons?|people|actors?)\b)|characters|people|actors|persons"
+        _logic_pattern(
+            r"(?:两个|两名|三个|三名|多个|多名|另一个|另一名|不同|其他)(?=.{0,30}(?:角色|人物|人))",
+            r"(?:two|three|both|multiple|several|another|other)(?=.{0,60}\b(?:characters?|persons?|people|actors?)\b)|characters|people|actors|persons",
         ),
         "多个主体条件尚未支持，不能合成同一人物条件。",
     ),
     (
-        _pattern(
+        _logic_pattern(
+            r"(?:和|与)(?=(?:一个|一名).{0,30}(?:角色|人物|人))",
             r"with(?=.{0,80}\b(?:character|person|actor)\b)"
-            r"|and(?=\s+(?:a|an|one|the|another)\b.{0,70}\b(?:character|person|actor)\b)"
-            r"|(?:和|与)(?=(?:一个|一名).{0,30}(?:角色|人物|人))"
+            r"|and(?=\s+(?:a|an|one|the|another)\b.{0,70}\b(?:character|person|actor)\b)",
         ),
         "多个主体或主体之间的关系尚未支持。",
     ),
 )
+_ITEM_SEPARATOR = _logic_pattern(r"[,，、;；。.]|以及|并且|和|与", r"and")
 _PUNCTUATION = frozenset(",，、。.;；:：!?！？")
 _UNKNOWN = "这段文字尚未支持，未加入条件。"
 
@@ -256,6 +269,8 @@ def draft_detail_query(text: str) -> dict[str, object]:
     signatures: set[tuple[tuple[AttributeKind, str], ...]] = set()
     condition_count = 0
     unsupported = len(tuple(_SUBJECT.finditer(text))) > 1
+    last_held_end: int | None = None
+    ambiguous_held = False
     position = 0
     while position < len(text):
         forbidden = next(
@@ -293,6 +308,13 @@ def draft_detail_query(text: str) -> dict[str, object]:
             if condition_count > MAX_QUERY_CONDITIONS:
                 unsupported = True
                 reason = "条件总数超过16项，不能截取一部分代替原要求。"
+            elif (
+                rule.family == "held"
+                and last_held_end is not None
+                and _ITEM_SEPARATOR.search(text[last_held_end:position]) is None
+            ):
+                ambiguous_held = True
+                reason = "相邻持有物描述可能指同一物体，不能自动拆成多个对象；请明确编辑。"
             elif rule.conditions in signatures:
                 reason = "重复出现同一条件，暂保留第一次；请确认是否确实需要多个对象。"
             elif any(
@@ -324,6 +346,8 @@ def draft_detail_query(text: str) -> dict[str, object]:
                         "已识别为" + "、".join(labels) + "。",
                     )
                 )
+            if rule.family == "held":
+                last_held_end = match.end()
             position = match.end()
             continue
         if text[position].isspace() or text[position] in _PUNCTUATION:
@@ -402,7 +426,7 @@ def draft_detail_query(text: str) -> dict[str, object]:
     unparsed = [item.copy() for item in spans if item["kind"] == "unparsed"]
     constraint = (
         None
-        if unsupported or not actor
+        if unsupported or ambiguous_held or not actor
         else json.loads(
             canonical_constraint_json(QueryConstraint(tuple(actor), tuple(environment)))
         )

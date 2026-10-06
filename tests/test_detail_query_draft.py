@@ -315,3 +315,70 @@ def test_draft_is_deterministic_and_returned_mutations_do_not_change_a_subsequen
     original["constraint"]["actorAll"].clear()
     original["unparsed"][0]["text"] = "changed"
     assert checked(text) == expected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "没穿红外套",
+        "未穿红外套",
+        "白发，没穿红外套",
+        "白发，尚未穿红色外套",
+        "doesn't wear red coat",
+        "doesn’t wear red coat",
+        "isn't wearing red coat",
+        "didn't wear red coat",
+        "white hair instead of red coat",
+        "white hair rather than red coat",
+        "white hair未穿红外套",
+        "white hair或black hair",
+    ],
+)
+def test_review_negation_replacement_and_mixed_language_logic_have_no_positive_manifest(text):
+    report = checked(text)
+    assert report["status"] == "unsupported" and report["constraint"] is None
+    assert report["unparsed"]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "奔跑后跳跃",
+        "跳跃前抬头",
+        "奔跑时跳跃",
+        "white hair奔跑后jumping",
+        "running后jumping",
+        "白发，抬头前射击",
+    ],
+)
+def test_review_short_chinese_temporal_markers_do_not_become_simultaneous_and(text):
+    report = checked(text)
+    assert report["status"] == "unsupported" and report["constraint"] is None
+    assert report["unparsed"]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "拿着长杆武器",
+        "拿着长杆 武器",
+        "holding a long rod weapon",
+        "holding a blue flat object weapon",
+        "白发，拿着长杆武器",
+        "长杆：武器",
+        "拿着长杆的武器",
+    ],
+)
+def test_review_adjacent_held_descriptions_do_not_invent_two_objects(text):
+    report = checked(text)
+    assert report["status"] == "needs_review" and report["constraint"] is None
+    assert any("同一物体" in item["reason"] for item in report["unparsed"])
+
+
+@pytest.mark.parametrize(
+    "text", ["拿着长杆和武器", "拿着长杆、武器", "holding a long rod and a weapon"]
+)
+def test_review_explicitly_separated_held_objects_still_have_independent_groups(text):
+    report = checked(text)
+    assert report["status"] == "ready"
+    assert atoms(report) == {("held_shape", "long_rod", "held1"), ("held_class", "weapon", "held2")}

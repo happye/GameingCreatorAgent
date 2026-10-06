@@ -51,3 +51,15 @@ G:\Tools\ChatGPTRepo\GameingCreatorAgent\.venv\Scripts\python.exe -B -m pytest t
 这不是通用语言理解器。姓名、技能、未知修饰、未知颜色及其他自由语法仍需人工编辑；语法只在有明确覆盖的正向同主体短句上ready。重复/互斥保留第一次已识别条件并明确needs_review，用户必须确认只核对这一部分，不能据子集结果宣称整句满足。超过16项不给前16项manifest，超过2048字符直接ValueError，不截断输入。v4视觉理解和F006/F009/F010质量门槛未改变。
 
 已向root说明结果、使用帮助、反例证据和限制。下一步root集成纯POST与页面确认/未处理提示，检查迟到响应和部分确认流程，再执行本切片完整verify；本worker提交仅owned三文件后冻结，不接触server/UI或公共交接。真实v4新对照仍只冻结方案，不发送已有次数用完的请求。
+
+## 语义复查修正检查点
+
+root复查发现首轮有会改变用户要求的遗漏："没穿红外套"、"未穿红外套"、"doesn't wear red coat"可能给出肯定衣物草稿；"white hair instead of red coat"可能将替代要求当成全部满足；"奔跑后跳跃"可能将先后关系当成普通并列；"拿着长杆武器"和"holding a long rod weapon"可能将同一物体拆成两个独立持有物。这些不是可接受的自由语法降级，必须阻止草稿被确认成错误要求。
+
+现在以上否定、替代、时序描述返回unsupported且constraint=null，原文和拦截原因仍完整显示。中文逻辑标记不再套英文词边界，因此"white hair未穿红外套"、"running后jumping"等混写也不会漏掉。"未知名字"仍保留为未处理文字，HTML结束标签仍为原文中的未知片段。
+
+没有明确连接或分隔的相邻持有物描述，返回needs_review且constraint=null，并说明可能指同一物体；空白、冒号和"的"不会被误当成两个物品的分隔。"拿着长杆和武器"、"拿着长杆、武器"、"holding a long rod and a weapon"仍能得到held1/held2两组。没有扩充复合名词理解，用户需要明确编辑这种表述后再生成草稿。
+
+增加**28项**针对否定/替代、中英混写、短时序、复合持有物及明确多物连接的回归，新增测试共134项。修复前必要反例检查为24 failed / 9 passed，真实复现错误；修复后与冻结query、主体匹配及架构联合检查为**174 passed / 0 skip，1.74s，警告作为错误**。Ruff格式/lint和Application模块mypy均定向通过；仍只使用根隔离环境、-B、own PYTHONPATH/cache/basetemp，无Provider、网络或费用请求。
+
+已向root报告现在能正确阻止这些误解、明确列举多物仍可用、自由描述的剩余限制及反例证据。下一步root合入此owned三文件修复，执行已准备的API/浏览器反例和完整verify，向用户汇总结果并同步公共交接；本worker提交后再次冻结，不接触root代码或共享文档。
