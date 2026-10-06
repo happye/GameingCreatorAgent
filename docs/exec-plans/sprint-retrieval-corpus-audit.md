@@ -39,3 +39,5 @@ root负责ignored artifacts/retrieval-corpus-audit的只读脚本、证据和本
 生产health／state／CIM／exe／完整命令／仓库／父子身份重新匹配后替换原51180／46444。当前快照61396／parent56740；新v7与起跳2、旧v2三个描述确认／一个拒绝、新精分析v4缺失及不继承旧反馈通过。生产读验按普通路径追加1次查询；基础表／注册视频证据／精分析反馈预算／冻结proposal保持。PID仅快照，恢复操作前重验。
 
 费用／授权／人工质量不变：0新付费／预留／真实人评，旧未知¥4.065536保留，F006/F009/F010 false。已按持久规则向用户说明作用、JUMP误报纠正、真实复测与不足、完整检查及下一动作。详细汇报将保存在report-2026-10-06-retrieval-corpus-audit.md；网络同步以独立Git核对为准。下一工作核对已有候选中的主体／镜头／动作依据，区分标题／特效／动作，不追加模型请求，不把开发数据当最终人评。
+
+实现、验证和详细汇报已一起提交6763484。网络恢复后一次普通push成功，独立ls-remote确认完整HEAD6763484a67035fc8aa5f26fb7d595880f5b6afcc一致；只更新已授权codex/visual-details，0ae1a68后的积压本地实现也已同步。8文档／72本地链接通过。本次最后仅追加同步记录，不再修改源码／重复完整验证；最新文档checkpoint和远端SHA以.cache/retrieval-corpus-publication.json为准。

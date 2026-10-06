@@ -22,7 +22,7 @@
 
 1. root顺序登记并检查已有候选的主体／镜头连续性／动作文字依据，区分标题、特效、物体存在与真实动作；实际漏检确认后才改检索，不新增分析，不重试unknown run。
 2. F006仍需10–20段代表录像、按原录制会话划分独立测试、事前冻结查询与人工参考事件；主查询至少十个独立可用参考事件，十固定槽至少七个不同事件获人工2/3。开发PV与同视频多版本不能替代独立测试，描述确认不等于检索评级。
-3. 网络稳定后仅补推已授权https://github.com/happye/GameingCreatorAgent的codex/visual-details并独立比对HEAD，不更新main／强推；之前网络失败、最新本地状态尚未独立确认到远端，最后观察0ae1a687976abc1bdded8eae782702c1622a5479，以新receipt和Git为准。不得循环联网或改全局配置。
+3. 网络已恢复，源码／报告6763484a67035fc8aa5f26fb7d595880f5b6afcc已普通push到已授权https://github.com/happye/GameingCreatorAgent的codex/visual-details，独立ls-remote同SHA；此前0ae1a68后的积压提交也已同步。当前仅更新本交接同步记录，最终文档checkpoint及远端核对以.cache/retrieval-corpus-publication.json和Git为准；不更新main／强推，不循环联网或改全局配置。
 4. 新精分析v4仍待对应新授权；未答复继续离线，Goal active。额度／网络恢复不构成新增模型许可。完整检查已通过，恢复不要无变化重复验证，先读Git和证据。
 
 ## 费用、授权与实际人评
