@@ -6,6 +6,8 @@
 
 ## 当前可恢复状态
 
+新切片已开始：同候选对照人工记录，sprint-detail-pilot-review.md。root顺序负责纯Application记录合同、Infrastructure独立记录包/本地记录页、新测试和现有生成器集成，旧worker冻结。目标为可填写／载入／下载及来源重验，缺v4结果禁填，日期/填写人不是验收。开始时5bc7029干净、scaffold通过；本切片尚无新实现/验证，1683为上一完整基线。先完成合同，再接页面并实际验证；0模型/预算。
+
 - 当前分支 codex/visual-details；最新源码检查点0a9c4af。worker对照生成器b58159d已整合4e2829a，再由root修复本地文件下载、条件标签及中文说明；worker原worktree冻结。
 - 同候选旧版／新版对照页已可直接打开：artifacts/detail-pilot-comparison-20261006-final/comparison.html。原六张画面、旧描述、三个确认与一个判错均保留；新版两个精确请求没有结果，明确显示“未执行／暂无结果”，不继承旧人工结论。
 - 定向116 passed，其中生成器22项；脚本Ruff及strict mypy通过。真实1366/390浏览器核对原六图hash/尺寸、旧反馈隔离、空人工结论和模板实际下载通过，无页面错误、外部请求或横向溢出。0Provider/预留变更，源DB/侧车/账本及冻结资料保持原值。

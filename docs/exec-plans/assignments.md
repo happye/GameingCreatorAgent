@@ -1,5 +1,7 @@
 # Active assignments
 
+新当前离线切片为同候选对照人工记录，见sprint-detail-pilot-review.md。root在codex/visual-details顺序负责新纯记录合同、独立文件输出/本地记录页及其测试、现有root生成器集成和公共文档；所有旧worker/worktree冻结，无并行writer。新版无结果不可填写判断；四维记录不代替U10，0Provider/预算动作，先保存节点再长验证。
+
 当前同候选v2/v4人工对照切片已交付，见sprint-detail-pilot-comparison.md和report-2026-10-06-pilot-comparison.md。detail_parts_v3在独占.worktrees/detail-pilot-compare/codex/detail-pilot-compare的b58159d已整合4e2829a，原tree冻结；root下载与标签修复0a9c4af完成。定向116、完整verify1683/1权限skip及真实1366/390六图/反馈/模板下载通过，0Provider/预算/源数据变更。query_draft_review只读复核通过，root负责报告与普通分支同步；其他worker冻结。v4仍无真实结果、新授权待答；模板空值、U10和费用边界不变。下一切片先登记新的人工记录本地核验分工，不回写已冻结worker。
 
 以下为历史任务与验证基线；生产当前快照52396/parent49720，旧PID和旧验证数字不能当现状，详见HANDOFF。
