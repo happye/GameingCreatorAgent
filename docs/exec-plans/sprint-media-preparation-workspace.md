@@ -1,5 +1,23 @@
 # Phase 0 多素材准备工作台
 
+## 当前状态：已交付，原全量失败保留
+
+接cd7a6e5完成真实素材／指南／相关检查与现用服务，见[通俗汇报](report-2026-10-07-media-preparation-workspace.md)。20后台／HTTP、6最终浏览器；一次完整2204passed／1新准备页面遇storage.batch_checkpoint失败／1Windows权限skip444.233s（pytest控制台444.38s），唯一失败一次窄复查1passed3.021s；165格式／85源码类型／lint／CLI通过。随后发现现用读取被取消后按钮未恢复，直接在stopPreparationObservation重置按钮一行，补确定性“读取中换项目”检查；最终6准备＋22联合页面共28passed42.266s，没有再跑完整，不能称最终完整全绿。新源码最后仅JS／此测试变化，final-ui.xml与真实现用检查覆盖；TD012及原失败未隐藏、未修改旧状态保存／增加重试。
+
+最终双离线wheel SHA547ec8937503211bca188c18d6535709ddff84e1a24e6e31b5938e03f92f62ab，84包文件等于源码、无媒体／缓存／DB（.cache/media-preparation-workspace-package.json）。初次构建后JS一行修改，因此已重新构建两次并核对；其他无变化检查不重复。
+
+真实三片桌面bad项夹两成功后修复／续跑三原ID，窄屏刷新连接／显式停止／原批次恢复；每组3Pending／55、65、96图与音轨，原后续上限1.25保持，modelInvocations=0。临时禁probe/preprocess复用3项及文件保持通过；独立进程读取两组一致，窄屏首任务实际media attempt2保留。ignored artifacts/media-preparation-workspace-validation/report.json／六下载／六截图及finish-readback.py是当前证据。
+
+验证脚本多处假设错误已保留：子进程ROOT缺失、probe包装签名、切目标后未显式刷新历史、FFmpeg同文件调用probe两次、复用“首次attempt=1”helper检查中断任务。没有修改产品凑这些脚本通过／删除项目重做；最终只读读取实际保存结果。初次桌面后的旧demo全文件baseline未落盘，不能宣称整段真实页面实验前后全字节比对或恢复丢失耗时；当前源身份与后续现用期间852文件完整性有证据，程序禁用所有模型／账本／搜索路径。
+
+部署第一次fresh health连接拒绝，原38216／45800的CIM与8765监听均不存在；没有Stop-Process旧PID，直接原启动器-NoBrowser就绪45524／parent28036。fresh健康／启动记录／实际exe、命令、创建时间已核对，.cache/media-preparation-workspace-deployment.json。最终两个现用尺寸各复用3prepared／228文件保持、打开任务／Pending搜索禁用、回到demo重放原联合排名／原片暂停与下载，0新搜索，原852文件与unknown4.065536／billingConfirmed=false保持；live-report.json／截图，三个现用资源字节等于最终源码。
+
+README／使用手册／批量CLI指南／新页面指南／API health与4准备接口／架构、验收证据、记忆均同步。所有持久汇报／主线优先规则与最新用户AGENTS一致。0新付费／上传／预留／人评；待授权proposal SHA保持，F006/F009/F010false。已通俗汇报现在可准备／接续、真实录像结果、唯一全量失败与按钮修正、零费用边界，下一root主线核对F006冻结计划与独立人工评审资料，再登记新范围，不把开发三片当独立测试。goal active；本地提交／普通发布结果以Git和.cache/media-preparation-workspace-final.json／publication.json为准，旧worker冻结。
+
+下方为开始与未验收检查点历史：
+
+2026-10-07 root恢复cd7a6e5未验收检查点，上一goal turn为progress（源码／26定向／报告与本地提交形成证据），本轮继续相同主交付、无新范围／worker。fresh工作树干净、init CheckOnly与完整隔离工具检查通过。独占ignored artifacts/media-preparation-workspace-validation真实页面证据、原公共文档与当前源码必要直接修复；开始一次最终verify并与真实素材页面检查同时推进，两者不写同一项目。费用与人评边界保持，goal active。
+
 2026-10-07，root / Codex，codex/visual-details，接eb73a9f。上一goal turn为progress：联合搜索页面、真实三源／最终2180通过和现用服务已交付；push连接失败不阻断本地主线，goal active。旧worker与worktree冻结，无并行写入者。
 
 本轮主交付F002／F004／现有本地工作台：一行一个本地录像路径，明确目标项目／准备方案／每任务以后分析的上限，提交1–100段离线准备；后台顺序执行不占住页面，逐项进度、显式停止、已保存批次与同ID续跑、打开素材任务。浏览器关闭不自动取消；服务关闭尽力取消并保留既有批次，恢复后显式续跑，不从持久状态冒称任务仍活着。CLI已有媒体准备／冻结／锁／配置／来源与费用边界复用，不增加模型／账本／上传／自动分析。

@@ -20,7 +20,7 @@ root：`ui/server.py`、`ui/service.py`、新 `ui/media.py`、HTTP行为测试�
 
 v2每个非空candidate增加`evidenceSummary`，纯投影已登记且属于同media／duration／候选区间的引用。包含status、registeredImageCount／registeredAudioCount、distinctImageSourceTimeCount／distinctImageContentCount、firstImageSourceUs／lastImageSourceUs／imageSpanUs、按源时间列出的imageFrames（evidenceId／sourceUs／sha256）。同ID去重，图片源点须在半开区间内，音频须相交；未知ID／注册ID冲突／外源或时钟不符／类型不符时status=unavailable，计数和时刻为空，不发布部分计数。其余status为registered_single_frame／registered_same_instant／registered_repeated_content／registered_multi_frame／registered_audio_only。这些仅表示登记输入，actionUnderstandingVerified始终null；不同图片不证明动作、主体或镜头连续性，单张不提供动作过程对照。不得把全窗口送图数作为某候选引用图数；无文件读取、哈希重算或额外模型请求，下载不含本地路径。v1历史文件不作当前响应，不改变检索版本／排名／源事实／人评。
 
-- `/api/health` → `{application:"gamingcreator-workspace",apiVersion:1,repository,pid,parentPid}`；GET/HEAD，不访问模型或项目数据库，no-store。启动器用仓库真实路径与进程身份判断ready/复用，不能仅凭端口打开认作本服务。
+- `/api/health` → `{application:"gamingcreator-workspace",apiVersion:1,capabilities:["media-preparation-v1"],repository,pid,parentPid}`；GET/HEAD，不访问模型或项目数据库，no-store。启动器用仓库真实路径与进程身份判断ready/复用，不能仅凭端口打开认作本服务。新准备入口初始隐藏，仅确认服务声明支持后显示；旧健康响应没有capabilities时保留原工作台流程。
 - `/api/projects` → `{projects:[{path,name}]}`；path为仓库内相对路径，发现 `artifacts/` 下现有数据库。
 - `/api/runs?project=...` → `{runs:[{id,status,sourceName,durationUs,errorCode,analysisKind,analysisProfile}]}`；analysisKind为temporal或frame_observations，analysisProfile为detailed/temporal/frame_observations，来自固定prompt配置。
 - `/api/tasks?project=...&limit=100&offset=0[&run=...]` → material-tasks-v1，GET/HEAD，limit 1–200、offset 0–1000000；单项run不接受非零offset。包含project原请求表示、total/offset/limit/hasMore/ordering/snapshotOnly及tasks；页面每页20条。task包含runId/runStatus/phase/phaseLabel、sourceName/durationUs/sourceSha256/configHash/errorCode、图片／音频／事件／转录数量、原configuration、stages、progress、cost与continuationBlockers。phase为preparation_incomplete/media_prepared/analysis_incomplete/completed；progress分开统计requiredCompleted/requiredTotal与completedVisionWindows，media完成后提供plannedWindows/plannedUploadFrames/coverageFits。cost.scope=base_analysis，Decimal字符串记录knownCny、unknownReservationCny、committedCny/remainingCny；旧记录预留不完整时后三者为null，knownUnknownReservationCny只表示可识别的部分，billingConfirmed=false。精分析费用仍独立读取。requiresRetryConfirmation保留未提交远端调用的显式重试要求。接口不返回源绝对路径或nextCommand；nextAction仅为提示，不执行。只读单事务metadata快照不hash媒体、不恢复run、不构造Provider／账本或追加搜索。integrityCheck=not_requested、humanQualityGate=null；Host/Origin和仓库边界与既有GET一致。
@@ -30,6 +30,16 @@ v2每个非空candidate增加`evidenceSummary`，纯投影已登记且属于同m
 - `/assets/app.js`、`/assets/style.css` → 固定静态资源；`/` → index.html。
 
 项目目录和数据库真实路径都必须位于当前仓库。已注册原视频可保留在原本的本地路径。媒体只通过run/evidence身份映射，不接受任意文件路径。inspect生成的URL保留请求的project表示（例如仓库相对路径），前端核对项目/run身份后才加载。应用错误使用有效HTTP状态，JSON包含 `code,message,exitCode,runId`；请求/访问边界错误至少有code/message。检查/查询不调用远端API。
+
+## 多素材离线准备接口
+
+`POST /api/prepare-media-batch`严格接受新批次`{project,paths,profile,maxCostCny,timeoutSeconds}`或原批次`{project,resume,timeoutSeconds}`，202返回`media-preparation-job-v1`，包括jobId／project原请求表示／batchId（首次登记前可null）、status／live／cancellationRequested、最近已保存progress／result／error和UTC时间。paths为1–100个不同本地路径，网页相对路径以仓库为起点，不接受URL或UNC；目标是当前仓库artifacts真实子目录，不要求初次已有DB。profile仅frames／temporal／detailed，maxCostCny为有限正数Decimal字符串，timeoutSeconds为1–86400有限数。原批次须核对冻结输入／配置，不接受路径、方案或限额覆盖；首次DB创建前恢复暂拒绝（TD013）。
+
+`GET /api/media-preparation?project=...&job=...`读取实际注册工作，错项目／job为404；`POST /api/cancel-media-preparation`严格`{project,job}`，请求协程取消，返回200不冒称已停止。单服务一次只一个活线程，冲突409；最多保留100注册任务。线程实际状态与磁盘state分开，关闭浏览器不取消工作，关闭服务请求取消并保留状态，无重启自动执行。
+
+`GET /api/media-batches?project=...&limit=20&offset=0`返回`media-preparation-catalog-v1`、project／total／offset／limit／batches／activeJob；limit 1–100、offset 0–1000000。只读原批次文件，无法核对的目录保留readable=false／提示，不隐式执行。activeJob仅真实活线程；保存的处理中state不是live证明。POST沿用同源／单Content-Length／64KiB／去重字段限制。progress在CLI原状态成功保存之后通知，不改变锁、固定runId、媒体身份、账本或原CLI stderr（无回调时保持）。modelInvocations与newReservations为0；本地准备不调用模型、上传或分析。
+
+页面生命周期／用户步骤见[准备指南](../references/media-preparation-workspace-guide.md)。准备结果和下载保持原`media-batch-result-v1`，只说明媒体已准备／等待另行分析，不证明F006质量。
 
 ## inspect 视图
 

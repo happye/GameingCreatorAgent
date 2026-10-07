@@ -1,8 +1,8 @@
 # Active assignments
 
-root / Codex顺序负责[sprint-media-preparation-workspace](sprint-media-preparation-workspace.md)，接eb73a9f，codex/visual-details；独占ui/media_preparation.py后台准备／批次读取、server／static、main可选检查点回调、新任务／HTTP／浏览器行为和公共文档。1–100本地录像逐项准备／停止／原批次接续与素材任务；0模型／费用／人评，目标仅artifacts内，旧锁与来源／配置／预算保持。旧worker／worktree冻结，主线优先，小问题延期。
+root / Codex已顺序交付[sprint-media-preparation-workspace](sprint-media-preparation-workspace.md)，接cd7a6e5，codex/visual-details；ui/media_preparation.py后台准备／批次读取、server／static、main可选检查点回调、新任务／HTTP／浏览器行为和公共文档。1–100本地录像逐项准备／刷新连接／停止／原批次接续与素材任务；0模型／费用／人评，目标仅artifacts内，旧锁与来源／配置／预算保持。旧worker／worktree冻结，主线优先，小问题延期。
 
-额度14%汇报节点：已实现、**未验收**，20后台／HTTP、最终5浏览器＋1health通过，3源码类型／lint通过；旧4失败一次复查通过仍TD012。真实素材、整体验证／wheel、指南和部署待做。8765fresh health仍38216／45800、旧后台无新capability；新入口默认隐藏待后台支持，无生产重启。当前任务继续，不以本轮检查点或上一2180称新功能已交付；见report-2026-10-07-quota-checkpoint.md和HANDOFF，feature_list原状态不变，goal active。
+最终状态：完整2204passed／1新页面storage.batch_checkpoint失败／1权限skip，唯一失败一次窄复查通过；之后直接修取消读取后的按钮状态，最终6准备＋22联合页面28passed，未重跑整套。85源码类型／格式／lint／CLI与双wheel／84包文件同源码通过。真实双尺寸三片各3Pending、原ID／限额／禁抽取复用、独立进程一致；现用双尺寸复用各228文件／旧852文件、0新搜索／费用保持。旧8765服务已不存在，原启动器重新启动45524／28036，最终capability／静态字节与身份核对。下一root先核对F006冻结计划与独立人评资料再登记新范围；旧worker冻结，F006/F009/F010false，goal active。见report-2026-10-07-media-preparation-workspace.md和HANDOFF；额度14%检查点属历史。
 
 root / Codex已顺序交付[sprint-project-retrieval-workspace](sprint-project-retrieval-workspace.md)，接5d2a48e，codex/visual-details。ui service/server/static与22新行为，网页来源选择／联合排名／原run回看／完整排名下载、原篮／诊断保持；真实双尺寸／现用hybrid、三新查询6文件／旧214搜索及unknown保持。最终完整2180passed／1权限skip、83包文件同源码；首次布局失败保留，直接修正后复核。8765fresh进程38216／45800，0付费／预留／人评。下一root登记离线批量准备接现有任务流程；旧worker/worktree冻结，小问题延期，F006/F009/F010false。
 

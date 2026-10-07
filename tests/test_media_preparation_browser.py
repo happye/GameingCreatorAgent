@@ -18,6 +18,37 @@ def fill_prepare(page, document):
     page.locator("#preparation-budget").fill("1.75")
 
 
+def test_switch_project_during_catalog_read_can_explicitly_refresh_again(preparation):  # noqa: F811
+    playwright = pytest.importorskip("playwright.sync_api")
+    jobs, document, media = preparation
+    with workspace(jobs.repository) as base, playwright.sync_playwright() as runtime:
+        browser = runtime.chromium.launch(headless=True)
+        try:
+            page = browser.new_page()
+            held = []
+
+            def delay_first_catalog(route):
+                if not held:
+                    held.append(route)
+                else:
+                    route.continue_()
+
+            page.route("**/api/media-batches?**", delay_first_catalog)
+            page.goto(base)
+            page.locator("#open-preparation").click()
+            playwright.expect(page.locator("#refresh-preparation")).to_be_disabled()
+            page.locator("#preparation-project").fill(document["project"])
+            playwright.expect(page.locator("#refresh-preparation")).to_be_enabled()
+            page.locator("#refresh-preparation").click()
+            playwright.expect(page.locator("#preparation-history-summary")).to_have_text(
+                "此项目还没有准备批次。"
+            )
+            playwright.expect(page.locator("#refresh-preparation")).to_be_enabled()
+            assert media.probes == media.extractions == []
+        finally:
+            browser.close()
+
+
 def test_preparation_entry_stays_hidden_with_previous_running_service(preparation):  # noqa: F811
     playwright = pytest.importorskip("playwright.sync_api")
     jobs, _, media = preparation

@@ -36,7 +36,7 @@
       "passes": true,
       "test_criteria": "Representative and synthetic VFR/nonzero-PTS clips produce traceable source timecodes; no-audio, malformed input and cancellation are handled cleanly.",
       "dependencies": ["F001"],
-      "evidence": ["docs/exec-plans/sprint-F002.md", "docs/references/media-processing.md", "docs/references/media-toolchain.json", "scripts/test-media.ps1", "docs/exec-plans/sprint-long-footage-media.md", "tests/test_streamed_media_logs.py", "tests/test_media_integration.py", "docs/exec-plans/sprint-media-preparation.md", "tests/test_media_preparation.py", "scripts/prepare-media.ps1", "docs/exec-plans/sprint-media-batch-preparation.md", "docs/references/media-batch-preparation-guide.md", "tests/test_media_batch.py", "scripts/prepare-media-batch.ps1"]
+      "evidence": ["docs/exec-plans/sprint-F002.md", "docs/references/media-processing.md", "docs/references/media-toolchain.json", "scripts/test-media.ps1", "docs/exec-plans/sprint-long-footage-media.md", "tests/test_streamed_media_logs.py", "tests/test_media_integration.py", "docs/exec-plans/sprint-media-preparation.md", "tests/test_media_preparation.py", "scripts/prepare-media.ps1", "docs/exec-plans/sprint-media-batch-preparation.md", "docs/references/media-batch-preparation-guide.md", "tests/test_media_batch.py", "scripts/prepare-media-batch.ps1", "docs/exec-plans/sprint-media-preparation-workspace.md", "docs/references/media-preparation-workspace-guide.md", "tests/test_media_preparation_jobs.py", "tests/test_media_preparation_browser.py"]
     },
     {
       "id": "F003",
@@ -56,7 +56,7 @@
       "passes": true,
       "test_criteria": "A second process reloads the timeline; migrations/FKs and interrupted-stage/file-integrity recovery pass; unknown request costs survive recovery; full source video bytes are absent from SQLite.",
       "dependencies": ["F001"],
-      "evidence": ["docs/exec-plans/sprint-F004.md", "docs/references/timeline-storage.md", "scripts/test-storage.ps1", "scripts/verify.ps1", "docs/exec-plans/sprint-long-footage-media.md", "docs/exec-plans/sprint-media-preparation.md", "tests/test_media_preparation.py", "docs/exec-plans/sprint-material-tasks.md", "tests/test_material_tasks.py", "tests/test_material_tasks_http.py", "tests/test_material_tasks_browser.py", "scripts/list-tasks.ps1", "docs/exec-plans/sprint-media-batch-preparation.md", "docs/references/media-batch-preparation-guide.md", "tests/test_media_batch.py", "scripts/prepare-media-batch.ps1"]
+      "evidence": ["docs/exec-plans/sprint-F004.md", "docs/references/timeline-storage.md", "scripts/test-storage.ps1", "scripts/verify.ps1", "docs/exec-plans/sprint-long-footage-media.md", "docs/exec-plans/sprint-media-preparation.md", "tests/test_media_preparation.py", "docs/exec-plans/sprint-material-tasks.md", "tests/test_material_tasks.py", "tests/test_material_tasks_http.py", "tests/test_material_tasks_browser.py", "scripts/list-tasks.ps1", "docs/exec-plans/sprint-media-batch-preparation.md", "docs/references/media-batch-preparation-guide.md", "tests/test_media_batch.py", "scripts/prepare-media-batch.ps1", "docs/exec-plans/sprint-media-preparation-workspace.md", "tests/test_media_preparation_jobs.py", "tests/test_media_preparation_browser.py"]
     },
     {
       "id": "F005",
@@ -86,7 +86,7 @@
       "passes": true,
       "test_criteria": "Registered source/evidence HTTP boundaries and Range/HEAD/errors pass; real existing footage supports search, seek/end pause, evidence preview, isolated basket restoration and identity-preserving JSON/CSV export; browser behavior checks cover stale responses and text safety using project-isolated tools.",
       "dependencies": ["F004", "F005"],
-      "evidence": ["docs/design-docs/adr-002-local-inspection-ui.md", "docs/design-docs/inspection-workspace-api.md", "docs/exec-plans/sprint-inspection-workspace.md", "docs/exec-plans/sprint-inspection-frontend.md", "tests/test_inspection_http.py", "scripts/validate-inspection-ui.py", "docs/exec-plans/sprint-material-tasks.md", "tests/test_material_tasks.py", "tests/test_material_tasks_http.py", "tests/test_material_tasks_browser.py", "scripts/list-tasks.ps1", "docs/exec-plans/sprint-project-retrieval-workspace.md", "docs/exec-plans/report-2026-10-07-project-workspace.md", "tests/test_project_search_workspace.py"]
+      "evidence": ["docs/design-docs/adr-002-local-inspection-ui.md", "docs/design-docs/inspection-workspace-api.md", "docs/exec-plans/sprint-inspection-workspace.md", "docs/exec-plans/sprint-inspection-frontend.md", "tests/test_inspection_http.py", "scripts/validate-inspection-ui.py", "docs/exec-plans/sprint-material-tasks.md", "tests/test_material_tasks.py", "tests/test_material_tasks_http.py", "tests/test_material_tasks_browser.py", "scripts/list-tasks.ps1", "docs/exec-plans/sprint-project-retrieval-workspace.md", "docs/exec-plans/report-2026-10-07-project-workspace.md", "tests/test_project_search_workspace.py", "docs/exec-plans/sprint-media-preparation-workspace.md", "docs/exec-plans/report-2026-10-07-media-preparation-workspace.md", "docs/references/media-preparation-workspace-guide.md", "tests/test_media_preparation_jobs.py", "tests/test_media_preparation_browser.py"]
     },
     {
       "id": "F008",

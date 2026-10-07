@@ -1,5 +1,7 @@
 # Technical debt
 
+TD012补充（2026-10-07准备页面交付）：一次完整2204passed／1新test_prepare_browser_three_materials_download_and_open_waiting_tasks[viewport0]失败／1权限skip444.233s，失败项目state明确第三项storage.batch_checkpoint／停止，两项prepared保留。.cache/media-preparation-workspace-tests.xml／verify.log及原pytest目录保存；唯一失败仅一次窄复查1passed3.021s（workspace-recheck.xml）。原因未定位、旧save未改、未加重试；最终另修明确UI读批次取消后按钮状态，并相关28项通过，未重新跑完整。继续延期，不把新测试遇旧问题说成旧测试或整套全绿。
+
 TD012补充（2026-10-07准备页面检查点）：20新后台／HTTP全部通过，合跑原23批次测试有4项状态保存／恢复失败（.cache/media-preparation-jobs-first.xml）。test_bad_middle_item_continues_and_repaired_item_reuses_frozen_batch、test_cancel_stops_remaining_items_and_explicit_resume_keeps_ids、test_started_analysis_is_reported_without_touching_stage_or_unknown_invocation、test_per_item_deadline_includes_probe_and_can_be_explicitly_extended仅一次窄复查4passed1.854s（.cache/media-preparation-old-failure-recheck.xml）。未定位原因、未更改旧保存或加入生产重试；按用户主线优先延期。本轮尚未运行整体验证，不能把此复查称整套通过。
 
 TD004补充（2026-10-07跨素材检索）：真实三开发片的长负面词法查询“**不存在**的星际交易飞船维修机制”仍得到一候选，唯一共享bigram为“**存在**”，原facts含“仍存在”。证明有限检索不保证负面／整句意图，不代表录像包含该机制。证据ignored artifacts/project-retrieval-validation/report.json；程序与原单run排名未改，首次校验误假设应空已纠正，三原查询记录保留后再做最终验证，共七新项目查询。按用户优先级只记录、不在本轮循环修复；F006仍false。

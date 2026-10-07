@@ -61,4 +61,6 @@ v4精分析新增独立实体连续性证据：注册帧及源时钟→角色/�
 
 ## 架构检查
 
+本地准备页面由UI的有界后台任务管理器接入既有CLI批量准备入口，沿用Application媒体处理与Infrastructure冻结清单／状态／原项目锁。检查点已保存后向页面投影逐项进度；真实线程／协程状态独立于磁盘记录。取消、原ID接续和已准备素材核验复用沿原流程，页面不进入Provider或账本，不启动分析。接口与新旧服务能力确认见[工作台合同](./inspection-workspace-api.md)，用户步骤见[准备页面指南](../references/media-preparation-workspace-guide.md)。
+
 F001 建立包导入方向、类型和格式检查；F004 检查 SQLite 与文件原子边界、断点恢复；F003 检查 Provider 替换和未知 usage；F005 检查时间码、稳定排序和重复事件；F006 执行独立 benchmark。架构基线可据失败证据修订，修订保留原因、影响与版本。

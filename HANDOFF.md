@@ -1,5 +1,17 @@
 # 当前交接
 
+2026-10-07 root接cd7a6e5已交付[sprint-media-preparation-workspace](docs/exec-plans/sprint-media-preparation-workspace.md)，[通俗汇报](docs/exec-plans/report-2026-10-07-media-preparation-workspace.md)。1–100本地路径页面准备／后台逐项状态／刷新重新连接／显式停止／原批次固定任务接续／已准备复用／打开素材任务与下载。CLI原冻结／锁／来源／配置／后续上限保持，0模型／上传／预留／人评。
+
+完整2204passed／1新准备页面遇既有storage.batch_checkpoint失败／1权限skip444.233s，原失败一次窄复查1passed3.021s，TD012延期。此后现用检查发现取消旧读取后按钮未恢复，直接修JS一行并加确定性检查；最终6准备＋22联合页面28passed42.266s，**没有最终整套重跑，不称全量全绿**。165格式／85源码类型／lint／CLI通过；最后双wheel SHA547ec8937503211bca188c18d6535709ddff84e1a24e6e31b5938e03f92f62ab／84包文件同源码无媒体缓存DB。回执.cache/media-preparation-workspace-{tests.xml,recheck.xml,final-ui.xml,verify.log,package.json}；源冻结及保存事实见final.json／Git。
+
+真实三开发片桌面坏项修复后接续／窄屏刷新停止与原批次继续、两组6Pending／55/65/96图及音轨、原限额1.25／原ID、禁抽取复用与独立进程读回通过，窄屏首任务实际媒体attempt2保留。ignored artifacts/media-preparation-workspace-validation/report.json／下载／截图。验证脚本错误保留、没有删项目重做；耗时丢失不估算，初次桌面前旧项目baseline未保存不能称整个真实实验前后全字节比对。最终现用双尺寸各3prepared复用／228文件保持、任务／原联合排名重放和原片暂停／下载通过，**0新搜索**，现用期间旧demo852文件保持，源身份／待授权proposal SHA保持。
+
+fresh health初次连接拒绝，原38216／45800进程与监听均不存在，未按旧PID终止；原启动器-NoBrowser启动**8765 pid45524／parent28036**，健康capabilities含media-preparation-v1、启动记录与实际exe／命令／创建时间、最终三静态资源均核对。部署receipt及live-report.json保存。旧unknown4.065536／billingConfirmed=false现用只读保持，精分析授权仍未答不发送；F006/F009/F010false。README／指南／API／架构／feature evidence／LEARNINGS与最新用户AGENTS规则同步，旧worker冻结。
+
+已按通俗协议汇报已可用的一批准备／接续与坏文件继续、真实录像验证、旧保存失败只窄复查及新按钮修正、零费用与未人评。**下一主线**root先核对F006已有冻结计划／独立素材来源／评审入口，区分开发三片与独立测试，再登记下一主要交付范围；不回头循环TD012、不重复实现CLI、不越门槛做成片商业。goal active，上一与本轮progress，不pause／complete。原普通push授权当前codex/visual-details保持，本轮提交与发布事实以Git和.cache/media-preparation-workspace-publication.json为准；远端未同步时明确记录，不更新main／强推。
+
+## 历史检查点与此前交付
+
 2026-10-07用户提示额度14%并请求汇报；root保存多素材准备页面**未验收检查点**，见[sprint-media-preparation-workspace](docs/exec-plans/sprint-media-preparation-workspace.md)与[阶段汇报](docs/exec-plans/report-2026-10-07-quota-checkpoint.md)。代码／页面／后台生命周期已实现，20新增后台／HTTP首批通过；新页面首4项中3项测试asyncio与Playwright冲突，直接移到浏览器环境退出后核验，4passed13.930s。兼容入口检查初次健康地址少/api造成失败，已直接修正；最终5浏览器＋1health共6passed（.cache/media-preparation-browser-checkpoint.xml）。Ruff／3源码mypy通过。旧4批次失败一次窄复查4passed1.854s，原43项／4失败回执保留，TD012延期，不称修复。**尚未本轮真实素材／整体验证／双离线wheel／指南／生产更新**，不得引用上一2180作为本轮通过。feature_list原验收状态未改，F006/F009/F010false。
 
 fresh只读health仍8765 pid38216／parent45800且无新capabilities；新静态准备入口默认隐藏，仅后台声明支持media-preparation-v1时显示，旧已交付联合搜索可继续使用，未重启生产。0新模型／上传／预留／人评，unknown¥4.065536／待答¥4.07proposal保持。旧worker冻结、无并行写者；源码／证据／报告已形成可提交检查点，最终保存状态以Git及.cache/media-preparation-workspace-checkpoint.json为准。上次确认远端5d2a48e，后续本地待补推，本轮0push／远端读取，goal active，不擅自pause或complete。

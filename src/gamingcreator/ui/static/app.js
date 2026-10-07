@@ -63,6 +63,7 @@
 
     function stopPreparationObservation() {
         state.preparationController?.abort();
+        ui["refresh-preparation"].disabled = false;
         state.preparationController = null;
         state.preparationRevision += 1;
         if (state.preparationTimer !== null) clearTimeout(state.preparationTimer);
