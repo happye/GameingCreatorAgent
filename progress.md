@@ -2,6 +2,8 @@
 
 ## 当前进度摘要（2026-10-08）
 
+发布事实：已有细节检索代码及交付文档1b9da43已普通push且独立ls-remote确认同SHA，仅codex/visual-details；main未更新／无强推。此段补事实，最终文档head与同步以Git和.cache/detail-index-publication.json为准，源码／现用／goal active保持。
+
 2026-10-08，Phase 0／F005／F010，[准确已有细节检索](docs/exec-plans/sprint-saved-detail-retrieval.md)已交付，[使用指南](docs/references/saved-detail-retrieval-guide.md)与[通俗汇报](docs/exec-plans/report-2026-10-08-saved-detail-retrieval.md)。多录像明确勾选‘含已有细节’及准确精版本后，用有帧支持的observed属性帮助排序，逐候选保留主体／部件／镜头出处。uncertain／冲突不作正向文字，排名不证明同主体AND；候选条件核对仍单独判断。旧默认搜索、原事实／源时间／证据及历史排名保持，不自动分析／费用。
 
 本轮23新后台＋3新页面通过，一次完整2367passed／3旧失败TD014／1权限skip、原因未解决且不循环；98源码包及独立包进程通过。真实‘白色头发’漏掉的35–36s事件进入第5位，仍partial，细节覆盖1/227；一次新词法约0.77秒、两新排名文件、858旧文件／217普通排名／费用提案保持，0新模型费用／真人标签。现用6772／50720两尺寸下载／原片出画面／版本隔离通过。

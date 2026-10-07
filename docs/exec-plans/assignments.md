@@ -8,4 +8,6 @@
 
 用户授权只读explorer /root/acceptance_explanation 已完成验收用途回答；未写代码，未因当前开发再派新Agent。已有普通push授权仅当前分支，最终保存／同步见Git和.cache/detail-index-publication.json。
 
+发布事实：代码及交付文档1b9da43已普通push且独立远端SHA一致，仅codex/visual-details，main未更新／无强推。此段补事实，最终文档head以Git及publication为准，goal active。
+
 [历史分工快照](assignments-history-2026-10-08.md)保留原归属及交付证据，其中待推送／PID／下一步均是当时状态。

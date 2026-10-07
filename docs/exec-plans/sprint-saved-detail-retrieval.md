@@ -2,6 +2,8 @@
 
 交付状态：2026-10-08已完成本轮范围并更新现用；当前完整事实见下方交付节点、[通俗汇报](report-2026-10-08-saved-detail-retrieval.md)及根HANDOFF。开始登记／实现／定向节点是本轮历史，不覆盖最终下一步。保存／远端事实以Git和.cache/detail-index-publication.json为准，goal active。
 
+发布节点：代码及交付文档1b9da43已普通push至codex/visual-details，独立ls-remote同1b9da43cb041ca79e9c7659df0975fc5bb027829；main未更新／无强推。仅补发布事实，最终文档head及同步见Git与publication，源码／检查／包／现用保持，goal active。
+
 2026-10-08 root / Codex接aec965d，codex/visual-details，上一goal turn为progress：候选条件依据已实现／实测／现用、文档对齐并成功普通push，工作树干净，当前完整init及scaffold通过。Phase 0／F005／F010主线，旧workers冻结。
 
 主要交付：明确选择“包含已保存细节”和精v1–v4后，把准确Completed基础版本对应的、带原帧支持且没有互斥冲突的observed属性加入联合检索文字；原始事件事实／证据／区间不改，不把uncertain或自由描述当确认属性。保留镜头／主体／部件及支持帧来源，正文区分“模型观察待人工核对”，文本排名不证明同主体AND满足，仍由typed核对判断。v4只消费原投影中有支持的actor／ownership，不跨切镜头合并。没有结果保持旧基础语料，不自动精分析／模型／费用／预算；词法及本地E5／RRF均使用扩充语料。

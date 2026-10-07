@@ -18,7 +18,7 @@ root独占本轮代码和公共记录；旧workers冻结，用户仅授权只读
 
 新两次／六帧／最高¥4.07提案SHA06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6未答、executionAuthorized=false，不发送不重试。旧漫画unknown¥4.065536、两请求及billingConfirmed=false保持。已批准旧两次¥4.04已执行，不重复。
 
-分支codex/visual-details；当前交付保存／远端事实以Git及.cache/detail-index-publication.json为准。上一aec965d已独立确认远端同步；本轮最终普通push仅当前分支，不改main／强推。goal active，不因阶段完成标整体完成或擅自暂停。
+发布事实：代码及交付文档1b9da43cb041ca79e9c7659df0975fc5bb027829已普通push至codex/visual-details，独立ls-remote同SHA；main未更新／无强推。本段仅补发布事实，最终文档head及同步以Git和.cache/detail-index-publication.json为准。源码／包／现用保持，goal active，不因阶段完成标整体完成或擅自暂停。
 
 ## 历史入口
 
