@@ -1,5 +1,15 @@
 # 当前交接
 
+2026-10-07，root接5d2a48e已交付[sprint-project-retrieval-workspace](docs/exec-plans/sprint-project-retrieval-workspace.md)，[通俗汇报](docs/exec-plans/report-2026-10-07-project-workspace.md)。F005／F007明确1–100个不同源Completed分析，网页联合搜索／来源标签／原run空查询读取与媒体身份核验后播放／证据、独立完整排名下载；原单录像查询／诊断、按run独立篮与源时间导出保持，音频fallback可核验。迟到／错来源拒绝，不通过结果路径服务字节，无新SQL／费用合同。
+
+22新增行为、45定向41.185s／9前后文／最终3页面通过；首完整2179passed／1旧detail-query被新布局遮挡失败／1权限skip435.40s，稳定截图确认候选仅6px，直接紧凑到98px并增>=90px检查。窄屏选择控件16px／无横溢，124px候选可浏览。源码变化后最终完整2180passed／1权限skip320.976s、162格式／84类型／lint／CLI／双离线wheel通过，SHA6c6e34bb719b1d01c93596bf1fd17d65af9a239a3aef797fecce3c2d1e2e8fec，83包文件同源码无素材／DB。首失败非环境偶发、不称首轮全绿；.cache/project-workspace-final.xml／final-verify.log／package.json及6冻结文件SHA保持，不重复无变化整套。
+
+真实三开发片双尺寸两词法页面0.85s／0.87s、六原片起止暂停与图／篮／下载归属保持；现用默认hybrid约5.48s（检索5.074s）、十位含三来源、三原片播放与恢复通过，完整候选与此前CLI原排名／事实／证据／分数逐项相等。846旧文件保持、实际共3项目查询／6新文件（2词法＋1hybrid），复用排名与窗口检查0查询，旧单run搜索214→214，三源／proposal SHA保持。ignored artifacts/project-workspace-validation有初次／最终replay／live／source-dialog／prior-cli-ranking证据；首批加载截图已替换为完整读取后的稳定截图。
+
+8765先fresh health／state／CIM父子、exe／命令／创建时间核验，40592／11788已更新为38216／45800；三个现用资源字节等于最终源码，.cache/project-workspace-deployment.json／live-assets.json。旧漫画unknown¥4.065536／两旧unknown requests／billingConfirmedfalse只读保持，不重试；新¥4.07proposal授权仍未答，不发送。F006/F009/F010false，0付费／新预留／真实人评。用户持久主线优先与通俗详细汇报继续执行，旧worker/worktree冻结、TD004/005/010/011/012/013延期。
+
+已向用户汇报联合搜索、原来源回看／隔离篮、真实时间／零新费用、桌面遮挡修正与最终检查／现用更新。下一root登记多素材离线准备接现有素材任务清单，逐项进度／显式接续，不隐式分析或越过F006进入桌面／成片／商业。已有普通push授权当前codex/visual-details，以Git及.cache/project-workspace-publication.json为保存／远端事实，不更新main／强推；goal active，上一与本轮均progress，不标整体完成。下方历史切片。
+
 2026-10-07，root接0a85f3a已交付[sprint-project-retrieval](docs/exec-plans/sprint-project-retrieval.md)，[通俗汇报](docs/exec-plans/report-2026-10-07-project-retrieval.md)。F005明确1–100个不同源Completed任务的一次联合BM25／E5／RRF排名、来源／原候选ID／时间／证据／uncertainty保留；跨media同时间不去重，同一视频不同分析版本拒绝不默选。输入与所有源核验先于本地embedding；SQLite read_only，原单run候选／版本／SQL和benchmark保持。独立project-search-v1／retrieval-project-v1结果与最后SHA回执保存，CLI search-project／PowerShell7／指南完成，无新SQL／HTTP或工作台变更。
 
 40新增行为全部在一次完整通过，136定向71.203s通过；一次完整2157passed／1旧media-batch状态替换失败／1 Windows symlink权限skip376.91s，唯一失败一次窄复查1passed0.648s，TD012保留、未称第一次全过／未重跑整套。161格式／84类型／lint、CLI／双离线wheel通过，SHAde10d6cedda89407d814943938502460ace0b824c6f65029ff8b135f2d8780be，83包文件同源码无媒体／缓存／DB。回执.cache/project-retrieval-tests.xml／verify.log／old-failure.xml／package.json，源码冻结后只文档／ignored证据。

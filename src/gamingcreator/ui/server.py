@@ -18,6 +18,7 @@ from gamingcreator.ui.service import (
     inspect_run,
     match_details,
     project_runs_payload,
+    project_search_payload,
     project_tasks_payload,
     registered_media,
 )
@@ -187,7 +188,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(403, {"code": "input.origin", "message": "请从本机工作台访问。"})
                 return
             path = urlparse(self.path).path
-            if path not in {"/api/match-details", "/api/draft-detail-query"}:
+            if path not in {"/api/match-details", "/api/draft-detail-query", "/api/search-project"}:
                 self._json(404, {"code": "input.route", "message": "没有这个操作。"})
                 return
 
@@ -200,6 +201,35 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return result
 
             value = json.loads(body, object_pairs_hook=unique)
+            if path == "/api/search-project":
+                if (
+                    type(value) is not dict
+                    or set(value) != {"project", "runs", "query", "mode", "top"}
+                    or any(type(value[key]) is not str for key in ("project", "query", "mode"))
+                    or type(value["runs"]) is not list
+                    or not 1 <= len(value["runs"]) <= 100
+                    or any(type(item) is not str for item in value["runs"])
+                    or type(value["top"]) is not int
+                    or not 1 <= value["top"] <= 100
+                    or value["mode"] not in ("lexical", "semantic", "hybrid")
+                ):
+                    raise ValueError("Invalid project search fields.")
+                project = resolve_project(self.repository, value["project"])
+                self._json(
+                    200,
+                    asyncio.run(
+                        project_search_payload(
+                            project,
+                            value["runs"],
+                            value["query"],
+                            self.repository,
+                            mode=value["mode"],
+                            top_k=value["top"],
+                            project_reference=value["project"],
+                        )
+                    ),
+                )
+                return
             if path == "/api/draft-detail-query":
                 if type(value) is not dict or set(value) != {"text"}:
                     raise ValueError("Invalid draft request fields.")

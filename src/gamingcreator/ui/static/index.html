@@ -54,11 +54,13 @@
             </div>
         </section>
         <aside class="panel search-panel" aria-label="自然语言片段检索">
+            <div class="search-scope"><button id="open-search-sources" class="text-button" type="button" disabled>选择多段录像</button><button id="single-search-source" class="text-button" type="button" hidden>只搜当前录像</button><span id="search-scope-label" class="muted small">搜索当前录像</span></div>
             <div class="panel-heading"><div><span class="eyebrow">CREATOR ASSISTANT</span><h2>描述你想找的片段</h2></div><span class="assistant-mark" aria-hidden="true">✦</span></div>
             <form id="search-form"><label class="sr-only" for="query">自然语言查询</label><textarea id="query" rows="2" maxlength="4096" placeholder="例如：寻找角色打斗和攻击的片段" disabled></textarea><div class="search-options"><div><label class="field-label" for="mode">检索方式</label><select id="mode" disabled><option value="hybrid">混合检索</option><option value="lexical">词法检索</option><option value="semantic">语义检索</option></select></div><div><label class="field-label" for="top">候选条数</label><input id="top" type="number" min="1" max="100" value="10" disabled></div></div><button id="search-button" class="button primary" type="submit" disabled>查找片段 <span aria-hidden="true">↗</span></button></form>
             <div class="results-heading"><h3>检索候选 <span id="candidate-count" class="count">0</span></h3><span class="muted small">按相关性排名</span></div>
             <p id="search-context" class="muted small">打开已完成的运行后即可查询。</p>
             <button id="open-retrieval-diagnostics" class="text-button diagnostics-open" type="button" disabled>查看检索诊断 · 前十位</button>
+            <button id="download-project-search" class="text-button" type="button" hidden disabled>下载这次多录像搜索结果</button>
             <div id="candidate-list" class="candidate-list" aria-live="polite"><p class="empty-state">描述动作、玩法或画面，<br>从已有素材中发现可用片段。</p></div>
         </aside>
         <section class="panel timeline-panel" aria-label="源视频语义时间轴">
@@ -95,6 +97,13 @@
     </dialog>
     <dialog id="detail-cost-dialog" aria-labelledby="detail-cost-title"><div class="dialog-heading"><h2 id="detail-cost-title">精分析费用与调用</h2><button id="close-detail-costs" class="icon-button" aria-label="关闭费用记录">×</button></div><p class="muted small">仅查看已有记录。估价不是账单；未知费用预留继续占用承诺金额。</p><div id="detail-cost-content" aria-live="polite"></div></dialog>
     <dialog id="tasks-dialog" aria-labelledby="tasks-title"><div class="dialog-heading"><h2 id="tasks-title">素材任务</h2><button id="close-tasks" class="icon-button" aria-label="关闭素材任务">×</button></div><p class="muted small">查看已保存进度，不会开始分析。打开素材或续跑时会重新核对文件；这里的“处理中”是保存记录，不代表任务仍在运行。</p><div class="tasks-toolbar"><span id="tasks-page-summary" aria-live="polite"></span><div><button id="tasks-previous" class="text-button" disabled>上一页</button><button id="tasks-next" class="text-button" disabled>下一页</button><button id="refresh-tasks" class="text-button">重新读取</button></div></div><div id="tasks-list" class="tasks-list" aria-live="polite"></div></dialog>
+    <dialog id="search-sources-dialog" aria-labelledby="search-sources-title">
+        <div class="dialog-heading"><h2 id="search-sources-title">选择要搜索的录像</h2><button id="close-search-sources" class="icon-button" type="button" aria-label="关闭录像选择">×</button></div>
+        <p class="muted small">从已完成的分析中选择，最多100段。同一录像有多个分析版本时，请只选一个。</p>
+        <div id="search-sources-list" class="search-sources-list"></div>
+        <p id="search-sources-summary" class="muted small" aria-live="polite"></p>
+        <button id="apply-search-sources" class="button primary compact" type="button" disabled>使用选中的录像</button>
+    </dialog>
     <dialog id="retrieval-diagnostics-dialog" aria-labelledby="retrieval-diagnostics-title">
         <div class="dialog-heading"><h2 id="retrieval-diagnostics-title">检索诊断 · 固定十位</h2><button id="close-retrieval-diagnostics" class="icon-button" aria-label="关闭检索诊断">×</button></div>
         <p id="retrieval-diagnostics-summary"></p>

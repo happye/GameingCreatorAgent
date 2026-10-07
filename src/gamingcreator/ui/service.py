@@ -19,7 +19,7 @@ from gamingcreator.application.retrieval import RETRIEVAL_VERSION, CandidateClip
 from gamingcreator.application.retrieval_diagnostics import retrieval_diagnostics
 from gamingcreator.application.storage import RunStatus, StoredInvocation, StoredTimeline
 from gamingcreator.application.tasks import tasks_payload
-from gamingcreator.cli.main import execute_search
+from gamingcreator.cli.main import execute_project_search, execute_search
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.time import SourceInstant, SourceRange
 from gamingcreator.infrastructure.detail_cost_history import refinement_cost_history
@@ -202,6 +202,8 @@ async def project_runs_payload(project: Path) -> dict[str, object]:
                     "id": run_id,
                     "status": status,
                     "sourceName": run.asset.source_path.name,
+                    "sourceSha256": run.asset.sha256,
+                    "mediaId": run.asset.media_id,
                     "durationUs": run.asset.duration_us,
                     "errorCode": run.error_code,
                     "analysisKind": "temporal"
@@ -213,6 +215,22 @@ async def project_runs_payload(project: Path) -> dict[str, object]:
         return {"runs": rows}
     finally:
         await store.close()
+
+
+async def project_search_payload(
+    project: Path,
+    run_ids: list[str],
+    query: str,
+    repository: Path,
+    *,
+    mode: RetrievalMode = "hybrid",
+    top_k: int = 10,
+    project_reference: str,
+) -> dict[str, object]:
+    document = await execute_project_search(
+        project, run_ids, query, repository, mode=mode, top_k=top_k
+    )
+    return {**document, "project": project_reference}
 
 
 async def project_tasks_payload(

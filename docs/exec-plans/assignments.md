@@ -1,5 +1,7 @@
 # Active assignments
 
+root / Codex已顺序交付[sprint-project-retrieval-workspace](sprint-project-retrieval-workspace.md)，接5d2a48e，codex/visual-details。ui service/server/static与22新行为，网页来源选择／联合排名／原run回看／完整排名下载、原篮／诊断保持；真实双尺寸／现用hybrid、三新查询6文件／旧214搜索及unknown保持。最终完整2180passed／1权限skip、83包文件同源码；首次布局失败保留，直接修正后复核。8765fresh进程38216／45800，0付费／预留／人评。下一root登记离线批量准备接现有任务流程；旧worker/worktree冻结，小问题延期，F006/F009/F010false。
+
 root已順序交付[sprint-project-retrieval](sprint-project-retrieval.md)，接0a85f3a：共用检索内核的联合语料、原候选／来源／证据保留、main search-project／独立查询文件／PS；真实三源词法0.45s／hybrid3.9s、脚本1.15s同排名与另一进程、旧214检索／文件／费用保持。40新增／136定向通过，完整2157passed／1旧batch state保存失败／1权限skip，唯一失败一次窄复查通过；格式／84类型／双wheel／83包文件同源码通过。实际负面1候选记TD004，不反复修；本轮共7新项目查询、0付费／预留／人评，F006/F009/F010false。下一root登记现有工作台多素材选择／联合搜索与按源回看；旧worker／worktree冻结，无新SQL／HTTP或当前UI改动。
 
 root已顺序交付[sprint-media-batch-preparation](sprint-media-batch-preparation.md)，接06394ae：Application固定任务批量准备／Infrastructure冻结清单与原子状态／main／PS／模板和指南。实际三开发片4秒首次／3秒修复同批次续跑／0.8秒禁止提取复查，原任务／素材／832开发文件／费用保持，0模型／预算／搜索／人评。23新增全部通过；一次完整2117passed／1旧HTTP连接中断失败／1权限skip，失败一次窄复查通过；格式／lint／83类型／双wheel／82包文件同源码通过。TD012／TD013延期，下一root登记跨素材检索一次需求搜多Completed录像；旧worker／worktree冻结，原分析及unknown不重试，F006/F009/F010false。

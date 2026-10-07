@@ -12,6 +12,10 @@ root：`ui/server.py`、`ui/service.py`、新 `ui/media.py`、HTTP行为测试�
 
 ## GET 接口
 
+2026-10-07新增`POST /api/search-project`，严格JSON字段`{project,runs,query,mode,top}`。runs为1–100不同Completed ID，query为1–4096字符，mode为lexical／semantic／hybrid、top为整数1–100。沿原POST的64KiB／单Content-Length／同源／去重字段边界，项目真实路径位于仓库；所有来源先复核，同源SHA／media重复在embedding前拒绝，不能部分排名。响应复用CLI完整`project-search-v1`并加请求的project表示；每次独立保存result／SHA receipt，不写旧retrieval_runs、不调用分析／费用。`GET /api/runs`额外提供mediaId与sourceSha256，帮助显式选择版本。
+
+前端把联合结果与当前inspect视图分开，验证请求范围、每条原来源／全局rank／media／SHA／区间后接受；候选点击先空查询inspect原run并复核媒体、时长与configHash，原注册媒体URL校验保持。当前源candidates投影只取同run联合行，使音频fallback也可在原篮子核验；detailRefinement取来源事件已有结果。联合诊断隐藏，结果下载保留完整原排名；篮／JSON／CSV仍按run独立、源时间排序。原单搜索与旧诊断合同保持。abort／revision／controller身份防迟到结果，取消页面等待不能撤销已经完成的本地记录。
+
 2026-10-06，`GET /api/inspect` 增加 `retrievalDiagnostics`：空查询或非completed运行时为null；非空搜索成功后为`retrieval-diagnostics-v2`（取代v1，增加登记证据摘要）。失败沿原HTTP错误路径返回，没有“成功零命中”诊断。字段绑定project/run、mediaId/mediaSha256/durationUs、configHash、retrievalVersion、原query/mode/requestedTopK；slots固定十位按已返回候选顺序保留position和原rank，candidate含ID／event／原区间／证据／事实／排序分数。缺位为missing，已见过同eventId（无event时同candidateId）为known_duplicate并引用首次位置。不同ID仍须人工核对独立性；不从十一位补位。returnedCount、missingCount、knownDuplicateCount、limitedByRequestedTopK和abstentionReason保留诊断上下文，humanGrade／humanLabels／usefulRate／qualityGate均为null。无新路由或持久化合同，非空搜索仍保存原有retrieval记录；弹窗及JSON下载使用已有响应并重验当前上下文。
 
 v2每个非空candidate增加`evidenceSummary`，纯投影已登记且属于同media／duration／候选区间的引用。包含status、registeredImageCount／registeredAudioCount、distinctImageSourceTimeCount／distinctImageContentCount、firstImageSourceUs／lastImageSourceUs／imageSpanUs、按源时间列出的imageFrames（evidenceId／sourceUs／sha256）。同ID去重，图片源点须在半开区间内，音频须相交；未知ID／注册ID冲突／外源或时钟不符／类型不符时status=unavailable，计数和时刻为空，不发布部分计数。其余status为registered_single_frame／registered_same_instant／registered_repeated_content／registered_multi_frame／registered_audio_only。这些仅表示登记输入，actionUnderstandingVerified始终null；不同图片不证明动作、主体或镜头连续性，单张不提供动作过程对照。不得把全窗口送图数作为某候选引用图数；无文件读取、哈希重算或额外模型请求，下载不含本地路径。v1历史文件不作当前响应，不改变检索版本／排名／源事实／人评。

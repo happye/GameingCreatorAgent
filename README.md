@@ -6,7 +6,7 @@ This repository is the starting point for a local-first game-content creation to
 
 ## Current state
 
-One query can now jointly search explicitly selected completed recordings with `./scripts/search-project.ps1`, retaining original source/run identities, timecodes, evidence and uncertainty. BM25/E5/RRF rank a shared corpus; separate videos are not deduplicated merely for sharing a timestamp. Results have independent saved records and no paid analysis. See the [joint retrieval guide](./docs/references/project-retrieval-guide.md); the browser's existing search remains single-run.
+One query can jointly search explicitly selected completed recordings in the local workspace's “选择多段录像” dialog or with `./scripts/search-project.ps1`. Results retain original source/run identities, timecodes, evidence and uncertainty; click a candidate to preview its own recording. BM25/E5/RRF rank a shared corpus, while baskets stay separate by run. Download the complete joint ranking without another search. See the [joint retrieval guide](./docs/references/project-retrieval-guide.md); no paid analysis is dispatched.
 
 Multiple recordings can now be prepared locally from one bounded list, with fixed task IDs, saved per-task configuration/limits and explicit continuation of the same batch. Bad recordings do not block later input items; ready tasks are checked and reused without extraction, and tasks already in model analysis are only reported. No model, upload or budget reservation occurs. See the [batch preparation guide](./docs/references/media-batch-preparation-guide.md).
 

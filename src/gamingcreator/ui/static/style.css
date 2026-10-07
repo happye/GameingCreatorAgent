@@ -166,6 +166,29 @@ button.evidence-card { padding: 0; }
 .candidate-card { border: 1px solid var(--line); border-radius: 7px; background: #151b25; padding: 9px; margin-bottom: 7px; }
 .candidate-card.active, .timeline-row.active { border-color: #577fbd; background: #243653; }
 .candidate-card-top { display: flex; align-items: center; gap: 7px; }
+.search-scope { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding-top: 8px; flex-shrink: 0; }
+.search-scope span { width: 100%; overflow-wrap: anywhere; }
+.candidate-source { margin: 5px 0; color: var(--accent); font-size: 11px; overflow-wrap: anywhere; }
+#search-sources-dialog { width: min(680px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; }
+.search-sources-list { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+.search-source-option { display: flex; align-items: flex-start; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 6px; overflow-wrap: anywhere; }
+.search-source-option input { flex: 0 0 16px; width: 16px; height: 16px; margin-top: 3px; padding: 0; }
+.search-source-option span { min-width: 0; }
+.search-source-option small { display: block; color: var(--muted); margin-top: 4px; }
+@media (min-width: 1001px) {
+    .search-panel .search-scope { gap: 4px 12px; padding-top: 4px; }
+    .search-panel .search-scope span { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .search-panel > .panel-heading { min-height: 28px; }
+    .search-panel > .panel-heading .eyebrow { display: none; }
+    .search-panel .assistant-mark { width: 24px; height: 24px; font-size: 20px; }
+    .search-panel #query { height: 44px; min-height: 44px; padding: 6px 8px; font-size: 11px; line-height: 1.4; }
+    .search-panel .search-options { margin: 4px 0; }
+    .search-panel .search-options .field-label { line-height: 11px; margin-bottom: 1px; }
+    .search-panel .search-options input, .search-panel .search-options select { height: 25px; padding: 3px 6px; }
+    .search-panel #search-button { padding: 6px 10px; font-size: 11px; }
+    .search-panel .results-heading { margin: 5px 0 3px; }
+    .search-panel #search-context { margin-bottom: 3px; }
+}
 .rank { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 5px; background: #263a5b; color: var(--accent); font-size: 10px; flex-shrink: 0; }
 .clip-preview { border: 0; background: transparent; color: #d9e3f3; text-align: left; padding: 0; font-size: 11px; font-variant-numeric: tabular-nums; line-height: 1.5; }
 .candidate-card .clip-preview { flex: 1; }

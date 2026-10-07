@@ -27,6 +27,8 @@
         "retrieval-diagnostics-summary", "retrieval-diagnostics-slots", "download-retrieval-diagnostics",
         "open-tasks", "tasks-dialog", "close-tasks", "tasks-list", "tasks-page-summary",
         "tasks-previous", "tasks-next", "refresh-tasks",
+        "open-search-sources", "single-search-source", "search-scope-label", "search-sources-dialog",
+        "close-search-sources", "search-sources-list", "search-sources-summary", "apply-search-sources", "download-project-search",
     ].map((id) => [id, byId(id)]));
     const state = {
         project: "", run: "", revision: 0, runs: [], view: null, active: null,
@@ -38,12 +40,158 @@
         draftController: null, draftRevision: 0, drafting: false, draftScope: "manual",
         diagnosticsContext: null,
         tasksController: null, tasksRevision: 0, tasksOffset: 0,
+        searchRuns: [], projectSearch: null, projectSearchController: null,
     };
     const statusLabels = {
         pending: "等待分析", running: "分析中", completed: "已完成", failed: "失败",
         cancelled: "已取消", interrupted: "已中断",
     };
     const TASK_PAGE_SIZE = 20;
+
+    function updateSearchScope() {
+        ui["open-search-sources"].textContent = state.searchRuns.length ? `已选 ${state.searchRuns.length} 段 · 更改录像` : "选择多段录像";
+        ui["search-scope-label"].textContent = state.searchRuns.length ? `搜索已选的 ${state.searchRuns.length} 段录像 · 回看时可切换来源` : "搜索当前录像";
+        ui["single-search-source"].hidden = !state.searchRuns.length;
+        ui["open-search-sources"].disabled = state.busy || !state.runs.some((run) => run.status === "completed");
+        ui["download-project-search"].hidden = !state.searchRuns.length;
+        ui["download-project-search"].disabled = state.busy || !state.projectSearch;
+        ui["open-retrieval-diagnostics"].hidden = Boolean(state.searchRuns.length);
+    }
+
+    function clearProjectSearch() {
+        state.projectSearchController?.abort();
+        state.projectSearchController = null;
+        state.projectSearch = null;
+        clearRetrievalDiagnostics();
+        updateSearchScope();
+    }
+
+    function openSearchSources() {
+        ui["search-sources-list"].replaceChildren();
+        const ready = state.runs.filter((run) => run.status === "completed" && /^[a-f0-9]{64}$/.test(run.sourceSha256));
+        for (const run of ready) {
+            const label = element("label", "search-source-option");
+            const checkbox = element("input");
+            checkbox.type = "checkbox";
+            checkbox.value = run.id;
+            checkbox.dataset.sha = run.sourceSha256;
+            checkbox.dataset.media = run.mediaId;
+            checkbox.checked = state.searchRuns.includes(run.id);
+            const copy = element("span", "", run.sourceName || "未命名录像");
+            const profile = run.analysisProfile === "detailed" ? "细节动作分析" : run.analysisKind === "temporal" ? "连续动作分析" : "画面观察";
+            copy.append(element("small", "", `${profile} · ${timecode(run.durationUs)} · 版本 ${run.id.slice(0, 8)}`));
+            label.append(checkbox, copy);
+            ui["search-sources-list"].append(label);
+            checkbox.addEventListener("change", () => {
+                if (checkbox.checked) {
+                    for (const other of ui["search-sources-list"].querySelectorAll("input")) {
+                        if (other !== checkbox && (other.dataset.sha === checkbox.dataset.sha || other.dataset.media === checkbox.dataset.media)) other.checked = false;
+                    }
+                }
+                updateSourceChoice();
+            });
+        }
+        if (!ready.length) empty(ui["search-sources-list"], "还没有已完成且来源明确的录像。");
+        updateSourceChoice();
+        ui["search-sources-dialog"].showModal();
+    }
+
+    function updateSourceChoice() {
+        const count = ui["search-sources-list"].querySelectorAll("input:checked").length;
+        ui["search-sources-summary"].textContent = `已选择 ${count} 段 · 关闭窗口会保留原来的搜索范围`;
+        ui["apply-search-sources"].disabled = count < 1 || count > 100;
+    }
+
+    function jointRowsForView(payload) {
+        const result = state.projectSearch;
+        if (!result) return payload;
+        const source = result.sources.find((item) => item.runId === payload.runId);
+        if (!source) return payload;
+        if (payload.media.id !== source.mediaId || payload.media.sha256 !== source.sourceSha256
+            || payload.media.durationUs !== source.durationUs || payload.configHash !== source.configHash) throw new Error("候选来源已变化，请重新搜索后回看。");
+        const candidates = result.candidates.filter((row) => row.runId === payload.runId).map((row) => {
+            const event = payload.timeline.find((item) => item.eventId === row.eventId);
+            return { ...row, detailRefinement: event?.detailRefinement };
+        });
+        return { ...payload, candidates, query: result.query, mode: result.mode, retrievalVersion: result.retrievalVersion, retrievalDiagnostics: null };
+    }
+
+    async function searchProject(query) {
+        const top = Number(ui.top.value);
+        if (!Number.isInteger(top) || top < 1 || top > 100) return notice("候选条数需要是1到100的整数。");
+        state.inspectController?.abort();
+        clearProjectSearch();
+        state.active = null;
+        state.playbackEndUs = null;
+        ui["source-video"].pause();
+        updateActive();
+        renderEvidence();
+        const controller = new AbortController();
+        state.projectSearchController = controller;
+        const revision = state.revision;
+        const runs = [...state.searchRuns];
+        const mode = ui.mode.value;
+        notice("");
+        setBusy(true, true);
+        empty(ui["candidate-list"], "正在搜索选中的录像…");
+        ui["candidate-count"].textContent = "0";
+        try {
+            const result = await request("/api/search-project", {}, controller.signal, { project: state.project, runs, query, mode, top });
+            if (controller.signal.aborted || revision !== state.revision || state.projectSearchController !== controller) return;
+            if (result.schemaVersion !== "project-search-v1" || result.project !== state.project || result.query !== query
+                || result.mode !== mode || result.topK !== top || !Array.isArray(result.sources) || result.sources.length !== runs.length
+                || !Array.isArray(result.candidates) || result.candidates.length > top
+                || new Set(result.sources.map((source) => source.runId)).size !== runs.length
+                || result.sources.some((source) => {
+                    const known = state.runs.find((run) => run.id === source.runId);
+                    return !runs.includes(source.runId) || !known || known.sourceSha256 !== source.sourceSha256 || known.mediaId !== source.mediaId || known.durationUs !== source.durationUs;
+                }) || result.candidates.some((row, index) => {
+                    const source = result.sources.find((item) => item.runId === row.runId);
+                    return !source || row.rank !== index + 1 || row.mediaId !== source.mediaId || row.sourceSha256 !== source.sourceSha256
+                        || row.sourceName !== source.sourceName || !validInterval(row, source.durationUs)
+                        || typeof row.candidateId !== "string" || !Array.isArray(row.evidenceIds) || !row.evidenceIds.every((id) => typeof id === "string")
+                        || !Array.isArray(row.observableFacts) || !row.observableFacts.every((fact) => typeof fact === "string");
+                })) throw new Error("多录像结果的来源或排名不一致，请重新搜索。");
+            state.projectSearch = result;
+            if (state.view) state.view = jointRowsForView(state.view);
+            renderCandidates();
+            renderSelections();
+        } catch (error) {
+            if (controller.signal.aborted || revision !== state.revision || state.projectSearchController !== controller) return;
+            notice(error.message);
+            empty(ui["candidate-list"], "搜索未完成，请查看提示后重试。");
+            ui["candidate-count"].textContent = "0";
+        } finally {
+            if (revision === state.revision && state.projectSearchController === controller) setBusy(false);
+        }
+    }
+
+    async function openJointCandidate(row, select = false) {
+        const result = state.projectSearch;
+        if (!result || state.busy || !result.candidates.includes(row)) return;
+        if (state.run !== row.runId || !state.view?.candidates.some((item) => item.candidateId === row.candidateId)) {
+            ui["run-select"].value = row.runId;
+            const loaded = await switchRun(row.runId, true);
+            if (!loaded || state.projectSearch !== result || state.run !== row.runId) return;
+        }
+        const current = state.view?.candidates.find((item) => item.candidateId === row.candidateId);
+        if (!current || state.projectSearch !== result || state.run !== row.runId) return;
+        if (select) toggleSelection("candidate", current);
+        else await previewClip("candidate", current);
+    }
+
+    function downloadProjectSearch() {
+        if (!state.projectSearch || state.busy) return;
+        const url = URL.createObjectURL(new Blob([JSON.stringify(state.projectSearch, null, 2) + "\n"], { type: "application/json;charset=utf-8" }));
+        const link = element("a");
+        link.href = url;
+        link.download = `project-search-${state.projectSearch.searchId}.json`;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        notice("已下载这次搜索的原排名、录像来源和证据清单。", true);
+    }
 
     function clearTasks() {
         state.tasksController?.abort();
@@ -804,6 +952,7 @@
     }
 
     function currentDiagnostics() {
+        if (state.searchRuns.length) return null;
         const view = state.view;
         const doc = view?.retrievalDiagnostics;
         if (state.busy || view?.runStatus !== "completed" || !doc
@@ -918,7 +1067,7 @@
         state.busy = busy;
         if (busy) clearRetrievalDiagnostics();
         updateDiagnosticsButton();
-        const completed = state.view?.runStatus === "completed";
+        const completed = state.searchRuns.length > 0 || state.view?.runStatus === "completed";
         ui["search-button"].disabled = busy || !completed;
         ui["search-button"].textContent = busy ? (searching ? "正在本地检索…" : "正在读取…") : "查找片段 ↗";
         ui["refresh-view"].disabled = busy || !state.run;
@@ -929,6 +1078,8 @@
         ui["open-detail-costs"].disabled = busy || !state.run;
         updateDetailQueryButton();
         renderSelections();
+        updateSearchScope();
+        if (state.projectSearch) renderCandidates();
     }
 
     function resetView() {
@@ -988,7 +1139,8 @@
         drawTimeline();
     }
 
-    function switchRun(run) {
+    async function switchRun(run, keepProjectSearch = false) {
+        if (!keepProjectSearch) clearProjectSearch();
         state.revision += 1;
         state.inspectController?.abort();
         state.run = run;
@@ -1000,10 +1152,14 @@
         ui["source-duration"].textContent = metadata ? `源时长 ${timecode(metadata.durationUs)}` : "源视频保留在本机";
         ui["run-state"].className = `run-state ${metadata?.status || "muted"}`;
         ui["run-state"].textContent = metadata ? `${statusLabels[metadata.status] || metadata.status} · ${run}${metadata.errorCode ? ` · ${metadata.errorCode}` : ""}` : "尚未选择运行";
-        if (run) void inspect("");
+        if (run) return await inspect("");
+        return false;
     }
 
     async function loadRuns(project, preferredRun = "") {
+        clearProjectSearch();
+        state.searchRuns = [];
+        if (ui["search-sources-dialog"].open) ui["search-sources-dialog"].close();
         state.runsController?.abort();
         state.inspectController?.abort();
         state.revision += 1;
@@ -1119,12 +1275,13 @@
             if (payload.runId !== state.run || !Array.isArray(payload.timeline) || !Array.isArray(payload.candidates)
                 || !payload.media || typeof payload.media.id !== "string"
                 || !Number.isSafeInteger(payload.media.durationUs) || payload.media.durationUs <= 0) throw new Error("分析视图的素材或运行身份不一致。");
-            state.view = payload;
-            const activeRow = previousActive && (previousActive.kind === "candidate" ? payload.candidates : payload.timeline)
+            state.view = jointRowsForView(payload);
+            const activeRow = previousActive && (previousActive.kind === "candidate" ? state.view.candidates : state.view.timeline)
                 .find((row) => selectionKey(row) === selectionKey(previousActive.row));
             state.active = activeRow ? { kind: previousActive.kind, row: activeRow } : null;
             state.playbackEndUs = null;
             renderView();
+            return true;
         } catch (error) {
             if (error.name === "AbortError" || state.revision !== revision || state.inspectController !== controller) return;
             notice(error.message);
@@ -1141,6 +1298,7 @@
         } finally {
             if (state.revision === revision && state.inspectController === controller) setBusy(false);
         }
+        return false;
     }
 
     function renderView() {
@@ -1209,29 +1367,47 @@
 
     function renderCandidates() {
         const view = state.view;
-        if (!view) return;
+        const joint = state.projectSearch;
+        if (!view && !joint) return;
+        const rows = joint ? joint.candidates : view.candidates;
         const scrollTop = ui["candidate-list"].scrollTop;
-        ui["candidate-count"].textContent = view.candidates.length;
+        ui["candidate-count"].textContent = rows.length;
         ui["candidate-list"].replaceChildren();
-        ui["search-context"].textContent = view.query ? `“${view.query}” · ${view.mode} · 分数是排序信号` : "输入你需要的动作、玩法或画面。";
-        if (!view.candidates.length) {
+        ui["search-context"].textContent = joint ? `“${joint.query}” · ${joint.sources.length} 段录像共同排名 · 分数是排序信号`
+            : view.query ? `“${view.query}” · ${view.mode} · 分数是排序信号` : "输入你需要的动作、玩法或画面。";
+        if (!rows.length) {
+            if (joint) return empty(ui["candidate-list"], "选中的录像中没有匹配候选，可以换一种描述。");
             empty(ui["candidate-list"], view.runStatus !== "completed" ? "分析尚未完成，可以先查看已保存时间轴。"
                 : view.query ? (view.abstentionReason ? `没有合适候选（${view.abstentionReason}）。可以换一种描述。` : "没有匹配候选。可以换一种描述。") : "输入查询后查找片段，或直接从时间轴选片。");
             return;
         }
-        for (const row of view.candidates) {
+        for (const row of rows) {
             const card = element("article", `candidate-card${state.active?.kind === "candidate" && state.active.row.candidateId === row.candidateId ? " active" : ""}`);
             const top = element("div", "candidate-card-top");
             const preview = element("button", "clip-preview", intervalLabel(row));
             preview.type = "button";
-            preview.disabled = !validInterval(row) || !state.sourceUrl;
+            preview.disabled = joint ? state.busy || !validInterval(row, joint.sources.find((source) => source.runId === row.runId)?.durationUs) : !validInterval(row) || !state.sourceUrl;
             preview.setAttribute("aria-label", `播放候选 ${row.rank}，${intervalLabel(row)}`);
-            preview.addEventListener("click", () => previewClip("candidate", row));
-            top.append(element("span", "rank", row.rank), preview, selectionButton("candidate", row));
+            preview.addEventListener("click", () => joint ? void openJointCandidate(row) : void previewClip("candidate", row));
+            let selection;
+            if (joint) {
+                const selected = state.run === row.runId && state.selections.some((entry) => entry.key === selectionKey(row));
+                selection = element("button", `select-clip${selected ? " selected" : ""}`, selected ? "✓" : "+");
+                selection.type = "button";
+                selection.setAttribute("aria-label", selected ? "从来源录像的片段篮移除" : "加入来源录像的片段篮");
+                selection.setAttribute("aria-pressed", String(selected));
+                selection.disabled = state.busy;
+                selection.addEventListener("click", () => { void openJointCandidate(row, true); });
+            } else selection = selectionButton("candidate", row);
+            top.append(element("span", "rank", row.rank), preview, selection);
             const copy = element("p", "candidate-facts", facts(row).join("；"));
             const meta = element("div", "candidate-meta");
             meta.append(element("span", "", `${Array.isArray(row.evidenceIds) ? row.evidenceIds.length : 0} 份证据`), element("span", "", `${row.scoreKind || "score"} · ${typeof row.score === "number" && Number.isFinite(row.score) ? row.score.toFixed(4) : "—"}`));
             card.append(top, copy, meta);
+            if (joint) {
+                card.dataset.run = row.runId;
+                card.insertBefore(element("p", "candidate-source", `来源 · ${row.sourceName}`), copy);
+            }
             appendUncertainty(card, row);
             ui["candidate-list"].append(card);
         }
@@ -1645,7 +1821,25 @@
         ui["project-select"].value = project;
         void loadRuns(project);
     });
-    ui["run-select"].addEventListener("change", () => switchRun(ui["run-select"].value));
+    ui["run-select"].addEventListener("change", () => { void switchRun(ui["run-select"].value); });
+    ui["open-search-sources"].addEventListener("click", openSearchSources);
+    ui["close-search-sources"].addEventListener("click", () => ui["search-sources-dialog"].close());
+    ui["apply-search-sources"].addEventListener("click", () => {
+        const runs = [...ui["search-sources-list"].querySelectorAll("input:checked")].map((input) => input.value);
+        if (!runs.length || runs.length > 100) return;
+        clearProjectSearch();
+        state.searchRuns = runs;
+        ui["search-sources-dialog"].close();
+        updateSearchScope();
+        void inspect("");
+    });
+    ui["single-search-source"].addEventListener("click", () => {
+        clearProjectSearch();
+        state.searchRuns = [];
+        updateSearchScope();
+        void inspect("");
+    });
+    ui["download-project-search"].addEventListener("click", downloadProjectSearch);
     ui["detail-profile"].addEventListener("change", () => { void inspect(state.view?.query || "", true); });
     ui["open-detail-query"].addEventListener("click", () => {
         if (!canMatchDetails()) return;
@@ -1675,6 +1869,12 @@
     for (const id of ["query", "mode", "top"]) {
         ui[id].addEventListener(id === "mode" ? "change" : "input", () => {
             state.inspectController?.abort();
+            if (state.projectSearchController && !state.projectSearch) {
+                state.projectSearchController.abort();
+                state.projectSearchController = null;
+                setBusy(false);
+                empty(ui["candidate-list"], "查询已变化，请重新查找片段。");
+            }
             if (state.view) state.view = { ...state.view, retrievalDiagnostics: null };
             clearRetrievalDiagnostics();
             updateDiagnosticsButton();
@@ -1686,11 +1886,12 @@
     ui["refresh-view"].addEventListener("click", () => { void inspect(""); });
     ui["search-form"].addEventListener("submit", (event) => {
         event.preventDefault();
-        if (state.view?.runStatus !== "completed" || state.busy) return;
+        if ((!state.searchRuns.length && state.view?.runStatus !== "completed") || state.busy) return;
         const query = ui.query.value.trim();
         if (!query) return notice("写一句你想寻找的动作或画面，再查找片段。");
         if (query.length > 4096) return notice("查询最多 4096 个字符，请缩短描述。");
-        void inspect(query);
+        if (state.searchRuns.length) void searchProject(query);
+        else void inspect(query);
     });
     ui.query.addEventListener("keydown", (event) => {
         if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) { event.preventDefault(); ui["search-form"].requestSubmit(); }
