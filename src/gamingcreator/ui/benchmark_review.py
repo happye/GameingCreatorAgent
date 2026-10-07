@@ -20,9 +20,19 @@ video{display:block;max-width:100%;width:640px;max-height:320px;background:#151b
 """
 
 
-def render_benchmark_review(context: dict[str, object], template: dict[str, object]) -> str:
+def render_benchmark_review(
+    context: dict[str, object],
+    template: dict[str, object],
+    *,
+    media_urls: dict[str, str] | None = None,
+) -> str:
     media = [
-        {**row, "videoUrl": Path(cast(str, row["path"])).as_uri()}
+        {
+            **row,
+            "videoUrl": media_urls[cast(str, row["runId"])]
+            if media_urls is not None
+            else Path(cast(str, row["path"])).as_uri(),
+        }
         for row in cast(list[dict[str, object]], context["media"])
     ]
     config = {"context": {**context, "media": media}, "template": template}
@@ -39,7 +49,8 @@ def render_benchmark_review(context: dict[str, object], template: dict[str, obje
         + asset
     )
     digest = base64.b64encode(hashlib.sha256(script.encode()).digest()).decode("ascii")
-    policy = f"default-src 'none'; media-src file: blob:; style-src 'unsafe-inline'; script-src 'sha256-{digest}'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    media_policy = "'self'" if media_urls is not None else "file: blob:"
+    policy = f"default-src 'none'; media-src {media_policy}; style-src 'unsafe-inline'; script-src 'sha256-{digest}'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
     body = """<header><h1>检索候选 · 人工判分</h1>
 <p>按原排名核对十个固定位置。缺位和已知重复保留，不能用后面的结果补位；相同真实动作可映射到同一独立事件。</p>
 <p class="notice">所有评分先留空。模型描述只供对照，请回看原片；下载或选择评分不会自动通过检索验收。没有事前人工参考时，可记录0/1或暂不判分，2/3需要对应的冻结独立事件。</p>

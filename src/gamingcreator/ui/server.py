@@ -1,6 +1,7 @@
 """Loopback workspace backed by registered timelines, media and local search."""
 
 import asyncio
+import html
 import json
 import os
 import socket
@@ -12,7 +13,8 @@ from urllib.parse import parse_qs, urlparse
 from gamingcreator.application.detail_query_draft import draft_detail_query
 from gamingcreator.application.retrieval import RetrievalMode
 from gamingcreator.domain.errors import AppError, ExitCode
-from gamingcreator.ui.media import VerifiedMediaCache, byte_range
+from gamingcreator.ui.benchmark_workflow import BenchmarkWorkflows
+from gamingcreator.ui.media import MediaResource, VerifiedMediaCache, byte_range
 from gamingcreator.ui.media_preparation import MediaPreparationJobs
 from gamingcreator.ui.service import (
     detail_costs,
@@ -29,6 +31,9 @@ ASSETS = {
     "/": ("index.html", "text/html; charset=utf-8"),
     "/assets/app.js": ("app.js", "text/javascript; charset=utf-8"),
     "/assets/style.css": ("style.css", "text/css; charset=utf-8"),
+    "/acceptance": ("benchmark-workflow.html", "text/html; charset=utf-8"),
+    "/assets/benchmark-workflow.js": ("benchmark-workflow.js", "text/javascript; charset=utf-8"),
+    "/assets/benchmark-workflow.css": ("benchmark-workflow.css", "text/css; charset=utf-8"),
 }
 
 
@@ -91,11 +96,15 @@ def error_status(error: AppError) -> int:
 
 class WorkspaceServer(ThreadingHTTPServer):
     preparation_jobs: MediaPreparationJobs
+    benchmark_workflows: BenchmarkWorkflows
 
     def server_close(self) -> None:
         jobs = getattr(self, "preparation_jobs", None)
         if jobs is not None:
             jobs.close()
+        workflows = getattr(self, "benchmark_workflows", None)
+        if workflows is not None:
+            workflows.close()
         super().server_close()
 
     def server_bind(self) -> None:
@@ -111,11 +120,14 @@ class InspectionHandler(BaseHTTPRequestHandler):
     repository = Path.cwd()
     media_cache = VerifiedMediaCache()
     preparation_jobs: MediaPreparationJobs
+    benchmark_workflows: BenchmarkWorkflows
 
     def log_message(self, format: str, *args: object) -> None:
         return
 
-    def _headers(self, status: int, length: int, content_type: str) -> None:
+    def _headers(
+        self, status: int, length: int, content_type: str, policy: str | None = None
+    ) -> None:
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(length))
@@ -123,7 +135,8 @@ class InspectionHandler(BaseHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header(
             "Content-Security-Policy",
-            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+            policy
+            or "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data:; media-src 'self'; object-src 'none'; "
             "frame-ancestors 'none'; base-uri 'none'",
         )
@@ -153,6 +166,9 @@ class InspectionHandler(BaseHTTPRequestHandler):
 
     def _media(self, project: Path, run_id: str, evidence_id: str | None = None) -> None:
         resource = asyncio.run(registered_media(project, run_id, evidence_id))
+        self._serve_media(resource)
+
+    def _serve_media(self, resource: MediaResource) -> None:
         with self.media_cache.open(resource) as source:
             size = os.fstat(source.fileno()).st_size
             try:
@@ -190,7 +206,9 @@ class InspectionHandler(BaseHTTPRequestHandler):
             ):
                 raise ValueError("Expected a bounded JSON body.")
             length = int(self.headers["Content-Length"])
-            if not 0 < length <= 65536:
+            path = urlparse(self.path).path
+            body_limit = 8_388_608 if path == "/api/benchmark-step" else 65536
+            if not 0 < length <= body_limit:
                 raise ValueError("Request is too large.")
             # Socket read timeout prevents a partial body from retaining a handler indefinitely.
             self.connection.settimeout(10)
@@ -209,6 +227,8 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/search-project",
                 "/api/prepare-media-batch",
                 "/api/cancel-media-preparation",
+                "/api/benchmark-workflows",
+                "/api/benchmark-step",
             }:
                 self._json(404, {"code": "input.route", "message": "没有这个操作。"})
                 return
@@ -222,6 +242,16 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return result
 
             value = json.loads(body, object_pairs_hook=unique)
+            if path in {"/api/benchmark-workflows", "/api/benchmark-step"}:
+                if type(value) is not dict:
+                    raise ValueError("Expected workflow fields.")
+                payload = (
+                    self.benchmark_workflows.create(value)
+                    if path == "/api/benchmark-workflows"
+                    else self.benchmark_workflows.submit(value)
+                )
+                self._json(201 if path == "/api/benchmark-workflows" else 202, payload)
+                return
             if path == "/api/prepare-media-batch":
                 if type(value) is not dict:
                     raise ValueError("Expected preparation fields.")
@@ -323,7 +353,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     {
                         "application": "gamingcreator-workspace",
                         "apiVersion": 1,
-                        "capabilities": ["media-preparation-v1"],
+                        "capabilities": ["media-preparation-v1", "benchmark-workflow-v1"],
                         "repository": str(self.repository.resolve()),
                         "pid": os.getpid(),
                         "parentPid": os.getppid(),
@@ -334,6 +364,53 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(200, {"projects": discover_projects(self.repository)})
                 return
             query = _query(self.path)
+            if path == "/api/benchmark-workflows":
+                if query:
+                    raise ValueError("Unexpected workflow catalog fields.")
+                self._json(200, self.benchmark_workflows.catalog())
+                return
+            if path == "/api/benchmark-workflow":
+                if set(query) != {"workflow"}:
+                    raise ValueError("Expected workflow identity.")
+                self._json(200, self.benchmark_workflows.get(query["workflow"]))
+                return
+            if path == "/api/benchmark-source":
+                if set(query) != {"workflow", "attempt", "source"}:
+                    raise ValueError("Expected registered source identity.")
+                self._serve_media(
+                    self.benchmark_workflows.media(
+                        query["workflow"], query["attempt"], query["source"]
+                    )
+                )
+                return
+            if path == "/api/benchmark-file":
+                if set(query) != {"workflow", "attempt", "file"}:
+                    raise ValueError("Expected registered workflow file.")
+                identifier, attempt, name = query["workflow"], query["attempt"], query["file"]
+                if name.endswith(".html"):
+                    data = self.benchmark_workflows.page(identifier, attempt, name)
+                    # Renderer supplies a hash-only inline policy. Apply the same policy in the response.
+                    policy = html.unescape(
+                        data.decode()
+                        .split('http-equiv="Content-Security-Policy" content="', 1)[1]
+                        .split('"', 1)[0]
+                    )
+                    self._headers(
+                        200,
+                        len(data),
+                        "text/html; charset=utf-8",
+                        policy + "; frame-ancestors 'none'",
+                    )
+                    self.end_headers()
+                    if self.command != "HEAD":
+                        self.wfile.write(data)
+                else:
+                    self._send(
+                        200,
+                        self.benchmark_workflows.file(identifier, attempt, name),
+                        "application/json; charset=utf-8",
+                    )
+                return
             if path == "/api/media-preparation":
                 if set(query) != {"project", "job"}:
                     raise ValueError("Expected preparation identity.")
@@ -433,6 +510,7 @@ def create_server(host: str, port: int, repository: Path) -> ThreadingHTTPServer
     if host != "127.0.0.1":
         raise ValueError("The inspection workspace only binds to 127.0.0.1")
     jobs = MediaPreparationJobs(repository)
+    workflows = BenchmarkWorkflows(repository)
     handler = type(
         "WorkspaceHandler",
         (InspectionHandler,),
@@ -440,10 +518,12 @@ def create_server(host: str, port: int, repository: Path) -> ThreadingHTTPServer
             "repository": repository.resolve(),
             "media_cache": VerifiedMediaCache(),
             "preparation_jobs": jobs,
+            "benchmark_workflows": workflows,
         },
     )
     server = WorkspaceServer((host, port), handler)
     server.preparation_jobs = jobs
+    server.benchmark_workflows = workflows
     return server
 
 

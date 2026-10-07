@@ -1,5 +1,16 @@
 # 当前交接
 
+2026-10-07 root接d15777a已交付[统一验收入口](docs/exec-plans/sprint-benchmark-workspace.md)，[指南](docs/references/benchmark-workspace-guide.md)、[通俗汇报](docs/exec-plans/report-2026-10-07-benchmark-workspace.md)。工作台八步登记／原片／冻结／Completed绑定／显式报告／固定评审／原排名评分、输入结果持久保存／实际OS执行锁／中断新目录／后续锁前步，同源登记SHA及Range回看，表单须下载后提交，无自动人评／模型／费用。root独占代码与文档，旧worker冻结。
+
+新增18全通过；一次完整2272passed／3failed／1权限skip445.04s，旧health能力声明同步，两旧media准备路径／状态问题单次三项复查3passed2.22s，原因未明TD012延期，没重跑整套／不称全绿。178格式lint／92类型／CLI／双同wheel a5d8ac51c4f27303dd27bf3df596f58f2fec6d80cb417e7a79e620e34e643aae，94包文件等源码，独立包进程登记／渲染通过。整套后只旧health测试及文档，生产源码保持。
+
+实际三开发源／三查询八步均完成，原片1.2s／核对1.3s／冻结1.4s／绑定0.9s／三词法2.9s／评审0.8s／空计分0.9s；两尺寸恢复／原片及30固定位，另一实例所有SHA一致。baseline先存，856旧文件（排除WAL/SHM）本次保持，9基础表／三源／旧费用两metadata／proposal原输入保持；检索214→217仅三SQL排名，计分0search。真实验证助手的路径／链接／SQLite和JSON假设错误保存，原七步继续完第八步／尾部只读回，不删或重搜。
+
+8765 fresh state／health／CIM／exe命令创建时间核对更新45524／28036→53176／54948，benchmark-workflow-v1；六现用资源等源码，两尺寸入口／8步／30位／原区间播放末尾停与空判断保持，0新search／paid。原片标注三个特殊时钟只手填，TD006未扩展。已通俗汇报能力、实测、失败单次复查与包、现用结果及下一动作。F006/F009/F010false、原unknown4.065536／待答¥4.07保留，0本轮模型／上传／预留／真标签。
+
+**下一主线**root先登记冻结来源与已有Completed任务的页面选择关联，保留SHA／配置／同源版本和分区资格，省去手写对应表；不循环TD012、不越门槛成片商业。goal active；普通push已授权当前分支，不改main／强推，保存／远端事实以Git和.cache/benchmark-workflow-publication.json为准。以下为上一轮交付历史。
+
+
 发布事实：登记表单完整交付24e3481已本地提交；一次普通push在21.111秒连接github.com:443失败／exit128，.cache/benchmark-plan-editor-push.log保留，不重试／未读取远端。上次独立确认799625c，原片标注与本次登记仍待补推，不能称远端已同步。后续仅补发布事实，最终文档head以Git及publication为准，源码／2257完整通过／90包文件保持，goal active。
 
 2026-10-07 root接7f5cbd7已交付[事前计划登记表单](docs/exec-plans/sprint-benchmark-plan-editor.md)，[指南](docs/references/benchmark-plan-editor-guide.md)、[通俗汇报](docs/exec-plans/report-2026-10-07-plan-editor.md)。不必手写来源／查询JSON，未知声明与未填草稿可保存继续、明确用途和是否看过结果后旧plan导出；已有人评资料拒绝登记导入，不清判断。纯Application／独立file表单／公开Python与PS，不读取媒体内容或模型／项目，不增加HTTP／SQL，现用工作台不重启。

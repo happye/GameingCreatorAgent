@@ -1,5 +1,7 @@
 # Gaming Creator Agent
 
+The local workspace's “验收流程” entry connects source/query registration, raw-footage references, freezing, Completed-run binding, explicit local ranking and fixed-candidate review/scoring. Submitted steps preserve their inputs and new output directories; refresh or restart recovers progress. Forms require downloading edits and submitting the saved file. Ranking runs on an explicit click; scoring performs no search. See the [acceptance workspace guide](docs/references/benchmark-workspace-guide.md). Independent human retrieval acceptance remains pending.
+
 Version repository: [happye/GameingCreatorAgent](https://github.com/happye/GameingCreatorAgent). Use the current working branch named in [`HANDOFF.md`](./HANDOFF.md); unfinished features may not be on `main`. Keep media, keys, environments, and caches outside tracked files.
 
 This repository is the starting point for a local-first game-content creation tool. The source plan is [`游戏内容创作与商业化产品总方案 V1.0.txt`](./游戏内容创作与商业化产品总方案%20V1.0.txt). The first milestone validates whether a semantic timeline can find useful moments in local game footage before a desktop UI or commercial system is built.

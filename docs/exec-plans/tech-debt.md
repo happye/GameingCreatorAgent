@@ -30,3 +30,5 @@ Record debt when it is discovered; do not hide it in a passing feature. Review r
 | TD013 | 2026-10-07/F002 | low; before first task only | 批次plan已冻结但SQLite尚未创建就中断时，resume的原项目存在性检查拒绝；尚无已创建任务，不影响已有任务恢复 | 保留批次冻结资料，恢复环境后重新提交清单；后续明确仅对未创建任务的批次放开初始化，不能重建已丢失DB中的分析或未知费用。由本轮代码路径检查发现，未宣称真实硬杀在此窗口验证 | deferred per user delivery priority |
 
 TD012补充（2026-10-07多素材准备）：定向批次state替换也偶发storage.batch_checkpoint，保留.cache/media-batch-behavior.xml／complete-targeted.xml；最终23新增在一次完整回归均通过。该次旧HTTP oversized请求WinError10053失败，.cache/media-batch-tests.xml／verify.log保留，唯一失败一次窄复查1passed0.981s（old-failure-recheck.xml）。没有定位环境原因、加生产重试或重跑无变化全套，继续按用户优先级延期。
+
+TD012补充（2026-10-07统一验收入口）：完整回归两旧media-preparation-jobs检查分别出现项目路径资格拒绝和取消范围400而非404，原代码未改，原因未确定；.cache/benchmark-workflow-verify.log保留。一轮窄复查连同新增能力声明同步检查3passed2.22s（recheck.xml），不称两旧问题已修复、不重跑整套、不放松路径边界。旧health预期未包含新能力属于本次合同检查同步，已改测试，不归入环境债务。

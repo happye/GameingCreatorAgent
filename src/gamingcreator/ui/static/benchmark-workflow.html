@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>验收流程 · 游戏创作工作台</title><link rel="stylesheet" href="/assets/benchmark-workflow.css"><script src="/assets/benchmark-workflow.js" defer></script></head>
+<body><main>
+<header><a href="/">← 回到素材工作台</a><h1>验收流程</h1><p>先登记想找什么，在原片上标注，再核对固定十位结果。每一步的输入和结果保存在本机，回来时可以继续。</p><p class="notice">流程完成与检索质量通过分开显示。已有开发片可练习操作；独立录像、事前人工参考和候选判断仍需要人实际确认。</p></header>
+<section><h2>开始或继续</h2><form id="create-form"><label>新流程名称<input id="workflow-name" maxlength="120" required placeholder="例如：第一批玩法验收"></label><button id="create-workflow" type="submit">新建流程</button></form><label>已保存的流程<select id="workflow-select"><option value="">请选择</option></select></label><button id="refresh" type="button">重新读取进度</button><p id="status" role="status" aria-live="polite">正在读取已保存的流程。</p></section>
+<section id="current" hidden><h2 id="current-name"></h2><p id="overall"></p><p id="location"></p><p>打开表单后，修改内容需先下载保存，再回这里选择下载文件接续。关闭表单前请保存；进度页保存的是已经提交的步骤。</p><div id="steps"></div><h3>所有执行记录</h3><p>失败或中断的尝试保留在原目录。再次点击步骤会创建新目录，已经生成后续资料时不会改写前面的步骤。</p><div id="history"></div></section>
+</main></body></html>

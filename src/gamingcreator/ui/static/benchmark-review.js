@@ -5,6 +5,7 @@ const controls = new Map();
 const status = document.getElementById("status");
 const video = document.getElementById("source-video");
 const playState = document.getElementById("play-state");
+source.context.media.forEach(media => { media.videoUrl = new URL(media.videoUrl, location.href).href; });
 let editRevision = 0, loadRevision = 0, playRevision = 0, playing = null;
 const clone = value => JSON.parse(JSON.stringify(value));
 const canonical = value => JSON.stringify(value, (key, item) => item && !Array.isArray(item) && typeof item === "object" ? Object.fromEntries(Object.keys(item).sort().map(name => [name, item[name]])) : item);

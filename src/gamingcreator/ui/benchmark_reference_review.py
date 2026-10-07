@@ -11,9 +11,19 @@ from typing import cast
 from gamingcreator.ui.benchmark_review import STYLE
 
 
-def render_reference_review(context: dict[str, object], template: dict[str, object]) -> str:
+def render_reference_review(
+    context: dict[str, object],
+    template: dict[str, object],
+    *,
+    media_urls: dict[str, str] | None = None,
+) -> str:
     media = [
-        {**row, "videoUrl": Path(cast(str, row["path"])).as_uri()}
+        {
+            **row,
+            "videoUrl": media_urls[cast(str, row["id"])]
+            if media_urls is not None
+            else Path(cast(str, row["path"])).as_uri(),
+        }
         for row in cast(list[dict[str, object]], context["media"])
     ]
     encoded = base64.b64encode(
@@ -32,7 +42,8 @@ def render_reference_review(context: dict[str, object], template: dict[str, obje
         .read_text(encoding="utf-8")
     )
     digest = base64.b64encode(hashlib.sha256(script.encode()).digest()).decode("ascii")
-    policy = f"default-src 'none'; media-src file: blob:; style-src 'unsafe-inline'; script-src 'sha256-{digest}'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    media_policy = "'self'" if media_urls is not None else "file: blob:"
+    policy = f"default-src 'none'; media-src {media_policy}; style-src 'unsafe-inline'; script-src 'sha256-{digest}'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
     body = """<header><h1>原片 · 人工参考标注</h1>
 <p>先看原录像，记录事前查询对应的真实动作和可用区间。这里没有模型描述，也不执行分析或检索。</p>
 <p class="notice">这是待冻结的参考草稿。下载、填写区间或人工声明均不自动通过独立验收；主查询需要至少十个独立可用参考事件。</p>

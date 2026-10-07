@@ -1,5 +1,17 @@
 # 本地检查工作台 API
 
+## 持久验收流程（benchmark-workflow-v1）
+
+`/acceptance`及三份明确static资源加入白名单；首页仅在health声明`benchmark-workflow-v1`时显示入口。POST与GET均沿用本机Host／Origin约束，不提供任意路径读取。
+
+`POST /api/benchmark-workflows {name}`创建本机流程（201）；`GET /api/benchmark-workflows`列出最多200个流程；`GET /api/benchmark-workflow?workflow=<32hex>`读取步骤、执行所有权和最新评分qualityGate。步骤状态running/finished/failed及只读覆盖interrupted，busy以实际OS锁为准，旧磁盘记录不是活进程。未评分qualityGate=null，paidRequestsSent=0。
+
+`POST /api/benchmark-step {workflow,action,fields}`以202开始单一步骤；同流程同时执行拒绝，失败／中断后显式重试产生新目录。action及exact fields：register `{inputText}`（空串可从空草稿开始）、references `{inputText}`（绝对来源plan）、references-import `{inputText}`（原记录）、freeze `{}`、bind `{project,inputText,partition}`（当前artifacts项目／来源到Completed任务JSON／development或test）、ranking `{mode}`（lexical/semantic/hybrid）、review `{}`、score `{inputText}`（候选记录）。外层正文仅此接口最多8MiB，其余POST仍64KiB；各JSON内容沿用旧1–4MiB合同，拒绝重复／额外字段和非字符串fields。有后续完成成果时拒绝改写早期步骤，新来源／查询需新建流程。
+
+`GET|HEAD /api/benchmark-file?workflow&attempt&file`只提供已完成步骤登记文件，SHA和链接检查；JSON下载及动态表单，后者从原context/template渲染，hash-only inline CSP、connect-none及同源媒体。`GET|HEAD /api/benchmark-source?workflow&attempt&source`只提供该context来源，SHA由VerifiedMediaCache核验并复用Range／HEAD边界；不能用path代替身份。不提供未完成输出、输入路径或任意HTML。来源改变为409，资料不符为400，不补造结果。
+
+每步request/status/output保存在专用流程目录，状态原子更新、公开入口回执保持；读取不自动修复历史。ranking复用原benchmark明确本地检索并追加SQL记录，0/6都保留报告；score复用固定排名计分，未通过或未验证exit6也作为已完成并保留报告。执行完成不升级独立声明、人工参考或F006验收。参见[用户步骤](../references/benchmark-workspace-guide.md)。
+
 2026-10-04 基础功能实现合同。现有 CLI 和 F006 验收不变；页面只绑定 `127.0.0.1`，Windows使用独占端口防止旧/新进程同时监听。
 
 2026-10-06页面新增临时前后各1秒回看，使用已有注册源视频URL与当前有效区间；首尾截至media.durationUs，页面显示实际播放范围。原区间／候选／证据／片段篮导出与diagnostics v2不变，无新HTTP字段／端点，不额外检索或分析。

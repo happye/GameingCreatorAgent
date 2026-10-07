@@ -2206,6 +2206,8 @@
     void (async () => {
         try {
             const health = await request("/api/health", {});
+            document.getElementById("open-acceptance").hidden = !(health.application === "gamingcreator-workspace"
+                && health.capabilities?.includes("benchmark-workflow-v1"));
             ui["open-preparation"].hidden = !(health.application === "gamingcreator-workspace"
                 && health.capabilities?.includes("media-preparation-v1"));
         } catch { /* Keep the preparation entry hidden until its service is available. */ }

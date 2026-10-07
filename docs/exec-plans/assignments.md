@@ -1,5 +1,8 @@
 # Active assignments
 
+root / Codex已顺序交付[统一验收入口](sprint-benchmark-workspace.md)，接d15777a；八步持久输入结果／实际锁／恢复／同源原片／固定排名计分，新18及真实三源／现用双尺寸通过。完整2272／3失败／1skip，旧health同步和两旧准备仅一轮复查通过，TD012延期；94包文件等源码及独立包登记通过。8765已fresh更新53176／54948，0新费用／人评。下一root登记冻结来源与Completed任务页面选择关联，旧worker冻结，goal active；发布见Git和publication。
+
+
 root / Codex已顺序交付[sprint-benchmark-plan-editor](sprint-benchmark-plan-editor.md)，接7f5cbd7。草稿Application／本机登记表单／公开Python与PS／29新增／集成配置与指南；未知声明保留、未填保存继续、完整旧plan导出、有人评的旧计划拒绝登记改写。实际三开发源双尺寸／公开PS生成590ms／草稿新进程继续575ms／原片衔接1447ms、前后858旧项目文件／费用DB等两metadata／三源与proposal保持。一次完整2257passed／1权限skip、175格式／91类型／CLI／同双wheel与90包文件等源码／独立包渲染通过，无本轮失败。0模型／上传／搜索／预算／真评分，现用工作台无变更，TD012未复现不称解决。下一root登记统一验收入口范围，复用现有登记／标注／冻结／固定评审与计分；旧worker冻结，F006/F009/F010false、goal active，保存发布见Git及publication，不改main／强推。
 
 root / Codex已顺序交付[sprint-benchmark-reference-review](sprint-benchmark-reference-review.md)，接799625c／af11042；新Application／原片HTML／多区间记录和导出旧plan、公开Python／PS、集成检查与指南。三真实开发片双尺寸六播放／手填（均特殊时钟）、保存重载／空参考freeze与独立读回通过，22新增全部通过；一次完整2225passed／3旧准备失败／1权限skip，正确准备目录后仅一次三项复查通过，TD012原因未明延期。格式／88类型／CLI／双wheel／87包文件同源码及独立wheel渲染通过。本轮源码与06771ee相同，无HTTP／SQL／模型／费用／真评分，现用工作台不重启，旧worker冻结。下一root核对F006独立人评前置素材／声明／查询参考，再登记主要交付；report-2026-10-07-reference-review.md与HANDOFF记通俗结论，F006/F009/F010false、goal active。原普通push连接失败，本轮0push／远端读取，本地保存与待补推事实见Git及publication。

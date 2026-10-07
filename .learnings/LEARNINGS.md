@@ -1,5 +1,7 @@
 # Learnings
 
+统一验收将执行成功与qualityGate分开：原benchmark／score退出6时报告必须保存且步骤可完成，不补人评或升级独立声明。实际benchmark只把普通排名保存到SQL，不沿用search CLI“额外两JSON”的假设；WAL持有时主DB字节可不变，核验应检查原基础表／实际检索ID与记录数，并明确排除临时WAL／SHM。HTTP候选URL先转绝对地址，再与currentSrc比较；保持原hash CSP，Playwright wait_for_function须传函数，不能因测试字符串被拒而放开unsafe-eval。组合媒体夹具先读原路径／起点合同，分配已创建的新子目录，并从实际asset设置时钟资格。
+
 验收登记草稿必须与完成计划分开：未知分区／是否看过结果允许保存，但导出旧plan须明确声明，不能默认false或推断录制独立性。已有人工元数据／参考拒绝转登记，不静默清空；实际媒体身份留给原片入口复核。生成页面bootstrap用canonical JSON，可从同一保存资料稳定渲染；验证先保存baseline、每个成功节点落盘，避免汇总中断后丢掉时间与不变证据。
 
 原片参考验证必须复用各版本的真实读取合同：标注包／导出为benchmark-review-receipt-v1，冻结为benchmark-bundle-receipt-v1，用read_freeze而不是把前者字段套到后者。freeze的质量字段在preparation中。长验证每个成功节点立即持久化耗时和原项目baseline，汇总中断后只读回核对已有结果；未持久化的耗时／全程不变证据不能补估。特殊时钟开发源只验证手填区间，零起点测试的自动取时不能移称真实三源自动映射已通过。
