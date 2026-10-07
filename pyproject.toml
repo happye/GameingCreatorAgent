@@ -43,5 +43,5 @@ select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
 [tool.mypy]
 python_version = "3.13"
 strict = true
-files = ["src", "tests/test_providers.py", "tests/test_media_integration.py", "tests/test_storage_process.py", "tests/storage_process_helper.py", "scripts/validate-media.py", "scripts/validate-storage.py", "scripts/prepare-benchmark-review.py", "scripts/prepare-benchmark-references.py"]
+files = ["src", "tests/test_providers.py", "tests/test_media_integration.py", "tests/test_storage_process.py", "tests/storage_process_helper.py", "scripts/validate-media.py", "scripts/validate-storage.py", "scripts/prepare-benchmark-review.py", "scripts/prepare-benchmark-references.py", "scripts/prepare-benchmark-plan.py"]
 cache_dir = ".cache/mypy"

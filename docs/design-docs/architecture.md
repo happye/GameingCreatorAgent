@@ -10,6 +10,8 @@
 
 分析前参考标注由纯Application `benchmark_reference_review`绑定实际媒体身份／源时钟与事前plan，固定来源与查询，仅允许人工参考和人工元数据变化；导入复核实际源后转回既有benchmark-plan-v1。UI生成独立file页面，hash限定脚本CSP／禁止外部连接，只播放原录像和编辑参考，不读模型输出；特殊源时钟禁自动取时。公开脚本组合本地FFmpeg探测、既有有界读取／独占新目录／最后SHA回执，导出仍待原freeze，不增加HTTP／SQL／Provider。保存声明不认证人评或独立性；使用见[原片标注指南](../references/benchmark-reference-review-guide.md)。
 
+其前置登记通过Application `benchmark_plan_draft`保存允许未知值的benchmark-plan-draft-v1，完成后用原loads_plan复核并转旧plan，人工参考空／确认false。已有人评元数据或事件的旧计划拒绝转登记草稿，不静默清判断。UI独立file表单只编辑来源／查询，hash限定脚本、禁止外部连接；脚本有界读取／规范输入相对路径／独占发布，不probe或读媒体／项目，也不增加HTTP／SQL／模型。登记仅格式有效，实际来源由后续原片入口核验。见[登记指南](../references/benchmark-plan-editor-guide.md)。
+
 跨素材检索通过Application `search_timelines`把明确选择的Completed来源合为联合语料，复用原BM25／E5／RRF内核。内部文档按runId区分、候选仍用原run／原文档身份；去重先核对media，来源SHA重复拒绝。CLI `search-project`只读核验SQLite，再组合本地embedding；新Infrastructure `project_search_files`发布独立版本结果及最后SHA回执，不扩展SQL、不改旧单run检索或benchmark。UI有界同源POST复用同一组合，保持联合结果独立；原来源空查询inspect核对media／SHA／duration／config，再提供注册原片／证据与按run独立篮，不使用结果本地路径服务字节。公开脚本及页面边界见[联合检索指南](../references/project-retrieval-guide.md)。
 
 多素材离线准备由纯Application `media_batch`顺序复用`prepare_media`、原MediaProcessor／TimelineStore；CLI只组合FFmpeg与SQLite。Infrastructure `media_batch_files`在项目内冻结原输入／配置、预先分配的runId和SHA回执，批次状态原子替换、进程锁排除并发写；没有新SQL／HTTP／Provider合同。续跑先查固定任务，Pending且media完成则读回核验不改任务，media-only中断才续准备，任何非media阶段或调用只报告现状。单项输入失败继续，存储／环境问题或取消停止；不构造模型／账本。详见[批次指南](../references/media-batch-preparation-guide.md)。

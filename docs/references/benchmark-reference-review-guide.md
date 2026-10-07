@@ -4,7 +4,7 @@
 
 ## 准备页面
 
-先按[验收准备指南](./benchmark-preparation-guide.md)复制计划模板，填写本地录像、原录制组、开发／测试分区、是否看过模型结果，以及事前查询。尚未标注时，referenceEvents为空，人工确认false、版本null、填写人为空。不能从文件数量猜测独立会话，也不能把看过结果的开发录像当成新的独立测试。
+先用[计划登记表单](./benchmark-plan-editor-guide.md)或按[验收准备指南](./benchmark-preparation-guide.md)复制计划模板，填写本地录像、原录制组、开发／测试分区、是否看过模型结果，以及事前查询。尚未标注时，referenceEvents为空，人工确认false、版本null、填写人为空。不能从文件数量猜测独立会话，也不能把看过结果的开发录像当成新的独立测试。
 
 在仓库根目录使用已经准备好的PowerShell 7：
 
