@@ -1,5 +1,7 @@
 # Phase 0 多录像搜索工作台
 
+发布状态：实现和本轮证据已本地b6e8518，首次普通push21.113s连接github.com:443失败／exit128，没有重试或本轮远端读取；上次确认远端5d2a48e，待补推。现用工作台和最终验证保持，补记只改文档，不重复无变化整套；以.cache/project-workspace-publication.json及Git记录为事实。下一本地主线继续，goal active。
+
 2026-10-07，root / Codex，codex/visual-details，接5d2a48e。上一goal turn为progress：联合排名、CLI与真实三来源验证已交付并推送；继续F005已授权本地检查工作台，goal active。旧worker与worktree冻结。
 
 主交付：明确选择1–100个已完成且不同源的任务，一次联合查询；候选保留全局排名、来源、原时间／事实／不确定性。点击候选先读取原任务再播放其原录像与证据，不另做单任务搜索。旧单任务搜索、按运行独立篮子与源时间导出保持；联合排名提供独立结果下载，不能冒充旧诊断或人工验收。

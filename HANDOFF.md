@@ -1,5 +1,7 @@
 # 当前交接
 
+发布事实：实现／完整证据已本地提交b6e8518；一次已授权普通push在21.113秒连接github.com:443失败，.cache/project-workspace-push.log／publication.json保留exit128。未重试、未读取远端；上次确认远端5d2a48e，本轮待补推。补记仅文档，完整2180／1权限skip及现用38216／45800验证仍有效。下一主线本地继续，不将网络当新授权或阻塞所有开发，不改main／强推。
+
 2026-10-07，root接5d2a48e已交付[sprint-project-retrieval-workspace](docs/exec-plans/sprint-project-retrieval-workspace.md)，[通俗汇报](docs/exec-plans/report-2026-10-07-project-workspace.md)。F005／F007明确1–100个不同源Completed分析，网页联合搜索／来源标签／原run空查询读取与媒体身份核验后播放／证据、独立完整排名下载；原单录像查询／诊断、按run独立篮与源时间导出保持，音频fallback可核验。迟到／错来源拒绝，不通过结果路径服务字节，无新SQL／费用合同。
 
 22新增行为、45定向41.185s／9前后文／最终3页面通过；首完整2179passed／1旧detail-query被新布局遮挡失败／1权限skip435.40s，稳定截图确认候选仅6px，直接紧凑到98px并增>=90px检查。窄屏选择控件16px／无横溢，124px候选可浏览。源码变化后最终完整2180passed／1权限skip320.976s、162格式／84类型／lint／CLI／双离线wheel通过，SHA6c6e34bb719b1d01c93596bf1fd17d65af9a239a3aef797fecce3c2d1e2e8fec，83包文件同源码无素材／DB。首失败非环境偶发、不称首轮全绿；.cache/project-workspace-final.xml／final-verify.log／package.json及6冻结文件SHA保持，不重复无变化整套。
