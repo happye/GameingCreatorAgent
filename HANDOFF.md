@@ -1,5 +1,7 @@
 # 当前交接
 
+发布事实：登记表单完整交付24e3481已本地提交；一次普通push在21.111秒连接github.com:443失败／exit128，.cache/benchmark-plan-editor-push.log保留，不重试／未读取远端。上次独立确认799625c，原片标注与本次登记仍待补推，不能称远端已同步。后续仅补发布事实，最终文档head以Git及publication为准，源码／2257完整通过／90包文件保持，goal active。
+
 2026-10-07 root接7f5cbd7已交付[事前计划登记表单](docs/exec-plans/sprint-benchmark-plan-editor.md)，[指南](docs/references/benchmark-plan-editor-guide.md)、[通俗汇报](docs/exec-plans/report-2026-10-07-plan-editor.md)。不必手写来源／查询JSON，未知声明与未填草稿可保存继续、明确用途和是否看过结果后旧plan导出；已有人评资料拒绝登记导入，不清判断。纯Application／独立file表单／公开Python与PS，不读取媒体内容或模型／项目，不增加HTTP／SQL，现用工作台不重启。
 
 首29passed3.07s，实际三开发源公开PS生成590ms／草稿新进程继续575ms／原片衔接1447ms，双尺寸3源3查询／声明保持／未知阻断／下载载入、两个进程使用下载资料通过；截图root核对清晰。操作前baseline／每步progress持久化，858旧项目文件、旧费用DB与media-manifest两文件、三源／原输入／proposal全过程保持，首次真实流程直接通过，无删除或补估耗时。一次完整2257passed／1Windows文件链接权限skip326.415s JUnit，0失败／错误；175格式／lint、91类型／CLI、双wheel a4edf608fc7bfe0665e4a39b3e18c67b49c0ebac0b15cde42adb6c3f158b7b04与90包文件等源码、独立wheel渲染同原页通过。.cache/benchmark-plan-editor-*及ignored验证目录留证；源码冻结后只文档，不重复完整。

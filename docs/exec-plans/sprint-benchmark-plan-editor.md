@@ -26,6 +26,8 @@ root独占新application/benchmark_plan_draft.py、ui/benchmark_plan_editor.py�
 
 ## 当前交付结论
 
+发布：完整实现及指南24e3481已本地提交；一次授权普通push在21.111秒连接github.com:443失败／exit128，原log保留，不重试、不读取远端。上次799625c、本次与原片交付待补推；最终仅文档事实更新，不改源码／包／完整2257通过，保存head以Git和publication为准。
+
 一次完整2257passed／1Windows文件链接权限skip、0失败／错误，326.415s JUnit（326.49s控制台）；29新增全部通过，无本轮失败或窄复查，TD012未复现不称原因解决。175格式／lint、91文件mypy、CLI、双wheel SHAa4edf608fc7bfe0665e4a39b3e18c67b49c0ebac0b15cde42adb6c3f158b7b04通过；90包文件逐字节同当前源码，无媒体／缓存／DB，独立wheel进程渲染同原生成页SHAf388c2160708ea2d6d92f2e33f1caeb972a85fd4d1d65dcaf4fbebede97fb27f。源码冻结后仅文档与ignored证据，不重复完整检查。
 
 root看过实际登记／查询视口截图，桌面／窄屏四图无横溢、字段与声明清晰；0外部请求／页面错误。原公开PS／草稿继续为不同进程，下载原plan同输入、原片source SHA同freeze。基线和每步耗时／结果先保存，真实流程首次通过，858开发文件、旧费用DB及media-manifest两文件、三源／原输入／proposal保持。回执.cache/benchmark-plan-editor-{first.xml,final-tests.xml,final-verify.log,workflow.log,package.json}和ignored baseline／progress／report／下载／截图，0模型／上传／预算／搜索／真评分。
