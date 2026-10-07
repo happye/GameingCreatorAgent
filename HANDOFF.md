@@ -1,5 +1,15 @@
 # 当前交接
 
+2026-10-07用户提示额度14%并请求汇报；root保存多素材准备页面**未验收检查点**，见[sprint-media-preparation-workspace](docs/exec-plans/sprint-media-preparation-workspace.md)与[阶段汇报](docs/exec-plans/report-2026-10-07-quota-checkpoint.md)。代码／页面／后台生命周期已实现，20新增后台／HTTP首批通过；新页面首4项中3项测试asyncio与Playwright冲突，直接移到浏览器环境退出后核验，4passed13.930s。兼容入口检查初次健康地址少/api造成失败，已直接修正；最终5浏览器＋1health共6passed（.cache/media-preparation-browser-checkpoint.xml）。Ruff／3源码mypy通过。旧4批次失败一次窄复查4passed1.854s，原43项／4失败回执保留，TD012延期，不称修复。**尚未本轮真实素材／整体验证／双离线wheel／指南／生产更新**，不得引用上一2180作为本轮通过。feature_list原验收状态未改，F006/F009/F010false。
+
+fresh只读health仍8765 pid38216／parent45800且无新capabilities；新静态准备入口默认隐藏，仅后台声明支持media-preparation-v1时显示，旧已交付联合搜索可继续使用，未重启生产。0新模型／上传／预留／人评，unknown¥4.065536／待答¥4.07proposal保持。旧worker冻结、无并行写者；源码／证据／报告已形成可提交检查点，最终保存状态以Git及.cache/media-preparation-workspace-checkpoint.json为准。上次确认远端5d2a48e，后续本地待补推，本轮0push／远端读取，goal active，不擅自pause或complete。
+
+已向用户汇报：联合搜索真实三录像可用约5.5秒；批量准备新流程模拟材料验证通过但尚未正式可用；新旧入口兼容和旧失败仅一次复查；零新费用与人评边界。**下一步沿当前sprint接续，不另开大功能**：真实三片页面准备与显式接续／已存任务复用、源与旧项目完整性及零调用核验，然后一次verify／wheel、指南和fresh身份部署；最后回到Phase 0独立人评。不得重新实现已有批次CLI，不循环TD012或重复无变化全套。
+
+下方为本轮开始时登记及已交付历史：
+
+2026-10-07，root接eb73a9f登记[sprint-media-preparation-workspace](docs/exec-plans/sprint-media-preparation-workspace.md)，下一主线为多素材离线准备页面／后台逐项进度／显式停止与同批次恢复、打开素材任务。拥有ui/media_preparation.py／server／static、main可选检查点回调、新任务／HTTP／浏览器与公共文档。旧worker冻结，上一goal turn progress／本轮goal active；开始工作树干净。0模型／预留／人评，原unknown／待授权proposal／F006/F009/F010false保持。8765现用38216／45800尚未变，本轮新服务部署前fresh核验；TD004/005/010/011/012/013延期。下一步后台真实任务生命周期和原批次复用，已向用户通俗汇报。
+
 发布事实：实现／完整证据已本地提交b6e8518；一次已授权普通push在21.113秒连接github.com:443失败，.cache/project-workspace-push.log／publication.json保留exit128。未重试、未读取远端；上次确认远端5d2a48e，本轮待补推。补记仅文档，完整2180／1权限skip及现用38216／45800验证仍有效。下一主线本地继续，不将网络当新授权或阻塞所有开发，不改main／强推。
 
 2026-10-07，root接5d2a48e已交付[sprint-project-retrieval-workspace](docs/exec-plans/sprint-project-retrieval-workspace.md)，[通俗汇报](docs/exec-plans/report-2026-10-07-project-workspace.md)。F005／F007明确1–100个不同源Completed分析，网页联合搜索／来源标签／原run空查询读取与媒体身份核验后播放／证据、独立完整排名下载；原单录像查询／诊断、按run独立篮与源时间导出保持，音频fallback可核验。迟到／错来源拒绝，不通过结果路径服务字节，无新SQL／费用合同。

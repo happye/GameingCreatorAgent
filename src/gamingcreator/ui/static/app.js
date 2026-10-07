@@ -29,6 +29,10 @@
         "tasks-previous", "tasks-next", "refresh-tasks",
         "open-search-sources", "single-search-source", "search-scope-label", "search-sources-dialog",
         "close-search-sources", "search-sources-list", "search-sources-summary", "apply-search-sources", "download-project-search",
+        "open-preparation", "preparation-dialog", "close-preparation", "preparation-form", "preparation-project",
+        "preparation-paths", "preparation-profile", "preparation-budget", "preparation-timeout", "start-preparation", "stop-preparation",
+        "preparation-status", "preparation-summary", "preparation-items", "open-prepared-tasks", "download-preparation",
+        "refresh-preparation", "preparation-history-summary", "preparation-batches", "preparation-previous", "preparation-next",
     ].map((id) => [id, byId(id)]));
     const state = {
         project: "", run: "", revision: 0, runs: [], view: null, active: null,
@@ -41,12 +45,214 @@
         diagnosticsContext: null,
         tasksController: null, tasksRevision: 0, tasksOffset: 0,
         searchRuns: [], projectSearch: null, projectSearchController: null,
+        preparationController: null, preparationRevision: 0, preparationTimer: null,
+        preparationJob: null, preparationSubmitting: false, preparationOffset: 0, preparationCatalog: null,
     };
     const statusLabels = {
         pending: "等待分析", running: "分析中", completed: "已完成", failed: "失败",
         cancelled: "已取消", interrupted: "已中断",
     };
     const TASK_PAGE_SIZE = 20;
+
+    const preparationLabels = {
+        queued: "等待准备", running: "正在准备", cancelling: "正在停止…", finished: "本批次检查已完成",
+        partial: "部分素材尚未准备好", failed: "本次准备停止", cancelled: "本次准备已停止",
+        pending: "等待处理", prepared: "本地素材已准备，等待另行分析",
+        coverage_blocked: "素材已保存，分析配置覆盖不足", analysis_started: "已进入分析，沿原任务处理", stopped: "已保存停止状态",
+    };
+
+    function stopPreparationObservation() {
+        state.preparationController?.abort();
+        state.preparationController = null;
+        state.preparationRevision += 1;
+        if (state.preparationTimer !== null) clearTimeout(state.preparationTimer);
+        state.preparationTimer = null;
+    }
+
+    function preparationTarget() { return ui["preparation-project"].value.trim().replaceAll("\\", "/"); }
+
+    function rememberPreparationTarget(project) {
+        try { localStorage.setItem("gamingcreator:preparation-project", project); } catch { storageWarning(); }
+    }
+
+    function validPreparationJob(job, project) {
+        return job?.schemaVersion === "media-preparation-job-v1" && job.project === project
+            && /^[a-f0-9]{32}$/.test(job.jobId) && typeof job.live === "boolean" && typeof job.cancellationRequested === "boolean"
+            && ["queued", "running", "cancelling", "finished", "partial", "failed", "cancelled"].includes(job.status)
+            && (job.batchId === null || /^[a-f0-9]{32}$/.test(job.batchId))
+            && (job.progress === null || (job.progress.batchId === job.batchId && Array.isArray(job.progress.items)
+                && job.progress.items.length <= 100 && job.progress.items.every((row) => row && typeof row.id === "string" && typeof row.runId === "string"
+                    && typeof row.sourceName === "string" && typeof row.verifiedThisInvocation === "boolean" && typeof preparationLabels[row.status] === "string")));
+    }
+
+    function renderPreparationJob() {
+        const job = state.preparationJob;
+        const active = Boolean(job?.live && ["queued", "running", "cancelling"].includes(job.status));
+        for (const id of ["preparation-project", "preparation-paths", "preparation-profile", "preparation-budget", "preparation-timeout", "start-preparation"]) ui[id].disabled = active || state.preparationSubmitting;
+        ui["start-preparation"].textContent = state.preparationSubmitting ? "正在提交…" : "开始本地准备";
+        ui["stop-preparation"].disabled = !active || job.cancellationRequested || state.preparationSubmitting;
+        ui["open-prepared-tasks"].disabled = !job?.progress;
+        ui["download-preparation"].disabled = !job?.result || active;
+        ui["preparation-status"].textContent = job ? preparationLabels[job.status] : "尚未开始新批次";
+        const rows = job?.progress?.items || [];
+        ui["preparation-summary"].textContent = rows.length ? `已检查 ${rows.filter((row) => row.verifiedThisInvocation).length}/${rows.length} 段 · 已准备 ${rows.filter((row) => row.status === "prepared").length} 段`
+            : job ? (job.error?.message || "正在登记原清单，请稍候。") : "提交录像清单后，在这里查看每段进度。";
+        if (job?.error?.message && rows.length) ui["preparation-summary"].textContent += ` · ${job.error.message}`;
+        ui["preparation-items"].replaceChildren();
+        for (const row of rows) {
+            const card = element("article", `preparation-item ${row.status}`);
+            card.dataset.run = row.runId;
+            card.append(element("h4", "", `${row.id} · ${row.sourceName}`), element("p", "small", row.status === "failed" ? "这段录像准备失败" : preparationLabels[row.status]));
+            if (row.result && Number.isSafeInteger(row.result.imageCount)) card.append(element("p", "muted small", `${row.result.imageCount} 张画面 · ${row.result.audioAvailable ? "已保存音轨" : "没有音轨"}`));
+            if (typeof row.message === "string") card.append(element("p", "warning small", row.message));
+            if (!row.verifiedThisInvocation && !["running", "pending"].includes(row.status)) card.append(element("p", "muted small", "这是上次保存的状态，本次尚未重新核对。"));
+            ui["preparation-items"].append(card);
+        }
+        for (const button of ui["preparation-batches"].querySelectorAll("button")) button.disabled = active || state.preparationSubmitting || button.dataset.unreadable === "true";
+    }
+
+    function observePreparation(job, revision) {
+        state.preparationJob = job;
+        renderPreparationJob();
+        if (!job.live) return;
+        state.preparationTimer = setTimeout(() => { void pollPreparation(job, revision); }, 750);
+    }
+
+    async function pollPreparation(job, revision) {
+        if (state.preparationRevision !== revision || !ui["preparation-dialog"].open || job.project !== preparationTarget()) return;
+        const controller = new AbortController();
+        state.preparationController = controller;
+        try {
+            const current = await request("/api/media-preparation", { project: job.project, job: job.jobId }, controller.signal);
+            if (controller.signal.aborted || revision !== state.preparationRevision || state.preparationController !== controller) return;
+            if (!validPreparationJob(current, job.project) || current.jobId !== job.jobId) throw new Error("准备任务身份或进度不一致，请重新读取批次。");
+            observePreparation(current, revision);
+            if (!current.live && current.batchId) void readPreparationBatches(state.preparationOffset, true);
+        } catch (error) {
+            if (controller.signal.aborted || revision !== state.preparationRevision) return;
+            notice(`${error.message} 请重新读取批次；不会自动重新提交。`);
+            ui["preparation-summary"].textContent = "暂时无法确认本次任务状态，请重新读取；已保存资料保留。";
+        }
+    }
+
+    async function readPreparationBatches(offset = 0, keepJob = false) {
+        stopPreparationObservation();
+        const project = preparationTarget();
+        if (!project) return notice("请填写仓库artifacts目录内的准备项目。");
+        const revision = state.preparationRevision;
+        const controller = new AbortController();
+        state.preparationController = controller;
+        if (!keepJob) state.preparationJob = null;
+        renderPreparationJob();
+        ui["refresh-preparation"].disabled = true;
+        try {
+            const catalog = await request("/api/media-batches", { project, limit: 20, offset }, controller.signal);
+            if (controller.signal.aborted || revision !== state.preparationRevision || project !== preparationTarget()) return;
+            if (catalog.schemaVersion !== "media-preparation-catalog-v1" || catalog.project !== project || catalog.offset !== offset
+                || catalog.limit !== 20 || !Number.isSafeInteger(catalog.total) || !Array.isArray(catalog.batches)
+                || catalog.batches.length > 20 || catalog.batches.some((batch) => !/^[a-f0-9]{32}$/.test(batch.batchId) || typeof batch.readable !== "boolean")
+                || (catalog.activeJob && !validPreparationJob(catalog.activeJob, project))) throw new Error("已保存批次身份或分页不一致。");
+            rememberPreparationTarget(project);
+            state.preparationCatalog = catalog;
+            state.preparationOffset = offset;
+            ui["preparation-history-summary"].textContent = catalog.total ? `${offset + 1}–${Math.min(offset + 20, catalog.total)} / ${catalog.total} 个批次 · 以下为保存记录` : "此项目还没有准备批次。";
+            ui["preparation-previous"].disabled = offset === 0;
+            ui["preparation-next"].disabled = offset + 20 >= catalog.total;
+            ui["preparation-batches"].replaceChildren();
+            for (const batch of catalog.batches) {
+                const card = element("article", "preparation-batch");
+                card.dataset.batch = batch.batchId;
+                card.append(element("h4", "", `批次 ${batch.batchId.slice(0, 8)}`));
+                card.append(element("p", "muted small", batch.readable ? `${batch.items.length} 段 · ${preparationLabels[batch.status] || "已保存状态"} · 非实时任务状态`
+                    : batch.message || "资料无法核对，请保留原批次后检查。"));
+                if (batch.readable) card.append(element("p", "muted small", `原每段后续分析上限：¥${batch.maxCostCnyPerTask}，继续不会替换原方案或额度。`));
+                const resume = element("button", "button secondary compact", "继续本地准备");
+                resume.type = "button";
+                resume.dataset.unreadable = String(!batch.readable);
+                resume.disabled = !batch.readable;
+                resume.addEventListener("click", () => { void submitPreparation(batch.batchId); });
+                card.append(resume);
+                ui["preparation-batches"].append(card);
+            }
+            if (catalog.activeJob) observePreparation(catalog.activeJob, revision);
+            else renderPreparationJob();
+        } catch (error) {
+            if (controller.signal.aborted || revision !== state.preparationRevision) return;
+            notice(error.message);
+            empty(ui["preparation-batches"], "批次清单未读取完成，请查看提示后重新读取。");
+        } finally {
+            if (revision === state.preparationRevision) ui["refresh-preparation"].disabled = false;
+        }
+    }
+
+    async function submitPreparation(resume = null) {
+        if (state.preparationSubmitting || (state.preparationJob?.live && ["queued", "running", "cancelling"].includes(state.preparationJob.status))) return;
+        const project = preparationTarget();
+        const timeoutSeconds = Number(ui["preparation-timeout"].value);
+        if (!project || !Number.isFinite(timeoutSeconds) || timeoutSeconds < 1 || timeoutSeconds > 86400) return notice("请填写准备项目和1–86400秒的每段期限。");
+        let body = { project, resume, timeoutSeconds };
+        if (resume === null) {
+            const paths = ui["preparation-paths"].value.split(/\r?\n/).map((line) => line.trim().replace(/^"(.*)"$/, "$1")).filter(Boolean);
+            const maxCostCny = ui["preparation-budget"].value.trim();
+            if (paths.length < 1 || paths.length > 100 || !maxCostCny || !Number.isFinite(Number(maxCostCny)) || Number(maxCostCny) <= 0) return notice("请填写1–100段录像路径及以后每段分析的正数上限。");
+            body = { project, paths, profile: ui["preparation-profile"].value, maxCostCny, timeoutSeconds };
+        }
+        stopPreparationObservation();
+        const revision = state.preparationRevision;
+        const controller = new AbortController();
+        state.preparationController = controller;
+        state.preparationSubmitting = true;
+        notice("");
+        renderPreparationJob();
+        try {
+            const job = await request("/api/prepare-media-batch", {}, controller.signal, body);
+            if (controller.signal.aborted || revision !== state.preparationRevision || project !== preparationTarget()) return;
+            if (!validPreparationJob(job, project)) throw new Error("准备任务来源不一致，请重新读取批次确认。");
+            rememberPreparationTarget(project);
+            observePreparation(job, revision);
+        } catch (error) {
+            if (controller.signal.aborted || revision !== state.preparationRevision) return;
+            notice(`${error.message} 先重新读取批次确认，不会自动重试提交。`);
+        } finally {
+            if (revision === state.preparationRevision) {
+                state.preparationSubmitting = false;
+                renderPreparationJob();
+            }
+        }
+    }
+
+    async function cancelPreparation() {
+        const job = state.preparationJob;
+        if (!job?.live || job.cancellationRequested) return;
+        stopPreparationObservation();
+        const revision = state.preparationRevision;
+        const controller = new AbortController();
+        state.preparationController = controller;
+        try {
+            const result = await request("/api/cancel-media-preparation", {}, controller.signal, { project: job.project, job: job.jobId });
+            if (controller.signal.aborted || revision !== state.preparationRevision) return;
+            if (!validPreparationJob(result, job.project) || result.jobId !== job.jobId) throw new Error("停止任务的身份不一致，请重新读取。");
+            observePreparation(result, revision);
+        } catch (error) {
+            if (controller.signal.aborted || revision !== state.preparationRevision) return;
+            notice(`${error.message} 请重新读取确认任务状态。`);
+        }
+    }
+
+    async function openPreparedTasks() {
+        const job = state.preparationJob;
+        if (!job?.progress) return;
+        const project = job.project;
+        ui["preparation-dialog"].close();
+        if (![...ui["project-select"].options].some((option) => option.value === project)) {
+            const option = element("option", "", project);
+            option.value = project;
+            ui["project-select"].append(option);
+        }
+        ui["project-select"].value = project;
+        await loadRuns(project);
+        if (state.project === project) void loadTasks();
+    }
 
     function updateSearchScope() {
         ui["open-search-sources"].textContent = state.searchRuns.length ? `已选 ${state.searchRuns.length} 段 · 更改录像` : "选择多段录像";
@@ -1856,6 +2062,45 @@
     ui["detail-query-form"].addEventListener("submit", (event) => { event.preventDefault(); void matchDetailQuery(); });
     ui["open-detail-costs"].addEventListener("click", () => { void openDetailCosts(); });
     ui["open-tasks"].addEventListener("click", () => { void loadTasks(); });
+    ui["open-preparation"].addEventListener("click", () => {
+        if (!ui["preparation-project"].value) {
+            let saved = "";
+            try { saved = localStorage.getItem("gamingcreator:preparation-project") || ""; } catch { storageWarning(); }
+            ui["preparation-project"].value = saved.length <= 8192 ? saved || state.project || "artifacts/my-recordings" : state.project || "artifacts/my-recordings";
+        }
+        ui["preparation-dialog"].showModal();
+        void readPreparationBatches();
+    });
+    ui["close-preparation"].addEventListener("click", () => ui["preparation-dialog"].close());
+    ui["preparation-dialog"].addEventListener("close", () => { stopPreparationObservation(); state.preparationSubmitting = false; });
+    ui["preparation-project"].addEventListener("input", () => {
+        stopPreparationObservation();
+        state.preparationJob = null;
+        state.preparationCatalog = null;
+        state.preparationOffset = 0;
+        ui["preparation-batches"].replaceChildren();
+        ui["preparation-history-summary"].textContent = "项目已变化，请重新读取批次。";
+        ui["preparation-previous"].disabled = true;
+        ui["preparation-next"].disabled = true;
+        renderPreparationJob();
+    });
+    ui["preparation-form"].addEventListener("submit", (event) => { event.preventDefault(); void submitPreparation(); });
+    ui["stop-preparation"].addEventListener("click", () => { void cancelPreparation(); });
+    ui["refresh-preparation"].addEventListener("click", () => { void readPreparationBatches(); });
+    ui["preparation-previous"].addEventListener("click", () => { void readPreparationBatches(Math.max(0, state.preparationOffset - 20)); });
+    ui["preparation-next"].addEventListener("click", () => { void readPreparationBatches(state.preparationOffset + 20); });
+    ui["open-prepared-tasks"].addEventListener("click", () => { void openPreparedTasks(); });
+    ui["download-preparation"].addEventListener("click", () => {
+        if (!state.preparationJob?.result) return;
+        const url = URL.createObjectURL(new Blob([JSON.stringify(state.preparationJob.result, null, 2) + "\n"], { type: "application/json;charset=utf-8" }));
+        const link = element("a");
+        link.href = url;
+        link.download = `media-batch-${state.preparationJob.batchId}.json`;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
     ui["close-tasks"].addEventListener("click", clearTasks);
     ui["tasks-previous"].addEventListener("click", () => { void loadTasks(Math.max(0, state.tasksOffset - TASK_PAGE_SIZE)); });
     ui["tasks-next"].addEventListener("click", () => { void loadTasks(state.tasksOffset + TASK_PAGE_SIZE); });
@@ -1957,5 +2202,12 @@
     });
     window.addEventListener("resize", drawTimeline);
     resetView();
+    void (async () => {
+        try {
+            const health = await request("/api/health", {});
+            ui["open-preparation"].hidden = !(health.application === "gamingcreator-workspace"
+                && health.capabilities?.includes("media-preparation-v1"));
+        } catch { /* Keep the preparation entry hidden until its service is available. */ }
+    })();
     void loadProjects();
 })();

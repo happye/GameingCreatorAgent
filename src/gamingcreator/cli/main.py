@@ -3,7 +3,7 @@ import asyncio
 import json
 import shutil
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import asdict
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -876,6 +876,7 @@ async def execute_prepare_media_batch(
     max_cost_cny: str | None = None,
     resume: str | None = None,
     timeout_seconds: float | None = None,
+    on_progress: Callable[[dict[str, object]], None] | None = None,
 ) -> dict[str, object]:
     if timeout_seconds is not None and (not isfinite(timeout_seconds) or timeout_seconds <= 0):
         raise AppError("input.media_batch", "每素材期限须为有限正数。", ExitCode.INPUT)
@@ -926,6 +927,9 @@ async def execute_prepare_media_batch(
 
             def checkpoint(document: dict[str, object]) -> None:
                 files.save(document, plan, digest)
+                if on_progress is not None:
+                    on_progress(document)
+                    return
                 rows = cast(list[dict[str, object]], document["items"])
                 print(
                     json.dumps(

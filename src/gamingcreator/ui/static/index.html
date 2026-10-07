@@ -26,6 +26,7 @@
                 <details class="manual-project"><summary>打开其他项目目录</summary><form id="project-form"><label class="sr-only" for="project-path">仓库内的项目目录</label><input id="project-path" placeholder="artifacts/demo-phase0" autocomplete="off" spellcheck="false"><button class="button secondary" type="submit">打开</button></form><p class="muted small">填写仓库内已有的项目目录。</p></details>
                 <div class="section-heading"><label class="field-label" for="run-select">分析运行</label><button id="refresh-runs" class="text-button" disabled>重新读取</button></div>
                 <button id="open-tasks" class="button secondary compact task-browser-open" disabled>查看素材任务 ↗</button>
+                <button id="open-preparation" class="button secondary compact task-browser-open" type="button" hidden>准备多段录像 ↗</button>
                 <select id="run-select" disabled><option value="">先选择项目</option></select>
                 <p id="run-state" class="run-state muted">尚未选择素材</p>
                 <div class="source-summary"><div class="source-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5zM14 3v5h5"/><path d="m10 11 5 3-5 3z"/></svg></div><div><span class="source-label">当前素材</span><h3 id="source-name">选择一份分析结果</h3><p id="source-duration" class="muted small">源视频保留在本机</p></div></div>
@@ -97,6 +98,20 @@
     </dialog>
     <dialog id="detail-cost-dialog" aria-labelledby="detail-cost-title"><div class="dialog-heading"><h2 id="detail-cost-title">精分析费用与调用</h2><button id="close-detail-costs" class="icon-button" aria-label="关闭费用记录">×</button></div><p class="muted small">仅查看已有记录。估价不是账单；未知费用预留继续占用承诺金额。</p><div id="detail-cost-content" aria-live="polite"></div></dialog>
     <dialog id="tasks-dialog" aria-labelledby="tasks-title"><div class="dialog-heading"><h2 id="tasks-title">素材任务</h2><button id="close-tasks" class="icon-button" aria-label="关闭素材任务">×</button></div><p class="muted small">查看已保存进度，不会开始分析。打开素材或续跑时会重新核对文件；这里的“处理中”是保存记录，不代表任务仍在运行。</p><div class="tasks-toolbar"><span id="tasks-page-summary" aria-live="polite"></span><div><button id="tasks-previous" class="text-button" disabled>上一页</button><button id="tasks-next" class="text-button" disabled>下一页</button><button id="refresh-tasks" class="text-button">重新读取</button></div></div><div id="tasks-list" class="tasks-list" aria-live="polite"></div></dialog>
+    <dialog id="preparation-dialog" aria-labelledby="preparation-title">
+        <div class="dialog-heading"><h2 id="preparation-title">准备多段本地录像</h2><button id="close-preparation" class="icon-button" type="button" aria-label="关闭素材准备">×</button></div>
+        <form id="preparation-form">
+            <label class="field-label" for="preparation-project">准备项目</label><input id="preparation-project" required placeholder="artifacts/my-recordings" maxlength="8192">
+            <label class="field-label" for="preparation-paths">录像路径 · 每行一段</label><textarea id="preparation-paths" rows="3" required placeholder="GameVideos/第一场.mp4&#10;G:\录像\第二场.mp4"></textarea>
+            <p class="muted small">可粘贴本机完整路径，也可填写仓库内的相对路径；最多100段，原视频留在原处。</p>
+            <div class="preparation-settings"><div><label class="field-label" for="preparation-profile">准备方案</label><select id="preparation-profile"><option value="frames">画面观察</option><option value="temporal">连续动作（试验）</option><option value="detailed" selected>细节动作（试验）</option></select></div><div><label class="field-label" for="preparation-budget">以后每段分析上限（元）</label><input id="preparation-budget" type="number" min="0.00000001" step="any" required placeholder="例如：5"></div></div>
+            <p class="muted small">这次只在本机保存画面和音轨。金额仅保存为以后分析的上限，不付款、不预留费用，也不授权后续分析。</p>
+            <details><summary>准备时间设置</summary><label class="field-label" for="preparation-timeout">每段最长准备时间（秒）</label><input id="preparation-timeout" type="number" min="1" max="86400" value="3600" required></details>
+            <button id="start-preparation" class="button primary compact" type="submit">开始本地准备</button>
+        </form>
+        <section class="preparation-progress"><div class="section-heading"><h3 id="preparation-status">尚未开始新批次</h3><button id="stop-preparation" class="text-button" type="button" disabled>停止当前准备</button></div><p id="preparation-summary" class="muted small" aria-live="polite"></p><div id="preparation-items" class="preparation-items"></div><div class="preparation-actions"><button id="open-prepared-tasks" class="button secondary compact" type="button" disabled>打开素材任务</button><button id="download-preparation" class="text-button" type="button" disabled>下载本批次结果</button></div><p class="muted small">关闭窗口或页面不会停止任务。已保存的“处理中”记录不代表任务仍在运行；重新打开后核对本次状态，服务中断后须明确继续。</p></section>
+        <section><div class="section-heading"><h3>已保存批次</h3><button id="refresh-preparation" class="text-button" type="button">重新读取</button></div><p id="preparation-history-summary" class="muted small"></p><div id="preparation-batches" class="preparation-items"></div><div class="preparation-actions"><button id="preparation-previous" class="text-button" type="button" disabled>上一页</button><button id="preparation-next" class="text-button" type="button" disabled>下一页</button></div></section>
+    </dialog>
     <dialog id="search-sources-dialog" aria-labelledby="search-sources-title">
         <div class="dialog-heading"><h2 id="search-sources-title">选择要搜索的录像</h2><button id="close-search-sources" class="icon-button" type="button" aria-label="关闭录像选择">×</button></div>
         <p class="muted small">从已完成的分析中选择，最多100段。同一录像有多个分析版本时，请只选一个。</p>

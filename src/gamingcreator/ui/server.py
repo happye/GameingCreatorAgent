@@ -13,6 +13,7 @@ from gamingcreator.application.detail_query_draft import draft_detail_query
 from gamingcreator.application.retrieval import RetrievalMode
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.ui.media import VerifiedMediaCache, byte_range
+from gamingcreator.ui.media_preparation import MediaPreparationJobs
 from gamingcreator.ui.service import (
     detail_costs,
     inspect_run,
@@ -70,7 +71,12 @@ def discover_projects(repository: Path) -> list[dict[str, str]]:
 
 
 def error_status(error: AppError) -> int:
-    if error.code in {"input.evidence", "storage.run_missing", "storage.run_not_found"}:
+    if error.code in {
+        "input.evidence",
+        "storage.run_missing",
+        "storage.run_not_found",
+        "input.preparation_job",
+    }:
         return 404
     return {
         ExitCode.INPUT: 400,
@@ -84,6 +90,14 @@ def error_status(error: AppError) -> int:
 
 
 class WorkspaceServer(ThreadingHTTPServer):
+    preparation_jobs: MediaPreparationJobs
+
+    def server_close(self) -> None:
+        jobs = getattr(self, "preparation_jobs", None)
+        if jobs is not None:
+            jobs.close()
+        super().server_close()
+
     def server_bind(self) -> None:
         # Windows SO_REUSEADDR permits two live listeners on the same endpoint.
         # Use exclusive ownership so a stale preview cannot serve the new URL.
@@ -96,6 +110,7 @@ class WorkspaceServer(ThreadingHTTPServer):
 class InspectionHandler(BaseHTTPRequestHandler):
     repository = Path.cwd()
     media_cache = VerifiedMediaCache()
+    preparation_jobs: MediaPreparationJobs
 
     def log_message(self, format: str, *args: object) -> None:
         return
@@ -188,7 +203,13 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(403, {"code": "input.origin", "message": "请从本机工作台访问。"})
                 return
             path = urlparse(self.path).path
-            if path not in {"/api/match-details", "/api/draft-detail-query", "/api/search-project"}:
+            if path not in {
+                "/api/match-details",
+                "/api/draft-detail-query",
+                "/api/search-project",
+                "/api/prepare-media-batch",
+                "/api/cancel-media-preparation",
+            }:
                 self._json(404, {"code": "input.route", "message": "没有这个操作。"})
                 return
 
@@ -201,6 +222,20 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return result
 
             value = json.loads(body, object_pairs_hook=unique)
+            if path == "/api/prepare-media-batch":
+                if type(value) is not dict:
+                    raise ValueError("Expected preparation fields.")
+                self._json(202, self.preparation_jobs.submit(value))
+                return
+            if path == "/api/cancel-media-preparation":
+                if (
+                    type(value) is not dict
+                    or set(value) != {"project", "job"}
+                    or any(type(item) is not str for item in value.values())
+                ):
+                    raise ValueError("Expected exact cancellation identity.")
+                self._json(200, self.preparation_jobs.cancel(value["project"], value["job"]))
+                return
             if path == "/api/search-project":
                 if (
                     type(value) is not dict
@@ -288,6 +323,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     {
                         "application": "gamingcreator-workspace",
                         "apiVersion": 1,
+                        "capabilities": ["media-preparation-v1"],
                         "repository": str(self.repository.resolve()),
                         "pid": os.getpid(),
                         "parentPid": os.getppid(),
@@ -298,6 +334,23 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(200, {"projects": discover_projects(self.repository)})
                 return
             query = _query(self.path)
+            if path == "/api/media-preparation":
+                if set(query) != {"project", "job"}:
+                    raise ValueError("Expected preparation identity.")
+                self._json(200, self.preparation_jobs.get(query["project"], query["job"]))
+                return
+            if path == "/api/media-batches":
+                if set(query) - {"project", "limit", "offset"} or "project" not in query:
+                    raise ValueError("Expected batch catalog fields.")
+                self._json(
+                    200,
+                    self.preparation_jobs.catalog(
+                        query["project"],
+                        limit=int(query.get("limit", "20")),
+                        offset=int(query.get("offset", "0")),
+                    ),
+                )
+                return
             if path not in {
                 "/api/runs",
                 "/api/tasks",
@@ -379,15 +432,19 @@ class InspectionHandler(BaseHTTPRequestHandler):
 def create_server(host: str, port: int, repository: Path) -> ThreadingHTTPServer:
     if host != "127.0.0.1":
         raise ValueError("The inspection workspace only binds to 127.0.0.1")
+    jobs = MediaPreparationJobs(repository)
     handler = type(
         "WorkspaceHandler",
         (InspectionHandler,),
         {
             "repository": repository.resolve(),
             "media_cache": VerifiedMediaCache(),
+            "preparation_jobs": jobs,
         },
     )
-    return WorkspaceServer((host, port), handler)
+    server = WorkspaceServer((host, port), handler)
+    server.preparation_jobs = jobs
+    return server
 
 
 def serve(host: str, port: int, repository: Path) -> None:

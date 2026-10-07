@@ -1,5 +1,7 @@
 # Progress Log
 
+2026-10-07额度14%阶段汇报：多素材准备页面／后台逐项进度、刷新连接／显式停止／同批次固定任务接续／坏文件继续／打开素材任务已实现，保存**未验收检查点**。20新后台HTTP首批通过；页面首次3失败为asyncio验证脚本冲突，直接修正4passed13.930s；新旧服务兼容检查健康地址写错已修正，最终5浏览器＋1health共6通过。旧4批次失败一次窄复查4passed1.854s，原失败保留TD012。Ruff／3源码类型通过；真实录像／整套／安装包／操作指南／现用服务更新尚未完成。8765fresh health38216／45800无新capability，新入口隐藏至后台支持，原联合搜索已交付保持。0付费／上传／预留／人评，unknown／待授权proposal／F006/F009/F010false保持。本轮0push／远端读取，保存事实以Git和.cache/media-preparation-workspace-checkpoint.json为准。已通俗汇报可用与待验证区别，下一真实素材与一次完整检查后部署，继续当前主线，不另开功能、不循环小bug，goal active。
+
 2026-10-07本轮实现b6e8518已本地保存；一次已授权普通push21.113秒连接github.com:443失败exit128，不重试／不读取远端，最后确认5d2a48e、本轮待补推。仅补发布文档，最终2180／1权限skip与现用38216／45800保持；下一本地主线继续，goal active。
 
 2026-10-07 root / Codex接5d2a48e交付F005／F007多录像工作台：显式不同Completed来源／SHA版本互斥、一次联合排名、原run空查询读取后播放与注册证据、完整排名下载；原单任务篮／源时排序导出和诊断保持，音频fallback、迟到／错来源拒绝。22新行为／45定向41.185s、9前后文／3最终页面通过。首完整2179／1旧detail-query遮挡失败／1权限skip435.40s，实际截图确认6px候选区，直接紧凑到98px及窄屏16px选择框后最终2180passed／1权限skip320.976s、162格式／84类型／lint／CLI／双wheel SHA6c6e34bb719b1d01c93596bf1fd17d65af9a239a3aef797fecce3c2d1e2e8fec／83包文件同源码通过，首失败事实保留。真实双尺寸词法0.85s／0.87s、六原片起止暂停／证据／独立篮／下载，现用hybrid5.48s及三播放通过，完整候选同此前CLI；三查询6文件、846旧文件／214单检索／三源／proposal及unknown保持，0付费／预留／人评。8765fresh身份38216／45800、静态同源码；详见sprint-project-retrieval-workspace和通俗report。已汇报实际能力、布局与验收边界，下一root登记批量离线准备接现有素材清单；旧worker冻结、小问题延期，F006/F009/F010false，goal active。Git及project-workspace-publication为保存／推送事实。

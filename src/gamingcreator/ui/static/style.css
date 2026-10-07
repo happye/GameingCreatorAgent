@@ -175,6 +175,20 @@ button.evidence-card { padding: 0; }
 .search-source-option input { flex: 0 0 16px; width: 16px; height: 16px; margin-top: 3px; padding: 0; }
 .search-source-option span { min-width: 0; }
 .search-source-option small { display: block; color: var(--muted); margin-top: 4px; }
+#preparation-dialog { width: min(760px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; }
+#preparation-dialog .field-label { margin-top: 9px; }
+#preparation-dialog p { overflow-wrap: anywhere; line-height: 1.6; margin: 8px 0; }
+#preparation-dialog summary { margin: 8px 0; cursor: pointer; font-size: 12px; }
+#preparation-dialog textarea { min-height: 80px; }
+#start-preparation { margin-top: 10px; }
+.preparation-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.preparation-progress { margin: 18px 0; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.preparation-items { display: flex; flex-direction: column; gap: 7px; margin: 8px 0; }
+.preparation-item, .preparation-batch { padding: 10px; border: 1px solid var(--line); border-radius: 6px; overflow-wrap: anywhere; }
+.preparation-item h4, .preparation-batch h4 { margin: 0; font-size: 12px; }
+.preparation-item.failed, .preparation-item.cancelled { border-color: #ac7945; }
+.preparation-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+@media (max-width: 600px) { .preparation-settings { grid-template-columns: minmax(0, 1fr); } }
 @media (min-width: 1001px) {
     .search-panel .search-scope { gap: 4px 12px; padding-top: 4px; }
     .search-panel .search-scope span { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

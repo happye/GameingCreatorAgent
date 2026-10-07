@@ -1,5 +1,9 @@
 # Active assignments
 
+root / Codex顺序负责[sprint-media-preparation-workspace](sprint-media-preparation-workspace.md)，接eb73a9f，codex/visual-details；独占ui/media_preparation.py后台准备／批次读取、server／static、main可选检查点回调、新任务／HTTP／浏览器行为和公共文档。1–100本地录像逐项准备／停止／原批次接续与素材任务；0模型／费用／人评，目标仅artifacts内，旧锁与来源／配置／预算保持。旧worker／worktree冻结，主线优先，小问题延期。
+
+额度14%汇报节点：已实现、**未验收**，20后台／HTTP、最终5浏览器＋1health通过，3源码类型／lint通过；旧4失败一次复查通过仍TD012。真实素材、整体验证／wheel、指南和部署待做。8765fresh health仍38216／45800、旧后台无新capability；新入口默认隐藏待后台支持，无生产重启。当前任务继续，不以本轮检查点或上一2180称新功能已交付；见report-2026-10-07-quota-checkpoint.md和HANDOFF，feature_list原状态不变，goal active。
+
 root / Codex已顺序交付[sprint-project-retrieval-workspace](sprint-project-retrieval-workspace.md)，接5d2a48e，codex/visual-details。ui service/server/static与22新行为，网页来源选择／联合排名／原run回看／完整排名下载、原篮／诊断保持；真实双尺寸／现用hybrid、三新查询6文件／旧214搜索及unknown保持。最终完整2180passed／1权限skip、83包文件同源码；首次布局失败保留，直接修正后复核。8765fresh进程38216／45800，0付费／预留／人评。下一root登记离线批量准备接现有任务流程；旧worker/worktree冻结，小问题延期，F006/F009/F010false。
 
 root已順序交付[sprint-project-retrieval](sprint-project-retrieval.md)，接0a85f3a：共用检索内核的联合语料、原候选／来源／证据保留、main search-project／独立查询文件／PS；真实三源词法0.45s／hybrid3.9s、脚本1.15s同排名与另一进程、旧214检索／文件／费用保持。40新增／136定向通过，完整2157passed／1旧batch state保存失败／1权限skip，唯一失败一次窄复查通过；格式／84类型／双wheel／83包文件同源码通过。实际负面1候选记TD004，不反复修；本轮共7新项目查询、0付费／预留／人评，F006/F009/F010false。下一root登记现有工作台多素材选择／联合搜索与按源回看；旧worker／worktree冻结，无新SQL／HTTP或当前UI改动。
