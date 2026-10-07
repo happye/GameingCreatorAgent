@@ -19,6 +19,7 @@ v2每个非空candidate增加`evidenceSummary`，纯投影已登记且属于同m
 - `/api/health` → `{application:"gamingcreator-workspace",apiVersion:1,repository,pid,parentPid}`；GET/HEAD，不访问模型或项目数据库，no-store。启动器用仓库真实路径与进程身份判断ready/复用，不能仅凭端口打开认作本服务。
 - `/api/projects` → `{projects:[{path,name}]}`；path为仓库内相对路径，发现 `artifacts/` 下现有数据库。
 - `/api/runs?project=...` → `{runs:[{id,status,sourceName,durationUs,errorCode,analysisKind,analysisProfile}]}`；analysisKind为temporal或frame_observations，analysisProfile为detailed/temporal/frame_observations，来自固定prompt配置。
+- `/api/tasks?project=...&limit=100&offset=0[&run=...]` → material-tasks-v1，GET/HEAD，limit 1–200、offset 0–1000000；单项run不接受非零offset。包含project原请求表示、total/offset/limit/hasMore/ordering/snapshotOnly及tasks；页面每页20条。task包含runId/runStatus/phase/phaseLabel、sourceName/durationUs/sourceSha256/configHash/errorCode、图片／音频／事件／转录数量、原configuration、stages、progress、cost与continuationBlockers。phase为preparation_incomplete/media_prepared/analysis_incomplete/completed；progress分开统计requiredCompleted/requiredTotal与completedVisionWindows，media完成后提供plannedWindows/plannedUploadFrames/coverageFits。cost.scope=base_analysis，Decimal字符串记录knownCny、unknownReservationCny、committedCny/remainingCny；旧记录预留不完整时后三者为null，knownUnknownReservationCny只表示可识别的部分，billingConfirmed=false。精分析费用仍独立读取。requiresRetryConfirmation保留未提交远端调用的显式重试要求。接口不返回源绝对路径或nextCommand；nextAction仅为提示，不执行。只读单事务metadata快照不hash媒体、不恢复run、不构造Provider／账本或追加搜索。integrityCheck=not_requested、humanQualityGate=null；Host/Origin和仓库边界与既有GET一致。
 - `/api/inspect?project=...&run=...&query=...&mode=hybrid&top=10` → 下面的视图；query为空只刷新时间轴，不执行搜索。检索模式 lexical/semantic/hybrid、top 1..100。
 - `/api/media?project=...&run=...` → run已登记的原视频，GET/HEAD和单段HTTP Range。
 - `/api/evidence?project=...&run=...&id=...` → 当前run已登记的图片或WAV，GET/HEAD。
@@ -63,6 +64,8 @@ timeline/candidate行新增 `detailRefinement:{status:"unverified",availability,
 ## 页面行为与导出
 
 按原方案§12提供素材/视频/查询三个区域和下方时间轴。事件/候选可点击seek并播放到end自动暂停；证据图可查看源帧。文本全部用textContent等安全DOM API，不插入模型HTML。
+
+2026-10-07左侧“查看素材任务”打开分页清单，显示保存阶段、原采样／模型配置、基础已知估价与未知预留、原上限和继续处理提示。“打开此任务”沿原run选择／空查询inspect路径核对并查看已有资料，不开始分析；非Completed任务仍禁用搜索。清单的running仅为保存状态，不表示进程活着。刷新、分页、关闭及切项目通过请求取消与版本／project／offset身份校验隔离迟到响应，失败显示未读取，不作成功空列表；所有保存文本用textContent。
 
 查询结果按rank保留，时间轴按源时间；时间轴文本/标签筛选不更改候选排名。页面可选择片段，按 project+run 隔离，localStorage只保存选中候选，不写密钥。片段篮显示、保存和JSON/CSV统一按startUs、endUs、稳定身份升序，保留每片原rank/查询来源。切换run清空旧显示；同run重绘保留列表scrollTop，改变时间轴筛选回到列表开头。
 

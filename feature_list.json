@@ -46,7 +46,7 @@
       "passes": true,
       "test_criteria": "Provider replacement is verified; ASR distinguishes no_audio/no_speech/failure; schema, usage, budget and retry checks pass with per-attempt model/prompt/cost/time records and unknown costs preserved.",
       "dependencies": ["F002"],
-      "evidence": ["docs/exec-plans/sprint-demo.md", "docs/exec-plans/sprint-F003.md", "docs/references/deepseek-pricing.json", "tests/test_analyze_v2.py", "scripts/validate-demo.py", "scripts/verify.ps1", "docs/exec-plans/sprint-media-preparation.md", "tests/test_media_preparation.py"]
+      "evidence": ["docs/exec-plans/sprint-demo.md", "docs/exec-plans/sprint-F003.md", "docs/references/deepseek-pricing.json", "tests/test_analyze_v2.py", "scripts/validate-demo.py", "scripts/verify.ps1", "docs/exec-plans/sprint-media-preparation.md", "tests/test_media_preparation.py", "docs/exec-plans/sprint-material-tasks.md", "tests/test_material_tasks.py", "tests/test_material_tasks_http.py", "tests/test_material_tasks_browser.py", "scripts/list-tasks.ps1"]
     },
     {
       "id": "F004",
@@ -56,7 +56,7 @@
       "passes": true,
       "test_criteria": "A second process reloads the timeline; migrations/FKs and interrupted-stage/file-integrity recovery pass; unknown request costs survive recovery; full source video bytes are absent from SQLite.",
       "dependencies": ["F001"],
-      "evidence": ["docs/exec-plans/sprint-F004.md", "docs/references/timeline-storage.md", "scripts/test-storage.ps1", "scripts/verify.ps1", "docs/exec-plans/sprint-long-footage-media.md", "docs/exec-plans/sprint-media-preparation.md", "tests/test_media_preparation.py"]
+      "evidence": ["docs/exec-plans/sprint-F004.md", "docs/references/timeline-storage.md", "scripts/test-storage.ps1", "scripts/verify.ps1", "docs/exec-plans/sprint-long-footage-media.md", "docs/exec-plans/sprint-media-preparation.md", "tests/test_media_preparation.py", "docs/exec-plans/sprint-material-tasks.md", "tests/test_material_tasks.py", "tests/test_material_tasks_http.py", "tests/test_material_tasks_browser.py", "scripts/list-tasks.ps1"]
     },
     {
       "id": "F005",
@@ -86,7 +86,7 @@
       "passes": true,
       "test_criteria": "Registered source/evidence HTTP boundaries and Range/HEAD/errors pass; real existing footage supports search, seek/end pause, evidence preview, isolated basket restoration and identity-preserving JSON/CSV export; browser behavior checks cover stale responses and text safety using project-isolated tools.",
       "dependencies": ["F004", "F005"],
-      "evidence": ["docs/design-docs/adr-002-local-inspection-ui.md", "docs/design-docs/inspection-workspace-api.md", "docs/exec-plans/sprint-inspection-workspace.md", "docs/exec-plans/sprint-inspection-frontend.md", "tests/test_inspection_http.py", "scripts/validate-inspection-ui.py"]
+      "evidence": ["docs/design-docs/adr-002-local-inspection-ui.md", "docs/design-docs/inspection-workspace-api.md", "docs/exec-plans/sprint-inspection-workspace.md", "docs/exec-plans/sprint-inspection-frontend.md", "tests/test_inspection_http.py", "scripts/validate-inspection-ui.py", "docs/exec-plans/sprint-material-tasks.md", "tests/test_material_tasks.py", "tests/test_material_tasks_http.py", "tests/test_material_tasks_browser.py", "scripts/list-tasks.ps1"]
     },
     {
       "id": "F008",

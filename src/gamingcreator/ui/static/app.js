@@ -25,6 +25,8 @@
         "open-detail-costs", "detail-cost-dialog", "close-detail-costs", "detail-cost-content",
         "open-retrieval-diagnostics", "retrieval-diagnostics-dialog", "close-retrieval-diagnostics",
         "retrieval-diagnostics-summary", "retrieval-diagnostics-slots", "download-retrieval-diagnostics",
+        "open-tasks", "tasks-dialog", "close-tasks", "tasks-list", "tasks-page-summary",
+        "tasks-previous", "tasks-next", "refresh-tasks",
     ].map((id) => [id, byId(id)]));
     const state = {
         project: "", run: "", revision: 0, runs: [], view: null, active: null,
@@ -35,11 +37,105 @@
         costController: null, costRevision: 0,
         draftController: null, draftRevision: 0, drafting: false, draftScope: "manual",
         diagnosticsContext: null,
+        tasksController: null, tasksRevision: 0, tasksOffset: 0,
     };
     const statusLabels = {
         pending: "等待分析", running: "分析中", completed: "已完成", failed: "失败",
         cancelled: "已取消", interrupted: "已中断",
     };
+    const TASK_PAGE_SIZE = 20;
+
+    function clearTasks() {
+        state.tasksController?.abort();
+        state.tasksController = null;
+        state.tasksRevision += 1;
+        state.tasksOffset = 0;
+        if (ui["tasks-dialog"].open) ui["tasks-dialog"].close();
+        ui["tasks-list"].replaceChildren();
+        ui["tasks-page-summary"].textContent = "";
+        ui["tasks-previous"].disabled = true;
+        ui["tasks-next"].disabled = true;
+    }
+
+    function taskMoney(value) { return typeof value === "string" ? `¥${value}` : "未知"; }
+
+    function renderTasks(payload, project, revision) {
+        ui["tasks-list"].replaceChildren();
+        const start = payload.tasks.length ? payload.offset + 1 : 0;
+        ui["tasks-page-summary"].textContent = `${start}–${payload.offset + payload.tasks.length} / ${payload.total} 个任务`;
+        ui["tasks-previous"].disabled = payload.offset === 0;
+        ui["tasks-next"].disabled = !payload.hasMore;
+        if (!payload.tasks.length) { empty(ui["tasks-list"], "这一页没有已保存任务。"); return; }
+        const blockerLabels = {
+            material_integrity: "原文件或证据有问题，先核对素材。",
+            explicit_retry_required: "旧调用未提交或费用未确认，需明确选择重试；原预留保留。",
+            legacy_stopped: "旧分析流程已停止，不能直接重放。",
+            coverage_limit: "原配置不足以覆盖全部窗口，调整配置后准备新任务。",
+            unsupported_cli_provider: "该配置需要对应的分析入口。",
+        };
+        for (const task of payload.tasks) {
+            if (typeof task.runId !== "string" || !task.runId) throw new Error("任务身份无效。");
+            const card = element("section", "task-card");
+            card.append(element("h3", "", task.sourceName || "未命名素材"));
+            card.append(element("p", "task-phase", task.phaseLabel || "进度未确认"));
+            const savedStatus = task.runStatus === "running" ? "处理中（保存记录）" : statusLabels[task.runStatus] || task.runStatus;
+            card.append(element("p", "muted small", `${savedStatus} · ${timecode(task.durationUs)} · ${task.imageCount} 张画面 · ${task.eventCount} 条事件`));
+            const progress = task.progress || {};
+            card.append(element("p", "small", `阶段 ${progress.requiredCompleted}/${progress.requiredTotal} 已完成；视觉窗口 ${progress.completedVisionWindows}/${progress.plannedWindows ?? "尚未准备"}`));
+            const config = task.configuration?.analysis || {};
+            card.append(element("p", "muted small", `保存的配置：${config.model || "模型未知"}，每 ${(config.sampling_interval_ms || 0) / 1000} 秒取样，${config.window_frames || "?"} 张一组，重叠 ${config.window_overlap ?? "?"} 张。`));
+            const cost = task.cost || {};
+            card.append(element("p", "small", `基础分析已知估价 ${taskMoney(cost.knownCny)}；${cost.unknownAttempts ?? "?"} 次费用未确认；未知预留 ${taskMoney(cost.unknownReservationCny)}。`));
+            card.append(element("p", "muted small", `保存的分析上限 ${taskMoney(task.configuration?.maxCostCny)}；含未知预留的承诺 ${taskMoney(cost.committedCny)}。精分析费用另行查看。`));
+            const blockers = Array.isArray(task.continuationBlockers) ? task.continuationBlockers : [];
+            const next = task.phase === "completed" ? "可以打开回看与检索。" : task.nextAction === "prepare_media" ? "下一步：按原任务ID续准备素材。" : "下一步：明确启动分析，接着已保存进度运行。";
+            card.append(element("p", "task-next small", blockers.length ? blockers.map((item) => blockerLabels[item] || "接续条件尚未满足。").join(" ") : next));
+            if (task.errorCode) card.append(element("p", "muted small", `已保存的停止原因：${task.errorCode}`));
+            card.append(element("p", "task-id muted small", `任务 ${task.runId}`));
+            const open = element("button", "button secondary compact", "打开此任务");
+            open.type = "button";
+            open.addEventListener("click", () => {
+                if (state.project !== project || state.tasksRevision !== revision) return;
+                clearTasks();
+                if (state.runs.some((run) => run.id === task.runId)) {
+                    ui["run-select"].value = task.runId;
+                    switchRun(task.runId);
+                } else { void loadRuns(project, task.runId); }
+            });
+            card.append(open);
+            ui["tasks-list"].append(card);
+        }
+    }
+
+    async function loadTasks(offset = 0) {
+        if (!state.project) return;
+        state.tasksController?.abort();
+        const controller = new AbortController();
+        state.tasksController = controller;
+        const revision = ++state.tasksRevision;
+        const project = state.project;
+        state.tasksOffset = offset;
+        ui["tasks-previous"].disabled = true;
+        ui["tasks-next"].disabled = true;
+        ui["tasks-page-summary"].textContent = "正在读取保存进度…";
+        empty(ui["tasks-list"], "正在读取素材任务…");
+        if (!ui["tasks-dialog"].open) ui["tasks-dialog"].showModal();
+        try {
+            const payload = await request("/api/tasks", { project, limit: TASK_PAGE_SIZE, offset }, controller.signal);
+            if (state.project !== project || state.tasksRevision !== revision || state.tasksController !== controller) return;
+            if (payload.schemaVersion !== "material-tasks-v1" || payload.project !== project || payload.offset !== offset
+                || !Array.isArray(payload.tasks) || !Number.isSafeInteger(payload.total) || payload.total < 0
+                || payload.limit !== TASK_PAGE_SIZE || typeof payload.hasMore !== "boolean") throw new Error("任务清单来源或页码无效。");
+            renderTasks(payload, project, revision);
+        } catch (error) {
+            if (error.name !== "AbortError" && state.project === project && state.tasksRevision === revision) {
+                empty(ui["tasks-list"], error.message);
+                ui["tasks-page-summary"].textContent = "未读取，不能据此判断没有任务。";
+                ui["tasks-previous"].disabled = true;
+                ui["tasks-next"].disabled = true;
+            }
+        }
+    }
 
     function element(tag, className, text) {
         const node = document.createElement(tag);
@@ -836,6 +932,8 @@
     }
 
     function resetView() {
+        clearTasks();
+        ui["open-tasks"].disabled = !state.project;
         clearRetrievalDiagnostics();
         invalidateDetailDraft(true);
         clearDetailCosts();
@@ -1563,6 +1661,12 @@
     ui["add-detail-condition"].addEventListener("click", () => addDetailCondition());
     ui["detail-query-form"].addEventListener("submit", (event) => { event.preventDefault(); void matchDetailQuery(); });
     ui["open-detail-costs"].addEventListener("click", () => { void openDetailCosts(); });
+    ui["open-tasks"].addEventListener("click", () => { void loadTasks(); });
+    ui["close-tasks"].addEventListener("click", clearTasks);
+    ui["tasks-previous"].addEventListener("click", () => { void loadTasks(Math.max(0, state.tasksOffset - TASK_PAGE_SIZE)); });
+    ui["tasks-next"].addEventListener("click", () => { void loadTasks(state.tasksOffset + TASK_PAGE_SIZE); });
+    ui["refresh-tasks"].addEventListener("click", () => { void loadTasks(state.tasksOffset); });
+    ui["tasks-dialog"].addEventListener("close", () => { state.tasksController?.abort(); state.tasksController = null; state.tasksRevision += 1; });
     ui["close-detail-costs"].addEventListener("click", () => ui["detail-cost-dialog"].close());
     ui["open-retrieval-diagnostics"].addEventListener("click", openRetrievalDiagnostics);
     ui["close-retrieval-diagnostics"].addEventListener("click", clearRetrievalDiagnostics);

@@ -1,5 +1,7 @@
 # Active assignments
 
+root已顺序交付[sprint-material-tasks](sprint-material-tasks.md)，接2a38e4d。共用只读快照／CLI tasks／list-tasks.ps1／工作台分页与打开，原配置与未知费用保持，83定向与最终17接口／浏览器、完整1987／1权限skip、72包文件同源码通过；实际三项目8任务／6桌面窄屏清单、工作台40592／11788 fresh身份及4629文件字节保持，0模型／预算／普通搜索／人评。小时完整详情耗时留TD005，TD010／TD011延期，旧worker冻结。已详细汇报，下一root登记独立验收素材／事前查询和人工参考冻结入口，接F006现有合同，不能宣布人评通过。网络上次超时，本轮0push。
+
 root已交付[sprint-media-preparation](sprint-media-preparation.md)，接c2b4f14：已实现prepare-media本地准备／保存原配置与media阶段，pending等待显式分析续跑；独占application/analysis.py／storage.py、cli/main.py、infrastructure/sqlite_store.py、新准备测试及真实媒体入口和公共记录。65定向passed、实际小时33秒准备／25秒不重新抽帧核对、另一进程完整读回，0模型／新预留，完整1942／1权限skip、CLI／类型／lint／相同离线wheel和71包文件逐字节校验通过。旧worker冻结，TD010／TD011延期；核对耗时记TD005。下一素材任务清单／阶段／原配置／费用查看先登记归属。上一交付一次push网络超时失败，继续本地，无重复联网。
 
 root已交付[sprint-long-footage-media](sprint-long-footage-media.md)，接94d5f29。F002／F004／TD001：流式时间记录、源时钟／裁切、限流／回收，一小时合成媒体保存／第二进程回读及显式离线采样入口；41定向＋1入口、完整1912／1权限skip、实际小时13715ms预处理／11725ms保存通过。0新付费调用，原开发DB保持。TD001resolved，TD010／TD011延期，旧worker冻结。下一root独立离线素材准备／保存任务入口及显式分析续跑，先登记范围；下方长事件检索为上一交付。

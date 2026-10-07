@@ -25,6 +25,7 @@
                 <select id="project-select"><option value="">正在读取项目…</option></select>
                 <details class="manual-project"><summary>打开其他项目目录</summary><form id="project-form"><label class="sr-only" for="project-path">仓库内的项目目录</label><input id="project-path" placeholder="artifacts/demo-phase0" autocomplete="off" spellcheck="false"><button class="button secondary" type="submit">打开</button></form><p class="muted small">填写仓库内已有的项目目录。</p></details>
                 <div class="section-heading"><label class="field-label" for="run-select">分析运行</label><button id="refresh-runs" class="text-button" disabled>重新读取</button></div>
+                <button id="open-tasks" class="button secondary compact task-browser-open" disabled>查看素材任务 ↗</button>
                 <select id="run-select" disabled><option value="">先选择项目</option></select>
                 <p id="run-state" class="run-state muted">尚未选择素材</p>
                 <div class="source-summary"><div class="source-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5zM14 3v5h5"/><path d="m10 11 5 3-5 3z"/></svg></div><div><span class="source-label">当前素材</span><h3 id="source-name">选择一份分析结果</h3><p id="source-duration" class="muted small">源视频保留在本机</p></div></div>
@@ -93,6 +94,7 @@
         <p class="muted small">仅本地核对，不发起精分析。条件满足仍需人工确认；未知属性不补全。</p><section id="detail-match-result" aria-live="polite"></section>
     </dialog>
     <dialog id="detail-cost-dialog" aria-labelledby="detail-cost-title"><div class="dialog-heading"><h2 id="detail-cost-title">精分析费用与调用</h2><button id="close-detail-costs" class="icon-button" aria-label="关闭费用记录">×</button></div><p class="muted small">仅查看已有记录。估价不是账单；未知费用预留继续占用承诺金额。</p><div id="detail-cost-content" aria-live="polite"></div></dialog>
+    <dialog id="tasks-dialog" aria-labelledby="tasks-title"><div class="dialog-heading"><h2 id="tasks-title">素材任务</h2><button id="close-tasks" class="icon-button" aria-label="关闭素材任务">×</button></div><p class="muted small">查看已保存进度，不会开始分析。打开素材或续跑时会重新核对文件；这里的“处理中”是保存记录，不代表任务仍在运行。</p><div class="tasks-toolbar"><span id="tasks-page-summary" aria-live="polite"></span><div><button id="tasks-previous" class="text-button" disabled>上一页</button><button id="tasks-next" class="text-button" disabled>下一页</button><button id="refresh-tasks" class="text-button">重新读取</button></div></div><div id="tasks-list" class="tasks-list" aria-live="polite"></div></dialog>
     <dialog id="retrieval-diagnostics-dialog" aria-labelledby="retrieval-diagnostics-title">
         <div class="dialog-heading"><h2 id="retrieval-diagnostics-title">检索诊断 · 固定十位</h2><button id="close-retrieval-diagnostics" class="icon-button" aria-label="关闭检索诊断">×</button></div>
         <p id="retrieval-diagnostics-summary"></p>

@@ -1,5 +1,13 @@
 # Errors
 
+## [ERR-20261007-020] material_tasks_audit_assumptions
+
+**Logged**: 2026-10-07
+**Status**: direct test/script fixes resolved; actual hour inspection latency deferred TD005
+**Area**: tests
+
+两条迟到响应测试用了wait_for_function字符串布尔式，被既有CSP拒绝；直接改已有函数形式，不放宽CSP，完整1987／1权限skip通过。实际脚本最初猜测URL project参数能切项目，按原手动表单纠正；5秒小时完整详情等待不足，退出时handler尚未结束引起清理错误。未认定新生产bug，停止该耗时探查，最终6真实清单页面字节保持，明确小时完整详情未验证，小型任务打开／禁搜由行为测试覆盖。Shell读文件使用了Bash brace路径导致PowerShell解析失败，直接显式列路径；health拒连后应先止错判断服务终止，不继续使用null响应。旧health拒连／父子CIM不存在后正常隐藏启动新服务，完整身份再核对通过，不盲停历史PID。
+
 ## [ERR-20261007-019] media_preparation_test_contracts
 
 **Logged**: 2026-10-07

@@ -1,5 +1,15 @@
 # 当前交接
 
+2026-10-07，root已交付[sprint-material-tasks](docs/exec-plans/sprint-material-tasks.md)，接2a38e4d；[通俗汇报](docs/exec-plans/report-2026-10-07-material-tasks.md)。Phase 0／F003／F004／F007：CLI tasks／list-tasks.ps1与工作台“查看素材任务”共用只读metadata快照，分页／单项／打开既有任务；原配置／阶段与父子窗口、基础已知费用／未知预留显示。清单不hash媒体／recover／Provider／预算／普通搜索，CLI只提示明确argv而不执行，费用未定保留retry要求与空命令，旧预留资料不足保持null。旧worker冻结，TD010／TD011和完整详情耗时TD005延期，F006/F009/F010false。
+
+83定向3.64s，接口／浏览器最终17项及一次完整1987passed／1 Windows文件symlink权限skip372.65s；145格式／73类型／lint／CLI／双离线wheel SHA8ba637d4bab57b6ef42f58bad36cbff482da7e56cced2b6e56e4ee797a006c87，72包文件同源码且无媒体／缓存／DB。JUnit1988／0fail／0error／1权限skip，回执.cache/material-tasks-verify.log／tests.xml／package.json；之后仅文档／ignored证据，不重复完整测试。
+
+实际三项目8任务：4完成／3分析未完成／1待分析；禁止_hash与模型构造下读取19／4／10ms。一小时合成3600图／1of3／900窗口／0调用，漫画旧0ba106578bc7435c8689d12892a35dfb仍¥4.065536未知预留与显式retry，无nextCommand。实际1366／390共6清单页面／无横溢／root截图核对／项目字节保持；ignored artifacts/material-tasks-validation/report.json。首次实际脚本URL切项目误假设已纠正；5秒小时完整详情核验超时后不循环定位，最终实际验收限任务清单，小型打开／禁搜由行为测试验证，小时详情耗时TD005继续跟踪。
+
+旧工作台fresh health拒连且CIM父子不存在，正常隐藏启动新服务，不按历史PID停进程；新health／state／CIM完整exe／命令／父子一致40592／11788，三网页资源等于源码，三任务API读8项／4629项目文件字节保持，0普通搜索／模型／新预留／人评。.cache/material-tasks-live-health.json／live.json为回执；PID仅快照，任何停启须重新核对。
+
+已向用户说明清单能找回任务、区分等待与中断、保留原配置／未知费用以及实际验证限制。下一主要交付先登记独立验收素材与事前查询／人工参考冻结入口，接F006现有manifest／benchmark；不造人工标签或拿开发PV代替独立测试。新两次¥4.07授权仍未答，原proposal未动。上次普通push网络超时，本轮0push／远端读取，当前本地HEAD及publication回执为准，普通授权分支待补推，不改main／强推。
+
 2026-10-07，root接c2b4f14已交付[sprint-media-preparation](docs/exec-plans/sprint-media-preparation.md)：prepare-media CLI／scripts/prepare-media.ps1独立本地抽帧／提音轨，保存原配置和费用上限／media阶段，任务pending等待显式analyze --resume；不构造ASR／视觉／HTTP／预算账本或读取密钥。续准备仅接受未开始模型工作任务，原身份与旧unknown保持，0新付费。65定向passed（20.53s），一次完整1942passed／1 Windows文件symlink权限skip，301.42s，141格式／72类型／lint／CLI／双离线wheel通过。SHA10497aac761d0a919546998f2168e6a28aaf7eae2e7376a1379c3b10b6ea9a45，71包文件同源码且不含素材／缓存／DB；JUnit1943／0fail／0error／1权限skip。回执.cache/media-preparation-final-targeted.xml／tests.xml／verify.log／package.json；之后仅文档／ignored证据，不重复完整检查。
 
 实际一小时合成源新入口32761ms准备／保存3600图、900窗口／4499含重叠上传帧、168752音频映射；续准备禁止preprocess仍通过25067ms原文件核对／重建，独立进程完整摘要一致。run26a49c8e606446c5a2e971bf1bb9724f pending／media completed attempt1／0invocations／无完成时间线；原开发DB SHA保持，报告ignored artifacts/media-preparation-validation/hour-report.json。仅合成容量／本地保存，未真实一小时ASR／视觉或人评；配置¥5只是保存后续上限，不是费用授权／预留，未执行nextCommand。已向用户详细汇报这一流程、实际33秒／25秒和未验证范围。

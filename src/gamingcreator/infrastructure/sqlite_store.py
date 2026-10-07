@@ -26,10 +26,12 @@ from gamingcreator.application.storage import (
     RecoveryReport,
     RunConfiguration,
     RunStatus,
+    RunTaskSnapshot,
     StageCheckpoint,
     StageStatus,
     StoredInvocation,
     StoredRun,
+    StoredTaskPage,
     StoredTimeline,
 )
 from gamingcreator.domain.errors import AppError, ExitCode
@@ -419,6 +421,64 @@ class SqliteTimelineStore:
                     "SELECT run_id, status FROM analysis_runs ORDER BY run_id"
                 )
             )
+
+        return await self._call(load)
+
+    async def load_task_page(
+        self, *, limit: int = 100, offset: int = 0, run_id: str | None = None
+    ) -> StoredTaskPage:
+        """Read a consistent metadata page without hashing or decoding media artifacts."""
+
+        def load() -> StoredTaskPage:
+            if (
+                type(limit) is not int
+                or not 1 <= limit <= 200
+                or type(offset) is not int
+                or not 0 <= offset <= 1_000_000
+            ):
+                raise _error("storage.task_query")
+            self._db.execute("BEGIN")
+            try:
+                if run_id is not None:
+                    self._run_row(run_id)
+                    identifiers, total = (run_id,), 1
+                else:
+                    total = self._db.execute("SELECT COUNT(*) FROM analysis_runs").fetchone()[0]
+                    identifiers = tuple(
+                        row[0]
+                        for row in self._db.execute(
+                            "SELECT run_id FROM analysis_runs ORDER BY created_at DESC,run_id DESC LIMIT ? OFFSET ?",
+                            (limit, offset),
+                        )
+                    )
+                tasks = []
+                for identifier in identifiers:
+                    image_count, audio_count = self._db.execute(
+                        "SELECT COUNT(CASE WHEN kind='image' THEN 1 END), COUNT(CASE WHEN kind='audio' THEN 1 END) FROM evidence WHERE run_id=?",
+                        (identifier,),
+                    ).fetchone()
+                    event_count = self._db.execute(
+                        "SELECT COUNT(*) FROM semantic_events WHERE run_id=?", (identifier,)
+                    ).fetchone()[0]
+                    transcript_count = self._db.execute(
+                        "SELECT COUNT(*) FROM transcript_segments WHERE run_id=?", (identifier,)
+                    ).fetchone()[0]
+                    tasks.append(
+                        RunTaskSnapshot(
+                            self._load_run(identifier),
+                            self._checkpoints(identifier),
+                            self._invocations(identifier),
+                            image_count,
+                            audio_count,
+                            event_count,
+                            transcript_count,
+                        )
+                    )
+                self._db.execute("COMMIT")
+                return StoredTaskPage(tuple(tasks), total, offset, limit)
+            except BaseException:
+                self._db.execute("ROLLBACK")
+                raise
 
         return await self._call(load)
 

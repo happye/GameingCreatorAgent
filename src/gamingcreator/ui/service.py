@@ -18,6 +18,7 @@ from gamingcreator.application.observation_text import FACTS_PROJECTION_VERSION,
 from gamingcreator.application.retrieval import RETRIEVAL_VERSION, CandidateClip, RetrievalMode
 from gamingcreator.application.retrieval_diagnostics import retrieval_diagnostics
 from gamingcreator.application.storage import RunStatus, StoredInvocation, StoredTimeline
+from gamingcreator.application.tasks import tasks_payload
 from gamingcreator.cli.main import execute_search
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.time import SourceInstant, SourceRange
@@ -210,6 +211,23 @@ async def project_runs_payload(project: Path) -> dict[str, object]:
                 }
             )
         return {"runs": rows}
+    finally:
+        await store.close()
+
+
+async def project_tasks_payload(
+    project: Path,
+    *,
+    limit: int = 100,
+    offset: int = 0,
+    run_id: str | None = None,
+    project_reference: str | None = None,
+) -> dict[str, object]:
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    try:
+        payload = await tasks_payload(store, limit=limit, offset=offset, run_id=run_id)
+        payload["project"] = project_reference if project_reference is not None else str(project)
+        return payload
     finally:
         await store.close()
 

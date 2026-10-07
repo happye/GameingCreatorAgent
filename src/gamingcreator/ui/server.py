@@ -18,6 +18,7 @@ from gamingcreator.ui.service import (
     inspect_run,
     match_details,
     project_runs_payload,
+    project_tasks_payload,
     registered_media,
 )
 
@@ -269,6 +270,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
             query = _query(self.path)
             if path not in {
                 "/api/runs",
+                "/api/tasks",
                 "/api/inspect",
                 "/api/media",
                 "/api/evidence",
@@ -279,6 +281,19 @@ class InspectionHandler(BaseHTTPRequestHandler):
             project = resolve_project(self.repository, query.get("project", ""))
             if path == "/api/runs":
                 self._json(200, asyncio.run(project_runs_payload(project)))
+            elif path == "/api/tasks":
+                self._json(
+                    200,
+                    asyncio.run(
+                        project_tasks_payload(
+                            project,
+                            limit=int(query.get("limit", "100")),
+                            offset=int(query.get("offset", "0")),
+                            run_id=query.get("run"),
+                            project_reference=query.get("project"),
+                        )
+                    ),
+                )
             elif path == "/api/detail-cost-history":
                 self._json(200, asyncio.run(detail_costs(project, query.get("run", ""))))
             elif path in {"/api/media", "/api/evidence"}:

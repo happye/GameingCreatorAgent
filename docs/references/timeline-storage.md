@@ -26,6 +26,10 @@ F004 的实现入口为 `application/storage.py` 的 `TimelineStore` port 与 `i
 
 未完成窗口存在可能已计费的远端调用时，要求 `--retry-uncertain`；恢复账本累计所有尝试的请求数、上传图片数和已知费用，未知费用保留原 reservation。原预算不能覆盖增大，重试仍受硬上限。旧 v1 维持有限 checkpoint 续跑。ASR 输入 hash 含权重修订/稳定参数，视觉配置固定 prompt 内容 hash；变化拒绝续跑。不能私读 SQL 或按 WAV 秒数假定源视频秒数。
 
+## 保存任务的只读清单
+
+`load_task_page`返回RunTaskSnapshot／StoredTaskPage，在只读连接的一次短BEGIN/COMMIT快照中读取run原配置、checkpoint、全部调用和登记数量；不取writer、不迁移、不recover、不读取media artifact或计算媒体hash。分页limit 1–200、offset 0–1000000，按created_at倒序再run ID排序；单项不存在保持storage.run_missing。Application tasks投影父阶段／视觉窗口、原配置与基础费用，unknown不得隐藏，缺旧预留资料保持null。Metadata清单不提供文件完整性保证，真正回看／续跑仍沿原验证路径。行为与实际三个项目只读证据见[sprint-material-tasks](../exec-plans/sprint-material-tasks.md)。
+
 ## 向量与检索记录
 
 检索只接受经完整性校验的 Completed run。`persist_search` 原子登记事件 embedding、retrieval run、ranked hits 和 evidence links，空结果也可保存；不修改已完成分析。组合 FK 约束相同 run/media/事件证据，区间仍不超过源时长。分析只读 reader 可并行；记录新检索需要 writer 锁。

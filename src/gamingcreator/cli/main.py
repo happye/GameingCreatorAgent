@@ -47,6 +47,7 @@ from gamingcreator.application.retrieval import (
     search_timeline,
 )
 from gamingcreator.application.storage import RunStatus
+from gamingcreator.application.tasks import tasks_payload
 from gamingcreator.domain.errors import AppError, ExitCode, invalid_config
 from gamingcreator.infrastructure.deepseek_vision import (
     MAX_IMAGE_WIDTH_V5,
@@ -90,6 +91,11 @@ def _parser() -> CliParser:
     prepare.add_argument("--max-cost-cny", help="保存后续分析的费用上限；准备不会调用模型")
     prepare.add_argument("--resume", help="按原配置续准备，只接受尚未开始模型分析的任务")
     prepare.add_argument("--timeout-seconds", type=float, default=3600)
+    tasks = commands.add_parser("tasks", help="查看已保存素材任务、阶段、原配置和费用")
+    tasks.add_argument("--project", type=Path, required=True)
+    tasks.add_argument("--run", help="只查看一个任务")
+    tasks.add_argument("--limit", type=int, default=100)
+    tasks.add_argument("--offset", type=int, default=0)
     search = commands.add_parser("search", help="用自然语言检索已完成的时间线")
     search.add_argument("query")
     search.add_argument("--project", type=Path, required=True)
@@ -528,6 +534,33 @@ async def execute_analyze(prepared: PreparedAnalyze, repository: Path) -> Analyz
         await store.close()
 
 
+async def execute_tasks(
+    project: Path, *, limit: int = 100, offset: int = 0, run_id: str | None = None
+) -> dict[str, object]:
+    _require_project(project)
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    try:
+        document = await tasks_payload(store, limit=limit, offset=offset, run_id=run_id)
+        document["project"] = str(project.resolve())
+        rows = cast(list[dict[str, object]], document["tasks"])
+        for row in rows:
+            row["nextCommand"] = None
+            if row["nextAction"] is not None and not row["continuationBlockers"]:
+                run = await store.load_run(cast(str, row["runId"]))
+                row["nextCommand"] = [
+                    "gamingcreator",
+                    "prepare-media" if row["nextAction"] == "prepare_media" else "analyze",
+                    str(run.asset.source_path),
+                    "--project",
+                    str(project.resolve()),
+                    "--resume",
+                    run.run_id,
+                ]
+        return document
+    finally:
+        await store.close()
+
+
 async def execute_prepare_media(
     prepared: PreparedAnalyze, repository: Path, *, timeout_seconds: float = 3600
 ) -> dict[str, object]:
@@ -617,6 +650,12 @@ async def execute_prepare_media(
 
 
 def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | None:
+    if args.command == "tasks":
+        return asyncio.run(
+            execute_tasks(
+                args.project.resolve(), limit=args.limit, offset=args.offset, run_id=args.run
+            )
+        )
     if args.command == "match-details":
         return asyncio.run(
             execute_detail_match(

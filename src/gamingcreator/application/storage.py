@@ -91,6 +91,25 @@ class StoredTimeline:
 
 
 @dataclass(frozen=True, slots=True)
+class RunTaskSnapshot:
+    run: StoredRun
+    checkpoints: tuple[StageCheckpoint, ...]
+    invocations: tuple[StoredInvocation, ...]
+    image_count: int
+    audio_count: int
+    event_count: int
+    transcript_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class StoredTaskPage:
+    tasks: tuple[RunTaskSnapshot, ...]
+    total: int
+    offset: int
+    limit: int
+
+
+@dataclass(frozen=True, slots=True)
 class IntegrityIssue:
     run_id: str
     code: str
@@ -115,6 +134,10 @@ class TimelineStore(Protocol):
     async def load_run(self, run_id: str) -> StoredRun: ...
 
     async def list_runs(self) -> tuple[tuple[str, str], ...]: ...
+
+    async def load_task_page(
+        self, *, limit: int = 100, offset: int = 0, run_id: str | None = None
+    ) -> StoredTaskPage: ...
 
     async def load_evidence_reference(
         self, run_id: str, evidence_id: str
