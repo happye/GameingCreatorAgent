@@ -1,5 +1,13 @@
 # Active assignments
 
+2026-10-07 root / Codex已交付[多素材复合条件核对](sprint-project-detail-query.md)，接0678afd，独占Application／CLI／service／HTTP／主typed弹窗／新检查及公共文档，旧worker冻结。新26／相关48通过，完整2310／2旧失败延期TD014与TD012／1权限skip；96包文件／独立进程、实际三源227事件与现用1366／390分页筛选下载回看通过，0search／费用／真人标签。8765新13880／24000仅快照，已fresh身份核对；最终保存发布见Git和publication。
+
+用户授权只读explorer /root/acceptance_explanation 已答验收用途与记录核对，不写代码。root已说明日常不必填、正式独立原片参考及候选评分仍需人工；[人工待办](human-inputs.md)及即时提醒／持续同步规则已持久到共享记忆和三个工具入口。当前进度摘要与Phase 0里程碑同步，F006/F009/F010false，goal active。
+
+下一root登记把明确条件核对接入现有多录像检索候选的范围：保留排名／来源、显示满足／缺依据／不确定与原帧支持；不自动过滤未知或调用模型，不循环旧失败。其余workers冻结，公共文档root串行维护。
+
+## 历史分工与交付
+
 root / Codex已顺序交付[冻结来源版本选择](sprint-benchmark-run-picker.md)，接156f6f1；显式Completed版本／只读菜单／旧freeze与原媒体绑定／保存选择恢复。11新增及实际三源／现用双尺寸通过，完整2285passed／1旧状态失败／1权限skip，单次复查仍失败TD014延期；95包文件等源码与独立包进程读回通过。8765已fresh更新24212／50696，原数据与217排名保持、0search／paid／真人标签。下一root核对并登记跨素材已保存结果复合条件统一核对，旧worker冻结，goal active；最终保存发布见Git和publication。
 
 

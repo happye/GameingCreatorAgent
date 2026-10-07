@@ -19,7 +19,11 @@ from gamingcreator.application.retrieval import RETRIEVAL_VERSION, CandidateClip
 from gamingcreator.application.retrieval_diagnostics import retrieval_diagnostics
 from gamingcreator.application.storage import RunStatus, StoredInvocation, StoredTimeline
 from gamingcreator.application.tasks import tasks_payload
-from gamingcreator.cli.main import execute_project_search, execute_search
+from gamingcreator.cli.main import (
+    execute_project_detail_match,
+    execute_project_search,
+    execute_search,
+)
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.time import SourceInstant, SourceRange
 from gamingcreator.infrastructure.detail_cost_history import refinement_cost_history
@@ -229,6 +233,31 @@ async def project_search_payload(
 ) -> dict[str, object]:
     document = await execute_project_search(
         project, run_ids, query, repository, mode=mode, top_k=top_k
+    )
+    return {**document, "project": project_reference}
+
+
+async def project_detail_payload(
+    project: Path,
+    run_ids: list[str],
+    manifest: str,
+    *,
+    profile: str,
+    limit: int,
+    offset: int,
+    status: str,
+    snapshot: str | None,
+    project_reference: str,
+) -> dict[str, object]:
+    document = await execute_project_detail_match(
+        project,
+        run_ids,
+        manifest,
+        profile=profile,
+        limit=limit,
+        offset=offset,
+        status=status,
+        snapshot=snapshot,
     )
     return {**document, "project": project_reference}
 

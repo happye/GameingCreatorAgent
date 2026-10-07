@@ -81,6 +81,10 @@ timeline/candidate行新增 `detailRefinement:{status:"unverified",availability,
 
 ## 明确条件与费用接口
 
+`POST /api/match-project-details`接受JSON `{project,runs,profile,constraint,limit,offset,status,snapshot}`（所有字段必填；页面使用20／0／all／null作为首请求值），沿64KiB正文与本机Host／Origin／唯一字段边界。runs为1–100个不同Completed任务，同源SHA／media重复拒绝；profile显式v1–v4，constraint沿原query-v1正向AND。全部事件核验并核对准确已保存结果，再按status（all/full/partial/no_match/unverified）筛选分页；20,000事件或8MiB页超限明确拒绝，limit为1–50、offset为0–20,000、snapshot可为64位小写SHA。不写SQL／搜索／侧车、不调用模型或预算。
+
+响应`project-detail-query-v1`绑定project、scopeId、snapshotId、constraintJson、refinementProfile；sources含run／media／sourceSHA／configHash／pipelineVersion／durationUs／eventCount。counts覆盖全部事件；results仅本页，保留来源、原eventId／区间／证据／显示事实和原match报告，order为source-run-time。totalEvents／totalSelected／offset／limit／hasNext明确分页；humanLabels／qualityGate为null，普通搜索／模型／付费／预留计数为0。snapshot涵盖全部核对报告，不限本页或当前筛选；旧snapshot不一致报input.project_detail_snapshot，请重新核对。新health能力`project-detail-query-v1`才启用页面入口，旧后台无此能力时保留旧流程。
+
 `POST /api/draft-detail-query`仅接受JSON `{text}`，使用与match相同的本机Host/Origin、64KiB正文及唯一字段检查；text必须为字符串且不超过2048 Unicode code points。返回独立`actor-detail-query-draft-v1`：`originalText,status,spanOffsetUnit, constraint,spans,unparsed`，偏移单位为`unicode-code-point`，spans原文拼接严格等于originalText。ready表示有限正向同主体语法完全解析；未知文字为needs_review；否定、OR、多主体关系、时序或条件超限为unsupported且constraint=null，不将原句降级为肯定AND。纯Application解析不读取项目、数据库、文件或Provider；无预算/侧车写入。
 
 页面生成后只填入可编辑条件，不自动匹配。未处理要求展示原文和原因，必须明确勾选仅核对当前条件后才能做子集匹配，结果继续显示原描述尚有未核对要求。任何草稿匹配均仅针对当前可编辑清单；编辑/生成/关闭/切run/profile取消旧响应，不按JavaScript UTF-16切分服务器片段。手动条件入口继续保留，自由检索候选不自动按草稿过滤。

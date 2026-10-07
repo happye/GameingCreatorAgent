@@ -1,5 +1,7 @@
 # Technical debt
 
+2026-10-07多素材条件核对补充：一次完整2310passed／2旧failed／1Windows文件symlink权限skip，393.051s JUnit（终端393.29s）。TD014的test_http_registered_source_range_csp_and_reference_import再次读到interrupted而预期finished；TD012的test_browser_saved_batch_is_explicit_and_bad_video_does_not_stop_the_rest显示“本次准备停止”而预期“部分素材尚未准备好”，本轮未查明该失败根因，不能称已修复或直接认定与旧文件锁同因。.cache/project-detail-query-full.xml／final-verify.log及原临时目录留证，新26均通过；两项不循环复查、不改生产重试，按用户要求延期，不称全量全绿。
+
 TD012补充（2026-10-07原片参考交付）：一次完整2225passed／3旧准备失败／1权限skip441.531s JUnit，.cache/benchmark-reference-final-tests.xml／final-verify.log及原目录保留。test_corrupt_batch_records_refuse_before_media_work[state.json]明确storage.batch_checkpoint；test_coverage_is_reported_without_analysis_command_or_new_budget期望输入2实际存储5；test_browser_page_reload_recovers_live_job_then_explicit_stop_and_same_batch_resume停止按钮已disabled超时，第三原因未证实，不把它直接归作同一存储根因。首窄命令漏父目录3setup error／无测试执行保留recheck.xml，正确准备后仅一次3passed6.121s（recheck-final.xml）。22原片新检查全部通过；不改保存或加生产重试、不重新跑无变化整套，原因继续未解。
 
 TD012补充（2026-10-07准备页面交付）：一次完整2204passed／1新test_prepare_browser_three_materials_download_and_open_waiting_tasks[viewport0]失败／1权限skip444.233s，失败项目state明确第三项storage.batch_checkpoint／停止，两项prepared保留。.cache/media-preparation-workspace-tests.xml／verify.log及原pytest目录保存；唯一失败仅一次窄复查1passed3.021s（workspace-recheck.xml）。原因未定位、旧save未改、未加重试；最终另修明确UI读批次取消后按钮状态，并相关28项通过，未重新跑完整。继续延期，不把新测试遇旧问题说成旧测试或整套全绿。

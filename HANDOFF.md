@@ -1,5 +1,17 @@
 # 当前交接
 
+2026-10-07，Phase 0，root / Codex接0678afd已交付[多录像复合条件核对](docs/exec-plans/sprint-project-detail-query.md)，[通俗汇报及验收问题回答](docs/exec-plans/report-2026-10-07-project-detail-query.md)。明确不同Completed录像／准确精版本／正向同主体和同部件AND，扫描全部事件后筛选分页／全结果快照／按原来源回看与本页下载；缺资料保持未验证，0自动模型／费用／普通搜索／SQL写。
+
+新26／相关48检查通过；一次完整2310passed／2旧failed／1Windows文件symlink权限skip，393.051s JUnit。两旧失败为TD014完成状态与TD012批量准备状态，本轮不循环复查、不改生产重试／不称整体全绿。184格式lint／94类型／CLI，独立同双wheel SHA3c9dc30563cc45a8c3041f39a8d6755b05fdf34d28b7e59d033321eebbbd08bb、96包文件等源码与独立包进程真实结果通过。首次verify仅import排序停止，已改测试、未启动pytest；生产源码冻结后仅文档／ignored证据，不重复完整。
+
+真实三旧开发源227事件“白发＋持杖”约801ms：0full／1partial／226unverified，精v4无结果全未验证；明确Atom基础v6后220全未验证，不借基础v4精结果。五只读核对及包／现用全程baseline856文件／9基础表／217排名／三源／四保护文件保持，无真人标注。现用两尺寸实际分页筛选下载／35–36秒原片与身份、三static等源码和几何通过；用户空“第一批玩法验收”保持。8765原服务fresh已不存在，原启动器新13880／24000，fresh health/state/CIM exe命令创建时间与无活跃工作核对，project-detail-query-v1；PID仅快照。助手的LASTEXITCODE／部件组假设错误留证并修正，不重启两次／改生产结果。
+
+已回答用户：日常不用填验收表，它用于正式人工质量验收；独立来源与事前原片参考、固定候选评分仍需真人。[人工待办](docs/exec-plans/human-inputs.md)列时点／入口／状态／证据，当前离线开发继续。新“需要人工协助第一时间提醒记录、里程碑与进度持续对齐”持久至AGENTS、共享协议与Codex／Claude／Grok入口，与主线优先／通俗汇报共同加载。HANDOFF／分工／progress当前摘要／Phase 0计划已同步，旧记录是历史。F006/F009/F010false；新¥4.07未答不发送、旧unknown¥4.065536保留。
+
+下一主要交付：把明确条件核对接到现有多录像检索候选，直接显示满足／缺依据／不确定和原帧依据，保留原排名与来源，不自动排除未知或发模型；先登记范围。root独占本轮代码和公共文档，用户授权只读explorer已回答问题，旧workers冻结，goal active。已有普通push授权当前codex/visual-details，不改main／强推；最终提交与远端事实以Git及.cache/project-detail-query-publication.json为准，上一交付0678afd已独立确认远端同步。
+
+## 历史交付与发布记录
+
 发布事实：源码及交付文档ae236a6已普通push至codex/visual-details，积压799625c之后的交付一并上传；独立ls-remote与本地ae236a66cf5fe9d7d121b5f1e9b55c64127daa11一致，main未更新、无强推。.cache/benchmark-run-picker-push.json／remote.json留证；本段仅补发布事实，最终文档head及同步以Git和publication为准，源码／95包／现用24212／50696保持，goal active。
 
 2026-10-07 root / Codex接156f6f1已交付[冻结来源版本选择](docs/exec-plans/sprint-benchmark-run-picker.md)，[通俗汇报](docs/exec-plans/report-2026-10-07-run-picker.md)。第五步按冻结录像／明确用途只读列全部同源版本、明确选择Completed、旧freeze拒绝、原绑定重验媒体／证据、保存选择恢复，旧映射兼容。root独占代码及文档，旧worker冻结，goal active。

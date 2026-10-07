@@ -8,6 +8,8 @@
 
 ## 包结构与依赖
 
+多素材条件核对由纯Application `project_detail_query`消费TimelineStore及已保存结果回调，加载不同Completed源后扫描全部事件，再筛选分页。CLI只读组合SQLite与`match_refinement(save=False)`，UI同源有界POST复用；scope绑定条件／profile／源配置，全结果snapshot防止跨更新分页。100任务／20,000事件与8MiB页上限明确拒绝，不粗检索截断、合并跨源实体、调用Provider或写SQL／侧车。页面原来源加载后按timeline事件身份回看。见[条件指南](../references/project-detail-query-guide.md)。
+
 分析前参考标注由纯Application `benchmark_reference_review`绑定实际媒体身份／源时钟与事前plan，固定来源与查询，仅允许人工参考和人工元数据变化；导入复核实际源后转回既有benchmark-plan-v1。UI生成独立file页面，hash限定脚本CSP／禁止外部连接，只播放原录像和编辑参考，不读模型输出；特殊源时钟禁自动取时。公开脚本组合本地FFmpeg探测、既有有界读取／独占新目录／最后SHA回执，导出仍待原freeze，不增加HTTP／SQL／Provider。保存声明不认证人评或独立性；使用见[原片标注指南](../references/benchmark-reference-review-guide.md)。
 
 其前置登记通过Application `benchmark_plan_draft`保存允许未知值的benchmark-plan-draft-v1，完成后用原loads_plan复核并转旧plan，人工参考空／确认false。已有人评元数据或事件的旧计划拒绝转登记草稿，不静默清判断。UI独立file表单只编辑来源／查询，hash限定脚本、禁止外部连接；脚本有界读取／规范输入相对路径／独占发布，不probe或读媒体／项目，也不增加HTTP／SQL／模型。登记仅格式有效，实际来源由后续原片入口核验。见[登记指南](../references/benchmark-plan-editor-guide.md)。

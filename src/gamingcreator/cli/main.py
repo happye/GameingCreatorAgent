@@ -56,6 +56,7 @@ from gamingcreator.application.observation_text import (
     display_facts,
 )
 from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
+from gamingcreator.application.project_detail_query import match_project_details
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.retrieval import (
     RETRIEVAL_VERSION,
@@ -178,6 +179,19 @@ def _parser() -> CliParser:
     detail.add_argument(
         "--save-match", action="store_true", help="在已发布精分析旁保存独立匹配记录"
     )
+    project_detail = commands.add_parser(
+        "match-project-details", help="按明确复合条件核对多段录像的已保存精结果"
+    )
+    project_detail.add_argument("--project", type=Path, required=True)
+    project_detail.add_argument("--run", action="append", required=True)
+    project_detail.add_argument("--input", type=Path, required=True)
+    project_detail.add_argument("--profile", choices=("v1", "v2", "v3", "v4"), default="v2")
+    project_detail.add_argument(
+        "--status", choices=("all", "full", "partial", "no_match", "unverified"), default="all"
+    )
+    project_detail.add_argument("--limit", type=int, default=20)
+    project_detail.add_argument("--offset", type=int, default=0)
+    project_detail.add_argument("--snapshot", help="沿用上页结果身份；变化时拒绝")
     return parser
 
 
@@ -418,6 +432,44 @@ async def execute_project_search(
         }
         write_project_search(project, document)
         return document
+    finally:
+        await store.close()
+
+
+async def execute_project_detail_match(
+    project: Path,
+    run_ids: Sequence[str],
+    manifest: str,
+    *,
+    profile: str,
+    limit: int = 20,
+    offset: int = 0,
+    status: str = "all",
+    snapshot: str | None = None,
+) -> dict[str, object]:
+    _require_project(project)
+    try:
+        constraint = loads_constraint(manifest)
+    except ValueError:
+        raise AppError("input.detail_query", "复合条件格式或词表无效。", ExitCode.INPUT) from None
+    from gamingcreator.infrastructure.detail_query_sidecar import refinement_identity_for_profile
+
+    refinement_identity_for_profile(profile)
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    try:
+        return await match_project_details(
+            store,
+            run_ids,
+            constraint,
+            profile,
+            lambda timeline, event_id, query: match_refinement(
+                project, timeline, event_id, query, profile=profile, save=False
+            ),
+            limit=limit,
+            offset=offset,
+            status=status,
+            expected_snapshot=snapshot,
+        )
     finally:
         await store.close()
 
@@ -1083,6 +1135,19 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
         return asyncio.run(
             execute_tasks(
                 args.project.resolve(), limit=args.limit, offset=args.offset, run_id=args.run
+            )
+        )
+    if args.command == "match-project-details":
+        return asyncio.run(
+            execute_project_detail_match(
+                args.project.resolve(),
+                args.run,
+                read_bounded(args.input).decode("utf-8-sig"),
+                profile=args.profile,
+                limit=args.limit,
+                offset=args.offset,
+                status=args.status,
+                snapshot=args.snapshot,
             )
         )
     if args.command == "match-details":

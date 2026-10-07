@@ -55,3 +55,9 @@ All agents share acceptance criteria; start with `HANDOFF.md` and `docs/referenc
 先解释现在能做什么、对用户的使用有什么帮助，再说明实际验证结果、仍存在的问题和下一步具体动作。用用户熟悉的例子；提交号、测试数量和内部实现仅作必要证据，不能代替使用效果说明。关键改动包括功能或使用流程变化、模型理解或费用行为变化，以及影响验收的发现。
 
 按 `docs/references/agent-workflow.md` 的汇报协议执行；将本次已汇报的结论及下一步写入任务 sprint 和 `HANDOFF.md`。Worker 向集成负责人提供同样内容，由负责人汇总给用户；已有授权内的工作继续推进。
+
+## Persistent human assistance and progress alignment
+
+用户于2026-10-07要求：发现需要用户标注、确认素材、手动操作或提供其他帮助时，第一时间用通俗语言提醒，并记录到 `docs/exec-plans/human-inputs.md`。记录具体事项、操作入口、触发时点、影响范围、状态及完成证据；不要等用户追问，也不要替用户填写真实判断。待人工事项仅阻断依赖它的工作，继续推进可以独立完成的开发。需要新费用授权时保留原问题与提案，不把开发继续当作授权。
+
+持续对齐里程碑和进度：关键实现／验证／发布节点同步当前 sprint、`HANDOFF.md`、`docs/exec-plans/assignments.md` 与 `progress.md` 的当前摘要；阶段或验收状态变化同时核对规格与 `feature_list.json`。顶部明确已交付、开发中、人工待办和下一步，旧失败／旧发布记录保留为历史，不能覆盖当前事实。所有项目 Agent、子任务及工具切换共同遵守。

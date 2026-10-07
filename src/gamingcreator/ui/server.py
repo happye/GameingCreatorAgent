@@ -20,6 +20,7 @@ from gamingcreator.ui.service import (
     detail_costs,
     inspect_run,
     match_details,
+    project_detail_payload,
     project_runs_payload,
     project_search_payload,
     project_tasks_payload,
@@ -225,6 +226,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/match-details",
                 "/api/draft-detail-query",
                 "/api/search-project",
+                "/api/match-project-details",
                 "/api/prepare-media-batch",
                 "/api/cancel-media-preparation",
                 "/api/benchmark-workflows",
@@ -295,6 +297,48 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     ),
                 )
                 return
+            if path == "/api/match-project-details":
+                if (
+                    type(value) is not dict
+                    or set(value)
+                    != {
+                        "project",
+                        "runs",
+                        "profile",
+                        "constraint",
+                        "limit",
+                        "offset",
+                        "status",
+                        "snapshot",
+                    }
+                    or any(type(value[key]) is not str for key in ("project", "profile", "status"))
+                    or type(value["runs"]) is not list
+                    or not 1 <= len(value["runs"]) <= 100
+                    or any(type(item) is not str for item in value["runs"])
+                    or type(value["constraint"]) is not dict
+                    or type(value["limit"]) is not int
+                    or type(value["offset"]) is not int
+                    or (value["snapshot"] is not None and type(value["snapshot"]) is not str)
+                ):
+                    raise ValueError("Invalid project detail query identity.")
+                project = resolve_project(self.repository, value["project"])
+                self._json(
+                    200,
+                    asyncio.run(
+                        project_detail_payload(
+                            project,
+                            value["runs"],
+                            json.dumps(value["constraint"], ensure_ascii=False, allow_nan=False),
+                            profile=value["profile"],
+                            limit=value["limit"],
+                            offset=value["offset"],
+                            status=value["status"],
+                            snapshot=value["snapshot"],
+                            project_reference=value["project"],
+                        )
+                    ),
+                )
+                return
             if path == "/api/draft-detail-query":
                 if type(value) is not dict or set(value) != {"text"}:
                     raise ValueError("Invalid draft request fields.")
@@ -357,6 +401,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             "media-preparation-v1",
                             "benchmark-workflow-v1",
                             "benchmark-bind-options-v1",
+                            "project-detail-query-v1",
                         ],
                         "repository": str(self.repository.resolve()),
                         "pid": os.getpid(),

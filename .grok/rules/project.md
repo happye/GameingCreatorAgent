@@ -6,4 +6,6 @@ Keep the shared persistent reporting mode on resumption and tool switches: after
 
 Keep the shared delivery priority: follow the master plan's current milestone; fix minor issues when straightforward, otherwise record reproduction and impact in technical debt and continue the main deliverable. Do not repeatedly spend time or tokens on one small bug, diagnostic polish or unchanged verification. Apply this to workers and future resumptions.
 
+Keep the shared human-assistance and progress-alignment rules: notify the user promptly when annotation or manual actions are needed, record them in docs/exec-plans/human-inputs.md, and align current milestone, sprint, handoff, assignments and progress at key nodes. Pending human actions block only dependent work. Apply this to workers and future resumptions.
+
 Run `grok inspect` from the repository root to check discovered instruction paths, including `AGENTS.md` and this rules file. Grok may also discover `CLAUDE.md` for compatibility; all entries point to the same shared rules. Keep Grok session history and credentials local; record project decisions and verification in repository artifacts.
