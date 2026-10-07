@@ -37,3 +37,5 @@ TD012补充（2026-10-07多素材准备）：定向批次state替换也偶发sto
 TD012补充（2026-10-07统一验收入口）：完整回归两旧media-preparation-jobs检查分别出现项目路径资格拒绝和取消范围400而非404，原代码未改，原因未确定；.cache/benchmark-workflow-verify.log保留。一轮窄复查连同新增能力声明同步检查3passed2.22s（recheck.xml），不称两旧问题已修复、不重跑整套、不放松路径边界。旧health预期未包含新能力属于本次合同检查同步，已改测试，不归入环境债务。
 
 TD012补充（2026-10-07冻结来源选择）：相关定向检查中的旧test_actual_os_lock_blocks_duplicate_and_released_ownership_is_interrupted在读取status.json时PermissionError，原输出.cache/benchmark-run-picker-focused.xml；生产执行锁／保存路径未改，原因未定位。保留影响与复现入口，做一次窄复查后继续主交付，不通过生产重试掩盖，不把复查通过称为原因解决。
+
+2026-10-08检索候选依据完整回归补充：2345项，2339passed／4failed／1error／1权限skip，533.585s JUnit，.cache/search-detail-full.xml及full-verify.log保留。四个旧版本选择检查（含一个fixture setup error）在既有步骤返回interrupted而非finished，归入TD014同一完成时序；旧批量准备页面仍返回“本次准备停止”而非部分准备，归入TD012。本轮32新增全部通过，源码没有改这些工作流／批次模块，原因未解决。按用户主线优先，本轮不再次窄复查或重复完整、不自动重试或宣称整体全绿；继续包／实际现用及下一检索覆盖交付。

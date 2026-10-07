@@ -65,6 +65,7 @@ from gamingcreator.application.retrieval import (
     search_timeline,
     search_timelines,
 )
+from gamingcreator.application.search_detail_query import match_search_details
 from gamingcreator.application.storage import RunStatus
 from gamingcreator.application.tasks import tasks_payload
 from gamingcreator.domain.errors import AppError, ExitCode, invalid_config
@@ -88,7 +89,10 @@ from gamingcreator.infrastructure.local_asr import LocalAsrProvider
 from gamingcreator.infrastructure.local_embeddings import LocalEmbeddingProvider
 from gamingcreator.infrastructure.local_files import LocalInputReader
 from gamingcreator.infrastructure.media_batch_files import MediaBatchFiles, read_batch_bytes
-from gamingcreator.infrastructure.project_search_files import write_project_search
+from gamingcreator.infrastructure.project_search_files import (
+    read_project_search,
+    write_project_search,
+)
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 
 
@@ -192,6 +196,14 @@ def _parser() -> CliParser:
     project_detail.add_argument("--limit", type=int, default=20)
     project_detail.add_argument("--offset", type=int, default=0)
     project_detail.add_argument("--snapshot", help="沿用上页结果身份；变化时拒绝")
+    search_detail = commands.add_parser(
+        "match-search-details", help="为已保存原排名补明确条件依据，不再搜索"
+    )
+    search_detail.add_argument("--project", type=Path, required=True)
+    search_detail.add_argument("--search", required=True)
+    search_detail.add_argument("--search-sha256", required=True)
+    search_detail.add_argument("--input", type=Path, required=True)
+    search_detail.add_argument("--profile", choices=("v1", "v2", "v3", "v4"), default="v2")
     return parser
 
 
@@ -432,6 +444,41 @@ async def execute_project_search(
         }
         write_project_search(project, document)
         return document
+    finally:
+        await store.close()
+
+
+async def execute_search_detail_match(
+    project: Path,
+    search_id: str,
+    search_sha256: str,
+    manifest: str,
+    *,
+    profile: str,
+) -> dict[str, object]:
+    _require_project(project)
+    try:
+        constraint = loads_constraint(manifest)
+    except ValueError:
+        raise AppError("input.detail_query", "复合条件格式或词表无效。", ExitCode.INPUT) from None
+    document = read_project_search(project, search_id)
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    try:
+        return await match_search_details(
+            store,
+            document,
+            search_sha256,
+            constraint,
+            profile,
+            lambda timeline, event_id, query: match_refinement(
+                project,
+                timeline,
+                event_id,
+                query,
+                profile=profile,
+                save=False,
+            ),
+        )
     finally:
         await store.close()
 
@@ -1135,6 +1182,16 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
         return asyncio.run(
             execute_tasks(
                 args.project.resolve(), limit=args.limit, offset=args.offset, run_id=args.run
+            )
+        )
+    if args.command == "match-search-details":
+        return asyncio.run(
+            execute_search_detail_match(
+                args.project.resolve(),
+                args.search,
+                args.search_sha256,
+                read_bounded(args.input).decode("utf-8-sig"),
+                profile=args.profile,
             )
         )
     if args.command == "match-project-details":

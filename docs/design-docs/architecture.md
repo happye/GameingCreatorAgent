@@ -1,5 +1,7 @@
 # Phase 0 架构基线 v2
 
+保存排名的条件依据由纯Application `search_detail_query`复用TimelineStore、retrieval纯来源投影`candidate_sources`与准确已保存结果回调；读取原`project-search-v1`内容并核对来源／区间／事实／证据后，对全部原候选补状态，不重排、筛掉未知或重新检索。CLI只读原文件SHA回执和SQLite，POST再绑定规范内容摘要；语音候选不进入视觉matcher，最多100来源／100候选／8MiB。原搜索响应只增摘要，原文件保持。页面独立保留依据及原排名，换条件／profile／查询清除、跨源回看保持。见[候选指南](../references/search-detail-evidence-guide.md)。
+
 工作台检索诊断由纯Application `retrieval_diagnostics`投影已有InspectionView；UI/service附加十个固定位置，静态页面负责显示、当前查询身份核对、下载和原区间预览。投影不重排、不调用模型、不评分，检索保存仍走已有execute_search。没有人工标签时质量字段为空；正式计分继续由benchmark处理。使用步骤见[检索诊断指南](../references/retrieval-diagnostics-guide.md)。
 
 静态页面提供临时“前后各1秒回看”：根据当前有效行与已校验media.durationUs计算源时钟范围，复用源视频seek／结束暂停，不生成新Candidate或修改行对象。原区间播放、选片篮／导出与证据引用保持；拖动时间条释放临时停止点，切项目／run或丢失选择时禁用。回看显示实际范围，仅本地媒体读取，无新API／Provider／检索记录。

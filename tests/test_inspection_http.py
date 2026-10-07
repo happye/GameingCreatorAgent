@@ -130,6 +130,7 @@ def test_health_identifies_repository_and_pid_without_model_or_storage(tmp_path)
                 "benchmark-workflow-v1",
                 "benchmark-bind-options-v1",
                 "project-detail-query-v1",
+                "search-detail-query-v1",
             ],
             "repository": str(tmp_path.resolve()),
             "pid": os.getpid(),

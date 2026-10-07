@@ -128,6 +128,16 @@ class CandidateClip:
 
 
 @dataclass(frozen=True, slots=True)
+class CandidateSource:
+    candidate_id: str
+    event_id: str | None
+    media_id: str
+    source_range: SourceRange
+    evidence_ids: tuple[str, ...]
+    observable_facts: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class SearchResult:
     run_id: str
     query: str
@@ -308,6 +318,21 @@ def _documents(timeline: StoredTimeline) -> tuple[_Document, ...]:
             )
         )
     return tuple(sorted(documents, key=lambda item: (item.source_range.start_us, item.identifier)))
+
+
+def candidate_sources(timeline: StoredTimeline) -> tuple[CandidateSource, ...]:
+    """Project original candidate identities without scores, embeddings or another search."""
+    return tuple(
+        CandidateSource(
+            item.candidate_id,
+            item.event_id,
+            item.media_id,
+            item.source_range,
+            item.evidence_ids,
+            item.facts,
+        )
+        for item in _documents(timeline)
+    )
 
 
 def _lexical_query(query: str) -> str:

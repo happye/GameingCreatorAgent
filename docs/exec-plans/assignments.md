@@ -1,5 +1,7 @@
 # Active assignments
 
+2026-10-08 root / Codex接30fdc9c已交付[检索候选条件依据](sprint-search-detail-evidence.md)，[通俗汇报](report-2026-10-08-search-detail-evidence.md)。明确原保存搜索与条件／profile后，候选旁状态／支持／未知／独立下载，原排名分数保持；原SHA回执、内容摘要与Completed来源完整复核，语音未知不进入视觉matcher，0匹配搜索／SQL写／模型费用／人评。新32全部通过，完整2339passed／4旧failed／1旧setup error／1权限skip，TD014／TD012保留不循环，187格式lint／95类型／CLI、同双wheel97源码包文件与独立进程通过。真实一次新词法34候选全未验证约532ms，原856文件／9表／217排名／三源／四保护文件全过程保持，仅两新联合排名文件。fresh身份部署59932／54904现用支持search-detail-query-v1，两尺寸真实原排名重放／下载／跨源57–58s实际出画面播放／换profile清除旧依据且0搜索／几何与用户空验收流程保持。PID仅快照，后续重核。root独占，旧workers冻结，goal active；新¥4.07未答不发送、旧unknown¥4.065536保留，F006/F009/F010false。下一主要交付利用准确已保存人物细节提高检索覆盖，解决35–36s旧partial未入粗排名；最终保存发布见Git和.cache/search-detail-publication.json，普通授权当前分支，不改main／强推。
+
 2026-10-07 root / Codex已交付[多素材复合条件核对](sprint-project-detail-query.md)，接0678afd，独占Application／CLI／service／HTTP／主typed弹窗／新检查及公共文档，旧worker冻结。新26／相关48通过，完整2310／2旧失败延期TD014与TD012／1权限skip；96包文件／独立进程、实际三源227事件与现用1366／390分页筛选下载回看通过，0search／费用／真人标签。8765新13880／24000仅快照，已fresh身份核对；最终保存发布见Git和publication。
 
 用户授权只读explorer /root/acceptance_explanation 已答验收用途与记录核对，不写代码。root已说明日常不必填、正式独立原片参考及候选评分仍需人工；[人工待办](human-inputs.md)及即时提醒／持续同步规则已持久到共享记忆和三个工具入口。当前进度摘要与Phase 0里程碑同步，F006/F009/F010false，goal active。

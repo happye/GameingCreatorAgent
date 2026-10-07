@@ -1,5 +1,13 @@
 # 本地检查工作台 API
 
+## 原搜索候选的条件依据（search-detail-query-v1）
+
+`POST /api/match-search-details`严格接受`{project,searchId,searchSha256,profile,constraint}`，前四项字符串、constraint对象；沿64KiB／本机Host与Origin／唯一字段边界。读取已有联合搜索的result及原文件SHA回执，再核对规范内容摘要searchSha256、实际Completed来源和每个候选身份／顺序／区间／事实／证据，先全部验证再匹配。客户端候选或文件路径不接受；准确profile为v1–v4，正向AND沿query-v1。
+
+响应`search-detail-query-v1`含原search全文、规范摘要、constraintJson、refinementProfile、原顺序matches（rank/runId/candidateId/eventId/status/availability/match）、四状态counts、snapshotId与请求project。视觉事件只读准确精结果，语音availability=transcript_only且match=null／status=unverified；最多100来源／100候选／8MiB，原排名分数与耗时保持。humanLabels及qualityGate为空，ordinarySearches/modelAnalysisCalls/paidRequestsSent/newReservations均0，不写SQL／搜索／侧车。health新capability启用页面入口；旧后端隐藏新按钮。
+
+`POST /api/search-project`响应另加`searchSha256`，由原保存文档（不含响应的project与searchSha256）规范JSON计算；原文件字节SHA仍由receipt验证，二者不可混用。原保存协议不改变。
+
 ## 持久验收流程（benchmark-workflow-v1）
 
 `/acceptance`及三份明确static资源加入白名单；首页仅在health声明`benchmark-workflow-v1`时显示入口。POST与GET均沿用本机Host／Origin约束，不提供任意路径读取。

@@ -25,6 +25,7 @@ from gamingcreator.ui.service import (
     project_search_payload,
     project_tasks_payload,
     registered_media,
+    search_detail_payload,
 )
 
 STATIC = Path(__file__).with_name("static")
@@ -227,6 +228,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/draft-detail-query",
                 "/api/search-project",
                 "/api/match-project-details",
+                "/api/match-search-details",
                 "/api/prepare-media-batch",
                 "/api/cancel-media-preparation",
                 "/api/benchmark-workflows",
@@ -292,6 +294,33 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             self.repository,
                             mode=value["mode"],
                             top_k=value["top"],
+                            project_reference=value["project"],
+                        )
+                    ),
+                )
+                return
+            if path == "/api/match-search-details":
+                if (
+                    type(value) is not dict
+                    or set(value)
+                    != {"project", "searchId", "searchSha256", "profile", "constraint"}
+                    or any(
+                        type(value[key]) is not str
+                        for key in ("project", "searchId", "searchSha256", "profile")
+                    )
+                    or type(value["constraint"]) is not dict
+                ):
+                    raise ValueError("Invalid saved-search condition request.")
+                project = resolve_project(self.repository, value["project"])
+                self._json(
+                    200,
+                    asyncio.run(
+                        search_detail_payload(
+                            project,
+                            value["searchId"],
+                            value["searchSha256"],
+                            json.dumps(value["constraint"], ensure_ascii=False, allow_nan=False),
+                            profile=value["profile"],
                             project_reference=value["project"],
                         )
                     ),
@@ -402,6 +431,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             "benchmark-workflow-v1",
                             "benchmark-bind-options-v1",
                             "project-detail-query-v1",
+                            "search-detail-query-v1",
                         ],
                         "repository": str(self.repository.resolve()),
                         "pid": os.getpid(),

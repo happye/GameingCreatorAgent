@@ -2,7 +2,9 @@
 
 ## 当前进度摘要（2026-10-07）
 
-本轮实现及规则本地d27ae45已保存；一次普通push连接GitHub超时300022ms／exit128，不重试／未读取远端，本轮待补推。旧积压已同步的事实保持；网络不影响本机功能及下一主线。最终文档head和本轮发布状态见Git与publication回执。
+2026-10-08 root / Codex接30fdc9c已交付[检索候选条件依据](docs/exec-plans/sprint-search-detail-evidence.md)，[通俗汇报](docs/exec-plans/report-2026-10-08-search-detail-evidence.md)。明确原保存搜索与条件／profile后，候选旁状态／支持／未知／独立下载，原排名分数保持；原SHA回执、内容摘要与Completed来源完整复核，语音未知不进入视觉matcher，0匹配搜索／SQL写／模型费用／人评。新32全部通过，完整2339passed／4旧failed／1旧setup error／1权限skip，TD014／TD012保留不循环，187格式lint／95类型／CLI、同双wheel97源码包文件与独立进程通过。真实一次新词法34候选全未验证约532ms，原856文件／9表／217排名／三源／四保护文件全过程保持，仅两新联合排名文件。fresh身份部署59932／54904现用支持search-detail-query-v1，两尺寸真实原排名重放／下载／跨源57–58s实际出画面播放／换profile清除旧依据且0搜索／几何与用户空验收流程保持。PID仅快照，后续重核。root独占，旧workers冻结，goal active；新¥4.07未答不发送、旧unknown¥4.065536保留，F006/F009/F010false。下一主要交付利用准确已保存人物细节提高检索覆盖，解决35–36s旧partial未入粗排名；最终保存发布见Git和.cache/search-detail-publication.json，普通授权当前分支，不改main／强推。
+
+上一交付多素材条件核对及规则本地d27ae45已保存；一次普通push连接GitHub超时300022ms／exit128，不重试／未读取远端。这份与新候选依据的积压状态见本轮Git与.cache/search-detail-publication.json；之前已同步的旧积压保持，网络不影响本机功能及下一主线。
 
 当前 Phase 0，正式人工检索质量尚未验收，F006/F009/F010保持false。最后交付为多素材复合条件核对，已更新现用；当前保存／发布以Git及project-detail-query-publication回执为准。上一版本选择、统一验收流程、原片参考、事前登记及更早交付已普通补推，最近独立远端确认为0678afd。下面旧推送失败是历史记录，不再欠这些旧积压。
 

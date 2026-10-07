@@ -62,7 +62,7 @@
             <div class="results-heading"><h3>检索候选 <span id="candidate-count" class="count">0</span></h3><span class="muted small">按相关性排名</span></div>
             <p id="search-context" class="muted small">打开已完成的运行后即可查询。</p>
             <button id="open-retrieval-diagnostics" class="text-button diagnostics-open" type="button" disabled>查看检索诊断 · 前十位</button>
-            <button id="download-project-search" class="text-button" type="button" hidden disabled>下载这次多录像搜索结果</button>
+            <div class="search-result-actions"><button id="download-project-search" class="text-button" type="button" hidden disabled>下载这次多录像搜索结果</button><button id="open-search-detail-query" class="text-button" type="button" hidden disabled>核对候选条件 ↗</button></div>
             <div id="candidate-list" class="candidate-list" aria-live="polite"><p class="empty-state">描述动作、玩法或画面，<br>从已有素材中发现可用片段。</p></div>
         </aside>
         <section class="panel timeline-panel" aria-label="源视频语义时间轴">
@@ -97,6 +97,7 @@
         <form id="detail-query-form"><div id="detail-conditions"></div><div class="detail-query-actions"><button id="add-detail-condition" type="button" class="button secondary compact">＋ 条件</button><button id="match-detail-query" type="submit" class="button primary compact">核对已保存结果</button></div></form>
         <p class="muted small">仅本地核对，不发起精分析。条件满足仍需人工确认；未知属性不补全。</p>
         <div id="project-detail-controls" hidden><label>查看结果<select id="project-detail-filter"><option value="all">全部核对结果</option><option value="full">条件全部满足</option><option value="partial">条件部分满足</option><option value="unverified">尚未验证</option><option value="no_match">有证据不符</option></select></label><p id="project-detail-summary" aria-live="polite"></p><div class="detail-query-actions"><button id="project-detail-previous" type="button" class="text-button" disabled>上一页</button><button id="project-detail-next" type="button" class="text-button" disabled>下一页</button><button id="project-detail-download" type="button" class="text-button" disabled>下载本页核对结果</button></div></div>
+        <div id="search-detail-controls" hidden><p id="search-detail-summary" aria-live="polite">确认条件后，为这次搜索的原候选补依据；不重排，不剔除未知结果。</p><button id="download-search-details" class="text-button" type="button" disabled>下载原候选及条件依据</button></div>
         <section id="detail-match-result" aria-live="polite"></section>
     </dialog>
     <dialog id="detail-cost-dialog" aria-labelledby="detail-cost-title"><div class="dialog-heading"><h2 id="detail-cost-title">精分析费用与调用</h2><button id="close-detail-costs" class="icon-button" aria-label="关闭费用记录">×</button></div><p class="muted small">仅查看已有记录。估价不是账单；未知费用预留继续占用承诺金额。</p><div id="detail-cost-content" aria-live="polite"></div></dialog>

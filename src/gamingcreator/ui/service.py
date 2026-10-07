@@ -17,12 +17,14 @@ from gamingcreator.application.inspection import InspectionView, inspection_view
 from gamingcreator.application.observation_text import FACTS_PROJECTION_VERSION, display_facts
 from gamingcreator.application.retrieval import RETRIEVAL_VERSION, CandidateClip, RetrievalMode
 from gamingcreator.application.retrieval_diagnostics import retrieval_diagnostics
+from gamingcreator.application.search_detail_query import search_snapshot_sha256
 from gamingcreator.application.storage import RunStatus, StoredInvocation, StoredTimeline
 from gamingcreator.application.tasks import tasks_payload
 from gamingcreator.cli.main import (
     execute_project_detail_match,
     execute_project_search,
     execute_search,
+    execute_search_detail_match,
 )
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.time import SourceInstant, SourceRange
@@ -233,6 +235,25 @@ async def project_search_payload(
 ) -> dict[str, object]:
     document = await execute_project_search(
         project, run_ids, query, repository, mode=mode, top_k=top_k
+    )
+    return {
+        **document,
+        "project": project_reference,
+        "searchSha256": search_snapshot_sha256(document),
+    }
+
+
+async def search_detail_payload(
+    project: Path,
+    search_id: str,
+    search_sha256: str,
+    manifest: str,
+    *,
+    profile: str,
+    project_reference: str,
+) -> dict[str, object]:
+    document = await execute_search_detail_match(
+        project, search_id, search_sha256, manifest, profile=profile
     )
     return {**document, "project": project_reference}
 

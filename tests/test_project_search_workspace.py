@@ -13,6 +13,7 @@ from test_project_retrieval import completed_pool, forbidden, snapshot
 from test_sqlite_store import CONFIG, bundle_fixture
 
 from gamingcreator.application.media import SamplingParameters
+from gamingcreator.application.search_detail_query import search_snapshot_sha256
 from gamingcreator.infrastructure.ffmpeg_media import write_manifest
 from gamingcreator.infrastructure.project_search_files import read_project_search
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
@@ -67,7 +68,10 @@ def test_http_joint_ranking_records_all_origins_without_mutating_saved_analysis(
         assert result["qualityGate"] is None
         assert result["modelAnalysisCalls"] == result["newReservations"] == 0
         saved = read_project_search(project, result["searchId"])
-        assert saved == {key: value for key, value in result.items() if key != "project"}
+        assert saved == {
+            key: value for key, value in result.items() if key not in {"project", "searchSha256"}
+        }
+        assert result["searchSha256"] == search_snapshot_sha256(saved)
         for candidate in result["candidates"]:
             run_id = candidate["runId"]
             status, _, raw = get(

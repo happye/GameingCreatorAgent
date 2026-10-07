@@ -21,6 +21,7 @@
         "detail-query-target", "detail-query-form", "detail-conditions", "add-detail-condition",
         "match-detail-query", "detail-match-result", "open-project-detail-query", "project-detail-controls",
         "project-detail-filter", "project-detail-summary", "project-detail-previous", "project-detail-next", "project-detail-download",
+        "open-search-detail-query", "search-detail-controls", "search-detail-summary", "download-search-details",
         "detail-draft-text", "generate-detail-draft", "detail-draft-status",
         "detail-draft-gaps", "detail-draft-confirmation", "detail-draft-subset",
         "open-detail-costs", "detail-cost-dialog", "close-detail-costs", "detail-cost-content",
@@ -47,6 +48,7 @@
         tasksController: null, tasksRevision: 0, tasksOffset: 0,
         searchRuns: [], projectSearch: null, projectSearchController: null,
         detailProjectScope: false, projectDetail: null, projectDetailAvailable: false,
+        detailSearchScope: false, searchDetail: null, searchDetailAvailable: false,
         preparationController: null, preparationRevision: 0, preparationTimer: null,
         preparationJob: null, preparationSubmitting: false, preparationOffset: 0, preparationCatalog: null,
     };
@@ -258,6 +260,8 @@
     }
 
     function updateSearchScope() {
+        ui["open-search-detail-query"].hidden = !state.searchDetailAvailable || !state.projectSearch;
+        ui["open-search-detail-query"].disabled = state.busy || !currentSearchDetailScope();
         ui["open-project-detail-query"].hidden = !state.projectDetailAvailable || !state.searchRuns.length;
         ui["open-project-detail-query"].disabled = state.busy || !state.searchRuns.length || !state.view?.detailQueryOptions;
         ui["open-search-sources"].textContent = state.searchRuns.length ? `已选 ${state.searchRuns.length} 段 · 更改录像` : "选择多段录像";
@@ -270,6 +274,7 @@
     }
 
     function clearProjectSearch() {
+        clearSearchDetailEvidence();
         state.projectSearchController?.abort();
         state.projectSearchController = null;
         state.projectSearch = null;
@@ -585,6 +590,7 @@
     }
 
     function canMatchDetails() {
+        if (state.detailSearchScope) return !state.busy && currentSearchDetailScope() && Boolean(state.view?.detailQueryOptions);
         if (state.detailProjectScope) return state.projectDetailAvailable && !state.busy && state.searchRuns.length > 0 && Boolean(state.view?.detailQueryOptions);
         return !state.busy && state.view?.runStatus === "completed" && Boolean(state.active?.row.eventId)
             && state.view?.detailRefinementProfile?.profile === ui["detail-profile"].value;
@@ -599,7 +605,8 @@
         ui["generate-detail-draft"].disabled = !available || state.drafting || !ui["detail-draft-text"].value.trim();
         ui["generate-detail-draft"].textContent = state.drafting ? "正在整理条件…" : "生成可编辑条件";
         ui["detail-draft-subset"].disabled = state.drafting;
-        ui["detail-query-target"].textContent = state.detailProjectScope
+        ui["detail-query-target"].textContent = state.detailSearchScope
+            ? `“${state.projectSearch?.query || ""}” · 只核对原搜索的 ${state.projectSearch?.candidates.length || 0} 个候选 · 精分析 ${ui["detail-profile"].value}` : state.detailProjectScope
             ? `核对已选 ${state.searchRuns.length} 段录像的全部已有事件 · 精分析 ${ui["detail-profile"].value}` : state.active
             ? `${intervalLabel(state.active.row)} · 精分析 ${ui["detail-profile"].value}` : "先选择一个已完成运行中的片段。";
     }
@@ -612,6 +619,7 @@
         state.projectDetail = null;
         ui["project-detail-filter"].disabled = false;
         ui["project-detail-controls"].hidden = !state.detailProjectScope;
+        ui["search-detail-controls"].hidden = !state.detailSearchScope;
         ui["project-detail-summary"].textContent = "先明确条件并核对；缺少精分析不能当作没有符合条件的画面。";
         for (const id of ["project-detail-previous", "project-detail-next", "project-detail-download"]) ui[id].disabled = true;
         empty(ui["detail-match-result"], state.detailProjectScope ? "选择条件后，统一核对已选录像的已保存结果。" : "选择条件后，核对当前片段的已保存结果。");
@@ -689,6 +697,7 @@
     }
 
     function detailConditionsChanged() {
+        if (state.detailSearchScope) clearSearchDetailEvidence();
         if (state.drafting) invalidateDetailDraft();
         clearDetailMatch();
     }
@@ -780,7 +789,7 @@
     }
 
     function conditionLabel(condition) {
-        const definition = state.view.detailQueryOptions.kinds.find((item) => item.kind === condition.kind);
+        const definition = state.view?.detailQueryOptions?.kinds.find((item) => item.kind === condition.kind);
         const value = definition?.values.find((item) => item.value === condition.value);
         const group = conditionGroups(condition.kind).find(([token]) => token === condition.partGroup);
         return `${definition?.label || condition.kind}：${value?.label || condition.value} · ${group?.[1] || condition.partGroup}`;
@@ -842,6 +851,87 @@
         }
         const notes = { detail_missing: "缺少已保存的主体详情。", unassigned_evidence: "部分帧尚未归属镜头。", observed_attribute_conflict: "观察属性存在冲突。", unresolved_entity: "还有实体、持有关系或画面连续性未确定，不能据此排除所有人物。" };
         for (const note of result.notes) ui["detail-match-result"].append(element("p", "warning small", notes[note] || cleanObservationText(note)));
+    }
+
+    function currentSearchDetailScope() {
+        const search = state.projectSearch;
+        return Boolean(state.searchDetailAvailable && search && /^[a-f0-9]{64}$/.test(search.searchSha256)
+            && search.query === ui.query.value.trim() && search.mode === ui.mode.value && search.topK === Number(ui.top.value));
+    }
+
+    function clearSearchDetailEvidence() {
+        state.searchDetail = null;
+        ui["download-search-details"].disabled = true;
+        ui["search-detail-summary"].textContent = "确认条件后，为这次搜索的原候选补依据；不重排，不剔除未知结果。";
+        if (state.projectSearch) renderCandidates();
+    }
+
+    function stableJson(value) {
+        const sorted = (item) => Array.isArray(item) ? item.map(sorted)
+            : item && typeof item === "object" ? Object.fromEntries(Object.keys(item).sort().map(key => [key, sorted(item[key])])) : item;
+        return JSON.stringify(sorted(value));
+    }
+
+    function conditionIdentity(constraint) {
+        return stableJson({schemaVersion:constraint.schemaVersion,version:constraint.version,vocabularyVersion:constraint.vocabularyVersion,
+            actorAll:constraint.actorAll.map(row=>`${row.partGroup}\n${row.kind}\n${row.value}`).sort(),
+            environmentAll:constraint.environmentAll.map(row=>`${row.partGroup}\n${row.kind}\n${row.value}`).sort()});
+    }
+
+    async function matchSearchDetails() {
+        if (!state.detailSearchScope || !canMatchDetails() || state.matching || !draftScopeConfirmed()) return;
+        let constraint;
+        try {constraint=detailConstraint();} catch(error){return empty(ui["detail-match-result"],error.message);}
+        const search=state.projectSearch, project=state.project, profile=ui["detail-profile"].value;
+        clearDetailMatch();clearSearchDetailEvidence();
+        const controller=new AbortController(), revision=state.matchRevision;
+        state.matchController=controller;state.matching=true;updateDetailQueryButton();
+        try {
+            const report=await request("/api/match-search-details",{},controller.signal,{project,searchId:search.searchId,searchSha256:search.searchSha256,profile,constraint});
+            if(revision!==state.matchRevision || state.matchController!==controller || project!==state.project || state.projectSearch!==search || !state.detailSearchScope || !currentSearchDetailScope() || profile!==ui["detail-profile"].value)return;
+            const {project:unusedProject,searchSha256:unusedDigest,...original}=search;
+            if(report.schemaVersion!=="search-detail-query-v1" || report.project!==project || report.searchSha256!==search.searchSha256
+                || report.refinementProfile!==profile || stableJson(report.search)!==stableJson(original)
+                || conditionIdentity(JSON.parse(report.constraintJson))!==conditionIdentity(constraint)
+                || !Array.isArray(report.matches) || report.matches.length!==search.candidates.length
+                || !/^[a-f0-9]{64}$/.test(report.snapshotId) || report.matches.some((row,index)=>{
+                    const expected=search.candidates[index];
+                    return row.rank!==expected.rank || row.runId!==expected.runId || row.candidateId!==expected.candidateId || row.eventId!==expected.eventId
+                        || !["full","partial","no_match","unverified"].includes(row.status)
+                        || (expected.eventId===null ? row.status!=="unverified" || row.match!==null || row.availability!=="transcript_only"
+                            : row.availability!=="visual_event" || !row.match || row.match.runId!==row.runId || row.match.eventId!==row.eventId || row.match.refinementProfile!==profile || row.match.constraintJson!==report.constraintJson || row.match.result?.status!==row.status || !Array.isArray(row.match.result.matches));
+                }))throw new Error("条件依据与原搜索、候选或条件版本不一致，请重新核对。");
+            state.searchDetail=report;
+            const count=report.counts;
+            ui["search-detail-summary"].textContent=`已核对原排名 ${report.matches.length} 个候选：全部满足 ${count.full}，部分满足 ${count.partial}，尚未验证 ${count.unverified}，有证据不符 ${count.no_match}。原顺序与分数保留；关闭窗口可在候选旁看依据。`;
+            ui["download-search-details"].disabled=false;
+            empty(ui["detail-match-result"],"条件状态和依据已显示在原搜索候选旁；缺资料仍需回看原片。");
+            renderCandidates();
+        } catch(error){if(error.name!=="AbortError" && revision===state.matchRevision)empty(ui["detail-match-result"],error.message);}
+        finally{if(revision===state.matchRevision){state.matching=false;updateDetailQueryButton();}}
+    }
+
+    function appendSearchConditionProof(card,row) {
+        const report=state.searchDetail;
+        if(!report || report.searchSha256!==state.projectSearch?.searchSha256 || report.refinementProfile!==ui["detail-profile"].value)return;
+        const match=report.matches.find(item=>item.runId===row.runId && item.candidateId===row.candidateId);
+        if(!match)return;
+        const labels={full:"条件全部满足",partial:"条件部分满足",unverified:"尚未验证",no_match:"有证据不符"};
+        const details=element("details","candidate-condition-proof"), list=element("ul");
+        details.dataset.status=match.status;
+        details.append(element("summary",match.status==="full"?"accent":"warning",`${labels[match.status]} · 条件依据（精分析 ${report.refinementProfile}）`));
+        const query=JSON.parse(report.constraintJson);
+        list.append(element("li","","只核对以下条件，原搜索的其他要求仍需回看。"));
+        list.append(element("li","",`核对条件：${[...query.actorAll,...query.environmentAll].map(conditionLabel).join("；")}`));
+        if(match.availability==="transcript_only")list.append(element("li","","该候选来自语音，缺少可核对的视觉主体，尚未验证。"));
+        else if(!match.match.result.matches.length)list.append(element("li","","该准确版本缺少足够的主体细节；不代表原片没有。"));
+        for(const actor of match.match?.result.matches || []){
+            list.append(element("li","","同一镜头内的一个主体："));
+            for(const [key,label] of [["satisfied","有支持"],["uncertain","不确定"],["opposed","有相反证据"]])for(const support of actor[key])list.append(element("li","",`${label} · ${conditionLabel(support.condition)} · ${support.evidenceIds.length} 张画面`));
+            for(const missing of actor.missing)list.append(element("li","",`缺少支持 · ${conditionLabel(missing)}`));
+            list.append(element("li","",`共同支持画面 ${actor.sharedEvidenceIds.length} 张`));
+        }
+        details.append(list);card.append(details);
     }
 
     async function matchProjectDetails(offset = 0, snapshot = null) {
@@ -1677,6 +1767,7 @@
                 card.insertBefore(element("p", "candidate-source", `来源 · ${row.sourceName}`), copy);
             }
             appendUncertainty(card, row);
+            if (joint) appendSearchConditionProof(card,row);
             ui["candidate-list"].append(card);
         }
         ui["candidate-list"].scrollTop = scrollTop;
@@ -2108,8 +2199,9 @@
         void inspect("");
     });
     ui["download-project-search"].addEventListener("click", downloadProjectSearch);
-    ui["detail-profile"].addEventListener("change", () => { void inspect(state.view?.query || "", true); });
+    ui["detail-profile"].addEventListener("change", () => { clearSearchDetailEvidence();void inspect(state.projectSearch ? "" : state.view?.query || "", true); });
     ui["open-detail-query"].addEventListener("click", () => {
+        state.detailSearchScope=false;
         state.detailProjectScope=false;
         if (!canMatchDetails()) return;
         clearDetailMatch();
@@ -2118,9 +2210,20 @@
     });
     ui["open-project-detail-query"].addEventListener("click",()=>{
         if(!state.projectDetailAvailable || !state.searchRuns.length || state.busy)return;
-        state.detailProjectScope=true;ui["project-detail-filter"].value="all";clearDetailMatch();
+        state.detailSearchScope=false;state.detailProjectScope=true;ui["project-detail-filter"].value="all";clearDetailMatch();
         if(!ui["detail-conditions"].children.length)addDetailCondition();
         ui["detail-query-dialog"].showModal();
+    });
+    ui["open-search-detail-query"].addEventListener("click",()=>{
+        if(state.busy || !currentSearchDetailScope())return;
+        state.detailSearchScope=true;state.detailProjectScope=false;clearDetailMatch();
+        if(!ui["detail-conditions"].children.length)addDetailCondition();
+        ui["detail-query-dialog"].showModal();
+    });
+    ui["download-search-details"].addEventListener("click",()=>{
+        if(!state.searchDetail || state.matching)return;
+        const url=URL.createObjectURL(new Blob([JSON.stringify(state.searchDetail,null,2)+"\n"],{type:"application/json;charset=utf-8"})),link=element("a");
+        link.href=url;link.download=`search-conditions-${state.searchDetail.search.searchId}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     });
     ui["project-detail-filter"].addEventListener("change",()=>void matchProjectDetails(0,state.projectDetail?.snapshotId || null));
     ui["project-detail-previous"].addEventListener("click",()=>{const report=state.projectDetail;if(report)void matchProjectDetails(Math.max(0,report.offset-report.limit),report.snapshotId);});
@@ -2131,12 +2234,12 @@
         link.href=url;link.download=`compound-results-page-${state.projectDetail.offset+1}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     });
     ui["close-detail-query"].addEventListener("click", () => ui["detail-query-dialog"].close());
-    ui["detail-query-dialog"].addEventListener("close", () => { state.detailProjectScope=false;invalidateDetailDraft(true); clearDetailMatch(); });
-    ui["detail-draft-text"].addEventListener("input", () => { invalidateDetailDraft(); clearDetailMatch(); });
+    ui["detail-query-dialog"].addEventListener("close", () => { state.detailSearchScope=false;state.detailProjectScope=false;invalidateDetailDraft(true); clearDetailMatch(); });
+    ui["detail-draft-text"].addEventListener("input", () => { if(state.detailSearchScope)clearSearchDetailEvidence();invalidateDetailDraft(); clearDetailMatch(); });
     ui["generate-detail-draft"].addEventListener("click", () => { void generateDetailDraft(); });
     ui["detail-draft-subset"].addEventListener("change", clearDetailMatch);
     ui["add-detail-condition"].addEventListener("click", () => addDetailCondition());
-    ui["detail-query-form"].addEventListener("submit", (event) => { event.preventDefault(); void (state.detailProjectScope ? matchProjectDetails() : matchDetailQuery()); });
+    ui["detail-query-form"].addEventListener("submit", (event) => { event.preventDefault(); void (state.detailSearchScope ? matchSearchDetails() : state.detailProjectScope ? matchProjectDetails() : matchDetailQuery()); });
     ui["open-detail-costs"].addEventListener("click", () => { void openDetailCosts(); });
     ui["open-tasks"].addEventListener("click", () => { void loadTasks(); });
     ui["open-preparation"].addEventListener("click", () => {
@@ -2190,6 +2293,9 @@
     ui["retrieval-diagnostics-dialog"].addEventListener("close", () => { state.diagnosticsContext = null; });
     for (const id of ["query", "mode", "top"]) {
         ui[id].addEventListener(id === "mode" ? "change" : "input", () => {
+            clearSearchDetailEvidence();
+            if(state.detailSearchScope)clearDetailMatch();
+            updateSearchScope();
             state.inspectController?.abort();
             if (state.projectSearchController && !state.projectSearch) {
                 state.projectSearchController.abort();
@@ -2283,6 +2389,7 @@
         try {
             const health = await request("/api/health", {});
             state.projectDetailAvailable=health.application==="gamingcreator-workspace" && health.capabilities?.includes("project-detail-query-v1");updateSearchScope();
+            state.searchDetailAvailable=health.application==="gamingcreator-workspace" && health.capabilities?.includes("search-detail-query-v1");updateSearchScope();
             document.getElementById("open-acceptance").hidden = !(health.application === "gamingcreator-workspace"
                 && health.capabilities?.includes("benchmark-workflow-v1"));
             ui["open-preparation"].hidden = !(health.application === "gamingcreator-workspace"

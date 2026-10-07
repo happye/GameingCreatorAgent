@@ -168,6 +168,9 @@ button.evidence-card { padding: 0; }
 .candidate-card-top { display: flex; align-items: center; gap: 7px; }
 .search-scope { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding-top: 8px; flex-shrink: 0; }
 .search-scope span { width: 100%; overflow-wrap: anywhere; }
+.search-result-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; flex-shrink: 0; }
+.candidate-condition-proof { margin-top: 6px; overflow-wrap: anywhere; font-size: 10px; }
+.candidate-condition-proof ul { padding-left: 16px; }
 .candidate-source { margin: 5px 0; color: var(--accent); font-size: 11px; overflow-wrap: anywhere; }
 #search-sources-dialog { width: min(680px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; }
 .search-sources-list { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
