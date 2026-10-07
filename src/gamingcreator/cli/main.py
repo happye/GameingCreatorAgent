@@ -323,6 +323,8 @@ async def execute_benchmark(
             ):
                 raise ValueError("Benchmark source mismatch.")
 
+        retrieval_ids: dict[str, str] = {}
+
         async def search(query: BenchmarkQuery) -> tuple[BenchmarkHit, ...]:
             timeline = await store.load_completed_timeline(query.run_id)
             began = perf_counter()
@@ -334,7 +336,7 @@ async def execute_benchmark(
                 min_similarity=min_similarity,
             )
             elapsed = round((perf_counter() - began) * 1000)
-            await store.persist_search(
+            retrieval_ids[query.query_id] = await store.persist_search(
                 result,
                 _search_document(
                     result,
@@ -401,6 +403,8 @@ async def execute_benchmark(
                 next(iter(versions)) if len(versions) == 1 else None,
             ),
         )
+        for row in cast(list[dict[str, JsonValue]], report["queries"]):
+            row["retrievalId"] = retrieval_ids.get(cast(str, row["queryId"]))
         _write_json(output_path, report)
         return report
     finally:

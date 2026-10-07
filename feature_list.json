@@ -76,7 +76,7 @@
       "passes": false,
       "test_criteria": "A frozen independent human-labeled benchmark reports every query, fixed-denominator U10, misses/timecode errors, runtime and cold/hot cost; each main mechanic query reaches U10 >= 0.70; sparse/negative groups are separate and unverified cost gates remain null.",
       "dependencies": ["F005"],
-      "evidence": ["docs/exec-plans/sprint-F006-worker.md", "docs/references/benchmark-manifest-schema.md", "tests/test_benchmark.py", "docs/exec-plans/sprint-demo.md", "docs/exec-plans/sprint-benchmark-preparation.md", "docs/references/benchmark-preparation-guide.md", "tests/test_benchmark_preparation.py", "scripts/prepare-benchmark.ps1"]
+      "evidence": ["docs/exec-plans/sprint-F006-worker.md", "docs/references/benchmark-manifest-schema.md", "tests/test_benchmark.py", "docs/exec-plans/sprint-demo.md", "docs/exec-plans/sprint-benchmark-preparation.md", "docs/references/benchmark-preparation-guide.md", "tests/test_benchmark_preparation.py", "scripts/prepare-benchmark.ps1", "docs/exec-plans/sprint-benchmark-candidate-review.md", "docs/references/benchmark-candidate-review-guide.md", "tests/test_benchmark_review.py", "scripts/prepare-benchmark-review.ps1"]
     },
     {
       "id": "F007",

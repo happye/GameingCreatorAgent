@@ -33,6 +33,8 @@ CLI 只解析输入、组装依赖和输出结果；Application 编排 stages、
 
 ## 数据流与状态
 
+F006候选评审使用纯Application benchmark_review把绑定manifest、报告与保存检索组成固定十位依据；核对人工记录后仅转换candidateLabels及reviewed，不计分或改原声明。UI renderer打包离线HTML／静态JS，file原片回看、下载／载入记录；hash限定脚本、connect-src none，无新增HTTP路由。scripts/prepare-benchmark-review.py组合只读TimelineStore，Infrastructure在新目录独占发布并最后保存SHA回执。benchmark报告追加retrievalId关联实际排名，历史无身份报告拒绝准备；生成／导入不搜索，正式benchmark仍显式重新执行查询。见[候选评审指南](../references/benchmark-candidate-review-guide.md)。
+
 F006验收准备由纯Application benchmark_preparation验证计划／分区／同源与查询族、参考和旧benchmark转换；Infrastructure benchmark_preparation_files有界读取、SHA回执和新目录独占发布；CLI组合本地MediaProcessor.probe与只读TimelineStore。先冻结原输入／录像SHA与时长／UTC时间，再绑定Completed run并保留原config／pipeline来源。冻结与绑定无Provider／预算／检索，候选标签空；benchmark --binding先核对只增候选评分／复核，不允许更换查询／参考／身份。缺独立性与人评继续null，资料准备不代替F006。
 
 离线对照生成器从冻结proposal、原报告/人工反馈和当前精确版本侧车读取同候选资料，复核注册帧、原结果和旧匹配逐项一致；输出新目录内的HTML、来源JSON及默认空值的人工记录模板。画面与下载JSON内嵌静态页面，无脚本/外部连接；不存在v4结果就保留no_saved_result，不调用Provider、预留预算或写源数据库。详情见[使用指南](../references/detail-pilot-comparison-guide.md)。

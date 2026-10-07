@@ -1,5 +1,14 @@
 # Errors
 
+## [ERR-20261007-022] benchmark_review_check_scope
+
+**Logged**: 2026-10-07
+**Area**: tests / scripts / documentation
+
+首轮mypy使用Mapping解决容器方差，37定向行为含音频fallback和浏览器迟到载入保护通过；Ruff未使用context直接补质量null断言，未循环调试。PowerShell检索模式中的双引号引发解析失败，改单引号一次；不存在路径／glob换成实际文件。一次文档批次最后hunk猜错标题，整批未落盘；读取精确标题后重做。不得用最后一个检查的exit0掩盖之前错误，不猜路径／标题。完整检查和实际三源回看结果以sprint及回执为准。
+
+完整2069passed／2旧测试Windows环境失败／1权限skip：HTTP错误类型测试WinError10053、pilot JSON替换WinError5。源码未改，窄复查一次2passed1.11s，保留初次失败／TD012，后续补CLI和双离线包检查；不反复诊断或重跑全套。查.cache文件应限顶层，禁止递归扫描旧锁目录；读取模块先用rg --files限定src确认文件名，不猜material_tasks路径。
+
 ## [ERR-20261007-021] benchmark_preparation_fixture_and_wrapper
 
 **Logged**: 2026-10-07

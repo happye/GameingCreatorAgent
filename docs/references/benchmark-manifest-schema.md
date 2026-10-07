@@ -6,6 +6,8 @@ The optional local [preparation workflow](./benchmark-preparation-guide.md) free
 
 ## Prepare an unlabelled run
 
+The [candidate review workflow](./benchmark-candidate-review-guide.md) converts downloaded manual records to this same manifest format after verifying the frozen binding, source identities and persisted ranking. New CLI reports include per-query retrievalId; failed queries may have null. Generation/import refuse successful historical reports without a saved retrieval identity, preserve ten slots and leave ungraded positions unlabelled. They do not score quality. The existing benchmark command explicitly runs searches again when scoring an imported manifest.
+
 Copy `templates/phase0-benchmark.example.json`. Replace each source's `mediaId`, Completed `runId`, lowercase 64-character `sha256`, and positive `durationUs` with actual timeline metadata. Query source pairs must match `media`. Durations and all interval endpoints are source-relative Int64 integer microseconds. JSON booleans, floats and numeric strings cannot stand in for integers. Duplicate identities, unknown fields and duplicate JSON keys are rejected.
 
 Leave `humanLabels.confirmed: false` until a person has watched and judged the source clips. An unlabelled manifest runs and reports timing/results, with quality metrics and `qualityGate: null`. The example has placeholder source metadata and must be edited before a verified CLI run.

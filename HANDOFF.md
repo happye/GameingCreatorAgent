@@ -1,5 +1,13 @@
 # 当前交接
 
+2026-10-07，root接fbca080已交付[sprint-benchmark-candidate-review](docs/exec-plans/sprint-benchmark-candidate-review.md)，[通俗汇报](docs/exec-plans/report-2026-10-07-benchmark-candidate-review.md)。Phase 0／F006固定十位本机原片回看、0–3理由／原人工事件、下载／再载入、导入重验来源与保存排名生成旧v1判分文件；默认空、缺位／重复不补、失败不可判分、音频fallback、迟到载入保留新编辑。main报告只加实际retrievalId，旧无身份报告拒绝；生成／导入只读，不搜索／模型／预算。非零源起点手动回看TD006，HTML无外网，公开PowerShell7中文路径入口通过。
+
+37新行为／首轮138定向通过；一次完整2069passed／2旧测试Windows连接中断或文件拒绝访问／1权限skip320.98s，失败只窄复查一次2passed1.11s，TD012保留，不称初次完整全过／不重复无变化全套。153格式／79类型／lint通过；后续CLI及双离线wheel SHA8ad801bdc13bd191466257ecb54d56e101dabbc60e5957821021eb84f8875bbb通过，78包文件等于源码且无媒体／缓存／DB；JUnit／verify.log／failures.xml／package.json在.cache/benchmark-review-*，源码后仅文档／ignored证据。
+
+实际三开发录像显式lexical benchmark1978ms／exit6保留报告，新增3普通检索211→214；九基础表、627非检索项目文件及三源SHA保持。生成1129ms／空记录导入1044ms，1366／390两页30固定位、六实际0–2.000001／29–30／30–31秒播放及末尾暂停、空记录下载载入一致，0外网／页面错误，root核对双尺寸清晰视口截图。最大约0.267594秒迟停不改原区间；浏览器非逐帧裁切。生成／导入后检索和项目文件保持，0Provider／新预留／真实人评。旧unknown¥4.065536／空重试命令、新proposal SHA保持，F006/F009/F010false。
+
+已向用户详细说明可回看／保存继续、防错资料和新编辑覆盖、实际时间与未人评／时钟限制。下一root主线读取固定原排名计算人工评分，避免评审后再次搜索改变结果；当前benchmark仍显式再检索，指南已说明，先登记归属再开发。旧worker冻结；TD005／TD010／TD011／TD012延期，无工作台路由或现用网页变化无需重启。Git及.cache/benchmark-review-publication.json为本交付保存／推送事实；已有普通授权分支可补推，不更新main／强推，付费授权仍待答。
+
 2026-10-07，root已交付[sprint-benchmark-preparation](docs/exec-plans/sprint-benchmark-preparation.md)，接7b5a7b3；[通俗汇报](docs/exec-plans/report-2026-10-07-benchmark-preparation.md)。F006原素材／录制组／开发测试分区／是否看过结果／查询族与查询、人工参考事前冻结：freeze-benchmark仅本地probe／hash、原输入／来源／UTC时间／准备缺口／最后SHA回执，新目录独占；bind-benchmark只读绑定Completed身份到旧benchmark v1，原config／pipeline与freeze SHA来源保留，候选评分空。benchmark --binding在store／embedding前复核，仅candidateLabels／humanLabels.reviewed可变；改查询／参考／来源／版本／填写人或确认／独立性声明拒绝。计划模板与PowerShell7 prepare-benchmark.ps1两动作、指南已交付，无新SQLite／Provider／费用合同。准备ready不鉴定人评或独立性，F006/F009/F010仍false。
 
 47新行为、133定向2.07s；一次完整2034passed／1 Windows文件symlink权限skip287.17s，148格式／75类型／lint／CLI／双离线wheel SHAa27ca9c94bcebb1aa3aafc4991842e6cd644409b43c837f7358fca3135ba9260通过。74包文件同源码，无媒体／缓存／DB；JUnit2035／0fail／0error／1权限skip，.cache/benchmark-preparation-tests.xml／verify.log／package.json。之后仅文档与ignored证据，不重复完整检查；PowerShell脚本env路径直接修正由实际两动作验证，不在包／Python完整检查范围。

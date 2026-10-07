@@ -43,6 +43,8 @@ stdout 为结果或 JSON；进度/JSON 诊断写 stderr。退出码：0 成功�
 
 ## 2. 时间与数据合同
 
+候选评审记录benchmark-candidate-review-v1绑定原manifest／报告SHA及实际retrievalId，保留十位、原排名／区间／模型事实、缺位和已知重复。成功报告须可回读保存检索；音频无eventId使用原candidateId，失败查询不可判分。只允许日期／填写人／复核与候选grade、humanEventId、reason填写；0–3必须理由、2/3必须原参考，未判定保持null。导入重新核对Completed来源／config／pipeline和排名、原报告／绑定，只生成旧v1候选标签，不改变confirmed／independent。新目录独占发布回执最后保存，生成／导入无搜索／模型／预算或新HTTP。HTML本机原片回看仅零起点已验证；其他时钟及编码手动核对，TD006未关闭。正式benchmark仍显式再检索评分，不称原排名只读评测。见[指南](../references/benchmark-candidate-review-guide.md)。
+
 验收准备用benchmark-plan-v1记录原路径、录制组、development/test、是否看过模型结果、查询族及人工参考，不含候选评分。freeze-benchmark仅本地probe／hash原视频，重验输入／来源未改变，在新目录独占写原字节和benchmark-freeze-v1，UTC冻结时间、准备缺口与SHA回执；完成回执最后写。来源／内容／查询族跨区、缺同源组／足量代表来源／主查询或人工参考、测试已看结果等不冒充独立ready。参考采用原benchmark验证并按实际时长核对；原录制与人工声明不由工具认证。bind-benchmark只读核对Completed run／来源完整性／冻结SHA和时长，指定分区完整映射，输出原benchmark v1与config／pipeline／freeze SHA来源。新目录不可覆盖或写入项目／冻结目录；缺参考保持confirmed=false，独立准备不足或development时independentTestSet=false，candidateLabels空。两步不构造模型、预算或搜索。benchmark可选--binding在打开store／加载embedding前复核原绑定，仅candidateLabels与humanLabels.reviewed可变；改查询／参考／来源／版本／填写人或声明拒绝。准备结果qualityGate始终null，正式70%与费用合同不变；操作见[验收准备](../references/benchmark-preparation-guide.md)。
 
 所有领域时间是从源视频规范化起点计量的 Int64 微秒 `[startUs,endUs)`；非负且小于等于源时长，Python int 必须校验不超过 `2^63-1`。格式化显示时间可以舍入，持久化不可用显示字符串反推。Evidence 另存原始 PTS、timebase、streamStart、切片偏移、音视频偏移和变换版本；模型局部时间由程序回映射并检查范围，VAD 必须有回映射。

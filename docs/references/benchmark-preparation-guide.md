@@ -55,6 +55,8 @@
 
 ## 4. 在固定依据下运行和填候选评分
 
+可用[固定候选评审页](./benchmark-candidate-review-guide.md)回看、填写理由、下载并继续已有记录；准备页从带retrievalId的新报告核对实际保存排名，导入后生成原v1判分文件，不替人评分或确认独立性。
+
 复制bound目录中的benchmark.json到另一文件，保留原绑定目录。先在固定查询下检索，再按[人工验收指南](./human-acceptance-guide.md)观看返回原区间，填写candidateLabels的0–3评分、理由及独立humanEventId。不得在看过结果后把未确认的原参考或不独立数据改成已确认／独立。
 
 ```powershell
