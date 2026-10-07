@@ -27,3 +27,5 @@ root独占新application/benchmark_run_selection.py、ui/benchmark_workflow.py�
 功能已交付至现用8765：fresh health／state／CIM完整exe／命令／创建时间与无活跃验收或准备工作核对，53176／54948更新为24212／50696，benchmark-bind-options-v1。三份static与源码一致；双尺寸真实恢复、V4/V6可选版本、用户空流程09ef2eacc0694a19b9b85fe0275cf5da未改、旧856文件及217排名保持，0新增search／paid，live-report.json与deployment.json留证。源码从完整检查后未改，没有第二次完整检查；两个旧失败最终磁盘均finished，TD014保留状态显示问题，不将复查失败隐藏。
 
 已向用户通俗汇报当前页面操作、实际半秒关联／保存恢复、完整失败与延期、0费用和现用结果；[详细汇报](report-2026-10-07-run-picker.md)。下一主线先核对已有多素材搜索与typed条件合同，再登记跨素材已保存结果的复合条件统一核对，转回内容检索，不继续扩张验收页面。旧worker冻结，F006/F009/F010false、旧unknown及待答新授权保持，goal active；本地提交与一次普通授权push结果稍后按Git和publication记录。
+
+保存发布：ae236a6已本地提交23文件并普通push当前分支（799625c..ae236a6）；独立ls-remote一致，网络恢复后积压一并上传，main不更新、无强推。提交前diff检查与树归属核对，之后只发布文档／ignored回执，源码与安装包保持。最终文档head及其普通同步见Git与.cache/benchmark-run-picker-publication.json，不追加无变化的整套测试，目标active。

@@ -1,5 +1,7 @@
 # 当前交接
 
+发布事实：源码及交付文档ae236a6已普通push至codex/visual-details，积压799625c之后的交付一并上传；独立ls-remote与本地ae236a66cf5fe9d7d121b5f1e9b55c64127daa11一致，main未更新、无强推。.cache/benchmark-run-picker-push.json／remote.json留证；本段仅补发布事实，最终文档head及同步以Git和publication为准，源码／95包／现用24212／50696保持，goal active。
+
 2026-10-07 root / Codex接156f6f1已交付[冻结来源版本选择](docs/exec-plans/sprint-benchmark-run-picker.md)，[通俗汇报](docs/exec-plans/report-2026-10-07-run-picker.md)。第五步按冻结录像／明确用途只读列全部同源版本、明确选择Completed、旧freeze拒绝、原绑定重验媒体／证据、保存选择恢复，旧映射兼容。root独占代码及文档，旧worker冻结，goal active。
 
 新11检查全部通过；最终定向12passed含旧锁单次复查；一次完整2285passed／1failed／1权限skip366.207s，旧原片HTTP完成时读到interrupted而最终磁盘finished，唯一失败单次复查仍失败，TD014延期，不称全绿。181格式／lint／93类型／CLI，单独双离线wheel SHA9a023e962221cb43e4fa2fcd360f65328ed4a7b588ef25863f6dd00e1939bd01、95包文件等源码／独立包进程读取真实选择通过；完整后源码未改，没有重跑整套。
