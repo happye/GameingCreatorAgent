@@ -1,5 +1,7 @@
 # 当前交接
 
+发布状态：本轮实现及持久规则已本地提交d27ae45；一次已授权普通push连接GitHub超时300022ms／exit128，.cache/project-detail-query-push.log保留，没有重试或读取远端，不能称本轮远端同步。最近独立确认仍0678afd；本轮待网络恢复补推当前codex/visual-details，不改main／强推。随后仅补发布事实，最终文档head以Git及publication回执为准，本机功能／源码包／检查保持，goal active。
+
 2026-10-07，Phase 0，root / Codex接0678afd已交付[多录像复合条件核对](docs/exec-plans/sprint-project-detail-query.md)，[通俗汇报及验收问题回答](docs/exec-plans/report-2026-10-07-project-detail-query.md)。明确不同Completed录像／准确精版本／正向同主体和同部件AND，扫描全部事件后筛选分页／全结果快照／按原来源回看与本页下载；缺资料保持未验证，0自动模型／费用／普通搜索／SQL写。
 
 新26／相关48检查通过；一次完整2310passed／2旧failed／1Windows文件symlink权限skip，393.051s JUnit。两旧失败为TD014完成状态与TD012批量准备状态，本轮不循环复查、不改生产重试／不称整体全绿。184格式lint／94类型／CLI，独立同双wheel SHA3c9dc30563cc45a8c3041f39a8d6755b05fdf34d28b7e59d033321eebbbd08bb、96包文件等源码与独立包进程真实结果通过。首次verify仅import排序停止，已改测试、未启动pytest；生产源码冻结后仅文档／ignored证据，不重复完整。
