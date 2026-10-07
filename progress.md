@@ -1,5 +1,7 @@
 # Progress Log
 
+2026-10-07用户额度14%请求汇报，root接799625c保存原片参考标注未验收检查点：分析前本机HTML／多区间／下载载入／保护原来源查询、重验实际源后导出旧plan、公开Python／PowerShell入口已实现，新脚本加入verify与mypy。20合同＋2桌面／窄屏实际短MP4页面通过，首转义断言失败已直接修正测试／原回执保留；真实游戏公开入口／原freeze衔接／第二进程／整套／双wheel／指南待完成，不称正式交付或真人人评。现用批量准备／联合搜索不变，fresh只读health45524／28036支持media-preparation-v1，0重启／模型／上传／搜索／费用预留／真实标签，旧unknown／待答提案保持，F006/F009/F010false，旧worker冻结、goal active。通俗汇报及下一真实开发录像验证见report-2026-10-07-reference-checkpoint与sprint／HANDOFF，保存发布以Git及benchmark-reference-checkpoint-publication回执为准，不改main／强推、不循环小bug。
+
 2026-10-07多素材准备交付ae49b40已普通push并独立确认远端一致，原5d2a48e之后网络积压补齐；main不改／无强推，publication receipt保存。仅补发布记忆，原源码证据／现用45524／28036与下一F006主线保持，goal active。
 
 2026-10-07 root接cd7a6e5交付多素材准备页面：后台逐项进度／刷新连接／显式停止／原批次固定ID与后续限额接续／坏项继续／准备素材复用、打开任务与下载。真实1366／390三开发片，两组6Pending／55、65、96图及音轨／原1.25限额、禁probe抽取复用、独立进程读回通过；窄屏中断任务实际媒体attempt2保持。验证脚本失败保留，不删项目重做、不估丢失耗时；第一次桌面前旧baseline未保存不称全程旧文件核对。完整2204passed／1新页面既有保存失败／1权限skip444.233s，唯一失败一次窄复查1passed3.021s；后发现读取取消后按钮不恢复直接修JS一行、新确定性检查，最终28相关passed42.266s，未重跑整套。165格式／85类型／lint／CLI、最终双wheel SHA547ec8937503211bca188c18d6535709ddff84e1a24e6e31b5938e03f92f62ab／84包文件同源码无媒体缓存DB。旧服务fresh不存在，原启动器更新8765为45524／28036，无终止旧PID；现用两尺寸复用各3项／228文件、原联合排名重放／原片暂停／下载、旧852文件保持／0新搜索，unknown4.065536／billingConfirmedfalse与待答proposal保持。0模型／上传／预留／人评，F006/F009/F010false。README／指南／API／架构／验收证据／记忆同步；通俗汇报已说明能力／验证界限／下一F006独立资料与人评主线，旧worker冻结、小问题延期，goal active。Git及media-preparation-workspace-final／publication回执为保存发布事实。

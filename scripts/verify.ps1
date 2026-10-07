@@ -17,7 +17,7 @@ try {
   # Avoid pytest's temporary cache-directory rename on Windows filesystem locks.
   New-Item -ItemType Directory -Path (Join-Path $testRunRoot 'cache') -Force | Out-Null
   $pytestArguments = @('-m', 'pytest', '-W', 'error', '--basetemp', (Join-Path $testRunRoot 'tmp'), '-o', ('cache_dir=' + (Join-Path $testRunRoot 'cache')))
-  foreach ($arguments in @(@('-m', 'ruff', 'format', '--check', 'src', 'tests', 'scripts/validate-media.py', 'scripts/validate-storage.py', 'scripts/validate-inspection-ui.py', 'scripts/validate-temporal-gameplay.py', 'scripts/validate-visual-details.py', 'scripts/prepare-benchmark-review.py'), @('-m', 'ruff', 'check', 'src', 'tests', 'scripts/validate-media.py', 'scripts/validate-storage.py', 'scripts/validate-inspection-ui.py', 'scripts/validate-temporal-gameplay.py', 'scripts/validate-visual-details.py', 'scripts/prepare-benchmark-review.py'), @('-m', 'mypy'), $pytestArguments)) {
+  foreach ($arguments in @(@('-m', 'ruff', 'format', '--check', 'src', 'tests', 'scripts/validate-media.py', 'scripts/validate-storage.py', 'scripts/validate-inspection-ui.py', 'scripts/validate-temporal-gameplay.py', 'scripts/validate-visual-details.py', 'scripts/prepare-benchmark-review.py', 'scripts/prepare-benchmark-references.py'), @('-m', 'ruff', 'check', 'src', 'tests', 'scripts/validate-media.py', 'scripts/validate-storage.py', 'scripts/validate-inspection-ui.py', 'scripts/validate-temporal-gameplay.py', 'scripts/validate-visual-details.py', 'scripts/prepare-benchmark-review.py', 'scripts/prepare-benchmark-references.py'), @('-m', 'mypy'), $pytestArguments)) {
     & $pythonPath @arguments
     if ($LASTEXITCODE -ne 0) { throw "Project check failed: $($arguments -join ' ')" }
   }
