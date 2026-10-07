@@ -62,6 +62,7 @@ from gamingcreator.application.retrieval import (
     RetrievalMode,
     SearchResult,
     search_timeline,
+    search_timelines,
 )
 from gamingcreator.application.storage import RunStatus
 from gamingcreator.application.tasks import tasks_payload
@@ -86,6 +87,7 @@ from gamingcreator.infrastructure.local_asr import LocalAsrProvider
 from gamingcreator.infrastructure.local_embeddings import LocalEmbeddingProvider
 from gamingcreator.infrastructure.local_files import LocalInputReader
 from gamingcreator.infrastructure.media_batch_files import MediaBatchFiles, read_batch_bytes
+from gamingcreator.infrastructure.project_search_files import write_project_search
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 
 
@@ -147,6 +149,17 @@ def _parser() -> CliParser:
     search.add_argument("--format", choices=("json",), default="json")
     search.add_argument("--mode", choices=("lexical", "semantic", "hybrid"), default="hybrid")
     search.add_argument("--min-similarity", type=float, default=0.80)
+    project_search = commands.add_parser("search-project", help="一次需求联合检索多个已完成录像")
+    project_search.add_argument("query")
+    project_search.add_argument("--project", type=Path, required=True)
+    project_search.add_argument(
+        "--run", action="append", required=True, help="明确选择任务，可重复参数"
+    )
+    project_search.add_argument("--top-k", type=int, default=10)
+    project_search.add_argument(
+        "--mode", choices=("lexical", "semantic", "hybrid"), default="hybrid"
+    )
+    project_search.add_argument("--min-similarity", type=float, default=0.80)
     benchmark = commands.add_parser("benchmark", help="执行冻结人工标签评测")
     benchmark.add_argument("--input", type=Path, required=True)
     benchmark.add_argument("--project", type=Path, required=True)
@@ -276,6 +289,134 @@ async def execute_search(
             embedding_space=provider.space if provider else None,
         )
         _write_json(project / "runs" / run_id / "searches" / (uuid4().hex + ".json"), document)
+        return document
+    finally:
+        await store.close()
+
+
+async def execute_project_search(
+    project: Path,
+    run_ids: Sequence[str],
+    query: str,
+    repository: Path,
+    *,
+    top_k: int = 10,
+    mode: RetrievalMode = "hybrid",
+    min_similarity: float = 0.80,
+) -> dict[str, object]:
+    if (
+        not 1 <= len(run_ids) <= 100
+        or any(
+            type(identifier) is not str or not identifier.strip() or len(identifier) > 256
+            for identifier in run_ids
+        )
+        or len(set(run_ids)) != len(run_ids)
+        or type(query) is not str
+        or not query.strip()
+        or len(query) > 4096
+        or type(top_k) is not int
+        or not 1 <= top_k <= 100
+        or mode not in ("lexical", "semantic", "hybrid")
+        or type(min_similarity) not in (int, float)
+        or not isfinite(min_similarity)
+        or not -1 <= min_similarity <= 1
+    ):
+        raise AppError(
+            "input.project_search", "请选择不同任务、有效查询和检索参数。", ExitCode.INPUT
+        )
+    project = project.resolve()
+    _require_project(project)
+    started_at = datetime.now(UTC).isoformat()
+    began = perf_counter()
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    try:
+        timelines = tuple(
+            [await store.load_completed_timeline(identifier) for identifier in sorted(run_ids)]
+        )
+        if len({timeline.run.asset.sha256 for timeline in timelines}) != len(timelines) or len(
+            {timeline.run.asset.media_id for timeline in timelines}
+        ) != len(timelines):
+            raise AppError("retrieval.scope", "同一原录像请只选择一个分析版本。", ExitCode.INPUT)
+        validation_ms = round((perf_counter() - began) * 1000)
+        provider = LocalEmbeddingProvider.from_manifest(repository) if mode != "lexical" else None
+        result = await search_timelines(
+            timelines,
+            query,
+            top_k=top_k,
+            mode=mode,
+            embedding_provider=provider,
+            min_similarity=min_similarity,
+        )
+        details: dict[str, dict[str, object]] = {}
+        for timeline in timelines:
+            subset = SearchResult(
+                timeline.run.run_id,
+                result.query,
+                mode,
+                tuple(
+                    item.clip for item in result.candidates if item.run_id == timeline.run.run_id
+                ),
+            )
+            rows = cast(
+                list[dict[str, object]],
+                _search_document(
+                    subset, 0, {event.event_id: event.uncertainty for event in timeline.events}
+                )["candidates"],
+            )
+            details.update((cast(str, row["candidateId"]), row) for row in rows)
+        sources = [
+            {
+                "runId": run.run_id,
+                "mediaId": run.asset.media_id,
+                "sourceName": run.asset.source_path.name,
+                "sourcePath": str(run.asset.source_path),
+                "sourceSha256": run.asset.sha256,
+                "durationUs": run.asset.duration_us,
+                "configHash": run.config_hash,
+                "pipelineVersion": run.configuration.pipeline_version,
+                "pipelineHash": run.configuration.pipeline_hash,
+                "analysisConfiguration": asdict(run.configuration.analysis),
+            }
+            for run in result.sources
+        ]
+        source_by_run = {cast(str, source["runId"]): source for source in sources}
+        search_id = uuid4().hex
+        document: dict[str, object] = {
+            "schemaVersion": "project-search-v1",
+            "searchId": search_id,
+            "scopeId": result.scope_id,
+            "query": result.query,
+            "mode": result.mode,
+            "topK": top_k,
+            "retrievalVersion": result.retrieval_version,
+            "factsProjectionVersion": FACTS_PROJECTION_VERSION,
+            "minSimilarity": result.min_similarity,
+            "minSemanticMargin": result.min_semantic_margin,
+            "abstentionReason": result.abstention_reason,
+            "startedAt": started_at,
+            "elapsedMs": round((perf_counter() - began) * 1000),
+            "sourceValidationMs": validation_ms,
+            "scoreIsProbability": False,
+            "qualityGate": None,
+            "modelAnalysisCalls": 0,
+            "newReservations": 0,
+            "embedding": json.loads(json.dumps(asdict(result.embedding_metadata), default=str))
+            if result.embedding_metadata
+            else None,
+            "sources": sources,
+            "candidates": [
+                details[item.clip.candidate_id]
+                | {
+                    "rank": rank,
+                    "runId": item.run_id,
+                    "sourceName": source_by_run[item.run_id]["sourceName"],
+                    "sourceSha256": source_by_run[item.run_id]["sourceSha256"],
+                }
+                for rank, item in enumerate(result.candidates, 1)
+            ],
+            "recordPath": str(project / "project-searches" / search_id / "result.json"),
+        }
+        write_project_search(project, document)
         return document
     finally:
         await store.close()
@@ -896,6 +1037,18 @@ async def execute_prepare_media(
 
 
 def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | None:
+    if args.command == "search-project":
+        return asyncio.run(
+            execute_project_search(
+                args.project,
+                args.run,
+                args.query,
+                Path.cwd(),
+                top_k=args.top_k,
+                mode=args.mode,
+                min_similarity=args.min_similarity,
+            )
+        )
     if args.command == "prepare-media-batch":
         return asyncio.run(
             execute_prepare_media_batch(

@@ -1,5 +1,9 @@
 # Technical debt
 
+TD004补充（2026-10-07跨素材检索）：真实三开发片的长负面词法查询“**不存在**的星际交易飞船维修机制”仍得到一候选，唯一共享bigram为“**存在**”，原facts含“仍存在”。证明有限检索不保证负面／整句意图，不代表录像包含该机制。证据ignored artifacts/project-retrieval-validation/report.json；程序与原单run排名未改，首次校验误假设应空已纠正，三原查询记录保留后再做最终验证，共七新项目查询。按用户优先级只记录、不在本轮循环修复；F006仍false。
+
+TD012补充（同轮）：一次完整回归的旧test_coverage_is_reported_without_analysis_command_or_new_budget遇storage.batch_checkpoint，.cache/project-retrieval-tests.xml／verify.log留证；唯一失败仅一次窄复查1passed0.648s（old-failure.xml）。40新增联合检索全部通过，无生产重试／状态持久化修改，不重跑无变化整套。
+
 Record debt when it is discovered; do not hide it in a passing feature. Review related entries during each sprint and close them with a tested change.
 
 | ID | Found | Severity | Impact | Proposed fix | Status |

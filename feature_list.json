@@ -66,7 +66,7 @@
       "passes": true,
       "test_criteria": "A query returns stable, deduplicated source intervals with evidence from a Completed run; empty results are valid; lexical and semantic retrieval are compared on fixed fixtures.",
       "dependencies": ["F003", "F004"],
-      "evidence": ["docs/exec-plans/sprint-demo.md", "docs/exec-plans/sprint-F005-worker.md", "docs/exec-plans/sprint-F005-persistence-worker.md", "tests/test_retrieval.py", "tests/test_search_cli.py", "scripts/validate-demo.py", "docs/exec-plans/sprint-long-footage-retrieval.md", "tests/test_long_retrieval.py"]
+      "evidence": ["docs/exec-plans/sprint-demo.md", "docs/exec-plans/sprint-F005-worker.md", "docs/exec-plans/sprint-F005-persistence-worker.md", "tests/test_retrieval.py", "tests/test_search_cli.py", "scripts/validate-demo.py", "docs/exec-plans/sprint-long-footage-retrieval.md", "tests/test_long_retrieval.py", "docs/exec-plans/sprint-project-retrieval.md", "docs/references/project-retrieval-guide.md", "tests/test_project_retrieval.py", "scripts/search-project.ps1"]
     },
     {
       "id": "F006",

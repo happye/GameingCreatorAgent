@@ -4,6 +4,8 @@
 
 ## 1. CLI 与外部行为
 
+`search-project`明确选择同一项目1–100个Completed run，不能重复run／原视频SHA或media身份。所有源完整核验先于本地E5，共用原排名内核计算联合BM25／cosine／RRF和统一语义margin，候选保留原ID／源时钟／证据／uncertainty并带run来源。SQLite只读，不增加旧retrieval_runs或恢复任务；project-search-v1／独立retrievalVersion写入项目内新目录、结果与最后SHA回执可跨进程读回。新scope身份不证明独立素材，qualityGate固定未验证；负面／复合整句理解边界及CPU成本见[使用指南](../references/project-retrieval-guide.md)。
+
 `prepare-media-batch`输入严格media-batch-input-v1、1–100项／1MiB、唯一id与原路径，相对清单目录解析。先冻结原输入／schema2配置／每任务后续限额与固定runId，再逐项调用原离线准备。resume只接受原project／batchId和可选资源期限；已准备完整重验后复用、已进入模型只报告。输入失败继续，存储／环境停止、取消130；partial2与finished0均保留逐项结果，尚未复核项显式标识。media-batch-result-v1与stderr progress-v1区分结果和进度，0模型／上传／预留；plan保存前后创建的早期缺口见TD013。详见[批次操作及状态](../references/media-batch-preparation-guide.md)。
 
 用户硬约束：所有工具、包、模型权重和缓存隔离于本机系统。portable uv 放 `.tools/uv`，CPython 3.13 运行时放 `.tools/python`，应用/开发/ASR 包全部装入 `.venv`；FFmpeg 放 `.tools/ffmpeg/bin`，缓存放 `.cache`。仅使用进程环境，不写注册表、系统/用户 PATH 或全局包目录；uv 注册和全局链接显式禁用。版本固定及校验在 F001 完成，详见 [隔离环境](../references/isolated-environment.md)。
@@ -23,6 +25,7 @@ gamingcreator tasks --project <directory> --run <run-id>
 gamingcreator freeze-benchmark --input <plan.json> --output <new-directory>
 gamingcreator bind-benchmark --freeze <freeze-directory> --project <directory> --runs <mapping.json> --partition test --output <new-directory>
 gamingcreator search "机制描述" --project <directory> --run <completed-run-id> --mode hybrid --top-k 10 --format json
+gamingcreator search-project "机制描述" --project <directory> --run <completed-run-id> --run <another-run-id> --mode hybrid --top-k 10
 gamingcreator benchmark --input <frozen-manifest> --project <directory> --output <report.json>
 gamingcreator benchmark --input <judged-manifest> --project <directory> --output <report.json> --binding <bound-directory>
 ```

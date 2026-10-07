@@ -1,5 +1,15 @@
 # 当前交接
 
+2026-10-07，root接0a85f3a已交付[sprint-project-retrieval](docs/exec-plans/sprint-project-retrieval.md)，[通俗汇报](docs/exec-plans/report-2026-10-07-project-retrieval.md)。F005明确1–100个不同源Completed任务的一次联合BM25／E5／RRF排名、来源／原候选ID／时间／证据／uncertainty保留；跨media同时间不去重，同一视频不同分析版本拒绝不默选。输入与所有源核验先于本地embedding；SQLite read_only，原单run候选／版本／SQL和benchmark保持。独立project-search-v1／retrieval-project-v1结果与最后SHA回执保存，CLI search-project／PowerShell7／指南完成，无新SQL／HTTP或工作台变更。
+
+40新增行为全部在一次完整通过，136定向71.203s通过；一次完整2157passed／1旧media-batch状态替换失败／1 Windows symlink权限skip376.91s，唯一失败一次窄复查1passed0.648s，TD012保留、未称第一次全过／未重跑整套。161格式／84类型／lint、CLI／双离线wheel通过，SHAde10d6cedda89407d814943938502460ace0b824c6f65029ff8b135f2d8780be，83包文件同源码无媒体／缓存／DB。回执.cache/project-retrieval-tests.xml／verify.log／old-failure.xml／package.json，源码冻结后只文档／ignored证据。
+
+真实Atom v6／另一Atom／漫画三开发片，角色移动联合词法449ms／hybrid3880ms，两种Top10都含三来源；221 E5文本／78缓存／1本地worker。公开PowerShell7中文入口1153ms／相同词法全排名和scope，另一进程保存hybrid来源／排名／证据／区间／SHA读回一致。最终基线838文件（含首次3查询6文件）字节保持，新增4查询8文件，拒绝同源v4/v6不构造模型／不写文件；原单run检索214→214，三原源SHA保持，0付费／新预留／真实人评。证据ignored artifacts/project-retrieval-validation。
+
+首次误以长负面句应空而校验失败，实际“**不存在**的星际交易飞船维修机制”返回1候选、唯一共享词“存在”对原“仍存在”；只纠正校验预期、保留3查询，未改检索凑通过。最终又显式4查询，本轮共7项目查询14新文件，不抹去早期结果。此负面／整句意图不足记TD004并延期，不宣称负面成功或独立准确率。模型理解／F006/F009/F010false，旧unknown¥4.065536／空retry命令和新待授权proposal原SHA保持，费用授权未答不得发送。
+
+已向用户详细说明一需求搜三来源、时间相同独立保留、实际0.45秒3.9秒及读回相同、负面限制延期与完整检查事实。下一root主线把联合搜索接到已有本地检查工作台，明确多录像选择与按候选原来源回看，保留原篮／导出／单任务流程；先登记归属，旧worker／worktree冻结，TD005／TD010／TD011／TD012／TD013延期。现用工作台本轮无路由／静态变化无需重启。普通push既有授权当前分支，以Git及.cache/project-retrieval-publication.json记录事实，不更新main／强推。goal active，上一与本轮均progress，不标整体目标完成。
+
 2026-10-07，root接06394ae已交付[sprint-media-batch-preparation](docs/exec-plans/sprint-media-batch-preparation.md)，[通俗汇报](docs/exec-plans/report-2026-10-07-media-batch-preparation.md)。F002／F004一次清单1–100项本地准备，原清单／配置／每任务后续限额与固定runId冻结SHA；逐项原子状态、批次和原项目双进程锁，同批次显式续跑。已准备完整复核不再提取／不改任务，media-only中断按原ID接续，模型已开始只报告；输入失败继续，存储／环境或取消停止，未复核旧项标识false。CLI／PowerShell7／模板／指南完成，原单段入口共用配置验证，无新SQL／HTTP／Provider合同。
 
 新增23行为在一次完整检查全部通过；完整2117passed／1旧HTTP WinError10053失败／1 Windows symlink权限skip372.98s。原失败仅一次窄复查1passed0.981s，TD012保留、未称第一次全过；159格式／83类型／lint、CLI／双离线wheel通过，SHAdeb283c665afbd762eff48a2d87fcccff5c3e92d63945aef54ce2f6784d270cd，82包文件等于源码，无媒体／缓存／DB。回执.cache/media-batch-tests.xml／verify.log／old-failure-recheck.xml／package.json；源码冻结后仅文档／ignored证据，不重复无变化全套。

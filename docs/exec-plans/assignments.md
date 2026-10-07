@@ -1,5 +1,7 @@
 # Active assignments
 
+root已順序交付[sprint-project-retrieval](sprint-project-retrieval.md)，接0a85f3a：共用检索内核的联合语料、原候选／来源／证据保留、main search-project／独立查询文件／PS；真实三源词法0.45s／hybrid3.9s、脚本1.15s同排名与另一进程、旧214检索／文件／费用保持。40新增／136定向通过，完整2157passed／1旧batch state保存失败／1权限skip，唯一失败一次窄复查通过；格式／84类型／双wheel／83包文件同源码通过。实际负面1候选记TD004，不反复修；本轮共7新项目查询、0付费／预留／人评，F006/F009/F010false。下一root登记现有工作台多素材选择／联合搜索与按源回看；旧worker／worktree冻结，无新SQL／HTTP或当前UI改动。
+
 root已顺序交付[sprint-media-batch-preparation](sprint-media-batch-preparation.md)，接06394ae：Application固定任务批量准备／Infrastructure冻结清单与原子状态／main／PS／模板和指南。实际三开发片4秒首次／3秒修复同批次续跑／0.8秒禁止提取复查，原任务／素材／832开发文件／费用保持，0模型／预算／搜索／人评。23新增全部通过；一次完整2117passed／1旧HTTP连接中断失败／1权限skip，失败一次窄复查通过；格式／lint／83类型／双wheel／82包文件同源码通过。TD012／TD013延期，下一root登记跨素材检索一次需求搜多Completed录像；旧worker／worktree冻结，原分析及unknown不重试，F006/F009/F010false。
 
 root已顺序交付[sprint-benchmark-fixed-scoring](sprint-benchmark-fixed-scoring.md)，接12a7614：原排名Score／原基础费用汇总与CLI共用／原耗时分开；缺／重复／失败／未判定旧规则、原SHA与身份保持，null／false退出6保留报告。24新行为／116定向、完整2095／1权限skip、156格式／81类型／双wheel与80包文件同源码通过。实际三开发片直接465ms／PowerShell1018ms，原三十位／三ID／费用／1512.274ms原检索保持，832项目文件与三源不变、搜索214→214、0模型／预算／真评分，第二进程一致。已详细汇报，下一root登记多素材批量离线准备／逐任务恢复状态；其他worker冻结，小问题延期，不改原算法／SQLite／HTTP，F006/F009/F010false。

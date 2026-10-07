@@ -1,6 +1,7 @@
 """Deterministic evidence-backed lexical and local semantic clip retrieval."""
 
 import hashlib
+import json
 import math
 import re
 import unicodedata
@@ -16,13 +17,14 @@ from gamingcreator.application.providers import (
     InvocationMetadata,
     ProviderStatus,
 )
-from gamingcreator.application.storage import RunStatus, StoredTimeline
+from gamingcreator.application.storage import RunStatus, StoredRun, StoredTimeline
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.models import Embedding, EvidenceReference
 from gamingcreator.domain.time import SourceInstant, SourceRange
 
 RetrievalMode = Literal["lexical", "semantic", "hybrid"]
 RETRIEVAL_VERSION = "bm25-e5-rrf-v7"
+PROJECT_RETRIEVAL_VERSION = RETRIEVAL_VERSION + "-project-v1"
 _STOP_WORDS = frozenset(
     "a an and are at avatar character characters clip find for from game gameplay in is me of on player please show the to video with".split()
 )
@@ -140,6 +142,26 @@ class SearchResult:
 
 
 @dataclass(frozen=True, slots=True)
+class ProjectCandidateClip:
+    run_id: str
+    clip: CandidateClip
+
+
+@dataclass(frozen=True, slots=True)
+class ProjectSearchResult:
+    scope_id: str
+    query: str
+    mode: RetrievalMode
+    sources: tuple[StoredRun, ...]
+    candidates: tuple[ProjectCandidateClip, ...]
+    embedding_metadata: InvocationMetadata | None
+    min_similarity: float
+    min_semantic_margin: float
+    abstention_reason: str | None
+    retrieval_version: str = PROJECT_RETRIEVAL_VERSION
+
+
+@dataclass(frozen=True, slots=True)
 class _Document:
     identifier: str
     event_id: str | None
@@ -149,6 +171,13 @@ class _Document:
     facts: tuple[str, ...]
     tags: tuple[str, ...]
     text: str
+    run_id: str
+    source_identifier: str
+
+    @property
+    def candidate_id(self) -> str:
+        digest = hashlib.sha256(f"{self.run_id}:{self.source_identifier}".encode()).hexdigest()
+        return "clip-" + digest[:24]
 
 
 def _fail(code: str, message: str) -> AppError:
@@ -240,6 +269,8 @@ def _documents(timeline: StoredTimeline) -> tuple[_Document, ...]:
                     event.observable_facts,
                     event.mechanic_tags,
                     text,
+                    run.run_id,
+                    f"event:{event.event_id}",
                 )
             )
     for segment in timeline.transcripts:
@@ -272,6 +303,8 @@ def _documents(timeline: StoredTimeline) -> tuple[_Document, ...]:
                 (segment.text,),
                 (),
                 segment.text,
+                run.run_id,
+                identity,
             )
         )
     return tuple(sorted(documents, key=lambda item: (item.source_range.start_us, item.identifier)))
@@ -381,6 +414,8 @@ def _cosine(left: Embedding, right: Embedding) -> float:
 
 
 def _duplicate(left: _Document, right: _Document) -> bool:
+    if left.media_id != right.media_id:
+        return False
     intersection = _overlap(left.source_range, right.source_range)
     minimum = min(
         left.source_range.end_us - left.source_range.start_us,
@@ -414,6 +449,100 @@ async def search_timeline(
     min_similarity: float = 0.80,
     min_semantic_margin: float = 0.02,
 ) -> SearchResult:
+    return await _search_documents(
+        timeline.run.run_id,
+        (timeline,),
+        query,
+        top_k=top_k,
+        mode=mode,
+        embedding_provider=embedding_provider,
+        context=context,
+        min_similarity=min_similarity,
+        min_semantic_margin=min_semantic_margin,
+    )
+
+
+async def search_timelines(
+    timelines: tuple[StoredTimeline, ...],
+    query: str,
+    *,
+    top_k: int = 10,
+    mode: RetrievalMode = "hybrid",
+    embedding_provider: EmbeddingProvider | None = None,
+    context: CancellationContext | None = None,
+    min_similarity: float = 0.80,
+    min_semantic_margin: float = 0.02,
+) -> ProjectSearchResult:
+    """Rank one joint corpus, retaining each original task/candidate identity."""
+    if not 1 <= len(timelines) <= 100:
+        raise _fail("retrieval.scope", "请选择1–100个已完成任务。")
+    timelines = tuple(sorted(timelines, key=lambda item: item.run.run_id))
+    sources = tuple(item.run for item in timelines)
+    if (
+        len({run.run_id for run in sources}) != len(sources)
+        or len({run.asset.media_id for run in sources}) != len(sources)
+        or len({run.asset.sha256 for run in sources}) != len(sources)
+    ):
+        raise _fail("retrieval.scope", "任务不能重复，同一原录像请只选择一个分析版本。")
+    identity = json.dumps(
+        [
+            (
+                run.run_id,
+                run.config_hash,
+                run.configuration.pipeline_hash,
+                run.asset.media_id,
+                run.asset.sha256,
+                run.asset.duration_us,
+            )
+            for run in sources
+        ],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    scope_id = "project-" + hashlib.sha256(identity.encode("utf-8")).hexdigest()[:32]
+    result = await _search_documents(
+        scope_id,
+        timelines,
+        query,
+        namespace=True,
+        top_k=top_k,
+        mode=mode,
+        embedding_provider=embedding_provider,
+        context=context,
+        min_similarity=min_similarity,
+        min_semantic_margin=min_semantic_margin,
+    )
+    owners = {
+        document.candidate_id: document.run_id
+        for timeline in timelines
+        for document in _documents(timeline)
+    }
+    return ProjectSearchResult(
+        scope_id,
+        result.query,
+        result.mode,
+        sources,
+        tuple(ProjectCandidateClip(owners[item.candidate_id], item) for item in result.candidates),
+        result.embedding_metadata,
+        result.min_similarity,
+        result.min_semantic_margin,
+        result.abstention_reason,
+    )
+
+
+async def _search_documents(
+    run_id: str,
+    timelines: tuple[StoredTimeline, ...],
+    query: str,
+    *,
+    namespace: bool = False,
+    top_k: int = 10,
+    mode: RetrievalMode = "hybrid",
+    embedding_provider: EmbeddingProvider | None = None,
+    context: CancellationContext | None = None,
+    min_similarity: float = 0.80,
+    min_semantic_margin: float = 0.02,
+) -> SearchResult:
     """Rank validated source intervals; scores are ranking signals, never probabilities.
 
     The semantic cutoff is a tunable uncalibrated demo parameter, not a quality gate.
@@ -439,15 +568,21 @@ async def search_timeline(
         raise _fail("retrieval.configuration", "语义检索分差阈值无效。")
     if not isinstance(query, str) or len(query) > 4096:
         raise _fail("retrieval.query", "查询须为不超过4096字符的文本。")
-    documents = _documents(timeline)
+    documents = tuple(
+        replace(document, identifier=f"{document.run_id}:{document.identifier}")
+        if namespace
+        else document
+        for timeline in timelines
+        for document in _documents(timeline)
+    )
     query = query.strip()
     if context is not None:
-        if context.run_id != timeline.run.run_id:
+        if context.run_id != run_id:
             raise _fail("retrieval.configuration", "检索上下文关联无效。")
         context.check_cancelled()
     if not documents or not _tokens(query):
         return SearchResult(
-            timeline.run.run_id,
+            run_id,
             query,
             mode,
             (),
@@ -477,8 +612,8 @@ async def search_timeline(
             )
         texts = (f"query: {query}", *(f"passage: {item.text}" for item in documents))
         result = await embedding_provider.embed(
-            EmbeddingRequest(timeline.run.run_id, texts, "embedding-v1"),
-            context or CancellationContext(timeline.run.run_id, 120),
+            EmbeddingRequest(run_id, texts, "embedding-v1"),
+            context or CancellationContext(run_id, 120),
         )
         if context is not None:
             context.check_cancelled()
@@ -494,7 +629,7 @@ async def search_timeline(
         if len(embeddings) != len(texts) or any(
             embedding.space != embeddings[0].space
             or embedding.text_hash != hashlib.sha256(text.encode("utf-8")).hexdigest()
-            or embedding.subject_id != f"{timeline.run.run_id}:{index}"
+            or embedding.subject_id != f"{run_id}:{index}"
             for index, (embedding, text) in enumerate(zip(embeddings, texts, strict=True))
         ):
             raise _fail("retrieval.embedding_invalid", "模型返回的向量空间、数量或文本关联不一致。")
@@ -566,9 +701,6 @@ async def search_timeline(
         ):
             continue
         selected.append(document)
-        identity = hashlib.sha256(
-            f"{timeline.run.run_id}:{document.identifier}".encode()
-        ).hexdigest()[:24]
         signals = []
         if document.identifier in lexical:
             signals.append(f"BM25={lexical[document.identifier]:.4f}")
@@ -576,7 +708,7 @@ async def search_timeline(
             signals.append(f"cosine={semantic[document.identifier]:.4f}")
         candidates.append(
             CandidateClip(
-                f"clip-{identity}",
+                document.candidate_id,
                 document.event_id,
                 document.media_id,
                 document.source_range,
@@ -590,7 +722,7 @@ async def search_timeline(
         if len(candidates) == top_k:
             break
     return SearchResult(
-        timeline.run.run_id,
+        run_id,
         query,
         mode,
         tuple(candidates),
