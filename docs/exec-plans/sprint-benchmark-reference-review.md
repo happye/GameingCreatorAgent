@@ -18,6 +18,8 @@ root独占新application/benchmark_reference_review.py、ui/benchmark_reference_
 
 尚未运行本轮真实游戏录像公开PowerShell入口／实际播放／原冻结衔接／第二进程核对、完整verify与双wheel，指南和正式交付尚未完成。当前完整22项是20合同＋2页面，不宣称全量通过。源时钟特殊情况仍手工填写，不扩写区间或猜独立来源。
 
+源码检查点06771ee已本地提交；一次普通push连接github.com:443在21.131秒后失败／exit128，原日志保留，不重试、不读取远端。上次独立确认799625c，本轮新检查点未远端同步，网络恢复后补推原授权分支；最终发布状态见.cache/benchmark-reference-checkpoint-publication.json。仅文档补事实不重跑源码检查。
+
 阶段通俗结论及下一步见[额度14%汇报](report-2026-10-07-reference-checkpoint.md)。现用批量准备／联合搜索已交付；新原片标注正在验证。fresh只读健康确认8765／45524／28036与media-preparation-v1，未重启。0新模型／上传／普通搜索／费用预留／真实人评，旧unknown4.065536／待答新提案保持，F006/F009/F010false，旧worker冻结，goal active。
 
 下一条具体操作：读取既有开发计划的三源路径，在新的ignored验证目录建立development／modelResultsViewed=true、人工确认false的原片标注包，通过项目隔离PowerShell7公开入口生成／导入空记录并交给旧freeze；验证实际源身份与旧项目／费用不变。再用1366／390核对实际原片播放、标区间与保存重载；程序演示标记不得当人工标签或独立测试。完成后一次整体验证／包核对、使用指南、提交交付；不循环TD012。保存／推送以Git和.cache/benchmark-reference-checkpoint-publication.json为准，普通授权工作分支，不改main／强推。

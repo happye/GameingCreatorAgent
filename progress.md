@@ -1,5 +1,7 @@
 # Progress Log
 
+本轮原片参考源码检查点06771ee已本地提交；普通push一次21.131秒连接github.com:443失败／exit128，日志保留，未重试／未读取远端。上次确认远端799625c，本轮新检查点待补推授权分支；本段仅文档事实，不改源码／现用工作台／验证／goal状态。
+
 2026-10-07用户额度14%请求汇报，root接799625c保存原片参考标注未验收检查点：分析前本机HTML／多区间／下载载入／保护原来源查询、重验实际源后导出旧plan、公开Python／PowerShell入口已实现，新脚本加入verify与mypy。20合同＋2桌面／窄屏实际短MP4页面通过，首转义断言失败已直接修正测试／原回执保留；真实游戏公开入口／原freeze衔接／第二进程／整套／双wheel／指南待完成，不称正式交付或真人人评。现用批量准备／联合搜索不变，fresh只读health45524／28036支持media-preparation-v1，0重启／模型／上传／搜索／费用预留／真实标签，旧unknown／待答提案保持，F006/F009/F010false，旧worker冻结、goal active。通俗汇报及下一真实开发录像验证见report-2026-10-07-reference-checkpoint与sprint／HANDOFF，保存发布以Git及benchmark-reference-checkpoint-publication回执为准，不改main／强推、不循环小bug。
 
 2026-10-07多素材准备交付ae49b40已普通push并独立确认远端一致，原5d2a48e之后网络积压补齐；main不改／无强推，publication receipt保存。仅补发布记忆，原源码证据／现用45524／28036与下一F006主线保持，goal active。

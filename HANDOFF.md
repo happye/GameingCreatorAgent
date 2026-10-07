@@ -1,5 +1,7 @@
 # 当前交接
 
+本轮源码检查点06771ee已本地提交；一次普通push在21.131秒连接github.com:443失败／exit128，.cache/benchmark-reference-checkpoint-push.log保留，不重试。上次独立确认远端799625c，本轮未读取远端；网络恢复后补推codex/visual-details，不能称新检查点远端已同步。后续仅补此发布事实，最终文档head以Git和publication.json为准。
+
 2026-10-07额度14%汇报，root接799625c保存[sprint-benchmark-reference-review](docs/exec-plans/sprint-benchmark-reference-review.md)**未验收检查点**，见[通俗阶段汇报](docs/exec-plans/report-2026-10-07-reference-checkpoint.md)。F006冻结前原片参考页面、多动作区间／下载载入、重核实际源与原查询后旧plan导出、Python／PowerShell入口已实现；新脚本已登记verify与mypy。root独占新Application／renderer／static、公开脚本、新合同与浏览器测试及集成配置和公共记录，旧worker冻结。20合同＋2桌面／窄屏浏览器通过；浏览器实际生成短MP4，未做真实游戏人工判断。首次转义断言失败直接改测试后通过，原回执保留；本轮未真实游戏公开入口／冻结衔接／整套／双wheel／指南，不引用上一完整检查作本轮通过。
 
 现用批量准备和联合搜索已交付；fresh只读health确认8765 pid45524／parent28036、media-preparation-v1，本轮无服务更新或新标注入口。已通俗说明标注省手写区间、可保存继续及未正式交付界限。**下一操作**按sprint用已有三开发源／新ignored目录跑公开PowerShell7生成标注包、导入空记录和原freeze衔接、第二进程核对，再双尺寸真实原片播放／保存重载，最后一次完整检查与包／指南；不重做旧评审或循环TD012。现有7文件不证明独立样本，程序演示不造真标签。0模型／上传／搜索／预留／人评，旧unknown4.065536／待答proposal／F006/F009/F010false保持，goal active不pause／complete。Git及.cache/benchmark-reference-checkpoint-publication.json为本轮保存／普通push事实；不改main／强推。
