@@ -1,5 +1,13 @@
 # 当前交接
 
+2026-10-07，root已交付[sprint-benchmark-preparation](docs/exec-plans/sprint-benchmark-preparation.md)，接7b5a7b3；[通俗汇报](docs/exec-plans/report-2026-10-07-benchmark-preparation.md)。F006原素材／录制组／开发测试分区／是否看过结果／查询族与查询、人工参考事前冻结：freeze-benchmark仅本地probe／hash、原输入／来源／UTC时间／准备缺口／最后SHA回执，新目录独占；bind-benchmark只读绑定Completed身份到旧benchmark v1，原config／pipeline与freeze SHA来源保留，候选评分空。benchmark --binding在store／embedding前复核，仅candidateLabels／humanLabels.reviewed可变；改查询／参考／来源／版本／填写人或确认／独立性声明拒绝。计划模板与PowerShell7 prepare-benchmark.ps1两动作、指南已交付，无新SQLite／Provider／费用合同。准备ready不鉴定人评或独立性，F006/F009/F010仍false。
+
+47新行为、133定向2.07s；一次完整2034passed／1 Windows文件symlink权限skip287.17s，148格式／75类型／lint／CLI／双离线wheel SHAa27ca9c94bcebb1aa3aafc4991842e6cd644409b43c837f7358fca3135ba9260通过。74包文件同源码，无媒体／缓存／DB；JUnit2035／0fail／0error／1权限skip，.cache/benchmark-preparation-tests.xml／verify.log／package.json。之后仅文档与ignored证据，不重复完整检查；PowerShell脚本env路径直接修正由实际两动作验证，不在包／Python完整检查范围。
+
+实际三已有开发录像冻结1516ms／绑定487ms，832项目文件／3源视频字节保持、另一进程读回3素材／3查询／原SHA一致，人评false／independentfalse／候选评分空。两个Atom保守同组，只有两已知录制组，不能当独立样本。公开PowerShell7中文计划Freeze与Bind通过，Bind1209ms，manifest／来源逐字节同直接CLI。ignored artifacts/benchmark-preparation-validation/check-preparation.py／report.json／script-bind-report.json／frozen／bound为本机证据；0模型／普通搜索／预算预留／新真实人评。旧漫画¥4.065536及空retry命令、新proposal原SHA保持，.cache/benchmark-preparation-invariants.json。
+
+已向用户详细说明先冻结后绑定、防同源跨区与事后改查询、资料不足保持草稿、实际1.5秒／0.5秒和未验收范围。下一root主线候选人工判分入口：固定前十位、原区间回看、0–3理由与独立事件映射、绑定原冻结依据并导出评测文件，先登记归属，不造评分／独立通过。旧worker冻结、TD005／TD010／TD011延期，工作台本轮无UI合同变化无需重启。新¥4.07授权仍未答；上次网络超时后本轮0push／远端读取，本地HEAD及publication回执为准，普通授权分支待补推，不改main／强推。
+
 2026-10-07，root已交付[sprint-material-tasks](docs/exec-plans/sprint-material-tasks.md)，接2a38e4d；[通俗汇报](docs/exec-plans/report-2026-10-07-material-tasks.md)。Phase 0／F003／F004／F007：CLI tasks／list-tasks.ps1与工作台“查看素材任务”共用只读metadata快照，分页／单项／打开既有任务；原配置／阶段与父子窗口、基础已知费用／未知预留显示。清单不hash媒体／recover／Provider／预算／普通搜索，CLI只提示明确argv而不执行，费用未定保留retry要求与空命令，旧预留资料不足保持null。旧worker冻结，TD010／TD011和完整详情耗时TD005延期，F006/F009/F010false。
 
 83定向3.64s，接口／浏览器最终17项及一次完整1987passed／1 Windows文件symlink权限skip372.65s；145格式／73类型／lint／CLI／双离线wheel SHA8ba637d4bab57b6ef42f58bad36cbff482da7e56cced2b6e56e4ee797a006c87，72包文件同源码且无媒体／缓存／DB。JUnit1988／0fail／0error／1权限skip，回执.cache/material-tasks-verify.log／tests.xml／package.json；之后仅文档／ignored证据，不重复完整测试。

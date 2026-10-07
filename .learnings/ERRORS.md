@@ -1,5 +1,13 @@
 # Errors
 
+## [ERR-20261007-021] benchmark_preparation_fixture_and_wrapper
+
+**Logged**: 2026-10-07
+**Status**: resolved; focused133 / full2034 and actual PowerShell Freeze/Bind passed
+**Area**: tests / scripts
+
+新测试重复猜测不存在的helper导入两次，最终按现有定义使用test_detail_query.snapshot；沿已有规则先rg定义再import，不猜模块／符号。两断言直接修正：确认参考后的空返回应失败，验证未判分应返回一个未判分候选；storage fixture不能同目录重复建media，复用一次bundle。CancellationContext须run_id、mypy冗余cast与--binding参数误接search均由类型检查直接纠正。测试新代码先format再lint，避免紧凑一行语句造成噪声。公开PowerShell wrapper最初错误从根目录找env.ps1，直接改scripts/env.ps1，真实中文Freeze／Bind通过；首失败回执保留，不调查全局环境。一次文档补丁引用了不完整行而未应用，按完整现有行重做，未改生产源码／重复完整测试。
+
 ## [ERR-20261007-020] material_tasks_audit_assumptions
 
 **Logged**: 2026-10-07

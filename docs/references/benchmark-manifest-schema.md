@@ -2,6 +2,8 @@
 
 `application/benchmark.py` consumes a strict JSON manifest and an injected search function. The CLI owner connects `gamingcreator benchmark --input <manifest.json> --project <project> --output <report.json>`. This document supplements `phase-0-benchmark.md`; its human-quality threshold is unchanged.
 
+The optional local [preparation workflow](./benchmark-preparation-guide.md) freezes original footage identities, recording/partition/query families and human references before binding Completed runs to this unchanged v1 format. Generated candidateLabels remain empty. `benchmark --binding <bound-directory>` verifies the immutable template before opening storage or loading retrieval models; only candidateLabels and humanLabels.reviewed may change. Reference confirmation or independence cannot be added after viewing results under the same binding. Preparation readiness records declarations and consistency, not authenticated human acceptance. Legacy manifests without this option keep their original behavior.
+
 ## Prepare an unlabelled run
 
 Copy `templates/phase0-benchmark.example.json`. Replace each source's `mediaId`, Completed `runId`, lowercase 64-character `sha256`, and positive `durationUs` with actual timeline metadata. Query source pairs must match `media`. Durations and all interval endpoints are source-relative Int64 integer microseconds. JSON booleans, floats and numeric strings cannot stand in for integers. Duplicate identities, unknown fields and duplicate JSON keys are rejected.

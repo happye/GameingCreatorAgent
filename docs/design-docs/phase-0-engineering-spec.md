@@ -16,8 +16,11 @@ gamingcreator prepare-media <local-video> --project <directory> --config <json> 
 gamingcreator prepare-media <local-video> --project <directory> --resume <run-id>
 gamingcreator tasks --project <directory> --limit 100 --offset 0
 gamingcreator tasks --project <directory> --run <run-id>
+gamingcreator freeze-benchmark --input <plan.json> --output <new-directory>
+gamingcreator bind-benchmark --freeze <freeze-directory> --project <directory> --runs <mapping.json> --partition test --output <new-directory>
 gamingcreator search "机制描述" --project <directory> --run <completed-run-id> --mode hybrid --top-k 10 --format json
 gamingcreator benchmark --input <frozen-manifest> --project <directory> --output <report.json>
+gamingcreator benchmark --input <judged-manifest> --project <directory> --output <report.json> --binding <bound-directory>
 ```
 
 `analyze` 校验文件、能力、预算和空间后创建 run。成功写 SQLite 与 `semantic_timeline.json`；失败或取消输出 run ID 和稳定错误码，保留已完成 checkpoint。显式 v2 resume 使用原配置/预算，跳过完成的 media、asr 和 `vision-000000` 等窗口；进行中记录转 Interrupted 后重开，不自动重放。未提交的远端调用可能已有费用，须 `--retry-uncertain` 才重试，原费用/未知预留继续计入预算。已完成 run 只重读。旧 v1 保留原有限续跑行为；配置、prompt 内容或 ASR 稳定参数不匹配时拒绝恢复。
@@ -39,6 +42,8 @@ gamingcreator benchmark --input <frozen-manifest> --project <directory> --output
 stdout 为结果或 JSON；进度/JSON 诊断写 stderr。退出码：0 成功，2 输入，3 环境/配置，4 Provider，5 存储/完整性，6 benchmark 未过门槛，7 预算停止，130 用户取消。JSON 错误含 code、runId、retryable、友好说明，不含凭据。
 
 ## 2. 时间与数据合同
+
+验收准备用benchmark-plan-v1记录原路径、录制组、development/test、是否看过模型结果、查询族及人工参考，不含候选评分。freeze-benchmark仅本地probe／hash原视频，重验输入／来源未改变，在新目录独占写原字节和benchmark-freeze-v1，UTC冻结时间、准备缺口与SHA回执；完成回执最后写。来源／内容／查询族跨区、缺同源组／足量代表来源／主查询或人工参考、测试已看结果等不冒充独立ready。参考采用原benchmark验证并按实际时长核对；原录制与人工声明不由工具认证。bind-benchmark只读核对Completed run／来源完整性／冻结SHA和时长，指定分区完整映射，输出原benchmark v1与config／pipeline／freeze SHA来源。新目录不可覆盖或写入项目／冻结目录；缺参考保持confirmed=false，独立准备不足或development时independentTestSet=false，candidateLabels空。两步不构造模型、预算或搜索。benchmark可选--binding在打开store／加载embedding前复核原绑定，仅candidateLabels与humanLabels.reviewed可变；改查询／参考／来源／版本／填写人或声明拒绝。准备结果qualityGate始终null，正式70%与费用合同不变；操作见[验收准备](../references/benchmark-preparation-guide.md)。
 
 所有领域时间是从源视频规范化起点计量的 Int64 微秒 `[startUs,endUs)`；非负且小于等于源时长，Python int 必须校验不超过 `2^63-1`。格式化显示时间可以舍入，持久化不可用显示字符串反推。Evidence 另存原始 PTS、timebase、streamStart、切片偏移、音视频偏移和变换版本；模型局部时间由程序回映射并检查范围，VAD 必须有回映射。
 

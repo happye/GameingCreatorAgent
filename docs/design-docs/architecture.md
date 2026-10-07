@@ -33,6 +33,8 @@ CLI 只解析输入、组装依赖和输出结果；Application 编排 stages、
 
 ## 数据流与状态
 
+F006验收准备由纯Application benchmark_preparation验证计划／分区／同源与查询族、参考和旧benchmark转换；Infrastructure benchmark_preparation_files有界读取、SHA回执和新目录独占发布；CLI组合本地MediaProcessor.probe与只读TimelineStore。先冻结原输入／录像SHA与时长／UTC时间，再绑定Completed run并保留原config／pipeline来源。冻结与绑定无Provider／预算／检索，候选标签空；benchmark --binding先核对只增候选评分／复核，不允许更换查询／参考／身份。缺独立性与人评继续null，资料准备不代替F006。
+
 离线对照生成器从冻结proposal、原报告/人工反馈和当前精确版本侧车读取同候选资料，复核注册帧、原结果和旧匹配逐项一致；输出新目录内的HTML、来源JSON及默认空值的人工记录模板。画面与下载JSON内嵌静态页面，无脚本/外部连接；不存在v4结果就保留no_saved_result，不调用Provider、预留预算或写源数据库。详情见[使用指南](../references/detail-pilot-comparison-guide.md)。
 
 人工记录由Application纯解码和来源绑定，UI生成独立本地表单（hash限定脚本CSP、无外部连接），Infrastructure有界读取并独占写新记录目录。script先重跑原对照的来源核对，再验证四维bool/null、元数据、原帧和当前scene实体；缺结果不可判断。归档保留原输入字节、规范记录、完整comparison、汇总和摘要，不写模型侧车或U10标签。见[记录指南](../references/detail-pilot-review-guide.md)。

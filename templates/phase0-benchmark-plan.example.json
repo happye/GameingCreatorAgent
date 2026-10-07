@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "benchmark-plan-v1",
+  "datasetId": "replace-with-dataset-id",
+  "labelVersion": null,
+  "humanReferences": {"confirmed": false, "annotators": [], "reviewed": false},
+  "sources": [
+    {"id": "development-001", "path": "../GameVideos/development.mp4", "recordingGroup": null, "partition": "development", "modelResultsViewed": true},
+    {"id": "test-001", "path": "../GameVideos/independent-test.mp4", "recordingGroup": null, "partition": "test", "modelResultsViewed": false}
+  ],
+  "queries": [
+    {"id": "main-001", "text": "寻找使用闪避躲开敌人攻击的片段", "kind": "main", "sourceId": "test-001", "family": "test-dodge-001", "referenceEvents": []}
+  ]
+}

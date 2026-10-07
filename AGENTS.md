@@ -25,6 +25,7 @@ Use Windows PowerShell. Keep runtimes in `.tools/`, packages in `.venv/`, and ca
 - `./scripts/verify.ps1`: format, lint, types, pytest, and reproducible offline wheel builds.
 - `./scripts/test-media.ps1 -AllLocal`: validate footage in ignored `GameVideos/`.
 - `./scripts/test-storage.ps1 -AllLocal`: verify media persistence and a second process's reads.
+- `./scripts/prepare-benchmark.ps1`: freeze source/query plans, then bind Completed runs without inference; see `docs/references/benchmark-preparation-guide.md`.
 
 ## Architecture and coding rules
 
@@ -33,6 +34,8 @@ Follow `docs/design-docs/architecture.md`, `phase-0-engineering-spec.md`, ADR-00
 ## Testing and acceptance
 
 Use pytest `tests/test_*.py`; follow `docs/references/testing-guide.md` and `phase-0-benchmark.md`. Top-10 Useful Rate has ten fixed slots: missing and duplicate events count zero; independent human-judged usable events must reach ≥70%. Multi-frame inputs and index hits do not prove action understanding. Mark `passes: true` only after feature evidence. Benchmark exit 6 preserves its report when the gate fails or remains unverified.
+
+Use `benchmark --binding <bound-directory>` for the frozen preparation workflow; only candidate judgments and human review status may change. Preparation readiness and recorded human declarations do not prove F006 acceptance.
 
 ## Changes, commits, and handoff
 

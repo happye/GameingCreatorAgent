@@ -5,6 +5,7 @@ import shutil
 import sys
 from collections.abc import Sequence
 from dataclasses import asdict
+from datetime import UTC, datetime
 from decimal import Decimal
 from math import isfinite
 from pathlib import Path
@@ -30,6 +31,11 @@ from gamingcreator.application.benchmark import (
     loads_manifest,
     run_benchmark,
 )
+from gamingcreator.application.benchmark_preparation import (
+    bind_manifest,
+    freeze_document,
+    loads_plan,
+)
 from gamingcreator.application.budget import BudgetLedger, InvocationRecorder
 from gamingcreator.application.detail_query import MAX_MANIFEST_BYTES, loads_constraint
 from gamingcreator.application.inputs import AnalyzeInput, PreparedAnalyze, prepare_analyze
@@ -49,6 +55,13 @@ from gamingcreator.application.retrieval import (
 from gamingcreator.application.storage import RunStatus
 from gamingcreator.application.tasks import tasks_payload
 from gamingcreator.domain.errors import AppError, ExitCode, invalid_config
+from gamingcreator.infrastructure.benchmark_preparation_files import (
+    read_bounded,
+    read_freeze,
+    validate_bound_manifest,
+    write_binding,
+    write_freeze,
+)
 from gamingcreator.infrastructure.deepseek_vision import (
     MAX_IMAGE_WIDTH_V5,
     MODEL,
@@ -96,6 +109,15 @@ def _parser() -> CliParser:
     tasks.add_argument("--run", help="只查看一个任务")
     tasks.add_argument("--limit", type=int, default=100)
     tasks.add_argument("--offset", type=int, default=0)
+    freeze = commands.add_parser("freeze-benchmark", help="本地登记原素材并冻结验收查询，不分析")
+    freeze.add_argument("--input", type=Path, required=True)
+    freeze.add_argument("--output", type=Path, required=True)
+    bind = commands.add_parser("bind-benchmark", help="把冻结验收素材绑定到已完成运行，不检索")
+    bind.add_argument("--freeze", type=Path, required=True)
+    bind.add_argument("--project", type=Path, required=True)
+    bind.add_argument("--runs", type=Path, required=True)
+    bind.add_argument("--partition", choices=("development", "test"), default="test")
+    bind.add_argument("--output", type=Path, required=True)
     search = commands.add_parser("search", help="用自然语言检索已完成的时间线")
     search.add_argument("query")
     search.add_argument("--project", type=Path, required=True)
@@ -110,6 +132,9 @@ def _parser() -> CliParser:
     benchmark.add_argument("--output", type=Path, required=True)
     benchmark.add_argument("--mode", choices=("lexical", "semantic", "hybrid"), default="hybrid")
     benchmark.add_argument("--min-similarity", type=float, default=0.80)
+    benchmark.add_argument(
+        "--binding", type=Path, help="复核冻结绑定，只允许追加候选人评与复核状态"
+    )
     detail = commands.add_parser("match-details", help="离线匹配同主体属性条件清单")
     detail.add_argument("--project", type=Path, required=True)
     detail.add_argument("--run", required=True)
@@ -271,10 +296,16 @@ async def execute_benchmark(
     *,
     mode: RetrievalMode = "hybrid",
     min_similarity: float = 0.80,
+    binding_path: Path | None = None,
 ) -> dict[str, JsonValue]:
     _require_project(project)
     try:
-        manifest = loads_manifest(input_path.read_text(encoding="utf-8"))
+        if binding_path is not None:
+            input_bytes = read_bounded(input_path)
+            validate_bound_manifest(binding_path, input_bytes)
+            manifest = loads_manifest(input_bytes.decode("utf-8-sig"))
+        else:
+            manifest = loads_manifest(input_path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, ValueError):
         raise AppError("input.benchmark", "评测清单不符合冻结标签合同。", ExitCode.INPUT) from None
     store = await SqliteTimelineStore.open(project)
@@ -534,6 +565,114 @@ async def execute_analyze(prepared: PreparedAnalyze, repository: Path) -> Analyz
         await store.close()
 
 
+async def execute_freeze_benchmark(
+    input_path: Path, output: Path, repository: Path
+) -> dict[str, object]:
+    try:
+        data = read_bounded(input_path)
+        plan = loads_plan(data.decode("utf-8-sig"))
+        processor = FfmpegMediaProcessor(repository)
+        assets = {}
+        for source in plan.sources:
+            path = Path(source.path)
+            if not path.is_absolute():
+                path = input_path.parent / path
+            assets[source.source_id] = await processor.probe(
+                path.resolve(), CancellationContext("benchmark-freeze", timeout_seconds=300)
+            )
+        frozen = freeze_document(plan, assets, datetime.now(UTC).isoformat())
+        hashes = write_freeze(input_path, data, frozen, output)
+        return {
+            "schemaVersion": "benchmark-preparation-result-v1",
+            "output": str(output.resolve()),
+            "files": hashes,
+            "frozenAt": frozen["frozenAt"],
+            "preparation": frozen["preparation"],
+            "qualityGate": None,
+            "paidRequestsSent": 0,
+        }
+    except (OSError, ValueError, UnicodeError, TypeError, KeyError, RecursionError):
+        raise AppError(
+            "input.benchmark_preparation",
+            "验收计划／来源／新输出目录无效，未开始分析。",
+            ExitCode.INPUT,
+        ) from None
+
+
+async def execute_bind_benchmark(
+    directory: Path, project: Path, runs_path: Path, partition: str, output: Path
+) -> dict[str, object]:
+    _require_project(project)
+    try:
+        frozen, freeze_sha = read_freeze(directory)
+
+        def pairs(items: list[tuple[str, object]]) -> dict[str, object]:
+            result = {}
+            for key, value in items:
+                if key in result:
+                    raise ValueError("运行映射含重复字段。")
+                result[key] = value
+            return result
+
+        runs = json.loads(read_bounded(runs_path).decode("utf-8-sig"), object_pairs_hook=pairs)
+        if (
+            type(runs) is not dict
+            or not runs
+            or any(type(value) is not str or not value.strip() for value in runs.values())
+            or len(set(runs.values())) != len(runs)
+        ):
+            raise ValueError("运行映射无效。")
+        store = await SqliteTimelineStore.open(project, read_only=True)
+        try:
+            timelines = {
+                key: await store.load_completed_timeline(value) for key, value in runs.items()
+            }
+            manifest = bind_manifest(frozen, timelines, partition)
+            provenance = {
+                "schemaVersion": "benchmark-binding-v1",
+                "freezeSha256": freeze_sha,
+                "frozenAt": frozen["frozenAt"],
+                "partition": partition,
+                "runs": [
+                    {
+                        "sourceId": key,
+                        "runId": value.run.run_id,
+                        "configHash": value.run.config_hash,
+                        "pipelineVersion": value.run.configuration.pipeline_version,
+                    }
+                    for key, value in timelines.items()
+                ],
+                "preparation": frozen["preparation"],
+                "qualityGate": None,
+                "humanCandidateLabels": None,
+                "paidRequestsSent": 0,
+            }
+            hashes = write_binding(
+                directory=directory,
+                freeze_sha256=freeze_sha,
+                output=output,
+                project=project,
+                manifest=manifest,
+                provenance=provenance,
+            )
+            return {
+                "schemaVersion": "benchmark-preparation-result-v1",
+                "output": str(output.resolve()),
+                "files": hashes,
+                "preparation": frozen["preparation"],
+                "qualityGate": None,
+                "paidRequestsSent": 0,
+            }
+        finally:
+            await store.close()
+    except (OSError, ValueError, UnicodeError, TypeError, KeyError, RecursionError):
+        raise AppError(
+            "input.benchmark_binding",
+            "冻结资料／运行映射／来源身份／新输出目录无效，未检索。",
+            ExitCode.INPUT,
+        ) from None
+
+
 async def execute_tasks(
     project: Path, *, limit: int = 100, offset: int = 0, run_id: str | None = None
 ) -> dict[str, object]:
@@ -650,6 +789,20 @@ async def execute_prepare_media(
 
 
 def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | None:
+    if args.command == "freeze-benchmark":
+        return asyncio.run(
+            execute_freeze_benchmark(args.input.resolve(), args.output.resolve(), Path.cwd())
+        )
+    if args.command == "bind-benchmark":
+        return asyncio.run(
+            execute_bind_benchmark(
+                args.freeze.resolve(),
+                args.project.resolve(),
+                args.runs.resolve(),
+                args.partition,
+                args.output.resolve(),
+            )
+        )
     if args.command == "tasks":
         return asyncio.run(
             execute_tasks(
@@ -710,6 +863,7 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
                 Path.cwd(),
                 mode=args.mode,
                 min_similarity=args.min_similarity,
+                binding_path=args.binding.resolve() if args.binding is not None else None,
             )
         ),
     )

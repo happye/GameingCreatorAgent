@@ -1,5 +1,7 @@
 # Active assignments
 
+root已交付[sprint-benchmark-preparation](sprint-benchmark-preparation.md)，接7b5a7b3：F006本地原素材／同源分区／查询族／人工参考冻结，Completed绑定旧manifest；benchmark --binding只允许候选人评／复核变更。新Application／文件适配／CLI与计划模板／PowerShell7两动作／47新测试、133定向及完整2034／1权限skip通过，74包文件同源码。实际3开发视频1.5秒冻结／0.5秒绑定／第二进程、832项目文件／3源保持，0模型／普通搜索／新预留／真实人评；明确两个Atom可能同源、整体非独立。已详细汇报，下一root登记候选人工判分入口／固定十位回看与原冻结绑定导出。旧worker冻结，小性能／TD010／TD011延期，F006/F009/F010false，新付费待答、网络不循环。
+
 root已顺序交付[sprint-material-tasks](sprint-material-tasks.md)，接2a38e4d。共用只读快照／CLI tasks／list-tasks.ps1／工作台分页与打开，原配置与未知费用保持，83定向与最终17接口／浏览器、完整1987／1权限skip、72包文件同源码通过；实际三项目8任务／6桌面窄屏清单、工作台40592／11788 fresh身份及4629文件字节保持，0模型／预算／普通搜索／人评。小时完整详情耗时留TD005，TD010／TD011延期，旧worker冻结。已详细汇报，下一root登记独立验收素材／事前查询和人工参考冻结入口，接F006现有合同，不能宣布人评通过。网络上次超时，本轮0push。
 
 root已交付[sprint-media-preparation](sprint-media-preparation.md)，接c2b4f14：已实现prepare-media本地准备／保存原配置与media阶段，pending等待显式分析续跑；独占application/analysis.py／storage.py、cli/main.py、infrastructure/sqlite_store.py、新准备测试及真实媒体入口和公共记录。65定向passed、实际小时33秒准备／25秒不重新抽帧核对、另一进程完整读回，0模型／新预留，完整1942／1权限skip、CLI／类型／lint／相同离线wheel和71包文件逐字节校验通过。旧worker冻结，TD010／TD011延期；核对耗时记TD005。下一素材任务清单／阶段／原配置／费用查看先登记归属。上一交付一次push网络超时失败，继续本地，无重复联网。
