@@ -102,3 +102,7 @@ Parallel follow-up workers must remain in separate worktrees. Preserve newly int
 - Bind visible attributes to their actor and action, preserve uncertainty, validate higher-resolution evidence with versioned profiles, and keep descriptions compact for512-token embeddings. Window-local aliases cannot be mapped from an event's cited subset. Preserve frozen source facts; version any presentation/index projection.
 - Shared specification and current work: docs/exec-plans/sprint-visual-details.md. Not a new gameplay quality pass.
 
+## 2026-10-07: Frozen source version choices
+
+Existing-run selection is a read-only metadata projection, not source/evidence integrity verification. Keep all matching versions explicit, preserve unknown recording declarations, carry the freeze digest to submission, and let original binding verify media. Restore only previously saved user choices; never select newest/first as a default or turn one recording's versions into independent samples. Workflow terminal-state reads may race with the recorded running snapshot; observed failures remain TD014, not a claimed environmental fix.
+

@@ -16,6 +16,8 @@ from uuid import uuid4
 
 from gamingcreator.application.benchmark_preparation import canonical_json, loads_plan
 from gamingcreator.application.benchmark_review import decode_object
+from gamingcreator.application.benchmark_run_selection import VERSION as BIND_OPTIONS_VERSION
+from gamingcreator.application.benchmark_run_selection import binding_choices
 from gamingcreator.application.retrieval import RetrievalMode
 from gamingcreator.cli.main import (
     execute_benchmark,
@@ -23,7 +25,8 @@ from gamingcreator.cli.main import (
     execute_freeze_benchmark,
 )
 from gamingcreator.domain.errors import AppError, ExitCode
-from gamingcreator.infrastructure.benchmark_preparation_files import read_bounded
+from gamingcreator.infrastructure.benchmark_preparation_files import read_bounded, read_freeze
+from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
 from gamingcreator.ui.benchmark_reference_review import render_reference_review
 from gamingcreator.ui.benchmark_review import render_benchmark_review
@@ -261,6 +264,63 @@ class BenchmarkWorkflows:
                 self.file(identifier, cast(str, row["attemptId"]), name)
         return rows
 
+    def _project(self, reference: str) -> Path:
+        requested = Path(reference)
+        project = (requested if requested.is_absolute() else self.repository / requested).resolve()
+        if (
+            not reference.strip()
+            or not project.is_relative_to(self.repository / "artifacts")
+            or not (project / "timeline.sqlite3").resolve().is_relative_to(self.repository)
+            or not (project / "timeline.sqlite3").is_file()
+        ):
+            raise _invalid("请选择当前仓库artifacts中的已有分析项目。")
+        return project
+
+    async def binding_options(
+        self, identifier: str, project_reference: str, partition: str
+    ) -> dict[str, object]:
+        self._metadata(identifier)
+        rows = self._successful(identifier)
+        if "freeze" not in rows:
+            raise _invalid("请先完成冻结，再选择关联任务。")
+        project = self._project(project_reference)
+        freeze = rows["freeze"]
+        frozen, digest = read_freeze(self._output(identifier, freeze))
+        store = await SqliteTimelineStore.open(project, read_only=True)
+        try:
+            run_ids = await store.list_runs()
+            if len(run_ids) > 5000:
+                raise _invalid("项目任务超过5000个，请保留资料并选较小的验收项目。")
+            runs = [await store.load_run(run_id) for run_id, _ in run_ids]
+            sources = binding_choices(frozen, runs, partition)
+        finally:
+            await store.close()
+        previous: dict[str, str] = {}
+        if "bind" in rows and Path(cast(str, rows["bind"]["project"])) == project:
+            binding = decode_object(
+                self.file(identifier, cast(str, rows["bind"]["attemptId"]), "binding.json")
+            )
+            if binding["freezeSha256"] == digest and binding["partition"] == partition:
+                previous = {
+                    cast(str, item["sourceId"]): cast(str, item["runId"])
+                    for item in cast(list[dict[str, object]], binding["runs"])
+                }
+        if self._successful(identifier)["freeze"]["attemptId"] != freeze["attemptId"]:
+            raise _invalid("读取期间冻结计划已更换，请重新读取关联选择。")
+        return {
+            "schemaVersion": BIND_OPTIONS_VERSION,
+            "workflow": identifier,
+            "project": project_reference,
+            "partition": partition,
+            "freezeAttempt": freeze["attemptId"],
+            "freezeSha256": digest,
+            "sources": sources,
+            "previousSelection": previous,
+            "mediaIntegrityVerified": False,
+            "qualityGate": None,
+            "paidRequestsSent": 0,
+        }
+
     def submit(self, document: dict[str, object]) -> dict[str, object]:
         if (
             set(document) != {"workflow", "action", "fields"}
@@ -271,9 +331,10 @@ class BenchmarkWorkflows:
             raise _invalid()
         identifier, action = _id(document["workflow"]), document["action"]
         fields = cast(dict[str, object], document["fields"])
-        if set(fields) != FIELDS[action] or any(
-            type(value) is not str for value in fields.values()
-        ):
+        allowed = FIELDS[action]
+        if action == "bind" and "freezeSha256" in fields:
+            allowed = allowed | {"freezeSha256"}
+        if set(fields) != allowed or any(type(value) is not str for value in fields.values()):
             raise _invalid()
         if "inputText" in fields:
             value = cast(str, fields["inputText"])
@@ -296,16 +357,12 @@ class BenchmarkWorkflows:
         if action == "bind":
             if fields["partition"] not in {"development", "test"}:
                 raise _invalid()
-            project_path = Path(cast(str, fields["project"]))
-            project = (
-                project_path if project_path.is_absolute() else self.repository / project_path
-            ).resolve()
+            project = self._project(cast(str, fields["project"]))
             if (
-                not project.is_relative_to(self.repository / "artifacts")
-                or not (project / "timeline.sqlite3").resolve().is_relative_to(self.repository)
-                or not (project / "timeline.sqlite3").is_file()
+                "freezeSha256" in fields
+                and re.fullmatch(r"[a-f0-9]{64}", cast(str, fields["freezeSha256"])) is None
             ):
-                raise _invalid("请选择当前仓库artifacts中的已有分析项目。")
+                raise _invalid("冻结身份无效，请重新读取来源与任务。")
             fields = {**fields, "project": str(project)}
         if action == "ranking" and fields["mode"] not in {"lexical", "semantic", "hybrid"}:
             raise _invalid()
@@ -330,6 +387,10 @@ class BenchmarkWorkflows:
                 }
                 if action in required and required[action] not in rows:
                     raise _invalid("请先完成页面提示的前一步。")
+                if action == "bind" and "freezeSha256" in fields:
+                    _, digest = read_freeze(self._output(identifier, rows["freeze"]))
+                    if fields["freezeSha256"] != digest:
+                        raise _invalid("任务选择来自旧冻结计划，请重新读取后明确选择。")
                 if any(STEPS.index(key) > index for key in rows):
                     raise _invalid("后续资料已生成，早期来源或结果不能改写；请新建流程。")
                 attempts = self._attempts(identifier)

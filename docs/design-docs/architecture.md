@@ -67,6 +67,8 @@ v4精分析新增独立实体连续性证据：注册帧及源时钟→角色/�
 
 统一验收入口由UI的BenchmarkWorkflows复用公开登记／标注／候选评审脚本及CLI冻结／绑定／benchmark函数。后台线程逐步执行，输入及独占新输出保存在artifacts/benchmark-workflows；状态原子替换，SHA登记已完成文件。流程OS锁持有期间才表示执行所有权，中断不自动重试；有后续成果时拒绝改写早期步骤。按上下文来源与SHA通过现有VerifiedMediaCache和Range服务原片，动态页面复用renderer并保持hash CSP／同源媒体。没有新SQL结构或付费调用；明确生成排名步骤才追加原检索记录，计分不搜索。合同见[工作台API](inspection-workspace-api.md)，操作见[验收入口指南](../references/benchmark-workspace-guide.md)。
 
+冻结来源版本选择由纯Application的benchmark_run_selection投影来源分区／查询资格、同原片SHA／保存时长与StoredRun状态，不把metadata资格当实际媒体核验。UI只读列出所有匹配版本，要求明确选择；已成功绑定的选择由原binding.json恢复。选择携带freeze身份，实际提交仍复用原Completed时间线绑定与完整证据检查，不创建新的模型分析或排名。
+
 本地准备页面由UI的有界后台任务管理器接入既有CLI批量准备入口，沿用Application媒体处理与Infrastructure冻结清单／状态／原项目锁。检查点已保存后向页面投影逐项进度；真实线程／协程状态独立于磁盘记录。取消、原ID接续和已准备素材核验复用沿原流程，页面不进入Provider或账本，不启动分析。接口与新旧服务能力确认见[工作台合同](./inspection-workspace-api.md)，用户步骤见[准备页面指南](../references/media-preparation-workspace-guide.md)。
 
 F001 建立包导入方向、类型和格式检查；F004 检查 SQLite 与文件原子边界、断点恢复；F003 检查 Provider 替换和未知 usage；F005 检查时间码、稳定排序和重复事件；F006 执行独立 benchmark。架构基线可据失败证据修订，修订保留原因、影响与版本。

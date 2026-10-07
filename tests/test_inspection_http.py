@@ -125,7 +125,11 @@ def test_health_identifies_repository_and_pid_without_model_or_storage(tmp_path)
         assert json.loads(body) == {
             "application": "gamingcreator-workspace",
             "apiVersion": 1,
-            "capabilities": ["media-preparation-v1", "benchmark-workflow-v1"],
+            "capabilities": [
+                "media-preparation-v1",
+                "benchmark-workflow-v1",
+                "benchmark-bind-options-v1",
+            ],
             "repository": str(tmp_path.resolve()),
             "pid": os.getpid(),
             "parentPid": os.getppid(),

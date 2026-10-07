@@ -21,7 +21,7 @@ Use Windows PowerShell. Keep runtimes in `.tools/`, packages in `.venv/`, and ca
 - `./scripts/run-demo.ps1 -Run <id>`: search an existing demo; `-Video <path>` starts paid vision analysis.
 - `./scripts/run-ui.ps1`: open local preview, evidence, search and interval exports.
 - `./Start-Workspace.cmd`: start the workspace and open a browser; reuse matching service. Logs stay in `.cache/workspace`; startup makes no paid requests.
-- Workbench “验收流程” / `/acceptance`: persist registration, raw references, freeze/bind, explicit ranking, fixed review and scoring; see `docs/references/benchmark-workspace-guide.md`.
+- Workbench “验收流程” / `/acceptance`: persist registration, raw references, explicit Completed-version selection, freeze/bind, ranking, fixed review and scoring; see `docs/references/benchmark-workspace-guide.md`. Metadata choices do not verify media; binding retains the original source/evidence checks.
 - `./scripts/init.ps1`: check scaffold, exact toolchain and media prerequisites; `-CheckOnly` checks scaffold.
 - `./scripts/verify.ps1`: format, lint, types, pytest, and reproducible offline wheel builds.
 - `./scripts/test-media.ps1 -AllLocal`: validate footage in ignored `GameVideos/`.

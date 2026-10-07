@@ -1,5 +1,9 @@
 # Active assignments
 
+root / Codex已顺序交付[冻结来源版本选择](sprint-benchmark-run-picker.md)，接156f6f1；显式Completed版本／只读菜单／旧freeze与原媒体绑定／保存选择恢复。11新增及实际三源／现用双尺寸通过，完整2285passed／1旧状态失败／1权限skip，单次复查仍失败TD014延期；95包文件等源码与独立包进程读回通过。8765已fresh更新24212／50696，原数据与217排名保持、0search／paid／真人标签。下一root核对并登记跨素材已保存结果复合条件统一核对，旧worker冻结，goal active；最终保存发布见Git和publication。
+
+
+
 root / Codex已顺序交付[统一验收入口](sprint-benchmark-workspace.md)，接d15777a；八步持久输入结果／实际锁／恢复／同源原片／固定排名计分，新18及真实三源／现用双尺寸通过。完整2272／3失败／1skip，旧health同步和两旧准备仅一轮复查通过，TD012延期；94包文件等源码及独立包登记通过。8765已fresh更新53176／54948，0新费用／人评。下一root登记冻结来源与Completed任务页面选择关联，旧worker冻结，goal active；发布见Git和publication。
 
 

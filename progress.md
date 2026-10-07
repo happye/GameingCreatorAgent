@@ -227,3 +227,8 @@ v4只读清单34135cc锁定原两候选六帧，新保守预留4.065536；旧已
 已向用户保存并链接report-2026-10-06-query-draft.md，解释使用收益、实际验证和仍未证明的视觉理解。F006/F009/F010仍false。下一步同步工作分支，明确新授权后再真实对照；未授权继续离线准备人工检索验收资料。最终Git状态见sprint，不改main/强推。
 
 2026-10-07 root交付统一验收入口：八步持久流程与原排名回看评分／实际OS执行所有权／同源媒体。实际三开发源完整流程、双尺寸现用8765和新18通过；完整2272／3失败／1skip，旧health同步、两旧准备问题一次三项复查通过但原因延期，94包文件与独立包运行通过。普通检索214→217三SQL记录，计分／现用0search，0新付费或人评；F006/F009/F010false。下一冻结来源与Completed任务页面选择，见sprint-benchmark-workspace／report-2026-10-07-benchmark-workspace，旧worker冻结，goal active。
+
+
+## 2026-10-07: Explicit frozen-source analysis choices
+
+Delivered the acceptance fifth-step version picker, saved-choice restoration, frozen identity guard and legacy mapping compatibility. New 11 checks and actual three-development-recording desktop/mobile binding pass; 856 prior project files, nine core tables and 217 retrieval records stay unchanged, no search/inference/paid calls. One full run: 2285 passed, one old workflow status failure, one Windows symlink privilege skip; the sole recheck still fails and TD014 retains the issue. Ruff/mypy/CLI and identical offline wheels (95 package files; isolated wheel readback) pass. Production 8765 updated after fresh identity/no-active-job checks; three assets and saved choices verified. See sprint-benchmark-run-picker and report-2026-10-07-run-picker. F006/F009/F010 remain false; next scope is cross-recording compound-condition checks against existing saved detail, without automatic inference. Goal active; local commit/push facts in Git/publication.

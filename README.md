@@ -1,6 +1,6 @@
 # Gaming Creator Agent
 
-The local workspace's “验收流程” entry connects source/query registration, raw-footage references, freezing, Completed-run binding, explicit local ranking and fixed-candidate review/scoring. Submitted steps preserve their inputs and new output directories; refresh or restart recovers progress. Forms require downloading edits and submitting the saved file. Ranking runs on an explicit click; scoring performs no search. See the [acceptance workspace guide](docs/references/benchmark-workspace-guide.md). Independent human retrieval acceptance remains pending.
+The local workspace's “验收流程” entry connects source/query registration, raw-footage references, freezing, explicit selection of existing Completed analysis versions, local ranking and fixed-candidate review/scoring. Submitted steps preserve their inputs and new output directories; refresh or restart recovers progress and saved analysis choices. Forms require downloading edits and submitting the saved file. Ranking runs on an explicit click; scoring performs no search. See the [acceptance workspace guide](docs/references/benchmark-workspace-guide.md). Independent human retrieval acceptance remains pending.
 
 Version repository: [happye/GameingCreatorAgent](https://github.com/happye/GameingCreatorAgent). Use the current working branch named in [`HANDOFF.md`](./HANDOFF.md); unfinished features may not be on `main`. Keep media, keys, environments, and caches outside tracked files.
 

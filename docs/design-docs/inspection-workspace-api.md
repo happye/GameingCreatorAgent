@@ -6,6 +6,10 @@
 
 `POST /api/benchmark-workflows {name}`创建本机流程（201）；`GET /api/benchmark-workflows`列出最多200个流程；`GET /api/benchmark-workflow?workflow=<32hex>`读取步骤、执行所有权和最新评分qualityGate。步骤状态running/finished/failed及只读覆盖interrupted，busy以实际OS锁为准，旧磁盘记录不是活进程。未评分qualityGate=null，paidRequestsSent=0。
 
+health的`benchmark-bind-options-v1`启用第五步版本选择。`GET /api/benchmark-bind-options?workflow=<32hex>&project=<已有artifacts项目>&partition=development|test`只接受这三个参数，在已完成冻结下只读SQLite任务元数据；最多5000个任务，仅返回所选分区且被查询引用的冻结来源、同SHA任务的状态／模型／prompt／配置身份与时长资格。未完成／时长不符／重复物理来源禁选；不读原片或证据内容，不恢复任务或搜索，`mediaIntegrityVerified=false`、`qualityGate=null`、`paidRequestsSent=0`。返回freezeAttempt／freezeSha256，已有同项目、用途及freeze的成功binding投影previousSelection；没有自动选择最新版本。
+
+选择页面的bind fields沿用project／partition／inputText，另带`freezeSha256`；服务器持有流程OS锁后核对当前freeze，不符时在创建尝试之前拒绝。旧三字段映射仍兼容，实际绑定沿原CLI完整核对源和证据。切用途／项目／流程清空尚未保存选择并取消请求；页面只在身份一致时显示候选，旧后台能力缺失时保留原映射表入口。
+
 `POST /api/benchmark-step {workflow,action,fields}`以202开始单一步骤；同流程同时执行拒绝，失败／中断后显式重试产生新目录。action及exact fields：register `{inputText}`（空串可从空草稿开始）、references `{inputText}`（绝对来源plan）、references-import `{inputText}`（原记录）、freeze `{}`、bind `{project,inputText,partition}`（当前artifacts项目／来源到Completed任务JSON／development或test）、ranking `{mode}`（lexical/semantic/hybrid）、review `{}`、score `{inputText}`（候选记录）。外层正文仅此接口最多8MiB，其余POST仍64KiB；各JSON内容沿用旧1–4MiB合同，拒绝重复／额外字段和非字符串fields。有后续完成成果时拒绝改写早期步骤，新来源／查询需新建流程。
 
 `GET|HEAD /api/benchmark-file?workflow&attempt&file`只提供已完成步骤登记文件，SHA和链接检查；JSON下载及动态表单，后者从原context/template渲染，hash-only inline CSP、connect-none及同源媒体。`GET|HEAD /api/benchmark-source?workflow&attempt&source`只提供该context来源，SHA由VerifiedMediaCache核验并复用Range／HEAD边界；不能用path代替身份。不提供未完成输出、输入路径或任意HTML。来源改变为409，资料不符为400，不补造结果。

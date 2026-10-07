@@ -1,5 +1,15 @@
 # 当前交接
 
+2026-10-07 root / Codex接156f6f1已交付[冻结来源版本选择](docs/exec-plans/sprint-benchmark-run-picker.md)，[通俗汇报](docs/exec-plans/report-2026-10-07-run-picker.md)。第五步按冻结录像／明确用途只读列全部同源版本、明确选择Completed、旧freeze拒绝、原绑定重验媒体／证据、保存选择恢复，旧映射兼容。root独占代码及文档，旧worker冻结，goal active。
+
+新11检查全部通过；最终定向12passed含旧锁单次复查；一次完整2285passed／1failed／1权限skip366.207s，旧原片HTTP完成时读到interrupted而最终磁盘finished，唯一失败单次复查仍失败，TD014延期，不称全绿。181格式／lint／93类型／CLI，单独双离线wheel SHA9a023e962221cb43e4fa2fcd360f65328ed4a7b588ef25863f6dd00e1939bd01、95包文件等源码／独立包进程读取真实选择通过；完整后源码未改，没有重跑整套。
+
+实际三开发源新流程87987c533086430a8b2181f37db28908四步均保存，桌面选择Atom V6及另两原版本／窄屏恢复，V4/V6同时可见，绑定501.391ms，独立进程一致。baseline先落盘，856旧文件排除WAL/SHM、9基础表／217原排名／三源／四保护文件全过程保持。验证助手末尾错读human字段后按实际humanLabels只读完成尾部检查，未重做步骤。0search／模型／paid／真人标签，旧unknown4.065536／待答新¥4.07与F006/F009/F010false保持。
+
+现用8765经fresh health／state／CIM完整exe／命令／创建时间及无活跃工作核对，53176／54948更新24212／50696，benchmark-bind-options-v1。三static资源等源码／双尺寸恢复和数据保持／用户空“第一批玩法验收”09ef2eacc0694a19b9b85fe0275cf5da未改，live-report.json与.cache/benchmark-run-picker-deployment.json留证；PID仅快照，后续重新核对。已通俗汇报操作、实测、旧失败延期与下一主线。
+
+下一主线转回检索：先核对既有多素材搜索与单候选typed条件合同，再登记让一组明确复合条件统一核对多段素材既有结果的范围。保持同主体／原帧证据与缺精结果未验证，不自动调用模型，不扩张验收页或循环TD012／TD014。授权普通push仅当前codex/visual-details、不改main／强推；本轮最终提交与远端事实见Git和.cache/benchmark-run-picker-publication.json。下面为上一交付历史。
+
 发布事实：统一验收入口9a69c8d已本地提交；一次普通授权push连接github.com:443在21.084秒失败／exit128，.cache/benchmark-workflow-push.log保留，不重试／未读远端。上次独立确认799625c，当前及积压交付仍待补推，不称远端同步。本段仅补发布事实，最终文档head以Git与publication为准；源码／94包及现用53176／54948保持，goal active。
 
 2026-10-07 root接d15777a已交付[统一验收入口](docs/exec-plans/sprint-benchmark-workspace.md)，[指南](docs/references/benchmark-workspace-guide.md)、[通俗汇报](docs/exec-plans/report-2026-10-07-benchmark-workspace.md)。工作台八步登记／原片／冻结／Completed绑定／显式报告／固定评审／原排名评分、输入结果持久保存／实际OS执行锁／中断新目录／后续锁前步，同源登记SHA及Range回看，表单须下载后提交，无自动人评／模型／费用。root独占代码与文档，旧worker冻结。

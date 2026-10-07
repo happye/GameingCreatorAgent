@@ -353,7 +353,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     {
                         "application": "gamingcreator-workspace",
                         "apiVersion": 1,
-                        "capabilities": ["media-preparation-v1", "benchmark-workflow-v1"],
+                        "capabilities": [
+                            "media-preparation-v1",
+                            "benchmark-workflow-v1",
+                            "benchmark-bind-options-v1",
+                        ],
                         "repository": str(self.repository.resolve()),
                         "pid": os.getpid(),
                         "parentPid": os.getppid(),
@@ -373,6 +377,18 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 if set(query) != {"workflow"}:
                     raise ValueError("Expected workflow identity.")
                 self._json(200, self.benchmark_workflows.get(query["workflow"]))
+                return
+            if path == "/api/benchmark-bind-options":
+                if set(query) != {"workflow", "project", "partition"}:
+                    raise ValueError("Expected exact binding selection identity.")
+                self._json(
+                    200,
+                    asyncio.run(
+                        self.benchmark_workflows.binding_options(
+                            query["workflow"], query["project"], query["partition"]
+                        )
+                    ),
+                )
                 return
             if path == "/api/benchmark-source":
                 if set(query) != {"workflow", "attempt", "source"}:
