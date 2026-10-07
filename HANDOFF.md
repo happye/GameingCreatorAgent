@@ -1,5 +1,7 @@
 # 当前交接
 
+当前root接424d4fa已完成[真实已有细节中英文／模式对照](docs/exec-plans/sprint-saved-detail-real-modes.md)，[通俗汇报](docs/exec-plans/report-2026-10-08-saved-detail-real-modes.md)，Phase 0／F005／F010，root独占、旧workers冻结，goal active。16单元复用两中文词法排名、14新查询28文件；目标中文lexical遗漏→5／semantic6→6／hybrid遗漏→4，英文lexical与hybrid空→第1、semantic仍空，typed全部partial。冻结0.80／0.02不调，860旧文件／9表／217普通排名／三源／四费用提案保持，0新视觉分析／费用／人评。16记录独立98源码wheel进程读回及英文typed快照一致；src未改，不重跑完整或重部署，六能力现用保持。只读缓存精目标138token未截断、英cos0.77457，基础目标缓存缺失保持unknown，首日志保留。另一次五文本／一个worker固定实验：白发单属性英0.83308、白发主体属性0.82366、全镜头属性0.79681，支持下一主体独立表示，尚未接工作台。人工待办保持，F006/F009/F010false、新¥4.07未答／旧unknown保留。本轮保存及普通push见Git和.cache/detail-modes-publication.json；以下上一源码交付是历史，不重复执行。
+
 2026-10-08，Phase 0／F005／F010，[准确已有细节检索](docs/exec-plans/sprint-saved-detail-retrieval.md)已交付，[使用指南](docs/references/saved-detail-retrieval-guide.md)与[通俗汇报](docs/exec-plans/report-2026-10-08-saved-detail-retrieval.md)。多录像明确勾选‘含已有细节’及准确精版本后，用有帧支持的observed属性帮助排序，逐候选保留主体／部件／镜头出处。uncertain／冲突不作正向文字，排名不证明同主体AND；候选条件核对仍单独判断。旧默认搜索、原事实／源时间／证据及历史排名保持，不自动分析／费用。
 
 23新增后台＋3新增页面全部通过；最终相关49passed。一次完整2371项，2367passed／3旧failed／0error／1 Windows symlink权限skip，512.738s JUnit（终端512.84s）；三失败均读interrupted而非finished，归TD014，不循环修复／复查或重复完整，不称全绿。首页面旧fixture WinError5归TD012、三新桌面高度问题已按CSS直接修；原回执保留。190 Ruff文件／96类型／CLI通过，同双离线wheel SHA7fb6a384f7ec793bd93757d99712920bc13d20e8002926c38046444c2e9d3b48，98包文件等源码，独立包进程验证同一真实原排名与细节快照。
@@ -12,7 +14,7 @@
 
 root独占本轮代码和公共记录；旧workers冻结，用户仅授权只读explorer回答验收问题，未另开并行开发。优先总方案主线／阶段交付，小问题直接修不了就存tech-debt；关键变更通俗汇报并同步sprint、HANDOFF、assignments与progress。加载AGENTS及[共享协议](docs/references/agent-workflow.md)、CODEX／CLAUDE／Grok适配，规则跨恢复生效。
 
-下一主要交付：对同一准确已保存细节，做真实本地词法／E5语义／混合及中英文查询对照，找出遗漏、局部相关与负例；每次新查询先登记保存ID和预算边界，保留原排名、缺位及不确定，不调阈值凑质量。先登记新sprint，再落实主线，不能另扩验收UI或循环TD012／TD014。付费精分析仍待新授权，不能借旧¥4.04批准；正式独立人评另行提醒。
+下一主要交付：先登记主体独立语义检索sprint，再将准确observed细节按shot／actor及环境形成独立文字投影；原事件语义分数取最大，同一候选在RRF只出现一次，不因人物多获得额外排名奖励。保留原facts／源时间／证据／同主体AND核对，uncertain／冲突不入正向facet，v4归属验证保持；明确新语料投影身份并兼容旧v1已保存排名的快照核验，不能默借新表示。固定原阈值，不扩大验收UI或循环TD012／TD014／负面泛词；实现后定向、真实英语语义对照、一次有变化完整与包／现用交付。新付费仍待对应批准。
 
 日常不用填写验收表。正式F006需用户确认代表来源与录制分组、在看分析结果前标原片参考、固定前十位候选评分，具体时点／入口／完成证据见[人工待办](docs/exec-plans/human-inputs.md)。当前离线工作没有新人工操作需求；需要真人时立即说明并记录，不能用程序演练替代人评。F006/F009/F010保持false。
 

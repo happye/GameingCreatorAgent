@@ -1,5 +1,7 @@
 # Testing and benchmark guide
 
+2026-10-08当前固定真实模式对照已完成：[sprint](../exec-plans/sprint-saved-detail-real-modes.md)／[汇报](../exec-plans/report-2026-10-08-saved-detail-real-modes.md)。16单元复用两旧词法排名／14新查询28文件，原门槛固定、中文hybrid目标第4／英文lexical与hybrid第1、英文semantic仍漏，1/227覆盖及typed partial保持，非人评U10。一次五文本／单worker本地主体文字实验支持下一改进，尚未接生产。860旧项目文件／217普通排名／源费用保持，独立原98源码wheel读回16排名及英文typed快照一致；src无变化，未重复完整／包或重部署。下面完整检查仍是上一有源码变更节点的事实；F006/F009/F010false。
+
 2026-10-08当前已有细节检索：[sprint](../exec-plans/sprint-saved-detail-retrieval.md)记录23新后台＋3页面全部通过、最终相关49passed；一次完整2371项／2367passed／3旧TD014失败／1权限skip／512.738s JUnit。190 Ruff／96类型／CLI，同双wheel98包文件等源码、独立包进程真实原排名／语料SHA一致。现用两尺寸复用同一保存排名，原片35–36s解码播放、下载／profile隔离与用户空流程通过，0后端新搜索；858旧文件／217普通排名／源及费用保持。本轮真实只新一次词法约0.77秒、第5位partial、细节1/227，不能称人评或独立准确率通过。三个旧完成状态失败不循环；TD012首定向WinError5未解决，原日志留证。以下‘当前’及完整检查均为各历史节点，不替代本轮事实。
 
 2026-10-08检索候选条件依据：新32全部通过，定向26后台与32页面／原搜索通过；一次完整2339passed／4failed／1error／1Windows权限skip，533.585s JUnit，.cache/search-detail-full.xml。四旧版本选择含一个setup完成状态问题归TD014，旧批量准备停止状态归TD012，不循环复查或重跑整套、不称全绿。Ruff187／mypy95／CLI通过，独立同双wheel SHAf95dee7f8fbbcfee064987d22f39d60a88878b3439490d48a03494f538c3c006、97包文件等源码及独立包进程34真实结果一致。两尺寸现用真实原排名重放、依据／下载／出画面播放／换profile保持原排名且0搜索通过；856旧文件／9表／217排名／三源／四保护文件不变，仅一次新联合搜索两文件。当前[sprint](../exec-plans/sprint-search-detail-evidence.md)及[人工待办](../exec-plans/human-inputs.md)记录最新状态，下面历史结果不替代本轮质量验收。

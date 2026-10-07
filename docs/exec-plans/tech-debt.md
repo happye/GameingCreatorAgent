@@ -1,5 +1,7 @@
 # Technical debt
 
+2026-10-08真实模式对照补充TD009／TD004：准确已有细节仍只覆盖1/227事件，固定0.80时中文hybrid已知事件由遗漏到第4、英文lexical／hybrid空到第1，但英文纯semantic仍空。精目标138token未截断／cached cosine0.7745725，基础目标cache不可用只记unknown；一次五文本正向投影实验主体五属性英文0.8236567、单白发0.8330784、全镜头属性0.7968096，下一按人物独立表示／原事件最大分数一次RRF，不能用降阈值或此开发样本冒称质量通过。中文staff只命中另一来源28–29s长杆武器基础描述且unknown，negative-zh仍仅共享“存在”；保持TD004未解决、原14新排名及首次缓存日志，不循环微修或自动重发，src未改。
+
 2026-10-08已有细节检索补充：首页面定向旧scope fixture在准备原文件／manifest时WinError5（.cache/detail-index-browser.xml）归TD012，未改保存／重试，原因未解决。桌面checkbox继承25px输入样式导致候选区85px，已按明确CSS直接收为12px，相关49passed。一次完整2371项／2367passed／3旧failed／1权限skip／512.738s JUnit，.cache/detail-index-full.xml／full-verify.log；三个旧版本选择／原片参考均读interrupted而非finished，归TD014，不窄复查／循环修复／重跑完整，不称全绿。26新增全部通过；按用户主线优先继续包／实际部署及真实检索对照。
 
 2026-10-07多素材条件核对补充：一次完整2310passed／2旧failed／1Windows文件symlink权限skip，393.051s JUnit（终端393.29s）。TD014的test_http_registered_source_range_csp_and_reference_import再次读到interrupted而预期finished；TD012的test_browser_saved_batch_is_explicit_and_bad_video_does_not_stop_the_rest显示“本次准备停止”而预期“部分素材尚未准备好”，本轮未查明该失败根因，不能称已修复或直接认定与旧文件锁同因。.cache/project-detail-query-full.xml／final-verify.log及原临时目录留证，新26均通过；两项不循环复查、不改生产重试，按用户要求延期，不称全量全绿。

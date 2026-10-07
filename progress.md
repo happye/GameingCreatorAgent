@@ -2,6 +2,8 @@
 
 ## 当前进度摘要（2026-10-08）
 
+[真实模式对照](docs/exec-plans/sprint-saved-detail-real-modes.md)已完成，root接424d4fa：16单元含复用两旧／14新查询28文件，目标中文词法遗漏→5／纯语义6→6／默认混合遗漏→4；英文词法与混合空→1、纯语义仍空。冻结0.80／0.02、1/227细节覆盖及typed partial保持，860旧文件／217普通排名／三源／费用提案不变，0新视觉／费用／标签。独立原98源码包读回16结果通过，不重跑无变化完整／重部署。一次五文本主体实验英0.82366跨原0.80，未接生产；下一登记并实现按人物独立语义投影、事件最大分数一次RRF及旧快照兼容，继续主线。通俗汇报见[report](docs/exec-plans/report-2026-10-08-saved-detail-real-modes.md)，保存／同步以Git及.cache/detail-modes-publication.json为准，goal active。
+
 发布事实：已有细节检索代码及交付文档1b9da43已普通push且独立ls-remote确认同SHA，仅codex/visual-details；main未更新／无强推。此段补事实，最终文档head与同步以Git和.cache/detail-index-publication.json为准，源码／现用／goal active保持。
 
 2026-10-08，Phase 0／F005／F010，[准确已有细节检索](docs/exec-plans/sprint-saved-detail-retrieval.md)已交付，[使用指南](docs/references/saved-detail-retrieval-guide.md)与[通俗汇报](docs/exec-plans/report-2026-10-08-saved-detail-retrieval.md)。多录像明确勾选‘含已有细节’及准确精版本后，用有帧支持的observed属性帮助排序，逐候选保留主体／部件／镜头出处。uncertain／冲突不作正向文字，排名不证明同主体AND；候选条件核对仍单独判断。旧默认搜索、原事实／源时间／证据及历史排名保持，不自动分析／费用。
