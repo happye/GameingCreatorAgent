@@ -1,5 +1,7 @@
 # Phase 0 架构基线 v2
 
+准确已有细节检索由纯Application `detail_retrieval`调用注入reader，复核原RefinementRequest／payload／投影并产生固定双语observed文字、带镜头／主体／部件／帧的依据及全语料SHA。`retrieval.search_timelines`的可选`RetrievalSupplement`只增排名文档文字和scope版本，原facts／时钟／证据不变；语义margin按原facts＋补充文字区分。Infrastructure准确只读sidecar供CLI组合，原SQLite／旧默认检索保持。联合保存文件附detailRetrieval／逐候选detailSearchEvidence；候选核对重建原profile语料并精确对照，变化拒绝。v4消费验证过的actor／ownership投影，uncertain／同部件互斥冲突不索引，不称同actor AND或质量已通过。见[指南](../references/saved-detail-retrieval-guide.md)。
+
 保存排名的条件依据由纯Application `search_detail_query`复用TimelineStore、retrieval纯来源投影`candidate_sources`与准确已保存结果回调；读取原`project-search-v1`内容并核对来源／区间／事实／证据后，对全部原候选补状态，不重排、筛掉未知或重新检索。CLI只读原文件SHA回执和SQLite，POST再绑定规范内容摘要；语音候选不进入视觉matcher，最多100来源／100候选／8MiB。原搜索响应只增摘要，原文件保持。页面独立保留依据及原排名，换条件／profile／查询清除、跨源回看保持。见[候选指南](../references/search-detail-evidence-guide.md)。
 
 工作台检索诊断由纯Application `retrieval_diagnostics`投影已有InspectionView；UI/service附加十个固定位置，静态页面负责显示、当前查询身份核对、下载和原区间预览。投影不重排、不调用模型、不评分，检索保存仍走已有execute_search。没有人工标签时质量字段为空；正式计分继续由benchmark处理。使用步骤见[检索诊断指南](../references/retrieval-diagnostics-guide.md)。

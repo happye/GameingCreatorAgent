@@ -65,7 +65,7 @@ from gamingcreator.application.retrieval import (
     search_timeline,
     search_timelines,
 )
-from gamingcreator.application.search_detail_query import match_search_details
+from gamingcreator.application.search_detail_query import match_search_details, search_run_ids
 from gamingcreator.application.storage import RunStatus
 from gamingcreator.application.tasks import tasks_payload
 from gamingcreator.domain.errors import AppError, ExitCode, invalid_config
@@ -82,7 +82,11 @@ from gamingcreator.infrastructure.deepseek_vision import (
     DeepSeekVisionProvider,
     vision_prompt_fingerprint,
 )
-from gamingcreator.infrastructure.detail_query_sidecar import match_refinement
+from gamingcreator.infrastructure.detail_query_sidecar import (
+    match_refinement,
+    read_saved_detail_corpus,
+    refinement_identity_for_profile,
+)
 from gamingcreator.infrastructure.ffmpeg_media import FfmpegMediaProcessor
 from gamingcreator.infrastructure.http_transport import HttpxVisionTransport
 from gamingcreator.infrastructure.local_asr import LocalAsrProvider
@@ -165,6 +169,7 @@ def _parser() -> CliParser:
         "--mode", choices=("lexical", "semantic", "hybrid"), default="hybrid"
     )
     project_search.add_argument("--min-similarity", type=float, default=0.80)
+    project_search.add_argument("--detail-profile", choices=("v1", "v2", "v3", "v4"))
     benchmark = commands.add_parser("benchmark", help="执行冻结人工标签评测")
     benchmark.add_argument("--input", type=Path, required=True)
     benchmark.add_argument("--project", type=Path, required=True)
@@ -329,6 +334,7 @@ async def execute_project_search(
     top_k: int = 10,
     mode: RetrievalMode = "hybrid",
     min_similarity: float = 0.80,
+    detail_profile: str | None = None,
 ) -> dict[str, object]:
     if (
         not 1 <= len(run_ids) <= 100
@@ -351,6 +357,8 @@ async def execute_project_search(
             "input.project_search", "请选择不同任务、有效查询和检索参数。", ExitCode.INPUT
         )
     project = project.resolve()
+    if detail_profile is not None:
+        refinement_identity_for_profile(detail_profile)
     _require_project(project)
     started_at = datetime.now(UTC).isoformat()
     began = perf_counter()
@@ -364,6 +372,11 @@ async def execute_project_search(
         ) != len(timelines):
             raise AppError("retrieval.scope", "同一原录像请只选择一个分析版本。", ExitCode.INPUT)
         validation_ms = round((perf_counter() - began) * 1000)
+        corpus = (
+            read_saved_detail_corpus(project, timelines, detail_profile)
+            if detail_profile is not None
+            else None
+        )
         provider = LocalEmbeddingProvider.from_manifest(repository) if mode != "lexical" else None
         result = await search_timelines(
             timelines,
@@ -372,6 +385,7 @@ async def execute_project_search(
             mode=mode,
             embedding_provider=provider,
             min_similarity=min_similarity,
+            supplement=corpus.supplement if corpus is not None else None,
         )
         details: dict[str, dict[str, object]] = {}
         for timeline in timelines:
@@ -442,6 +456,10 @@ async def execute_project_search(
             ],
             "recordPath": str(project / "project-searches" / search_id / "result.json"),
         }
+        if corpus is not None:
+            document["detailRetrieval"] = corpus.manifest
+            for row in cast(list[dict[str, object]], document["candidates"]):
+                row["detailSearchEvidence"] = corpus.evidence.get(cast(str, row["candidateId"]))
         write_project_search(project, document)
         return document
     finally:
@@ -464,6 +482,32 @@ async def execute_search_detail_match(
     document = read_project_search(project, search_id)
     store = await SqliteTimelineStore.open(project, read_only=True)
     try:
+        if "detailRetrieval" in document:
+            indexed_manifest = document["detailRetrieval"]
+            if (
+                type(indexed_manifest) is not dict
+                or type(indexed_manifest.get("profile")) is not str
+            ):
+                raise AppError(
+                    "retrieval.detail_snapshot", "原细节语料身份无效。", ExitCode.STORAGE
+                )
+            timelines = tuple(
+                [
+                    await store.load_completed_timeline(identifier)
+                    for identifier in search_run_ids(document)
+                ]
+            )
+            corpus = read_saved_detail_corpus(project, timelines, indexed_manifest["profile"])
+            if indexed_manifest != corpus.manifest or any(
+                row.get("detailSearchEvidence")
+                != corpus.evidence.get(cast(str, row.get("candidateId")))
+                for row in cast(list[dict[str, object]], document["candidates"])
+            ):
+                raise AppError(
+                    "retrieval.detail_snapshot",
+                    "原检索细节语料已变化，请重新搜索，不给旧排名借用新依据。",
+                    ExitCode.STORAGE,
+                )
         return await match_search_details(
             store,
             document,
@@ -1150,6 +1194,7 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
                 top_k=args.top_k,
                 mode=args.mode,
                 min_similarity=args.min_similarity,
+                detail_profile=args.detail_profile,
             )
         )
     if args.command == "prepare-media-batch":

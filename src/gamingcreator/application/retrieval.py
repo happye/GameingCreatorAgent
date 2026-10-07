@@ -138,6 +138,18 @@ class CandidateSource:
 
 
 @dataclass(frozen=True, slots=True)
+class CandidateText:
+    candidate_id: str
+    facts: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class RetrievalSupplement:
+    snapshot_sha256: str
+    candidates: tuple[CandidateText, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class SearchResult:
     run_id: str
     query: str
@@ -183,6 +195,7 @@ class _Document:
     text: str
     run_id: str
     source_identifier: str
+    supplemental_facts: tuple[str, ...] = ()
 
     @property
     def candidate_id(self) -> str:
@@ -497,6 +510,7 @@ async def search_timelines(
     context: CancellationContext | None = None,
     min_similarity: float = 0.80,
     min_semantic_margin: float = 0.02,
+    supplement: RetrievalSupplement | None = None,
 ) -> ProjectSearchResult:
     """Rank one joint corpus, retaining each original task/candidate identity."""
     if not 1 <= len(timelines) <= 100:
@@ -524,6 +538,10 @@ async def search_timelines(
         ensure_ascii=False,
         separators=(",", ":"),
     )
+    if supplement is not None:
+        if not re.fullmatch(r"[a-f0-9]{64}", supplement.snapshot_sha256):
+            raise _fail("retrieval.supplement", "已有细节的语料快照无效。")
+        identity += "\nsaved-detail-text-v1:" + supplement.snapshot_sha256
     scope_id = "project-" + hashlib.sha256(identity.encode("utf-8")).hexdigest()[:32]
     result = await _search_documents(
         scope_id,
@@ -536,6 +554,7 @@ async def search_timelines(
         context=context,
         min_similarity=min_similarity,
         min_semantic_margin=min_semantic_margin,
+        supplement=supplement,
     )
     owners = {
         document.candidate_id: document.run_id
@@ -552,6 +571,7 @@ async def search_timelines(
         result.min_similarity,
         result.min_semantic_margin,
         result.abstention_reason,
+        PROJECT_RETRIEVAL_VERSION + ("-saved-details-v1" if supplement is not None else ""),
     )
 
 
@@ -567,6 +587,7 @@ async def _search_documents(
     context: CancellationContext | None = None,
     min_similarity: float = 0.80,
     min_semantic_margin: float = 0.02,
+    supplement: RetrievalSupplement | None = None,
 ) -> SearchResult:
     """Rank validated source intervals; scores are ranking signals, never probabilities.
 
@@ -600,6 +621,30 @@ async def _search_documents(
         for timeline in timelines
         for document in _documents(timeline)
     )
+    if supplement is not None:
+        extra = {row.candidate_id: row.facts for row in supplement.candidates}
+        visual = {row.candidate_id for row in documents if row.event_id is not None}
+        if (
+            len(extra) != len(supplement.candidates)
+            or not set(extra) <= visual
+            or any(
+                type(facts) is not tuple
+                or not 1 <= len(facts) <= 256
+                or any(type(fact) is not str or not fact or len(fact) > 4096 for fact in facts)
+                for facts in extra.values()
+            )
+        ):
+            raise _fail("retrieval.supplement", "细节文字与原视觉候选不一致。")
+        documents = tuple(
+            replace(
+                row,
+                text=row.text + "\n" + "\n".join(extra[row.candidate_id]),
+                supplemental_facts=extra[row.candidate_id],
+            )
+            if row.candidate_id in extra
+            else row
+            for row in documents
+        )
     query = query.strip()
     if context is not None:
         if context.run_id != run_id:
@@ -685,7 +730,11 @@ async def _search_documents(
                 if document.identifier in denied_actions:
                     continue
                 description = (
-                    unicodedata.normalize("NFKC", "\n".join(document.facts)).casefold().strip()
+                    unicodedata.normalize(
+                        "NFKC", "\n".join(document.facts + document.supplemental_facts)
+                    )
+                    .casefold()
+                    .strip()
                 )
                 groups[description] = max(
                     groups.get(description, -1.0), _cosine(embeddings[0], embedding)

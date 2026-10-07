@@ -1,5 +1,13 @@
 # 本地检查工作台 API
 
+## 可选已有细节检索（saved-detail-retrieval-v1）
+
+`POST /api/search-project`在原五字段之外可明确增加`detailProfile`字符串v1–v4；缺省使用原基础语料，null／bool／latest拒绝。同源及正文边界保持；实际来源、准确基础版本与精request／payload先复核，再使用本地embedding。最多100不同来源／20,000视觉事件、8MiB细节语料，不自动分析／上传／预留费用。
+
+响应和保存的`project-search-v1`可附`detailRetrieval`，版本saved-detail-text-v1、profile／promptHash／settingsHash／sources／totalVisualEvents／publishedRefinements／indexedEvents／refinements／snapshotSha256；逐候选`detailSearchEvidence`为准确细节记录或null。属性含shotId／actorId（环境为null）／partId／kind／value／observed／固定text／evidenceIds／startUs／endUs，原候选facts／time／evidence不改。该文字用于BM25／E5／RRF相关排序，不保证同主体AND。
+
+health能力启用“含已有细节”，旧后端隐藏选项；请求revision绑定准确profile。排名显示原profile与覆盖数，换profile不改旧排名，条件依据清除且需新明确搜索才能核对新版本。`match-search-details`遇此排名，先按原索引profile重建完整语料并核对manifest与逐候选依据；变化报retrieval.detail_snapshot，不沿用当前新细节。旧无索引排名走原合同。使用见[指南](../references/saved-detail-retrieval-guide.md)。
+
 ## 原搜索候选的条件依据（search-detail-query-v1）
 
 `POST /api/match-search-details`严格接受`{project,searchId,searchSha256,profile,constraint}`，前四项字符串、constraint对象；沿64KiB／本机Host与Origin／唯一字段边界。读取已有联合搜索的result及原文件SHA回执，再核对规范内容摘要searchSha256、实际Completed来源和每个候选身份／顺序／区间／事实／证据，先全部验证再匹配。客户端候选或文件路径不接受；准确profile为v1–v4，正向AND沿query-v1。
@@ -36,7 +44,7 @@ root：`ui/server.py`、`ui/service.py`、新 `ui/media.py`、HTTP行为测试�
 
 ## GET 接口
 
-2026-10-07新增`POST /api/search-project`，严格JSON字段`{project,runs,query,mode,top}`。runs为1–100不同Completed ID，query为1–4096字符，mode为lexical／semantic／hybrid、top为整数1–100。沿原POST的64KiB／单Content-Length／同源／去重字段边界，项目真实路径位于仓库；所有来源先复核，同源SHA／media重复在embedding前拒绝，不能部分排名。响应复用CLI完整`project-search-v1`并加请求的project表示；每次独立保存result／SHA receipt，不写旧retrieval_runs、不调用分析／费用。`GET /api/runs`额外提供mediaId与sourceSha256，帮助显式选择版本。
+2026-10-07新增`POST /api/search-project`，原必需JSON字段`{project,runs,query,mode,top}`，可选准确`detailProfile`见上文。runs为1–100不同Completed ID，query为1–4096字符，mode为lexical／semantic／hybrid、top为整数1–100。沿原POST的64KiB／单Content-Length／同源／去重字段边界，项目真实路径位于仓库；所有来源先复核，同源SHA／media重复在embedding前拒绝，不能部分排名。响应复用CLI完整`project-search-v1`并加请求的project表示；每次独立保存result／SHA receipt，不写旧retrieval_runs、不调用分析／费用。`GET /api/runs`额外提供mediaId与sourceSha256，帮助显式选择版本。
 
 前端把联合结果与当前inspect视图分开，验证请求范围、每条原来源／全局rank／media／SHA／区间后接受；候选点击先空查询inspect原run并复核媒体、时长与configHash，原注册媒体URL校验保持。当前源candidates投影只取同run联合行，使音频fallback也可在原篮子核验；detailRefinement取来源事件已有结果。联合诊断隐藏，结果下载保留完整原排名；篮／JSON／CSV仍按run独立、源时间排序。原单搜索与旧诊断合同保持。abort／revision／controller身份防迟到结果，取消页面等待不能撤销已经完成的本地记录。
 

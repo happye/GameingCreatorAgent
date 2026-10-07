@@ -273,7 +273,18 @@ class InspectionHandler(BaseHTTPRequestHandler):
             if path == "/api/search-project":
                 if (
                     type(value) is not dict
-                    or set(value) != {"project", "runs", "query", "mode", "top"}
+                    or set(value)
+                    not in (
+                        {"project", "runs", "query", "mode", "top"},
+                        {"project", "runs", "query", "mode", "top", "detailProfile"},
+                    )
+                    or (
+                        "detailProfile" in value
+                        and (
+                            type(value["detailProfile"]) is not str
+                            or value["detailProfile"] not in {"v1", "v2", "v3", "v4"}
+                        )
+                    )
                     or any(type(value[key]) is not str for key in ("project", "query", "mode"))
                     or type(value["runs"]) is not list
                     or not 1 <= len(value["runs"]) <= 100
@@ -295,6 +306,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             mode=value["mode"],
                             top_k=value["top"],
                             project_reference=value["project"],
+                            detail_profile=value.get("detailProfile"),
                         )
                     ),
                 )
@@ -432,6 +444,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             "benchmark-bind-options-v1",
                             "project-detail-query-v1",
                             "search-detail-query-v1",
+                            "saved-detail-retrieval-v1",
                         ],
                         "repository": str(self.repository.resolve()),
                         "pid": os.getpid(),

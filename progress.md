@@ -2,19 +2,16 @@
 
 ## 当前进度摘要（2026-10-08）
 
-2026-10-08发布事实：af58e6d候选条件依据已普通push并独立确认远端同SHA，上一多素材条件核对及持久规则积压一并上传；main未更新／无强推。最终文档head和同步见Git与.cache/search-detail-publication.json，下面上一失败为历史，现用／检查保持，goal active。
+2026-10-08，Phase 0／F005／F010，[准确已有细节检索](docs/exec-plans/sprint-saved-detail-retrieval.md)已交付，[使用指南](docs/references/saved-detail-retrieval-guide.md)与[通俗汇报](docs/exec-plans/report-2026-10-08-saved-detail-retrieval.md)。多录像明确勾选‘含已有细节’及准确精版本后，用有帧支持的observed属性帮助排序，逐候选保留主体／部件／镜头出处。uncertain／冲突不作正向文字，排名不证明同主体AND；候选条件核对仍单独判断。旧默认搜索、原事实／源时间／证据及历史排名保持，不自动分析／费用。
 
-2026-10-08 root / Codex接30fdc9c已交付[检索候选条件依据](docs/exec-plans/sprint-search-detail-evidence.md)，[通俗汇报](docs/exec-plans/report-2026-10-08-search-detail-evidence.md)。明确原保存搜索与条件／profile后，候选旁状态／支持／未知／独立下载，原排名分数保持；原SHA回执、内容摘要与Completed来源完整复核，语音未知不进入视觉matcher，0匹配搜索／SQL写／模型费用／人评。新32全部通过，完整2339passed／4旧failed／1旧setup error／1权限skip，TD014／TD012保留不循环，187格式lint／95类型／CLI、同双wheel97源码包文件与独立进程通过。真实一次新词法34候选全未验证约532ms，原856文件／9表／217排名／三源／四保护文件全过程保持，仅两新联合排名文件。fresh身份部署59932／54904现用支持search-detail-query-v1，两尺寸真实原排名重放／下载／跨源57–58s实际出画面播放／换profile清除旧依据且0搜索／几何与用户空验收流程保持。PID仅快照，后续重核。root独占，旧workers冻结，goal active；新¥4.07未答不发送、旧unknown¥4.065536保留，F006/F009/F010false。下一主要交付利用准确已保存人物细节提高检索覆盖，解决35–36s旧partial未入粗排名；最终保存发布见Git和.cache/search-detail-publication.json，普通授权当前分支，不改main／强推。
+本轮23新后台＋3新页面通过，一次完整2367passed／3旧失败TD014／1权限skip、原因未解决且不循环；98源码包及独立包进程通过。真实‘白色头发’漏掉的35–36s事件进入第5位，仍partial，细节覆盖1/227；一次新词法约0.77秒、两新排名文件、858旧文件／217普通排名／费用提案保持，0新模型费用／真人标签。现用6772／50720两尺寸下载／原片出画面／版本隔离通过。
 
-上一交付多素材条件核对及规则本地d27ae45已保存；一次普通push连接GitHub超时300022ms／exit128，不重试／未读取远端。这份与新候选依据的积压状态见本轮Git与.cache/search-detail-publication.json；之前已同步的旧积压保持，网络不影响本机功能及下一主线。
+下一主要交付：对同一准确已保存细节，做真实本地词法／E5语义／混合及中英文查询对照，找出遗漏、局部相关与负例；每次新查询先登记保存ID和预算边界，保留原排名、缺位及不确定，不调阈值凑质量。先登记新sprint，再落实主线，不能另扩验收UI或循环TD012／TD014。付费精分析仍待新授权，不能借旧¥4.04批准；正式独立人评另行提醒。
 
-当前 Phase 0，正式人工检索质量尚未验收，F006/F009/F010保持false。最后交付为多素材复合条件核对，已更新现用；当前保存／发布以Git及project-detail-query-publication回执为准。上一版本选择、统一验收流程、原片参考、事前登记及更早交付已普通补推，最近独立远端确认为0678afd。下面旧推送失败是历史记录，不再欠这些旧积压。
-
-已交付多素材复合条件核对并更新现用：新26／相关48检查通过，完整2310通过／2旧失败延期／1权限skip；同双包96文件，真实三旧源227事件約0.8秒得到0全部满足／1部分满足／226未验证，两尺寸翻页筛选下载与35–36秒回看通过，856文件和217排名保持，0新模型费用。下一将明确条件核对接入现有检索候选，显示依据和未验证，保留原排名；正式人评仍未完成。
-
-已向用户说明验收用途，人工所需事项与时点见[人工待办](docs/exec-plans/human-inputs.md)；“发现人工协助立即提醒并记录、持续对齐里程碑和项目进度”持久至AGENTS、协作协议和三工具入口。关键节点由root更新本摘要、当前sprint、HANDOFF和assignments，历史证据保留。
+即时人工提醒和持续里程碑对齐已持久到AGENTS、共享协议及三工具入口；[人工待办](docs/exec-plans/human-inputs.md)持续维护。F006/F009/F010false；新¥4.07未答、旧unknown保留，goal active。本轮最终提交／普通push事实见Git及.cache/detail-index-publication.json，上一aec965d已同步；旧网络失败已是历史。
 
 ## 历史记录
+
 
 登记表单完整实现／指南24e3481已本地提交，普通push一次21.111秒连接github.com:443失败／exit128，原日志保留、不重试／未读远端。上次确认799625c，新登记及原片交付待补推；仅补文档发布事实，源码／2257完整通过／90包文件与goal active保持。
 

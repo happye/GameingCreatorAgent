@@ -11,6 +11,7 @@
         "active-range", "active-facts", "evidence-tab", "transcript-tab", "evidence-panel",
         "transcript-panel", "evidence-count", "evidence-list", "transcript-tab-count",
         "transcript-list", "search-form", "query", "mode", "top", "search-button",
+        "saved-details-control", "include-saved-details",
         "candidate-count", "search-context", "candidate-list", "selection-count",
         "selection-list", "selection-warning", "clear-selection", "export-json",
         "export-csv", "timeline-count", "timeline-filter", "tag-filter", "timeline-map",
@@ -49,6 +50,7 @@
         searchRuns: [], projectSearch: null, projectSearchController: null,
         detailProjectScope: false, projectDetail: null, projectDetailAvailable: false,
         detailSearchScope: false, searchDetail: null, searchDetailAvailable: false,
+        savedDetailRetrievalAvailable: false,
         preparationController: null, preparationRevision: 0, preparationTimer: null,
         preparationJob: null, preparationSubmitting: false, preparationOffset: 0, preparationCatalog: null,
     };
@@ -260,6 +262,9 @@
     }
 
     function updateSearchScope() {
+        ui["saved-details-control"].hidden = !state.savedDetailRetrievalAvailable;
+        ui["include-saved-details"].disabled = state.busy || !state.savedDetailRetrievalAvailable || !state.searchRuns.length;
+        ui["saved-details-control"].title = `联合搜索时加入精分析 ${ui["detail-profile"].value} 的已有细节；不启动精分析。`;
         ui["open-search-detail-query"].hidden = !state.searchDetailAvailable || !state.projectSearch;
         ui["open-search-detail-query"].disabled = state.busy || !currentSearchDetailScope();
         ui["open-project-detail-query"].hidden = !state.projectDetailAvailable || !state.searchRuns.length;
@@ -347,13 +352,15 @@
         const revision = state.revision;
         const runs = [...state.searchRuns];
         const mode = ui.mode.value;
+        const detailProfile = state.savedDetailRetrievalAvailable && ui["include-saved-details"].checked ? ui["detail-profile"].value : null;
         notice("");
         setBusy(true, true);
         empty(ui["candidate-list"], "正在搜索选中的录像…");
         ui["candidate-count"].textContent = "0";
         try {
-            const result = await request("/api/search-project", {}, controller.signal, { project: state.project, runs, query, mode, top });
+            const result = await request("/api/search-project", {}, controller.signal, { project: state.project, runs, query, mode, top, ...(detailProfile ? {detailProfile} : {}) });
             if (controller.signal.aborted || revision !== state.revision || state.projectSearchController !== controller) return;
+            if ((detailProfile !== null) !== ui["include-saved-details"].checked || (detailProfile && detailProfile !== ui["detail-profile"].value)) return;
             if (result.schemaVersion !== "project-search-v1" || result.project !== state.project || result.query !== query
                 || result.mode !== mode || result.topK !== top || !Array.isArray(result.sources) || result.sources.length !== runs.length
                 || !Array.isArray(result.candidates) || result.candidates.length > top
@@ -368,6 +375,7 @@
                         || typeof row.candidateId !== "string" || !Array.isArray(row.evidenceIds) || !row.evidenceIds.every((id) => typeof id === "string")
                         || !Array.isArray(row.observableFacts) || !row.observableFacts.every((fact) => typeof fact === "string");
                 })) throw new Error("多录像结果的来源或排名不一致，请重新搜索。");
+            if (detailProfile ? !validSavedDetailSearch(result, detailProfile) : result.detailRetrieval !== undefined) throw new Error("已有细节与本次所选版本、候选或支持帧不一致，请重新搜索。");
             state.projectSearch = result;
             if (state.view) state.view = jointRowsForView(state.view);
             renderCandidates();
@@ -856,7 +864,49 @@
     function currentSearchDetailScope() {
         const search = state.projectSearch;
         return Boolean(state.searchDetailAvailable && search && /^[a-f0-9]{64}$/.test(search.searchSha256)
+            && Boolean(search.detailRetrieval) === ui["include-saved-details"].checked
+            && (!search.detailRetrieval || search.detailRetrieval.profile === ui["detail-profile"].value)
             && search.query === ui.query.value.trim() && search.mode === ui.mode.value && search.topK === Number(ui.top.value));
+    }
+
+    function validSavedDetailSearch(search, profile) {
+        const index = search.detailRetrieval;
+        return index?.version === "saved-detail-text-v1" && index.profile === profile
+            && /^[a-f0-9]{64}$/.test(index.snapshotSha256)
+            && Array.isArray(index.refinements) && Array.isArray(index.sources)
+            && Number.isSafeInteger(index.totalVisualEvents) && index.totalVisualEvents <= 20000
+            && Number.isSafeInteger(index.publishedRefinements) && index.publishedRefinements === index.refinements.length
+            && Number.isSafeInteger(index.indexedEvents) && index.indexedEvents <= index.publishedRefinements
+            && index.sources.length === search.sources.length
+            && index.sources.every(source => {
+                const expected=search.sources.find(row=>row.runId===source.runId);
+                return expected && source.mediaId===expected.mediaId && source.sourceSha256===expected.sourceSha256 && source.configHash===expected.configHash && source.durationUs===expected.durationUs;
+            })
+            && search.candidates.every(row => {
+                const proof=row.detailSearchEvidence;
+                if(proof===null)return !index.refinements.some(item=>item.candidateId===row.candidateId && item.attributes?.length);
+                const original=index.refinements.find(item=>item.candidateId===row.candidateId && item.runId===row.runId && item.eventId===row.eventId);
+                return proof && original && stableJson(proof)===stableJson(original)
+                    && /^[a-f0-9]{64}$/.test(proof.requestHash) && /^[a-f0-9]{64}$/.test(proof.payloadHash)
+                    && Array.isArray(proof.attributes) && proof.attributes.length>0
+                    && proof.attributes.every(item=>item.status==="observed" && typeof item.text==="string" && item.text.length<=4096 && typeof item.shotId==="string" && typeof item.partId==="string"
+                        && Array.isArray(item.evidenceIds) && item.evidenceIds.length>0 && item.evidenceIds.every(id=>row.evidenceIds.includes(id)));
+            });
+    }
+
+    function appendSavedDetailSearchEvidence(card, row) {
+        const proof=row.detailSearchEvidence;
+        if(!proof?.attributes.length)return;
+        const details=element("details","candidate-detail-search"), list=element("ul");
+        details.append(element("summary","",`检索含已有细节 · 精分析 ${state.projectSearch.detailRetrieval.profile}`));
+        details.append(element("p","muted","模型观察待人工核对；文字命中不能确认所有条件属于同一人物。"));
+        const actors=new Map();
+        for(const attribute of proof.attributes){
+            const key=`${attribute.shotId}/${attribute.actorId ?? "environment"}`;
+            if(!actors.has(key))actors.set(key, actors.size+1);
+            list.append(element("li","",`${attribute.actorId===null ? "镜头环境" : `主体组 ${actors.get(key)}`} · ${attribute.text.split(" ")[0]} · ${attribute.evidenceIds.length} 张支持画面`));
+        }
+        details.append(list);card.append(details);
     }
 
     function clearSearchDetailEvidence() {
@@ -1733,6 +1783,7 @@
         ui["candidate-list"].replaceChildren();
         ui["search-context"].textContent = joint ? `“${joint.query}” · ${joint.sources.length} 段录像共同排名 · 分数是排序信号`
             : view.query ? `“${view.query}” · ${view.mode} · 分数是排序信号` : "输入你需要的动作、玩法或画面。";
+        if(joint?.detailRetrieval)ui["search-context"].textContent+=` · 含精分析 ${joint.detailRetrieval.profile} 已有细节，${joint.detailRetrieval.indexedEvents}/${joint.detailRetrieval.totalVisualEvents} 个事件有可检索细节`;
         if (!rows.length) {
             if (joint) return empty(ui["candidate-list"], "选中的录像中没有匹配候选，可以换一种描述。");
             empty(ui["candidate-list"], view.runStatus !== "completed" ? "分析尚未完成，可以先查看已保存时间轴。"
@@ -1767,6 +1818,7 @@
                 card.insertBefore(element("p", "candidate-source", `来源 · ${row.sourceName}`), copy);
             }
             appendUncertainty(card, row);
+            if(joint?.detailRetrieval)appendSavedDetailSearchEvidence(card,row);
             if (joint) appendSearchConditionProof(card,row);
             ui["candidate-list"].append(card);
         }
@@ -2308,6 +2360,13 @@
             updateDiagnosticsButton();
         });
     }
+    ui["include-saved-details"].addEventListener("change", () => {
+        clearSearchDetailEvidence();
+        if(state.detailSearchScope)clearDetailMatch();
+        state.projectSearchController?.abort();
+        state.projectSearchController=null;
+        setBusy(false);updateSearchScope();
+    });
     ui["detail-cost-dialog"].addEventListener("close", () => { state.costController?.abort(); state.costRevision += 1; });
     ui["refresh-projects"].addEventListener("click", () => { void loadProjects(); });
     ui["refresh-runs"].addEventListener("click", () => { void loadRuns(state.project, state.run); });
@@ -2390,6 +2449,7 @@
             const health = await request("/api/health", {});
             state.projectDetailAvailable=health.application==="gamingcreator-workspace" && health.capabilities?.includes("project-detail-query-v1");updateSearchScope();
             state.searchDetailAvailable=health.application==="gamingcreator-workspace" && health.capabilities?.includes("search-detail-query-v1");updateSearchScope();
+            state.savedDetailRetrievalAvailable=health.application==="gamingcreator-workspace" && health.capabilities?.includes("saved-detail-retrieval-v1");updateSearchScope();
             document.getElementById("open-acceptance").hidden = !(health.application === "gamingcreator-workspace"
                 && health.capabilities?.includes("benchmark-workflow-v1"));
             ui["open-preparation"].hidden = !(health.application === "gamingcreator-workspace"

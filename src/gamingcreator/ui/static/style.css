@@ -381,3 +381,8 @@ dialog::backdrop { background: #030713d9; }
 .task-next { margin-top: 10px !important; }
 .task-card .button { margin-top: 8px; }
 @media (max-width: 600px) { .tasks-list { grid-template-columns: minmax(0, 1fr); } }
+.search-mode-heading { display: flex; align-items: start; justify-content: space-between; gap: 4px; }
+.detail-search-toggle { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; line-height: 11px; white-space: nowrap; }
+.search-panel .search-options .detail-search-toggle input { width: 12px; height: 12px; padding: 0; margin: 0; }
+.candidate-detail-search { font-size: 11px; margin-top: 5px; overflow-wrap: anywhere; }
+.candidate-detail-search ul { margin: 4px 0; padding-left: 16px; }

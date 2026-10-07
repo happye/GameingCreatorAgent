@@ -232,9 +232,10 @@ async def project_search_payload(
     mode: RetrievalMode = "hybrid",
     top_k: int = 10,
     project_reference: str,
+    detail_profile: str | None = None,
 ) -> dict[str, object]:
     document = await execute_project_search(
-        project, run_ids, query, repository, mode=mode, top_k=top_k
+        project, run_ids, query, repository, mode=mode, top_k=top_k, detail_profile=detail_profile
     )
     return {
         **document,

@@ -5,14 +5,17 @@ from pathlib import Path
 
 from gamingcreator.application.detail_query import MAX_MANIFEST_BYTES, match_report
 from gamingcreator.application.detail_refinement import (
+    DetailRefinementRequest,
     RefinementIdentity,
     RefinementSettings,
     default_refinement_identity,
 )
+from gamingcreator.application.detail_retrieval import SavedDetailCorpus, build_saved_detail_corpus
 from gamingcreator.application.storage import RunStatus, StoredTimeline
 from gamingcreator.domain.actor_details import (
     MATCHER_VERSION,
     TEMPORAL_MATCHER_VERSION,
+    CandidateDetail,
     QueryConstraint,
     constraint_hash,
 )
@@ -48,6 +51,23 @@ def refinement_identity_for_profile(profile: str) -> RefinementIdentity:
 def refinement_settings_for_profile(profile: str) -> RefinementSettings:
     refinement_identity_for_profile(profile)
     return temporal_refinement_settings() if profile == "v4" else RefinementSettings()
+
+
+def read_saved_detail_corpus(
+    project: Path, timelines: tuple[StoredTimeline, ...], profile: str
+) -> SavedDetailCorpus:
+    identity = refinement_identity_for_profile(profile)
+    settings = refinement_settings_for_profile(profile)
+
+    def read(
+        timeline: StoredTimeline, event_id: str
+    ) -> tuple[DetailRefinementRequest | None, CandidateDetail | None]:
+        outcome = reuse_or_refuse(project, timeline, event_id, identity=identity, settings=settings)
+        return outcome.request, outcome.detail
+
+    return build_saved_detail_corpus(
+        timelines, read, profile=profile, identity=identity, settings=settings
+    )
 
 
 def match_refinement(

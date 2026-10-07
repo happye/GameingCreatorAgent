@@ -1,5 +1,7 @@
 # Phase 0 工程规格 v5
 
+联合检索可明确`--detail-profile v1|v2|v3|v4`复用准确已保存observed属性文字，原facts／证据／时钟保持；不含uncertain或同部件冲突，不保证跨属性同actor AND。新排名附完整语料SHA／版本及逐候选出处，后续原候选核对复核同一原profile语料，变化拒绝。100不同源／20,000视觉事件／8MiB上限；不自动分析、费用或写SQL，缺省旧搜索保持。见[已有细节指南](../references/saved-detail-retrieval-guide.md)。
+
 状态：2026-10-04 实施合同。CLI 已接媒体、本地 ASR、视觉窗口/账本、显式续跑、词法/本地语义检索和人工标签评测入口；F003/F005 技术合同已验收，F006独立人工质量gate未通过。CLI证据见sprint-demo；本地工作台及最新完整验证见 [sprint-inspection-workspace](../exec-plans/sprint-inspection-workspace.md)。来源：原总方案 §58–59、69–71；语言见 [ADR-001](./adr-001-phase-0-language.md)，审查见 [reverse-review](../exec-plans/reverse-review-2026-10-03.md)。当前运行入口见 [Demo](../references/demo-quickstart.md)。
 
 ## 1. CLI 与外部行为

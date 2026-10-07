@@ -5,6 +5,7 @@ param(
   [ValidateSet('lexical', 'semantic', 'hybrid')][string]$Mode = 'hybrid',
   [ValidateRange(1, 100)][int]$TopK = 10,
   [double]$MinSimilarity = 0.80,
+  [ValidateSet('v1', 'v2', 'v3', 'v4')][string]$DetailProfile,
   [switch]$Json
 )
 $ErrorActionPreference = 'Stop'
@@ -12,6 +13,7 @@ $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 . (Join-Path $PSScriptRoot 'env.ps1')
 $projectSearchArguments = @('-B', '-m', 'gamingcreator', 'search-project', $Query, '--project', $Project, '--mode', $Mode, '--top-k', $TopK, '--min-similarity', $MinSimilarity.ToString([Globalization.CultureInfo]::InvariantCulture))
 foreach ($projectSearchRun in $Run) { $projectSearchArguments += @('--run', $projectSearchRun) }
+if ($DetailProfile) { $projectSearchArguments += @('--detail-profile', $DetailProfile) }
 $projectSearchOutputEncoding = $OutputEncoding
 $projectSearchConsoleEncoding = [Console]::OutputEncoding
 $projectSearchExit = 1
