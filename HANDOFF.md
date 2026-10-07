@@ -1,5 +1,7 @@
 # 当前交接
 
+发布事实：实现与完整交付资料ae49b40已普通push到codex/visual-details，独立ls-remote一致；原网络积压5d2a48e之后的提交一并补齐。main未更新、无强推，.cache/media-preparation-workspace-publication.json留证。之后仅补本段发布事实，最终文档head以Git／receipt为准，源码／验证及现用45524／28036保持。
+
 2026-10-07 root接cd7a6e5已交付[sprint-media-preparation-workspace](docs/exec-plans/sprint-media-preparation-workspace.md)，[通俗汇报](docs/exec-plans/report-2026-10-07-media-preparation-workspace.md)。1–100本地路径页面准备／后台逐项状态／刷新重新连接／显式停止／原批次固定任务接续／已准备复用／打开素材任务与下载。CLI原冻结／锁／来源／配置／后续上限保持，0模型／上传／预留／人评。
 
 完整2204passed／1新准备页面遇既有storage.batch_checkpoint失败／1权限skip444.233s，原失败一次窄复查1passed3.021s，TD012延期。此后现用检查发现取消旧读取后按钮未恢复，直接修JS一行并加确定性检查；最终6准备＋22联合页面28passed42.266s，**没有最终整套重跑，不称全量全绿**。165格式／85源码类型／lint／CLI通过；最后双wheel SHA547ec8937503211bca188c18d6535709ddff84e1a24e6e31b5938e03f92f62ab／84包文件同源码无媒体缓存DB。回执.cache/media-preparation-workspace-{tests.xml,recheck.xml,final-ui.xml,verify.log,package.json}；源冻结及保存事实见final.json／Git。

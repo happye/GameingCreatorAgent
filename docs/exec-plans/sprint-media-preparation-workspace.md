@@ -2,6 +2,8 @@
 
 ## 当前状态：已交付，原全量失败保留
 
+发布：ae49b40实现／资料已普通push当前codex/visual-details，独立远端HEAD一致，5d2a48e之后断网积压已补齐，main保持；本段为后续仅文档记录，最终head以Git／publication receipt为准，不再跑源码无变化验证。goal active、下一主线保持。
+
 接cd7a6e5完成真实素材／指南／相关检查与现用服务，见[通俗汇报](report-2026-10-07-media-preparation-workspace.md)。20后台／HTTP、6最终浏览器；一次完整2204passed／1新准备页面遇storage.batch_checkpoint失败／1Windows权限skip444.233s（pytest控制台444.38s），唯一失败一次窄复查1passed3.021s；165格式／85源码类型／lint／CLI通过。随后发现现用读取被取消后按钮未恢复，直接在stopPreparationObservation重置按钮一行，补确定性“读取中换项目”检查；最终6准备＋22联合页面共28passed42.266s，没有再跑完整，不能称最终完整全绿。新源码最后仅JS／此测试变化，final-ui.xml与真实现用检查覆盖；TD012及原失败未隐藏、未修改旧状态保存／增加重试。
 
 最终双离线wheel SHA547ec8937503211bca188c18d6535709ddff84e1a24e6e31b5938e03f92f62ab，84包文件等于源码、无媒体／缓存／DB（.cache/media-preparation-workspace-package.json）。初次构建后JS一行修改，因此已重新构建两次并核对；其他无变化检查不重复。
