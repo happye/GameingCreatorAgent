@@ -1,5 +1,7 @@
 # Active assignments
 
+root已顺序交付[sprint-media-batch-preparation](sprint-media-batch-preparation.md)，接06394ae：Application固定任务批量准备／Infrastructure冻结清单与原子状态／main／PS／模板和指南。实际三开发片4秒首次／3秒修复同批次续跑／0.8秒禁止提取复查，原任务／素材／832开发文件／费用保持，0模型／预算／搜索／人评。23新增全部通过；一次完整2117passed／1旧HTTP连接中断失败／1权限skip，失败一次窄复查通过；格式／lint／83类型／双wheel／82包文件同源码通过。TD012／TD013延期，下一root登记跨素材检索一次需求搜多Completed录像；旧worker／worktree冻结，原分析及unknown不重试，F006/F009/F010false。
+
 root已顺序交付[sprint-benchmark-fixed-scoring](sprint-benchmark-fixed-scoring.md)，接12a7614：原排名Score／原基础费用汇总与CLI共用／原耗时分开；缺／重复／失败／未判定旧规则、原SHA与身份保持，null／false退出6保留报告。24新行为／116定向、完整2095／1权限skip、156格式／81类型／双wheel与80包文件同源码通过。实际三开发片直接465ms／PowerShell1018ms，原三十位／三ID／费用／1512.274ms原检索保持，832项目文件与三源不变、搜索214→214、0模型／预算／真评分，第二进程一致。已详细汇报，下一root登记多素材批量离线准备／逐任务恢复状态；其他worker冻结，小问题延期，不改原算法／SQLite／HTTP，F006/F009/F010false。
 
 root已顺序交付[sprint-benchmark-candidate-review](sprint-benchmark-candidate-review.md)，接fbca080：固定十位本机原片回看／人工理由与原参考／下载载入／核对导入旧v1评分文件；main只加retrievalId，生成／导入只读无搜索。37新行为，完整2069／2旧Windows环境失败／1权限skip，失败一次窄复查2passed，TD012延期；153格式／79类型／双wheel与78包文件同源码通过。实际三开发原片双尺寸六播放／30固定位／空记录回环／1.1秒准备和1.0秒导入，九基础表／三源与627非检索文件保持，明确新增3普通检索、0Provider／预算／真实人评。已通俗汇报，下一root登记固定原排名人工计分，避免再检索改变结果；旧worker冻结，F006/F009/F010false，不改SQLite／HTTP／Provider。

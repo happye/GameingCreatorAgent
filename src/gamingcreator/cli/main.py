@@ -6,6 +6,7 @@ import sys
 from collections.abc import Sequence
 from dataclasses import asdict
 from datetime import UTC, datetime
+from decimal import Decimal
 from math import isfinite
 from pathlib import Path
 from time import perf_counter
@@ -37,7 +38,18 @@ from gamingcreator.application.benchmark_preparation import (
 )
 from gamingcreator.application.budget import BudgetLedger, InvocationRecorder
 from gamingcreator.application.detail_query import MAX_MANIFEST_BYTES, loads_constraint
-from gamingcreator.application.inputs import AnalyzeInput, PreparedAnalyze, prepare_analyze
+from gamingcreator.application.inputs import (
+    AnalysisConfig,
+    AnalyzeInput,
+    PreparedAnalyze,
+    prepare_analyze,
+)
+from gamingcreator.application.media_batch import (
+    MediaBatchItem,
+    MediaBatchPlan,
+    loads_batch_input,
+    run_media_batch,
+)
 from gamingcreator.application.observation_text import (
     FACTS_PROJECTION_VERSION,
     clean_observation_text,
@@ -73,6 +85,7 @@ from gamingcreator.infrastructure.http_transport import HttpxVisionTransport
 from gamingcreator.infrastructure.local_asr import LocalAsrProvider
 from gamingcreator.infrastructure.local_embeddings import LocalEmbeddingProvider
 from gamingcreator.infrastructure.local_files import LocalInputReader
+from gamingcreator.infrastructure.media_batch_files import MediaBatchFiles, read_batch_bytes
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 
 
@@ -103,6 +116,15 @@ def _parser() -> CliParser:
     prepare.add_argument("--max-cost-cny", help="保存后续分析的费用上限；准备不会调用模型")
     prepare.add_argument("--resume", help="按原配置续准备，只接受尚未开始模型分析的任务")
     prepare.add_argument("--timeout-seconds", type=float, default=3600)
+    batch = commands.add_parser(
+        "prepare-media-batch", help="一次清单逐素材离线准备，支持原批次续跑"
+    )
+    batch.add_argument("--project", type=Path, required=True)
+    batch.add_argument("--input", type=Path, help="media-batch-input-v1素材清单")
+    batch.add_argument("--config", type=Path)
+    batch.add_argument("--max-cost-cny", help="保存每个任务后续上限，准备不预留费用")
+    batch.add_argument("--resume", help="按原批次ID续准备，不能覆盖清单／配置／限额")
+    batch.add_argument("--timeout-seconds", type=float, help="每素材期限；续跑默认保留原值")
     tasks = commands.add_parser("tasks", help="查看已保存素材任务、阶段、原配置和费用")
     tasks.add_argument("--project", type=Path, required=True)
     tasks.add_argument("--run", help="只查看一个任务")
@@ -688,6 +710,114 @@ async def execute_tasks(
         await store.close()
 
 
+def _media_preparation_config(config: AnalysisConfig | None) -> AnalysisConfig:
+    if (
+        config is None
+        or config.schema_version != 2
+        or config.provider != "deepseek"
+        or config.model != MODEL
+        or config.price_version != DEEPSEEK_FLASH_20261004.version
+        or (
+            config.vision_prompt_hash is not None
+            and config.vision_prompt_hash != vision_prompt_fingerprint(config.vision_prompt_version)
+        )
+    ):
+        raise invalid_config()
+    return config
+
+
+async def execute_prepare_media_batch(
+    project: Path,
+    repository: Path,
+    *,
+    input_path: Path | None = None,
+    config_path: Path | None = None,
+    max_cost_cny: str | None = None,
+    resume: str | None = None,
+    timeout_seconds: float | None = None,
+) -> dict[str, object]:
+    if timeout_seconds is not None and (not isfinite(timeout_seconds) or timeout_seconds <= 0):
+        raise AppError("input.media_batch", "每素材期限须为有限正数。", ExitCode.INPUT)
+    project = project.resolve()
+    files = None
+    try:
+        if resume is not None:
+            if input_path is not None or config_path is not None or max_cost_cny is not None:
+                raise ValueError("续批次不能覆盖清单／配置／限额。")
+            _require_project(project)
+            files = MediaBatchFiles(project, resume)
+        else:
+            if input_path is None or config_path is None or max_cost_cny is None:
+                raise ValueError("新批次需要清单／配置／每任务后续上限。")
+            input_path = input_path.resolve()
+            source_bytes = read_batch_bytes(input_path)
+            config_bytes = read_batch_bytes(config_path)
+            config = _media_preparation_config(LocalInputReader().load_config(config_path))
+            budget = Decimal(max_cost_cny)
+            if not budget.is_finite() or budget <= 0:
+                raise ValueError("每任务后续上限须为有限正数。")
+            inputs = loads_batch_input(source_bytes)
+            items = tuple(
+                MediaBatchItem(
+                    identifier,
+                    (
+                        Path(path) if Path(path).is_absolute() else input_path.parent / path
+                    ).resolve(),
+                    uuid4().hex,
+                )
+                for identifier, path in inputs
+            )
+            if len({item.video for item in items}) != len(items):
+                raise ValueError("清单不能重复同一本地路径。")
+            _require_space(project)
+            plan = MediaBatchPlan(
+                uuid4().hex, project, config, budget, timeout_seconds or 3600, items
+            )
+            files = MediaBatchFiles(project, plan.batch_id)
+            files.create(plan, input_path.parent, source_bytes, config_bytes)
+        files.acquire()
+        plan, state, digest = files.load()
+        _media_preparation_config(plan.config)
+        _require_space(project)
+        media = FfmpegMediaProcessor(repository)
+        store = await SqliteTimelineStore.open(project)
+        try:
+
+            def checkpoint(document: dict[str, object]) -> None:
+                files.save(document, plan, digest)
+                rows = cast(list[dict[str, object]], document["items"])
+                print(
+                    json.dumps(
+                        {
+                            "schemaVersion": "media-batch-progress-v1",
+                            "batchId": plan.batch_id,
+                            "status": document["status"],
+                            "finishedItems": sum(
+                                row["verifiedThisInvocation"] is True for row in rows
+                            ),
+                            "totalItems": len(rows),
+                        },
+                        ensure_ascii=False,
+                    ),
+                    file=sys.stderr,
+                )
+
+            return await run_media_batch(
+                plan, state, media, store, checkpoint, timeout_seconds=timeout_seconds
+            )
+        finally:
+            await store.close()
+    except (OSError, ValueError, UnicodeError, KeyError, TypeError, ArithmeticError):
+        raise AppError(
+            "input.media_batch",
+            "批次清单／配置／状态不符，请保留原资料并检查对应批次。",
+            ExitCode.INPUT,
+        ) from None
+    finally:
+        if files is not None:
+            files.close()
+
+
 async def execute_prepare_media(
     prepared: PreparedAnalyze, repository: Path, *, timeout_seconds: float = 3600
 ) -> dict[str, object]:
@@ -707,18 +837,7 @@ async def execute_prepare_media(
             config = (await preview.load_run(prepared.resume)).configuration.analysis
         finally:
             await preview.close()
-    if (
-        config is None
-        or config.schema_version != 2
-        or config.provider != "deepseek"
-        or config.model != MODEL
-        or config.price_version != DEEPSEEK_FLASH_20261004.version
-        or (
-            config.vision_prompt_hash is not None
-            and config.vision_prompt_hash != vision_prompt_fingerprint(config.vision_prompt_version)
-        )
-    ):
-        raise invalid_config()
+    config = _media_preparation_config(config)
     if prepared.resume is None:
         asset = await media.probe(
             prepared.video, CancellationContext("probe", min(120, timeout_seconds))
@@ -777,6 +896,18 @@ async def execute_prepare_media(
 
 
 def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | None:
+    if args.command == "prepare-media-batch":
+        return asyncio.run(
+            execute_prepare_media_batch(
+                args.project,
+                Path.cwd(),
+                input_path=args.input,
+                config_path=args.config,
+                max_cost_cny=args.max_cost_cny,
+                resume=args.resume,
+                timeout_seconds=args.timeout_seconds,
+            )
+        )
     if args.command == "freeze-benchmark":
         return asyncio.run(
             execute_freeze_benchmark(args.input.resolve(), args.output.resolve(), Path.cwd())
@@ -876,6 +1007,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(json.dumps(outcome, ensure_ascii=False, default=str))
             if args.command == "benchmark" and outcome.get("qualityGate") is not True:
                 return int(ExitCode.BENCHMARK)
+            if args.command == "prepare-media-batch":
+                return int(cast(int, outcome["exitCode"]))
         elif outcome is not None:
             print(
                 json.dumps(

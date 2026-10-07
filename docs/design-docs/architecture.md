@@ -8,6 +8,8 @@
 
 ## 包结构与依赖
 
+多素材离线准备由纯Application `media_batch`顺序复用`prepare_media`、原MediaProcessor／TimelineStore；CLI只组合FFmpeg与SQLite。Infrastructure `media_batch_files`在项目内冻结原输入／配置、预先分配的runId和SHA回执，批次状态原子替换、进程锁排除并发写；没有新SQL／HTTP／Provider合同。续跑先查固定任务，Pending且media完成则读回核验不改任务，media-only中断才续准备，任何非media阶段或调用只报告现状。单项输入失败继续，存储／环境问题或取消停止；不构造模型／账本。详见[批次指南](../references/media-batch-preparation-guide.md)。
+
 ```mermaid
 flowchart TD
     CLI[Cli 组合入口] --> APP[Application 用例与 Provider 合同]

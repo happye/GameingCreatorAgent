@@ -6,6 +6,8 @@ This repository is the starting point for a local-first game-content creation to
 
 ## Current state
 
+Multiple recordings can now be prepared locally from one bounded list, with fixed task IDs, saved per-task configuration/limits and explicit continuation of the same batch. Bad recordings do not block later input items; ready tasks are checked and reused without extraction, and tasks already in model analysis are only reported. No model, upload or budget reservation occurs. See the [batch preparation guide](./docs/references/media-batch-preparation-guide.md).
+
 Phase 0 now has a local [candidate review workflow](./docs/references/benchmark-candidate-review-guide.md): open an actual saved benchmark ranking, replay source intervals, fill human grades/reasons, download and reload records, then import verified judgments into the existing benchmark format. Ten positions remain fixed, including missing and duplicate events. Generation/import are read-only and make no model or search calls; independent human acceptance remains pending.
 
 Add `-Score` when importing a review record to score the original saved ranking with the existing quality rules. Source verification stays read-only, original search timings and unknown analysis costs are preserved, and scoring time is reported separately. Failed/unverified gates exit 6 while keeping the report; this makes no new searches or paid requests.

@@ -1,5 +1,15 @@
 # 当前交接
 
+2026-10-07，root接06394ae已交付[sprint-media-batch-preparation](docs/exec-plans/sprint-media-batch-preparation.md)，[通俗汇报](docs/exec-plans/report-2026-10-07-media-batch-preparation.md)。F002／F004一次清单1–100项本地准备，原清单／配置／每任务后续限额与固定runId冻结SHA；逐项原子状态、批次和原项目双进程锁，同批次显式续跑。已准备完整复核不再提取／不改任务，media-only中断按原ID接续，模型已开始只报告；输入失败继续，存储／环境或取消停止，未复核旧项标识false。CLI／PowerShell7／模板／指南完成，原单段入口共用配置验证，无新SQL／HTTP／Provider合同。
+
+新增23行为在一次完整检查全部通过；完整2117passed／1旧HTTP WinError10053失败／1 Windows symlink权限skip372.98s。原失败仅一次窄复查1passed0.981s，TD012保留、未称第一次全过；159格式／83类型／lint、CLI／双离线wheel通过，SHAdeb283c665afbd762eff48a2d87fcccff5c3e92d63945aef54ce2f6784d270cd，82包文件等于源码，无媒体／缓存／DB。回执.cache/media-batch-tests.xml／verify.log／old-failure-recheck.xml／package.json；源码冻结后仅文档／ignored证据，不重复无变化全套。
+
+实际两Atom夹坏文件3974ms／exit2／prepared-failed-prepared；修复未登记坏文件为漫画录像后公开PowerShell7续跑3125ms／exit0，三原runId保留／两任务124文件不重做；再续禁止probe/preprocess769ms／228项目文件保持。三任务55／96／65图均有音轨，media attempt1／Pending／无invocations或events，另进程冻结SHA／摘要一致，现有tasks清单3项均素材已保存等待分析。原demo832文件及三源SHA保持，搜索214→214，0模型／费用预留／人评。ignored artifacts/media-batch-preparation-validation是本机证据，不提交录像／项目DB。
+
+用户主线交付优先及详细通俗汇报规则已再次核对AGENTS／CODEX／CLAUDE／Grok／agent-workflow／LEARNINGS。已汇报一次清单／修复续跑／实际4秒3秒0.8秒和仍待分析、旧unknown保持。TD012偶发state替换和旧HTTP连接中断继续延期；TD013是计划刚保存但DB未创建就中断的恢复小缺口，指南明确，保留目录后重新提交，不反复定位。下一root主线跨素材检索：一次需求搜多段已完成录像，保持来源／原时间／排名；先登记归属。无工作台路由或静态变化无需重启，旧worker／worktree冻结。
+
+旧漫画0ba106578bc7435c8689d12892a35dfb unknown¥4.065536／retry要求与空命令通过本轮只读复核；新¥4.07两候选proposal SHA06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6保持，授权未答、不得发送。F006/F009/F010false。已有普通push授权分支仍codex/visual-details，本轮0push／远端读取，Git及.cache/media-batch-publication.json为本地保存事实，不改main／强推。
+
 2026-10-07，root接12a7614已交付[sprint-benchmark-fixed-scoring](docs/exec-plans/sprint-benchmark-fixed-scoring.md)，[通俗汇报](docs/exec-plans/report-2026-10-07-benchmark-fixed-scoring.md)。F006评审记录显式--score／PowerShell -Score对原十位保存排名复用旧run_benchmark计分，无新检索；原失败／缺位／结构与人工重复／少例负例／未判定及声明边界保持。原报告／绑定／依据／规范记录SHA、retrievalId可追溯；原startedAt／elapsedMs／耗时比例保留，scoredAt／scoringElapsedMs独立。基础费用抽为与CLI共用纯benchmark_analysis_costs，从原attempt汇总，不能信任报告自填cost，不操作账本／unknown。无Score默认仅转旧标签／qualitynull；Score未过或未验证exit6前保留新目录完整报告，无新HTTP／SQLite／Provider合同。
 
 24新增行为／116定向3.53s；一次完整2095passed／1 Windows symlink权限skip340.95s，156格式／81类型／lint／CLI／双离线wheel SHA66f89fdbd5946575545068693971f95a5f21a872aad925210c02bee030c8552e通过，80包文件逐字节等于源码且无媒体／缓存／DB。JUnit2096／0fail／0error／1权限skip及package回执在.cache/benchmark-fixed-score-*。源完成后仅文档／ignored证据，不重复无变化全套；上一TD012未重现但原因未解决，继续延期。

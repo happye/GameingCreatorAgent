@@ -1,0 +1,7 @@
+{
+  "schemaVersion": "media-batch-input-v1",
+  "items": [
+    {"id": "录制一", "path": "../GameVideos/session-001.mp4"},
+    {"id": "录制二", "path": "../GameVideos/session-002.mp4"}
+  ]
+}
