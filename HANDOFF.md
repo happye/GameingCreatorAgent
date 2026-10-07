@@ -1,5 +1,7 @@
 # 当前交接
 
+发布事实：统一验收入口9a69c8d已本地提交；一次普通授权push连接github.com:443在21.084秒失败／exit128，.cache/benchmark-workflow-push.log保留，不重试／未读远端。上次独立确认799625c，当前及积压交付仍待补推，不称远端同步。本段仅补发布事实，最终文档head以Git与publication为准；源码／94包及现用53176／54948保持，goal active。
+
 2026-10-07 root接d15777a已交付[统一验收入口](docs/exec-plans/sprint-benchmark-workspace.md)，[指南](docs/references/benchmark-workspace-guide.md)、[通俗汇报](docs/exec-plans/report-2026-10-07-benchmark-workspace.md)。工作台八步登记／原片／冻结／Completed绑定／显式报告／固定评审／原排名评分、输入结果持久保存／实际OS执行锁／中断新目录／后续锁前步，同源登记SHA及Range回看，表单须下载后提交，无自动人评／模型／费用。root独占代码与文档，旧worker冻结。
 
 新增18全通过；一次完整2272passed／3failed／1权限skip445.04s，旧health能力声明同步，两旧media准备路径／状态问题单次三项复查3passed2.22s，原因未明TD012延期，没重跑整套／不称全绿。178格式lint／92类型／CLI／双同wheel a5d8ac51c4f27303dd27bf3df596f58f2fec6d80cb417e7a79e620e34e643aae，94包文件等源码，独立包进程登记／渲染通过。整套后只旧health测试及文档，生产源码保持。
