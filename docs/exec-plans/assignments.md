@@ -1,6 +1,6 @@
 # Active assignments
 
-root / Codex顺序负责[sprint-benchmark-reference-review](sprint-benchmark-reference-review.md)，接799625c；独占新benchmark_reference_review Application／UI renderer／benchmark-references.js、prepare-benchmark-references.py／ps1、新合同与原片浏览器／入口测试、verify与pyproject集成配置、指南与公共记录。额度14%保存未验收检查点：编辑／保存接续／原身份核对后旧plan导出已实现，20合同＋2双尺寸短视频页面通过，实际游戏公开入口／冻结衔接／整套／包／指南待完成。复用原冻结与独占发布，无新HTTP／SQL／模型／预算／真实人评，旧worker冻结。下一沿此主线完成真实流程验证，现用准备页面已交付；report-2026-10-07-reference-checkpoint.md与HANDOFF记录通俗结论。F006/F009/F010false、goal active。
+root / Codex已顺序交付[sprint-benchmark-reference-review](sprint-benchmark-reference-review.md)，接799625c／af11042；新Application／原片HTML／多区间记录和导出旧plan、公开Python／PS、集成检查与指南。三真实开发片双尺寸六播放／手填（均特殊时钟）、保存重载／空参考freeze与独立读回通过，22新增全部通过；一次完整2225passed／3旧准备失败／1权限skip，正确准备目录后仅一次三项复查通过，TD012原因未明延期。格式／88类型／CLI／双wheel／87包文件同源码及独立wheel渲染通过。本轮源码与06771ee相同，无HTTP／SQL／模型／费用／真评分，现用工作台不重启，旧worker冻结。下一root核对F006独立人评前置素材／声明／查询参考，再登记主要交付；report-2026-10-07-reference-review.md与HANDOFF记通俗结论，F006/F009/F010false、goal active。原普通push连接失败，本轮0push／远端读取，本地保存与待补推事实见Git及publication。
 
 root / Codex已顺序交付[sprint-media-preparation-workspace](sprint-media-preparation-workspace.md)，接cd7a6e5，codex/visual-details；ui/media_preparation.py后台准备／批次读取、server／static、main可选检查点回调、新任务／HTTP／浏览器行为和公共文档。1–100本地录像逐项准备／刷新连接／停止／原批次接续与素材任务；0模型／费用／人评，目标仅artifacts内，旧锁与来源／配置／预算保持。旧worker／worktree冻结，主线优先，小问题延期。
 

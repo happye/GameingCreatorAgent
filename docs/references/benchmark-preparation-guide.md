@@ -21,6 +21,8 @@
 
 人工参考由人观看原片填写，使用独立humanEventId／independenceGroup、usableRanges和reason；时间为原录像微秒。尚未填写可用空数组，confirmed=false。计划不接受候选评分，因为此时尚未查看检索结果。
 
+不必手写参考区间：用[原片参考标注页](./benchmark-reference-review-guide.md)打开事前计划，看原录像、登记动作和可用区间，下载记录并继续标注。导入核对实际录像和原查询后生成待冻结的benchmark-plan.json，再从下节冻结；人工声明和独立性由人确认，页面不看模型结果或自动评分。
+
 ## 2. 冻结本地资料
 
 在仓库根目录，用已有PowerShell 7：

@@ -1,6 +1,14 @@
 # 当前交接
 
-本轮源码检查点06771ee已本地提交；一次普通push在21.131秒连接github.com:443失败／exit128，.cache/benchmark-reference-checkpoint-push.log保留，不重试。上次独立确认远端799625c，本轮未读取远端；网络恢复后补推codex/visual-details，不能称新检查点远端已同步。后续仅补此发布事实，最终文档head以Git和publication.json为准。
+2026-10-07 root接af11042已交付原片参考标注流程，见[sprint](docs/exec-plans/sprint-benchmark-reference-review.md)、[通俗汇报](docs/exec-plans/report-2026-10-07-reference-review.md)和[使用指南](docs/references/benchmark-reference-review-guide.md)。分析前看原片／同动作多区间／下载载入、保护原查询声明、重验实际源后旧plan导出／原freeze衔接；没有新HTTP／SQL／模型。三实际开发片1366／390六播放和两记录回环、两个进程严格读回一致，**三片均特殊时钟只手填**；合成零起点自动抓取通过，TD006延期。原模板确认false／开发与已看结果true／两Atom同组，不造真标签或独立样本。
+
+一次完整2225passed／3旧批量准备失败／1Windows文件链接权限skip441.531s JUnit；22新检查全部通过，三旧失败正确准备临时目录后一次窄复查3passed6.121s，原因未确定TD012延期、不称全量全绿。首复查命令漏父目录3setup错误保留、未执行测试；没有生产改动或重复完整。170格式／lint、88文件mypy、CLI／同双wheel SHAec298280844703b52715680ec6cdf15844d909f38145b32ddc8ba30796f5ad60与87包文件等源码通过，独立wheel渲染同输入与源码相同。源码与06771ee相同，后续只文档／ignored证据，回执.cache/benchmark-reference-*和ignored验证目录。
+
+验证脚本合同／CSP／JSON顺序假设失败均直接修正并保留原输出，不改产品或重做数据；真实耗时与首次baseline未持久化，不估算／不称全程字节比对，最终读回858旧项目文件／页面包／proposal保持、三源同之前freeze SHA。现用工作台无新入口或资源变更、不重启，0功能模型／上传／搜索／预留／真人评分。下一root核对F006独立素材／事前查询与原片参考真实前置资料，再登记下一主交付、组织固定候选人评／原排名计分；不能把七文件或两已知组当十独立会话。已通俗汇报当前能力、实测与限制／下一动作，旧worker冻结、小问题延期，F006/F009/F010false，goal active。本轮0push／远端读取，原连接失败待补推，最终提交以Git和.cache/benchmark-reference-publication.json为准。
+
+前一轮源码检查点06771ee已本地提交；一次普通push在21.131秒连接github.com:443失败／exit128，.cache/benchmark-reference-checkpoint-push.log保留，不重试。上次独立确认远端799625c，本次交付未读取远端；网络恢复后补推codex/visual-details，不能称新检查点远端已同步。最终文档head以Git和publication.json为准。
+
+以下为已完成的额度检查点及此前发布历史，恢复以顶部和sprint当前交付为准。
 
 2026-10-07额度14%汇报，root接799625c保存[sprint-benchmark-reference-review](docs/exec-plans/sprint-benchmark-reference-review.md)**未验收检查点**，见[通俗阶段汇报](docs/exec-plans/report-2026-10-07-reference-checkpoint.md)。F006冻结前原片参考页面、多动作区间／下载载入、重核实际源与原查询后旧plan导出、Python／PowerShell入口已实现；新脚本已登记verify与mypy。root独占新Application／renderer／static、公开脚本、新合同与浏览器测试及集成配置和公共记录，旧worker冻结。20合同＋2桌面／窄屏浏览器通过；浏览器实际生成短MP4，未做真实游戏人工判断。首次转义断言失败直接改测试后通过，原回执保留；本轮未真实游戏公开入口／冻结衔接／整套／双wheel／指南，不引用上一完整检查作本轮通过。
 

@@ -12,6 +12,8 @@ Multiple recordings can be prepared locally through the workspace's “准备多
 
 Phase 0 now has a local [candidate review workflow](./docs/references/benchmark-candidate-review-guide.md): open an actual saved benchmark ranking, replay source intervals, fill human grades/reasons, download and reload records, then import verified judgments into the existing benchmark format. Ten positions remain fixed, including missing and duplicate events. Generation/import are read-only and make no model or search calls; independent human acceptance remains pending.
 
+Before inference, the separate local [raw-footage reference page](./docs/references/benchmark-reference-review-guide.md) opens a predeclared plan, plays original recordings and lets a person register action intervals, save and reload reference drafts. Import rechecks the actual sources and fixed declarations before exporting a plan for the existing freeze workflow. It does not display model results, confirm human labels automatically or establish independent acceptance.
+
 Add `-Score` when importing a review record to score the original saved ranking with the existing quality rules. Source verification stays read-only, original search timings and unknown analysis costs are preserved, and scoring time is reported separately. Failed/unverified gates exit 6 while keeping the report; this makes no new searches or paid requests.
 
 Completed searches now expose an unscored ten-slot diagnostic in the local workspace, with original ranks, missing positions, known duplicates, source preview and a bound JSON snapshot. See the [diagnostic guide](./docs/references/retrieval-diagnostics-guide.md). It does not establish human retrieval acceptance.

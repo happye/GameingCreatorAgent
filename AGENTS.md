@@ -26,6 +26,7 @@ Use Windows PowerShell. Keep runtimes in `.tools/`, packages in `.venv/`, and ca
 - `./scripts/test-media.ps1 -AllLocal`: validate footage in ignored `GameVideos/`.
 - `./scripts/test-storage.ps1 -AllLocal`: verify media persistence and a second process's reads.
 - `./scripts/prepare-benchmark.ps1`: freeze source/query plans, then bind Completed runs without inference; see `docs/references/benchmark-preparation-guide.md`.
+- `./scripts/prepare-benchmark-references.ps1`: prepare a local raw-footage reference page, or verify its saved record and export a plan for freezing; see `docs/references/benchmark-reference-review-guide.md`.
 
 ## Architecture and coding rules
 
