@@ -6,7 +6,6 @@ import sys
 from collections.abc import Sequence
 from dataclasses import asdict
 from datetime import UTC, datetime
-from decimal import Decimal
 from math import isfinite
 from pathlib import Path
 from time import perf_counter
@@ -23,7 +22,6 @@ from gamingcreator.application.analysis import (
 )
 from gamingcreator.application.asr import LocalAsrSettings, ModelFile
 from gamingcreator.application.benchmark import (
-    BenchmarkCosts,
     BenchmarkHit,
     BenchmarkMedia,
     BenchmarkQuery,
@@ -31,6 +29,7 @@ from gamingcreator.application.benchmark import (
     loads_manifest,
     run_benchmark,
 )
+from gamingcreator.application.benchmark_analysis_costs import benchmark_analysis_costs
 from gamingcreator.application.benchmark_preparation import (
     bind_manifest,
     freeze_document,
@@ -45,7 +44,7 @@ from gamingcreator.application.observation_text import (
     display_facts,
 )
 from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
-from gamingcreator.application.providers import CancellationContext, CostStatus
+from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.retrieval import (
     RETRIEVAL_VERSION,
     RetrievalMode,
@@ -357,13 +356,12 @@ async def execute_benchmark(
                 for rank, item in enumerate(result.candidates, 1)
             )
 
-        cold = Decimal(0)
-        known = True
-        versions: set[str] = set()
+        cost_timelines = []
         provenance: list[JsonValue] = []
         for source in manifest.media:
             try:
                 timeline = await store.load_completed_timeline(source.run_id)
+                cost_timelines.append(timeline)
                 provenance.append(
                     {
                         "runId": source.run_id,
@@ -371,18 +369,8 @@ async def execute_benchmark(
                         "configHash": timeline.run.config_hash,
                     }
                 )
-                for attempt in timeline.invocations:
-                    usage = attempt.metadata.usage
-                    if usage.cost_cny is None or usage.cost_status == CostStatus.UNVERIFIED:
-                        known = False
-                    else:
-                        cold += usage.cost_cny
-                    if attempt.metadata.provider == "deepseek" and attempt.metadata.price_version:
-                        versions.add(attempt.metadata.price_version)
-                    elif attempt.metadata.provider == "deepseek":
-                        known = False
             except AppError:
-                known = False
+                pass
         report = await run_benchmark(
             manifest,
             search,
@@ -395,12 +383,8 @@ async def execute_benchmark(
                 "runs": provenance,
                 "embeddingRevision": provider.space.revision_scope if provider else None,
             },
-            costs=BenchmarkCosts(
-                cold if known else None,
-                Decimal(0),
-                "estimated" if known else "unverified",
-                known,
-                next(iter(versions)) if len(versions) == 1 else None,
+            costs=benchmark_analysis_costs(
+                cost_timelines, all_runs_loaded=len(cost_timelines) == len(manifest.media)
             ),
         )
         for row in cast(list[dict[str, JsonValue]], report["queries"]):

@@ -7,7 +7,8 @@ import json
 from pathlib import Path
 from typing import cast
 
-from gamingcreator.application.benchmark import loads_manifest
+from gamingcreator.application.benchmark import BenchmarkCosts, loads_manifest
+from gamingcreator.application.benchmark_analysis_costs import benchmark_analysis_costs
 from gamingcreator.application.benchmark_preparation import canonical_json
 from gamingcreator.application.benchmark_review import (
     MAX_REVIEW_BYTES,
@@ -16,6 +17,7 @@ from gamingcreator.application.benchmark_review import (
     judged_manifest,
     validate_review,
 )
+from gamingcreator.application.benchmark_review_scoring import score_saved_review
 from gamingcreator.domain.errors import AppError
 from gamingcreator.infrastructure.benchmark_preparation_files import (
     read_bounded,
@@ -28,7 +30,7 @@ from gamingcreator.ui.benchmark_review import render_benchmark_review
 
 async def prepare(
     project: Path, report_path: Path, binding: Path
-) -> tuple[dict[str, object], dict[str, object], bytes, bytes]:
+) -> tuple[dict[str, object], dict[str, object], bytes, bytes, BenchmarkCosts]:
     base_bytes = read_bounded(binding / "benchmark.json")
     validate_bound_manifest(binding, base_bytes)
     manifest = loads_manifest(base_bytes.decode("utf-8-sig"))
@@ -56,7 +58,13 @@ async def prepare(
             timelines=timelines,
             retrievals=retrievals,
         )
-        return context, template, base_bytes, report_bytes
+        return (
+            context,
+            template,
+            base_bytes,
+            report_bytes,
+            benchmark_analysis_costs(timelines.values()),
+        )
     finally:
         await store.close()
 
@@ -70,14 +78,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--binding", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--record", type=Path)
+    parser.add_argument("--score", action="store_true", help="对原保存排名计分，不重新搜索")
     args = parser.parse_args(argv)
+    if args.score and args.record is None:
+        parser.error("--score需要--record，不能自动填写人工评分。")
     try:
         project, report_path, binding = (
             args.project.resolve(),
             args.report.resolve(),
             args.binding.resolve(),
         )
-        context, template, base_bytes, report_bytes = asyncio.run(
+        context, template, base_bytes, report_bytes, costs = asyncio.run(
             prepare(project, report_path, binding)
         )
         outputs = {
@@ -88,6 +99,7 @@ def main(argv: list[str] | None = None) -> int:
         }
         protected = [project, report_path, binding]
         judged = 0
+        quality_gate = None
         if args.record is not None:
             record_path = args.record.resolve()
             data = read_bounded(record_path, MAX_REVIEW_BYTES)
@@ -101,6 +113,10 @@ def main(argv: list[str] | None = None) -> int:
                     "benchmark-judged.json": canonical_json(manifest),
                 }
             )
+            if args.score:
+                scored = asyncio.run(score_saved_review(context, record, report_bytes, costs=costs))
+                outputs["benchmark-fixed-report.json"] = canonical_json(scored)
+                quality_gate = scored["qualityGate"]
             protected.append(record_path)
             judged = sum(
                 slot["grade"] is not None
@@ -118,18 +134,31 @@ def main(argv: list[str] | None = None) -> int:
         print(
             json.dumps(
                 {
-                    "schemaVersion": "benchmark-review-result-v1",
+                    "schemaVersion": "benchmark-fixed-score-result-v1"
+                    if args.score
+                    else "benchmark-review-result-v1",
                     "output": str(args.output.resolve()),
                     "files": files,
                     "judgedPositions": judged,
-                    "qualityGate": None,
+                    "qualityGate": quality_gate,
                     "paidRequestsSent": 0,
                 },
                 ensure_ascii=False,
             )
         )
+        if args.score and quality_gate is not True:
+            return 6
         return 0
-    except (OSError, ValueError, UnicodeError, TypeError, KeyError, RecursionError, AppError):
+    except (
+        OSError,
+        ValueError,
+        UnicodeError,
+        TypeError,
+        KeyError,
+        OverflowError,
+        RecursionError,
+        AppError,
+    ):
         print(
             json.dumps(
                 {

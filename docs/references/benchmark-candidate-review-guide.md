@@ -51,13 +51,23 @@
 
 工具再次核对绑定、报告、原素材及保存检索；改动查询、位置、候选、区间或冻结依据会被拒绝。新目录保存原输入、规范记录、benchmark-judged.json及SHA回执；只有实际评分进入candidateLabels，备注和未判定不变成标签。完成回执最后保存，中途未完成须换新目录。
 
-正式评分仍用原benchmark入口：
+要计算这次回看过的固定原排名，导入时加-Score：
+
+```powershell
+./scripts/prepare-benchmark-review.ps1 -Project artifacts/demo-phase0 -ReportPath artifacts/acceptance-ranking-report.json -BindingDirectory artifacts/acceptance-bound-001 -RecordPath artifacts/benchmark-review-record.json -Score -OutputDirectory artifacts/acceptance-fixed-score-001
+```
+
+输出benchmark-fixed-report.json，使用同一份原十位结果及原benchmark评分标准，不重新搜索。原失败查询保持失败，缺位和重复仍计入十位分母；尚未判断的位置或没有确认的原参考，不会变成已评分。资料独立性和原参考确认无法事后升级。全部符合原门槛时qualityGate=true；未达标为false、未验证为null，两者均退出6，报告仍完整保存。新目录与资料核对规则和普通导入相同；-Score必须有-RecordPath。
+
+报告保留原retrievalId、startedAt、elapsedMs及retrievalWallclockToSourceRatio；scoredAt和scoringElapsedMs单独记录计分时间，读回的速度不能冒充原检索速度。scoring记录原报告／绑定／规范人工记录及固定依据SHA，ordinarySearches和paidRequestsSent均为0。费用从已核对原分析attempt汇总，忽略下载记录和报告中自行填写的费用声明；未知仍未知，原账本不操作。它沿用基础分析费用范围，不含独立精分析或其他项目的预留。
+
+不加-Score时仍只导出标签，qualityGate始终null。若要明确重新检索比较，可继续用原benchmark入口：
 
 ```powershell
 . ./scripts/env.ps1
 ./.venv/Scripts/python.exe -B -m gamingcreator benchmark --input artifacts/acceptance-reviewed-001/benchmark-judged.json --binding artifacts/acceptance-bound-001 --project artifacts/demo-phase0 --mode hybrid --output artifacts/acceptance-final-report.json
 ```
 
-这一步重新执行冻结查询并产生普通检索记录，须保持相同检索配置，不能称为对原排名只读计分。未标注、来源不独立或质量不足继续退出6。准备和导入qualityGate始终null，70%门槛由[原协议](./phase-0-benchmark.md)判断。
+上面benchmark命令重新执行冻结查询并产生普通检索记录，须保持相同配置，其结果不是原排名只读计分。两个计分入口都遵循[原70%协议](./phase-0-benchmark.md)。普通准备／导入与文件发布回执本身不计算质量；显式-Score的结果和benchmark-fixed-report.json才提供固定排名计分结论。
 
 本机演示位于ignored artifacts/benchmark-candidate-review-validation/评审页面/review.html，使用已有三份开发录像，未填真实评分，不是独立验收样本。页面含本机路径和模型描述，留在本地；原视频、数据库和生成文件不随Git提交。

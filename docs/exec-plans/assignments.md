@@ -1,5 +1,7 @@
 # Active assignments
 
+root已顺序交付[sprint-benchmark-fixed-scoring](sprint-benchmark-fixed-scoring.md)，接12a7614：原排名Score／原基础费用汇总与CLI共用／原耗时分开；缺／重复／失败／未判定旧规则、原SHA与身份保持，null／false退出6保留报告。24新行为／116定向、完整2095／1权限skip、156格式／81类型／双wheel与80包文件同源码通过。实际三开发片直接465ms／PowerShell1018ms，原三十位／三ID／费用／1512.274ms原检索保持，832项目文件与三源不变、搜索214→214、0模型／预算／真评分，第二进程一致。已详细汇报，下一root登记多素材批量离线准备／逐任务恢复状态；其他worker冻结，小问题延期，不改原算法／SQLite／HTTP，F006/F009/F010false。
+
 root已顺序交付[sprint-benchmark-candidate-review](sprint-benchmark-candidate-review.md)，接fbca080：固定十位本机原片回看／人工理由与原参考／下载载入／核对导入旧v1评分文件；main只加retrievalId，生成／导入只读无搜索。37新行为，完整2069／2旧Windows环境失败／1权限skip，失败一次窄复查2passed，TD012延期；153格式／79类型／双wheel与78包文件同源码通过。实际三开发原片双尺寸六播放／30固定位／空记录回环／1.1秒准备和1.0秒导入，九基础表／三源与627非检索文件保持，明确新增3普通检索、0Provider／预算／真实人评。已通俗汇报，下一root登记固定原排名人工计分，避免再检索改变结果；旧worker冻结，F006/F009/F010false，不改SQLite／HTTP／Provider。
 
 root已交付[sprint-benchmark-preparation](sprint-benchmark-preparation.md)，接7b5a7b3：F006本地原素材／同源分区／查询族／人工参考冻结，Completed绑定旧manifest；benchmark --binding只允许候选人评／复核变更。新Application／文件适配／CLI与计划模板／PowerShell7两动作／47新测试、133定向及完整2034／1权限skip通过，74包文件同源码。实际3开发视频1.5秒冻结／0.5秒绑定／第二进程、832项目文件／3源保持，0模型／普通搜索／新预留／真实人评；明确两个Atom可能同源、整体非独立。已详细汇报，下一root登记候选人工判分入口／固定十位回看与原冻结绑定导出。旧worker冻结，小性能／TD010／TD011延期，F006/F009/F010false，新付费待答、网络不循环。

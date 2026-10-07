@@ -1,5 +1,13 @@
 # 当前交接
 
+2026-10-07，root接12a7614已交付[sprint-benchmark-fixed-scoring](docs/exec-plans/sprint-benchmark-fixed-scoring.md)，[通俗汇报](docs/exec-plans/report-2026-10-07-benchmark-fixed-scoring.md)。F006评审记录显式--score／PowerShell -Score对原十位保存排名复用旧run_benchmark计分，无新检索；原失败／缺位／结构与人工重复／少例负例／未判定及声明边界保持。原报告／绑定／依据／规范记录SHA、retrievalId可追溯；原startedAt／elapsedMs／耗时比例保留，scoredAt／scoringElapsedMs独立。基础费用抽为与CLI共用纯benchmark_analysis_costs，从原attempt汇总，不能信任报告自填cost，不操作账本／unknown。无Score默认仅转旧标签／qualitynull；Score未过或未验证exit6前保留新目录完整报告，无新HTTP／SQLite／Provider合同。
+
+24新增行为／116定向3.53s；一次完整2095passed／1 Windows symlink权限skip340.95s，156格式／81类型／lint／CLI／双离线wheel SHA66f89fdbd5946575545068693971f95a5f21a872aad925210c02bee030c8552e通过，80包文件逐字节等于源码且无媒体／缓存／DB。JUnit2096／0fail／0error／1权限skip及package回执在.cache/benchmark-fixed-score-*。源完成后仅文档／ignored证据，不重复无变化全套；上一TD012未重现但原因未解决，继续延期。
+
+实际三开发片复用上一原报告／空记录，禁搜索／persist／模型／HTTP／预算下直接465ms／公开PowerShell7中文入口1018ms，原30slots／3保存身份／费用／1512.274ms原检索逐项保持，纯评分0.072ms单列不冒充检索提升。832项目文件含DB／三源SHA保持，搜索214→214、0新付费／预留／真评分；第二进程同SHA与三十位，exit6完整报告。ignored artifacts/benchmark-fixed-scoring-validation为本机证据。旧unknown¥4.065536／空retry命令和新proposal原SHA保持，F006/F009/F010false，新两次¥4.07仍未授权。
+
+已向用户详细说明原排名计分、空记录未验证、原耗时与unknown保留、实际1秒和零新增搜索／文件不变。下一root主线多段原录像批量离线准备／逐素材结果与恢复状态，先登记归属再开发，不隐式分析或越过F006进入桌面／商业。旧worker与TD005／TD010／TD011／TD012延期，现用工作台路由／静态页不变无需重启。上次普通push21秒连接失败，本轮0push／远端读取；本地Git及.cache/benchmark-fixed-score-publication.json为保存事实，已有授权工作分支待补推，不更新main／强推。
+
 2026-10-07，root接fbca080已交付[sprint-benchmark-candidate-review](docs/exec-plans/sprint-benchmark-candidate-review.md)，[通俗汇报](docs/exec-plans/report-2026-10-07-benchmark-candidate-review.md)。Phase 0／F006固定十位本机原片回看、0–3理由／原人工事件、下载／再载入、导入重验来源与保存排名生成旧v1判分文件；默认空、缺位／重复不补、失败不可判分、音频fallback、迟到载入保留新编辑。main报告只加实际retrievalId，旧无身份报告拒绝；生成／导入只读，不搜索／模型／预算。非零源起点手动回看TD006，HTML无外网，公开PowerShell7中文路径入口通过。
 
 37新行为／首轮138定向通过；一次完整2069passed／2旧测试Windows连接中断或文件拒绝访问／1权限skip320.98s，失败只窄复查一次2passed1.11s，TD012保留，不称初次完整全过／不重复无变化全套。153格式／79类型／lint通过；后续CLI及双离线wheel SHA8ad801bdc13bd191466257ecb54d56e101dabbc60e5957821021eb84f8875bbb通过，78包文件等于源码且无媒体／缓存／DB；JUnit／verify.log／failures.xml／package.json在.cache/benchmark-review-*，源码后仅文档／ignored证据。

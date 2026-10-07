@@ -1,5 +1,14 @@
 # Errors
 
+## [ERR-20261007-023] benchmark_fixed_scoring_fixture_and_types
+
+**Logged**: 2026-10-07
+**Area**: tests / application
+
+首轮类型检查4项：object数值先明确cast、Protocol callback参数名须匹配media、JSON字典赋值需类型明确、已收窄SHA重复cast移除，直接修正后81范围通过。新测试猜错snapshot模块导致收集失败，按现有review测试引用test_detail_query修正；篡改用例把context.template共享对象当下载记录，补deepcopy后正确拒绝。最终116定向通过3.53s，原评分／费用合同未放松。恢复须复用已知fixture入口，不猜路径；完整及实际验收以sprint／回执为准。
+
+固定计分完整2095passed／1权限skip及实际三开发片零新增检索／832项目文件保持通过，旧TD012未重现但不判原因解决。验证后仅文档／ignored证据更新，不再重复源码全套。
+
 ## [ERR-20261007-022] benchmark_review_check_scope
 
 **Logged**: 2026-10-07

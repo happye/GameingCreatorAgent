@@ -3,7 +3,8 @@ param(
   [Parameter(Mandatory = $true)][string]$ReportPath,
   [Parameter(Mandatory = $true)][string]$BindingDirectory,
   [Parameter(Mandatory = $true)][string]$OutputDirectory,
-  [string]$RecordPath
+  [string]$RecordPath,
+  [switch]$Score
 )
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -11,6 +12,7 @@ $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $pythonPath = Join-Path $repositoryRoot '.venv/Scripts/python.exe'
 $reviewArguments = @('-B', (Join-Path $PSScriptRoot 'prepare-benchmark-review.py'), '--project', $Project, '--report', $ReportPath, '--binding', $BindingDirectory, '--output', $OutputDirectory)
 if ($RecordPath) { $reviewArguments += @('--record', $RecordPath) }
+if ($Score) { $reviewArguments += '--score' }
 $reviewOutputEncoding = $OutputEncoding
 $reviewConsoleEncoding = [Console]::OutputEncoding
 $reviewExit = 1

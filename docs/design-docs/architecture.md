@@ -33,7 +33,7 @@ CLI 只解析输入、组装依赖和输出结果；Application 编排 stages、
 
 ## 数据流与状态
 
-F006候选评审使用纯Application benchmark_review把绑定manifest、报告与保存检索组成固定十位依据；核对人工记录后仅转换candidateLabels及reviewed，不计分或改原声明。UI renderer打包离线HTML／静态JS，file原片回看、下载／载入记录；hash限定脚本、connect-src none，无新增HTTP路由。scripts/prepare-benchmark-review.py组合只读TimelineStore，Infrastructure在新目录独占发布并最后保存SHA回执。benchmark报告追加retrievalId关联实际排名，历史无身份报告拒绝准备；生成／导入不搜索，正式benchmark仍显式重新执行查询。见[候选评审指南](../references/benchmark-candidate-review-guide.md)。
+F006候选评审使用纯Application benchmark_review把绑定manifest、报告与保存检索组成固定十位依据；默认核对人工记录后转换candidateLabels及reviewed，不计分或改原声明。显式Score由benchmark_review_scoring注入原保存hits／原失败，复用原run_benchmark算法，不重新检索；benchmark_analysis_costs纯汇总原attempt，与CLI同用。费用unknown保持，原检索时间与评分时间分开，记录原SHA／retrievalId。UI renderer打包离线HTML／静态JS，file原片回看、下载／载入记录；hash限定脚本、connect-src none，无新增HTTP路由。scripts/prepare-benchmark-review.py组合只读TimelineStore，Infrastructure新目录独占发布并最后写SHA回执；不操作模型或账本，失败／未验证评分退出6保留报告。原benchmark命令仍显式再检索，旧无身份报告拒绝评审准备。见[候选评审指南](../references/benchmark-candidate-review-guide.md)。
 
 F006验收准备由纯Application benchmark_preparation验证计划／分区／同源与查询族、参考和旧benchmark转换；Infrastructure benchmark_preparation_files有界读取、SHA回执和新目录独占发布；CLI组合本地MediaProcessor.probe与只读TimelineStore。先冻结原输入／录像SHA与时长／UTC时间，再绑定Completed run并保留原config／pipeline来源。冻结与绑定无Provider／预算／检索，候选标签空；benchmark --binding先核对只增候选评分／复核，不允许更换查询／参考／身份。缺独立性与人评继续null，资料准备不代替F006。
 
