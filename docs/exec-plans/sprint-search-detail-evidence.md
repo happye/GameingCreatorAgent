@@ -1,5 +1,7 @@
 # 检索候选的明确条件依据
 
+发布：af58e6d实现及完整交付资料普通push成功，独立ls-remote同af58e6d452c3cac5ddd3d7888ee42ca84433c6bb，上一d27／30fd积压一并补齐，main未更新／无强推。初始带后台启动与超时终止的助手脚本在执行前被工具策略拒绝，0副作用；改为直接普通git push后7.436s成功，独立读取3.047s成功。没有绕过目标范围或用额外授权。最终文档head见Git和.cache/search-detail-publication.json，源码／完整检查与现用保持，goal active。
+
 2026-10-07 root / Codex接30fdc9c，codex/visual-details。上一goal turn为progress：多录像全事件条件核对已交付／现用，人工需求与持续同步规则已持久，源码与发布事实两本地提交保存，push超时不称远端同步。当前工作树干净，fresh health13880／24000支持上一能力，完整环境和scaffold通过。Phase 0／F005／F010主线，旧workers冻结。
 
 交付：对一份明确已保存的多录像搜索，人工确认一组typed正向AND条件和精分析版本后，为原排名的所有已返回候选补full／partial／no_match／unverified和同主体／部件／原帧依据，网页直接看、回看与独立下载。只核对当前原排名，不声称全库已筛选；全事件核对沿上一入口。音频候选没有视觉事件时保持未验证，不从语音补出外观。没有模型、费用、SQL／搜索／侧车写入，不重排、不剔除未知或再检索。
