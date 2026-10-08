@@ -1,9 +1,10 @@
 # Active assignments
 
-2026-10-08 root接786b7f6已交付[sprint-saved-detail-grouped-ranking](sprint-saved-detail-grouped-ranking.md)／[通俗汇报](report-2026-10-08-saved-detail-grouped-ranking.md)，codex/visual-details，Phase 0／F005／F010。root owns Application分组BM25／E5最大分数、v3投影／v1-v2兼容、CLI组保存核验、service／页面、检查和公共记录；旧workers冻结、无并行写者。
+2026-10-08，Phase 0，codex/visual-details，root / Codex负责集成与公共记录；旧worker冻结、无并行写者。
 
-24固定纯前后查询、一个公开保存排名、81后台／15页面及18新增通过；一次完整2402passed／3旧failed／3error／1权限skip、不循环；同双包98源码及独立九新旧快照、現用56132／49132两尺寸原排名／不同实际组／下载／出画面／profile隔离及用户空验收流程保持。0新增付费／人评，F006/F009/F010false、goal active。保存／普通分支发布以Git及.cache/detail-grouped-publication.json为准。
+- **已交付**：[人物独立排名](sprint-saved-detail-grouped-ranking.md)abbba14已普通push／现用，18新增通过，旧TD012／TD014保持，真实复合仍partial。
+- **已执行**：[两冻结候选真实试验](sprint-detail-temporal-execution.md)各一次／六帧、两次HTTP400、无新结果或重试；用户已核实未扣费，人工确认另存，原Provider未知与保守ledger占用不改写，旧另一任务unknown保留。独立进程／902旧文件与28外部保护核对通过。
+- **开发中／下一动作**：root owns离线请求格式核对、版本化修正方案及公共记录；JSON输出指示缺口只是疑点，不称定位400原因。不改原冻结请求／扩授权，不循环付费试错。人工核销缺口记debt。
+- **人工待办**：本次授权／账单核实已完成，暂无新可标注结果；正式独立素材／事前参考／固定评分见[human-inputs](human-inputs.md)，到触发即提醒。
 
-下一root负责[冻结真实v4试验](sprint-detail-temporal-execution.md)的就绪核对、指定两次执行、结果对照与公共记录；2026-10-08用户已明确授权原两候选／六帧／最高¥4.07及DeepSeek目的地，授权回执与原提案分开保存。旧unknown保持，不重用已消费¥4.04；不修改原事实或旧结果，不循环排名微调替代真实理解验证。人工触发及时提醒记human-inputs；关键节点持续同步公共摘要。完整当前事实见[HANDOFF](../../HANDOFF.md)。
-
-用户授权只读explorer验收用途任务已完成；未另授权并行开发，不重启旧workers。[历史分工](assignments-history-2026-10-08.md)中的PID／待发布／下一步均为当时状态。
+当前F006/F009/F010false、goal active。关键节点持续同步sprint／HANDOFF／本表／progress；当前事实见[HANDOFF](../../HANDOFF.md)，交付报告见[本次结果](report-2026-10-08-temporal-pilot-execution.md)。保存／普通分支发布以Git及ignored回执为准。旧分工见[历史](assignments-history-2026-10-08.md)。

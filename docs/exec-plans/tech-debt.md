@@ -1,8 +1,12 @@
 # Technical debt
 
+2026-10-08真实v4试验补充TD009：两个冻结请求各一次均HTTP400，原传输层对非200只保留状态、丢弃错误正文，不能确定拒绝原因。离线发现JSON模式提示词缺少明确JSON输出指示，仅作兼容性疑点；需有版本的新修正方案，不修改原冻结请求、不循环付费尝试。复现与回执见sprint-detail-temporal-execution及ignored执行目录，902旧文件／28外部保护保持。
+
+费用记录能力缺口：用户已核实上述两次未扣费，但detail_refinement_sidecar／detail_cost_history仅接受Provider用量结算，尚无人工账单确认的独立核销合同；因此原API用量null、ledger仍保守占用本轮¥4.065536。人工确认单独保存，不伪造API成本、不直接覆盖ledger；后续须以明确来源和指定attempt的追加确认记录支持核销，保留原费用未知事实，更早另一任务¥4.065536不受影响。
+
 2026-10-08分组排名完整检查：2409项／2402passed／3failed／3error／1权限skip／570.449s JUnit，.cache/detail-grouped-full.xml及full-verify.log。五个旧版本选择检查在prepare阶段读interrupted而非finished（含三setup error），归TD014；旧test_corrupt_batch_records_refuse_before_media_work[state.json]在初始状态保存时storage.batch_checkpoint，归TD012，底层原因被包装隐藏，不称已定位WinError5。新18全通过，原工作流／batch源码未改，不重复窄复查／完整或加生产重试，继续主交付。
 
-复合已有细节对照：旧真实v2白发角色的浅色观察与coat形状为不同part ID，same-part matcher正确保持partial；红外套跨人及棕色来自短裤的组合也不能full。新文字v3不改变模型parts，不把关键词同现当同衣物证据。更严格模型parts／temporal结构已有程序合同，真实验证仍依赖未批准新实验；本轮不追修旧冻结结果或自动付费，TD009及F010质量仍未通过。复现ignored artifacts/saved-detail-grouped-validation/*conditionReport。
+复合已有细节对照：旧真实v2白发角色的浅色观察与coat形状为不同part ID，same-part matcher正确保持partial；红外套跨人及棕色来自短裤的组合也不能full。新文字v3不改变模型parts，不把关键词同现当同衣物证据。更严格模型parts／temporal结构已有程序合同，真实验证仍未完成：随后获授权的两个v4请求均HTTP400，没有新模型结果；不追修旧冻结结果或自动补发，TD009及F010质量仍未通过。复现ignored artifacts/saved-detail-grouped-validation/*conditionReport。
 
 2026-10-08人物独立语义交付补充：英文white hair纯语义空→第1、中文混合4→1，固定0.80／0.02；仍仅1/227细节覆盖、同人物白发＋持杖partial，不能称TD009或质量整体解决。一次完整2391项／2389passed／1旧TD014失败／1权限skip／449.131s；失败仍test_http_registered_source_range_csp_and_reference_import读取interrupted而非finished，日志.cache/detail-actor-full.xml／full-final-verify.log保留，不循环窄复查或完整。原主体／归属未知及TD004负面泛词边界保持，继续主线。
 

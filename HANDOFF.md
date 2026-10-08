@@ -1,19 +1,18 @@
 # 当前交接
 
-2026-10-08，root接786b7f6已交付[人物独立词法／语义排名](docs/exec-plans/sprint-saved-detail-grouped-ranking.md)／[通俗汇报](docs/exec-plans/report-2026-10-08-saved-detail-grouped-ranking.md)，Phase 0／F005／F010。新saved-detail-text-v3让基础原文档与准确shot／actor／环境组分别参与BM25／E5、每原事件每分量最大值／RRF一次，保存lexical及semantic实际组。原facts／源时间／证据、默认未选细节行为及准确v1／v2旧快照保持，不自动解析确认条件、不称同人／同part AND。
+2026-10-08，Phase 0；root / Codex，codex/visual-details，goal active。
 
-真实12before＋12after纯本地查询项目全字节不变：中文白发浅色外套词法3→2、白发红外套4→3，英文／混合仍第1；全部typed仍partial。旧模型v2把颜色与形状分到不同part ID，棕色来自其他衣物，不能借分组排名修成同件外套；1/227覆盖、F006/F009/F010false。另一次公开hybrid 2da5a7448f974aa4b16133c67f71495c约5283.491ms，第1，词法主体2／语义主体1，严格白发＋红外套partial1。898旧文件／9表／217普通排名／三源／四费用提案保持，仅一新公开查询两文件，0新增付费／视觉／ASR／人评。
+- **已交付**：人物独立关键词／语义排名已在现用工作台运行，提交abbba14普通push及独立远端核对一致。原描述与每个人物／环境分别计分，展开候选可看到两种检索各采用哪个人物组；旧版本结果保持。详见[分组排名](docs/exec-plans/sprint-saved-detail-grouped-ranking.md)。
+- **本次真实验证**：用户批准的两候选／六帧已各发送一次，22:27:58–22:27:59北京时间均HTTP400，无新细节、无重试。用户已核实未扣费，确认另存；原API用量null、共享预算工具本轮仍保守占用¥4.065536，更早另一任务未知预留¥4.065536保持。原902项目文件及28外部保护记录字节不变，只新增九个尝试／ledger文件。详见[执行sprint](docs/exec-plans/sprint-detail-temporal-execution.md)／[通俗报告](docs/exec-plans/report-2026-10-08-temporal-pilot-execution.md)。
+- **开发中／下一步**：root离线核对请求格式并准备有版本的新修正方案；启用JSON模式而未明确要求JSON输出是疑点，缺错误正文不能认定400原因。原提案与请求不改、不自动补发、不循环付费试错。人工费用核销能力缺口记tech-debt，不篡改原记录来清预留。
+- **人工待办**：本次授权和账单核实完成，目前没有新的可标注结果。正式F006仍待独立代表录像、事前原片参考及固定前十评分；日常不用填验收表，需要用户帮助即提醒具体入口／步骤并登记[人工待办](docs/exec-plans/human-inputs.md)。
 
-81后台19.228s、15页面32.453s通过；18新增全通过。一次完整2409项／2402passed／3failed／3error／1权限skip，570.449s JUnit。五旧版本选择准备／页面读interrupted归TD014，旧批次初始保存storage.batch_checkpoint归TD012，原因未定位、不循环。194格式／lint、96类型／CLI通过。同双wheel SHA6236a42f912482cf184e76aa76d2ee05ee8bb2596321f17022cbbda696dfe8d4、98源码包及独立九新旧完整核对JSON摘要一致。.cache/detail-grouped-*与ignored artifacts/saved-detail-grouped-validation留证，不重做已保存查询。
+## 验证和边界
 
-现用fresh身份／state／CIM exe命令及出生时间、无子任务／活跃批次或验收操作核对后更新56132／parent49132，launch20261008-215948-406-6f782d80086049498e28be4c8337929b，八能力含saved-detail-grouped-ranking-v1。1366／390重放同一保存排名，词法／语义不同组、两下载／partial1、35秒实际解码播放／profile隔离／无横溢、三static字节等源码及用户空验收流程09ef2eacc0694a19b9b85fe0275cf5da保持；0后端新搜索。root看两实际回看截图。PID只快照，操作前重核。
+分组排名81后台／15页面、18新增全部通过；一次完整2409项／2402passed／3旧failed／3error／1Windows权限skip／570.449s JUnit。五旧版本选择问题归TD014、一次旧批次初始保存问题归TD012，原因未定位、不循环。格式／lint、96类型／CLI通过；同双wheel SHA6236a42f912482cf184e76aa76d2ee05ee8bb2596321f17022cbbda696dfe8d4、98源码包／独立九新旧JSON核对通过。已有24纯前后及一个公开排名2da5a7448f974aa4b16133c67f71495c，中文词法3→2／4→3，其他目标仍第1，严格复合均partial、细节1/227。F006/F009/F010false。
 
-## 下一主线与人工依赖
+本次仅执行有界试验，无生产源码变更／新搜索／人评，不重复整套。另一进程读回新失败、原v2不变及v4缺失／unverified通过；执行、账单确认、基线／费用／原请求hash见ignored artifacts/detail-temporal-execution-20261008。原提案SHA06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6，executionAuthorized=false是冻结历史，当前授权另有回执；已批准两次已用，不覆盖第三次、重试或新提示词。
 
-下一root执行[冻结真实v4试验](docs/exec-plans/sprint-detail-temporal-execution.md)就绪预检。2026-10-08用户明确答复“允许按此冻结提案执行并发送这6张画面”：两指定候选、最多两请求不重试、新增最高¥4.07、发送至https://api.deepseek.com/chat/completions已获授权。提案artifacts/detail-temporal-validation/pilot-proposal.json SHA06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6及executionAuthorized=false作为原冻结历史保持；执行授权另存回执。核对实际请求／六帧SHA／当前官方费率后执行，不替换候选或提示词。旧unknown¥4.065536与billingConfirmed=false保留，旧已消费¥4.04不重用。
+现用UI上次核对56132／parent49132、launch20261008-215948-406-6f782d80086049498e28be4c8337929b、八能力；分组排名两尺寸实际出画面／下载／版本隔离及用户空验收流程09ef2eacc0694a19b9b85fe0275cf5da保持。本次未重启。PID只是快照，操作前重核。
 
-日常不用填验收表。正式F006仍需独立代表录像、事前原片参考与固定前十评分，详见[人工待办](docs/exec-plans/human-inputs.md)。新试验费用／发送范围授权已完成；真实结果出来后立即说明需要人核对哪段、什么内容及入口，不能代填判断。需要人帮助只阻断对应任务，已有授权内可独立工作继续。
-
-root独占本轮代码与公共记录，旧workers冻结，用户授权只读验收explorer已完成，未开并行开发。加载AGENTS及[共享协议](docs/references/agent-workflow.md)、CODEX／CLAUDE／Grok适配；主线交付优先，小问题一次直接修不了就记debt，关键节点通俗汇报并同步sprint／HANDOFF／assignments／progress。当前阶段未变、goal active，不把阶段交付当整体完成或擅自暂停。
-
-保存及授权普通分支发布身份以Git和.cache/detail-grouped-publication.json为准，仅codex/visual-details，不更新main或强推。旧786b7f6已普通push确认；本轮源码／验证／现用随最终提交保存。旧交接与PID／下一步见[历史](docs/exec-plans/handoff-history-2026-10-08.md)，不覆盖当前事实。
+root独占当前执行工具与公共记录，旧worker冻结，用户授权只读验收说明任务已完成。所有Agent加载AGENTS、[协作协议](docs/references/agent-workflow.md)、CODEX／CLAUDE／Grok入口；主线交付优先，小bug直接修不了即记录后继续，关键节点通俗汇报并同步sprint／HANDOFF／assignments／progress。普通分支发布身份以Git及.cache/detail-grouped-publication.json、.cache/detail-temporal-execution-publication.json为准，不更新main／不强推；阶段交付不等于整体goal完成。旧交接见[历史](docs/exec-plans/handoff-history-2026-10-08.md)。

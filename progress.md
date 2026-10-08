@@ -2,9 +2,11 @@
 
 ## 当前进度摘要（2026-10-08）
 
-[人物独立词法／语义排名](docs/exec-plans/sprint-saved-detail-grouped-ranking.md)已交付／现用，[通俗汇报](docs/exec-plans/report-2026-10-08-saved-detail-grouped-ranking.md)。新文字v3独立原文档及人物／环境BM25／E5、每事件最大分数及RRF一次，保留两实际组／旧v1-v2快照。24纯前后项目不变、另一个公开查询两文件；中文同人词法3→2、跨人4→3，其他目标仍第1，全部typed partial、1/227覆盖。原898文件／217普通排名／三源及费用保持，0新增模型分析／人评。
+已交付／现用：[人物独立关键词／语义排名](docs/exec-plans/sprint-saved-detail-grouped-ranking.md)，abbba14已普通push并独立确认远端一致。18新增全部通过，旧完整2402passed／3failed／3error／1权限skip、TD012／TD014保持；双包／现用两尺寸通过。真实严格复合仍partial、已有细节1/227，F006/F009/F010false。
 
-81后台／15页面、新18全通过；一次完整2402passed／3failed／3error／1权限skip／570.449s，旧TD012／TD014不循环；194格式／lint、96类型／CLI、同双wheel98源码文件及独立九新旧快照、现用56132／49132两尺寸原排名／不同组／下载／35秒出画面／版本隔离及用户空验收流程保持。下一[冻结真实v4试验](docs/exec-plans/sprint-detail-temporal-execution.md)就绪预检；2026-10-08用户已明确授权原两候选／六帧／最高¥4.07及DeepSeek目的地，执行前核对原哈希和当前费率，旧unknown保留。正式人工待办保持、F006/F009/F010false、goal active；普通分支发布身份以Git及.cache/detail-grouped-publication.json为准。
+本次已执行：[两冻结候选真实试验](docs/exec-plans/sprint-detail-temporal-execution.md)／[通俗报告](docs/exec-plans/report-2026-10-08-temporal-pilot-execution.md)。两个请求／六帧各一次，两次HTTP400，无新结果、不重试；用户已核实未扣费、确认另存，API用量未知及原ledger保守占用¥4.065536不改写，旧另一任务unknown¥4.065536保持。独立读回新失败／原v2不变／v4缺失，902旧文件与28外部保护字节不变，只新增九个尝试／费用文件；0本次新搜索／人评／生产源码变更，不重复完整。
+
+开发中／下一步：root离线核对JSON输出格式及错误证据缺口，准备有版本的新修正方案，不改本次冻结请求、不自动扩授权。人工：本次授权／账单核实完成，暂无新结果需标注；正式独立素材／事前原片参考／固定候选评分待真人，日常无需填验收流程。需要人工帮助即提醒登记、关键节点持续同步，goal active；发布以Git及.cache/detail-temporal-execution-publication.json为准。
 
 ## 最近交付历史
 

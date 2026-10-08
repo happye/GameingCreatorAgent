@@ -386,3 +386,5 @@ Ignore `OSError` from the cache write and return the verified vector. Do not del
 - **Notes**: `embed` now keeps the vector when the cache file cannot be replaced. The demo search then completed. Not promoted to AGENTS.md.
 
 ---
+
+2026-10-08真实v4执行：初预检误把旧提案全项目DB字节当当前要求，后续合法任务登记导致历史DB／wal／shm不同；原请求／六帧／wire精确一致、其余历史保护不变，改用当前执行基线，不改冻结请求。两HTTP400无错误正文和用量，失败回执保留，不重发；用户核实零扣费单独保存，不伪造Provider费用。一次临时文档打印未加载隔离env而GBK不支持¥，未改文件；后续按项目env执行。
