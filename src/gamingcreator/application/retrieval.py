@@ -144,9 +144,18 @@ class CandidateText:
 
 
 @dataclass(frozen=True, slots=True)
+class SemanticFacet:
+    facet_id: str
+    candidate_id: str
+    facts: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class RetrievalSupplement:
     snapshot_sha256: str
     candidates: tuple[CandidateText, ...]
+    projection_version: str = "saved-detail-text-v1"
+    semantic_facets: tuple[SemanticFacet, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -161,6 +170,7 @@ class SearchResult:
     min_semantic_margin: float = 0.02
     abstention_reason: str | None = None
     event_embeddings: tuple[Embedding, ...] = ()
+    semantic_detail_matches: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -181,6 +191,7 @@ class ProjectSearchResult:
     min_semantic_margin: float
     abstention_reason: str | None
     retrieval_version: str = PROJECT_RETRIEVAL_VERSION
+    semantic_detail_matches: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -539,9 +550,14 @@ async def search_timelines(
         separators=(",", ":"),
     )
     if supplement is not None:
-        if not re.fullmatch(r"[a-f0-9]{64}", supplement.snapshot_sha256):
+        if (
+            not re.fullmatch(r"[a-f0-9]{64}", supplement.snapshot_sha256)
+            or supplement.projection_version not in {"saved-detail-text-v1", "saved-detail-text-v2"}
+            or supplement.projection_version == "saved-detail-text-v1"
+            and supplement.semantic_facets
+        ):
             raise _fail("retrieval.supplement", "已有细节的语料快照无效。")
-        identity += "\nsaved-detail-text-v1:" + supplement.snapshot_sha256
+        identity += "\n" + supplement.projection_version + ":" + supplement.snapshot_sha256
     scope_id = "project-" + hashlib.sha256(identity.encode("utf-8")).hexdigest()[:32]
     result = await _search_documents(
         scope_id,
@@ -571,7 +587,13 @@ async def search_timelines(
         result.min_similarity,
         result.min_semantic_margin,
         result.abstention_reason,
-        PROJECT_RETRIEVAL_VERSION + ("-saved-details-v1" if supplement is not None else ""),
+        PROJECT_RETRIEVAL_VERSION
+        + (
+            "-saved-details-" + supplement.projection_version.rsplit("-", 1)[1]
+            if supplement
+            else ""
+        ),
+        result.semantic_detail_matches,
     )
 
 
@@ -621,6 +643,7 @@ async def _search_documents(
         for timeline in timelines
         for document in _documents(timeline)
     )
+    facets: tuple[SemanticFacet, ...] = supplement.semantic_facets if supplement else ()
     if supplement is not None:
         extra = {row.candidate_id: row.facts for row in supplement.candidates}
         visual = {row.candidate_id for row in documents if row.event_id is not None}
@@ -635,6 +658,24 @@ async def _search_documents(
             )
         ):
             raise _fail("retrieval.supplement", "细节文字与原视觉候选不一致。")
+        if (
+            len(facets) > 20_000
+            or len({row.facet_id for row in facets}) != len(facets)
+            or any(
+                type(row.facet_id) is not str
+                or not re.fullmatch(r"facet-[a-f0-9]{24}", row.facet_id)
+                or row.candidate_id not in extra
+                or type(row.facts) is not tuple
+                or not row.facts
+                or any(
+                    type(fact) is not str or fact not in extra[row.candidate_id]
+                    for fact in row.facts
+                )
+                or len("\n".join(row.facts)) > 8192 - len("passage: ")
+                for row in facets
+            )
+        ):
+            raise _fail("retrieval.supplement", "人物细节组与原候选不一致或超过20,000组。")
         documents = tuple(
             replace(
                 row,
@@ -670,6 +711,7 @@ async def _search_documents(
         else {}
     )
     semantic = {}
+    facet_winners: dict[str, str] = {}
     metadata = None
     abstention_reason = None
     event_embeddings: tuple[Embedding, ...] = ()
@@ -680,7 +722,11 @@ async def _search_documents(
                 "语义检索需要已准备的本地模型；可显式使用lexical模式。",
                 ExitCode.ENVIRONMENT,
             )
-        texts = (f"query: {query}", *(f"passage: {item.text}" for item in documents))
+        texts = (
+            f"query: {query}",
+            *(f"passage: {item.text}" for item in documents),
+            *("passage: " + "\n".join(item.facts) for item in facets),
+        )
         result = await embedding_provider.embed(
             EmbeddingRequest(run_id, texts, "embedding-v1"),
             context or CancellationContext(run_id, 120),
@@ -704,13 +750,25 @@ async def _search_documents(
         ):
             raise _fail("retrieval.embedding_invalid", "模型返回的向量空间、数量或文本关联不一致。")
         metadata = result.metadata
+        document_embeddings = embeddings[1 : 1 + len(documents)]
         event_embeddings = tuple(
             replace(embedding, subject_id=document.event_id)
-            for document, embedding in zip(documents, embeddings[1:], strict=True)
+            for document, embedding in zip(documents, document_embeddings, strict=True)
             if document.event_id is not None
         )
-        for document, embedding in zip(documents, embeddings[1:], strict=True):
+        similarities = {
+            document.identifier: _cosine(embeddings[0], embedding)
+            for document, embedding in zip(documents, document_embeddings, strict=True)
+        }
+        identifiers = {row.candidate_id: row.identifier for row in documents}
+        for facet, embedding in zip(facets, embeddings[1 + len(documents) :], strict=True):
+            identifier = identifiers[facet.candidate_id]
             similarity = _cosine(embeddings[0], embedding)
+            if similarity > similarities[identifier]:
+                similarities[identifier] = similarity
+                facet_winners[identifier] = facet.facet_id
+        for document in documents:
+            similarity = similarities[document.identifier]
             if similarity >= min_similarity and document.identifier not in denied_actions:
                 semantic[document.identifier] = similarity
         if mode == "hybrid" and semantic:
@@ -726,7 +784,7 @@ async def _search_documents(
             # E5 absolute cosines are high even for unrelated text. Contrast distinct
             # descriptions, grouping repeated independent occurrences for this check.
             groups: dict[str, float] = {}
-            for document, embedding in zip(documents, embeddings[1:], strict=True):
+            for document in documents:
                 if document.identifier in denied_actions:
                     continue
                 description = (
@@ -737,7 +795,7 @@ async def _search_documents(
                     .strip()
                 )
                 groups[description] = max(
-                    groups.get(description, -1.0), _cosine(embeddings[0], embedding)
+                    groups.get(description, -1.0), similarities[document.identifier]
                 )
             ordered = sorted(groups.values(), reverse=True)
             if (
@@ -780,6 +838,8 @@ async def _search_documents(
             signals.append(f"BM25={lexical[document.identifier]:.4f}")
         if document.identifier in semantic:
             signals.append(f"cosine={semantic[document.identifier]:.4f}")
+            if document.identifier in facet_winners:
+                signals.append(f"detailFacet={facet_winners[document.identifier]}")
         candidates.append(
             CandidateClip(
                 document.candidate_id,
@@ -805,4 +865,9 @@ async def _search_documents(
         min_semantic_margin=min_semantic_margin,
         abstention_reason=abstention_reason,
         event_embeddings=event_embeddings,
+        semantic_detail_matches=tuple(
+            (row.candidate_id, facet_winners[row.identifier])
+            for row in selected
+            if row.identifier in semantic and row.identifier in facet_winners
+        ),
     )

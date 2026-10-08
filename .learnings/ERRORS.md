@@ -1,5 +1,9 @@
 # Errors
 
+## 2026-10-08 人物语义检查准备
+
+完整入口第一次在pytest前被health测试新增能力行的缩进挡住，按formatter一次修正；首日志detail-actor-full-verify.log保留。实际套件只跑一次，2389passed／1旧TD014失败／1权限skip，不循环。代码未改旧工作流；源码冻结后包检查与现用继续。恢复时区分准备检查失败与已执行完整套件，不覆盖原回执。
+
 ## 2026-10-07 统一验收验证假设错误（已直接纠正）
 
 首次新后台检查因补丁缩进错误未收集；修正后15passed。浏览器首两项使用CSP禁止的字符串求值，改函数后2passed，不改安全策略。新增候选播放夹具先撞旧目录、再漏子目录创建及继承特殊时钟，全部保留原回执；按实际asset修正后1passed。真实助手初次旧漫画manifest路径少media层、随后链接名称错，保留已保存七步并从原流程完成评分，未重搜；尾部误假设DB字节必变和benchmark额外写检索JSON，只读实际SQL／原表与文件后改核验。见.cache/benchmark-workflow-*及artifacts/benchmark-workflow-validation，避免重复搭建或把验证假设称产品缺陷。

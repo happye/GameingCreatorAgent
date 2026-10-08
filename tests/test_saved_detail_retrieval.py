@@ -108,7 +108,7 @@ def test_all_modes_discover_attributes_absent_from_base_text_without_changing_fa
     assert clip.observable_facts == timeline.events[0].observable_facts
     assert clip.evidence_ids == tuple(sorted(timeline.events[0].evidence_ids))
     assert clip.source_range == timeline.events[0].source_range
-    assert "saved-details-v1" in augmented.retrieval_version
+    assert "saved-details-v2" in augmented.retrieval_version
     assert augmented.scope_id != original.scope_id
     assert index.manifest["indexedEvents"] == 1
     assert all(

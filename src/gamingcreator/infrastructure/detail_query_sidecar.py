@@ -10,7 +10,13 @@ from gamingcreator.application.detail_refinement import (
     RefinementSettings,
     default_refinement_identity,
 )
-from gamingcreator.application.detail_retrieval import SavedDetailCorpus, build_saved_detail_corpus
+from gamingcreator.application.detail_retrieval import (
+    VERSION as DETAIL_RETRIEVAL_VERSION,
+)
+from gamingcreator.application.detail_retrieval import (
+    SavedDetailCorpus,
+    build_saved_detail_corpus,
+)
 from gamingcreator.application.storage import RunStatus, StoredTimeline
 from gamingcreator.domain.actor_details import (
     MATCHER_VERSION,
@@ -54,7 +60,11 @@ def refinement_settings_for_profile(profile: str) -> RefinementSettings:
 
 
 def read_saved_detail_corpus(
-    project: Path, timelines: tuple[StoredTimeline, ...], profile: str
+    project: Path,
+    timelines: tuple[StoredTimeline, ...],
+    profile: str,
+    *,
+    version: str = DETAIL_RETRIEVAL_VERSION,
 ) -> SavedDetailCorpus:
     identity = refinement_identity_for_profile(profile)
     settings = refinement_settings_for_profile(profile)
@@ -66,7 +76,7 @@ def read_saved_detail_corpus(
         return outcome.request, outcome.detail
 
     return build_saved_detail_corpus(
-        timelines, read, profile=profile, identity=identity, settings=settings
+        timelines, read, profile=profile, identity=identity, settings=settings, version=version
     )
 
 

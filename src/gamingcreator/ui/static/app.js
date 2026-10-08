@@ -871,18 +871,20 @@
 
     function validSavedDetailSearch(search, profile) {
         const index = search.detailRetrieval;
-        return index?.version === "saved-detail-text-v1" && index.profile === profile
+        return ["saved-detail-text-v1", "saved-detail-text-v2"].includes(index?.version) && index.profile === profile
             && /^[a-f0-9]{64}$/.test(index.snapshotSha256)
             && Array.isArray(index.refinements) && Array.isArray(index.sources)
             && Number.isSafeInteger(index.totalVisualEvents) && index.totalVisualEvents <= 20000
             && Number.isSafeInteger(index.publishedRefinements) && index.publishedRefinements === index.refinements.length
             && Number.isSafeInteger(index.indexedEvents) && index.indexedEvents <= index.publishedRefinements
             && index.sources.length === search.sources.length
+            && (index.version === "saved-detail-text-v1" || validSavedSemanticFacets(index))
             && index.sources.every(source => {
                 const expected=search.sources.find(row=>row.runId===source.runId);
                 return expected && source.mediaId===expected.mediaId && source.sourceSha256===expected.sourceSha256 && source.configHash===expected.configHash && source.durationUs===expected.durationUs;
             })
             && search.candidates.every(row => {
+                if(row.semanticDetailFacetId != null && !index.semanticFacets?.some(facet=>facet.facetId===row.semanticDetailFacetId && facet.candidateId===row.candidateId && facet.runId===row.runId && facet.eventId===row.eventId))return false;
                 const proof=row.detailSearchEvidence;
                 if(proof===null)return !index.refinements.some(item=>item.candidateId===row.candidateId && item.attributes?.length);
                 const original=index.refinements.find(item=>item.candidateId===row.candidateId && item.runId===row.runId && item.eventId===row.eventId);
@@ -891,6 +893,22 @@
                     && Array.isArray(proof.attributes) && proof.attributes.length>0
                     && proof.attributes.every(item=>item.status==="observed" && typeof item.text==="string" && item.text.length<=4096 && typeof item.shotId==="string" && typeof item.partId==="string"
                         && Array.isArray(item.evidenceIds) && item.evidenceIds.length>0 && item.evidenceIds.every(id=>row.evidenceIds.includes(id)));
+            });
+    }
+
+    function validSavedSemanticFacets(index) {
+        return Number.isSafeInteger(index.semanticFacetCount) && index.semanticFacetCount>=0 && index.semanticFacetCount<=20000
+            && Array.isArray(index.semanticFacets) && index.semanticFacetCount===index.semanticFacets.length
+            && new Set(index.semanticFacets.map(row=>row.facetId)).size===index.semanticFacetCount
+            && index.semanticFacets.every(facet=>{
+                const original=index.refinements.find(row=>row.candidateId===facet.candidateId && row.runId===facet.runId && row.eventId===facet.eventId);
+                if(!original || !Array.isArray(original.attributes) || !/^facet-[a-f0-9]{24}$/.test(facet.facetId)
+                    || typeof facet.shotId!=="string" || !(facet.actorId===null || typeof facet.actorId==="string")
+                    || !Array.isArray(facet.attributeIndexes) || !facet.attributeIndexes.length
+                    || new Set(facet.attributeIndexes).size!==facet.attributeIndexes.length)return false;
+                const selected=facet.attributeIndexes.map(position=>Number.isSafeInteger(position) && position>=0 ? original.attributes[position] : null);
+                return selected.every(row=>row && row.status==="observed" && row.shotId===facet.shotId && row.actorId===facet.actorId)
+                    && Array.isArray(facet.facts) && stableJson(facet.facts)===stableJson(Array.from(new Set(selected.map(row=>row.text))));
             });
     }
 
@@ -903,9 +921,11 @@
         const actors=new Map();
         for(const attribute of proof.attributes){
             const key=`${attribute.shotId}/${attribute.actorId ?? "environment"}`;
-            if(!actors.has(key))actors.set(key, actors.size+1);
+            if(attribute.actorId!==null && !actors.has(key))actors.set(key, actors.size+1);
             list.append(element("li","",`${attribute.actorId===null ? "镜头环境" : `主体组 ${actors.get(key)}`} · ${attribute.text.split(" ")[0]} · ${attribute.evidenceIds.length} 张支持画面`));
         }
+        const used=state.projectSearch.detailRetrieval.semanticFacets?.find(row=>row.facetId===card.dataset.semanticFacet);
+        if(used)details.append(element("p","muted",used.actorId===null ? "本次语义采用镜头环境的独立细节。" : `本次语义采用主体组 ${actors.get(`${used.shotId}/${used.actorId}`)} 的独立细节；仍需核对原片。`));
         details.append(list);card.append(details);
     }
 
@@ -1818,7 +1838,7 @@
                 card.insertBefore(element("p", "candidate-source", `来源 · ${row.sourceName}`), copy);
             }
             appendUncertainty(card, row);
-            if(joint?.detailRetrieval)appendSavedDetailSearchEvidence(card,row);
+            if(joint?.detailRetrieval){if(row.semanticDetailFacetId)card.dataset.semanticFacet=row.semanticDetailFacetId;appendSavedDetailSearchEvidence(card,row);}
             if (joint) appendSearchConditionProof(card,row);
             ui["candidate-list"].append(card);
         }

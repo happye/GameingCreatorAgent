@@ -2,6 +2,10 @@
 
 ## 当前进度摘要（2026-10-08）
 
+当前[人物独立细节语义检索](docs/exec-plans/sprint-saved-detail-actor-semantics.md)已交付／现用，[通俗汇报](docs/exec-plans/report-2026-10-08-saved-detail-actor-semantics.md)，root接03e92f1。人物／环境observed分组、原事件最大语义分数／RRF一次，v2保存采用组且旧v1保持。英文纯语义空→第1、中文混合4→1，仍partial、细节1/227。一次完整2389passed／1旧TD014失败／1权限skip／449.131s，20新增全通过、不循环；192格式／lint、96类型／CLI、双wheel98源码及独立八新旧快照通过。现用50808／41844两尺寸保存排名／下载／组身份／出画面／版本隔离及用户空验收流程保持，0后端新搜索。888旧文件／217普通排名／三源／费用提案保持，只五新本地搜索十文件，0付费／人评。下一先登记多人物复合需求同人物支持／跨人物拼接固定对照及改进；旧workers冻结，goal active。保存／普通分支发布身份以Git及.cache/detail-actor-publication.json为准。
+
+用户本次再次要求人工协助即时提醒、持续同步里程碑。持久规则已在AGENTS、共享协议及各工具入口，本轮修正“尚未实现”等旧当前摘要，人工待办明确日常不需填验收、正式F006依赖独立来源／事前原片参考／固定评分；当前开发不需新手动操作。只读子任务回答用途，root继续开发。以下旧结果与下一步均为历史。
+
 [真实模式对照](docs/exec-plans/sprint-saved-detail-real-modes.md)已完成，root接424d4fa：16单元含复用两旧／14新查询28文件，目标中文词法遗漏→5／纯语义6→6／默认混合遗漏→4；英文词法与混合空→1、纯语义仍空。冻结0.80／0.02、1/227细节覆盖及typed partial保持，860旧文件／217普通排名／三源／费用提案不变，0新视觉／费用／标签。独立原98源码包读回16结果通过，不重跑无变化完整／重部署。一次五文本主体实验英0.82366跨原0.80，未接生产；下一登记并实现按人物独立语义投影、事件最大分数一次RRF及旧快照兼容，继续主线。通俗汇报见[report](docs/exec-plans/report-2026-10-08-saved-detail-real-modes.md)，保存／同步以Git及.cache/detail-modes-publication.json为准，goal active。
 
 发布事实：已有细节检索代码及交付文档1b9da43已普通push且独立ls-remote确认同SHA，仅codex/visual-details；main未更新／无强推。此段补事实，最终文档head与同步以Git和.cache/detail-index-publication.json为准，源码／现用／goal active保持。

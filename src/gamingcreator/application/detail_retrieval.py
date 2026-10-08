@@ -14,7 +14,7 @@ from gamingcreator.application.detail_refinement import (
     request_hash,
 )
 from gamingcreator.application.detail_refinement_budget import detail_matches_request, payload_hash
-from gamingcreator.application.retrieval import CandidateText, RetrievalSupplement
+from gamingcreator.application.retrieval import CandidateText, RetrievalSupplement, SemanticFacet
 from gamingcreator.application.storage import RunStatus, StoredTimeline
 from gamingcreator.domain.actor_details import (
     AttributeKind,
@@ -26,8 +26,10 @@ from gamingcreator.domain.actor_details import (
 )
 from gamingcreator.domain.errors import AppError, ExitCode
 
-VERSION = "saved-detail-text-v1"
+LEGACY_VERSION = "saved-detail-text-v1"
+VERSION = "saved-detail-text-v2"
 MAX_EVENTS = 20_000
+MAX_FACETS = 20_000
 MAX_BYTES = 8 * 1024 * 1024
 SavedReader = Callable[
     [StoredTimeline, str], tuple[DetailRefinementRequest | None, CandidateDetail | None]
@@ -91,10 +93,12 @@ def build_saved_detail_corpus(
     profile: str,
     identity: RefinementIdentity,
     settings: RefinementSettings,
+    version: str = VERSION,
 ) -> SavedDetailCorpus:
     total = sum(len(row.events) for row in timelines)
     if (
         profile not in {"v1", "v2", "v3", "v4"}
+        or version not in {LEGACY_VERSION, VERSION}
         or not 1 <= len(timelines) <= 100
         or total > MAX_EVENTS
         or any(row.run.status != RunStatus.COMPLETED for row in timelines)
@@ -105,6 +109,8 @@ def build_saved_detail_corpus(
         raise _fail("请选择准确的Completed版本，最多100个不同来源及20,000事件。")
     evidence: dict[str, dict[str, object]] = {}
     texts, records = [], []
+    facets: list[SemanticFacet] = []
+    facet_records: list[dict[str, object]] = []
     for timeline in sorted(timelines, key=lambda row: row.run.run_id):
         for event in sorted(timeline.events, key=lambda row: row.event_id):
             request, detail = reader(timeline, event.event_id)
@@ -119,12 +125,13 @@ def build_saved_detail_corpus(
                 or not detail_matches_request(detail, request)
             ):
                 raise _fail("已有细节与原事件、帧或所选精分析版本不一致。")
-            entries = []
+            entries: list[dict[str, object]] = []
             for shot in detail.shots:
                 groups = [(None, shot.environment)] + [
                     (actor.actor_id, actor.attributes) for actor in shot.actors
                 ]
                 for actor_id, attributes in groups:
+                    first = len(entries)
                     for attribute in _indexable(attributes):
                         entries.append(
                             {
@@ -138,6 +145,31 @@ def build_saved_detail_corpus(
                                 "evidenceIds": list(attribute.evidence_ids),
                                 "startUs": attribute.source_range.start_us,
                                 "endUs": attribute.source_range.end_us,
+                            }
+                        )
+                    if version == VERSION and len(entries) > first:
+                        if len(facets) >= MAX_FACETS:
+                            raise _fail("人物细节超过20,000组，请明确缩小来源范围。")
+                        facet_id = (
+                            "facet-"
+                            + hashlib.sha256(
+                                json.dumps([detail.candidate_id, shot.shot_id, actor_id]).encode()
+                            ).hexdigest()[:24]
+                        )
+                        facts = tuple(dict.fromkeys(str(row["text"]) for row in entries[first:]))
+                        if len("\n".join(facts)) > 8192 - len("passage: "):
+                            raise _fail("单组人物细节文字过长，请明确缩小来源范围。")
+                        facets.append(SemanticFacet(facet_id, detail.candidate_id, facts))
+                        facet_records.append(
+                            {
+                                "facetId": facet_id,
+                                "candidateId": detail.candidate_id,
+                                "runId": timeline.run.run_id,
+                                "eventId": event.event_id,
+                                "shotId": shot.shot_id,
+                                "actorId": actor_id,
+                                "attributeIndexes": list(range(first, len(entries))),
+                                "facts": list(facts),
                             }
                         )
             record: dict[str, object] = {
@@ -158,7 +190,7 @@ def build_saved_detail_corpus(
                     )
                 )
     manifest: dict[str, object] = {
-        "version": VERSION,
+        "version": version,
         "profile": profile,
         "promptHash": identity.prompt_hash,
         "settingsHash": refinement_settings_hash(settings),
@@ -181,9 +213,14 @@ def build_saved_detail_corpus(
         "humanLabels": None,
         "qualityGate": None,
     }
+    if version == VERSION:
+        manifest["semanticFacetCount"] = len(facets)
+        manifest["semanticFacets"] = facet_records
     raw = json.dumps(manifest, ensure_ascii=False, sort_keys=True, allow_nan=False).encode()
     if len(raw) > MAX_BYTES:
         raise _fail("已有细节语料超过8MiB，请明确缩小来源范围。")
     digest = hashlib.sha256(raw).hexdigest()
     manifest["snapshotSha256"] = digest
-    return SavedDetailCorpus(RetrievalSupplement(digest, tuple(texts)), manifest, evidence)
+    return SavedDetailCorpus(
+        RetrievalSupplement(digest, tuple(texts), version, tuple(facets)), manifest, evidence
+    )

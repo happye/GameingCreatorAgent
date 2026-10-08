@@ -2,6 +2,8 @@
 
 Joint searches can explicitly include saved, evidence-supported visual attributes with ‘含已有细节’ or `--detail-profile v2`. Only the exact selected base/refinement version is read; uncertain or conflicting observations do not become positive search text. Rankings carry detail provenance and corpus coverage, while same-actor conditions remain a separate check. No new analysis or paid request is dispatched. See the [saved-detail retrieval guide](docs/references/saved-detail-retrieval-guide.md).
 
+New detail-assisted semantic searches score each actor and the environment separately, then use the best score for the original event without duplicate results or extra ranking votes. Saved rankings identify the group used; old projection snapshots remain reproducible. This improves the tested English “white hair” query, while formal human retrieval acceptance remains pending.
+
 The local workspace's “验收流程” entry connects source/query registration, raw-footage references, freezing, explicit selection of existing Completed analysis versions, local ranking and fixed-candidate review/scoring. Submitted steps preserve their inputs and new output directories; refresh or restart recovers progress and saved analysis choices. Forms require downloading edits and submitting the saved file. Ranking runs on an explicit click; scoring performs no search. See the [acceptance workspace guide](docs/references/benchmark-workspace-guide.md). Independent human retrieval acceptance remains pending.
 
 Version repository: [happye/GameingCreatorAgent](https://github.com/happye/GameingCreatorAgent). Use the current working branch named in [`HANDOFF.md`](./HANDOFF.md); unfinished features may not be on `main`. Keep media, keys, environments, and caches outside tracked files.

@@ -458,8 +458,10 @@ async def execute_project_search(
         }
         if corpus is not None:
             document["detailRetrieval"] = corpus.manifest
+            semantic_facets = dict(result.semantic_detail_matches)
             for row in cast(list[dict[str, object]], document["candidates"]):
                 row["detailSearchEvidence"] = corpus.evidence.get(cast(str, row["candidateId"]))
+                row["semanticDetailFacetId"] = semantic_facets.get(cast(str, row["candidateId"]))
         write_project_search(project, document)
         return document
     finally:
@@ -487,6 +489,9 @@ async def execute_search_detail_match(
             if (
                 type(indexed_manifest) is not dict
                 or type(indexed_manifest.get("profile")) is not str
+                or type(indexed_manifest.get("version")) is not str
+                or indexed_manifest.get("version")
+                not in {"saved-detail-text-v1", "saved-detail-text-v2"}
             ):
                 raise AppError(
                     "retrieval.detail_snapshot", "原细节语料身份无效。", ExitCode.STORAGE
@@ -497,10 +502,27 @@ async def execute_search_detail_match(
                     for identifier in search_run_ids(document)
                 ]
             )
-            corpus = read_saved_detail_corpus(project, timelines, indexed_manifest["profile"])
+            corpus = read_saved_detail_corpus(
+                project,
+                timelines,
+                indexed_manifest["profile"],
+                version=indexed_manifest["version"],
+            )
+            allowed_facets = {
+                (row.candidate_id, row.facet_id) for row in corpus.supplement.semantic_facets
+            }
             if indexed_manifest != corpus.manifest or any(
                 row.get("detailSearchEvidence")
                 != corpus.evidence.get(cast(str, row.get("candidateId")))
+                or (
+                    row.get("semanticDetailFacetId") is not None
+                    and (
+                        type(row.get("semanticDetailFacetId")) is not str
+                        or type(row.get("candidateId")) is not str
+                        or (row.get("candidateId"), row.get("semanticDetailFacetId"))
+                        not in allowed_facets
+                    )
+                )
                 for row in cast(list[dict[str, object]], document["candidates"])
             ):
                 raise AppError(

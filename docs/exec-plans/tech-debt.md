@@ -1,6 +1,8 @@
 # Technical debt
 
-2026-10-08真实模式对照补充TD009／TD004：准确已有细节仍只覆盖1/227事件，固定0.80时中文hybrid已知事件由遗漏到第4、英文lexical／hybrid空到第1，但英文纯semantic仍空。精目标138token未截断／cached cosine0.7745725，基础目标cache不可用只记unknown；一次五文本正向投影实验主体五属性英文0.8236567、单白发0.8330784、全镜头属性0.7968096，下一按人物独立表示／原事件最大分数一次RRF，不能用降阈值或此开发样本冒称质量通过。中文staff只命中另一来源28–29s长杆武器基础描述且unknown，negative-zh仍仅共享“存在”；保持TD004未解决、原14新排名及首次缓存日志，不循环微修或自动重发，src未改。
+2026-10-08人物独立语义交付补充：英文white hair纯语义空→第1、中文混合4→1，固定0.80／0.02；仍仅1/227细节覆盖、同人物白发＋持杖partial，不能称TD009或质量整体解决。一次完整2391项／2389passed／1旧TD014失败／1权限skip／449.131s；失败仍test_http_registered_source_range_csp_and_reference_import读取interrupted而非finished，日志.cache/detail-actor-full.xml／full-final-verify.log保留，不循环窄复查或完整。原主体／归属未知及TD004负面泛词边界保持，继续主线。
+
+上一真实模式对照补充TD009／TD004：准确已有细节仍只覆盖1/227事件，固定0.80时中文hybrid已知事件由遗漏到第4、英文lexical／hybrid空到第1，但英文纯semantic仍空。精目标138token未截断／cached cosine0.7745725，基础目标cache不可用只记unknown；一次五文本正向投影实验主体五属性英文0.8236567、单白发0.8330784、全镜头属性0.7968096支持人物独立表示，不能用降阈值或此开发样本冒称质量通过。中文staff只命中另一来源28–29s长杆武器基础描述且unknown，negative-zh仍仅共享“存在”；保持TD004未解决、原14新排名及首次缓存日志，不循环微修或自动重发；本段为上一源码未改实验的历史。
 
 2026-10-08已有细节检索补充：首页面定向旧scope fixture在准备原文件／manifest时WinError5（.cache/detail-index-browser.xml）归TD012，未改保存／重试，原因未解决。桌面checkbox继承25px输入样式导致候选区85px，已按明确CSS直接收为12px，相关49passed。一次完整2371项／2367passed／3旧failed／1权限skip／512.738s JUnit，.cache/detail-index-full.xml／full-verify.log；三个旧版本选择／原片参考均读interrupted而非finished，归TD014，不窄复查／循环修复／重跑完整，不称全绿。26新增全部通过；按用户主线优先继续包／实际部署及真实检索对照。
 
