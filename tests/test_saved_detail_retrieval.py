@@ -108,7 +108,7 @@ def test_all_modes_discover_attributes_absent_from_base_text_without_changing_fa
     assert clip.observable_facts == timeline.events[0].observable_facts
     assert clip.evidence_ids == tuple(sorted(timeline.events[0].evidence_ids))
     assert clip.source_range == timeline.events[0].source_range
-    assert "saved-details-v2" in augmented.retrieval_version
+    assert "saved-details-v3" in augmented.retrieval_version
     assert augmented.scope_id != original.scope_id
     assert index.manifest["indexedEvents"] == 1
     assert all(
@@ -116,7 +116,8 @@ def test_all_modes_discover_attributes_absent_from_base_text_without_changing_fa
     )
     assert not any("staff" in text for row in index.supplement.candidates for text in row.facts)
     if mode != "lexical":
-        assert "white hair" in provider.texts[1]
+        assert "white hair" not in provider.texts[1]
+        assert any("white hair" in text for text in provider.texts[1 + len(timeline.events) :])
     assert snapshot(project) == before
 
 

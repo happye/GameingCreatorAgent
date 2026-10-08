@@ -4,9 +4,11 @@
 
 `POST /api/search-project`在原五字段之外可明确增加`detailProfile`字符串v1–v4；缺省使用原基础语料，null／bool／latest拒绝。同源及正文边界保持；实际来源、准确基础版本与精request／payload先复核，再使用本地embedding。最多100不同来源／20,000视觉事件、8MiB细节语料，不自动分析／上传／预留费用。
 
-响应和保存的`project-search-v1`可附`detailRetrieval`：当前版本saved-detail-text-v2，旧saved-detail-text-v1仍可复核；profile／promptHash／settingsHash／sources／totalVisualEvents／publishedRefinements／indexedEvents／refinements／snapshotSha256保持。逐候选`detailSearchEvidence`为准确细节记录或null，属性含shotId／actorId（环境为null）／partId／kind／value／observed／固定text／evidenceIds／startUs／endUs，原候选facts／time／evidence不改。文字用于BM25／E5／RRF相关排序，不保证同主体AND。
+响应和保存的`project-search-v1`可附`detailRetrieval`：当前saved-detail-text-v3，旧文字v1／v2仍可复核；profile／promptHash／settingsHash／sources／totalVisualEvents／publishedRefinements／indexedEvents／refinements／snapshotSha256保持。逐候选`detailSearchEvidence`为准确细节或null，属性含shotId／actorId（环境null）／partId／kind／value／observed／text／evidenceIds／startUs／endUs，原facts／time／evidence不改。BM25／E5／RRF相关排序不保证同主体／部件AND。
 
 v2新增`semanticFacetCount`及`semanticFacets`，每项facetId／candidateId／runId／eventId／shotId／actorId／attributeIndexes／facts绑定准确原观察。按镜头／人物分组，环境独立；只含可索引observed固定文字，每个事件语义取最大值、RRF每分量只计一次。最多20,000组，每组含passage前缀≤8192字符，超限先于embedding拒绝。候选`semanticDetailFacetId`为实际胜出组或null，页面核验其原候选／属性身份后显示出处。health新增`saved-detail-actor-semantics-v1`区分后端能力；原`saved-detail-retrieval-v1`选项能力保留。
+
+v3沿用准确facet合同，原描述不再追加合并的补充文字。BM25在原文档及独立组文档上计算后按原候选取最大，E5亦在原文档／独立组上取最大；RRF每事件每分量一次。候选新增`lexicalDetailFacetId`实际关键词胜出组或null，页面两种组分别校验／展示，可能是不同人物，不合为AND结论。health新增`saved-detail-grouped-ranking-v1`。复核按原version保留v1／v2投影，非法或外来词法／语义组均拒绝；无新请求字段、SQL写入或模型分析。BM25分数跨语料分布不可当概率或质量提升。
 
 health能力启用“含已有细节”，旧后端隐藏选项；请求revision绑定准确profile。排名显示原profile与覆盖数，换profile不改旧排名，条件依据清除且需新明确搜索才能核对新版本。`match-search-details`遇此排名，按原投影version及profile重建完整语料，核对manifest、逐候选依据及实际语义组；变化报retrieval.detail_snapshot，v1不能默用v2。旧无索引排名走原合同。使用见[指南](../references/saved-detail-retrieval-guide.md)。
 

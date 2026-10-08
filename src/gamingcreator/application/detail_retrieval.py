@@ -27,7 +27,8 @@ from gamingcreator.domain.actor_details import (
 from gamingcreator.domain.errors import AppError, ExitCode
 
 LEGACY_VERSION = "saved-detail-text-v1"
-VERSION = "saved-detail-text-v2"
+ACTOR_VERSION = "saved-detail-text-v2"
+VERSION = "saved-detail-text-v3"
 MAX_EVENTS = 20_000
 MAX_FACETS = 20_000
 MAX_BYTES = 8 * 1024 * 1024
@@ -98,7 +99,7 @@ def build_saved_detail_corpus(
     total = sum(len(row.events) for row in timelines)
     if (
         profile not in {"v1", "v2", "v3", "v4"}
-        or version not in {LEGACY_VERSION, VERSION}
+        or version not in {LEGACY_VERSION, ACTOR_VERSION, VERSION}
         or not 1 <= len(timelines) <= 100
         or total > MAX_EVENTS
         or any(row.run.status != RunStatus.COMPLETED for row in timelines)
@@ -147,7 +148,7 @@ def build_saved_detail_corpus(
                                 "endUs": attribute.source_range.end_us,
                             }
                         )
-                    if version == VERSION and len(entries) > first:
+                    if version != LEGACY_VERSION and len(entries) > first:
                         if len(facets) >= MAX_FACETS:
                             raise _fail("人物细节超过20,000组，请明确缩小来源范围。")
                         facet_id = (
@@ -213,7 +214,7 @@ def build_saved_detail_corpus(
         "humanLabels": None,
         "qualityGate": None,
     }
-    if version == VERSION:
+    if version != LEGACY_VERSION:
         manifest["semanticFacetCount"] = len(facets)
         manifest["semanticFacets"] = facet_records
     raw = json.dumps(manifest, ensure_ascii=False, sort_keys=True, allow_nan=False).encode()

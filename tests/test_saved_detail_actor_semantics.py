@@ -13,6 +13,7 @@ from test_saved_detail_retrieval import detail_pool  # noqa: F401 - shared isola
 
 from gamingcreator.application.detail_refinement import prepare_refinement
 from gamingcreator.application.detail_retrieval import (
+    ACTOR_VERSION,
     LEGACY_VERSION,
     VERSION,
     build_saved_detail_corpus,
@@ -167,8 +168,9 @@ def test_invalid_facet_scope_or_text_refuses_before_embedding(request, invalid):
     assert not provider.texts and snapshot(project) == before
 
 
+@pytest.mark.parametrize("legacy_version", [LEGACY_VERSION, ACTOR_VERSION])
 def test_legacy_saved_search_still_revalidates_original_manifest_without_borrowing_new_projection(
-    request, monkeypatch, tmp_path
+    request, monkeypatch, tmp_path, legacy_version
 ):
     project, timeline, _, _ = request.getfixturevalue("detail_pool")
     reader = cli.read_saved_detail_corpus
@@ -176,7 +178,7 @@ def test_legacy_saved_search_still_revalidates_original_manifest_without_borrowi
         cli,
         "read_saved_detail_corpus",
         lambda project, timelines, profile: reader(
-            project, timelines, profile, version=LEGACY_VERSION
+            project, timelines, profile, version=legacy_version
         ),
     )
     run_ids = (timeline.run.run_id,)
@@ -185,8 +187,8 @@ def test_legacy_saved_search_still_revalidates_original_manifest_without_borrowi
             project, run_ids, "white hair", tmp_path, mode="lexical", detail_profile="v2"
         )
     )
-    assert old["detailRetrieval"]["version"] == LEGACY_VERSION
-    assert "semanticFacets" not in old["detailRetrieval"]
+    assert old["detailRetrieval"]["version"] == legacy_version
+    assert ("semanticFacets" in old["detailRetrieval"]) == (legacy_version == ACTOR_VERSION)
     monkeypatch.setattr(cli, "read_saved_detail_corpus", reader)
     old_match = asyncio.run(
         cli.execute_search_detail_match(
@@ -214,6 +216,9 @@ def test_legacy_saved_search_still_revalidates_original_manifest_without_borrowi
         ("semanticDetailFacetId", "facet-" + "f" * 24),
         ("semanticDetailFacetId", []),
         ("semanticDetailFacetId", False),
+        ("lexicalDetailFacetId", "facet-" + "f" * 24),
+        ("lexicalDetailFacetId", []),
+        ("lexicalDetailFacetId", False),
         ("version", []),
         ("version", "latest"),
     ],
@@ -240,7 +245,7 @@ def test_cli_records_winning_group_and_refuses_foreign_group_provenance(
     )
     row = result["candidates"][0]
     assert row["semanticDetailFacetId"] == corpus.supplement.semantic_facets[0].facet_id
-    assert result["retrievalVersion"].endswith("-saved-details-v2")
+    assert result["retrievalVersion"].endswith("-saved-details-v3")
     if field == "version":
         result["detailRetrieval"]["version"] = value
     else:

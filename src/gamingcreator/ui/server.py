@@ -446,6 +446,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             "search-detail-query-v1",
                             "saved-detail-retrieval-v1",
                             "saved-detail-actor-semantics-v1",
+                            "saved-detail-grouped-ranking-v1",
                         ],
                         "repository": str(self.repository.resolve()),
                         "pid": os.getpid(),

@@ -2,7 +2,7 @@
 
 依据 [反向审查](./reverse-review-2026-10-03.md)、[工程合同](../design-docs/phase-0-engineering-spec.md) 和原方案 §71。保持 F001–F006 ID，避免交接时重复创建特性。F001–F005 的技术合同已验收，CLI Demo实测见 [sprint-demo](./sprint-demo.md)。F006工具已实现，独立人工质量gate仍未通过；旧spike仅为F000证据。
 
-2026-10-08当前里程碑：联合搜索／准备、验收工具／版本选择及[已有细节检索](sprint-saved-detail-retrieval.md)已交付；[人物独立语义检索](sprint-saved-detail-actor-semantics.md)核心／CLI／页面、真实固定五查询、一次完整／双包／现用已交付。英文white hair纯语义空→第1、中文混合4→1，原事件最大分数、RRF一次、旧v1快照及原证据／源时钟保持。2389完整通过／1旧TD014失败／1权限skip，不循环；双包及现用两尺寸通过。固定0.80／0.02不调，仍仅1/227细节覆盖、白发＋持杖partial，不提升质量门槛；0新付费／真人标签。下一先登记同人物复合需求／跨人物拼接固定已有观察对照及改进。正式F006独立录像／事前原片标注／固定评分仍待人工，具体时点见[人工待办](human-inputs.md)，日常不用填表；F006/F009/F010false，继续Phase 0，不越阶段。上一[真实模式对照](sprint-saved-detail-real-modes.md)为历史，不覆盖当前结果。
+2026-10-08当前里程碑：[分组词法／语义排名](sprint-saved-detail-grouped-ranking.md)文字v3已交付／现用；24固定纯前后＋一公开查询，中文同人词法3→2、跨人4→3，英文／混合仍第1，typed均partial／1/227。原facts／时钟／证据与旧v1／v2保持。完整2402passed／3旧failed／3error／1权限skip，不循环；双包及现用两尺寸通过，0新分析费用或人评。下一恢复冻结真实v4试验就绪预检，原两候选六帧最高¥4.07及目的地批准已提问，未答不执行；旧unknown保持。正式F006独立录像／事前参考／固定评分仍待真人，入口时点见[人工待办](human-inputs.md)，日常不用填表。F006/F009/F010false，继续Phase 0，不越阶段。旧里程碑见各sprint与progress历史，不覆盖当前事实。
 
 ```mermaid
 flowchart LR

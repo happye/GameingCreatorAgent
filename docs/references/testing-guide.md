@@ -1,5 +1,7 @@
 # Testing and benchmark guide
 
+2026-10-08当前[分组排名](../exec-plans/sprint-saved-detail-grouped-ranking.md)已交付：81后台／15页面，新18全通过；一次完整2409项／2402passed／3failed／3error／1 Windows权限skip／570.449s JUnit。旧TD014五个准备／页面失败，旧batch保存storage.batch_checkpoint归TD012，根因未定位、不重复窄复查或整套。194格式／lint、96类型／CLI，同双wheel SHA6236a42f912482cf184e76aa76d2ee05ee8bb2596321f17022cbbda696dfe8d4、98源码包及独立九新旧完整快照、现用1366／390原排名／词法主体2与语义主体1／下载／解码播放／profile隔离及用户空验收保持，0新后端搜索。24纯前后＋一个公开排名仅两文件，原898文件／217排名／源费用保持，typed partial、1/227，非真人质量通过。回执.cache/detail-grouped-*及ignored artifacts/saved-detail-grouped-validation；下方各“当前”是历史。
+
 2026-10-08当前[人物独立语义检索](../exec-plans/sprint-saved-detail-actor-semantics.md)已交付：[汇报](../exec-plans/report-2026-10-08-saved-detail-actor-semantics.md)。新18后台＋2页面全通过；一次完整2391项／2389passed／1旧TD014 failed／1权限skip／449.131s JUnit，不重复。192格式／lint、96类型／CLI、同双wheel98源码文件及独立五新v2＋三旧v1完整快照通过。五真实查询英文纯语义空→第1、中文混合4→1，仍partial且细节1/227；888旧文件／217普通排名／源费用保持。现用1366／390重放同一保存排名、组身份／下载／35秒解码播放／版本隔离及用户空流程保持，0后端新搜索／付费／真人评分。首formatter准备失败和启动前旧服务连接拒绝日志均保留；回执.cache/detail-actor-*与ignored artifacts/saved-detail-actor-validation。下面各轮“当前”均为历史，不替代本轮事实。
 
 2026-10-08当前固定真实模式对照已完成：[sprint](../exec-plans/sprint-saved-detail-real-modes.md)／[汇报](../exec-plans/report-2026-10-08-saved-detail-real-modes.md)。16单元复用两旧词法排名／14新查询28文件，原门槛固定、中文hybrid目标第4／英文lexical与hybrid第1、英文semantic仍漏，1/227覆盖及typed partial保持，非人评U10。一次五文本／单worker本地主体文字实验支持下一改进，尚未接生产。860旧项目文件／217普通排名／源费用保持，独立原98源码wheel读回16排名及英文typed快照一致；src无变化，未重复完整／包或重部署。下面完整检查仍是上一有源码变更节点的事实；F006/F009/F010false。

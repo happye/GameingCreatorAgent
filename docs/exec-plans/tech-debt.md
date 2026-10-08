@@ -1,5 +1,9 @@
 # Technical debt
 
+2026-10-08分组排名完整检查：2409项／2402passed／3failed／3error／1权限skip／570.449s JUnit，.cache/detail-grouped-full.xml及full-verify.log。五个旧版本选择检查在prepare阶段读interrupted而非finished（含三setup error），归TD014；旧test_corrupt_batch_records_refuse_before_media_work[state.json]在初始状态保存时storage.batch_checkpoint，归TD012，底层原因被包装隐藏，不称已定位WinError5。新18全通过，原工作流／batch源码未改，不重复窄复查／完整或加生产重试，继续主交付。
+
+复合已有细节对照：旧真实v2白发角色的浅色观察与coat形状为不同part ID，same-part matcher正确保持partial；红外套跨人及棕色来自短裤的组合也不能full。新文字v3不改变模型parts，不把关键词同现当同衣物证据。更严格模型parts／temporal结构已有程序合同，真实验证仍依赖未批准新实验；本轮不追修旧冻结结果或自动付费，TD009及F010质量仍未通过。复现ignored artifacts/saved-detail-grouped-validation/*conditionReport。
+
 2026-10-08人物独立语义交付补充：英文white hair纯语义空→第1、中文混合4→1，固定0.80／0.02；仍仅1/227细节覆盖、同人物白发＋持杖partial，不能称TD009或质量整体解决。一次完整2391项／2389passed／1旧TD014失败／1权限skip／449.131s；失败仍test_http_registered_source_range_csp_and_reference_import读取interrupted而非finished，日志.cache/detail-actor-full.xml／full-final-verify.log保留，不循环窄复查或完整。原主体／归属未知及TD004负面泛词边界保持，继续主线。
 
 上一真实模式对照补充TD009／TD004：准确已有细节仍只覆盖1/227事件，固定0.80时中文hybrid已知事件由遗漏到第4、英文lexical／hybrid空到第1，但英文纯semantic仍空。精目标138token未截断／cached cosine0.7745725，基础目标cache不可用只记unknown；一次五文本正向投影实验主体五属性英文0.8236567、单白发0.8330784、全镜头属性0.7968096支持人物独立表示，不能用降阈值或此开发样本冒称质量通过。中文staff只命中另一来源28–29s长杆武器基础描述且unknown，negative-zh仍仅共享“存在”；保持TD004未解决、原14新排名及首次缓存日志，不循环微修或自动重发；本段为上一源码未改实验的历史。

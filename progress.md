@@ -2,6 +2,12 @@
 
 ## 当前进度摘要（2026-10-08）
 
+[人物独立词法／语义排名](docs/exec-plans/sprint-saved-detail-grouped-ranking.md)已交付／现用，[通俗汇报](docs/exec-plans/report-2026-10-08-saved-detail-grouped-ranking.md)。新文字v3独立原文档及人物／环境BM25／E5、每事件最大分数及RRF一次，保留两实际组／旧v1-v2快照。24纯前后项目不变、另一个公开查询两文件；中文同人词法3→2、跨人4→3，其他目标仍第1，全部typed partial、1/227覆盖。原898文件／217普通排名／三源及费用保持，0新增模型分析／人评。
+
+81后台／15页面、新18全通过；一次完整2402passed／3failed／3error／1权限skip／570.449s，旧TD012／TD014不循环；194格式／lint、96类型／CLI、同双wheel98源码文件及独立九新旧快照、现用56132／49132两尺寸原排名／不同组／下载／35秒出画面／版本隔离及用户空验收流程保持。下一[冻结真实v4试验](docs/exec-plans/sprint-detail-temporal-execution.md)就绪预检；2026-10-08用户已明确授权原两候选／六帧／最高¥4.07及DeepSeek目的地，执行前核对原哈希和当前费率，旧unknown保留。正式人工待办保持、F006/F009/F010false、goal active；普通分支发布身份以Git及.cache/detail-grouped-publication.json为准。
+
+## 最近交付历史
+
 当前[人物独立细节语义检索](docs/exec-plans/sprint-saved-detail-actor-semantics.md)已交付／现用，[通俗汇报](docs/exec-plans/report-2026-10-08-saved-detail-actor-semantics.md)，root接03e92f1。人物／环境observed分组、原事件最大语义分数／RRF一次，v2保存采用组且旧v1保持。英文纯语义空→第1、中文混合4→1，仍partial、细节1/227。一次完整2389passed／1旧TD014失败／1权限skip／449.131s，20新增全通过、不循环；192格式／lint、96类型／CLI、双wheel98源码及独立八新旧快照通过。现用50808／41844两尺寸保存排名／下载／组身份／出画面／版本隔离及用户空验收流程保持，0后端新搜索。888旧文件／217普通排名／三源／费用提案保持，只五新本地搜索十文件，0付费／人评。下一先登记多人物复合需求同人物支持／跨人物拼接固定对照及改进；旧workers冻结，goal active。保存／普通分支发布身份以Git及.cache/detail-actor-publication.json为准。
 
 用户本次再次要求人工协助即时提醒、持续同步里程碑。持久规则已在AGENTS、共享协议及各工具入口，本轮修正“尚未实现”等旧当前摘要，人工待办明确日常不需填验收、正式F006依赖独立来源／事前原片参考／固定评分；当前开发不需新手动操作。只读子任务回答用途，root继续开发。以下旧结果与下一步均为历史。

@@ -1,5 +1,9 @@
 # Errors
 
+## 2026-10-08 分组排名检查准备
+
+首助手误写local_embeddings模块名（0查询）、首patch上下文不匹配（未写入）、类型循环变量复用、检查夹具candidate_sources单源API及旧合并文本断言，均按实际代码直接纠正并保留首日志。全套一次2402passed／3旧failed／3error／1skip，TD012／TD014根因未解，不重跑；没有修改旧工作流或冻结模型结果。
+
 ## 2026-10-08 人物语义检查准备
 
 完整入口第一次在pytest前被health测试新增能力行的缩进挡住，按formatter一次修正；首日志detail-actor-full-verify.log保留。实际套件只跑一次，2389passed／1旧TD014失败／1权限skip，不循环。代码未改旧工作流；源码冻结后包检查与现用继续。恢复时区分准备检查失败与已执行完整套件，不覆盖原回执。

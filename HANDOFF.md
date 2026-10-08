@@ -1,35 +1,19 @@
 # 当前交接
 
-2026-10-08 当前root接03e92f1已交付[人物独立细节语义检索](docs/exec-plans/sprint-saved-detail-actor-semantics.md)／[通俗汇报](docs/exec-plans/report-2026-10-08-saved-detail-actor-semantics.md)，Phase 0／F005／F010。准确observed按shot／actor／环境分组，原事件语义最大分数、RRF一次；新saved-detail-text-v2保存实际采用组，旧v1原版本精确复核。相关103后台、33页面、最终41合同通过；一次完整2389passed／1旧TD014 failed／1权限skip，449.131s，不循环。192格式／lint、96类型及CLI通过，同双wheel SHA4b418499947616edb99908cff6f1b63af6a0024e78b56d12a659a5667124750d、98源码包及独立八新旧快照保持。root独占代码与公共文档，旧workers冻结；用户授权只读子任务已完成验收用途回答。
+2026-10-08，root接786b7f6已交付[人物独立词法／语义排名](docs/exec-plans/sprint-saved-detail-grouped-ranking.md)／[通俗汇报](docs/exec-plans/report-2026-10-08-saved-detail-grouped-ranking.md)，Phase 0／F005／F010。新saved-detail-text-v3让基础原文档与准确shot／actor／环境组分别参与BM25／E5、每原事件每分量最大值／RRF一次，保存lexical及semantic实际组。原facts／源时间／证据、默认未选细节行为及准确v1／v2旧快照保持，不自动解析确认条件、不称同人／同part AND。
 
-真实固定五查询已完成：英文white hair纯语义由空→第1（cos0.8236567），英文混合第1，中文混合由第4→第1；未确定持杖和负例控制均空，不据此声称准确率。目标白发＋持杖仍partial、准确细节仅1/227事件。三个旧v1排名及条件快照精确保持；888旧文件／9表／217普通排名／三源／四费用提案保持，仅五新本地搜索十文件。0新增付费／视觉／ASR／真人标签；F006/F009/F010false、goal active。
+真实12before＋12after纯本地查询项目全字节不变：中文白发浅色外套词法3→2、白发红外套4→3，英文／混合仍第1；全部typed仍partial。旧模型v2把颜色与形状分到不同part ID，棕色来自其他衣物，不能借分组排名修成同件外套；1/227覆盖、F006/F009/F010false。另一次公开hybrid 2da5a7448f974aa4b16133c67f71495c约5283.491ms，第1，词法主体2／语义主体1，严格白发＋红外套partial1。898旧文件／9表／217普通排名／三源／四费用提案保持，仅一新公开查询两文件，0新增付费／视觉／ASR／人评。
 
-现用：原8765已退出，fresh旧PID与监听均不存在后用原隐藏starter启动50808／parent41844、launch20261008-210915-306-39b35b0fbb1a46ea8746a5affa3b69ae，未停其他进程。fresh health／state／CIM／时间／无活跃任务通过、七能力。1366／390重放保存英文纯语义排名c752c36c4b8142d5bae439d7c6087931，两下载／组身份／typed partial1／35秒解码播放／profile隔离／无横溢及用户空验收流程保持；0后端搜索。root看两实际回看截图；三资源字节等源码。首连接拒绝与最终启动回执.cache/detail-actor-deploy.log、start-baseline.json、deployment.json保留。PID仅快照，后续操作需重核。
+81后台19.228s、15页面32.453s通过；18新增全通过。一次完整2409项／2402passed／3failed／3error／1权限skip，570.449s JUnit。五旧版本选择准备／页面读interrupted归TD014，旧批次初始保存storage.batch_checkpoint归TD012，原因未定位、不循环。194格式／lint、96类型／CLI通过。同双wheel SHA6236a42f912482cf184e76aa76d2ee05ee8bb2596321f17022cbbda696dfe8d4、98源码包及独立九新旧完整核对JSON摘要一致。.cache/detail-grouped-*与ignored artifacts/saved-detail-grouped-validation留证，不重做已保存查询。
 
-下一主线：先登记多人物复合需求固定对照及改进，使用准确已保存观察区分“白发＋浅色外套”的同人物支持与“白发＋红色外套”的跨人物拼接；不把语义相关冒称AND，不调阈值或循环旧bug。人工见[待办](docs/exec-plans/human-inputs.md)：当前开发无新手动需求，正式F006需独立录像、事前参考和固定评分；发现触发立即提醒。实现／验证／交付均已通俗汇报并同步记录，当前保存和普通分支发布身份以Git及.cache/detail-actor-publication.json为准，goal active。下方旧实验与发布记录均是历史。
+现用fresh身份／state／CIM exe命令及出生时间、无子任务／活跃批次或验收操作核对后更新56132／parent49132，launch20261008-215948-406-6f782d80086049498e28be4c8337929b，八能力含saved-detail-grouped-ranking-v1。1366／390重放同一保存排名，词法／语义不同组、两下载／partial1、35秒实际解码播放／profile隔离／无横溢、三static字节等源码及用户空验收流程09ef2eacc0694a19b9b85fe0275cf5da保持；0后端新搜索。root看两实际回看截图。PID只快照，操作前重核。
 
-当前root接424d4fa已完成[真实已有细节中英文／模式对照](docs/exec-plans/sprint-saved-detail-real-modes.md)，[通俗汇报](docs/exec-plans/report-2026-10-08-saved-detail-real-modes.md)，Phase 0／F005／F010，root独占、旧workers冻结，goal active。16单元复用两中文词法排名、14新查询28文件；目标中文lexical遗漏→5／semantic6→6／hybrid遗漏→4，英文lexical与hybrid空→第1、semantic仍空，typed全部partial。冻结0.80／0.02不调，860旧文件／9表／217普通排名／三源／四费用提案保持，0新视觉分析／费用／人评。16记录独立98源码wheel进程读回及英文typed快照一致；src未改，不重跑完整或重部署，六能力现用保持。只读缓存精目标138token未截断、英cos0.77457，基础目标缓存缺失保持unknown，首日志保留。另一次五文本／一个worker固定实验：白发单属性英0.83308、白发主体属性0.82366、全镜头属性0.79681，支持下一主体独立表示，尚未接工作台。人工待办保持，F006/F009/F010false、新¥4.07未答／旧unknown保留。本轮保存及普通push见Git和.cache/detail-modes-publication.json；以下上一源码交付是历史，不重复执行。
+## 下一主线与人工依赖
 
-2026-10-08，Phase 0／F005／F010，[准确已有细节检索](docs/exec-plans/sprint-saved-detail-retrieval.md)已交付，[使用指南](docs/references/saved-detail-retrieval-guide.md)与[通俗汇报](docs/exec-plans/report-2026-10-08-saved-detail-retrieval.md)。多录像明确勾选‘含已有细节’及准确精版本后，用有帧支持的observed属性帮助排序，逐候选保留主体／部件／镜头出处。uncertain／冲突不作正向文字，排名不证明同主体AND；候选条件核对仍单独判断。旧默认搜索、原事实／源时间／证据及历史排名保持，不自动分析／费用。
+下一root执行[冻结真实v4试验](docs/exec-plans/sprint-detail-temporal-execution.md)就绪预检。2026-10-08用户明确答复“允许按此冻结提案执行并发送这6张画面”：两指定候选、最多两请求不重试、新增最高¥4.07、发送至https://api.deepseek.com/chat/completions已获授权。提案artifacts/detail-temporal-validation/pilot-proposal.json SHA06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6及executionAuthorized=false作为原冻结历史保持；执行授权另存回执。核对实际请求／六帧SHA／当前官方费率后执行，不替换候选或提示词。旧unknown¥4.065536与billingConfirmed=false保留，旧已消费¥4.04不重用。
 
-23新增后台＋3新增页面全部通过；最终相关49passed。一次完整2371项，2367passed／3旧failed／0error／1 Windows symlink权限skip，512.738s JUnit（终端512.84s）；三失败均读interrupted而非finished，归TD014，不循环修复／复查或重复完整，不称全绿。首页面旧fixture WinError5归TD012、三新桌面高度问题已按CSS直接修；原回执保留。190 Ruff文件／96类型／CLI通过，同双离线wheel SHA7fb6a384f7ec793bd93757d99712920bc13d20e8002926c38046444c2e9d3b48，98包文件等源码，独立包进程验证同一真实原排名与细节快照。
+日常不用填验收表。正式F006仍需独立代表录像、事前原片参考与固定前十评分，详见[人工待办](docs/exec-plans/human-inputs.md)。新试验费用／发送范围授权已完成；真实结果出来后立即说明需要人核对哪段、什么内容及入口，不能代填判断。需要人帮助只阻断对应任务，已有授权内可独立工作继续。
 
-真实三开发源只有一次新本地词法搜索3579bf10478348348666df8d84ece23b约769.388ms：‘白色头发’原34候选遗漏的35–36s事件进入前十第5位；细节覆盖仅1/227事件。原排名typed核对1638.527ms得到0full／1partial／9unverified，不提升为全部满足或独立质量通过。858旧项目文件／9基础表／217普通SQL排名／三源SHA／四费用提案文件全过程保持，仅两个新联合排名文件；0模型请求／新增费用／真人标签。ignored artifacts/saved-detail-retrieval-validation保存baseline、ranking、matched、real/live报告及下载／截图。
+root独占本轮代码与公共记录，旧workers冻结，用户授权只读验收explorer已完成，未开并行开发。加载AGENTS及[共享协议](docs/references/agent-workflow.md)、CODEX／CLAUDE／Grok适配；主线交付优先，小问题一次直接修不了就记debt，关键节点通俗汇报并同步sprint／HANDOFF／assignments／progress。当前阶段未变、goal active，不把阶段交付当整体完成或擅自暂停。
 
-现用8765经fresh health／state／CIM exe命令与创建时间、无活跃准备／验收任务核对后更新：PID6772／parent50720，saved-detail-retrieval-v1。两尺寸1366／390重放同一已存排名（0后端搜索），下载／细节及typed依据、35–36s解码出画面播放、换profile保持旧v2搜索身份并清旧核对、无横溢均通过；三static字节等源码，用户空流程09ef2eacc0694a19b9b85fe0275cf5da保持。PID仅快照，操作前需重核。.cache/detail-index-deployment.json／package.json／full.xml留证。首次本机验证助手把下载附加project／searchSha256误认变更，已按实际合同修助手，未改生产／重搜，初日志保留。
-
-## 恢复规则与待办
-
-root独占本轮代码和公共记录；旧workers冻结，用户仅授权只读explorer回答验收问题，未另开并行开发。优先总方案主线／阶段交付，小问题直接修不了就存tech-debt；关键变更通俗汇报并同步sprint、HANDOFF、assignments与progress。加载AGENTS及[共享协议](docs/references/agent-workflow.md)、CODEX／CLAUDE／Grok适配，规则跨恢复生效。
-
-当前主要交付核心／真实／一次完整／包／现用已完成。固定原阈值、facts／源时钟／证据／typed AND保持；不扩大验收UI或循环旧bug。新付费仍待对应批准；后续主线须先登记下一交付。
-
-日常不用填写验收表。正式F006需用户确认代表来源与录制分组、在看分析结果前标原片参考、固定前十位候选评分，具体时点／入口／完成证据见[人工待办](docs/exec-plans/human-inputs.md)。当前离线工作没有新人工操作需求；需要真人时立即说明并记录，不能用程序演练替代人评。F006/F009/F010保持false。
-
-新两次／六帧／最高¥4.07提案SHA06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6未答、executionAuthorized=false，不发送不重试。旧漫画unknown¥4.065536、两请求及billingConfirmed=false保持。已批准旧两次¥4.04已执行，不重复。
-
-发布事实：代码及交付文档1b9da43cb041ca79e9c7659df0975fc5bb027829已普通push至codex/visual-details，独立ls-remote同SHA；main未更新／无强推。本段仅补发布事实，最终文档head及同步以Git和.cache/detail-index-publication.json为准。源码／包／现用保持，goal active，不因阶段完成标整体完成或擅自暂停。
-
-## 历史入口
-
-上一[检索候选依据](docs/exec-plans/sprint-search-detail-evidence.md)、[多录像条件核对](docs/exec-plans/sprint-project-detail-query.md)、[统一验收流程](docs/exec-plans/sprint-benchmark-workspace.md)均已交付；详细工作历史见[progress](progress.md)、各sprint及[旧交接快照](docs/exec-plans/handoff-history-2026-10-08.md)。旧PID／待补推／下一步是历史，不覆盖本页。
+保存及授权普通分支发布身份以Git和.cache/detail-grouped-publication.json为准，仅codex/visual-details，不更新main或强推。旧786b7f6已普通push确认；本轮源码／验证／现用随最终提交保存。旧交接与PID／下一步见[历史](docs/exec-plans/handoff-history-2026-10-08.md)，不覆盖当前事实。

@@ -1,5 +1,7 @@
 # Phase 0 工程规格 v5
 
+文字投影saved-detail-text-v3沿用准确observed分组与有界合同，基础原文档不拼补充属性；BM25和E5分别在原描述及独立人物／环境组计算，原事件每分量最大分数、RRF一次。排名保存关键词与语义实际组并复核所属候选，旧文字v1／v2原投影保持可验证。组相关不保证同人／同部件／同帧AND；严格条件需要用户明确确认后用既有matcher，不自动消费未确认草稿。无新模型分析／费用／SQL写入。见[当前任务](../exec-plans/sprint-saved-detail-grouped-ranking.md)，下方v2合同为兼容机制。
+
 联合检索可明确`--detail-profile v1|v2|v3|v4`复用准确已保存observed属性，原facts／证据／时钟保持；不含uncertain或同部件冲突，不保证同actor AND。新saved-detail-text-v2按shot／actor及环境独立计算、按原事件取最大相似度，RRF只计一次；新排名保留实际采用组、完整SHA／版本及属性出处。旧v1按原version／profile精确复核，不能借新表示；变化及外来组拒绝。100不同源／20,000视觉事件／20,000语义组／8MiB，每组文字含passage前缀≤8192字符，超限先于计算拒绝。不自动分析、费用或写SQL，缺省旧搜索保持。见[已有细节指南](../references/saved-detail-retrieval-guide.md)。
 
 状态：2026-10-04 实施合同。CLI 已接媒体、本地 ASR、视觉窗口/账本、显式续跑、词法/本地语义检索和人工标签评测入口；F003/F005 技术合同已验收，F006独立人工质量gate未通过。CLI证据见sprint-demo；本地工作台及最新完整验证见 [sprint-inspection-workspace](../exec-plans/sprint-inspection-workspace.md)。来源：原总方案 §58–59、69–71；语言见 [ADR-001](./adr-001-phase-0-language.md)，审查见 [reverse-review](../exec-plans/reverse-review-2026-10-03.md)。当前运行入口见 [Demo](../references/demo-quickstart.md)。

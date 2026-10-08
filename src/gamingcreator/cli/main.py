@@ -459,9 +459,11 @@ async def execute_project_search(
         if corpus is not None:
             document["detailRetrieval"] = corpus.manifest
             semantic_facets = dict(result.semantic_detail_matches)
+            lexical_facets = dict(result.lexical_detail_matches)
             for row in cast(list[dict[str, object]], document["candidates"]):
                 row["detailSearchEvidence"] = corpus.evidence.get(cast(str, row["candidateId"]))
                 row["semanticDetailFacetId"] = semantic_facets.get(cast(str, row["candidateId"]))
+                row["lexicalDetailFacetId"] = lexical_facets.get(cast(str, row["candidateId"]))
         write_project_search(project, document)
         return document
     finally:
@@ -491,7 +493,7 @@ async def execute_search_detail_match(
                 or type(indexed_manifest.get("profile")) is not str
                 or type(indexed_manifest.get("version")) is not str
                 or indexed_manifest.get("version")
-                not in {"saved-detail-text-v1", "saved-detail-text-v2"}
+                not in {"saved-detail-text-v1", "saved-detail-text-v2", "saved-detail-text-v3"}
             ):
                 raise AppError(
                     "retrieval.detail_snapshot", "原细节语料身份无效。", ExitCode.STORAGE
@@ -514,14 +516,14 @@ async def execute_search_detail_match(
             if indexed_manifest != corpus.manifest or any(
                 row.get("detailSearchEvidence")
                 != corpus.evidence.get(cast(str, row.get("candidateId")))
-                or (
-                    row.get("semanticDetailFacetId") is not None
+                or any(
+                    row.get(field) is not None
                     and (
-                        type(row.get("semanticDetailFacetId")) is not str
+                        type(row.get(field)) is not str
                         or type(row.get("candidateId")) is not str
-                        or (row.get("candidateId"), row.get("semanticDetailFacetId"))
-                        not in allowed_facets
+                        or (row.get("candidateId"), row.get(field)) not in allowed_facets
                     )
+                    for field in ("semanticDetailFacetId", "lexicalDetailFacetId")
                 )
                 for row in cast(list[dict[str, object]], document["candidates"])
             ):

@@ -171,6 +171,7 @@ class SearchResult:
     abstention_reason: str | None = None
     event_embeddings: tuple[Embedding, ...] = ()
     semantic_detail_matches: tuple[tuple[str, str], ...] = ()
+    lexical_detail_matches: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -192,6 +193,7 @@ class ProjectSearchResult:
     abstention_reason: str | None
     retrieval_version: str = PROJECT_RETRIEVAL_VERSION
     semantic_detail_matches: tuple[tuple[str, str], ...] = ()
+    lexical_detail_matches: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -552,7 +554,8 @@ async def search_timelines(
     if supplement is not None:
         if (
             not re.fullmatch(r"[a-f0-9]{64}", supplement.snapshot_sha256)
-            or supplement.projection_version not in {"saved-detail-text-v1", "saved-detail-text-v2"}
+            or supplement.projection_version
+            not in {"saved-detail-text-v1", "saved-detail-text-v2", "saved-detail-text-v3"}
             or supplement.projection_version == "saved-detail-text-v1"
             and supplement.semantic_facets
         ):
@@ -594,6 +597,7 @@ async def search_timelines(
             else ""
         ),
         result.semantic_detail_matches,
+        result.lexical_detail_matches,
     )
 
 
@@ -644,6 +648,7 @@ async def _search_documents(
         for document in _documents(timeline)
     )
     facets: tuple[SemanticFacet, ...] = supplement.semantic_facets if supplement else ()
+    grouped = supplement is not None and supplement.projection_version == "saved-detail-text-v3"
     if supplement is not None:
         extra = {row.candidate_id: row.facts for row in supplement.candidates}
         visual = {row.candidate_id for row in documents if row.event_id is not None}
@@ -679,7 +684,7 @@ async def _search_documents(
         documents = tuple(
             replace(
                 row,
-                text=row.text + "\n" + "\n".join(extra[row.candidate_id]),
+                text=row.text if grouped else row.text + "\n" + "\n".join(extra[row.candidate_id]),
                 supplemental_facts=extra[row.candidate_id],
             )
             if row.candidate_id in extra
@@ -701,15 +706,41 @@ async def _search_documents(
             min_semantic_margin=min_semantic_margin,
         )
     denied_actions = _denied_action_documents(documents, query)
+    lexical_winners: dict[str, str] = {}
+    lexical_documents = documents
+    facet_documents: tuple[_Document, ...] = ()
+    if grouped and mode != "semantic":
+        by_candidate = {row.candidate_id: row for row in documents}
+        facet_documents = tuple(
+            replace(
+                by_candidate[facet.candidate_id],
+                identifier=facet.facet_id,
+                text="\n".join(facet.facts),
+            )
+            for facet in facets
+        )
+        lexical_documents += facet_documents
     lexical = (
         {
             identifier: score
-            for identifier, score in _lexical_scores(documents, query).items()
+            for identifier, score in _lexical_scores(lexical_documents, query).items()
             if identifier not in denied_actions
         }
         if mode != "semantic"
         else {}
     )
+    if facet_documents:
+        identifiers = {row.candidate_id: row.identifier for row in documents}
+        for lexical_facet in facet_documents:
+            score = lexical.pop(lexical_facet.identifier, None)
+            identifier = identifiers[lexical_facet.candidate_id]
+            if (
+                score is not None
+                and identifier not in denied_actions
+                and score > lexical.get(identifier, -1.0)
+            ):
+                lexical[identifier] = score
+                lexical_winners[identifier] = lexical_facet.identifier
     semantic = {}
     facet_winners: dict[str, str] = {}
     metadata = None
@@ -836,6 +867,8 @@ async def _search_documents(
         signals = []
         if document.identifier in lexical:
             signals.append(f"BM25={lexical[document.identifier]:.4f}")
+            if document.identifier in lexical_winners:
+                signals.append(f"lexicalDetailFacet={lexical_winners[document.identifier]}")
         if document.identifier in semantic:
             signals.append(f"cosine={semantic[document.identifier]:.4f}")
             if document.identifier in facet_winners:
@@ -869,5 +902,10 @@ async def _search_documents(
             (row.candidate_id, facet_winners[row.identifier])
             for row in selected
             if row.identifier in semantic and row.identifier in facet_winners
+        ),
+        lexical_detail_matches=tuple(
+            (row.candidate_id, lexical_winners[row.identifier])
+            for row in selected
+            if row.identifier in lexical_winners
         ),
     )

@@ -871,7 +871,7 @@
 
     function validSavedDetailSearch(search, profile) {
         const index = search.detailRetrieval;
-        return ["saved-detail-text-v1", "saved-detail-text-v2"].includes(index?.version) && index.profile === profile
+        return ["saved-detail-text-v1", "saved-detail-text-v2", "saved-detail-text-v3"].includes(index?.version) && index.profile === profile
             && /^[a-f0-9]{64}$/.test(index.snapshotSha256)
             && Array.isArray(index.refinements) && Array.isArray(index.sources)
             && Number.isSafeInteger(index.totalVisualEvents) && index.totalVisualEvents <= 20000
@@ -884,7 +884,7 @@
                 return expected && source.mediaId===expected.mediaId && source.sourceSha256===expected.sourceSha256 && source.configHash===expected.configHash && source.durationUs===expected.durationUs;
             })
             && search.candidates.every(row => {
-                if(row.semanticDetailFacetId != null && !index.semanticFacets?.some(facet=>facet.facetId===row.semanticDetailFacetId && facet.candidateId===row.candidateId && facet.runId===row.runId && facet.eventId===row.eventId))return false;
+                if([row.semanticDetailFacetId,row.lexicalDetailFacetId].some(id=>id != null && !index.semanticFacets?.some(facet=>facet.facetId===id && facet.candidateId===row.candidateId && facet.runId===row.runId && facet.eventId===row.eventId)))return false;
                 const proof=row.detailSearchEvidence;
                 if(proof===null)return !index.refinements.some(item=>item.candidateId===row.candidateId && item.attributes?.length);
                 const original=index.refinements.find(item=>item.candidateId===row.candidateId && item.runId===row.runId && item.eventId===row.eventId);
@@ -926,6 +926,8 @@
         }
         const used=state.projectSearch.detailRetrieval.semanticFacets?.find(row=>row.facetId===card.dataset.semanticFacet);
         if(used)details.append(element("p","muted",used.actorId===null ? "本次语义采用镜头环境的独立细节。" : `本次语义采用主体组 ${actors.get(`${used.shotId}/${used.actorId}`)} 的独立细节；仍需核对原片。`));
+        const lexical=state.projectSearch.detailRetrieval.semanticFacets?.find(row=>row.facetId===card.dataset.lexicalFacet);
+        if(lexical)details.append(element("p","muted",lexical.actorId===null ? "本次词法采用镜头环境的独立细节。" : `本次词法采用主体组 ${actors.get(`${lexical.shotId}/${lexical.actorId}`)} 的独立细节；不同人物的关键词不合并加分。`));
         details.append(list);card.append(details);
     }
 
@@ -1838,7 +1840,7 @@
                 card.insertBefore(element("p", "candidate-source", `来源 · ${row.sourceName}`), copy);
             }
             appendUncertainty(card, row);
-            if(joint?.detailRetrieval){if(row.semanticDetailFacetId)card.dataset.semanticFacet=row.semanticDetailFacetId;appendSavedDetailSearchEvidence(card,row);}
+            if(joint?.detailRetrieval){if(row.semanticDetailFacetId)card.dataset.semanticFacet=row.semanticDetailFacetId;if(row.lexicalDetailFacetId)card.dataset.lexicalFacet=row.lexicalDetailFacetId;appendSavedDetailSearchEvidence(card,row);}
             if (joint) appendSearchConditionProof(card,row);
             ui["candidate-list"].append(card);
         }

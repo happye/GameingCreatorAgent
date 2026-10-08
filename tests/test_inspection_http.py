@@ -133,6 +133,7 @@ def test_health_identifies_repository_and_pid_without_model_or_storage(tmp_path)
                 "search-detail-query-v1",
                 "saved-detail-retrieval-v1",
                 "saved-detail-actor-semantics-v1",
+                "saved-detail-grouped-ranking-v1",
             ],
             "repository": str(tmp_path.resolve()),
             "pid": os.getpid(),
