@@ -1,5 +1,7 @@
 # Active assignments
 
+**追加配置任务已完成／录像主线仍暂停**：root owns [通用skill](sprint-harness-routing-skill.md)的增量合并、三个工具技能同步、项目三角色配置与公共记录。Luna/high历史定位、Sol/medium独立审查均已完成并核对实际元数据，无并行写者。my-skills/main已正常合并e3ae40a且读回；当前无需用户操作，下一步待用户恢复录像开发，按原计划及关键交付的合同／独立评估执行。
+
 2026-10-11收尾，开发／验证节点2026-10-08，Phase 0，codex/visual-details，root / Codex负责集成与公共记录；旧worker冻结，无并行写者。用户额度14%要求结束本会话，收尾后暂停，不自动开下一任务。
 
 - **已交付／10-08部署验证**：[人物独立排名](sprint-saved-detail-grouped-ranking.md)保持；[明确JSON的新v5](sprint-detail-temporal-json.md)已接Provider、精确profile读取／条件核对／CLI／页面与冻结工具。root owns上述模块、对应17新增验证及共享进度；旧v4不改，新v5无真实结果。

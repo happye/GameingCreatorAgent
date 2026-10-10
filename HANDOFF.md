@@ -1,5 +1,7 @@
 # 当前交接
 
+**2026-10-11用户追加任务已交付**：[通用模型分工skill及三角色补齐](docs/exec-plans/sprint-harness-routing-skill.md)已增量合入my-skills/main的e3ae40a，并同步本机Codex／Claude／Grok技能副本；原记忆／门禁保留，新增项目三个harness_*原生角色，当前型号分工立即可用，未声称新角色热刷新／全工具执行。13隔离项12passed／1权限skip，Codex原生配置接受、Grok九角色发现、独立审查通过；当前无新人工需求／DeepSeek请求。详见[通俗报告](docs/exec-plans/report-2026-10-11-harness-routing-skill.md)。录像主线仍暂停，恢复后按原开发路径和关键交付独立评估；其分支待普通push与技能仓库已发布分开记录。
+
 2026-10-11收尾，开发／验证节点2026-10-08，Phase 0；root / Codex，codex/visual-details。用户因额度剩14%明确结束本会话；收尾后暂停持续开发，等待用户恢复，不自动继续。
 
 - **已交付／部署记录**：多录像已有细节检索、人物独立关键词／语义排名保持可用；新精分析v5明确要求JSON输出，已接精确版本读取、条件核对、CLI／PowerShell和现有页面。新增“连续实体 v5（试验）”，默认v2；旧后台不支持时禁选。v4原提示词／请求／失败记录保持。详见[本轮sprint](docs/exec-plans/sprint-detail-temporal-json.md)／[通俗收尾报告](docs/exec-plans/report-2026-10-08-detail-json.md)。

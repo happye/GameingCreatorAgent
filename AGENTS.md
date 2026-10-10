@@ -47,6 +47,8 @@ All agents share acceptance criteria; start with `HANDOFF.md` and `docs/referenc
 
 ## Persistent subagent model routing
 
+关键里程碑按[开发三角色流程](docs/references/development-agent-pipeline.md)执行合同规划、实现和独立评估；本项目新增harness_planner／harness_generator／harness_evaluator三个Sol/medium原生角色，既有六专家分工保持。简单改动记为单Agent，不强制三人并发；只读角色的报告由主控持久化。通用harness-project-init技能已增量同步；配置／发现／实际执行分别验证。
+
 用户于2026-10-11明确要求按任务能力选择子Agent模型以节省token／额度。需要独立委派时按[模型分工指南](docs/references/codex-agent-routing-guide.md)：定位Luna/high、进度Luna/low、开发与普通审查Sol/medium、关键边界审查Sol/high、复杂设计Astra/low；默认Luna/medium。简单任务直接完成，不重复审查／播报；不让全部子任务继承主模型和高推理。当前角色清单不刷新时，用已有default／worker类型明确传model／reasoning_effort和最小任务上下文（本工具fork_turns=none），不假称热加载成功。写任务明确归属及他人改动保护，派发前读指南与角色指令，只有实际执行记录能证明使用型号。此要求适用于恢复与工具切换，模型可用性以当前工具为准。
 
 ## Persistent delivery priority

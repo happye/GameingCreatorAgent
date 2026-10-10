@@ -18,6 +18,8 @@
 
 ## 子Agent按能力选模型（持久规则）
 
+关键交付采用[Planner→Generator→Evaluator](development-agent-pipeline.md)的合同与独立评估；本项目Codex三角色配置已补齐，未将配置生成称为已执行。简单工作由主控直接做并明确单Agent；只读规划／评估返回内容由主控保存，不追加重复reviewer。换工具先核对原生能力与可用型号，不假称Codex配置对所有工具有效。
+
 用户于2026-10-11明确要求按任务能力选择模型以节省token／额度。需要委派的独立任务遵循[Codex分工指南](codex-agent-routing-guide.md)：查代码Luna/high、看进度Luna/low、开发和一般审查Sol/medium、关键边界审查Sol/high、复杂设计Astra/low，默认Luna/medium。简单任务直接做，不重复审查、不让进度Agent高频重复播报；不对全部子Agent复制主模型／整段历史。当前工具无法识别新角色时，用可用default／worker加明确model／reasoning_effort与最小上下文，本工具用fork_turns=none；新会话原生加载角色配置，旧角色不热切换。
 
 只用当前运行时确实支持的模型，并用执行记录核对；不按Agent自称或别的产品的模型别名判断生效。写任务仍必须分配owner、保护他人改动；只读角色不得变更项目或执行费用／上传。低模型不足时给证据明确升级一次，不反复试错后再无限重查；主模型保持用户设置。个人与项目配置可按指南安装，权限继承限制和实际验证边界如实汇报，不能承诺未经测量的节省比例。其他工具保持此偏好，但按自己的受支持模型实现。

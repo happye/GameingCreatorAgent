@@ -2,6 +2,8 @@
 
 ## 当前进度摘要（2026-10-11收尾；开发／验证节点2026-10-08）
 
+**2026-10-11用户追加任务已交付**：[通用模型分工skill及三角色补齐](docs/exec-plans/sprint-harness-routing-skill.md)已增量合入my-skills/main的e3ae40a，并同步本机Codex／Claude／Grok技能副本；原记忆／门禁保留，新增项目三个harness_*原生角色，当前型号分工立即可用，未声称新角色热刷新／全工具执行。13隔离项12passed／1权限skip，Codex原生配置接受、Grok九角色发现、独立审查通过；当前无新人工需求／DeepSeek请求。详见[通俗报告](docs/exec-plans/report-2026-10-11-harness-routing-skill.md)。录像主线仍暂停，恢复后按原开发路径和关键交付独立评估；其分支待普通push与技能仓库已发布分开记录。
+
 2026-10-11收尾追加配置：[子Agent按能力选模型](docs/exec-plans/sprint-codex-agent-routing.md)已安装个人／项目六角色、默认Luna/medium、最多3子Agent；Luna／Sol／Astra三次当前真实执行记录核对，主模型保持。共享记忆和工具入口已同步；独立CLI同一进程断流后完成新命名只读子任务／exit0，重复安装／拒绝冲突及备份核对通过；未称原聊天角色清单热刷新。仅完成用户追加任务，视频项目仍按原要求收尾暂停。
 
 发布状态：de4f15a源码与63534d1分工已本地提交；一次普通push连接github.com:443在21.121秒失败／exit128，原日志保存，不重试／远端读取。最后确认远端b232013，本轮待补推；本机配置使用不依赖远端。

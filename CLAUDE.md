@@ -13,3 +13,5 @@ Persist the human-assistance and progress-alignment rules in `AGENTS.md`: prompt
 In Claude Code, use `/memory` to check that this file and the imported `AGENTS.md` are loaded. Keep any personal settings in ignored local files. Record decisions and verification in the repository so Codex and Grok Build can resume them.
 
 Load the shared capability-based subagent routing preference from AGENTS.md on handoff. The [Codex mapping](docs/references/codex-agent-routing-guide.md) uses Codex model names and TOML; do not pass these names as Claude aliases. Preserve minimal context, explicit ownership, necessary specialist checks and truthful runtime evidence when using this tool's own supported delegation.
+
+For substantive milestones follow the shared Planner -> Generator -> independent Evaluator contract in `docs/references/development-agent-pipeline.md`; simple work stays in the parent and is recorded as single-agent work. The portable harness-project-init skill now supplies this tool's native routing adapter; verify actual discovery/model before use rather than treating Codex TOML as this tool's configuration. The integrator persists read-only role outputs.

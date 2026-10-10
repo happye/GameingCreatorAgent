@@ -1,5 +1,7 @@
 # Codex子Agent按能力分工
 
+2026-10-11新增[可移植harness技能与开发三角色](development-agent-pipeline.md)：技能仓库已合并e3ae40a、本机三工具副本同步；项目补harness_planner／harness_generator／harness_evaluator（Sol/medium），原六专家及个人安装保持。关键交付按合同独立评估，简单工作直接做；新三角色名称本轮未执行，当前聊天按显式模型路由立即可用。
+
 用户于2026-10-11要求参考个人及投资项目的Claude Agent，把子任务分给合适模型以节省额度。这里使用Codex原生配置，并保留当前聊天可立即执行的明确模型分配方式。
 
 | 任务 | 角色 | 模型／推理 | 边界 |
