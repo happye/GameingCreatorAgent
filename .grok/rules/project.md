@@ -9,3 +9,5 @@ Keep the shared delivery priority: follow the master plan's current milestone; f
 Keep the shared human-assistance and progress-alignment rules: notify the user promptly when annotation or manual actions are needed, record them in docs/exec-plans/human-inputs.md, and align current milestone, sprint, handoff, assignments and progress at key nodes. Pending human actions block only dependent work. Apply this to workers and future resumptions.
 
 Run `grok inspect` from the repository root to check discovered instruction paths, including `AGENTS.md` and this rules file. Grok may also discover `CLAUDE.md` for compatibility; all entries point to the same shared rules. Keep Grok session history and credentials local; record project decisions and verification in repository artifacts.
+
+Load the shared capability-based subagent routing preference. The [Codex mapping](../../docs/references/codex-agent-routing-guide.md) is specific to Codex models and configuration; do not claim those names work in Grok. Use this tool's actual supported models, bounded context and explicit ownership, and verify execution before claiming routing succeeded.

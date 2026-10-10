@@ -11,3 +11,5 @@ Persist the delivery priority too: follow the master plan and current milestone,
 Persist the human-assistance and progress-alignment rules in `AGENTS.md`: promptly notify the user of required annotation or manual actions, record them in `docs/exec-plans/human-inputs.md`, and keep current milestone, sprint, handoff, assignments and progress aligned at key nodes. Pending human actions block only dependent work; subagents and future sessions follow the same rules.
 
 In Claude Code, use `/memory` to check that this file and the imported `AGENTS.md` are loaded. Keep any personal settings in ignored local files. Record decisions and verification in the repository so Codex and Grok Build can resume them.
+
+Load the shared capability-based subagent routing preference from AGENTS.md on handoff. The [Codex mapping](docs/references/codex-agent-routing-guide.md) uses Codex model names and TOML; do not pass these names as Claude aliases. Preserve minimal context, explicit ownership, necessary specialist checks and truthful runtime evidence when using this tool's own supported delegation.

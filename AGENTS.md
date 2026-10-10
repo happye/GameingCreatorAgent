@@ -45,6 +45,10 @@ Use `benchmark --binding <bound-directory>` for the frozen preparation workflow;
 
 All agents share acceptance criteria; start with `HANDOFF.md` and `docs/references/agent-workflow.md`. Assign ownership; parallel writers use separate worktrees. Record verification and resumable work before transfer. Use imperative `chore:`/`docs:` subjects or `feat(F002): add local frame extraction`. PRs describe behavior, link a feature and include evidence. Never commit secrets, footage, generated media or databases.
 
+## Persistent subagent model routing
+
+用户于2026-10-11明确要求按任务能力选择子Agent模型以节省token／额度。需要独立委派时按[模型分工指南](docs/references/codex-agent-routing-guide.md)：定位Luna/high、进度Luna/low、开发与普通审查Sol/medium、关键边界审查Sol/high、复杂设计Astra/low；默认Luna/medium。简单任务直接完成，不重复审查／播报；不让全部子任务继承主模型和高推理。当前角色清单不刷新时，用已有default／worker类型明确传model／reasoning_effort和最小任务上下文（本工具fork_turns=none），不假称热加载成功。写任务明确归属及他人改动保护，派发前读指南与角色指令，只有实际执行记录能证明使用型号。此要求适用于恢复与工具切换，模型可用性以当前工具为准。
+
 ## Persistent delivery priority
 
 用户要求按总方案和设计好的开发路径推进大方向，优先阶段性交付，不在同一个小bug上反复消耗时间和tokens。每轮先明确所属阶段与主要交付；小问题能直接修就修，需要持续定位／试错就记录到docs/exec-plans/tech-debt.md，保存复现与影响后继续主线。只有阻断当前主要交付或影响数据／费用等关键边界的问题才优先处理。不得把连续微修、诊断增强、报告数量或重复完整测试代替计划中的实际开发进展。此规则适用于所有项目Agent、子任务、会话恢复和工具切换，与下方通俗汇报规则共同持续生效。

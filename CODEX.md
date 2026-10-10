@@ -12,3 +12,5 @@ Read [AGENTS.md](./AGENTS.md) first; it is the repository-wide source of truth. 
 8. Load the persistent human-assistance and progress-alignment rules in `AGENTS.md`. Promptly notify and record required human actions in `docs/exec-plans/human-inputs.md`; keep milestone, handoff, assignment and current progress summaries aligned at key nodes. Continue independent work while dependent human tasks remain pending.
 
 Codex discovers `AGENTS.md` natively; this file is linked guidance, not an assumed native configuration filename. Current status and environment findings belong in `HANDOFF.md`.
+
+Use the persistent subagent model routing in `AGENTS.md` and [the routing guide](docs/references/codex-agent-routing-guide.md). Choose the task's model and effort explicitly when this session cannot resolve a new custom role; use minimal fresh context and verify actual execution metadata. Do not send every task to the parent model or duplicate specialist checks.
