@@ -122,6 +122,37 @@ def read_proposal(prepared):
     return asyncio.run(proposal_script.prepare_proposal(project, baseline))
 
 
+def test_json_profile_freezes_new_identity_without_changing_inputs_or_source(prepared):
+    legacy = read_proposal(prepared)
+    project, baseline, *_ = prepared
+    result = asyncio.run(proposal_script.prepare_proposal(project, baseline, profile="v5"))
+    assert result["profile"] == "v5"
+    assert result["promptVersion"] == "actor-detail-refinement-v5"
+    assert "one valid JSON object" in result["systemPrompt"]
+    assert result["paidRequestsSent"] == 0 and result["realV5RecognitionVerified"] is False
+    assert result["authorization"]["executionAuthorized"] is False
+    assert result["maximumNewHttpAttempts"] == 2 and result["automaticRetry"] is False
+    assert result["budgetId"] != legacy["budgetId"]
+    assert (
+        result["protectedFilesBefore"]
+        == result["protectedFilesAfter"]
+        == legacy["protectedFilesAfter"]
+    )
+    assert result["costPlan"] == legacy["costPlan"]
+    for old, current in zip(legacy["cases"], result["cases"], strict=True):
+        assert current["requestHash"] != old["requestHash"]
+        assert current["wirePayloadSha256"] != old["wirePayloadSha256"]
+        assert current["inputFrames"] == old["inputFrames"]
+        assert current["sequenceTextBlocks"] == old["sequenceTextBlocks"]
+        assert current["requestParameters"] == old["requestParameters"]
+
+
+def test_pilot_rejects_unrecognized_profile_before_source_reads(prepared):
+    project, baseline, *_ = prepared
+    with pytest.raises(ValueError, match="explicitly v4 or v5"):
+        asyncio.run(proposal_script.prepare_proposal(project, baseline, profile="v6"))
+
+
 def test_exact_original_frames_and_read_only_sources_are_frozen_without_any_calls(
     prepared, monkeypatch
 ):

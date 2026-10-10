@@ -26,6 +26,7 @@ from gamingcreator.domain.errors import AppError
 from gamingcreator.domain.models import Embedding
 from gamingcreator.infrastructure.deepseek_detail_parts import parse_parts_detail
 from gamingcreator.infrastructure.deepseek_detail_temporal import parse_temporal_detail
+from gamingcreator.infrastructure.deepseek_detail_temporal_json import parse_temporal_json_detail
 from gamingcreator.infrastructure.detail_query_sidecar import (
     read_saved_detail_corpus,
     refinement_identity_for_profile,
@@ -170,7 +171,7 @@ def test_missing_exact_profile_retains_base_corpus_and_creates_nothing(detail_po
     assert snapshot(project) == before
 
 
-@pytest.mark.parametrize("profile", ["v1", "v3", "v4"])
+@pytest.mark.parametrize("profile", ["v1", "v3", "v4", "v5"])
 def test_each_exact_profile_uses_its_validated_observed_projection(detail_pool, profile):
     _, timeline, _, detail = detail_pool
     identity = refinement_identity_for_profile(profile)
@@ -183,7 +184,8 @@ def test_each_exact_profile_uses_its_validated_observed_projection(detail_pool, 
     elif profile == "v3":
         detail = parse_parts_detail(json.dumps(visible_parts(request)), request)
     else:
-        detail = parse_temporal_detail(json.dumps(temporal_model(request)), request)
+        parser = parse_temporal_json_detail if profile == "v5" else parse_temporal_detail
+        detail = parser(json.dumps(temporal_model(request)), request)
     corpus = build_saved_detail_corpus(
         (timeline,),
         lambda source, event: (request, detail),
@@ -198,7 +200,7 @@ def test_each_exact_profile_uses_its_validated_observed_projection(detail_pool, 
     assert corpus.manifest["indexedEvents"] == 1
     evidence = corpus.evidence[detail.candidate_id]["attributes"]
     assert all(row["status"] == "observed" for row in evidence)
-    if profile == "v4":
+    if profile in {"v4", "v5"}:
         assert {row["actorId"] for row in evidence} == {"actor-1"}
         assert {row["kind"] for row in evidence} == {"hair_color", "held_shape"}
 

@@ -36,7 +36,7 @@ async def match_project_details(
             for identifier in run_ids
         )
         or len(set(run_ids)) != len(run_ids)
-        or profile not in {"v1", "v2", "v3", "v4"}
+        or profile not in {"v1", "v2", "v3", "v4", "v5"}
         or type(limit) is not int
         or not 1 <= limit <= 50
         or type(offset) is not int

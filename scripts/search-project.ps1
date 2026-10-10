@@ -5,7 +5,7 @@ param(
   [ValidateSet('lexical', 'semantic', 'hybrid')][string]$Mode = 'hybrid',
   [ValidateRange(1, 100)][int]$TopK = 10,
   [double]$MinSimilarity = 0.80,
-  [ValidateSet('v1', 'v2', 'v3', 'v4')][string]$DetailProfile,
+  [ValidateSet('v1', 'v2', 'v3', 'v4', 'v5')][string]$DetailProfile,
   [switch]$Json
 )
 $ErrorActionPreference = 'Stop'

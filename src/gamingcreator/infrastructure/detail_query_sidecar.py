@@ -32,6 +32,9 @@ from gamingcreator.infrastructure.deepseek_detail_temporal import (
     provider_temporal_identity,
     temporal_refinement_settings,
 )
+from gamingcreator.infrastructure.deepseek_detail_temporal_json import (
+    provider_temporal_json_identity,
+)
 from gamingcreator.infrastructure.detail_refinement_sidecar import (
     RefinementWriterLock,
     _atomic,
@@ -51,12 +54,14 @@ def refinement_identity_for_profile(profile: str) -> RefinementIdentity:
         return provider_parts_identity()
     if profile == "v4":
         return provider_temporal_identity()
-    raise AppError("input.detail_profile", "精分析版本只能为v1、v2、v3或v4。", ExitCode.INPUT)
+    if profile == "v5":
+        return provider_temporal_json_identity()
+    raise AppError("input.detail_profile", "精分析版本只能为v1、v2、v3、v4或v5。", ExitCode.INPUT)
 
 
 def refinement_settings_for_profile(profile: str) -> RefinementSettings:
     refinement_identity_for_profile(profile)
-    return temporal_refinement_settings() if profile == "v4" else RefinementSettings()
+    return temporal_refinement_settings() if profile in {"v4", "v5"} else RefinementSettings()
 
 
 def read_saved_detail_corpus(
@@ -132,7 +137,7 @@ def match_refinement(
             )
         document = report()
         directory = sidecar_directory(project, timeline.run.run_id, outcome.request_hash)
-        matcher_version = TEMPORAL_MATCHER_VERSION if profile == "v4" else MATCHER_VERSION
+        matcher_version = TEMPORAL_MATCHER_VERSION if profile in {"v4", "v5"} else MATCHER_VERSION
         target = directory / "matches" / f"{constraint_hash(constraint)}-{matcher_version}.json"
         _confined(project.resolve(), target)
         if target.exists():

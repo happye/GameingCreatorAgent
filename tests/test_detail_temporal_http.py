@@ -19,17 +19,18 @@ from gamingcreator.application.detail_refinement_budget import (
 )
 from gamingcreator.infrastructure.deepseek_detail_temporal import (
     parse_temporal_detail,
-    provider_temporal_identity,
     temporal_refinement_settings,
 )
+from gamingcreator.infrastructure.deepseek_detail_temporal_json import parse_temporal_json_detail
+from gamingcreator.infrastructure.detail_query_sidecar import refinement_identity_for_profile
 from gamingcreator.infrastructure.detail_refinement_sidecar import freeze_request, sidecar_directory
 
 
-def publish_temporal_fixture(project, timeline, *, object_uncertain=False):
+def publish_temporal_fixture(project, timeline, *, object_uncertain=False, profile="v4"):
     request = prepare_refinement(
         timeline,
         timeline.events[0].event_id,
-        identity=provider_temporal_identity(),
+        identity=refinement_identity_for_profile(profile),
         settings=temporal_refinement_settings(),
     ).request
     assert request is not None
@@ -39,7 +40,8 @@ def publish_temporal_fixture(project, timeline, *, object_uncertain=False):
     model["entities"][1]["description"] = (
         '近镜头物品 <img src=x onerror="window.temporalInjected=true">'
     )
-    detail = parse_temporal_detail(json.dumps(model), request)
+    parser = parse_temporal_json_detail if profile == "v5" else parse_temporal_detail
+    detail = parser(json.dumps(model), request)
     digest = freeze_request(project, request)
     directory = sidecar_directory(project, request.run_id, digest)
     document = {
@@ -63,42 +65,52 @@ def inspect(base, project, stored, profile):
     )
 
 
-def test_missing_v4_cannot_borrow_v2_or_create_requests(tmp_path, monkeypatch):
+@pytest.mark.parametrize("profile", ["v4", "v5"])
+def test_missing_temporal_profile_cannot_borrow_v2_or_create_requests(
+    tmp_path, monkeypatch, profile
+):
     project, _, stored = seed_project(tmp_path)
     publish_v2_fixture(project, stored)
     refuse_sends(monkeypatch)
     before = snapshot(project)
     with workspace(tmp_path) as base:
-        status, _, raw = inspect(base, project, stored, "v4")
+        status, _, raw = inspect(base, project, stored, profile)
         assert status == 200
         view = json.loads(raw)
         assert (
             view["detailRefinementProfile"]["schemaVersion"] == "actor-detail-refinement-schema-v2"
         )
         assert view["timeline"][0]["detailRefinement"]["availability"] == "missing"
-        status, _, raw = post(base, body(project, stored, profile="v4"))
+        status, _, raw = post(base, body(project, stored, profile=profile))
         assert status == 200 and json.loads(raw)["result"]["status"] == "unverified"
     assert snapshot(project) == before
 
 
-def test_saved_scene_identity_and_match_use_the_exact_v4_profile(tmp_path, monkeypatch):
+@pytest.mark.parametrize("profile", ["v4", "v5"])
+def test_saved_scene_identity_and_match_use_the_exact_profile(tmp_path, monkeypatch, profile):
     project, _, stored = seed_project(tmp_path)
-    _, document, detail = publish_temporal_fixture(project, stored)
+    _, document, detail = publish_temporal_fixture(project, stored, profile=profile)
     refuse_sends(monkeypatch)
     before = snapshot(project)
     with workspace(tmp_path) as base:
-        status, _, raw = inspect(base, project, stored, "v4")
+        status, _, raw = inspect(base, project, stored, profile)
         assert status == 200
         row = json.loads(raw)["timeline"][0]["detailRefinement"]
         assert row["payloadHash"] == document["payloadHash"]
         assert row["detail"]["temporalScene"]["entities"][1]["classification"]["kind"] == "object"
         assert len(row["detail"]["shots"][0]["actors"]) == 1
-        status, _, raw = post(base, body(project, stored, profile="v4"))
+        status, _, raw = post(base, body(project, stored, profile=profile))
         report = json.loads(raw)
         assert status == 200 and report["result"]["status"] == "full"
         assert report["result"]["matcherVersion"] == "actor-detail-matcher-v2"
         assert report["refinementPayloadHash"] == payload_hash(detail)
         assert report["humanLabels"] is report["qualityGate"] is None
+        other = "v4" if profile == "v5" else "v5"
+        status, _, raw = inspect(base, project, stored, other)
+        assert (
+            status == 200
+            and json.loads(raw)["timeline"][0]["detailRefinement"]["availability"] == "missing"
+        )
         status, _, raw = inspect(base, project, stored, "v3")
         assert (
             status == 200
@@ -107,9 +119,12 @@ def test_saved_scene_identity_and_match_use_the_exact_v4_profile(tmp_path, monke
     assert snapshot(project) == before
 
 
-def test_forged_projection_is_rejected_even_when_payload_hash_is_recomputed(tmp_path, monkeypatch):
+@pytest.mark.parametrize("profile", ["v4", "v5"])
+def test_forged_projection_is_rejected_even_when_payload_hash_is_recomputed(
+    tmp_path, monkeypatch, profile
+):
     project, _, stored = seed_project(tmp_path)
-    directory, document, _ = publish_temporal_fixture(project, stored)
+    directory, document, _ = publish_temporal_fixture(project, stored, profile=profile)
     payload = json.loads(document["payloadJson"])
     payload["shots"][0]["actors"][0]["description"] = "scene不支持的新主体描述"
     document["payloadJson"] = json.dumps(
@@ -120,20 +135,21 @@ def test_forged_projection_is_rejected_even_when_payload_hash_is_recomputed(tmp_
     refuse_sends(monkeypatch)
     before = snapshot(project)
     with workspace(tmp_path) as base:
-        status, _, raw = inspect(base, project, stored, "v4")
+        status, _, raw = inspect(base, project, stored, profile)
         assert status == 409 and json.loads(raw)["code"] == "refinement.damaged"
-        status, _, raw = post(base, body(project, stored, profile="v4"))
+        status, _, raw = post(base, body(project, stored, profile=profile))
         assert status == 409 and json.loads(raw)["code"] == "refinement.damaged"
     assert snapshot(project) == before
 
 
 @pytest.mark.parametrize(("width", "object_uncertain"), [(1366, False), (390, True)])
+@pytest.mark.parametrize("profile", ["v4", "v5"])
 def test_browser_keeps_objects_separate_and_shows_safe_evidence_links(
-    tmp_path, monkeypatch, width, object_uncertain
+    tmp_path, monkeypatch, width, object_uncertain, profile
 ):
     playwright = pytest.importorskip("playwright.sync_api")
     project, _, stored = seed_project(tmp_path)
-    publish_temporal_fixture(project, stored, object_uncertain=object_uncertain)
+    publish_temporal_fixture(project, stored, object_uncertain=object_uncertain, profile=profile)
     refuse_sends(monkeypatch)
     before = snapshot(project)
     with workspace(tmp_path) as base, playwright.sync_playwright() as runtime:
@@ -151,7 +167,7 @@ def test_browser_keeps_objects_separate_and_shows_safe_evidence_links(
             )
             page.goto(base)
             playwright.expect(page.locator("#timeline-count")).to_have_text("1")
-            page.locator("#detail-profile").select_option("v4")
+            page.locator("#detail-profile").select_option(profile)
             playwright.expect(page.locator("#detail-profile")).to_be_enabled()
             page.locator("#timeline-list .clip-preview").click()
             playwright.expect(page.locator("#detail-status")).to_contain_text(

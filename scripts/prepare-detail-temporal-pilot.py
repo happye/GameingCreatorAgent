@@ -1,4 +1,4 @@
-"""Freeze two v4 requests for review only; no provider calls, reservations or settlement."""
+"""Freeze two explicitly versioned requests; no provider calls, reservations or settlement."""
 
 import argparse
 import asyncio
@@ -20,6 +20,13 @@ from gamingcreator.infrastructure.deepseek_detail_temporal import (
     DeepSeekDetailTemporalProvider,
     provider_temporal_identity,
     temporal_refinement_settings,
+)
+from gamingcreator.infrastructure.deepseek_detail_temporal_json import (
+    PROMPT as JSON_PROMPT,
+)
+from gamingcreator.infrastructure.deepseek_detail_temporal_json import (
+    DeepSeekDetailTemporalJsonProvider,
+    provider_temporal_json_identity,
 )
 from gamingcreator.infrastructure.deepseek_vision import _jpeg_width, _json, _SchemaError
 from gamingcreator.infrastructure.detail_cost_history import refinement_cost_history
@@ -144,7 +151,11 @@ def _baseline(path: Path) -> tuple[dict[str, object], str]:
     return value, _sha(data)
 
 
-async def prepare_proposal(project: Path, baseline_path: Path) -> dict[str, object]:
+async def prepare_proposal(
+    project: Path, baseline_path: Path, *, profile: str = "v4"
+) -> dict[str, object]:
+    if profile not in {"v4", "v5"}:
+        raise ValueError("Pilot profile must be explicitly v4 or v5.")
     project = project.resolve()
     baseline_path = baseline_path.resolve()
     baseline, baseline_sha = _baseline(baseline_path)
@@ -153,7 +164,12 @@ async def prepare_proposal(project: Path, baseline_path: Path) -> dict[str, obje
     cases = []
     price = DEEPSEEK_FLASH_20261004
     settings = temporal_refinement_settings()
-    identity = provider_temporal_identity()
+    identity = (
+        provider_temporal_json_identity() if profile == "v5" else provider_temporal_identity()
+    )
+    provider_type = (
+        DeepSeekDetailTemporalJsonProvider if profile == "v5" else DeepSeekDetailTemporalProvider
+    )
     reserve = price.reservation_cny(price.context_limit_tokens, settings.max_output_tokens)
     shared = None
     try:
@@ -190,7 +206,7 @@ async def prepare_proposal(project: Path, baseline_path: Path) -> dict[str, obje
                 for item in timeline.evidence
                 if item.kind == "image"
             }
-            payload = DeepSeekDetailTemporalProvider(NoSendTransport(), paths)._payload(request)
+            payload = provider_type(NoSendTransport(), paths)._payload(request)
             frames = []
             for frame in request.evidence:
                 with paths[frame.evidence_id].open("rb") as stream:
@@ -274,14 +290,18 @@ async def prepare_proposal(project: Path, baseline_path: Path) -> dict[str, obje
         "schemaVersion": "actor-detail-temporal-pilot-proposal-v1",
         "project": str(project),
         "baselineProposal": {"path": str(baseline_path), "sha256": baseline_sha},
-        "budgetId": "actor-detail-temporal-pilot-20261006",
+        "budgetId": (
+            "actor-detail-json-pilot-20261008"
+            if profile == "v5"
+            else "actor-detail-temporal-pilot-20261006"
+        ),
         "destination": DESTINATION,
         "provider": identity.provider,
         "requestedModel": identity.requested_model,
         "promptVersion": identity.prompt_version,
         "promptHash": identity.prompt_hash,
         "schema": identity.schema_version,
-        "systemPrompt": PROMPT,
+        "systemPrompt": JSON_PROMPT if profile == "v5" else PROMPT,
         "maximumNewHttpAttempts": 2,
         "automaticRetry": False,
         "paidRequestsSent": 0,
@@ -321,6 +341,9 @@ async def prepare_proposal(project: Path, baseline_path: Path) -> dict[str, obje
         "protectedFilesAfter": after,
         "cases": cases,
     }
+    if profile == "v5":
+        result["profile"] = "v5"
+        result["realV5RecognitionVerified"] = False
     if len(_canonical(result).encode("utf-8")) > _MAX_JSON_BYTES:
         raise ValueError("Frozen proposal exceeds its byte limit.")
     return result
@@ -347,13 +370,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--baseline-proposal", type=Path, required=True)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--profile", choices=("v4", "v5"), default="v4")
     args = parser.parse_args(argv)
     if not args.dry_run and args.output is None:
         parser.error("--output is required unless --dry-run is selected")
     if args.dry_run and args.output is not None:
         parser.error("--dry-run does not accept an output path")
     try:
-        proposal = asyncio.run(prepare_proposal(args.project, args.baseline_proposal))
+        proposal = asyncio.run(
+            prepare_proposal(args.project, args.baseline_proposal, profile=args.profile)
+        )
         summary = {
             "paidRequestsSent": 0,
             "realV4RecognitionVerified": False,

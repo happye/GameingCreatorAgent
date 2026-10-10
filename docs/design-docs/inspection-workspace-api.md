@@ -1,8 +1,14 @@
 # 本地检查工作台 API
 
+## 明确JSON的连续实体精分析v5
+
+准确detailProfile／profile=v5使用actor-detail-refinement-v5的独立promptHash／requestHash，沿用v4的schema-v2、4096输出token、temporal-scene-v1、actor-details-v2及matcher-v2。只新增明确JSON输出指示，不改旧v4提示词、canonical或wire输入；旧／新版本不能相互读取或重新标记。单候选inspect／match、项目match、已保存排名match和可选已有细节search-project均支持准确v5。缺精确结果仍unverified，无模型调用／上传／预留费用。
+
+health新增detail-temporal-json-v1，现用共九项能力；页面“连续实体 v5（试验）”初始disabled，仅能力存在时启用，默认v2／inspect默认v1保持。当前v5无真实模型输出；v4两个真实请求HTTP400、用户核实零扣费，不称请求拒绝原因已定位。执行与提案边界见[本轮sprint](../exec-plans/sprint-detail-temporal-json.md)。
+
 ## 可选已有细节检索（saved-detail-retrieval-v1）
 
-`POST /api/search-project`在原五字段之外可明确增加`detailProfile`字符串v1–v4；缺省使用原基础语料，null／bool／latest拒绝。同源及正文边界保持；实际来源、准确基础版本与精request／payload先复核，再使用本地embedding。最多100不同来源／20,000视觉事件、8MiB细节语料，不自动分析／上传／预留费用。
+`POST /api/search-project`在原五字段之外可明确增加`detailProfile`字符串v1–v5；缺省使用原基础语料，null／bool／latest拒绝。同源及正文边界保持；实际来源、准确基础版本与精request／payload先复核，再使用本地embedding。最多100不同来源／20,000视觉事件、8MiB细节语料，不自动分析／上传／预留费用。
 
 响应和保存的`project-search-v1`可附`detailRetrieval`：当前saved-detail-text-v3，旧文字v1／v2仍可复核；profile／promptHash／settingsHash／sources／totalVisualEvents／publishedRefinements／indexedEvents／refinements／snapshotSha256保持。逐候选`detailSearchEvidence`为准确细节或null，属性含shotId／actorId（环境null）／partId／kind／value／observed／text／evidenceIds／startUs／endUs，原facts／time／evidence不改。BM25／E5／RRF相关排序不保证同主体／部件AND。
 
@@ -14,7 +20,7 @@ health能力启用“含已有细节”，旧后端隐藏选项；请求revision
 
 ## 原搜索候选的条件依据（search-detail-query-v1）
 
-`POST /api/match-search-details`严格接受`{project,searchId,searchSha256,profile,constraint}`，前四项字符串、constraint对象；沿64KiB／本机Host与Origin／唯一字段边界。读取已有联合搜索的result及原文件SHA回执，再核对规范内容摘要searchSha256、实际Completed来源和每个候选身份／顺序／区间／事实／证据，先全部验证再匹配。客户端候选或文件路径不接受；准确profile为v1–v4，正向AND沿query-v1。
+`POST /api/match-search-details`严格接受`{project,searchId,searchSha256,profile,constraint}`，前四项字符串、constraint对象；沿64KiB／本机Host与Origin／唯一字段边界。读取已有联合搜索的result及原文件SHA回执，再核对规范内容摘要searchSha256、实际Completed来源和每个候选身份／顺序／区间／事实／证据，先全部验证再匹配。客户端候选或文件路径不接受；准确profile为v1–v5，正向AND沿query-v1。
 
 响应`search-detail-query-v1`含原search全文、规范摘要、constraintJson、refinementProfile、原顺序matches（rank/runId/candidateId/eventId/status/availability/match）、四状态counts、snapshotId与请求project。视觉事件只读准确精结果，语音availability=transcript_only且match=null／status=unverified；最多100来源／100候选／8MiB，原排名分数与耗时保持。humanLabels及qualityGate为空，ordinarySearches/modelAnalysisCalls/paidRequestsSent/newReservations均0，不写SQL／搜索／侧车。health新capability启用页面入口；旧后端隐藏新按钮。
 
@@ -93,7 +99,7 @@ v2每个非空candidate增加`evidenceSummary`，纯投影已登记且属于同m
 - `cost:{knownCny,unknownAttempts,status}`；knownCny是已知部分的Decimal字符串，未知项单独计数，缺DeepSeek价格版本或unverified记录不得算零/已知金额，估价不是账单。
 - `retrievalVersion`、`configHash`、`query`、`mode`，用于导出来源追踪。
 
-2026-10-06版本选择：`/api/inspect`可选`detailProfile=v1|v2|v3|v4`，API默认v1保持旧合同，页面默认v2并显式选择版本，未知值为400/input.detail_profile。顶层`detailRefinementProfile:{version:"actor-detail-inspection-v1",profile,settingsHash,schemaVersion,promptVersion,promptHash,provider,requestedModel}`使用固定RefinementSettings与所选独立身份：v1为冻结骨架、v2独立Provider、v3嵌套部件Provider。精确key缺失返回unverified，不借用其他版本；不接受任意路径、不扫描mtime、不自动解析自由查询约束。v3只有离线合同验证，没有新真实模型输出。
+2026-10-06版本选择：`/api/inspect`可选`detailProfile=v1|v2|v3|v4|v5`，API默认v1保持旧合同，页面默认v2并显式选择版本，未知值为400/input.detail_profile。顶层`detailRefinementProfile:{version:"actor-detail-inspection-v1",profile,settingsHash,schemaVersion,promptVersion,promptHash,provider,requestedModel}`使用固定RefinementSettings与所选独立身份：v1为冻结骨架、v2独立Provider、v3嵌套部件Provider。精确key缺失返回unverified，不借用其他版本；不接受任意路径、不扫描mtime、不自动解析自由查询约束。v3只有离线合同验证，没有新真实模型输出。
 
 timeline/candidate行新增 `detailRefinement:{status:"unverified",availability,requestHash,detail}`。availability为 `missing`（该冻结key未发布结果）、`reused`（完整校验后复用）、`unsupported`（无视觉事件或旧数据缺合同兼容的版本/身份）、`run_incomplete`。非事件音频候选requestHash为null。detail缺失为null；复用时为actor-details-v1规范主体结构并增加计算出的unassignedEvidenceIds，保留镜头、主体、部件、observed/uncertain、原候选区间与支持源帧，不覆盖observableFacts或rank。没有typed QueryConstraint时status始终unverified，reused不等于full或人工认可。
 
@@ -101,7 +107,7 @@ timeline/candidate行新增 `detailRefinement:{status:"unverified",availability,
 
 ## 明确条件与费用接口
 
-`POST /api/match-project-details`接受JSON `{project,runs,profile,constraint,limit,offset,status,snapshot}`（所有字段必填；页面使用20／0／all／null作为首请求值），沿64KiB正文与本机Host／Origin／唯一字段边界。runs为1–100个不同Completed任务，同源SHA／media重复拒绝；profile显式v1–v4，constraint沿原query-v1正向AND。全部事件核验并核对准确已保存结果，再按status（all/full/partial/no_match/unverified）筛选分页；20,000事件或8MiB页超限明确拒绝，limit为1–50、offset为0–20,000、snapshot可为64位小写SHA。不写SQL／搜索／侧车、不调用模型或预算。
+`POST /api/match-project-details`接受JSON `{project,runs,profile,constraint,limit,offset,status,snapshot}`（所有字段必填；页面使用20／0／all／null作为首请求值），沿64KiB正文与本机Host／Origin／唯一字段边界。runs为1–100个不同Completed任务，同源SHA／media重复拒绝；profile显式v1–v5，constraint沿原query-v1正向AND。全部事件核验并核对准确已保存结果，再按status（all/full/partial/no_match/unverified）筛选分页；20,000事件或8MiB页超限明确拒绝，limit为1–50、offset为0–20,000、snapshot可为64位小写SHA。不写SQL／搜索／侧车、不调用模型或预算。
 
 响应`project-detail-query-v1`绑定project、scopeId、snapshotId、constraintJson、refinementProfile；sources含run／media／sourceSHA／configHash／pipelineVersion／durationUs／eventCount。counts覆盖全部事件；results仅本页，保留来源、原eventId／区间／证据／显示事实和原match报告，order为source-run-time。totalEvents／totalSelected／offset／limit／hasNext明确分页；humanLabels／qualityGate为null，普通搜索／模型／付费／预留计数为0。snapshot涵盖全部核对报告，不限本页或当前筛选；旧snapshot不一致报input.project_detail_snapshot，请重新核对。新health能力`project-detail-query-v1`才启用页面入口，旧后台无此能力时保留旧流程。
 

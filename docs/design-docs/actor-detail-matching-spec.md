@@ -1,5 +1,7 @@
 # F010：候选主体细节与复合匹配工程规格
 
+2026-10-08当前：新精分析v5明确JSON输出，沿用v4连续实体／遮挡／持有／part合同与严格scene投影，旧v4提示词／请求不改。单候选／项目／保存排名／已有细节入口支持精确v1–v5，缺相应版本仍unverified；默认页面v2，v5只在detail-temporal-json-v1后台启用。17新增全通过、包及现用验证完成，仍无真实v5结果。上一v4两请求HTTP400没有新细节、用户核实零扣费；旧35–36秒三人物确认和28–29秒误认物品反馈保持。F006/F009/F010false；新提案未授权，用户要求收尾后暂停。见[当前sprint](../exec-plans/sprint-detail-temporal-json.md)，下方2026-10-06段为历史合同节点。
+
 2026-10-06接续：用户已确认35–36秒三个描述正确、标错28–29秒s1/a2（近镜头持有物被当作人物），见[独立反馈](../exec-plans/detail-human-feedback-2026-10-06.md)。新v4保留actor/object/unknown分类、逐帧遮挡、相邻帧continuous/cut/unknown及owner依据；程序划分连续段，仅把有支持的actor与持有关系投影给匹配器。actor-details-v2完整保存temporal-scene-v1；请求schema-v2和matcher-v2仅用于新版本，旧v1/v2/v3提示词、canonical与hash保持。未知实体/关系不能被当作全部已排除；每次读取、保存和匹配重验scene投影一致。CLI/API/页面支持精确v4 profile（4096输出token设置）；只有离线工程验证，尚无真实v4输出。详见[sprint](../exec-plans/sprint-detail-temporal.md)，下方冻结v1合同仍适用其旧版本。
 
 2026-10-06；状态：typed合同/纯matcher、request/ports、sidecar/共享预算/恢复、独立v2精分析Provider及离线CLI条件匹配已实现；两个授权真实候选已完成精分析，均partial，独立人评仍待完成。依据 [F010计划](../exec-plans/sprint-visual-details.md)、[TD009](../exec-plans/tech-debt.md)、[Phase 0](../product-specs/phase-0.md) 与四层架构。

@@ -282,7 +282,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                         "detailProfile" in value
                         and (
                             type(value["detailProfile"]) is not str
-                            or value["detailProfile"] not in {"v1", "v2", "v3", "v4"}
+                            or value["detailProfile"] not in {"v1", "v2", "v3", "v4", "v5"}
                         )
                     )
                     or any(type(value[key]) is not str for key in ("project", "query", "mode"))
@@ -447,6 +447,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             "saved-detail-retrieval-v1",
                             "saved-detail-actor-semantics-v1",
                             "saved-detail-grouped-ranking-v1",
+                            "detail-temporal-json-v1",
                         ],
                         "repository": str(self.repository.resolve()),
                         "pid": os.getpid(),

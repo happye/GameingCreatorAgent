@@ -98,7 +98,7 @@ def build_saved_detail_corpus(
 ) -> SavedDetailCorpus:
     total = sum(len(row.events) for row in timelines)
     if (
-        profile not in {"v1", "v2", "v3", "v4"}
+        profile not in {"v1", "v2", "v3", "v4", "v5"}
         or version not in {LEGACY_VERSION, ACTOR_VERSION, VERSION}
         or not 1 <= len(timelines) <= 100
         or total > MAX_EVENTS

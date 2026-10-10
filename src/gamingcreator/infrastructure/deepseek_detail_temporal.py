@@ -112,7 +112,13 @@ def temporal_refinement_settings() -> RefinementSettings:
 
 
 def parse_temporal_detail(content: str, request: DetailRefinementRequest) -> CandidateDetail:
-    if request.identity != provider_temporal_identity() or request.base_prompt_hash is None:
+    return _parse_temporal_detail(content, request, provider_temporal_identity())
+
+
+def _parse_temporal_detail(
+    content: str, request: DetailRefinementRequest, identity: RefinementIdentity
+) -> CandidateDetail:
+    if request.identity != identity or request.base_prompt_hash is None:
         raise ValueError("Unsupported temporal refinement identity.")
     if type(content) is not str or len(content.encode("utf-8")) > MAX_RESPONSE_BYTES:
         raise ValueError("Invalid or oversized temporal response.")

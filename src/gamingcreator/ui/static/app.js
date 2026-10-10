@@ -2472,6 +2472,7 @@
             state.projectDetailAvailable=health.application==="gamingcreator-workspace" && health.capabilities?.includes("project-detail-query-v1");updateSearchScope();
             state.searchDetailAvailable=health.application==="gamingcreator-workspace" && health.capabilities?.includes("search-detail-query-v1");updateSearchScope();
             state.savedDetailRetrievalAvailable=health.application==="gamingcreator-workspace" && health.capabilities?.includes("saved-detail-retrieval-v1");updateSearchScope();
+            ui["detail-profile"].querySelector('[value="v5"]').disabled = !(health.application === "gamingcreator-workspace" && health.capabilities?.includes("detail-temporal-json-v1"));
             document.getElementById("open-acceptance").hidden = !(health.application === "gamingcreator-workspace"
                 && health.capabilities?.includes("benchmark-workflow-v1"));
             ui["open-preparation"].hidden = !(health.application === "gamingcreator-workspace"

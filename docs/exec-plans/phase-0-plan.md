@@ -2,7 +2,7 @@
 
 依据 [反向审查](./reverse-review-2026-10-03.md)、[工程合同](../design-docs/phase-0-engineering-spec.md) 和原方案 §71。保持 F001–F006 ID，避免交接时重复创建特性。F001–F005 的技术合同已验收，CLI Demo实测见 [sprint-demo](./sprint-demo.md)。F006工具已实现，独立人工质量gate仍未通过；旧spike仅为F000证据。
 
-2026-10-08当前里程碑：[分组词法／语义排名](sprint-saved-detail-grouped-ranking.md)已现用／abbba14普通push；18新增通过，旧完整六项非通过归TD012／TD014，真实复合仍partial、1/227。[两冻结候选真实试验](sprint-detail-temporal-execution.md)获授权后各一次／六帧，两次HTTP400，无新结果、不重试。用户已核实未扣费，确认另存；原API未知记录及保守占用、更早另一任务unknown保持。902旧文件／28外部保护及独立读回通过。下一root离线核对请求格式并准备版本化修正，不改原冻结提案或自动补发。正式F006独立录像／事前参考／固定评分仍待真人，入口时点见[人工待办](human-inputs.md)，日常不用填表。F006/F009/F010false，继续Phase 0；旧里程碑为历史，不覆盖当前事实。
+2026-10-11收尾时的当前里程碑（开发／验证节点2026-10-08）：[明确JSON的新v5](sprint-detail-temporal-json.md)已接精确只读／CLI／页面和冻结工具，原人物独立排名保持。17新增全部通过，一次完整2419passed／六旧非通过／1权限skip，旧TD012／TD014留证、不循环；双包99源码及现用两尺寸回看下载完成，911旧文件／39保护保持，0新调用／搜索／预留／人评。新v5无真实结果、细节1/227、严格复合仍partial，F006/F009/F010false。上一v4两请求HTTP400、用户核实零扣费，原API未知和保守ledger／更早另一unknown保持。新v5两候选六帧最高¥4.07提案已冻结未授权；恢复后处理具体新授权，再按真实结果提醒人工核对，正式F006来源／事前参考／固定评分另见[人工待办](human-inputs.md)。用户额度14%要求结束会话，收尾后暂停，不自动进入新阶段；[通俗报告](report-2026-10-08-detail-json.md)已保存，旧节点为历史。
 
 ```mermaid
 flowchart LR

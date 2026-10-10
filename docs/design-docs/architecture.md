@@ -1,8 +1,10 @@
 # Phase 0 架构基线 v2
 
+明确JSON的新v5独立Provider复用v4 payload构造、temporal settings及解码器，注入预期身份后严格解析；只有提示词／请求身份变化，原v4 PROMPT／SHA／canonical保持。公开精确读取与CLI支持v5，默认v2；detail-temporal-json-v1仅开启页面新版本选项。旧数据不能借用／重标为v5，缺结果仍unverified；冻结工具--profile v5只生成具体新提案，不发送或预留预算。当前无真实v5结果，见[本轮sprint](../exec-plans/sprint-detail-temporal-json.md)。
+
 已有细节当前采用saved-detail-text-v3：基础原文档与准确shot／actor／环境组分别参与BM25及E5，按原事件每分量最大分数、RRF一次；不追加合并的跨人物属性到原文档。保存lexicalDetailFacetId及semanticDetailFacetId，两组可能不同，不形成同actor／同part AND结论。纯Application v3投影、scope身份及侧车来源复核保持；旧v1／v2按原version重建并精确比对，原facts／证据／时钟与未选细节默认行为不变。当前证据见[分组任务](../exec-plans/sprint-saved-detail-grouped-ranking.md)。下方文字v2机制为兼容历史。
 
-准确已有细节检索由纯Application `detail_retrieval`调用注入reader，复核原RefinementRequest／payload／投影并产生固定双语observed文字、带镜头／主体／部件／帧的依据及全语料SHA。新saved-detail-text-v2还按shot／actor分组、环境独立形成SemanticFacet，绑定原属性索引及候选身份；`retrieval.search_timelines`可选`RetrievalSupplement`增排名文字和scope版本，基础及各组相似度按原事件取最大，RRF每事件每分量一次，原facts／时钟／证据不变。margin按原facts＋补充文字区分。Infrastructure准确只读sidecar供CLI组合，原SQLite／旧默认检索保持。保存文件附detailRetrieval／逐候选detailSearchEvidence／实际semanticDetailFacetId；核对按原version和profile重建语料并精确对照，v1仍按原投影，变化或外来组拒绝。v4消费已验证actor／ownership，uncertain／同部件互斥冲突不索引；20,000组及有界文字先于模型拒绝，不称同actor AND或质量通过。见[指南](../references/saved-detail-retrieval-guide.md)。
+准确已有细节检索由纯Application `detail_retrieval`调用注入reader，复核原RefinementRequest／payload／投影并产生固定双语observed文字、带镜头／主体／部件／帧的依据及全语料SHA。新saved-detail-text-v2还按shot／actor分组、环境独立形成SemanticFacet，绑定原属性索引及候选身份；`retrieval.search_timelines`可选`RetrievalSupplement`增排名文字和scope版本，基础及各组相似度按原事件取最大，RRF每事件每分量一次，原facts／时钟／证据不变。margin按原facts＋补充文字区分。Infrastructure准确只读sidecar供CLI组合，原SQLite／旧默认检索保持。保存文件附detailRetrieval／逐候选detailSearchEvidence／实际semanticDetailFacetId；核对按原version和profile重建语料并精确对照，v1仍按原投影，变化或外来组拒绝。v4／v5消费通过结构与证据校验的actor／ownership，uncertain／同部件互斥冲突不索引；20,000组及有界文字先于模型拒绝，不称同actor AND或质量通过。见[指南](../references/saved-detail-retrieval-guide.md)。
 
 保存排名的条件依据由纯Application `search_detail_query`复用TimelineStore、retrieval纯来源投影`candidate_sources`与准确已保存结果回调；读取原`project-search-v1`内容并核对来源／区间／事实／证据后，对全部原候选补状态，不重排、筛掉未知或重新检索。CLI只读原文件SHA回执和SQLite，POST再绑定规范内容摘要；语音候选不进入视觉matcher，最多100来源／100候选／8MiB。原搜索响应只增摘要，原文件保持。页面独立保留依据及原排名，换条件／profile／查询清除、跨源回看保持。见[候选指南](../references/search-detail-evidence-guide.md)。
 
@@ -43,7 +45,7 @@ CLI 只解析输入、组装依赖和输出结果；Application 编排 stages、
 
 本地页面不代表纯云服务，桌面EXE也不代表全离线推理；当前视频/ASR/SQLite/E5在本机，视觉证据必要图片发DeepSeek。未来Windows桌面封装遵循原本地优先方向，完整云端托管则需另作存储、任务与账号边界设计。详见[部署路线](../references/deployment-roadmap.md)。
 
-主体细节是独立精分析 sidecar，不重写基础事件。`/api/inspect` 显式选择 v1/v2/v3/v4 并返回条件词表与已保存结果身份；`POST /api/match-details` 只读匹配用户确认的同主体/同部件 AND 条件，页面按当前 request/payload 身份接收结果。`POST /api/draft-detail-query` 使用纯Application有限语法把描述变成可编辑清单，保留全部原文与未处理要求；不读项目或调用模型，未完整理解时须明确确认子集，不能替代自由查询的整句语义。`GET /api/detail-cost-history` 只读独立精分析的 planned/result/预算记录，显示本 run 与全项目已知估价及未知预留，不执行恢复、结算或模型调用。v3 将一个实际部件的属性嵌套后验证，再投影到冻结领域结构；v4保存连续实体、遮挡和持有关系证据，两者尚无真实模型验证。自由查询仍走原检索，不能据候选局部条件宣称整句满足。细节合同与版本边界见 [主体细节规格](./actor-detail-matching-spec.md) 和 [API 合同](./inspection-workspace-api.md)。
+主体细节是独立精分析 sidecar，不重写基础事件。`/api/inspect` 显式选择 v1/v2/v3/v4/v5 并返回条件词表与已保存结果身份；`POST /api/match-details` 只读匹配用户确认的同主体/同部件 AND 条件，页面按当前 request/payload 身份接收结果。`POST /api/draft-detail-query` 使用纯Application有限语法把描述变成可编辑清单，保留全部原文与未处理要求；不读项目或调用模型，未完整理解时须明确确认子集，不能替代自由查询的整句语义。`GET /api/detail-cost-history` 只读独立精分析的 planned/result/预算记录，显示本 run 与全项目已知估价及未知预留，不执行恢复、结算或模型调用。v3 将一个实际部件的属性嵌套后验证，再投影到冻结领域结构；v4保存连续实体、遮挡和持有关系证据，两者尚无真实模型验证。自由查询仍走原检索，不能据候选局部条件宣称整句满足。细节合同与版本边界见 [主体细节规格](./actor-detail-matching-spec.md) 和 [API 合同](./inspection-workspace-api.md)。
 
 已登记人工反馈由纯Application解码、原报告候选来源验证和精确结果投影组成；Infrastructure只读项目内独立 `detail-description-feedback` 文件，UI在描述及条件结果旁显示原话。报告原始SHA、case/run/event/request/payload及shot/actor须一致，更换模型结果不继承确认。反馈仅针对描述，不重写事实、属性、匹配结果或U10；不存在记录为未核对，损坏记录明确报错。
 

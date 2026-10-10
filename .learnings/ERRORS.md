@@ -1,5 +1,7 @@
 # Errors
 
+2026-10-08 v5收尾：新夹具首三失败因fake缺必填reply／HttpResponse body和沿用v4解析器，直接修夹具，原日志保留；不改领域合同。部署助手首保护遇同生System32 conhost先拒绝无变更，准确核对其父进程／出生时间后仅允许该控制台子进程；实际成功启动后误用PowerShell脚本的null LASTEXITCODE报失败，fresh health核对并恢复回执，没有第二次重启。文档整段替换首次同路径delete+add被patch拒绝、无写入，后用单Update完成；恢复不重做真实实验或整套检查。
+
 ## 2026-10-08 分组排名检查准备
 
 首助手误写local_embeddings模块名（0查询）、首patch上下文不匹配（未写入）、类型循环变量复用、检查夹具candidate_sources单源API及旧合并文本断言，均按实际代码直接纠正并保留首日志。全套一次2402passed／3旧failed／3error／1skip，TD012／TD014根因未解，不重跑；没有修改旧工作流或冻结模型结果。

@@ -1,18 +1,22 @@
 # 当前交接
 
-2026-10-08，Phase 0；root / Codex，codex/visual-details，goal active。
+2026-10-11收尾，开发／验证节点2026-10-08，Phase 0；root / Codex，codex/visual-details。用户因额度剩14%明确结束本会话；收尾后暂停持续开发，等待用户恢复，不自动继续。
 
-- **已交付**：人物独立关键词／语义排名已在现用工作台运行，提交abbba14普通push及独立远端核对一致。原描述与每个人物／环境分别计分，展开候选可看到两种检索各采用哪个人物组；旧版本结果保持。详见[分组排名](docs/exec-plans/sprint-saved-detail-grouped-ranking.md)。
-- **本次真实验证**：用户批准的两候选／六帧已各发送一次，22:27:58–22:27:59北京时间均HTTP400，无新细节、无重试。用户已核实未扣费，确认另存；原API用量null、共享预算工具本轮仍保守占用¥4.065536，更早另一任务未知预留¥4.065536保持。原902项目文件及28外部保护记录字节不变，只新增九个尝试／ledger文件。详见[执行sprint](docs/exec-plans/sprint-detail-temporal-execution.md)／[通俗报告](docs/exec-plans/report-2026-10-08-temporal-pilot-execution.md)。
-- **开发中／下一步**：root离线核对请求格式并准备有版本的新修正方案；启用JSON模式而未明确要求JSON输出是疑点，缺错误正文不能认定400原因。原提案与请求不改、不自动补发、不循环付费试错。人工费用核销能力缺口记tech-debt，不篡改原记录来清预留。
-- **人工待办**：本次授权和账单核实完成，目前没有新的可标注结果。正式F006仍待独立代表录像、事前原片参考及固定前十评分；日常不用填验收表，需要用户帮助即提醒具体入口／步骤并登记[人工待办](docs/exec-plans/human-inputs.md)。
+- **已交付／部署记录**：多录像已有细节检索、人物独立关键词／语义排名保持可用；新精分析v5明确要求JSON输出，已接精确版本读取、条件核对、CLI／PowerShell和现有页面。新增“连续实体 v5（试验）”，默认v2；旧后台不支持时禁选。v4原提示词／请求／失败记录保持。详见[本轮sprint](docs/exec-plans/sprint-detail-temporal-json.md)／[通俗收尾报告](docs/exec-plans/report-2026-10-08-detail-json.md)。
+- **仍未通过**：新v5没有真实模型结果，不能称人物／衣物理解改善或HTTP400原因已解决；既有细节覆盖1/227、真实严格复合仍partial，F006/F009/F010false，未进入正式剪辑／商业阶段。
+- **人工待办**：没有新画面需标注。新v5两候选／六帧提案已冻结，未授权／未执行；用户要求收尾，本轮不再提问或发送。正式F006仍需独立录像、事前原片参考及固定前十评分，日常不用填验收流程。触发与入口见[人工待办](docs/exec-plans/human-inputs.md)。
+- **恢复后的下一步**：加载持久规则、核对Git／环境／新冻结提案和基线；向用户说明两个指定候选、六帧发送目的地和最高¥4.07的新预算。仅获新的明确授权后各执行一次、不自动重试；真实结果出来立即提醒核对人物、衣物和持有物。没有授权时继续独立计划工作，旧TD012／TD014不循环追修。
 
-## 验证和边界
+## 验证、费用与恢复资料
 
-分组排名81后台／15页面、18新增全部通过；一次完整2409项／2402passed／3旧failed／3error／1Windows权限skip／570.449s JUnit。五旧版本选择问题归TD014、一次旧批次初始保存问题归TD012，原因未定位、不循环。格式／lint、96类型／CLI通过；同双wheel SHA6236a42f912482cf184e76aa76d2ee05ee8bb2596321f17022cbbda696dfe8d4、98源码包／独立九新旧JSON核对通过。已有24纯前后及一个公开排名2da5a7448f974aa4b16133c67f71495c，中文词法3→2／4→3，其他目标仍第1，严格复合均partial、细节1/227。F006/F009/F010false。
+本轮17新增全部通过；相关146项145passed／1Windows权限skip，加旧后台回退1passed。一次完整2426项／2419passed／4failed／2error／1权限skip，JUnit 447.652秒；五旧版本选择／workflow问题归TD014，一个旧HTTP content_type读取WinError10053归TD012，原因未解决、未窄复查或重跑。Ruff、97源码类型／CLI通过；双离线wheel SHA1c3b94ac94ca9ca15ae89f6485fcdb8ce01dd16cc18849c5e3eeb4bb2a072216，99包文件等源码，独立九旧完整排名与两新v5请求一致、缺失v5仍unverified。
 
-本次仅执行有界试验，无生产源码变更／新搜索／人评，不重复整套。另一进程读回新失败、原v2不变及v4缺失／unverified通过；执行、账单确认、基线／费用／原请求hash见ignored artifacts/detail-temporal-execution-20261008。原提案SHA06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6，executionAuthorized=false是冻结历史，当前授权另有回执；已批准两次已用，不覆盖第三次、重试或新提示词。
+2026-10-08服务实际更新一次，快照PID50320／parent45008、launch20261008-230613-401-fe6f42f064574f6997867cc4e5b1ba35，九能力含detail-temporal-json-v1。1366／390实际页面、原片35–36s播放／暂停、下载、版本切换清除旧条件依据及原排名保持通过；用户空验收流程09ef2eacc0694a19b9b85fe0275cf5da保持。PID只是快照，操作前重核所有权与活跃任务；启动助手假失败留证，只有一次实际更新。2026-10-11收尾只读health不可达；未为收尾重启。恢复后用Start-Workspace.cmd重新启动并核对health，历史PID不可直接操作。
 
-现用UI上次核对56132／parent49132、launch20261008-215948-406-6f782d80086049498e28be4c8337929b、八能力；分组排名两尺寸实际出画面／下载／版本隔离及用户空验收流程09ef2eacc0694a19b9b85fe0275cf5da保持。本次未重启。PID只是快照，操作前重核。
+911项目旧文件／39外部保护逐字节保持，0真实模型／ASR／新搜索／费用预留／人工标签。ignored artifacts/detail-json-validation/保存baseline、full-report、package-report、deployment-report、live-report和截图；.cache/detail-json-*保存检查及publication回执。不提交真实素材、数据库或密钥；ignored回执留在本机。
 
-root独占当前执行工具与公共记录，旧worker冻结，用户授权只读验收说明任务已完成。所有Agent加载AGENTS、[协作协议](docs/references/agent-workflow.md)、CODEX／CLAUDE／Grok入口；主线交付优先，小bug直接修不了即记录后继续，关键节点通俗汇报并同步sprint／HANDOFF／assignments／progress。普通分支发布身份以Git及.cache/detail-grouped-publication.json、.cache/detail-temporal-execution-publication.json为准，不更新main／不强推；阶段交付不等于整体goal完成。旧交接见[历史](docs/exec-plans/handoff-history-2026-10-08.md)。
+新提案artifacts/detail-json-validation/pilot-proposal.json，SHA8f590b2bf6b3663b8333ef3808382aad06c9b9954919c8de5e0888fc7b9b991f；budgetId actor-detail-json-pilot-20261008，新增上限¥4.065536（授权口径¥4.07），最多2请求／原六帧／DeepSeek https://api.deepseek.com/chat/completions，不自动重试，executionAuthorized=false。当前共享refinement占用¥4.08404212保守保持，追加总上限¥8.14957812；更早基础分析任务另一unknown预留¥4.065536单独保留。
+
+上一v4提案SHA06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6已批准并在22:27:58–22:27:59北京时间各发送一次，两个HTTP400、无结果／重试。用户明确“已核实未扣费”，billing-confirmation单独保存；原API用量null与ledger本轮保守预留¥4.065536不直接改写，人工账单核销合同缺口记debt。此前批准两次已用，不覆盖新v5或重发。见[上一执行sprint](docs/exec-plans/sprint-detail-temporal-execution.md)。
+
+root独占公共记录，旧worker冻结，已授权只读验收说明子任务完成。所有Agent读AGENTS与[协作协议](docs/references/agent-workflow.md)，加载主线优先、通俗关键汇报、人工即时提醒和进度同步规则；工具入口均引用。本轮保存／发布仅允许普通push至codex/visual-details，不更新main／不强推；实际HEAD／远端以Git及.cache/detail-json-publication.json为准。旧交接见[历史](docs/exec-plans/handoff-history-2026-10-08.md)。

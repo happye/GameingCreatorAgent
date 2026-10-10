@@ -169,7 +169,7 @@ def _parser() -> CliParser:
         "--mode", choices=("lexical", "semantic", "hybrid"), default="hybrid"
     )
     project_search.add_argument("--min-similarity", type=float, default=0.80)
-    project_search.add_argument("--detail-profile", choices=("v1", "v2", "v3", "v4"))
+    project_search.add_argument("--detail-profile", choices=("v1", "v2", "v3", "v4", "v5"))
     benchmark = commands.add_parser("benchmark", help="执行冻结人工标签评测")
     benchmark.add_argument("--input", type=Path, required=True)
     benchmark.add_argument("--project", type=Path, required=True)
@@ -184,7 +184,7 @@ def _parser() -> CliParser:
     detail.add_argument("--run", required=True)
     detail.add_argument("--event", required=True)
     detail.add_argument("--input", type=Path, required=True)
-    detail.add_argument("--profile", choices=("v1", "v2", "v3", "v4"), default="v2")
+    detail.add_argument("--profile", choices=("v1", "v2", "v3", "v4", "v5"), default="v2")
     detail.add_argument(
         "--save-match", action="store_true", help="在已发布精分析旁保存独立匹配记录"
     )
@@ -194,7 +194,7 @@ def _parser() -> CliParser:
     project_detail.add_argument("--project", type=Path, required=True)
     project_detail.add_argument("--run", action="append", required=True)
     project_detail.add_argument("--input", type=Path, required=True)
-    project_detail.add_argument("--profile", choices=("v1", "v2", "v3", "v4"), default="v2")
+    project_detail.add_argument("--profile", choices=("v1", "v2", "v3", "v4", "v5"), default="v2")
     project_detail.add_argument(
         "--status", choices=("all", "full", "partial", "no_match", "unverified"), default="all"
     )
@@ -208,7 +208,7 @@ def _parser() -> CliParser:
     search_detail.add_argument("--search", required=True)
     search_detail.add_argument("--search-sha256", required=True)
     search_detail.add_argument("--input", type=Path, required=True)
-    search_detail.add_argument("--profile", choices=("v1", "v2", "v3", "v4"), default="v2")
+    search_detail.add_argument("--profile", choices=("v1", "v2", "v3", "v4", "v5"), default="v2")
     return parser
 
 

@@ -73,7 +73,7 @@ async def match_search_details(
     matcher: SavedMatcher,
 ) -> dict[str, object]:
     if (
-        profile not in {"v1", "v2", "v3", "v4"}
+        profile not in {"v1", "v2", "v3", "v4", "v5"}
         or type(expected_search_sha256) is not str
         or not re.fullmatch(r"[a-f0-9]{64}", expected_search_sha256)
     ):

@@ -1,6 +1,8 @@
 # Technical debt
 
-2026-10-08真实v4试验补充TD009：两个冻结请求各一次均HTTP400，原传输层对非200只保留状态、丢弃错误正文，不能确定拒绝原因。离线发现JSON模式提示词缺少明确JSON输出指示，仅作兼容性疑点；需有版本的新修正方案，不修改原冻结请求、不循环付费尝试。复现与回执见sprint-detail-temporal-execution及ignored执行目录，902旧文件／28外部保护保持。
+2026-10-08新v5完整检查：2426项／2419passed／4failed／2error／1权限skip／447.652秒JUnit；17新增全通过。TD014本轮五项：test_benchmark_run_selection两个setup（stale_freeze、http_choices）、test_benchmark_run_selection_browser两个（explicit_choices[1366]、late_choices）、test_benchmark_workflow的registered_source_range，均准备读interrupted而非finished；TD012本轮test_bad_draft_requests_cannot_access_a_project[content_type]读取ConnectionAbortedError／WinError10053。原相关workflow／draft路径未改、根因未解，.cache/detail-json-full.xml／full-verify.log及artifacts/detail-json-validation/full-report.json保留准确节点。按用户交付优先不窄复查、不重复完整、不加生产重试，后续相关阶段再处理。
+
+2026-10-08真实v4试验补充TD009：两个冻结请求各一次均HTTP400，原传输层对非200只保留状态、丢弃错误正文，不能确定拒绝原因。离线发现JSON模式提示词缺少明确JSON输出指示，已作为兼容性缺陷用独立v5修正并完成程序／包／现用验证；v5无真实结果，不能将此缺陷认定为此前400的确切原因。旧冻结请求不改、不循环付费尝试。复现与回执见sprint-detail-temporal-execution及ignored执行目录，902旧文件／28外部保护保持。
 
 费用记录能力缺口：用户已核实上述两次未扣费，但detail_refinement_sidecar／detail_cost_history仅接受Provider用量结算，尚无人工账单确认的独立核销合同；因此原API用量null、ledger仍保守占用本轮¥4.065536。人工确认单独保存，不伪造API成本、不直接覆盖ledger；后续须以明确来源和指定attempt的追加确认记录支持核销，保留原费用未知事实，更早另一任务¥4.065536不受影响。
 
