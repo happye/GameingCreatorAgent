@@ -4,6 +4,8 @@
 
 2026-10-11收尾追加配置：[子Agent按能力选模型](docs/exec-plans/sprint-codex-agent-routing.md)已安装个人／项目六角色、默认Luna/medium、最多3子Agent；Luna／Sol／Astra三次当前真实执行记录核对，主模型保持。共享记忆和工具入口已同步；独立CLI同一进程断流后完成新命名只读子任务／exit0，重复安装／拒绝冲突及备份核对通过；未称原聊天角色清单热刷新。仅完成用户追加任务，视频项目仍按原要求收尾暂停。
 
+发布状态：de4f15a源码与63534d1分工已本地提交；一次普通push连接github.com:443在21.121秒失败／exit128，原日志保存，不重试／远端读取。最后确认远端b232013，本轮待补推；本机配置使用不依赖远端。
+
 已交付／10-08部署验证：[明确JSON的新精分析v5](docs/exec-plans/sprint-detail-temporal-json.md)接精确读取、条件核对、CLI／页面及冻结工具；原人物独立排名保持。17新增全通过，相关145passed／1权限skip＋旧后台回退1passed；一次完整2419passed／4旧failed／2旧error／1权限skip，TD012／TD014未解决且不循环。97类型／CLI／双包99源码／独立九旧排名和两新请求／现用1366与390回看下载通过，911旧文件／39外部保护保持。
 
 边界：本轮0真实调用／新搜索／预留／人评；新v5无真实结果，既有细节1/227、严格复合仍partial，F006/F009/F010false。上一v4两个请求HTTP400且用户核实未扣费；人工确认另存，API未知／保守ledger及更早另一任务unknown保持。详见[通俗收尾报告](docs/exec-plans/report-2026-10-08-detail-json.md)。

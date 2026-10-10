@@ -20,4 +20,6 @@
 
 上一v4提案SHA06829ab9dc835545ef8c4de5c829351fc686ce70c990d8c902b9b919b2f062c6已批准并在22:27:58–22:27:59北京时间各发送一次，两个HTTP400、无结果／重试。用户明确“已核实未扣费”，billing-confirmation单独保存；原API用量null与ledger本轮保守预留¥4.065536不直接改写，人工账单核销合同缺口记debt。此前批准两次已用，不覆盖新v5或重发。见[上一执行sprint](docs/exec-plans/sprint-detail-temporal-execution.md)。
 
+**发布状态**：源码交付de4f15a、模型分工63534d1已本地提交；一次普通push在21.121秒连接github.com:443失败／exit128，原日志.cache/codex-agent-routing-push.log保存，未重复推送／未读取远端。最后已确认远端b232013，本轮提交待网络恢复后补推授权分支。当前配置本机生效不依赖push；最终文档HEAD和回执见Git及.cache/detail-json-publication.json。
+
 root独占公共记录，旧worker冻结，已授权只读验收说明子任务完成。所有Agent读AGENTS与[协作协议](docs/references/agent-workflow.md)，加载主线优先、通俗关键汇报、人工即时提醒和进度同步规则；工具入口均引用。本轮保存／发布仅允许普通push至codex/visual-details，不更新main／不强推；实际HEAD／远端以Git及.cache/detail-json-publication.json为准。旧交接见[历史](docs/exec-plans/handoff-history-2026-10-08.md)。

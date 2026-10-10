@@ -11,3 +11,5 @@
 实现后记录TOML／原生读取、真实子任务及模型执行证据；同步AGENTS／共享协议／工具入口／HANDOFF／分工／progress，保留前一完整检查和费用边界，不重跑无关pytest或发DeepSeek请求。任务结束完成收尾并暂停，等待用户恢复。
 
 已实现／当前验证：个人和项目六角色、默认Luna/medium／并发3、主模型保持；安装脚本保留原config备份和既有角色，重复安装不改已一致文件，追加个人AGENTS规则即时被当前上下文加载。原生strict-config读取默认正确；三实际子任务Luna/high、Sol/medium、Astra/low全部完成，SQLite和turn_context一致且无重路由。当前自定义agent_type首次unknown保留，改明确model/fork none成功；新会话CLI仅启动一次，transport自行断流重试后创建／完成task_progress_monitor并exit0，session1701终结，没有另起进程。CLI ephemeral不存子任务型号，三种型号的执行记录验证来自当前聊天。debug prompt-input未含自定义角色不能证明注册，失败保留。无DeepSeek／新视觉／搜索／费用预留／人评。新增安装验证：首次安装、再执行字节一致、冲突默认拒绝且零写入、个人父配置除agents外等原备份、六副本一致及911旧项目／39保护保持均通过；PowerShell语法通过。接下来仅保存／普通push并按原收尾要求暂停。
+
+发布／收尾节点：源码de4f15a与分工63534d1已本地提交；一次授权普通push于21.121秒连接github.com:443失败／exit128，日志.cache/codex-agent-routing-push.log保留，未重试／远端读取，最后确认远端b232013，本轮待网络恢复后补推。不影响个人／项目配置本机生效。当前功能、验证和人工边界已通俗汇报并同步HANDOFF／assignments／progress；完成本地记录后最后暂停持续开发，不自动继续。
