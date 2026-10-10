@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-11当前主线**：持续开发已恢复。[新v5真实验证](docs/exec-plans/sprint-detail-json-execution.md)指定两请求／六帧已执行，无重试；35–36秒schema失败无可用结果，28–29秒已保存人物及近景物体但持有归属未知，真人核对待办已即时提醒。新估算¥0.02822804，旧unknown保持；911项目旧文件／40外部保护逐字节不变，新进程读回通过。Generator在独立worktree实现指定失败请求的人工费用确认，root继续同源对照与公共入口；F006/F009/F010仍false，不提前进入商业阶段。以下暂停／未授权段落为恢复前历史。
+
 ## 当前进度摘要（2026-10-11收尾；开发／验证节点2026-10-08）
 
 **2026-10-11用户追加任务已交付**：[通用模型分工skill及三角色补齐](docs/exec-plans/sprint-harness-routing-skill.md)已增量合入my-skills/main的e3ae40a，并同步本机Codex／Claude／Grok技能副本；原记忆／门禁保留，新增项目三个harness_*原生角色，当前型号分工立即可用，未声称新角色热刷新／全工具执行。13隔离项12passed／1权限skip，Codex原生配置接受、Grok九角色发现、独立审查通过；当前无新人工需求／DeepSeek请求。详见[通俗报告](docs/exec-plans/report-2026-10-11-harness-routing-skill.md)。录像主线仍暂停，恢复后按原开发路径和关键交付独立评估；其分支待普通push与技能仓库已发布分开记录。

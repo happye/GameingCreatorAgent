@@ -1,0 +1,25 @@
+# 新v5两个真实候选验证
+
+2026-10-11用户恢复持续开发，Phase 0／F009／F010。上一目标turn是progress：新JSON profile程序／包／真实页面已交付；用户先前暂停因当前恢复目标撤销。root负责实际预检与执行、本地对照和公共记录，唯一独立费用评估由task_quality_guard承担；另一个harness_planner只读规划费用确认缺口，无并行写者、不得递归委派。
+
+用户已明确批准冻结v5提案SHA8f590b2bf6b3663b8333ef3808382aad06c9b9954919c8de5e0888fc7b9b991f：35–36秒三人物、28–29秒近镜头持有物两候选／原六帧、冻结提示词／参数／帧ID发送至https://api.deepseek.com/chat/completions；新增最高¥4.07、最多两次、每候选一次、不自动重试，原费用预留保持。原authorization.executionAuthorized=false保留为冻结历史，独立授权回执已保存。本轮两次已执行，授权次数耗尽。
+
+实际路径：当前环境检查→原v5提案及六帧／canonical／wire精确重建、当前官方费率和源项目保护基线→独立费用边界核对→两次逐项先落盘后发送／费用结算、不重试→新响应严格解码／旧v2与新v5对照、另一进程重读→有新结果立即给用户回看入口并登记human-inputs→同步sprint／HANDOFF／assignments／progress／phase计划。失败保留，不放松结构或自动补发，不把两个开发样本当独立F006质量通过。
+
+环境脚手架及完整工具先决检查通过，源码从85b28b3恢复、工作树原干净，源码没有改变不重复完整测试。当前官方Flash人民币峰谷价格与冻结快照相符，核对来源https://api-docs.deepseek.com/zh-cn/quick_start/pricing/。执行与独立评估证据放ignored artifacts/detail-json-execution-20261011/。阶段仍Phase 0，F006/F009/F010false，goal active。
+
+## 执行节点与已汇报内容
+
+独立guard核对原六帧／wire／预算及911旧项目文件、40外部保护通过。两次于2026-10-11北京时间02:15:17、02:15:28分别发送：actor-separation HTTP200但provider.schema失败，估算¥0.016581；held-item-shape HTTP200并发布，估算¥0.01164704。无重试／新ASR／新搜索／人工标签，checkpoint终态finished，两次上限严格消耗。新费用合计¥0.02822804、无新unknown，共享已知¥0.04673416、原unknown¥4.065536、原保守占用¥4.11227016；另一基础任务unknown¥4.065536单独保持。
+
+28–29秒返回一个蓝发人物、红色及绿橙色物体，背景相邻画面判连续，owners为空；这只是模型声称，不代替真人判断，旧白发＋蓝色扁平持物查询仍unverified。35–36秒原始JSON仅做一次离线解码，严格拒绝“Unexpected temporal scene fields.”；保持原响应和规则，不自动删字段或付费再试。新进程readback核对911旧文件／40保护不变、10新增attempt／ledger／发布文件、一候选missing／另一reused、原v2载荷保持。
+
+已向用户通俗报告一份保存／一份被拒、估算金额及持有关系未确认；已立即提醒28–29秒需要真人核对，human-inputs登记待办。root单Agent给现有比较工具增加精确v5读取与真实失败提示，生成同源对照／空人工记录入口；随后原计划继续独立费用能力，不循环旧bug。服务由启动助手实际重启一次，PID54500／launch20261011-021213-985-e5c59d958840456eade5027942f8fd4e是快照；历史PID不可直接操作。
+
+## 可回看的交付
+
+同源对照及人工记录页已生成在artifacts/detail-json-review-20261011-final/；该精确v5结果不会借用旧v4或v2载荷／判断。35–36秒维持no_saved_result领域状态，但页面明确已执行失败；这保留既有人工记录合同，禁止伪造可评分状态。28–29秒开放真人核对，所有值仍null，持有归属明确无确认。
+
+相关comparison/review/v5程序98项通过；缺失结果新提示改变了旧文本断言，直接同步一次。最后补既有review_entity_ids合同回归1项通过；Ruff与88源码mypy通过。实际1366／390页面均六帧SHA、尺寸、失败组禁填／已发布组可填、空记录下载验证、无横向溢出／脚本异常／外部请求通过，921项目文件逐字节保持。首版临时对照把failed设为新state导致旧人工记录校验拒绝，未交付给用户；修正为原no_saved_result后生成独立final目录，原临时页保留为诊断历史，不覆盖冻结资料。
+
+已给用户实际对照／记录链接并提问，请其重点判断“蓝发人物”及两近景物体是否看对，注明日常不需整套验收。未收到新人工结论，F006/F009/F010false。费用后端Generator已本地提交c11ffe5，正在由原guard独立评估，root随后接公开入口。普通push此前21.113秒连接github.com:443失败，没有重复；当前源码检查点待本地保存，远端不能称同步。

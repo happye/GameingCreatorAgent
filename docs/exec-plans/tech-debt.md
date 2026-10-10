@@ -1,5 +1,7 @@
 # Technical debt
 
+2026-10-11真实v5试验补充TD009：指定两次各一次均HTTP200；35–36秒原始JSON严格解码失败（Unexpected temporal scene fields），保留完整响应与schema-rejection.json，不删字段、不放松合同、不付费重试。28–29秒保存成功，模型区分人物与两近景物体，但owners为空、仅第一帧人物属性可见；旧严格复合仍unverified，真人尚未核对，不能称F009/F010通过。两次估算¥0.02822804，旧unknown保持；此节点解决“没有真实v5结果”的证据缺口，未解决全部主体／衣物理解。
+
 2026-10-08新v5完整检查：2426项／2419passed／4failed／2error／1权限skip／447.652秒JUnit；17新增全通过。TD014本轮五项：test_benchmark_run_selection两个setup（stale_freeze、http_choices）、test_benchmark_run_selection_browser两个（explicit_choices[1366]、late_choices）、test_benchmark_workflow的registered_source_range，均准备读interrupted而非finished；TD012本轮test_bad_draft_requests_cannot_access_a_project[content_type]读取ConnectionAbortedError／WinError10053。原相关workflow／draft路径未改、根因未解，.cache/detail-json-full.xml／full-verify.log及artifacts/detail-json-validation/full-report.json保留准确节点。按用户交付优先不窄复查、不重复完整、不加生产重试，后续相关阶段再处理。
 
 2026-10-08真实v4试验补充TD009：两个冻结请求各一次均HTTP400，原传输层对非200只保留状态、丢弃错误正文，不能确定拒绝原因。离线发现JSON模式提示词缺少明确JSON输出指示，已作为兼容性缺陷用独立v5修正并完成程序／包／现用验证；v5无真实结果，不能将此缺陷认定为此前400的确切原因。旧冻结请求不改、不循环付费尝试。复现与回执见sprint-detail-temporal-execution及ignored执行目录，902旧文件／28外部保护保持。

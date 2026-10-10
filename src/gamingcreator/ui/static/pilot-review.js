@@ -133,7 +133,7 @@ for (const caseData of context.comparison.cases) {
   const note = add(fieldset, "label", "画面依据与说明");
   rowControls.statement = add(note, "textarea");
   controls.set(caseData.caseId, rowControls);
-  if (!saved) { const message = add(section, "p", "未执行／暂无新版结果，这组暂不能填写判断。"); message.className = "notice"; }
+  if (!saved) { const message = add(section, "p", caseData.temporal.message + "；这组暂不能填写判断。"); message.className = "notice"; }
   const details = add(section, "details"); add(details, "summary", "新版分类、遮挡与切镜依据");
   if (!saved) add(details, "p", "暂无真实结果");
   else {
@@ -153,6 +153,7 @@ for (const caseData of context.comparison.cases) {
       const support = owner.status === "observed" ? "有画面支持的持有关系" : "待核对的持有关系";
       add(details, "p", `${support}：${owner.actorId} 与 ${owner.objectId}。${owner.reason}`);
     }
+    if (!scene.owners.length) add(details, "p", "没有确认的持有关系，目前无法判断谁拿着物品。");
   }
 }
 document.getElementById("download-record").addEventListener("click", () => {

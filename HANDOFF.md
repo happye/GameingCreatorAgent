@@ -1,5 +1,7 @@
 # 当前交接
 
+**2026-10-11当前状态：持续开发已恢复，Phase 0。** [新v5真实验证](docs/exec-plans/sprint-detail-json-execution.md)已按本轮新授权发送指定两候选／原六帧各一次，无重试；两次HTTP200，35–36秒因provider.schema未发布，28–29秒已发布人物／近景物体记录，但持有关系未确认、真人未判断。新增估算¥0.02822804，原unknown¥4.065536及另一基础任务预留保持；共享原保守占用¥4.11227016。911项目旧文件及40外部保护逐字节不变，独立新进程读回通过。当前生成v2/v5同源对照并提醒用户核对；费用人工确认合同已评估，Generator在独立worktree实现，root持公共记录，不改原发送门禁。F006/F009/F010仍false；更早无真实v5／未授权／暂停描述均为历史。
+
 **2026-10-11用户追加任务已交付**：[通用模型分工skill及三角色补齐](docs/exec-plans/sprint-harness-routing-skill.md)已增量合入my-skills/main的e3ae40a，并同步本机Codex／Claude／Grok技能副本；原记忆／门禁保留，新增项目三个harness_*原生角色，当前型号分工立即可用，未声称新角色热刷新／全工具执行。13隔离项12passed／1权限skip，Codex原生配置接受、Grok九角色发现、独立审查通过；当前无新人工需求／DeepSeek请求。详见[通俗报告](docs/exec-plans/report-2026-10-11-harness-routing-skill.md)。录像主线仍暂停，恢复后按原开发路径和关键交付独立评估；其分支待普通push与技能仓库已发布分开记录。
 
 2026-10-11收尾，开发／验证节点2026-10-08，Phase 0；root / Codex，codex/visual-details。用户因额度剩14%明确结束本会话；收尾后暂停持续开发，等待用户恢复，不自动继续。

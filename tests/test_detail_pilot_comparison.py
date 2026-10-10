@@ -40,6 +40,13 @@ from gamingcreator.infrastructure.deepseek_detail_temporal import (
     provider_temporal_identity,
     temporal_refinement_settings,
 )
+from gamingcreator.infrastructure.deepseek_detail_temporal_json import (
+    PROMPT as JSON_PROMPT,
+)
+from gamingcreator.infrastructure.deepseek_detail_temporal_json import (
+    parse_temporal_json_detail,
+    provider_temporal_json_identity,
+)
 
 SPEC = importlib.util.spec_from_file_location(
     "detail_pilot_comparison_script",
@@ -240,6 +247,68 @@ def rebind_proposal(fixture, mutation):
     fixture["args"][2] = write_json(path, value)
 
 
+def use_v5(fixture):
+    identity = provider_temporal_json_identity()
+    fixture["requests"] = [replace(request, identity=identity) for request in fixture["requests"]]
+
+    def mutate(proposal):
+        proposal.update(
+            profile="v5",
+            promptVersion=identity.prompt_version,
+            promptHash=identity.prompt_hash,
+            systemPrompt=JSON_PROMPT,
+        )
+        for row, request in zip(proposal["cases"], fixture["requests"], strict=True):
+            row["requestHash"] = request_hash(request)
+            row["canonicalRequest"] = json.loads(canonical_request_json(request))
+
+    rebind_proposal(fixture, mutate)
+
+
+def test_v5_comparison_reads_only_exact_json_identity_and_keeps_review_empty(fixture):
+    # Publishing v4 cannot satisfy the new v5 request.
+    old_request = fixture["requests"][0]
+    old_detail = parse_temporal_detail(json.dumps(temporal_model(old_request)), old_request)
+    publish(fixture["args"][0], old_request, old_detail)
+    use_v5(fixture)
+    assert prepare(fixture)["cases"][0]["temporal"]["scene"] is None
+    request = fixture["requests"][1]
+    detail = parse_temporal_json_detail(json.dumps(temporal_model(request)), request)
+    publish(fixture["args"][0], request, detail)
+    comparison = prepare(fixture)
+    assert comparison["profile"] == "v5"
+    assert comparison["paidRequestsSent"] == 0
+    assert comparison["cases"][1]["temporal"]["payloadHash"] == payload_hash(detail)
+    assert all(
+        row["objectMistakenForActor"] is None for row in script.review_template(comparison)["cases"]
+    )
+    page = script.render_html(comparison)
+    assert "v2/v5" in page and "新版 v5" in page and "新版 v4" not in page
+
+
+def test_executed_failed_v5_is_not_displayed_as_unexecuted(fixture, monkeypatch):
+    use_v5(fixture)
+    digest = request_hash(fixture["requests"][0])
+    monkeypatch.setattr(
+        script,
+        "refinement_cost_history",
+        lambda *args: {"attempts": [{"requestHash": digest, "status": "failed"}]},
+    )
+    result = prepare(fixture)
+    case = result["cases"][0]["temporal"]
+    assert case["state"] == "no_saved_result" and "已执行" in case["message"]
+    assert script.review_entity_ids(result)["actor-separation"] == ()
+    assert case["scene"] is None and case["humanReview"] is None
+    assert result["cases"][1]["temporal"]["state"] == "no_saved_result"
+
+
+@pytest.mark.parametrize("profile", ["v3", "v6", None, 5])
+def test_other_profiles_cannot_select_temporal_identity(fixture, profile):
+    rebind_proposal(fixture, lambda proposal: proposal.update(profile=profile))
+    with pytest.raises(ValueError, match="profile"):
+        prepare(fixture)
+
+
 def test_missing_v4_keeps_exact_old_feedback_and_new_independent_dimensions_null(
     fixture, monkeypatch
 ):
@@ -390,7 +459,7 @@ def test_html_escapes_every_untrusted_text_and_has_no_external_or_script_resourc
     assert "<script" not in page and 'src="https:' not in page
     assert page.count('src="data:image/jpeg;base64,') == 6
     assert "script-src 'none'" in page and "connect-src 'none'" in page
-    assert "未执行/暂无结果" in page
+    assert "暂无此精确请求的已发布结果" in page
 
 
 def test_outputs_are_new_downloadable_files_and_never_overwrite_sources_or_reviews(fixture):

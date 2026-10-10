@@ -1,5 +1,7 @@
 # Errors
 
+2026-10-11恢复开发：费用worker独立worktree/.cache父目录初始缺失造成pytest setup失败，补目录并核对PYTHONPATH实际落在worktree后通过；后续新worktree先准备项目缓存，不装全局环境。v5对照首实现新failed状态与旧review_entity_ids仅接受no_saved_result/saved_result冲突；保留原领域state，用已执行失败提示区分，重新生成final目录并验证空记录下载，不改真实判断。只读脚本首文本断言按新提示一次同步；apply_patch格式化上下文失配无写入后缩为准确单行修改。Windows rg文件glob应使用目录加-g过滤，不传带*路径；未找到文件先rg --files定位，不猜模块名。以上未新增模型请求或修改冻结响应。
+
 2026-10-11模型分工：当前工具尝试新task_explorer类型unknown，角色清单不热刷新；用default加明确model／effort及fork none，三个型号实际执行记录核对通过。debug prompt-input不含角色目录，不能据此断言不支持；新CLI同一进程断流后完成一个新命名角色／exit0，不重新启动验证。首次schema读取路径漏v1直接按生成清单修正；早期官方config-basics.md链接404，改用已打开的官方有效配置参考，不使用搜索片段做证据。记录限制，不虚报全部六角色实测或热刷新。
 
 2026-10-08 v5收尾：新夹具首三失败因fake缺必填reply／HttpResponse body和沿用v4解析器，直接修夹具，原日志保留；不改领域合同。部署助手首保护遇同生System32 conhost先拒绝无变更，准确核对其父进程／出生时间后仅允许该控制台子进程；实际成功启动后误用PowerShell脚本的null LASTEXITCODE报失败，fresh health核对并恢复回执，没有第二次重启。文档整段替换首次同路径delete+add被patch拒绝、无写入，后用单Update完成；恢复不重做真实实验或整套检查。

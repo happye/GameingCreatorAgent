@@ -1,5 +1,7 @@
 # Active assignments
 
+**2026-10-11主线进行中**：root owns[新v5真实验证](sprint-detail-json-execution.md)及v2/v5对照入口、公共记录；两次请求已执行、授权耗尽，一份已发布／一份schema失败，不重发。task_quality_guard独立执行前检查已通过，复用该角色评估后续费用交付；harness_planner已完成[人工费用确认合同](sprint-detail-billing-confirmation.md)。harness_generator独占独立worktree `.cache/worktrees/billing-confirmation-20261011` 的application/infrastructure确认模块、detail_cost_history与对应tests；root不同时改其文件。各角色实际Sol/medium或Sol/high已按执行元数据核对；下一步真人核对28–29秒、合入验证费用能力。以下暂停状态为历史。
+
 **追加配置任务已完成／录像主线仍暂停**：root owns [通用skill](sprint-harness-routing-skill.md)的增量合并、三个工具技能同步、项目三角色配置与公共记录。Luna/high历史定位、Sol/medium独立审查均已完成并核对实际元数据，无并行写者。my-skills/main已正常合并e3ae40a且读回；当前无需用户操作，下一步待用户恢复录像开发，按原计划及关键交付的合同／独立评估执行。
 
 2026-10-11收尾，开发／验证节点2026-10-08，Phase 0，codex/visual-details，root / Codex负责集成与公共记录；旧worker冻结，无并行写者。用户额度14%要求结束本会话，收尾后暂停，不自动开下一任务。

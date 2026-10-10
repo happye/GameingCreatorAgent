@@ -1,4 +1,4 @@
-"""Read exact frozen v2/v4 cases into an offline comparison; never send or reserve."""
+"""Read exact frozen v2/v4 or v2/v5 cases offline; never send or reserve."""
 
 import argparse
 import asyncio
@@ -30,7 +30,14 @@ from gamingcreator.infrastructure.deepseek_detail_temporal import (
     provider_temporal_identity,
     temporal_refinement_settings,
 )
+from gamingcreator.infrastructure.deepseek_detail_temporal_json import (
+    PROMPT as JSON_PROMPT,
+)
+from gamingcreator.infrastructure.deepseek_detail_temporal_json import (
+    provider_temporal_json_identity,
+)
 from gamingcreator.infrastructure.deepseek_vision import _jpeg_width, _json, _SchemaError
+from gamingcreator.infrastructure.detail_cost_history import refinement_cost_history
 from gamingcreator.infrastructure.detail_pilot_review_files import (
     read_pilot_review_file,
     write_pilot_review_bundle,
@@ -131,7 +138,13 @@ async def prepare_comparison(
         or _sha(proposal_bytes) != expected_sha256
     ):
         raise ValueError("Frozen proposal SHA-256 mismatch.")
-    identity = provider_temporal_identity()
+    profile = proposal.get("profile", "v4")
+    if profile not in ("v4", "v5"):
+        raise ValueError("Unsupported frozen temporal profile.")
+    identity = (
+        provider_temporal_json_identity() if profile == "v5" else provider_temporal_identity()
+    )
+    prompt = JSON_PROMPT if profile == "v5" else PROMPT
     if (
         proposal.get("schemaVersion") != "actor-detail-temporal-pilot-proposal-v1"
         or Path(_string(proposal.get("project"))).resolve() != project
@@ -150,11 +163,11 @@ async def prepare_comparison(
             identity.prompt_version,
             identity.prompt_hash,
             identity.schema_version,
-            PROMPT,
+            prompt,
             "https://api.deepseek.com/chat/completions",
         )
     ):
-        raise ValueError("Frozen proposal belongs to another project or v4 identity.")
+        raise ValueError("Frozen proposal belongs to another project or temporal identity.")
     rows = _rows(proposal)
     report, report_bytes = _read_json(inputs[1])
     _, feedback_bytes = _read_json(inputs[2])
@@ -310,7 +323,20 @@ async def prepare_comparison(
             ]
             scene = None if current.detail is None else current.detail.temporal_scene
             if current.detail is not None and scene is None:
-                raise ValueError("A saved v4 result must retain its validated temporal scene.")
+                raise ValueError("A saved temporal result must retain its validated scene.")
+            message = "已有保存结果，内容仍待人工核对"
+            state = "saved_result"
+            if current.detail is None:
+                state = "no_saved_result"
+                message = "暂无此精确请求的已发布结果，无法评价新版"
+                attempts = cast(
+                    list[dict[str, object]], refinement_cost_history(project, run_id)["attempts"]
+                )
+                matching = [
+                    item for item in attempts if item["requestHash"] == current.request_hash
+                ]
+                if matching and all(item["status"] == "failed" for item in matching):
+                    message = "已执行，但返回未通过检查，没有可用新版结果；未自动重试"
             cases.append(
                 {
                     "caseId": case_id,
@@ -331,10 +357,8 @@ async def prepare_comparison(
                         "payloadHash": None
                         if current.detail is None
                         else payload_hash(current.detail),
-                        "state": "no_saved_result" if current.detail is None else "saved_result",
-                        "message": "未执行/暂无结果（没有此精确请求的已发布结果）"
-                        if current.detail is None
-                        else "已有保存结果，内容仍待人工核对",
+                        "state": state,
+                        "message": message,
                         "scene": None if scene is None else scene_payload(scene),
                         "match": match_report(
                             request,
@@ -365,6 +389,8 @@ async def prepare_comparison(
         "humanLabels": None,
         "qualityGate": None,
         "realV4RecognitionVerified": False,
+        "realV5RecognitionVerified": False,
+        "profile": profile,
         "cases": cases,
     }
 
@@ -410,6 +436,10 @@ def review_template(comparison: dict[str, object]) -> dict[str, object]:
 
 
 def render_html(comparison: dict[str, object]) -> str:
+    profile = comparison.get("profile", "v4")
+    if profile not in ("v4", "v5"):
+        raise ValueError("Unsupported comparison profile.")
+
     def escape(value: object) -> str:
         return html.escape(str(value), quote=True)
 
@@ -504,19 +534,20 @@ def render_html(comparison: dict[str, object]) -> str:
                 + details("完整新版画面记录", scene)
             )
         sections.append(
-            f'<section><h2>{escape(case_titles[_string(case["caseId"])])} · {cast(int, interval["startUs"]) / 1_000_000:g}–{(cast(int, interval["endUs"]) - 1) / 1_000_000:g} 秒</h2><p>{escape(case["reviewPurpose"])}</p><p>两版对照使用同一个查询：{escape(query_label)}。角色条件须由同一角色和共同画面支持；同组衣物或持有物的形状、颜色还须属于同一部件。</p><div class="frames">{frames}</div><div class="versions"><article><h3>旧版 v2</h3><ul>{"".join(descriptions)}</ul>{matching_summary(old_match)}{details("旧版当时的检索结果（仅程序判断）", old_match)}</article><article><h3>新版 v4</h3>{new_text}{matching_summary(_object(temporal["match"]))}{details("同一查询的新版检索结果（仅程序判断）", temporal["match"])}</article></div>{details("本候选精确绑定身份", {"runId": case["runId"], "eventId": case["eventId"], "legacyRequestHash": legacy["requestHash"], "legacyPayloadHash": legacy["payloadHash"], "temporalRequestHash": temporal["requestHash"], "temporalPayloadHash": temporal["payloadHash"]})}</section>'
+            f'<section><h2>{escape(case_titles[_string(case["caseId"])])} · {cast(int, interval["startUs"]) / 1_000_000:g}–{(cast(int, interval["endUs"]) - 1) / 1_000_000:g} 秒</h2><p>{escape(case["reviewPurpose"])}</p><p>两版对照使用同一个查询：{escape(query_label)}。角色条件须由同一角色和共同画面支持；同组衣物或持有物的形状、颜色还须属于同一部件。</p><div class="frames">{frames}</div><div class="versions"><article><h3>旧版 v2</h3><ul>{"".join(descriptions)}</ul>{matching_summary(old_match)}{details("旧版当时的检索结果（仅程序判断）", old_match)}</article><article><h3>新版 {escape(profile)}</h3>{new_text}{matching_summary(_object(temporal["match"]))}{details("同一查询的新版检索结果（仅程序判断）", temporal["match"])}</article></div>{details("本候选精确绑定身份", {"runId": case["runId"], "eventId": case["eventId"], "legacyRequestHash": legacy["requestHash"], "legacyPayloadHash": legacy["payloadHash"], "temporalRequestHash": temporal["requestHash"], "temporalPayloadHash": temporal["payloadHash"]})}</section>'
         )
     downloads = download(
         "human-review-template.json", "下载人工记录模板", review_template(comparison)
     )
     downloads += " · " + download("comparison.json", "下载对照数据", comparison)
-    return (
+    page = (
         "<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'none'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'\"><title>同源画面 · v2/v4 人工对照</title><style>body{margin:0;background:#f4f7fb;color:#203047;font:16px/1.65 system-ui,sans-serif}main{max-width:1200px;margin:auto;padding:24px}h1{font-size:28px}section,header{background:white;border:1px solid #dce3ee;border-radius:14px;padding:24px;margin-bottom:24px}.frames{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.versions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}figure{margin:0}img{width:100%;height:auto;border-radius:8px}figcaption,.label{font-weight:600}.notice,.feedback{background:#fff5d8;padding:12px;border-radius:6px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;background:#f3f6fa;padding:12px}details{margin:12px 0}summary{cursor:pointer}article{min-width:0}li{margin-bottom:16px;overflow-wrap:anywhere}a{color:#1758a8}@media(max-width:700px){main{padding:12px}section,header{padding:16px}.versions,.frames{grid-template-columns:1fr}h1{font-size:23px}}</style></head><body><main><header><h1>同源画面 · v2/v4 人工对照</h1><p>两版共用每组原来的三张画面。旧反馈只评价旧版对应的描述，新版人工结论全部留空。</p><p>本次只读本地已保存资料，发送请求 0 次。新版无保存结果时无法判断识别是否改好；检索质量仍需独立人工验收。</p><p>"
         + downloads
         + "</p><p>请分别核对：物品是否被误当角色、切镜是否真实、原来的正确描述是否保留、同一查询找到的片段是否可用。尚未核对或没有新版结果的项目请留空。</p></header>"
         + "".join(sections)
         + "</main></body></html>"
     )
+    return page.replace("v2/v4", f"v2/{profile}")
 
 
 def write_comparison(comparison: dict[str, object], output_dir: Path) -> dict[str, str]:
