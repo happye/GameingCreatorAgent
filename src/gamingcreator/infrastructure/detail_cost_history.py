@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
+from gamingcreator.application.detail_billing_confirmation import reconciled_summary
 from gamingcreator.application.detail_refinement import (
     RefinementIdentity,
     RefinementSettings,
@@ -468,7 +469,9 @@ def _validate_attempt_files(root: Path) -> None:
                     raise ValueError("Orphan result has no planned attempt.")
 
 
-def refinement_cost_history(project: Path, run_id: str) -> dict[str, object]:
+def refinement_cost_history(
+    project: Path, run_id: str, *, ceiling_cny: Decimal | None = None
+) -> dict[str, object]:
     """Inspect all commitment without locks, publication, settlement, or provider calls."""
     root = project.resolve()
     sidecar._identity(run_id, sidecar._RUN_ID, "refinement.path")
@@ -507,12 +510,41 @@ def refinement_cost_history(project: Path, run_id: str) -> dict[str, object]:
                 "budgetCount": len({item.budget_id for item in charges}),
             }
         )
+        from gamingcreator.infrastructure.detail_billing_confirmation import (
+            read_billing_confirmations,
+        )
+
+        confirmations = read_billing_confirmations(root, charges)
+        for attempt in attempts:
+            key = (
+                run_id,
+                str(attempt["budgetId"]),
+                str(attempt["requestHash"]),
+                int(str(attempt["attemptNo"])),
+            )
+            attempt["humanBillingConfirmation"] = confirmations.get(key)
+        released = tuple(
+            item.reservation_cny
+            for item in charges
+            if (item.run_id, item.budget_id, item.request_hash, item.attempt) in confirmations
+        )
+        current_released = tuple(
+            item.reservation_cny
+            for item in current
+            if (item.run_id, item.budget_id, item.request_hash, item.attempt) in confirmations
+        )
         document: dict[str, object] = {
             "schemaVersion": HISTORY_SCHEMA_VERSION,
             "runId": run_id,
             "currency": "CNY",
             "summary": _summary(current),
             "sharedCommitment": shared,
+            "humanBillingSummary": reconciled_summary(
+                Decimal(str(_summary(current)["commitmentCny"])), current_released, None
+            ),
+            "sharedHumanBillingSummary": reconciled_summary(
+                Decimal(str(shared["commitmentCny"])), released, ceiling_cny
+            ),
             "attempts": attempts[-_MAX_DISPLAY_ATTEMPTS:],
             "totalAttemptCount": len(attempts),
             "attemptsTruncated": len(attempts) > _MAX_DISPLAY_ATTEMPTS,
