@@ -1,5 +1,7 @@
 # 当前交接
 
+**最新人工状态（2026-10-11）**：用户答“我正在标注”，要求逐框解释填法与原因、说明后再次询问。已核对当前references-v2真实控件并提供[通俗字段说明](docs/references/benchmark-reference-fields-guide.md)，重点是整份确认与单条片段、秒数、同次事件归组、登记后下载保存。正在填写的页面包不修改；当前仍未收到人工文件，下一收最新路径、完成范围与缺例再核对。无新代码／模型／网络动作。
+
 **2026-10-11最新交付：三段新录像的本地准备和事前原片标注页。** 用户提供《黑神话：钟馗》两段与《42中队》一段，共26分12.58秒，指定boss战、武器展示界面、释放连招、剧情演示四类需求，并明确“都没看过对应的AI结果”。已登记12个录像／需求组合；三任务只完成抽帧和音轨，仍pending，0模型请求／费用预留。菜单现在显示需求及录像名，当前操作入口是artifacts/independent-footage-validation-20261011/references-v2/review.html；v1未交付用户填写，只保留历史。详见[sprint](docs/exec-plans/sprint-independent-footage-preparation.md)和[通俗报告](docs/exec-plans/report-2026-10-11-independent-footage-preparation.md)。
 
 **验证与恢复**：批次ce93cda042794fd4b2916a8e0cf8b2a7已结束exit0，48.449秒准备3145图／三音轨；另一进程完整加载三媒体包及证据，1366／390页面三原片播放、12菜单来源、空草稿下载保持验证通过，相关既有22项通过。三原文件及demo原923文件不变。项目artifacts/independent-footage-20261011、证据artifacts/independent-footage-validation-20261011保留；不重抽帧或重跑已完成的exclusive输出检查。任务清单仅是metadata快照，完整性证据以delivery-report.json为准；下方费用双wheel属于该历史检查点，本轮JS资产已变，不能称旧包等于当前源码。
