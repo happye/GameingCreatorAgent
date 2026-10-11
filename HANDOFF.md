@@ -1,5 +1,7 @@
 # 当前交接
 
+**本轮发布回执**：真实费用登记和读回已在本机完成，完成记录已保存03e1534。一次普通push在21.115秒连接GitHub:443失败／exit1，未重复推送或读取远端；最后确认远端f5a3a69，网络恢复后补推当前授权分支。当前功能代码此前已发布，失败不影响本机费用显示；不得重跑真实导入。最终本地HEAD及回执见Git／.cache/detail-billing-publication.json。
+
 **2026-10-11当前状态：Phase 0持续开发；人工费用确认已交付。** 工作台现在显示你核实的两次失败请求“未扣费”，释放核对展示中的预留¥4.065536，核对后精分析占用¥0.04673416。原API未知2次、保守共享占用¥4.11227016、原账本和发送上限保持；更早基础分析另一笔unknown预留¥4.065536单独保留。无需用户重复操作，也没有新模型请求。详见[通俗汇报](docs/exec-plans/report-2026-10-11-billing-confirmation.md)。
 
 **已验证与恢复边界**：唯一费用guard在原额度终止后由同一角色接续，实际Sol/high最终通过、无阻断问题。root按原答／原UTC／原证据精确绑定两个旧HTTP400的attempt1，已各导入一次不可变确认。ignored artifacts/detail-billing-validation-20261011保存evaluation-final、import-receipts、readback-report、live-after-report与package-readback-after；921旧项目文件和40外部保护保持，只增加两确认，现总923文件。独立新进程、wheel和1366／390真实费用页读回通过，0新搜索／模型请求／人工识别标签。import-started.json是执行检查点，恢复时不得再执行导入循环。
