@@ -104,7 +104,7 @@
         renderReferences();
     }
     for (const [index, query] of record.plan.queries.entries()) {
-        const option = document.createElement("option"); option.value = String(index); option.textContent = query.text; byId("query-select").append(option);
+        const option = document.createElement("option"); option.value = String(index); option.textContent = `${query.text} · ${selectedMedia(index).path.split(/[\\/]/).pop()}`; byId("query-select").append(option);
     }
     byId("query-select").addEventListener("change", switchQuery);
     for (const id of ["label-version", "annotators", "confirmed", "reviewed"]) byId(id).addEventListener("input", () => { readMetadata(); edited(); });

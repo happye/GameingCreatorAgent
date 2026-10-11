@@ -1,5 +1,15 @@
 # 当前交接
 
+**2026-10-11最新交付：三段新录像的本地准备和事前原片标注页。** 用户提供《黑神话：钟馗》两段与《42中队》一段，共26分12.58秒，指定boss战、武器展示界面、释放连招、剧情演示四类需求，并明确“都没看过对应的AI结果”。已登记12个录像／需求组合；三任务只完成抽帧和音轨，仍pending，0模型请求／费用预留。菜单现在显示需求及录像名，当前操作入口是artifacts/independent-footage-validation-20261011/references-v2/review.html；v1未交付用户填写，只保留历史。详见[sprint](docs/exec-plans/sprint-independent-footage-preparation.md)和[通俗报告](docs/exec-plans/report-2026-10-11-independent-footage-preparation.md)。
+
+**验证与恢复**：批次ce93cda042794fd4b2916a8e0cf8b2a7已结束exit0，48.449秒准备3145图／三音轨；另一进程完整加载三媒体包及证据，1366／390页面三原片播放、12菜单来源、空草稿下载保持验证通过，相关既有22项通过。三原文件及demo原923文件不变。项目artifacts/independent-footage-20261011、证据artifacts/independent-footage-validation-20261011保留；不重抽帧或重跑已完成的exclusive输出检查。任务清单仅是metadata快照，完整性证据以delivery-report.json为准；下方费用双wheel属于该历史检查点，本轮JS资产已变，不能称旧包等于当前源码。
+
+**人工待办／下一步**：已即时提醒原片标注及保存记录，并询问保存后的本地位置；页面不会自动保存，可以分批继续。两钟馗暂保守同组，真实录制关系未确认；12项暂列main，原片参考仍空、人工确认false，必须按真实内容确认少例／负例或补素材后再正式冻结，不能凑十个事件。三录像／两个保守组尚未满足完整代表集。拿到原片记录后核对来源与查询分类→冻结→另行具体费用／发送授权→分析→绑定Completed→固定前十真人评分。F006/F009/F010false；原v5稍后核对与已执行两次授权保持。当前单Agent，root持公共记录，无新并行写者。
+
+**当前发布**：用户再次说明断网，本节点只本地保存，不尝试网络。普通补推仍限codex/visual-details，不更新main或强推；最后确认远端f5a3a69，最终本地HEAD／待推状态见Git及.cache/independent-footage-publication.json。
+
+## 上一费用交付检查点（历史）
+
 **本轮发布回执**：真实费用登记和读回已在本机完成，完成记录已保存03e1534。一次普通push在21.115秒连接GitHub:443失败／exit1，未重复推送或读取远端；最后确认远端f5a3a69，网络恢复后补推当前授权分支。当前功能代码此前已发布，失败不影响本机费用显示；不得重跑真实导入。最终本地HEAD及回执见Git／.cache/detail-billing-publication.json。
 
 **2026-10-11当前状态：Phase 0持续开发；人工费用确认已交付。** 工作台现在显示你核实的两次失败请求“未扣费”，释放核对展示中的预留¥4.065536，核对后精分析占用¥0.04673416。原API未知2次、保守共享占用¥4.11227016、原账本和发送上限保持；更早基础分析另一笔unknown预留¥4.065536单独保留。无需用户重复操作，也没有新模型请求。详见[通俗汇报](docs/exec-plans/report-2026-10-11-billing-confirmation.md)。
