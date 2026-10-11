@@ -1,5 +1,7 @@
 # Codex Project Guide
 
+For a new chat, follow the current HANDOFF and its resumption checklist. Explain the rejection trigger and whole-task stopping mechanism; prioritize defects blocking the deliverable. Continue authorized local development without repeating completed annotation or paid attempts.
+
 Read [AGENTS.md](./AGENTS.md) first; it is the repository-wide source of truth. This file records only Codex-specific working steps.
 
 1. Confirm the working directory, inspect `git status`, then read `HANDOFF.md` and `feature_list.json`. Follow `docs/references/agent-workflow.md` for assignment and cross-tool handoff. Do not overwrite unrelated work.

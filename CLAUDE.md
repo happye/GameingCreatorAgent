@@ -1,5 +1,7 @@
 # Claude Code — Gaming Creator Agent
 
+For a new chat, follow the current HANDOFF and its resumption checklist. Explain the rejection trigger and whole-task stopping mechanism; prioritize defects blocking the deliverable. Continue authorized local development without repeating completed annotation or paid attempts.
+
 @AGENTS.md
 
 The import above loads the shared repository guide. Before continuing an existing task, read `HANDOFF.md` and follow `docs/references/agent-workflow.md`; acceptance criteria remain in `feature_list.json` regardless of which tool started the task.

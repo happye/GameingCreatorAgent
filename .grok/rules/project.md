@@ -1,5 +1,7 @@
 # Grok Build — Gaming Creator Agent
 
+For a new chat, follow the current HANDOFF and its resumption checklist. Explain the rejection trigger and whole-task stopping mechanism; prioritize defects blocking the deliverable. Continue authorized local development without repeating completed annotation or paid attempts.
+
 Use the root `AGENTS.md` as the shared repository guide. Read `HANDOFF.md` when resuming work and follow `docs/references/agent-workflow.md` for assignments and transfers.
 
 Keep the shared persistent reporting mode on resumption and tool switches: after each key change, give a detailed plain-language report of what the user can now do, the benefit, verified results and remaining limits, and the next concrete action. Workers supply the same information to the integrator; follow the shared reporting protocol.

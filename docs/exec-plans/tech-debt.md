@@ -1,5 +1,7 @@
 # Technical debt
 
+**当前优先项：TD007/P1主线阻断。** 2026-10-11用户要求解释整片停止并确保新对话接手。解析拒绝同帧动作是正确保护，analysis.py将窗口provider.schema转成整任务failed为长录像可靠性缺陷，必须优先修复，不能按普通小bug延期。下一按sprint-long-analysis-reliability离线实现失败隔离／覆盖／资格，修好后继续同一原片；[接手清单](resume-long-zhongkui-20261011.md)。本轮只交接，功能未修复，无新请求。
+
 2026-10-11长素材真实复现TD007：新授权v2長钟馗run5c7894aa10e94b8aa82533bd77f9871e在第22／272窗口停止，schemaError=event_frame_boundaries，第三事件起止映射同一源帧77533500–77533501，当前V6提示词与解析明确要求动作跨不同时间的画面，非简单算秒偏差。已保存21窗口／19观察，22实际请求／198帧次／全部attempt1；估算¥0.10848724含失败¥0.00612692，0新unknown，独立边界PASS，未重试或续跑。原始第22响应未存，不能断言其余事件可用；更改解析不得靠接纳单帧动作、删字段或伪造Completed。证据artifacts/human-reference-pilot-20261011/execution-outcome-v1.json／evaluation-execution-final.json及boundary-check-after.xml（四项通过；首检查父缓存目录缺失，原XML保留）。主线下一按[sprint-long-analysis-reliability](sprint-long-analysis-reliability.md)先定义窗口拒绝／覆盖／资格和失败处理版本，再离线实现；新付费策略另立提案授权，原¥5许可不覆盖手工重跑。
 
 2026-10-11人工费用确认缺口已交付：独立验收PASS后仅为原两个HTTP400的attempt1追加不可变零扣费确认。真实新进程／wheel／工作台读回释放报告预留¥4.065536、核对后占用¥0.04673416；原API未知、ledger／send gate及更早基础unknown未改。下述“尚无人工合同”属于历史，报告层确认缺口已解决，不宣称Provider结算或发送预算已改变。TD009识别问题及TD012／TD014仍延期。

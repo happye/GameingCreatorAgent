@@ -1,5 +1,7 @@
 # Active assignments
 
+**新对话优先项（2026-10-11）**：TD007/P1整片中断，按[接手清单](resume-long-zhongkui-20261011.md)直接离线开发，保留21窗口／22调用和费用。当前root只整理交接，无产品写者／后台分析；接手主控持公共记录，在实现前分源码owner及唯一关键边界评估。修复后继续同一长钟馗，新付费另有具体提案；无需重复批准本地开发或重新标注。以下为基线，缺陷尚未修复。
+
 **2026-10-11执行终态与归属**：root只启动一次授权v2長钟馗，76.05772秒exit4/provider.schema，第22组事件起止同一帧被拒；21／272窗口、19观察保存。实际22请求／198帧次、全部attempt1，估算¥0.10848724、0新unknown／未结预留，其他两任务未执行。原同一task_quality_guard只读追加实际费用／身份审查PASS，无第二评审者或并行写者；实际型号未另认证，不按自报声称核验。当前sprint证据包含授权／启动／终态／execution-outcome-v1及evaluation-execution-final，句柄已结束，不重启。
 
 **下一任务**：root拥有公共进度、报告、TD007补充和[sprint-long-analysis-reliability](sprint-long-analysis-reliability.md)planned草案；先完成版本化窗口拒绝／覆盖／任务资格和失败处理合同后再明确实现文件owner。当前没有产品代码变更、Completed绑定、检索或人评，也没有新付费授权；四项定点边界检查通过且首缓存父目录错误保留。不要求补标，不放松多帧合同，不重复付费试错，F006/F009/F010false。用户断网，本节点只本地提交。

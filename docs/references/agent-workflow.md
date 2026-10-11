@@ -26,6 +26,8 @@
 
 ## 开始一个会话
 
+跨对话先读HANDOFF顶部与接手清单，直接执行已授权本地任务，不从历史暂停／未授权／待标注重启。停止汇报说明直接触发、整任务中断链路、严重度、已保存进度／费用和续作顺序；区分质量保护与流程缺陷，P1阻断优先修复。长钟馗当前入口docs/exec-plans/resume-long-zhongkui-20261011.md。
+
 1. 在正确的仓库或分配的 worktree 中启动工具，检查 `git status --short`、当前分支和最近提交。
 2. 读取 `AGENTS.md`、`HANDOFF.md`、`feature_list.json`；已有分工时读取自己的 sprint 文件。按任务读取相关规格、架构和规范。
 3. 运行 `./scripts/init.ps1 -CheckOnly`。开始构建前重新运行完整环境检查；旧交接里的环境结果不替代当前检查。

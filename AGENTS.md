@@ -62,6 +62,8 @@ All agents share acceptance criteria; start with `HANDOFF.md` and `docs/referenc
 
 先解释现在能做什么、对用户的使用有什么帮助，再说明实际验证结果、仍存在的问题和下一步具体动作。用用户熟悉的例子；提交号、测试数量和内部实现仅作必要证据，不能代替使用效果说明。关键改动包括功能或使用流程变化、模型理解或费用行为变化，以及影响验收的发现。
 
+任务停止时说明直接触发、局部错误如何影响整项任务、严重程度、已保存进度／费用及续作顺序。区分正确质量保护与待修中断机制；阻断主交付的可靠性问题优先修复，不能按普通小bug延期。新对话先读HANDOFF和当前接手清单，直接推进已有授权的本地开发，不要求用户重复讲历史或重做已有标注。
+
 按 `docs/references/agent-workflow.md` 的汇报协议执行；将本次已汇报的结论及下一步写入任务 sprint 和 `HANDOFF.md`。Worker 向集成负责人提供同样内容，由负责人汇总给用户；已有授权内的工作继续推进。
 
 ## Persistent human assistance and progress alignment
