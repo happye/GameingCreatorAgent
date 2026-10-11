@@ -116,6 +116,12 @@ def _parser() -> CliParser:
     analyze.add_argument("--max-cost-cny")
     analyze.add_argument("--resume")
     analyze.add_argument(
+        "--window-failure-policy",
+        choices=("stop-v1", "isolate-schema-v1"),
+        default="stop-v1",
+        help="显式隔离已结账的内容结构拒绝；有缺口仍不算完成",
+    )
+    analyze.add_argument(
         "--retry-uncertain",
         action="store_true",
         help="显式允许重试费用未确认的未完成窗口，预留费用继续计入原预算",
@@ -1296,6 +1302,7 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
                 args.max_cost_cny,
                 args.resume,
                 args.retry_uncertain if args.command == "analyze" else False,
+                args.window_failure_policy if args.command == "analyze" else "stop-v1",
             ),
             LocalInputReader(),
         )

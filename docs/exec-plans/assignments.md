@@ -1,5 +1,11 @@
 # Active assignments
 
+**当前已交付（2026-10-12）**：long_analysis_generator唯一源码owner已完成7源码＋1新测试；295相关／32新边界、格式lint/types通过，long_analysis_guard唯一Evaluator修正差异复核PASS，实际元数据Sol/medium与Sol/high。root owns公共记录、保护／提案／一次启动器／45拒绝验证及本地提交；两worker已完成，无后台分析。下一只等待具体v2费用图片确认后续原长钟馗250未执行窗口，最高新增¥4.89151276、原总¥5保持；0新模型／原进度费用标注不变，gap非Completed／F006false。不重开开发、重跑旧付费或催重标，下方验证中节点均历史。
+
+**当前验证节点**：源码已接入隔离／覆盖／策略身份，初次169相关与全src类型通过，Generator补最后边界后冻结；同一guard已开始独立最终评估。root真实只读核实21成功／第22可拒绝／从23组续250未执行、3160旧文件保护。续跑新提案待源码冻结；仍0新真实模型／不重标／F006false。以下开始节点与原交接均保留历史。
+
+**当前实施（2026-10-11新对话）**：用户要求直接修复P1并继续同片。root拥有公共docs／HANDOFF／progress及ignored续跑提案、保护快照；`long_analysis_generator`唯一源码写者 owns application/analysis.py、inputs.py、必要analysis_reliability.py、cli/main.py、infrastructure/deepseek_vision.py、必要storage/store及相关测试。`long_analysis_guard`唯一只读Evaluator先对齐费用／恢复边界、完成后最终审查，不增加重复reviewer。无并行源码写者、不需worktree；保留他人改动。合同见sprint-long-analysis-reliability当前顶部，原run／21成功／第22拒绝及费用保留，250未执行拟续；离线实现中，0新真实请求。环境两检查通过，基线b7805b8。下方下一开发／尚未分owner为历史。
+
 **新对话优先项（2026-10-11）**：TD007/P1整片中断，按[接手清单](resume-long-zhongkui-20261011.md)直接离线开发，保留21窗口／22调用和费用。当前root只整理交接，无产品写者／后台分析；接手主控持公共记录，在实现前分源码owner及唯一关键边界评估。修复后继续同一长钟馗，新付费另有具体提案；无需重复批准本地开发或重新标注。以下为基线，缺陷尚未修复。
 
 **2026-10-11执行终态与归属**：root只启动一次授权v2長钟馗，76.05772秒exit4/provider.schema，第22组事件起止同一帧被拒；21／272窗口、19观察保存。实际22请求／198帧次、全部attempt1，估算¥0.10848724、0新unknown／未结预留，其他两任务未执行。原同一task_quality_guard只读追加实际费用／身份审查PASS，无第二评审者或并行写者；实际型号未另认证，不按自报声称核验。当前sprint证据包含授权／启动／终态／execution-outcome-v1及evaluation-execution-final，句柄已结束，不重启。

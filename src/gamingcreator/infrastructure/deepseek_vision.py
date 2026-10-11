@@ -757,6 +757,48 @@ def _events(response: dict[str, object], request: VisionRequest) -> tuple[Semant
     return tuple(result)
 
 
+def _schema_projection(body: bytes, decoded: dict[str, object] | None) -> dict[str, object]:
+    projection: dict[str, object] = {
+        "responseSha256": hashlib.sha256(body).hexdigest(),
+        "responseBytes": len(body),
+    }
+    if decoded is None:
+        return projection
+    try:
+        choices = decoded.get("choices")
+        if not isinstance(choices, list) or len(choices) != 1:
+            return projection
+        message = _object(_object(choices[0]).get("message"))
+        content = message.get("content")
+        if not isinstance(content, str):
+            return projection
+        entries = _json(content).get("events")
+        if not isinstance(entries, list):
+            return projection
+        projection["eventCount"] = len(entries)
+        events = []
+        for index, entry in enumerate(entries[:16]):
+            if not isinstance(entry, dict):
+                continue
+            item: dict[str, object] = {"eventIndex": index}
+            for key in ("startFrameId", "endFrameId"):
+                alias = entry.get(key)
+                if isinstance(alias, str) and re.fullmatch(r"f[0-9]{1,2}", alias):
+                    item[key] = alias
+            aliases = entry.get("evidenceIds")
+            if isinstance(aliases, list):
+                item["evidenceIds"] = [
+                    alias
+                    for alias in aliases[:9]
+                    if isinstance(alias, str) and re.fullmatch(r"f[0-9]{1,2}", alias)
+                ]
+            events.append(item)
+        projection["events"] = events
+    except (_SchemaError, ValueError, TypeError):
+        pass
+    return projection
+
+
 class DeepSeekVisionProvider:
     def __init__(
         self,
@@ -888,6 +930,8 @@ class DeepSeekVisionProvider:
             )
             started = monotonic()
             externally_cancelled = False
+            response_body = b""
+            decoded_response: dict[str, object] | None = None
             try:
                 # Durable writes can wait for another operation. Recheck before sending;
                 # their elapsed time belongs to this call's total deadline.
@@ -897,6 +941,7 @@ class DeepSeekVisionProvider:
                 if remaining <= 0:
                     raise TransportError("provider.timeout")
                 response = await self._send(payload, context, remaining)
+                response_body = response.body
                 if response.status_code != 200:
                     code, retryable = self._http_error(response.status_code)
                     result = self._failed(metadata, code, retryable)
@@ -904,6 +949,7 @@ class DeepSeekVisionProvider:
                     if len(response.body) > MAX_RESPONSE_BYTES:
                         raise TransportError("provider.response_limit")
                     decoded = _json(response.body)
+                    decoded_response = decoded
                     actual, request_id = decoded.get("model"), decoded.get("id")
                     if isinstance(actual, str) and _RESPONSE_ID.fullmatch(actual):
                         metadata = replace(metadata, actual_model=actual)
@@ -929,8 +975,7 @@ class DeepSeekVisionProvider:
             except _SchemaError as error:
                 details = _json(metadata.execution_details or "{}")
                 details["schemaError"] = error.code
-                if error.detail:
-                    details["schemaDetail"] = error.detail
+                details["schemaProjection"] = _schema_projection(response_body, decoded_response)
                 metadata = replace(metadata, execution_details=json.dumps(details, sort_keys=True))
                 result = self._failed(metadata, "provider.schema")
             except asyncio.CancelledError:

@@ -37,6 +37,7 @@ class AnalyzeInput:
     max_cost_cny: str | None
     resume: str | None
     retry_uncertain: bool = False
+    window_failure_policy: str = "stop-v1"
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,9 +48,19 @@ class PreparedAnalyze:
     max_cost_cny: Decimal | None
     resume: str | None
     retry_uncertain: bool = False
+    window_failure_policy: str = "stop-v1"
 
 
 def prepare_analyze(command: AnalyzeInput, reader: InputReader) -> PreparedAnalyze:
+    if command.window_failure_policy not in ("stop-v1", "isolate-schema-v1") or (
+        command.window_failure_policy != "stop-v1"
+        and (command.resume is None or command.retry_uncertain)
+    ):
+        raise AppError(
+            "input.window_failure_policy",
+            "隔离策略只适用于显式续跑，不能与不确定重试混用。",
+            ExitCode.INPUT,
+        )
     video = reader.validate_video(command.video)
     if command.resume is not None:
         if not command.resume.strip() or command.config_path or command.max_cost_cny is not None:
@@ -57,7 +68,13 @@ def prepare_analyze(command: AnalyzeInput, reader: InputReader) -> PreparedAnaly
                 "input.resume", "续跑须提供运行 ID，且不得覆盖配置或预算。", ExitCode.INPUT
             )
         return PreparedAnalyze(
-            video, command.project, None, None, command.resume, command.retry_uncertain
+            video,
+            command.project,
+            None,
+            None,
+            command.resume,
+            command.retry_uncertain,
+            command.window_failure_policy,
         )
     if command.retry_uncertain:
         raise AppError("input.resume", "重试未确认调用只适用于显式续跑。", ExitCode.INPUT)

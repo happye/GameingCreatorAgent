@@ -1,5 +1,9 @@
 # Technical debt
 
+**2026-10-12 TD007中的P1调度阻断已修复并独立PASS**：isolate-schema-v1、成功／旧成功费用守门、原子策略标记与覆盖通过295相关／32新边界及唯一guard评估。真实原进度／费用／标注不变，v2具体续跑等待费用发送确认，0新模型；TD007剩余动作／跨镜头／时间跨度理解问题仍open，不把调度修复称内容质量验收。
+
+**2026-10-11本轮TD007/P1实现／离线验证已完成，唯一guard复核中**：版本化isolate-schema-v1保留内容拒绝、费用与窗口缺口并继续后窗；成功／旧成功费用身份守门、policy单事务和启动器优化门禁已补齐。相关295／32新边界与格式／lint／类型通过，45启动拒绝验证零调用；真实原run只读核对21成功／1拒绝／250未执行及3160旧文件不变。尚未真实续跑，仍待v2具体费用发送授权，缺口非Completed／F006false。仅修复长素材调度中断，不宣称静帧／跨镜头理解问题解决；下面“只交接、尚未实现”为原历史。
+
 **当前优先项：TD007/P1主线阻断。** 2026-10-11用户要求解释整片停止并确保新对话接手。解析拒绝同帧动作是正确保护，analysis.py将窗口provider.schema转成整任务failed为长录像可靠性缺陷，必须优先修复，不能按普通小bug延期。下一按sprint-long-analysis-reliability离线实现失败隔离／覆盖／资格，修好后继续同一原片；[接手清单](resume-long-zhongkui-20261011.md)。本轮只交接，功能未修复，无新请求。
 
 2026-10-11长素材真实复现TD007：新授权v2長钟馗run5c7894aa10e94b8aa82533bd77f9871e在第22／272窗口停止，schemaError=event_frame_boundaries，第三事件起止映射同一源帧77533500–77533501，当前V6提示词与解析明确要求动作跨不同时间的画面，非简单算秒偏差。已保存21窗口／19观察，22实际请求／198帧次／全部attempt1；估算¥0.10848724含失败¥0.00612692，0新unknown，独立边界PASS，未重试或续跑。原始第22响应未存，不能断言其余事件可用；更改解析不得靠接纳单帧动作、删字段或伪造Completed。证据artifacts/human-reference-pilot-20261011/execution-outcome-v1.json／evaluation-execution-final.json及boundary-check-after.xml（四项通过；首检查父缓存目录缺失，原XML保留）。主线下一按[sprint-long-analysis-reliability](sprint-long-analysis-reliability.md)先定义窗口拒绝／覆盖／资格和失败处理版本，再离线实现；新付费策略另立提案授权，原¥5许可不覆盖手工重跑。

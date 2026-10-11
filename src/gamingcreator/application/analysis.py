@@ -19,6 +19,15 @@ from pathlib import Path
 from time import monotonic
 from uuid import uuid4
 
+from gamingcreator.application.analysis_reliability import (
+    POLICY,
+    POLICY_STAGE,
+    policy_hash,
+    rejected_windows,
+    validate_policy,
+    verify_successful_window,
+    write_coverage,
+)
 from gamingcreator.application.inputs import AnalysisConfig, PreparedAnalyze
 from gamingcreator.application.media import MediaProcessor, SamplingParameters
 from gamingcreator.application.providers import (
@@ -537,6 +546,10 @@ async def _run_pipeline(
         return CancellationContext(run_id, seconds, context.cancelled)
 
     finished = False
+    windows: tuple[tuple[EvidenceReference, ...], ...] = ()
+    policy_run = (
+        await ports.store.load_run(run_id) if prepared.window_failure_policy == POLICY else None
+    )
     try:
         bundle = await _prepare_media_bundle(
             prepared,
@@ -641,9 +654,26 @@ async def _run_pipeline(
                         await ports.store.load_timeline(run_id, require_completed=False)
                     ).events
                 }
+                rejected = (
+                    await rejected_windows(ports.store, policy_run, windows)
+                    if policy_run
+                    else frozenset()
+                )
+                for rejected_stage in rejected:
+                    rejected_index = int(rejected_stage.removeprefix("vision-"))
+                    await ports.store.record_schema_rejection(
+                        run_id,
+                        rejected_stage,
+                        _digest([item.evidence_id for item in windows[rejected_index]]),
+                    )
+                completed_count = sum(
+                    f"vision-{i:06d}" in completed_stages for i in range(len(windows))
+                )
                 for index, window in enumerate(windows):
                     stage_id = f"vision-{index:06d}"
                     if stage_id in completed_stages:
+                        continue
+                    if stage_id in rejected:
                         continue
                     await ports.store.begin_stage(
                         run_id, stage_id, _digest([item.evidence_id for item in window])
@@ -664,10 +694,19 @@ async def _run_pipeline(
                     )
                     if visual.status != ProviderStatus.COMPLETED or visual.output is None:
                         code = visual.error.code if visual.error else "provider.failed"
+                        await ports.store.finish_stage(
+                            run_id, stage_id, StageStatus.FAILED, error_code=code
+                        )
+                        if policy_run and code == "provider.schema":
+                            rejected = await rejected_windows(ports.store, policy_run, windows)
+                            if stage_id in rejected:
+                                continue
                         raise AppError(
                             code, "视觉窗口分析没有完成；已保存先前窗口。", _exit_for(code), run_id
                         )
                     fresh = []
+                    if policy_run:
+                        await verify_successful_window(ports.store, policy_run, window, stage_id)
                     for event in visual.output:
                         previous = existing.get(event.event_id)
                         if previous is not None:
@@ -688,12 +727,14 @@ async def _run_pipeline(
                         (),
                         _digest([event.event_id for event in visual.output]),
                     )
+                    completed_count += 1
                     print(
                         json.dumps(
                             {
                                 "runId": run_id,
                                 "stage": "vision",
-                                "completedWindows": index + 1,
+                                "completedWindows": completed_count,
+                                "rejectedWindows": len(rejected),
                                 "totalWindows": len(windows),
                             },
                             ensure_ascii=True,
@@ -701,6 +742,15 @@ async def _run_pipeline(
                         file=sys.stderr,
                         flush=True,
                     )
+                if policy_run:
+                    await write_coverage(ports.store, policy_run, windows, project)
+                    if rejected:
+                        raise AppError(
+                            "analysis.coverage_gap",
+                            "后续窗口已保存；有拒绝缺口，整片仍未完成。",
+                            ExitCode.PROVIDER,
+                            run_id,
+                        )
                 await ports.store.finish_stage(
                     run_id, "vision", StageStatus.COMPLETED, _digest(sorted(existing))
                 )
@@ -723,14 +773,20 @@ async def _run_pipeline(
         )
     except AppError as error:
         await _abort(ports.store, run_id, True, finished, error.code)
+        if policy_run and windows:
+            await write_coverage(ports.store, policy_run, windows, project)
         if error.run_id is None:
             raise AppError(error.code, error.message, error.exit_code, run_id) from error
         raise
     except (KeyboardInterrupt, asyncio.CancelledError):
         await _abort(ports.store, run_id, True, finished, "operation.cancelled")
+        if policy_run and windows:
+            await write_coverage(ports.store, policy_run, windows, project)
         raise
     except Exception:
         await _abort(ports.store, run_id, True, finished, "analysis.unexpected")
+        if policy_run and windows:
+            await write_coverage(ports.store, policy_run, windows, project)
         raise AppError(
             "analysis.unexpected", "分析意外停止，已保留完成窗口。", ExitCode.PROVIDER, run_id
         ) from None
@@ -815,6 +871,12 @@ async def resume_analysis(
         raise AppError(error.code, error.message, error.exit_code, run_id) from error
     if stored.asset.source_path.resolve() != prepared.video.resolve():
         raise AppError("input.resume", "续跑视频与原运行不一致。", ExitCode.INPUT, run_id)
+    validate_policy(
+        stored,
+        await store.load_checkpoints(run_id),
+        prepared.window_failure_policy,
+        prepared.retry_uncertain,
+    )
     if stored.status == RunStatus.COMPLETED:
         timeline = await store.load_completed_timeline(run_id)
         if not (project / "runs" / run_id / "semantic_timeline.json").is_file():
@@ -876,6 +938,11 @@ async def resume_analysis(
             )
             and not prepared.retry_uncertain
         ):
+            if prepared.window_failure_policy == POLICY and "media" in completed_stages:
+                saved_bundle = await store.load_media_bundle(run_id)
+                await write_coverage(
+                    store, stored, vision_windows(saved_bundle, configuration.analysis), project
+                )
             raise AppError(
                 "budget.retry_confirmation_required",
                 "有未提交的远端调用；显式传入 --retry-uncertain 可保留原费用后重试。",
@@ -889,6 +956,9 @@ async def resume_analysis(
                 "storage.run_incomplete", "阶段检查点顺序无效。", ExitCode.STORAGE, run_id
             )
         await store.prepare_resume(run_id)
+        if prepared.window_failure_policy == POLICY and POLICY_STAGE not in completed_stages:
+            identity = policy_hash(stored)
+            await store.record_analysis_policy(run_id, identity)
     return await _run_pipeline(
         prepared,
         ports,

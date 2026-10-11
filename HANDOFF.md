@@ -1,4 +1,14 @@
-# 当前交接：优先修复长钟馗分析中断
+# 当前交接：P1修复完成，等待具体续跑确认
+
+**已交付（2026-10-12，10-11接手）**：P1长录像内容拒绝导致整片中断已修复。显式isolate-schema-v1隔离整窗、保留拒绝与费用后继续；新成功及旧成功费用／身份守门，策略身份单事务保存，缺口不Completed。295相关（32新边界）、Ruff／格式／mypy91通过，45启动拒绝检查零调用；唯一guard修正差异复核PASS。实际执行元数据核实Generator Sol/medium、guard Sol/high；无重复reviewer。报告见docs/exec-plans/report-2026-10-12-long-analysis-reliability.md。
+
+**待续跑／无需重标**：原长钟馗run5c7894aa10e94b8aa82533bd77f9871e保留21成功／第22拒绝／19观察／22请求／198帧次／估算¥0.10848724，0新模型／unknown。3160旧文件、原片／媒体／标注／冻结资料及DB字节不变。v2具体续跑方案SHA aa2299e81325a905a2d032a6bb99288710aa05c2422c2fbc49f673979ed1c9d0，250未执行／2247帧次，原总¥5剩余最高¥4.89151276／478尝试／4802帧次；从第23组开始，旧成功及第22拒绝不发。保留拒绝缺口，预期仍非Completed，F006/F009/F010false，不绑定／评分／要求重标。
+
+**下一具体动作**：按接手清单向用户确认v2的具体费用和已有图片发送；获准后原答另存authorization绑定proposal及evaluation-final-v2 SHA，再仅一次运行artifacts/long-analysis-reliability-20261011/execute-continuation.py，启动前原保护／身份复核。v2提案和evaluation-final-v2已保存，旧v1 review FAIL保留禁止执行。当前没有后台分析，旧execute-authorized-analysis.py禁止运行，不重做旧媒体／导入步骤。Python启动器显式require门禁，不依assert。未获新批准不发送。
+
+**保存／验证限制**：源代码与公共记录本地保存于codex/visual-details，实际提交以git读取；不尝试Git网络。未跑无关完整pytest／wheel，未验证真实新模型或真人质量。当前sprint／assignments／progress／human-inputs均同步。以下为修复前历史基线，不从“尚未修复／下一开发”恢复。
+
+## 修复前历史基线
 
 2026-10-11。用户将在同一工作区新开对话，要求直接接手。**下一开发为TD007/P1长录像可靠性缺陷；功能尚未修复。** 先读AGENTS.md，再按[接手清单](docs/exec-plans/resume-long-zhongkui-20261011.md)与[开发合同](docs/exec-plans/sprint-long-analysis-reliability.md)直接离线实现，不要求重复批准开发或重新标注。
 

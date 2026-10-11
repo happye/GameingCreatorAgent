@@ -760,6 +760,75 @@ class SqliteTimelineStore:
 
         await self._call(finish)
 
+    async def record_schema_rejection(self, run_id: str, stage_id: str, input_hash: str) -> None:
+        """Repair a locally uncommitted ended rejection without advancing its attempt."""
+
+        def record() -> None:
+            self._mutable(run_id)
+            _digest(input_hash)
+            row = self._db.execute(
+                "SELECT * FROM stage_checkpoints WHERE run_id=? AND stage_id=?", (run_id, stage_id)
+            ).fetchone()
+            attempts = self._db.execute(
+                "SELECT status,error_code FROM provider_invocations WHERE run_id=? AND stage_id=?",
+                (run_id, stage_id),
+            ).fetchall()
+            if (
+                row is None
+                or row["input_hash"] != input_hash
+                or row["status"] == StageStatus.COMPLETED
+                or not attempts
+                or any(
+                    item["status"] != InvocationStatus.FAILED
+                    or item["error_code"] != "provider.schema"
+                    for item in attempts
+                )
+            ):
+                raise _error("storage.stage_state")
+            with self._transaction():
+                self._db.execute(
+                    "UPDATE stage_checkpoints SET status='failed',error_code='provider.schema',output_hash=NULL,updated_at=? WHERE run_id=? AND stage_id=?",
+                    (_now(), run_id, stage_id),
+                )
+
+        await self._call(record)
+
+    async def record_analysis_policy(self, run_id: str, identity_hash: str) -> None:
+        """Commit the scheduling identity atomically, without a running marker state."""
+
+        def record() -> None:
+            self._mutable(run_id)
+            _digest(identity_hash)
+            stage_id = "policy-isolate-schema-v1"
+            row = self._db.execute(
+                "SELECT * FROM stage_checkpoints WHERE run_id=? AND stage_id=?", (run_id, stage_id)
+            ).fetchone()
+            if row is not None:
+                if (
+                    row["status"] != StageStatus.COMPLETED
+                    or row["input_hash"] != identity_hash
+                    or row["output_hash"] != identity_hash
+                    or row["error_code"] is not None
+                ):
+                    raise _error("storage.resume_mismatch")
+                return
+            with self._transaction():
+                self._db.execute(
+                    "INSERT INTO stage_checkpoints VALUES (?,?,?,?,?,?,?,?)",
+                    (
+                        run_id,
+                        stage_id,
+                        str(StageStatus.COMPLETED),
+                        identity_hash,
+                        identity_hash,
+                        1,
+                        None,
+                        _now(),
+                    ),
+                )
+
+        await self._call(record)
+
     async def persist_media_bundle(
         self, run_id: str, bundle: MediaPreprocessingResult, stage_id: str = "media"
     ) -> None:

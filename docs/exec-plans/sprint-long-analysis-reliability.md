@@ -1,4 +1,39 @@
-# 长录像分析稳定性：下一开发合同草案
+# 长录像分析稳定性：P1实施合同
+
+**最终交付（2026-10-12）：P1调度修复已通过离线验证及唯一guard差异复核PASS。** 295相关／32新边界、Ruff／格式／mypy91通过；45启动拒绝检查三种解释器模式零调用。真实原run保护和只读dry-run通过，21成功／第22拒绝／¥0.10848724／标注保持，0新真实模型。v2方案SHA aa2299e81325a905a2d032a6bb99288710aa05c2422c2fbc49f673979ed1c9d0已冻结；只续250未执行／2247帧次，最高新增¥4.89151276、原总¥5不增加。等待该新方案费用和图片发送确认，没有批准不执行。evaluation-final-v2.json保存唯一guardPASS，v1 FAIL及提案保留不执行。通俗说明见[本轮报告](report-2026-10-12-long-analysis-reliability.md)，不需重标；gap不Completed，F006/F009/F010false。下面实施过程保留历史。
+
+## 当前实施节点（2026-10-11）
+
+用户新对话要求直接修复，离线验证后继续同一长钟馗，不重跑旧付费任务、不重新标注。root负责规划、集成、公共记录和具体续跑提案；唯一源码写者`long_analysis_generator`（运行时原生harness_generator，配置Sol/medium），唯一独立Evaluator`long_analysis_guard`（task_quality_guard，配置Sol/high）先对齐边界、实现后最终评估；无并行源码写者。型号调用配置由工具确认，实际执行元数据核验另存，不依自报。git基线b7805b8、分支codex/visual-details、工作树干净；init -CheckOnly及完整环境检查通过。
+
+### 本轮冻结的行为合同
+
+1. 默认`stop-v1`保持旧行为。新增显式`analyze --resume <原run> --window-failure-policy isolate-schema-v1`，追加与原run/source/config/pipeline哈希关联的版本化操作策略检查点；这是失败调度策略，原推理输入、原配置、提示词及pipeline身份不改。后续恢复须显式选择同策略，策略身份冲突拒绝。
+2. 仅隔离结束调用、有准确模型／请求身份、费用已知且结构诊断明确落在白名单的内容拒绝。单帧动作等保护继续；整窗口拒绝，不猜旧原始响应内其他事件有效。usage／response_identity、认证、预算、存储、来源及unknown／不确定调用保持停止；隔离策略不与retry-uncertain混用。
+3. 同一run保留21成功窗口、第22失败调用及费用；显式新策略可将第22组作为已拒绝缺口跳过，仅分析250个未执行窗口。后续不合格窗口保存FAILED检查点及调用证据后继续；再次恢复不重发成功／已拒绝窗口。
+4. 有缺口时最终`failed/analysis.coverage_gap`，输出独立`analysis_coverage.json`，列出完成／拒绝／未执行窗口的源范围、策略版本与身份、完整资格false；不写伪Completed导出，不进入正式搜索／benchmark。没有缺口才允许原Completed规则。
+5. 新结构错误保留有界安全投影：响应SHA／字节数及白名单帧alias边界／证据／事件索引，不保存原始响应或任意prose／秘密。源时间、多帧合同、历史费用、unknown及原锁不变。
+6. 关键离线验证采用真实SQLite、真实Provider＋fake transport：前后成功／中间拒绝、默认停止、恢复0重放、unknown／费用／预算、身份／存储／并发与完整资格。相关回归及format/lint/types；不重复完整无关测试。真实续跑先完成修复、证据和唯一独立评估，再冻结具体提案及所需新费用／发送授权。
+
+已向用户说明：第22组内容拒绝合理，整片停止是流程缺陷；前21组、费用、标注已保留。下一动作是实现以上策略并验证，再准备同源250窗口续跑。当前0新真实模型调用、无需用户重标或评分；F006/F009/F010false。以下为原交接草案，保留历史。
+
+### 实现前独立对齐与保护快照
+
+唯一guard只读预对齐接受本合同，非最终PASS；要求从持久调用核验身份／费用／白名单，finish后checkpoint前崩溃可补记可信拒绝但不得重发，覆盖由预期全窗口重建且硬停后也保留未执行范围。原报告已发Generator，同一Evaluator完成后再评估。
+
+保护快照`artifacts/long-analysis-reliability-20261011/baseline-protection-v1.json`保存3160旧文件SHA、原项目全部表行、原run/config及费用。只读实际读取为21完成／1拒绝／250未执行、2247待发送帧次，1903媒体图、19观察、¥0.10848724、0unknown；媒体完整核对及源SHA匹配，DB字节不变。`agent-runtime-metadata-v1.json`从本轮rollout turn_context及session_meta确认Generator为gpt-6.1-sol/medium、guard为gpt-6.1-sol/high，角色与parent关联匹配，非Agent自报。
+
+### 实现／验证节点（正在最终评估）
+
+**修正后最终离线节点**：295相关测试0fail／0error／0skip，15.651s，`.cache/long-analysis-reliability-final-v2.xml`；32新边界以真实SQLite＋Provider＋fake HTTP覆盖，Ruff全src／8owned格式／mypy91通过。新成功和恢复时的旧成功都核验费用／身份；策略完整标记改单事务。启动器所有门禁改显式条件，真实默认、`-O`与`PYTHONOPTIMIZE=1`三模式45拒绝场景均零启动，`launcher-validation-v2.json`保存。v1报告／289回执保留为历史；未跑无关完整pytest或wheel，未验证真人质量。
+
+真实只读`real-project-dry-run-v2.json`确认全部21旧成功的费用／身份和第22白名单拒绝；3160旧文件／DB／原片／标注再核对不变。最终续跑提案v2 SHA **aa2299e81325a905a2d032a6bb99288710aa05c2422c2fbc49f673979ed1c9d0**，输入清单bc5ba7a5af567b5721eacbe2382c132e6b7b20a6edfac7194b07a018c02e3b96；250新窗口／2247帧次，剩余最高¥4.89151276／478尝试／4802帧次，原总¥5不增加。新旧成功／拒绝均不重发，旧第22缺口保持，预期仍非Completed。原Provider可重试transport最多每新窗口三次，所有unknown保留原预留；应用层不允许费用未确认的返回继续后窗。v2未批准／未执行，由同一guard复核修正差异及冻结提案。
+
+**独立评估v1 FAIL，正在定点修正**：289相关回执全部通过，但唯一guard以fake transport证明成功响应unknown仍能继续下一发送；以优化compile证明启动器assert门禁可被删除；确认policy begin/finish双写的中断标记会拒绝后续恢复。三项以真实触发路径记录`evaluation-review-v1.json`，未执行任何新真实请求。Generator修成功／历史成功费用守门和policy原子标记，root修启动器显式门禁及优化模式0启动验证；v1冻结提案仅保留历史、不执行，修正后冻结v2并由同一guard复核差异。用户已获通俗提醒，不要求重标。
+
+Generator已接入策略检查点、持久账本白名单、崩溃后补记拒绝、后窗口继续、覆盖和安全结构投影。初次169相关测试通过（其中18可靠性），全src类型91文件、格式及lint通过；最终补充策略篡改／无缺口／writer边界后统一证据。唯一guard已收到当前diff和新提案助手／一次启动器，正在独立评估，尚未最终PASS。
+
+真实原项目`real-project-dry-run-v1.json`只读使用新实现核对policyHash b56f483ae17aade90a4cd272678a1b2fe5460ab4f8b7882b5e2c6eac273cc5f1，原第22`event_frame_boundaries`满足拒绝隔离条件，下一为vision-000022至271，250窗口；旧21成功与第22均不会重发，预计仍有缺口非Completed。未写原项目覆盖、policy检查点、账本或模型结果。提案助手首次_payload返回值假设错误已纠正，未产生提案或请求；待源码冻结后生成。用户已收到使用效果／不重发／真实只读核对说明，当前0新真实模型。
 
 2026-10-11，Phase 0／F003输入可靠性与F006真实验证依赖；**P1主线阻断，下一开发优先项**，planned／尚未实现／无新费用提案。用户要求新对话直接接手，[清单](resume-long-zhongkui-20261011.md)已记录原因、素材、权限、费用与开发顺序。root负责合同和集成，实现前对齐唯一独立评估者及文件owner。本节点不新增子Agent、模型请求或测试。
 
