@@ -1,6 +1,12 @@
 # 当前交接
 
-**最新人工状态（2026-10-11）**：用户答“我正在标注”，要求逐框解释填法与原因、说明后再次询问。已核对当前references-v2真实控件并提供[通俗字段说明](docs/references/benchmark-reference-fields-guide.md)，重点是整份确认与单条片段、秒数、同次事件归组、登记后下载保存。正在填写的页面包不修改；当前仍未收到人工文件，下一收最新路径、完成范围与缺例再核对。无新代码／模型／网络动作。
+**2026-10-11最新交付：首份真人参考已核对、修订并冻结小规模对照。** 收到根目录原片标注记录.json：长钟馗12个事件。按用户明确答复排除两条长剑特写，纠正老者逃跑理由；保留原字节及完整12查询，修订副本剩boss1／连招5／剧情4，共10个已标注样例。原始答案已加入ignore，只在本地保存。公开参考导入与冻结均exit0；见[当前sprint](docs/exec-plans/sprint-human-reference-pilot.md)和[通俗汇报](docs/exec-plans/report-2026-10-11-human-reference-pilot.md)。
+
+**验证／限制**：唯一只读费用与身份guard最终PASS；root最终读回v2提案、limitations、10执行文件、保存配置、源文件、真人原文件及当前参考包一致，数据库pending、调用／事件／转录均0。冻结SHA8cc6fffcc869，仍readiness=false／qualityGate=null：三查询的sparse只指当前标注样例少，实际全片事件总量、完整覆盖及全片Recall未知，不能称正式70%通过。武器界面仍未确定；其他两片的“似乎没有”及空参考不转负例。F006/F009/F010仍false，规格范围不变。ignored证据在artifacts/human-reference-pilot-20261011。
+
+**开发中／人工待办／下一步**：三类已标样例够开始有限对照，暂不用补标。具体新分析提案analysis-proposal-v2.json已就绪，SHA f608c4dedac6；仅长钟馗run5c7894aa10e94b8aa82533bd77f9871e，最高新增¥5，1903张已注册图片／272正常窗口／2445正常帧次；含既有失败重试最多500实际尝试／5000帧次，每窗口最多3次。旧unknown保持，不上传原片、音轨、ASR或真人答案；预算不足停止且保留进度，不能保证整片完成。必须先获这份新的费用与发送授权，旧v5许可已耗尽、保存MaxCostCny5不是授权；之后分析→只有Completed才能绑定→固定候选产生即提醒人评。root持有写任务，独立guard只读已完成，无并行写者，不重跑既成导入／冻结／抽帧或完整测试。
+
+## 三段原片准备记录（历史；已收到并核对首份参考）
 
 **2026-10-11最新交付：三段新录像的本地准备和事前原片标注页。** 用户提供《黑神话：钟馗》两段与《42中队》一段，共26分12.58秒，指定boss战、武器展示界面、释放连招、剧情演示四类需求，并明确“都没看过对应的AI结果”。已登记12个录像／需求组合；三任务只完成抽帧和音轨，仍pending，0模型请求／费用预留。菜单现在显示需求及录像名，当前操作入口是artifacts/independent-footage-validation-20261011/references-v2/review.html；v1未交付用户填写，只保留历史。详见[sprint](docs/exec-plans/sprint-independent-footage-preparation.md)和[通俗报告](docs/exec-plans/report-2026-10-11-independent-footage-preparation.md)。
 

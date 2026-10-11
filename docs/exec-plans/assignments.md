@@ -1,6 +1,12 @@
 # Active assignments
 
-最新人工跟进：用户正在标注、要求逐框解释。root单Agent负责字段说明及公共记录；当前references-v2包保持，说明后重新收最新文件路径／完成范围／缺例，未收到记录不执行导入或确认。无新源码／付费／网络任务。
+**2026-10-11当前任务：首份真人参考与分析准备。** root在codex/visual-details拥有sprint-human-reference-pilot、通俗报告、公共进度、根目录答案ignore及ignored回执。收到12事件，用户确认排除两特写并改老者理由，原字节保留；完整12查询导入、长钟馗三查询10样例小对照冻结均完成。唯一human_reference_execution_guard为task_quality_guard、有界只读，无写／模型／外部操作，最终PASS；无其他并行写者，不重复委派评审。实际执行型号未另从运行元数据认证，不以Agent自报声称已认证。
+
+**完成证据与边界**：artifacts/human-reference-pilot-20261011保存原／修订／用户纠正回执、imported-v1、frozen-v1、输入清单、v2费用提案、limitations、evaluation-final和final-readback-v2。v2 SHA f608c4dedac6、冻结8cc6fffcc869；10执行文件／保存配置／来源与原答案／当前参考包匹配，DBpending、0调用／事件／转录。1／5／4只是已标注样例数，非全片总量；未填不等于负例、正式readiness=false／gate=null，F006/F009/F010false。无产品源码变更，不重跑完整测试和已完成媒体／导入步骤。
+
+**下一动作／人工依赖**：root向用户申请长钟馗新提案的最高¥5及1903注册图片发送授权；正常272窗口／2445帧次，含可重试失败最多500实际尝试／5000帧次、每窗口3次；旧unknown保留，预算不足停止，不保证Completed。旧v5许可已耗尽。获准后只执行冻结命令一次，Completed才绑定，再生成固定候选并即时提醒人评；标注样例足够当前小对照，其他来源／界面缺例不阻断这三项。网络仍按用户断网声明不尝试，仅本地提交。详见[当前sprint](sprint-human-reference-pilot.md)。
+
+## 三段原片准备分工（历史；首份参考已收到）
 
 **2026-10-11当前交付：三段新素材本地准备与事前原片页完成。** 用户四类需求与“都没看过对应的AI结果”已登记；root单Agent复用既有批次／登记／参考工具，拥有sprint-independent-footage-preparation、benchmark-references.js的一处菜单来源文字、报告及公共进度。批次48.449秒／3145图／三音轨、三pending任务，独立完整媒体读回、两尺寸三原片播放与12选项检查通过，既有22项通过，0模型／预留。无新增子Agent或并行写者；不重复完整测试或已完成的真实媒体步骤。
 

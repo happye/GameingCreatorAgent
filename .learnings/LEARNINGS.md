@@ -1,5 +1,28 @@
 # Learnings
 
+## [LRN-20261011-REFERENCE] correction
+
+**Logged**: 2026-10-11T22:00:00+08:00
+**Priority**: high
+**Status**: resolved
+**Area**: docs
+
+### Summary
+首份真人参考是已标样例，未穷尽原片；武器界面与长剑特写分开，未填不当负例。
+
+### Details
+用户提交12事件并确认仅要装备菜单等武器展示界面，排除两特写、纠正老者理由。只在保留原字节的新副本修改。剩余1／5／4为已标样例数；用户说“一些真实事件”，未确认全片覆盖，不能声称实际全片事件数或全片Recall。小对照的sparse字段只用于当前样例数量，不证明真实少例分布；空参考／“似乎没有”不能当确认负例。结果用于调优后需要新的独立验收集。
+
+### Suggested Action
+依本轮sprint、limitations与原始确认接续；保留原12查询，冻结范围不补入事后答案。新录像费用和图片发送另获具体授权，保存配置参数不是许可。
+
+### Metadata
+- Source: user_feedback
+- Related Files: docs/exec-plans/sprint-human-reference-pilot.md, docs/exec-plans/human-inputs.md, HANDOFF.md
+- Tags: human-reference, sample-coverage, fee-authorization
+
+---
+
 2026-10-11用户反馈正在原片标注，但字段含义与原因不清楚。人工表单首次交付须逐框给通俗含义、填写方法、为何需要和假设示例；区分整份记录声明／单条事件、事件名称／同次动作归组、登记／下载。缺例如实报告，正式十个事件门槛不能变成凑数。说明后重新询问最新文件位置及完成范围；正在填写的references-v2保持不覆盖，不把“正在标注”当已提交。共享协议已加入，具体说明见docs/references/benchmark-reference-fields-guide.md。
 
 2026-10-08：JSON模式须在消息明确要求JSON，兼容修正必须产生独立精分析提示词／请求身份，旧冻结输入和授权保持；文档缺陷不等于已经证实的HTTP400原因。前端新profile必须等后台能力才启用，缺真实结果始终unverified。用户明确结束会话后收尾并暂停，不把未答的新付费提案当授权，也不自动续开功能。

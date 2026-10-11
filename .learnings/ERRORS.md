@@ -1,5 +1,27 @@
 # Errors
 
+## [ERR-20261011-REFERENCE-PATH] local_readback_path
+
+**Logged**: 2026-10-11T22:00:00+08:00
+**Priority**: low
+**Status**: resolved
+**Area**: infra
+
+### Summary
+临时最终读回助手把参考包回执中的相对文件名误当工作区路径。
+
+### Context
+首运行只读context.json未找到，未写输出、调用模型或修改原资料。回执键相对references-v2包，明确以该目录解析后一次纠正，final-readback-v2通过。另有本轮模块路径猜测失败，均只读；既有“先rg --files定位，不猜路径”规则继续适用。
+
+### Suggested Fix
+读取回执前确认键值路径基准。恢复不重跑已完成exclusive输出，不将临时助手错误升为产品修复任务。
+
+### Metadata
+- Reproducible: yes
+- Related Files: docs/exec-plans/sprint-human-reference-pilot.md
+
+---
+
 2026-10-11独立评估恢复：collaboration显示pending_init与实际子任务终态不一致；读原JSONL发现task_complete携usage_limit_exceeded，last_agent_message=null。不能仅按界面状态无限等待，也不能把旧中间评论算验收。检查终态、错误及turnId后，依据用户已恢复额度接续同一角色；不因普通观察超时重启，不追加重复审查。后续同一角色实际Sol/high最终PASS后，才各追加一次真实确认并独立读回；恢复不得重跑已完成导入循环，见费用sprint／import-started.json。
 
 2026-10-11费用验证续：误将旧execution_details假定为HTTP错误字符串、空响应文件假定JSON；实际metadata是JSON计价／请求时间，HTTP400应从原checkpoint精确绑定核对，按真实字段一次纠正，原资料不改。查部署助手误递归.cache触碰旧权限锁目录，已收窄为顶层Get-ChildItem和指定artifacts目录；不得重复递归缓存。旧health拒绝连接时deploy助手在kill前退出，随后启动助手新启动，未操作历史PID。完整验证一次保留旧五TD014失败，不循环；独立任务pending_init时不声称已运行／通过，不因观察超时复制评估者。

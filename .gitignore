@@ -7,6 +7,8 @@ artifacts/
 .cache/
 .worktrees/
 output/
+# Human reference answers saved at the workspace root stay local.
+/原片标注记录.json
 *.mp4
 *.mov
 *.mkv
