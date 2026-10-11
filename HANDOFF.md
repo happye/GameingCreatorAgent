@@ -1,6 +1,8 @@
 # 当前交接
 
-**2026-10-11当前状态：持续开发已恢复，Phase 0。** [新v5真实验证](docs/exec-plans/sprint-detail-json-execution.md)已按本轮新授权发送指定两候选／原六帧各一次，无重试；两次HTTP200，35–36秒因provider.schema未发布，28–29秒已发布人物／近景物体记录，但持有关系未确认、真人未判断。新增估算¥0.02822804，原unknown¥4.065536及另一基础任务预留保持；共享原保守占用¥4.11227016。911项目旧文件及40外部保护逐字节不变，独立新进程读回通过。当前生成v2/v5同源对照并提醒用户核对；费用人工确认合同已评估，Generator在独立worktree实现，root持公共记录，不改原发送门禁。F006/F009/F010仍false；更早无真实v5／未授权／暂停描述均为历史。
+**2026-10-11当前状态：持续开发，Phase 0。** [v5真实验证及同源对照](docs/exec-plans/report-2026-10-11-detail-json-pilot.md)已本地交付e4d7bf6：新授权指定两请求／原六帧各一次、无重试，两HTTP200但三人物schema失败无发布，近景已保存／持有归属未知。新增估算¥0.02822804，旧unknown及更早另一任务预留保持；原保守共享占用¥4.11227016。用户答“稍后核对，继续开发”，新判断仍null。F006/F009/F010false，后续正式桌面／商业gate保持。
+
+**最新接续节点**：[人工未扣费确认](docs/exec-plans/report-2026-10-11-billing-confirmation.md)后端887d55e／公开PowerShell及Python入口／只读费用页已实现；38相关检查和新增57passed／1权限skip，完整2484项2477passed／五旧TD014非通过／两权限skip，handle23672已终态exit1，不重跑。双离线wheel SHA bf000539dc1c067a47b94046fb52338f078f655d7ca3471857501d4f13df8079，101包文件等源码，独立wheel进程重读通过。旧service已不可达，安全助手未kill后实际新启动PID5140／helper50496；1366/390费用页资源／两个run读回通过、921项目旧文件及40保护保持。原guard评估任务pending_init，真实材料已准确映射但0导入，不复制评估者；下一核对同一任务状态，通过后按mapping-report各追加一次、运行fresh readback／live-after与wheel读取，原ledger／发送上限保持。Planner确认下一主线为原F006独立质量验收，不捏造独立新功能，不重复催促稍后判断。下面暂停／无结果／未执行等是历史。
 
 **2026-10-11用户追加任务已交付**：[通用模型分工skill及三角色补齐](docs/exec-plans/sprint-harness-routing-skill.md)已增量合入my-skills/main的e3ae40a，并同步本机Codex／Claude／Grok技能副本；原记忆／门禁保留，新增项目三个harness_*原生角色，当前型号分工立即可用，未声称新角色热刷新／全工具执行。13隔离项12passed／1权限skip，Codex原生配置接受、Grok九角色发现、独立审查通过；当前无新人工需求／DeepSeek请求。详见[通俗报告](docs/exec-plans/report-2026-10-11-harness-routing-skill.md)。录像主线仍暂停，恢复后按原开发路径和关键交付独立评估；其分支待普通push与技能仓库已发布分开记录。
 

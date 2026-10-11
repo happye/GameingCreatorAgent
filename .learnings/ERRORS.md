@@ -1,5 +1,7 @@
 # Errors
 
+2026-10-11费用验证续：误将旧execution_details假定为HTTP错误字符串、空响应文件假定JSON；实际metadata是JSON计价／请求时间，HTTP400应从原checkpoint精确绑定核对，按真实字段一次纠正，原资料不改。查部署助手误递归.cache触碰旧权限锁目录，已收窄为顶层Get-ChildItem和指定artifacts目录；不得重复递归缓存。旧health拒绝连接时deploy助手在kill前退出，随后启动助手新启动，未操作历史PID。完整验证一次保留旧五TD014失败，不循环；独立任务pending_init时不声称已运行／通过，不因观察超时复制评估者。
+
 2026-10-11恢复开发：费用worker独立worktree/.cache父目录初始缺失造成pytest setup失败，补目录并核对PYTHONPATH实际落在worktree后通过；后续新worktree先准备项目缓存，不装全局环境。v5对照首实现新failed状态与旧review_entity_ids仅接受no_saved_result/saved_result冲突；保留原领域state，用已执行失败提示区分，重新生成final目录并验证空记录下载，不改真实判断。只读脚本首文本断言按新提示一次同步；apply_patch格式化上下文失配无写入后缩为准确单行修改。Windows rg文件glob应使用目录加-g过滤，不传带*路径；未找到文件先rg --files定位，不猜模块名。以上未新增模型请求或修改冻结响应。
 
 2026-10-11模型分工：当前工具尝试新task_explorer类型unknown，角色清单不热刷新；用default加明确model／effort及fork none，三个型号实际执行记录核对通过。debug prompt-input不含角色目录，不能据此断言不支持；新CLI同一进程断流后完成一个新命名角色／exit0，不重新启动验证。首次schema读取路径漏v1直接按生成清单修正；早期官方config-basics.md链接404，改用已打开的官方有效配置参考，不使用搜索片段做证据。记录限制，不虚报全部六角色实测或热刷新。

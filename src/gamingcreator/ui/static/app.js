@@ -1102,17 +1102,23 @@
     function renderDetailCosts(history) {
         const container = ui["detail-cost-content"];
         container.replaceChildren();
-        const summary = (title, data) => {
+        const summary = (title, data, human) => {
             const section = element("section", "detail-cost-summary");
             section.append(element("h3", "", title));
             section.append(element("p", "", `已知估价 ${money(data.knownEstimatedCostCny)} · ${data.attemptCount} 次尝试`));
             section.append(element("p", data.unknownCostCount ? "warning" : "muted small", `未知费用 ${data.unknownCostCount} 次 · 保留预留 ${money(data.unknownReservedCny)}`));
             section.append(element("p", "accent", `承诺金额 ${money(data.commitmentCny)}`));
+            if (human?.confirmedNoChargeCount > 0) {
+                section.append(element("p", "", `其中 ${human.confirmedNoChargeCount} 次已由用户核实未扣费；原API费用仍记为未知。`));
+                section.append(element("p", "small", `人工核对释放的预留 ${money(human.releasedReservationCny)}`));
+                section.append(element("p", "accent", `核对后占用 ${money(human.reconciledCommitmentCny)}`));
+            }
             container.append(section);
         };
-        summary("当前运行的精分析", history.summary);
-        summary("本项目全部精分析（含其他运行）", history.sharedCommitment);
+        summary("当前运行的精分析", history.summary, history.humanBillingSummary);
+        summary("本项目全部精分析（含其他运行）", history.sharedCommitment, history.sharedHumanBillingSummary);
         container.append(element("p", "muted small", "这里只汇总精分析。基础分析与其他项目的费用不包含在内。"));
+        if (history.sharedHumanBillingSummary?.confirmedNoChargeCount > 0) container.append(element("p", "muted small", "人工核对单独保存，原记录与发送上限保持；核对后占用不代表允许新调用。"));
         if (!history.attempts.length) container.append(element("p", "muted", "当前运行尚无已登记的精分析尝试。"));
         if (history.attemptsTruncated) container.append(element("p", "warning small", `共 ${history.totalAttemptCount} 次尝试，仅展示 ${history.attempts.length} 条；上方金额已包含全部记录。`));
         const labels = { planned: "已计划，发送状态待核对", completed: "已完成", failed: "失败", cancelled: "已取消", recorded: "已登记历史" };
@@ -1122,6 +1128,7 @@
             section.append(element("p", "muted small", `预算 ${attempt.budgetId} · 原预留 ${money(attempt.reservationCny)}`));
             if (attempt.errorCode) section.append(element("p", "warning small", `错误 ${attempt.errorCode}`));
             if (attempt.settlementPending) section.append(element("p", "warning small", "已返回用量但账本尚未结算，继续保留未知费用预留。"));
+            if (attempt.humanBillingConfirmation) section.append(element("p", "", "用户已核实本次未扣费，原API费用未知记录保留。"));
             const metadata = attempt.metadata;
             if (metadata) {
                 const usage = metadata.usage;

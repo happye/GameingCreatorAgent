@@ -1,6 +1,8 @@
 # Active assignments
 
-**2026-10-11主线进行中**：root owns[新v5真实验证](sprint-detail-json-execution.md)及v2/v5对照入口、公共记录；两次请求已执行、授权耗尽，一份已发布／一份schema失败，不重发。task_quality_guard独立执行前检查已通过，复用该角色评估后续费用交付；harness_planner已完成[人工费用确认合同](sprint-detail-billing-confirmation.md)。harness_generator独占独立worktree `.cache/worktrees/billing-confirmation-20261011` 的application/infrastructure确认模块、detail_cost_history与对应tests；root不同时改其文件。各角色实际Sol/medium或Sol/high已按执行元数据核对；下一步真人核对28–29秒、合入验证费用能力。以下暂停状态为历史。
+**2026-10-11最新节点**：v5指定两请求已执行并交付同源对照，用户稍后核对；费用确认后端已合入887d55e，公开入口／工作台与38相关检查完成。完整2484项2477passed／五旧TD014非通过／两权限skip，新57passed／1skip；双离线wheel101文件等源码，独立包读回及实际两尺寸费用页通过。921旧项目文件／40保护保持、0额外模型。独立guard任务pending_init，真实旧答已精确映射但0导入；下一同一评估通过后追加／fresh readback，不复制审查者、不重跑完整。F006/F009/F010false，正式质量待真人参考，以下暂停／待发送／无真实v5段落是历史。
+
+当前Generator终态完成／c11ffe5，已合入887d55e；root接公开入口、只读费用页面和真实映射，38项通过。guard复用为唯一只读评估者，未批准真实导入前保持0追加；Planner只读准备下一独立主线合同。完整verify handle23672活跃，原旧workflow失效留证，root持公共进度／真实导入／服务发布；没有新的并行写者。
 
 **追加配置任务已完成／录像主线仍暂停**：root owns [通用skill](sprint-harness-routing-skill.md)的增量合并、三个工具技能同步、项目三角色配置与公共记录。Luna/high历史定位、Sol/medium独立审查均已完成并核对实际元数据，无并行写者。my-skills/main已正常合并e3ae40a且读回；当前无需用户操作，下一步待用户恢复录像开发，按原计划及关键交付的合同／独立评估执行。
 

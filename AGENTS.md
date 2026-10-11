@@ -21,6 +21,7 @@ Use Windows PowerShell. Keep runtimes in `.tools/`, packages in `.venv/`, and ca
 - `./scripts/run-demo.ps1 -Run <id>`: search an existing demo; `-Video <path>` starts paid vision analysis.
 - `./scripts/run-ui.ps1`: open local preview, evidence, search and interval exports.
 - `./scripts/search-project.ps1 -Run <ids> -Query <text>`: search explicitly selected different Completed recordings; optional `-DetailProfile v1|v2|v3|v4|v5` uses exact saved, supported observations. The workbench exposes “含已有细节”; see `docs/references/saved-detail-retrieval-guide.md`. Text ranking does not prove same-actor conditions; no new analysis is dispatched.
+- `./scripts/confirm-detail-billing.ps1`: append a human zero-charge confirmation for one explicitly identified ended attempt; see `docs/references/detail-billing-confirmation-guide.md`. Original API unknown costs, ledgers and send limits remain; reconciled display occupancy does not authorize new calls.
 - `./Start-Workspace.cmd`: start the workspace and open a browser; reuse matching service. Logs stay in `.cache/workspace`; startup makes no paid requests.
 - Workbench “验收流程” / `/acceptance`: persist registration, raw references, explicit Completed-version selection, freeze/bind, ranking, fixed review and scoring; see `docs/references/benchmark-workspace-guide.md`. Metadata choices do not verify media; binding retains the original source/evidence checks.
 - `./scripts/init.ps1`: check scaffold, exact toolchain and media prerequisites; `-CheckOnly` checks scaffold.

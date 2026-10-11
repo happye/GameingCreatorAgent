@@ -15,6 +15,8 @@ Given a local game video, create a `Video Semantic Timeline` and return timestam
 5. Search for a clearly described game mechanic and return ranked clips with start/end timecodes and relevance evidence.
 6. Run a repeatable benchmark using representative, human-labeled clips.
 
+Developer cost records may retain an additive human zero-charge confirmation for an explicitly identified ended detail attempt. Keep original API usage, unknown counts, ledger and send limits; expose the original and reconciled display values separately. This extends invocation observability within Phase 0. See [confirmation guide](../references/detail-billing-confirmation-guide.md); commercial billing remains outside the accepted phase.
+
 ## Go / no-go
 
 For clear game-mechanic queries, at least 70% of ten ranked slots must contain independent clips judged usable or highly relevant by a human. Missing or duplicate-event slots count zero. Freeze main queries with enough labeled events before inference; report sparse and negative queries separately. Follow `docs/references/phase-0-benchmark.md`. Report queries, labels, misses, timecode errors, runtime, and cold model cost. If quality fails, improve understanding/retrieval before starting the formal desktop and commercial stages. The authorized local inspection workspace helps inspect evidence; its selections do not constitute human quality labels.

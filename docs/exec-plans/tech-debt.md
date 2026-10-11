@@ -1,5 +1,7 @@
 # Technical debt
 
+2026-10-11费用确认完整检查：2484项／2477passed／2failed／3error／2 Windows权限skip，JUnit602.524秒、终端602.73秒。五旧版本选择项在既有prepare中读interrupted而非finished，归TD014；原workflow源码未改、根因未解，不窄复查或重跑完整。新58项57passed／1新增symlink权限skip，费用／公开入口／v5对照相关检查通过。日志.cache/detail-billing-full-verify.log、JUnit.cache/detail-billing-full.xml及ignored full-report.json保存。TD012本轮未复现不表示解决，主交付继续包／实际页面和唯一独立评估。
+
 2026-10-11真实v5试验补充TD009：指定两次各一次均HTTP200；35–36秒原始JSON严格解码失败（Unexpected temporal scene fields），保留完整响应与schema-rejection.json，不删字段、不放松合同、不付费重试。28–29秒保存成功，模型区分人物与两近景物体，但owners为空、仅第一帧人物属性可见；旧严格复合仍unverified，真人尚未核对，不能称F009/F010通过。两次估算¥0.02822804，旧unknown保持；此节点解决“没有真实v5结果”的证据缺口，未解决全部主体／衣物理解。
 
 2026-10-08新v5完整检查：2426项／2419passed／4failed／2error／1权限skip／447.652秒JUnit；17新增全通过。TD014本轮五项：test_benchmark_run_selection两个setup（stale_freeze、http_choices）、test_benchmark_run_selection_browser两个（explicit_choices[1366]、late_choices）、test_benchmark_workflow的registered_source_range，均准备读interrupted而非finished；TD012本轮test_bad_draft_requests_cannot_access_a_project[content_type]读取ConnectionAbortedError／WinError10053。原相关workflow／draft路径未改、根因未解，.cache/detail-json-full.xml／full-verify.log及artifacts/detail-json-validation/full-report.json保留准确节点。按用户交付优先不窄复查、不重复完整、不加生产重试，后续相关阶段再处理。
