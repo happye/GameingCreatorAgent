@@ -1,5 +1,7 @@
 # Technical debt
 
+2026-10-11人工费用确认缺口已交付：独立验收PASS后仅为原两个HTTP400的attempt1追加不可变零扣费确认。真实新进程／wheel／工作台读回释放报告预留¥4.065536、核对后占用¥0.04673416；原API未知、ledger／send gate及更早基础unknown未改。下述“尚无人工合同”属于历史，报告层确认缺口已解决，不宣称Provider结算或发送预算已改变。TD009识别问题及TD012／TD014仍延期。
+
 2026-10-11费用确认完整检查：2484项／2477passed／2failed／3error／2 Windows权限skip，JUnit602.524秒、终端602.73秒。五旧版本选择项在既有prepare中读interrupted而非finished，归TD014；原workflow源码未改、根因未解，不窄复查或重跑完整。新58项57passed／1新增symlink权限skip，费用／公开入口／v5对照相关检查通过。日志.cache/detail-billing-full-verify.log、JUnit.cache/detail-billing-full.xml及ignored full-report.json保存。TD012本轮未复现不表示解决，主交付继续包／实际页面和唯一独立评估。
 
 2026-10-11真实v5试验补充TD009：指定两次各一次均HTTP200；35–36秒原始JSON严格解码失败（Unexpected temporal scene fields），保留完整响应与schema-rejection.json，不删字段、不放松合同、不付费重试。28–29秒保存成功，模型区分人物与两近景物体，但owners为空、仅第一帧人物属性可见；旧严格复合仍unverified，真人尚未核对，不能称F009/F010通过。两次估算¥0.02822804，旧unknown保持；此节点解决“没有真实v5结果”的证据缺口，未解决全部主体／衣物理解。
@@ -8,7 +10,7 @@
 
 2026-10-08真实v4试验补充TD009：两个冻结请求各一次均HTTP400，原传输层对非200只保留状态、丢弃错误正文，不能确定拒绝原因。离线发现JSON模式提示词缺少明确JSON输出指示，已作为兼容性缺陷用独立v5修正并完成程序／包／现用验证；v5无真实结果，不能将此缺陷认定为此前400的确切原因。旧冻结请求不改、不循环付费尝试。复现与回执见sprint-detail-temporal-execution及ignored执行目录，902旧文件／28外部保护保持。
 
-费用记录能力缺口：用户已核实上述两次未扣费，但detail_refinement_sidecar／detail_cost_history仅接受Provider用量结算，尚无人工账单确认的独立核销合同；因此原API用量null、ledger仍保守占用本轮¥4.065536。人工确认单独保存，不伪造API成本、不直接覆盖ledger；后续须以明确来源和指定attempt的追加确认记录支持核销，保留原费用未知事实，更早另一任务¥4.065536不受影响。
+费用记录能力缺口（历史发现，2026-10-11报告层已解决）：此前仅接受Provider用量，用户核实零扣费无法反映到费用汇总。现已交付指定attempt的追加人工确认和独立投影，原API用量null、ledger保守占用继续保存；更早基础分析另一笔¥4.065536不受影响。实现、严格材料、真实导入与读回见sprint-detail-billing-confirmation；没有变更自动发送授权或Provider费用。
 
 2026-10-08分组排名完整检查：2409项／2402passed／3failed／3error／1权限skip／570.449s JUnit，.cache/detail-grouped-full.xml及full-verify.log。五个旧版本选择检查在prepare阶段读interrupted而非finished（含三setup error），归TD014；旧test_corrupt_batch_records_refuse_before_media_work[state.json]在初始状态保存时storage.batch_checkpoint，归TD012，底层原因被包装隐藏，不称已定位WinError5。新18全通过，原工作流／batch源码未改，不重复窄复查／完整或加生产重试，继续主交付。
 

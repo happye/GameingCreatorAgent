@@ -1,5 +1,7 @@
 # 新v5两个真实候选验证
 
+**后续完成节点**：指定两请求已执行、许可耗尽。2026-10-11人工费用确认独立PASS后，两旧HTTP400原答已各登记一次，真实费用页／新进程／wheel读回通过，原API费用和本次v5估算保持。用户仍稍后核对28–29秒，人工判断留空；下一原F006独立质量验收。详见sprint-detail-billing-confirmation及HANDOFF，下文待评估／0导入属于过程历史，不重跑已有导入或请求。
+
 2026-10-11用户恢复持续开发，Phase 0／F009／F010。上一目标turn是progress：新JSON profile程序／包／真实页面已交付；用户先前暂停因当前恢复目标撤销。root负责实际预检与执行、本地对照和公共记录，唯一独立费用评估由task_quality_guard承担；另一个harness_planner只读规划费用确认缺口，无并行写者、不得递归委派。
 
 用户已明确批准冻结v5提案SHA8f590b2bf6b3663b8333ef3808382aad06c9b9954919c8de5e0888fc7b9b991f：35–36秒三人物、28–29秒近镜头持有物两候选／原六帧、冻结提示词／参数／帧ID发送至https://api.deepseek.com/chat/completions；新增最高¥4.07、最多两次、每候选一次、不自动重试，原费用预留保持。原authorization.executionAuthorized=false保留为冻结历史，独立授权回执已保存。本轮两次已执行，授权次数耗尽。

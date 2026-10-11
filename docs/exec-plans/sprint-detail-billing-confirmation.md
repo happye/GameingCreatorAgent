@@ -1,5 +1,7 @@
 # 指定失败请求的人工费用核对
 
+**当前交付：已完成。** 唯一guard最终验收通过；真实旧两HTTP400各追加一次不可变零扣费确认，新进程／离线wheel／1366和390工作台均正确读回。展示释放¥4.065536、核对后占用¥0.04673416，原API未知2次／共享保守占用¥4.11227016／账本／发送上限及更早基础unknown保持。921旧项目文件及40保护不变，只新增两确认，无新Provider调用、搜索或识别判断。下文“待评估／0导入”均为实施过程历史，不能作为恢复动作。
+
 2026-10-11，Phase 0／F003／F004。用户已恢复开发，主线v5有界试验由root另行执行；本合同是独立费用持久化交付，不代替真实理解验收，不改冻结v5请求或原预算。harness_planner已只读给出合同，Sol/medium实际执行元数据已核对。task_quality_guard为唯一独立评估角色，先对齐合同再评价实现；不另叠加reviewer。root持有公共记录和真实材料，Generator使用独立worktree。
 
 ## 使用效果与范围
@@ -43,3 +45,15 @@ Planner复用只读核对当前批准计划：F001–F005技术合同及F006工�
 独立guard后续任务当前运行时为pending_init，非已验收；没有追加重复评估者或用主控替代签收，真实材料保持待审。下一恢复时先查该任务的实际状态，不仅因观察超时而重启；通过后按mapping-report两准确身份调用公开入口，各追加一次，再执行verify-readback.py／check-live.py（不带--before-import）及wheel新进程重读，保留原ledger与新v5费用。此前用户原答无需重问，新v5画面仍稍后核对。
 
 功能检查点ff95517已正常push到授权GitHub/codex/visual-details，实际远端从b232013更新并用ls-remote精确读回一致；不更新main／不强推。本地工作树干净，旧network失败记录作为历史，当前publication见.cache/detail-billing-publication.json。goal保持active，后续独立评估／真实追加仍未完成，未将费用或质量gate虚标通过。
+
+## 原评估任务恢复
+
+后续goal turn核对真实执行JSONL，原评估turn01a12710-a34f-7903-a82b-edef8cdb5196已于2026-10-10T18:27:55.012Z以usage_limit_exceeded终态结束，last_agent_message=null；不是仍活跃的评估或只因观察超时。界面pending_init是遗留状态。用户已明确恢复额度，主控据此在同一guard上接续评估（未复制角色／扩大测试），把最终后端／公开入口／UI／真实材料交其验收。前面的pending描述保留为当时观察，当前0真实导入。证据evaluation-resumption.json；这次诊断改变下一动作，接续后以实际执行元数据和结论核对，不把旧中间评论当通过。
+
+## 最终独立验收与真实交付
+
+同一task_quality_guard最终PASS、无阻断问题，实际恢复turn01a12a29-1273-7c41-8127-0a7f091df6e8／gpt-6.1-sol/high，evaluation-final.json记录原证据、严格材料、费用与身份边界通过。root在导入前再次核对921文件、两个材料SHA及PASS，保存独占import-started.json；公开PowerShell入口仅对actor-separation／held-item-shape各执行一次。budget actor-detail-temporal-pilot-20261006／attempt1，两个run及request映射保持，原答“已核实未扣费”、原UTC和来源没有重写。import-receipts.json保存两次成功回执，不得恢复时重复导入循环。
+
+verify-readback.py独立进程证明921旧文件／40外部保护不变，只新增两不可变确认；总923文件。原API未知2次、原sharedCommitment¥4.11227016、六尝试／两run／三budget及所有旧费用保持。sharedHumanBillingSummary确认2次、释放预留¥4.065536、核对后占用¥0.04673416；更早基础分析另笔¥4.065536未受影响。check-live.py在1366／390两个原run实际页面显示一致、静态资源等源码，无溢出／外部请求／修改HTTP／新搜索。独立-I进程直接从同一wheel导入并读回923文件不变，package-readback-after.json保存证据。没有重新跑完整检查或新增模型调用。
+
+已向用户通俗汇报：费用原答现在落入项目并在费用页可见，用户无需再次操作；原记录和更早未知费用仍在。下一主线按Planner结论返回F006独立质量验收，28–29秒按用户要求稍后核对，不能用费用验收代替识别质量或提前进入后续阶段。同步HANDOFF／assignments／progress／phase-0-plan／human-inputs／tech-debt；功能已发布，本次完成记录正常提交并推送授权分支，实际回执以.cache/detail-billing-publication.json为准。

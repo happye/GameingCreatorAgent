@@ -1,10 +1,14 @@
 # 当前交接
 
-**当前发布回执**：功能检查点ff95517已正常推送并读回GitHub的codex/visual-details，包含旧待推送实现、v5真实对照及本次费用能力；只更新用户已授权分支，未操作main。网络此前失败保留为历史，当前源码与远端一致，回执.cache/detail-billing-publication.json。独立费用评估仍pending_init，0真实确认导入；完整验证已结束，不重新启动。
+**2026-10-11当前状态：Phase 0持续开发；人工费用确认已交付。** 工作台现在显示你核实的两次失败请求“未扣费”，释放核对展示中的预留¥4.065536，核对后精分析占用¥0.04673416。原API未知2次、保守共享占用¥4.11227016、原账本和发送上限保持；更早基础分析另一笔unknown预留¥4.065536单独保留。无需用户重复操作，也没有新模型请求。详见[通俗汇报](docs/exec-plans/report-2026-10-11-billing-confirmation.md)。
 
-**2026-10-11当前状态：持续开发，Phase 0。** [v5真实验证及同源对照](docs/exec-plans/report-2026-10-11-detail-json-pilot.md)已本地交付e4d7bf6：新授权指定两请求／原六帧各一次、无重试，两HTTP200但三人物schema失败无发布，近景已保存／持有归属未知。新增估算¥0.02822804，旧unknown及更早另一任务预留保持；原保守共享占用¥4.11227016。用户答“稍后核对，继续开发”，新判断仍null。F006/F009/F010false，后续正式桌面／商业gate保持。
+**已验证与恢复边界**：唯一费用guard在原额度终止后由同一角色接续，实际Sol/high最终通过、无阻断问题。root按原答／原UTC／原证据精确绑定两个旧HTTP400的attempt1，已各导入一次不可变确认。ignored artifacts/detail-billing-validation-20261011保存evaluation-final、import-receipts、readback-report、live-after-report与package-readback-after；921旧项目文件和40外部保护保持，只增加两确认，现总923文件。独立新进程、wheel和1366／390真实费用页读回通过，0新搜索／模型请求／人工识别标签。import-started.json是执行检查点，恢复时不得再执行导入循环。
 
-**最新接续节点**：[人工未扣费确认](docs/exec-plans/report-2026-10-11-billing-confirmation.md)后端887d55e／公开PowerShell及Python入口／只读费用页已实现；38相关检查和新增57passed／1权限skip，完整2484项2477passed／五旧TD014非通过／两权限skip，handle23672已终态exit1，不重跑。双离线wheel SHA bf000539dc1c067a47b94046fb52338f078f655d7ca3471857501d4f13df8079，101包文件等源码，独立wheel进程重读通过。旧service已不可达，安全助手未kill后实际新启动PID5140／helper50496；1366/390费用页资源／两个run读回通过、921项目旧文件及40保护保持。原guard评估任务pending_init，真实材料已准确映射但0导入，不复制评估者；下一核对同一任务状态，通过后按mapping-report各追加一次、运行fresh readback／live-after与wheel读取，原ledger／发送上限保持。Planner确认下一主线为原F006独立质量验收，不捏造独立新功能，不重复催促稍后判断。下面暂停／无结果／未执行等是历史。
+**程序与发布**：功能源码ff95517、文档f5a3a69已正常推送授权GitHub/codex/visual-details并精确读回，main未操作；本次完成记录同样只同步该分支，最终发布事实以Git及.cache/detail-billing-publication.json为准。一次完整2484项2477passed／五旧TD014非通过／两权限skip，新增57passed／1权限skip；完整handle23672已结束，不重跑或循环微修。双离线wheel SHA bf000539dc1c067a47b94046fb52338f078f655d7ca3471857501d4f13df8079，101包文件等源码；现用服务PID5140／helper50496仅为启动快照，操作前重新核对所有权。
+
+**人工待办与下一主线**：[v5两个候选](docs/exec-plans/report-2026-10-11-detail-json-pilot.md)已各请求一次／授权耗尽：35–36秒schema失败，28–29秒保存但持有归属未知，新增估算¥0.02822804。用户“稍后核对，继续开发”已记录，判断仍null，不重复催促。下一按原F006推进独立来源分组→分析前查询／原片参考→明确Completed绑定→固定前十真人评分；现有入口与技术合同已齐全，真人来源／参考只阻断依赖它的验收。F006/F009/F010false，正式桌面／剪辑／商业阶段门槛保持；新付费试验须另有冻结提案和授权，不复用已执行v5许可。主控持公共记录，费用Generator／Planner／guard均完成，无并行写者。
+
+## 历史交接记录（不代表当前状态）
 
 **2026-10-11用户追加任务已交付**：[通用模型分工skill及三角色补齐](docs/exec-plans/sprint-harness-routing-skill.md)已增量合入my-skills/main的e3ae40a，并同步本机Codex／Claude／Grok技能副本；原记忆／门禁保留，新增项目三个harness_*原生角色，当前型号分工立即可用，未声称新角色热刷新／全工具执行。13隔离项12passed／1权限skip，Codex原生配置接受、Grok九角色发现、独立审查通过；当前无新人工需求／DeepSeek请求。详见[通俗报告](docs/exec-plans/report-2026-10-11-harness-routing-skill.md)。录像主线仍暂停，恢复后按原开发路径和关键交付独立评估；其分支待普通push与技能仓库已发布分开记录。
 

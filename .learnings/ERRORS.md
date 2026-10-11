@@ -1,5 +1,7 @@
 # Errors
 
+2026-10-11独立评估恢复：collaboration显示pending_init与实际子任务终态不一致；读原JSONL发现task_complete携usage_limit_exceeded，last_agent_message=null。不能仅按界面状态无限等待，也不能把旧中间评论算验收。检查终态、错误及turnId后，依据用户已恢复额度接续同一角色；不因普通观察超时重启，不追加重复审查。后续同一角色实际Sol/high最终PASS后，才各追加一次真实确认并独立读回；恢复不得重跑已完成导入循环，见费用sprint／import-started.json。
+
 2026-10-11费用验证续：误将旧execution_details假定为HTTP错误字符串、空响应文件假定JSON；实际metadata是JSON计价／请求时间，HTTP400应从原checkpoint精确绑定核对，按真实字段一次纠正，原资料不改。查部署助手误递归.cache触碰旧权限锁目录，已收窄为顶层Get-ChildItem和指定artifacts目录；不得重复递归缓存。旧health拒绝连接时deploy助手在kill前退出，随后启动助手新启动，未操作历史PID。完整验证一次保留旧五TD014失败，不循环；独立任务pending_init时不声称已运行／通过，不因观察超时复制评估者。
 
 2026-10-11恢复开发：费用worker独立worktree/.cache父目录初始缺失造成pytest setup失败，补目录并核对PYTHONPATH实际落在worktree后通过；后续新worktree先准备项目缓存，不装全局环境。v5对照首实现新failed状态与旧review_entity_ids仅接受no_saved_result/saved_result冲突；保留原领域state，用已执行失败提示区分，重新生成final目录并验证空记录下载，不改真实判断。只读脚本首文本断言按新提示一次同步；apply_patch格式化上下文失配无写入后缩为准确单行修改。Windows rg文件glob应使用目录加-g过滤，不传带*路径；未找到文件先rg --files定位，不猜模块名。以上未新增模型请求或修改冻结响应。
