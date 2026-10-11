@@ -1,5 +1,7 @@
 # 当前交接
 
+**当前发布回执**：功能检查点ff95517已正常推送并读回GitHub的codex/visual-details，包含旧待推送实现、v5真实对照及本次费用能力；只更新用户已授权分支，未操作main。网络此前失败保留为历史，当前源码与远端一致，回执.cache/detail-billing-publication.json。独立费用评估仍pending_init，0真实确认导入；完整验证已结束，不重新启动。
+
 **2026-10-11当前状态：持续开发，Phase 0。** [v5真实验证及同源对照](docs/exec-plans/report-2026-10-11-detail-json-pilot.md)已本地交付e4d7bf6：新授权指定两请求／原六帧各一次、无重试，两HTTP200但三人物schema失败无发布，近景已保存／持有归属未知。新增估算¥0.02822804，旧unknown及更早另一任务预留保持；原保守共享占用¥4.11227016。用户答“稍后核对，继续开发”，新判断仍null。F006/F009/F010false，后续正式桌面／商业gate保持。
 
 **最新接续节点**：[人工未扣费确认](docs/exec-plans/report-2026-10-11-billing-confirmation.md)后端887d55e／公开PowerShell及Python入口／只读费用页已实现；38相关检查和新增57passed／1权限skip，完整2484项2477passed／五旧TD014非通过／两权限skip，handle23672已终态exit1，不重跑。双离线wheel SHA bf000539dc1c067a47b94046fb52338f078f655d7ca3471857501d4f13df8079，101包文件等源码，独立wheel进程重读通过。旧service已不可达，安全助手未kill后实际新启动PID5140／helper50496；1366/390费用页资源／两个run读回通过、921项目旧文件及40保护保持。原guard评估任务pending_init，真实材料已准确映射但0导入，不复制评估者；下一核对同一任务状态，通过后按mapping-report各追加一次、运行fresh readback／live-after与wheel读取，原ledger／发送上限保持。Planner确认下一主线为原F006独立质量验收，不捏造独立新功能，不重复催促稍后判断。下面暂停／无结果／未执行等是历史。

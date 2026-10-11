@@ -41,3 +41,5 @@ Planner复用只读核对当前批准计划：F001–F005技术合同及F006工�
 真实PowerShell公开入口已用合成失败请求验证，精确确认与0新调用成功。真实导入依然0。旧服务health已拒绝连接，deploy助手在任何kill前退出，未操作旧PID；用启动助手实际新启动一次，现用PID5140／helper50496／launch20261011-163957-102-a30c7b03aa684ec1b796b51504b4f613以实际receipt为准。1366／390实际页面在两个原run读费用，静态资源等源码，新backend确返回零人工确认投影；无新搜索／修改HTTP／外部请求，921项目旧文件及40外部保护保持。
 
 独立guard后续任务当前运行时为pending_init，非已验收；没有追加重复评估者或用主控替代签收，真实材料保持待审。下一恢复时先查该任务的实际状态，不仅因观察超时而重启；通过后按mapping-report两准确身份调用公开入口，各追加一次，再执行verify-readback.py／check-live.py（不带--before-import）及wheel新进程重读，保留原ledger与新v5费用。此前用户原答无需重问，新v5画面仍稍后核对。
+
+功能检查点ff95517已正常push到授权GitHub/codex/visual-details，实际远端从b232013更新并用ls-remote精确读回一致；不更新main／不强推。本地工作树干净，旧network失败记录作为历史，当前publication见.cache/detail-billing-publication.json。goal保持active，后续独立评估／真实追加仍未完成，未将费用或质量gate虚标通过。
