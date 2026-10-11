@@ -1,5 +1,13 @@
 # 当前交接
 
+**2026-10-11最新终态：本轮长钟馗分析已停止并保存结果，未完成。** 用户授权v2 SHA f608c4dedac6最高新增¥5后，仅启动一次原run；76.05772秒exit4，完成21／272窗口、19观察、0转录。第22窗口（约1:13.5–1:17.5）第三事件起止选同一源帧，provider.schema／event_frame_boundaries；现多帧合同正确拒绝。22请求／198帧次／全部attempt1，新增估算¥0.10848724（含失败¥0.00612692），0新unknown／0未结预留，未达预算上限；另两任务pending／0调用，旧unknown保持。原真人文件不变。详见[报告](docs/exec-plans/report-2026-10-11-human-reference-pilot.md)。
+
+**审查／限制／恢复**：同一只读guard追加实际执行边界审查PASS，此PASS只证明授权／费用／身份与交接，分析本身failed，非质量通过。ignored execution-outcome-v1、evaluation-execution-final、execution-finished和日志保存，执行句柄91845已结束；历史PID35160不用于操作。四项定点离线边界检查通过，首父缓存目录缺失回执保留；没有产品代码改动／放松单帧保护／绑定／检索／评分／第二次付费尝试。第22原始响应未存，不能断言其余事件有效。F006/F009/F010false，全片覆盖／Recall未验证。不要再运行execute-authorized-analysis.py或已完成的exclusive助手。
+
+**下一主线／人工**：问题归既有TD007，按[长录像稳定性合同草案](docs/exec-plans/sprint-long-analysis-reliability.md)定义窗口拒绝／覆盖／任务资格和版本化失败处理，再离线实现；不在此错误循环改提示词和付费试错。草案planned，尚未实现／授权新费用。当前不需补标或候选评分；未Completed不能绑定。新付费续跑或不同策略须新具体提案，原许可不覆盖手工重跑。root负责公共记录、guard已完成、无并行写者；本节点只本地提交，不尝试Git网络。
+
+## 本轮启动前快照（以下未授权／0调用为历史）
+
 **2026-10-11最新交付：首份真人参考已核对、修订并冻结小规模对照。** 收到根目录原片标注记录.json：长钟馗12个事件。按用户明确答复排除两条长剑特写，纠正老者逃跑理由；保留原字节及完整12查询，修订副本剩boss1／连招5／剧情4，共10个已标注样例。原始答案已加入ignore，只在本地保存。公开参考导入与冻结均exit0；见[当前sprint](docs/exec-plans/sprint-human-reference-pilot.md)和[通俗汇报](docs/exec-plans/report-2026-10-11-human-reference-pilot.md)。
 
 **验证／限制**：唯一只读费用与身份guard最终PASS；root最终读回v2提案、limitations、10执行文件、保存配置、源文件、真人原文件及当前参考包一致，数据库pending、调用／事件／转录均0。冻结SHA8cc6fffcc869，仍readiness=false／qualityGate=null：三查询的sparse只指当前标注样例少，实际全片事件总量、完整覆盖及全片Recall未知，不能称正式70%通过。武器界面仍未确定；其他两片的“似乎没有”及空参考不转负例。F006/F009/F010仍false，规格范围不变。ignored证据在artifacts/human-reference-pilot-20261011。

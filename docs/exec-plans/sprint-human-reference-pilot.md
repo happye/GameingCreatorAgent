@@ -1,5 +1,7 @@
 # 首份真人参考：核对、冻结和小规模分析准备
 
+**2026-10-11最终执行状态**：用户明确批准v2最高新增¥5及图片发送后，root按原身份核对并只执行一次。76.05772秒exit4/provider.schema，第22窗口第三事件选同一帧作起止；保存21／272窗口、19观察、0转录。22实际请求／198帧次／全attempt1，估算¥0.10848724含失败¥0.00612692，0新unknown／0未结预留，未超预算。另两任务pending／0调用；原答案不改。原同一guard只读实际边界审查PASS，分析本身未完成，未绑定／检索／人评，不再运行执行助手。下一见[长录像稳定性合同草案](sprint-long-analysis-reliability.md)，planned尚未实现，无新付费许可。下方准备及待授权描述为执行前历史。
+
 2026-10-11，Phase 0／F006。用户提交根目录原片标注记录.json，包含钟馗15分钟录像四查询共12个事件，其他两录像暂无区间。用户进一步确认武器只指装备菜单等展示界面，两长剑特写不算；老者逃跑事件理由误复制，明确同意纠正。原文件保留，修订副本记录授权、SHA和每项变化，不改已有references-v2包。
 
 本节点root复用公开参考导入／冻结入口，负责ignored记录、范围说明、分析准备及公共文档；只有真人语义／费用／身份的独立审查需要唯一task_quality_guard，无普通重复review，无新产品源码或完整测试。保存的真人文件加入明确ignore，不提交原始答案、素材或数据库。
@@ -33,3 +35,15 @@ budget-boundary-readback为纯内存账本：两次未知各保留2.032768，占
 获具体授权后另存用户答复与execution-started回执，再核对这份提案和执行身份，仅运行已冻结命令一次。执行结束核对用量／账本／Completed状态；只有Completed才绑定frozen-v1、生成固定检索及真人评审，产生候选就提醒用户。这轮只报告已标样例命中、漏掉及人判可用性；一场boss不能切成多场，覆盖长boss区间也不证明任意短窗口可用。若拿本轮结果调优，再收新的独立验收集，不把事后追加标签改称事前答案。
 
 发布仅本地commit；用户断网，本节点不执行Git网络。最后确认远端f5a3a69，恢复普通push仅codex/visual-details，main及强推不操作。已完成抽帧、导入、冻结及exclusive输出不得重跑。
+
+## 实际执行终态、限制及后续
+
+授权-granted记录原用户答复与question ID，提案仍SHA f608c4dedac6、原executionAuthorized=false是冻结历史，授权另存不改提案。execution-preflight核对1903图／272规范请求体；execution-started在Popen前写入，execution-process记录PID35160，execution-finished记2026-10-11T14:10:22.118604+00:00／returnCode4。exec句柄91845已结束，无重复启动或活跃分析；不能用历史PID操作进程。
+
+独立进程execution-outcome-v1核对SQLite的21completed／1failed远程尝试、输入登记帧与当前参数，恢复保守账本为22请求／198帧次，全部attempt1，known0.10848724／reserved0／unresolved0。76.05772秒结束，不是预算用尽；失败费用0.00612692包含在总估算内，估算不是账单。另两任务pending、0调用，原真人文件SHA保持；原场景／参考冻结不改。实际模型版本由原调用metadata保存，不从自由文案推断。
+
+失败stage vision-000021，来源帧73533500–77533500us，schemaDetail eventIndex2／startUs77533500／endUs77533501：源帧映射显示动作起止同一帧。V6提示词204行已要求不同起止，649行严格拒绝；错误不是允许加一微秒就修好的端点问题。未保存第22原始响应，不能断言另外两事件或完整字段有效；19保存观察未经过真人核对。
+
+同一human_reference_execution_guard接续一次有界实际费用／身份审查，evaluation-execution-final PASS只指授权／预算／身份／交接边界，分析仍failed。既有边界测试定点四项通过，boundary-check-after.xml；首检查因缓存父目录缺失四项setup error，boundary-check.xml原样保留，补该项目局部父目录后一次修正，无产品代码变化。不重跑全套、不删单帧保护、不重复付费。
+
+TD007补充真实长素材复现，当前不具Completed绑定／排名／正式评分条件，F006/F009/F010false，全片覆盖及Recall未验证，候选真人事项未触发。下一按稳定性草案先界定拒绝窗口的覆盖与资格、版本化失败处理及离线复现，再明确owner实现；不循环对这一帧试提示词或付费。当前不要求补标／核对账单／重批旧许可。不同策略或新付费续跑另立具体提案授权，原上限余额不是手工续跑许可。
