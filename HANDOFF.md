@@ -1,4 +1,8 @@
-# 当前交接：P1修复完成，等待具体续跑确认
+# 当前交接：P1修复完成，已获具体方案接续指令
+
+**实际接续已启动（2026-10-12）**：execution-started-v1／process-v1已保存，唯一运行句柄79777／实际分析PID41752。不能再次运行launcher；恢复先核实该本轮句柄与execution-finished，再只读日志／DB。首次实际进度21→30成功窗口，保留原第22拒绝，已经越过原停止点；仍在处理，费用终态未出。原run／媒体／标注与总¥5限制保持，旧成功／拒绝不发。
+
+**2026-10-12恢复／启动前节点**：用户在已列明v2费用图片方案的确认问题后答“刚才断了，继续工作”。原答逐字保存authorization-granted-v2.json，绑定v2 SHA aa2299e81325a905a2d032a6bb99288710aa05c2422c2fbc49f673979ed1c9d0及evaluation-final-v2 SHA c1ce874610610f6cd4dac19dea487e3dd3ff795b6b783a660bee1c356081e8f4；只允许同run250新窗口、最高新增¥4.89151276、总¥5保持，不授权旧窗口重发／其他录像。已核对工作树干净、HEAD1e3f420，断线前无启动回执／后台分析。下一只运行新execute-continuation.py一次，其独占启动记录防重启；仍不重抽帧／重标。下方等待确认段为该答复前历史。
 
 **已交付（2026-10-12，10-11接手）**：P1长录像内容拒绝导致整片中断已修复。显式isolate-schema-v1隔离整窗、保留拒绝与费用后继续；新成功及旧成功费用／身份守门，策略身份单事务保存，缺口不Completed。295相关（32新边界）、Ruff／格式／mypy91通过，45启动拒绝检查零调用；唯一guard修正差异复核PASS。实际执行元数据核实Generator Sol/medium、guard Sol/high；无重复reviewer。报告见docs/exec-plans/report-2026-10-12-long-analysis-reliability.md。
 
