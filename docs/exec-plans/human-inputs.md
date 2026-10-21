@@ -5,7 +5,7 @@
 可选本机命令（不自动执行付费）：
 `.\scripts\prepare-directed-gap-fill-draft.ps1 -Coverage <analysis_coverage.json> -OutputDirectory artifacts/directed-gap-fill-draft-<date>`
 （或直接调同名 `.py`）。
-可选本机只读（不花钱、不宣称通过）：`gamingcreator acceptance-readiness --project <项目目录>`（可加 `--output artifacts/acceptance-readiness.json`）。另可选只读：`gamingcreator coverage-gap-report --project <项目目录>`（可加 `--coverage <analysis_coverage.json>`／`--output`）；列出缺口 run 与拒窗，**不清除缺口、不代选 A／B／D、草稿≠选 B**。有可检索运行时也只显示「仍须人工标签／冻结绑定」，**不会**写成已通过。工作台选好项目后也可点「验收就绪 ↗」只读查看（与 CLI 同源）；**同样不会写成已通过**。验收流程第 5 步读取可关联分析时也会并排显示同一套只读就绪汇总。
+可选本机只读（不花钱、不宣称通过）：`gamingcreator acceptance-readiness --project <项目目录>`（可加 `--output artifacts/acceptance-readiness.json`）。另可选只读：`gamingcreator coverage-gap-report --project <项目目录>`（可加 `--coverage <analysis_coverage.json>`／`--output`）；列出缺口 run 与拒窗，**不清除缺口、不代选 A／B／D、草稿≠选 B**。工作台选好项目后也可点「覆盖缺口 ↗」只读查看（与 CLI 同源）。有可检索运行时也只显示「仍须人工标签／冻结绑定」，**不会**写成已通过。工作台选好项目后也可点「验收就绪 ↗」只读查看（与 CLI 同源）；**同样不会写成已通过**。验收流程第 5 步读取可关联分析时也会并排显示同一套只读就绪汇总。
 
 
 本机已有一份未授权示例包（忽略目录、勿当批准）：`artifacts/directed-gap-fill-draft-20261021/`。

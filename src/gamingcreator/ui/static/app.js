@@ -31,6 +31,7 @@
         "open-tasks", "tasks-dialog", "close-tasks", "tasks-list", "tasks-page-summary",
         "tasks-previous", "tasks-next", "refresh-tasks",
         "open-readiness", "readiness-dialog", "close-readiness", "readiness-status", "readiness-body", "refresh-readiness",
+        "open-coverage-gaps", "coverage-gaps-dialog", "close-coverage-gaps", "coverage-gaps-status", "coverage-gaps-body", "refresh-coverage-gaps",
         "open-search-sources", "single-search-source", "search-scope-label", "search-sources-dialog",
         "close-search-sources", "search-sources-list", "search-sources-summary", "apply-search-sources", "download-project-search",
         "open-preparation", "preparation-dialog", "close-preparation", "preparation-form", "preparation-project",
@@ -48,7 +49,7 @@
         draftController: null, draftRevision: 0, drafting: false, draftScope: "manual",
         diagnosticsContext: null,
         tasksController: null, tasksRevision: 0, tasksOffset: 0,
-        readinessController: null, readinessRevision: 0,
+        readinessController: null, readinessRevision: 0, coverageGapsController: null, coverageGapsRevision: 0,
         searchRuns: [], projectSearch: null, projectSearchController: null,
         detailProjectScope: false, projectDetail: null, projectDetailAvailable: false,
         detailSearchScope: false, searchDetail: null, searchDetailAvailable: false,
@@ -523,8 +524,93 @@
     }
 
 
+    
+    function clearCoverageGaps() {
+        state.coverageGapsController?.abort();
+        state.coverageGapsController = null;
+        state.coverageGapsRevision += 1;
+        if (ui["coverage-gaps-dialog"].open) ui["coverage-gaps-dialog"].close();
+        ui["coverage-gaps-status"].textContent = "";
+        ui["coverage-gaps-body"].replaceChildren();
+    }
+
+    function renderCoverageGaps(payload) {
+        ui["coverage-gaps-body"].replaceChildren();
+        if (payload.schemaVersion !== "coverage-gap-report-v1" || payload.snapshotOnly !== true
+            || payload.coverageGapsCleared !== false || payload.optionChosen != null
+            || !payload.featureClaims || payload.featureClaims.F006 !== false
+            || payload.featureClaims.F009 !== false || payload.featureClaims.F010 !== false) {
+            throw new Error("覆盖缺口报告无效或含通过／已清除声明，已拒绝展示。");
+        }
+        ui["coverage-gaps-status"].textContent =
+            `缺口 run ${payload.gapRunCount ?? 0} · 拒窗 ${payload.rejectedStageCount ?? 0} · 未清除`;
+        const note = element("p", "readiness-note small",
+            payload.notes || "只读汇总覆盖缺口；不清除、不代选 A／B／D、不宣称验收通过。");
+        ui["coverage-gaps-body"].append(note);
+        const pending = Array.isArray(payload.userDecisionsPending) ? payload.userDecisionsPending : [];
+        if (pending.length) {
+            ui["coverage-gaps-body"].append(element("p", "muted small",
+                "仍待你决定：" + pending.join("、") + "（工具不会代选）。"));
+        }
+        if (payload.draftHint) {
+            ui["coverage-gaps-body"].append(element("p", "muted small", String(payload.draftHint)));
+        }
+        const runs = Array.isArray(payload.runs) ? payload.runs : [];
+        if (!runs.length) {
+            ui["coverage-gaps-body"].append(element("p", "muted small", "当前快照没有覆盖缺口 run。"));
+            return;
+        }
+        for (const run of runs) {
+            const card = element("div", "readiness-count");
+            card.append(element("strong", "", String(run.runId || "（无 runId）")));
+            card.append(document.createTextNode(
+                ` · ${run.phaseLabel || run.phase || "coverage_gap"} · searchEligible=${String(run.searchEligible)}`
+            ));
+            ui["coverage-gaps-body"].append(card);
+            const summary = run.windowSummary;
+            if (summary && Array.isArray(summary.rejectedStageIds) && summary.rejectedStageIds.length) {
+                const list = element("ul", "readiness-runs");
+                for (const stageId of summary.rejectedStageIds) {
+                    list.append(element("li", "small", String(stageId)));
+                }
+                ui["coverage-gaps-body"].append(element("h3", "", "拒窗 stageId"));
+                ui["coverage-gaps-body"].append(list);
+            } else if (!run.coverageLoaded) {
+                ui["coverage-gaps-body"].append(element("p", "muted small",
+                    "未读到 analysis_coverage.json（可在项目 runs/<runId>/ 放置或稍后用 CLI --coverage）。"));
+            }
+        }
+        ui["coverage-gaps-body"].append(element("p", "muted small",
+            `coverageGapsCleared=${String(payload.coverageGapsCleared)}；optionChosen=${String(payload.optionChosen)}。`));
+    }
+
+    async function loadCoverageGaps() {
+        const project = state.project;
+        if (!project) return;
+        state.coverageGapsController?.abort();
+        const controller = new AbortController();
+        state.coverageGapsController = controller;
+        const revision = ++state.coverageGapsRevision;
+        ui["coverage-gaps-status"].textContent = "正在读取覆盖缺口…";
+        empty(ui["coverage-gaps-body"], "正在汇总缺口 run 与拒窗…");
+        if (!ui["coverage-gaps-dialog"].open) ui["coverage-gaps-dialog"].showModal();
+        try {
+            const payload = await request("/api/coverage-gap-report", { project, limit: 100, offset: 0 }, controller.signal);
+            if (state.project !== project || state.coverageGapsRevision !== revision || state.coverageGapsController !== controller) return;
+            if (payload.project !== project) throw new Error("覆盖缺口报告项目不符。");
+            renderCoverageGaps(payload);
+        } catch (error) {
+            if (error.name !== "AbortError" && state.project === project && state.coverageGapsRevision === revision) {
+                empty(ui["coverage-gaps-body"], error.message);
+                ui["coverage-gaps-status"].textContent = "未读取；不能据此判断缺口已清或已通过。";
+            }
+        }
+    }
+
+
     function clearTasks() {
         clearReadiness();
+        clearCoverageGaps();
         state.tasksController?.abort();
         state.tasksController = null;
         state.tasksRevision += 1;
@@ -1653,6 +1739,7 @@
         clearTasks();
         ui["open-tasks"].disabled = !state.project;
         ui["open-readiness"].disabled = !state.project;
+        ui["open-coverage-gaps"].disabled = !state.project;
         clearRetrievalDiagnostics();
         invalidateDetailDraft(true);
         clearDetailCosts();
@@ -2472,6 +2559,14 @@
     ui["open-detail-costs"].addEventListener("click", () => { void openDetailCosts(); });
     ui["open-tasks"].addEventListener("click", () => { void loadTasks(); });
     ui["open-readiness"].addEventListener("click", () => { void loadReadiness(); });
+    ui["open-coverage-gaps"].addEventListener("click", () => { void loadCoverageGaps(); });
+    ui["refresh-coverage-gaps"].addEventListener("click", () => { void loadCoverageGaps(); });
+    ui["close-coverage-gaps"].addEventListener("click", () => ui["coverage-gaps-dialog"].close());
+    ui["coverage-gaps-dialog"].addEventListener("close", () => {
+        state.coverageGapsController?.abort();
+        state.coverageGapsController = null;
+        state.coverageGapsRevision += 1;
+    });
     ui["close-readiness"].addEventListener("click", clearReadiness);
     ui["refresh-readiness"].addEventListener("click", () => { void loadReadiness(); });
     ui["readiness-dialog"].addEventListener("close", () => {

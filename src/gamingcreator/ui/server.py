@@ -21,6 +21,7 @@ from gamingcreator.ui.service import (
     inspect_run,
     match_details,
     project_acceptance_readiness_payload,
+    project_coverage_gap_report_payload,
     project_detail_payload,
     project_runs_payload,
     project_search_payload,
@@ -451,6 +452,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             "detail-temporal-json-v1",
                             "acceptance-readiness-v1",
                             "acceptance-readiness-inert-v1",
+                            "coverage-gap-report-v1",
                         ],
                         "repository": str(self.repository.resolve()),
                         "pid": os.getpid(),
@@ -542,6 +544,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/runs",
                 "/api/tasks",
                 "/api/acceptance-readiness",
+                "/api/coverage-gap-report",
                 "/api/inspect",
                 "/api/media",
                 "/api/evidence",
@@ -573,6 +576,19 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             project,
                             limit=int(query.get("limit", "100")),
                             offset=int(query.get("offset", "0")),
+                            project_reference=query.get("project"),
+                        )
+                    ),
+                )
+            elif path == "/api/coverage-gap-report":
+                self._json(
+                    200,
+                    asyncio.run(
+                        project_coverage_gap_report_payload(
+                            project,
+                            limit=int(query.get("limit", "100")),
+                            offset=int(query.get("offset", "0")),
+                            coverage=query.get("coverage") or None,
                             project_reference=query.get("project"),
                         )
                     ),

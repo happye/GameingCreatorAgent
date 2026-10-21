@@ -7,6 +7,7 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 from gamingcreator.application.acceptance_readiness import build_acceptance_readiness
+from gamingcreator.application.coverage_gap_report import build_coverage_gap_report
 from gamingcreator.application.detail_query import loads_constraint, query_options
 from gamingcreator.application.detail_refinement import (
     RefinementIdentity,
@@ -329,6 +330,29 @@ async def project_acceptance_readiness_payload(
         tasks_document = await tasks_payload(store, limit=limit, offset=offset)
         reference = project_reference if project_reference is not None else str(project)
         return build_acceptance_readiness(tasks_document, project=reference)
+    finally:
+        await store.close()
+
+
+async def project_coverage_gap_report_payload(
+    project: Path,
+    *,
+    limit: int = 100,
+    offset: int = 0,
+    coverage: str | None = None,
+    project_reference: str | None = None,
+) -> dict[str, object]:
+    """Read-only coverage-gap report for the workbench; never clears gaps or picks A/B/D."""
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    try:
+        tasks_document = await tasks_payload(store, limit=limit, offset=offset)
+        reference = project_reference if project_reference is not None else str(project)
+        coverage_path = Path(coverage) if coverage else None
+        return build_coverage_gap_report(
+            tasks_document,
+            project=reference,
+            coverage=coverage_path,
+        )
     finally:
         await store.close()
 
