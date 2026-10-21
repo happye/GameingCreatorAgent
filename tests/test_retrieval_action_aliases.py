@@ -181,3 +181,67 @@ def test_jump_title_brands_excluded_in_hybrid_against_adversarial_embeddings(que
         )
     )
     assert [item.event_id for item in result.candidates] == ["event-3"]
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize("query", ["fight", "combat", "fighting", "战斗", "打斗"])
+def test_fight_tag_only_mechanic_noise_excluded_keeps_fact_evidence(mode, query):
+    """Fight/combat queries must not rank damage-floater UI solely via bare 战斗 tags."""
+    import asyncio
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import search_timeline
+    from gamingcreator.application.storage import StoredTimeline
+    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
+
+    base = _base_timeline(
+        "红色爆炸特效持续，出现数字820",
+        "画面切换为战斗界面，多名角色在场景中交战。",
+        "角色跳跃并落地。",
+    )
+    events = list(base.events)
+    events[0] = replace(events[0], mechanic_tags=("战斗", "伤害"))
+    data = StoredTimeline(
+        base.run,
+        base.checkpoints,
+        base.evidence,
+        base.transcripts,
+        tuple(events),
+        base.invocations,
+    )
+    result = asyncio.run(
+        search_timeline(data, query, mode=mode, embedding_provider=EqualSimilarity(), top_k=10)
+    )
+    hit_ids = [item.event_id for item in result.candidates]
+    assert "event-0" not in hit_ids, hit_ids
+    assert "event-1" in hit_ids, hit_ids
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+def test_attack_tag_only_recall_still_kept(mode):
+    """TD010: attack tag-only remains reachable; fight tag-noise filter must not broaden."""
+    import asyncio
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import search_timeline
+    from gamingcreator.application.storage import StoredTimeline
+    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
+
+    base = _base_timeline(
+        "画面中央偏下出现蓝色光效和伤害数字",
+        "角色向左移动。",
+    )
+    events = list(base.events)
+    events[0] = replace(events[0], mechanic_tags=("攻击", "伤害"))
+    data = StoredTimeline(
+        base.run,
+        base.checkpoints,
+        base.evidence,
+        base.transcripts,
+        tuple(events),
+        base.invocations,
+    )
+    result = asyncio.run(
+        search_timeline(data, "攻击", mode=mode, embedding_provider=EqualSimilarity(), top_k=10)
+    )
+    assert any(item.event_id == "event-0" for item in result.candidates)

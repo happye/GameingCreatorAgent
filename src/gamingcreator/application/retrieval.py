@@ -238,6 +238,59 @@ class _Document:
 
 
 
+
+# Liberally painted theme tags that often mark UI chrome (damage floaters) without
+# fight language in facts/transcripts. Tag-only hits for these actions are noise.
+# Attack tag-only recall stays intentional (TD010); do not add "attack" here.
+_TAG_ONLY_NOISE_ACTIONS = frozenset({"fight"})
+
+
+def _tag_only_action_noise_documents(
+    documents: tuple[_Document, ...], query: str
+) -> frozenset[str]:
+    """Exclude clips whose only query-action evidence is a liberally painted mechanicTag.
+
+    Lexical BM25 indexes `text` (facts + tags). For fight/combat queries, bare
+    `战斗` tags on damage-number UI frames outrank real "战斗界面" facts. When the
+    query asks for a tag-only-noise action and `positive_text` carries none of that
+    action's terms, the clip is theme-tag noise — not gameplay fight evidence.
+    Attack tag-only recall remains (TD010).
+    """
+    folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
+    if _NEGATIVE_QUERY_INTENT.search(folded_query):
+        return frozenset()
+    actions = {
+        _ACTION_BY_TERM[match.group()]
+        for match in _ACTION_MENTION.finditer(folded_query)
+        if _ACTION_BY_TERM[match.group()] in _TAG_ONLY_NOISE_ACTIONS
+    }
+    if not actions:
+        return frozenset()
+    noisy: set[str] = set()
+    for document in documents:
+        positive = unicodedata.normalize("NFKC", document.positive_text).casefold().replace(
+            "’", "'"
+        )
+        positive_actions = {
+            _ACTION_BY_TERM[match.group()]
+            for match in _ACTION_MENTION.finditer(positive)
+            if _ACTION_BY_TERM[match.group()] in actions
+        }
+        if positive_actions:
+            continue
+        tag_blob = unicodedata.normalize(
+            "NFKC", "\n".join(document.tags)
+        ).casefold().replace("’", "'")
+        tag_actions = {
+            _ACTION_BY_TERM[match.group()]
+            for match in _ACTION_MENTION.finditer(tag_blob)
+            if _ACTION_BY_TERM[match.group()] in actions
+        }
+        if tag_actions:
+            noisy.add(document.identifier)
+    return frozenset(noisy)
+
+
 def _title_brand_action_noise_documents(
     documents: tuple[_Document, ...], query: str
 ) -> frozenset[str]:
@@ -799,8 +852,10 @@ async def _search_documents(
             min_similarity=min_similarity,
             min_semantic_margin=min_semantic_margin,
         )
-    denied_actions = _denied_action_documents(documents, query) | _title_brand_action_noise_documents(
-        documents, query
+    denied_actions = (
+        _denied_action_documents(documents, query)
+        | _title_brand_action_noise_documents(documents, query)
+        | _tag_only_action_noise_documents(documents, query)
     )
     lexical_winners: dict[str, str] = {}
     lexical_documents = documents
