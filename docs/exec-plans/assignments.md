@@ -1,5 +1,7 @@
 # Active assignments
 
+**当前（2026-10-21）：root 单 Agent 已交付只读诊断包。** artifacts/coverage-gap-diagnosis-20261021 与 report-2026-10-21-coverage-gap-diagnosis.md 已落盘；0 Generator 产品写者、0 付费、0 launcher。human-inputs A/B/C/D **仍 pending**。若人选 C，再开离线实现（schemaDetail 并存等）；若选 B，须新提案。不改 feature_list。以下规划开档／终态为历史。
+
 **当前（推送后）：root 单 Agent 持缺口规划。** 接续记录已推送 ea8b029；新 sprint docs/exec-plans/sprint-coverage-gap-plan.md 由 root／GamingCreatorAgent 拥有（公共 docs／HANDOFF／progress／human-inputs）。无 Generator／guard 产品写者；0 后台分析、0 新付费。不改 feature_list。下一：等人择选项后再决定是否开离线实现或定向补窗提案。以下最终完成／接续终态为历史。
 
 **最终完成（2026-10-12）**：root唯一执行及只读保护核对完成；同一long_analysis_guard实际授权／费用／身份／窗口集合／完整资格PASS，evaluation-execution-v1已保存，无第二reviewer。Generator／guard均已结束，无源码写者或后台分析。250新窗口各一次，269成功／3拒绝／0未执行、469观察，新¥1.38173400／累计¥1.49022124，旧记录／标注保持；当前只保存最终记录／本地提交，不自动补发或重标，F006false。以下核对中／运行中皆历史。

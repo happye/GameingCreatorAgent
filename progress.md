@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-21 覆盖缺口只读诊断包交付**：按 sprint-coverage-gap-plan 推荐项，从 outcome／coverage／SQLite 检查点与 invocation 白名单投影只读汇总三拒窗。结论：均 event_frame_boundaries；248／253 末事件 f8→f8；021 有 schemaDetail、248／253 无（1e3f420 替换写入）。工件 artifacts/coverage-gap-diagnosis-20261021/；正式报告 docs/exec-plans/report-2026-10-21-coverage-gap-diagnosis.md。0 新模型／不重跑 launcher／F006/F009/F010 仍 false；**A/B/C/D 仍待决**；未改产品源码。进度备注：诊断已开始并完成打包，供人选 C（及 B）使用。
+
 **2026-10-21 覆盖缺口规划开档**：接续成果已推送 codex/visual-details＠ea8b029。新建 docs/exec-plans/sprint-coverage-gap-plan.md，盘点三拒绝窗（000021／000248／000253）证据、费用与独立选项（保留／定向补窗新授权／先离线改进／暂缓）；同步 HANDOFF／assignments／human-inputs。0 新模型、不重跑 launcher、F006/F009/F010 仍 false。下一等人择项。
 
 **2026-10-12最终实际核对PASS**：P1修复后同原片250未执行接续已完成、单次运行到尾，唯一guard确认授权上下文／费用／身份／窗口集合／资格，evaluation-execution-v1留档。269成功／3拒绝／0未执行、469观察，新估算¥1.38173400／总¥1.49022124／0unknown／0reserved，3160旧文件／3322旧不可变行及标注保持，旧窗与另两录像0重发。进程、调用及checkpoint已结束。缺口令完整资格false是正确保护，非半途中断；无需重标，F006/F009/F010false，最终记录仅本地提交。

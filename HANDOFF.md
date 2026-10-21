@@ -1,5 +1,7 @@
 # 当前交接：P1修复与长钟馗接续已完成，保留3组缺口
 
+**当前交接（2026-10-21）：覆盖缺口只读拒因诊断包已交付。** 工件见 artifacts/coverage-gap-diagnosis-20261021/ 与 docs/exec-plans/report-2026-10-21-coverage-gap-diagnosis.md。三窗均为 event_frame_boundaries 同帧模式；000248／000253 缺 schemaDetail 因 1e3f420 用 projection 替换 detail。0 新付费／未重发／F006/F009/F010 仍 false。**人工 A/B/C/D 仍待决**（未代选）。未选前不改产品源码；若选 C，下一离线优先恢复 schemaDetail 并存写入。以下为规划开档／接续完成历史。
+
 **当前交接（推送后规划）：三组覆盖缺口独立方案已开。** 长钟馗 P1 修复与 v2 接续终态已在分支 codex/visual-details 推送至 **ea8b029**（工作树当时干净）。新开规划 sprint：[sprint-coverage-gap-plan.md](docs/exec-plans/sprint-coverage-gap-plan.md)。3 缺口仍为旧 vision-000021 与新 vision-000248／000253（均 event_frame_boundaries／provider.schema，isolate-schema-v1 已记录；接续未重发成功窗）。completedEligible=false／failed/analysis.coverage_gap 为正确资格保护。F006/F009/F010 仍 false。**禁止**再跑 launcher／付费视觉；剩余预算不是补缺口授权。下一动作：人工在 human-inputs 择 A 保留缺口／B 定向补窗新提案／C 先离线诊断／D 暂缓；未择项前只做文档与只读。以下为接续完成／guard PASS 历史。
 
 **最终保存（2026-10-12）：唯一guard实际执行核对PASS。** evaluation-execution-v1.json独立确认具体授权、250新窗口各一次／0旧窗与其他录像重发、费用新增¥1.38173400／累计¥1.49022124／0unknown／0reserved、3160文件／3322旧DB行／源与标注保持，coverage与checkpoint逐条一致。269成功／3拒绝／0未执行、469观察，842.598秒处理到尾。进程与所有调用／检查点均已结束，无后台分析；禁止再运行新旧launcher。实际P1修复及接续任务完成，F006/F009/F010仍false，下一只有保留缺口的独立方案／正式质量路径，不自动发送或要求重标。报告与当前sprint／assignments／progress／human-inputs已同步，源码1e3f420与授权启动记录a34d77c已本地保存，最终记录提交以git读取，不尝试网络。
