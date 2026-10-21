@@ -1,6 +1,6 @@
 # Sprint：TD009 sidecar 只读匹配／指纹拒收合同
 
-**状态（2026-10-22）：代码已落地，待推送。** `match_refinement`：coverage-gap → `refinement.coverage_gap`；报告 `matcherVersion` 必须等于当前 profile 合同（v1.2／temporal v2）。只读匹配不写盘；保存文件名带 matcher 版本；篡改 match JSON → `refinement.immutable`；事件指纹漂移使旧 sidecar 孤儿化不复用；篡改 request.json 指纹 → `refinement.source_mismatch`。验证=**pytest**。0 付费；不代选 A／B／D；不标 F006/F009/F010 true；不宣称 TD009／人评关单。
+**状态（2026-10-22）：已推送 origin/main `af939bd`。** `match_refinement`：coverage-gap → `refinement.coverage_gap`；报告 `matcherVersion` 必须等于当前 profile 合同（v1.2／temporal v2）。只读匹配不写盘；保存文件名带 matcher 版本；篡改 match JSON → `refinement.immutable`；事件指纹漂移使旧 sidecar 孤儿化不复用；篡改 request.json 指纹 → `refinement.source_mismatch`。验证=**pytest**。0 付费；不代选 A／B／D；不标 F006/F009/F010 true；不宣称 TD009／人评关单。
 
 ## Assignment
 
@@ -18,4 +18,4 @@
 - [x] coverage-gap 拒收
 - [x] matcherVersion 自检
 - [x] 只读无写／版本化文件名／immutable／指纹漂移与篡改 pytest 绿
-- [ ] 已推送 `origin/main`（推送后勾）
+- [x] 已推送 `origin/main`（`af939bd`）
