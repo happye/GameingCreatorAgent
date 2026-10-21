@@ -1246,3 +1246,54 @@ def test_run_gait_non_action_words_do_not_match(query):
     """Bare run and lookalikes must not become move queries (run-id / substring safety)."""
     data = timeline("角色向左移动。")
     assert search(data, query, "lexical").candidates == ()
+
+
+@pytest.mark.parametrize(
+    "query,positive",
+    [
+        ("platform", "一个绿色角色从悬浮平台下方出现，最终落在粉色圆形平台上。"),
+        ("platforms", "一个绿色角色从悬浮平台下方出现，最终落在粉色圆形平台上。"),
+        ("smoke", "角色向城堡方向奔跑，身后有白色烟雾轨迹。"),
+        ("smokes", "角色向城堡方向奔跑，身后有白色烟雾轨迹。"),
+        ("smoking", "角色向城堡方向奔跑，身后有白色烟雾轨迹。"),
+        ("landing", "角色完成一次跳跃，随后落地并向前移动。"),
+        ("landed", "角色完成一次跳跃，随后落地并向前移动。"),
+        ("landings", "角色完成一次跳跃，随后落地并向前移动。"),
+        ("lands", "角色完成一次跳跃，随后落地并向前移动。"),
+        ("castle", "角色在绿色阶梯上向城堡方向奔跑。"),
+        ("castles", "角色在绿色阶梯上向城堡方向奔跑。"),
+    ],
+)
+def test_scene_platform_smoke_landing_castle_cross_lingual_keeps_chinese_evidence(query, positive):
+    """English scene nouns expand to 平台／烟雾／落地／城堡 (demo-phase0 real corpus)."""
+    data = timeline(positive, "角色向左移动。")
+    result = search(data, query, "lexical")
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    assert result.candidates[0].observable_facts == (positive,)
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "platformx",
+        "platforms2",
+        "smokehouse",
+        "smokestack",
+        "landing2",
+        "landingsx",
+        "homeland",
+        "inland",
+        "land",
+        "castled",
+        "forecastle",
+        "castle2",
+    ],
+)
+def test_scene_platform_smoke_landing_castle_non_words_do_not_cross_lingual_match(query):
+    data = timeline(
+        "一个绿色角色从悬浮平台下方出现，最终落在粉色圆形平台上。",
+        "角色向城堡方向奔跑，身后有白色烟雾轨迹。",
+        "角色完成一次跳跃，随后落地并向前移动。",
+        "角色在绿色阶梯上向城堡方向奔跑。",
+    )
+    assert search(data, query, "lexical").candidates == ()

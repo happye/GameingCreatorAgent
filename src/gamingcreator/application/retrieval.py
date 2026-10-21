@@ -150,6 +150,18 @@ _CROSS_LINGUAL_TERMS = (
     ("grass", "草地"),
     ("covers", "掩体"),
     ("cover", "掩体"),
+    ("platforms", "平台"),
+    ("platform", "平台"),
+    ("smoking", "烟雾"),
+    ("smokes", "烟雾"),
+    ("smoke", "烟雾"),
+    ("landings", "落地"),
+    ("landing", "落地"),
+    ("landed", "落地"),
+    ("lands", "落地"),
+    # Bare "land" omitted — too many non-game senses (homeland, inland, …).
+    ("castles", "城堡"),
+    ("castle", "城堡"),
 )
 # A small explicit-language guard, not a language model. Apply this only to
 # positive action queries; passage identities follow the observation projection.
