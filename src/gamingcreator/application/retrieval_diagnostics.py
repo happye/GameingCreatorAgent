@@ -131,6 +131,7 @@ def retrieval_diagnostics(
                     "evidenceIds": list(row.evidence_ids),
                     "score": row.score,
                     "scoreKind": row.score_kind,
+                    "lexicalEvidence": row.lexical_evidence,
                     "evidenceSummary": _evidence_summary(row, evidence, media_id, duration_us),
                 },
             )

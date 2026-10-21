@@ -144,6 +144,9 @@ class CandidateClip:
     evidence_ids: tuple[str, ...]
     observable_facts: tuple[str, ...]
     why: str
+    # Where query-action tokens live: positive_text / mechanic_tags / mixed.
+    # None when the query has no recognized action. Ranking signal only.
+    lexical_evidence: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -288,6 +291,50 @@ def _tag_only_action_noise_documents(
         if tag_actions:
             noisy.add(document.identifier)
     return frozenset(noisy)
+
+
+
+def _action_lexical_evidence(document: _Document, query: str) -> str | None:
+    """Classify where recognized query-action tokens appear (ranking transparency).
+
+    Returns ``positive_text``, ``mechanic_tags``, ``mixed``, or ``None`` when the
+    query carries no known action / has negative intent. Does not change scores.
+    Attack tag-only recall stays reachable (TD010); fight/move/interact tag-only
+    rows are excluded earlier and should not surface as ``mechanic_tags``.
+    """
+    folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
+    if _NEGATIVE_QUERY_INTENT.search(folded_query):
+        return None
+    actions = {_ACTION_BY_TERM[match.group()] for match in _ACTION_MENTION.finditer(folded_query)}
+    if not actions:
+        return None
+    positive = unicodedata.normalize("NFKC", document.positive_text).casefold().replace(
+        "’", "'"
+    )
+    tag_blob = unicodedata.normalize("NFKC", "\n".join(document.tags)).casefold().replace(
+        "’", "'"
+    )
+    in_positive = bool(
+        {
+            _ACTION_BY_TERM[match.group()]
+            for match in _ACTION_MENTION.finditer(positive)
+            if _ACTION_BY_TERM[match.group()] in actions
+        }
+    )
+    in_tags = bool(
+        {
+            _ACTION_BY_TERM[match.group()]
+            for match in _ACTION_MENTION.finditer(tag_blob)
+            if _ACTION_BY_TERM[match.group()] in actions
+        }
+    )
+    if in_positive and in_tags:
+        return "mixed"
+    if in_positive:
+        return "positive_text"
+    if in_tags:
+        return "mechanic_tags"
+    return None
 
 
 def _title_brand_action_noise_documents(
@@ -1029,6 +1076,9 @@ async def _search_documents(
             signals.append(f"cosine={semantic[document.identifier]:.4f}")
             if document.identifier in facet_winners:
                 signals.append(f"detailFacet={facet_winners[document.identifier]}")
+        evidence_channel = _action_lexical_evidence(document, query)
+        if evidence_channel is not None:
+            signals.append(f"lexicalEvidence={evidence_channel}")
         candidates.append(
             CandidateClip(
                 document.candidate_id,
@@ -1040,6 +1090,7 @@ async def _search_documents(
                 document.evidence_ids,
                 document.facts,
                 "; ".join(signals) + "; ranking signal, not probability",
+                evidence_channel,
             )
         )
         if len(candidates) == top_k:

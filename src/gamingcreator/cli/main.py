@@ -304,6 +304,7 @@ def _search_document(
                 "displayUncertainty": clean_observation_text(doubts.get(item.event_id or "") or "")
                 or None,
                 "why": item.why,
+                "lexicalEvidence": item.lexical_evidence,
             }
             for rank, item in enumerate(result.candidates, 1)
         ],

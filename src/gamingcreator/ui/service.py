@@ -147,6 +147,7 @@ def view_payload(view: InspectionView) -> dict[str, object]:
                 "evidenceIds": list(row.evidence_ids),
                 "score": row.score,
                 "scoreKind": row.score_kind,
+                "lexicalEvidence": row.lexical_evidence,
             }
             for row in view.candidates
         ],
@@ -185,6 +186,7 @@ def _candidates(document: dict[str, object], duration_us: int) -> tuple[Candidat
         if not isinstance(item, dict):
             raise AppError("retrieval.timeline_invalid", "检索候选字段无效。", ExitCode.STORAGE)
         event_id = item["eventId"]
+        evidence = item.get("lexicalEvidence")
         clips.append(
             CandidateClip(
                 str(item["candidateId"]),
@@ -196,6 +198,7 @@ def _candidates(document: dict[str, object], duration_us: int) -> tuple[Candidat
                 _text_tuple(item["evidenceIds"]),
                 _text_tuple(item["observableFacts"]),
                 str(item["why"]),
+                None if evidence is None else str(evidence),
             )
         )
     return tuple(clips)

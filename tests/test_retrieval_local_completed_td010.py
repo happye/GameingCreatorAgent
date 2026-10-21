@@ -306,3 +306,42 @@ def test_local_completed_demo_phase0_candidate_sources_contract():
 
     asyncio.run(run())
 
+
+def test_local_completed_demo_phase0_lexical_evidence_channels():
+    """demo-phase0: attack tag-only => mechanic_tags; fight/move hits => positive_text|mixed."""
+    _require_sqlite(DEMO_PHASE0)
+
+    async def run() -> None:
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
+        docs = {doc.event_id: doc for doc in _documents(timeline)}
+
+        attack = await search_timeline(timeline, "攻击", mode="lexical", top_k=20)
+        assert attack.candidates
+        tag_only = [
+            item
+            for item in attack.candidates
+            if "攻击" not in docs[item.event_id].positive_text
+        ]
+        assert tag_only, "fixture regression: expected tag-only attack hits"
+        for item in tag_only:
+            assert item.lexical_evidence == "mechanic_tags"
+            assert "lexicalEvidence=mechanic_tags" in item.why
+
+        for query, terms in (
+            ("战斗", ("战斗", "打斗", "fight", "combat")),
+            ("移动", ("移动", "move", "moving", "movement")),
+        ):
+            result = await search_timeline(timeline, query, mode="lexical", top_k=20)
+            assert result.candidates, query
+            for item in result.candidates:
+                assert item.lexical_evidence in {"positive_text", "mixed"}, (
+                    query,
+                    item.event_id,
+                    item.lexical_evidence,
+                    docs[item.event_id].positive_text[:80],
+                )
+                assert item.lexical_evidence != "mechanic_tags"
+                assert any(term in docs[item.event_id].positive_text for term in terms)
+
+    asyncio.run(run())

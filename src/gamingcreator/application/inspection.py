@@ -31,6 +31,7 @@ class RankedRow:
     evidence_ids: tuple[str, ...]
     score: float
     score_kind: str
+    lexical_evidence: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,6 +77,7 @@ def inspection_view(
             item.evidence_ids,
             item.score,
             item.score_kind,
+            item.lexical_evidence,
         )
         for index, item in enumerate(candidates, 1)
     )

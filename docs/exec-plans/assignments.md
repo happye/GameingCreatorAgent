@@ -1,5 +1,7 @@
 # Active assignments
 
+**当前（2026-10-22）：root / Agent 推进检索动作证据通道 lexicalEvidence（已推送 PLACEHOLDER）。** sprint-retrieval-lexical-evidence-channel.md 归 root／GamingCreatorAgent。拥有 retrieval／投影面与测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／TD004／TD010 关单。以下 move／interact＋candidate_sources 为历史。
+
 **当前（2026-10-22）：root / Agent 推进 move／interact 裸标签噪声 + candidate_sources 合同（已推送 862dee4）。** sprint-retrieval-move-interact-candidate-sources.md 归 root／GamingCreatorAgent。拥有 retrieval 排除集／candidate_sources 合同与测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／TD004／TD010 关单。以下战斗裸标签排除为历史。
 
 **当前（2026-10-22）：root / Agent 推进战斗／combat 裸 mechanicTag 噪声排除（检索离线质量，已推送 0896740）。** sprint-retrieval-fight-tag-only-noise.md 归 root／GamingCreatorAgent。拥有 retrieval 排除集与 action-aliases／local-completed 测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／TD004／TD010 关单；不实现独立静态衣着索引。以下 TD009 match-report inert 为历史。

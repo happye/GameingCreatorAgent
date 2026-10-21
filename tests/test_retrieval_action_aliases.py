@@ -378,3 +378,86 @@ def test_candidate_sources_refuse_coverage_gap_run():
     with pytest.raises(AppError) as refused:
         candidate_sources(gap)
     assert refused.value.code == "retrieval.coverage_gap"
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+def test_lexical_evidence_marks_attack_tag_only_as_mechanic_tags(mode):
+    """TD010 recall stays; why/field advertise mechanic_tags evidence channel."""
+    import asyncio
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import search_timeline
+    from gamingcreator.application.storage import StoredTimeline
+    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
+
+    base = _base_timeline(
+        "画面中央偏下出现蓝色光效和伤害数字",
+        "角色攻击目标并造成伤害。",
+    )
+    events = list(base.events)
+    events[0] = replace(events[0], mechanic_tags=("攻击", "伤害"))
+    events[1] = replace(events[1], mechanic_tags=("攻击",))
+    data = StoredTimeline(
+        base.run,
+        base.checkpoints,
+        base.evidence,
+        base.transcripts,
+        tuple(events),
+        base.invocations,
+    )
+    result = asyncio.run(
+        search_timeline(data, "攻击", mode=mode, embedding_provider=EqualSimilarity(), top_k=10)
+    )
+    by_id = {item.event_id: item for item in result.candidates}
+    assert "event-0" in by_id
+    assert by_id["event-0"].lexical_evidence == "mechanic_tags"
+    assert "lexicalEvidence=mechanic_tags" in by_id["event-0"].why
+    assert "ranking signal, not probability" in by_id["event-0"].why
+    assert "event-1" in by_id
+    assert by_id["event-1"].lexical_evidence in {"positive_text", "mixed"}
+    assert "lexicalEvidence=" in by_id["event-1"].why
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+def test_lexical_evidence_marks_fight_fact_hits_as_positive_text(mode):
+    import asyncio
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import search_timeline
+    from gamingcreator.application.storage import StoredTimeline
+    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
+
+    base = _base_timeline(
+        "红色爆炸特效持续，出现数字820",
+        "画面切换为战斗界面，多名角色在场景中交战。",
+    )
+    events = list(base.events)
+    events[0] = replace(events[0], mechanic_tags=("战斗", "伤害"))
+    events[1] = replace(events[1], mechanic_tags=("战斗",))
+    data = StoredTimeline(
+        base.run,
+        base.checkpoints,
+        base.evidence,
+        base.transcripts,
+        tuple(events),
+        base.invocations,
+    )
+    result = asyncio.run(
+        search_timeline(data, "战斗", mode=mode, embedding_provider=EqualSimilarity(), top_k=10)
+    )
+    hit_ids = [item.event_id for item in result.candidates]
+    assert "event-0" not in hit_ids
+    assert "event-1" in hit_ids
+    hit = next(item for item in result.candidates if item.event_id == "event-1")
+    assert hit.lexical_evidence == "mixed"
+    assert "lexicalEvidence=mixed" in hit.why
+
+
+def test_non_action_query_leaves_lexical_evidence_none():
+    from test_retrieval_negation import search, timeline
+
+    result = search(timeline("草地上有一座塔。"), "草地塔", "lexical")
+    assert result.candidates
+    assert result.candidates[0].lexical_evidence is None
+    assert "lexicalEvidence=" not in result.candidates[0].why
+    assert "ranking signal, not probability" in result.candidates[0].why
