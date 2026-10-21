@@ -1,6 +1,6 @@
 # Sprint：TD009 match-report↔sidecar 证据 partId／condition 加深
 
-**状态（2026-10-22）：feature 待推送（docs 记录提交另记）。** `assert_match_report_sidecar_binding_contract`：证据桶（satisfied／opposed／counterEvidence／uncertain）每条须有非空 `partId`，以及对象 `condition` 且 `kind`／`partGroup`／`value` 均为非空字符串。`match_report_sidecar_binding_gaps` 新码：`match_evidence_part_id_invalid`／`match_evidence_condition_*`。pytest + demo-phase0 legacy matches 只读。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD009／F010 关单**；不改写 artifacts；MATCH_REPORT_VERSION／MATCHER_VERSION 不动。
+**状态（2026-10-22）：已推送 origin/main daecce3（docs 记录提交另记）。** `assert_match_report_sidecar_binding_contract`：证据桶（satisfied／opposed／counterEvidence／uncertain）每条须有非空 `partId`，以及对象 `condition` 且 `kind`／`partGroup`／`value` 均为非空字符串。`match_report_sidecar_binding_gaps` 新码：`match_evidence_part_id_invalid`／`match_evidence_condition_*`。pytest + demo-phase0 legacy matches 只读。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD009／F010 关单**；不改写 artifacts；MATCH_REPORT_VERSION／MATCHER_VERSION 不动。
 
 ## Assignment
 
@@ -18,7 +18,7 @@
 - [x] binding 加深 partId／condition.kind／partGroup／value
 - [x] gaps 新码
 - [x] 只读绿；伪造拒绝绿
-- [ ] 已推送 `origin/main`（feature／docs SHA 见 HANDOFF）
+- [x] 已推送 `origin/main`（feature `daecce3`／docs SHA 见 HANDOFF）
 
 ## Verification
 

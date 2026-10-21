@@ -1,3 +1,5 @@
+**当前锚点（2026-10-22，TD009 match-report↔sidecar 证据 partId／condition 加深，已推送 daecce3）：** binding：证据桶 partId 非空；condition.kind／partGroup／value 非空字符串；gaps 新码；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-td009-match-report-sidecar-evidence-part-condition.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD009 关单**。以下 project receipt 为历史。
+
 **当前锚点（2026-10-22，项目联合检索 receipt↔resultSha256 绑定加深，已推送 899c8a3）：** `assert_project_search_receipt_contract`；receipt 精确信封＋result 原始字节 sha256；modelAnalysisCalls／newReservations＝0；read_project_search 接线；pytest + demo-phase0 project-searches 只读；sprint：docs/exec-plans/sprint-retrieval-project-search-receipt-binding.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**；攻击 tag-only 仍保留。以下 factsProjectionVersion 为历史。
 
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
