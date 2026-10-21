@@ -26,3 +26,7 @@
 ## Stop
 
 - 禁止付费；禁止用旧 v2／余额冒充补窗许可；禁止改 feature_list；禁止代用户选 A／B／D。
+
+## Follow-on
+
+- 提案草稿模板：见 [sprint-coverage-gap-proposal-draft.md](sprint-coverage-gap-proposal-draft.md)（不代选 B）。

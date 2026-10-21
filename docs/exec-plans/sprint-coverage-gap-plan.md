@@ -1,6 +1,6 @@
 # Sprint：三组分析覆盖缺口的独立处理方案（规划）
 
-**状态（2026-10-21）：规划完成；用户已选 C；定向补窗离线合同见 sprint-coverage-gap-directed-contract.md。** 选项 C 实现见 sprint-coverage-gap-offline-c.md。本规划 sprint 仍 0 付费、不重跑 launcher、F006/F009/F010 false。B 为未来付费补窗路径。
+**状态（2026-10-21）：规划完成；用户已选 C；定向补窗离线合同见 sprint-coverage-gap-directed-contract.md；提案草稿模板见 sprint-coverage-gap-proposal-draft.md。** 选项 C 实现见 sprint-coverage-gap-offline-c.md。本规划 sprint 仍 0 付费、不重跑 launcher、F006/F009/F010 false。B 为未来付费补窗路径。
 
 ## Assignment
 
@@ -72,7 +72,7 @@
 
 1. **只读诊断包**：从 outcome／coverage／stderr 抽取三窗的白名单投影、帧 alias、事件索引；确认 000248／000253 的 schemaDetail 为何为空、与 000021 同帧模式是否同类（不重放请求）。
 2. **合同澄清备忘（已落地）**：见 sprint-coverage-gap-directed-contract.md 与 `directed_gap_fill_inventory`／`validate_directed_gap_fill_targets`；补窗身份 `directed-gap-fill-v1` ≠ isolate 续跑；目标仅 rejected，禁止 269 成功重发。
-3. **离线测试夹具**：若改提示或边界诊断，仅 fake transport／相关 pytest；不跑无关全量、不触真实 Provider。
+3. **离线测试夹具／提案草稿（已落地模板）**：见 sprint-coverage-gap-proposal-draft.md 与 `build_directed_gap_fill_proposal_draft`；仍 0 付费，草稿≠选 B。
 4. **不改 feature_list**：F006/F009/F010 保持 false，直至另有 Completed 证据与人评路径。
 
 本规划 sprint **不要求**立刻改产品源码；上述为人工选定 C／B 后的建议顺序。

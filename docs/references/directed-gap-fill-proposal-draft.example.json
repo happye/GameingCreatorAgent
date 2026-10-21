@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "directed-gap-fill-proposal-draft-v1",
+  "proposalIdentity": "directed-gap-fill-v1",
+  "draftStatus": "template-unfrozen",
+  "selectsOptionB": false,
+  "notIsolateResume": true,
+  "isolatePolicy": "isolate-schema-v1",
+  "purpose": "示例：离线定向补窗提案草稿（非真实授权）。",
+  "runId": "<from analysis_coverage.json>",
+  "targets": {
+    "stageIds": ["vision-000021", "vision-000248", "vision-000253"],
+    "windowCount": 3
+  },
+  "forbidden": {
+    "mustNotResendCompleted": true,
+    "mustNotReuseOldV2OrBalance": true
+  },
+  "limits": {
+    "maximumAdditionalCostCny": null,
+    "costCeilingFilled": false,
+    "note": "冻结前由人工填入明确新增费用上限；旧余额无效。"
+  },
+  "authorization": {
+    "executionAuthorized": false,
+    "feeAuthorized": false,
+    "sendAuthorized": false,
+    "optionBChosenByUser": false,
+    "requiresNewExplicitFeeAndImageApproval": true,
+    "draftDoesNotAuthorizeAnything": true
+  },
+  "gapsCleared": false
+}
