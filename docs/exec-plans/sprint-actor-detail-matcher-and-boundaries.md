@@ -1,6 +1,6 @@
 # Sprint：TD009 matcher 正向 AND 边界加固（v1.2）
 
-**状态（2026-10-22）：代码已落地，待推送。** `_full` 明确要求：全部条件 satisfied、无 uncertain／missing／opposed、非空 shared evidence、无冲突、同一 `part_group` 只落在一个 `part_id`。`MATCHER_VERSION` → `actor-detail-matcher-v1.2`。回归：持有物 shape／class 分落不同 part 不得 FULL；AND 条件证据帧不相交不得 FULL；`match_report` 露出 v1.2 与同居 demotion。验证=**pytest**。0 付费；不代选 A／B／D；不标 F006/F009/F010 true；不宣称 TD009／人评关单。
+**状态（2026-10-22）：已推送 origin/main `6bfab3b`。** `_full` 明确要求：全部条件 satisfied、无 uncertain／missing／opposed、非空 shared evidence、无冲突、同一 `part_group` 只落在一个 `part_id`。`MATCHER_VERSION` → `actor-detail-matcher-v1.2`。回归：持有物 shape／class 分落不同 part 不得 FULL；AND 条件证据帧不相交不得 FULL；`match_report` 露出 v1.2 与同居 demotion。验证=**pytest**。0 付费；不代选 A／B／D；不标 F006/F009/F010 true；不宣称 TD009／人评关单。
 
 ## Assignment
 
@@ -18,4 +18,4 @@
 - [x] `_full` AND 门槛（含 part_group 单 part）
 - [x] MATCHER_VERSION v1.2
 - [x] 分 part held AND／不相交帧 AND／match_report 回归绿
-- [ ] 已推送 `origin/main`（推送后勾）
+- [x] 已推送 `origin/main`（`6bfab3b`）
