@@ -584,3 +584,47 @@ def test_cli_search_document_projects_score_is_probability_false():
     assert "qualityGate" not in document
     for row in document["candidates"]:
         assert "ranking signal, not probability" in row["why"]
+
+
+def test_assert_search_document_contract_accepts_cli_projection_and_rejects_claims():
+    from gamingcreator.application.retrieval import assert_search_document_contract
+    from gamingcreator.cli.main import _search_document
+    from gamingcreator.domain.errors import AppError
+    from test_retrieval_negation import search, timeline
+
+    hit = search(timeline("角色向左移动。"), "移动", "lexical")
+    document = _search_document(hit, elapsed_ms=3)
+    assert document["scoreIsProbability"] is False
+    assert document["abstentionReason"] is None
+    assert_search_document_contract(document)
+
+    empty = search(timeline("角色跳跃。"), "", "lexical")
+    empty_doc = _search_document(empty, elapsed_ms=1)
+    assert empty_doc["abstentionReason"] == "empty_query"
+    assert empty_doc["candidates"] == []
+    assert_search_document_contract(empty_doc)
+
+    forged = dict(document)
+    forged["formalAcceptancePassed"] = True
+    with pytest.raises(AppError) as claimed:
+        assert_search_document_contract(forged)
+    assert claimed.value.code == "retrieval.contract"
+
+    gated = dict(document)
+    gated["qualityGate"] = "passed"
+    with pytest.raises(AppError) as gate:
+        assert_search_document_contract(gated)
+    assert gate.value.code == "retrieval.contract"
+
+
+def test_assert_candidate_sources_contract_pins_inventory_without_scores():
+    from gamingcreator.application.retrieval import (
+        assert_candidate_sources_contract,
+        candidate_sources,
+    )
+    from test_retrieval_negation import timeline
+
+    sources = candidate_sources(timeline("角色跳跃。", "角色向左移动。"))
+    assert len(sources) == 2
+    assert_candidate_sources_contract(sources)
+    assert not hasattr(sources[0], "score")

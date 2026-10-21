@@ -70,6 +70,7 @@ from gamingcreator.application.retrieval import (
     RETRIEVAL_VERSION,
     RetrievalMode,
     SearchResult,
+    assert_search_document_contract,
     load_searchable_timeline,
     search_timeline,
     search_timelines,
@@ -270,7 +271,7 @@ def _search_document(
     event_uncertainty: dict[str, str | None] | None = None,
 ) -> dict[str, object]:
     doubts = event_uncertainty or {}
-    return {
+    document = {
         "schemaVersion": 1,
         "runId": result.run_id,
         "query": result.query,
@@ -309,6 +310,8 @@ def _search_document(
             for rank, item in enumerate(result.candidates, 1)
         ],
     }
+    assert_search_document_contract(document)
+    return document
 
 
 def _write_json(path: Path, value: object) -> None:
@@ -509,6 +512,7 @@ async def execute_project_search(
                 row["detailSearchEvidence"] = corpus.evidence.get(cast(str, row["candidateId"]))
                 row["semanticDetailFacetId"] = semantic_facets.get(cast(str, row["candidateId"]))
                 row["lexicalDetailFacetId"] = lexical_facets.get(cast(str, row["candidateId"]))
+        assert_search_document_contract(document)
         write_project_search(project, document)
         return document
     finally:

@@ -41,6 +41,16 @@ ABSTENTION_REASONS = frozenset(
         "semantic_ambiguity_without_lexical_anchor",
     }
 )
+# Keys that must never claim acceptance / human pass on search projections.
+SEARCH_DOCUMENT_FORBIDDEN_CLAIM_KEYS = frozenset(
+    {
+        "formalAcceptancePassed",
+        "humanLabels",
+        "clearedGaps",
+        "gapsCleared",
+        "acceptancePassed",
+    }
+)
 _STOP_WORDS = frozenset(
     "a an and are at avatar character characters clip find for from game gameplay in is me of on player please show the to video with".split()
 )
@@ -450,6 +460,52 @@ def assert_project_search_result_contract(result: ProjectSearchResult) -> None:
             raise _fail("retrieval.contract", "未知的项目 lexicalEvidence 通道。")
 
 
+
+def assert_candidate_sources_contract(sources: tuple[CandidateSource, ...]) -> None:
+    """Refuse inventory projections that invent scores or break identity/time order."""
+    seen: set[str] = set()
+    previous_start = -1
+    for item in sources:
+        if item.candidate_id in seen:
+            raise _fail("retrieval.contract", "候选清单标识重复。")
+        seen.add(item.candidate_id)
+        if item.source_range.start_us < previous_start:
+            raise _fail("retrieval.contract", "候选清单未按源时间排序。")
+        previous_start = item.source_range.start_us
+        if hasattr(item, "score") or hasattr(item, "score_kind"):
+            raise _fail("retrieval.contract", "候选清单不能带有打分字段。")
+
+
+def assert_search_document_contract(document: dict[str, object]) -> None:
+    """Refuse CLI/API search JSON that looks like acceptance or unknown abstention."""
+    if not isinstance(document, dict):
+        raise _fail("retrieval.contract", "检索投影必须是对象。")
+    if document.get("scoreIsProbability") is not False:
+        raise _fail("retrieval.contract", "检索投影不能把分数标成概率。")
+    abstention = document.get("abstentionReason")
+    if abstention is not None and abstention not in ABSTENTION_REASONS:
+        raise _fail("retrieval.contract", "检索投影弃权原因未知。")
+    if "qualityGate" in document and document.get("qualityGate") is not None:
+        raise _fail("retrieval.contract", "检索投影 qualityGate 必须为空。")
+    for key in SEARCH_DOCUMENT_FORBIDDEN_CLAIM_KEYS:
+        if key in document and document.get(key) is not None:
+            raise _fail("retrieval.contract", f"检索投影不能声称 {key}。")
+    candidates = document.get("candidates")
+    if type(candidates) is not list:
+        raise _fail("retrieval.contract", "检索投影候选必须是列表。")
+    if abstention is not None and candidates:
+        raise _fail("retrieval.contract", "弃权投影不能同时带有候选。")
+    for row in candidates:
+        if not isinstance(row, dict):
+            raise _fail("retrieval.contract", "检索投影候选无效。")
+        why = row.get("why")
+        if type(why) is not str or "ranking signal, not probability" not in why:
+            raise _fail("retrieval.contract", "检索投影候选缺少非概率声明。")
+        evidence = row.get("lexicalEvidence")
+        if evidence is not None and evidence not in LEXICAL_EVIDENCE_CHANNELS:
+            raise _fail("retrieval.contract", "检索投影 lexicalEvidence 未知。")
+
+
 def refuse_unsearchable_run(run: StoredRun) -> None:
     """Refuse runs that must not back NL search or formal acceptance queries."""
     if run.status == RunStatus.FAILED and run.error_code == "analysis.coverage_gap":
@@ -606,12 +662,12 @@ def _documents(timeline: StoredTimeline) -> tuple[_Document, ...]:
 def candidate_sources(timeline: StoredTimeline) -> tuple[CandidateSource, ...]:
     """Project original candidate identities without scores, embeddings or another search.
 
-    Inventory is derived from the same searchable documents as `search_timeline`:
+    Inventory is derived from the same searchable documents as ``search_timeline``:
     coverage-gap / unsearchable runs refuse here too. Facts are observable facts only
     (mechanicTags never appear as a substitute). Ordering follows document time order.
     Candidate ids are stable and must align with search hit identities for the same run.
     """
-    return tuple(
+    sources = tuple(
         CandidateSource(
             item.candidate_id,
             item.event_id,
@@ -622,6 +678,8 @@ def candidate_sources(timeline: StoredTimeline) -> tuple[CandidateSource, ...]:
         )
         for item in _documents(timeline)
     )
+    assert_candidate_sources_contract(sources)
+    return sources
 
 
 def _lexical_query(query: str) -> str:

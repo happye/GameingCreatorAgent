@@ -417,3 +417,35 @@ def test_local_completed_demo_phase0_project_search_ranking_contract():
         assert_project_search_result_contract(jump)
 
     asyncio.run(run())
+
+
+def test_local_completed_demo_phase0_search_document_and_sources_contracts():
+    """demo-phase0: CLI search projection + candidate_sources inventory contracts."""
+    _require_sqlite(DEMO_PHASE0)
+
+    async def run() -> None:
+        from gamingcreator.application.retrieval import (
+            assert_candidate_sources_contract,
+            assert_search_document_contract,
+            candidate_sources,
+        )
+        from gamingcreator.cli.main import _search_document
+
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
+        sources = candidate_sources(timeline)
+        assert_candidate_sources_contract(sources)
+        assert len(sources) >= 50
+
+        move = await search_timeline(timeline, "移动", mode="lexical", top_k=5)
+        move_doc = _search_document(move, elapsed_ms=2)
+        assert_search_document_contract(move_doc)
+        assert all(row["candidateId"] in {s.candidate_id for s in sources} for row in move_doc["candidates"])
+
+        jump = await search_timeline(timeline, "jump", mode="lexical", top_k=5)
+        jump_doc = _search_document(jump, elapsed_ms=1)
+        assert jump_doc["abstentionReason"] == "no_positive_action_evidence"
+        assert jump_doc["candidates"] == []
+        assert_search_document_contract(jump_doc)
+
+    asyncio.run(run())
