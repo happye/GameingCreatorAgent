@@ -1,6 +1,6 @@
 # Sprint：离线验收就绪只读汇总
 
-**状态（2026-10-22）：已交付（待推送）。** 新增 `acceptance_readiness` 与 CLI `acceptance-readiness`：从任务快照汇总可检索／覆盖缺口／阻断；`formalAcceptancePassed`／`humanEvalPassed`／F006/F009/F010 恒为 false；有可检索运行时仅 `awaiting_human_labels_and_freeze`，永不输出 passed。0 付费；不代选 A／B／D；不声称三缺口已清；不标 F006 true；不宣称人评通过。
+**状态（2026-10-22）：已交付并推送 d911068。** 新增 `acceptance_readiness` 与 CLI `acceptance-readiness`：从任务快照汇总可检索／覆盖缺口／阻断；`formalAcceptancePassed`／`humanEvalPassed`／F006/F009/F010 恒为 false；有可检索运行时仅 `awaiting_human_labels_and_freeze`，永不输出 passed。0 付费；不代选 A／B／D；不声称三缺口已清；不标 F006 true；不宣称人评通过。
 
 ## Assignment
 
@@ -19,4 +19,4 @@
 - [x] inert 护栏拒绝把 F006／人评／qualityGate 标真
 - [x] 相关 pytest 绿；CLI 只读不碰媒体／模型
 - [x] 0 DeepSeek／launcher；F006/F009/F010 仍 false
-- [ ] 已推送 `origin/codex/visual-details`（推送后勾）
+- [x] 已推送 `origin/codex/visual-details`（d911068）

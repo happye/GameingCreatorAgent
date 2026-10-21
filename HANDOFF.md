@@ -1,6 +1,6 @@
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
-**当前锚点（2026-10-22，离线验收就绪只读汇总）：** `acceptance-readiness` CLI + `acceptance_readiness` 从任务快照汇总资格／阻断；`formalAcceptancePassed`／人评／F006/F009/F010 恒 false；有可检索运行仅为 `awaiting_human_labels_and_freeze`。sprint：`docs/exec-plans/sprint-acceptance-readiness.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下验收绑定选项闸为历史。
+**当前锚点（2026-10-22，离线验收就绪只读汇总，已推送 d911068）：** `acceptance-readiness` CLI + `acceptance_readiness` 从任务快照汇总资格／阻断；`formalAcceptancePassed`／人评／F006/F009/F010 恒 false；有可检索运行仅为 `awaiting_human_labels_and_freeze`。sprint：`docs/exec-plans/sprint-acceptance-readiness.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下验收绑定选项闸为历史。
 
 
 **当前交接（2026-10-22）：验收绑定选项覆盖缺口拒文已推送 5877395。** `binding_choices` 区分 coverage_gap；验收流程不可选并显示白话拒文；下发 `searchEligible`。sprint：`docs/exec-plans/sprint-acceptance-bind-eligibility.md`。0 付费／F006/F009/F010 仍 false；**不宣称人评／F006 通过**。**三缺口仍在**。**A／B／D 仍留给用户**。评测资格闸基线 f785473／9b1d81f。以下为评测闸／假传输历史。
