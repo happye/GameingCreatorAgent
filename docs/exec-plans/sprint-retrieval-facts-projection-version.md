@@ -1,6 +1,6 @@
 # Sprint：单任务／项目检索 factsProjectionVersion 白名单加深
 
-**状态（2026-10-22）：已推送 origin/main FEATURE_SHA（docs 记录提交另记）。** 新增 `FACTS_PROJECTION_VERSIONS={legacy-frame-alias-neutral-v1}`。`assert_run_search_document_contract`：若带 `factsProjectionVersion` 则必须∈白名单；`qualityGate` 必须为 null。`assert_project_search_document_contract`：`factsProjectionVersion` 必有且∈同一白名单。pytest + demo-phase0 runs/*/searches（83 有／121 无）与 project-searches 只读。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD004／TD010 关单**；不改写 artifacts；`RETRIEVAL_VERSION` 仍 `bm25-e5-rrf-v7`；攻击 tag-only 仍保留。
+**状态（2026-10-22）：已推送 origin/main cc97a9e（docs 记录提交另记）。** 新增 `FACTS_PROJECTION_VERSIONS={legacy-frame-alias-neutral-v1}`。`assert_run_search_document_contract`：若带 `factsProjectionVersion` 则必须∈白名单；`qualityGate` 必须为 null。`assert_project_search_document_contract`：`factsProjectionVersion` 必有且∈同一白名单。pytest + demo-phase0 runs/*/searches（83 有／121 无）与 project-searches 只读。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD004／TD010 关单**；不改写 artifacts；`RETRIEVAL_VERSION` 仍 `bm25-e5-rrf-v7`；攻击 tag-only 仍保留。
 
 ## Assignment
 

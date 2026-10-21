@@ -1,3 +1,5 @@
+**2026-10-22 检索（factsProjectionVersion 白名单，cc97a9e）：** sprint-retrieval-facts-projection-version.md；不关单。
+
 **2026-10-22 检索（project startedAt／validationMs，b07867f）：** sprint-retrieval-project-started-validation-ms.md；不关单。
 
 **2026-10-22 TD009（payloadJson／shots，24f59ec）：** sprint-td009-match-report-sidecar-payload-shots.md；不关单。
