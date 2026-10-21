@@ -643,6 +643,19 @@ def assert_run_search_document_contract(
         media_id = row.get("mediaId")
         if type(media_id) is not str or not media_id:
             raise _fail("retrieval.contract", "单任务检索投影候选 mediaId 无效。")
+        # Owned timeline event ids are "{runId}:{mediaId}:..."; bare synthetic ids stay allowed.
+        if ":" in event_id and not event_id.startswith(f"{run_id}:{media_id}:"):
+            raise _fail("retrieval.contract", "单任务检索投影候选 eventId 与 mediaId 不一致。")
+        why = row.get("why")
+        if type(why) is not str or not why.strip():
+            raise _fail("retrieval.contract", "单任务检索投影候选 why 无效。")
+        folded_why = why.casefold()
+        if "not probability" not in folded_why or "ranking signal" not in folded_why:
+            raise _fail("retrieval.contract", "单任务检索投影候选 why 缺少 inert 打分声明。")
+        start_tc = row.get("startTimecode")
+        end_tc = row.get("endTimecode")
+        if type(start_tc) is not str or not start_tc or type(end_tc) is not str or not end_tc:
+            raise _fail("retrieval.contract", "单任务检索投影候选 timecode 无效。")
 
 
 
@@ -656,6 +669,9 @@ def assert_persisted_retrieval_contract(document: dict[str, object]) -> None:
     run_id = document.get("runId")
     if type(run_id) is not str or not run_id:
         raise _fail("retrieval.contract", "持久化检索 runId 无效。")
+    media_id = document.get("mediaId")
+    if type(media_id) is not str or not media_id:
+        raise _fail("retrieval.contract", "持久化检索 mediaId 无效。")
     query = document.get("query")
     if type(query) is not str:
         raise _fail("retrieval.contract", "持久化检索 query 无效。")
@@ -706,6 +722,8 @@ def assert_persisted_retrieval_contract(document: dict[str, object]) -> None:
             raise _fail("retrieval.contract", "持久化检索候选 evidenceIds 无效。")
         if tuple(hit_evidence or ()) != tuple(cand_evidence):
             raise _fail("retrieval.contract", "持久化检索命中 evidence 不一致。")
+        if candidate.get("mediaId") != media_id:
+            raise _fail("retrieval.contract", "持久化检索候选 mediaId 与信封不一致。")
 
 
 def assert_project_search_document_contract(document: dict[str, object]) -> None:

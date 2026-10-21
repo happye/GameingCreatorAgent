@@ -1,5 +1,7 @@
 # Phase 0 开发任务与依赖
 
+**2026-10-22 检索离线扩展（信封／单任务投影 media／why／timecode 加深，已推送 PLACEHOLDER）：** media 归属、why inert、timecode；见 sprint-retrieval-envelope-media-why-timecode.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
+
 **2026-10-22 检索离线扩展（UI 观察跨语言 + 交战别名，已推送 3058c8a）：** countdown／timer／score／beam；交战；见 sprint-retrieval-ui-countdown-score-beam-jiaozhan.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线扩展（cast／skill 别名 + explode 跨语言，已推送 5cbfb4f）：** cast＝释放／技能；tag-only；explode→爆炸；见 sprint-retrieval-cast-skill-explode-aliases.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。

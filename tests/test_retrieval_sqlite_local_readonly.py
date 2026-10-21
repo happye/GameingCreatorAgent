@@ -140,3 +140,50 @@ def test_assert_persisted_retrieval_contract_rejects_evidence_and_range_drift() 
 
     asyncio.run(run())
 
+
+def test_assert_persisted_retrieval_contract_rejects_media_why_timecode_drift() -> None:
+    db = _require_sqlite()
+    ids = _retrieval_ids(db)
+    if not ids:
+        pytest.skip("local retrieval_runs empty")
+
+    async def run() -> None:
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        document = None
+        for retrieval_id in ids:
+            loaded = await store.load_retrieval(retrieval_id)
+            if loaded["result"].get("candidates"):
+                document = loaded
+                break
+        assert document is not None
+
+        media_drift = json.loads(json.dumps(document))
+        media_drift["result"]["candidates"][0]["mediaId"] = "not-the-envelope-media"
+        with pytest.raises(AppError) as media:
+            assert_persisted_retrieval_contract(media_drift)
+        assert media.value.code == "retrieval.contract"
+
+        why_missing = json.loads(json.dumps(document))
+        why_missing["result"]["candidates"][0]["why"] = "cosine=0.9"
+        with pytest.raises(AppError) as why:
+            assert_persisted_retrieval_contract(why_missing)
+        assert why.value.code == "retrieval.contract"
+
+        tc_missing = json.loads(json.dumps(document))
+        tc_missing["result"]["candidates"][0]["startTimecode"] = ""
+        with pytest.raises(AppError) as tc:
+            assert_persisted_retrieval_contract(tc_missing)
+        assert tc.value.code == "retrieval.contract"
+
+        prefix_drift = json.loads(json.dumps(document))
+        run_id = str(document["runId"])
+        media_id = str(document["mediaId"])
+        # Keep run ownership prefix but swap media segment.
+        prefix_drift["result"]["candidates"][0]["eventId"] = f"{run_id}:other-media:event:deadbeef"
+        prefix_drift["hits"][0]["event_id"] = prefix_drift["result"]["candidates"][0]["eventId"]
+        with pytest.raises(AppError) as owned:
+            assert_persisted_retrieval_contract(prefix_drift)
+        assert owned.value.code == "retrieval.contract"
+        assert media_id  # envelope media retained for clarity
+
+    asyncio.run(run())

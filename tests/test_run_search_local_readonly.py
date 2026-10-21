@@ -90,3 +90,36 @@ def test_assert_run_search_document_contract_rejects_foreign_event_and_acceptanc
     # Base contract still composes.
     assert_search_document_contract(document)
     assert RETRIEVAL_VERSION.startswith(RETRIEVAL_VERSION_PREFIX)
+
+
+def test_assert_run_search_document_contract_rejects_media_why_timecode() -> None:
+    files = _require_search_files()
+    document = None
+    run_id = None
+    for path in files:
+        loaded = json.loads(path.read_text(encoding="utf-8-sig"))
+        if loaded.get("candidates"):
+            document = loaded
+            run_id = path.parts[-3]
+            break
+    assert document is not None and run_id is not None
+    assert_run_search_document_contract(document, expected_run_id=run_id)
+
+    bad_why = json.loads(json.dumps(document))
+    bad_why["candidates"][0]["why"] = "cosine only"
+    with pytest.raises(AppError) as why:
+        assert_run_search_document_contract(bad_why, expected_run_id=run_id)
+    assert why.value.code == "retrieval.contract"
+
+    bad_tc = json.loads(json.dumps(document))
+    bad_tc["candidates"][0]["endTimecode"] = ""
+    with pytest.raises(AppError) as tc:
+        assert_run_search_document_contract(bad_tc, expected_run_id=run_id)
+    assert tc.value.code == "retrieval.contract"
+
+    media = str(document["candidates"][0]["mediaId"])
+    bad_prefix = json.loads(json.dumps(document))
+    bad_prefix["candidates"][0]["eventId"] = f"{run_id}:not-{media}:event:x"
+    with pytest.raises(AppError) as owned:
+        assert_run_search_document_contract(bad_prefix, expected_run_id=run_id)
+    assert owned.value.code == "retrieval.contract"
