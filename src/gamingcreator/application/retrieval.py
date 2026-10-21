@@ -552,6 +552,10 @@ def assert_project_search_result_contract(result: ProjectSearchResult) -> None:
         raise _fail("retrieval.contract", "项目检索版本与合同不一致。")
     if not result.scope_id.startswith("project-"):
         raise _fail("retrieval.contract", "项目检索 scope 标识无效。")
+    if result.mode not in RETRIEVAL_MODES:
+        raise _fail("retrieval.contract", "项目检索 mode 无效。")
+    if type(result.query) is not str:
+        raise _fail("retrieval.contract", "项目检索 query 无效。")
     if result.abstention_reason is not None and result.abstention_reason not in ABSTENTION_REASONS:
         raise _fail("retrieval.contract", "未知的项目检索弃权原因。")
     if result.abstention_reason is not None and result.candidates:
@@ -559,11 +563,19 @@ def assert_project_search_result_contract(result: ProjectSearchResult) -> None:
     source_ids = tuple(run.run_id for run in result.sources)
     if len(source_ids) != len(set(source_ids)):
         raise _fail("retrieval.contract", "项目检索源运行不能重复。")
+    media_ids = tuple(run.asset.media_id for run in result.sources)
+    if len(media_ids) != len(set(media_ids)):
+        raise _fail("retrieval.contract", "项目检索源媒体不能重复。")
+    source_shas = tuple(run.asset.sha256 for run in result.sources)
+    if len(source_shas) != len(set(source_shas)):
+        raise _fail("retrieval.contract", "项目检索源指纹不能重复。")
+    sources_by_run = {run.run_id: run for run in result.sources}
     source_set = set(source_ids)
     seen_clips: set[str] = set()
     for row in result.candidates:
         if row.run_id not in source_set:
             raise _fail("retrieval.contract", "候选所属运行不在项目源列表中。")
+        source = sources_by_run[row.run_id]
         item = row.clip
         if item.candidate_id in seen_clips:
             raise _fail("retrieval.contract", "项目检索候选标识重复。")
@@ -574,6 +586,18 @@ def assert_project_search_result_contract(result: ProjectSearchResult) -> None:
             raise _fail("retrieval.contract", "项目候选缺少非概率声明。")
         if item.lexical_evidence is not None and item.lexical_evidence not in LEXICAL_EVIDENCE_CHANNELS:
             raise _fail("retrieval.contract", "未知的项目 lexicalEvidence 通道。")
+        if type(item.media_id) is not str or not item.media_id:
+            raise _fail("retrieval.contract", "项目候选 mediaId 无效。")
+        if item.media_id != source.asset.media_id:
+            raise _fail("retrieval.contract", "项目候选 mediaId 与源运行不一致。")
+        event_id = item.event_id
+        # Transcript-only hits omit event_id (None). Empty string / wrong type still refuse.
+        if event_id is not None and (type(event_id) is not str or not event_id):
+            raise _fail("retrieval.contract", "项目候选 eventId 无效。")
+        if type(event_id) is str and ":" in event_id and not event_id.startswith(f"{row.run_id}:"):
+            raise _fail("retrieval.contract", "项目候选 eventId 不属于源运行。")
+        if not (item.source_range.start_us < item.source_range.end_us):
+            raise _fail("retrieval.contract", "项目候选时间范围无效。")
 
 
 

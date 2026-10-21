@@ -529,3 +529,87 @@ def test_assert_project_search_result_contract_rejects_foreign_owner_and_probabi
         assert versioned.value.code == "retrieval.contract"
 
     asyncio.run(run())
+
+
+def test_assert_project_search_result_contract_rejects_media_event_mode_and_duplicate_source():
+    """Deeper gates mirroring project-search JSON: mode, media align, owned eventId, unique media."""
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import assert_project_search_result_contract
+    from gamingcreator.domain.errors import AppError
+
+    first = recording("alpha", facts="角色向左移动。")
+    second = recording("beta", facts="角色向右移动。")
+
+    async def run() -> None:
+        move = await search_timelines((first, second), "移动", mode="lexical", top_k=5)
+        assert move.candidates
+        assert_project_search_result_contract(move)
+
+        bad_mode = replace(move, mode="not-a-mode")  # type: ignore[arg-type]
+        with pytest.raises(AppError) as mode_err:
+            assert_project_search_result_contract(bad_mode)
+        assert mode_err.value.code == "retrieval.contract"
+
+        drifted = replace(
+            move,
+            candidates=(
+                replace(
+                    move.candidates[0],
+                    clip=replace(move.candidates[0].clip, media_id="not-the-source-media"),
+                ),
+            ),
+        )
+        with pytest.raises(AppError) as media_err:
+            assert_project_search_result_contract(drifted)
+        assert media_err.value.code == "retrieval.contract"
+
+        foreign_event = replace(
+            move,
+            candidates=(
+                replace(
+                    move.candidates[0],
+                    clip=replace(
+                        move.candidates[0].clip,
+                        event_id=f"foreign-run:{move.candidates[0].clip.media_id}:event:x",
+                    ),
+                ),
+            ),
+        )
+        with pytest.raises(AppError) as event_err:
+            assert_project_search_result_contract(foreign_event)
+        assert event_err.value.code == "retrieval.contract"
+
+        # Transcript-style None remains legal.
+        none_event = replace(
+            move,
+            candidates=(
+                replace(
+                    move.candidates[0],
+                    clip=replace(move.candidates[0].clip, event_id=None),
+                ),
+                *move.candidates[1:],
+            ),
+        )
+        assert_project_search_result_contract(none_event)
+
+        empty_event = replace(
+            move,
+            candidates=(
+                replace(
+                    move.candidates[0],
+                    clip=replace(move.candidates[0].clip, event_id=""),
+                ),
+            ),
+        )
+        with pytest.raises(AppError) as empty_err:
+            assert_project_search_result_contract(empty_event)
+        assert empty_err.value.code == "retrieval.contract"
+
+        # Duplicate source media fingerprints must refuse (same asset twice).
+        dup_media = replace(move, sources=(first.run, replace(second.run, asset=first.run.asset)))
+        with pytest.raises(AppError) as dup_err:
+            assert_project_search_result_contract(dup_media)
+        assert dup_err.value.code == "retrieval.contract"
+
+    asyncio.run(run())
