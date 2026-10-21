@@ -1,6 +1,6 @@
 # Sprint：共享离线 WaitingTransport／IdleRecorder
 
-**状态（2026-10-22）：已交付（待推送）。** `WaitingTransport` 并入 `tests/fake_vision_transport.py`；`IdleRecorder` 抽到 `tests/fake_invocation_recorder.py`；`test_deepseek_vision`／`test_analyze` 改接线；新增合同测试。0 付费；不代选 A／B／D；不声称三缺口已清；不标 F006 true；不宣称人评／验收通过。
+**状态（2026-10-22）：已交付并推送 f1fe0c8。** `WaitingTransport` 并入 `tests/fake_vision_transport.py`；`IdleRecorder` 抽到 `tests/fake_invocation_recorder.py`；`test_deepseek_vision`／`test_analyze` 改接线；新增合同测试。0 付费；不代选 A／B／D；不声称三缺口已清；不标 F006 true；不宣称人评／验收通过。
 
 ## Assignment
 
@@ -18,4 +18,4 @@
 - [x] WaitingTransport／IdleRecorder 共享且原用例改接线
 - [x] 合同测试 + analyze／deepseek 相关套件绿
 - [x] 0 DeepSeek／launcher；F006/F009/F010 仍 false
-- [ ] 已推送 `origin/codex/visual-details`（推送后勾）
+- [x] 已推送 `origin/codex/visual-details`（f1fe0c8）

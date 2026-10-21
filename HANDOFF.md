@@ -1,6 +1,6 @@
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
-**当前锚点（2026-10-22，共享离线 WaitingTransport／IdleRecorder）：** 取消等待传输与预算闲置记录器抽到共享测试双件；原 deepseek／analyze 改接线。sprint：`docs/exec-plans/sprint-shared-waiting-idle-doubles.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下工作台 readiness 为历史。
+**当前锚点（2026-10-22，共享离线 WaitingTransport／IdleRecorder，已推送 f1fe0c8）：** 取消等待传输与预算闲置记录器抽到共享测试双件；原 deepseek／analyze 改接线。sprint：`docs/exec-plans/sprint-shared-waiting-idle-doubles.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下工作台 readiness 为历史。
 
 
 **当前锚点（2026-10-22，工作台只读验收就绪，已推送 cb35e90）：** 「验收就绪 ↗」+ `/api/acceptance-readiness`；拒绝展示通过声明；任务清单 schema 对齐 material-tasks-v2。sprint：`docs/exec-plans/sprint-workbench-acceptance-readiness.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下 CLI readiness 为历史。
