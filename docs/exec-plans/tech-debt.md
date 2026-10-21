@@ -1,3 +1,5 @@
+**2026-10-22 检索离线进展（JSON 投影 rank／media／时间窗加深，已推送 e0e54d7）：** 共享 search-document：连续 rank／media／scoreKind／时间窗；见 sprint-retrieval-search-document-rank-media-span.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+
 **2026-10-22 检索离线进展（持久化信封 mode／rank／elapsed／时间窗加深，已推送 8396c5a）：** mode／连续 rank／elapsedMs／start_us<end_us；见 sprint-retrieval-persisted-mode-rank-elapsed.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 TD009 离线进展（match-report matches／版本／证据归属加深，已推送 3ee0c89）：** assert／gaps 加深 matches／versions／evidence；见 sprint-td009-match-report-matches-versions.md。复合人评／静态索引仍 open；不宣称 TD009／F010 关单。

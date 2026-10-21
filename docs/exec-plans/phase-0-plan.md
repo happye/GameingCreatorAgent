@@ -1,3 +1,5 @@
+**2026-10-22 检索离线扩展（JSON 投影 rank／media／时间窗加深，已推送 e0e54d7）：** assert_search_document_contract；见 sprint-retrieval-search-document-rank-media-span.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
+
 **2026-10-22 检索离线扩展（持久化信封 mode／rank／elapsed／时间窗加深，已推送 8396c5a）：** assert_persisted_retrieval_contract；见 sprint-retrieval-persisted-mode-rank-elapsed.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
 
 **2026-10-22 TD009 离线扩展（match-report matches／版本／证据归属加深，已推送 3ee0c89）：** matches 行／evidence 归属／result 与 constraint 版本；见 sprint-td009-match-report-matches-versions.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD009 关单。
