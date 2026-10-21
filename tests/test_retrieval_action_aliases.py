@@ -709,3 +709,66 @@ def test_duel_query_with_only_tag_noise_abstains():
     )
     assert result.candidates == ()
     assert result.abstention_reason == "no_positive_action_evidence"
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize(
+    "query,positive,denial",
+    [
+        ("fighter", "角色与敌人战斗。", "没有战斗。"),
+        ("fighters", "俯视视角对战场景，多名角色交锋。", "没有对战。"),
+        ("duel", "俯视视角对战场景，多名角色交锋。", "没有对战。"),
+        ("brawl", "角色与敌人打架。", "没有打架。"),
+        ("dueling", "画面中央发生团战，多名角色聚集。", "没有团战。"),
+        ("brawling", "角色与敌人打架。", "未见打架。"),
+    ],
+)
+def test_fighter_duel_brawl_english_aliases_keep_chinese_evidence(mode, query, positive, denial):
+    """fighter／duel／brawl are fight actions; Chinese body evidence still retrieves."""
+    data = timeline(positive, denial)
+    result = search(data, query, mode)
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    assert result.candidates[0].observable_facts == (positive,)
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize("query", ["fighter", "fighters", "duel", "brawl", "dueling", "brawling"])
+def test_fighter_duel_brawl_tag_only_mechanic_noise_excluded(mode, query):
+    """English fight synonyms must apply the same tag-only chrome filter as fight."""
+    import asyncio
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import search_timeline
+    from gamingcreator.application.storage import StoredTimeline
+    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
+
+    base = _base_timeline(
+        "红色爆炸特效持续，出现数字820",
+        "画面切换为战斗界面，多名角色在场景中交战。",
+        "角色跳跃并落地。",
+    )
+    events = list(base.events)
+    events[0] = replace(events[0], mechanic_tags=("战斗", "伤害"))
+    data = StoredTimeline(
+        base.run,
+        base.checkpoints,
+        base.evidence,
+        base.transcripts,
+        tuple(events),
+        base.invocations,
+    )
+    result = asyncio.run(
+        search_timeline(data, query, mode=mode, embedding_provider=EqualSimilarity(), top_k=10)
+    )
+    hit_ids = [item.event_id for item in result.candidates]
+    assert "event-0" not in hit_ids, hit_ids
+    assert "event-1" in hit_ids, hit_ids
+
+
+@pytest.mark.parametrize(
+    "query",
+    ["firefighter", "duelist", "brawlerx", "fighters2", "dueling2"],
+)
+def test_fighter_duel_brawl_non_action_words_do_not_match(query):
+    data = timeline("角色与敌人战斗。", "俯视视角对战场景。")
+    assert search(data, query, "lexical").candidates == ()

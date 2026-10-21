@@ -82,6 +82,12 @@ _CROSS_LINGUAL_TERMS = (
     ("fights", "战斗"),
     ("fight", "战斗"),
     ("combat", "战斗"),
+    ("dueling", "对战"),
+    ("duels", "对战"),
+    ("duel", "对战"),
+    ("brawling", "打架"),
+    ("brawls", "打架"),
+    ("brawl", "打架"),
 )
 # A small explicit-language guard, not a language model. Apply this only to
 # positive action queries; passage identities follow the observation projection.
@@ -98,7 +104,15 @@ _ACTION_TERMS = {
         "fight",
         "fights",
         "fighting",
+        "fighter",
+        "fighters",
         "combat",
+        "duel",
+        "duels",
+        "dueling",
+        "brawl",
+        "brawls",
+        "brawling",
     ),
     "interact": (
         "交互",

@@ -1,5 +1,7 @@
 # Phase 0 开发任务与依赖
 
+**2026-10-22 检索离线扩展（fight 英文别名 fighter／duel／brawl，已推送 PLACEHOLDER）：** 堵 cross-lingual-only 漏噪声；见 sprint-retrieval-fight-fighter-duel-brawl-en.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
+
 **2026-10-22 检索离线扩展（fight 别名打架／对战／团战，已推送 1e87a86）：** _ACTION_TERMS；见 sprint-retrieval-fight-duel-brawl-aliases.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
 
 > **2026-10-22 离线补强：** 项目联合检索落盘只读对照（已推送 `a62690e`）；不清除三缺口；不代选 A／B／D；不标 F006 true。
