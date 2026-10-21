@@ -1,6 +1,6 @@
 # Sprint：TD009 match-report↔sidecar settings／cost／metadata 时间加深
 
-**状态（2026-10-22）：已推送 origin/main FEATURE_SHA（docs 记录提交另记）。** 加深 `assert_match_report_sidecar_binding_contract`：request／canonical schemaVersion；promptHash／basePromptHash／basePromptVersion；canonical `settings`（version／imageDetail／五项正整数）；result `notes` 全字符串；match `conflicts`／`missing` 若存在须为列表；result schemaVersion／costCny；metadata attempt≥1、elapsed_ms≥0、schema_version＝canonical。`match_report_sidecar_binding_gaps` 映射同步。pytest + demo-phase0 legacy 只读。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD009／F010 关单**；不改写旧 artifacts。
+**状态（2026-10-22）：已推送 origin/main fda69be（docs 记录提交另记）。** 加深 `assert_match_report_sidecar_binding_contract`：request／canonical schemaVersion；promptHash／basePromptHash／basePromptVersion；canonical `settings`（version／imageDetail／五项正整数）；result `notes` 全字符串；match `conflicts`／`missing` 若存在须为列表；result schemaVersion／costCny；metadata attempt≥1、elapsed_ms≥0、schema_version＝canonical。`match_report_sidecar_binding_gaps` 映射同步。pytest + demo-phase0 legacy 只读。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD009／F010 关单**；不改写旧 artifacts。
 
 ## Assignment
 
