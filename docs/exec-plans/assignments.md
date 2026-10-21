@@ -1,3 +1,5 @@
+**2026-10-22 检索（search／project embedding_metadata，d3a6526）：** sprint-retrieval-search-result-embedding-metadata.md；不关单。
+
 **2026-10-22 检索（俯视／按钮／地图／沙地／水域／失真／扭曲／石柱，347ea01）：** sprint-retrieval-scene-overhead-button-map-sand-water-glitch.md；不关单。
 
 **2026-10-22 检索（收集／骑乘／过场／滚动／冲击波，ebb92e7）：** sprint-retrieval-scene-collect-mount-cutscene-scroll-shockwave.md；不关单。

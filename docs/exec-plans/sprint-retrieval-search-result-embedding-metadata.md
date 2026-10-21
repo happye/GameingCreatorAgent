@@ -1,6 +1,6 @@
 # Sprint：内存检索结果 embedding_metadata 按 mode 加深
 
-**状态（2026-10-22）：已推送 origin/main FEATURE_SHA（docs 记录提交另记）。** 新增 `_assert_search_embedding_metadata`：lexical 不得带 `embedding_metadata`；hybrid／semantic **有候选时**必须带；空弃权可省略。有 metadata 时校验 `provider`／`requested_model`／`schema_version`／`attempt≥1`；`actual_model` 若非 null 须＝requested。挂入 `assert_search_result_contract` 与 `assert_project_search_result_contract`；并校验 `min_similarity`／`min_semantic_margin` 数值。验证＝**pytest**（含 fixture hybrid／lexical）。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD004／TD010 关单**；`RETRIEVAL_VERSION` 仍 `bm25-e5-rrf-v7`；攻击 tag-only 仍保留。场景别名本轮不扩（收益递减，轮换合同）。
+**状态（2026-10-22）：已推送 origin/main d3a6526（docs 记录提交另记）。** 新增 `_assert_search_embedding_metadata`：lexical 不得带 `embedding_metadata`；hybrid／semantic **有候选时**必须带；空弃权可省略。有 metadata 时校验 `provider`／`requested_model`／`schema_version`／`attempt≥1`；`actual_model` 若非 null 须＝requested。挂入 `assert_search_result_contract` 与 `assert_project_search_result_contract`；并校验 `min_similarity`／`min_semantic_margin` 数值。验证＝**pytest**（含 fixture hybrid／lexical）。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD004／TD010 关单**；`RETRIEVAL_VERSION` 仍 `bm25-e5-rrf-v7`；攻击 tag-only 仍保留。场景别名本轮不扩（收益递减，轮换合同）。
 
 ## Assignment
 

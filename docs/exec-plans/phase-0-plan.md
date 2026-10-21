@@ -1,3 +1,5 @@
+**2026-10-22 检索离线扩展（内存结果 embedding_metadata 按 mode 加深，已推送 d3a6526）：** 见 sprint-retrieval-search-result-embedding-metadata.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
+
 **2026-10-22 检索离线扩展（场景跨语言 俯视／按钮／地图／沙地／水域／失真／扭曲／石柱，已推送 347ea01）：** demo-phase0 真实俯视／按钮／地图／沙地／水域／失真／扭曲／石柱；见 sprint-retrieval-scene-overhead-button-map-sand-water-glitch.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线扩展（场景／玩法跨语言 收集／骑乘／过场／滚动／冲击波，已推送 ebb92e7）：** demo-phase0 真实收集／骑乘／过场／滚动／冲击波；见 sprint-retrieval-scene-collect-mount-cutscene-scroll-shockwave.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
