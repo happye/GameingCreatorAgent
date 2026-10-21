@@ -1,6 +1,6 @@
 # Technical debt
 
-**2026-10-22 检索离线进展（项目联合检索打分 inert 合同，已推送 `PLACEHOLDER`）：** `assert_project_search_result_contract`；见 sprint-retrieval-project-ranking-inert-contract.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+**2026-10-22 检索离线进展（项目联合检索打分 inert 合同，已推送 `549adfc`）：** `assert_project_search_result_contract`；见 sprint-retrieval-project-ranking-inert-contract.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 TD009 离线进展（本机 match-report-v1 只读对照，已推送 `4aa5571`）：** `match_report_contract_gaps`；见 sprint-td009-match-report-local-readonly.md。复合人评／静态索引仍 open；不宣称 TD009／F010 关单。
 
