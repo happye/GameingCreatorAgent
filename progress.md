@@ -1,6 +1,6 @@
 # Progress Log
 
-**2026-10-22 acceptance-readiness inertContract 跨面落地：** health 能力位＋JS 校验＋feature_list 闸门 pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-acceptance-readiness-inert-surface.md。
+**2026-10-22 acceptance-readiness inertContract 跨面落地（已推送 ce934e0）：** health 能力位＋JS 校验＋feature_list 闸门 pytest 绿；已推 origin/main。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-acceptance-readiness-inert-surface.md。
 
 **2026-10-22 acceptance-readiness 嵌入 inertContract（已推送 af79104）：** 机读禁通过合同写入只读报告；pytest 绿；已推 origin/main。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-acceptance-readiness-inert-contract.md。
 

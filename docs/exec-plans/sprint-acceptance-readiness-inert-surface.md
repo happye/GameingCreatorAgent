@@ -1,6 +1,6 @@
 # Sprint：acceptance-readiness inertContract 跨面落地
 
-**状态（2026-10-22）：已交付（待推送）。** health 能力位增加 cceptance-readiness-inert-v1；工作台／验收流程 JS 校验 payload.inertContract；SURFACE_JS_INERT_GUARDS 含 inert 字符串；新增 feature_list F006/F009/F010 仍 false 与 readiness claims 对齐测试。0 付费；不代选 A／B／D；不声称三缺口已清；不标 F006 true；不宣称人评／验收通过。
+**状态（2026-10-22）：已交付并推送 ce934e0。** health 能力位增加 cceptance-readiness-inert-v1；工作台／验收流程 JS 校验 payload.inertContract；SURFACE_JS_INERT_GUARDS 含 inert 字符串；新增 feature_list F006/F009/F010 仍 false 与 readiness claims 对齐测试。0 付费；不代选 A／B／D；不声称三缺口已清；不标 F006 true；不宣称人评／验收通过。
 
 ## Assignment
 
@@ -20,4 +20,4 @@
 - [x] SURFACE_JS_INERT_GUARDS 与跨面／HTTP／静态测试更新
 - [x] feature_list 闸门与 readiness claims 对齐 pytest
 - [x] 0 DeepSeek／launcher；F006/F009/F010 仍 false
-- [ ] 已推送 origin/main（推送后勾）
+- [x] 已推送 origin/main（ce934e0）
