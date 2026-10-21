@@ -6,6 +6,7 @@ import os
 import re
 from pathlib import Path
 
+from gamingcreator.application.retrieval import assert_project_search_document_contract
 from gamingcreator.domain.errors import AppError, ExitCode
 
 MAX_RECORD_BYTES = 8 * 1024 * 1024
@@ -93,6 +94,7 @@ def read_project_search(project: Path, search_id: str) -> dict[str, object]:
             }
         ):
             raise ValueError("Receipt does not match the saved record.")
+        assert_project_search_document_contract(raw)
         return raw
     except (OSError, ValueError, UnicodeError):
         raise AppError(

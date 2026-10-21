@@ -506,6 +506,45 @@ def assert_search_document_contract(document: dict[str, object]) -> None:
             raise _fail("retrieval.contract", "检索投影 lexicalEvidence 未知。")
 
 
+
+def assert_project_search_document_contract(document: dict[str, object]) -> None:
+    """Refuse joint-search JSON that drops source ownership or claims paid/acceptance work."""
+    assert_search_document_contract(document)
+    if document.get("schemaVersion") != "project-search-v1":
+        raise _fail("retrieval.contract", "项目检索投影 schema 与合同不一致。")
+    search_id = document.get("searchId")
+    if type(search_id) is not str or not re.fullmatch(r"[a-f0-9]{32}", search_id):
+        raise _fail("retrieval.contract", "项目检索 searchId 无效。")
+    scope_id = document.get("scopeId")
+    if type(scope_id) is not str or not scope_id.startswith("project-"):
+        raise _fail("retrieval.contract", "项目检索 scopeId 无效。")
+    version = document.get("retrievalVersion")
+    if type(version) is not str or not (
+        version == PROJECT_RETRIEVAL_VERSION
+        or version.startswith(PROJECT_RETRIEVAL_VERSION + "-saved-details-")
+    ):
+        raise _fail("retrieval.contract", "项目检索版本与合同不一致。")
+    if document.get("modelAnalysisCalls") != 0 or document.get("newReservations") != 0:
+        raise _fail("retrieval.contract", "离线项目检索投影不能声称新的模型分析或预留。")
+    sources = document.get("sources")
+    if type(sources) is not list or not sources:
+        raise _fail("retrieval.contract", "项目检索投影必须包含源运行列表。")
+    source_ids: set[str] = set()
+    for source in sources:
+        if not isinstance(source, dict):
+            raise _fail("retrieval.contract", "项目检索源运行无效。")
+        run_id = source.get("runId")
+        if type(run_id) is not str or not run_id or run_id in source_ids:
+            raise _fail("retrieval.contract", "项目检索源运行标识无效或重复。")
+        source_ids.add(run_id)
+    for row in document.get("candidates") or []:
+        if not isinstance(row, dict):
+            raise _fail("retrieval.contract", "项目检索候选无效。")
+        run_id = row.get("runId")
+        if run_id not in source_ids:
+            raise _fail("retrieval.contract", "项目检索候选所属运行不在源列表中。")
+
+
 def refuse_unsearchable_run(run: StoredRun) -> None:
     """Refuse runs that must not back NL search or formal acceptance queries."""
     if run.status == RunStatus.FAILED and run.error_code == "analysis.coverage_gap":

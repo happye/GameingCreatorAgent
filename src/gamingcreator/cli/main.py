@@ -70,6 +70,7 @@ from gamingcreator.application.retrieval import (
     RETRIEVAL_VERSION,
     RetrievalMode,
     SearchResult,
+    assert_project_search_document_contract,
     assert_search_document_contract,
     load_searchable_timeline,
     search_timeline,
@@ -512,7 +513,7 @@ async def execute_project_search(
                 row["detailSearchEvidence"] = corpus.evidence.get(cast(str, row["candidateId"]))
                 row["semanticDetailFacetId"] = semantic_facets.get(cast(str, row["candidateId"]))
                 row["lexicalDetailFacetId"] = lexical_facets.get(cast(str, row["candidateId"]))
-        assert_search_document_contract(document)
+        assert_project_search_document_contract(document)
         write_project_search(project, document)
         return document
     finally:
