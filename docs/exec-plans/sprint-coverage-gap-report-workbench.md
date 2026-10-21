@@ -1,6 +1,6 @@
 # Sprint：工作台只读覆盖缺口报告
 
-**状态（2026-10-22）：已交付（待推送）。** 工作台新增「覆盖缺口 ↗」对话框与 `/api/coverage-gap-report`；health 能力位 `coverage-gap-report-v1`；前端拒绝 cleared／optionChosen／F006 通过声明。0 付费；不代选 A／B／D；不声称三缺口已清；不标 F006 true；不宣称人评／验收通过。
+**状态（2026-10-22）：已交付并推送 5925ae1。** 工作台新增「覆盖缺口 ↗」对话框与 `/api/coverage-gap-report`；health 能力位 `coverage-gap-report-v1`；前端拒绝 cleared／optionChosen／F006 通过声明。0 付费；不代选 A／B／D；不声称三缺口已清；不标 F006 true；不宣称人评／验收通过。
 
 ## Assignment
 
@@ -19,4 +19,4 @@
 - [x] 工作台按钮／对话框／inert 渲染
 - [x] HTTP／静态 pytest
 - [x] 0 DeepSeek／launcher；F006/F009/F010 仍 false
-- [ ] 已推送 `origin/main`（推送后勾）
+- [x] 已推送 `origin/main`（5925ae1）
