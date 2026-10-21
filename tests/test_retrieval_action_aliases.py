@@ -245,3 +245,136 @@ def test_attack_tag_only_recall_still_kept(mode):
         search_timeline(data, "攻击", mode=mode, embedding_provider=EqualSimilarity(), top_k=10)
     )
     assert any(item.event_id == "event-0" for item in result.candidates)
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize("query", ["move", "moving", "movement", "移动"])
+def test_move_tag_only_mechanic_noise_excluded_keeps_fact_evidence(mode, query):
+    """Move queries must not rank clips whose only 移动 evidence is a mechanicTag."""
+    import asyncio
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import search_timeline
+    from gamingcreator.application.storage import StoredTimeline
+    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
+
+    base = _base_timeline(
+        "画面中央出现绿色光效和伤害数字",
+        "角色向左移动并穿过桥面。",
+        "角色跳跃并落地。",
+    )
+    events = list(base.events)
+    events[0] = replace(events[0], mechanic_tags=("角色移动", "伤害"))
+    data = StoredTimeline(
+        base.run,
+        base.checkpoints,
+        base.evidence,
+        base.transcripts,
+        tuple(events),
+        base.invocations,
+    )
+    result = asyncio.run(
+        search_timeline(data, query, mode=mode, embedding_provider=EqualSimilarity(), top_k=10)
+    )
+    hit_ids = [item.event_id for item in result.candidates]
+    assert "event-0" not in hit_ids, hit_ids
+    assert "event-1" in hit_ids, hit_ids
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize("query", ["interact", "interaction", "交互", "互动"])
+def test_interact_tag_only_mechanic_noise_excluded_keeps_fact_evidence(mode, query):
+    """Interact queries must not rank clips whose only 交互 evidence is a mechanicTag."""
+    import asyncio
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import search_timeline
+    from gamingcreator.application.storage import StoredTimeline
+    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
+
+    base = _base_timeline(
+        "画面右下角弹出商店图标",
+        "角色与按钮交互并打开菜单。",
+        "角色向左移动。",
+    )
+    events = list(base.events)
+    events[0] = replace(events[0], mechanic_tags=("交互", "UI"))
+    data = StoredTimeline(
+        base.run,
+        base.checkpoints,
+        base.evidence,
+        base.transcripts,
+        tuple(events),
+        base.invocations,
+    )
+    result = asyncio.run(
+        search_timeline(data, query, mode=mode, embedding_provider=EqualSimilarity(), top_k=10)
+    )
+    hit_ids = [item.event_id for item in result.candidates]
+    assert "event-0" not in hit_ids, hit_ids
+    assert "event-1" in hit_ids, hit_ids
+
+
+def test_candidate_sources_are_score_free_time_ordered_and_align_with_search():
+    """Inventory identities match search hits; no ranking fields; facts exclude tags."""
+    import asyncio
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import candidate_sources, search_timeline
+    from gamingcreator.application.storage import StoredTimeline
+    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
+
+    base = _base_timeline(
+        "角色向左移动。",
+        "画面显示伤害数字",
+        "角色与按钮交互。",
+    )
+    events = list(base.events)
+    events[1] = replace(events[1], mechanic_tags=("战斗", "伤害"))
+    data = StoredTimeline(
+        base.run,
+        base.checkpoints,
+        base.evidence,
+        base.transcripts,
+        tuple(events),
+        base.invocations,
+    )
+    sources = candidate_sources(data)
+    assert [s.event_id for s in sources] == ["event-0", "event-1", "event-2"]
+    assert [s.source_range.start_us for s in sources] == sorted(s.source_range.start_us for s in sources)
+    assert not hasattr(sources[0], "score")
+    assert "战斗" not in "\n".join(sources[1].observable_facts)
+    result = asyncio.run(
+        search_timeline(data, "移动", mode="lexical", embedding_provider=EqualSimilarity(), top_k=5)
+    )
+    by_id = {s.candidate_id: s for s in sources}
+    assert result.candidates
+    for hit in result.candidates:
+        assert hit.candidate_id in by_id
+        assert by_id[hit.candidate_id].event_id == hit.event_id
+
+
+def test_candidate_sources_refuse_coverage_gap_run():
+    """coverage-gap timelines cannot project a candidate inventory."""
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import candidate_sources
+    from gamingcreator.application.storage import RunStatus
+    from gamingcreator.domain.errors import AppError
+    from test_retrieval_negation import timeline as _base_timeline
+
+    data = _base_timeline("角色跳跃。")
+    failed = replace(data.run, status=RunStatus.FAILED, error_code="analysis.coverage_gap")
+    from gamingcreator.application.storage import StoredTimeline
+
+    gap = StoredTimeline(
+        failed,
+        data.checkpoints,
+        data.evidence,
+        data.transcripts,
+        data.events,
+        data.invocations,
+    )
+    with pytest.raises(AppError) as refused:
+        candidate_sources(gap)
+    assert refused.value.code == "retrieval.coverage_gap"

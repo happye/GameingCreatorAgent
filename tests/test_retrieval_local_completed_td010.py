@@ -238,3 +238,71 @@ def test_local_completed_demo_phase0_attack_tag_only_still_reachable_after_fight
         assert any(doc.event_id in hit_events for doc in tag_only_attack)
 
     asyncio.run(run())
+
+
+def test_local_completed_demo_phase0_move_hits_require_positive_text_action():
+    """demo-phase0: move/移动 lexical hits must carry move language in positive_text."""
+    _require_sqlite(DEMO_PHASE0)
+
+    async def run() -> None:
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
+        docs = {doc.event_id: doc for doc in _documents(timeline)}
+        move_terms = ("移动", "move", "moves", "moving", "movement")
+        for query in ("move", "moving", "移动"):
+            result = await search_timeline(timeline, query, mode="lexical", top_k=20)
+            assert result.candidates, f"expected move-in-facts hits for {query!r}"
+            for item in result.candidates:
+                doc = docs[item.event_id]
+                assert any(term in doc.positive_text for term in move_terms), (
+                    query,
+                    item.event_id,
+                    doc.tags,
+                    doc.positive_text[:120],
+                )
+
+    asyncio.run(run())
+
+
+def test_local_completed_demo_phase0_candidate_sources_contract():
+    """candidate_sources: score-free inventory, time-ordered, aligned with search ids."""
+    _require_sqlite(DEMO_PHASE0)
+
+    async def run() -> None:
+        from gamingcreator.application.retrieval import candidate_sources
+
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
+        docs = _documents(timeline)
+        sources = candidate_sources(timeline)
+        assert len(sources) == len(docs) >= 50
+        assert [s.source_range.start_us for s in sources] == sorted(
+            s.source_range.start_us for s in sources
+        )
+        assert not hasattr(sources[0], "score")
+        assert not hasattr(sources[0], "score_kind")
+        by_id = {s.candidate_id: s for s in sources}
+        assert len(by_id) == len(sources)
+
+        # Observable facts only: bare mechanicTags do not substitute into inventory facts.
+        for doc in docs:
+            src = next(s for s in sources if s.event_id == doc.event_id)
+            assert src.observable_facts == doc.facts
+            assert src.evidence_ids == doc.evidence_ids
+            assert src.media_id == doc.media_id
+            for tag in doc.tags:
+                if tag and tag not in "\n".join(doc.facts):
+                    assert tag not in "\n".join(src.observable_facts)
+
+        result = await search_timeline(timeline, "移动", mode="lexical", top_k=20)
+        assert result.candidates
+        for hit in result.candidates:
+            assert hit.candidate_id in by_id
+            src = by_id[hit.candidate_id]
+            assert src.event_id == hit.event_id
+            assert src.source_range == hit.source_range
+            assert src.evidence_ids == hit.evidence_ids
+            assert src.observable_facts == hit.observable_facts
+
+    asyncio.run(run())
+

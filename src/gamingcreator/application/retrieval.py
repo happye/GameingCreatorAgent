@@ -239,10 +239,11 @@ class _Document:
 
 
 
-# Liberally painted theme tags that often mark UI chrome (damage floaters) without
-# fight language in facts/transcripts. Tag-only hits for these actions are noise.
-# Attack tag-only recall stays intentional (TD010); do not add "attack" here.
-_TAG_ONLY_NOISE_ACTIONS = frozenset({"fight"})
+# Liberally painted theme tags that often mark UI chrome without action language
+# in facts/transcripts (e.g. bare 战斗 on damage floaters, bare 角色移动).
+# Tag-only hits for these actions are noise. Attack tag-only recall stays
+# intentional (TD010); do not add "attack" here.
+_TAG_ONLY_NOISE_ACTIONS = frozenset({"fight", "move", "interact"})
 
 
 def _tag_only_action_noise_documents(
@@ -250,11 +251,9 @@ def _tag_only_action_noise_documents(
 ) -> frozenset[str]:
     """Exclude clips whose only query-action evidence is a liberally painted mechanicTag.
 
-    Lexical BM25 indexes `text` (facts + tags). For fight/combat queries, bare
-    `战斗` tags on damage-number UI frames outrank real "战斗界面" facts. When the
-    query asks for a tag-only-noise action and `positive_text` carries none of that
-    action's terms, the clip is theme-tag noise — not gameplay fight evidence.
-    Attack tag-only recall remains (TD010).
+    Lexical BM25 indexes `text` (facts + tags). For fight/move/interact queries,
+    bare theme tags (战斗／角色移动／交互) without matching language in positive_text
+    are UI/theme chrome — not gameplay evidence. Attack tag-only recall remains (TD010).
     """
     folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
     if _NEGATIVE_QUERY_INTENT.search(folded_query):
@@ -489,7 +488,13 @@ def _documents(timeline: StoredTimeline) -> tuple[_Document, ...]:
 
 
 def candidate_sources(timeline: StoredTimeline) -> tuple[CandidateSource, ...]:
-    """Project original candidate identities without scores, embeddings or another search."""
+    """Project original candidate identities without scores, embeddings or another search.
+
+    Inventory is derived from the same searchable documents as `search_timeline`:
+    coverage-gap / unsearchable runs refuse here too. Facts are observable facts only
+    (mechanicTags never appear as a substitute). Ordering follows document time order.
+    Candidate ids are stable and must align with search hit identities for the same run.
+    """
     return tuple(
         CandidateSource(
             item.candidate_id,

@@ -1,7 +1,9 @@
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
-**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip 0896740（含 fight tag-only 噪声排除）），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
+**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip PLACEHOLDER（含 move／interact tag-only + candidate_sources）），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
 
+
+**当前锚点（2026-10-22，move／interact 裸标签噪声 + candidate_sources 合同，已推送 PLACEHOLDER）：** `_TAG_ONLY_NOISE_ACTIONS` 扩至 move／interact；`candidate_sources` 合同；pytest + demo-phase0 只读；sprint：`docs/exec-plans/sprint-retrieval-move-interact-candidate-sources.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**。攻击 tag-only 召回仍保留。以下战斗裸标签排除为历史。
 
 **当前锚点（2026-10-22，战斗／combat 裸标签噪声排除／检索离线质量，已推送 0896740）：** _tag_only_action_noise_documents；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-retrieval-fight-tag-only-noise.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**。攻击 tag-only 召回仍按 TD010 保留。以下 TD009 match-report inert 为历史。
 
