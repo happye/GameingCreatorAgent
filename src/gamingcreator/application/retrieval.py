@@ -415,6 +415,41 @@ def assert_search_result_contract(result: SearchResult) -> None:
             raise _fail("retrieval.contract", "未知的 lexicalEvidence 通道。")
 
 
+def assert_project_search_result_contract(result: ProjectSearchResult) -> None:
+    """Refuse joint-corpus payloads that drop source identity or look like probabilities."""
+    if result.score_is_probability is not False:
+        raise _fail("retrieval.contract", "项目检索分数不是概率，不能标记为 score_is_probability。")
+    if not (
+        result.retrieval_version == PROJECT_RETRIEVAL_VERSION
+        or result.retrieval_version.startswith(PROJECT_RETRIEVAL_VERSION + "-saved-details-")
+    ):
+        raise _fail("retrieval.contract", "项目检索版本与合同不一致。")
+    if not result.scope_id.startswith("project-"):
+        raise _fail("retrieval.contract", "项目检索 scope 标识无效。")
+    if result.abstention_reason is not None and result.abstention_reason not in ABSTENTION_REASONS:
+        raise _fail("retrieval.contract", "未知的项目检索弃权原因。")
+    if result.abstention_reason is not None and result.candidates:
+        raise _fail("retrieval.contract", "项目弃权结果不能同时带有候选。")
+    source_ids = tuple(run.run_id for run in result.sources)
+    if len(source_ids) != len(set(source_ids)):
+        raise _fail("retrieval.contract", "项目检索源运行不能重复。")
+    source_set = set(source_ids)
+    seen_clips: set[str] = set()
+    for row in result.candidates:
+        if row.run_id not in source_set:
+            raise _fail("retrieval.contract", "候选所属运行不在项目源列表中。")
+        item = row.clip
+        if item.candidate_id in seen_clips:
+            raise _fail("retrieval.contract", "项目检索候选标识重复。")
+        seen_clips.add(item.candidate_id)
+        if item.score_kind not in SCORE_KINDS:
+            raise _fail("retrieval.contract", "未知的项目检索打分种类。")
+        if "ranking signal, not probability" not in item.why:
+            raise _fail("retrieval.contract", "项目候选缺少非概率声明。")
+        if item.lexical_evidence is not None and item.lexical_evidence not in LEXICAL_EVIDENCE_CHANNELS:
+            raise _fail("retrieval.contract", "未知的项目 lexicalEvidence 通道。")
+
+
 def refuse_unsearchable_run(run: StoredRun) -> None:
     """Refuse runs that must not back NL search or formal acceptance queries."""
     if run.status == RunStatus.FAILED and run.error_code == "analysis.coverage_gap":
@@ -813,7 +848,7 @@ async def search_timelines(
         for timeline in timelines
         for document in _documents(timeline)
     }
-    return ProjectSearchResult(
+    project = ProjectSearchResult(
         scope_id,
         result.query,
         result.mode,
@@ -831,7 +866,10 @@ async def search_timelines(
         ),
         result.semantic_detail_matches,
         result.lexical_detail_matches,
+        result.score_is_probability,
     )
+    assert_project_search_result_contract(project)
+    return project
 
 
 async def _search_documents(

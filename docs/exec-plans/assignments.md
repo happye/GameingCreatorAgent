@@ -1,5 +1,7 @@
 # Active assignments
 
+**当前（2026-10-22）：root / Agent 推进项目联合检索打分 inert 合同（已推送 PLACEHOLDER）。** sprint-retrieval-project-ranking-inert-contract.md 归 root／GamingCreatorAgent。拥有 retrieval 项目合同与测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／TD004／TD010 关单。以下 TD009 只读对照为历史。
+
 **当前（2026-10-22）：root / Agent 推进 TD009 本机 match-report-v1 只读对照（已推送 4aa5571）。** sprint-td009-match-report-local-readonly.md 归 root／GamingCreatorAgent。拥有 detail_query gaps 与只读对照测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／TD009 关单；不改写旧 match JSON。以下检索打分 inert 为历史。
 
 **当前（2026-10-22）：root / Agent 推进检索打分 inert 合同（已推送 7bbf773）。** sprint-retrieval-ranking-inert-contract.md 归 root／GamingCreatorAgent。拥有 retrieval 合同／CLI 投影与测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／TD004／TD010 关单。以下 action abstention 为历史。

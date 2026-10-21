@@ -466,3 +466,66 @@ def test_saved_record_is_exclusive_and_refuses_missing_or_changed_receipt(tmp_pa
             read_project_search(project, result["searchId"])
 
     asyncio.run(scenario())
+
+
+def test_assert_project_search_result_contract_accepts_joint_hits_and_action_abstention():
+    from gamingcreator.application.retrieval import assert_project_search_result_contract
+
+    first = recording("alpha", facts="角色向左移动。")
+    second = recording("beta", facts="角色跳跃并落地。")
+
+    async def run() -> None:
+        move = await search_timelines((first, second), "移动", mode="lexical", top_k=5)
+        assert move.score_is_probability is False
+        assert move.retrieval_version == PROJECT_RETRIEVAL_VERSION
+        assert move.abstention_reason is None
+        assert move.candidates
+        assert {row.run_id for row in move.candidates} <= {first.run.run_id, second.run.run_id}
+        assert_project_search_result_contract(move)
+
+        jump = await search_timelines(
+            (recording("title-a", facts="画面显示“JUMP明星大乱斗”标题。"),),
+            "jump",
+            mode="lexical",
+            top_k=5,
+        )
+        assert jump.candidates == ()
+        assert jump.abstention_reason == "no_positive_action_evidence"
+        assert jump.score_is_probability is False
+        assert_project_search_result_contract(jump)
+
+        empty = await search_timelines((first,), "   ", mode="lexical", top_k=5)
+        assert empty.abstention_reason == "empty_query"
+        assert_project_search_result_contract(empty)
+
+    asyncio.run(run())
+
+
+def test_assert_project_search_result_contract_rejects_foreign_owner_and_probability():
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import assert_project_search_result_contract
+    from gamingcreator.domain.errors import AppError
+
+    first = recording("alpha", facts="角色向左移动。")
+
+    async def run() -> None:
+        move = await search_timelines((first,), "移动", mode="lexical", top_k=3)
+        with pytest.raises(AppError) as flagged:
+            assert_project_search_result_contract(replace(move, score_is_probability=True))
+        assert flagged.value.code == "retrieval.contract"
+
+        foreign = replace(
+            move,
+            candidates=(replace(move.candidates[0], run_id="not-a-source"),),
+        )
+        with pytest.raises(AppError) as owned:
+            assert_project_search_result_contract(foreign)
+        assert owned.value.code == "retrieval.contract"
+
+        bad_version = replace(move, retrieval_version="bm25-e5-rrf-v7")
+        with pytest.raises(AppError) as versioned:
+            assert_project_search_result_contract(bad_version)
+        assert versioned.value.code == "retrieval.contract"
+
+    asyncio.run(run())

@@ -389,3 +389,31 @@ def test_local_completed_demo_phase0_search_result_ranking_contract():
                 assert result.abstention_reason == "empty_query"
 
     asyncio.run(run())
+
+
+def test_local_completed_demo_phase0_project_search_ranking_contract():
+    """demo-phase0 joint lexical search satisfies project ranking inert contract."""
+    _require_sqlite(DEMO_PHASE0)
+
+    async def run() -> None:
+        from gamingcreator.application.retrieval import (
+            PROJECT_RETRIEVAL_VERSION,
+            assert_project_search_result_contract,
+            search_timelines,
+        )
+
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
+        move = await search_timelines((timeline,), "移动", mode="lexical", top_k=5)
+        assert move.candidates
+        assert move.retrieval_version == PROJECT_RETRIEVAL_VERSION
+        assert move.score_is_probability is False
+        assert all(row.run_id == COMPLETED_RUN_DEMO for row in move.candidates)
+        assert_project_search_result_contract(move)
+
+        jump = await search_timelines((timeline,), "jump", mode="lexical", top_k=5)
+        assert jump.candidates == ()
+        assert jump.abstention_reason == "no_positive_action_evidence"
+        assert_project_search_result_contract(jump)
+
+    asyncio.run(run())
