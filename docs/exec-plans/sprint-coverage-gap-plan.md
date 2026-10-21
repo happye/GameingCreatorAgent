@@ -83,7 +83,7 @@
 - [x] HANDOFF.md、assignments.md、progress.md 顶部反映：推送 ea8b029、本 sprint 已开、下一动作。
 - [x] human-inputs.md 顶部仅一条清晰待决（选项 A–D＋影响）。
 - [x] `feature_list.json` 未改动（F006/F009/F010 仍 false）。
-- [ ] 普通本地提交＋（若网络可用）向 `codex/visual-details` 普通推送；可选 `.cache` 发布回执。
+- [x] 普通本地提交＋（若网络可用）向 `codex/visual-details` 普通推送；可选 `.cache` 发布回执。
 - [x] 0 新付费请求；无 launcher 启动。
 
 ## Stop conditions and fee gate
