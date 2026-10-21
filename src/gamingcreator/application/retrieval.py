@@ -162,6 +162,18 @@ _CROSS_LINGUAL_TERMS = (
     # Bare "land" omitted — too many non-game senses (homeland, inland, …).
     ("castles", "城堡"),
     ("castle", "城堡"),
+    ("bleachers", "看台"),
+    ("bleacher", "看台"),
+    ("grandstands", "看台"),
+    ("grandstand", "看台"),
+    # Bare stand/stands omitted — too many non-seating senses.
+    ("flashing", "闪光"),
+    ("flashes", "闪光"),
+    ("flash", "闪光"),
+    ("trajectories", "轨迹"),
+    ("trajectory", "轨迹"),
+    ("trails", "轨迹"),
+    ("trail", "轨迹"),
 )
 # A small explicit-language guard, not a language model. Apply this only to
 # positive action queries; passage identities follow the observation projection.

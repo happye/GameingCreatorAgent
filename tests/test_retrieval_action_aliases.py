@@ -1297,3 +1297,53 @@ def test_scene_platform_smoke_landing_castle_non_words_do_not_cross_lingual_matc
         "角色在绿色阶梯上向城堡方向奔跑。",
     )
     assert search(data, query, "lexical").candidates == ()
+
+
+@pytest.mark.parametrize(
+    "query,positive",
+    [
+        ("bleacher", "背景为蓝紫色未来风格竞技场，有看台、气球和立柱。"),
+        ("bleachers", "背景为蓝紫色未来风格竞技场，有看台、气球和立柱。"),
+        ("grandstand", "背景为蓝紫色未来风格竞技场，有看台、气球和立柱。"),
+        ("grandstands", "背景为蓝紫色未来风格竞技场，有看台、气球和立柱。"),
+        ("flash", "角色周围出现紫色环形光效和白色闪光。"),
+        ("flashes", "角色周围出现紫色环形光效和白色闪光。"),
+        ("flashing", "角色周围出现紫色环形光效和白色闪光。"),
+        ("trail", "角色向城堡方向奔跑，身后有白色烟雾轨迹。"),
+        ("trails", "角色向城堡方向奔跑，身后有白色烟雾轨迹。"),
+        ("trajectory", "角色向城堡方向奔跑，身后有白色烟雾轨迹。"),
+        ("trajectories", "角色向城堡方向奔跑，身后有白色烟雾轨迹。"),
+    ],
+)
+def test_scene_bleacher_flash_trail_cross_lingual_keeps_chinese_evidence(query, positive):
+    """English scene nouns expand to 看台／闪光／轨迹 (demo-phase0 real corpus)."""
+    data = timeline(positive, "角色向左移动。")
+    result = search(data, query, "lexical")
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    assert result.candidates[0].observable_facts == (positive,)
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "bleacherx",
+        "bleachers2",
+        "grandstanding",
+        "flashback",
+        "flashlight",
+        "flashy",
+        "trailhead",
+        "trailing",
+        "trail2",
+        "stand",
+        "stands",
+        "standing",
+    ],
+)
+def test_scene_bleacher_flash_trail_non_words_do_not_cross_lingual_match(query):
+    data = timeline(
+        "背景为蓝紫色未来风格竞技场，有看台、气球和立柱。",
+        "角色周围出现紫色环形光效和白色闪光。",
+        "角色向城堡方向奔跑，身后有白色烟雾轨迹。",
+    )
+    assert search(data, query, "lexical").candidates == ()
