@@ -1,3 +1,5 @@
+**2026-10-22 检索离线扩展（move 奔跑／迈步／running 步态别名，已推送 c9773d4）：** demo-phase0 真实奔跑／迈步；见 sprint-retrieval-move-run-gait-aliases.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
+
 **2026-10-22 检索离线扩展（项目联合检索内存结果 media／event／mode 加深，已推送 7d2696d）：** assert_project_search_result_contract 与落盘合同对齐；见 sprint-retrieval-project-result-media-event-mode.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线扩展（项目联合检索 media／sha／timecode 加深，已推送 7c857c9）：** assert_project_search 加深；run-search 允许转录 eventId=None；见 sprint-retrieval-project-search-media-timecode.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
