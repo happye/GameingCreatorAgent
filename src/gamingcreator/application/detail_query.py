@@ -489,6 +489,66 @@ def assert_match_report_sidecar_binding_contract(
             token_value = usage.get(token_key)
             if token_value is not None and (type(token_value) is not int or token_value < 0):
                 raise ValueError(f"Sidecar result metadata.usage.{token_key} is invalid.")
+        payload_json = result_document.get("payloadJson")
+        if type(payload_json) is not str or not payload_json:
+            raise ValueError("Sidecar result payloadJson is invalid.")
+        try:
+            detail_payload = json.loads(payload_json)
+        except (TypeError, ValueError, RecursionError) as exc:
+            raise ValueError("Sidecar result payloadJson must be JSON object.") from exc
+        if type(detail_payload) is not dict:
+            raise ValueError("Sidecar result payloadJson must be JSON object.")
+        if detail_payload.get("runId") != run_id:
+            raise ValueError("Sidecar result payload runId does not match match report.")
+        if detail_payload.get("eventId") != event_id:
+            raise ValueError("Sidecar result payload eventId does not match match report.")
+        if detail_payload.get("candidateId") != report.get("candidateId"):
+            raise ValueError("Sidecar result payload candidateId does not match match report.")
+        if detail_payload.get("eventFingerprint") != report.get("eventFingerprint"):
+            raise ValueError("Sidecar result payload eventFingerprint does not match match report.")
+        if detail_payload.get("mediaSha256") != media_sha:
+            raise ValueError("Sidecar result payload mediaSha256 does not match request.")
+        if detail_payload.get("sourceRange") != report.get("sourceRange"):
+            raise ValueError("Sidecar result payload sourceRange does not match match report.")
+        if detail_payload.get("configurationHash") != payload.get("configurationHash"):
+            raise ValueError("Sidecar result payload configurationHash does not match request.")
+        if detail_payload.get("pipelineVersion") != payload.get("pipelineVersion"):
+            raise ValueError("Sidecar result payload pipelineVersion does not match request.")
+        if detail_payload.get("basePromptHash") != request_document.get("basePromptHash"):
+            raise ValueError("Sidecar result payload basePromptHash does not match request.")
+        if detail_payload.get("basePromptVersion") != request_document.get("basePromptVersion"):
+            raise ValueError("Sidecar result payload basePromptVersion does not match request.")
+        schema_version = detail_payload.get("schemaVersion")
+        if type(schema_version) is not str or not schema_version:
+            raise ValueError("Sidecar result payload schemaVersion is invalid.")
+        vocabulary_version = detail_payload.get("vocabularyVersion")
+        if type(vocabulary_version) is not str or not vocabulary_version:
+            raise ValueError("Sidecar result payload vocabularyVersion is invalid.")
+        media_id = detail_payload.get("mediaId")
+        if type(media_id) is not str or not media_id:
+            raise ValueError("Sidecar result payload mediaId is invalid.")
+        shots = detail_payload.get("shots")
+        if type(shots) is not list or not shots:
+            raise ValueError("Sidecar result payload shots is invalid.")
+        detail_shot_ids: set[str] = set()
+        for shot in shots:
+            if type(shot) is not dict:
+                raise ValueError("Sidecar result payload shot row is invalid.")
+            shot_id = shot.get("shotId")
+            if type(shot_id) is not str or not shot_id:
+                raise ValueError("Sidecar result payload shotId is invalid.")
+            if shot_id in detail_shot_ids:
+                raise ValueError("Sidecar result payload shotId is duplicated.")
+            detail_shot_ids.add(shot_id)
+            if not _source_range_contains(report.get("sourceRange"), shot.get("sourceRange")):
+                raise ValueError("Sidecar result payload shot sourceRange escapes report range.")
+        match_shot_ids = {
+            row.get("shotId")
+            for row in matches
+            if type(row) is dict and type(row.get("shotId")) is str and row.get("shotId")
+        }
+        if not match_shot_ids <= detail_shot_ids:
+            raise ValueError("Match report shotIds are not covered by sidecar payload shots.")
 
 
 def match_report_sidecar_binding_gaps(
@@ -583,6 +643,27 @@ def match_report_sidecar_binding_gaps(
             ("usage.input_tokens is invalid", "usage_input_tokens_invalid"),
             ("usage.output_tokens is invalid", "usage_output_tokens_invalid"),
             ("usage.cached_input_tokens is invalid", "usage_cached_input_tokens_invalid"),
+            ("payloadJson is invalid", "payload_json_invalid"),
+            ("payloadJson must be JSON object", "payload_json_invalid"),
+            ("payload runId does not match", "payload_run_id_mismatch"),
+            ("payload eventId does not match", "payload_event_id_mismatch"),
+            ("payload candidateId does not match", "payload_candidate_id_mismatch"),
+            ("payload eventFingerprint does not match", "payload_event_fingerprint_mismatch"),
+            ("payload mediaSha256 does not match", "payload_media_sha256_mismatch"),
+            ("payload sourceRange does not match", "payload_source_range_mismatch"),
+            ("payload configurationHash does not match", "payload_configuration_hash_mismatch"),
+            ("payload pipelineVersion does not match", "payload_pipeline_version_mismatch"),
+            ("payload basePromptHash does not match", "payload_base_prompt_hash_mismatch"),
+            ("payload basePromptVersion does not match", "payload_base_prompt_version_mismatch"),
+            ("payload schemaVersion is invalid", "payload_schema_version_invalid"),
+            ("payload vocabularyVersion is invalid", "payload_vocabulary_version_invalid"),
+            ("payload mediaId is invalid", "payload_media_id_invalid"),
+            ("payload shots is invalid", "payload_shots_invalid"),
+            ("payload shot row is invalid", "payload_shot_row_invalid"),
+            ("payload shotId is invalid", "payload_shot_id_invalid"),
+            ("payload shotId is duplicated", "payload_shot_id_duplicated"),
+            ("payload shot sourceRange escapes", "payload_shot_source_range_escape"),
+            ("shotIds are not covered by sidecar payload shots", "match_shot_ids_not_in_payload"),
             ("binding requires objects", "binding_not_object"),
         )
         coded = False

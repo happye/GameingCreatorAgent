@@ -537,3 +537,50 @@ def test_assert_match_report_sidecar_binding_rejects_duplicate_actor_and_usage_c
     assert "usage_input_tokens_invalid" in match_report_sidecar_binding_gaps(
         document, request_doc, bad_tokens
     )
+
+
+def test_assert_match_report_sidecar_binding_rejects_payload_identity_and_shot_coverage_drift() -> None:
+    document, request_doc, result_doc = _load_first_legacy_binding()
+    assert_match_report_sidecar_binding_contract(document, request_doc, result_doc)
+    assert match_report_sidecar_binding_gaps(document, request_doc, result_doc) == ()
+
+    bad_run = json.loads(json.dumps(result_doc))
+    detail = json.loads(bad_run["payloadJson"])
+    detail["runId"] = "run-forged"
+    bad_run["payloadJson"] = json.dumps(detail, ensure_ascii=False, separators=(",", ":"))
+    # payloadHash will also drift vs report — binding checks payloadHash before payloadJson parse?
+    # Order: payloadHash match first, then later payloadJson. Keep hash so we reach identity checks.
+    with pytest.raises(ValueError, match="payload runId"):
+        assert_match_report_sidecar_binding_contract(document, request_doc, bad_run)
+    assert "payload_run_id_mismatch" in match_report_sidecar_binding_gaps(
+        document, request_doc, bad_run
+    )
+
+    bad_shots = json.loads(json.dumps(result_doc))
+    detail = json.loads(bad_shots["payloadJson"])
+    detail["shots"] = []
+    bad_shots["payloadJson"] = json.dumps(detail, ensure_ascii=False, separators=(",", ":"))
+    with pytest.raises(ValueError, match="shots"):
+        assert_match_report_sidecar_binding_contract(document, request_doc, bad_shots)
+    assert "payload_shots_invalid" in match_report_sidecar_binding_gaps(
+        document, request_doc, bad_shots
+    )
+
+    uncovered = json.loads(json.dumps(result_doc))
+    detail = json.loads(uncovered["payloadJson"])
+    # Drop all shots that matches need.
+    detail["shots"] = [
+        {
+            "shotId": "shot-not-on-report",
+            "sourceRange": document["sourceRange"],
+            "actors": [],
+            "environment": {},
+            "evidenceIds": [],
+        }
+    ]
+    uncovered["payloadJson"] = json.dumps(detail, ensure_ascii=False, separators=(",", ":"))
+    with pytest.raises(ValueError, match="shotIds are not covered"):
+        assert_match_report_sidecar_binding_contract(document, request_doc, uncovered)
+    assert "match_shot_ids_not_in_payload" in match_report_sidecar_binding_gaps(
+        document, request_doc, uncovered
+    )
