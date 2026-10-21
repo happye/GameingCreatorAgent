@@ -1,5 +1,7 @@
 # Technical debt
 
+**2026-10-22 TD010 离线进展：** 否定护栏改为只扫描 facts／transcripts（`positive_text`），裸 mechanicTags 不再击穿显式动作否定；见 sprint-retrieval-mechanic-tag-denial.md。真实 DB run 对照与其余混合语义边界仍未关单。
+
 **2026-10-22 传输层非200正文**：历史「非200丢弃错误正文」离线合同缺口已在 sprint-http-error-body-retention 修补（有界保留＋失败投影）；不宣称 TD009／F010 质量通过。
 
 **2026-10-12 TD007/P1调度修复已真实验证**：只续同片250未执行，新增两个第三事件f8→f8被拒的窗口都隔离后继续到尾；269成功／3拒绝／0未执行，469观察，总估算¥1.49022124／0unknown。唯一guard实际边界PASS，原记录／标注保持。调度中断已修复，动作理解与3拒绝覆盖缺口仍未验收，不放松多帧合同或自动重发；TD007剩余质量问题继续open。

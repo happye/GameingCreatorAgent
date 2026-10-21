@@ -225,3 +225,44 @@ def test_unknown_generic_description_is_not_blanket_filtered_for_action_query() 
 def test_only_denied_evidence_returns_empty(mode: RetrievalMode, fact: str) -> None:
     query = "jumping" if fact.isascii() else "跳跃"
     assert search(timeline(fact), query, mode).candidates == ()
+
+
+def timeline_with_tags(*rows: tuple[str, tuple[str, ...]]) -> StoredTimeline:
+    """Each row is (observable_fact, mechanic_tags)."""
+    facts = tuple(row[0] for row in rows)
+    base = timeline(*facts)
+    events = tuple(
+        SemanticEvent(
+            event.event_id,
+            event.media_id,
+            event.run_id,
+            event.source_range,
+            event.observable_facts,
+            tags,
+            event.evidence_ids,
+            event.modality,
+            event.uncertainty,
+        )
+        for event, (_fact, tags) in zip(base.events, rows, strict=True)
+    )
+    return StoredTimeline(base.run, base.checkpoints, base.evidence, base.transcripts, events, base.invocations)
+
+
+def test_bare_mechanic_tags_cannot_defeat_explicit_fact_denial():
+    """TD010: exclusive fact denial stays excluded even if mechanicTags echo the action."""
+    result = asyncio.run(
+        search_timeline(
+            timeline_with_tags(
+                ("没有跳跃，角色站在原地。", ("jump",)),
+                ("角色完成一次跳跃。", ()),
+            ),
+            "角色跳跃",
+            mode="hybrid",
+            embedding_provider=EqualSimilarity(),
+            top_k=5,
+        )
+    )
+    assert isinstance(result, SearchResult)
+    event_ids = [item.event_id for item in result.candidates]
+    assert "event-0" not in event_ids
+    assert "event-1" in event_ids

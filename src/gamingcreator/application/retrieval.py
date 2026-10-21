@@ -214,6 +214,8 @@ class _Document:
     run_id: str
     source_identifier: str
     supplemental_facts: tuple[str, ...] = ()
+    # Facts/transcripts only: used so bare mechanicTags cannot defeat denial guards (TD010).
+    positive_text: str = ""
 
     @property
     def candidate_id(self) -> str:
@@ -321,9 +323,9 @@ def _documents(timeline: StoredTimeline) -> tuple[_Document, ...]:
             for segment in timeline.transcripts
             if _overlap(segment.source_range, event.source_range) > 0
         )
-        text = "\n".join(
-            (*display_facts(event.observable_facts), *event.mechanic_tags, *transcripts)
-        ).strip()
+        positive_parts = (*display_facts(event.observable_facts), *transcripts)
+        positive_text = "\n".join(positive_parts).strip()
+        text = "\n".join((*positive_parts, *event.mechanic_tags)).strip()
         if text:
             documents.append(
                 _Document(
@@ -337,6 +339,7 @@ def _documents(timeline: StoredTimeline) -> tuple[_Document, ...]:
                     text,
                     run.run_id,
                     f"event:{event.event_id}",
+                    positive_text=positive_text or text,
                 )
             )
     for segment in timeline.transcripts:
@@ -413,9 +416,11 @@ def _lexical_query(query: str) -> str:
 def _denied_action_documents(documents: tuple[_Document, ...], query: str) -> frozenset[str]:
     """Reject only recognized query actions mentioned exclusively in explicit denials.
 
-    Unknown wording stays eligible. Any unnegated occurrence, including a separate
-    affirmative clause, defeats exclusion. Absence queries retain existing ranking;
-    this guard does not implement negative-query semantics.
+    Unknown wording stays eligible. Any unnegated occurrence in observable facts or
+    transcripts, including a separate affirmative clause, defeats exclusion. Bare
+    mechanicTags alone do not defeat an exclusive fact denial (TD010). Absence
+    queries retain existing ranking; this guard does not implement negative-query
+    semantics.
     """
     folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
     if _NEGATIVE_QUERY_INTENT.search(folded_query):
@@ -425,7 +430,9 @@ def _denied_action_documents(documents: tuple[_Document, ...], query: str) -> fr
         return frozenset()
     denied = set()
     for document in documents:
-        text = unicodedata.normalize("NFKC", document.text).casefold().replace("’", "'")
+        # Exclude bare mechanicTags from denial/affirmation scanning (TD010).
+        source = document.positive_text or document.text
+        text = unicodedata.normalize("NFKC", source).casefold().replace("’", "'")
         spans = tuple(
             match.span()
             for match in _EXPLICIT_DENIAL.finditer(text)
