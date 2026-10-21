@@ -1,3 +1,5 @@
+**2026-10-22 TD009（pipeline／provider／metadata，0bbab05）：** sprint-td009-match-report-sidecar-pipeline-metadata.md；不关单。
+
 **2026-10-22 TD009（binding gaps + baseRun／model，bd6b081）：** sprint-td009-match-report-sidecar-binding-gaps.md；不关单。
 
 **2026-10-22 TD009（match-report↔sidecar 证据／区间／media，5d54d0b）：** 只读绑定加深；sprint-td009-match-report-sidecar-evidence-range-binding.md；不关单。

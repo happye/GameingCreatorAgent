@@ -1,6 +1,6 @@
 # Sprint：TD009 match-report↔sidecar pipeline／provider／metadata 绑定加深
 
-**状态（2026-10-22）：已推送 origin/main FEATURE_SHA（docs 记录提交另记）。** 加深 `assert_match_report_sidecar_binding_contract`：canonical `configurationHash`（64-hex）、`pipelineVersion`、`provider`、`requestedModel`、`promptVersion` 非空；有 result 侧车时 `metadata` 为对象，且 `provider`／`requested_model`／`actual_model`／`prompt_version` 分别对齐 canonical／actualModel。`match_report_sidecar_binding_gaps` 映射同步新码。pytest：legacy 三份仍 gaps==()；伪造 config／pipeline／provider／prompt_version 拒绝。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD009／F010 关单**；不改写旧 artifacts。
+**状态（2026-10-22）：已推送 origin/main 0bbab05（docs 记录提交另记）。** 加深 `assert_match_report_sidecar_binding_contract`：canonical `configurationHash`（64-hex）、`pipelineVersion`、`provider`、`requestedModel`、`promptVersion` 非空；有 result 侧车时 `metadata` 为对象，且 `provider`／`requested_model`／`actual_model`／`prompt_version` 分别对齐 canonical／actualModel。`match_report_sidecar_binding_gaps` 映射同步新码。pytest：legacy 三份仍 gaps==()；伪造 config／pipeline／provider／prompt_version 拒绝。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD009／F010 关单**；不改写旧 artifacts。
 
 ## Assignment
 
