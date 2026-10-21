@@ -1,3 +1,5 @@
+**2026-10-22 检索离线扩展（场景跨语言 标题／转场／标志，已推送 9d914f8）：** demo-phase0 真实标题／转场／标志；见 sprint-retrieval-scene-title-transition-logo.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
+
 **2026-10-22 检索离线扩展（内存结果 embedding_metadata 按 mode 加深，已推送 d3a6526）：** 见 sprint-retrieval-search-result-embedding-metadata.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线扩展（场景跨语言 俯视／按钮／地图／沙地／水域／失真／扭曲／石柱，已推送 347ea01）：** demo-phase0 真实俯视／按钮／地图／沙地／水域／失真／扭曲／石柱；见 sprint-retrieval-scene-overhead-button-map-sand-water-glitch.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。

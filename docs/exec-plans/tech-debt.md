@@ -1,3 +1,5 @@
+**2026-10-22 检索离线进展（场景跨语言 标题／转场／标志，已推送 9d914f8）：** 见 sprint-retrieval-scene-title-transition-logo.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+
 **2026-10-22 检索离线进展（内存结果 embedding_metadata 按 mode 加深，已推送 d3a6526）：** 见 sprint-retrieval-search-result-embedding-metadata.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线进展（场景跨语言 俯视／按钮／地图／沙地／水域／失真／扭曲／石柱，已推送 347ea01）：** 见 sprint-retrieval-scene-overhead-button-map-sand-water-glitch.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
