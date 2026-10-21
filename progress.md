@@ -1,6 +1,6 @@
 # Progress Log
 
-**2026-10-22 共享离线 FakeVisionTransport**：测试假传输双件合并；相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-shared-fake-vision-transport.md。
+**2026-10-22 共享离线 FakeVisionTransport（已推送 9e62ae9）**：测试假传输双件合并；相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-shared-fake-vision-transport.md。
 
 **2026-10-22 失败调用诊断投影（已推送 218e6c8）**：inspect／工作台只读展示 schema／http 失败摘要；相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-invocation-failure-diagnostics.md。
 
