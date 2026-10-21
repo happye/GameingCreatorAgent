@@ -584,3 +584,53 @@ def test_local_completed_demo_phase0_heal_damage_cross_lingual():
 
     asyncio.run(run())
 
+
+def test_local_completed_demo_phase0_cast_skill_aliases():
+    """demo-phase0: cast／skill English queries hit Chinese 释放／技能 body text."""
+    _require_sqlite(DEMO_PHASE0)
+
+    async def run() -> None:
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
+        docs = {doc.event_id: doc for doc in _documents(timeline)}
+        baseline = await search_timeline(timeline, "技能", mode="lexical", top_k=20)
+        assert baseline.candidates
+        base_ids = {item.event_id for item in baseline.candidates}
+        for query in ("skill", "skills", "cast", "casting", "释放"):
+            result = await search_timeline(timeline, query, mode="lexical", top_k=20)
+            assert result.candidates, query
+            ids = {item.event_id for item in result.candidates}
+            # English aliases should land inside the Chinese 技能／释放 hit set
+            assert ids <= base_ids or query in {"释放", "cast", "casting"}, (query, ids - base_ids)
+            for item in result.candidates:
+                doc = docs[item.event_id]
+                blob = doc.positive_text + "\n" + "\n".join(doc.tags)
+                assert ("技能" in blob) or ("释放" in blob) or ("施放" in blob) or ("施法" in blob), (
+                    query,
+                    item.event_id,
+                    doc.positive_text[:80],
+                    doc.tags,
+                )
+                # Survivors must not be tag-only chrome for cast action
+                assert item.lexical_evidence != "mechanic_tags", (query, item.event_id)
+
+    asyncio.run(run())
+
+
+def test_local_completed_demo_phase0_explode_cross_lingual():
+    """demo-phase0: explode English queries hit Chinese 爆炸 body text."""
+    _require_sqlite(DEMO_PHASE0)
+
+    async def run() -> None:
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
+        docs = {doc.event_id: doc for doc in _documents(timeline)}
+        for query in ("explode", "exploding", "explosion"):
+            result = await search_timeline(timeline, query, mode="lexical", top_k=20)
+            assert result.candidates, query
+            for item in result.candidates:
+                doc = docs[item.event_id]
+                blob = doc.positive_text + "\n" + "\n".join(doc.tags)
+                assert "爆炸" in blob, (query, item.event_id, doc.positive_text[:80], doc.tags)
+
+    asyncio.run(run())

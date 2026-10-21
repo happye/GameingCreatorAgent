@@ -932,3 +932,104 @@ def test_interacted_alias_abstains_when_no_positive_lexical_evidence():
     empty = search(timeline("角色向左移动。"), "interacted", "lexical")
     assert empty.candidates == ()
     assert empty.abstention_reason == "no_positive_action_evidence"
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize(
+    "query,positive",
+    [
+        ("cast", "角色释放蓝色环形技能。"),
+        ("casting", "角色释放蓝色环形技能。"),
+        ("casts", "角色施放紫色光束。"),
+        ("skill", "角色释放蓝色光效技能。"),
+        ("skills", "右侧技能图标可见，角色释放技能。"),
+        ("技能", "角色释放蓝色环形技能。"),
+        ("释放", "角色释放蓝色环形技能。"),
+        ("施法", "角色施法并出现光效。"),
+    ],
+)
+def test_cast_skill_aliases_keep_chinese_evidence(mode, query, positive):
+    # Exclusive single-term denials so 释放／技能 do not leak as affirmative clauses.
+    data = timeline(positive, "没有释放。", "没有技能。", "未见施法。", "没有施放。")
+    result = search(data, query, mode)
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    assert result.candidates[0].observable_facts == (positive,)
+
+
+@pytest.mark.parametrize(
+    "query",
+    ["skillful", "forecast", "broadcast", "castable", "skillshot", "overcast"],
+)
+def test_cast_skill_non_action_words_do_not_match(query):
+    data = timeline("角色释放蓝色环形技能。", "角色施法并出现光效。")
+    assert search(data, query, "lexical").candidates == ()
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize("query", ["cast", "skill", "casting", "skills", "释放", "技能"])
+def test_cast_skill_tag_only_mechanic_noise_excluded(mode, query):
+    """Bare 技能释放／技能特效 mechanicTags without cast language in facts are chrome."""
+    import asyncio
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import search_timeline
+    from gamingcreator.application.storage import StoredTimeline
+    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
+
+    base = _base_timeline("角色向左移动。", "地面出现橙色区域。")
+    events = list(base.events)
+    events[0] = replace(events[0], mechanic_tags=("技能释放", "伤害数字"))
+    events[1] = replace(events[1], mechanic_tags=("技能特效",))
+    data = StoredTimeline(
+        base.run, base.checkpoints, base.evidence, base.transcripts, tuple(events), base.invocations
+    )
+    empty = asyncio.run(
+        search_timeline(data, query, mode=mode, embedding_provider=EqualSimilarity(), top_k=10)
+    )
+    assert empty.candidates == ()
+    assert empty.abstention_reason == "no_positive_action_evidence"
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+def test_cast_skill_tag_only_excluded_keeps_fact_evidence(mode):
+    import asyncio
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import search_timeline
+    from gamingcreator.application.storage import StoredTimeline
+    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
+
+    base = _base_timeline("角色释放蓝色环形技能。", "角色向左移动。")
+    events = list(base.events)
+    events[0] = replace(events[0], mechanic_tags=("技能释放", "伤害数字"))
+    events[1] = replace(events[1], mechanic_tags=("技能特效",))
+    data = StoredTimeline(
+        base.run, base.checkpoints, base.evidence, base.transcripts, tuple(events), base.invocations
+    )
+    result = asyncio.run(
+        search_timeline(data, "skill", mode=mode, embedding_provider=EqualSimilarity(), top_k=10)
+    )
+    assert [c.event_id for c in result.candidates] == ["event-0"]
+    assert result.candidates[0].lexical_evidence in {"positive_text", "mixed"}
+
+
+@pytest.mark.parametrize(
+    "query,positive",
+    [
+        ("explode", "画面中央出现红色爆炸特效。"),
+        ("exploding", "画面中央出现红色爆炸特效。"),
+        ("explosion", "金色爆炸特效持续可见。"),
+        ("exploded", "场景中出现爆炸。"),
+    ],
+)
+def test_explode_cross_lingual_keeps_chinese_evidence(query, positive):
+    data = timeline(positive, "角色向左移动。")
+    result = search(data, query, "lexical")
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    assert result.candidates[0].observable_facts == (positive,)
+
+
+@pytest.mark.parametrize("query", ["unexploded", "exploderx", "explosion2"])
+def test_explode_non_action_words_do_not_cross_lingual_match(query):
+    data = timeline("画面中央出现红色爆炸特效。")
+    assert search(data, query, "lexical").candidates == ()

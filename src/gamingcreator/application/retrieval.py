@@ -102,6 +102,16 @@ _CROSS_LINGUAL_TERMS = (
     ("damaging", "伤害"),
     ("damages", "伤害"),
     ("damage", "伤害"),
+    ("casting", "释放"),
+    ("casts", "释放"),
+    ("cast", "释放"),
+    ("skills", "技能"),
+    ("skill", "技能"),
+    ("exploding", "爆炸"),
+    ("exploded", "爆炸"),
+    ("explodes", "爆炸"),
+    ("explosion", "爆炸"),
+    ("explode", "爆炸"),
 )
 # A small explicit-language guard, not a language model. Apply this only to
 # positive action queries; passage identities follow the observation projection.
@@ -159,6 +169,17 @@ _ACTION_TERMS = {
         "walks",
         "walking",
         "walked",
+    ),
+    "cast": (
+        "释放",
+        "施放",
+        "施法",
+        "技能",
+        "cast",
+        "casts",
+        "casting",
+        "skill",
+        "skills",
     ),
 }
 _ACTION_BY_TERM = {term: action for action, terms in _ACTION_TERMS.items() for term in terms}
@@ -329,8 +350,9 @@ class _Document:
 # Liberally painted theme tags that often mark UI chrome without action language
 # in facts/transcripts (e.g. bare 战斗 on damage floaters, bare 角色移动).
 # Tag-only hits for these actions are noise. Attack tag-only recall stays
-# intentional (TD010); do not add "attack" here.
-_TAG_ONLY_NOISE_ACTIONS = frozenset({"fight", "move", "interact"})
+# intentional (TD010); do not add "attack" here. Cast/skill bare
+# 技能* tags without body 释放／技能 language are chrome.
+_TAG_ONLY_NOISE_ACTIONS = frozenset({"fight", "move", "interact", "cast"})
 
 
 def _tag_only_action_noise_documents(
@@ -339,7 +361,7 @@ def _tag_only_action_noise_documents(
     """Exclude clips whose only query-action evidence is a liberally painted mechanicTag.
 
     Lexical BM25 indexes `text` (facts + tags). For fight/move/interact queries,
-    bare theme tags (战斗／对战／团战／角色移动／行走／交互) without matching language in positive_text
+    bare theme tags (战斗／对战／团战／角色移动／行走／交互／技能释放／技能特效) without matching language in positive_text
     are UI/theme chrome — not gameplay evidence. Attack tag-only recall remains (TD010).
     """
     folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")

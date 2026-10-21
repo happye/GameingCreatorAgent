@@ -1,7 +1,9 @@
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
-**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip df20305（含 heal／damage／interacted／信封 evidence／range），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
+**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip PLACEHOLDER（含 cast／skill／explode 别名），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
 
+
+**当前锚点（2026-10-22，检索 cast／skill 别名 + explode 跨语言，已推送 PLACEHOLDER）：** _ACTION_TERMS cast（释放／技能／cast／skill）；tag-only 含 cast；explode→爆炸；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-retrieval-cast-skill-explode-aliases.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**；攻击 tag-only 仍保留。以下 heal／damage／interacted／信封为历史。
 
 **当前锚点（2026-10-22，检索 heal／damage 跨语言 + interacted + 信封 evidence／range，已推送 df20305）：** _CROSS_LINGUAL_TERMS heal→治疗／damage→伤害；interacted∈interact；assert_persisted 加深 evidence／range；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-retrieval-heal-damage-interacted-envelope.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**；攻击 tag-only 仍保留。以下 SQLite retrieval_runs 信封为历史。
 
