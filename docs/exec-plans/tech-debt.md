@@ -1,3 +1,5 @@
+**2026-10-22 检索离线进展（场景名词跨语言 看台／闪光／轨迹，已推送 1485255）：** bleacher／flash／trail→看台／闪光／轨迹；裸 stand 排除；见 sprint-retrieval-scene-bleacher-flash-trail.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+
 **2026-10-22 检索离线进展（场景名词跨语言 平台／烟雾／落地／城堡，已推送 296ac1f）：** platform／smoke／landing／castle→平台／烟雾／落地／城堡；裸 land 排除；见 sprint-retrieval-scene-platform-smoke-landing-castle.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线进展（move 奔跑／迈步／running 步态别名，已推送 c9773d4）：** running 系列→移动；奔跑／迈步入 move；裸 run 排除；见 sprint-retrieval-move-run-gait-aliases.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
