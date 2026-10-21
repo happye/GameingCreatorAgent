@@ -1,6 +1,6 @@
 # Sprint：离线 coverage-gap-report 产品能力
 
-**状态（2026-10-22）：已交付（待推送）。** 新增只读 coverage-gap-report（application + CLI）：从任务快照列出覆盖缺口 run，若有 nalysis_coverage.json 则汇总拒窗 ID／计数；恒 coverageGapsCleared=false、optionChosen=null；附草稿提示且声明草稿≠选 B。0 付费；不代选 A／B／D；不声称三缺口已清；不标 F006 true；不宣称人评／验收通过。
+**状态（2026-10-22）：已交付并推送 5d7b715。** 新增只读 coverage-gap-report（application + CLI）：从任务快照列出覆盖缺口 run，若有 nalysis_coverage.json 则汇总拒窗 ID／计数；恒 coverageGapsCleared=false、optionChosen=null；附草稿提示且声明草稿≠选 B。0 付费；不代选 A／B／D；不声称三缺口已清；不标 F006 true；不宣称人评／验收通过。
 
 ## Assignment
 
@@ -19,4 +19,4 @@
 - [x] CLI coverage-gap-report（--project／可选 --coverage／--output）
 - [x] pytest：任务行、覆盖清单、coverage-only、篡改拒绝、CLI 只读
 - [x] 0 DeepSeek／launcher；F006/F009/F010 仍 false
-- [ ] 已推送 origin/main（推送后勾）
+- [x] 已推送 `origin/main`（5d7b715）
