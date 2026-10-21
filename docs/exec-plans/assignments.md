@@ -1,3 +1,5 @@
+**2026-10-22 检索（project receipt↔resultSha256，899c8a3）：** sprint-retrieval-project-search-receipt-binding.md；不关单。
+
 **2026-10-22 检索（factsProjectionVersion 白名单，cc97a9e）：** sprint-retrieval-facts-projection-version.md；不关单。
 
 **2026-10-22 检索（project startedAt／validationMs，b07867f）：** sprint-retrieval-project-started-validation-ms.md；不关单。

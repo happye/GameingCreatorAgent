@@ -1,3 +1,5 @@
+**2026-10-22 检索离线进展（项目联合检索 receipt↔resultSha256 绑定加深，已推送 899c8a3）：** 见 sprint-retrieval-project-search-receipt-binding.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+
 **2026-10-22 检索离线进展（factsProjectionVersion 白名单加深，已推送 cc97a9e）：** 见 sprint-retrieval-facts-projection-version.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线进展（项目联合检索 startedAt／sourceValidationMs／信封加深，已推送 b07867f）：** 见 sprint-retrieval-project-started-validation-ms.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。

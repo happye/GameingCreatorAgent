@@ -1,3 +1,5 @@
+**当前锚点（2026-10-22，项目联合检索 receipt↔resultSha256 绑定加深，已推送 899c8a3）：** `assert_project_search_receipt_contract`；receipt 精确信封＋result 原始字节 sha256；modelAnalysisCalls／newReservations＝0；read_project_search 接线；pytest + demo-phase0 project-searches 只读；sprint：docs/exec-plans/sprint-retrieval-project-search-receipt-binding.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**；攻击 tag-only 仍保留。以下 factsProjectionVersion 为历史。
+
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
 **当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip 73e75d1（含场景／HUD 跨语言），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。

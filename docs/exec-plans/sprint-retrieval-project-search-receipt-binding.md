@@ -1,6 +1,6 @@
 # Sprint：项目联合检索 receipt↔resultSha256 绑定加深
 
-**状态（2026-10-22）：feature 待推送（docs 记录提交另记）。** 新增 `assert_project_search_receipt_contract(receipt, *, search_id, result_bytes)`：信封必须精确等于 `project-search-receipt-v1` + searchId + `sha256(result.json 原始字节)` + `modelAnalysisCalls=0` + `newReservations=0`。`read_project_search` 改走该断言（磁盘漂移仍映射为 `storage.project_search`）。pytest + demo-phase0 全部 32 条 project-searches 只读。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD004／TD010 关单**；不改写 artifacts；`RETRIEVAL_VERSION` 仍 `bm25-e5-rrf-v7`；攻击 tag-only 仍保留。
+**状态（2026-10-22）：已推送 origin/main 899c8a3（docs 记录提交另记）。** 新增 `assert_project_search_receipt_contract(receipt, *, search_id, result_bytes)`：信封必须精确等于 `project-search-receipt-v1` + searchId + `sha256(result.json 原始字节)` + `modelAnalysisCalls=0` + `newReservations=0`。`read_project_search` 改走该断言（磁盘漂移仍映射为 `storage.project_search`）。pytest + demo-phase0 全部 32 条 project-searches 只读。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD004／TD010 关单**；不改写 artifacts；`RETRIEVAL_VERSION` 仍 `bm25-e5-rrf-v7`；攻击 tag-only 仍保留。
 
 ## Assignment
 
@@ -18,7 +18,7 @@
 - [x] `assert_project_search_receipt_contract`
 - [x] `read_project_search` 接线；漂移仍 `storage.project_search`
 - [x] demo-phase0 32 条 receipt 只读绿；伪造 sha／付费／多余键拒绝绿
-- [ ] 已推送 `origin/main`（feature／docs SHA 见 HANDOFF）
+- [x] 已推送 `origin/main`（feature `899c8a3`／docs SHA 见 HANDOFF）
 
 ## Verification
 
