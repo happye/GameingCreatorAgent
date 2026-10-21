@@ -1,9 +1,9 @@
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
-**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip PLACEHOLDER（含检索信封 media／why／timecode 加深），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
+**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip 1b885d1（含检索信封 media／why／timecode 加深），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
 
 
-**当前锚点（2026-10-22，检索信封／单任务投影 media／why／timecode 加深，已推送 PLACEHOLDER）：** assert_run_search／assert_persisted 加深 media 归属、why inert、timecode；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-retrieval-envelope-media-why-timecode.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**；攻击 tag-only 仍保留。以下 UI 观察跨语言 + 交战为历史。
+**当前锚点（2026-10-22，检索信封／单任务投影 media／why／timecode 加深，已推送 1b885d1）：** assert_run_search／assert_persisted 加深 media 归属、why inert、timecode；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-retrieval-envelope-media-why-timecode.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**；攻击 tag-only 仍保留。以下 UI 观察跨语言 + 交战为历史。
 
 **当前锚点（2026-10-22，检索 UI 观察跨语言 + 交战别名，已推送 3058c8a）：** countdown／timer／score／beam→倒计时／计时／比分／光束；交战∈fight；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-retrieval-ui-countdown-score-beam-jiaozhan.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**；攻击 tag-only 仍保留。以下 cast／skill／explode 为历史。
 

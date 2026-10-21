@@ -1,6 +1,6 @@
 # Sprint：检索信封／单任务投影 media／why／timecode 加深
 
-**状态（2026-10-22）：待推送 origin/main。** 加深 `assert_run_search_document_contract`：候选 `eventId` 须为 `{runId}:{mediaId}:…`（裸合成 id 仍允许）、`why` 须含 inert「ranking signal／not probability」、`startTimecode`／`endTimecode` 非空。加深 `assert_persisted_retrieval_contract`：信封 `mediaId` 有效且与每个候选 `mediaId` 对齐。pytest 只读扫 demo-phase0 `retrieval_runs`（217）与 `runs/*/searches`（~204）。验证＝**pytest + 只读 SQLite／JSON**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单；不改写 DB／旧 JSON。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。攻击 tag-only 仍保留。
+**状态（2026-10-22）：已推送 origin/main 1b885d1。** 加深 `assert_run_search_document_contract`：候选 `eventId` 须为 `{runId}:{mediaId}:…`（裸合成 id 仍允许）、`why` 须含 inert「ranking signal／not probability」、`startTimecode`／`endTimecode` 非空。加深 `assert_persisted_retrieval_contract`：信封 `mediaId` 有效且与每个候选 `mediaId` 对齐。pytest 只读扫 demo-phase0 `retrieval_runs`（217）与 `runs/*/searches`（~204）。验证＝**pytest + 只读 SQLite／JSON**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单；不改写 DB／旧 JSON。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。攻击 tag-only 仍保留。
 
 ## Assignment
 

@@ -1,6 +1,6 @@
 # Technical debt
 
-**2026-10-22 检索离线进展（信封／单任务投影 media／why／timecode 加深，已推送 PLACEHOLDER）：** assert_run_search／assert_persisted；见 sprint-retrieval-envelope-media-why-timecode.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+**2026-10-22 检索离线进展（信封／单任务投影 media／why／timecode 加深，已推送 1b885d1）：** assert_run_search／assert_persisted；见 sprint-retrieval-envelope-media-why-timecode.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线进展（UI 观察跨语言 + 交战别名，已推送 3058c8a）：** demo-phase0 真实倒计时／计时／比分／光束／交战；见 sprint-retrieval-ui-countdown-score-beam-jiaozhan.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
