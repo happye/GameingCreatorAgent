@@ -1,3 +1,5 @@
+**2026-10-22 检索离线扩展（项目联合检索 startedAt／sourceValidationMs／信封加深，已推送 b07867f）：** 见 sprint-retrieval-project-started-validation-ms.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
+
 **2026-10-22 TD009 离线扩展（match-report↔sidecar payloadJson 身份／shots 覆盖，已推送 24f59ec）：** 见 sprint-td009-match-report-sidecar-payload-shots.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD009 关单。
 
 **2026-10-22 TD009 离线扩展（match-report↔sidecar actorId 唯一／usage.cost 对齐，已推送 b710ec1）：** 见 sprint-td009-match-report-sidecar-actor-usage-cost.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD009 关单。

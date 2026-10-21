@@ -1,6 +1,6 @@
 # Sprint：项目联合检索 startedAt／sourceValidationMs／信封加深
 
-**状态（2026-10-22）：已推送 origin/main FEATURE_SHA（docs 记录提交另记）。** 加深 `assert_project_search_document_contract`：`startedAt` 须为带时区 ISO-8601（`Z` 可）；`sourceValidationMs`／`elapsedMs` 为 `int≥0`；`factsProjectionVersion` 非空；`qualityGate` 必须为 null；`recordPath` 非空且包含 `searchId`。pytest + demo-phase0 project-searches 只读（32）。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD004／TD010 关单**；不改写 artifacts；`RETRIEVAL_VERSION` 仍 `bm25-e5-rrf-v7`；攻击 tag-only 仍保留。
+**状态（2026-10-22）：已推送 origin/main b07867f（docs 记录提交另记）。** 加深 `assert_project_search_document_contract`：`startedAt` 须为带时区 ISO-8601（`Z` 可）；`sourceValidationMs`／`elapsedMs` 为 `int≥0`；`factsProjectionVersion` 非空；`qualityGate` 必须为 null；`recordPath` 非空且包含 `searchId`。pytest + demo-phase0 project-searches 只读（32）。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD004／TD010 关单**；不改写 artifacts；`RETRIEVAL_VERSION` 仍 `bm25-e5-rrf-v7`；攻击 tag-only 仍保留。
 
 ## Assignment
 
