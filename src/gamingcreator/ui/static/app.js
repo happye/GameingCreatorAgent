@@ -289,7 +289,7 @@
 
     function openSearchSources() {
         ui["search-sources-list"].replaceChildren();
-        const ready = state.runs.filter((run) => run.status === "completed" && /^[a-f0-9]{64}$/.test(run.sourceSha256));
+        const ready = state.runs.filter((run) => isSearchEligible(run) && /^[a-f0-9]{64}$/.test(run.sourceSha256));
         for (const run of ready) {
             const label = element("label", "search-source-option");
             const checkbox = element("input");
@@ -1500,11 +1500,33 @@
         notice("已下载本次检索诊断，人工评分仍为空。", true);
     }
 
+
+    function isCoverageGapBlocked(target) {
+        if (!target) return false;
+        const code = target.errorCode || target.abstentionReason || "";
+        return code === "analysis.coverage_gap" || code === "retrieval.coverage_gap";
+    }
+
+    function isSearchEligible(target) {
+        if (!target) return false;
+        if (target.searchEligible === true) return true;
+        if (target.searchEligible === false) return false;
+        const status = target.runStatus || target.status;
+        return status === "completed";
+    }
+
+    function searchBlockedMessage(target) {
+        if (isCoverageGapBlocked(target)) {
+            return "该分析保留覆盖缺口，未获完整资格，不能用于检索或正式验收。";
+        }
+        return "分析尚未完成，可以先查看已保存时间轴。";
+    }
+
     function setBusy(busy, searching = false) {
         state.busy = busy;
         if (busy) clearRetrievalDiagnostics();
         updateDiagnosticsButton();
-        const completed = state.searchRuns.length > 0 || state.view?.runStatus === "completed";
+        const completed = state.searchRuns.length > 0 || isSearchEligible(state.view);
         ui["search-button"].disabled = busy || !completed;
         ui["search-button"].textContent = busy ? (searching ? "正在本地检索…" : "正在读取…") : "查找片段 ↗";
         ui["refresh-view"].disabled = busy || !state.run;
@@ -1811,12 +1833,13 @@
         ui["candidate-count"].textContent = rows.length;
         ui["candidate-list"].replaceChildren();
         ui["search-context"].textContent = joint ? `“${joint.query}” · ${joint.sources.length} 段录像共同排名 · 分数是排序信号`
-            : view.query ? `“${view.query}” · ${view.mode} · 分数是排序信号` : "输入你需要的动作、玩法或画面。";
+            : view.query ? `“${view.query}” · ${view.mode} · 分数是排序信号`
+            : (!isSearchEligible(view) ? searchBlockedMessage(view) : "输入你需要的动作、玩法或画面。");
         if(joint?.detailRetrieval)ui["search-context"].textContent+=` · 含精分析 ${joint.detailRetrieval.profile} 已有细节，${joint.detailRetrieval.indexedEvents}/${joint.detailRetrieval.totalVisualEvents} 个事件有可检索细节`;
         if (!rows.length) {
             if (joint) return empty(ui["candidate-list"], "选中的录像中没有匹配候选，可以换一种描述。");
-            empty(ui["candidate-list"], view.runStatus !== "completed" ? "分析尚未完成，可以先查看已保存时间轴。"
-                : view.query ? (view.abstentionReason ? `没有合适候选（${view.abstentionReason}）。可以换一种描述。` : "没有匹配候选。可以换一种描述。") : "输入查询后查找片段，或直接从时间轴选片。");
+            empty(ui["candidate-list"], !isSearchEligible(view) ? searchBlockedMessage(view)
+                : view.query ? (view.abstentionReason ? `没有合适候选（${view.abstentionReason === "retrieval.coverage_gap" ? searchBlockedMessage(view) : view.abstentionReason}）。可以换一种描述。` : "没有匹配候选。可以换一种描述。") : "输入查询后查找片段，或直接从时间轴选片。");
             return;
         }
         for (const row of rows) {
@@ -2402,7 +2425,10 @@
     ui["refresh-view"].addEventListener("click", () => { void inspect(""); });
     ui["search-form"].addEventListener("submit", (event) => {
         event.preventDefault();
-        if ((!state.searchRuns.length && state.view?.runStatus !== "completed") || state.busy) return;
+        if (state.busy) return;
+        if (!state.searchRuns.length && !isSearchEligible(state.view)) {
+            return notice(searchBlockedMessage(state.view));
+        }
         const query = ui.query.value.trim();
         if (!query) return notice("写一句你想寻找的动作或画面，再查找片段。");
         if (query.length > 4096) return notice("查询最多 4096 个字符，请缩短描述。");

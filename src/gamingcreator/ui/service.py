@@ -18,7 +18,7 @@ from gamingcreator.application.observation_text import FACTS_PROJECTION_VERSION,
 from gamingcreator.application.retrieval import RETRIEVAL_VERSION, CandidateClip, RetrievalMode
 from gamingcreator.application.retrieval_diagnostics import retrieval_diagnostics
 from gamingcreator.application.search_detail_query import search_snapshot_sha256
-from gamingcreator.application.storage import RunStatus, StoredInvocation, StoredTimeline
+from gamingcreator.application.storage import RunStatus, StoredInvocation, StoredRun, StoredTimeline
 from gamingcreator.application.tasks import tasks_payload
 from gamingcreator.cli.main import (
     execute_project_detail_match,
@@ -99,7 +99,17 @@ def _analysis_profile(prompt_version: str) -> str:
     return "frame_observations"
 
 
+def search_abstention_for_run(run: StoredRun) -> str | None:
+    """Map non-searchable runs to the same refusal codes as NL search."""
+    if run.status == RunStatus.COMPLETED:
+        return None
+    if run.status == RunStatus.FAILED and run.error_code == "analysis.coverage_gap":
+        return "retrieval.coverage_gap"
+    return "storage.run_incomplete"
+
+
 def view_payload(view: InspectionView) -> dict[str, object]:
+
     return {
         "artifact": view.artifact,
         "runId": view.run_id,
@@ -212,6 +222,8 @@ async def project_runs_payload(project: Path) -> dict[str, object]:
                     "mediaId": run.asset.media_id,
                     "durationUs": run.asset.duration_us,
                     "errorCode": run.error_code,
+                    "searchEligible": status == RunStatus.COMPLETED.value,
+                    "completedEligible": status == RunStatus.COMPLETED.value,
                     "analysisKind": "temporal"
                     if profile in ("temporal", "detailed")
                     else "frame_observations",
@@ -368,10 +380,8 @@ async def inspect_run(
     finally:
         await store.close()
     candidates: tuple[CandidateClip, ...] = ()
-    abstention = None
-    if timeline.run.status != RunStatus.COMPLETED:
-        abstention = "storage.run_incomplete"
-    elif query.strip():
+    abstention = search_abstention_for_run(timeline.run)
+    if abstention is None and query.strip():
         document = await execute_search(project, run_id, query, repository, top_k=top_k, mode=mode)
         candidates = _candidates(document, timeline.run.asset.duration_us)
         reason = document["abstentionReason"]
@@ -479,6 +489,9 @@ async def inspect_run(
             "analysisProfile": profile,
             "query": query,
             "mode": mode,
+            "errorCode": timeline.run.error_code,
+            "searchEligible": timeline.run.status == RunStatus.COMPLETED,
+            "completedEligible": timeline.run.status == RunStatus.COMPLETED,
         }
     )
     return payload
