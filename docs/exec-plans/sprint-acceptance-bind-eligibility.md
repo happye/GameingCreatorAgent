@@ -1,6 +1,6 @@
 # Sprint：验收绑定选项对齐覆盖缺口拒文
 
-**状态（2026-10-22）：本轮交付。** `binding_choices` 对 `analysis.coverage_gap` 给出与检索相同的白话拒文，并下发 `searchEligible`／`errorCode`；验收流程绑定选择列表禁用该任务。0 付费；不代选 A／B／D；不声称三缺口已清；不标 F006 true；不宣称人评通过。
+**状态（2026-10-22）：已交付并推送 5877395。** `binding_choices` 对 `analysis.coverage_gap` 给出与检索相同的白话拒文，并下发 `searchEligible`／`errorCode`；验收流程绑定选择列表禁用该任务。0 付费；不代选 A／B／D；不声称三缺口已清；不标 F006 true；不宣称人评通过。
 
 ## Assignment
 
@@ -18,4 +18,4 @@
 - [x] coverage_gap 不可选且文案对齐
 - [x] 相关 pytest 绿
 - [x] 0 DeepSeek／launcher；F006/F009/F010 仍 false
-- [ ] 推送 `origin/codex/visual-details`
+- [x] 已推送 `origin/codex/visual-details`（5877395）

@@ -1,6 +1,6 @@
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
-**当前交接（2026-10-22）：验收绑定选项覆盖缺口拒文已推送准备。** `binding_choices` 区分 coverage_gap；验收流程不可选并显示白话拒文；下发 `searchEligible`。sprint：`docs/exec-plans/sprint-acceptance-bind-eligibility.md`。0 付费／F006/F009/F010 仍 false；**不宣称人评／F006 通过**。**三缺口仍在**。**A／B／D 仍留给用户**。评测资格闸基线 f785473／9b1d81f。以下为评测闸／假传输历史。
+**当前交接（2026-10-22）：验收绑定选项覆盖缺口拒文已推送 5877395。** `binding_choices` 区分 coverage_gap；验收流程不可选并显示白话拒文；下发 `searchEligible`。sprint：`docs/exec-plans/sprint-acceptance-bind-eligibility.md`。0 付费／F006/F009/F010 仍 false；**不宣称人评／F006 通过**。**三缺口仍在**。**A／B／D 仍留给用户**。评测资格闸基线 f785473／9b1d81f。以下为评测闸／假传输历史。
 
 **当前交接（2026-10-22）：评测／绑定／细节核对检索资格闸已推送 f785473。** `execute_benchmark`／`execute_bind_benchmark`／`execute_detail_match` 使用 `load_searchable_timeline`；覆盖缺口 → `retrieval.coverage_gap`。sprint：`docs/exec-plans/sprint-benchmark-search-eligibility.md`。0 付费／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。共享 FakeTransport 基线 9e62ae9／362954d。以下为假传输／失败诊断历史。
 
