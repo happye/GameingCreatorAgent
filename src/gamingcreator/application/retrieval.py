@@ -73,6 +73,7 @@ _CHINESE_FILLER = (
 # Longer words come first so a shorter stem does not also match inside them.
 _CROSS_LINGUAL_TERMS = (
     ("attacking", "攻击"),
+    ("attackers", "攻击"),
     ("attacker", "攻击"),
     ("attacks", "攻击"),
     ("attack", "攻击"),
@@ -94,7 +95,15 @@ _CROSS_LINGUAL_TERMS = (
 _ACTION_TERMS = {
     "jump": ("跳跃", "跳起", "起跳", "jump", "jumps", "jumping", "jumped"),
     "shoot": ("射击", "开枪", "shoot", "shoots", "shooting"),
-    "attack": ("攻击", "attack", "attacks", "attacking", "attacked"),
+    "attack": (
+        "攻击",
+        "attack",
+        "attacks",
+        "attacking",
+        "attacked",
+        "attacker",
+        "attackers",
+    ),
     "fight": (
         "战斗",
         "打斗",

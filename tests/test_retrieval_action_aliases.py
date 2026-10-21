@@ -772,3 +772,58 @@ def test_fighter_duel_brawl_tag_only_mechanic_noise_excluded(mode, query):
 def test_fighter_duel_brawl_non_action_words_do_not_match(query):
     data = timeline("角色与敌人战斗。", "俯视视角对战场景。")
     assert search(data, query, "lexical").candidates == ()
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize("query", ["attacker", "attackers"])
+def test_attacker_aliases_keep_attack_tag_only_td010(mode, query):
+    """TD010: attacker／attackers must stay action-recognized and keep tag-only attack recall."""
+    import asyncio
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import search_timeline
+    from gamingcreator.application.storage import StoredTimeline
+    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
+
+    base = _base_timeline(
+        "画面中央偏下出现蓝色光效和伤害数字",
+        "角色向左移动。",
+    )
+    events = list(base.events)
+    events[0] = replace(events[0], mechanic_tags=("攻击", "伤害"))
+    data = StoredTimeline(
+        base.run,
+        base.checkpoints,
+        base.evidence,
+        base.transcripts,
+        tuple(events),
+        base.invocations,
+    )
+    result = asyncio.run(
+        search_timeline(data, query, mode=mode, embedding_provider=EqualSimilarity(), top_k=10)
+    )
+    hits = [item for item in result.candidates if item.event_id == "event-0"]
+    assert hits, result.candidates
+    assert hits[0].lexical_evidence == "mechanic_tags"
+    assert "lexicalEvidence=mechanic_tags" in hits[0].why
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize(
+    "query,positive,denial",
+    [
+        ("attacker", "角色攻击目标。", "没有攻击。"),
+        ("attackers", "角色攻击目标。", "未见攻击。"),
+    ],
+)
+def test_attacker_aliases_keep_chinese_body_evidence(mode, query, positive, denial):
+    data = timeline(positive, denial)
+    result = search(data, query, mode)
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    assert result.candidates[0].lexical_evidence == "positive_text"
+
+
+@pytest.mark.parametrize("query", ["firefighter", "attackers2", "attackerx", "reattacker"])
+def test_attacker_non_action_words_do_not_match(query):
+    data = timeline("角色攻击目标。")
+    assert search(data, query, "lexical").candidates == ()

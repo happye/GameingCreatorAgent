@@ -508,3 +508,27 @@ def test_local_completed_demo_phase0_fighter_duel_brawl_tag_only_noise_excluded(
 
     asyncio.run(run())
 
+
+def test_local_completed_demo_phase0_attacker_aliases_keep_tag_only():
+    """demo-phase0: attacker／attackers match attack tag-only and mark mechanic_tags."""
+    _require_sqlite(DEMO_PHASE0)
+
+    async def run() -> None:
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
+        docs = {doc.event_id: doc for doc in _documents(timeline)}
+        baseline = await search_timeline(timeline, "攻击", mode="lexical", top_k=20)
+        assert baseline.candidates
+        for query in ("attacker", "attackers"):
+            result = await search_timeline(timeline, query, mode="lexical", top_k=20)
+            assert {item.event_id for item in result.candidates} == {
+                item.event_id for item in baseline.candidates
+            }
+            for item in result.candidates:
+                doc = docs[item.event_id]
+                if "攻击" not in doc.positive_text:
+                    assert item.lexical_evidence == "mechanic_tags", (query, item.event_id, doc.tags)
+                    assert "攻击" in doc.tags
+
+    asyncio.run(run())
+
