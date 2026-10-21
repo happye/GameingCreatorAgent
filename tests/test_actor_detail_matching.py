@@ -244,6 +244,39 @@ def test_fixture_3_uncertain_weapon_class_cannot_override_observed_shape() -> No
     assert combined.status == MatchStatus.PARTIAL
 
 
+
+def test_fixture_3_coexisting_uncertain_class_blocks_observed_full() -> None:
+    """TD009: OBSERVED+UNCERTAIN weapon on the same part cannot count as FULL."""
+    registry = evidence()
+    observed_shape = attribute(registry, AttributeKind.HELD_SHAPE, "蓝色扁平物体", "item")
+    observed_class = attribute(
+        registry, AttributeKind.HELD_CLASS, "武器", "item", status=AttributeStatus.OBSERVED
+    )
+    uncertain_class = attribute(
+        registry, AttributeKind.HELD_CLASS, "武器", "item", status=AttributeStatus.UNCERTAIN
+    )
+    observed = detail(
+        registry,
+        (shot(registry, (actor((observed_shape, observed_class, uncertain_class)),)),),
+    )
+    class_query = QueryConstraint((condition(AttributeKind.HELD_CLASS, "weapon", "item"),))
+    result = match_actor_details(observed, class_query)
+    assert result.status == MatchStatus.UNVERIFIED
+    assert result.matcher_version == MATCHER_VERSION
+    assert not result.matches[0].satisfied
+    assert len(result.matches[0].uncertain) == 1
+    shape_query = QueryConstraint(
+        (condition(AttributeKind.HELD_SHAPE, "blue_flat_object", "item"),)
+    )
+    assert match_actor_details(observed, shape_query).status == MatchStatus.FULL
+    combined = match_actor_details(
+        observed, QueryConstraint((*shape_query.actor_all, *class_query.actor_all))
+    )
+    assert combined.status == MatchStatus.PARTIAL
+    assert len(combined.matches[0].satisfied) == 1
+    assert len(combined.matches[0].uncertain) == 1
+
+
 def test_fixture_3_overlapping_observed_conflict_is_neither_full_nor_reliable_negative() -> None:
     registry = evidence()
     white = attribute(registry, AttributeKind.HAIR_COLOR, "white", "hair")

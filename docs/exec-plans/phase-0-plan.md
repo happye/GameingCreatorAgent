@@ -1,5 +1,7 @@
 # Phase 0 开发任务与依赖
 
+> **2026-10-22 离线补强：** TD009 matcher 同居 UNCERTAIN 阻断 OBSERVED FULL（v1.1）；不清除三缺口；不代选 A／B／D；不标 F006 true。
+
 > **2026-10-22 离线补强：** JUMP 标题品牌 hybrid／semantic 排除（TD004，已推送 `fb984ea`）；不清除三缺口；不代选 A／B／D；不标 F006 true。
 
 > **2026-10-22 离线补强：** 检索忽略 JUMP 标题品牌噪声（TD004，已推送 `0497ebf`）；不清除三缺口；不代选 A／B／D；不标 F006 true。

@@ -1,5 +1,7 @@
 # Technical debt
 
+**2026-10-22 TD009 离线进展（同居 UNCERTAIN 阻断 FULL，待推送）：** matcher v1.1：同值 OBSERVED+UNCERTAIN 不得 FULL；见 sprint-actor-detail-matcher-coexisting-uncertainty.md。复合人评／sidecar 精分析／静态索引仍 open；不宣称 TD009／F010 关单。
+
 **2026-10-22 TD004 离线进展（JUMP hybrid／semantic 排除，已推送 `fb984ea`）：** title-brand-only action 噪声并入检索排除集；见 sprint-retrieval-jump-title-hybrid-noise.md。Boss／射击等其余误召回与人评校准仍 open；不宣称 TD004 关单。
 
 **2026-10-22 TD004 离线进展（JUMP 标题品牌噪声，已推送 `0497ebf`）：** lexical／否定扫描前中性化冻结 JUMP 标题品牌；见 sprint-retrieval-jump-title-brand-noise.md。不宣称 TD004／人评关单；Boss／射击等其余 hybrid 空召回问题仍 open。

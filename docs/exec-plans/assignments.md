@@ -1,5 +1,7 @@
 # Active assignments
 
+**当前（2026-10-22）：root / Agent 推进 TD009 matcher 同居 UNCERTAIN 阻断 FULL。** sprint-actor-detail-matcher-coexisting-uncertainty.md 归 root／GamingCreatorAgent。拥有 matcher／domain 版本钉与测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／TD009 关单。以下 JUMP hybrid 标题噪声为历史。
+
 **当前（2026-10-22）：root / Agent 推进 JUMP 标题品牌 hybrid／semantic 排除（TD004，已推送 fb984ea）。** sprint-retrieval-jump-title-hybrid-noise.md 归 root／GamingCreatorAgent。拥有 retrieval 与相关测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／TD004 关单。以下 lexical 标题中性化为历史。
 
 **当前（2026-10-22）：root / Agent 推进检索忽略 JUMP 标题品牌噪声（TD004 离线，已推送 0497ebf）。** sprint-retrieval-jump-title-brand-noise.md 归 root／GamingCreatorAgent。拥有 retrieval 与相关测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／人评／TD004 关单。以下 TD010 本机只读对照为历史。

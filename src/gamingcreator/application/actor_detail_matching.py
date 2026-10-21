@@ -141,10 +141,17 @@ def _part_conditions(
             for item in matching
             if item.status == AttributeStatus.OBSERVED and not _conflicted(item, conflicts)
         ]
-        if observed:
+        uncertain_matching = [
+            item for item in matching if item.status == AttributeStatus.UNCERTAIN
+        ]
+        # TD009: coexisting UNCERTAIN on the same kind/value must not let a parallel
+        # OBSERVED row become FULL support (facts misclassification + doubt).
+        if observed and not uncertain_matching:
             satisfied.append(_support(condition, observed[0]))
         elif matching:
-            uncertain.append(_support(condition, matching[0]))
+            uncertain.append(
+                _support(condition, (uncertain_matching or matching)[0])
+            )
         else:
             alternatives = [
                 item
