@@ -96,6 +96,11 @@ _CROSS_LINGUAL_TERMS = (
     ("walked", "移动"),
     ("walks", "移动"),
     ("walk", "移动"),
+    ("running", "移动"),
+    ("runners", "移动"),
+    ("runner", "移动"),
+    ("runs", "移动"),
+    ("ran", "移动"),
     ("healing", "治疗"),
     ("healed", "治疗"),
     ("heals", "治疗"),
@@ -195,6 +200,8 @@ _ACTION_TERMS = {
         "行走",
         "走动",
         "位移",
+        "奔跑",
+        "迈步",
         "move",
         "moves",
         "moving",
@@ -203,6 +210,12 @@ _ACTION_TERMS = {
         "walks",
         "walking",
         "walked",
+        # Avoid bare "run" — collides with run-id tokens like run-0.
+        "running",
+        "runs",
+        "ran",
+        "runner",
+        "runners",
     ),
     "cast": (
         "释放",
@@ -395,7 +408,7 @@ def _tag_only_action_noise_documents(
     """Exclude clips whose only query-action evidence is a liberally painted mechanicTag.
 
     Lexical BM25 indexes `text` (facts + tags). For fight/move/interact queries,
-    bare theme tags (战斗／对战／团战／交战／角色移动／行走／交互／技能释放／技能特效) without matching language in positive_text
+    bare theme tags (战斗／对战／团战／交战／角色移动／行走／奔跑／迈步／交互／技能释放／技能特效) without matching language in positive_text
     are UI/theme chrome — not gameplay evidence. Attack tag-only recall remains (TD010).
     """
     folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")

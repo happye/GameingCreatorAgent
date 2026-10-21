@@ -1180,3 +1180,69 @@ def test_avatar_still_searchable_after_scene_alias_sprint():
     result = search(data, "avatar", "lexical")
     assert result.abstention_reason != "empty_query"
     assert [c.event_id for c in result.candidates] == ["event-0"]
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize(
+    "query,positive,denial",
+    [
+        ("running", "角色向左移动。", "没有移动。"),
+        ("runs", "角色向左移动。", "未见移动。"),
+        ("ran", "角色向左移动。", "没有移动。"),
+        ("runner", "角色向左移动。", "未见移动。"),
+        ("runners", "角色向左移动。", "没有移动。"),
+        ("奔跑", "角色向城堡方向奔跑。", "没有奔跑。"),
+        ("迈步", "粉色头发角色向前迈步。", "未见迈步。"),
+        ("move", "角色奔跑穿过平台。", "没有奔跑。"),
+    ],
+)
+def test_run_gait_aliases_keep_chinese_move_evidence(mode, query, positive, denial):
+    """running／奔跑／迈步 are move synonyms (demo-phase0 real 奔跑／迈步); bare run avoided."""
+    data = timeline(positive, denial)
+    result = search(data, query, mode)
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    assert result.candidates[0].observable_facts == (positive,)
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize("query", ["running", "runs", "ran", "runner", "奔跑", "迈步"])
+def test_run_gait_tag_only_mechanic_noise_excluded(mode, query):
+    """Run／gait aliases must apply the same move tag-only chrome filter."""
+    import asyncio
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import search_timeline
+    from gamingcreator.application.storage import StoredTimeline
+    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
+
+    base = _base_timeline(
+        "俯视视角的绿色场地，中央有角色释放蓝色光效技能。",
+        "场地中央有角色移动，出现绿色特效。",
+        "角色跳跃并落地。",
+    )
+    events = list(base.events)
+    events[0] = replace(events[0], mechanic_tags=("角色移动", "技能按钮"))
+    data = StoredTimeline(
+        base.run,
+        base.checkpoints,
+        base.evidence,
+        base.transcripts,
+        tuple(events),
+        base.invocations,
+    )
+    result = asyncio.run(
+        search_timeline(data, query, mode=mode, embedding_provider=EqualSimilarity(), top_k=10)
+    )
+    hit_ids = [item.event_id for item in result.candidates]
+    assert "event-0" not in hit_ids, hit_ids
+    assert "event-1" in hit_ids, hit_ids
+
+
+@pytest.mark.parametrize(
+    "query",
+    ["running2", "ran2", "runnerx", "outrun", "forerunner", "run"],
+)
+def test_run_gait_non_action_words_do_not_match(query):
+    """Bare run and lookalikes must not become move queries (run-id / substring safety)."""
+    data = timeline("角色向左移动。")
+    assert search(data, query, "lexical").candidates == ()
