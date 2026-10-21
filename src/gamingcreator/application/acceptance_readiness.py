@@ -47,6 +47,8 @@ FORBIDDEN_STATUS_LABELS = frozenset(
 # Substrings each workbench/workflow surface must keep checking (offline contract).
 SURFACE_JS_INERT_GUARDS = (
     "acceptance-readiness-v1",
+    "acceptance-readiness-inert-v1",
+    "inertContract",
     "formalAcceptancePassed !== false",
     "humanEvalPassed !== false",
     "coverageGapsCleared !== false",

@@ -13,6 +13,8 @@ def test_benchmark_workflow_static_links_readiness_without_pass_claims() -> None
     css = (ROOT / "benchmark-workflow.css").read_text(encoding="utf-8")
     assert "/api/acceptance-readiness" in js
     assert "acceptance-readiness-v1" in js
+    assert "acceptance-readiness-inert-v1" in js
+    assert "inertContract" in js
     assert "function assertReadinessInert" in js
     assert "function fillBindReadiness" in js
     assert 'readiness.id="bind-readiness"' in js or "bind-readiness" in js

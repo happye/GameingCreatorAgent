@@ -507,7 +507,10 @@
                 || !payload.featureClaims || payload.featureClaims.F006 !== false
                 || payload.featureClaims.F009 !== false || payload.featureClaims.F010 !== false
                 || typeof payload.formalAcceptanceStatus !== "string"
-                || payload.formalAcceptanceStatus === "passed") {
+                || payload.formalAcceptanceStatus === "passed"
+                || !payload.inertContract
+                || payload.inertContract.schemaVersion !== "acceptance-readiness-inert-v1"
+                || payload.inertContract.snapshotOnlyRequired !== true) {
                 throw new Error("验收就绪来源无效或含通过声明。");
             }
             renderReadiness(payload);

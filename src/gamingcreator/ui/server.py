@@ -450,6 +450,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             "saved-detail-grouped-ranking-v1",
                             "detail-temporal-json-v1",
                             "acceptance-readiness-v1",
+                            "acceptance-readiness-inert-v1",
                         ],
                         "repository": str(self.repository.resolve()),
                         "pid": os.getpid(),

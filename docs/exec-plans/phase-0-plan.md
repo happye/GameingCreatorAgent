@@ -1,5 +1,7 @@
 # Phase 0 开发任务与依赖
 
+> **2026-10-22 离线补充：** acceptance-readiness inertContract 跨面落地（health／JS）＋feature_list 闸门测试；不清除覆盖缺口；不代选 A／B／D；不标 F006 true。
+
 > **2026-10-22 离线补充：** acceptance-readiness 嵌入 inertContract 机读护栏；不清除覆盖缺口；不代选 A／B／D；不标 F006 true。
 
 > **2026-10-22 离线补充：** 跨面 acceptance-readiness 惰性合同（CLI／工作台／验收流程）；不清除覆盖缺口；不代选 A／B／D；不标 F006 true。

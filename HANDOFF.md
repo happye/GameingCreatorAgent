@@ -3,6 +3,9 @@
 **当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip af79104（含 inertContract）），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
 
 
+**当前锚点（2026-10-22，acceptance-readiness inertContract 跨面落地）：** health／工作台／验收流程采纳 inert-v1；feature_list 闸门测试钉死 F006/F009/F010 false。sprint：docs/exec-plans/sprint-acceptance-readiness-inert-surface.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下 inertContract 嵌入为历史。
+
+
 **当前锚点（2026-10-22，acceptance-readiness 嵌入 inertContract，已推送 af79104）：** 报告内含机读禁通过合同；断言校验一致。sprint：docs/exec-plans/sprint-acceptance-readiness-inert-contract.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下跨面 inert 加固为历史。
 
 

@@ -10,7 +10,10 @@ from test_inspection_http import get, workspace
 from test_material_tasks import seed_tasks
 from test_material_tasks_http import refuse_work
 
-from gamingcreator.application.acceptance_readiness import ACCEPTANCE_READINESS_VERSION
+from gamingcreator.application.acceptance_readiness import (
+    ACCEPTANCE_READINESS_VERSION,
+    INERT_CONTRACT_VERSION,
+)
 
 
 def test_acceptance_readiness_http_is_read_only_and_never_passed(tmp_path, monkeypatch):
@@ -29,6 +32,8 @@ def test_acceptance_readiness_http_is_read_only_and_never_passed(tmp_path, monke
         assert payload["qualityGate"] is None
         assert payload["coverageGapsCleared"] is False
         assert payload["featureClaims"] == {"F006": False, "F009": False, "F010": False}
+        assert payload["inertContract"]["schemaVersion"] == INERT_CONTRACT_VERSION
+        assert payload["inertContract"]["snapshotOnlyRequired"] is True
         assert payload["formalAcceptanceStatus"] == "blocked_no_searchable_run"
         assert payload["formalAcceptanceStatus"] != "passed"
         assert "no_searchable_run" in payload["projectBlockers"]
@@ -47,6 +52,7 @@ def test_acceptance_readiness_http_is_read_only_and_never_passed(tmp_path, monke
         health = json.loads(health_raw)
         assert health_status == 200
         assert "acceptance-readiness-v1" in health["capabilities"]
+        assert "acceptance-readiness-inert-v1" in health["capabilities"]
     assert snapshot(project) == before
 
 
@@ -62,4 +68,6 @@ def test_workbench_static_exposes_readiness_controls():
     assert "function loadReadiness" in js
     assert 'material-tasks-v2' in js
     assert "formalAcceptancePassed !== false" in js
+    assert "acceptance-readiness-inert-v1" in js
+    assert "inertContract" in js
     assert "不会" in html or "不宣称" in html

@@ -80,6 +80,7 @@ def test_workbench_and_workflow_js_keep_shared_inert_guards() -> None:
 def test_server_exposes_readiness_capability_and_route() -> None:
     source = SERVER.read_text(encoding="utf-8")
     assert "acceptance-readiness-v1" in source
+    assert "acceptance-readiness-inert-v1" in source
     assert '"/api/acceptance-readiness"' in source
 
 
