@@ -1,6 +1,8 @@
 # Progress Log
 
-**2026-10-22 跨面 acceptance-readiness 惰性合同加固：** 护栏扩展＋跨面 pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-acceptance-readiness-cross-surface.md。
+**2026-10-22 acceptance-readiness 嵌入 inertContract：** 机读禁通过合同写入只读报告；pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-acceptance-readiness-inert-contract.md。
+
+**2026-10-22 跨面 acceptance-readiness 惰性合同加固（已推送 a08686a）：** 护栏扩展＋跨面 pytest 绿；已推 origin/main。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-acceptance-readiness-cross-surface.md。
 
 
 **2026-10-22 验收流程页只读挂接验收就绪（已推送 82862df）：** 绑定步骤并读 readiness；inert 护栏；静态 pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-acceptance-workflow-readiness.md。

@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from gamingcreator.application.acceptance_readiness import (
+    build_inert_contract,
     ACCEPTANCE_READINESS_VERSION,
     assert_acceptance_readiness_inert,
     build_acceptance_readiness,
@@ -169,3 +170,9 @@ def test_forbidden_pass_labels_are_rejected() -> None:
     with pytest.raises(AssertionError, match="forbidden formalAcceptanceStatusLabel"):
         assert_acceptance_readiness_inert(bad)
 
+
+
+def test_inert_contract_is_embedded_and_stable() -> None:
+    doc = build_acceptance_readiness(_tasks())
+    assert doc["inertContract"] == build_inert_contract()
+    assert doc["inertContract"]["schemaVersion"] == "acceptance-readiness-inert-v1"

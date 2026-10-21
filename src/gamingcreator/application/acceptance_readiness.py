@@ -54,6 +54,30 @@ SURFACE_JS_INERT_GUARDS = (
     'formalAcceptanceStatus === "passed"',
 )
 
+INERT_CONTRACT_VERSION = "acceptance-readiness-inert-v1"
+REQUIRED_FALSE_FLAGS = (
+    "formalAcceptancePassed",
+    "humanEvalPassed",
+    "coverageGapsCleared",
+    "featureClaims.F006",
+    "featureClaims.F009",
+    "featureClaims.F010",
+)
+
+
+def build_inert_contract() -> dict[str, Any]:
+    """Machine-readable inert rules for CLI/API/UI consumers."""
+    return {
+        "schemaVersion": INERT_CONTRACT_VERSION,
+        "forbiddenFormalStatuses": sorted(FORBIDDEN_FORMAL_STATUSES),
+        "forbiddenStatusLabels": sorted(FORBIDDEN_STATUS_LABELS),
+        "requiredFalseFlags": list(REQUIRED_FALSE_FLAGS),
+        "snapshotOnlyRequired": True,
+        "surfaceJsGuards": list(SURFACE_JS_INERT_GUARDS),
+        "notes": "就绪报告永不输出 passed／已通过；本块只描述护栏，不表示验收或 F006 通过。",
+    }
+
+
 
 def _as_task_rows(tasks_document: Mapping[str, Any]) -> list[dict[str, Any]]:
     raw = tasks_document.get("tasks")
@@ -139,6 +163,7 @@ def build_acceptance_readiness(
     document: dict[str, object] = {
         "schemaVersion": ACCEPTANCE_READINESS_VERSION,
         "snapshotOnly": True,
+        "inertContract": build_inert_contract(),
         "project": project,
         "tasksSchemaVersion": tasks_document.get("schemaVersion"),
         "taskTotal": tasks_document.get("total", len(rows)),
@@ -200,6 +225,22 @@ def assert_acceptance_readiness_inert(document: Mapping[str, Any]) -> None:
         raise AssertionError(f"forbidden formalAcceptanceStatusLabel: {label!r}")
     if document.get("snapshotOnly") is not True:
         raise AssertionError("snapshotOnly must be True")
+    contract = document.get("inertContract")
+    if not isinstance(contract, Mapping):
+        raise AssertionError("inertContract missing")
+    expected = build_inert_contract()
+    if contract.get("schemaVersion") != INERT_CONTRACT_VERSION:
+        raise AssertionError(f"bad inertContract.schemaVersion: {contract.get('schemaVersion')!r}")
+    if contract.get("snapshotOnlyRequired") is not True:
+        raise AssertionError("inertContract.snapshotOnlyRequired must be True")
+    if list(contract.get("forbiddenFormalStatuses") or []) != expected["forbiddenFormalStatuses"]:
+        raise AssertionError("inertContract.forbiddenFormalStatuses mismatch")
+    if list(contract.get("forbiddenStatusLabels") or []) != expected["forbiddenStatusLabels"]:
+        raise AssertionError("inertContract.forbiddenStatusLabels mismatch")
+    if list(contract.get("requiredFalseFlags") or []) != expected["requiredFalseFlags"]:
+        raise AssertionError("inertContract.requiredFalseFlags mismatch")
+    if list(contract.get("surfaceJsGuards") or []) != expected["surfaceJsGuards"]:
+        raise AssertionError("inertContract.surfaceJsGuards mismatch")
 
 
 def write_acceptance_readiness(document: Mapping[str, Any], output: Path) -> Path:

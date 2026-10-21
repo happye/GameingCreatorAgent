@@ -1,5 +1,7 @@
 # Active assignments
 
+**当前（2026-10-22）：root 单 Agent 交付 acceptance-readiness 嵌入 inertContract。** sprint-acceptance-readiness-inert-contract.md 由 root／GamingCreatorAgent 拥有。改 acceptance_readiness 与相关测试／公共 docs；0 付费。不代选 A／B／D；不改 feature_list；不宣称 F006／人评通过。以下跨面 inert 加固为历史。
+
 **当前（2026-10-22）：root 单 Agent 交付跨面 acceptance-readiness 惰性合同加固。** sprint-acceptance-readiness-cross-surface.md 由 root／GamingCreatorAgent 拥有。改 acceptance_readiness 与相关测试／公共 docs；0 付费。不代选 A／B／D；不改 feature_list；不宣称 F006／人评通过。以下验收流程挂接为历史。
 
 

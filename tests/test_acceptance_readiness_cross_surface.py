@@ -10,6 +10,8 @@ from gamingcreator.application.acceptance_readiness import (
     FORBIDDEN_STATUS_LABELS,
     assert_acceptance_readiness_inert,
     build_acceptance_readiness,
+    build_inert_contract,
+    INERT_CONTRACT_VERSION,
     surface_js_inert_guards,
 )
 from gamingcreator.application.tasks import TASKS_VERSION
@@ -86,3 +88,24 @@ def test_cli_registers_acceptance_readiness_command() -> None:
     assert "acceptance-readiness" in source
     assert "execute_acceptance_readiness" in source
     assert "不宣称通过" in source
+
+
+def test_built_readiness_embeds_inert_contract() -> None:
+    doc = build_acceptance_readiness(_tasks())
+    contract = doc["inertContract"]
+    assert contract == build_inert_contract()
+    assert contract["schemaVersion"] == INERT_CONTRACT_VERSION
+    assert contract["snapshotOnlyRequired"] is True
+    assert "passed" in contract["forbiddenFormalStatuses"]
+    assert "验收通过" in contract["forbiddenStatusLabels"]
+    assert_acceptance_readiness_inert(doc)
+
+
+def test_inert_contract_mismatch_is_rejected() -> None:
+    doc = build_acceptance_readiness(_tasks())
+    bad = dict(doc)
+    bad_contract = dict(doc["inertContract"])
+    bad_contract["forbiddenFormalStatuses"] = ["passed"]
+    bad["inertContract"] = bad_contract
+    with __import__("pytest").raises(AssertionError, match="forbiddenFormalStatuses mismatch"):
+        assert_acceptance_readiness_inert(bad)
