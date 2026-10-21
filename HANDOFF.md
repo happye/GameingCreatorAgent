@@ -3,6 +3,8 @@
 **当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip 8aac1d2（含 TD009 matcher v1.1）），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
 
 
+**当前锚点（2026-10-22，TD009 matcher 正向 AND 边界／v1.2，待推送）：** `actor-detail-matcher-v1.2`；pytest；sprint：`docs/exec-plans/sprint-actor-detail-matcher-and-boundaries.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD009 关单**。以下同居 UNCERTAIN 阻断为历史。
+
 **当前锚点（2026-10-22，TD009 matcher 同居 UNCERTAIN 阻断 FULL，已推送 8aac1d2）：** `actor-detail-matcher-v1.1`；pytest；sprint：`docs/exec-plans/sprint-actor-detail-matcher-coexisting-uncertainty.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD009 关单**。以下 JUMP hybrid 标题噪声为历史。
 
 **当前锚点（2026-10-22，JUMP 标题品牌 hybrid／semantic 排除／TD004，已推送 fb984ea）：** `_title_brand_action_noise_documents`；pytest + demo-phase0 只读；sprint：`docs/exec-plans/sprint-retrieval-jump-title-hybrid-noise.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004 关单**。以下 lexical 标题中性化为历史。

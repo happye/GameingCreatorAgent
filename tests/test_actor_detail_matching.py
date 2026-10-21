@@ -477,3 +477,76 @@ def test_partial_preserves_same_actor_support_without_mutating_the_candidate() -
     assert result.status == MatchStatus.PARTIAL
     assert result.matches[0].missing == (condition(AttributeKind.HELD_CLASS, "weapon", "item"),)
     assert repr(observed) == before
+
+def test_and_boundary_held_shape_class_different_parts_cannot_full() -> None:
+    """TD009: same part_group held shape+class on different parts is not FULL."""
+    registry = evidence()
+    shape = attribute(registry, AttributeKind.HELD_SHAPE, "蓝色扁平物体", "rod")
+    klass = attribute(registry, AttributeKind.HELD_CLASS, "武器", "blade")
+    observed = detail(registry, (shot(registry, (actor((shape, klass)),)),))
+    query = QueryConstraint(
+        (
+            condition(AttributeKind.HELD_SHAPE, "blue_flat_object", "held"),
+            condition(AttributeKind.HELD_CLASS, "weapon", "held"),
+        )
+    )
+    result = match_actor_details(observed, query)
+    assert result.status == MatchStatus.PARTIAL
+    assert result.matcher_version == MATCHER_VERSION
+    assert len(result.matches[0].satisfied) == 1
+    assert result.matches[0].missing
+
+
+def test_and_boundary_disjoint_support_frames_cannot_full() -> None:
+    """TD009: AND conditions on disjoint evidence frames lack shared support."""
+    registry = evidence()
+    hair = attribute(registry, AttributeKind.HAIR_COLOR, "白发", "hair", frames=(0,))
+    coat_color = attribute(registry, AttributeKind.CLOTHING_COLOR, "红色", "coat", frames=(2,))
+    coat_shape = attribute(registry, AttributeKind.CLOTHING_SHAPE, "外套", "coat", frames=(2,))
+    observed = detail(registry, (shot(registry, (actor((hair, coat_color, coat_shape)),)),))
+    query = QueryConstraint(
+        (
+            condition(AttributeKind.HAIR_COLOR, "white", "head"),
+            condition(AttributeKind.CLOTHING_COLOR, "red", "coat"),
+            condition(AttributeKind.CLOTHING_SHAPE, "coat", "coat"),
+        )
+    )
+    result = match_actor_details(observed, query)
+    assert result.status == MatchStatus.PARTIAL
+    assert result.matcher_version == MATCHER_VERSION
+    # Best frame can satisfy the coat pair only; hair stays missing without a shared frame.
+    assert len(result.matches[0].satisfied) == 2
+    assert result.matches[0].missing
+    assert result.matches[0].shared_evidence_ids
+
+
+def test_match_report_carries_matcher_v1_2_and_and_demotion() -> None:
+    """Offline report contract: matcher version + coexistence demotion are visible."""
+    from gamingcreator.application.detail_query import match_report
+
+    registry = evidence()
+    observed_shape = attribute(registry, AttributeKind.HELD_SHAPE, "蓝色扁平物体", "item")
+    observed_class = attribute(
+        registry, AttributeKind.HELD_CLASS, "武器", "item", status=AttributeStatus.OBSERVED
+    )
+    uncertain_class = attribute(
+        registry, AttributeKind.HELD_CLASS, "武器", "item", status=AttributeStatus.UNCERTAIN
+    )
+    observed = detail(
+        registry,
+        (shot(registry, (actor((observed_shape, observed_class, uncertain_class)),)),),
+    )
+    query = QueryConstraint((condition(AttributeKind.HELD_CLASS, "weapon", "item"),))
+    document = match_report(
+        None,
+        observed,
+        query,
+        run_id=RUN,
+        event_id=EVENT,
+        request_digest=None,
+    )
+    assert document["result"]["matcherVersion"] == MATCHER_VERSION
+    assert document["result"]["status"] == MatchStatus.UNVERIFIED.value
+    assert MATCHER_VERSION == "actor-detail-matcher-v1.2"
+
+

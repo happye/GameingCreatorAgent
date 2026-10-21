@@ -257,12 +257,26 @@ def _at_frame(
     )
 
 
+def _part_groups_share_one_part(match: ActorMatch) -> bool:
+    """Same query part_group must land on one concrete part_id (TD009 AND)."""
+    parts_by_group: dict[str, set[str]] = {}
+    for item in match.satisfied:
+        parts_by_group.setdefault(item.condition.part_group, set()).add(item.part_id)
+    return all(len(parts) == 1 for parts in parts_by_group.values())
+
+
 def _full(match: ActorMatch, count: int) -> bool:
+    # Positive AND: every condition satisfied on one shared supporting frame, with
+    # no residual uncertain/missing/opposed rows and no part_group split across parts.
     return (
         len(match.satisfied) == count
+        and not match.uncertain
+        and not match.missing
+        and not match.opposed
         and bool(match.shared_evidence_ids)
         and match.source_range is not None
         and not match.conflicts
+        and _part_groups_share_one_part(match)
     )
 
 

@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-22 TD009 matcher 正向 AND 边界／v1.2（待推送）：** _full 门槛收紧；分 part held／不相交帧不得 FULL；match_report 露 v1.2；pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户；不宣称 TD009 关单。sprint-actor-detail-matcher-and-boundaries.md。
+
 **2026-10-22 TD009 matcher 同居 UNCERTAIN 阻断 FULL（已推送 8aac1d2）：** 同 part／kind／value 的 OBSERVED+UNCERTAIN 不得 FULL；matcher v1.1；pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户；不宣称 TD009 关单。sprint-actor-detail-matcher-coexisting-uncertainty.md。
 
 **2026-10-22 JUMP 标题品牌 hybrid／semantic 排除（TD004，已推送 fb984ea）：** title-brand-only action noise 并入排除集；EqualSimilarity hybrid + demo-phase0 只读。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户；不宣称 TD004 关单。sprint-retrieval-jump-title-hybrid-noise.md。
