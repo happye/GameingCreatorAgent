@@ -14,7 +14,7 @@
     const states = {running:"正在执行", finished:"资料已保存", failed:"本次失败，资料已保留", interrupted:"执行已中断，资料已保留"};
     const byId = id => document.getElementById(id);
     let current = null, revision = 0, controller = null, timer = null;
-    let pickerAvailable = false, cancelPicker = null, projectCatalog = null;
+    let pickerAvailable = false, readinessAvailable = false, cancelPicker = null, projectCatalog = null;
     const bindStates = new WeakMap();
     const text = (tag, value, className) => {const node=document.createElement(tag); node.textContent=value; if(className) node.className=className; return node;};
     function status(message) {byId("status").textContent=message;}
@@ -31,6 +31,42 @@
     }
     function inputLabel(form,label,id,type="text") {const wrapper=text("label",label), input=document.createElement("input");input.id=id;input.type=type; if(type==="file") input.accept=".json,application/json"; wrapper.append(input);form.append(wrapper);return input;}
     function selectLabel(form,label,id,values) {const wrapper=text("label",label),select=document.createElement("select");select.id=id;for(const [value,labelText] of values){const option=text("option",labelText);option.value=value;select.append(option);} wrapper.append(select);form.append(wrapper);return select;}
+
+    function assertReadinessInert(payload) {
+        if (payload.schemaVersion !== "acceptance-readiness-v1" || payload.snapshotOnly !== true
+            || payload.formalAcceptancePassed !== false || payload.humanEvalPassed !== false
+            || payload.coverageGapsCleared !== false || payload.qualityGate === true
+            || !payload.featureClaims || payload.featureClaims.F006 !== false
+            || payload.featureClaims.F009 !== false || payload.featureClaims.F010 !== false
+            || typeof payload.formalAcceptanceStatus !== "string"
+            || payload.formalAcceptanceStatus === "passed") {
+            throw new Error("验收就绪来源无效或含通过声明，已拒绝展示。");
+        }
+    }
+    function fillBindReadiness(panel, statusNode, payload) {
+        assertReadinessInert(payload);
+        panel.replaceChildren();
+        const title = text("p", payload.formalAcceptanceStatusLabel || payload.formalAcceptanceStatus, "bind-readiness-title");
+        statusNode.textContent = "已汇总验收就绪（只读）；不等于检索质量通过或 F006 通过。";
+        panel.append(statusNode, title);
+        const counts = payload.counts || {};
+        panel.append(text("p",
+            `可检索 ${counts.searchableRuns ?? "—"} · 覆盖缺口 ${counts.coverageGapRuns ?? "—"} · 未完成 ${counts.incompleteRuns ?? "—"}`,
+            "state"));
+        const blockers = Array.isArray(payload.projectBlockers) ? payload.projectBlockers : [];
+        if (blockers.length) {
+            panel.append(text("p", "阻断：" + blockers.join("、"), "state"));
+        }
+        const note = text("p",
+            payload.notes || "本汇总不能代替人工评分，也不宣称验收通过。",
+            "bind-readiness-note");
+        panel.append(note);
+        if (Array.isArray(payload.userDecisionsPending) && payload.userDecisionsPending.length) {
+            panel.append(text("p", "仍待你决定：" + payload.userDecisionsPending.join("、") + "（不代选 A／B／D）。", "state"));
+        }
+        panel.append(text("p", "formalAcceptancePassed=false · humanEvalPassed=false · F006/F009/F010=false", "state"));
+    }
+
     function installPicker(form, completed, locked) {
         const identifier=current.id, freeze=completed.freeze, project=form.querySelector("#bind-project"), partition=form.querySelector("#bind-partition");
         const holder=text("div",""), message=text("p","先明确选择项目和用途，再读取可关联的分析。","state");
@@ -38,9 +74,9 @@
         const read=text("button","读取可关联的分析");read.id="read-bind-options";read.type="button";
         const legacy=form.querySelector("input[type=file]");
         const details=document.createElement("details"); details.append(text("summary","使用已有对应表（可选）"),legacy.parentElement);
-        form.append(read,message,holder,details);
+        const readiness=text("div","");readiness.id="bind-readiness";readiness.className="bind-readiness";const readinessStatus=text("p","填写项目并读取分析时，会同时汇总验收就绪（只读，不宣称通过）。","state");readinessStatus.id="bind-readiness-status";readiness.append(readinessStatus);form.append(read,message,readiness,holder,details);
         const state={options:null,generation:0,controller:null};bindStates.set(form,state);
-        function invalidate() {state.generation+=1;state.controller?.abort();state.options=null;holder.replaceChildren();read.disabled=Boolean(locked);message.textContent="选择已变更，请重新读取并明确选择任务。";}
+        function invalidate() {state.generation+=1;state.controller?.abort();state.options=null;holder.replaceChildren();read.disabled=Boolean(locked);message.textContent="选择已变更，请重新读取并明确选择任务。";if(readiness){readiness.replaceChildren();readiness.append(readinessStatus);readinessStatus.textContent="选择已变更，就绪汇总已清空；请重新读取。";}}
         cancelPicker=invalidate;
         for(const node of [project,partition]) node.addEventListener("input",invalidate);
         const list=document.createElement("datalist");list.id="bind-projects";project.setAttribute("list",list.id);form.append(list);
@@ -65,7 +101,7 @@
                     wrapper.append(select);holder.append(wrapper,text("p",`录制归组：${source.recordingGroup || "尚未确认"} · ${source.modelResultsViewed?"已看过模型结果":"声明未看过模型结果"}`,"state"));
                     if(!source.candidates.some(row=>row.selectable)){const gapOnly=source.candidates.length>0&&source.candidates.every(row=>row.errorCode==="analysis.coverage_gap"||(typeof row.reason==="string"&&row.reason.includes("覆盖缺口")));holder.append(text("p",gapOnly?"这段录像的分析保留覆盖缺口，未获完整资格，不能关联做正式验收。":"这段录像暂无可关联的已完成分析，请保留原任务并按已有流程处理。","failed"));}
                 }
-                message.textContent="已按保存的原片身份列出任务；选择后关联时会核对实际录像和证据。"+(Object.keys(value.previousSelection).length?" 已恢复上次明确选择。":" 不会自动选择最新版本。");
+                message.textContent="已按保存的原片身份列出任务；选择后关联时会核对实际录像和证据。"+(Object.keys(value.previousSelection).length?" 已恢复上次明确选择。":" 不会自动选择最新版本。");if(readinessAvailable){try{const ready=await request("/api/acceptance-readiness?"+new URLSearchParams({project:identity.project,limit:"100"}),{signal:state.controller.signal});if(generation!==state.generation || current?.id!==identifier || !form.isConnected)return;if(ready.project!==identity.project)throw new Error("验收就绪项目不符，请重新读取。");fillBindReadiness(readiness,readinessStatus,ready);}catch(readyError){if(generation===state.generation){readiness.replaceChildren();readiness.append(readinessStatus);readinessStatus.textContent="验收就绪未读取："+readyError.message+"（不影响上方关联列表；不能据此判断已通过）。";}}}else{readinessStatus.textContent="当前工作台未提供验收就绪接口；关联仍可用。不宣称验收通过。";}
             }catch(error){if(generation===state.generation){state.options=null;holder.replaceChildren();message.textContent=error.message;}}
             finally{if(generation===state.generation)read.disabled=Boolean(locked);}
         })());
@@ -75,7 +111,7 @@
         current=value; byId("current").hidden=false;byId("current-name").textContent=value.name;
         byId("location").textContent="本机保存位置：artifacts/benchmark-workflows/"+value.id;
         const quality=value.qualityGate===true?"本报告检索质量达到门槛":value.qualityGate===false?"本报告未达到质量门槛":"检索质量尚未验证";
-        byId("overall").textContent=(value.busy?"有一步正在执行。":"可以继续以下步骤。")+" · "+quality;
+        byId("overall").textContent=(value.busy?"有一步正在执行。":"可以继续以下步骤。")+" · "+quality+" · 验收就绪只是资格汇总，不等于已验收或 F006 通过。";
         const completed=Object.fromEntries(value.attempts.filter(row=>row.status==="finished").map(row=>[row.action,row]));
         byId("steps").replaceChildren();
         for(const [index,step] of steps.entries()) {
@@ -140,5 +176,5 @@
     byId("create-form").addEventListener("submit",event=>{event.preventDefault();void (async()=>{const token=resetRequest();byId("create-workflow").disabled=true;try{const value=await request("/api/benchmark-workflows",{method:"POST",body:JSON.stringify({name:byId("workflow-name").value}),signal:token.signal});if(token.version!==revision)return;location.hash=value.id;await catalog(value.id);}catch(error){if(token.version===revision)status(error.message);}finally{byId("create-workflow").disabled=false;}})();});
     byId("workflow-select").addEventListener("change",()=>{const id=byId("workflow-select").value;resetRequest();current=null;byId("current").hidden=true;location.hash=id;if(id)void load(id);});
     byId("refresh").addEventListener("click",()=>void catalog(current?.id || location.hash.slice(1)));
-    void (async()=>{try{const health=await request("/api/health");pickerAvailable=health.application==="gamingcreator-workspace" && health.capabilities?.includes("benchmark-bind-options-v1");}catch{/* Existing saved-file binding remains available. */} await catalog(location.hash.slice(1));})();
+    void (async()=>{try{const health=await request("/api/health");pickerAvailable=health.application==="gamingcreator-workspace" && health.capabilities?.includes("benchmark-bind-options-v1");readinessAvailable=health.application==="gamingcreator-workspace" && health.capabilities?.includes("acceptance-readiness-v1");}catch{/* Existing saved-file binding remains available. */} await catalog(location.hash.slice(1));})();
 })();

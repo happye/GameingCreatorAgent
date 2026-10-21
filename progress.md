@@ -1,5 +1,8 @@
 # Progress Log
 
+**2026-10-22 验收流程页只读挂接验收就绪：** 绑定步骤并读 readiness；inert 护栏；静态 pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-acceptance-workflow-readiness.md。
+
+
 **2026-10-22 共享离线 WaitingTransport／IdleRecorder（已推送 f1fe0c8）：** 抽到 fake_vision_transport／fake_invocation_recorder；合同测试绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-shared-waiting-idle-doubles.md。
 
 
