@@ -369,6 +369,30 @@ def assert_refinement_request_document_contract(document: dict[str, object]) -> 
     for key in REFINEMENT_DOCUMENT_FORBIDDEN_CLAIM_KEYS:
         if key in document and document.get(key) is not None:
             raise _refinement_contract_fail(f"精分析请求不能声称 {key}。", run_id)
+        if key in payload and payload.get(key) is not None:
+            raise _refinement_contract_fail(f"精分析请求规范载荷不能声称 {key}。", run_id)
+    candidate_id = payload.get("candidateId")
+    if type(candidate_id) is not str or not candidate_id:
+        raise _refinement_contract_fail("精分析请求 candidateId 无效。", run_id)
+    media_sha = payload.get("mediaSha256")
+    if type(media_sha) is not str or not _HASH64.fullmatch(media_sha):
+        raise _refinement_contract_fail("精分析请求 mediaSha256 无效。", run_id)
+    configuration_hash = payload.get("configurationHash")
+    if type(configuration_hash) is not str or not _HASH64.fullmatch(configuration_hash):
+        raise _refinement_contract_fail("精分析请求 configurationHash 无效。", run_id)
+    interval = payload.get("interval")
+    if type(interval) is not dict:
+        raise _refinement_contract_fail("精分析请求 interval 无效。", run_id)
+    start_us = interval.get("startUs")
+    end_us = interval.get("endUs")
+    duration_us = interval.get("durationUs")
+    if type(start_us) is not int or type(end_us) is not int or type(duration_us) is not int:
+        raise _refinement_contract_fail("精分析请求 interval 时间字段无效。", run_id)
+    if not (0 <= start_us < end_us <= duration_us):
+        raise _refinement_contract_fail("精分析请求 interval 时间范围无效。", run_id)
+    evidence = payload.get("evidence")
+    if type(evidence) is not list or not evidence:
+        raise _refinement_contract_fail("精分析请求 evidence 无效。", run_id)
 
 
 def assert_refinement_result_document_contract(document: dict[str, object]) -> None:
@@ -438,6 +462,27 @@ def assert_refinement_sidecar_pair_contract(
         raise _refinement_contract_fail("精分析结果 mediaSha256 与请求不一致。", run_id)
     if detail.configuration_hash != payload.get("configurationHash"):
         raise _refinement_contract_fail("精分析结果 configurationHash 与请求不一致。", run_id)
+    interval = payload.get("interval")
+    assert type(interval) is dict
+    source_range = detail.source_range
+    if (
+        source_range.start_us != interval.get("startUs")
+        or source_range.end_us != interval.get("endUs")
+        or source_range.duration_us != interval.get("durationUs")
+    ):
+        raise _refinement_contract_fail("精分析结果时间范围与请求 interval 不一致。", run_id)
+    if detail.base_prompt_hash != request_document.get("basePromptHash"):
+        raise _refinement_contract_fail("精分析结果 basePromptHash 与请求不一致。", run_id)
+    if detail.base_prompt_version != request_document.get("basePromptVersion"):
+        raise _refinement_contract_fail("精分析结果 basePromptVersion 与请求不一致。", run_id)
+    event_id = detail.event_id
+    # Owned timelines use "{runId}:{mediaId}:..."; synthetic fixtures may use bare ids.
+    if (
+        type(event_id) is str
+        and ":" in event_id
+        and not event_id.startswith(f"{detail.run_id}:{detail.media_id}:")
+    ):
+        raise _refinement_contract_fail("精分析结果 eventId 不属于请求媒体。", run_id)
 
 
 def refinement_sidecar_contract_gaps(

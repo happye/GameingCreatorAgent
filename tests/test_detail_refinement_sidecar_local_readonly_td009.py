@@ -110,3 +110,81 @@ def test_assert_refinement_sidecar_pair_contract_rejects_cross_request_result() 
     assert mismatched.value.code == "refinement.contract"
     gaps = refinement_sidecar_contract_gaps(request_doc, result_doc)
     assert gaps
+
+
+def test_assert_refinement_request_rejects_canonical_identity_interval_evidence_drift() -> None:
+    dirs = _require_sidecar_dirs()
+    document = json.loads((dirs[0] / "request.json").read_text(encoding="utf-8-sig"))
+    assert_refinement_request_document_contract(document)
+
+    bad_media = json.loads(json.dumps(document))
+    payload = json.loads(bad_media["canonicalJson"])
+    payload["mediaSha256"] = "0" * 64
+    bad_media["canonicalJson"] = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    # Keep requestHash pointing at old body so either hash or field check fails.
+    with pytest.raises(AppError) as media:
+        assert_refinement_request_document_contract(bad_media)
+    assert media.value.code == "refinement.contract"
+
+    # Re-hash so identity field checks run after hash gate.
+    aligned = json.loads(json.dumps(document))
+    payload = json.loads(aligned["canonicalJson"])
+    payload["mediaSha256"] = "0" * 64
+    body = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    # Use exact canonical string style from file when possible.
+    original = aligned["canonicalJson"]
+    payload = json.loads(original)
+    payload["candidateId"] = ""
+    # Preserve formatting by round-tripping through loads/dumps of original structure.
+    import hashlib
+
+    rewritten = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    # Prefer keeping original key order via replace on parsed then dump with same separators as stored.
+    # Fallback: dump sorted; update hash to match.
+    aligned["canonicalJson"] = rewritten
+    aligned["requestHash"] = hashlib.sha256(rewritten.encode("utf-8")).hexdigest()
+    # eventFingerprint in envelope still matches payload fingerprint field
+    with pytest.raises(AppError) as empty_candidate:
+        assert_refinement_request_document_contract(aligned)
+    assert empty_candidate.value.code == "refinement.contract"
+
+    interval_bad = json.loads(json.dumps(document))
+    payload = json.loads(interval_bad["canonicalJson"])
+    payload["interval"]["endUs"] = payload["interval"]["startUs"]
+    rewritten = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    interval_bad["canonicalJson"] = rewritten
+    interval_bad["requestHash"] = hashlib.sha256(rewritten.encode("utf-8")).hexdigest()
+    with pytest.raises(AppError) as spanned:
+        assert_refinement_request_document_contract(interval_bad)
+    assert spanned.value.code == "refinement.contract"
+
+    claimed = json.loads(json.dumps(document))
+    payload = json.loads(claimed["canonicalJson"])
+    payload["qualityGate"] = True
+    rewritten = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    claimed["canonicalJson"] = rewritten
+    claimed["requestHash"] = hashlib.sha256(rewritten.encode("utf-8")).hexdigest()
+    with pytest.raises(AppError) as gate:
+        assert_refinement_request_document_contract(claimed)
+    assert gate.value.code == "refinement.contract"
+
+
+def test_assert_refinement_sidecar_pair_rejects_range_and_prompt_drift() -> None:
+    dirs = [path for path in _require_sidecar_dirs() if (path / "result.json").is_file()]
+    if not dirs:
+        pytest.skip("local detail-refinements results missing")
+    request_doc = json.loads((dirs[0] / "request.json").read_text(encoding="utf-8-sig"))
+    result_doc = json.loads((dirs[0] / "result.json").read_text(encoding="utf-8-sig"))
+    assert_refinement_sidecar_pair_contract(request_doc, result_doc)
+
+    prompt_drift = json.loads(json.dumps(request_doc))
+    prompt_drift["basePromptHash"] = "a" * 64
+    with pytest.raises(AppError) as prompt:
+        assert_refinement_sidecar_pair_contract(prompt_drift, result_doc)
+    assert prompt.value.code == "refinement.contract"
+
+    version_drift = json.loads(json.dumps(request_doc))
+    version_drift["basePromptVersion"] = "not-the-result-prompt"
+    with pytest.raises(AppError) as version:
+        assert_refinement_sidecar_pair_contract(version_drift, result_doc)
+    assert version.value.code == "refinement.contract"
