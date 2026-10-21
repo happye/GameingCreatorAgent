@@ -1,6 +1,6 @@
 # Sprint：项目联合检索落盘结果本机只读对照
 
-**状态（2026-10-22）：待推送 origin/main。** 新增 `assert_project_search_document_contract`：在 `assert_search_document_contract` 之上钉死 `project-search-v1`、searchId／scopeId、项目检索版本前缀、sources 归属、`modelAnalysisCalls=0`／`newReservations=0`。CLI 落盘前与 `read_project_search` 读回时强制校验。pytest 只读扫 `artifacts/demo-phase0/project-searches/*/result.json`＋receipt 联动。验证=**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。
+**状态（2026-10-22）：已推送 origin/main a62690e。** 新增 `assert_project_search_document_contract`：在 `assert_search_document_contract` 之上钉死 `project-search-v1`、searchId／scopeId、项目检索版本前缀、sources 归属、`modelAnalysisCalls=0`／`newReservations=0`。CLI 落盘前与 `read_project_search` 读回时强制校验。pytest 只读扫 `artifacts/demo-phase0/project-searches/*/result.json`＋receipt 联动。验证=**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。
 
 ## Assignment
 
