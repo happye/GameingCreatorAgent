@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-22 检索拒绝覆盖缺口／未完成 run**：NL 搜索入口在排序前明确拒绝 `retrieval.coverage_gap` 与未完成记录；相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-search-eligibility.md。
+
 **2026-10-22 任务列表区分覆盖缺口资格（已推送 3230651）**：material-tasks-v2；coverage_gap 不再混进「分析未完成」；searchEligible 仅 Completed。相关 pytest 绿；工作台文案同步。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-tasks-coverage-gap-eligibility.md。
 
 **2026-10-22 草稿包链接同帧诊断证据（已推送 c1cbf37）**：写出时附加 diagnosis-links 与 README 拒因摘录；缺包则写期望路径。相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-coverage-gap-diagnosis-link.md。

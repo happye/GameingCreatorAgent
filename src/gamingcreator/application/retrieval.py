@@ -17,7 +17,12 @@ from gamingcreator.application.providers import (
     InvocationMetadata,
     ProviderStatus,
 )
-from gamingcreator.application.storage import RunStatus, StoredRun, StoredTimeline
+from gamingcreator.application.storage import (
+    RunStatus,
+    StoredRun,
+    StoredTimeline,
+    TimelineStore,
+)
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.models import Embedding, EvidenceReference
 from gamingcreator.domain.time import SourceInstant, SourceRange
@@ -220,6 +225,32 @@ def _fail(code: str, message: str) -> AppError:
     return AppError(code, message, ExitCode.INPUT)
 
 
+def refuse_unsearchable_run(run: StoredRun) -> None:
+    """Refuse runs that must not back NL search or formal acceptance queries."""
+    if run.status == RunStatus.FAILED and run.error_code == "analysis.coverage_gap":
+        raise _fail(
+            "retrieval.coverage_gap",
+            "该分析保留覆盖缺口，未获完整资格，不能用于检索或正式验收。",
+        )
+    if run.status != RunStatus.COMPLETED:
+        raise _fail(
+            "storage.run_incomplete",
+            "只能检索已完成并校验的分析记录。",
+        )
+
+
+async def load_searchable_timeline(store: TimelineStore, run_id: str) -> StoredTimeline:
+    """Load one Completed timeline for search, with coverage-gap-specific refusal."""
+    # Prefer run metadata before the heavy timeline load when the store exposes it.
+    # Test doubles may only implement load_completed_timeline; still gate on timeline.run.
+    load_run = getattr(store, "load_run", None)
+    if callable(load_run):
+        refuse_unsearchable_run(await load_run(run_id))
+    timeline = await store.load_completed_timeline(run_id)
+    refuse_unsearchable_run(timeline.run)
+    return timeline
+
+
 def _tokens(text: str) -> tuple[str, ...]:
     text = unicodedata.normalize("NFKC", text).casefold()
     for filler in _CHINESE_FILLER:
@@ -251,8 +282,7 @@ def _evidence_overlaps(evidence: EvidenceReference, interval: SourceRange) -> bo
 
 def _documents(timeline: StoredTimeline) -> tuple[_Document, ...]:
     run, asset = timeline.run, timeline.run.asset
-    if run.status != RunStatus.COMPLETED:
-        raise _fail("storage.run_incomplete", "只能检索已完成并校验的分析记录。")
+    refuse_unsearchable_run(run)
     evidence = {item.evidence_id: item for item in timeline.evidence}
     if len(evidence) != len(timeline.evidence):
         raise _fail("retrieval.timeline_invalid", "时间轴证据标识重复。")
@@ -618,7 +648,7 @@ async def _search_documents(
     """Rank validated source intervals; scores are ranking signals, never probabilities.
 
     The semantic cutoff is a tunable uncalibrated demo parameter, not a quality gate.
-    Callers must obtain the timeline through load_completed_timeline to check file integrity.
+    Callers must obtain the timeline through load_searchable_timeline (or an equivalent Completed gate) to check file integrity.
     """
     if (
         type(top_k) is not int

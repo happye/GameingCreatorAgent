@@ -1,5 +1,7 @@
 # Active assignments
 
+**当前（2026-10-22）：root 单 Agent 交付检索资格闸。** sprint-search-eligibility.md 由 root／GamingCreatorAgent 拥有。改 `retrieval.py`、CLI 搜索／详情加载、相关测试／公共 docs；0 付费。不代选 A／B／D；不改 feature_list。以下任务列表／缺口脚手架为历史。
+
 **当前（2026-10-22）：root 单 Agent 交付任务列表覆盖缺口资格区分。** sprint-tasks-coverage-gap-eligibility.md 由 root／GamingCreatorAgent 拥有。改 `tasks.py`、工作台任务文案、相关测试／公共 docs；0 付费。不代选 A／B／D；不改 feature_list。以下诊断链接／缺口脚手架为历史。
 
 **当前（2026-10-22）：root 单 Agent 交付草稿诊断证据链接。** sprint-coverage-gap-diagnosis-link.md 由 root／GamingCreatorAgent 拥有。改 directed_gap_fill 链接助手／写出 README、CLI 可选参数、测试与公共 docs；0 付费。不代选 A／B／D；不改 feature_list。以下写出脚本为历史。

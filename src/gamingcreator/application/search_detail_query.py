@@ -7,7 +7,7 @@ import re
 from typing import cast
 
 from gamingcreator.application.project_detail_query import STATUSES, SavedMatcher
-from gamingcreator.application.retrieval import candidate_sources
+from gamingcreator.application.retrieval import candidate_sources, load_searchable_timeline
 from gamingcreator.application.storage import TimelineStore
 from gamingcreator.domain.actor_details import QueryConstraint, canonical_constraint_json
 from gamingcreator.domain.errors import AppError, ExitCode
@@ -88,7 +88,9 @@ async def match_search_details(
             ExitCode.STORAGE,
         )
     ids = search_run_ids(document)
-    timelines = {identifier: await store.load_completed_timeline(identifier) for identifier in ids}
+    timelines = {
+        identifier: await load_searchable_timeline(store, identifier) for identifier in ids
+    }
     sources = cast(list[dict[str, object]], document["sources"])
     if len({row.run.asset.sha256 for row in timelines.values()}) != len(ids) or len(
         {row.run.asset.media_id for row in timelines.values()}

@@ -62,6 +62,7 @@ from gamingcreator.application.retrieval import (
     RETRIEVAL_VERSION,
     RetrievalMode,
     SearchResult,
+    load_searchable_timeline,
     search_timeline,
     search_timelines,
 )
@@ -302,7 +303,7 @@ async def execute_search(
     _require_project(project)
     store = await SqliteTimelineStore.open(project)
     try:
-        timeline = await store.load_completed_timeline(run_id)
+        timeline = await load_searchable_timeline(store, run_id)
         provider = LocalEmbeddingProvider.from_manifest(repository) if mode != "lexical" else None
         started = perf_counter()
         result = await search_timeline(
@@ -371,7 +372,7 @@ async def execute_project_search(
     store = await SqliteTimelineStore.open(project, read_only=True)
     try:
         timelines = tuple(
-            [await store.load_completed_timeline(identifier) for identifier in sorted(run_ids)]
+            [await load_searchable_timeline(store, identifier) for identifier in sorted(run_ids)]
         )
         if len({timeline.run.asset.sha256 for timeline in timelines}) != len(timelines) or len(
             {timeline.run.asset.media_id for timeline in timelines}
@@ -506,7 +507,7 @@ async def execute_search_detail_match(
                 )
             timelines = tuple(
                 [
-                    await store.load_completed_timeline(identifier)
+                    await load_searchable_timeline(store, identifier)
                     for identifier in search_run_ids(document)
                 ]
             )

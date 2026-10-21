@@ -6,6 +6,7 @@ from collections.abc import Callable, Sequence
 from typing import cast
 
 from gamingcreator.application.observation_text import display_facts
+from gamingcreator.application.retrieval import load_searchable_timeline
 from gamingcreator.application.storage import StoredTimeline, TimelineStore
 from gamingcreator.domain.actor_details import QueryConstraint, canonical_constraint_json
 from gamingcreator.domain.errors import AppError, ExitCode
@@ -56,7 +57,9 @@ async def match_project_details(
             "请选择不同录像、明确条件版本和有效分页参数。",
             ExitCode.INPUT,
         )
-    timelines = [await store.load_completed_timeline(identifier) for identifier in sorted(run_ids)]
+    timelines = [
+        await load_searchable_timeline(store, identifier) for identifier in sorted(run_ids)
+    ]
     if len({row.run.asset.sha256 for row in timelines}) != len(timelines) or len(
         {row.run.asset.media_id for row in timelines}
     ) != len(timelines):

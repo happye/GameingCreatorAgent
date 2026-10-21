@@ -416,3 +416,15 @@ def test_provider_cancelling_context_cannot_return_success():
 def test_invalid_configuration_refused(options):
     with pytest.raises(AppError):
         search(timeline(), "construction", **options)
+
+
+def test_coverage_gap_run_refused_with_specific_code():
+    data = timeline()
+    gap = replace(
+        data,
+        run=replace(data.run, status=RunStatus.FAILED, error_code="analysis.coverage_gap"),
+    )
+    with pytest.raises(AppError) as refused:
+        search(gap, "jump", mode="lexical")
+    assert refused.value.code == "retrieval.coverage_gap"
+    assert "覆盖缺口" in refused.value.message
