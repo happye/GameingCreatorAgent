@@ -1,6 +1,6 @@
 # Sprint：素材任务行嵌入覆盖缺口拒窗摘要
 
-**状态（2026-10-22）：已交付（待推送）。** `material-tasks-v2` 对 `analysis_coverage_gap` 任务附加只读 `coverageGapSummary`（拒窗 ID／计数；恒未清除、未选 B）；工作台任务卡展示摘要。0 付费；不代选 A／B／D；不声称三缺口已清；不标 F006 true；不宣称人评／验收通过。
+**状态（2026-10-22）：已交付并推送 2b4d209。** `material-tasks-v2` 对 `analysis_coverage_gap` 任务附加只读 `coverageGapSummary`（拒窗 ID／计数；恒未清除、未选 B）；工作台任务卡展示摘要。0 付费；不代选 A／B／D；不声称三缺口已清；不标 F006 true；不宣称人评／验收通过。
 
 ## Assignment
 
@@ -19,4 +19,4 @@
 - [x] 工作台任务卡展示拒窗／未加载提示
 - [x] pytest 覆盖有／无 coverage 文件与静态字符串
 - [x] 0 DeepSeek／launcher；F006/F009/F010 仍 false
-- [ ] 已推送 `origin/main`（推送后勾）
+- [x] 已推送 `origin/main`（2b4d209）

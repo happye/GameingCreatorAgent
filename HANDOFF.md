@@ -1,9 +1,9 @@
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
-**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip 5925ae1（含工作台覆盖缺口）），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
+**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip 2b4d209（含任务行拒窗摘要）），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
 
 
-**当前锚点（2026-10-22，素材任务行覆盖缺口拒窗摘要）：** `coverageGapSummary` 嵌入任务卡；未清除／未代选。sprint：`docs/exec-plans/sprint-tasks-coverage-gap-summary.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下工作台覆盖缺口报告为历史。
+**当前锚点（2026-10-22，素材任务行覆盖缺口拒窗摘要，已推送 2b4d209）：** `coverageGapSummary` 嵌入任务卡；未清除／未代选。sprint：`docs/exec-plans/sprint-tasks-coverage-gap-summary.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下工作台覆盖缺口报告为历史。
 
 **当前锚点（2026-10-22，工作台只读覆盖缺口报告，已推送 5925ae1）：** 「覆盖缺口 ↗」+ `/api/coverage-gap-report`；拒绝 cleared／通过声明。sprint：`docs/exec-plans/sprint-coverage-gap-report-workbench.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下 coverage-gap-report CLI 为历史。
 
