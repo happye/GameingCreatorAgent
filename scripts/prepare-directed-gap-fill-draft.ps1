@@ -2,7 +2,10 @@
     [Parameter(Mandatory = $true)][string]$Coverage,
     [Parameter(Mandatory = $true)][string]$OutputDirectory,
     [string[]]$Stage,
-    [string]$MaxAdditionalCostCny
+    [string]$MaxAdditionalCostCny,
+    [string]$DiagnosisDir,
+    [string]$DocsReport,
+    [string]$RepoRoot
 )
 # Read-only: write inert directed gap-fill proposal draft under an ignored artifacts dir.
 # Never calls a model / launcher.
@@ -22,6 +25,15 @@ if ($Stage) {
 }
 if ($MaxAdditionalCostCny) {
     $draftArguments += @('--max-additional-cost-cny', $MaxAdditionalCostCny)
+}
+if ($DiagnosisDir) {
+    $draftArguments += @('--diagnosis-dir', $DiagnosisDir)
+}
+if ($DocsReport) {
+    $draftArguments += @('--docs-report', $DocsReport)
+}
+if ($RepoRoot) {
+    $draftArguments += @('--repo-root', $RepoRoot)
 }
 $draftOutputEncoding = $OutputEncoding
 $draftConsoleEncoding = [Console]::OutputEncoding

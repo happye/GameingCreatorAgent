@@ -1,6 +1,6 @@
 # Sprint：三组分析覆盖缺口的独立处理方案（规划）
 
-**状态（2026-10-21）：规划完成；用户已选 C；定向补窗离线合同见 sprint-coverage-gap-directed-contract.md；提案草稿模板见 sprint-coverage-gap-proposal-draft.md；只读写出见 sprint-coverage-gap-draft-writer.md。** 选项 C 实现见 sprint-coverage-gap-offline-c.md。本规划 sprint 仍 0 付费、不重跑 launcher、F006/F009/F010 false。B 为未来付费补窗路径。
+**状态（2026-10-21）：规划完成；用户已选 C；定向补窗离线合同见 sprint-coverage-gap-directed-contract.md；提案草稿模板见 sprint-coverage-gap-proposal-draft.md；只读写出见 sprint-coverage-gap-draft-writer.md；诊断证据链接见 sprint-coverage-gap-diagnosis-link.md。** 选项 C 实现见 sprint-coverage-gap-offline-c.md。本规划 sprint 仍 0 付费、不重跑 launcher、F006/F009/F010 false。B 为未来付费补窗路径。
 
 ## Assignment
 

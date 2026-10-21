@@ -1,5 +1,7 @@
 # Active assignments
 
+**当前（2026-10-22）：root 单 Agent 交付草稿诊断证据链接。** sprint-coverage-gap-diagnosis-link.md 由 root／GamingCreatorAgent 拥有。改 directed_gap_fill 链接助手／写出 README、CLI 可选参数、测试与公共 docs；0 付费。不代选 A／B／D；不改 feature_list。以下写出脚本为历史。
+
 **当前（2026-10-21）：root 单 Agent 交付定向补窗草稿只读写出。** sprint-coverage-gap-draft-writer.md 由 root／GamingCreatorAgent 拥有。改 `directed_gap_fill.py` write 路径、scripts、相关测试／公共 docs；0 付费、0 launcher。不代选 A／B／D；不改 feature_list。以下模板／护栏为历史。
 
 **当前（2026-10-21）：root 单 Agent 交付定向补窗提案草稿模板。** sprint-coverage-gap-proposal-draft.md 由 root／GamingCreatorAgent 拥有。改 `directed_gap_fill.py` 与相关测试／公共 docs；0 付费、0 launcher。不代选 A／B／D；不改 feature_list。以下护栏／选项 C／终态为历史。

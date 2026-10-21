@@ -26,3 +26,7 @@
 ## Stop
 
 - 禁止付费；禁止代选 A／B／D；禁止把草稿目录当批准证据。
+
+## Follow-on
+
+- 同帧诊断证据链接：见 [sprint-coverage-gap-diagnosis-link.md](sprint-coverage-gap-diagnosis-link.md)。

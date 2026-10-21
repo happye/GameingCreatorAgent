@@ -44,6 +44,24 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="可选费用上限占位（写入草稿仍不授权）",
     )
+    parser.add_argument(
+        "--diagnosis-dir",
+        type=Path,
+        default=None,
+        help="可选同帧诊断包目录（默认 artifacts/coverage-gap-diagnosis-20261021）",
+    )
+    parser.add_argument(
+        "--docs-report",
+        type=Path,
+        default=None,
+        help="可选仓库诊断报告路径（默认 docs/exec-plans/report-2026-10-21-coverage-gap-diagnosis.md）",
+    )
+    parser.add_argument(
+        "--repo-root",
+        type=Path,
+        default=None,
+        help="可选仓库根（解析相对诊断／报告路径；默认当前工作目录）",
+    )
     args = parser.parse_args(argv)
     try:
         receipt = write_directed_gap_fill_proposal_draft(
@@ -51,6 +69,9 @@ def main(argv: list[str] | None = None) -> int:
             args.output,
             proposed_stage_ids=args.stages,
             maximum_additional_cost_cny=args.max_additional_cost_cny,
+            diagnosis_dir=args.diagnosis_dir,
+            docs_report=args.docs_report,
+            repo_root=args.repo_root,
         )
     except AppError as error:
         print(error.message, file=sys.stderr)

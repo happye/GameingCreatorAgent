@@ -1,6 +1,6 @@
 # 需要用户参与的事项
 
-**已决（2026-10-21）：覆盖缺口选 C。** 离线改进／护栏／提案草稿模板已齐；现可用本机只读命令把**未授权草稿**写到 `artifacts/` 方便以后查阅——**生成草稿 ≠ 选 B，也不花钱**。三缺口仍在。
+**已决（2026-10-21）：覆盖缺口选 C。** 离线改进／护栏／提案草稿模板已齐；现可用本机只读命令把**未授权草稿**写到 `artifacts/` 方便以后查阅——**生成草稿 ≠ 选 B，也不花钱**；草稿 README 会附带同帧拒因诊断摘要（只读）。三缺口仍在。
 
 可选本机命令（不自动执行付费）：
 `.\scripts\prepare-directed-gap-fill-draft.ps1 -Coverage <analysis_coverage.json> -OutputDirectory artifacts/directed-gap-fill-draft-<date>`
