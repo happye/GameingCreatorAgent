@@ -1,6 +1,6 @@
 # Sprint：TD009 sidecar 规范载荷／pair 时间与 prompt 加深
 
-**状态（2026-10-22）：待推送 origin/main。** 加深 `assert_refinement_request_document_contract`：canonical 须含有效 `candidateId`／`mediaSha256`／`configurationHash`、合法 `interval`（start＜end≤duration）、非空 `evidence`；规范载荷同样禁止验收声称字段。加深 `assert_refinement_sidecar_pair_contract`：结果 `source_range` 对齐请求 interval；`basePromptHash`／`basePromptVersion` 与请求一致；带冒号的 `eventId` 须挂 `{runId}:{mediaId}:`。pytest 只读扫 demo-phase0 detail-refinements（6 request／3 result）+ 既有 sidecar 单测。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006/F009/F010 true；**不宣称 TD009／人评关单**；不改写旧 sidecar。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。攻击 tag-only 仍保留。
+**状态（2026-10-22）：已推送 origin/main 3889b45。** 加深 `assert_refinement_request_document_contract`：canonical 须含有效 `candidateId`／`mediaSha256`／`configurationHash`、合法 `interval`（start＜end≤duration）、非空 `evidence`；规范载荷同样禁止验收声称字段。加深 `assert_refinement_sidecar_pair_contract`：结果 `source_range` 对齐请求 interval；`basePromptHash`／`basePromptVersion` 与请求一致；带冒号的 `eventId` 须挂 `{runId}:{mediaId}:`。pytest 只读扫 demo-phase0 detail-refinements（6 request／3 result）+ 既有 sidecar 单测。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006/F009/F010 true；**不宣称 TD009／人评关单**；不改写旧 sidecar。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。攻击 tag-only 仍保留。
 
 ## Assignment
 

@@ -1,6 +1,6 @@
 # Technical debt
 
-**2026-10-22 TD009 离线进展（sidecar 规范载荷／pair 时间与 prompt 加深，已推送 PLACEHOLDER）：** canonical／interval／basePrompt；见 sprint-td009-sidecar-canonical-interval-prompt.md。复合人评／静态索引仍 open；不宣称 TD009／F010 关单。
+**2026-10-22 TD009 离线进展（sidecar 规范载荷／pair 时间与 prompt 加深，已推送 3889b45）：** canonical／interval／basePrompt；见 sprint-td009-sidecar-canonical-interval-prompt.md。复合人评／静态索引仍 open；不宣称 TD009／F010 关单。
 
 **2026-10-22 检索离线进展（信封／单任务投影 media／why／timecode 加深，已推送 1b885d1）：** assert_run_search／assert_persisted；见 sprint-retrieval-envelope-media-why-timecode.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 

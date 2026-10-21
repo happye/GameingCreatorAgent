@@ -1,4 +1,4 @@
-**当前（2026-10-22）：root / Agent 推进 TD009 sidecar 规范载荷／pair 时间与 prompt 加深（已推送 PLACEHOLDER）。** sprint-td009-sidecar-canonical-interval-prompt.md 归 root／GamingCreatorAgent。拥有 detail_refinement_budget 合同加深与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不改写旧 sidecar；不声称 F006／TD009 关单。以下检索信封 media／why／timecode 为历史。
+**当前（2026-10-22）：root / Agent 推进 TD009 sidecar 规范载荷／pair 时间与 prompt 加深（已推送 3889b45）。** sprint-td009-sidecar-canonical-interval-prompt.md 归 root／GamingCreatorAgent。拥有 detail_refinement_budget 合同加深与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不改写旧 sidecar；不声称 F006／TD009 关单。以下检索信封 media／why／timecode 为历史。
 
 **当前（2026-10-22）：root / Agent 推进检索信封／单任务投影 media／why／timecode 加深（已推送 1b885d1）。** sprint-retrieval-envelope-media-why-timecode.md 归 root／GamingCreatorAgent。拥有 retrieval 合同加深与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不改写 DB／旧 JSON；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下 UI 观察跨语言 + 交战为历史。
 
