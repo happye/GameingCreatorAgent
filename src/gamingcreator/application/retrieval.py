@@ -779,6 +779,37 @@ def assert_search_document_contract(document: dict[str, object]) -> None:
 
 
 
+
+def _assert_retrieval_embedding_metadata(mode: object, embedding: object, *, scope: str) -> None:
+    """Gate run/project search embedding execution metadata by retrieval mode.
+
+    lexical must omit embedding; hybrid/semantic require provider／model／schema fields
+    with actual_model == requested_model. Does not claim TD010 closeout.
+    """
+    if mode == "lexical":
+        if embedding is not None:
+            raise _fail("retrieval.contract", f"{scope} lexical 不得带 embedding。")
+        return
+    if mode not in {"hybrid", "semantic"}:
+        return
+    if type(embedding) is not dict:
+        raise _fail("retrieval.contract", f"{scope} hybrid／semantic 缺少 embedding。")
+    provider = embedding.get("provider")
+    if type(provider) is not str or not provider:
+        raise _fail("retrieval.contract", f"{scope} embedding.provider 无效。")
+    requested = embedding.get("requested_model")
+    actual = embedding.get("actual_model")
+    if type(requested) is not str or not requested:
+        raise _fail("retrieval.contract", f"{scope} embedding.requested_model 无效。")
+    if type(actual) is not str or not actual:
+        raise _fail("retrieval.contract", f"{scope} embedding.actual_model 无效。")
+    if actual != requested:
+        raise _fail("retrieval.contract", f"{scope} embedding.actual_model 与 requested_model 不一致。")
+    schema_version = embedding.get("schema_version")
+    if type(schema_version) is not str or not schema_version:
+        raise _fail("retrieval.contract", f"{scope} embedding.schema_version 无效。")
+
+
 def assert_run_search_document_contract(
     document: dict[str, object],
     *,
@@ -836,7 +867,18 @@ def assert_run_search_document_contract(
         end_tc = row.get("endTimecode")
         if type(start_tc) is not str or not start_tc or type(end_tc) is not str or not end_tc:
             raise _fail("retrieval.contract", "单任务检索投影候选 timecode 无效。")
-
+    _assert_retrieval_embedding_metadata(
+        document.get("mode"), document.get("embedding"), scope="单任务检索投影"
+    )
+    elapsed_ms = document.get("elapsedMs")
+    if type(elapsed_ms) is not int or elapsed_ms < 0:
+        raise _fail("retrieval.contract", "单任务检索投影 elapsedMs 无效。")
+    min_similarity = document.get("minSimilarity")
+    if type(min_similarity) not in {int, float}:
+        raise _fail("retrieval.contract", "单任务检索投影 minSimilarity 无效。")
+    min_margin = document.get("minSemanticMargin")
+    if min_margin is not None and type(min_margin) not in {int, float}:
+        raise _fail("retrieval.contract", "单任务检索投影 minSemanticMargin 无效。")
 
 
 def assert_persisted_retrieval_contract(document: dict[str, object]) -> None:
@@ -980,6 +1022,11 @@ def assert_project_search_document_contract(document: dict[str, object]) -> None
     top_k = document.get("topK")
     if type(top_k) is not int or top_k < 1:
         raise _fail("retrieval.contract", "项目检索投影 topK 无效。")
+    project_candidates = document.get("candidates")
+    if type(project_candidates) is not list:
+        raise _fail("retrieval.contract", "项目检索投影 candidates 必须是列表。")
+    if len(project_candidates) > top_k:
+        raise _fail("retrieval.contract", "项目检索投影 candidates 超过 topK。")
     sources = document.get("sources")
     if type(sources) is not list or not sources:
         raise _fail("retrieval.contract", "项目检索投影必须包含源运行列表。")
@@ -1022,6 +1069,9 @@ def assert_project_search_document_contract(document: dict[str, object]) -> None
         end_tc = row.get("endTimecode")
         if type(start_tc) is not str or not start_tc or type(end_tc) is not str or not end_tc:
             raise _fail("retrieval.contract", "项目检索候选 timecode 无效。")
+    _assert_retrieval_embedding_metadata(
+        document.get("mode"), document.get("embedding"), scope="项目检索投影"
+    )
 
 
 def refuse_unsearchable_run(run: StoredRun) -> None:

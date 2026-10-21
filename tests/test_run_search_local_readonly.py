@@ -191,3 +191,55 @@ def test_assert_search_document_contract_rejects_base_rank_media_span_and_score_
     with pytest.raises(AppError) as tc_err:
         assert_search_document_contract(bad_tc)
     assert tc_err.value.code == "retrieval.contract"
+
+
+def test_assert_run_search_document_contract_rejects_embedding_mode_and_threshold_drift() -> None:
+    files = _require_search_files()
+    hybrid = None
+    lexical = None
+    for path in files:
+        document = json.loads(path.read_text(encoding="utf-8-sig"))
+        mode = document.get("mode")
+        if mode == "hybrid" and hybrid is None:
+            hybrid = document
+        if mode == "lexical" and lexical is None:
+            lexical = document
+        if hybrid is not None and lexical is not None:
+            break
+    assert hybrid is not None and lexical is not None
+
+    missing = json.loads(json.dumps(hybrid))
+    missing["embedding"] = None
+    with pytest.raises(AppError) as missing_emb:
+        assert_run_search_document_contract(missing)
+    assert missing_emb.value.code == "retrieval.contract"
+
+    lexical_emb = json.loads(json.dumps(lexical))
+    lexical_emb["embedding"] = {
+        "provider": "local-onnx-e5",
+        "requested_model": "Xenova/multilingual-e5-small",
+        "actual_model": "Xenova/multilingual-e5-small",
+        "schema_version": "embedding-v1",
+    }
+    with pytest.raises(AppError) as lexical_has:
+        assert_run_search_document_contract(lexical_emb)
+    assert lexical_has.value.code == "retrieval.contract"
+
+    model_drift = json.loads(json.dumps(hybrid))
+    model_drift["embedding"] = dict(model_drift["embedding"])
+    model_drift["embedding"]["actual_model"] = "forged-other-model"
+    with pytest.raises(AppError) as mismatched:
+        assert_run_search_document_contract(model_drift)
+    assert mismatched.value.code == "retrieval.contract"
+
+    bad_elapsed = json.loads(json.dumps(hybrid))
+    bad_elapsed["elapsedMs"] = -1
+    with pytest.raises(AppError) as elapsed:
+        assert_run_search_document_contract(bad_elapsed)
+    assert elapsed.value.code == "retrieval.contract"
+
+    bad_margin = json.loads(json.dumps(hybrid))
+    bad_margin["minSemanticMargin"] = "not-a-number"
+    with pytest.raises(AppError) as margin:
+        assert_run_search_document_contract(bad_margin)
+    assert margin.value.code == "retrieval.contract"

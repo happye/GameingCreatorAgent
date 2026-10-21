@@ -145,3 +145,57 @@ def test_assert_project_search_document_contract_rejects_media_sha_timecode_and_
     with pytest.raises(AppError) as tc_err:
         assert_project_search_document_contract(bad_tc)
     assert tc_err.value.code == "retrieval.contract"
+
+
+def test_assert_project_search_document_contract_rejects_embedding_and_topk_overflow() -> None:
+    dirs = _require_project_search_dirs()
+    hybrid = None
+    lexical = None
+    for directory in dirs:
+        result_path = directory / "result.json"
+        if not result_path.is_file():
+            continue
+        document = json.loads(result_path.read_text(encoding="utf-8-sig"))
+        if document.get("schemaVersion") != "project-search-v1":
+            continue
+        mode = document.get("mode")
+        if mode == "hybrid" and hybrid is None:
+            hybrid = document
+        if mode == "lexical" and lexical is None:
+            lexical = document
+        if hybrid is not None and lexical is not None:
+            break
+    assert hybrid is not None
+
+    missing = json.loads(json.dumps(hybrid))
+    missing["embedding"] = None
+    with pytest.raises(AppError) as missing_emb:
+        assert_project_search_document_contract(missing)
+    assert missing_emb.value.code == "retrieval.contract"
+
+    overflow = json.loads(json.dumps(hybrid))
+    overflow["topK"] = 1
+    if len(overflow.get("candidates") or []) <= 1 and overflow.get("candidates"):
+        overflow["candidates"] = list(overflow["candidates"]) + list(overflow["candidates"])
+    with pytest.raises(AppError) as over:
+        assert_project_search_document_contract(overflow)
+    assert over.value.code == "retrieval.contract"
+
+    if lexical is not None:
+        lexical_emb = json.loads(json.dumps(lexical))
+        lexical_emb["embedding"] = {
+            "provider": "local-onnx-e5",
+            "requested_model": "Xenova/multilingual-e5-small",
+            "actual_model": "Xenova/multilingual-e5-small",
+            "schema_version": "embedding-v1",
+        }
+        with pytest.raises(AppError) as lexical_has:
+            assert_project_search_document_contract(lexical_emb)
+        assert lexical_has.value.code == "retrieval.contract"
+
+    model_drift = json.loads(json.dumps(hybrid))
+    model_drift["embedding"] = dict(model_drift["embedding"])
+    model_drift["embedding"]["actual_model"] = "forged-other-model"
+    with pytest.raises(AppError) as mismatched:
+        assert_project_search_document_contract(model_drift)
+    assert mismatched.value.code == "retrieval.contract"
