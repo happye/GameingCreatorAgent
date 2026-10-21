@@ -1,3 +1,5 @@
+**2026-10-22 TD009 离线进展（match-report↔sidecar binding gaps 对齐 + baseRun／model，已推送 bd6b081）：** `match_report_sidecar_binding_gaps`；binding 加深 baseRun／fingerprint／status／constraintHash／actualModel；见 sprint-td009-match-report-sidecar-binding-gaps.md。复合人评／静态索引仍 open；不宣称 TD009／F010 关单。
+
 **2026-10-22 TD009 离线进展（match-report↔sidecar 证据／区间／media 绑定加深，已推送 5d54d0b）：** `assert_match_report_sidecar_binding_contract`：evidence ⊆ sidecar、嵌套 sourceRange、eventId↔mediaSha256、payloadHash；见 sprint-td009-match-report-sidecar-evidence-range-binding.md。复合人评／静态索引仍 open；不宣称 TD009／F010 关单。
 
 **2026-10-22 检索离线进展（内存结果／候选清单 media／event 加深，已推送 5e236d1）：** search_result／candidate_sources：media／event／unique id；project- scope 放行；见 sprint-retrieval-search-result-media-event-sources.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
