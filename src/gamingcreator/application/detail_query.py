@@ -398,6 +398,22 @@ def assert_match_report_sidecar_binding_contract(
             for entry in entries:
                 if type(entry) is not dict:
                     raise ValueError(f"Match report match.{bucket} entry invalid for sidecar binding.")
+                part_id = entry.get("partId")
+                if type(part_id) is not str or not part_id:
+                    raise ValueError(
+                        f"Match report match.{bucket} partId invalid for sidecar binding."
+                    )
+                condition = entry.get("condition")
+                if type(condition) is not dict:
+                    raise ValueError(
+                        f"Match report match.{bucket} condition invalid for sidecar binding."
+                    )
+                for field in ("kind", "partGroup", "value"):
+                    field_value = condition.get(field)
+                    if type(field_value) is not str or not field_value:
+                        raise ValueError(
+                            f"Match report match.{bucket} condition.{field} invalid for sidecar binding."
+                        )
                 evidence_ids = entry.get("evidenceIds") or []
                 if not _match_evidence_ids_owned(run_id, evidence_ids):
                     raise ValueError(
@@ -664,6 +680,11 @@ def match_report_sidecar_binding_gaps(
             ("payload shotId is duplicated", "payload_shot_id_duplicated"),
             ("payload shot sourceRange escapes", "payload_shot_source_range_escape"),
             ("shotIds are not covered by sidecar payload shots", "match_shot_ids_not_in_payload"),
+            ("partId invalid for sidecar binding", "match_evidence_part_id_invalid"),
+            ("condition.kind invalid for sidecar binding", "match_evidence_condition_kind_invalid"),
+            ("condition.partGroup invalid for sidecar binding", "match_evidence_condition_part_group_invalid"),
+            ("condition.value invalid for sidecar binding", "match_evidence_condition_value_invalid"),
+            ("condition invalid for sidecar binding", "match_evidence_condition_invalid"),
             ("binding requires objects", "binding_not_object"),
         )
         coded = False

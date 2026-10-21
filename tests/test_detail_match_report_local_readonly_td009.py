@@ -584,3 +584,95 @@ def test_assert_match_report_sidecar_binding_rejects_payload_identity_and_shot_c
     assert "match_shot_ids_not_in_payload" in match_report_sidecar_binding_gaps(
         document, request_doc, uncovered
     )
+
+
+def test_assert_match_report_sidecar_binding_rejects_evidence_part_id_and_condition_drift() -> None:
+    """Evidence bucket rows must carry non-empty partId and condition.kind/partGroup/value."""
+    document, request_doc, result_doc = _load_first_legacy_binding()
+    assert_match_report_sidecar_binding_contract(document, request_doc, result_doc)
+    assert match_report_sidecar_binding_gaps(document, request_doc, result_doc) == ()
+
+    def _first_evidence_entry(report: dict) -> tuple[int, str, int]:
+        matches = report["result"]["matches"]
+        for match_index, row in enumerate(matches):
+            for bucket in ("satisfied", "opposed", "counterEvidence", "uncertain"):
+                entries = row.get(bucket) or []
+                if entries:
+                    return match_index, bucket, 0
+        raise AssertionError("expected at least one evidence bucket entry")
+
+    match_index, bucket, index = _first_evidence_entry(document)
+
+    missing_part = json.loads(json.dumps(document))
+    entry = missing_part["result"]["matches"][match_index][bucket][index]
+    entry["partId"] = ""
+    with pytest.raises(ValueError, match="partId"):
+        assert_match_report_sidecar_binding_contract(missing_part, request_doc, result_doc)
+    assert "match_evidence_part_id_invalid" in match_report_sidecar_binding_gaps(
+        missing_part, request_doc, result_doc
+    )
+
+    drop_part = json.loads(json.dumps(document))
+    drop_part["result"]["matches"][match_index][bucket][index].pop("partId", None)
+    with pytest.raises(ValueError, match="partId"):
+        assert_match_report_sidecar_binding_contract(drop_part, request_doc, result_doc)
+    assert "match_evidence_part_id_invalid" in match_report_sidecar_binding_gaps(
+        drop_part, request_doc, result_doc
+    )
+
+    bad_condition = json.loads(json.dumps(document))
+    bad_condition["result"]["matches"][match_index][bucket][index]["condition"] = "hair_color"
+    with pytest.raises(ValueError, match="condition invalid"):
+        assert_match_report_sidecar_binding_contract(bad_condition, request_doc, result_doc)
+    assert "match_evidence_condition_invalid" in match_report_sidecar_binding_gaps(
+        bad_condition, request_doc, result_doc
+    )
+
+    bad_kind = json.loads(json.dumps(document))
+    bad_kind["result"]["matches"][match_index][bucket][index]["condition"]["kind"] = ""
+    with pytest.raises(ValueError, match="condition.kind"):
+        assert_match_report_sidecar_binding_contract(bad_kind, request_doc, result_doc)
+    assert "match_evidence_condition_kind_invalid" in match_report_sidecar_binding_gaps(
+        bad_kind, request_doc, result_doc
+    )
+
+    bad_group = json.loads(json.dumps(document))
+    bad_group["result"]["matches"][match_index][bucket][index]["condition"]["partGroup"] = ""
+    with pytest.raises(ValueError, match="condition.partGroup"):
+        assert_match_report_sidecar_binding_contract(bad_group, request_doc, result_doc)
+    assert "match_evidence_condition_part_group_invalid" in match_report_sidecar_binding_gaps(
+        bad_group, request_doc, result_doc
+    )
+
+    bad_value = json.loads(json.dumps(document))
+    bad_value["result"]["matches"][match_index][bucket][index]["condition"]["value"] = ""
+    with pytest.raises(ValueError, match="condition.value"):
+        assert_match_report_sidecar_binding_contract(bad_value, request_doc, result_doc)
+    assert "match_evidence_condition_value_invalid" in match_report_sidecar_binding_gaps(
+        bad_value, request_doc, result_doc
+    )
+
+
+def test_local_demo_phase0_match_evidence_entries_carry_part_id_and_condition() -> None:
+    files = _require_legacy_matches()
+    for path in files:
+        document = json.loads(path.read_text(encoding="utf-8-sig"))
+        request_path = path.parents[1] / "request.json"
+        result_path = path.parents[1] / "result.json"
+        if not request_path.is_file() or not result_path.is_file():
+            continue
+        request_doc = json.loads(request_path.read_text(encoding="utf-8-sig"))
+        result_doc = json.loads(result_path.read_text(encoding="utf-8-sig"))
+        assert_match_report_sidecar_binding_contract(document, request_doc, result_doc)
+        matches = document["result"]["matches"]
+        seen = 0
+        for row in matches:
+            for bucket in ("satisfied", "opposed", "counterEvidence", "uncertain"):
+                for entry in row.get(bucket) or []:
+                    seen += 1
+                    assert isinstance(entry.get("partId"), str) and entry["partId"]
+                    condition = entry.get("condition")
+                    assert isinstance(condition, dict)
+                    for field in ("kind", "partGroup", "value"):
+                        assert isinstance(condition.get(field), str) and condition[field]
+        assert seen >= 1, path.name
