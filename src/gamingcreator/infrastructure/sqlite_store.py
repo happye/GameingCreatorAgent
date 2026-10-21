@@ -19,7 +19,7 @@ from typing import Any, cast
 
 from gamingcreator.application.inputs import AnalysisConfig
 from gamingcreator.application.providers import CostStatus, InvocationMetadata, ProviderUsage
-from gamingcreator.application.retrieval import SearchResult
+from gamingcreator.application.retrieval import SearchResult, assert_persisted_retrieval_contract
 from gamingcreator.application.storage import (
     IntegrityIssue,
     InvocationStatus,
@@ -57,6 +57,7 @@ from gamingcreator.infrastructure.retrieval_persistence import (
 )
 from gamingcreator.infrastructure.retrieval_persistence import (
     load_retrieval as read_retrieval,
+
 )
 from gamingcreator.infrastructure.sqlite_schema import migrate, validate_schema
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
@@ -568,7 +569,9 @@ class SqliteTimelineStore:
         return await self._call(persist)
 
     async def load_retrieval(self, retrieval_id: str) -> dict[str, object]:
-        return await self._call(lambda: read_retrieval(self._db, retrieval_id))
+        document = await self._call(lambda: read_retrieval(self._db, retrieval_id))
+        assert_persisted_retrieval_contract(document)
+        return document
 
     async def load_checkpoints(self, run_id: str) -> tuple[StageCheckpoint, ...]:
         def load() -> tuple[StageCheckpoint, ...]:

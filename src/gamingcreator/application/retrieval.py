@@ -604,6 +604,61 @@ def assert_run_search_document_contract(
             raise _fail("retrieval.contract", "单任务检索投影候选 mediaId 无效。")
 
 
+
+def assert_persisted_retrieval_contract(document: dict[str, object]) -> None:
+    """Refuse load_retrieval envelopes whose SQLite hits drift from result_json."""
+    if type(document) is not dict:
+        raise _fail("retrieval.contract", "持久化检索信封必须是对象。")
+    retrieval_id = document.get("retrievalId")
+    if type(retrieval_id) is not str or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", retrieval_id):
+        raise _fail("retrieval.contract", "持久化检索 retrievalId 无效。")
+    run_id = document.get("runId")
+    if type(run_id) is not str or not run_id:
+        raise _fail("retrieval.contract", "持久化检索 runId 无效。")
+    query = document.get("query")
+    if type(query) is not str:
+        raise _fail("retrieval.contract", "持久化检索 query 无效。")
+    query_hash = document.get("queryHash")
+    if type(query_hash) is not str or query_hash != hashlib.sha256(query.encode("utf-8")).hexdigest():
+        raise _fail("retrieval.contract", "持久化检索 queryHash 不一致。")
+    version = document.get("retrievalVersion")
+    if type(version) is not str or not version.startswith(RETRIEVAL_VERSION_PREFIX):
+        raise _fail("retrieval.contract", "持久化检索 retrievalVersion 无效。")
+    result = document.get("result")
+    if type(result) is not dict:
+        raise _fail("retrieval.contract", "持久化检索 result 必须是对象。")
+    assert_run_search_document_contract(result, expected_run_id=run_id)
+    if result.get("runId") != run_id:
+        raise _fail("retrieval.contract", "持久化检索 result.runId 不一致。")
+    if result.get("query") != query:
+        raise _fail("retrieval.contract", "持久化检索 result.query 不一致。")
+    if result.get("retrievalVersion") != version:
+        raise _fail("retrieval.contract", "持久化检索 result.retrievalVersion 不一致。")
+    hits = document.get("hits")
+    if type(hits) is not list:
+        raise _fail("retrieval.contract", "持久化检索 hits 必须是列表。")
+    candidates = result.get("candidates")
+    assert type(candidates) is list
+    if len(hits) != len(candidates):
+        raise _fail("retrieval.contract", "持久化检索 hits 与 candidates 数量不一致。")
+    for hit, candidate in zip(hits, candidates, strict=True):
+        if type(hit) is not dict or type(candidate) is not dict:
+            raise _fail("retrieval.contract", "持久化检索命中行无效。")
+        if hit.get("rank") != candidate.get("rank"):
+            raise _fail("retrieval.contract", "持久化检索命中 rank 不一致。")
+        if hit.get("candidate_id") != candidate.get("candidateId"):
+            raise _fail("retrieval.contract", "持久化检索命中 candidateId 不一致。")
+        if hit.get("event_id") != candidate.get("eventId"):
+            raise _fail("retrieval.contract", "持久化检索命中 eventId 不一致。")
+        if hit.get("score_kind") != candidate.get("scoreKind"):
+            raise _fail("retrieval.contract", "持久化检索命中 scoreKind 不一致。")
+        try:
+            if float(hit.get("score")) != float(candidate.get("score")):  # type: ignore[arg-type]
+                raise _fail("retrieval.contract", "持久化检索命中 score 不一致。")
+        except (TypeError, ValueError):
+            raise _fail("retrieval.contract", "持久化检索命中 score 无效。") from None
+
+
 def assert_project_search_document_contract(document: dict[str, object]) -> None:
     """Refuse joint-search JSON that drops source ownership or claims paid/acceptance work."""
     assert_search_document_contract(document)
