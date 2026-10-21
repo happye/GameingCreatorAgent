@@ -1,6 +1,6 @@
 # Sprint：验收流程页只读挂接验收就绪
 
-**状态（2026-10-22）：已交付（待推送）。** 验收流程「关联已完成的分析」读取任务时，同时拉 `/api/acceptance-readiness` 并展示只读汇总；`assertReadinessInert` 拒绝任何通过声明；页头／总览文案强调就绪 ≠ 已验收／F006。0 付费；不代选 A／B／D；不声称三缺口已清；不标 F006 true；不宣称人评／验收通过。
+**状态（2026-10-22）：已交付并推送 82862df。** 验收流程「关联已完成的分析」读取任务时，同时拉 `/api/acceptance-readiness` 并展示只读汇总；`assertReadinessInert` 拒绝任何通过声明；页头／总览文案强调就绪 ≠ 已验收／F006。0 付费；不代选 A／B／D；不声称三缺口已清；不标 F006 true；不宣称人评／验收通过。
 
 ## Assignment
 
@@ -18,4 +18,4 @@
 - [x] 关联读取时展示 readiness；含通过声明则拒显
 - [x] 文案区分质量门槛／F006／人评
 - [x] 静态 pytest 绿；0 DeepSeek／launcher；F006/F009/F010 仍 false
-- [ ] 已推送 `origin/codex/visual-details`（推送后勾）
+- [x] 已推送 `origin/codex/visual-details`（82862df）
