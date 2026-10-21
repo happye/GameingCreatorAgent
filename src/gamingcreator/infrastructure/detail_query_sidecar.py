@@ -3,7 +3,11 @@
 import json
 from pathlib import Path
 
-from gamingcreator.application.detail_query import MAX_MANIFEST_BYTES, match_report
+from gamingcreator.application.detail_query import (
+    MAX_MANIFEST_BYTES,
+    assert_match_report_contract,
+    match_report,
+)
 from gamingcreator.application.detail_refinement import (
     DetailRefinementRequest,
     RefinementIdentity,
@@ -126,6 +130,7 @@ def match_refinement(
             request_digest=outcome.request_hash,
         )
         document["refinementProfile"] = profile
+        assert_match_report_contract(document)
         expected_matcher = (
             TEMPORAL_MATCHER_VERSION if profile in {"v4", "v5"} else MATCHER_VERSION
         )

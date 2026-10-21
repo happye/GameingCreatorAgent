@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-22 TD009 匹配报告 inert／禁静态索引 v1.1（待推送）：** humanLabels/qualityGate 恒 null；independentStaticClothingIndex=false；constraintHash；pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户；不宣称 TD009 关单。sprint-detail-match-report-inert-v1_1.md。
+
 **2026-10-22 TD009 sidecar 只读匹配／指纹拒收（已推送 af939bd）：** coverage-gap 拒匹配；matcherVersion 自检；指纹漂移孤儿化；pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户；不宣称 TD009 关单。sprint-detail-query-sidecar-contracts.md。
 
 **2026-10-22 TD009 matcher 正向 AND 边界／v1.2（已推送 6bfab3b）：** _full 门槛收紧；分 part held／不相交帧不得 FULL；match_report 露 v1.2；pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户；不宣称 TD009 关单。sprint-actor-detail-matcher-and-boundaries.md。

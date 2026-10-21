@@ -1,5 +1,6 @@
 """Explicit query manifests and evidence reports. No free-text constraint inference or I/O."""
 
+import hashlib
 import json
 from dataclasses import asdict, replace
 
@@ -21,10 +22,77 @@ from gamingcreator.domain.actor_details import (
     QueryConstraint,
     attribute_value_options,
     canonical_constraint_json,
+    constraint_hash,
 )
 
-MATCH_REPORT_VERSION = "actor-detail-match-report-v1"
+MATCH_REPORT_VERSION = "actor-detail-match-report-v1.1"
 MAX_MANIFEST_BYTES = 1_048_576
+MATCH_REPORT_INERT_VERSION = "match-report-inert-v1"
+REQUIRED_MATCH_REPORT_KEYS = frozenset(
+    {
+        "schemaVersion",
+        "runId",
+        "eventId",
+        "candidateId",
+        "sourceRange",
+        "eventFingerprint",
+        "refinementRequestHash",
+        "refinementPayloadHash",
+        "constraintJson",
+        "constraintHash",
+        "result",
+        "humanLabels",
+        "qualityGate",
+        "inertContract",
+        "independentStaticClothingIndex",
+    }
+)
+
+
+def build_match_report_inert_contract() -> dict[str, object]:
+    """Machine-readable rules: match reports never auto-pass or invent static indexes."""
+    return {
+        "schemaVersion": MATCH_REPORT_INERT_VERSION,
+        "humanLabelsMustBeNull": True,
+        "qualityGateMustBeNull": True,
+        "forbiddenQualityGateValues": [True, "passed", "pass", "已通过", "通过"],
+        "independentStaticClothingIndex": False,
+        "notes": (
+            "humanLabels/qualityGate stay null until explicit human review; "
+            "static clothing is candidate-bound only — no independent static event index."
+        ),
+    }
+
+
+def assert_match_report_contract(document: dict[str, object]) -> None:
+    """Refuse match reports that claim human pass or open a static clothing index."""
+    missing = REQUIRED_MATCH_REPORT_KEYS - set(document)
+    if missing:
+        raise ValueError(f"Match report missing fields: {sorted(missing)}")
+    if document.get("schemaVersion") != MATCH_REPORT_VERSION:
+        raise ValueError("Match report schemaVersion mismatch.")
+    if document.get("humanLabels") is not None:
+        raise ValueError("humanLabels must stay null on offline match reports.")
+    gate = document.get("qualityGate")
+    if gate is not None:
+        raise ValueError("qualityGate must stay null on offline match reports.")
+    if document.get("independentStaticClothingIndex") is not False:
+        raise ValueError("independentStaticClothingIndex must stay False.")
+    contract = document.get("inertContract")
+    expected = build_match_report_inert_contract()
+    if contract != expected:
+        raise ValueError("Match report inertContract mismatch.")
+    result = document.get("result")
+    if not isinstance(result, dict) or "status" not in result or "matcherVersion" not in result:
+        raise ValueError("Match report result must expose status and matcherVersion.")
+    constraint_json = document.get("constraintJson")
+    constraint_digest = document.get("constraintHash")
+    if type(constraint_json) is not str or type(constraint_digest) is not str:
+        raise ValueError("constraintJson/constraintHash must be strings.")
+    if constraint_digest != hashlib.sha256(constraint_json.encode("utf-8")).hexdigest():
+        raise ValueError("constraintHash must digest constraintJson.")
+
+
 
 
 def query_options() -> dict[str, object]:
@@ -138,7 +206,7 @@ def match_report(
             schema_version=DETAIL_TEMPORAL_SCHEMA_VERSION,
             matcher_version=TEMPORAL_MATCHER_VERSION,
         )
-    return {
+    document: dict[str, object] = {
         "schemaVersion": MATCH_REPORT_VERSION,
         "runId": run_id,
         "eventId": event_id,
@@ -148,7 +216,12 @@ def match_report(
         "refinementRequestHash": request_digest,
         "refinementPayloadHash": None if detail is None else payload_hash(detail),
         "constraintJson": canonical_constraint_json(constraint),
+        "constraintHash": constraint_hash(constraint),
         "result": _camel_payload(asdict(result)),
         "humanLabels": None,
         "qualityGate": None,
+        "independentStaticClothingIndex": False,
+        "inertContract": build_match_report_inert_contract(),
     }
+    assert_match_report_contract(document)
+    return document
