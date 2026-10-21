@@ -1,6 +1,6 @@
 # Sprint：检索打分 inert 合同（score_is_probability／allowlist）
 
-**状态（2026-10-22）：待推送 origin/main。** 增加 `SCORE_KINDS`／`ABSTENTION_REASONS`／`LEXICAL_EVIDENCE_CHANNELS` 与 `SearchResult.score_is_probability=False`；`assert_search_result_contract` 在 `_search_documents` 出口强制校验；CLI 投影改读 `result.score_is_probability`。验证=**pytest + demo-phase0 只读**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。
+**状态（2026-10-22）：已推送 origin/main 7bbf773。** 增加 `SCORE_KINDS`／`ABSTENTION_REASONS`／`LEXICAL_EVIDENCE_CHANNELS` 与 `SearchResult.score_is_probability=False`；`assert_search_result_contract` 在 `_search_documents` 出口强制校验；CLI 投影改读 `result.score_is_probability`。验证=**pytest + demo-phase0 只读**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。
 
 ## Assignment
 

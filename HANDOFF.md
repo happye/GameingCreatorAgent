@@ -1,9 +1,9 @@
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
-**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip PLACEHOLDER（含 ranking inert contract）），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
+**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip 7bbf773（含 ranking inert contract）），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
 
 
-**当前锚点（2026-10-22，检索打分 inert 合同，已推送 PLACEHOLDER）：** `assert_search_result_contract`／`score_is_probability=False`；pytest + demo-phase0 只读；sprint：`docs/exec-plans/sprint-retrieval-ranking-inert-contract.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**。以下 action abstention 为历史。
+**当前锚点（2026-10-22，检索打分 inert 合同，已推送 7bbf773）：** `assert_search_result_contract`／`score_is_probability=False`；pytest + demo-phase0 只读；sprint：`docs/exec-plans/sprint-retrieval-ranking-inert-contract.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**。以下 action abstention 为历史。
 
 **当前锚点（2026-10-22，动作空召回／空查询 abstention，已推送 b85b5ef）：** `empty_query`／`no_positive_action_evidence`；pytest + demo-phase0 只读；sprint：`docs/exec-plans/sprint-retrieval-action-abstention.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**。以下 lexicalEvidence 为历史。
 
