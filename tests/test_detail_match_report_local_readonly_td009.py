@@ -179,3 +179,76 @@ def test_match_report_contract_gaps_flags_identity_and_forbidden_claims() -> Non
     assert "event_run_mismatch" in gaps
     assert "forbidden_claim:formalAcceptancePassed" in gaps
     assert "source_range_invalid" in gaps
+
+
+def test_assert_match_report_contract_rejects_match_row_evidence_and_result_versions() -> None:
+    """Deeper v1.1 gates: match actor/shot, owned evidenceIds, result/constraint versions."""
+    from test_detail_match_report_contract import _weapon_coexist_detail
+    from test_actor_detail_matching import EVENT, RUN, condition
+    from gamingcreator.application.detail_query import match_report
+    from gamingcreator.domain.actor_details import AttributeKind, QueryConstraint
+
+    query = QueryConstraint((condition(AttributeKind.HELD_CLASS, "weapon", "item"),))
+    document = match_report(
+        None,
+        _weapon_coexist_detail(),
+        query,
+        run_id=RUN,
+        event_id=EVENT,
+        request_digest=None,
+    )
+    assert_match_report_contract(document)
+    assert match_report_contract_gaps(document) == ()
+
+    bad_actor = json.loads(json.dumps(document, default=str))
+    # default=str may stringify enums in constraint — rebuild from fresh copy via match_report fields we mutate on result only
+    bad_actor = dict(document)
+    bad_actor["result"] = json.loads(json.dumps(document["result"], default=str))
+    # Fix enum strings back? result matches uncertain condition may be strings now — re-assert path only mutates actorId
+    bad_actor["result"]["matches"][0]["actorId"] = ""
+    with pytest.raises(ValueError, match="actorId"):
+        assert_match_report_contract(bad_actor)
+
+    bad_shot = dict(document)
+    bad_shot["result"] = json.loads(json.dumps(document["result"], default=str))
+    bad_shot["result"]["matches"][0]["shotId"] = ""
+    with pytest.raises(ValueError, match="shotId"):
+        assert_match_report_contract(bad_shot)
+
+    foreign = dict(document)
+    foreign["result"] = json.loads(json.dumps(document["result"], default=str))
+    # Put a foreign evidence id into sharedEvidenceIds
+    foreign["result"]["matches"][0]["sharedEvidenceIds"] = ["other-run:media:image:000001"]
+    with pytest.raises(ValueError, match="sharedEvidenceIds"):
+        assert_match_report_contract(foreign)
+
+    bad_query_ver = dict(document)
+    bad_query_ver["result"] = json.loads(json.dumps(document["result"], default=str))
+    bad_query_ver["result"]["queryVersion"] = "actor-detail-query-v0"
+    with pytest.raises(ValueError, match="queryVersion"):
+        assert_match_report_contract(bad_query_ver)
+
+    bad_constraint = dict(document)
+    payload = json.loads(document["constraintJson"])
+    del payload["vocabularyVersion"]
+    bad_constraint["constraintJson"] = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    bad_constraint["constraintHash"] = __import__("hashlib").sha256(
+        bad_constraint["constraintJson"].encode("utf-8")
+    ).hexdigest()
+    bad_constraint["result"] = json.loads(json.dumps(document["result"], default=str))
+    bad_constraint["result"]["constraintHash"] = bad_constraint["constraintHash"]
+    with pytest.raises(ValueError, match="vocabularyVersion"):
+        assert_match_report_contract(bad_constraint)
+
+
+def test_match_report_contract_gaps_flags_match_evidence_and_versions_on_legacy() -> None:
+    files = _require_legacy_matches()
+    document = json.loads(files[0].read_text(encoding="utf-8-sig"))
+    forged = json.loads(json.dumps(document))
+    forged["result"]["matches"][0]["sharedEvidenceIds"] = ["foreign-run:media:image:1"]
+    forged["result"]["queryVersion"] = "not-current"
+    forged["result"]["matches"][0]["actorId"] = ""
+    gaps = match_report_contract_gaps(forged)
+    assert "match_shared_evidence_invalid" in gaps
+    assert "query_version_mismatch" in gaps
+    assert "match_actor_id_invalid" in gaps

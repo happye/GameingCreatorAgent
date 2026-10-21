@@ -12,6 +12,9 @@ from gamingcreator.application.detail_refinement import (
 )
 from gamingcreator.application.detail_refinement_budget import payload_hash
 from gamingcreator.domain.actor_details import (
+    DETAIL_SCHEMA_VERSION,
+    DETAIL_TEMPORAL_SCHEMA_VERSION,
+    DETAIL_VOCABULARY_VERSION,
     DETAIL_TEMPORAL_SCHEMA_VERSION,
     DETAIL_VOCABULARY_VERSION,
     MATCHER_VERSION,
@@ -96,6 +99,21 @@ def _valid_optional_source_range(value: object) -> bool:
     return 0 <= start_us < end_us <= duration_us
 
 
+
+_MATCH_EVIDENCE_BUCKETS = ("satisfied", "opposed", "counterEvidence", "uncertain")
+
+
+def _match_evidence_ids_owned(run_id: str, evidence_ids: object) -> bool:
+    if type(evidence_ids) is not list:
+        return False
+    for evidence_id in evidence_ids:
+        if type(evidence_id) is not str or not evidence_id:
+            return False
+        if ":" in evidence_id and not evidence_id.startswith(f"{run_id}:"):
+            return False
+    return True
+
+
 def assert_match_report_contract(document: dict[str, object]) -> None:
     """Refuse match reports that claim human pass or open a static clothing index."""
     missing = REQUIRED_MATCH_REPORT_KEYS - set(document)
@@ -154,6 +172,65 @@ def assert_match_report_contract(document: dict[str, object]) -> None:
         raise ValueError("constraintJson/constraintHash must be strings.")
     if constraint_digest != hashlib.sha256(constraint_json.encode("utf-8")).hexdigest():
         raise ValueError("constraintHash must digest constraintJson.")
+    try:
+        constraint_payload = json.loads(constraint_json)
+    except (TypeError, ValueError, RecursionError) as exc:
+        raise ValueError("constraintJson must be JSON object.") from exc
+    if type(constraint_payload) is not dict:
+        raise ValueError("constraintJson must be JSON object.")
+    for key in ("schemaVersion", "version", "vocabularyVersion"):
+        value = constraint_payload.get(key)
+        if type(value) is not str or not value:
+            raise ValueError(f"constraintJson.{key} is invalid.")
+    result_schema = result.get("schemaVersion")
+    if result_schema not in {DETAIL_SCHEMA_VERSION, DETAIL_TEMPORAL_SCHEMA_VERSION}:
+        raise ValueError("Match report result.schemaVersion is invalid.")
+    if result.get("querySchemaVersion") != QUERY_SCHEMA_VERSION:
+        raise ValueError("Match report result.querySchemaVersion is invalid.")
+    if result.get("queryVersion") != QUERY_VERSION:
+        raise ValueError("Match report result.queryVersion is invalid.")
+    if result.get("vocabularyVersion") != DETAIL_VOCABULARY_VERSION:
+        raise ValueError("Match report result.vocabularyVersion is invalid.")
+    notes = result.get("notes")
+    if notes is not None:
+        if type(notes) is not list or any(type(item) is not str for item in notes):
+            raise ValueError("Match report result.notes must be a string list.")
+    matches = result.get("matches")
+    if type(matches) is not list:
+        raise ValueError("Match report result.matches must be a list.")
+    assert type(run_id) is str
+    for row in matches:
+        if type(row) is not dict:
+            raise ValueError("Match report match row must be an object.")
+        actor_id = row.get("actorId")
+        if type(actor_id) is not str or not actor_id:
+            raise ValueError("Match report match actorId is invalid.")
+        shot_id = row.get("shotId")
+        if type(shot_id) is not str or not shot_id:
+            raise ValueError("Match report match shotId is invalid.")
+        if not _valid_optional_source_range(row.get("sourceRange")):
+            raise ValueError("Match report match sourceRange is invalid.")
+        shared = row.get("sharedEvidenceIds")
+        if shared is None:
+            shared = []
+        if not _match_evidence_ids_owned(run_id, shared):
+            raise ValueError("Match report sharedEvidenceIds are invalid.")
+        for bucket in _MATCH_EVIDENCE_BUCKETS:
+            entries = row.get(bucket)
+            if entries is None:
+                continue
+            if type(entries) is not list:
+                raise ValueError(f"Match report match.{bucket} must be a list.")
+            for entry in entries:
+                if type(entry) is not dict:
+                    raise ValueError(f"Match report match.{bucket} entry must be an object.")
+                evidence_ids = entry.get("evidenceIds")
+                if evidence_ids is None:
+                    evidence_ids = []
+                if not _match_evidence_ids_owned(run_id, evidence_ids):
+                    raise ValueError(f"Match report match.{bucket} evidenceIds are invalid.")
+                if "sourceRange" in entry and not _valid_optional_source_range(entry.get("sourceRange")):
+                    raise ValueError(f"Match report match.{bucket} sourceRange is invalid.")
 
 
 def match_report_contract_gaps(document: dict[str, object]) -> tuple[str, ...]:
@@ -235,6 +312,80 @@ def match_report_contract_gaps(document: dict[str, object]) -> tuple[str, ...]:
             gaps.append("constraint_hash_type")
         elif constraint_digest != hashlib.sha256(constraint_json.encode("utf-8")).hexdigest():
             gaps.append("constraint_hash_mismatch")
+        elif type(constraint_json) is str:
+            try:
+                constraint_payload = json.loads(constraint_json)
+            except (TypeError, ValueError, RecursionError):
+                gaps.append("constraint_json_invalid")
+                constraint_payload = None
+            if type(constraint_payload) is dict:
+                for key in ("schemaVersion", "version", "vocabularyVersion"):
+                    value = constraint_payload.get(key)
+                    if type(value) is not str or not value:
+                        gaps.append(f"constraint_missing:{key}")
+            elif constraint_payload is not None:
+                gaps.append("constraint_json_invalid")
+    if isinstance(result, dict):
+        result_schema = result.get("schemaVersion")
+        if (
+            "schemaVersion" in result
+            and result_schema not in {DETAIL_SCHEMA_VERSION, DETAIL_TEMPORAL_SCHEMA_VERSION}
+        ):
+            gaps.append("result_schema_version_invalid")
+        if (
+            "querySchemaVersion" in result
+            and result.get("querySchemaVersion") != QUERY_SCHEMA_VERSION
+        ):
+            gaps.append("query_schema_version_mismatch")
+        if "queryVersion" in result and result.get("queryVersion") != QUERY_VERSION:
+            gaps.append("query_version_mismatch")
+        if (
+            "vocabularyVersion" in result
+            and result.get("vocabularyVersion") != DETAIL_VOCABULARY_VERSION
+        ):
+            gaps.append("vocabulary_version_mismatch")
+        notes = result.get("notes")
+        if notes is not None and (
+            type(notes) is not list or any(type(item) is not str for item in notes)
+        ):
+            gaps.append("notes_invalid")
+        matches = result.get("matches")
+        if "matches" in result and type(matches) is not list:
+            gaps.append("matches_not_list")
+        elif type(matches) is list and type(run_id) is str and run_id:
+            for row in matches:
+                if type(row) is not dict:
+                    gaps.append("match_row_invalid")
+                    continue
+                if type(row.get("actorId")) is not str or not row.get("actorId"):
+                    gaps.append("match_actor_id_invalid")
+                if type(row.get("shotId")) is not str or not row.get("shotId"):
+                    gaps.append("match_shot_id_invalid")
+                if "sourceRange" in row and not _valid_optional_source_range(row.get("sourceRange")):
+                    gaps.append("match_source_range_invalid")
+                shared = row.get("sharedEvidenceIds")
+                if shared is not None and not _match_evidence_ids_owned(run_id, shared):
+                    gaps.append("match_shared_evidence_invalid")
+                for bucket in _MATCH_EVIDENCE_BUCKETS:
+                    entries = row.get(bucket)
+                    if entries is None:
+                        continue
+                    if type(entries) is not list:
+                        gaps.append(f"match_{bucket}_invalid")
+                        continue
+                    for entry in entries:
+                        if type(entry) is not dict:
+                            gaps.append(f"match_{bucket}_entry_invalid")
+                            continue
+                        evidence_ids = entry.get("evidenceIds")
+                        if evidence_ids is not None and not _match_evidence_ids_owned(
+                            run_id, evidence_ids
+                        ):
+                            gaps.append(f"match_{bucket}_evidence_invalid")
+                        if "sourceRange" in entry and not _valid_optional_source_range(
+                            entry.get("sourceRange")
+                        ):
+                            gaps.append(f"match_{bucket}_range_invalid")
     return tuple(gaps)
 
 
