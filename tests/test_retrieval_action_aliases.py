@@ -1507,3 +1507,76 @@ def test_scene_rising_shield_float_stair_hug_ring_note_non_words_do_not_cross_li
         "绿色头发角色周围有黄色音符。",
     )
     assert search(data, query, "lexical").candidates == ()
+
+
+@pytest.mark.parametrize(
+    "query,positive",
+    [
+        ("collect", "绿色头发角色周围有黄色音符可供收集。"),
+        ("collecting", "绿色头发角色周围有黄色音符可供收集。"),
+        ("collects", "绿色头发角色周围有黄色音符可供收集。"),
+        ("collected", "绿色头发角色周围有黄色音符可供收集。"),
+        ("mount", "角色骑乘在载具上向前移动。"),
+        ("mounts", "角色骑乘在载具上向前移动。"),
+        ("mounted", "角色骑乘在载具上向前移动。"),
+        ("mounting", "角色骑乘在载具上向前移动。"),
+        ("ride", "角色骑乘在载具上向前移动。"),
+        ("riding", "角色骑乘在载具上向前移动。"),
+        ("rides", "角色骑乘在载具上向前移动。"),
+        ("cutscene", "过场画面中出现标题文字与角色展示。"),
+        ("cutscenes", "过场画面中出现标题文字与角色展示。"),
+        ("cinematic", "过场画面中出现标题文字与角色展示。"),
+        ("cinematics", "过场画面中出现标题文字与角色展示。"),
+        ("scroll", "镜头随平台滚动，角色保持向前移动。"),
+        ("scrolling", "镜头随平台滚动，角色保持向前移动。"),
+        ("scrolls", "镜头随平台滚动，角色保持向前移动。"),
+        ("scrolled", "镜头随平台滚动，角色保持向前移动。"),
+        ("shockwave", "角色举起权杖释放冲击波。"),
+        ("shockwaves", "角色举起权杖释放冲击波。"),
+    ],
+)
+def test_scene_collect_mount_cutscene_scroll_shockwave_cross_lingual_keeps_chinese_evidence(
+    query, positive
+):
+    """English collect／mount／cutscene／scroll／shockwave → 收集／骑乘／过场／滚动／冲击波 (demo-phase0)."""
+    data = timeline(positive, "角色向左移动。")
+    result = search(data, query, "lexical")
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    assert result.candidates[0].observable_facts == (positive,)
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "collection",
+        "collective",
+        "collector",
+        "recollect",
+        "mountain",
+        "mountable",
+        "dismount",
+        "rider",
+        "rideable",
+        "override",
+        "cutscenesx",
+        "precinematic",
+        "scrollable",
+        "scrollbar",
+        "roll",
+        "rolling",
+        "shock",
+        "wave",
+        "aftershock",
+    ],
+)
+def test_scene_collect_mount_cutscene_scroll_shockwave_non_words_do_not_cross_lingual_match(
+    query,
+):
+    data = timeline(
+        "绿色头发角色周围有黄色音符可供收集。",
+        "角色骑乘在载具上向前移动。",
+        "过场画面中出现标题文字与角色展示。",
+        "镜头随平台滚动，角色保持向前移动。",
+        "角色举起权杖释放冲击波。",
+    )
+    assert search(data, query, "lexical").candidates == ()
