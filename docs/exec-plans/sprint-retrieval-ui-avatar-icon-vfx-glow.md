@@ -1,6 +1,6 @@
 # Sprint：检索 UI 肖像／图标／特效跨语言（avatar 出停用词）
 
-**状态（2026-10-22）：待推送 origin/main。** 基于 demo-phase0 真实正文（特效≈63、光效≈24、图标≈10、头像≈8）：`_CROSS_LINGUAL_TERMS` 增补 avatar→头像、icon→图标、vfx／fx→特效、glow→光效；将 `avatar` 移出 `_STOP_WORDS`，避免「avatar」单独查询被 `empty_query` 弃权。pytest + demo-phase0 Completed 只读。验证＝**pytest + 只读 SQLite**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单；不发明 Boss／射击语料；不改写 DB。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。攻击 tag-only 仍保留。
+**状态（2026-10-22）：已推送 origin/main da231a0。** 基于 demo-phase0 真实正文（特效≈63、光效≈24、图标≈10、头像≈8）：`_CROSS_LINGUAL_TERMS` 增补 avatar→头像、icon→图标、vfx／fx→特效、glow→光效；将 `avatar` 移出 `_STOP_WORDS`，避免「avatar」单独查询被 `empty_query` 弃权。pytest + demo-phase0 Completed 只读。验证＝**pytest + 只读 SQLite**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单；不发明 Boss／射击语料；不改写 DB。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。攻击 tag-only 仍保留。
 
 ## Assignment
 

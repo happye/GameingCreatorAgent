@@ -1,4 +1,4 @@
-**当前（2026-10-22）：root / Agent 推进检索 UI 肖像／图标／特效跨语言（已推送 PLACEHOLDER）。** sprint-retrieval-ui-avatar-icon-vfx-glow.md 归 root／GamingCreatorAgent。拥有 retrieval UI 跨语言／stopword 与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不发明 Boss／射击语料；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下 TD009 match-report 绑定为历史。
+**当前（2026-10-22）：root / Agent 推进检索 UI 肖像／图标／特效跨语言（已推送 da231a0）。** sprint-retrieval-ui-avatar-icon-vfx-glow.md 归 root／GamingCreatorAgent。拥有 retrieval UI 跨语言／stopword 与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不发明 Boss／射击语料；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下 TD009 match-report 绑定为历史。
 
 **当前（2026-10-22）：root / Agent 推进 TD009 match-report 身份／sidecar 绑定加深（已推送 52b7e7e）。** sprint-td009-match-report-identity-sidecar-binding.md 归 root／GamingCreatorAgent。拥有 detail_query 合同加深与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不改写旧 match／sidecar；不声称 F006／TD009 关单。以下 sidecar canonical／interval／prompt 为历史。
 
