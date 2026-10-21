@@ -13,6 +13,7 @@ from gamingcreator.application.detail_refinement_budget import payload_hash
 from gamingcreator.domain.actor_details import (
     DETAIL_TEMPORAL_SCHEMA_VERSION,
     DETAIL_VOCABULARY_VERSION,
+    MATCHER_VERSION,
     QUERY_SCHEMA_VERSION,
     QUERY_VERSION,
     TEMPORAL_MATCHER_VERSION,
@@ -91,6 +92,54 @@ def assert_match_report_contract(document: dict[str, object]) -> None:
         raise ValueError("constraintJson/constraintHash must be strings.")
     if constraint_digest != hashlib.sha256(constraint_json.encode("utf-8")).hexdigest():
         raise ValueError("constraintHash must digest constraintJson.")
+
+
+def match_report_contract_gaps(document: dict[str, object]) -> tuple[str, ...]:
+    """Stable offline gap codes when a saved match report is not current v1.1 contract.
+
+    Does not claim human-eval / F010 / TD009 closeout. Used for readonly对照 against
+    legacy on-disk reports (e.g. actor-detail-match-report-v1 + matcher-v1).
+    """
+    if not isinstance(document, dict):
+        return ("not_object",)
+    gaps: list[str] = []
+    schema = document.get("schemaVersion")
+    if schema != MATCH_REPORT_VERSION:
+        gaps.append("schema_version_mismatch")
+    missing = REQUIRED_MATCH_REPORT_KEYS - set(document)
+    for key in sorted(missing):
+        gaps.append(f"missing:{key}")
+    if document.get("humanLabels") is not None:
+        gaps.append("human_labels_not_null")
+    if document.get("qualityGate") is not None:
+        gaps.append("quality_gate_not_null")
+    if (
+        "independentStaticClothingIndex" in document
+        and document.get("independentStaticClothingIndex") is not False
+    ):
+        gaps.append("static_clothing_index_enabled")
+    if "inertContract" in document and document.get("inertContract") != build_match_report_inert_contract():
+        gaps.append("inert_contract_mismatch")
+    result = document.get("result")
+    if not isinstance(result, dict):
+        gaps.append("result_not_object")
+    else:
+        if "status" not in result:
+            gaps.append("result_missing_status")
+        if "matcherVersion" not in result:
+            gaps.append("result_missing_matcher_version")
+        else:
+            matcher = result.get("matcherVersion")
+            if matcher not in {MATCHER_VERSION, TEMPORAL_MATCHER_VERSION}:
+                gaps.append("matcher_version_mismatch")
+    constraint_json = document.get("constraintJson")
+    constraint_digest = document.get("constraintHash")
+    if "constraintHash" in document or "constraintJson" in document:
+        if type(constraint_json) is not str or type(constraint_digest) is not str:
+            gaps.append("constraint_hash_type")
+        elif constraint_digest != hashlib.sha256(constraint_json.encode("utf-8")).hexdigest():
+            gaps.append("constraint_hash_mismatch")
+    return tuple(gaps)
 
 
 
