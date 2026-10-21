@@ -1,6 +1,6 @@
 # Sprint：检索 move 步态别名 walk／行走／走动／位移
 
-**状态（2026-10-22）：待推送 origin/main。** `_ACTION_TERMS["move"]` 与 `_CROSS_LINGUAL_TERMS` 增补 `walk`／`walking`／`walked`／`walks` 与中文 `行走`／`走动`／`位移`。词法交叉扩展到「移动」等；move 仍在 tag-only 噪声集。顺手把跨语言词边界与动作识别对齐为含 `_`，避免 `walk_walk` 之类下划线拼接误扩。pytest + demo-phase0 Completed 只读：walk 系列与「移动」同命中集，正文须含移动类词。验证＝**pytest + 只读 SQLite**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单。攻击 tag-only 仍保留。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。
+**状态（2026-10-22）：已推送 origin/main 8d47ba7。** `_ACTION_TERMS["move"]` 与 `_CROSS_LINGUAL_TERMS` 增补 `walk`／`walking`／`walked`／`walks` 与中文 `行走`／`走动`／`位移`。词法交叉扩展到「移动」等；move 仍在 tag-only 噪声集。顺手把跨语言词边界与动作识别对齐为含 `_`，避免 `walk_walk` 之类下划线拼接误扩。pytest + demo-phase0 Completed 只读：walk 系列与「移动」同命中集，正文须含移动类词。验证＝**pytest + 只读 SQLite**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单。攻击 tag-only 仍保留。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。
 
 ## Assignment
 

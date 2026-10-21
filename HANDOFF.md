@@ -1,9 +1,9 @@
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
-**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip PLACEHOLDER（含检索 move 步态别名 walk／行走），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
+**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip 8d47ba7（含检索 move 步态别名 walk／行走），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
 
 
-**当前锚点（2026-10-22，检索 move 步态别名 walk／行走／走动／位移，已推送 PLACEHOLDER）：** _ACTION_TERMS／_CROSS_LINGUAL_TERMS＋下划线边界对齐；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-retrieval-move-walk-gait-aliases.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**；攻击 tag-only 仍保留。以下 attack 施事别名 attacker／attackers 为历史。
+**当前锚点（2026-10-22，检索 move 步态别名 walk／行走／走动／位移，已推送 8d47ba7）：** _ACTION_TERMS／_CROSS_LINGUAL_TERMS＋下划线边界对齐；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-retrieval-move-walk-gait-aliases.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**；攻击 tag-only 仍保留。以下 attack 施事别名 attacker／attackers 为历史。
 
 **当前锚点（2026-10-22，检索 attack 施事别名 attacker／attackers，已推送 56171d3）：** _ACTION_TERMS／_CROSS_LINGUAL_TERMS；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-retrieval-attack-attacker-aliases.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**；攻击 tag-only 仍保留。以下 fight 英文别名 fighter／duel／brawl 为历史。
 
