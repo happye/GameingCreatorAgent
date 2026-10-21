@@ -1,3 +1,5 @@
+**当前（2026-10-22）：root / Agent 推进 TD009 sidecar evidence／cost／pair 证据绑定加深（已推送 06cddd8）。** sprint-td009-sidecar-evidence-cost-binding.md 归 root／GamingCreatorAgent。拥有 detail_refinement_budget 合同加深与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不改写旧 sidecar；不声称 F006／TD009 关单。以下看台／闪光／轨迹为历史。
+
 **当前（2026-10-22）：root / Agent 推进检索场景名词跨语言 看台／闪光／轨迹（已推送 1485255）。** sprint-retrieval-scene-bleacher-flash-trail.md 归 root／GamingCreatorAgent。拥有 retrieval 场景跨语言与只读测试／交接 docs；裸 stand 不收；0 付费；不代选 A／B／D；不改 feature_list；不发明 Boss／射击语料；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下平台／烟雾／落地／城堡为历史。
 
 **当前（2026-10-22）：root / Agent 推进检索场景名词跨语言 平台／烟雾／落地／城堡（已推送 296ac1f）。** sprint-retrieval-scene-platform-smoke-landing-castle.md 归 root／GamingCreatorAgent。拥有 retrieval 场景跨语言与只读测试／交接 docs；裸 land 不收；0 付费；不代选 A／B／D；不改 feature_list；不发明 Boss／射击语料；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下 move 奔跑／迈步／running 为历史。

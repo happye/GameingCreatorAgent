@@ -3,6 +3,7 @@
 **当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip 73e75d1（含场景／HUD 跨语言），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
 
 
+**当前锚点（2026-10-22，TD009 sidecar evidence／cost／pair 证据绑定加深，已推送 06cddd8）：** request evidence 行归属／sha／sourceUs；result costCny 十进制／actualModel；pair 证据序列一致；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-td009-sidecar-evidence-cost-binding.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD009 关单**。以下看台／闪光／轨迹为历史。
 **当前锚点（2026-10-22，检索场景名词跨语言 看台／闪光／轨迹，已推送 1485255）：** bleacher／grandstand／flash／trail／trajectory→看台／闪光／轨迹；裸 stand 不收；pytest；sprint：docs/exec-plans/sprint-retrieval-scene-bleacher-flash-trail.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**；攻击 tag-only 仍保留。以下平台／烟雾／落地／城堡为历史。
 **当前锚点（2026-10-22，检索场景名词跨语言 平台／烟雾／落地／城堡，已推送 296ac1f）：** platform／smoke／landing／castle→平台／烟雾／落地／城堡；裸 land 不收；pytest；sprint：docs/exec-plans/sprint-retrieval-scene-platform-smoke-landing-castle.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**；攻击 tag-only 仍保留。以下 move 奔跑／迈步／running 为历史。
 **当前锚点（2026-10-22，检索 move 奔跑／迈步／running 步态别名，已推送 c9773d4）：** _ACTION_TERMS move 扩奔跑／迈步／running／runs／ran／runner；跨语言→移动；裸 run 不收；tag-only 铬层仍排除；pytest；sprint：docs/exec-plans/sprint-retrieval-move-run-gait-aliases.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**；攻击 tag-only 仍保留。以下项目联合检索内存结果加深为历史。
