@@ -11,6 +11,7 @@ from pathlib import Path
 
 import httpx
 import pytest
+from fake_vision_transport import FakeVisionTransport
 
 from gamingcreator.application.budget import BudgetLedger
 from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
@@ -89,19 +90,13 @@ class Recorder:
         raise AssertionError("Attempt was not persisted before sending.")
 
 
-class FakeTransport:
-    def __init__(self, replies: list[HttpResponse | Exception], recorder: Recorder) -> None:
-        self.replies = replies
-        self.recorder = recorder
-        self.payloads: list[dict[str, object]] = []
+def FakeTransport(
+    replies: list[HttpResponse | Exception], recorder: Recorder
+) -> FakeVisionTransport:
+    def before_post(payload: dict[str, object], timeout_seconds: float) -> None:
+        assert recorder.records[-1].status == InvocationStatus.RUNNING
 
-    async def post(self, payload: dict[str, object], timeout_seconds: float) -> HttpResponse:
-        assert self.recorder.records[-1].status == InvocationStatus.RUNNING
-        self.payloads.append(payload)
-        reply = self.replies.pop(0)
-        if isinstance(reply, Exception):
-            raise reply
-        return reply
+    return FakeVisionTransport(replies, before_post=before_post)
 
 
 class WaitingTransport:
@@ -1106,7 +1101,9 @@ def test_http_error_body_projected_into_execution_details(tmp_path: Path):
         }
     ).encode("utf-8")
     provider, _, recorder, _ = provider_fixture([HttpResponse(400, body)])
-    result = asyncio.run(provider.analyze(request_fixture(tmp_path), CancellationContext("run-1", 2)))
+    result = asyncio.run(
+        provider.analyze(request_fixture(tmp_path), CancellationContext("run-1", 2))
+    )
     assert result.status is ProviderStatus.FAILED
     assert result.error is not None and result.error.code == "provider.http"
     details = json.loads(result.metadata.execution_details or "{}")

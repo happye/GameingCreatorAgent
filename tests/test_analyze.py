@@ -7,6 +7,7 @@ from fractions import Fraction
 from pathlib import Path
 
 import pytest
+from fake_vision_transport import FakeVisionTransport as FakeTransport
 
 from gamingcreator.application.analysis import (
     PIPELINE_VERSION,
@@ -141,19 +142,6 @@ class ScriptedVision:
             elapsed_ms=1,
         )
         return ProviderResult(ProviderStatus.COMPLETED, (self.event,), metadata)
-
-
-class FakeTransport:
-    def __init__(self, replies: list[HttpResponse | Exception]) -> None:
-        self.replies = replies
-        self.payloads: list[dict[str, object]] = []
-
-    async def post(self, payload: dict[str, object], timeout_seconds: float) -> HttpResponse:
-        self.payloads.append(payload)
-        reply = self.replies.pop(0)
-        if isinstance(reply, Exception):
-            raise reply
-        return reply
 
 
 class IdleRecorder:

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
+from fake_vision_transport import FakeVisionTransport, offline_chat_completion
 
 from gamingcreator.application.budget import BudgetLedger
 from gamingcreator.application.providers import (
@@ -31,7 +32,6 @@ from gamingcreator.infrastructure.deepseek_vision import (
     DeepSeekVisionProvider,
     vision_prompt_fingerprint,
 )
-from gamingcreator.infrastructure.http_transport import HttpResponse
 
 
 class Recorder:
@@ -59,40 +59,16 @@ class Recorder:
         self.finished.append((status, metadata, error_code))
 
 
-class FakeTransport:
-    def __init__(self, events: list[dict[str, object]], recorder: Recorder) -> None:
-        self.events = events
-        self.recorder = recorder
-        self.payloads: list[dict[str, object]] = []
+def FakeTransport(events: list[dict[str, object]], recorder: Recorder) -> FakeVisionTransport:
+    def before_post(payload: dict[str, object], timeout_seconds: float) -> None:
+        assert len(recorder.begun) == 1 and not recorder.finished
 
-    async def post(self, payload: dict[str, object], timeout_seconds: float) -> HttpResponse:
-        assert len(self.recorder.begun) == 1 and not self.recorder.finished
-        self.payloads.append(payload)
-        return HttpResponse(
-            200,
-            json.dumps(
-                {
-                    "id": "chatcmpl-frame-contract-offline",
-                    "model": "deepseek-flash",
-                    "usage": {
-                        "prompt_tokens": 20,
-                        "completion_tokens": 3,
-                        "prompt_cache_hit_tokens": 2,
-                        "prompt_cache_miss_tokens": 18,
-                        "total_tokens": 23,
-                    },
-                    "choices": [
-                        {
-                            "finish_reason": "stop",
-                            "message": {
-                                "role": "assistant",
-                                "content": json.dumps({"events": self.events}),
-                            },
-                        }
-                    ],
-                }
-            ).encode(),
-        )
+    return FakeVisionTransport(
+        repeat=offline_chat_completion(
+            response_id="chatcmpl-frame-contract-offline", events=events
+        ),
+        before_post=before_post,
+    )
 
 
 def request_fixture(tmp_path: Path, *, frames: int = 3, static: bool = False) -> VisionRequest:

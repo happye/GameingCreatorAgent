@@ -1,4 +1,6 @@
-# 当前交接：失败调用诊断已进工作台，三缺口仍在
+# 当前交接：共享离线 FakeVisionTransport 已抽出，三缺口仍在
+
+**当前交接（2026-10-22）：共享离线 FakeVisionTransport 已推送准备。** `tests/fake_vision_transport.py` 统一队列／重复回复；analyze／deepseek／temporal 测试改接线。sprint：`docs/exec-plans/sprint-shared-fake-vision-transport.md`。0 付费／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。失败诊断基线 218e6c8／b9d7adf。以下为失败诊断／传输历史。
 
 **当前交接（2026-10-22）：失败调用诊断投影已推送 218e6c8。** inspect 下发 `invocationFailures`（schema／http 有界投影）；工作台阶段列表显示失败诊断。sprint：`docs/exec-plans/sprint-invocation-failure-diagnostics.md`。0 付费／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。非200正文基线 acca03e／7c78ed2。以下为传输／工作台／检索闸历史。
 
