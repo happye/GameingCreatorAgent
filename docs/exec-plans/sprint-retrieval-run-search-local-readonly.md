@@ -1,6 +1,6 @@
 # Sprint：单任务检索落盘 JSON 本机只读归属合同
 
-**状态（2026-10-22）：待推送 origin/main。** 新增 `assert_run_search_document_contract`：在 `assert_search_document_contract` 之上钉死 `schemaVersion=1`、runId、retrievalVersion 前缀 `bm25-e5-rrf-v*`、mode、可选 retrievalId 形状、scoreKind∈SCORE_KINDS、候选 eventId 不得挂到外来 run（`:` 前缀归属）。CLI `_search_document` 落盘前强制。pytest 只读扫 `artifacts/demo-phase0/runs/*/searches/*.json`（204 份）。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单；不改写旧 search JSON。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。攻击 tag-only 仍保留。
+**状态（2026-10-22）：已推送 origin/main 54303a2。** 新增 `assert_run_search_document_contract`：在 `assert_search_document_contract` 之上钉死 `schemaVersion=1`、runId、retrievalVersion 前缀 `bm25-e5-rrf-v*`、mode、可选 retrievalId 形状、scoreKind∈SCORE_KINDS、候选 eventId 不得挂到外来 run（`:` 前缀归属）。CLI `_search_document` 落盘前强制。pytest 只读扫 `artifacts/demo-phase0/runs/*/searches/*.json`（204 份）。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单；不改写旧 search JSON。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。攻击 tag-only 仍保留。
 
 ## Assignment
 
