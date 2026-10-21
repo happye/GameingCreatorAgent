@@ -314,6 +314,8 @@ def assert_same_request(request: DetailRefinementRequest, digest: str) -> None:
 
 REQUEST_DOCUMENT_SCHEMA_VERSION = 1
 _HASH64 = re.compile(r"[0-9a-f]{64}\Z")
+_COST_CNY = re.compile(r"^(?:0|[1-9]\d*)(?:\.\d+)?$")
+
 
 REFINEMENT_DOCUMENT_FORBIDDEN_CLAIM_KEYS = (
     "humanLabels",
@@ -393,6 +395,33 @@ def assert_refinement_request_document_contract(document: dict[str, object]) -> 
     evidence = payload.get("evidence")
     if type(evidence) is not list or not evidence:
         raise _refinement_contract_fail("精分析请求 evidence 无效。", run_id)
+    seen_evidence: set[str] = set()
+    for row in evidence:
+        if type(row) is not dict:
+            raise _refinement_contract_fail("精分析请求 evidence 行无效。", run_id)
+        evidence_id = row.get("evidenceId")
+        if type(evidence_id) is not str or not evidence_id:
+            raise _refinement_contract_fail("精分析请求 evidenceId 无效。", run_id)
+        if evidence_id in seen_evidence:
+            raise _refinement_contract_fail("精分析请求 evidenceId 重复。", run_id)
+        seen_evidence.add(evidence_id)
+        # Owned timelines use "{runId}:{mediaSha256}:..."; bare synthetic ids may omit colon.
+        if ":" in evidence_id and not evidence_id.startswith(f"{run_id}:"):
+            raise _refinement_contract_fail("精分析请求 evidenceId 不属于该任务。", run_id)
+        if ":" in evidence_id and not evidence_id.startswith(f"{run_id}:{media_sha}:"):
+            raise _refinement_contract_fail("精分析请求 evidenceId 与 mediaSha256 不一致。", run_id)
+        row_sha = row.get("sha256")
+        if type(row_sha) is not str or not _HASH64.fullmatch(row_sha):
+            raise _refinement_contract_fail("精分析请求 evidence sha256 无效。", run_id)
+        source_us = row.get("sourceUs")
+        row_duration = row.get("durationUs")
+        if type(source_us) is not int or type(row_duration) is not int:
+            raise _refinement_contract_fail("精分析请求 evidence 时间字段无效。", run_id)
+        if row_duration != duration_us:
+            raise _refinement_contract_fail("精分析请求 evidence durationUs 与 interval 不一致。", run_id)
+        # Interval is half-open [startUs, endUs).
+        if not (start_us <= source_us < end_us):
+            raise _refinement_contract_fail("精分析请求 evidence sourceUs 超出 interval。", run_id)
 
 
 def assert_refinement_result_document_contract(document: dict[str, object]) -> None:
@@ -425,8 +454,10 @@ def assert_refinement_result_document_contract(document: dict[str, object]) -> N
     if model_revision is not None and type(model_revision) is not str:
         raise _refinement_contract_fail("精分析结果 modelRevision 无效。")
     cost = document.get("costCny")
-    if cost is not None and type(cost) is not str:
+    if cost is not None and (type(cost) is not str or not _COST_CNY.fullmatch(cost)):
         raise _refinement_contract_fail("精分析结果 costCny 必须是十进制字符串或空。")
+    if actual_model is not None and not actual_model.strip():
+        raise _refinement_contract_fail("精分析结果 actualModel 无效。")
     if "metadata" in document and type(document.get("metadata")) is not dict:
         raise _refinement_contract_fail("精分析结果 metadata 必须是对象。")
     for key in REFINEMENT_DOCUMENT_FORBIDDEN_CLAIM_KEYS:
@@ -483,6 +514,16 @@ def assert_refinement_sidecar_pair_contract(
         and not event_id.startswith(f"{detail.run_id}:{detail.media_id}:")
     ):
         raise _refinement_contract_fail("精分析结果 eventId 不属于请求媒体。", run_id)
+    request_evidence = payload.get("evidence")
+    assert type(request_evidence) is list
+    request_evidence_ids = tuple(
+        row["evidenceId"]
+        for row in request_evidence
+        if type(row) is dict and type(row.get("evidenceId")) is str
+    )
+    detail_evidence_ids = tuple(item.evidence_id for item in detail.evidence)
+    if detail_evidence_ids != request_evidence_ids:
+        raise _refinement_contract_fail("精分析结果 evidence 与请求不一致。", run_id)
 
 
 def refinement_sidecar_contract_gaps(

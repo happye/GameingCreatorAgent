@@ -8,6 +8,7 @@ Does not rewrite old sidecar JSON.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -188,3 +189,80 @@ def test_assert_refinement_sidecar_pair_rejects_range_and_prompt_drift() -> None
     with pytest.raises(AppError) as version:
         assert_refinement_sidecar_pair_contract(version_drift, result_doc)
     assert version.value.code == "refinement.contract"
+
+
+def test_assert_refinement_request_rejects_evidence_row_and_cost_format() -> None:
+    """Deeper gates: evidence id ownership/sha/sourceUs; result costCny decimal shape."""
+    dirs = _require_sidecar_dirs()
+    document = json.loads((dirs[0] / "request.json").read_text(encoding="utf-8-sig"))
+    assert_refinement_request_document_contract(document)
+
+    foreign = json.loads(json.dumps(document))
+    payload = json.loads(foreign["canonicalJson"])
+    media = payload["mediaSha256"]
+    payload["evidence"][0]["evidenceId"] = f"foreign-run:{media}:image:000001"
+    rewritten = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    foreign["canonicalJson"] = rewritten
+    foreign["requestHash"] = hashlib.sha256(rewritten.encode("utf-8")).hexdigest()
+    with pytest.raises(AppError) as owned:
+        assert_refinement_request_document_contract(foreign)
+    assert owned.value.code == "refinement.contract"
+
+    bad_sha = json.loads(json.dumps(document))
+    payload = json.loads(bad_sha["canonicalJson"])
+    payload["evidence"][0]["sha256"] = "0" * 63 + "g"
+    rewritten = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    bad_sha["canonicalJson"] = rewritten
+    bad_sha["requestHash"] = hashlib.sha256(rewritten.encode("utf-8")).hexdigest()
+    with pytest.raises(AppError) as sha_err:
+        assert_refinement_request_document_contract(bad_sha)
+    assert sha_err.value.code == "refinement.contract"
+
+    out_of_range = json.loads(json.dumps(document))
+    payload = json.loads(out_of_range["canonicalJson"])
+    payload["evidence"][0]["sourceUs"] = payload["interval"]["endUs"]
+    rewritten = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    out_of_range["canonicalJson"] = rewritten
+    out_of_range["requestHash"] = hashlib.sha256(rewritten.encode("utf-8")).hexdigest()
+    with pytest.raises(AppError) as ranged:
+        assert_refinement_request_document_contract(out_of_range)
+    assert ranged.value.code == "refinement.contract"
+
+    result_dirs = [path for path in dirs if (path / "result.json").is_file()]
+    if not result_dirs:
+        pytest.skip("local detail-refinements results missing")
+    result_doc = json.loads((result_dirs[0] / "result.json").read_text(encoding="utf-8-sig"))
+    assert_refinement_result_document_contract(result_doc)
+    bad_cost = json.loads(json.dumps(result_doc))
+    bad_cost["costCny"] = "0.008513CNY"
+    with pytest.raises(AppError) as cost_err:
+        assert_refinement_result_document_contract(bad_cost)
+    assert cost_err.value.code == "refinement.contract"
+    empty_model = json.loads(json.dumps(result_doc))
+    empty_model["actualModel"] = "   "
+    with pytest.raises(AppError) as model_err:
+        assert_refinement_result_document_contract(empty_model)
+    assert model_err.value.code == "refinement.contract"
+
+
+def test_assert_refinement_sidecar_pair_rejects_evidence_id_drift() -> None:
+    dirs = [path for path in _require_sidecar_dirs() if (path / "result.json").is_file()]
+    if not dirs:
+        pytest.skip("local detail-refinements results missing")
+    request_doc = json.loads((dirs[0] / "request.json").read_text(encoding="utf-8-sig"))
+    result_doc = json.loads((dirs[0] / "result.json").read_text(encoding="utf-8-sig"))
+    assert_refinement_sidecar_pair_contract(request_doc, result_doc)
+
+    drifted = json.loads(json.dumps(request_doc))
+    payload = json.loads(drifted["canonicalJson"])
+    # Drop last evidence id from the request view while keeping hash consistent with forged payload.
+    payload["evidence"] = payload["evidence"][:-1]
+    rewritten = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    drifted["canonicalJson"] = rewritten
+    drifted["requestHash"] = hashlib.sha256(rewritten.encode("utf-8")).hexdigest()
+    # Pair still requires matching requestHash on result — forge result hash too so we hit evidence check.
+    forged_result = json.loads(json.dumps(result_doc))
+    forged_result["requestHash"] = drifted["requestHash"]
+    with pytest.raises(AppError) as evidence_err:
+        assert_refinement_sidecar_pair_contract(drifted, forged_result)
+    assert evidence_err.value.code == "refinement.contract"
