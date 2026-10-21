@@ -1,6 +1,6 @@
 # Sprint：SQLite retrieval_runs 本机只读信封合同
 
-**状态（2026-10-22）：待推送 origin/main。** 新增 `assert_persisted_retrieval_contract`：在 run-search 归属合同之上钉死 `load_retrieval` 信封——queryHash＝SHA256(query)、result 与行级 hits 的 rank／candidateId／eventId／score／scoreKind 对齐、version／runId／query 与 result 一致。`SqliteTimelineStore.load_retrieval` 读回强制（底层 `retrieval_persistence.load_retrieval` 仍供窄存储单测用最小 fixture）。pytest 只读扫 demo-phase0 全部 `retrieval_runs`（217）。验证＝**pytest + 只读 SQLite**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单；不改写 DB。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。攻击 tag-only 仍保留。
+**状态（2026-10-22）：已推送 origin/main 6e9daa1。** 新增 `assert_persisted_retrieval_contract`：在 run-search 归属合同之上钉死 `load_retrieval` 信封——queryHash＝SHA256(query)、result 与行级 hits 的 rank／candidateId／eventId／score／scoreKind 对齐、version／runId／query 与 result 一致。`SqliteTimelineStore.load_retrieval` 读回强制（底层 `retrieval_persistence.load_retrieval` 仍供窄存储单测用最小 fixture）。pytest 只读扫 demo-phase0 全部 `retrieval_runs`（217）。验证＝**pytest + 只读 SQLite**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单；不改写 DB。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。攻击 tag-only 仍保留。
 
 ## Assignment
 

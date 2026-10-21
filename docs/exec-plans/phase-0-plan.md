@@ -1,6 +1,6 @@
 # Phase 0 开发任务与依赖
 
-**2026-10-22 检索离线扩展（SQLite retrieval_runs 本机只读信封合同，已推送 PLACEHOLDER）：** ssert_persisted_retrieval_contract；见 sprint-retrieval-sqlite-local-readonly.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
+**2026-10-22 检索离线扩展（SQLite retrieval_runs 本机只读信封合同，已推送 6e9daa1）：** ssert_persisted_retrieval_contract；见 sprint-retrieval-sqlite-local-readonly.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线扩展（单任务检索落盘本机只读归属合同，已推送 54303a2）：** ssert_run_search_document_contract；见 sprint-retrieval-run-search-local-readonly.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
 
