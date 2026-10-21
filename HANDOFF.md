@@ -1,6 +1,6 @@
 # 当前交接：检索已明确拒绝覆盖缺口 run，三缺口仍在
 
-**当前交接（2026-10-22）：NL 检索资格闸已推送准备。** `load_searchable_timeline`／`refuse_unsearchable_run`：`analysis.coverage_gap` → `retrieval.coverage_gap` 白话拒绝；未完成 run → 明确「只能检索已完成…」。单 run／项目搜索／详情查询入口已接。sprint：`docs/exec-plans/sprint-search-eligibility.md`。0 付费／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。任务列表资格基线 3230651／539830a。以下为任务列表／缺口脚手架历史。
+**当前交接（2026-10-22）：NL 检索资格闸已推送 8ef7291。** `load_searchable_timeline`／`refuse_unsearchable_run`：`analysis.coverage_gap` → `retrieval.coverage_gap` 白话拒绝；未完成 run → 明确「只能检索已完成…」。单 run／项目搜索／详情查询入口已接。sprint：`docs/exec-plans/sprint-search-eligibility.md`。0 付费／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。任务列表资格基线 3230651／539830a。以下为任务列表／缺口脚手架历史。
 
 **当前交接（2026-10-22）：任务列表覆盖缺口资格区分已推送 3230651。** `material-tasks-v2`：`analysis.coverage_gap` → 相位 `analysis_coverage_gap`／「分析保留覆盖缺口，未获完整资格」；`searchEligible`／`completedEligible` 仅 Completed 为 true。工作台任务下一步文案同步。sprint：`docs/exec-plans/sprint-tasks-coverage-gap-eligibility.md`。0 付费／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。覆盖缺口脚手架基线 26e06e1。以下为诊断链接／写出历史。
 

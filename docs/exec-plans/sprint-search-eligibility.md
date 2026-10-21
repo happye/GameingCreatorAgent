@@ -1,6 +1,6 @@
 # Sprint：检索拒绝覆盖缺口／未完成 run（明确合同）
 
-**状态（2026-10-22）：离线实现中／本轮交付。** 自然语言检索入口在进入排序前，用 `load_searchable_timeline` 拒绝 `analysis.coverage_gap` 与未完成 run，并给出白话错误，避免落到笼统「项目存储校验失败」。0 付费；不代选 A／B／D；不声称三缺口已清；不改 feature_list。
+**状态（2026-10-22）：已交付并推送 8ef7291。** 自然语言检索入口在进入排序前，用 `load_searchable_timeline` 拒绝 `analysis.coverage_gap` 与未完成 run，并给出白话错误，避免落到笼统「项目存储校验失败」。0 付费；不代选 A／B／D；不声称三缺口已清；不改 feature_list。
 
 ## Assignment
 
