@@ -1,3 +1,5 @@
+**2026-10-22 TD009 离线扩展（match-report matches／版本／证据归属加深，已推送 3ee0c89）：** matches 行／evidence 归属／result 与 constraint 版本；见 sprint-td009-match-report-matches-versions.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD009 关单。
+
 **2026-10-22 检索离线扩展（场景名词跨语言 升起／护罩／悬浮／阶梯／拥抱／圆环／音符，已推送 8bec125）：** demo-phase0 真实升起／护罩／悬浮／阶梯／拥抱／圆环／音符；见 sprint-retrieval-scene-rising-shield-float-stair-hug.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
 
 **2026-10-22 TD009 离线扩展（sidecar evidence／cost／pair 证据绑定加深，已推送 06cddd8）：** evidence 行归属／sha／sourceUs；costCny；pair 证据序列；见 sprint-td009-sidecar-evidence-cost-binding.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD009 关单。

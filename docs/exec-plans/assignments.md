@@ -1,3 +1,5 @@
+**当前（2026-10-22）：root / Agent 推进 TD009 match-report matches／版本／证据归属加深（已推送 3ee0c89）。** sprint-td009-match-report-matches-versions.md 归 root／GamingCreatorAgent。拥有 detail_query 合同加深与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不改写旧 match；不声称 F006／TD009 关单。以下升起／护罩／悬浮场景跨语言为历史。
+
 **当前（2026-10-22）：root / Agent 推进检索场景名词跨语言 升起／护罩／悬浮／阶梯／拥抱／圆环／音符（已推送 8bec125）。** sprint-retrieval-scene-rising-shield-float-stair-hug.md 归 root／GamingCreatorAgent。拥有 retrieval 场景跨语言与只读测试／交接 docs；裸 rose／float 不收；0 付费；不代选 A／B／D；不改 feature_list；不发明 Boss／射击语料；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下 TD009 sidecar evidence／cost 为历史。
 
 **当前（2026-10-22）：root / Agent 推进 TD009 sidecar evidence／cost／pair 证据绑定加深（已推送 06cddd8）。** sprint-td009-sidecar-evidence-cost-binding.md 归 root／GamingCreatorAgent。拥有 detail_refinement_budget 合同加深与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不改写旧 sidecar；不声称 F006／TD009 关单。以下看台／闪光／轨迹为历史。
