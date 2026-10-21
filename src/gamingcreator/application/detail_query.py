@@ -1,6 +1,7 @@
 """Explicit query manifests and evidence reports. No free-text constraint inference or I/O."""
 
 import hashlib
+import re
 import json
 from dataclasses import asdict, replace
 
@@ -20,6 +21,7 @@ from gamingcreator.domain.actor_details import (
     AttributeConstraint,
     AttributeKind,
     CandidateDetail,
+    MatchStatus,
     QueryConstraint,
     attribute_value_options,
     canonical_constraint_json,
@@ -65,6 +67,35 @@ def build_match_report_inert_contract() -> dict[str, object]:
     }
 
 
+_HASH64 = re.compile(r"[0-9a-f]{64}\Z")
+MATCH_REPORT_FORBIDDEN_CLAIM_KEYS = (
+    "formalAcceptancePassed",
+    "acceptanceStatus",
+    "humanEvalPassed",
+    "f006Passed",
+    "f009Passed",
+    "f010Passed",
+)
+_MATCH_REPORT_STATUSES = frozenset(status.value for status in MatchStatus)
+
+
+def _valid_optional_hash64(value: object) -> bool:
+    return value is None or (type(value) is str and bool(_HASH64.fullmatch(value)))
+
+
+def _valid_optional_source_range(value: object) -> bool:
+    if value is None:
+        return True
+    if type(value) is not dict:
+        return False
+    start_us = value.get("startUs")
+    end_us = value.get("endUs")
+    duration_us = value.get("durationUs")
+    if type(start_us) is not int or type(end_us) is not int or type(duration_us) is not int:
+        return False
+    return 0 <= start_us < end_us <= duration_us
+
+
 def assert_match_report_contract(document: dict[str, object]) -> None:
     """Refuse match reports that claim human pass or open a static clothing index."""
     missing = REQUIRED_MATCH_REPORT_KEYS - set(document)
@@ -83,9 +114,40 @@ def assert_match_report_contract(document: dict[str, object]) -> None:
     expected = build_match_report_inert_contract()
     if contract != expected:
         raise ValueError("Match report inertContract mismatch.")
+    for key in MATCH_REPORT_FORBIDDEN_CLAIM_KEYS:
+        if key in document and document.get(key) is not None:
+            raise ValueError(f"{key} must stay absent/null on offline match reports.")
+    run_id = document.get("runId")
+    if type(run_id) is not str or not run_id:
+        raise ValueError("Match report runId must be a non-empty string.")
+    event_id = document.get("eventId")
+    if type(event_id) is not str or not event_id:
+        raise ValueError("Match report eventId must be a non-empty string.")
+    if ":" in event_id and not event_id.startswith(f"{run_id}:"):
+        raise ValueError("Match report eventId does not belong to runId.")
+    candidate_id = document.get("candidateId")
+    if candidate_id is not None and (type(candidate_id) is not str or not candidate_id):
+        raise ValueError("Match report candidateId must be null or a non-empty string.")
+    fingerprint = document.get("eventFingerprint")
+    if not _valid_optional_hash64(fingerprint):
+        raise ValueError("Match report eventFingerprint must be null or sha256 hex.")
+    if not _valid_optional_source_range(document.get("sourceRange")):
+        raise ValueError("Match report sourceRange is invalid.")
+    if not _valid_optional_hash64(document.get("refinementRequestHash")):
+        raise ValueError("Match report refinementRequestHash must be null or sha256 hex.")
+    if not _valid_optional_hash64(document.get("refinementPayloadHash")):
+        raise ValueError("Match report refinementPayloadHash must be null or sha256 hex.")
     result = document.get("result")
     if not isinstance(result, dict) or "status" not in result or "matcherVersion" not in result:
         raise ValueError("Match report result must expose status and matcherVersion.")
+    status = result.get("status")
+    if status not in _MATCH_REPORT_STATUSES:
+        raise ValueError("Match report result.status is invalid.")
+    matcher = result.get("matcherVersion")
+    if matcher not in {MATCHER_VERSION, TEMPORAL_MATCHER_VERSION}:
+        raise ValueError("Match report result.matcherVersion is invalid.")
+    if result.get("constraintHash") != document.get("constraintHash"):
+        raise ValueError("Match report result.constraintHash must match constraintHash.")
     constraint_json = document.get("constraintJson")
     constraint_digest = document.get("constraintHash")
     if type(constraint_json) is not str or type(constraint_digest) is not str:
@@ -113,6 +175,9 @@ def match_report_contract_gaps(document: dict[str, object]) -> tuple[str, ...]:
         gaps.append("human_labels_not_null")
     if document.get("qualityGate") is not None:
         gaps.append("quality_gate_not_null")
+    for key in MATCH_REPORT_FORBIDDEN_CLAIM_KEYS:
+        if key in document and document.get(key) is not None:
+            gaps.append(f"forbidden_claim:{key}")
     if (
         "independentStaticClothingIndex" in document
         and document.get("independentStaticClothingIndex") is not False
@@ -120,18 +185,49 @@ def match_report_contract_gaps(document: dict[str, object]) -> tuple[str, ...]:
         gaps.append("static_clothing_index_enabled")
     if "inertContract" in document and document.get("inertContract") != build_match_report_inert_contract():
         gaps.append("inert_contract_mismatch")
+    run_id = document.get("runId")
+    event_id = document.get("eventId")
+    if type(run_id) is not str or not run_id:
+        gaps.append("run_id_invalid")
+    if type(event_id) is not str or not event_id:
+        gaps.append("event_id_invalid")
+    elif type(run_id) is str and ":" in event_id and not event_id.startswith(f"{run_id}:"):
+        gaps.append("event_run_mismatch")
+    candidate_id = document.get("candidateId")
+    if candidate_id is not None and (type(candidate_id) is not str or not candidate_id):
+        gaps.append("candidate_id_invalid")
+    if "eventFingerprint" in document and not _valid_optional_hash64(document.get("eventFingerprint")):
+        gaps.append("event_fingerprint_invalid")
+    if "sourceRange" in document and not _valid_optional_source_range(document.get("sourceRange")):
+        gaps.append("source_range_invalid")
+    if "refinementRequestHash" in document and not _valid_optional_hash64(
+        document.get("refinementRequestHash")
+    ):
+        gaps.append("refinement_request_hash_invalid")
+    if "refinementPayloadHash" in document and not _valid_optional_hash64(
+        document.get("refinementPayloadHash")
+    ):
+        gaps.append("refinement_payload_hash_invalid")
     result = document.get("result")
     if not isinstance(result, dict):
         gaps.append("result_not_object")
     else:
         if "status" not in result:
             gaps.append("result_missing_status")
+        elif result.get("status") not in _MATCH_REPORT_STATUSES:
+            gaps.append("result_status_invalid")
         if "matcherVersion" not in result:
             gaps.append("result_missing_matcher_version")
         else:
             matcher = result.get("matcherVersion")
             if matcher not in {MATCHER_VERSION, TEMPORAL_MATCHER_VERSION}:
                 gaps.append("matcher_version_mismatch")
+        if (
+            "constraintHash" in result
+            and "constraintHash" in document
+            and result.get("constraintHash") != document.get("constraintHash")
+        ):
+            gaps.append("result_constraint_hash_mismatch")
     constraint_json = document.get("constraintJson")
     constraint_digest = document.get("constraintHash")
     if "constraintHash" in document or "constraintJson" in document:

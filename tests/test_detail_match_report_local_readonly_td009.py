@@ -92,3 +92,90 @@ def test_match_report_contract_gaps_flags_forged_human_pass_on_legacy_shape() ->
     gaps = match_report_contract_gaps(forged)
     assert "human_labels_not_null" in gaps
     assert "quality_gate_not_null" in gaps
+
+
+def test_local_demo_phase0_legacy_match_reports_bind_refinement_sidecars() -> None:
+    """Legacy v1 reports still point at real detail-refinements request/result pairs."""
+    files = _require_legacy_matches()
+    for path in files:
+        document = json.loads(path.read_text(encoding="utf-8-sig"))
+        request_hash = document.get("refinementRequestHash")
+        payload_hash = document.get("refinementPayloadHash")
+        assert isinstance(request_hash, str) and len(request_hash) == 64
+        assert isinstance(payload_hash, str) and len(payload_hash) == 64
+        sidecars = list(DEMO_PHASE0.glob(f"**/detail-refinements/{request_hash}/request.json"))
+        assert len(sidecars) == 1, (path.name, request_hash)
+        request_doc = json.loads(sidecars[0].read_text(encoding="utf-8-sig"))
+        assert request_doc["requestHash"] == request_hash
+        assert request_doc["runId"] == document["runId"]
+        assert request_doc["eventFingerprint"] == document["eventFingerprint"]
+        canonical = json.loads(request_doc["canonicalJson"])
+        assert canonical.get("candidateId") == document.get("candidateId")
+        assert canonical.get("interval") == document.get("sourceRange")
+        result_path = sidecars[0].with_name("result.json")
+        assert result_path.is_file(), path.name
+        result_doc = json.loads(result_path.read_text(encoding="utf-8-sig"))
+        assert result_doc.get("payloadHash") == payload_hash
+        # Ownership: event id stays under the same run.
+        assert str(document["eventId"]).startswith(f'{document["runId"]}:')
+
+
+def test_assert_match_report_contract_rejects_identity_range_matcher_and_claims() -> None:
+    from test_detail_match_report_contract import _weapon_coexist_detail
+    from test_actor_detail_matching import EVENT, RUN, condition
+    from gamingcreator.application.detail_query import match_report
+    from gamingcreator.domain.actor_details import AttributeKind, QueryConstraint
+
+    query = QueryConstraint((condition(AttributeKind.HELD_CLASS, "weapon", "item"),))
+    document = match_report(
+        None,
+        _weapon_coexist_detail(),
+        query,
+        run_id=RUN,
+        event_id=EVENT,
+        request_digest=None,
+    )
+    assert_match_report_contract(document)
+
+    bad_event = dict(document)
+    bad_event["eventId"] = "other-run:media:event:x"
+    with pytest.raises(ValueError, match="eventId"):
+        assert_match_report_contract(bad_event)
+
+    bad_range = dict(document)
+    bad_range["sourceRange"] = {"startUs": 10, "endUs": 10, "durationUs": 100}
+    with pytest.raises(ValueError, match="sourceRange"):
+        assert_match_report_contract(bad_range)
+
+    bad_matcher = json.loads(json.dumps(document))
+    bad_matcher["result"]["matcherVersion"] = "actor-detail-matcher-v1"
+    with pytest.raises(ValueError, match="matcherVersion"):
+        assert_match_report_contract(bad_matcher)
+
+    bad_status = json.loads(json.dumps(document))
+    bad_status["result"]["status"] = "passed"
+    with pytest.raises(ValueError, match="status"):
+        assert_match_report_contract(bad_status)
+
+    claim = dict(document)
+    claim["formalAcceptancePassed"] = True
+    with pytest.raises(ValueError, match="formalAcceptancePassed"):
+        assert_match_report_contract(claim)
+
+    hash_drift = json.loads(json.dumps(document))
+    hash_drift["result"]["constraintHash"] = "0" * 64
+    with pytest.raises(ValueError, match="constraintHash"):
+        assert_match_report_contract(hash_drift)
+
+
+def test_match_report_contract_gaps_flags_identity_and_forbidden_claims() -> None:
+    files = _require_legacy_matches()
+    document = json.loads(files[0].read_text(encoding="utf-8-sig"))
+    forged = dict(document)
+    forged["eventId"] = "someone-else:media:event:x"
+    forged["formalAcceptancePassed"] = True
+    forged["sourceRange"] = {"startUs": 5, "endUs": 1, "durationUs": 10}
+    gaps = match_report_contract_gaps(forged)
+    assert "event_run_mismatch" in gaps
+    assert "forbidden_claim:formalAcceptancePassed" in gaps
+    assert "source_range_invalid" in gaps

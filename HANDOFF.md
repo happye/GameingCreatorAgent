@@ -1,7 +1,9 @@
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
-**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip 3889b45（含 TD009 sidecar canonical／interval／prompt 加深），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
+**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip PLACEHOLDER（含 TD009 match-report 身份／sidecar 绑定），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
 
+
+**当前锚点（2026-10-22，TD009 match-report 身份／sidecar 绑定加深，已推送 PLACEHOLDER）：** assert／gaps 身份／range／status／matcher；旧 match↔sidecar 只读绑定；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-td009-match-report-identity-sidecar-binding.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD009 关单**。以下 sidecar canonical／interval／prompt 为历史。
 
 **当前锚点（2026-10-22，TD009 sidecar 规范载荷／pair 时间与 prompt 加深，已推送 3889b45）：** request canonical 身份／interval／evidence；pair source_range／basePrompt；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-td009-sidecar-canonical-interval-prompt.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD009 关单**。以下检索信封 media／why／timecode 为历史。
 
