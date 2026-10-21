@@ -368,3 +368,24 @@ def test_local_completed_demo_phase0_jump_title_only_abstains():
         assert attack.abstention_reason is None
 
     asyncio.run(run())
+
+
+def test_local_completed_demo_phase0_search_result_ranking_contract():
+    """demo-phase0 lexical results always satisfy ranking inert contract."""
+    _require_sqlite(DEMO_PHASE0)
+
+    async def run() -> None:
+        from gamingcreator.application.retrieval import assert_search_result_contract
+
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
+        for query in ("移动", "攻击", "战斗", "jump", "草地", ""):
+            result = await search_timeline(timeline, query, mode="lexical", top_k=10)
+            assert result.score_is_probability is False
+            assert_search_result_contract(result)
+            if query == "jump":
+                assert result.abstention_reason == "no_positive_action_evidence"
+            if query == "":
+                assert result.abstention_reason == "empty_query"
+
+    asyncio.run(run())

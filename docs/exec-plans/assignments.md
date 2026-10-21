@@ -1,5 +1,7 @@
 # Active assignments
 
+**当前（2026-10-22）：root / Agent 推进检索打分 inert 合同（已推送 PLACEHOLDER）。** sprint-retrieval-ranking-inert-contract.md 归 root／GamingCreatorAgent。拥有 retrieval 合同／CLI 投影与测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／TD004／TD010 关单。以下 action abstention 为历史。
+
 **当前（2026-10-22）：root / Agent 推进动作空召回／空查询 abstention（已推送 b85b5ef）。** sprint-retrieval-action-abstention.md 归 root／GamingCreatorAgent。拥有 retrieval abstention 与测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／TD004／TD010 关单。以下 lexicalEvidence 为历史。
 
 **当前（2026-10-22）：root / Agent 推进检索动作证据通道 lexicalEvidence（已推送 17bd9a2）。** sprint-retrieval-lexical-evidence-channel.md 归 root／GamingCreatorAgent。拥有 retrieval／投影面与测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／TD004／TD010 关单。以下 move／interact＋candidate_sources 为历史。

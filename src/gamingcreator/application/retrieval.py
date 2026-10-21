@@ -30,6 +30,17 @@ from gamingcreator.domain.time import SourceInstant, SourceRange
 RetrievalMode = Literal["lexical", "semantic", "hybrid"]
 RETRIEVAL_VERSION = "bm25-e5-rrf-v7"
 PROJECT_RETRIEVAL_VERSION = RETRIEVAL_VERSION + "-project-v1"
+# Ranking signals only — never calibrated probabilities or acceptance claims.
+SCORE_KINDS = frozenset({"bm25", "cosine", "rrf-bm25-cosine"})
+LEXICAL_EVIDENCE_CHANNELS = frozenset({"positive_text", "mechanic_tags", "mixed"})
+ABSTENTION_REASONS = frozenset(
+    {
+        "empty_query",
+        "no_searchable_documents",
+        "no_positive_action_evidence",
+        "semantic_ambiguity_without_lexical_anchor",
+    }
+)
 _STOP_WORDS = frozenset(
     "a an and are at avatar character characters clip find for from game gameplay in is me of on player please show the to video with".split()
 )
@@ -194,6 +205,8 @@ class SearchResult:
     event_embeddings: tuple[Embedding, ...] = ()
     semantic_detail_matches: tuple[tuple[str, str], ...] = ()
     lexical_detail_matches: tuple[tuple[str, str], ...] = ()
+    # Ranking scores are signals only; never treat as calibrated probabilities.
+    score_is_probability: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -216,6 +229,7 @@ class ProjectSearchResult:
     retrieval_version: str = PROJECT_RETRIEVAL_VERSION
     semantic_detail_matches: tuple[tuple[str, str], ...] = ()
     lexical_detail_matches: tuple[tuple[str, str], ...] = ()
+    score_is_probability: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -379,6 +393,26 @@ def _title_brand_action_noise_documents(
 
 def _fail(code: str, message: str) -> AppError:
     return AppError(code, message, ExitCode.INPUT)
+
+
+
+def assert_search_result_contract(result: SearchResult) -> None:
+    """Refuse ranking payloads that look like probabilities or unknown abstentions."""
+    if result.score_is_probability is not False:
+        raise _fail("retrieval.contract", "检索分数不是概率，不能标记为 score_is_probability。")
+    if result.retrieval_version != RETRIEVAL_VERSION:
+        raise _fail("retrieval.contract", "检索版本与合同不一致。")
+    if result.abstention_reason is not None and result.abstention_reason not in ABSTENTION_REASONS:
+        raise _fail("retrieval.contract", "未知的检索弃权原因。")
+    if result.abstention_reason is not None and result.candidates:
+        raise _fail("retrieval.contract", "弃权结果不能同时带有候选。")
+    for item in result.candidates:
+        if item.score_kind not in SCORE_KINDS:
+            raise _fail("retrieval.contract", "未知的检索打分种类。")
+        if "ranking signal, not probability" not in item.why:
+            raise _fail("retrieval.contract", "候选缺少非概率声明。")
+        if item.lexical_evidence is not None and item.lexical_evidence not in LEXICAL_EVIDENCE_CHANNELS:
+            raise _fail("retrieval.contract", "未知的 lexicalEvidence 通道。")
 
 
 def refuse_unsearchable_run(run: StoredRun) -> None:
@@ -896,7 +930,7 @@ async def _search_documents(
             raise _fail("retrieval.configuration", "检索上下文关联无效。")
         context.check_cancelled()
     if not _tokens(query):
-        return SearchResult(
+        empty = SearchResult(
             run_id,
             query,
             mode,
@@ -905,8 +939,10 @@ async def _search_documents(
             min_semantic_margin=min_semantic_margin,
             abstention_reason="empty_query",
         )
+        assert_search_result_contract(empty)
+        return empty
     if not documents:
-        return SearchResult(
+        bare = SearchResult(
             run_id,
             query,
             mode,
@@ -915,6 +951,8 @@ async def _search_documents(
             min_semantic_margin=min_semantic_margin,
             abstention_reason="no_searchable_documents",
         )
+        assert_search_result_contract(bare)
+        return bare
     denied_actions = (
         _denied_action_documents(documents, query)
         | _title_brand_action_noise_documents(documents, query)
@@ -1117,7 +1155,7 @@ async def _search_documents(
                 # Action query produced no survivors after denial / title-brand /
                 # tag-only noise filters (or corpus lacks positive evidence).
                 abstention_reason = "no_positive_action_evidence"
-    return SearchResult(
+    result = SearchResult(
         run_id,
         query,
         mode,
@@ -1138,3 +1176,5 @@ async def _search_documents(
             if row.identifier in lexical_winners
         ),
     )
+    assert_search_result_contract(result)
+    return result

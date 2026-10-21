@@ -518,3 +518,69 @@ def test_non_action_empty_corpus_does_not_set_action_abstention():
     result = search(timeline("草地上有一座塔。"), "飞机跑道", "lexical")
     assert result.candidates == ()
     assert result.abstention_reason is None
+
+
+def test_assert_search_result_contract_accepts_live_hits_and_known_abstentions():
+    from gamingcreator.application.retrieval import assert_search_result_contract
+    from test_retrieval_negation import search, timeline
+
+    hit = search(timeline("角色跳跃并落地。"), "jump", "lexical")
+    assert hit.abstention_reason is None
+    assert hit.score_is_probability is False
+    assert_search_result_contract(hit)
+    assert all(item.score_kind == "bm25" for item in hit.candidates)
+
+    empty = search(timeline("角色跳跃。"), "", "lexical")
+    assert empty.abstention_reason == "empty_query"
+    assert empty.score_is_probability is False
+    assert_search_result_contract(empty)
+
+    title_only = search(
+        timeline("画面显示“JUMP明星大乱斗”标题。"),
+        "jump",
+        "lexical",
+    )
+    assert title_only.abstention_reason == "no_positive_action_evidence"
+    assert_search_result_contract(title_only)
+
+
+def test_assert_search_result_contract_rejects_probability_flag_and_unknown_kind():
+    from dataclasses import replace
+
+    import pytest
+
+    from gamingcreator.application.retrieval import assert_search_result_contract
+    from gamingcreator.domain.errors import AppError
+    from test_retrieval_negation import search, timeline
+
+    hit = search(timeline("角色跳跃并落地。"), "jump", "lexical")
+    with pytest.raises(AppError) as flagged:
+        assert_search_result_contract(replace(hit, score_is_probability=True))
+    assert flagged.value.code == "retrieval.contract"
+
+    bad_kind = replace(
+        hit,
+        candidates=(replace(hit.candidates[0], score_kind="probability"),),
+    )
+    with pytest.raises(AppError) as kinded:
+        assert_search_result_contract(bad_kind)
+    assert kinded.value.code == "retrieval.contract"
+
+    bad_abs = replace(hit, candidates=(), abstention_reason="cleared_gaps")
+    with pytest.raises(AppError) as absed:
+        assert_search_result_contract(bad_abs)
+    assert absed.value.code == "retrieval.contract"
+
+
+def test_cli_search_document_projects_score_is_probability_false():
+    from gamingcreator.cli.main import _search_document
+    from test_retrieval_negation import search, timeline
+
+    result = search(timeline("角色向左移动。"), "移动", "lexical")
+    document = _search_document(result, elapsed_ms=1)
+    assert document["scoreIsProbability"] is False
+    assert document["abstentionReason"] is None
+    assert "formalAcceptancePassed" not in document
+    assert "qualityGate" not in document
+    for row in document["candidates"]:
+        assert "ranking signal, not probability" in row["why"]

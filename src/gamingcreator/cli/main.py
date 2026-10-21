@@ -281,7 +281,7 @@ def _search_document(
         "minSemanticMargin": result.min_semantic_margin,
         "abstentionReason": result.abstention_reason,
         "elapsedMs": elapsed_ms,
-        "scoreIsProbability": False,
+        "scoreIsProbability": result.score_is_probability,
         "embedding": json.loads(json.dumps(asdict(result.embedding_metadata), default=str))
         if result.embedding_metadata
         else None,
@@ -481,7 +481,7 @@ async def execute_project_search(
             "startedAt": started_at,
             "elapsedMs": round((perf_counter() - began) * 1000),
             "sourceValidationMs": validation_ms,
-            "scoreIsProbability": False,
+            "scoreIsProbability": result.score_is_probability,
             "qualityGate": None,
             "modelAnalysisCalls": 0,
             "newReservations": 0,
