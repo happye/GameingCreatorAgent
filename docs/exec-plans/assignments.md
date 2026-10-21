@@ -1,3 +1,5 @@
+**2026-10-22 检索（run／project embedding＋topK，7aad0df）：** sprint-retrieval-run-project-embedding-topk.md；不关单。
+
 **2026-10-22 检索（parameters／embeddingSpace，3aa3ac4）：** sprint-retrieval-persisted-parameters-embedding-space.md；不关单。
 
 **2026-10-22 TD009（pipeline／provider／metadata，0bbab05）：** sprint-td009-match-report-sidecar-pipeline-metadata.md；不关单。

@@ -1,6 +1,6 @@
 # Sprint：单任务／项目检索 embedding 元数据 + topK 加深
 
-**状态（2026-10-22）：已推送 origin/main FEATURE_SHA（docs 记录提交另记）。** 新增 `_assert_retrieval_embedding_metadata`：lexical 不得带 `embedding`；hybrid／semantic 须有对象且 `provider`／`requested_model`／`actual_model`／`schema_version` 非空，且 actual＝requested。挂入 `assert_run_search_document_contract`（另：`elapsedMs`≥0、`minSimilarity` 数值、`minSemanticMargin` 数值或 null）与 `assert_project_search_document_contract`（另：`len(candidates)≤topK`）。pytest + demo-phase0 runs/*/searches（204）与 project-searches 只读。验证＝**pytest + 只读 JSON／SQLite**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD004／TD010 关单**；不改写 artifacts；RETRIEVAL_VERSION 仍 `bm25-e5-rrf-v7`；攻击 tag-only 仍保留。
+**状态（2026-10-22）：已推送 origin/main 7aad0df（docs 记录提交另记）。** 新增 `_assert_retrieval_embedding_metadata`：lexical 不得带 `embedding`；hybrid／semantic 须有对象且 `provider`／`requested_model`／`actual_model`／`schema_version` 非空，且 actual＝requested。挂入 `assert_run_search_document_contract`（另：`elapsedMs`≥0、`minSimilarity` 数值、`minSemanticMargin` 数值或 null）与 `assert_project_search_document_contract`（另：`len(candidates)≤topK`）。pytest + demo-phase0 runs/*/searches（204）与 project-searches 只读。验证＝**pytest + 只读 JSON／SQLite**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD004／TD010 关单**；不改写 artifacts；RETRIEVAL_VERSION 仍 `bm25-e5-rrf-v7`；攻击 tag-only 仍保留。
 
 ## Assignment
 

@@ -1,3 +1,5 @@
+**2026-10-22 检索离线进展（单任务／项目 embedding 元数据 + topK 加深，已推送 7aad0df）：** lexical 禁 embedding；hybrid／semantic model 对齐；project candidates≤topK；见 sprint-retrieval-run-project-embedding-topk.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+
 **2026-10-22 检索离线进展（持久化信封 parameters／embeddingSpace 加深，已推送 3aa3ac4）：** mode／topK／阈值对齐；embeddingSpace 按 mode；见 sprint-retrieval-persisted-parameters-embedding-space.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 TD009 离线进展（match-report↔sidecar pipeline／provider／metadata，已推送 0bbab05）：** configurationHash／pipeline／provider／metadata 对齐；见 sprint-td009-match-report-sidecar-pipeline-metadata.md。复合人评／静态索引仍 open；不宣称 TD009／F010 关单。
