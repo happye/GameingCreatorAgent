@@ -1094,3 +1094,42 @@ def test_jiaozhan_tag_only_mechanic_noise_excluded_lexical():
     empty = asyncio.run(search_timeline(data, "交战", mode="lexical", top_k=10))
     assert empty.candidates == ()
     assert empty.abstention_reason == "no_positive_action_evidence"
+
+
+@pytest.mark.parametrize(
+    "query,positive",
+    [
+        ("avatar", "顶部有双方角色头像与比分条。"),
+        ("avatars", "左上角显示角色头像。"),
+        ("icon", "下方出现一个圆形图标。"),
+        ("icons", "右侧有技能图标。"),
+        ("vfx", "场地中央出现蓝色旋风特效。"),
+        ("fx", "出现绿色特效和伤害数字。"),
+        ("glow", "场地内出现黄色光效。"),
+        ("glowing", "中央有角色释放蓝色光效技能。"),
+    ],
+)
+def test_avatar_icon_vfx_glow_cross_lingual_keeps_chinese_evidence(query, positive):
+    """English UI portrait／icon／vfx words expand to 头像／图标／特效／光效 (lexical)."""
+    data = timeline(positive, "角色向左移动。")
+    result = search(data, query, "lexical")
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    assert result.candidates[0].observable_facts == (positive,)
+    assert result.abstention_reason is None
+
+
+def test_avatar_alone_is_not_empty_query_stopword():
+    """Portrait queries must remain searchable; avatar is not filler."""
+    data = timeline("顶部有双方角色头像与比分条。")
+    result = search(data, "avatar", "lexical")
+    assert result.abstention_reason != "empty_query"
+    assert [c.event_id for c in result.candidates] == ["event-0"]
+
+
+@pytest.mark.parametrize(
+    "query",
+    ["avatarx", "iconic2", "vfxz", "glowworm", "prefix", "postfix"],
+)
+def test_avatar_icon_vfx_glow_non_words_do_not_cross_lingual_match(query):
+    data = timeline("顶部有双方角色头像与比分条。", "右侧有技能图标。", "出现绿色特效。", "黄色光效。")
+    assert search(data, query, "lexical").candidates == ()

@@ -54,7 +54,8 @@ SEARCH_DOCUMENT_FORBIDDEN_CLAIM_KEYS = frozenset(
     }
 )
 _STOP_WORDS = frozenset(
-    "a an and are at avatar character characters clip find for from game gameplay in is me of on player please show the to video with".split()
+    # "avatar" is a real UI/portrait query term against Chinese 头像 observations — keep it searchable.
+    "a an and are at character characters clip find for from game gameplay in is me of on player please show the to video with".split()
 )
 _CHINESE_FILLER = (
     "帮我找到",
@@ -122,6 +123,15 @@ _CROSS_LINGUAL_TERMS = (
     ("score", "比分"),
     ("beams", "光束"),
     ("beam", "光束"),
+    ("avatars", "头像"),
+    ("avatar", "头像"),
+    ("icons", "图标"),
+    ("icon", "图标"),
+    ("vfx", "特效"),
+    ("fx", "特效"),
+    ("glowing", "光效"),
+    ("glows", "光效"),
+    ("glow", "光效"),
 )
 # A small explicit-language guard, not a language model. Apply this only to
 # positive action queries; passage identities follow the observation projection.

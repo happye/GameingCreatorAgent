@@ -1,5 +1,7 @@
 # Phase 0 开发任务与依赖
 
+**2026-10-22 检索离线扩展（UI 肖像／图标／特效跨语言，已推送 PLACEHOLDER）：** avatar 出停用词；avatar／icon／vfx／glow；见 sprint-retrieval-ui-avatar-icon-vfx-glow.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
+
 **2026-10-22 TD009 离线扩展（match-report 身份／sidecar 绑定加深，已推送 52b7e7e）：** assert／gaps＋旧 match↔sidecar；见 sprint-td009-match-report-identity-sidecar-binding.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD009 关单。
 
 **2026-10-22 TD009 离线扩展（sidecar 规范载荷／pair 时间与 prompt 加深，已推送 3889b45）：** canonical 身份／interval／evidence；pair basePrompt／source_range；见 sprint-td009-sidecar-canonical-interval-prompt.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD009 关单。
