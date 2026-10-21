@@ -200,8 +200,8 @@ def test_local_completed_demo_phase0_fight_tag_only_noise_excluded():
         store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = {doc.event_id: doc for doc in _documents(timeline)}
-        fight_terms = ("战斗", "打斗", "fight", "fights", "fighting", "combat")
-        for query in ("fight", "combat", "战斗", "打斗"):
+        fight_terms = ("战斗", "打斗", "打架", "对战", "团战", "fight", "fights", "fighting", "combat")
+        for query in ("fight", "combat", "战斗", "打斗", "对战", "团战"):
             result = await search_timeline(timeline, query, mode="lexical", top_k=20)
             assert result.candidates, f"expected some fight-in-facts hits for {query!r}"
             for item in result.candidates:
@@ -329,7 +329,7 @@ def test_local_completed_demo_phase0_lexical_evidence_channels():
             assert "lexicalEvidence=mechanic_tags" in item.why
 
         for query, terms in (
-            ("战斗", ("战斗", "打斗", "fight", "combat")),
+            ("战斗", ("战斗", "打斗", "打架", "对战", "团战", "fight", "combat")),
             ("移动", ("移动", "move", "moving", "movement")),
         ):
             result = await search_timeline(timeline, query, mode="lexical", top_k=20)
@@ -449,3 +449,27 @@ def test_local_completed_demo_phase0_search_document_and_sources_contracts():
         assert_search_document_contract(jump_doc)
 
     asyncio.run(run())
+
+
+def test_local_completed_demo_phase0_duel_brawl_tag_only_noise_excluded():
+    """demo-phase0: 对战／团战／打架 queries must not keep bare mechanicTag chrome."""
+    _require_sqlite(DEMO_PHASE0)
+
+    async def run() -> None:
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
+        docs = {doc.event_id: doc for doc in _documents(timeline)}
+        fight_terms = ("战斗", "打斗", "打架", "对战", "团战", "fight", "fights", "fighting", "combat")
+        for query in ("对战", "团战", "打架"):
+            result = await search_timeline(timeline, query, mode="lexical", top_k=20)
+            for item in result.candidates:
+                doc = docs[item.event_id]
+                assert any(term in doc.positive_text for term in fight_terms), (
+                    query,
+                    item.event_id,
+                    doc.tags,
+                    doc.positive_text[:120],
+                )
+
+    asyncio.run(run())
+

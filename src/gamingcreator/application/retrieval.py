@@ -89,7 +89,17 @@ _ACTION_TERMS = {
     "jump": ("跳跃", "跳起", "起跳", "jump", "jumps", "jumping", "jumped"),
     "shoot": ("射击", "开枪", "shoot", "shoots", "shooting"),
     "attack": ("攻击", "attack", "attacks", "attacking", "attacked"),
-    "fight": ("战斗", "打斗", "fight", "fights", "fighting", "combat"),
+    "fight": (
+        "战斗",
+        "打斗",
+        "打架",
+        "对战",
+        "团战",
+        "fight",
+        "fights",
+        "fighting",
+        "combat",
+    ),
     "interact": (
         "交互",
         "互动",
@@ -279,7 +289,7 @@ def _tag_only_action_noise_documents(
     """Exclude clips whose only query-action evidence is a liberally painted mechanicTag.
 
     Lexical BM25 indexes `text` (facts + tags). For fight/move/interact queries,
-    bare theme tags (战斗／角色移动／交互) without matching language in positive_text
+    bare theme tags (战斗／对战／团战／角色移动／交互) without matching language in positive_text
     are UI/theme chrome — not gameplay evidence. Attack tag-only recall remains (TD010).
     """
     folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")

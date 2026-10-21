@@ -1,5 +1,7 @@
 # Phase 0 开发任务与依赖
 
+**2026-10-22 检索离线扩展（fight 别名打架／对战／团战，已推送 PLACEHOLDER）：** _ACTION_TERMS；见 sprint-retrieval-fight-duel-brawl-aliases.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
+
 > **2026-10-22 离线补强：** 项目联合检索落盘只读对照（已推送 `a62690e`）；不清除三缺口；不代选 A／B／D；不标 F006 true。
 
 **2026-10-22 TD009 离线扩展（sidecar request／result 本机只读对照，已推送 198ea93）：** ssert_refinement_sidecar_pair_contract；见 sprint-td009-sidecar-request-result-local-readonly.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD009 关单。

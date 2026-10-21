@@ -628,3 +628,84 @@ def test_assert_candidate_sources_contract_pins_inventory_without_scores():
     assert len(sources) == 2
     assert_candidate_sources_contract(sources)
     assert not hasattr(sources[0], "score")
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize(
+    "query,positive,denial",
+    [
+        ("打架", "角色与敌人打架。", "没有打架。"),
+        ("对战", "俯视视角对战场景，多名角色交锋。", "没有对战。"),
+        ("团战", "画面中央发生团战，多名角色聚集。", "未见团战。"),
+        ("fight", "俯视视角对战场景，多名角色交锋。", "没有对战。"),
+        ("战斗", "画面中央发生团战，多名角色聚集。", "没有团战。"),
+    ],
+)
+def test_fight_duel_brawl_aliases_keep_chinese_evidence(mode, query, positive, denial):
+    """打架／对战／团战 are fight synonyms; cross-term positive evidence still retrieves."""
+    data = timeline(positive, denial)
+    result = search(data, query, mode)
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    assert result.candidates[0].observable_facts == (positive,)
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize("query", ["对战", "团战", "打架", "战斗", "fight", "combat"])
+def test_fight_duel_brawl_tag_only_mechanic_noise_excluded(mode, query):
+    """Bare 对战／团战 mechanicTags without fight language in facts are chrome noise."""
+    import asyncio
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import search_timeline
+    from gamingcreator.application.storage import StoredTimeline
+    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
+
+    base = _base_timeline(
+        "俯视视角的绿色场地，中央有角色释放蓝色光效技能。",
+        "俯视视角对战场景，多名角色在中央交锋。",
+        "角色跳跃并落地。",
+    )
+    events = list(base.events)
+    events[0] = replace(events[0], mechanic_tags=("对战", "技能释放"))
+    data = StoredTimeline(
+        base.run,
+        base.checkpoints,
+        base.evidence,
+        base.transcripts,
+        tuple(events),
+        base.invocations,
+    )
+    result = asyncio.run(
+        search_timeline(data, query, mode=mode, embedding_provider=EqualSimilarity(), top_k=10)
+    )
+    hit_ids = [item.event_id for item in result.candidates]
+    assert "event-0" not in hit_ids, hit_ids
+    if query in {"对战", "团战", "打架", "战斗", "fight", "combat"}:
+        assert "event-1" in hit_ids, hit_ids
+
+
+def test_duel_query_with_only_tag_noise_abstains():
+    """对战 query over tag-only chrome yields no_positive_action_evidence."""
+    import asyncio
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import search_timeline
+    from gamingcreator.application.storage import StoredTimeline
+    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
+
+    base = _base_timeline("俯视视角的绿色场地，中央有角色释放蓝色光效技能。")
+    events = list(base.events)
+    events[0] = replace(events[0], mechanic_tags=("对战", "技能按钮"))
+    data = StoredTimeline(
+        base.run,
+        base.checkpoints,
+        base.evidence,
+        base.transcripts,
+        tuple(events),
+        base.invocations,
+    )
+    result = asyncio.run(
+        search_timeline(data, "对战", mode="lexical", embedding_provider=EqualSimilarity(), top_k=10)
+    )
+    assert result.candidates == ()
+    assert result.abstention_reason == "no_positive_action_evidence"

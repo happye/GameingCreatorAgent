@@ -1,3 +1,5 @@
+**当前（2026-10-22）：root / Agent 推进检索 fight 别名打架／对战／团战（已推送 PLACEHOLDER）。** sprint-retrieval-fight-duel-brawl-aliases.md 归 root／GamingCreatorAgent。拥有 retrieval 别名与测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／TD004／TD010 关单。以下 TD009 sidecar request／result 只读对照为历史。
+
 **当前（2026-10-22）：root / Agent 推进 TD009 sidecar request／result 本机只读对照（已推送 198ea93）。** sprint-td009-sidecar-request-result-local-readonly.md 归 root／GamingCreatorAgent。拥有 detail_refinement_budget／sidecar 合同与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不改写旧 sidecar JSON；不声称 F006／TD009 关单。以下项目联合检索落盘只读对照为历史。
 
 # Active assignments

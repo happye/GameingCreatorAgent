@@ -1,5 +1,7 @@
 # Technical debt
 
+**2026-10-22 检索离线进展（fight 别名打架／对战／团战，已推送 PLACEHOLDER）：** _ACTION_TERMS fight 扩中文别名；见 sprint-retrieval-fight-duel-brawl-aliases.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+
 **2026-10-22 TD009 离线扩展（sidecar request／result 本机只读对照，已推送 198ea93）：** ssert_refinement_request_document_contract／result／pair；见 sprint-td009-sidecar-request-result-local-readonly.md；静态度量／人评仍 open；不宣称 TD009／F010 关单。
 
 **2026-10-22 检索离线进展（项目联合检索落盘只读对照，已推送 `a62690e`）：** `assert_project_search_document_contract`；见 sprint-retrieval-project-search-local-readonly.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
