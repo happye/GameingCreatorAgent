@@ -1,5 +1,8 @@
 # Progress Log
 
+**2026-10-22 共享离线 WaitingTransport／IdleRecorder：** 抽到 fake_vision_transport／fake_invocation_recorder；合同测试绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-shared-waiting-idle-doubles.md。
+
+
 **2026-10-22 工作台只读验收就绪（已推送 cb35e90）：** 对话框 + `/api/acceptance-readiness`；前端拒绝通过声明；任务 schema 对齐 v2；pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-workbench-acceptance-readiness.md。
 
 

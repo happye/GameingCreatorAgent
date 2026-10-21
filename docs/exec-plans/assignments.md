@@ -1,5 +1,8 @@
 # Active assignments
 
+**当前（2026-10-22）：root 单 Agent 交付共享离线 WaitingTransport／IdleRecorder。** sprint-shared-waiting-idle-doubles.md 由 root／GamingCreatorAgent 拥有。改共享测试双件与相关接线／公共 docs；0 付费。不代选 A／B／D；不改 feature_list；不宣称 F006／人评通过。以下工作台 readiness 为历史。
+
+
 **当前（2026-10-22）：root 单 Agent 交付工作台只读验收就绪。** sprint-workbench-acceptance-readiness.md 由 root／GamingCreatorAgent 拥有。改 ui service／server／static、相关测试／公共 docs；0 付费。不代选 A／B／D；不改 feature_list；不宣称 F006／人评通过。以下 CLI readiness 为历史。
 
 

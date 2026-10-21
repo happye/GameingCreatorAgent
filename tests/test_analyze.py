@@ -7,6 +7,7 @@ from fractions import Fraction
 from pathlib import Path
 
 import pytest
+from fake_invocation_recorder import IdleRecorder
 from fake_vision_transport import FakeVisionTransport as FakeTransport
 
 from gamingcreator.application.analysis import (
@@ -143,13 +144,6 @@ class ScriptedVision:
         )
         return ProviderResult(ProviderStatus.COMPLETED, (self.event,), metadata)
 
-
-class IdleRecorder:
-    async def begin_invocation(self, *args: object, **kwargs: object) -> None:
-        raise AssertionError("Invocation was recorded before a budget check.")
-
-    async def finish_invocation(self, *args: object, **kwargs: object) -> None:
-        raise AssertionError("Invocation was recorded before a budget check.")
 
 
 def asr_metadata() -> InvocationMetadata:

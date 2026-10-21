@@ -1,5 +1,7 @@
 # Phase 0 开发任务与依赖
 
+> **2026-10-22 离线补充：** 共享 WaitingTransport／IdleRecorder 测试双件；不清除覆盖缺口；不代选 A／B／D；不标 F006 true。
+
 > **2026-10-22 离线补充：** 工作台「验收就绪」只读展示与 CLI 同源；不清除覆盖缺口；不代选 A／B／D；不标 F006 true。
 
 > **2026-10-22 离线补充：** `acceptance-readiness` 只读汇总资格／阻断；不清除覆盖缺口；不代选 A／B／D；不标 F006 true。

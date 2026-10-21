@@ -6,7 +6,7 @@ import asyncio
 import json
 
 import pytest
-from fake_vision_transport import FakeVisionTransport, offline_chat_completion
+from fake_vision_transport import FakeVisionTransport, WaitingTransport, offline_chat_completion
 
 from gamingcreator.infrastructure.http_transport import HttpResponse, TransportError
 
@@ -80,3 +80,18 @@ def test_offline_chat_completion_shape():
     assert decoded["model"] == "deepseek-flash"
     content = json.loads(decoded["choices"][0]["message"]["content"])
     assert content == {"events": [{"startFrameId": "f0", "endFrameId": "f1"}]}
+
+
+def test_waiting_transport_signals_start_and_marks_closed_on_cancel():
+    transport = WaitingTransport()
+
+    async def scenario() -> None:
+        task = asyncio.create_task(transport.post({"x": 1}, 5.0))
+        await asyncio.wait_for(transport.started.wait(), 1)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        assert transport.closed is True
+
+    asyncio.run(scenario())
+

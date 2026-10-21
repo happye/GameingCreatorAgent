@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import Callable, Sequence
 
@@ -73,3 +74,24 @@ class FakeVisionTransport:
         if isinstance(reply, Exception):
             raise reply
         return reply
+
+
+class WaitingTransport:
+    """Hang on post until cancelled; used for offline cancel/timeout contracts.
+
+    Never opens sockets. Callers wait on ``started`` then cancel the consumer.
+    """
+
+    def __init__(self) -> None:
+        self.started = asyncio.Event()
+        self.closed = False
+
+    async def post(self, payload: dict[str, object], timeout_seconds: float) -> HttpResponse:
+        del payload, timeout_seconds
+        self.started.set()
+        try:
+            await asyncio.Future[None]()
+        finally:
+            self.closed = True
+        raise AssertionError("Cancelled request cannot complete.")
+

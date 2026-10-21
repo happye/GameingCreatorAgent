@@ -11,7 +11,7 @@ from pathlib import Path
 
 import httpx
 import pytest
-from fake_vision_transport import FakeVisionTransport
+from fake_vision_transport import FakeVisionTransport, WaitingTransport
 
 from gamingcreator.application.budget import BudgetLedger
 from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
@@ -98,19 +98,6 @@ def FakeTransport(
 
     return FakeVisionTransport(replies, before_post=before_post)
 
-
-class WaitingTransport:
-    def __init__(self) -> None:
-        self.started = asyncio.Event()
-        self.closed = False
-
-    async def post(self, payload: dict[str, object], timeout_seconds: float) -> HttpResponse:
-        self.started.set()
-        try:
-            await asyncio.Future[None]()
-        finally:
-            self.closed = True
-        raise AssertionError("Cancelled request cannot complete.")
 
 
 def request_fixture(tmp_path: Path, *, frames: int = 1, width: int = 512) -> VisionRequest:
