@@ -38,6 +38,23 @@ class VisionTransport(Protocol):
     async def post(self, payload: dict[str, object], timeout_seconds: float) -> HttpResponse: ...
 
 
+async def _read_bounded_body(response: httpx.Response) -> bytes:
+    length = response.headers.get("content-length")
+    if length is not None:
+        try:
+            oversized = int(length) > MAX_RESPONSE_BYTES
+        except ValueError:
+            raise TransportError("provider.transport") from None
+        if oversized:
+            raise TransportError("provider.response_limit")
+    chunks = bytearray()
+    async for chunk in response.aiter_bytes(chunk_size=65_536):
+        if len(chunks) + len(chunk) > MAX_RESPONSE_BYTES:
+            raise TransportError("provider.response_limit")
+        chunks.extend(chunk)
+    return bytes(chunks)
+
+
 class HttpxVisionTransport:
     def __init__(self, transport: httpx.AsyncBaseTransport | None = None) -> None:
         self._transport = transport
@@ -51,7 +68,11 @@ class HttpxVisionTransport:
             raise TransportError("provider.timeout")
         # Resolve only in the sending process; never put this value in records or exceptions.
         credential = os.environ.get("DEEPSEEK_API_KEY")
-        if not credential or not credential.strip() or any(c in credential for c in "\r\n"):
+        if (
+            not credential
+            or not credential.strip()
+            or any(c in credential for c in (chr(13), chr(10)))
+        ):
             raise TransportError("provider.auth")
         try:
             async with httpx.AsyncClient(
@@ -66,24 +87,16 @@ class HttpxVisionTransport:
                 },
             ) as client:
                 async with client.stream("POST", DEEPSEEK_ENDPOINT, json=payload) as response:
-                    if response.status_code != 200:
-                        return HttpResponse(response.status_code, b"")
-                    if response.headers.get("content-encoding", "identity").lower() != "identity":
+                    # Reject compressed 200 bodies before reading (same as prior contract).
+                    # Non-200 still keeps a bounded body for offline diagnosis.
+                    if (
+                        response.status_code == 200
+                        and response.headers.get("content-encoding", "identity").lower()
+                        != "identity"
+                    ):
                         raise TransportError("provider.response_limit")
-                    length = response.headers.get("content-length")
-                    if length is not None:
-                        try:
-                            oversized = int(length) > MAX_RESPONSE_BYTES
-                        except ValueError:
-                            raise TransportError("provider.transport") from None
-                        if oversized:
-                            raise TransportError("provider.response_limit")
-                    chunks = bytearray()
-                    async for chunk in response.aiter_bytes(chunk_size=65_536):
-                        if len(chunks) + len(chunk) > MAX_RESPONSE_BYTES:
-                            raise TransportError("provider.response_limit")
-                        chunks.extend(chunk)
-                    return HttpResponse(response.status_code, bytes(chunks))
+                    body = await _read_bounded_body(response)
+                    return HttpResponse(response.status_code, body)
         except httpx.RequestError:
             raise TransportError("provider.network", retryable=True) from None
         except (ValueError, UnicodeError):

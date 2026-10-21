@@ -758,6 +758,35 @@ def _events(response: dict[str, object], request: VisionRequest) -> tuple[Semant
     return tuple(result)
 
 
+def _http_error_projection(body: bytes) -> dict[str, object]:
+    """Bounded, credential-free summary of a non-200 provider body for offline diagnosis."""
+    projection: dict[str, object] = {
+        "responseSha256": hashlib.sha256(body).hexdigest(),
+        "responseBytes": len(body),
+    }
+    if not body:
+        projection["bodyKind"] = "empty"
+        return projection
+    try:
+        decoded: object = json.loads(body.decode("utf-8"))
+    except (ValueError, UnicodeError):
+        projection["bodyKind"] = "non_json"
+        return projection
+    if not isinstance(decoded, dict):
+        projection["bodyKind"] = "non_object"
+        return projection
+    projection["bodyKind"] = "json_object"
+    error = decoded.get("error")
+    if isinstance(error, dict):
+        message = error.get("message")
+        error_type = error.get("type")
+        if isinstance(message, str) and message.strip():
+            projection["errorMessage"] = message.strip()[:500]
+        if isinstance(error_type, str) and error_type.strip() and len(error_type) <= 100:
+            projection["errorType"] = error_type.strip()
+    return projection
+
+
 def _schema_projection(body: bytes, decoded: dict[str, object] | None) -> dict[str, object]:
     projection: dict[str, object] = {
         "responseSha256": hashlib.sha256(body).hexdigest(),
@@ -945,6 +974,12 @@ class DeepSeekVisionProvider:
                 response_body = response.body
                 if response.status_code != 200:
                     code, retryable = self._http_error(response.status_code)
+                    details = _json(metadata.execution_details or "{}")
+                    details["httpStatus"] = response.status_code
+                    details["httpErrorProjection"] = _http_error_projection(response_body)
+                    metadata = replace(
+                        metadata, execution_details=json.dumps(details, sort_keys=True)
+                    )
                     result = self._failed(metadata, code, retryable)
                 else:
                     if len(response.body) > MAX_RESPONSE_BYTES:

@@ -1007,7 +1007,7 @@ class ResponseStream(httpx.AsyncByteStream):
         self.closed = True
 
 
-def test_httpx_uses_official_url_no_proxy_and_no_private_error_body(
+def test_httpx_uses_official_url_no_proxy_and_keeps_bounded_error_body(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # Replace the environment object rather than reading any existing credential value.
@@ -1021,17 +1021,19 @@ def test_httpx_uses_official_url_no_proxy_and_no_private_error_body(
         },
     )
     requests = []
+    error_body = b"private-error-body"
 
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
         assert str(request.url) == DEEPSEEK_ENDPOINT
         assert request.headers["authorization"] == "Bearer offline-test"
         return httpx.Response(
-            302, headers={"location": "https://offline.invalid"}, content=b"private-error-body"
+            302, headers={"location": "https://offline.invalid"}, content=error_body
         )
 
     response = asyncio.run(HttpxVisionTransport(httpx.MockTransport(handler)).post({}, 1))
-    assert response.status_code == 302 and response.body == b"" and len(requests) == 1
+    # Bounded non-200 bodies are retained for diagnosis; exceptions still must not embed them.
+    assert response.status_code == 302 and response.body == error_body and len(requests) == 1
 
 
 @pytest.mark.parametrize("mode", ["header", "stream", "compressed"])
@@ -1092,3 +1094,28 @@ def test_httpx_cancel_closes_active_response(monkeypatch: pytest.MonkeyPatch) ->
         assert stream.closed
 
     asyncio.run(scenario())
+
+
+def test_http_error_body_projected_into_execution_details(tmp_path: Path):
+    body = json.dumps(
+        {
+            "error": {
+                "message": "Messages with JSON mode must instruct JSON.",
+                "type": "invalid_request_error",
+            }
+        }
+    ).encode("utf-8")
+    provider, _, recorder, _ = provider_fixture([HttpResponse(400, body)])
+    result = asyncio.run(provider.analyze(request_fixture(tmp_path), CancellationContext("run-1", 2)))
+    assert result.status is ProviderStatus.FAILED
+    assert result.error is not None and result.error.code == "provider.http"
+    details = json.loads(result.metadata.execution_details or "{}")
+    assert details["httpStatus"] == 400
+    projection = details["httpErrorProjection"]
+    assert projection["bodyKind"] == "json_object"
+    assert projection["errorType"] == "invalid_request_error"
+    assert "JSON mode" in projection["errorMessage"]
+    assert projection["responseBytes"] == len(body)
+    assert projection["responseSha256"]
+    finished = recorder.records[-1]
+    assert finished.status is InvocationStatus.FAILED
