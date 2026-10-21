@@ -1244,6 +1244,33 @@ def assert_project_search_document_contract(document: dict[str, object]) -> None
         raise _fail("retrieval.contract", "项目检索投影 recordPath 与 searchId 不一致。")
 
 
+def assert_project_search_receipt_contract(
+    receipt: object,
+    *,
+    search_id: str,
+    result_bytes: bytes,
+) -> None:
+    """Refuse project-search receipts that drift from saved result bytes or claim paid work.
+
+    Exact envelope: schemaVersion project-search-receipt-v1, searchId, resultSha256 of the
+    on-disk result.json bytes, and inert modelAnalysisCalls/newReservations counters.
+    """
+    if type(search_id) is not str or not re.fullmatch(r"[a-f0-9]{32}", search_id):
+        raise _fail("retrieval.contract", "项目检索 receipt searchId 无效。")
+    if type(result_bytes) is not bytes or not result_bytes:
+        raise _fail("retrieval.contract", "项目检索 receipt 对照字节无效。")
+    expected = {
+        "schemaVersion": "project-search-receipt-v1",
+        "searchId": search_id,
+        "resultSha256": hashlib.sha256(result_bytes).hexdigest(),
+        "modelAnalysisCalls": 0,
+        "newReservations": 0,
+    }
+    if receipt != expected:
+        raise _fail("retrieval.contract", "项目检索 receipt 与 result 校验失败。")
+
+
+
 def refuse_unsearchable_run(run: StoredRun) -> None:
     """Refuse runs that must not back NL search or formal acceptance queries."""
     if run.status == RunStatus.FAILED and run.error_code == "analysis.coverage_gap":

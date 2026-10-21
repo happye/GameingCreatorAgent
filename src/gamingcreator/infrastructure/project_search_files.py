@@ -6,7 +6,10 @@ import os
 import re
 from pathlib import Path
 
-from gamingcreator.application.retrieval import assert_project_search_document_contract
+from gamingcreator.application.retrieval import (
+    assert_project_search_document_contract,
+    assert_project_search_receipt_contract,
+)
 from gamingcreator.domain.errors import AppError, ExitCode
 
 MAX_RECORD_BYTES = 8 * 1024 * 1024
@@ -84,16 +87,15 @@ def read_project_search(project: Path, search_id: str) -> dict[str, object]:
             type(raw) is not dict
             or raw.get("schemaVersion") != "project-search-v1"
             or raw.get("searchId") != search_id
-            or receipt
-            != {
-                "schemaVersion": "project-search-receipt-v1",
-                "searchId": search_id,
-                "resultSha256": hashlib.sha256(documents[0]).hexdigest(),
-                "modelAnalysisCalls": 0,
-                "newReservations": 0,
-            }
         ):
             raise ValueError("Receipt does not match the saved record.")
+        try:
+            assert_project_search_receipt_contract(
+                receipt, search_id=search_id, result_bytes=documents[0]
+            )
+        except AppError as error:
+            # Preserve storage.project_search for on-disk receipt mismatch.
+            raise ValueError("Receipt does not match the saved record.") from error
         assert_project_search_document_contract(raw)
         return raw
     except (OSError, ValueError, UnicodeError):

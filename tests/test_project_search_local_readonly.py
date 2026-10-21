@@ -7,6 +7,7 @@ Does not claim F006 / gap clearance / TD closeout.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -15,6 +16,7 @@ import pytest
 from gamingcreator.application.retrieval import (
     PROJECT_RETRIEVAL_VERSION,
     assert_project_search_document_contract,
+    assert_project_search_receipt_contract,
 )
 from gamingcreator.domain.errors import AppError
 from gamingcreator.infrastructure.project_search_files import read_project_search
@@ -53,7 +55,11 @@ def test_local_demo_phase0_project_search_results_pass_document_contract() -> No
             or version.startswith(PROJECT_RETRIEVAL_VERSION + "-saved-details-")
         )
         assert_project_search_document_contract(document)
-        # Receipt linkage / inert counters are enforced by the reader.
+        result_bytes = result_path.read_bytes()
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8-sig"))
+        assert_project_search_receipt_contract(
+            receipt, search_id=directory.name, result_bytes=result_bytes
+        )
         loaded = read_project_search(DEMO_PHASE0, directory.name)
         assert loaded["searchId"] == directory.name
         assert loaded["searchId"] == document["searchId"]
@@ -261,3 +267,82 @@ def test_assert_project_search_document_contract_rejects_forged_facts_projection
     with pytest.raises(AppError) as bad:
         assert_project_search_document_contract(forged)
     assert bad.value.code == "retrieval.contract"
+
+
+def test_local_demo_phase0_project_search_receipts_bind_result_sha256() -> None:
+    """Every demo receipt must hash the on-disk result.json bytes and stay inert."""
+    dirs = _require_project_search_dirs()
+    assert len(dirs) >= 1
+    for directory in dirs:
+        result_bytes = (directory / "result.json").read_bytes()
+        receipt = json.loads((directory / "receipt.json").read_text(encoding="utf-8-sig"))
+        assert_project_search_receipt_contract(
+            receipt, search_id=directory.name, result_bytes=result_bytes
+        )
+        assert receipt["resultSha256"] == hashlib.sha256(result_bytes).hexdigest()
+        assert receipt["modelAnalysisCalls"] == 0
+        assert receipt["newReservations"] == 0
+
+
+def test_assert_project_search_receipt_contract_rejects_drift_and_paid_claims() -> None:
+    dirs = _require_project_search_dirs()
+    directory = dirs[0]
+    result_bytes = (directory / "result.json").read_bytes()
+    receipt = json.loads((directory / "receipt.json").read_text(encoding="utf-8-sig"))
+    assert_project_search_receipt_contract(
+        receipt, search_id=directory.name, result_bytes=result_bytes
+    )
+
+    bad_sha = dict(receipt)
+    bad_sha["resultSha256"] = "0" * 64
+    with pytest.raises(AppError) as sha_err:
+        assert_project_search_receipt_contract(
+            bad_sha, search_id=directory.name, result_bytes=result_bytes
+        )
+    assert sha_err.value.code == "retrieval.contract"
+
+    paid = dict(receipt)
+    paid["modelAnalysisCalls"] = 1
+    with pytest.raises(AppError) as paid_err:
+        assert_project_search_receipt_contract(
+            paid, search_id=directory.name, result_bytes=result_bytes
+        )
+    assert paid_err.value.code == "retrieval.contract"
+
+    reserved = dict(receipt)
+    reserved["newReservations"] = 1
+    with pytest.raises(AppError) as res_err:
+        assert_project_search_receipt_contract(
+            reserved, search_id=directory.name, result_bytes=result_bytes
+        )
+    assert res_err.value.code == "retrieval.contract"
+
+    wrong_id = dict(receipt)
+    wrong_id["searchId"] = "a" * 32
+    with pytest.raises(AppError) as id_err:
+        assert_project_search_receipt_contract(
+            wrong_id, search_id=directory.name, result_bytes=result_bytes
+        )
+    assert id_err.value.code == "retrieval.contract"
+
+    extra = dict(receipt)
+    extra["qualityGate"] = True
+    with pytest.raises(AppError) as extra_err:
+        assert_project_search_receipt_contract(
+            extra, search_id=directory.name, result_bytes=result_bytes
+        )
+    assert extra_err.value.code == "retrieval.contract"
+
+    with pytest.raises(AppError) as bytes_err:
+        assert_project_search_receipt_contract(
+            receipt, search_id=directory.name, result_bytes=result_bytes + b"\n"
+        )
+    assert bytes_err.value.code == "retrieval.contract"
+
+    with pytest.raises(AppError) as schema_err:
+        assert_project_search_receipt_contract(
+            {**receipt, "schemaVersion": "project-search-receipt-v0"},
+            search_id=directory.name,
+            result_bytes=result_bytes,
+        )
+    assert schema_err.value.code == "retrieval.contract"
