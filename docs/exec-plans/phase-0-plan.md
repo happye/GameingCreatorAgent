@@ -1,5 +1,7 @@
 # Phase 0 开发任务与依赖
 
+> **2026-10-22 离线补强：** TD010 混合语义边界／离线 DB 形对照（positive_text 禁回退＋golden JSON）；不清除三缺口；不代选 A／B／D；不标 F006 true。
+
 > **2026-10-22 离线补充：** 检索否定护栏忽略裸 mechanicTags（TD010，已推送 `1d0f70d`）；不清除覆盖缺口；不代选 A／B／D；不标 F006 true。
 
 > **2026-10-22 离线补充：** 素材任务行嵌入 coverageGapSummary 拒窗摘要；不清除覆盖缺口；不代选 A／B／D；不标 F006 true。

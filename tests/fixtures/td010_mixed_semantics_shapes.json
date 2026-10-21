@@ -1,0 +1,58 @@
+{
+  "note": "Offline TD010 mixed-semantics golden shapes (not a live DB dump; not quality acceptance).",
+  "run_id": "run",
+  "cases": [
+    {
+      "id": "deny-jump-tag-jump",
+      "query": "角色跳跃",
+      "events": [
+        {"facts": ["没有跳跃，角色站在原地。"], "tags": ["jump"], "expect": "excluded"},
+        {"facts": ["角色完成一次跳跃。"], "tags": [], "expect": "included"}
+      ]
+    },
+    {
+      "id": "deny-jump-tag-attack-query-attack",
+      "query": "攻击",
+      "events": [
+        {"facts": ["没有跳跃，角色站在原地。"], "tags": ["attack"], "expect": "included"},
+        {"facts": ["角色发动一次攻击。"], "tags": [], "expect": "included"}
+      ]
+    },
+    {
+      "id": "tags-only-jump",
+      "query": "jump",
+      "events": [
+        {"facts": [], "tags": ["jump"], "expect": "included"}
+      ]
+    },
+    {
+      "id": "deny-in-facts-affirm-in-transcript",
+      "query": "跳跃",
+      "events": [
+        {
+          "facts": ["没有跳跃。"],
+          "tags": ["jump"],
+          "transcript": "随后角色起跳并落地。",
+          "expect": "included"
+        }
+      ]
+    },
+    {
+      "id": "deny-in-facts-and-transcript",
+      "query": "跳跃",
+      "events": [
+        {
+          "facts": ["没有跳跃。"],
+          "tags": ["jump"],
+          "transcript": "画面未见跳跃动作。",
+          "expect": "excluded"
+        },
+        {
+          "facts": ["角色跳跃到平台。"],
+          "tags": [],
+          "expect": "included"
+        }
+      ]
+    }
+  ]
+}

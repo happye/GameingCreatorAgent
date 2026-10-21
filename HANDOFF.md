@@ -3,6 +3,8 @@
 **当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip 1d0f70d（含 TD010 否定护栏）），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
 
 
+**当前锚点（2026-10-22，TD010 混合语义边界／离线 DB 形对照，待推送）：** positive_text 不再回退到标签正文；混合通道 pytest + `tests/fixtures/td010_mixed_semantics_shapes.json`；sprint：`docs/exec-plans/sprint-retrieval-td010-mixed-semantics.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称真实 DB run 对照关单**。以下裸标签否定护栏为历史。
+
 **当前锚点（2026-10-22，检索否定保护不受裸 mechanicTags 覆盖／TD010，已推送 1d0f70d）：** `positive_text` 护栏；sprint：`docs/exec-plans/sprint-retrieval-mechanic-tag-denial.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下任务行拒窗摘要为历史。
 
 **当前锚点（2026-10-22，素材任务行覆盖缺口拒窗摘要，已推送 2b4d209）：** `coverageGapSummary` 嵌入任务卡；未清除／未代选。sprint：`docs/exec-plans/sprint-tasks-coverage-gap-summary.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下工作台覆盖缺口报告为历史。

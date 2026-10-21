@@ -20,7 +20,13 @@ from gamingcreator.application.providers import (
 from gamingcreator.application.retrieval import RetrievalMode, SearchResult, search_timeline
 from gamingcreator.application.storage import RunConfiguration, RunStatus, StoredRun, StoredTimeline
 from gamingcreator.domain.media import MediaAsset, MediaStream
-from gamingcreator.domain.models import Embedding, EmbeddingSpace, EvidenceReference, SemanticEvent
+from gamingcreator.domain.models import (
+    Embedding,
+    EmbeddingSpace,
+    EvidenceReference,
+    SemanticEvent,
+    TranscriptSegment,
+)
 from gamingcreator.domain.time import SourceInstant, SourceRange
 
 SPACE = EmbeddingSpace("fixture", "negation-fixture", "fixed-test-only", 2, "l2")
@@ -266,3 +272,146 @@ def test_bare_mechanic_tags_cannot_defeat_explicit_fact_denial():
     event_ids = [item.event_id for item in result.candidates]
     assert "event-0" not in event_ids
     assert "event-1" in event_ids
+
+
+
+def timeline_db_shaped(
+    rows: list[dict],
+) -> StoredTimeline:
+    """Build a Completed-timeline-shaped fixture (facts/tags/transcripts) without a live DB."""
+    count = max(len(rows), 1)
+    asset = MediaAsset(
+        "media",
+        Path("source.mp4"),
+        "a" * 64,
+        (MediaStream(0, "video", Fraction(1, 1_000_000), 0, count * 1_000_000),),
+        Fraction(0),
+        count * 1_000_000,
+        "fixture",
+    )
+    config = RunConfiguration(
+        AnalysisConfig("fixture", "fixture", 10, 10), Decimal("1"), "fixture", "a" * 64
+    )
+    run = StoredRun("run", asset, config, "a" * 64, RunStatus.COMPLETED, None)
+    evidence = tuple(
+        EvidenceReference(
+            f"run:image:{index}",
+            "media",
+            "image",
+            SourceInstant(index * 1_000_000 + 100_000, asset.duration_us),
+            Path(f"{index}.jpg"),
+            "a" * 64,
+            "fixture",
+        )
+        for index in range(len(rows))
+    )
+    events = []
+    transcripts = []
+    for index, row in enumerate(rows):
+        facts = tuple(row.get("facts") or ())
+        tags = tuple(row.get("tags") or ())
+        # Empty-fact events still need a searchable document when tags exist.
+        if not facts and not tags and not row.get("transcript"):
+            facts = ("（空观察）",)
+        events.append(
+            SemanticEvent(
+                f"event-{index}",
+                "media",
+                "run",
+                SourceRange(index * 1_000_000, (index + 1) * 1_000_000, asset.duration_us),
+                facts,
+                tags,
+                (f"run:image:{index}",),
+                "visual",
+                None,
+            )
+        )
+        transcript = row.get("transcript")
+        if transcript:
+            transcripts.append(
+                TranscriptSegment(
+                    "media",
+                    SourceRange(index * 1_000_000, (index + 1) * 1_000_000, asset.duration_us),
+                    transcript,
+                )
+            )
+    return StoredTimeline(
+        run, (), evidence, tuple(transcripts), tuple(events), ()
+    )
+
+
+def test_tags_only_event_remains_searchable_without_fact_fallback():
+    """TD010: empty facts + mechanicTags must not reintroduce tags into positive_text."""
+    data = timeline_db_shaped([{"facts": [], "tags": ["jump"]}])
+    # positive_text must stay empty so denial never scans tags; lexical still uses text.
+    from gamingcreator.application.retrieval import _documents
+
+    docs = _documents(data)
+    assert len(docs) == 1
+    assert docs[0].positive_text == ""
+    assert "jump" in docs[0].text.casefold()
+    result = search(data, "jump", "hybrid")
+    assert [item.event_id for item in result.candidates] == ["event-0"]
+
+
+def test_denied_action_does_not_block_other_action_tag_hit():
+    """Denial of jump must not exclude the same clip from an attack query."""
+    data = timeline_with_tags(
+        ("没有跳跃，角色站在原地。", ("attack",)),
+        ("角色发动一次攻击。", ()),
+    )
+    result = search(data, "攻击", "hybrid")
+    ids = {item.event_id for item in result.candidates}
+    assert "event-0" in ids
+    assert "event-1" in ids
+
+
+def test_transcript_affirmative_defeats_fact_denial_despite_echo_tag():
+    """Mixed channel: transcript affirmation in positive_text keeps the clip."""
+    data = timeline_db_shaped(
+        [
+            {
+                "facts": ["没有跳跃。"],
+                "tags": ["jump"],
+                "transcript": "随后角色起跳并落地。",
+            }
+        ]
+    )
+    result = search(data, "跳跃", "hybrid")
+    assert [item.event_id for item in result.candidates] == ["event-0"]
+
+
+def test_fact_and_transcript_both_deny_keeps_exclusion_despite_tag():
+    data = timeline_db_shaped(
+        [
+            {
+                "facts": ["没有跳跃。"],
+                "tags": ["jump"],
+                "transcript": "画面未见跳跃动作。",
+            },
+            {"facts": ["角色跳跃到平台。"], "tags": []},
+        ]
+    )
+    result = search(data, "跳跃", "hybrid")
+    ids = [item.event_id for item in result.candidates]
+    assert "event-0" not in ids
+    assert "event-1" in ids
+
+
+def test_td010_mixed_semantics_golden_shapes():
+    """Offline DB-shaped对照: golden JSON drives include/exclude expectations."""
+    import json
+
+    payload = json.loads(
+        Path("tests/fixtures/td010_mixed_semantics_shapes.json").read_text(encoding="utf-8-sig")
+    )
+    for case in payload["cases"]:
+        data = timeline_db_shaped(case["events"])
+        result = search(data, case["query"], "hybrid")
+        got = {item.event_id for item in result.candidates}
+        for index, event in enumerate(case["events"]):
+            event_id = f"event-{index}"
+            if event["expect"] == "excluded":
+                assert event_id not in got, case["id"]
+            else:
+                assert event_id in got, case["id"]

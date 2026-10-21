@@ -339,7 +339,7 @@ def _documents(timeline: StoredTimeline) -> tuple[_Document, ...]:
                     text,
                     run.run_id,
                     f"event:{event.event_id}",
-                    positive_text=positive_text or text,
+                    positive_text=positive_text,
                 )
             )
     for segment in timeline.transcripts:
@@ -374,6 +374,7 @@ def _documents(timeline: StoredTimeline) -> tuple[_Document, ...]:
                 segment.text,
                 run.run_id,
                 identity,
+                positive_text=segment.text,
             )
         )
     return tuple(sorted(documents, key=lambda item: (item.source_range.start_us, item.identifier)))
@@ -430,8 +431,8 @@ def _denied_action_documents(documents: tuple[_Document, ...], query: str) -> fr
         return frozenset()
     denied = set()
     for document in documents:
-        # Exclude bare mechanicTags from denial/affirmation scanning (TD010).
-        source = document.positive_text or document.text
+        # Facts/transcripts only — never fall back to tag-bearing text (TD010).
+        source = document.positive_text
         text = unicodedata.normalize("NFKC", source).casefold().replace("’", "'")
         spans = tuple(
             match.span()
