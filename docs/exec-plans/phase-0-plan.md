@@ -1,6 +1,6 @@
 # Phase 0 开发任务与依赖
 
-**2026-10-22 检索离线扩展（heal／damage 跨语言 + interacted + 信封 evidence／range，已推送 PLACEHOLDER）：** 跨语言 heal→治疗／damage→伤害；interacted；assert_persisted evidence／range；见 sprint-retrieval-heal-damage-interacted-envelope.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
+**2026-10-22 检索离线扩展（heal／damage 跨语言 + interacted + 信封 evidence／range，已推送 df20305）：** 跨语言 heal→治疗／damage→伤害；interacted；assert_persisted evidence／range；见 sprint-retrieval-heal-damage-interacted-envelope.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线扩展（SQLite retrieval_runs 本机只读信封合同，已推送 6e9daa1）：** ssert_persisted_retrieval_contract；见 sprint-retrieval-sqlite-local-readonly.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
 

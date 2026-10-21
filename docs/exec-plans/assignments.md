@@ -1,4 +1,4 @@
-**当前（2026-10-22）：root / Agent 推进检索 heal／damage 跨语言 + interacted + 信封 evidence／range（已推送 PLACEHOLDER）。** sprint-retrieval-heal-damage-interacted-envelope.md 归 root／GamingCreatorAgent。拥有 retrieval 跨语言／interact 别名与信封加深、只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不改写 DB；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下 SQLite retrieval_runs 信封为历史。
+**当前（2026-10-22）：root / Agent 推进检索 heal／damage 跨语言 + interacted + 信封 evidence／range（已推送 df20305）。** sprint-retrieval-heal-damage-interacted-envelope.md 归 root／GamingCreatorAgent。拥有 retrieval 跨语言／interact 别名与信封加深、只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不改写 DB；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下 SQLite retrieval_runs 信封为历史。
 
 **当前（2026-10-22）：root / Agent 推进 SQLite retrieval_runs 本机只读信封合同（已推送 6e9daa1）。** sprint-retrieval-sqlite-local-readonly.md 归 root／GamingCreatorAgent。拥有 retrieval 信封合同／Store 门闩与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不改写 DB；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下单任务检索落盘只读为历史。
 

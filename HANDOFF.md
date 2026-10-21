@@ -1,9 +1,9 @@
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
-**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip PLACEHOLDER（含 heal／damage／interacted／信封 evidence／range），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
+**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip df20305（含 heal／damage／interacted／信封 evidence／range），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
 
 
-**当前锚点（2026-10-22，检索 heal／damage 跨语言 + interacted + 信封 evidence／range，已推送 PLACEHOLDER）：** _CROSS_LINGUAL_TERMS heal→治疗／damage→伤害；interacted∈interact；assert_persisted 加深 evidence／range；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-retrieval-heal-damage-interacted-envelope.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**；攻击 tag-only 仍保留。以下 SQLite retrieval_runs 信封为历史。
+**当前锚点（2026-10-22，检索 heal／damage 跨语言 + interacted + 信封 evidence／range，已推送 df20305）：** _CROSS_LINGUAL_TERMS heal→治疗／damage→伤害；interacted∈interact；assert_persisted 加深 evidence／range；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-retrieval-heal-damage-interacted-envelope.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**；攻击 tag-only 仍保留。以下 SQLite retrieval_runs 信封为历史。
 
 **当前锚点（2026-10-22，SQLite retrieval_runs 本机只读信封合同，已推送 6e9daa1）：** ssert_persisted_retrieval_contract；Store.load_retrieval 门闩；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-retrieval-sqlite-local-readonly.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**；攻击 tag-only 仍保留。以下单任务检索落盘只读归属为历史。
 

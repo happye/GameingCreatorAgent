@@ -1,6 +1,6 @@
 # Technical debt
 
-**2026-10-22 检索离线进展（heal／damage 跨语言 + interacted + 信封 evidence／range，已推送 PLACEHOLDER）：** heal／damage→治疗／伤害；interacted；断言 evidence／range；见 sprint-retrieval-heal-damage-interacted-envelope.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+**2026-10-22 检索离线进展（heal／damage 跨语言 + interacted + 信封 evidence／range，已推送 df20305）：** heal／damage→治疗／伤害；interacted；断言 evidence／range；见 sprint-retrieval-heal-damage-interacted-envelope.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线进展（SQLite retrieval_runs 本机只读信封合同，已推送 6e9daa1）：** ssert_persisted_retrieval_contract；Store 读回门闩；见 sprint-retrieval-sqlite-local-readonly.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
