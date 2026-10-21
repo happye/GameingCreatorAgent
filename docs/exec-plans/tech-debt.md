@@ -1,3 +1,5 @@
+**2026-10-22 检索离线进展（项目联合检索内存结果 media／event／mode 加深，已推送 7d2696d）：** result 合同：源媒体／指纹唯一、候选对齐、owned event、mode；见 sprint-retrieval-project-result-media-event-mode.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+
 **2026-10-22 检索离线进展（项目联合检索 media／sha／timecode 加深，已推送 7c857c9）：** project-search 源媒体／指纹／时间码；转录 eventId=None；见 sprint-retrieval-project-search-media-timecode.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 # Technical debt
