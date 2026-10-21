@@ -1,3 +1,5 @@
+**2026-10-22 检索离线扩展（项目联合检索 media／sha／timecode 加深，已推送 7c857c9）：** assert_project_search 加深；run-search 允许转录 eventId=None；见 sprint-retrieval-project-search-media-timecode.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
+
 # Phase 0 开发任务与依赖
 
 **2026-10-22 检索离线扩展（场景／HUD 跨语言，已推送 73e75d1）：** healthbar／arena／grass／building／cover；见 sprint-retrieval-scene-healthbar-arena-grass.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。

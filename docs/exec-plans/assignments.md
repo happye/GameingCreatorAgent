@@ -1,3 +1,5 @@
+**当前（2026-10-22）：root / Agent 推进项目联合检索 media／sha／timecode 加深（已推送 7c857c9）。** sprint-retrieval-project-search-media-timecode.md 归 root／GamingCreatorAgent。拥有 project／run 检索合同加深与只读测试／交接 docs；允许转录 eventId=None；0 付费；不代选 A／B／D；不改 feature_list；不发明 Boss／射击语料；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下场景／HUD 跨语言为历史。
+
 **当前（2026-10-22）：root / Agent 推进检索场景／HUD 跨语言（已推送 73e75d1）。** sprint-retrieval-scene-healthbar-arena-grass.md 归 root／GamingCreatorAgent。拥有 retrieval 场景／HUD 跨语言与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不发明 Boss／射击语料；不声称 F006／TD004／TD010 关单；avatar 仍可检索；攻击 tag-only 仍保留。以下 UI avatar／icon／vfx／glow 为历史。
 
 **当前（2026-10-22）：root / Agent 推进检索 UI 肖像／图标／特效跨语言（已推送 da231a0）。** sprint-retrieval-ui-avatar-icon-vfx-glow.md 归 root／GamingCreatorAgent。拥有 retrieval UI 跨语言／stopword 与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不发明 Boss／射击语料；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下 TD009 match-report 绑定为历史。

@@ -1,3 +1,5 @@
+**2026-10-22 检索离线进展（项目联合检索 media／sha／timecode 加深，已推送 7c857c9）：** project-search 源媒体／指纹／时间码；转录 eventId=None；见 sprint-retrieval-project-search-media-timecode.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+
 # Technical debt
 
 **2026-10-22 检索离线进展（场景／HUD 跨语言，已推送 73e75d1）：** demo-phase0 真实血条／场地／草地／建筑／掩体；见 sprint-retrieval-scene-healthbar-arena-grass.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
