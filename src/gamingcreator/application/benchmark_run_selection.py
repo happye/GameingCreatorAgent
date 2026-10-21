@@ -46,10 +46,15 @@ def binding_choices(
             if run.asset.sha256 != original["sha256"]:
                 continue
             complete = run.status == RunStatus.COMPLETED
+            coverage_gap = (
+                run.status == RunStatus.FAILED and run.error_code == "analysis.coverage_gap"
+            )
             duration_matches = run.asset.duration_us == original["durationUs"]
             reason = (
                 "同一录像在所选用途里重复登记，请先核对计划。"
                 if duplicate
+                else "该分析保留覆盖缺口，未获完整资格，不能用于检索或正式验收。"
+                if coverage_gap
                 else "分析尚未完成，不能用于检索验收。"
                 if not complete
                 else "保存时长与冻结原片不同，不能关联。"
@@ -61,6 +66,8 @@ def binding_choices(
                 {
                     "runId": run.run_id,
                     "status": str(run.status),
+                    "errorCode": run.error_code,
+                    "searchEligible": reason is None,
                     "selectable": reason is None,
                     "reason": reason,
                     "analysisLabel": LABELS.get(config.vision_prompt_version, "其他已保存分析"),

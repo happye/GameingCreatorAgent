@@ -5,6 +5,7 @@ import copy
 import hashlib
 import json
 from dataclasses import replace
+from pathlib import Path
 from urllib.parse import urlencode
 
 import pytest
@@ -59,6 +60,8 @@ def test_choices_keep_versions_identity_declarations_and_query_partition(tmp_pat
     assert [item["selectable"] for item in candidates] == [True, True, False, False]
     assert candidates[1]["analysisLabel"] == "主体细节与动作 V6"
     assert candidates[2]["reason"] and candidates[3]["reason"]
+    assert candidates[2]["searchEligible"] is False
+    assert candidates[0]["searchEligible"] is True
     assert binding_choices(frozen, [foreign], "test")[0]["sourceId"] == "source-2"
 
 
@@ -231,3 +234,32 @@ def test_http_choices_exact_identity_and_no_paid_or_quality_claim(selection_work
                 manager.file(identifier, payload["freezeAttempt"], "freeze.json")
             ).hexdigest()
         )
+
+
+def test_coverage_gap_run_is_not_selectable_for_acceptance(tmp_path):
+    raw, assets = plan_fixture(tmp_path)
+    raw["sources"][0]["partition"] = "development"
+    frozen = freeze(raw, assets)
+    completed = StoredRun("run-ok", assets["source-0"], CONFIG, "a" * 64, RunStatus.COMPLETED, None)
+    gap = StoredRun(
+        "run-gap",
+        assets["source-0"],
+        CONFIG,
+        "b" * 64,
+        RunStatus.FAILED,
+        "analysis.coverage_gap",
+    )
+    choices = binding_choices(frozen, [completed, gap], "development")
+    by_id = {item["runId"]: item for item in choices[0]["candidates"]}
+    assert by_id["run-ok"]["selectable"] is True
+    assert by_id["run-ok"]["searchEligible"] is True
+    assert by_id["run-gap"]["selectable"] is False
+    assert by_id["run-gap"]["searchEligible"] is False
+    assert by_id["run-gap"]["errorCode"] == "analysis.coverage_gap"
+    assert "覆盖缺口" in by_id["run-gap"]["reason"]
+
+
+def test_acceptance_workflow_js_mentions_coverage_gap_refusal():
+    text = Path("src/gamingcreator/ui/static/benchmark-workflow.js").read_text(encoding="utf-8")
+    assert "覆盖缺口" in text
+    assert "不能关联做正式验收" in text

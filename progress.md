@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-22 验收绑定选项覆盖缺口拒文**：binding_choices／验收流程与检索资格对齐；相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；不宣称人评通过；A／B／D 仍待用户。sprint-acceptance-bind-eligibility.md。
+
 **2026-10-22 评测／绑定／细节核对检索资格闸（已推送 f785473）**：benchmark／bind／detail-match 与 NL 检索同一拒绝；相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-benchmark-search-eligibility.md。
 
 **2026-10-22 共享离线 FakeVisionTransport（已推送 9e62ae9）**：测试假传输双件合并；相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-shared-fake-vision-transport.md。

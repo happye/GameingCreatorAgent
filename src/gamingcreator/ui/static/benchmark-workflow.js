@@ -63,7 +63,7 @@
                     for(const candidate of source.candidates){const option=text("option",`${candidate.analysisLabel} · ${candidate.model} · ${candidate.runId}${candidate.reason?" · "+candidate.reason:""}`);option.value=candidate.runId;option.disabled=!candidate.selectable;select.append(option);}
                     const previous=value.previousSelection[source.sourceId]; if(source.candidates.some(row=>row.runId===previous && row.selectable))select.value=previous;
                     wrapper.append(select);holder.append(wrapper,text("p",`录制归组：${source.recordingGroup || "尚未确认"} · ${source.modelResultsViewed?"已看过模型结果":"声明未看过模型结果"}`,"state"));
-                    if(!source.candidates.some(row=>row.selectable))holder.append(text("p","这段录像暂无可关联的已完成分析，请保留原任务并按已有流程处理。","failed"));
+                    if(!source.candidates.some(row=>row.selectable)){const gapOnly=source.candidates.length>0&&source.candidates.every(row=>row.errorCode==="analysis.coverage_gap"||(typeof row.reason==="string"&&row.reason.includes("覆盖缺口")));holder.append(text("p",gapOnly?"这段录像的分析保留覆盖缺口，未获完整资格，不能关联做正式验收。":"这段录像暂无可关联的已完成分析，请保留原任务并按已有流程处理。","failed"));}
                 }
                 message.textContent="已按保存的原片身份列出任务；选择后关联时会核对实际录像和证据。"+(Object.keys(value.previousSelection).length?" 已恢复上次明确选择。":" 不会自动选择最新版本。");
             }catch(error){if(generation===state.generation){state.options=null;holder.replaceChildren();message.textContent=error.message;}}
