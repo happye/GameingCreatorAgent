@@ -14,6 +14,7 @@ from gamingcreator.application.detail_refinement import (
 )
 from gamingcreator.application.detail_refinement_budget import canonical_detail_json, payload_hash
 from gamingcreator.application.inspection import InspectionView, inspection_view
+from gamingcreator.application.invocation_diagnostics import invocation_failure_diagnostics
 from gamingcreator.application.observation_text import FACTS_PROJECTION_VERSION, display_facts
 from gamingcreator.application.retrieval import RETRIEVAL_VERSION, CandidateClip, RetrievalMode
 from gamingcreator.application.retrieval_diagnostics import retrieval_diagnostics
@@ -456,6 +457,7 @@ async def inspect_run(
                 }
                 for stage in timeline.checkpoints
             ],
+            "invocationFailures": invocation_failure_diagnostics(timeline.invocations),
             "cost": cost_payload(timeline.invocations),
             "detailQueryOptions": query_options(),
             "retrievalVersion": RETRIEVAL_VERSION,

@@ -1798,11 +1798,27 @@
             : unknown > 0 ? `另有 ${unknown} 次调用费用待确认；已知估价非总额。`
                 : "已有记录的费用估算，未核对账单。";
         const stages = Array.isArray(view.stages) ? view.stages : [];
-        ui["stage-summary"].textContent = stages.length ? `${stages.filter((stage) => stage.status === "completed").length}/${stages.length} 已完成` : "未登记";
+        const failures = Array.isArray(view.invocationFailures) ? view.invocationFailures : [];
+        ui["stage-summary"].textContent = stages.length
+            ? `${stages.filter((stage) => stage.status === "completed").length}/${stages.length} 已完成${failures.length ? ` · ${failures.length} 条失败诊断` : ""}`
+            : (failures.length ? `${failures.length} 条失败诊断` : "未登记");
         ui["stage-list"].replaceChildren();
         for (const stage of stages) {
             const row = element("li");
             row.append(element("span", "", `${stage.id}${stage.errorCode ? ` · ${stage.errorCode}` : ""}`), element("span", stage.status, statusLabels[stage.status] || stage.status));
+            ui["stage-list"].append(row);
+        }
+        for (const failure of failures) {
+            const row = element("li", "warning");
+            const diagnostics = failure.diagnostics && typeof failure.diagnostics === "object" ? failure.diagnostics : {};
+            const httpMessage = diagnostics.httpErrorProjection && typeof diagnostics.httpErrorProjection.errorMessage === "string"
+                ? diagnostics.httpErrorProjection.errorMessage
+                : "";
+            const bits = [failure.stageId || "调用", `尝试 ${failure.attempt || "?"}`, failure.errorCode || "失败"];
+            if (diagnostics.schemaError) bits.push(String(diagnostics.schemaError));
+            if (httpMessage) bits.push(httpMessage);
+            else if (typeof diagnostics.schemaDetail === "string" && diagnostics.schemaDetail.trim()) bits.push(diagnostics.schemaDetail.trim());
+            row.append(element("span", "", bits.join(" · ")), element("span", "failed", "失败诊断"));
             ui["stage-list"].append(row);
         }
         const oldTag = ui["tag-filter"].value;

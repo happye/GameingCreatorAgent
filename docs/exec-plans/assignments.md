@@ -1,5 +1,7 @@
 # Active assignments
 
+**当前（2026-10-22）：root 单 Agent 交付失败调用诊断投影。** sprint-invocation-failure-diagnostics.md 由 root／GamingCreatorAgent 拥有。改 invocation_diagnostics、inspect／app.js、相关测试／公共 docs；0 付费。不代选 A／B／D；不改 feature_list。以下传输／工作台为历史。
+
 **当前（2026-10-22）：root 单 Agent 交付非200传输正文有界保留。** sprint-http-error-body-retention.md 由 root／GamingCreatorAgent 拥有。改 http_transport／deepseek 失败投影、相关测试／公共 docs；0 付费。不代选 A／B／D；不改 feature_list。以下工作台／检索闸为历史。
 
 **当前（2026-10-22）：root 单 Agent 交付工作台检索资格对齐。** sprint-workbench-search-eligibility.md 由 root／GamingCreatorAgent 拥有。改 ui/service、app.js、相关测试／公共 docs；0 付费。不代选 A／B／D；不改 feature_list。以下检索闸／任务列表为历史。
