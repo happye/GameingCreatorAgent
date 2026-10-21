@@ -1,6 +1,6 @@
 # Sprint：覆盖缺口选项 C 离线改进（schemaDetail 并存）
 
-**状态（2026-10-21）：已选 C／代码与测试已落地，待提交推送。** 用户明确选 C：先离线改进，不发 DeepSeek、不重跑 launcher、不标 F006/F009/F010 true。选项 B（定向补窗新授权）保留为以后路径，本 sprint 不执行。
+**状态（2026-10-21）：已选 C／已推送 a226bca。** 用户明确选 C：先离线改进，不发 DeepSeek、不重跑 launcher、不标 F006/F009/F010 true。选项 B（定向补窗新授权）保留为以后路径，本 sprint 不执行。
 
 ## Assignment
 

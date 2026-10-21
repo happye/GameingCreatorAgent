@@ -1,6 +1,6 @@
 # Progress Log
 
-**2026-10-21 选项 C 离线改进**：用户选 C。恢复 schemaError 时 schemaDetail 与 schemaProjection 并存；解析注释标明同帧＝空区间；诊断报告补「根因」；新建 sprint-coverage-gap-offline-c.md；同步 human-inputs／HANDOFF／assignments。V6 提示 hash 冻结不动。相关 pytest 见本轮提交。0 DeepSeek／0 launcher／F006/F009/F010 仍 false；三缺口仍在，清缺口须以后 B。
+**2026-10-21 选项 C 离线改进**：已提交并推送 **a226bca**。用户选 C。恢复 schemaError 时 schemaDetail 与 schemaProjection 并存；解析注释标明同帧＝空区间；诊断报告补「根因」；新建 sprint-coverage-gap-offline-c.md；同步 human-inputs／HANDOFF／assignments。V6 提示 hash 冻结不动。相关 pytest 见本轮提交。0 DeepSeek／0 launcher／F006/F009/F010 仍 false；三缺口仍在，清缺口须以后 B。
 
 **2026-10-21 覆盖缺口只读诊断包交付**：按 sprint-coverage-gap-plan 推荐项，从 outcome／coverage／SQLite 检查点与 invocation 白名单投影只读汇总三拒窗。结论：均 event_frame_boundaries；248／253 末事件 f8→f8；021 有 schemaDetail、248／253 无（1e3f420 替换写入）。工件 artifacts/coverage-gap-diagnosis-20261021/；正式报告 docs/exec-plans/report-2026-10-21-coverage-gap-diagnosis.md。0 新模型／不重跑 launcher／F006/F009/F010 仍 false；**A/B/C/D 仍待决**；未改产品源码。进度备注：诊断已开始并完成打包，供人选 C（及 B）使用。
 
