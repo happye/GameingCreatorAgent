@@ -1,6 +1,6 @@
 # Technical debt
 
-**2026-10-22 检索离线进展（动作空召回／空查询 abstention，已推送 `PLACEHOLDER`）：** `empty_query`／`no_positive_action_evidence`；见 sprint-retrieval-action-abstention.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+**2026-10-22 检索离线进展（动作空召回／空查询 abstention，已推送 `b85b5ef`）：** `empty_query`／`no_positive_action_evidence`；见 sprint-retrieval-action-abstention.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线进展（动作证据通道 lexicalEvidence，已推送 `17bd9a2`）：** `_action_lexical_evidence`；见 sprint-retrieval-lexical-evidence-channel.md。攻击 tag-only 仍保留并透明标注；Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 

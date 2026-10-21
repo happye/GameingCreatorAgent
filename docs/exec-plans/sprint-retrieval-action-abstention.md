@@ -1,6 +1,6 @@
 # Sprint：动作空召回／空查询 abstention 说明（检索离线质量）
 
-**状态（2026-10-22）：待推送 origin/main。** 空／空白 query → `abstention_reason=empty_query`；无检索文档 → `no_searchable_documents`；含已知动作且过滤后零命中（标题品牌噪声／裸标签排除／语料无正向证据）→ `no_positive_action_evidence`。否定意图空结果不冒充该原因。不改分数与既有噪声排除。验证=**pytest + demo-phase0 只读**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。
+**状态（2026-10-22）：已推送 origin/main b85b5ef。** 空／空白 query → `abstention_reason=empty_query`；无检索文档 → `no_searchable_documents`；含已知动作且过滤后零命中（标题品牌噪声／裸标签排除／语料无正向证据）→ `no_positive_action_evidence`。否定意图空结果不冒充该原因。不改分数与既有噪声排除。验证=**pytest + demo-phase0 只读**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。
 
 ## Assignment
 
