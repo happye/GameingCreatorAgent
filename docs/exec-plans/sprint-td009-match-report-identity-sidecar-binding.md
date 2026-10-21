@@ -1,6 +1,6 @@
 # Sprint：TD009 match-report 身份／sidecar 绑定／gaps 加深
 
-**状态（2026-10-22）：待推送 origin/main。** 加深 `assert_match_report_contract`／`match_report_contract_gaps`：`runId`／`eventId` 归属、可选 `eventFingerprint`／refinement 哈希（null 或 sha256）、可选合法 `sourceRange`、`result.status`∈MatchStatus、`result.matcherVersion` 现行版本、`result.constraintHash`＝顶栏 constraintHash、禁止 formalAcceptance／F006 等声称。新增本机只读对照：demo-phase0 旧 v1 match 报告的 `refinementRequestHash`／`payloadHash` 必须对上真实 detail-refinements 侧车（run／指纹／candidate／interval）。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD009／人评关单**；不改写旧 match JSON。攻击 tag-only 仍保留。
+**状态（2026-10-22）：已推送 origin/main 52b7e7e。** 加深 `assert_match_report_contract`／`match_report_contract_gaps`：`runId`／`eventId` 归属、可选 `eventFingerprint`／refinement 哈希（null 或 sha256）、可选合法 `sourceRange`、`result.status`∈MatchStatus、`result.matcherVersion` 现行版本、`result.constraintHash`＝顶栏 constraintHash、禁止 formalAcceptance／F006 等声称。新增本机只读对照：demo-phase0 旧 v1 match 报告的 `refinementRequestHash`／`payloadHash` 必须对上真实 detail-refinements 侧车（run／指纹／candidate／interval）。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD009／人评关单**；不改写旧 match JSON。攻击 tag-only 仍保留。
 
 ## Assignment
 

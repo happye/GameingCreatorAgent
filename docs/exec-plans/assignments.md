@@ -1,4 +1,4 @@
-**当前（2026-10-22）：root / Agent 推进 TD009 match-report 身份／sidecar 绑定加深（已推送 PLACEHOLDER）。** sprint-td009-match-report-identity-sidecar-binding.md 归 root／GamingCreatorAgent。拥有 detail_query 合同加深与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不改写旧 match／sidecar；不声称 F006／TD009 关单。以下 sidecar canonical／interval／prompt 为历史。
+**当前（2026-10-22）：root / Agent 推进 TD009 match-report 身份／sidecar 绑定加深（已推送 52b7e7e）。** sprint-td009-match-report-identity-sidecar-binding.md 归 root／GamingCreatorAgent。拥有 detail_query 合同加深与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不改写旧 match／sidecar；不声称 F006／TD009 关单。以下 sidecar canonical／interval／prompt 为历史。
 
 **当前（2026-10-22）：root / Agent 推进 TD009 sidecar 规范载荷／pair 时间与 prompt 加深（已推送 3889b45）。** sprint-td009-sidecar-canonical-interval-prompt.md 归 root／GamingCreatorAgent。拥有 detail_refinement_budget 合同加深与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不改写旧 sidecar；不声称 F006／TD009 关单。以下检索信封 media／why／timecode 为历史。
 

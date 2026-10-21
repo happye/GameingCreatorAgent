@@ -1,6 +1,6 @@
 # Technical debt
 
-**2026-10-22 TD009 离线进展（match-report 身份／sidecar 绑定加深，已推送 PLACEHOLDER）：** 身份／range／status／matcher；旧报告侧车绑定；见 sprint-td009-match-report-identity-sidecar-binding.md。复合人评／静态索引仍 open；不宣称 TD009／F010 关单。
+**2026-10-22 TD009 离线进展（match-report 身份／sidecar 绑定加深，已推送 52b7e7e）：** 身份／range／status／matcher；旧报告侧车绑定；见 sprint-td009-match-report-identity-sidecar-binding.md。复合人评／静态索引仍 open；不宣称 TD009／F010 关单。
 
 **2026-10-22 TD009 离线进展（sidecar 规范载荷／pair 时间与 prompt 加深，已推送 3889b45）：** canonical／interval／basePrompt；见 sprint-td009-sidecar-canonical-interval-prompt.md。复合人评／静态索引仍 open；不宣称 TD009／F010 关单。
 
