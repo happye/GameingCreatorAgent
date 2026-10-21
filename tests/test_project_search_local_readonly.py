@@ -199,3 +199,46 @@ def test_assert_project_search_document_contract_rejects_embedding_and_topk_over
     with pytest.raises(AppError) as mismatched:
         assert_project_search_document_contract(model_drift)
     assert mismatched.value.code == "retrieval.contract"
+
+
+def test_assert_project_search_document_contract_rejects_started_at_and_validation_timing_drift() -> None:
+    dirs = _require_project_search_dirs()
+    document = None
+    for directory in dirs:
+        result_path = directory / "result.json"
+        if not result_path.is_file():
+            continue
+        loaded = json.loads(result_path.read_text(encoding="utf-8-sig"))
+        if loaded.get("schemaVersion") == "project-search-v1":
+            document = loaded
+            break
+    assert document is not None
+    assert_project_search_document_contract(document)
+
+    naive = json.loads(json.dumps(document))
+    naive["startedAt"] = "2026-10-07T17:12:25.896681"
+    with pytest.raises(AppError) as no_tz:
+        assert_project_search_document_contract(naive)
+    assert no_tz.value.code == "retrieval.contract"
+
+    bad_svm = json.loads(json.dumps(document))
+    bad_svm["sourceValidationMs"] = -1
+    with pytest.raises(AppError) as svm:
+        assert_project_search_document_contract(bad_svm)
+    assert svm.value.code == "retrieval.contract"
+
+    gated = json.loads(json.dumps(document))
+    gated["qualityGate"] = True
+    with pytest.raises(AppError) as gate:
+        assert_project_search_document_contract(gated)
+    assert gate.value.code == "retrieval.contract"
+
+    bad_path = json.loads(json.dumps(document))
+    bad_path["recordPath"] = "G:/elsewhere/not-this-search/result.json"
+    with pytest.raises(AppError) as path_err:
+        assert_project_search_document_contract(bad_path)
+    assert path_err.value.code == "retrieval.contract"
+
+    zulu = json.loads(json.dumps(document))
+    zulu["startedAt"] = "2026-10-07T09:12:25.896681Z"
+    assert_project_search_document_contract(zulu)

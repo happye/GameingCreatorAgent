@@ -1203,6 +1203,32 @@ def assert_project_search_document_contract(document: dict[str, object]) -> None
     _assert_retrieval_embedding_metadata(
         document.get("mode"), document.get("embedding"), scope="项目检索投影"
     )
+    started_at = document.get("startedAt")
+    if type(started_at) is not str or not started_at:
+        raise _fail("retrieval.contract", "项目检索投影 startedAt 无效。")
+    try:
+        parsed_started = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise _fail("retrieval.contract", "项目检索投影 startedAt 无法解析。") from exc
+    if parsed_started.tzinfo is None:
+        raise _fail("retrieval.contract", "项目检索投影 startedAt 缺少时区。")
+    source_validation_ms = document.get("sourceValidationMs")
+    if type(source_validation_ms) is not int or source_validation_ms < 0:
+        raise _fail("retrieval.contract", "项目检索投影 sourceValidationMs 无效。")
+    elapsed_ms = document.get("elapsedMs")
+    if type(elapsed_ms) is not int or elapsed_ms < 0:
+        raise _fail("retrieval.contract", "项目检索投影 elapsedMs 无效。")
+    facts_projection_version = document.get("factsProjectionVersion")
+    if type(facts_projection_version) is not str or not facts_projection_version:
+        raise _fail("retrieval.contract", "项目检索投影 factsProjectionVersion 无效。")
+    if document.get("qualityGate") is not None:
+        raise _fail("retrieval.contract", "项目检索投影不能声称 qualityGate。")
+    record_path = document.get("recordPath")
+    if type(record_path) is not str or not record_path:
+        raise _fail("retrieval.contract", "项目检索投影 recordPath 无效。")
+    # searchId already validated as 32-hex above.
+    if type(search_id) is str and search_id not in record_path.replace("\\", "/"):
+        raise _fail("retrieval.contract", "项目检索投影 recordPath 与 searchId 不一致。")
 
 
 def refuse_unsearchable_run(run: StoredRun) -> None:
