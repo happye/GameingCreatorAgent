@@ -187,3 +187,52 @@ def test_assert_persisted_retrieval_contract_rejects_media_why_timecode_drift() 
         assert media_id  # envelope media retained for clarity
 
     asyncio.run(run())
+
+
+def test_assert_persisted_retrieval_contract_rejects_mode_rank_elapsed_and_empty_span() -> None:
+    """Deeper envelope gates: mode, contiguous ranks 1..n, elapsedMs align, nonempty hit span."""
+    db = _require_sqlite()
+    ids = _retrieval_ids(db)
+    if not ids:
+        pytest.skip("local retrieval_runs empty")
+
+    async def run() -> None:
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        document = None
+        for retrieval_id in ids:
+            loaded = await store.load_retrieval(retrieval_id)
+            if loaded["result"].get("candidates"):
+                document = loaded
+                break
+        assert document is not None
+        assert_persisted_retrieval_contract(document)
+
+        bad_mode = json.loads(json.dumps(document))
+        bad_mode["result"]["mode"] = "not-a-mode"
+        with pytest.raises(AppError) as mode_err:
+            assert_persisted_retrieval_contract(bad_mode)
+        assert mode_err.value.code == "retrieval.contract"
+
+        bad_rank = json.loads(json.dumps(document))
+        bad_rank["hits"][0]["rank"] = 99
+        bad_rank["result"]["candidates"][0]["rank"] = 99
+        with pytest.raises(AppError) as rank_err:
+            assert_persisted_retrieval_contract(bad_rank)
+        assert rank_err.value.code == "retrieval.contract"
+
+        if "elapsedMs" in document and "elapsedMs" in document["result"]:
+            bad_elapsed = json.loads(json.dumps(document))
+            bad_elapsed["elapsedMs"] = int(bad_elapsed["elapsedMs"]) + 7
+            with pytest.raises(AppError) as elapsed_err:
+                assert_persisted_retrieval_contract(bad_elapsed)
+            assert elapsed_err.value.code == "retrieval.contract"
+
+        empty_span = json.loads(json.dumps(document))
+        start = empty_span["hits"][0]["start_us"]
+        empty_span["hits"][0]["end_us"] = start
+        empty_span["result"]["candidates"][0]["endUs"] = start
+        with pytest.raises(AppError) as span_err:
+            assert_persisted_retrieval_contract(empty_span)
+        assert span_err.value.code == "retrieval.contract"
+
+    asyncio.run(run())

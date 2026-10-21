@@ -808,6 +808,10 @@ def assert_persisted_retrieval_contract(document: dict[str, object]) -> None:
         raise _fail("retrieval.contract", "持久化检索 result.query 不一致。")
     if result.get("retrievalVersion") != version:
         raise _fail("retrieval.contract", "持久化检索 result.retrievalVersion 不一致。")
+    if result.get("mode") not in RETRIEVAL_MODES:
+        raise _fail("retrieval.contract", "持久化检索 result.mode 无效。")
+    if "elapsedMs" in document and document.get("elapsedMs") != result.get("elapsedMs"):
+        raise _fail("retrieval.contract", "持久化检索 elapsedMs 与 result 不一致。")
     hits = document.get("hits")
     if type(hits) is not list:
         raise _fail("retrieval.contract", "持久化检索 hits 必须是列表。")
@@ -815,11 +819,11 @@ def assert_persisted_retrieval_contract(document: dict[str, object]) -> None:
     assert type(candidates) is list
     if len(hits) != len(candidates):
         raise _fail("retrieval.contract", "持久化检索 hits 与 candidates 数量不一致。")
-    for hit, candidate in zip(hits, candidates, strict=True):
+    for index, (hit, candidate) in enumerate(zip(hits, candidates, strict=True), start=1):
         if type(hit) is not dict or type(candidate) is not dict:
             raise _fail("retrieval.contract", "持久化检索命中行无效。")
-        if hit.get("rank") != candidate.get("rank"):
-            raise _fail("retrieval.contract", "持久化检索命中 rank 不一致。")
+        if hit.get("rank") != index or candidate.get("rank") != index:
+            raise _fail("retrieval.contract", "持久化检索命中 rank 必须从 1 连续编号。")
         if hit.get("candidate_id") != candidate.get("candidateId"):
             raise _fail("retrieval.contract", "持久化检索命中 candidateId 不一致。")
         if hit.get("event_id") != candidate.get("eventId"):
@@ -831,7 +835,11 @@ def assert_persisted_retrieval_contract(document: dict[str, object]) -> None:
                 raise _fail("retrieval.contract", "持久化检索命中 score 不一致。")
         except (TypeError, ValueError):
             raise _fail("retrieval.contract", "持久化检索命中 score 无效。") from None
-        if hit.get("start_us") != candidate.get("startUs") or hit.get("end_us") != candidate.get("endUs"):
+        start_us = hit.get("start_us")
+        end_us = hit.get("end_us")
+        if type(start_us) is not int or type(end_us) is not int or not (start_us < end_us):
+            raise _fail("retrieval.contract", "持久化检索命中时间范围无效。")
+        if start_us != candidate.get("startUs") or end_us != candidate.get("endUs"):
             raise _fail("retrieval.contract", "持久化检索命中时间范围不一致。")
         hit_evidence = hit.get("evidence_ids")
         cand_evidence = candidate.get("evidenceIds")
