@@ -17,6 +17,7 @@ from gamingcreator.application.detail_query import (
     assert_match_report_contract,
     assert_match_report_sidecar_binding_contract,
     match_report_contract_gaps,
+    match_report_sidecar_binding_gaps,
 )
 from gamingcreator.domain.actor_details import MATCHER_VERSION, TEMPORAL_MATCHER_VERSION
 
@@ -112,6 +113,7 @@ def test_local_demo_phase0_legacy_match_reports_bind_refinement_sidecars() -> No
         result_doc = json.loads(result_path.read_text(encoding="utf-8-sig"))
         # Deepened binding: identity + media + evidence ⊆ sidecar + nested ranges.
         assert_match_report_sidecar_binding_contract(document, request_doc, result_doc)
+        assert match_report_sidecar_binding_gaps(document, request_doc, result_doc) == ()
         # Ownership: event id stays under the same run (kept as explicit guard).
         assert str(document["eventId"]).startswith(f'{document["runId"]}:')
 
@@ -330,3 +332,69 @@ def test_assert_match_report_contract_rejects_match_source_range_escape() -> Non
     row["sourceRange"] = {"startUs": 0, "endUs": 2_000_000, "durationUs": 5_000_000}
     with pytest.raises(ValueError, match="escapes report range"):
         assert_match_report_contract(document)
+
+
+def test_match_report_sidecar_binding_gaps_flags_forged_evidence_range_media_payload() -> None:
+    """Soft gap codes stay aligned with assert_match_report_sidecar_binding_contract."""
+    document, request_doc, result_doc = _load_first_legacy_binding()
+    assert match_report_sidecar_binding_gaps(document, request_doc, result_doc) == ()
+
+    forged = json.loads(json.dumps(document))
+    matches = forged["result"]["matches"]
+    bucket = None
+    for name in ("satisfied", "opposed", "counterEvidence", "uncertain"):
+        if matches[0].get(name):
+            bucket = name
+            break
+    assert bucket is not None
+    matches[0][bucket][0]["evidenceIds"] = [
+        f'{forged["runId"]}:{"a"*64}:evidence:forged-not-on-sidecar'
+    ]
+    gaps = match_report_sidecar_binding_gaps(forged, request_doc, result_doc)
+    assert "match_evidence_not_in_sidecar" in gaps, gaps
+    with pytest.raises(ValueError, match="not in sidecar evidence"):
+        assert_match_report_sidecar_binding_contract(forged, request_doc, result_doc)
+
+    forged2 = json.loads(json.dumps(document))
+    outer = forged2["sourceRange"]
+    forged2["result"]["matches"][0]["sourceRange"] = {
+        "startUs": int(outer["startUs"]) - 1_000_000,
+        "endUs": int(outer["endUs"]) + 1_000_000,
+        "durationUs": int(outer["durationUs"]),
+    }
+    gaps2 = match_report_sidecar_binding_gaps(forged2, request_doc, result_doc)
+    assert "match_source_range_escape" in gaps2, gaps2
+
+    forged3 = json.loads(json.dumps(document))
+    forged3["eventId"] = f'{forged3["runId"]}:{"b"*64}:event:forged'
+    gaps3 = match_report_sidecar_binding_gaps(forged3, request_doc, result_doc)
+    assert "event_media_mismatch" in gaps3, gaps3
+
+    forged4 = json.loads(json.dumps(document))
+    forged4["refinementPayloadHash"] = "c" * 64
+    gaps4 = match_report_sidecar_binding_gaps(forged4, request_doc, result_doc)
+    assert "payload_hash_mismatch" in gaps4, gaps4
+
+
+def test_assert_match_report_sidecar_binding_rejects_base_run_and_actual_model_drift() -> None:
+    document, request_doc, result_doc = _load_first_legacy_binding()
+    drifted = json.loads(json.dumps(request_doc))
+    payload = json.loads(drifted["canonicalJson"])
+    payload["baseRunId"] = "run-forged-not-on-report"
+    drifted["canonicalJson"] = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    # requestHash no longer matches canonical — binding checks baseRunId after hash fields
+    # Recompute so we isolate baseRunId (hash check comes first on requestHash equality with report).
+    # Keep requestHash == report.refinementRequestHash so we reach baseRunId check:
+    # assert compares report hash to request_document.requestHash first, then parses canonical.
+    # So leave requestHash as the report's hash; baseRunId drift should still surface.
+    with pytest.raises(ValueError, match="baseRunId"):
+        assert_match_report_sidecar_binding_contract(document, drifted, result_doc)
+    gaps = match_report_sidecar_binding_gaps(document, drifted, result_doc)
+    assert "base_run_id_mismatch" in gaps, gaps
+
+    model_drift = json.loads(json.dumps(result_doc))
+    model_drift["actualModel"] = "forged-model-not-requested"
+    with pytest.raises(ValueError, match="actualModel"):
+        assert_match_report_sidecar_binding_contract(document, request_doc, model_drift)
+    gaps_m = match_report_sidecar_binding_gaps(document, request_doc, model_drift)
+    assert "actual_model_mismatch" in gaps_m, gaps_m

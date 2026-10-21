@@ -295,6 +295,13 @@ def assert_match_report_sidecar_binding_contract(
         raise ValueError("Match report runId/eventId invalid for sidecar binding.")
     if not event_id.startswith(f"{run_id}:{media_sha}:"):
         raise ValueError("Match report eventId does not match sidecar mediaSha256.")
+    if payload.get("baseRunId") != run_id:
+        raise ValueError("Sidecar canonical baseRunId does not match match report runId.")
+    if payload.get("eventFingerprint") != report.get("eventFingerprint"):
+        raise ValueError("Sidecar canonical eventFingerprint does not match match report.")
+    profile = report.get("refinementProfile")
+    if profile is not None and (type(profile) is not str or not profile):
+        raise ValueError("Match report refinementProfile is invalid.")
     evidence_rows = payload.get("evidence")
     if type(evidence_rows) is not list or not evidence_rows:
         raise ValueError("Sidecar request evidence is invalid.")
@@ -309,6 +316,12 @@ def assert_match_report_sidecar_binding_contract(
     matches = result.get("matches")
     if type(matches) is not list:
         raise ValueError("Match report matches must be a list for sidecar binding.")
+    status = result.get("status")
+    if type(status) is not str or not status:
+        raise ValueError("Match report result.status is invalid for sidecar binding.")
+    constraint_hash = result.get("constraintHash")
+    if type(constraint_hash) is not str or not _HASH64.fullmatch(constraint_hash):
+        raise ValueError("Match report result.constraintHash is invalid for sidecar binding.")
     outer_range = report.get("sourceRange")
     for row in matches:
         if type(row) is not dict:
@@ -350,6 +363,73 @@ def assert_match_report_sidecar_binding_contract(
             raise ValueError("Match report payloadHash does not match sidecar result.")
         if result_document.get("requestHash") != request_hash:
             raise ValueError("Sidecar result requestHash does not match match report.")
+        actual_model = result_document.get("actualModel")
+        if type(actual_model) is not str or not actual_model:
+            raise ValueError("Sidecar result actualModel is invalid.")
+        requested = payload.get("requestedModel")
+        if type(requested) is str and requested and actual_model != requested:
+            raise ValueError("Sidecar result actualModel does not match request requestedModel.")
+
+
+def match_report_sidecar_binding_gaps(
+    report: dict[str, object],
+    request_document: dict[str, object],
+    result_document: dict[str, object] | None = None,
+) -> tuple[str, ...]:
+    """Stable offline gap codes mirroring assert_match_report_sidecar_binding_contract.
+
+    Empty tuple means the triple would pass the binding assert. Does not claim
+    human-eval / F010 / TD009 closeout. Used for soft readonly对照.
+    """
+    gaps: list[str] = []
+    try:
+        assert_match_report_sidecar_binding_contract(report, request_document, result_document)
+    except ValueError as exc:
+        message = str(exc)
+        mapping = (
+            ("refinementRequestHash is invalid", "refinement_request_hash_invalid"),
+            ("requestHash does not match sidecar request", "request_hash_mismatch"),
+            ("runId does not match sidecar request", "run_id_mismatch"),
+            ("eventFingerprint does not match sidecar request", "event_fingerprint_mismatch"),
+            ("canonicalJson is invalid", "canonical_json_invalid"),
+            ("canonicalJson must be JSON object", "canonical_json_invalid"),
+            ("candidateId does not match sidecar request", "candidate_id_mismatch"),
+            ("sourceRange does not match sidecar interval", "source_range_interval_mismatch"),
+            ("mediaSha256 is invalid", "media_sha256_invalid"),
+            ("runId/eventId invalid", "run_event_invalid"),
+            ("eventId does not match sidecar mediaSha256", "event_media_mismatch"),
+            ("baseRunId does not match", "base_run_id_mismatch"),
+            ("canonical eventFingerprint does not match", "canonical_event_fingerprint_mismatch"),
+            ("refinementProfile is invalid", "refinement_profile_invalid"),
+            ("Sidecar request evidence is invalid", "sidecar_evidence_invalid"),
+            ("result must be an object", "result_not_object"),
+            ("matches must be a list", "matches_not_list"),
+            ("result.status is invalid", "result_status_invalid"),
+            ("result.constraintHash is invalid", "result_constraint_hash_invalid"),
+            ("match row invalid", "match_row_invalid"),
+            ("match sourceRange escapes", "match_source_range_escape"),
+            ("sharedEvidenceIds invalid", "shared_evidence_invalid"),
+            ("sharedEvidenceIds not in sidecar evidence", "shared_evidence_not_in_sidecar"),
+            ("evidenceIds invalid for sidecar binding", "match_evidence_invalid"),
+            ("evidenceIds not in sidecar evidence", "match_evidence_not_in_sidecar"),
+            ("sourceRange escapes report range", "match_bucket_source_range_escape"),
+            ("Sidecar result must be an object", "sidecar_result_not_object"),
+            ("refinementPayloadHash is invalid", "refinement_payload_hash_invalid"),
+            ("payloadHash does not match sidecar result", "payload_hash_mismatch"),
+            ("Sidecar result requestHash does not match", "sidecar_result_request_hash_mismatch"),
+            ("actualModel is invalid", "actual_model_invalid"),
+            ("actualModel does not match request requestedModel", "actual_model_mismatch"),
+            ("binding requires objects", "binding_not_object"),
+        )
+        coded = False
+        for needle, code in mapping:
+            if needle in message:
+                gaps.append(code)
+                coded = True
+                break
+        if not coded:
+            gaps.append("binding_failed")
+    return tuple(gaps)
 
 
 def match_report_contract_gaps(document: dict[str, object]) -> tuple[str, ...]:
