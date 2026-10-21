@@ -1,9 +1,9 @@
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
-**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip a08686a（含跨面 inert 合同）），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
+**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip af79104（含 inertContract）），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
 
 
-**当前锚点（2026-10-22，acceptance-readiness 嵌入 inertContract）：** 报告内含机读禁通过合同；断言校验一致。sprint：docs/exec-plans/sprint-acceptance-readiness-inert-contract.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下跨面 inert 加固为历史。
+**当前锚点（2026-10-22，acceptance-readiness 嵌入 inertContract，已推送 af79104）：** 报告内含机读禁通过合同；断言校验一致。sprint：docs/exec-plans/sprint-acceptance-readiness-inert-contract.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下跨面 inert 加固为历史。
 
 
 **当前锚点（2026-10-22，跨面 acceptance-readiness 惰性合同加固，已推送 a08686a）：** 禁止 passed／已通过等状态与标签；`SURFACE_JS_INERT_GUARDS` 跨面核对。sprint：`docs/exec-plans/sprint-acceptance-readiness-cross-surface.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下验收流程 readiness 挂接为历史。

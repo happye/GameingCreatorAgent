@@ -1,6 +1,6 @@
 # Sprint：acceptance-readiness 嵌入 inertContract 机读护栏
 
-**状态（2026-10-22）：已交付（待推送）。** 在只读就绪报告中嵌入 inertContract（cceptance-readiness-inert-v1），列出禁止状态／标签、必为 false 的标志与跨面 JS 护栏；ssert_acceptance_readiness_inert 校验该块与源常量一致。0 付费；不代选 A／B／D；不声称三缺口已清；不标 F006 true；不宣称人评／验收通过。
+**状态（2026-10-22）：已交付并推送 af79104。** 在只读就绪报告中嵌入 inertContract（cceptance-readiness-inert-v1），列出禁止状态／标签、必为 false 的标志与跨面 JS 护栏；ssert_acceptance_readiness_inert 校验该块与源常量一致。0 付费；不代选 A／B／D；不声称三缺口已清；不标 F006 true；不宣称人评／验收通过。
 
 ## Assignment
 
@@ -19,4 +19,4 @@
 - [x] inert 断言校验合同与常量一致
 - [x] pytest 覆盖嵌入与篡改拒绝
 - [x] 0 DeepSeek／launcher；F006/F009/F010 仍 false
-- [ ] 已推送 origin/main（推送后勾）
+- [x] 已推送 origin/main（af79104）
