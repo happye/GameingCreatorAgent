@@ -367,9 +367,19 @@ def assert_match_report_sidecar_binding_contract(
     if type(notes) is not list or any(type(note) is not str for note in notes):
         raise ValueError("Match report result.notes is invalid for sidecar binding.")
     outer_range = report.get("sourceRange")
+    seen_actor_ids: set[str] = set()
     for row in matches:
         if type(row) is not dict:
             raise ValueError("Match report match row invalid for sidecar binding.")
+        actor_id = row.get("actorId")
+        if type(actor_id) is not str or not actor_id:
+            raise ValueError("Match report match actorId is invalid for sidecar binding.")
+        if actor_id in seen_actor_ids:
+            raise ValueError("Match report match actorId is duplicated for sidecar binding.")
+        seen_actor_ids.add(actor_id)
+        shot_id = row.get("shotId")
+        if type(shot_id) is not str or not shot_id:
+            raise ValueError("Match report match shotId is invalid for sidecar binding.")
         for key in ("conflicts", "missing"):
             value = row.get(key)
             if value is not None and type(value) is not list:
@@ -446,6 +456,39 @@ def assert_match_report_sidecar_binding_contract(
             raise ValueError("Sidecar result metadata.elapsed_ms is invalid.")
         if metadata.get("schema_version") != payload.get("schemaVersion"):
             raise ValueError("Sidecar result metadata.schema_version does not match canonical.")
+        usage = metadata.get("usage")
+        if type(usage) is not dict:
+            raise ValueError("Sidecar result metadata.usage must be an object.")
+        usage_cost = usage.get("cost_cny")
+        if cost is not None and usage_cost != cost:
+            raise ValueError("Sidecar result metadata.usage.cost_cny does not match costCny.")
+        if usage_cost is not None and (
+            type(usage_cost) is not str or not _REFINEMENT_COST_CNY.fullmatch(usage_cost)
+        ):
+            raise ValueError("Sidecar result metadata.usage.cost_cny is invalid.")
+        original_cost = usage.get("original_cost")
+        if original_cost is not None and (
+            type(original_cost) is not str or not _REFINEMENT_COST_CNY.fullmatch(original_cost)
+        ):
+            raise ValueError("Sidecar result metadata.usage.original_cost is invalid.")
+        if (
+            type(usage_cost) is str
+            and type(original_cost) is str
+            and usage_cost
+            and original_cost
+            and usage_cost != original_cost
+        ):
+            raise ValueError("Sidecar result metadata.usage cost fields disagree.")
+        currency = usage.get("currency")
+        if currency is not None and (type(currency) is not str or not currency):
+            raise ValueError("Sidecar result metadata.usage.currency is invalid.")
+        cost_status = usage.get("cost_status")
+        if cost_status is not None and (type(cost_status) is not str or not cost_status):
+            raise ValueError("Sidecar result metadata.usage.cost_status is invalid.")
+        for token_key in ("input_tokens", "output_tokens", "cached_input_tokens"):
+            token_value = usage.get(token_key)
+            if token_value is not None and (type(token_value) is not int or token_value < 0):
+                raise ValueError(f"Sidecar result metadata.usage.{token_key} is invalid.")
 
 
 def match_report_sidecar_binding_gaps(
@@ -527,6 +570,19 @@ def match_report_sidecar_binding_gaps(
             ("metadata.attempt is invalid", "metadata_attempt_invalid"),
             ("metadata.elapsed_ms is invalid", "metadata_elapsed_ms_invalid"),
             ("metadata.schema_version does not match", "metadata_schema_version_mismatch"),
+            ("match actorId is invalid", "match_actor_id_invalid"),
+            ("match actorId is duplicated", "match_actor_id_duplicated"),
+            ("match shotId is invalid", "match_shot_id_invalid"),
+            ("metadata.usage must be an object", "metadata_usage_not_object"),
+            ("usage.cost_cny does not match costCny", "usage_cost_cny_mismatch"),
+            ("usage.cost_cny is invalid", "usage_cost_cny_invalid"),
+            ("usage.original_cost is invalid", "usage_original_cost_invalid"),
+            ("usage cost fields disagree", "usage_cost_fields_disagree"),
+            ("usage.currency is invalid", "usage_currency_invalid"),
+            ("usage.cost_status is invalid", "usage_cost_status_invalid"),
+            ("usage.input_tokens is invalid", "usage_input_tokens_invalid"),
+            ("usage.output_tokens is invalid", "usage_output_tokens_invalid"),
+            ("usage.cached_input_tokens is invalid", "usage_cached_input_tokens_invalid"),
             ("binding requires objects", "binding_not_object"),
         )
         coded = False

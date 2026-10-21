@@ -493,3 +493,47 @@ def test_assert_match_report_sidecar_binding_rejects_settings_cost_and_metadata_
     assert "result_notes_invalid" in match_report_sidecar_binding_gaps(
         bad_notes, request_doc, result_doc
     )
+
+
+def test_assert_match_report_sidecar_binding_rejects_duplicate_actor_and_usage_cost_drift() -> None:
+    document, request_doc, result_doc = _load_first_legacy_binding()
+    assert_match_report_sidecar_binding_contract(document, request_doc, result_doc)
+    assert match_report_sidecar_binding_gaps(document, request_doc, result_doc) == ()
+
+    dup = json.loads(json.dumps(document))
+    matches = dup["result"]["matches"]
+    assert len(matches) >= 2
+    matches[1]["actorId"] = matches[0]["actorId"]
+    with pytest.raises(ValueError, match="actorId is duplicated"):
+        assert_match_report_sidecar_binding_contract(dup, request_doc, result_doc)
+    assert "match_actor_id_duplicated" in match_report_sidecar_binding_gaps(
+        dup, request_doc, result_doc
+    )
+
+    empty_shot = json.loads(json.dumps(document))
+    empty_shot["result"]["matches"][0]["shotId"] = ""
+    with pytest.raises(ValueError, match="shotId"):
+        assert_match_report_sidecar_binding_contract(empty_shot, request_doc, result_doc)
+    assert "match_shot_id_invalid" in match_report_sidecar_binding_gaps(
+        empty_shot, request_doc, result_doc
+    )
+
+    usage_drift = json.loads(json.dumps(result_doc))
+    usage_drift["metadata"] = dict(usage_drift["metadata"])
+    usage_drift["metadata"]["usage"] = dict(usage_drift["metadata"]["usage"])
+    usage_drift["metadata"]["usage"]["cost_cny"] = "9.999"
+    with pytest.raises(ValueError, match="usage.cost_cny"):
+        assert_match_report_sidecar_binding_contract(document, request_doc, usage_drift)
+    assert "usage_cost_cny_mismatch" in match_report_sidecar_binding_gaps(
+        document, request_doc, usage_drift
+    )
+
+    bad_tokens = json.loads(json.dumps(result_doc))
+    bad_tokens["metadata"] = dict(bad_tokens["metadata"])
+    bad_tokens["metadata"]["usage"] = dict(bad_tokens["metadata"]["usage"])
+    bad_tokens["metadata"]["usage"]["input_tokens"] = -1
+    with pytest.raises(ValueError, match="input_tokens"):
+        assert_match_report_sidecar_binding_contract(document, request_doc, bad_tokens)
+    assert "usage_input_tokens_invalid" in match_report_sidecar_binding_gaps(
+        document, request_doc, bad_tokens
+    )
