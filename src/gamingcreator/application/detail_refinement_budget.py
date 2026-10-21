@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -309,3 +310,147 @@ def assert_same_request(request: DetailRefinementRequest, digest: str) -> None:
             ExitCode.STORAGE,
             request.run_id,
         )
+
+
+REQUEST_DOCUMENT_SCHEMA_VERSION = 1
+_HASH64 = re.compile(r"[0-9a-f]{64}\Z")
+
+REFINEMENT_DOCUMENT_FORBIDDEN_CLAIM_KEYS = (
+    "humanLabels",
+    "qualityGate",
+    "formalAcceptancePassed",
+    "acceptanceStatus",
+    "humanEvalPassed",
+    "f006Passed",
+    "f009Passed",
+    "f010Passed",
+)
+
+
+def _refinement_contract_fail(message: str, run_id: str | None = None) -> AppError:
+    return AppError("refinement.contract", message, ExitCode.STORAGE, run_id)
+
+
+def assert_refinement_request_document_contract(document: dict[str, object]) -> None:
+    """Refuse sidecar request.json that drifts hash, fingerprint, or claims acceptance."""
+    if type(document) is not dict:
+        raise _refinement_contract_fail("精分析请求投影必须是对象。")
+    run_id = document.get("runId") if type(document.get("runId")) is str else None
+    if document.get("schemaVersion") != REQUEST_DOCUMENT_SCHEMA_VERSION:
+        raise _refinement_contract_fail("精分析请求 schemaVersion 无效。", run_id)
+    digest = document.get("requestHash")
+    if type(digest) is not str or not _HASH64.fullmatch(digest):
+        raise _refinement_contract_fail("精分析请求 requestHash 无效。", run_id)
+    if type(document.get("runId")) is not str or not document["runId"]:
+        raise _refinement_contract_fail("精分析请求 runId 无效。", run_id)
+    fingerprint = document.get("eventFingerprint")
+    if type(fingerprint) is not str or not _HASH64.fullmatch(fingerprint):
+        raise _refinement_contract_fail("精分析请求 eventFingerprint 无效。", run_id)
+    canonical = document.get("canonicalJson")
+    if type(canonical) is not str or not canonical:
+        raise _refinement_contract_fail("精分析请求 canonicalJson 无效。", run_id)
+    if hashlib.sha256(canonical.encode("utf-8")).hexdigest() != digest:
+        raise _refinement_contract_fail("精分析请求哈希与 canonicalJson 不一致。", run_id)
+    try:
+        payload = json.loads(canonical)
+    except (TypeError, ValueError, RecursionError):
+        raise _refinement_contract_fail("精分析请求 canonicalJson 无法解析。", run_id) from None
+    if type(payload) is not dict:
+        raise _refinement_contract_fail("精分析请求 canonicalJson 必须是对象。", run_id)
+    if payload.get("eventFingerprint") != fingerprint:
+        raise _refinement_contract_fail("精分析请求指纹与规范载荷不一致。", run_id)
+    if payload.get("baseRunId") != document.get("runId"):
+        raise _refinement_contract_fail("精分析请求 runId 与规范载荷不一致。", run_id)
+    if type(document.get("basePromptVersion")) is not str or not document["basePromptVersion"]:
+        raise _refinement_contract_fail("精分析请求 basePromptVersion 无效。", run_id)
+    prompt_hash = document.get("basePromptHash")
+    if type(prompt_hash) is not str or not _HASH64.fullmatch(prompt_hash):
+        raise _refinement_contract_fail("精分析请求 basePromptHash 无效。", run_id)
+    for key in REFINEMENT_DOCUMENT_FORBIDDEN_CLAIM_KEYS:
+        if key in document and document.get(key) is not None:
+            raise _refinement_contract_fail(f"精分析请求不能声称 {key}。", run_id)
+
+
+def assert_refinement_result_document_contract(document: dict[str, object]) -> None:
+    """Refuse sidecar result.json that forges acceptance or breaks payload hashing."""
+    if type(document) is not dict:
+        raise _refinement_contract_fail("精分析结果投影必须是对象。")
+    if document.get("schemaVersion") != RESULT_SCHEMA_VERSION:
+        raise _refinement_contract_fail("精分析结果 schemaVersion 无效。")
+    digest = document.get("requestHash")
+    if type(digest) is not str or not _HASH64.fullmatch(digest):
+        raise _refinement_contract_fail("精分析结果 requestHash 无效。")
+    payload_json = document.get("payloadJson")
+    if type(payload_json) is not str or not payload_json:
+        raise _refinement_contract_fail("精分析结果 payloadJson 必须是规范字符串。")
+    payload_digest = document.get("payloadHash")
+    if type(payload_digest) is not str or not _HASH64.fullmatch(payload_digest):
+        raise _refinement_contract_fail("精分析结果 payloadHash 无效。")
+    if hashlib.sha256(payload_json.encode("utf-8")).hexdigest() != payload_digest:
+        raise _refinement_contract_fail("精分析结果 payloadHash 与载荷不一致。")
+    try:
+        detail = detail_from_canonical(payload_json)
+    except (KeyError, TypeError, ValueError, AttributeError):
+        raise _refinement_contract_fail("精分析结果载荷不是有效主体结构。") from None
+    if canonical_detail_json(detail) != payload_json:
+        raise _refinement_contract_fail("精分析结果载荷不是冻结规范格式。")
+    actual_model = document.get("actualModel")
+    if actual_model is not None and type(actual_model) is not str:
+        raise _refinement_contract_fail("精分析结果 actualModel 无效。")
+    model_revision = document.get("modelRevision")
+    if model_revision is not None and type(model_revision) is not str:
+        raise _refinement_contract_fail("精分析结果 modelRevision 无效。")
+    cost = document.get("costCny")
+    if cost is not None and type(cost) is not str:
+        raise _refinement_contract_fail("精分析结果 costCny 必须是十进制字符串或空。")
+    if "metadata" in document and type(document.get("metadata")) is not dict:
+        raise _refinement_contract_fail("精分析结果 metadata 必须是对象。")
+    for key in REFINEMENT_DOCUMENT_FORBIDDEN_CLAIM_KEYS:
+        if key in document and document.get(key) is not None:
+            raise _refinement_contract_fail(f"精分析结果不能声称 {key}。")
+
+
+def assert_refinement_sidecar_pair_contract(
+    request_document: dict[str, object],
+    result_document: dict[str, object] | None,
+) -> None:
+    """Readonly对照：request／result 同哈希，且结果主体挂回请求指纹与 run。"""
+    assert_refinement_request_document_contract(request_document)
+    if result_document is None:
+        return
+    assert_refinement_result_document_contract(result_document)
+    run_id = request_document.get("runId") if type(request_document.get("runId")) is str else None
+    if result_document.get("requestHash") != request_document.get("requestHash"):
+        raise _refinement_contract_fail("精分析 request／result 的 requestHash 不一致。", run_id)
+    payload_json = result_document["payloadJson"]
+    assert type(payload_json) is str
+    detail = detail_from_canonical(payload_json)
+    if detail.run_id != request_document.get("runId"):
+        raise _refinement_contract_fail("精分析结果 runId 与请求不一致。", run_id)
+    if detail.event_fingerprint != request_document.get("eventFingerprint"):
+        raise _refinement_contract_fail("精分析结果指纹与请求不一致。", run_id)
+    canonical = request_document.get("canonicalJson")
+    assert type(canonical) is str
+    payload = json.loads(canonical)
+    if detail.candidate_id != payload.get("candidateId"):
+        raise _refinement_contract_fail("精分析结果 candidateId 与请求不一致。", run_id)
+    if detail.media_sha256 != payload.get("mediaSha256"):
+        raise _refinement_contract_fail("精分析结果 mediaSha256 与请求不一致。", run_id)
+    if detail.configuration_hash != payload.get("configurationHash"):
+        raise _refinement_contract_fail("精分析结果 configurationHash 与请求不一致。", run_id)
+
+
+def refinement_sidecar_contract_gaps(
+    request_document: dict[str, object],
+    result_document: dict[str, object] | None = None,
+) -> tuple[str, ...]:
+    """List request／result contract gaps without raising. Empty means pair is clean."""
+    gaps: list[str] = []
+    try:
+        assert_refinement_sidecar_pair_contract(request_document, result_document)
+    except AppError as error:
+        if error.code != "refinement.contract":
+            gaps.append(f"unexpected:{error.code}")
+        else:
+            gaps.append(error.message)
+    return tuple(gaps)

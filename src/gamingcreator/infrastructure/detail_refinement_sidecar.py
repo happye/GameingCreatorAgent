@@ -25,6 +25,9 @@ from gamingcreator.application.detail_refinement import (
 from gamingcreator.application.detail_refinement_budget import (
     RESULT_SCHEMA_VERSION,
     BudgetCharge,
+    assert_refinement_request_document_contract,
+    assert_refinement_result_document_contract,
+    assert_refinement_sidecar_pair_contract,
     assert_same_request,
     canonical_detail_json,
     detail_from_canonical,
@@ -411,6 +414,7 @@ def freeze_request(project: Path, request: DetailRefinementRequest) -> str:
         "basePromptVersion": request.base_prompt_version,
         "basePromptHash": request.base_prompt_hash,
     }
+    assert_refinement_request_document_contract(document)
     payload = json.dumps(document, ensure_ascii=False, sort_keys=True).encode("utf-8")
     if target.exists():
         existing = _read_bytes(target, project.resolve())
@@ -428,13 +432,13 @@ def _published(project: Path, request: DetailRefinementRequest) -> CandidateDeta
     if not target.exists():
         return None
     document = _loads(target, project.resolve())
-    actual_model = document.get("actualModel")
-    if (
-        document.get("schemaVersion") != RESULT_SCHEMA_VERSION
-        or document.get("requestHash") != request_hash(request)
-        or type(document.get("payloadJson")) is not str
-        or (actual_model is not None and type(actual_model) is not str)
-    ):
+    try:
+        assert_refinement_result_document_contract(document)
+    except AppError as error:
+        if error.code == "refinement.contract":
+            raise _fail("refinement.damaged", error.message, request.run_id) from None
+        raise
+    if document.get("requestHash") != request_hash(request):
         raise _fail("refinement.damaged", "已发布的精分析结果无效。", request.run_id)
     payload_json = document["payloadJson"]
     assert type(payload_json) is str
@@ -501,6 +505,12 @@ def reuse_or_refuse(
             MatchStatus.UNVERIFIED, prepared.request, prepared.request_hash, None, False
         )
     stored = _loads(directory / "request.json", project.resolve())
+    try:
+        assert_refinement_request_document_contract(stored)
+    except AppError as error:
+        if error.code == "refinement.contract":
+            raise _fail("refinement.source_mismatch", error.message, event.run_id) from None
+        raise
     canonical = stored.get("canonicalJson")
     if (
         type(stored.get("schemaVersion")) is not int
@@ -712,6 +722,10 @@ def _publish(
         else format(metadata.usage.cost_cny, "f"),
         "metadata": metadata_payload(metadata),
     }
+    assert_refinement_result_document_contract(document)
+    request_path = sidecar_directory(project, request.run_id, request_hash(request)) / "request.json"
+    if request_path.exists():
+        assert_refinement_sidecar_pair_contract(_loads(request_path, project.resolve()), document)
     result_path = sidecar_directory(project, request.run_id, request_hash(request)) / "result.json"
     _confined(project.resolve(), result_path)
     if result_path.exists():

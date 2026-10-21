@@ -1,3 +1,5 @@
+**当前（2026-10-22）：root / Agent 推进 TD009 sidecar request／result 本机只读对照（已推送 PLACEHOLDER）。** sprint-td009-sidecar-request-result-local-readonly.md 归 root／GamingCreatorAgent。拥有 detail_refinement_budget／sidecar 合同与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不改写旧 sidecar JSON；不声称 F006／TD009 关单。以下项目联合检索落盘只读对照为历史。
+
 # Active assignments
 
 **当前（2026-10-22）：root / Agent 推进项目联合检索落盘只读对照（已推送 a62690e）。** sprint-retrieval-project-search-local-readonly.md 归 root／GamingCreatorAgent。拥有 retrieval／CLI／project_search_files 与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不改写旧 project-search JSON；不声称 F006／TD004／TD010 关单。以下 search-document／candidate_sources 合同为历史。

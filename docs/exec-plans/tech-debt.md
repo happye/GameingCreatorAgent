@@ -1,5 +1,7 @@
 # Technical debt
 
+**2026-10-22 TD009 离线扩展（sidecar request／result 本机只读对照，已推送 PLACEHOLDER）：** ssert_refinement_request_document_contract／result／pair；见 sprint-td009-sidecar-request-result-local-readonly.md；静态度量／人评仍 open；不宣称 TD009／F010 关单。
+
 **2026-10-22 检索离线进展（项目联合检索落盘只读对照，已推送 `a62690e`）：** `assert_project_search_document_contract`；见 sprint-retrieval-project-search-local-readonly.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线进展（JSON 投影／candidate_sources 清单合同，已推送 `6af5dd6`）：** `assert_search_document_contract`／`assert_candidate_sources_contract`；见 sprint-retrieval-search-document-sources-contract.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
