@@ -1655,3 +1655,47 @@ def test_scene_overhead_button_map_sand_water_glitch_non_words_do_not_cross_ling
         "竞技场入口两侧立着石柱。",
     )
     assert search(data, query, "lexical").candidates == ()
+
+
+@pytest.mark.parametrize(
+    "query,positive",
+    [
+        ("title", "画面显示带有字样的标题画面，背景为像素化场景。"),
+        ("titles", "画面显示带有字样的标题画面，背景为像素化场景。"),
+        ("transition", "镜头切换时出现转场光效，中央建筑被光束遮挡。"),
+        ("transitions", "镜头切换时出现转场光效，中央建筑被光束遮挡。"),
+        ("logo", "画面中央显示 NARUTO 标志，场景变为绿色区域。"),
+        ("logos", "画面中央显示 NARUTO 标志，场景变为绿色区域。"),
+    ],
+)
+def test_scene_title_transition_logo_cross_lingual_keeps_chinese_evidence(query, positive):
+    """English title／transition／logo → 标题／转场／标志 (demo-phase0)."""
+    data = timeline(positive, "角色向左移动。")
+    result = search(data, query, "lexical")
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    assert result.candidates[0].observable_facts == (positive,)
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "titled",
+        "subtitle",
+        "untitled",
+        "entitle",
+        "titlebrand",
+        "transitional",
+        "transit",
+        "logon",
+        "logic",
+        "catalogue",
+        "analog",
+    ],
+)
+def test_scene_title_transition_logo_non_words_do_not_cross_lingual_match(query):
+    data = timeline(
+        "画面显示带有字样的标题画面，背景为像素化场景。",
+        "镜头切换时出现转场光效，中央建筑被光束遮挡。",
+        "画面中央显示 NARUTO 标志，场景变为绿色区域。",
+    )
+    assert search(data, query, "lexical").candidates == ()

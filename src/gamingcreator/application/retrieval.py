@@ -247,6 +247,12 @@ _CROSS_LINGUAL_TERMS = (
     ("distortion", "扭曲"),
     ("pillars", "石柱"),
     ("pillar", "石柱"),
+    ("titles", "标题"),
+    ("title", "标题"),
+    ("transitions", "转场"),
+    ("transition", "转场"),
+    ("logos", "标志"),
+    ("logo", "标志"),
 )
 # A small explicit-language guard, not a language model. Apply this only to
 # positive action queries; passage identities follow the observation projection.
