@@ -1,3 +1,5 @@
+**2026-10-22 TD009（match-report↔sidecar 证据／区间／media，5d54d0b）：** 只读绑定加深；sprint-td009-match-report-sidecar-evidence-range-binding.md；不关单。
+
 **当前（2026-10-22）：root / Agent 推进内存检索结果／候选清单 media／event 加深（已推送 5e236d1）。** sprint-retrieval-search-result-media-event-sources.md 归 root／GamingCreatorAgent。拥有 assert_search_result／candidate_sources 加深与 pytest／交接 docs；project- scope 例外；0 付费；不代选 A／B／D；不改 feature_list；不发明 Boss／射击语料；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下 search-document rank／media／span 为历史。
 
 **当前（2026-10-22）：root / Agent 推进检索 JSON 投影 rank／media／时间窗加深（已推送 e0e54d7）。** sprint-retrieval-search-document-rank-media-span.md 归 root／GamingCreatorAgent。拥有 assert_search_document_contract 加深与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不改写旧 JSON；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下持久化信封 mode／rank／elapsed 为历史。

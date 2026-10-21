@@ -1,3 +1,5 @@
+**2026-10-22 TD009 离线扩展（match-report↔sidecar 证据／区间／media 绑定加深，已推送 5d54d0b）：** legacy match↔request／result 证据子集与区间／media 只读绑定；见 sprint-td009-match-report-sidecar-evidence-range-binding.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD009 关单。
+
 **2026-10-22 检索离线扩展（内存结果／候选清单 media／event 加深，已推送 5e236d1）：** assert_search_result_contract／assert_candidate_sources_contract；见 sprint-retrieval-search-result-media-event-sources.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线扩展（JSON 投影 rank／media／时间窗加深，已推送 e0e54d7）：** assert_search_document_contract；见 sprint-retrieval-search-document-rank-media-span.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
