@@ -681,6 +681,19 @@ def assert_search_result_contract(result: SearchResult) -> None:
             type(evidence_id) is not str or not evidence_id for evidence_id in item.evidence_ids
         ):
             raise _fail("retrieval.contract", "检索候选 evidenceIds 无效。")
+    _assert_search_embedding_metadata(
+        result.mode,
+        result.embedding_metadata,
+        has_candidates=bool(result.candidates),
+        scope="检索结果",
+    )
+    if type(result.min_similarity) not in {int, float}:
+        raise _fail("retrieval.contract", "检索 min_similarity 无效。")
+    if result.min_semantic_margin is not None and type(result.min_semantic_margin) not in {
+        int,
+        float,
+    }:
+        raise _fail("retrieval.contract", "检索 min_semantic_margin 无效。")
 
 
 def assert_project_search_result_contract(result: ProjectSearchResult) -> None:
@@ -740,7 +753,19 @@ def assert_project_search_result_contract(result: ProjectSearchResult) -> None:
             raise _fail("retrieval.contract", "项目候选 eventId 不属于源运行。")
         if not (item.source_range.start_us < item.source_range.end_us):
             raise _fail("retrieval.contract", "项目候选时间范围无效。")
-
+    _assert_search_embedding_metadata(
+        result.mode,
+        result.embedding_metadata,
+        has_candidates=bool(result.candidates),
+        scope="项目检索结果",
+    )
+    if type(result.min_similarity) not in {int, float}:
+        raise _fail("retrieval.contract", "项目检索 min_similarity 无效。")
+    if result.min_semantic_margin is not None and type(result.min_semantic_margin) not in {
+        int,
+        float,
+    }:
+        raise _fail("retrieval.contract", "项目检索 min_semantic_margin 无效。")
 
 
 def assert_candidate_sources_contract(sources: tuple[CandidateSource, ...]) -> None:
@@ -820,6 +845,54 @@ def assert_search_document_contract(document: dict[str, object]) -> None:
 
 
 
+
+
+
+def _assert_search_embedding_metadata(
+    mode: object,
+    metadata: object,
+    *,
+    has_candidates: bool,
+    scope: str,
+) -> None:
+    """Gate in-memory SearchResult／ProjectSearchResult embedding_metadata by mode.
+
+    lexical must omit metadata. hybrid／semantic with candidates require it;
+    empty abstention results may omit. When present, provider／requested_model／
+    schema_version／attempt are required; actual_model if set must equal requested.
+    """
+    if mode == "lexical":
+        if metadata is not None:
+            raise _fail("retrieval.contract", f"{scope} lexical 不得带 embedding_metadata。")
+        return
+    if mode not in {"hybrid", "semantic"}:
+        return
+    if metadata is None:
+        if has_candidates:
+            raise _fail("retrieval.contract", f"{scope} hybrid／semantic 候选结果缺少 embedding_metadata。")
+        return
+    # Duck-typed to InvocationMetadata fields (avoid hard import cycles in asserts).
+    provider = getattr(metadata, "provider", None)
+    if type(provider) is not str or not provider:
+        raise _fail("retrieval.contract", f"{scope} embedding_metadata.provider 无效。")
+    requested = getattr(metadata, "requested_model", None)
+    if type(requested) is not str or not requested:
+        raise _fail("retrieval.contract", f"{scope} embedding_metadata.requested_model 无效。")
+    actual = getattr(metadata, "actual_model", None)
+    if actual is not None:
+        if type(actual) is not str or not actual:
+            raise _fail("retrieval.contract", f"{scope} embedding_metadata.actual_model 无效。")
+        if actual != requested:
+            raise _fail(
+                "retrieval.contract",
+                f"{scope} embedding_metadata.actual_model 与 requested_model 不一致。",
+            )
+    schema_version = getattr(metadata, "schema_version", None)
+    if type(schema_version) is not str or not schema_version:
+        raise _fail("retrieval.contract", f"{scope} embedding_metadata.schema_version 无效。")
+    attempt = getattr(metadata, "attempt", None)
+    if type(attempt) is not int or attempt < 1:
+        raise _fail("retrieval.contract", f"{scope} embedding_metadata.attempt 无效。")
 
 
 def _assert_retrieval_embedding_metadata(mode: object, embedding: object, *, scope: str) -> None:

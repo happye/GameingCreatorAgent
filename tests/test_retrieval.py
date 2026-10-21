@@ -15,7 +15,11 @@ from gamingcreator.application.providers import (
     ProviderStatus,
     ProviderUsage,
 )
-from gamingcreator.application.retrieval import search_timeline
+from gamingcreator.application.retrieval import (
+    SearchResult,
+    assert_search_result_contract,
+    search_timeline,
+)
 from gamingcreator.application.storage import RunConfiguration, RunStatus, StoredRun, StoredTimeline
 from gamingcreator.domain.errors import AppError
 from gamingcreator.domain.media import MediaAsset, MediaStream
@@ -428,3 +432,49 @@ def test_coverage_gap_run_refused_with_specific_code():
         search(gap, "jump", mode="lexical")
     assert refused.value.code == "retrieval.coverage_gap"
     assert "覆盖缺口" in refused.value.message
+
+
+def test_assert_search_result_contract_rejects_embedding_metadata_mode_drift() -> None:
+    from test_retrieval_negation import search, timeline
+
+    data = timeline("角色向左移动。", "角色跳跃。")
+    hybrid = search(data, "移动", "hybrid")
+    assert hybrid.embedding_metadata is not None
+    assert_search_result_contract(hybrid)
+
+    missing = replace(hybrid, embedding_metadata=None)
+    with pytest.raises(AppError) as missing_meta:
+        assert_search_result_contract(missing)
+    assert missing_meta.value.code == "retrieval.contract"
+
+    lexical = search(data, "移动", "lexical")
+    assert lexical.embedding_metadata is None
+    assert_search_result_contract(lexical)
+    leaked = replace(
+        lexical,
+        embedding_metadata=hybrid.embedding_metadata,
+    )
+    with pytest.raises(AppError) as lexical_has:
+        assert_search_result_contract(leaked)
+    assert lexical_has.value.code == "retrieval.contract"
+
+    drifted = replace(
+        hybrid,
+        embedding_metadata=replace(
+            hybrid.embedding_metadata,
+            actual_model="forged-other-model",
+        ),
+    )
+    with pytest.raises(AppError) as mismatched:
+        assert_search_result_contract(drifted)
+    assert mismatched.value.code == "retrieval.contract"
+
+    # Empty abstention may omit metadata even in hybrid.
+    empty = SearchResult(
+        run_id="run-empty",
+        query="",
+        mode="hybrid",
+        candidates=(),
+        abstention_reason="empty_query",
+    )
+    assert_search_result_contract(empty)
