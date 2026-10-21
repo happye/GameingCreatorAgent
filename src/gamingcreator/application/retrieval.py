@@ -112,6 +112,16 @@ _CROSS_LINGUAL_TERMS = (
     ("explodes", "爆炸"),
     ("explosion", "爆炸"),
     ("explode", "爆炸"),
+    ("countdowns", "倒计时"),
+    ("countdown", "倒计时"),
+    ("timers", "计时"),
+    ("timer", "计时"),
+    ("scoreboards", "比分"),
+    ("scoreboard", "比分"),
+    ("scores", "比分"),
+    ("score", "比分"),
+    ("beams", "光束"),
+    ("beam", "光束"),
 )
 # A small explicit-language guard, not a language model. Apply this only to
 # positive action queries; passage identities follow the observation projection.
@@ -133,6 +143,7 @@ _ACTION_TERMS = {
         "打架",
         "对战",
         "团战",
+        "交战",
         "fight",
         "fights",
         "fighting",
@@ -361,7 +372,7 @@ def _tag_only_action_noise_documents(
     """Exclude clips whose only query-action evidence is a liberally painted mechanicTag.
 
     Lexical BM25 indexes `text` (facts + tags). For fight/move/interact queries,
-    bare theme tags (战斗／对战／团战／角色移动／行走／交互／技能释放／技能特效) without matching language in positive_text
+    bare theme tags (战斗／对战／团战／交战／角色移动／行走／交互／技能释放／技能特效) without matching language in positive_text
     are UI/theme chrome — not gameplay evidence. Attack tag-only recall remains (TD010).
     """
     folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")

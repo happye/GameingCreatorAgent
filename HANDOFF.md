@@ -1,7 +1,9 @@
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
-**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip 5cbfb4f（含 cast／skill／explode 别名），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
+**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip PLACEHOLDER（含 UI 观察跨语言 + 交战），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
 
+
+**当前锚点（2026-10-22，检索 UI 观察跨语言 + 交战别名，已推送 PLACEHOLDER）：** countdown／timer／score／beam→倒计时／计时／比分／光束；交战∈fight；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-retrieval-ui-countdown-score-beam-jiaozhan.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**；攻击 tag-only 仍保留。以下 cast／skill／explode 为历史。
 
 **当前锚点（2026-10-22，检索 cast／skill 别名 + explode 跨语言，已推送 5cbfb4f）：** _ACTION_TERMS cast（释放／技能／cast／skill）；tag-only 含 cast；explode→爆炸；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-retrieval-cast-skill-explode-aliases.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**；攻击 tag-only 仍保留。以下 heal／damage／interacted／信封为历史。
 

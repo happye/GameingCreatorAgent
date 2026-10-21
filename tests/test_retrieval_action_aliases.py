@@ -1033,3 +1033,64 @@ def test_explode_cross_lingual_keeps_chinese_evidence(query, positive):
 def test_explode_non_action_words_do_not_cross_lingual_match(query):
     data = timeline("画面中央出现红色爆炸特效。")
     assert search(data, query, "lexical").candidates == ()
+
+
+@pytest.mark.parametrize(
+    "query,positive",
+    [
+        ("countdown", "顶部显示倒计时“02:33”。"),
+        ("countdowns", "顶部倒计时显示“02:32”。"),
+        ("timer", "顶部显示比分与计时。"),
+        ("timers", "顶部计时器显示01:43。"),
+        ("score", "顶部有双方角色头像与比分条。"),
+        ("scores", "顶部比分条仍可见。"),
+        ("scoreboard", "顶部显示比分与计时。"),
+        ("scoreboards", "顶部有双方角色头像与比分条。"),
+        ("beam", "中央有大量蓝色垂直光束特效。"),
+        ("beams", "画面出现紫色光束与金色光束。"),
+    ],
+)
+def test_countdown_timer_score_beam_cross_lingual_keeps_chinese_evidence(query, positive):
+    """English UI observation words expand to 倒计时／计时／比分／光束 (lexical)."""
+    data = timeline(positive, "角色向左移动。")
+    result = search(data, query, "lexical")
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    assert result.candidates[0].observable_facts == (positive,)
+
+
+@pytest.mark.parametrize(
+    "query",
+    ["countdownx", "scoreboard2", "beamingly", "timerswitch", "highscorex"],
+)
+def test_countdown_timer_score_beam_non_words_do_not_cross_lingual_match(query):
+    data = timeline("顶部显示倒计时“02:33”。", "顶部比分条仍可见。", "中央有蓝色垂直光束。")
+    assert search(data, query, "lexical").candidates == ()
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize("query", ["交战", "fight", "combat"])
+def test_jiaozhan_fight_alias_keeps_chinese_evidence(mode, query):
+    data = timeline("多名角色在场景中交战。", "没有战斗。", "未见打斗。")
+    result = search(data, query, mode)
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    assert result.candidates[0].observable_facts == ("多名角色在场景中交战。",)
+
+
+def test_jiaozhan_tag_only_mechanic_noise_excluded_lexical():
+    """Bare 交战 mechanicTag without fight language in facts is chrome noise (lexical)."""
+    import asyncio
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import search_timeline
+    from gamingcreator.application.storage import StoredTimeline
+    from test_retrieval_negation import timeline as _base_timeline
+
+    base = _base_timeline("角色向左移动。", "地面出现橙色区域。")
+    events = list(base.events)
+    events[0] = replace(events[0], mechanic_tags=("交战", "伤害数字"))
+    data = StoredTimeline(
+        base.run, base.checkpoints, base.evidence, base.transcripts, tuple(events), base.invocations
+    )
+    empty = asyncio.run(search_timeline(data, "交战", mode="lexical", top_k=10))
+    assert empty.candidates == ()
+    assert empty.abstention_reason == "no_positive_action_evidence"
