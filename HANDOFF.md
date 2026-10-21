@@ -1,9 +1,9 @@
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
-**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip 51b0f56（含 TD010 混合语义边界）），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
+**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip 58b3f73（含 TD010 本机只读对照）），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
 
 
-**当前锚点（2026-10-22，TD010 本机 Completed 只读对照，待推送）：** pytest + `artifacts/demo-phase0`／`independent-footage-20261011` 只读 DB；sprint：`docs/exec-plans/sprint-retrieval-td010-local-completed-readonly.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD010 全库关单**。以下混合语义边界为历史。
+**当前锚点（2026-10-22，TD010 本机 Completed 只读对照，已推送 58b3f73）：** pytest + `artifacts/demo-phase0`／`independent-footage-20261011` 只读 DB；sprint：`docs/exec-plans/sprint-retrieval-td010-local-completed-readonly.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD010 全库关单**。以下混合语义边界为历史。
 
 **当前锚点（2026-10-22，TD010 混合语义边界／离线 DB 形对照，已推送 51b0f56）：** positive_text 不再回退到标签正文；混合通道 pytest + `tests/fixtures/td010_mixed_semantics_shapes.json`；sprint：`docs/exec-plans/sprint-retrieval-td010-mixed-semantics.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称真实 DB run 对照关单**。以下裸标签否定护栏为历史。
 

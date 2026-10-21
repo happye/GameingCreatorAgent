@@ -1,6 +1,6 @@
 # Sprint：TD010 本机 Completed 只读对照（artifacts DB）
 
-**状态（2026-10-22）：代码已落地，待推送。** 对 `artifacts/demo-phase0` 的 Completed run 与 `artifacts/independent-footage-20261011` 的 coverage-gap run 做 SqliteTimelineStore `read_only` 冒烟：positive_text 不含裸 mechanicTags 回声、否定护栏不泄漏进 lexical hits、tag-only「攻击」仍可检索、coverage-gap 拒绝可检索加载。验证方式=**pytest + 本机只读 DB**；无 DeepSeek／launcher／付费／浏览器。不代选 A／B／D；不标 F006 true；不宣称人评／验收通过；不声称覆盖缺口已清；不宣称 TD010 全库／四 run 关单。
+**状态（2026-10-22）：已推送 origin/main 58b3f73。** 对 `artifacts/demo-phase0` 的 Completed run 与 `artifacts/independent-footage-20261011` 的 coverage-gap run 做 SqliteTimelineStore `read_only` 冒烟：positive_text 不含裸 mechanicTags 回声、否定护栏不泄漏进 lexical hits、tag-only「攻击」仍可检索、coverage-gap 拒绝可检索加载。验证方式=**pytest + 本机只读 DB**；无 DeepSeek／launcher／付费／浏览器。不代选 A／B／D；不标 F006 true；不宣称人评／验收通过；不声称覆盖缺口已清；不宣称 TD010 全库／四 run 关单。
 
 ## Assignment
 
