@@ -1,6 +1,6 @@
 # Progress Log
 
-**2026-10-22 草稿包链接同帧诊断证据**：写出时附加 diagnosis-links 与 README 拒因摘录；缺包则写期望路径。相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-coverage-gap-diagnosis-link.md。
+**2026-10-22 草稿包链接同帧诊断证据（已推送 c1cbf37）**：写出时附加 diagnosis-links 与 README 拒因摘录；缺包则写期望路径。相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-coverage-gap-diagnosis-link.md。
 
 **2026-10-21 定向补窗草稿只读写出（已推送 6ab066a）**：新增 write helper 与 `prepare-directed-gap-fill-draft` 脚本；输出含 draft／inventory／README／receipt，回读 inert；相关 pytest 绿。artifacts/ 已在 .gitignore。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-coverage-gap-draft-writer.md。
 
