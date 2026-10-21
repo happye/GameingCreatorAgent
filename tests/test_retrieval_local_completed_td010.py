@@ -133,3 +133,27 @@ def test_local_independent_footage_coverage_gap_refuses_searchable_load():
         assert refused.value.code == "retrieval.coverage_gap"
 
     asyncio.run(run())
+
+
+def test_local_completed_demo_phase0_jump_titles_not_lexical_hits():
+    """TD004 offline: real Completed JUMP title cards must not rank for bare jump."""
+    _require_sqlite(DEMO_PHASE0)
+
+    async def run() -> None:
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
+        docs = {doc.event_id: doc for doc in _documents(timeline)}
+        title_events = {
+            event_id
+            for event_id, doc in docs.items()
+            if "jump assemble" in doc.positive_text.casefold()
+            or "jump明星大乱斗" in doc.positive_text.casefold()
+            or "少年jump正版授权" in doc.positive_text.casefold()
+        }
+        assert title_events, "fixture regression: expected JUMP title cards in demo-phase0"
+        for query in ("jump", "JUMP"):
+            result = await search_timeline(timeline, query, mode="lexical", top_k=20)
+            hit_events = {item.event_id for item in result.candidates}
+            assert hit_events.isdisjoint(title_events), sorted(hit_events & title_events)
+
+    asyncio.run(run())

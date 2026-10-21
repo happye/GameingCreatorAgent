@@ -1,5 +1,7 @@
 # Phase 0 开发任务与依赖
 
+> **2026-10-22 离线补强：** 检索忽略 JUMP 标题品牌噪声（TD004）；不清除三缺口；不代选 A／B／D；不标 F006 true。
+
 > **2026-10-22 离线补强：** TD010 本机 Completed 只读对照（pytest + artifacts sqlite，已推送 58b3f73）；不清除三缺口；不代选 A／B／D；不标 F006 true。
 
 > **2026-10-22 离线补强：** TD010 混合语义边界／离线 DB 形对照（已推送 51b0f56）（positive_text 禁回退＋golden JSON）；不清除三缺口；不代选 A／B／D；不标 F006 true。

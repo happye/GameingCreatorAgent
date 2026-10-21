@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-22 检索忽略 JUMP 标题品牌噪声（TD004 离线，待推送）：** neutralize JUMP ASSEMBLE／JUMP明星大乱斗；pytest + demo-phase0 只读。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户；不宣称 TD004 关单。sprint-retrieval-jump-title-brand-noise.md。
+
 **2026-10-22 TD010 本机 Completed 只读对照（已推送 58b3f73）：** pytest + demo-phase0／independent-footage 只读 sqlite；positive_text 纯度／否定不泄漏／coverage-gap 拒绝。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户；不宣称全库关单。sprint-retrieval-td010-local-completed-readonly.md。
 
 **2026-10-22 TD010 混合语义边界／离线 DB 形对照（已推送 51b0f56）：** positive_text 禁回退；transcript 写入 positive_text；mixed-semantics pytest + golden JSON。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户；不宣称真实 DB 关单。sprint-retrieval-td010-mixed-semantics.md。

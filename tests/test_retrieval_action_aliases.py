@@ -137,10 +137,17 @@ def test_known_chinese_action_aliases_preserve_evidence_and_denial_guard(
         }
 
 
-@pytest.mark.parametrize("query", ["跳跃", "起跳", "跳起", "jumping", "jumped"])
+@pytest.mark.parametrize("query", ["跳跃", "起跳", "跳起", "jumping", "jumped", "jump", "JUMP"])
 def test_jump_game_titles_do_not_become_translated_action_evidence(query):
-    data = timeline("画面显示“JUMP明星大乱斗”标题。", "画面显示“JUMP ASSEMBLE”游戏标志。")
-    assert search(data, query, "lexical").candidates == ()
+    """TD004: frozen JUMP title brands are not gameplay jump evidence."""
+    data = timeline(
+        "画面显示“JUMP明星大乱斗”标题。",
+        "画面显示“JUMP ASSEMBLE”游戏标志。",
+        "少年JUMP正版授权出现在角落。",
+        "角色跳跃并落地。",
+    )
+    result = search(data, query, "lexical")
+    assert [item.event_id for item in result.candidates] == ["event-3"]
 
 
 @pytest.mark.parametrize(

@@ -113,6 +113,20 @@ _UNCERTAIN_DENIAL_PREFIX = re.compile(
     r"unclear whether|unclear if|cannot confirm|may be|might be))(?:并|也|仍|还)?\s*$|"
     r"(?:是否|有)\s*$"
 )
+# Known game-title brands that embed the English token "jump" without naming
+# a gameplay jump. Neutralize only these frozen phrases before lexical scoring
+# and action-denial scans so title cards do not rank as jump evidence (TD004).
+_TITLE_BRAND_ACTION_NOISE = re.compile(
+    r"jump\s*assemble|jump\s*明星大乱斗|少年\s*jump\s*正版授权",
+    re.IGNORECASE,
+)
+
+
+def _neutralize_title_brands(text: str) -> str:
+    """Replace frozen title brands; leave real jump/跳跃 observations untouched."""
+    return _TITLE_BRAND_ACTION_NOISE.sub("titlebrand", text)
+
+
 _NEGATIVE_QUERY_INTENT = re.compile(
     r"没有|未见|未观察到|无|不|避免|禁止|排除|不要|"
     r"\b(?:no|not|without|avoid|exclude|excluding|except|never)\b|\b(?:do|does|did)n't\b"
@@ -432,7 +446,8 @@ def _denied_action_documents(documents: tuple[_Document, ...], query: str) -> fr
     denied = set()
     for document in documents:
         # Facts/transcripts only — never fall back to tag-bearing text (TD010).
-        source = document.positive_text
+        # Title brands like JUMP ASSEMBLE are not gameplay jump affirmations (TD004).
+        source = _neutralize_title_brands(document.positive_text)
         text = unicodedata.normalize("NFKC", source).casefold().replace("’", "'")
         spans = tuple(
             match.span()
@@ -455,7 +470,7 @@ def _denied_action_documents(documents: tuple[_Document, ...], query: str) -> fr
 
 def _lexical_scores(documents: tuple[_Document, ...], query: str) -> dict[str, float]:
     terms = frozenset(_tokens(_lexical_query(query)))
-    counters = [Counter(_tokens(item.text)) for item in documents]
+    counters = [Counter(_tokens(_neutralize_title_brands(item.text))) for item in documents]
     average = sum(map(lambda counter: sum(counter.values()), counters)) / len(documents)
     if not terms or average == 0:
         return {}
