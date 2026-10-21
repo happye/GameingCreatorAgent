@@ -160,3 +160,12 @@ def test_execute_acceptance_readiness_cli_read_only(tmp_path, monkeypatch) -> No
 
     asyncio.run(run())
     assert (project / "timeline.sqlite3").read_bytes() == before
+
+
+def test_forbidden_pass_labels_are_rejected() -> None:
+    doc = build_acceptance_readiness(_tasks())
+    bad = dict(doc)
+    bad["formalAcceptanceStatusLabel"] = "验收通过"
+    with pytest.raises(AssertionError, match="forbidden formalAcceptanceStatusLabel"):
+        assert_acceptance_readiness_inert(bad)
+

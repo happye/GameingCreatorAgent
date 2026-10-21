@@ -1,5 +1,11 @@
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
+**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip 736c3ce），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
+
+
+**当前锚点（2026-10-22，跨面 acceptance-readiness 惰性合同加固）：** 禁止 passed／已通过等状态与标签；`SURFACE_JS_INERT_GUARDS` 跨面核对。sprint：`docs/exec-plans/sprint-acceptance-readiness-cross-surface.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下验收流程 readiness 挂接为历史。
+
+
 **当前锚点（2026-10-22，验收流程页只读挂接验收就绪，已推送 82862df）：** 关联分析时展示 `/api/acceptance-readiness`；拒绝通过声明。sprint：`docs/exec-plans/sprint-acceptance-workflow-readiness.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下共享 WaitingTransport 为历史。
 
 

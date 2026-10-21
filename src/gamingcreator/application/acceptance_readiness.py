@@ -22,6 +22,38 @@ _STATUS_LABELS = {
     _STATUS_AWAITING_HUMAN: "已有可检索运行，但仍须人工标签、冻结与绑定；本报告不宣称通过",
 }
 
+FORBIDDEN_FORMAL_STATUSES = frozenset(
+    {
+        "passed",
+        "accepted",
+        "formal_pass",
+        "quality_pass",
+        "human_eval_passed",
+    }
+)
+FORBIDDEN_STATUS_LABELS = frozenset(
+    {
+        "passed",
+        "accepted",
+        "已通过",
+        "验收通过",
+        "正式验收通过",
+        "人评通过",
+        "F006通过",
+        "F006 通过",
+    }
+)
+
+# Substrings each workbench/workflow surface must keep checking (offline contract).
+SURFACE_JS_INERT_GUARDS = (
+    "acceptance-readiness-v1",
+    "formalAcceptancePassed !== false",
+    "humanEvalPassed !== false",
+    "coverageGapsCleared !== false",
+    "featureClaims.F006 !== false",
+    'formalAcceptanceStatus === "passed"',
+)
+
 
 def _as_task_rows(tasks_document: Mapping[str, Any]) -> list[dict[str, Any]]:
     raw = tasks_document.get("tasks")
@@ -161,8 +193,13 @@ def assert_acceptance_readiness_inert(document: Mapping[str, Any]) -> None:
     status = document.get("formalAcceptanceStatus")
     if status not in _STATUS_LABELS:
         raise AssertionError(f"unknown formalAcceptanceStatus: {status!r}")
-    if status == "passed" or document.get("formalAcceptanceStatusLabel") == "passed":
-        raise AssertionError("readiness must never report passed")
+    if status in FORBIDDEN_FORMAL_STATUSES:
+        raise AssertionError(f"forbidden formalAcceptanceStatus: {status!r}")
+    label = document.get("formalAcceptanceStatusLabel")
+    if label in FORBIDDEN_STATUS_LABELS or label == "passed":
+        raise AssertionError(f"forbidden formalAcceptanceStatusLabel: {label!r}")
+    if document.get("snapshotOnly") is not True:
+        raise AssertionError("snapshotOnly must be True")
 
 
 def write_acceptance_readiness(document: Mapping[str, Any], output: Path) -> Path:
@@ -173,3 +210,8 @@ def write_acceptance_readiness(document: Mapping[str, Any], output: Path) -> Pat
     payload = json.dumps(document, ensure_ascii=False, indent=2, default=str) + "\n"
     output.write_text(payload, encoding="utf-8")
     return output
+
+
+def surface_js_inert_guards() -> tuple[str, ...]:
+    """Guards that static workbench/workflow JS must keep for inert readiness."""
+    return SURFACE_JS_INERT_GUARDS
