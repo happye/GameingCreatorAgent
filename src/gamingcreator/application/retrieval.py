@@ -1,6 +1,7 @@
 """Deterministic evidence-backed lexical and local semantic clip retrieval."""
 
 import hashlib
+from datetime import datetime
 import json
 import math
 import re
@@ -1114,6 +1115,15 @@ def assert_persisted_retrieval_contract(document: dict[str, object]) -> None:
         revision_scope = embedding_space.get("revision_scope")
         if type(revision_scope) is not str or not revision_scope:
             raise _fail("retrieval.contract", "持久化检索 embeddingSpace.revision_scope 无效。")
+    created_at = document.get("createdAt")
+    if type(created_at) is not str or not created_at:
+        raise _fail("retrieval.contract", "持久化检索 createdAt 无效。")
+    try:
+        parsed = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise _fail("retrieval.contract", "持久化检索 createdAt 无法解析。") from exc
+    if parsed.tzinfo is None:
+        raise _fail("retrieval.contract", "持久化检索 createdAt 缺少时区。")
 
 
 def assert_project_search_document_contract(document: dict[str, object]) -> None:

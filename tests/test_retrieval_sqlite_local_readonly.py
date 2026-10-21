@@ -322,3 +322,41 @@ def test_assert_persisted_retrieval_contract_rejects_parameters_and_embedding_sp
         assert margin.value.code == "retrieval.contract"
 
     asyncio.run(run())
+
+
+def test_assert_persisted_retrieval_contract_rejects_created_at_timezone_drift() -> None:
+    """createdAt must be timezone-aware ISO-8601."""
+    db = _require_sqlite()
+    ids = _retrieval_ids(db)
+    if not ids:
+        pytest.skip("local retrieval_runs empty")
+
+    async def run() -> None:
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        document = await store.load_retrieval(ids[0])
+        assert_persisted_retrieval_contract(document)
+
+        missing = json.loads(json.dumps(document))
+        missing["createdAt"] = None
+        with pytest.raises(AppError) as absent:
+            assert_persisted_retrieval_contract(missing)
+        assert absent.value.code == "retrieval.contract"
+
+        naive = json.loads(json.dumps(document))
+        naive["createdAt"] = "2026-10-04T15:49:21.250437"
+        with pytest.raises(AppError) as no_tz:
+            assert_persisted_retrieval_contract(naive)
+        assert no_tz.value.code == "retrieval.contract"
+
+        garbage = json.loads(json.dumps(document))
+        garbage["createdAt"] = "not-a-timestamp"
+        with pytest.raises(AppError) as bad:
+            assert_persisted_retrieval_contract(garbage)
+        assert bad.value.code == "retrieval.contract"
+
+        # Z suffix still accepted.
+        zulu = json.loads(json.dumps(document))
+        zulu["createdAt"] = "2026-10-04T07:49:21.250437Z"
+        assert_persisted_retrieval_contract(zulu)
+
+    asyncio.run(run())
