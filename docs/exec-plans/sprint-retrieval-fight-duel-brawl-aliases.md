@@ -1,6 +1,6 @@
 # Sprint：检索 fight 别名扩至打架／对战／团战（离线）
 
-**状态（2026-10-22）：待推送 origin/main。** `_ACTION_TERMS["fight"]` 增补中文别名 `打架`／`对战`／`团战`：词法查询经既有 `_lexical_query` 交叉扩展；tag-only 噪声排除与 `no_positive_action_evidence` 弃权同步认这批词。pytest 覆盖别名正例／裸标签噪声／demo-phase0 Completed 只读。验证＝**pytest + 只读 SQLite**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单。攻击 tag-only 召回仍按 TD010 保留。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。
+**状态（2026-10-22）：已推送 origin/main 1e87a86。** `_ACTION_TERMS["fight"]` 增补中文别名 `打架`／`对战`／`团战`：词法查询经既有 `_lexical_query` 交叉扩展；tag-only 噪声排除与 `no_positive_action_evidence` 弃权同步认这批词。pytest 覆盖别名正例／裸标签噪声／demo-phase0 Completed 只读。验证＝**pytest + 只读 SQLite**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单。攻击 tag-only 召回仍按 TD010 保留。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。
 
 ## Assignment
 

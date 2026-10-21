@@ -1,9 +1,9 @@
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
-**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip PLACEHOLDER（含检索 fight 别名打架／对战／团战），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
+**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip 1e87a86（含检索 fight 别名打架／对战／团战），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
 
 
-**当前锚点（2026-10-22，检索 fight 别名打架／对战／团战，已推送 PLACEHOLDER）：** _ACTION_TERMS fight 扩别名；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-retrieval-fight-duel-brawl-aliases.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**。以下 TD009 sidecar request／result 只读对照为历史。
+**当前锚点（2026-10-22，检索 fight 别名打架／对战／团战，已推送 1e87a86）：** _ACTION_TERMS fight 扩别名；pytest + demo-phase0 只读；sprint：docs/exec-plans/sprint-retrieval-fight-duel-brawl-aliases.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**。以下 TD009 sidecar request／result 只读对照为历史。
 
 **当前锚点（2026-10-22，TD009 sidecar request／result 本机只读对照，已推送 198ea93）：** ssert_refinement_sidecar_pair_contract；pytest + demo-phase0 detail-refinements 只读；sprint：docs/exec-plans/sprint-td009-sidecar-request-result-local-readonly.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD009 关单**。以下项目联合检索落盘只读对照为历史。
 
