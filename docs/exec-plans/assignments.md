@@ -1,6 +1,6 @@
 # Active assignments
 
-**当前（2026-10-22）：root 单 Agent 交付检索否定保护／TD010 离线修复。** sprint-retrieval-mechanic-tag-denial.md 由 root／GamingCreatorAgent 拥有。改 retrieval 与相关测试／tech-debt／公共 docs；0 付费。不代选 A／B／D；不改 feature_list 为 true；不宣称 F006／人评通过。以下任务行拒窗摘要为历史。
+**当前（2026-10-22）：root 单 Agent 交付检索否定保护／TD010 离线修复。** sprint-retrieval-mechanic-tag-denial.md 由 root／GamingCreatorAgent 拥有。改 retrieval 与相关测试／tech-debt／公共 docs；0 付费。不代选 A／B／D；不改 feature_list 为 true；不宣称 F006／人评通过。以下任务行拒窗摘要为历史。 已推送 1d0f70d
 
 **当前（2026-10-22）：root 单 Agent 交付素材任务行覆盖缺口拒窗摘要。** sprint-tasks-coverage-gap-summary.md 由 root／GamingCreatorAgent 拥有。改 tasks／工作台任务卡与相关测试／公共 docs；0 付费。不代选 A／B／D；不改 feature_list 为 true；不宣称 F006／人评通过。以下工作台覆盖缺口报告为历史。
 

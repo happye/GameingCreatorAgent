@@ -1,6 +1,6 @@
 # Sprint：检索否定保护不受裸 mechanicTags 覆盖（TD010）
 
-**状态（2026-10-22）：已交付（待推送）。** `_denied_action_documents` 仅在 observable facts／transcripts（`positive_text`）上判定显式否定与肯定；裸 `mechanicTags` 不再单独击穿「事实已否定该动作」的排除。0 付费；不代选 A／B／D；不标 F006 true；不宣称人评／验收通过；不声称覆盖缺口已清。
+**状态（2026-10-22）：已推送 origin/main `1d0f70d`。** `_denied_action_documents` 仅在 observable facts／transcripts（`positive_text`）上判定显式否定与肯定；裸 `mechanicTags` 不再单独击穿「事实已否定该动作」的排除。0 付费；不代选 A／B／D；不标 F006 true；不宣称人评／验收通过；不声称覆盖缺口已清。
 
 ## Assignment
 
@@ -19,4 +19,4 @@
 - [x] 否定护栏扫描 positive_text
 - [x] 回归 pytest：裸 tag 无法击穿显式否定；原有 negation 套件绿
 - [x] tech-debt TD010 记录离线进展
-- [ ] 已推送 `origin/main`（推送后勾）
+- [x] 已推送 `origin/main`（`1d0f70d`）

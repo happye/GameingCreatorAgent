@@ -1,6 +1,6 @@
 # Technical debt
 
-**2026-10-22 TD010 离线进展：** 否定护栏改为只扫描 facts／transcripts（`positive_text`），裸 mechanicTags 不再击穿显式动作否定；见 sprint-retrieval-mechanic-tag-denial.md。真实 DB run 对照与其余混合语义边界仍未关单。
+**2026-10-22 TD010 离线进展（已推送 `1d0f70d`）：** 否定护栏改为只扫描 facts／transcripts（`positive_text`），裸 mechanicTags 不再击穿显式动作否定；见 sprint-retrieval-mechanic-tag-denial.md。真实 DB run 对照与其余混合语义边界仍未关单。
 
 **2026-10-22 传输层非200正文**：历史「非200丢弃错误正文」离线合同缺口已在 sprint-http-error-body-retention 修补（有界保留＋失败投影）；不宣称 TD009／F010 质量通过。
 

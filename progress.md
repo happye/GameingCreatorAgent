@@ -1,6 +1,6 @@
 # Progress Log
 
-**2026-10-22 检索否定保护不受裸 mechanicTags 覆盖（TD010）：** positive_text 护栏；negation pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-retrieval-mechanic-tag-denial.md。
+**2026-10-22 检索否定保护不受裸 mechanicTags 覆盖（TD010，已推送 1d0f70d）：** positive_text 护栏；negation pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-retrieval-mechanic-tag-denial.md。
 
 **2026-10-22 素材任务行覆盖缺口拒窗摘要（已推送 2b4d209）：** tasks 嵌入 coverageGapSummary；工作台展示；pytest 绿；已推 origin/main。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-tasks-coverage-gap-summary.md。
 
