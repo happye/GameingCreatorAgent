@@ -302,6 +302,15 @@ def assert_match_report_sidecar_binding_contract(
     profile = report.get("refinementProfile")
     if profile is not None and (type(profile) is not str or not profile):
         raise ValueError("Match report refinementProfile is invalid.")
+    configuration_hash = payload.get("configurationHash")
+    if type(configuration_hash) is not str or not _HASH64.fullmatch(configuration_hash):
+        raise ValueError("Sidecar canonical configurationHash is invalid.")
+    pipeline_version = payload.get("pipelineVersion")
+    if type(pipeline_version) is not str or not pipeline_version:
+        raise ValueError("Sidecar canonical pipelineVersion is invalid.")
+    provider = payload.get("provider")
+    if type(provider) is not str or not provider:
+        raise ValueError("Sidecar canonical provider is invalid.")
     evidence_rows = payload.get("evidence")
     if type(evidence_rows) is not list or not evidence_rows:
         raise ValueError("Sidecar request evidence is invalid.")
@@ -367,8 +376,24 @@ def assert_match_report_sidecar_binding_contract(
         if type(actual_model) is not str or not actual_model:
             raise ValueError("Sidecar result actualModel is invalid.")
         requested = payload.get("requestedModel")
-        if type(requested) is str and requested and actual_model != requested:
+        if type(requested) is not str or not requested:
+            raise ValueError("Sidecar canonical requestedModel is invalid.")
+        if actual_model != requested:
             raise ValueError("Sidecar result actualModel does not match request requestedModel.")
+        metadata = result_document.get("metadata")
+        if type(metadata) is not dict:
+            raise ValueError("Sidecar result metadata must be an object.")
+        if metadata.get("provider") != provider:
+            raise ValueError("Sidecar result metadata.provider does not match request provider.")
+        if metadata.get("requested_model") != requested:
+            raise ValueError("Sidecar result metadata.requested_model does not match request.")
+        if metadata.get("actual_model") != actual_model:
+            raise ValueError("Sidecar result metadata.actual_model does not match actualModel.")
+        prompt_version = payload.get("promptVersion")
+        if type(prompt_version) is not str or not prompt_version:
+            raise ValueError("Sidecar canonical promptVersion is invalid.")
+        if metadata.get("prompt_version") != prompt_version:
+            raise ValueError("Sidecar result metadata.prompt_version does not match request.")
 
 
 def match_report_sidecar_binding_gaps(
@@ -419,6 +444,16 @@ def match_report_sidecar_binding_gaps(
             ("Sidecar result requestHash does not match", "sidecar_result_request_hash_mismatch"),
             ("actualModel is invalid", "actual_model_invalid"),
             ("actualModel does not match request requestedModel", "actual_model_mismatch"),
+            ("configurationHash is invalid", "configuration_hash_invalid"),
+            ("pipelineVersion is invalid", "pipeline_version_invalid"),
+            ("canonical provider is invalid", "provider_invalid"),
+            ("requestedModel is invalid", "requested_model_invalid"),
+            ("metadata must be an object", "metadata_not_object"),
+            ("metadata.provider does not match", "metadata_provider_mismatch"),
+            ("metadata.requested_model does not match", "metadata_requested_model_mismatch"),
+            ("metadata.actual_model does not match", "metadata_actual_model_mismatch"),
+            ("promptVersion is invalid", "prompt_version_invalid"),
+            ("metadata.prompt_version does not match", "metadata_prompt_version_mismatch"),
             ("binding requires objects", "binding_not_object"),
         )
         coded = False

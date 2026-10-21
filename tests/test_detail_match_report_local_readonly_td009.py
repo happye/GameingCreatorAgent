@@ -398,3 +398,47 @@ def test_assert_match_report_sidecar_binding_rejects_base_run_and_actual_model_d
         assert_match_report_sidecar_binding_contract(document, request_doc, model_drift)
     gaps_m = match_report_sidecar_binding_gaps(document, request_doc, model_drift)
     assert "actual_model_mismatch" in gaps_m, gaps_m
+
+
+def test_assert_match_report_sidecar_binding_rejects_pipeline_provider_metadata_drift() -> None:
+    document, request_doc, result_doc = _load_first_legacy_binding()
+    assert_match_report_sidecar_binding_contract(document, request_doc, result_doc)
+    assert match_report_sidecar_binding_gaps(document, request_doc, result_doc) == ()
+
+    bad_cfg = json.loads(json.dumps(request_doc))
+    payload = json.loads(bad_cfg["canonicalJson"])
+    payload["configurationHash"] = "not-a-hash"
+    bad_cfg["canonicalJson"] = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    with pytest.raises(ValueError, match="configurationHash"):
+        assert_match_report_sidecar_binding_contract(document, bad_cfg, result_doc)
+    assert "configuration_hash_invalid" in match_report_sidecar_binding_gaps(
+        document, bad_cfg, result_doc
+    )
+
+    bad_pipe = json.loads(json.dumps(request_doc))
+    payload = json.loads(bad_pipe["canonicalJson"])
+    payload["pipelineVersion"] = ""
+    bad_pipe["canonicalJson"] = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    with pytest.raises(ValueError, match="pipelineVersion"):
+        assert_match_report_sidecar_binding_contract(document, bad_pipe, result_doc)
+    assert "pipeline_version_invalid" in match_report_sidecar_binding_gaps(
+        document, bad_pipe, result_doc
+    )
+
+    bad_meta = json.loads(json.dumps(result_doc))
+    bad_meta["metadata"] = dict(bad_meta["metadata"])
+    bad_meta["metadata"]["provider"] = "forged-provider"
+    with pytest.raises(ValueError, match="metadata.provider"):
+        assert_match_report_sidecar_binding_contract(document, request_doc, bad_meta)
+    assert "metadata_provider_mismatch" in match_report_sidecar_binding_gaps(
+        document, request_doc, bad_meta
+    )
+
+    bad_prompt = json.loads(json.dumps(result_doc))
+    bad_prompt["metadata"] = dict(bad_prompt["metadata"])
+    bad_prompt["metadata"]["prompt_version"] = "forged-prompt-version"
+    with pytest.raises(ValueError, match="metadata.prompt_version"):
+        assert_match_report_sidecar_binding_contract(document, request_doc, bad_prompt)
+    assert "metadata_prompt_version_mismatch" in match_report_sidecar_binding_gaps(
+        document, request_doc, bad_prompt
+    )
