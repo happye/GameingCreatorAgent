@@ -93,3 +93,4 @@ def test_workbench_static_exposes_coverage_gap_controls():
     assert "function renderCoverageGaps" in js
     assert 'coverageGapsCleared !== false' in js
     assert "coverage-gap-report-v1" in js
+    assert "coverageGapSummary" in js

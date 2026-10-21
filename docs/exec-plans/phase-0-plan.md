@@ -1,5 +1,7 @@
 # Phase 0 开发任务与依赖
 
+> **2026-10-22 离线补充：** 素材任务行嵌入 coverageGapSummary 拒窗摘要；不清除覆盖缺口；不代选 A／B／D；不标 F006 true。
+
 > **2026-10-22 离线补充：** 工作台／API 只读 coverage-gap-report；不清除覆盖缺口；不代选 A／B／D；不标 F006 true。
 
 > **2026-10-22 离线补充：** coverage-gap-report 只读产品能力（缺口 run／拒窗汇总）；不清除覆盖缺口；不代选 A／B／D；不标 F006 true。

@@ -657,6 +657,18 @@
             const next = task.phase === "completed" ? "可以打开回看与检索。" : task.phase === "analysis_coverage_gap" ? "有覆盖缺口，不能当完整分析用于正式检索／验收；保留缺口或另开定向补窗提案（须新授权）。" : task.nextAction === "prepare_media" ? "下一步：按原任务ID续准备素材。" : "下一步：明确启动分析，接着已保存进度运行。";
             card.append(element("p", "task-next small", blockers.length ? blockers.map((item) => blockerLabels[item] || "接续条件尚未满足。").join(" ") : next));
             if (task.errorCode) card.append(element("p", "muted small", `已保存的停止原因：${task.errorCode}`));
+            const gapSummary = task.coverageGapSummary;
+            if (gapSummary && task.phase === "analysis_coverage_gap") {
+                if (gapSummary.coverageGapsCleared !== false || gapSummary.optionChosen != null) {
+                    card.append(element("p", "muted small", "缺口摘要含非法清除／选项声明，已忽略。"));
+                } else if (gapSummary.coverageLoaded && Array.isArray(gapSummary.rejectedStageIds) && gapSummary.rejectedStageIds.length) {
+                    card.append(element("p", "muted small",
+                        `拒窗 ${gapSummary.rejectedCount}：${gapSummary.rejectedStageIds.join("、")}（未清除；A／B／D 仍待你决定）。`));
+                } else {
+                    card.append(element("p", "muted small",
+                        "尚未读到 analysis_coverage.json；可用「覆盖缺口 ↗」或 CLI 查看拒窗（不代选 A／B／D）。"));
+                }
+            }
             card.append(element("p", "task-id muted small", `任务 ${task.runId}`));
             const open = element("button", "button secondary compact", "打开此任务");
             open.type = "button";

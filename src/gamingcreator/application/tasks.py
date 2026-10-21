@@ -3,7 +3,14 @@
 import json
 from dataclasses import asdict
 from decimal import Decimal
+from pathlib import Path
+from typing import Any
 
+from gamingcreator.application.analysis_reliability import (
+    directed_gap_fill_inventory,
+    load_coverage_document,
+)
+from gamingcreator.application.coverage_gap_report import resolve_run_coverage_path
 from gamingcreator.application.providers import CostStatus
 from gamingcreator.application.storage import (
     InvocationStatus,
@@ -15,6 +22,46 @@ from gamingcreator.application.storage import (
 from gamingcreator.domain.errors import AppError, ExitCode
 
 TASKS_VERSION = "material-tasks-v2"
+
+_USER_DECISIONS = ("A_retain_gaps", "B_directed_gap_fill", "D_defer")
+
+
+def build_coverage_gap_task_summary(
+    project: Path | None, run_id: str
+) -> dict[str, Any]:
+    """Compact inert gap summary for a task row; never marks cleared or chooses B."""
+    summary: dict[str, Any] = {
+        "coverageLoaded": False,
+        "coveragePath": None,
+        "rejectedStageIds": [],
+        "rejectedCount": 0,
+        "completedEligible": False,
+        "coverageGapsCleared": False,
+        "optionChosen": None,
+        "userDecisionsPending": list(_USER_DECISIONS),
+    }
+    if project is None or not run_id:
+        return summary
+    coverage_path = resolve_run_coverage_path(project, run_id)
+    if coverage_path is None:
+        return summary
+    inventory = directed_gap_fill_inventory(load_coverage_document(coverage_path))
+    rejected = list(inventory.get("allowedRejectedStageIds") or [])
+    summary.update(
+        {
+            "coverageLoaded": True,
+            "coveragePath": str(coverage_path.resolve()),
+            "rejectedStageIds": rejected,
+            "rejectedCount": len(rejected),
+            "completedEligible": inventory.get("completedEligible") is True,
+        }
+    )
+    if summary["completedEligible"] is True:
+        raise AssertionError("coverage gap summary must not report completedEligible")
+    if summary["coverageGapsCleared"] is not False or summary["optionChosen"] is not None:
+        raise AssertionError("coverage gap summary must stay uncleared and unchosen")
+    return summary
+
 
 
 def _reservation(details: str | None) -> tuple[int, Decimal] | None:
@@ -31,7 +78,7 @@ def _reservation(details: str | None) -> tuple[int, Decimal] | None:
         return None
 
 
-def task_payload(snapshot: RunTaskSnapshot) -> dict[str, object]:
+def task_payload(snapshot: RunTaskSnapshot, *, project: Path | None = None) -> dict[str, object]:
     run, checkpoints = snapshot.run, snapshot.checkpoints
     config = run.configuration.analysis
     completed = {row.stage_id for row in checkpoints if row.status == StageStatus.COMPLETED}
@@ -150,7 +197,7 @@ def task_payload(snapshot: RunTaskSnapshot) -> dict[str, object]:
     if config.provider != "deepseek" or config.model != "deepseek-flash":
         blockers.append("unsupported_cli_provider")
     search_eligible = run.status == RunStatus.COMPLETED
-    return {
+    payload = {
         "runId": run.run_id,
         "runStatus": str(run.status),
         "phase": phase,
@@ -216,6 +263,12 @@ def task_payload(snapshot: RunTaskSnapshot) -> dict[str, object]:
         "requiresRetryConfirmation": retry_confirmation,
         "humanQualityGate": None,
     }
+    if coverage_gap:
+        payload["coverageGapSummary"] = build_coverage_gap_task_summary(
+            project, run.run_id
+        )
+    return payload
+
 
 
 async def tasks_payload(
@@ -236,7 +289,10 @@ async def tasks_payload(
     page = await store.load_task_page(limit=limit, offset=offset, run_id=run_id)
     return {
         "schemaVersion": TASKS_VERSION,
-        "tasks": [task_payload(item) for item in page.tasks],
+        "tasks": [
+            task_payload(item, project=getattr(store, "project", None))
+            for item in page.tasks
+        ],
         "total": page.total,
         "offset": page.offset,
         "limit": page.limit,

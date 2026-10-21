@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-22 素材任务行覆盖缺口拒窗摘要：** tasks 嵌入 coverageGapSummary；工作台展示；pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-tasks-coverage-gap-summary.md。
+
 **2026-10-22 工作台只读覆盖缺口报告（已推送 5925ae1）：** API＋对话框＋pytest 绿；已推 origin/main。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-coverage-gap-report-workbench.md。
 
 **2026-10-22 离线 coverage-gap-report 产品能力（已推送 5d7b715）：** 只读汇总缺口 run／拒窗；CLI＋pytest 绿；已推 origin/main。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-coverage-gap-report.md。

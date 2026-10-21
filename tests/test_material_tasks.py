@@ -353,3 +353,92 @@ def test_coverage_gap_failed_run_is_not_search_eligible(tmp_path):
     assert payload["completedEligible"] is False
     assert "coverage_gap" in payload["continuationBlockers"]
     assert payload["errorCode"] == "analysis.coverage_gap"
+
+
+def test_coverage_gap_task_summary_loads_rejected_stages(tmp_path):
+    project = tmp_path / "gap-project"
+    run_id = "gap-run"
+    coverage_dir = project / "runs" / run_id
+    coverage_dir.mkdir(parents=True)
+    coverage = {
+        "schemaVersion": 1,
+        "runId": run_id,
+        "sourceSha256": "a" * 64,
+        "configHash": "b" * 64,
+        "pipelineHash": "c" * 64,
+        "policyVersion": "isolate-schema-v1",
+        "policyHash": "d" * 64,
+        "completedEligible": False,
+        "windows": [
+            {
+                "stageId": "vision-000000",
+                "status": "completed",
+                "invocationVerified": True,
+                "attempted": True,
+                "checkpointStatus": "completed",
+                "stopCode": None,
+                "startUs": 0,
+                "endUs": 1_000_000,
+            },
+            {
+                "stageId": "vision-000021",
+                "status": "rejected",
+                "invocationVerified": False,
+                "attempted": True,
+                "checkpointStatus": "failed",
+                "stopCode": "provider.schema",
+                "startUs": 2_000_000,
+                "endUs": 3_000_000,
+            },
+            {
+                "stageId": "vision-000248",
+                "status": "rejected",
+                "invocationVerified": False,
+                "attempted": True,
+                "checkpointStatus": "failed",
+                "stopCode": "provider.schema",
+                "startUs": 4_000_000,
+                "endUs": 5_000_000,
+            },
+        ],
+    }
+    (coverage_dir / "analysis_coverage.json").write_text(
+        json.dumps(coverage, ensure_ascii=False), encoding="utf-8"
+    )
+    snapshot = snapshot_fixture(
+        tmp_path,
+        status=RunStatus.FAILED,
+        error_code="analysis.coverage_gap",
+        stages=(
+            ("media", StageStatus.COMPLETED),
+            ("asr", StageStatus.COMPLETED),
+            ("vision-000000", StageStatus.COMPLETED),
+            ("vision-000001", StageStatus.FAILED),
+        ),
+        invocations=(invocation(status=InvocationStatus.FAILED),),
+    )
+    snapshot = replace(snapshot, run=replace(snapshot.run, run_id=run_id))
+    payload = task_payload(snapshot, project=project)
+    summary = payload["coverageGapSummary"]
+    assert summary["coverageLoaded"] is True
+    assert summary["coverageGapsCleared"] is False
+    assert summary["optionChosen"] is None
+    assert summary["rejectedStageIds"] == ["vision-000021", "vision-000248"]
+    assert summary["rejectedCount"] == 2
+    assert "A_retain_gaps" in summary["userDecisionsPending"]
+
+
+def test_coverage_gap_task_summary_without_coverage_file(tmp_path):
+    snapshot = snapshot_fixture(
+        tmp_path,
+        status=RunStatus.FAILED,
+        error_code="analysis.coverage_gap",
+        stages=(("media", StageStatus.COMPLETED), ("vision-000001", StageStatus.FAILED)),
+        invocations=(invocation(status=InvocationStatus.FAILED),),
+    )
+    payload = task_payload(snapshot, project=tmp_path / "empty-project")
+    summary = payload["coverageGapSummary"]
+    assert summary["coverageLoaded"] is False
+    assert summary["rejectedCount"] == 0
+    assert summary["coverageGapsCleared"] is False
+    assert summary["optionChosen"] is None
