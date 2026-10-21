@@ -1,6 +1,6 @@
 # Sprint：TD009 本机 match-report-v1 只读对照
 
-**状态（2026-10-22）：待推送 origin/main。** 新增 `match_report_contract_gaps`：对磁盘上的旧 `actor-detail-match-report-v1`／`actor-detail-matcher-v1` 报告给出稳定缺口码（schema／缺 constraintHash／inertContract／independentStaticClothingIndex／matcher 版本等）；`assert_match_report_contract` 仍拒绝。pytest 只读打开 `artifacts/demo-phase0/**/matches/*-actor-detail-matcher-*.json`；现行 v1.1 fixture 缺口为空。验证=**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006/F009/F010 true；**不宣称 TD009／人评关单**。
+**状态（2026-10-22）：已推送 origin/main 4aa5571。** 新增 `match_report_contract_gaps`：对磁盘上的旧 `actor-detail-match-report-v1`／`actor-detail-matcher-v1` 报告给出稳定缺口码（schema／缺 constraintHash／inertContract／independentStaticClothingIndex／matcher 版本等）；`assert_match_report_contract` 仍拒绝。pytest 只读打开 `artifacts/demo-phase0/**/matches/*-actor-detail-matcher-*.json`；现行 v1.1 fixture 缺口为空。验证=**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006/F009/F010 true；**不宣称 TD009／人评关单**。
 
 ## Assignment
 
