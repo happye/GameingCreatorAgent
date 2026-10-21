@@ -1,5 +1,7 @@
 # Active assignments
 
+**当前（2026-10-21）：root 单 Agent 交付定向补窗离线合同。** sprint-coverage-gap-directed-contract.md 由 root／GamingCreatorAgent 拥有。改 `analysis_reliability.py` 只读助手与 `tests/test_directed_gap_fill_contract.py`／公共 docs；0 付费、0 launcher。不代选 A／B／D；不改 feature_list。以下选项 C／诊断／终态为历史。
+
 **当前（2026-10-21）：root 单 Agent 执行选项 C 离线改进。** 用户已选 C；sprint-coverage-gap-offline-c.md 由 root／GamingCreatorAgent 拥有。改 deepseek_vision 拒因落盘与相关测试／公共 docs；0 付费、0 launcher。B 保留为未来新提案路径，不自动开。不改 feature_list。以下诊断交付／规划／终态为历史。
 
 **当前（推送后）：root 单 Agent 持缺口规划。** 接续记录已推送 ea8b029；新 sprint docs/exec-plans/sprint-coverage-gap-plan.md 由 root／GamingCreatorAgent 拥有（公共 docs／HANDOFF／progress／human-inputs）。无 Generator／guard 产品写者；0 后台分析、0 新付费。不改 feature_list。下一：等人择选项后再决定是否开离线实现或定向补窗提案。以下最终完成／接续终态为历史。

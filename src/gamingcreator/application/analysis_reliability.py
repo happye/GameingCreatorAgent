@@ -335,3 +335,215 @@ async def write_coverage(
         raise AppError(
             "storage.coverage", "覆盖记录保存失败，任务仍未完成。", ExitCode.STORAGE, run.run_id
         ) from None
+
+
+# ---------------------------------------------------------------------------
+# Directed gap-fill (future option B) — offline contract only.
+# isolate-schema-v1 never re-sends rejected windows; resume only continues
+# unexecuted stages. A future paid gap-fill MUST be a separate proposal
+# identity (DIRECTED_GAP_FILL_PROPOSAL), not resume under POLICY. These
+# helpers draft / validate target stage sets from analysis_coverage.json
+# without authorizing fees or calling a provider.
+# ---------------------------------------------------------------------------
+
+DIRECTED_GAP_FILL_PROPOSAL = "directed-gap-fill-v1"
+_COVERAGE_STATUSES = frozenset({"completed", "rejected", "unexecuted"})
+
+
+def load_coverage_document(path: Path) -> dict[str, object]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError) as exc:
+        raise AppError(
+            "input.coverage_document",
+            "覆盖清单无法读取或不是合法 JSON。",
+            ExitCode.INPUT,
+        ) from exc
+    if not isinstance(payload, dict):
+        raise AppError(
+            "input.coverage_document",
+            "覆盖清单根节点必须是对象。",
+            ExitCode.INPUT,
+        )
+    windows = payload.get("windows")
+    if not isinstance(windows, list) or not windows:
+        raise AppError(
+            "input.coverage_document",
+            "覆盖清单缺少 windows 数组。",
+            ExitCode.INPUT,
+        )
+    for row in windows:
+        if not isinstance(row, dict):
+            raise AppError(
+                "input.coverage_document",
+                "覆盖清单窗口项必须是对象。",
+                ExitCode.INPUT,
+            )
+        stage = row.get("stageId")
+        status = row.get("status")
+        if not isinstance(stage, str) or not stage.startswith("vision-"):
+            raise AppError(
+                "input.coverage_document",
+                "覆盖清单 stageId 非法。",
+                ExitCode.INPUT,
+            )
+        if status not in _COVERAGE_STATUSES:
+            raise AppError(
+                "input.coverage_document",
+                f"覆盖清单 status 非法：{status!r}。",
+                ExitCode.INPUT,
+            )
+    return payload
+
+
+def coverage_stage_sets(
+    coverage: dict[str, object],
+) -> dict[str, frozenset[str]]:
+    windows = cast(list[object], coverage["windows"])
+    buckets: dict[str, set[str]] = {
+        "completed": set(),
+        "rejected": set(),
+        "unexecuted": set(),
+    }
+    for row in windows:
+        item = cast(dict[str, object], row)
+        stage = cast(str, item["stageId"])
+        status = cast(str, item["status"])
+        if (
+            stage in buckets["completed"]
+            or stage in buckets["rejected"]
+            or stage in buckets["unexecuted"]
+        ):
+            raise AppError(
+                "input.coverage_document",
+                f"覆盖清单重复 stageId：{stage}。",
+                ExitCode.INPUT,
+            )
+        buckets[status].add(stage)
+    return {key: frozenset(value) for key, value in buckets.items()}
+
+
+def directed_gap_fill_inventory(coverage: dict[str, object]) -> dict[str, object]:
+    """Build a frozen offline inventory for a future directed gap-fill proposal.
+
+    Does not authorize sending, does not change completedEligible, and does not
+    claim the three real gaps are cleared.
+    """
+    sets = coverage_stage_sets(coverage)
+    windows = cast(list[object], coverage["windows"])
+    rejected_rows = []
+    for row in windows:
+        item = cast(dict[str, object], row)
+        if item["status"] != "rejected":
+            continue
+        rejected_rows.append(
+            {
+                "stageId": item["stageId"],
+                "stopCode": item.get("stopCode"),
+                "startUs": item.get("startUs"),
+                "endUs": item.get("endUs"),
+                "checkpointStatus": item.get("checkpointStatus"),
+                "attempted": item.get("attempted"),
+                "invocationVerified": item.get("invocationVerified"),
+            }
+        )
+    return {
+        "schemaVersion": 1,
+        "proposalIdentity": DIRECTED_GAP_FILL_PROPOSAL,
+        "notIsolateResume": True,
+        "isolatePolicy": POLICY,
+        "runId": coverage.get("runId"),
+        "sourceSha256": coverage.get("sourceSha256"),
+        "configHash": coverage.get("configHash"),
+        "pipelineHash": coverage.get("pipelineHash"),
+        "coveragePolicyVersion": coverage.get("policyVersion"),
+        "coveragePolicyHash": coverage.get("policyHash"),
+        "completedEligible": coverage.get("completedEligible"),
+        "counts": {
+            "completed": len(sets["completed"]),
+            "rejected": len(sets["rejected"]),
+            "unexecuted": len(sets["unexecuted"]),
+        },
+        "forbiddenCompletedStageIds": sorted(sets["completed"]),
+        "allowedRejectedStageIds": sorted(sets["rejected"]),
+        "rejectedWindows": rejected_rows,
+        "rules": {
+            "targetsMustBeRejectedOnly": True,
+            "mustNotResendCompleted": True,
+            "mustNotIncludeUnexecuted": True,
+            "requiresNewFeeProposalAndAuth": True,
+            "oldIsolateResumeDoesNotAuthorizeGapFill": True,
+            "sameFrameContractRemainsEnforced": True,
+        },
+        "authorization": {
+            "feeAuthorized": False,
+            "sendAuthorized": False,
+            "note": (
+                "Inventory only. Option B still needs a frozen fee proposal "
+                "and explicit user approval."
+            ),
+        },
+    }
+
+
+def validate_directed_gap_fill_targets(
+    coverage: dict[str, object], proposed_stage_ids: object
+) -> frozenset[str]:
+    """Refuse any target set that would touch completed or unexecuted windows."""
+    if not isinstance(proposed_stage_ids, (list, tuple, set, frozenset)):
+        raise AppError(
+            "input.directed_gap_fill_targets",
+            "定向补窗目标必须是 stageId 列表。",
+            ExitCode.INPUT,
+        )
+    proposed = list(proposed_stage_ids)
+    if not proposed:
+        raise AppError(
+            "input.directed_gap_fill_targets",
+            "定向补窗目标不能为空。",
+            ExitCode.INPUT,
+        )
+    if any(not isinstance(item, str) for item in proposed):
+        raise AppError(
+            "input.directed_gap_fill_targets",
+            "定向补窗目标必须全是字符串 stageId。",
+            ExitCode.INPUT,
+        )
+    unique = frozenset(proposed)
+    if len(unique) != len(proposed):
+        raise AppError(
+            "input.directed_gap_fill_targets",
+            "定向补窗目标含重复 stageId。",
+            ExitCode.INPUT,
+        )
+    sets = coverage_stage_sets(coverage)
+    known = sets["completed"] | sets["rejected"] | sets["unexecuted"]
+    unknown = sorted(unique - known)
+    if unknown:
+        raise AppError(
+            "input.directed_gap_fill_targets",
+            "定向补窗目标含覆盖清单外的 stageId。",
+            ExitCode.INPUT,
+        )
+    completed_hits = sorted(unique & sets["completed"])
+    if completed_hits:
+        raise AppError(
+            "input.directed_gap_fill_targets",
+            "定向补窗禁止重发已成功窗口。",
+            ExitCode.INPUT,
+        )
+    unexecuted_hits = sorted(unique & sets["unexecuted"])
+    if unexecuted_hits:
+        raise AppError(
+            "input.directed_gap_fill_targets",
+            "定向补窗不得把未执行窗口塞进补窗目标；未执行仍走 isolate 续跑。",
+            ExitCode.INPUT,
+        )
+    not_rejected = sorted(unique - sets["rejected"])
+    if not_rejected:
+        raise AppError(
+            "input.directed_gap_fill_targets",
+            "定向补窗目标必须全部是 rejected 窗口。",
+            ExitCode.INPUT,
+        )
+    return unique
