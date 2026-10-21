@@ -1,6 +1,6 @@
 # Sprint：检索动作证据通道 lexicalEvidence（离线质量）
 
-**状态（2026-10-22）：待推送 origin/main。** 新增 `_action_lexical_evidence` 与 `CandidateClip.lexical_evidence`：对含已知动作的 query，标注命中证据来自 `positive_text`／`mechanic_tags`／`mixed`，并写入 `why` 的 `lexicalEvidence=`。不改分数；攻击 tag-only 仍可达（TD010）并标为 `mechanic_tags`；fight／move／interact 裸标签仍先排除，命中不得为纯 `mechanic_tags`。CLI／inspection／diagnostics／service 重建投影同步字段。验证=**pytest + demo-phase0 只读**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。
+**状态（2026-10-22）：已推送 origin/main 17bd9a2。** 新增 `_action_lexical_evidence` 与 `CandidateClip.lexical_evidence`：对含已知动作的 query，标注命中证据来自 `positive_text`／`mechanic_tags`／`mixed`，并写入 `why` 的 `lexicalEvidence=`。不改分数；攻击 tag-only 仍可达（TD010）并标为 `mechanic_tags`；fight／move／interact 裸标签仍先排除，命中不得为纯 `mechanic_tags`。CLI／inspection／diagnostics／service 重建投影同步字段。验证=**pytest + demo-phase0 只读**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。
 
 ## Assignment
 

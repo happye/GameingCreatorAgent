@@ -1,6 +1,6 @@
 # Phase 0 开发任务与依赖
 
-> **2026-10-22 离线补强：** 检索动作证据通道 lexicalEvidence（已推送 `PLACEHOLDER`）；不清除三缺口；不代选 A／B／D；不标 F006 true。
+> **2026-10-22 离线补强：** 检索动作证据通道 lexicalEvidence（已推送 `17bd9a2`）；不清除三缺口；不代选 A／B／D；不标 F006 true。
 
 > **2026-10-22 离线补强：** move／interact 裸标签噪声 + candidate_sources 合同（已推送 `862dee4`）；不清除三缺口；不代选 A／B／D；不标 F006 true。
 
