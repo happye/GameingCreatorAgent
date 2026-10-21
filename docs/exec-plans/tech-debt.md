@@ -1,6 +1,6 @@
 # Technical debt
 
-**2026-10-22 检索离线进展（fight 英文别名 fighter／duel／brawl，已推送 PLACEHOLDER）：** fighter 等纳入 fight 动作，避免仅跨语言扩展漏进裸战斗标签；见 sprint-retrieval-fight-fighter-duel-brawl-en.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+**2026-10-22 检索离线进展（fight 英文别名 fighter／duel／brawl，已推送 8416b0d）：** fighter 等纳入 fight 动作，避免仅跨语言扩展漏进裸战斗标签；见 sprint-retrieval-fight-fighter-duel-brawl-en.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线进展（fight 别名打架／对战／团战，已推送 1e87a86）：** _ACTION_TERMS fight 扩中文别名；见 sprint-retrieval-fight-duel-brawl-aliases.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
