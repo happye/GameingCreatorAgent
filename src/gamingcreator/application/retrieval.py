@@ -895,7 +895,7 @@ async def _search_documents(
         if context.run_id != run_id:
             raise _fail("retrieval.configuration", "检索上下文关联无效。")
         context.check_cancelled()
-    if not documents or not _tokens(query):
+    if not _tokens(query):
         return SearchResult(
             run_id,
             query,
@@ -903,6 +903,17 @@ async def _search_documents(
             (),
             min_similarity=min_similarity,
             min_semantic_margin=min_semantic_margin,
+            abstention_reason="empty_query",
+        )
+    if not documents:
+        return SearchResult(
+            run_id,
+            query,
+            mode,
+            (),
+            min_similarity=min_similarity,
+            min_semantic_margin=min_semantic_margin,
+            abstention_reason="no_searchable_documents",
         )
     denied_actions = (
         _denied_action_documents(documents, query)
@@ -1095,6 +1106,17 @@ async def _search_documents(
         )
         if len(candidates) == top_k:
             break
+    if not candidates and abstention_reason is None:
+        folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
+        if not _NEGATIVE_QUERY_INTENT.search(folded_query):
+            actions = {
+                _ACTION_BY_TERM[match.group()]
+                for match in _ACTION_MENTION.finditer(folded_query)
+            }
+            if actions:
+                # Action query produced no survivors after denial / title-brand /
+                # tag-only noise filters (or corpus lacks positive evidence).
+                abstention_reason = "no_positive_action_evidence"
     return SearchResult(
         run_id,
         query,

@@ -1,7 +1,9 @@
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
-**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip 17bd9a2（含 lexicalEvidence 证据通道）），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
+**当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip PLACEHOLDER（含 action abstention）），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
 
+
+**当前锚点（2026-10-22，动作空召回／空查询 abstention，已推送 PLACEHOLDER）：** `empty_query`／`no_positive_action_evidence`；pytest + demo-phase0 只读；sprint：`docs/exec-plans/sprint-retrieval-action-abstention.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**。以下 lexicalEvidence 为历史。
 
 **当前锚点（2026-10-22，检索动作证据通道 lexicalEvidence，已推送 17bd9a2）：** `_action_lexical_evidence`／`CandidateClip.lexical_evidence`；pytest + demo-phase0 只读；sprint：`docs/exec-plans/sprint-retrieval-lexical-evidence-channel.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**；**不宣称 TD004／TD010 关单**。攻击 tag-only 召回仍保留并标 mechanic_tags。以下 move／interact＋candidate_sources 为历史。
 

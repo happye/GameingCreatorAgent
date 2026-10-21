@@ -461,3 +461,60 @@ def test_non_action_query_leaves_lexical_evidence_none():
     assert result.candidates[0].lexical_evidence is None
     assert "lexicalEvidence=" not in result.candidates[0].why
     assert "ranking signal, not probability" in result.candidates[0].why
+
+
+@pytest.mark.parametrize("query", ["", "   ", "\n\t"])
+def test_empty_query_abstains_without_hits(query):
+    from test_retrieval_negation import search, timeline
+
+    result = search(timeline("角色跳跃。"), query, "lexical")
+    assert result.candidates == ()
+    assert result.abstention_reason == "empty_query"
+
+
+def test_action_query_with_only_title_brand_noise_abstains():
+    """Jump titles alone are not gameplay evidence; empty result must explain why."""
+    from test_retrieval_negation import search, timeline
+
+    result = search(
+        timeline(
+            "画面显示“JUMP明星大乱斗”标题。",
+            "画面显示“JUMP ASSEMBLE”游戏标志。",
+            "少年JUMP正版授权出现在角落。",
+        ),
+        "jump",
+        "lexical",
+    )
+    assert result.candidates == ()
+    assert result.abstention_reason == "no_positive_action_evidence"
+
+
+def test_action_query_with_fact_hit_does_not_abstain():
+    from test_retrieval_negation import search, timeline
+
+    result = search(
+        timeline(
+            "画面显示“JUMP明星大乱斗”标题。",
+            "角色跳跃并落地。",
+        ),
+        "jump",
+        "lexical",
+    )
+    assert [item.event_id for item in result.candidates] == ["event-1"]
+    assert result.abstention_reason is None
+
+
+def test_negative_intent_empty_does_not_claim_missing_action_evidence():
+    from test_retrieval_negation import search, timeline
+
+    result = search(timeline("角色跳跃。"), "without jumping", "lexical")
+    assert result.candidates == ()
+    assert result.abstention_reason is None
+
+
+def test_non_action_empty_corpus_does_not_set_action_abstention():
+    from test_retrieval_negation import search, timeline
+
+    result = search(timeline("草地上有一座塔。"), "飞机跑道", "lexical")
+    assert result.candidates == ()
+    assert result.abstention_reason is None

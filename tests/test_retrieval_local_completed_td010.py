@@ -345,3 +345,26 @@ def test_local_completed_demo_phase0_lexical_evidence_channels():
                 assert any(term in docs[item.event_id].positive_text for term in terms)
 
     asyncio.run(run())
+
+
+def test_local_completed_demo_phase0_jump_title_only_abstains():
+    """demo-phase0: jump/跳跃 with only JUMP title cards => no_positive_action_evidence."""
+    _require_sqlite(DEMO_PHASE0)
+
+    async def run() -> None:
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
+        for query in ("jump", "跳跃", "JUMP"):
+            result = await search_timeline(timeline, query, mode="lexical", top_k=10)
+            assert result.candidates == ()
+            assert result.abstention_reason == "no_positive_action_evidence", query
+
+        # Positive controls: action hits must not abstain.
+        move = await search_timeline(timeline, "移动", mode="lexical", top_k=5)
+        assert move.candidates
+        assert move.abstention_reason is None
+        attack = await search_timeline(timeline, "攻击", mode="lexical", top_k=5)
+        assert attack.candidates
+        assert attack.abstention_reason is None
+
+    asyncio.run(run())
