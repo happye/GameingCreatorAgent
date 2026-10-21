@@ -95,6 +95,13 @@ _CROSS_LINGUAL_TERMS = (
     ("walked", "移动"),
     ("walks", "移动"),
     ("walk", "移动"),
+    ("healing", "治疗"),
+    ("healed", "治疗"),
+    ("heals", "治疗"),
+    ("heal", "治疗"),
+    ("damaging", "伤害"),
+    ("damages", "伤害"),
+    ("damage", "伤害"),
 )
 # A small explicit-language guard, not a language model. Apply this only to
 # positive action queries; passage identities follow the observation projection.
@@ -135,6 +142,7 @@ _ACTION_TERMS = {
         "interact",
         "interacts",
         "interacting",
+        "interacted",
         "interaction",
         "interactions",
     ),
@@ -657,6 +665,14 @@ def assert_persisted_retrieval_contract(document: dict[str, object]) -> None:
                 raise _fail("retrieval.contract", "持久化检索命中 score 不一致。")
         except (TypeError, ValueError):
             raise _fail("retrieval.contract", "持久化检索命中 score 无效。") from None
+        if hit.get("start_us") != candidate.get("startUs") or hit.get("end_us") != candidate.get("endUs"):
+            raise _fail("retrieval.contract", "持久化检索命中时间范围不一致。")
+        hit_evidence = hit.get("evidence_ids")
+        cand_evidence = candidate.get("evidenceIds")
+        if type(cand_evidence) is not list:
+            raise _fail("retrieval.contract", "持久化检索候选 evidenceIds 无效。")
+        if tuple(hit_evidence or ()) != tuple(cand_evidence):
+            raise _fail("retrieval.contract", "持久化检索命中 evidence 不一致。")
 
 
 def assert_project_search_document_contract(document: dict[str, object]) -> None:

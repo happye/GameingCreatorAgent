@@ -108,3 +108,35 @@ def test_assert_persisted_retrieval_contract_rejects_hit_drift_and_acceptance() 
         assert RETRIEVAL_VERSION.startswith("bm25-e5-rrf-v")
 
     asyncio.run(run())
+
+
+def test_assert_persisted_retrieval_contract_rejects_evidence_and_range_drift() -> None:
+    db = _require_sqlite()
+    ids = _retrieval_ids(db)
+    if not ids:
+        pytest.skip("local retrieval_runs empty")
+
+    async def run() -> None:
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        document = None
+        for retrieval_id in ids:
+            loaded = await store.load_retrieval(retrieval_id)
+            if loaded["result"].get("candidates"):
+                document = loaded
+                break
+        assert document is not None
+
+        evidence_drift = json.loads(json.dumps(document))
+        evidence_drift["hits"][0]["evidence_ids"] = ["forged-evidence"]
+        with pytest.raises(AppError) as evidence:
+            assert_persisted_retrieval_contract(evidence_drift)
+        assert evidence.value.code == "retrieval.contract"
+
+        range_drift = json.loads(json.dumps(document))
+        range_drift["hits"][0]["start_us"] = int(range_drift["hits"][0]["start_us"]) + 1
+        with pytest.raises(AppError) as spanned:
+            assert_persisted_retrieval_contract(range_drift)
+        assert spanned.value.code == "retrieval.contract"
+
+    asyncio.run(run())
+

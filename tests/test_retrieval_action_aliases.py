@@ -891,3 +891,44 @@ def test_walk_gait_tag_only_mechanic_noise_excluded(mode, query):
 def test_walk_non_action_words_do_not_match(query):
     data = timeline("角色向左移动。")
     assert search(data, query, "lexical").candidates == ()
+
+
+@pytest.mark.parametrize(
+    "query,positive",
+    [
+        ("heal", "画面中央出现绿色治疗数字+195。"),
+        ("healing", "画面中央出现绿色治疗数字+195。"),
+        ("healed", "角色受到治疗并恢复生命。"),
+        ("damage", "画面中央出现伤害数字2200。"),
+        ("damaging", "画面中央出现伤害数字2200。"),
+        ("damages", "角色受到伤害并显示数字。"),
+    ],
+)
+def test_heal_damage_cross_lingual_keeps_chinese_evidence(query, positive):
+    """English heal／damage expand to 治疗／伤害 against Chinese body text (lexical)."""
+    data = timeline(positive, "角色向左移动。")
+    result = search(data, query, "lexical")
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    assert result.candidates[0].observable_facts == (positive,)
+
+
+@pytest.mark.parametrize(
+    "query",
+    ["healthbar", "healerx", "damages2", "damagingly", "selfheal"],
+)
+def test_heal_damage_non_action_words_do_not_cross_lingual_match(query):
+    data = timeline("画面中央出现绿色治疗数字+195。", "画面中央出现伤害数字2200。")
+    assert search(data, query, "lexical").candidates == ()
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+def test_interacted_alias_keeps_chinese_evidence(mode):
+    data = timeline("角色与按钮交互。", "没有交互。")
+    result = search(data, "interacted", mode)
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+
+
+def test_interacted_alias_abstains_when_no_positive_lexical_evidence():
+    empty = search(timeline("角色向左移动。"), "interacted", "lexical")
+    assert empty.candidates == ()
+    assert empty.abstention_reason == "no_positive_action_evidence"
