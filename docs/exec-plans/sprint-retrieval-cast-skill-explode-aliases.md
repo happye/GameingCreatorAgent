@@ -1,6 +1,6 @@
 # Sprint：检索 cast／skill 别名 + explode 跨语言（真实语料）
 
-**状态（2026-10-22）：待推送 origin/main。** 基于 demo-phase0 Completed 真实正文／标签频次（技能≈47、释放≈14、爆炸≈6）：新增动作 `cast`（释放／施放／施法／技能 + cast／skill 英文）；`_TAG_ONLY_NOISE_ACTIONS` 纳入 cast，裸「技能释放／技能特效」无正文证据不算命中；`_CROSS_LINGUAL_TERMS` 补 cast／skill→释放／技能、explode／explosion→爆炸。pytest + demo-phase0 只读。验证＝**pytest + 只读 SQLite**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单；不发明 Boss／射击语料；不改写 DB。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。攻击 tag-only 仍保留。
+**状态（2026-10-22）：已推送 origin/main 5cbfb4f。** 基于 demo-phase0 Completed 真实正文／标签频次（技能≈47、释放≈14、爆炸≈6）：新增动作 `cast`（释放／施放／施法／技能 + cast／skill 英文）；`_TAG_ONLY_NOISE_ACTIONS` 纳入 cast，裸「技能释放／技能特效」无正文证据不算命中；`_CROSS_LINGUAL_TERMS` 补 cast／skill→释放／技能、explode／explosion→爆炸。pytest + demo-phase0 只读。验证＝**pytest + 只读 SQLite**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单；不发明 Boss／射击语料；不改写 DB。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。攻击 tag-only 仍保留。
 
 ## Assignment
 

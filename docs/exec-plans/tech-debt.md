@@ -1,6 +1,6 @@
 # Technical debt
 
-**2026-10-22 检索离线进展（cast／skill 别名 + explode 跨语言，已推送 PLACEHOLDER）：** demo-phase0 真实 技能／释放／爆炸；cast tag-only 噪声排除；见 sprint-retrieval-cast-skill-explode-aliases.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+**2026-10-22 检索离线进展（cast／skill 别名 + explode 跨语言，已推送 5cbfb4f）：** demo-phase0 真实 技能／释放／爆炸；cast tag-only 噪声排除；见 sprint-retrieval-cast-skill-explode-aliases.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线进展（heal／damage 跨语言 + interacted + 信封 evidence／range，已推送 df20305）：** heal／damage→治疗／伤害；interacted；断言 evidence／range；见 sprint-retrieval-heal-damage-interacted-envelope.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
