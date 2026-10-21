@@ -1,6 +1,6 @@
 # Sprint：战斗／combat 裸 mechanicTag 噪声排除（检索离线质量）
 
-**状态（2026-10-22）：已推送 origin/main e6d97cd。** 增加 _tag_only_action_noise_documents：当 query 动作为 fight／combat／战斗／打斗，且文档 positive_text 不含该动作词、仅靠 mechanicTags（如裸「战斗」）撑起 BM25 时，并入检索排除集。攻击（攻击／attack）的 tag-only 召回按 TD010 保留。验证=**pytest（fixture + EqualSimilarity hybrid）+ demo-phase0 只读 DB**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单。RETRIEVAL_VERSION 仍为 m25-e5-rrf-v7（避免无谓产物 churn）。
+**状态（2026-10-22）：已推送 origin/main 0896740。** 增加 _tag_only_action_noise_documents：当 query 动作为 fight／combat／战斗／打斗，且文档 positive_text 不含该动作词、仅靠 mechanicTags（如裸「战斗」）撑起 BM25 时，并入检索排除集。攻击（攻击／attack）的 tag-only 召回按 TD010 保留。验证=**pytest（fixture + EqualSimilarity hybrid）+ demo-phase0 只读 DB**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单。RETRIEVAL_VERSION 仍为 m25-e5-rrf-v7（避免无谓产物 churn）。
 
 ## Assignment
 
@@ -19,4 +19,4 @@ etrieval.py、action-aliases／local-completed 测试、本 sprint、交接 docs
 - [x] _TAG_ONLY_NOISE_ACTIONS={"fight"} + _tag_only_action_noise_documents 并入 denied／排除集
 - [x] fixture：tag-only 战斗噪声不进结果；真实战斗事实保留；攻击 tag-only 仍可达
 - [x] demo-phase0 lexical 只读：fight／combat／战斗／打斗 hits 的 positive_text 均含战斗用语；攻击 tag-only 回归仍过
-- [x] 已推送 origin/main（e6d97cd）
+- [x] 已推送 origin/main（0896740）
