@@ -912,6 +912,45 @@ def assert_persisted_retrieval_contract(document: dict[str, object]) -> None:
             raise _fail("retrieval.contract", "持久化检索命中 evidence 不一致。")
         if candidate.get("mediaId") != media_id:
             raise _fail("retrieval.contract", "持久化检索候选 mediaId 与信封不一致。")
+    parameters = document.get("parameters")
+    if type(parameters) is not dict:
+        raise _fail("retrieval.contract", "持久化检索 parameters 必须是对象。")
+    param_mode = parameters.get("mode")
+    if param_mode not in RETRIEVAL_MODES:
+        raise _fail("retrieval.contract", "持久化检索 parameters.mode 无效。")
+    if param_mode != result.get("mode"):
+        raise _fail("retrieval.contract", "持久化检索 parameters.mode 与 result 不一致。")
+    top_k = parameters.get("topK")
+    if type(top_k) is not int or top_k < 1:
+        raise _fail("retrieval.contract", "持久化检索 parameters.topK 无效。")
+    if len(candidates) > top_k:
+        raise _fail("retrieval.contract", "持久化检索 candidates 超过 parameters.topK。")
+    for key in ("minSimilarity", "minSemanticMargin", "abstentionReason"):
+        if key in parameters and parameters.get(key) != result.get(key):
+            raise _fail("retrieval.contract", f"持久化检索 parameters.{key} 与 result 不一致。")
+    embedding_space = document.get("embeddingSpace")
+    if embedding_space is None:
+        if param_mode in {"hybrid", "semantic"}:
+            raise _fail("retrieval.contract", "持久化检索 hybrid／semantic 缺少 embeddingSpace。")
+    else:
+        if type(embedding_space) is not dict:
+            raise _fail("retrieval.contract", "持久化检索 embeddingSpace 必须是对象。")
+        if param_mode == "lexical":
+            raise _fail("retrieval.contract", "持久化检索 lexical 不得带 embeddingSpace。")
+        dimension = embedding_space.get("dimension")
+        if type(dimension) is not int or dimension < 1:
+            raise _fail("retrieval.contract", "持久化检索 embeddingSpace.dimension 无效。")
+        model = embedding_space.get("model")
+        if type(model) is not str or not model:
+            raise _fail("retrieval.contract", "持久化检索 embeddingSpace.model 无效。")
+        if embedding_space.get("normalization") != "l2":
+            raise _fail("retrieval.contract", "持久化检索 embeddingSpace.normalization 无效。")
+        provider = embedding_space.get("provider")
+        if type(provider) is not str or not provider:
+            raise _fail("retrieval.contract", "持久化检索 embeddingSpace.provider 无效。")
+        revision_scope = embedding_space.get("revision_scope")
+        if type(revision_scope) is not str or not revision_scope:
+            raise _fail("retrieval.contract", "持久化检索 embeddingSpace.revision_scope 无效。")
 
 
 def assert_project_search_document_contract(document: dict[str, object]) -> None:

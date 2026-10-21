@@ -236,3 +236,89 @@ def test_assert_persisted_retrieval_contract_rejects_mode_rank_elapsed_and_empty
         assert span_err.value.code == "retrieval.contract"
 
     asyncio.run(run())
+
+
+def test_assert_persisted_retrieval_contract_rejects_parameters_and_embedding_space_drift() -> None:
+    """parameters.mode／topK 与 embeddingSpace 形态须与 result／mode 对齐。"""
+    db = _require_sqlite()
+    ids = _retrieval_ids(db)
+    if not ids:
+        pytest.skip("local retrieval_runs empty")
+
+    async def run() -> None:
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        hybrid_doc = None
+        lexical_doc = None
+        for retrieval_id in ids:
+            loaded = await store.load_retrieval(retrieval_id)
+            mode = loaded["result"].get("mode")
+            if mode == "hybrid" and hybrid_doc is None:
+                hybrid_doc = loaded
+            if mode == "lexical" and lexical_doc is None:
+                lexical_doc = loaded
+            if hybrid_doc is not None and lexical_doc is not None:
+                break
+        assert hybrid_doc is not None
+
+        mode_drift = json.loads(json.dumps(hybrid_doc))
+        mode_drift["parameters"] = dict(mode_drift["parameters"])
+        mode_drift["parameters"]["mode"] = "lexical"
+        with pytest.raises(AppError) as mismatched:
+            assert_persisted_retrieval_contract(mode_drift)
+        assert mismatched.value.code == "retrieval.contract"
+
+        topk_drift = json.loads(json.dumps(hybrid_doc))
+        topk_drift["parameters"] = dict(topk_drift["parameters"])
+        topk_drift["parameters"]["topK"] = 0
+        with pytest.raises(AppError) as topk:
+            assert_persisted_retrieval_contract(topk_drift)
+        assert topk.value.code == "retrieval.contract"
+
+        # candidates exceed topK
+        overflow = json.loads(json.dumps(hybrid_doc))
+        overflow["parameters"] = dict(overflow["parameters"])
+        overflow["parameters"]["topK"] = 1
+        if len(overflow["result"]["candidates"]) <= 1:
+            # synthesize second candidate clone for overflow when only one hit
+            if overflow["result"]["candidates"]:
+                overflow["result"]["candidates"] = overflow["result"]["candidates"] * 2
+                overflow["hits"] = overflow["hits"] * 2
+                # ranks will also break — still contract fail
+        with pytest.raises(AppError) as over:
+            assert_persisted_retrieval_contract(overflow)
+        assert over.value.code == "retrieval.contract"
+
+        emb_missing = json.loads(json.dumps(hybrid_doc))
+        emb_missing["embeddingSpace"] = None
+        with pytest.raises(AppError) as missing:
+            assert_persisted_retrieval_contract(emb_missing)
+        assert missing.value.code == "retrieval.contract"
+
+        emb_bad_norm = json.loads(json.dumps(hybrid_doc))
+        emb_bad_norm["embeddingSpace"] = dict(emb_bad_norm["embeddingSpace"])
+        emb_bad_norm["embeddingSpace"]["normalization"] = "none"
+        with pytest.raises(AppError) as normed:
+            assert_persisted_retrieval_contract(emb_bad_norm)
+        assert normed.value.code == "retrieval.contract"
+
+        if lexical_doc is not None:
+            lexical_emb = json.loads(json.dumps(lexical_doc))
+            lexical_emb["embeddingSpace"] = {
+                "dimension": 384,
+                "model": "Xenova/multilingual-e5-small",
+                "normalization": "l2",
+                "provider": "local-onnx-e5",
+                "revision_scope": "forged",
+            }
+            with pytest.raises(AppError) as lexical:
+                assert_persisted_retrieval_contract(lexical_emb)
+            assert lexical.value.code == "retrieval.contract"
+
+        margin_drift = json.loads(json.dumps(hybrid_doc))
+        margin_drift["parameters"] = dict(margin_drift["parameters"])
+        margin_drift["parameters"]["minSimilarity"] = 0.123456
+        with pytest.raises(AppError) as margin:
+            assert_persisted_retrieval_contract(margin_drift)
+        assert margin.value.code == "retrieval.contract"
+
+    asyncio.run(run())
