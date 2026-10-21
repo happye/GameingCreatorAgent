@@ -1580,3 +1580,78 @@ def test_scene_collect_mount_cutscene_scroll_shockwave_non_words_do_not_cross_li
         "角色举起权杖释放冲击波。",
     )
     assert search(data, query, "lexical").candidates == ()
+
+
+@pytest.mark.parametrize(
+    "query,positive",
+    [
+        ("overhead", "画面切换为俯视视角，显示一块方形场地。"),
+        ("overheads", "画面切换为俯视视角，显示一块方形场地。"),
+        ("topdown", "画面切换为俯视视角，显示一块方形场地。"),
+        ("topdowns", "画面切换为俯视视角，显示一块方形场地。"),
+        ("button", "俯视对战场景右侧有技能按钮和方向摇杆。"),
+        ("buttons", "俯视对战场景右侧有技能按钮和方向摇杆。"),
+        ("map", "俯视视角的方形地图，中央有多个角色单位。"),
+        ("maps", "俯视视角的方形地图，中央有多个角色单位。"),
+        ("sand", "蓝色角色在沙地上移动，身后留下白色烟雾轨迹。"),
+        ("sands", "蓝色角色在沙地上移动，身后留下白色烟雾轨迹。"),
+        ("sandy", "蓝色角色在沙地上移动，身后留下白色烟雾轨迹。"),
+        ("water", "棕色方格平台漂浮在蓝色水域上方。"),
+        ("waters", "棕色方格平台漂浮在蓝色水域上方。"),
+        ("glitch", "画面出现条纹状失真与色彩错位。"),
+        ("glitches", "画面出现条纹状失真与色彩错位。"),
+        ("distortion", "文字被扭曲，场地与角色出现重影。"),
+        ("distortions", "文字被扭曲，场地与角色出现重影。"),
+        ("pillar", "竞技场入口两侧立着石柱。"),
+        ("pillars", "竞技场入口两侧立着石柱。"),
+    ],
+)
+def test_scene_overhead_button_map_sand_water_glitch_cross_lingual_keeps_chinese_evidence(
+    query, positive
+):
+    """English overhead／button／map／sand／water／glitch／distortion／pillar → 俯视／按钮／地图／沙地／水域／失真／扭曲／石柱."""
+    data = timeline(positive, "角色向左移动。")
+    result = search(data, query, "lexical")
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    assert result.candidates[0].observable_facts == (positive,)
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "overheading",
+        "head",
+        "top",
+        "down",
+        "buttoned",
+        "buttoning",
+        "mapping",
+        "mapped",
+        "bitmap",
+        "roadmap",
+        "sandal",
+        "sandwich",
+        "waterfall",
+        "waterproof",
+        "glitchy",
+        "unglitch",
+        "distort",
+        "distorted",
+        "pillarless",
+        "pillow",
+    ],
+)
+def test_scene_overhead_button_map_sand_water_glitch_non_words_do_not_cross_lingual_match(
+    query,
+):
+    data = timeline(
+        "画面切换为俯视视角，显示一块方形场地。",
+        "俯视对战场景右侧有技能按钮和方向摇杆。",
+        "俯视视角的方形地图，中央有多个角色单位。",
+        "蓝色角色在沙地上移动，身后留下白色烟雾轨迹。",
+        "棕色方格平台漂浮在蓝色水域上方。",
+        "画面出现条纹状失真与色彩错位。",
+        "文字被扭曲，场地与角色出现重影。",
+        "竞技场入口两侧立着石柱。",
+    )
+    assert search(data, query, "lexical").candidates == ()

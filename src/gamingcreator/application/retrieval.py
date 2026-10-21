@@ -228,6 +228,25 @@ _CROSS_LINGUAL_TERMS = (
     # Bare "roll" omitted — dice/roll-call noise.
     ("shockwaves", "冲击波"),
     ("shockwave", "冲击波"),
+    ("overheads", "俯视"),
+    ("overhead", "俯视"),
+    ("topdowns", "俯视"),
+    ("topdown", "俯视"),
+    ("buttons", "按钮"),
+    ("button", "按钮"),
+    ("maps", "地图"),
+    ("map", "地图"),
+    ("sandy", "沙地"),
+    ("sands", "沙地"),
+    ("sand", "沙地"),
+    ("waters", "水域"),
+    ("water", "水域"),
+    ("glitches", "失真"),
+    ("glitch", "失真"),
+    ("distortions", "扭曲"),
+    ("distortion", "扭曲"),
+    ("pillars", "石柱"),
+    ("pillar", "石柱"),
 )
 # A small explicit-language guard, not a language model. Apply this only to
 # positive action queries; passage identities follow the observation projection.
