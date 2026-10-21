@@ -154,6 +154,7 @@ def schema_detail(
     assert not result.error.retryable and result.output is None
     details = cast(dict[str, object], json.loads(result.metadata.execution_details or "{}"))
     assert details["schemaError"] == code
+    assert "schemaProjection" in details
     return cast(dict[str, object], details.get("schemaDetail", {}))
 
 

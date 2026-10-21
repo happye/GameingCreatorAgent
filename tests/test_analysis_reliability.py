@@ -599,6 +599,10 @@ def test_isolation_keeps_fees_and_resumes_without_replays(tmp_path: Path):
             )
             assert "角色移动" not in json.dumps(projection, ensure_ascii=False)
             assert len(json.dumps(projection).encode()) < 8192
+            detail = details["schemaDetail"]
+            assert detail["eventIndex"] == 0
+            assert set(detail) == {"eventIndex", "startUs", "endUs"}
+            assert detail["endUs"] == detail["startUs"] + 1
             selected = PreparedAnalyze(
                 source, project, None, None, RUN_ID, window_failure_policy=POLICY
             )

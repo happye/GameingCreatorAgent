@@ -1,6 +1,6 @@
 # Active assignments
 
-**当前（2026-10-21）：root 单 Agent 已交付只读诊断包。** artifacts/coverage-gap-diagnosis-20261021 与 report-2026-10-21-coverage-gap-diagnosis.md 已落盘；0 Generator 产品写者、0 付费、0 launcher。human-inputs A/B/C/D **仍 pending**。若人选 C，再开离线实现（schemaDetail 并存等）；若选 B，须新提案。不改 feature_list。以下规划开档／终态为历史。
+**当前（2026-10-21）：root 单 Agent 执行选项 C 离线改进。** 用户已选 C；sprint-coverage-gap-offline-c.md 由 root／GamingCreatorAgent 拥有。改 deepseek_vision 拒因落盘与相关测试／公共 docs；0 付费、0 launcher。B 保留为未来新提案路径，不自动开。不改 feature_list。以下诊断交付／规划／终态为历史。
 
 **当前（推送后）：root 单 Agent 持缺口规划。** 接续记录已推送 ea8b029；新 sprint docs/exec-plans/sprint-coverage-gap-plan.md 由 root／GamingCreatorAgent 拥有（公共 docs／HANDOFF／progress／human-inputs）。无 Generator／guard 产品写者；0 后台分析、0 新付费。不改 feature_list。下一：等人择选项后再决定是否开离线实现或定向补窗提案。以下最终完成／接续终态为历史。
 

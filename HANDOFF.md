@@ -1,6 +1,6 @@
 # 当前交接：P1修复与长钟馗接续已完成，保留3组缺口
 
-**当前交接（2026-10-21）：覆盖缺口只读拒因诊断包已交付。** 工件见 artifacts/coverage-gap-diagnosis-20261021/ 与 docs/exec-plans/report-2026-10-21-coverage-gap-diagnosis.md。三窗均为 event_frame_boundaries 同帧模式；000248／000253 缺 schemaDetail 因 1e3f420 用 projection 替换 detail。0 新付费／未重发／F006/F009/F010 仍 false。**人工 A/B/C/D 仍待决**（未代选）。未选前不改产品源码；若选 C，下一离线优先恢复 schemaDetail 并存写入。以下为规划开档／接续完成历史。
+**当前交接（2026-10-21）：用户已选 C，离线改进进行中。** 选项 C 已写入 human-inputs；sprint 见 docs/exec-plans/sprint-coverage-gap-offline-c.md。根因：同帧起止＝空片段，合同正确拒绝；1e3f420 曾用 schemaProjection 替换 schemaDetail，现恢复两字段并存。V6 提示冻结不动（已含同帧非法）。0 付费／不重跑 launcher／F006/F009/F010 仍 false。**B 仅未来路径**（须新提案＋新授权）。三缺口仍在，离线改代码不能消缺口。以下为诊断交付／规划／接续历史。
 
 **当前交接（推送后规划）：三组覆盖缺口独立方案已开。** 长钟馗 P1 修复与 v2 接续终态已在分支 codex/visual-details 推送至 **ea8b029**（工作树当时干净）。新开规划 sprint：[sprint-coverage-gap-plan.md](docs/exec-plans/sprint-coverage-gap-plan.md)。3 缺口仍为旧 vision-000021 与新 vision-000248／000253（均 event_frame_boundaries／provider.schema，isolate-schema-v1 已记录；接续未重发成功窗）。completedEligible=false／failed/analysis.coverage_gap 为正确资格保护。F006/F009/F010 仍 false。**禁止**再跑 launcher／付费视觉；剩余预算不是补缺口授权。下一动作：人工在 human-inputs 择 A 保留缺口／B 定向补窗新提案／C 先离线诊断／D 暂缓；未择项前只做文档与只读。以下为接续完成／guard PASS 历史。
 

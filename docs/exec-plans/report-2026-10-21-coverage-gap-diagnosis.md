@@ -1,6 +1,6 @@
 # 报告：覆盖缺口只读拒因诊断包（2026-10-21）
 
-**状态**：已交付只读诊断；**0 付费**；人工 A/B/C/D 仍待决。  
+**状态**：只读诊断已交付；用户已选 **C** 进入离线实现（见 sprint-coverage-gap-offline-c.md）；**0 付费**；B 保留为未来定向补窗。  
 **分支**：`codex/visual-details`  
 **正式工件**：[`artifacts/coverage-gap-diagnosis-20261021/`](../../artifacts/coverage-gap-diagnosis-20261021/)（`diagnosis-v1.json`、`report.md`、`whitelist-snippets-v1.json`）  
 **规划依据**：[sprint-coverage-gap-plan.md](sprint-coverage-gap-plan.md)
@@ -21,6 +21,11 @@
 
 ## 下一建议
 
-- 若选 **C**：先实现 schemaDetail 并存写入 + 同帧提示／fake-transport 测试。  
-- 若选 **B**：提案须引用本诊断包同帧证据，并建议先做 C 再发。  
-- 若选 **A/D**：本包仍可归档备查。
+- **已选 C**：实现 schemaDetail 并存；V6 提示冻结不动；相关 fake-transport 测试。  
+- **以后 B**：须新提案＋新费用授权；建议引用本诊断同帧证据。  
+- A／D 未选。
+
+
+## 根因
+
+同帧起止会生成 `[T, T+1)` 空动作区间，合同拒绝是保护不是误杀。248／253 缺 `schemaDetail` 是 `1e3f420` 落盘替换回归。详见工件 `report.md` 的「根因」节与 offline-c sprint。

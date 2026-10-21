@@ -1,5 +1,6 @@
 """Prompt self-check and unchanged temporal guards, not proof of model eligibility decisions."""
 
+import json
 from dataclasses import replace
 from pathlib import Path
 from typing import cast
@@ -152,6 +153,10 @@ def test_v6_reproduces_real_single_frame_boundary_failure_without_relaxing_parse
         "startUs": 31_500_000,
         "endUs": 31_500_001,
     }
+    details = json.loads(result.metadata.execution_details or "{}")
+    projection = details["schemaProjection"]
+    assert projection["events"][0]["startFrameId"] == projection["events"][0]["endFrameId"] == "f0"
+    assert details["schemaDetail"]["endUs"] == details["schemaDetail"]["startUs"] + 1
 
 
 def test_v6_does_not_silently_filter_malformed_event_to_complete_a_response(tmp_path: Path) -> None:

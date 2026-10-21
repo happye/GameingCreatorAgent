@@ -646,6 +646,7 @@ def _events(response: dict[str, object], request: VisionRequest) -> tuple[Semant
             last_time = cast(SourceInstant, evidence[end_alias].source_time).time_us
             start, end = first_time, last_time + 1
             detail.update({"startUs": start, "endUs": end})
+            # Same start/end alias maps to [T, T+1): an empty action interval. Reject.
             if first_time >= last_time:
                 raise _SchemaError("event_frame_boundaries", detail)
             boundary_aliases = (start_alias, end_alias)
@@ -975,6 +976,8 @@ class DeepSeekVisionProvider:
             except _SchemaError as error:
                 details = _json(metadata.execution_details or "{}")
                 details["schemaError"] = error.code
+                if error.detail:
+                    details["schemaDetail"] = error.detail
                 details["schemaProjection"] = _schema_projection(response_body, decoded_response)
                 metadata = replace(metadata, execution_details=json.dumps(details, sort_keys=True))
                 result = self._failed(metadata, "provider.schema")
