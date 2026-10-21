@@ -1,6 +1,6 @@
 # Sprint：非 200 传输正文有界保留与失败投影
 
-**状态（2026-10-22）：本轮交付。** `HttpxVisionTransport` 对非 200 响应保留有界正文（历史会丢空）；DeepSeek 失败元数据写入 `httpStatus`／`httpErrorProjection`（截断、无凭据）。0 付费／0 真网调用（MockTransport／FakeTransport）；不代选 A／B／D；不声称三缺口已清；不改 feature_list。
+**状态（2026-10-22）：已交付并推送 acca03e。** `HttpxVisionTransport` 对非 200 响应保留有界正文（历史会丢空）；DeepSeek 失败元数据写入 `httpStatus`／`httpErrorProjection`（截断、无凭据）。0 付费／0 真网调用（MockTransport／FakeTransport）；不代选 A／B／D；不声称三缺口已清；不改 feature_list。
 
 ## Assignment
 
@@ -19,4 +19,4 @@
 - [x] 失败 execution_details 含 httpErrorProjection
 - [x] 相关 pytest 绿（含既有 httpx 合同用例更新）
 - [x] 0 DeepSeek／launcher；F006/F009/F010 仍 false
-- [ ] 推送 `origin/codex/visual-details`
+- [x] 已推送 `origin/codex/visual-details`（acca03e）

@@ -1,6 +1,6 @@
 # 当前交接：非200错误正文已有界保留，三缺口仍在
 
-**当前交接（2026-10-22）：非200传输正文有界保留已推送准备。** `HttpxVisionTransport` 保留有界错误正文；DeepSeek 失败写入 `httpStatus`／`httpErrorProjection`。sprint：`docs/exec-plans/sprint-http-error-body-retention.md`。0 付费／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。工作台检索对齐基线 aa114b8／da8ecf5。以下为工作台／检索闸历史。
+**当前交接（2026-10-22）：非200传输正文有界保留已推送 acca03e。** `HttpxVisionTransport` 保留有界错误正文；DeepSeek 失败写入 `httpStatus`／`httpErrorProjection`。sprint：`docs/exec-plans/sprint-http-error-body-retention.md`。0 付费／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。工作台检索对齐基线 aa114b8／da8ecf5。以下为工作台／检索闸历史。
 
 **当前交接（2026-10-22）：工作台检索资格对齐已推送 aa114b8。** inspect／runs 下发 `searchEligible`／`completedEligible`／`errorCode`；覆盖缺口 abstention=`retrieval.coverage_gap`；工作台禁用搜索并显示与 CLI 相同白话拒文。sprint：`docs/exec-plans/sprint-workbench-search-eligibility.md`。0 付费／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。NL 检索闸基线 8ef7291／02bd7be。以下为检索闸／任务列表历史。
 
