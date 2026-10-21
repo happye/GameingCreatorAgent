@@ -10,7 +10,11 @@ from gamingcreator.application.detail_refinement import (
     REFINEMENT_TEMPORAL_SCHEMA_VERSION,
     DetailRefinementRequest,
 )
-from gamingcreator.application.detail_refinement_budget import payload_hash
+from gamingcreator.application.detail_refinement_budget import (
+    REQUEST_DOCUMENT_SCHEMA_VERSION,
+    RESULT_SCHEMA_VERSION,
+    payload_hash,
+)
 from gamingcreator.domain.actor_details import (
     DETAIL_SCHEMA_VERSION,
     DETAIL_TEMPORAL_SCHEMA_VERSION,
@@ -71,6 +75,9 @@ def build_match_report_inert_contract() -> dict[str, object]:
 
 
 _HASH64 = re.compile(r"[0-9a-f]{64}\Z")
+_REFINEMENT_COST_CNY = re.compile(r"^(?:0|[1-9]\d*)(?:\.\d+)?$")
+_SETTINGS_VERSION = "actor-detail-refinement-settings-v1"
+_CANONICAL_SCHEMA_VERSION = "actor-detail-refinement-schema-v1"
 MATCH_REPORT_FORBIDDEN_CLAIM_KEYS = (
     "formalAcceptancePassed",
     "acceptanceStatus",
@@ -311,6 +318,31 @@ def assert_match_report_sidecar_binding_contract(
     provider = payload.get("provider")
     if type(provider) is not str or not provider:
         raise ValueError("Sidecar canonical provider is invalid.")
+    if request_document.get("schemaVersion") != REQUEST_DOCUMENT_SCHEMA_VERSION:
+        raise ValueError("Sidecar request schemaVersion is invalid.")
+    if payload.get("schemaVersion") != _CANONICAL_SCHEMA_VERSION:
+        raise ValueError("Sidecar canonical schemaVersion is invalid.")
+    prompt_hash = payload.get("promptHash")
+    if type(prompt_hash) is not str or not _HASH64.fullmatch(prompt_hash):
+        raise ValueError("Sidecar canonical promptHash is invalid.")
+    base_prompt_hash = request_document.get("basePromptHash")
+    if type(base_prompt_hash) is not str or not _HASH64.fullmatch(base_prompt_hash):
+        raise ValueError("Sidecar request basePromptHash is invalid.")
+    base_prompt_version = request_document.get("basePromptVersion")
+    if type(base_prompt_version) is not str or not base_prompt_version:
+        raise ValueError("Sidecar request basePromptVersion is invalid.")
+    settings = payload.get("settings")
+    if type(settings) is not dict:
+        raise ValueError("Sidecar canonical settings must be an object.")
+    if settings.get("version") != _SETTINGS_VERSION:
+        raise ValueError("Sidecar canonical settings.version is invalid.")
+    image_detail = settings.get("imageDetail")
+    if type(image_detail) is not str or not image_detail:
+        raise ValueError("Sidecar canonical settings.imageDetail is invalid.")
+    for key in ("maxImageBytes", "maxImageWidth", "maxImages", "maxOutputTokens", "timeoutSeconds"):
+        value = settings.get(key)
+        if type(value) is not int or value < 1:
+            raise ValueError(f"Sidecar canonical settings.{key} is invalid.")
     evidence_rows = payload.get("evidence")
     if type(evidence_rows) is not list or not evidence_rows:
         raise ValueError("Sidecar request evidence is invalid.")
@@ -331,10 +363,17 @@ def assert_match_report_sidecar_binding_contract(
     constraint_hash = result.get("constraintHash")
     if type(constraint_hash) is not str or not _HASH64.fullmatch(constraint_hash):
         raise ValueError("Match report result.constraintHash is invalid for sidecar binding.")
+    notes = result.get("notes")
+    if type(notes) is not list or any(type(note) is not str for note in notes):
+        raise ValueError("Match report result.notes is invalid for sidecar binding.")
     outer_range = report.get("sourceRange")
     for row in matches:
         if type(row) is not dict:
             raise ValueError("Match report match row invalid for sidecar binding.")
+        for key in ("conflicts", "missing"):
+            value = row.get(key)
+            if value is not None and type(value) is not list:
+                raise ValueError(f"Match report match.{key} is invalid for sidecar binding.")
         if not _source_range_contains(outer_range, row.get("sourceRange")):
             raise ValueError("Match report match sourceRange escapes report/sidecar range.")
         shared = row.get("sharedEvidenceIds") or []
@@ -394,6 +433,19 @@ def assert_match_report_sidecar_binding_contract(
             raise ValueError("Sidecar canonical promptVersion is invalid.")
         if metadata.get("prompt_version") != prompt_version:
             raise ValueError("Sidecar result metadata.prompt_version does not match request.")
+        if result_document.get("schemaVersion") != RESULT_SCHEMA_VERSION:
+            raise ValueError("Sidecar result schemaVersion is invalid.")
+        cost = result_document.get("costCny")
+        if cost is not None and (type(cost) is not str or not _REFINEMENT_COST_CNY.fullmatch(cost)):
+            raise ValueError("Sidecar result costCny is invalid.")
+        attempt = metadata.get("attempt")
+        if type(attempt) is not int or attempt < 1:
+            raise ValueError("Sidecar result metadata.attempt is invalid.")
+        elapsed_ms = metadata.get("elapsed_ms")
+        if type(elapsed_ms) is not int or elapsed_ms < 0:
+            raise ValueError("Sidecar result metadata.elapsed_ms is invalid.")
+        if metadata.get("schema_version") != payload.get("schemaVersion"):
+            raise ValueError("Sidecar result metadata.schema_version does not match canonical.")
 
 
 def match_report_sidecar_binding_gaps(
@@ -454,6 +506,27 @@ def match_report_sidecar_binding_gaps(
             ("metadata.actual_model does not match", "metadata_actual_model_mismatch"),
             ("promptVersion is invalid", "prompt_version_invalid"),
             ("metadata.prompt_version does not match", "metadata_prompt_version_mismatch"),
+            ("request schemaVersion is invalid", "request_schema_version_invalid"),
+            ("canonical schemaVersion is invalid", "canonical_schema_version_invalid"),
+            ("promptHash is invalid", "prompt_hash_invalid"),
+            ("basePromptHash is invalid", "base_prompt_hash_invalid"),
+            ("basePromptVersion is invalid", "base_prompt_version_invalid"),
+            ("settings must be an object", "settings_not_object"),
+            ("settings.version is invalid", "settings_version_invalid"),
+            ("settings.imageDetail is invalid", "settings_image_detail_invalid"),
+            ("settings.maxImageBytes is invalid", "settings_max_image_bytes_invalid"),
+            ("settings.maxImageWidth is invalid", "settings_max_image_width_invalid"),
+            ("settings.maxImages is invalid", "settings_max_images_invalid"),
+            ("settings.maxOutputTokens is invalid", "settings_max_output_tokens_invalid"),
+            ("settings.timeoutSeconds is invalid", "settings_timeout_seconds_invalid"),
+            ("result.notes is invalid", "result_notes_invalid"),
+            ("match.conflicts is invalid", "match_conflicts_invalid"),
+            ("match.missing is invalid", "match_missing_invalid"),
+            ("result schemaVersion is invalid", "result_schema_version_invalid"),
+            ("costCny is invalid", "cost_cny_invalid"),
+            ("metadata.attempt is invalid", "metadata_attempt_invalid"),
+            ("metadata.elapsed_ms is invalid", "metadata_elapsed_ms_invalid"),
+            ("metadata.schema_version does not match", "metadata_schema_version_mismatch"),
             ("binding requires objects", "binding_not_object"),
         )
         coded = False

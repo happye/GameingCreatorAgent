@@ -442,3 +442,54 @@ def test_assert_match_report_sidecar_binding_rejects_pipeline_provider_metadata_
     assert "metadata_prompt_version_mismatch" in match_report_sidecar_binding_gaps(
         document, request_doc, bad_prompt
     )
+
+
+def test_assert_match_report_sidecar_binding_rejects_settings_cost_and_metadata_timing() -> None:
+    document, request_doc, result_doc = _load_first_legacy_binding()
+    assert_match_report_sidecar_binding_contract(document, request_doc, result_doc)
+    assert match_report_sidecar_binding_gaps(document, request_doc, result_doc) == ()
+
+    bad_settings = json.loads(json.dumps(request_doc))
+    payload = json.loads(bad_settings["canonicalJson"])
+    payload["settings"] = dict(payload["settings"])
+    payload["settings"]["maxImages"] = 0
+    bad_settings["canonicalJson"] = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    with pytest.raises(ValueError, match="settings.maxImages"):
+        assert_match_report_sidecar_binding_contract(document, bad_settings, result_doc)
+    assert "settings_max_images_invalid" in match_report_sidecar_binding_gaps(
+        document, bad_settings, result_doc
+    )
+
+    bad_cost = json.loads(json.dumps(result_doc))
+    bad_cost["costCny"] = "not-a-decimal"
+    with pytest.raises(ValueError, match="costCny"):
+        assert_match_report_sidecar_binding_contract(document, request_doc, bad_cost)
+    assert "cost_cny_invalid" in match_report_sidecar_binding_gaps(
+        document, request_doc, bad_cost
+    )
+
+    bad_attempt = json.loads(json.dumps(result_doc))
+    bad_attempt["metadata"] = dict(bad_attempt["metadata"])
+    bad_attempt["metadata"]["attempt"] = 0
+    with pytest.raises(ValueError, match="metadata.attempt"):
+        assert_match_report_sidecar_binding_contract(document, request_doc, bad_attempt)
+    assert "metadata_attempt_invalid" in match_report_sidecar_binding_gaps(
+        document, request_doc, bad_attempt
+    )
+
+    bad_schema_meta = json.loads(json.dumps(result_doc))
+    bad_schema_meta["metadata"] = dict(bad_schema_meta["metadata"])
+    bad_schema_meta["metadata"]["schema_version"] = "forged-schema"
+    with pytest.raises(ValueError, match="metadata.schema_version"):
+        assert_match_report_sidecar_binding_contract(document, request_doc, bad_schema_meta)
+    assert "metadata_schema_version_mismatch" in match_report_sidecar_binding_gaps(
+        document, request_doc, bad_schema_meta
+    )
+
+    bad_notes = json.loads(json.dumps(document))
+    bad_notes["result"]["notes"] = [1, 2]
+    with pytest.raises(ValueError, match="notes"):
+        assert_match_report_sidecar_binding_contract(bad_notes, request_doc, result_doc)
+    assert "result_notes_invalid" in match_report_sidecar_binding_gaps(
+        bad_notes, request_doc, result_doc
+    )
