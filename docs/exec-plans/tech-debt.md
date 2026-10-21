@@ -1,3 +1,5 @@
+**2026-10-22 检索离线进展（内存结果／候选清单 media／event 加深，已推送 5e236d1）：** search_result／candidate_sources：media／event／unique id；project- scope 放行；见 sprint-retrieval-search-result-media-event-sources.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+
 **2026-10-22 检索离线进展（JSON 投影 rank／media／时间窗加深，已推送 e0e54d7）：** 共享 search-document：连续 rank／media／scoreKind／时间窗；见 sprint-retrieval-search-document-rank-media-span.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线进展（持久化信封 mode／rank／elapsed／时间窗加深，已推送 8396c5a）：** mode／连续 rank／elapsedMs／start_us<end_us；见 sprint-retrieval-persisted-mode-rank-elapsed.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
