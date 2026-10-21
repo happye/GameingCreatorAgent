@@ -1,5 +1,7 @@
 # Active assignments
 
+**当前（2026-10-22）：root / Agent 推进 TD010 本机 Completed 只读对照。** sprint-retrieval-td010-local-completed-readonly.md 归 root／GamingCreatorAgent。拥有 local-completed 测试与交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／人评通过；不改写 artifacts。以下混合语义边界为历史。
+
 **当前（2026-10-22）：root / Agent 推进 TD010 混合语义边界／离线 DB 形对照（已推送 51b0f56）。** sprint-retrieval-td010-mixed-semantics.md 归 root／GamingCreatorAgent 拥有。拥有 retrieval 与相关测试／fixture、tech-debt、交接 docs；0 付费；不代选 A／B／D；不改 feature_list 为 true；不声称 F006／人评通过；不宣称真实 DB 对照关单。以下裸标签否定护栏为历史。
 
 **当前（2026-10-22）：root 单 Agent 交付检索否定保护／TD010 离线修复。** sprint-retrieval-mechanic-tag-denial.md 由 root／GamingCreatorAgent 拥有。改 retrieval 与相关测试／tech-debt／公共 docs；0 付费。不代选 A／B／D；不改 feature_list 为 true；不宣称 F006／人评通过。以下任务行拒窗摘要为历史。 已推送 1d0f70d

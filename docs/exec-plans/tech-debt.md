@@ -1,5 +1,7 @@
 # Technical debt
 
+**2026-10-22 TD010 本机 Completed 只读对照（待推送）：** `artifacts/demo-phase0` Completed + `independent-footage-20261011` coverage-gap 只读冒烟见 sprint-retrieval-td010-local-completed-readonly.md。不宣称全库／四 run／人评关单。
+
 **2026-10-22 TD010 混合语义边界（已推送 51b0f56）：** 否定扫描禁止回退到含 mechanicTags 的 text；transcript 写入 positive_text；离线 golden 	ests/fixtures/td010_mixed_semantics_shapes.json 钉住混合通道。见 sprint-retrieval-td010-mixed-semantics.md。真实 DB run 对照仍未关单；不宣称 F006／人评通过。
 
 **2026-10-22 TD010 离线进展（已推送 `1d0f70d`）：** 否定护栏改为只扫描 facts／transcripts（`positive_text`），裸 mechanicTags 不再击穿显式动作否定；见 sprint-retrieval-mechanic-tag-denial.md。真实 DB run 对照仍未关单（离线混合语义边界见上条）。
