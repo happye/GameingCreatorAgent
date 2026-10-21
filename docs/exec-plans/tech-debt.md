@@ -1,6 +1,6 @@
 # Technical debt
 
-**2026-10-22 TD004 离线进展（JUMP hybrid／semantic 排除，待推送）：** title-brand-only action 噪声并入检索排除集；见 sprint-retrieval-jump-title-hybrid-noise.md。Boss／射击等其余误召回与人评校准仍 open；不宣称 TD004 关单。
+**2026-10-22 TD004 离线进展（JUMP hybrid／semantic 排除，已推送 `fb984ea`）：** title-brand-only action 噪声并入检索排除集；见 sprint-retrieval-jump-title-hybrid-noise.md。Boss／射击等其余误召回与人评校准仍 open；不宣称 TD004 关单。
 
 **2026-10-22 TD004 离线进展（JUMP 标题品牌噪声，已推送 `0497ebf`）：** lexical／否定扫描前中性化冻结 JUMP 标题品牌；见 sprint-retrieval-jump-title-brand-noise.md。不宣称 TD004／人评关单；Boss／射击等其余 hybrid 空召回问题仍 open。
 
