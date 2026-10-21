@@ -1,3 +1,5 @@
+**当前（2026-10-22）：root / Agent 推进检索场景名词跨语言 平台／烟雾／落地／城堡（已推送 296ac1f）。** sprint-retrieval-scene-platform-smoke-landing-castle.md 归 root／GamingCreatorAgent。拥有 retrieval 场景跨语言与只读测试／交接 docs；裸 land 不收；0 付费；不代选 A／B／D；不改 feature_list；不发明 Boss／射击语料；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下 move 奔跑／迈步／running 为历史。
+
 **当前（2026-10-22）：root / Agent 推进检索 move 奔跑／迈步／running 步态别名（已推送 c9773d4）。** sprint-retrieval-move-run-gait-aliases.md 归 root／GamingCreatorAgent。拥有 retrieval 步态别名与只读测试／交接 docs；裸 run 不收；0 付费；不代选 A／B／D；不改 feature_list；不发明 Boss／射击语料；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下项目联合检索内存结果加深为历史。
 
 **当前（2026-10-22）：root / Agent 推进项目联合检索内存结果 media／event／mode 加深（已推送 7d2696d）。** sprint-retrieval-project-result-media-event-mode.md 归 root／GamingCreatorAgent。拥有 assert_project_search_result_contract 加深与 pytest／交接 docs；转录 eventId=None 仍保留；0 付费；不代选 A／B／D；不改 feature_list；不发明 Boss／射击语料；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下项目联合检索落盘 media／sha／timecode 为历史。
