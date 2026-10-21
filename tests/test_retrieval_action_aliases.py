@@ -827,3 +827,67 @@ def test_attacker_aliases_keep_chinese_body_evidence(mode, query, positive, deni
 def test_attacker_non_action_words_do_not_match(query):
     data = timeline("角色攻击目标。")
     assert search(data, query, "lexical").candidates == ()
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize(
+    "query,positive,denial",
+    [
+        ("walk", "角色向左移动。", "没有移动。"),
+        ("walking", "角色向左移动。", "未见移动。"),
+        ("walked", "角色向左移动。", "没有移动。"),
+        ("行走", "角色向左移动。", "没有移动。"),
+        ("走动", "角色向左移动。", "未见移动。"),
+        ("位移", "角色向左移动。", "没有移动。"),
+        ("move", "角色行走穿过平台。", "没有行走。"),
+    ],
+)
+def test_walk_gait_aliases_keep_chinese_move_evidence(mode, query, positive, denial):
+    """walk／行走／走动／位移 are move synonyms; body-text evidence still retrieves."""
+    data = timeline(positive, denial)
+    result = search(data, query, mode)
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    assert result.candidates[0].observable_facts == (positive,)
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize("query", ["walk", "walking", "walked", "行走", "走动", "位移"])
+def test_walk_gait_tag_only_mechanic_noise_excluded(mode, query):
+    """Walk／gait aliases must apply the same move tag-only chrome filter."""
+    import asyncio
+    from dataclasses import replace
+
+    from gamingcreator.application.retrieval import search_timeline
+    from gamingcreator.application.storage import StoredTimeline
+    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
+
+    base = _base_timeline(
+        "俯视视角的绿色场地，中央有角色释放蓝色光效技能。",
+        "场地中央有角色移动，出现绿色特效。",
+        "角色跳跃并落地。",
+    )
+    events = list(base.events)
+    events[0] = replace(events[0], mechanic_tags=("角色移动", "技能按钮"))
+    data = StoredTimeline(
+        base.run,
+        base.checkpoints,
+        base.evidence,
+        base.transcripts,
+        tuple(events),
+        base.invocations,
+    )
+    result = asyncio.run(
+        search_timeline(data, query, mode=mode, embedding_provider=EqualSimilarity(), top_k=10)
+    )
+    hit_ids = [item.event_id for item in result.candidates]
+    assert "event-0" not in hit_ids, hit_ids
+    assert "event-1" in hit_ids, hit_ids
+
+
+@pytest.mark.parametrize(
+    "query",
+    ["sidewalk", "walkway", "catwalk", "walking2", "walk_walk"],
+)
+def test_walk_non_action_words_do_not_match(query):
+    data = timeline("角色向左移动。")
+    assert search(data, query, "lexical").candidates == ()

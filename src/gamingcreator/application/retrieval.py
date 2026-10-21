@@ -89,6 +89,10 @@ _CROSS_LINGUAL_TERMS = (
     ("brawling", "打架"),
     ("brawls", "打架"),
     ("brawl", "打架"),
+    ("walking", "移动"),
+    ("walked", "移动"),
+    ("walks", "移动"),
+    ("walk", "移动"),
 )
 # A small explicit-language guard, not a language model. Apply this only to
 # positive action queries; passage identities follow the observation projection.
@@ -132,7 +136,20 @@ _ACTION_TERMS = {
         "interaction",
         "interactions",
     ),
-    "move": ("移动", "move", "moves", "moving", "movement"),
+    "move": (
+        "移动",
+        "行走",
+        "走动",
+        "位移",
+        "move",
+        "moves",
+        "moving",
+        "movement",
+        "walk",
+        "walks",
+        "walking",
+        "walked",
+    ),
 }
 _ACTION_BY_TERM = {term: action for action, terms in _ACTION_TERMS.items() for term in terms}
 _ACTION_PATTERN = (
@@ -312,7 +329,7 @@ def _tag_only_action_noise_documents(
     """Exclude clips whose only query-action evidence is a liberally painted mechanicTag.
 
     Lexical BM25 indexes `text` (facts + tags). For fight/move/interact queries,
-    bare theme tags (战斗／对战／团战／角色移动／交互) without matching language in positive_text
+    bare theme tags (战斗／对战／团战／角色移动／行走／交互) without matching language in positive_text
     are UI/theme chrome — not gameplay evidence. Attack tag-only recall remains (TD010).
     """
     folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
@@ -758,7 +775,7 @@ def _lexical_query(query: str) -> str:
     folded = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
     extras: list[str] = []
     for word, term in _CROSS_LINGUAL_TERMS:
-        if re.search(rf"(?<![a-z0-9]){re.escape(word)}(?![a-z0-9])", folded):
+        if re.search(rf"(?<![a-z0-9_]){re.escape(word)}(?![a-z0-9_])", folded):
             extras.append(term)
     # Reuse only the known Chinese action aliases. Expanding English words such
     # as "jump" would also match game titles like JUMP ASSEMBLE. Negative-intent

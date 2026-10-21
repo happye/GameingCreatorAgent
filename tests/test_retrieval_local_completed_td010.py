@@ -330,7 +330,7 @@ def test_local_completed_demo_phase0_lexical_evidence_channels():
 
         for query, terms in (
             ("战斗", ("战斗", "打斗", "打架", "对战", "团战", "fight", "combat", "fighter", "duel", "brawl")),
-            ("移动", ("移动", "move", "moving", "movement")),
+            ("移动", ("移动", "行走", "走动", "位移", "move", "moving", "movement", "walk", "walking")),
         ):
             result = await search_timeline(timeline, query, mode="lexical", top_k=20)
             assert result.candidates, query
@@ -529,6 +529,34 @@ def test_local_completed_demo_phase0_attacker_aliases_keep_tag_only():
                 if "攻击" not in doc.positive_text:
                     assert item.lexical_evidence == "mechanic_tags", (query, item.event_id, doc.tags)
                     assert "攻击" in doc.tags
+
+    asyncio.run(run())
+
+
+def test_local_completed_demo_phase0_walk_gait_aliases():
+    """demo-phase0: walk／行走／走动／位移 retrieve move body-text; no bare tag chrome."""
+    _require_sqlite(DEMO_PHASE0)
+
+    async def run() -> None:
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
+        docs = {doc.event_id: doc for doc in _documents(timeline)}
+        move_terms = ("移动", "行走", "走动", "位移", "move", "walk", "walking")
+        baseline = await search_timeline(timeline, "移动", mode="lexical", top_k=20)
+        assert baseline.candidates
+        for query in ("walk", "walking", "walked", "行走", "走动", "位移"):
+            result = await search_timeline(timeline, query, mode="lexical", top_k=20)
+            assert {item.event_id for item in result.candidates} == {
+                item.event_id for item in baseline.candidates
+            }, query
+            for item in result.candidates:
+                doc = docs[item.event_id]
+                assert any(term in doc.positive_text for term in move_terms), (
+                    query,
+                    item.event_id,
+                    doc.tags,
+                    doc.positive_text[:120],
+                )
 
     asyncio.run(run())
 

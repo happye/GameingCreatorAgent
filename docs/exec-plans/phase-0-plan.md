@@ -1,5 +1,7 @@
 # Phase 0 开发任务与依赖
 
+**2026-10-22 检索离线扩展（move 步态别名 walk／行走／走动／位移，已推送 PLACEHOLDER）：** 跨语言下划线边界对齐；见 sprint-retrieval-move-walk-gait-aliases.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
+
 **2026-10-22 检索离线扩展（attack 施事别名 attacker／attackers，已推送 56171d3）：** TD010 tag-only 保留并补齐 lexicalEvidence；见 sprint-retrieval-attack-attacker-aliases.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线扩展（fight 英文别名 fighter／duel／brawl，已推送 8416b0d）：** 堵 cross-lingual-only 漏噪声；见 sprint-retrieval-fight-fighter-duel-brawl-en.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
