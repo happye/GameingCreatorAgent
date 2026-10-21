@@ -26,3 +26,7 @@
 ## Stop
 
 - 禁止付费；禁止把草稿当授权；禁止代选 A／B／D；禁止改 feature_list。
+
+## Follow-on
+
+- 只读写出脚本：见 [sprint-coverage-gap-draft-writer.md](sprint-coverage-gap-draft-writer.md)。
