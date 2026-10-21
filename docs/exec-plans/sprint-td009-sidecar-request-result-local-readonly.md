@@ -1,6 +1,6 @@
 # Sprint：TD009 sidecar request／result 本机只读对照
 
-**状态（2026-10-22）：待推送 origin/main。** 新增 `assert_refinement_request_document_contract`／`assert_refinement_result_document_contract`／`assert_refinement_sidecar_pair_contract`／`refinement_sidecar_contract_gaps`：钉死 requestHash＝SHA256(canonicalJson)、指纹／runId 对齐、result schema／payloadHash、禁止 humanLabels／qualityGate／formalAcceptance 等验收声称。`freeze_request` 落盘前、`_publish` 落盘前、`reuse_or_refuse`／`_published` 读回时强制。pytest 只读扫 `artifacts/demo-phase0/**/detail-refinements/*/request.json`（及成对 result）。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006/F009/F010 true；不宣称 TD009／人评关单；不改写旧 sidecar JSON。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。
+**状态（2026-10-22）：已推送 origin/main 198ea93。** 新增 `assert_refinement_request_document_contract`／`assert_refinement_result_document_contract`／`assert_refinement_sidecar_pair_contract`／`refinement_sidecar_contract_gaps`：钉死 requestHash＝SHA256(canonicalJson)、指纹／runId 对齐、result schema／payloadHash、禁止 humanLabels／qualityGate／formalAcceptance 等验收声称。`freeze_request` 落盘前、`_publish` 落盘前、`reuse_or_refuse`／`_published` 读回时强制。pytest 只读扫 `artifacts/demo-phase0/**/detail-refinements/*/request.json`（及成对 result）。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006/F009/F010 true；不宣称 TD009／人评关单；不改写旧 sidecar JSON。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。
 
 ## Assignment
 

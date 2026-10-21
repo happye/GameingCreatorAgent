@@ -2,7 +2,7 @@
 
 > **2026-10-22 离线补强：** 项目联合检索落盘只读对照（已推送 `a62690e`）；不清除三缺口；不代选 A／B／D；不标 F006 true。
 
-**2026-10-22 TD009 离线扩展（sidecar request／result 本机只读对照，已推送 PLACEHOLDER）：** ssert_refinement_sidecar_pair_contract；见 sprint-td009-sidecar-request-result-local-readonly.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD009 关单。
+**2026-10-22 TD009 离线扩展（sidecar request／result 本机只读对照，已推送 198ea93）：** ssert_refinement_sidecar_pair_contract；见 sprint-td009-sidecar-request-result-local-readonly.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD009 关单。
 
 
 > **2026-10-22 离线补强：** 检索 JSON 投影／candidate_sources 清单合同（已推送 `6af5dd6`）；不清除三缺口；不代选 A／B／D；不标 F006 true。
