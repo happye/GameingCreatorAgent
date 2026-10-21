@@ -1,6 +1,6 @@
 # 当前交接：定向补窗提案草稿模板已落地，三缺口仍在
 
-**当前交接（2026-10-21）：离线提案草稿模板（不代选 B）。** 新增 `directed_gap_fill.py`：`build_directed_gap_fill_proposal_draft` 从覆盖清单生成 `directed-gap-fill-proposal-draft-v1`（`template-unfrozen`）；授权／选 B／消缺口标志恒为 false；目标仍经 `validate_directed_gap_fill_targets`。sprint：`docs/exec-plans/sprint-coverage-gap-proposal-draft.md`；示例：`docs/references/directed-gap-fill-proposal-draft.example.json`。0 付费／不重跑 launcher／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**（C 已决）。护栏基线 8fcc226／eba3f32。以下为护栏／选项 C／接续历史。
+**当前交接（2026-10-21）：定向补窗提案草稿模板已推送 f833d55。** 新增 `directed_gap_fill.py`：`build_directed_gap_fill_proposal_draft` 从覆盖清单生成 `directed-gap-fill-proposal-draft-v1`（`template-unfrozen`）；授权／选 B／消缺口标志恒为 false；目标仍经 `validate_directed_gap_fill_targets`。sprint：`docs/exec-plans/sprint-coverage-gap-proposal-draft.md`；示例：`docs/references/directed-gap-fill-proposal-draft.example.json`。0 付费／不重跑 launcher／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**（C 已决）。护栏基线 8fcc226／eba3f32。以下为护栏／选项 C／接续历史。
 
 **当前交接（2026-10-21）：定向补窗离线合同已推送 8fcc226。** 已在 `analysis_reliability.py` 增加只读库存／目标校验（`directed-gap-fill-v1`），相关 pytest 见 `tests/test_directed_gap_fill_contract.py`；sprint：`docs/exec-plans/sprint-coverage-gap-directed-contract.md`。明确：**isolate-schema-v1 续跑 ≠ 定向补窗**；补窗目标只能是覆盖清单里的 rejected，禁止夹带已成功窗。0 付费／不重跑 launcher／F006/F009/F010 仍 false。**三缺口仍在**，离线护栏不能消缺口。**A／B／D 仍留给用户**（C 已决）；B 须新提案＋新费用授权。选项 C 推送基线 a226bca／4a5ffe5。以下为选项 C／诊断／接续历史。
 

@@ -1,6 +1,6 @@
 # Sprint：定向补窗提案草稿模板（离线、不代选 B）
 
-**状态（2026-10-21）：离线实现中／本轮交付。** 在已落地的 `directed-gap-fill-v1` 护栏之上，补一份**未冻结、未授权**的提案草稿形状，方便以后若你选 B 时直接填费用／确认，而不是从零拼字段。本 sprint **不代选** A／B／D，0 付费，不重跑 launcher，不标 F006/F009/F010 true，不声称三缺口已清。
+**状态（2026-10-21）：已交付并推送 f833d55。** 在已落地的 `directed-gap-fill-v1` 护栏之上，补一份**未冻结、未授权**的提案草稿形状，方便以后若你选 B 时直接填费用／确认，而不是从零拼字段。本 sprint **不代选** A／B／D，0 付费，不重跑 launcher，不标 F006/F009/F010 true，不声称三缺口已清。
 
 ## Assignment
 
@@ -21,7 +21,7 @@
 - [x] 默认目标＝全部 rejected；可子集；夹带 completed 必拒；草稿恒 inert
 - [x] 0 DeepSeek／0 launcher；F006/F009/F010 仍 false
 - [x] human-inputs 仍保留 A／B／D；说明草稿≠选 B
-- [ ] 普通提交并推送 `origin/codex/visual-details`
+- [x] 普通提交并推送 `origin/codex/visual-details`
 
 ## Stop
 
