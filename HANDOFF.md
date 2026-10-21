@@ -1,4 +1,6 @@
-# 当前交接：共享离线 FakeVisionTransport 已抽出，三缺口仍在
+# 当前交接：评测绑定已接检索资格闸，三缺口仍在
+
+**当前交接（2026-10-22）：评测／绑定／细节核对检索资格闸已推送准备。** `execute_benchmark`／`execute_bind_benchmark`／`execute_detail_match` 使用 `load_searchable_timeline`；覆盖缺口 → `retrieval.coverage_gap`。sprint：`docs/exec-plans/sprint-benchmark-search-eligibility.md`。0 付费／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。共享 FakeTransport 基线 9e62ae9／362954d。以下为假传输／失败诊断历史。
 
 **当前交接（2026-10-22）：共享离线 FakeVisionTransport 已推送 9e62ae9。** `tests/fake_vision_transport.py` 统一队列／重复回复；analyze／deepseek／temporal 测试改接线。sprint：`docs/exec-plans/sprint-shared-fake-vision-transport.md`。0 付费／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。失败诊断基线 218e6c8／b9d7adf。以下为失败诊断／传输历史。
 

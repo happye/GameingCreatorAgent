@@ -1,5 +1,7 @@
 # Active assignments
 
+**当前（2026-10-22）：root 单 Agent 交付评测／绑定／细节核对检索资格闸。** sprint-benchmark-search-eligibility.md 由 root／GamingCreatorAgent 拥有。改 cli 评测／绑定／细节入口、相关测试／公共 docs；0 付费。不代选 A／B／D；不改 feature_list。以下假传输／失败诊断为历史。
+
 **当前（2026-10-22）：root 单 Agent 交付共享离线 FakeVisionTransport。** sprint-shared-fake-vision-transport.md 由 root／GamingCreatorAgent 拥有。改 tests/fake_vision_transport 与相关测试接线／公共 docs；0 付费。不代选 A／B／D；不改 feature_list。以下失败诊断／传输为历史。
 
 **当前（2026-10-22）：root 单 Agent 交付失败调用诊断投影。** sprint-invocation-failure-diagnostics.md 由 root／GamingCreatorAgent 拥有。改 invocation_diagnostics、inspect／app.js、相关测试／公共 docs；0 付费。不代选 A／B／D；不改 feature_list。以下传输／工作台为历史。

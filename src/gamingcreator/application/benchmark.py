@@ -10,6 +10,8 @@ from statistics import median
 from time import perf_counter
 from typing import Literal, Protocol
 
+from gamingcreator.domain.errors import AppError
+
 MAX_SOURCE_US = (1 << 63) - 1
 QueryKind = Literal["main", "sparse", "negative"]
 type JsonValue = None | bool | int | float | str | list[JsonValue] | dict[str, JsonValue]
@@ -502,6 +504,9 @@ async def run_benchmark(
             try:
                 await verify_media(source)
                 valid_sources.add((source.media_id, source.run_id))
+            except AppError:
+                # Eligibility / contract refusals (e.g. coverage-gap) must not become soft media misses.
+                raise
             except Exception:
                 media_failures.append(
                     {

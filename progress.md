@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-22 评测／绑定／细节核对检索资格闸**：benchmark／bind／detail-match 与 NL 检索同一拒绝；相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-benchmark-search-eligibility.md。
+
 **2026-10-22 共享离线 FakeVisionTransport（已推送 9e62ae9）**：测试假传输双件合并；相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-shared-fake-vision-transport.md。
 
 **2026-10-22 失败调用诊断投影（已推送 218e6c8）**：inspect／工作台只读展示 schema／http 失败摘要；相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-invocation-failure-diagnostics.md。

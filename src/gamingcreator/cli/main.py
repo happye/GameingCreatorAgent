@@ -618,7 +618,7 @@ async def execute_detail_match(
         ) from None
     store = await SqliteTimelineStore.open(project, read_only=True)
     try:
-        timeline = await store.load_completed_timeline(run_id)
+        timeline = await load_searchable_timeline(store, run_id)
         return match_refinement(project, timeline, event_id, constraint, profile=profile, save=save)
     finally:
         await store.close()
@@ -650,7 +650,7 @@ async def execute_benchmark(
 
         async def verify(media: BenchmarkMedia) -> None:
             source = media
-            timeline = await store.load_completed_timeline(source.run_id)
+            timeline = await load_searchable_timeline(store, source.run_id)
             asset = timeline.run.asset
             if (asset.media_id, asset.sha256, asset.duration_us) != (
                 source.media_id,
@@ -662,7 +662,7 @@ async def execute_benchmark(
         retrieval_ids: dict[str, str] = {}
 
         async def search(query: BenchmarkQuery) -> tuple[BenchmarkHit, ...]:
-            timeline = await store.load_completed_timeline(query.run_id)
+            timeline = await load_searchable_timeline(store, query.run_id)
             began = perf_counter()
             result = await search_timeline(
                 timeline,
@@ -697,7 +697,7 @@ async def execute_benchmark(
         provenance: list[JsonValue] = []
         for source in manifest.media:
             try:
-                timeline = await store.load_completed_timeline(source.run_id)
+                timeline = await load_searchable_timeline(store, source.run_id)
                 cost_timelines.append(timeline)
                 provenance.append(
                     {
@@ -706,8 +706,10 @@ async def execute_benchmark(
                         "configHash": timeline.run.config_hash,
                     }
                 )
-            except AppError:
-                pass
+            except AppError as error:
+                if error.code in {"retrieval.coverage_gap", "storage.run_incomplete"}:
+                    raise
+                # Other storage/read issues still allow cost rows to be partial.
         report = await run_benchmark(
             manifest,
             search,
@@ -950,7 +952,7 @@ async def execute_bind_benchmark(
         store = await SqliteTimelineStore.open(project, read_only=True)
         try:
             timelines = {
-                key: await store.load_completed_timeline(value) for key, value in runs.items()
+                key: await load_searchable_timeline(store, value) for key, value in runs.items()
             }
             manifest = bind_manifest(frozen, timelines, partition)
             provenance = {
