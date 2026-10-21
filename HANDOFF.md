@@ -3,6 +3,9 @@
 **当前交接（2026-10-22）：主干已合并。** codex/visual-details 上全部已推送提交已快进并入 main（tip ce934e0（含 inert 跨面落地）），远端 origin/main 已同步。以后默认在 main 上提交／推送，不再为日常交付新开旁支。以下为验收流程就绪联动历史。
 
 
+**当前锚点（2026-10-22，离线 coverage-gap-report 产品能力）：** CLI／库只读汇总缺口 run 与拒窗；不清除、不代选 A／B／D。sprint：docs/exec-plans/sprint-coverage-gap-report.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下 inertContract 跨面落地为历史。
+
+
 **当前锚点（2026-10-22，acceptance-readiness inertContract 跨面落地，已推送 ce934e0）：** health／工作台／验收流程采纳 inert-v1；feature_list 闸门测试钉死 F006/F009/F010 false。sprint：docs/exec-plans/sprint-acceptance-readiness-inert-surface.md；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下 inertContract 嵌入为历史。
 
 

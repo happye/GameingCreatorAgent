@@ -18,6 +18,10 @@ from gamingcreator.application.acceptance_readiness import (
     build_acceptance_readiness,
     write_acceptance_readiness,
 )
+from gamingcreator.application.coverage_gap_report import (
+    build_coverage_gap_report,
+    write_coverage_gap_report,
+)
 from gamingcreator.application.analysis import (
     AnalysisPorts,
     AnalyzeOutcome,
@@ -163,6 +167,23 @@ def _parser() -> CliParser:
         "--output",
         type=Path,
         help="可选：把 readiness JSON 写到本地路径",
+    )
+    gaps = commands.add_parser(
+        "coverage-gap-report",
+        help="只读汇总覆盖缺口 run／拒窗，不清除缺口、不代选 A／B／D",
+    )
+    gaps.add_argument("--project", type=Path, required=True)
+    gaps.add_argument("--limit", type=int, default=100)
+    gaps.add_argument("--offset", type=int, default=0)
+    gaps.add_argument(
+        "--coverage",
+        type=Path,
+        help="可选：显式 analysis_coverage.json（无任务行时也可只读汇总）",
+    )
+    gaps.add_argument(
+        "--output",
+        type=Path,
+        help="可选：把 coverage-gap-report JSON 写到本地路径",
     )
     freeze = commands.add_parser("freeze-benchmark", help="本地登记原素材并冻结验收查询，不分析")
     freeze.add_argument("--input", type=Path, required=True)
@@ -1041,6 +1062,33 @@ async def execute_acceptance_readiness(
         await store.close()
 
 
+async def execute_coverage_gap_report(
+    project: Path,
+    *,
+    limit: int = 100,
+    offset: int = 0,
+    coverage: Path | None = None,
+    output: Path | None = None,
+) -> dict[str, object]:
+    """Read-only coverage-gap runs/windows; never clears gaps or picks A/B/D."""
+    _require_project(project)
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    try:
+        tasks_document = await tasks_payload(store, limit=limit, offset=offset)
+        document = build_coverage_gap_report(
+            tasks_document,
+            project=project.resolve(),
+            coverage=coverage.resolve() if coverage is not None else None,
+        )
+        if output is not None:
+            written = write_coverage_gap_report(document, output)
+            document = dict(document)
+            document["outputPath"] = str(written)
+        return document
+    finally:
+        await store.close()
+
+
 async def execute_tasks(
     project: Path, *, limit: int = 100, offset: int = 0, run_id: str | None = None
 ) -> dict[str, object]:
@@ -1309,6 +1357,16 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
                 args.project.resolve(),
                 limit=args.limit,
                 offset=args.offset,
+                output=args.output.resolve() if args.output is not None else None,
+            )
+        )
+    if args.command == "coverage-gap-report":
+        return asyncio.run(
+            execute_coverage_gap_report(
+                args.project.resolve(),
+                limit=args.limit,
+                offset=args.offset,
+                coverage=args.coverage.resolve() if args.coverage is not None else None,
                 output=args.output.resolve() if args.output is not None else None,
             )
         )

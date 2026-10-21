@@ -1,5 +1,7 @@
 # Active assignments
 
+**当前（2026-10-22）：root 单 Agent 交付离线 coverage-gap-report 产品能力。** sprint-coverage-gap-report.md 由 root／GamingCreatorAgent 拥有。改 coverage_gap_report／CLI 与相关测试／公共 docs；0 付费。不代选 A／B／D；不改 feature_list 为 true；不宣称 F006／人评通过。以下 inert 跨面落地为历史。
+
 **当前（2026-10-22）：root 单 Agent 交付 acceptance-readiness inertContract 跨面落地。** sprint-acceptance-readiness-inert-surface.md 由 root／GamingCreatorAgent 拥有。改 server／static JS／acceptance_readiness guards 与相关测试／公共 docs；0 付费。不代选 A／B／D；不改 feature_list 为 true；不宣称 F006／人评通过。以下 inertContract 嵌入为历史。
 
 **当前（2026-10-22）：root 单 Agent 交付 acceptance-readiness 嵌入 inertContract。** sprint-acceptance-readiness-inert-contract.md 由 root／GamingCreatorAgent 拥有。改 acceptance_readiness 与相关测试／公共 docs；0 付费。不代选 A／B／D；不改 feature_list；不宣称 F006／人评通过。以下跨面 inert 加固为历史。
