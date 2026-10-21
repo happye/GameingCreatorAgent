@@ -1,6 +1,6 @@
 # Technical debt
 
-**2026-10-22 检索离线进展（move／interact 裸标签噪声 + candidate_sources，已推送 `PLACEHOLDER`）：** `_TAG_ONLY_NOISE_ACTIONS` 扩至 move／interact；candidate_sources 无分／对齐合同；见 sprint-retrieval-move-interact-candidate-sources.md。攻击 tag-only 仍保留；Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+**2026-10-22 检索离线进展（move／interact 裸标签噪声 + candidate_sources，已推送 `862dee4`）：** `_TAG_ONLY_NOISE_ACTIONS` 扩至 move／interact；candidate_sources 无分／对齐合同；见 sprint-retrieval-move-interact-candidate-sources.md。攻击 tag-only 仍保留；Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线进展（战斗／combat 裸标签噪声排除，已推送 0896740）：** _tag_only_action_noise_documents；见 sprint-retrieval-fight-tag-only-noise.md。攻击 tag-only 召回仍保留（TD010）；Boss／射击假语料与人评校准仍 open；不宣称 TD004／TD010 关单。
 

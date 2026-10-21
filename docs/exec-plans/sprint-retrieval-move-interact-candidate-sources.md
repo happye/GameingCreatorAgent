@@ -1,6 +1,6 @@
 # Sprint：move／interact 裸标签噪声 + candidate_sources 合同（检索离线质量）
 
-**状态（2026-10-22）：待推送 origin/main。** 将 `_TAG_ONLY_NOISE_ACTIONS` 扩展为 `fight|move|interact`：query 为移动／交互类且 `positive_text` 无对应动作词、仅靠 mechanicTags 时排除。攻击 tag-only 召回仍按 TD010 保留。补强 `candidate_sources` 文档合同：无分／无向量、按时间排序、facts 不含裸标签、与 search hit 身份对齐、coverage-gap 拒投。验证=**pytest（fixture + EqualSimilarity hybrid）+ demo-phase0 只读 DB**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。
+**状态（2026-10-22）：已推送 origin/main 862dee4。** 将 `_TAG_ONLY_NOISE_ACTIONS` 扩展为 `fight|move|interact`：query 为移动／交互类且 `positive_text` 无对应动作词、仅靠 mechanicTags 时排除。攻击 tag-only 召回仍按 TD010 保留。补强 `candidate_sources` 文档合同：无分／无向量、按时间排序、facts 不含裸标签、与 search hit 身份对齐、coverage-gap 拒投。验证=**pytest（fixture + EqualSimilarity hybrid）+ demo-phase0 只读 DB**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。
 
 ## Assignment
 
