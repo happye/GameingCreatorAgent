@@ -572,6 +572,98 @@ def test_assert_search_result_contract_rejects_probability_flag_and_unknown_kind
     assert absed.value.code == "retrieval.contract"
 
 
+def test_assert_search_result_contract_rejects_mode_media_event_and_duplicate_candidate():
+    """Deeper in-memory gates mirroring search-document: mode, media, owned eventId, unique ids."""
+    from dataclasses import replace
+
+    import pytest
+
+    from gamingcreator.application.retrieval import assert_search_result_contract
+    from gamingcreator.domain.errors import AppError
+    from test_retrieval_negation import search, timeline
+
+    hit = search(timeline("角色向左移动。"), "移动", "lexical")
+    assert hit.candidates
+    assert_search_result_contract(hit)
+
+    bad_mode = replace(hit, mode="not-a-mode")  # type: ignore[arg-type]
+    with pytest.raises(AppError) as mode_err:
+        assert_search_result_contract(bad_mode)
+    assert mode_err.value.code == "retrieval.contract"
+
+    bad_media = replace(
+        hit,
+        candidates=(replace(hit.candidates[0], media_id=""),),
+    )
+    with pytest.raises(AppError) as media_err:
+        assert_search_result_contract(bad_media)
+    assert media_err.value.code == "retrieval.contract"
+
+    foreign = replace(
+        hit,
+        candidates=(
+            replace(hit.candidates[0], event_id=f"foreign-run:{hit.candidates[0].media_id}:event:x"),
+        ),
+    )
+    with pytest.raises(AppError) as event_err:
+        assert_search_result_contract(foreign)
+    assert event_err.value.code == "retrieval.contract"
+
+    none_event = replace(
+        hit,
+        candidates=(replace(hit.candidates[0], event_id=None),),
+    )
+    assert_search_result_contract(none_event)
+
+    empty_event = replace(
+        hit,
+        candidates=(replace(hit.candidates[0], event_id=""),),
+    )
+    with pytest.raises(AppError) as empty_err:
+        assert_search_result_contract(empty_event)
+    assert empty_err.value.code == "retrieval.contract"
+
+    if len(hit.candidates) >= 1:
+        dup = replace(
+            hit,
+            candidates=(
+                hit.candidates[0],
+                replace(hit.candidates[0], score=hit.candidates[0].score * 0.5),
+            ),
+        )
+        with pytest.raises(AppError) as dup_err:
+            assert_search_result_contract(dup)
+        assert dup_err.value.code == "retrieval.contract"
+
+
+def test_assert_candidate_sources_contract_rejects_blank_media_and_empty_span():
+    from dataclasses import replace
+
+    import pytest
+
+    from gamingcreator.application.retrieval import (
+        assert_candidate_sources_contract,
+        candidate_sources,
+    )
+    from gamingcreator.domain.errors import AppError
+    from test_retrieval_negation import timeline
+
+    sources = candidate_sources(timeline("角色跳跃。", "角色向左移动。"))
+    assert_candidate_sources_contract(sources)
+
+    bad_media = (replace(sources[0], media_id=""),) + sources[1:]
+    with pytest.raises(AppError) as media_err:
+        assert_candidate_sources_contract(bad_media)
+    assert media_err.value.code == "retrieval.contract"
+
+    # SourceRange validates nonempty on construction — forge via object.__new__ bypass is heavy;
+    # instead duplicate id still refused (existing), and empty event string refused.
+    empty_event = (replace(sources[0], event_id=""),) + sources[1:]
+    with pytest.raises(AppError) as event_err:
+        assert_candidate_sources_contract(empty_event)
+    assert event_err.value.code == "retrieval.contract"
+
+
 def test_cli_search_document_projects_score_is_probability_false():
     from gamingcreator.cli.main import _search_document
     from test_retrieval_negation import search, timeline

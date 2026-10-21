@@ -596,17 +596,49 @@ def assert_search_result_contract(result: SearchResult) -> None:
         raise _fail("retrieval.contract", "检索分数不是概率，不能标记为 score_is_probability。")
     if result.retrieval_version != RETRIEVAL_VERSION:
         raise _fail("retrieval.contract", "检索版本与合同不一致。")
+    if result.mode not in RETRIEVAL_MODES:
+        raise _fail("retrieval.contract", "检索 mode 无效。")
+    if type(result.query) is not str:
+        raise _fail("retrieval.contract", "检索 query 无效。")
+    if type(result.run_id) is not str or not result.run_id:
+        raise _fail("retrieval.contract", "检索 runId 无效。")
     if result.abstention_reason is not None and result.abstention_reason not in ABSTENTION_REASONS:
         raise _fail("retrieval.contract", "未知的检索弃权原因。")
     if result.abstention_reason is not None and result.candidates:
         raise _fail("retrieval.contract", "弃权结果不能同时带有候选。")
+    seen_ids: set[str] = set()
     for item in result.candidates:
+        if type(item.candidate_id) is not str or not item.candidate_id:
+            raise _fail("retrieval.contract", "检索候选 candidateId 无效。")
+        if item.candidate_id in seen_ids:
+            raise _fail("retrieval.contract", "检索候选 candidateId 重复。")
+        seen_ids.add(item.candidate_id)
+        if type(item.media_id) is not str or not item.media_id:
+            raise _fail("retrieval.contract", "检索候选 mediaId 无效。")
         if item.score_kind not in SCORE_KINDS:
             raise _fail("retrieval.contract", "未知的检索打分种类。")
         if "ranking signal, not probability" not in item.why:
             raise _fail("retrieval.contract", "候选缺少非概率声明。")
         if item.lexical_evidence is not None and item.lexical_evidence not in LEXICAL_EVIDENCE_CHANNELS:
             raise _fail("retrieval.contract", "未知的 lexicalEvidence 通道。")
+        if not (item.source_range.start_us < item.source_range.end_us):
+            raise _fail("retrieval.contract", "检索候选时间范围无效。")
+        event_id = item.event_id
+        # Transcript-only hits omit event_id (None). Empty string / wrong type still refuse.
+        if event_id is not None and (type(event_id) is not str or not event_id):
+            raise _fail("retrieval.contract", "检索候选 eventId 无效。")
+        # Joint project search passes scope_id as run_id (project-…); event ids stay owned by source runs.
+        if (
+            type(event_id) is str
+            and ":" in event_id
+            and not result.run_id.startswith("project-")
+            and not event_id.startswith(f"{result.run_id}:")
+        ):
+            raise _fail("retrieval.contract", "检索候选 eventId 不属于该任务。")
+        if type(item.evidence_ids) is not tuple or any(
+            type(evidence_id) is not str or not evidence_id for evidence_id in item.evidence_ids
+        ):
+            raise _fail("retrieval.contract", "检索候选 evidenceIds 无效。")
 
 
 def assert_project_search_result_contract(result: ProjectSearchResult) -> None:
@@ -674,12 +706,25 @@ def assert_candidate_sources_contract(sources: tuple[CandidateSource, ...]) -> N
     seen: set[str] = set()
     previous_start = -1
     for item in sources:
+        if type(item.candidate_id) is not str or not item.candidate_id:
+            raise _fail("retrieval.contract", "候选清单标识无效。")
         if item.candidate_id in seen:
             raise _fail("retrieval.contract", "候选清单标识重复。")
         seen.add(item.candidate_id)
+        if type(item.media_id) is not str or not item.media_id:
+            raise _fail("retrieval.contract", "候选清单 mediaId 无效。")
+        if not (item.source_range.start_us < item.source_range.end_us):
+            raise _fail("retrieval.contract", "候选清单时间范围无效。")
         if item.source_range.start_us < previous_start:
             raise _fail("retrieval.contract", "候选清单未按源时间排序。")
         previous_start = item.source_range.start_us
+        event_id = item.event_id
+        if event_id is not None and (type(event_id) is not str or not event_id):
+            raise _fail("retrieval.contract", "候选清单 eventId 无效。")
+        if type(item.evidence_ids) is not tuple or any(
+            type(evidence_id) is not str or not evidence_id for evidence_id in item.evidence_ids
+        ):
+            raise _fail("retrieval.contract", "候选清单 evidenceIds 无效。")
         if hasattr(item, "score") or hasattr(item, "score_kind"):
             raise _fail("retrieval.contract", "候选清单不能带有打分字段。")
 
