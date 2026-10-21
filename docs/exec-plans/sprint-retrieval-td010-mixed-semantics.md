@@ -1,6 +1,6 @@
 # Sprint：TD010 混合语义边界与离线 DB 形对照
 
-**状态（2026-10-22）：代码已落地，待推送。** 否定护栏不再把 `positive_text` 回退到含 mechanicTags 的 `text`；transcript 文档显式写入 `positive_text`；新增混合通道（事实／字幕／裸标签）边界测试与离线 golden JSON 对照。0 付费；不代选 A／B／D；不标 F006 true；不宣称人评／验收通过；不声称覆盖缺口已清；不宣称 TD010 真实 DB run 已关单。
+**状态（2026-10-22）：已推送 origin/main 51b0f56。** 否定护栏不再把 `positive_text` 回退到含 mechanicTags 的 `text`；transcript 文档显式写入 `positive_text`；新增混合通道（事实／字幕／裸标签）边界测试与离线 golden JSON 对照。0 付费；不代选 A／B／D；不标 F006 true；不宣称人评／验收通过；不声称覆盖缺口已清；不宣称 TD010 真实 DB run 已关单。
 
 ## Assignment
 

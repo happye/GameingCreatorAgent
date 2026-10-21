@@ -1,6 +1,6 @@
 # Progress Log
 
-**2026-10-22 TD010 混合语义边界／离线 DB 形对照（待推送）：** positive_text 禁回退；transcript 写入 positive_text；mixed-semantics pytest + golden JSON。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户；不宣称真实 DB 关单。sprint-retrieval-td010-mixed-semantics.md。
+**2026-10-22 TD010 混合语义边界／离线 DB 形对照（已推送 51b0f56）：** positive_text 禁回退；transcript 写入 positive_text；mixed-semantics pytest + golden JSON。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户；不宣称真实 DB 关单。sprint-retrieval-td010-mixed-semantics.md。
 
 **2026-10-22 检索否定保护不受裸 mechanicTags 覆盖（TD010，已推送 1d0f70d）：** positive_text 护栏；negation pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-retrieval-mechanic-tag-denial.md。
 
