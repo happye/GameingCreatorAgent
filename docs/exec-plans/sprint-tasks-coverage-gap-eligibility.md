@@ -1,6 +1,6 @@
 # Sprint：任务列表区分覆盖缺口与检索资格
 
-**状态（2026-10-22）：离线实现中／本轮交付。** 覆盖缺口脚手架已齐；本轮回到 Phase-0 可用性：`tasks` 快照把 `analysis.coverage_gap` 从笼统「分析未完成」拆出，并标明不可检索／无完整资格。0 付费；不代选 A／B／D；不声称三缺口已清；不改 feature_list。
+**状态（2026-10-22）：已交付并推送 3230651。** 覆盖缺口脚手架已齐；本轮回到 Phase-0 可用性：`tasks` 快照把 `analysis.coverage_gap` 从笼统「分析未完成」拆出，并标明不可检索／无完整资格。0 付费；不代选 A／B／D；不声称三缺口已清；不改 feature_list。
 
 ## Assignment
 
@@ -18,7 +18,7 @@
 - [x] `analysis_coverage_gap` 相位 + `searchEligible`／`completedEligible`；相关 pytest 绿
 - [x] 工作台任务卡下一步文案区分缺口
 - [x] TASKS_VERSION → material-tasks-v2
-- [ ] 普通提交并推送 `origin/codex/visual-details`
+- [x] 普通提交并推送 `origin/codex/visual-details`
 
 ## Stop
 
