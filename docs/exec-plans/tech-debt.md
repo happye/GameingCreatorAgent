@@ -1,6 +1,6 @@
 # Technical debt
 
-**2026-10-22 检索离线进展（UI 观察跨语言 + 交战别名，已推送 PLACEHOLDER）：** demo-phase0 真实倒计时／计时／比分／光束／交战；见 sprint-retrieval-ui-countdown-score-beam-jiaozhan.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+**2026-10-22 检索离线进展（UI 观察跨语言 + 交战别名，已推送 3058c8a）：** demo-phase0 真实倒计时／计时／比分／光束／交战；见 sprint-retrieval-ui-countdown-score-beam-jiaozhan.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线进展（cast／skill 别名 + explode 跨语言，已推送 5cbfb4f）：** demo-phase0 真实 技能／释放／爆炸；cast tag-only 噪声排除；见 sprint-retrieval-cast-skill-explode-aliases.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 

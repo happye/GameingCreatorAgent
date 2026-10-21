@@ -1,4 +1,4 @@
-**当前（2026-10-22）：root / Agent 推进检索 UI 观察跨语言 + 交战别名（已推送 PLACEHOLDER）。** sprint-retrieval-ui-countdown-score-beam-jiaozhan.md 归 root／GamingCreatorAgent。拥有 retrieval UI 跨语言／交战别名与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不发明 Boss／射击语料；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下 cast／skill／explode 为历史。
+**当前（2026-10-22）：root / Agent 推进检索 UI 观察跨语言 + 交战别名（已推送 3058c8a）。** sprint-retrieval-ui-countdown-score-beam-jiaozhan.md 归 root／GamingCreatorAgent。拥有 retrieval UI 跨语言／交战别名与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不发明 Boss／射击语料；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下 cast／skill／explode 为历史。
 
 **当前（2026-10-22）：root / Agent 推进检索 cast／skill 别名 + explode 跨语言（已推送 5cbfb4f）。** sprint-retrieval-cast-skill-explode-aliases.md 归 root／GamingCreatorAgent。拥有 retrieval cast／skill／explode 别名与 tag-only、只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不发明 Boss／射击语料；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下 heal／damage／interacted／信封为历史。
 
