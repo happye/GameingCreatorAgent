@@ -1,6 +1,6 @@
 # Sprint：定向补窗离线合同（isolate 与选项 B 边界）
 
-**状态（2026-10-21）：离线实现中／本轮交付。** 用户已选 C；本 sprint **不代选** A／B／D，也 **不** 发 DeepSeek、不重跑 launcher、不标 F006/F009/F010 true。三缺口仍在；清缺口仍须以后选项 B（新提案＋新费用授权）。
+**状态（2026-10-21）：已交付并推送 8fcc226。** 用户已选 C；本 sprint **不代选** A／B／D，也 **不** 发 DeepSeek、不重跑 launcher、不标 F006/F009/F010 true。三缺口仍在；清缺口仍须以后选项 B（新提案＋新费用授权）。
 
 ## Assignment
 
@@ -21,7 +21,7 @@
 - [x] 真实长钟馗覆盖（若在仓）断言仅三拒绝可作目标，夹带成功窗必拒
 - [x] 0 DeepSeek／0 launcher；F006/F009/F010 仍 false；不声称三缺口已清
 - [x] human-inputs 保留 A／B／D 待决说明（C 已决）；B 仍须新提案＋新授权
-- [ ] 普通提交并推送 `origin/codex/visual-details`
+- [x] 普通提交并推送 `origin/codex/visual-details`
 
 ## Stop
 

@@ -1,6 +1,6 @@
 # 当前交接：定向补窗离线合同已落地，三缺口仍在
 
-**当前交接（2026-10-21）：选项 C 之后的下一离线项——定向补窗合同护栏。** 已在 `analysis_reliability.py` 增加只读库存／目标校验（`directed-gap-fill-v1`），相关 pytest 见 `tests/test_directed_gap_fill_contract.py`；sprint：`docs/exec-plans/sprint-coverage-gap-directed-contract.md`。明确：**isolate-schema-v1 续跑 ≠ 定向补窗**；补窗目标只能是覆盖清单里的 rejected，禁止夹带已成功窗。0 付费／不重跑 launcher／F006/F009/F010 仍 false。**三缺口仍在**，离线护栏不能消缺口。**A／B／D 仍留给用户**（C 已决）；B 须新提案＋新费用授权。选项 C 推送基线 a226bca／4a5ffe5。以下为选项 C／诊断／接续历史。
+**当前交接（2026-10-21）：定向补窗离线合同已推送 8fcc226。** 已在 `analysis_reliability.py` 增加只读库存／目标校验（`directed-gap-fill-v1`），相关 pytest 见 `tests/test_directed_gap_fill_contract.py`；sprint：`docs/exec-plans/sprint-coverage-gap-directed-contract.md`。明确：**isolate-schema-v1 续跑 ≠ 定向补窗**；补窗目标只能是覆盖清单里的 rejected，禁止夹带已成功窗。0 付费／不重跑 launcher／F006/F009/F010 仍 false。**三缺口仍在**，离线护栏不能消缺口。**A／B／D 仍留给用户**（C 已决）；B 须新提案＋新费用授权。选项 C 推送基线 a226bca／4a5ffe5。以下为选项 C／诊断／接续历史。
 
 **当前交接（2026-10-21）：用户已选 C，离线改进已推送 a226bca。** 选项 C 已写入 human-inputs；sprint 见 docs/exec-plans/sprint-coverage-gap-offline-c.md。根因：同帧起止＝空片段，合同正确拒绝；1e3f420 曾用 schemaProjection 替换 schemaDetail，现恢复两字段并存。V6 提示冻结不动（已含同帧非法）。0 付费／不重跑 launcher／F006/F009/F010 仍 false。**B 仅未来路径**（须新提案＋新授权）。三缺口仍在，离线改代码不能消缺口。以下为诊断交付／规划／接续历史。
 
