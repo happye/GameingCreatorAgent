@@ -1,5 +1,7 @@
 # Active assignments
 
+**当前（2026-10-22）：root / Agent 推进 TD009 sidecar 只读匹配／指纹拒收。** sprint-detail-query-sidecar-contracts.md 归 root／GamingCreatorAgent。拥有 detail_query_sidecar 与合同测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／TD009 关单。以下 matcher AND v1.2 为历史。
+
 **当前（2026-10-22）：root / Agent 推进 TD009 matcher 正向 AND 边界（v1.2，已推送 6bfab3b）。** sprint-actor-detail-matcher-and-boundaries.md 归 root／GamingCreatorAgent。拥有 matcher／domain 版本钉与测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／TD009 关单。以下同居 UNCERTAIN 阻断为历史。
 
 **当前（2026-10-22）：root / Agent 推进 TD009 matcher 同居 UNCERTAIN 阻断 FULL（已推送 8aac1d2）。** sprint-actor-detail-matcher-coexisting-uncertainty.md 归 root／GamingCreatorAgent。拥有 matcher／domain 版本钉与测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／TD009 关单。以下 JUMP hybrid 标题噪声为历史。

@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-22 TD009 sidecar 只读匹配／指纹拒收（待推送）：** coverage-gap 拒匹配；matcherVersion 自检；指纹漂移孤儿化；pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户；不宣称 TD009 关单。sprint-detail-query-sidecar-contracts.md。
+
 **2026-10-22 TD009 matcher 正向 AND 边界／v1.2（已推送 6bfab3b）：** _full 门槛收紧；分 part held／不相交帧不得 FULL；match_report 露 v1.2；pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户；不宣称 TD009 关单。sprint-actor-detail-matcher-and-boundaries.md。
 
 **2026-10-22 TD009 matcher 同居 UNCERTAIN 阻断 FULL（已推送 8aac1d2）：** 同 part／kind／value 的 OBSERVED+UNCERTAIN 不得 FULL；matcher v1.1；pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户；不宣称 TD009 关单。sprint-actor-detail-matcher-coexisting-uncertainty.md。

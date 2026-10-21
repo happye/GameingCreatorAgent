@@ -1,5 +1,7 @@
 # Phase 0 开发任务与依赖
 
+> **2026-10-22 离线补强：** TD009 sidecar 只读匹配／指纹拒收合同；不清除三缺口；不代选 A／B／D；不标 F006 true。
+
 > **2026-10-22 离线补强：** TD009 matcher 正向 AND 边界（v1.2，已推送 `6bfab3b`）；不清除三缺口；不代选 A／B／D；不标 F006 true。
 
 > **2026-10-22 离线补强：** TD009 matcher 同居 UNCERTAIN 阻断 OBSERVED FULL（v1.1，已推送 `8aac1d2`）；不清除三缺口；不代选 A／B／D；不标 F006 true。

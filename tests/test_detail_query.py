@@ -168,7 +168,7 @@ def test_saved_match_is_immutable_idempotent_and_does_not_change_refinement_or_s
     matches = list((directory / "matches").glob("*.json"))
     assert len(matches) == 1
     written = matches[0].stat().st_mtime_ns
-    assert first == json.loads(matches[0].read_text())
+    assert first == json.loads(matches[0].read_text(encoding="utf-8"))
     assert first == match_refinement(
         project, timeline, timeline.events[0].event_id, query, profile="v1", save=True
     )
@@ -177,7 +177,7 @@ def test_saved_match_is_immutable_idempotent_and_does_not_change_refinement_or_s
         assert (project / relative).read_bytes() == content
     assert not list((project / "detail-refinement-budgets").glob("*/ledger.jsonl"))
     tampered = dict(first, qualityGate=True)
-    matches[0].write_text(json.dumps(tampered))
+    matches[0].write_text(json.dumps(tampered, ensure_ascii=False), encoding="utf-8")
     with pytest.raises(AppError) as caught:
         match_refinement(
             project, timeline, timeline.events[0].event_id, query, profile="v1", save=True

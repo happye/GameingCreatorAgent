@@ -94,6 +94,17 @@ def match_refinement(
     profile: str = "v2",
     save: bool = False,
 ) -> dict[str, object]:
+    # TD009: coverage-gap runs are not match-eligible (mirror retrieval refusal).
+    if (
+        timeline.run.status == RunStatus.FAILED
+        and timeline.run.error_code == "analysis.coverage_gap"
+    ):
+        raise AppError(
+            "refinement.coverage_gap",
+            "该分析保留覆盖缺口，未获完整资格，不能用于细节匹配或正式验收。",
+            ExitCode.INPUT,
+            timeline.run.run_id,
+        )
     if timeline.run.status != RunStatus.COMPLETED:
         raise AppError(
             "refinement.run_incomplete",
@@ -115,6 +126,17 @@ def match_refinement(
             request_digest=outcome.request_hash,
         )
         document["refinementProfile"] = profile
+        expected_matcher = (
+            TEMPORAL_MATCHER_VERSION if profile in {"v4", "v5"} else MATCHER_VERSION
+        )
+        result = document.get("result")
+        if not isinstance(result, dict) or result.get("matcherVersion") != expected_matcher:
+            raise AppError(
+                "refinement.matcher_version",
+                "匹配报告的 matcher 版本与当前合同不一致。",
+                ExitCode.STORAGE,
+                timeline.run.run_id,
+            )
         if (
             len(json.dumps(document, ensure_ascii=False, allow_nan=False).encode())
             > MAX_MANIFEST_BYTES
