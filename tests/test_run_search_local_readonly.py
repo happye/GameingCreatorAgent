@@ -123,3 +123,26 @@ def test_assert_run_search_document_contract_rejects_media_why_timecode() -> Non
     with pytest.raises(AppError) as owned:
         assert_run_search_document_contract(bad_prefix, expected_run_id=run_id)
     assert owned.value.code == "retrieval.contract"
+
+
+def test_assert_run_search_document_contract_accepts_none_event_id_for_transcript_hits() -> None:
+    """Transcript-only candidates omit eventId; ownership gates apply only when present."""
+    runs_root = DEMO_PHASE0 / "runs"
+    if not runs_root.is_dir():
+        pytest.skip(f"local runs missing: {runs_root}")
+    search_files = sorted(runs_root.glob("*/searches/*.json"))
+    if not search_files:
+        pytest.skip("no local run search JSON")
+    document = json.loads(search_files[0].read_text(encoding="utf-8-sig"))
+    run_id = document["runId"]
+    assert_run_search_document_contract(document, expected_run_id=run_id)
+    none_event = json.loads(json.dumps(document))
+    if not none_event.get("candidates"):
+        pytest.skip("no candidates")
+    none_event["candidates"][0]["eventId"] = None
+    assert_run_search_document_contract(none_event, expected_run_id=run_id)
+    empty = json.loads(json.dumps(document))
+    empty["candidates"][0]["eventId"] = ""
+    with pytest.raises(AppError) as empty_err:
+        assert_run_search_document_contract(empty, expected_run_id=run_id)
+    assert empty_err.value.code == "retrieval.contract"

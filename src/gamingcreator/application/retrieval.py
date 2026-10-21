@@ -658,17 +658,19 @@ def assert_run_search_document_contract(
         if row.get("scoreKind") not in SCORE_KINDS:
             raise _fail("retrieval.contract", "单任务检索投影 scoreKind 无效。")
         event_id = row.get("eventId")
-        if type(event_id) is not str or not event_id:
+        # Transcript-only hits legitimately omit eventId (None). Empty string / wrong type still refuse.
+        if event_id is not None and (type(event_id) is not str or not event_id):
             raise _fail("retrieval.contract", "单任务检索投影候选 eventId 无效。")
-        # Persisted timelines use "{runId}:..."; synthetic unit fixtures may use bare ids.
-        if ":" in event_id and not event_id.startswith(f"{run_id}:"):
-            raise _fail("retrieval.contract", "单任务检索投影候选 eventId 不属于该任务。")
         media_id = row.get("mediaId")
         if type(media_id) is not str or not media_id:
             raise _fail("retrieval.contract", "单任务检索投影候选 mediaId 无效。")
-        # Owned timeline event ids are "{runId}:{mediaId}:..."; bare synthetic ids stay allowed.
-        if ":" in event_id and not event_id.startswith(f"{run_id}:{media_id}:"):
-            raise _fail("retrieval.contract", "单任务检索投影候选 eventId 与 mediaId 不一致。")
+        if type(event_id) is str:
+            # Persisted timelines use "{runId}:..."; synthetic unit fixtures may use bare ids.
+            if ":" in event_id and not event_id.startswith(f"{run_id}:"):
+                raise _fail("retrieval.contract", "单任务检索投影候选 eventId 不属于该任务。")
+            # Owned timeline event ids are "{runId}:{mediaId}:..."; bare synthetic ids stay allowed.
+            if ":" in event_id and not event_id.startswith(f"{run_id}:{media_id}:"):
+                raise _fail("retrieval.contract", "单任务检索投影候选 eventId 与 mediaId 不一致。")
         why = row.get("why")
         if type(why) is not str or not why.strip():
             raise _fail("retrieval.contract", "单任务检索投影候选 why 无效。")
@@ -768,23 +770,56 @@ def assert_project_search_document_contract(document: dict[str, object]) -> None
         raise _fail("retrieval.contract", "项目检索版本与合同不一致。")
     if document.get("modelAnalysisCalls") != 0 or document.get("newReservations") != 0:
         raise _fail("retrieval.contract", "离线项目检索投影不能声称新的模型分析或预留。")
+    if document.get("mode") not in RETRIEVAL_MODES:
+        raise _fail("retrieval.contract", "项目检索投影 mode 无效。")
+    query = document.get("query")
+    if type(query) is not str:
+        raise _fail("retrieval.contract", "项目检索投影 query 无效。")
+    top_k = document.get("topK")
+    if type(top_k) is not int or top_k < 1:
+        raise _fail("retrieval.contract", "项目检索投影 topK 无效。")
     sources = document.get("sources")
     if type(sources) is not list or not sources:
         raise _fail("retrieval.contract", "项目检索投影必须包含源运行列表。")
     source_ids: set[str] = set()
+    sources_by_run: dict[str, dict[str, object]] = {}
     for source in sources:
         if not isinstance(source, dict):
             raise _fail("retrieval.contract", "项目检索源运行无效。")
         run_id = source.get("runId")
         if type(run_id) is not str or not run_id or run_id in source_ids:
             raise _fail("retrieval.contract", "项目检索源运行标识无效或重复。")
+        media_id = source.get("mediaId")
+        if type(media_id) is not str or not media_id:
+            raise _fail("retrieval.contract", "项目检索源 mediaId 无效。")
+        source_sha = source.get("sourceSha256")
+        if type(source_sha) is not str or not re.fullmatch(r"[0-9a-f]{64}", source_sha):
+            raise _fail("retrieval.contract", "项目检索源 sourceSha256 无效。")
         source_ids.add(run_id)
+        sources_by_run[run_id] = source
     for row in document.get("candidates") or []:
         if not isinstance(row, dict):
             raise _fail("retrieval.contract", "项目检索候选无效。")
         run_id = row.get("runId")
         if run_id not in source_ids:
             raise _fail("retrieval.contract", "项目检索候选所属运行不在源列表中。")
+        source = sources_by_run[str(run_id)]
+        if row.get("mediaId") != source.get("mediaId"):
+            raise _fail("retrieval.contract", "项目检索候选 mediaId 与源运行不一致。")
+        if row.get("sourceSha256") != source.get("sourceSha256"):
+            raise _fail("retrieval.contract", "项目检索候选 sourceSha256 与源运行不一致。")
+        event_id = row.get("eventId")
+        # Transcript-only joint hits omit eventId (None). Empty string / wrong type still refuse.
+        if event_id is not None and (type(event_id) is not str or not event_id):
+            raise _fail("retrieval.contract", "项目检索候选 eventId 无效。")
+        if type(event_id) is str:
+            # Owned timelines use "{runId}:..."; bare synthetic fixtures may omit the colon.
+            if ":" in event_id and not event_id.startswith(f"{run_id}:"):
+                raise _fail("retrieval.contract", "项目检索候选 eventId 不属于源运行。")
+        start_tc = row.get("startTimecode")
+        end_tc = row.get("endTimecode")
+        if type(start_tc) is not str or not start_tc or type(end_tc) is not str or not end_tc:
+            raise _fail("retrieval.contract", "项目检索候选 timecode 无效。")
 
 
 def refuse_unsearchable_run(run: StoredRun) -> None:
