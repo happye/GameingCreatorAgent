@@ -1347,3 +1347,71 @@ def test_scene_bleacher_flash_trail_non_words_do_not_cross_lingual_match(query):
         "角色向城堡方向奔跑，身后有白色烟雾轨迹。",
     )
     assert search(data, query, "lexical").candidates == ()
+
+
+@pytest.mark.parametrize(
+    "query,positive",
+    [
+        ("rising", "一个绿色圆润角色从画面下方出现，向上升起。"),
+        ("rises", "一个绿色圆润角色从画面下方出现，向上升起。"),
+        ("shield", "蓝色角色周围出现半透明球形护罩，护罩随角色移动。"),
+        ("shields", "蓝色角色周围出现半透明球形护罩，护罩随角色移动。"),
+        ("barrier", "蓝色角色周围出现半透明球形护罩，护罩随角色移动。"),
+        ("barriers", "蓝色角色周围出现半透明球形护罩，护罩随角色移动。"),
+        ("floating", "一个绿色角色从悬浮平台下方出现，向上移动并穿过平台。"),
+        ("hover", "一个绿色角色从悬浮平台下方出现，向上移动并穿过平台。"),
+        ("hovering", "一个绿色角色从悬浮平台下方出现，向上移动并穿过平台。"),
+        ("stairs", "角色在绿色阶梯上向城堡方向奔跑。"),
+        ("stair", "角色在绿色阶梯上向城堡方向奔跑。"),
+        ("staircase", "角色在绿色阶梯上向城堡方向奔跑。"),
+        ("ladder", "角色在绿色阶梯上向城堡方向奔跑。"),
+        ("hug", "绿色头发角色向前倾身并拥抱粉色角色。"),
+        ("hugging", "绿色头发角色向前倾身并拥抱粉色角色。"),
+        ("embrace", "绿色头发角色向前倾身并拥抱粉色角色。"),
+        ("ring", "角色穿过带有粉色圆环的悬浮平台。"),
+        ("rings", "角色穿过带有粉色圆环的悬浮平台。"),
+        ("note", "绿色头发角色周围有黄色音符。"),
+        ("notes", "绿色头发角色周围有黄色音符。"),
+    ],
+)
+def test_scene_rising_shield_float_stair_hug_ring_note_cross_lingual_keeps_chinese_evidence(
+    query, positive
+):
+    """English scene nouns → 升起／护罩／悬浮／阶梯／拥抱／圆环／音符 (demo-phase0)."""
+    data = timeline(positive, "角色向左移动。")
+    result = search(data, query, "lexical")
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    assert result.candidates[0].observable_facts == (positive,)
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "rising2",
+        "arise",
+        "rose",
+        "windshield",
+        "shielding",
+        "float",
+        "floater",
+        "upstairs",
+        "downstairs",
+        "huggable",
+        "earring",
+        "ringing",
+        "notebook",
+        "noted",
+        "noteworthy",
+    ],
+)
+def test_scene_rising_shield_float_stair_hug_ring_note_non_words_do_not_cross_lingual_match(query):
+    data = timeline(
+        "一个绿色圆润角色从画面下方出现，向上升起。",
+        "蓝色角色周围出现半透明球形护罩，护罩随角色移动。",
+        "一个绿色角色从悬浮平台下方出现，向上移动并穿过平台。",
+        "角色在绿色阶梯上向城堡方向奔跑。",
+        "绿色头发角色向前倾身并拥抱粉色角色。",
+        "角色穿过带有粉色圆环的悬浮平台。",
+        "绿色头发角色周围有黄色音符。",
+    )
+    assert search(data, query, "lexical").candidates == ()
