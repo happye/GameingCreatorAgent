@@ -3,7 +3,9 @@
 import hashlib
 
 import pytest
-from test_retrieval_negation import search, timeline
+from test_retrieval_negation import EqualSimilarity, search, timeline
+from gamingcreator.application.retrieval import search_timeline
+import asyncio
 
 
 @pytest.mark.parametrize("mode", ["lexical", "hybrid"])
@@ -157,3 +159,25 @@ def test_jump_game_titles_do_not_become_translated_action_evidence(query):
 def test_negative_intent_does_not_translate_chinese_aliases(query):
     data = timeline("角色跳跃。", "角色射击。", "角色战斗。", "角色交互。")
     assert search(data, query, "lexical").candidates == ()
+
+
+
+@pytest.mark.parametrize("query", ["jump", "JUMP", "jumping"])
+def test_jump_title_brands_excluded_in_hybrid_against_adversarial_embeddings(query):
+    """TD004: semantic channel must not revive JUMP title cards for jump queries."""
+    data = timeline(
+        "画面显示“JUMP明星大乱斗”标题。",
+        "画面显示“JUMP ASSEMBLE”游戏标志。",
+        "少年JUMP正版授权出现在角落。",
+        "角色跳跃并落地。",
+    )
+    result = asyncio.run(
+        search_timeline(
+            data,
+            query,
+            mode="hybrid",
+            embedding_provider=EqualSimilarity(),
+            top_k=10,
+        )
+    )
+    assert [item.event_id for item in result.candidates] == ["event-3"]

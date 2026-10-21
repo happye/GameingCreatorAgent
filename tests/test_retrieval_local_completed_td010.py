@@ -21,6 +21,10 @@ from gamingcreator.application.retrieval import (
 )
 from gamingcreator.domain.errors import AppError
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
+import sys
+from pathlib import Path as _Path
+sys.path.insert(0, str(_Path(__file__).resolve().parent))
+from test_retrieval_negation import EqualSimilarity
 
 REPO = Path(__file__).resolve().parents[1]
 DEMO_PHASE0 = REPO / "artifacts" / "demo-phase0"
@@ -155,5 +159,34 @@ def test_local_completed_demo_phase0_jump_titles_not_lexical_hits():
             result = await search_timeline(timeline, query, mode="lexical", top_k=20)
             hit_events = {item.event_id for item in result.candidates}
             assert hit_events.isdisjoint(title_events), sorted(hit_events & title_events)
+
+    asyncio.run(run())
+
+
+def test_local_completed_demo_phase0_jump_titles_excluded_in_hybrid():
+    """TD004: adversarial equal embeddings must not revive JUMP title cards."""
+    _require_sqlite(DEMO_PHASE0)
+
+    async def run() -> None:
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
+        docs = {doc.event_id: doc for doc in _documents(timeline)}
+        title_events = {
+            event_id
+            for event_id, doc in docs.items()
+            if "jump assemble" in doc.positive_text.casefold()
+            or "jump明星大乱斗" in doc.positive_text.casefold()
+            or "少年jump正版授权" in doc.positive_text.casefold()
+        }
+        assert title_events
+        result = await search_timeline(
+            timeline,
+            "jump",
+            mode="hybrid",
+            embedding_provider=EqualSimilarity(),
+            top_k=20,
+        )
+        hit_events = {item.event_id for item in result.candidates}
+        assert hit_events.isdisjoint(title_events), sorted(hit_events & title_events)
 
     asyncio.run(run())

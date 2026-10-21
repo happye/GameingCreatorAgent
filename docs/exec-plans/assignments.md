@@ -1,5 +1,7 @@
 # Active assignments
 
+**当前（2026-10-22）：root / Agent 推进 JUMP 标题品牌 hybrid／semantic 排除（TD004）。** sprint-retrieval-jump-title-hybrid-noise.md 归 root／GamingCreatorAgent。拥有 retrieval 与相关测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／TD004 关单。以下 lexical 标题中性化为历史。
+
 **当前（2026-10-22）：root / Agent 推进检索忽略 JUMP 标题品牌噪声（TD004 离线，已推送 0497ebf）。** sprint-retrieval-jump-title-brand-noise.md 归 root／GamingCreatorAgent。拥有 retrieval 与相关测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／人评／TD004 关单。以下 TD010 本机只读对照为历史。
 
 **当前（2026-10-22）：root / Agent 推进 TD010 本机 Completed 只读对照（已推送 58b3f73）。** sprint-retrieval-td010-local-completed-readonly.md 归 root／GamingCreatorAgent。拥有 local-completed 测试与交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／人评通过；不改写 artifacts。以下混合语义边界为历史。

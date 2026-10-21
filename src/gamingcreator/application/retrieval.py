@@ -237,6 +237,47 @@ class _Document:
         return "clip-" + digest[:24]
 
 
+
+def _title_brand_action_noise_documents(
+    documents: tuple[_Document, ...], query: str
+) -> frozenset[str]:
+    """Exclude clips whose only query-action mention is a frozen title brand (TD004).
+
+    Lexical scoring already neutralizes brands. Semantic/hybrid can still rank a
+    title card highly for "jump" because the raw passage keeps JUMP ASSEMBLE.
+    When neutralizing removes every matched query action from positive_text, the
+    clip is title-brand noise for that action query — not gameplay evidence.
+    """
+    folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
+    if _NEGATIVE_QUERY_INTENT.search(folded_query):
+        return frozenset()
+    actions = {_ACTION_BY_TERM[match.group()] for match in _ACTION_MENTION.finditer(folded_query)}
+    if not actions:
+        return frozenset()
+    noisy: set[str] = set()
+    for document in documents:
+        original = unicodedata.normalize("NFKC", document.positive_text).casefold().replace(
+            "’", "'"
+        )
+        cleaned = unicodedata.normalize(
+            "NFKC", _neutralize_title_brands(document.positive_text)
+        ).casefold().replace("’", "'")
+        original_actions = {
+            _ACTION_BY_TERM[match.group()]
+            for match in _ACTION_MENTION.finditer(original)
+            if _ACTION_BY_TERM[match.group()] in actions
+        }
+        cleaned_actions = {
+            _ACTION_BY_TERM[match.group()]
+            for match in _ACTION_MENTION.finditer(cleaned)
+            if _ACTION_BY_TERM[match.group()] in actions
+        }
+        if original_actions and not cleaned_actions:
+            noisy.add(document.identifier)
+    return frozenset(noisy)
+
+
+
 def _fail(code: str, message: str) -> AppError:
     return AppError(code, message, ExitCode.INPUT)
 
@@ -758,7 +799,9 @@ async def _search_documents(
             min_similarity=min_similarity,
             min_semantic_margin=min_semantic_margin,
         )
-    denied_actions = _denied_action_documents(documents, query)
+    denied_actions = _denied_action_documents(documents, query) | _title_brand_action_noise_documents(
+        documents, query
+    )
     lexical_winners: dict[str, str] = {}
     lexical_documents = documents
     facet_documents: tuple[_Document, ...] = ()
