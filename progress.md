@@ -1,6 +1,6 @@
 # Progress Log
 
-**2026-10-22 失败调用诊断投影**：inspect／工作台只读展示 schema／http 失败摘要；相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-invocation-failure-diagnostics.md。
+**2026-10-22 失败调用诊断投影（已推送 218e6c8）**：inspect／工作台只读展示 schema／http 失败摘要；相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-invocation-failure-diagnostics.md。
 
 **2026-10-22 非200传输正文有界保留（已推送 acca03e）**：错误正文不再丢空；失败投影可离线诊断；相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-http-error-body-retention.md。
 

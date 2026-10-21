@@ -1,6 +1,6 @@
 # Sprint：失败调用诊断投影进入 inspect／工作台
 
-**状态（2026-10-22）：本轮交付。** 只读 `invocation_failure_diagnostics` 把失败调用的 `schemaError`／`schemaDetail`／`httpStatus`／`httpErrorProjection` 有界投影放进 inspect；工作台阶段列表展示「失败诊断」。0 付费；不代选 A／B／D；不声称三缺口已清；不改 feature_list。
+**状态（2026-10-22）：已交付并推送 218e6c8。** 只读 `invocation_failure_diagnostics` 把失败调用的 `schemaError`／`schemaDetail`／`httpStatus`／`httpErrorProjection` 有界投影放进 inspect；工作台阶段列表展示「失败诊断」。0 付费；不代选 A／B／D；不声称三缺口已清；不改 feature_list。
 
 ## Assignment
 
@@ -19,4 +19,4 @@
 - [x] 工作台展示失败诊断
 - [x] 相关 pytest 绿
 - [x] 0 DeepSeek／launcher；F006/F009/F010 仍 false
-- [ ] 推送 `origin/codex/visual-details`
+- [x] 已推送 `origin/codex/visual-details`（218e6c8）

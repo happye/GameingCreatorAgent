@@ -1,6 +1,6 @@
 # 当前交接：失败调用诊断已进工作台，三缺口仍在
 
-**当前交接（2026-10-22）：失败调用诊断投影已推送准备。** inspect 下发 `invocationFailures`（schema／http 有界投影）；工作台阶段列表显示失败诊断。sprint：`docs/exec-plans/sprint-invocation-failure-diagnostics.md`。0 付费／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。非200正文基线 acca03e／7c78ed2。以下为传输／工作台／检索闸历史。
+**当前交接（2026-10-22）：失败调用诊断投影已推送 218e6c8。** inspect 下发 `invocationFailures`（schema／http 有界投影）；工作台阶段列表显示失败诊断。sprint：`docs/exec-plans/sprint-invocation-failure-diagnostics.md`。0 付费／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。非200正文基线 acca03e／7c78ed2。以下为传输／工作台／检索闸历史。
 
 **当前交接（2026-10-22）：非200传输正文有界保留已推送 acca03e。** `HttpxVisionTransport` 保留有界错误正文；DeepSeek 失败写入 `httpStatus`／`httpErrorProjection`。sprint：`docs/exec-plans/sprint-http-error-body-retention.md`。0 付费／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。工作台检索对齐基线 aa114b8／da8ecf5。以下为工作台／检索闸历史。
 
