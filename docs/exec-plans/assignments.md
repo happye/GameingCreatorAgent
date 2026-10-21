@@ -1,3 +1,5 @@
+**2026-10-22 检索（parameters／embeddingSpace，3aa3ac4）：** sprint-retrieval-persisted-parameters-embedding-space.md；不关单。
+
 **2026-10-22 TD009（pipeline／provider／metadata，0bbab05）：** sprint-td009-match-report-sidecar-pipeline-metadata.md；不关单。
 
 **2026-10-22 TD009（binding gaps + baseRun／model，bd6b081）：** sprint-td009-match-report-sidecar-binding-gaps.md；不关单。

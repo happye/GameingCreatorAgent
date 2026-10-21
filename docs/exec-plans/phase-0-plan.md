@@ -1,3 +1,5 @@
+**2026-10-22 检索离线扩展（持久化信封 parameters／embeddingSpace 加深，已推送 3aa3ac4）：** 见 sprint-retrieval-persisted-parameters-embedding-space.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
+
 **2026-10-22 TD009 离线扩展（match-report↔sidecar pipeline／provider／metadata，已推送 0bbab05）：** 见 sprint-td009-match-report-sidecar-pipeline-metadata.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD009 关单。
 
 **2026-10-22 TD009 离线扩展（match-report↔sidecar binding gaps 对齐 + baseRun／model，已推送 bd6b081）：** 软 gap 码对齐绑定；见 sprint-td009-match-report-sidecar-binding-gaps.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD009 关单。

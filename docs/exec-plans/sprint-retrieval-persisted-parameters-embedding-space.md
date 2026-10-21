@@ -1,6 +1,6 @@
 # Sprint：持久化检索信封 parameters／embeddingSpace 加深
 
-**状态（2026-10-22）：已推送 origin/main FEATURE_SHA（docs 记录提交另记）。** 加深 `assert_persisted_retrieval_contract`：`parameters` 必为对象；`mode`∈RETRIEVAL_MODES 且＝`result.mode`；`topK`≥1 且 candidates 数≤topK；`minSimilarity`／`minSemanticMargin`／`abstentionReason` 若在 parameters 中须与 result 一致；`embeddingSpace`：hybrid／semantic 必有（dimension≥1、model／provider／revision_scope 非空、normalization＝`l2`），lexical 必须为 null。pytest + demo-phase0 `timeline.sqlite3` 只读（217 行）。验证＝**pytest + 只读 SQLite**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD004／TD010 关单**；不改写 SQLite；RETRIEVAL_VERSION 仍 `bm25-e5-rrf-v7`；攻击 tag-only 仍保留。
+**状态（2026-10-22）：已推送 origin/main 3aa3ac4（docs 记录提交另记）。** 加深 `assert_persisted_retrieval_contract`：`parameters` 必为对象；`mode`∈RETRIEVAL_MODES 且＝`result.mode`；`topK`≥1 且 candidates 数≤topK；`minSimilarity`／`minSemanticMargin`／`abstentionReason` 若在 parameters 中须与 result 一致；`embeddingSpace`：hybrid／semantic 必有（dimension≥1、model／provider／revision_scope 非空、normalization＝`l2`），lexical 必须为 null。pytest + demo-phase0 `timeline.sqlite3` 只读（217 行）。验证＝**pytest + 只读 SQLite**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD004／TD010 关单**；不改写 SQLite；RETRIEVAL_VERSION 仍 `bm25-e5-rrf-v7`；攻击 tag-only 仍保留。
 
 ## Assignment
 
