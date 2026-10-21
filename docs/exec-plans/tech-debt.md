@@ -1,6 +1,6 @@
 # Technical debt
 
-**2026-10-22 TD009 离线进展（匹配报告 inert／禁静态索引 v1.1，待推送）：** match-report-v1.1＋assert_match_report_contract；见 sprint-detail-match-report-inert-v1_1.md。复合人评仍 open；独立静态衣着索引仍明确不做；不宣称 TD009／F010 关单。
+**2026-10-22 TD009 离线进展（匹配报告 inert／禁静态索引 v1.1，已推送 `d428825`）：** match-report-v1.1＋assert_match_report_contract；见 sprint-detail-match-report-inert-v1_1.md。复合人评仍 open；独立静态衣着索引仍明确不做；不宣称 TD009／F010 关单。
 
 **2026-10-22 TD009 离线进展（sidecar 只读匹配／指纹拒收，已推送 `af939bd`）：** match_refinement coverage-gap＋matcherVersion 自检；见 sprint-detail-query-sidecar-contracts.md。复合人评／静态索引仍 open；不宣称 TD009／F010 关单。
 

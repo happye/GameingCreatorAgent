@@ -1,6 +1,6 @@
 # Sprint：TD009 匹配报告字段／惰性合同／禁静态衣着索引（v1.1）
 
-**状态（2026-10-22）：代码已落地，待推送。** `MATCH_REPORT_VERSION` → `actor-detail-match-report-v1.1`：强制 `humanLabels`／`qualityGate` 恒 null、`independentStaticClothingIndex=false`、嵌入 `inertContract`、新增 `constraintHash`；`assert_match_report_contract` 在 `match_report`／`match_refinement` 出口校验。验证=**pytest**。0 付费；不代选 A／B／D；不标 F006/F009/F010 true；不宣称 TD009／人评关单。
+**状态（2026-10-22）：已推送 origin/main `d428825`。** `MATCH_REPORT_VERSION` → `actor-detail-match-report-v1.1`：强制 `humanLabels`／`qualityGate` 恒 null、`independentStaticClothingIndex=false`、嵌入 `inertContract`、新增 `constraintHash`；`assert_match_report_contract` 在 `match_report`／`match_refinement` 出口校验。验证=**pytest**。0 付费；不代选 A／B／D；不标 F006/F009/F010 true；不宣称 TD009／人评关单。
 
 ## Assignment
 
@@ -19,4 +19,4 @@
 - [x] constraintHash 与 constraintJson 一致
 - [x] independentStaticClothingIndex 恒 false
 - [x] 篡改人标／闸／静态索引／哈希 → ValueError
-- [ ] 已推送 `origin/main`（推送后勾）
+- [x] 已推送 `origin/main`（`d428825`）
