@@ -4,7 +4,9 @@
 
 可选本机命令（不自动执行付费）：
 `.\scripts\prepare-directed-gap-fill-draft.ps1 -Coverage <analysis_coverage.json> -OutputDirectory artifacts/directed-gap-fill-draft-<date>`
-（或直接调同名 `.py`）。
+（或直接调同名 `.py`）。本机已有一份未授权示例包（忽略目录、勿当批准）：`artifacts/directed-gap-fill-draft-20261021/`。
+
+看任务进度时：长钟馗若显示「分析保留覆盖缺口，未获完整资格」，表示**不能**当正式 Completed 去检索／验收；另两段「素材已保存，等待分析」仍须新费用授权才能分析。
 
 **仍待你选（未代选）**：
 - **A 保留缺口**：接受本片 269／3，不追求 Completed。

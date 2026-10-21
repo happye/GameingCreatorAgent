@@ -44,9 +44,10 @@ def snapshot_fixture(
     stages=(("media", StageStatus.COMPLETED),),
     invocations=(),
     images=13,
+    error_code=None,
 ):
     bundle = bundle_fixture(tmp_path)
-    run = StoredRun("run-1", bundle.asset, CONFIG, "f" * 64, status, None)
+    run = StoredRun("run-1", bundle.asset, CONFIG, "f" * 64, status, error_code)
     checkpoints = tuple(
         StageCheckpoint(
             run.run_id,
@@ -139,6 +140,8 @@ def test_phase_and_next_action_follow_saved_checkpoints(tmp_path, status, stages
     assert payload["runStatus"] == status and payload["integrityCheck"] == "not_requested"
     assert payload["configuration"]["maxCostCny"] == "5" and payload["configHash"] == "f" * 64
     assert payload["humanQualityGate"] is None
+    assert payload["searchEligible"] is (status == RunStatus.COMPLETED)
+    assert payload["completedEligible"] is (status == RunStatus.COMPLETED)
 
 
 def test_child_window_completion_does_not_count_as_complete_parent_stage(tmp_path):
@@ -327,3 +330,26 @@ def test_invalid_paging_is_rejected_before_any_store_call(parameters):
     with pytest.raises(AppError) as refused:
         asyncio.run(tasks_payload(UnusedStore(), **parameters))
     assert refused.value.code == "input.tasks"
+
+
+def test_coverage_gap_failed_run_is_not_search_eligible(tmp_path):
+    snapshot = snapshot_fixture(
+        tmp_path,
+        status=RunStatus.FAILED,
+        error_code="analysis.coverage_gap",
+        stages=(
+            ("media", StageStatus.COMPLETED),
+            ("asr", StageStatus.COMPLETED),
+            ("vision-000000", StageStatus.COMPLETED),
+            ("vision-000001", StageStatus.FAILED),
+        ),
+        invocations=(invocation(status=InvocationStatus.FAILED),),
+    )
+    payload = task_payload(snapshot)
+    assert payload["phase"] == "analysis_coverage_gap"
+    assert payload["phaseLabel"] == "分析保留覆盖缺口，未获完整资格"
+    assert payload["nextAction"] is None
+    assert payload["searchEligible"] is False
+    assert payload["completedEligible"] is False
+    assert "coverage_gap" in payload["continuationBlockers"]
+    assert payload["errorCode"] == "analysis.coverage_gap"

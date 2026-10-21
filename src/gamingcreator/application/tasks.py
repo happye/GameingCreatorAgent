@@ -14,7 +14,7 @@ from gamingcreator.application.storage import (
 )
 from gamingcreator.domain.errors import AppError, ExitCode
 
-TASKS_VERSION = "material-tasks-v1"
+TASKS_VERSION = "material-tasks-v2"
 
 
 def _reservation(details: str | None) -> tuple[int, Decimal] | None:
@@ -38,9 +38,12 @@ def task_payload(snapshot: RunTaskSnapshot) -> dict[str, object]:
     model_started = bool(snapshot.invocations) or any(
         row.stage_id != "media" for row in checkpoints
     )
+    coverage_gap = run.status == RunStatus.FAILED and run.error_code == "analysis.coverage_gap"
     phase = (
         "completed"
         if run.status == RunStatus.COMPLETED
+        else "analysis_coverage_gap"
+        if coverage_gap
         else "analysis_incomplete"
         if model_started
         else "media_prepared"
@@ -49,6 +52,7 @@ def task_payload(snapshot: RunTaskSnapshot) -> dict[str, object]:
     )
     labels = {
         "completed": "分析已完成",
+        "analysis_coverage_gap": "分析保留覆盖缺口，未获完整资格",
         "analysis_incomplete": "分析未完成",
         "media_prepared": "素材已保存，等待分析",
         "preparation_incomplete": "素材准备未完成",
@@ -123,12 +127,14 @@ def task_payload(snapshot: RunTaskSnapshot) -> dict[str, object]:
     commitment = known + reserved if reservation_complete else None
     next_action = (
         None
-        if phase == "completed"
+        if phase in ("completed", "analysis_coverage_gap")
         else "prepare_media"
         if not model_started and config.schema_version == 2 and "media" not in completed
         else "analyze"
     )
     blockers = []
+    if coverage_gap:
+        blockers.append("coverage_gap")
     if run.error_code == "storage.integrity":
         blockers.append("material_integrity")
     if retry_confirmation:
@@ -143,11 +149,14 @@ def task_payload(snapshot: RunTaskSnapshot) -> dict[str, object]:
         blockers.append("coverage_limit")
     if config.provider != "deepseek" or config.model != "deepseek-flash":
         blockers.append("unsupported_cli_provider")
+    search_eligible = run.status == RunStatus.COMPLETED
     return {
         "runId": run.run_id,
         "runStatus": str(run.status),
         "phase": phase,
         "phaseLabel": labels[phase],
+        "searchEligible": search_eligible,
+        "completedEligible": True if search_eligible else False,
         "sourceName": run.asset.source_path.name,
         "durationUs": run.asset.duration_us,
         "sourceSha256": run.asset.sha256,

@@ -460,7 +460,7 @@
             card.append(element("p", "small", `基础分析已知估价 ${taskMoney(cost.knownCny)}；${cost.unknownAttempts ?? "?"} 次费用未确认；未知预留 ${taskMoney(cost.unknownReservationCny)}。`));
             card.append(element("p", "muted small", `保存的分析上限 ${taskMoney(task.configuration?.maxCostCny)}；含未知预留的承诺 ${taskMoney(cost.committedCny)}。精分析费用另行查看。`));
             const blockers = Array.isArray(task.continuationBlockers) ? task.continuationBlockers : [];
-            const next = task.phase === "completed" ? "可以打开回看与检索。" : task.nextAction === "prepare_media" ? "下一步：按原任务ID续准备素材。" : "下一步：明确启动分析，接着已保存进度运行。";
+            const next = task.phase === "completed" ? "可以打开回看与检索。" : task.phase === "analysis_coverage_gap" ? "有覆盖缺口，不能当完整分析用于正式检索／验收；保留缺口或另开定向补窗提案（须新授权）。" : task.nextAction === "prepare_media" ? "下一步：按原任务ID续准备素材。" : "下一步：明确启动分析，接着已保存进度运行。";
             card.append(element("p", "task-next small", blockers.length ? blockers.map((item) => blockerLabels[item] || "接续条件尚未满足。").join(" ") : next));
             if (task.errorCode) card.append(element("p", "muted small", `已保存的停止原因：${task.errorCode}`));
             card.append(element("p", "task-id muted small", `任务 ${task.runId}`));

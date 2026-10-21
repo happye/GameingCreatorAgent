@@ -1,4 +1,6 @@
-# 当前交接：草稿包已链同帧诊断证据，三缺口仍在
+# 当前交接：任务列表已区分覆盖缺口资格，三缺口仍在
+
+**当前交接（2026-10-22）：任务快照标明覆盖缺口不可检索。** `material-tasks-v2`：`analysis.coverage_gap` → 相位 `analysis_coverage_gap`／「分析保留覆盖缺口，未获完整资格」；`searchEligible`／`completedEligible` 仅 Completed 为 true。工作台任务下一步文案同步。sprint：`docs/exec-plans/sprint-tasks-coverage-gap-eligibility.md`。0 付费／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。覆盖缺口脚手架基线 26e06e1。以下为诊断链接／写出历史。
 
 **当前交接（2026-10-22）：草稿诊断证据链接已推送 c1cbf37。** `write_directed_gap_fill_proposal_draft` 现写入 `diagnosis-links-v1.json`，并把 vision-000021／000248／000253 的同帧摘要写入 README；缺诊断包时记录期望布局（`artifacts/coverage-gap-diagnosis-20261021`／`docs/exec-plans/report-2026-10-21-coverage-gap-diagnosis.md`）。sprint：`docs/exec-plans/sprint-coverage-gap-diagnosis-link.md`。0 付费／草稿 inert／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。写出基线 6ab066a／4965d36。以下为写出／模板历史。
 

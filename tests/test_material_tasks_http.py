@@ -58,7 +58,7 @@ def test_task_http_is_paged_read_only_and_preserves_unknown_attempts(tmp_path, m
         status, headers, raw = get(base, "/api/tasks?" + query)
         payload = json.loads(raw)
         assert status == 200 and headers["Cache-Control"] == "no-store"
-        assert payload["schemaVersion"] == "material-tasks-v1" and payload["hasMore"] is True
+        assert payload["schemaVersion"] == "material-tasks-v2" and payload["hasMore"] is True
         assert payload["project"] == str(project)
         assert [task["runId"] for task in payload["tasks"]] == ["run-002", "run-001"]
         status, _, raw = get(
