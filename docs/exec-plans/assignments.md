@@ -1,3 +1,5 @@
+**当前（2026-10-22）：root / Agent 推进单任务检索落盘本机只读归属合同（已推送 PLACEHOLDER）。** sprint-retrieval-run-search-local-readonly.md 归 root／GamingCreatorAgent。拥有 retrieval／CLI 合同与只读测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不改写旧 searches JSON；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下 move 步态别名为历史。
+
 **当前（2026-10-22）：root / Agent 推进检索 move 步态别名 walk／行走／走动／位移（已推送 8d47ba7）。** sprint-retrieval-move-walk-gait-aliases.md 归 root／GamingCreatorAgent。拥有 retrieval 别名／跨语言边界与测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下 attack 施事别名为历史。
 
 **当前（2026-10-22）：root / Agent 推进检索 attack 施事别名 attacker／attackers（已推送 56171d3）。** sprint-retrieval-attack-attacker-aliases.md 归 root／GamingCreatorAgent。拥有 retrieval 别名与测试／交接 docs；0 付费；不代选 A／B／D；不改 feature_list；不声称 F006／TD004／TD010 关单；攻击 tag-only 仍保留。以下 fight 英文别名为历史。

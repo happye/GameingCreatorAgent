@@ -32,6 +32,8 @@ RETRIEVAL_VERSION = "bm25-e5-rrf-v7"
 PROJECT_RETRIEVAL_VERSION = RETRIEVAL_VERSION + "-project-v1"
 # Ranking signals only — never calibrated probabilities or acceptance claims.
 SCORE_KINDS = frozenset({"bm25", "cosine", "rrf-bm25-cosine"})
+RETRIEVAL_MODES = frozenset({"lexical", "semantic", "hybrid"})
+RETRIEVAL_VERSION_PREFIX = "bm25-e5-rrf-v"
 LEXICAL_EVIDENCE_CHANNELS = frozenset({"positive_text", "mechanic_tags", "mixed"})
 ABSTENTION_REASONS = frozenset(
     {
@@ -555,6 +557,51 @@ def assert_search_document_contract(document: dict[str, object]) -> None:
         if evidence is not None and evidence not in LEXICAL_EVIDENCE_CHANNELS:
             raise _fail("retrieval.contract", "检索投影 lexicalEvidence 未知。")
 
+
+
+
+def assert_run_search_document_contract(
+    document: dict[str, object],
+    *,
+    expected_run_id: str | None = None,
+) -> None:
+    """Refuse single-run search JSON that drops run ownership or ranking contract."""
+    assert_search_document_contract(document)
+    if document.get("schemaVersion") != 1:
+        raise _fail("retrieval.contract", "单任务检索投影 schemaVersion 无效。")
+    run_id = document.get("runId")
+    if type(run_id) is not str or not run_id:
+        raise _fail("retrieval.contract", "单任务检索投影 runId 无效。")
+    if expected_run_id is not None and run_id != expected_run_id:
+        raise _fail("retrieval.contract", "单任务检索投影 runId 与路径不一致。")
+    version = document.get("retrievalVersion")
+    if type(version) is not str or not version.startswith(RETRIEVAL_VERSION_PREFIX):
+        raise _fail("retrieval.contract", "单任务检索投影 retrievalVersion 无效。")
+    if document.get("mode") not in RETRIEVAL_MODES:
+        raise _fail("retrieval.contract", "单任务检索投影 mode 无效。")
+    retrieval_id = document.get("retrievalId")
+    if retrieval_id is not None and (
+        type(retrieval_id) is not str or not re.fullmatch(r"[a-f0-9]{32}", retrieval_id)
+    ):
+        raise _fail("retrieval.contract", "单任务检索投影 retrievalId 无效。")
+    query = document.get("query")
+    if type(query) is not str:
+        raise _fail("retrieval.contract", "单任务检索投影 query 无效。")
+    candidates = document.get("candidates")
+    assert type(candidates) is list
+    for row in candidates:
+        assert isinstance(row, dict)
+        if row.get("scoreKind") not in SCORE_KINDS:
+            raise _fail("retrieval.contract", "单任务检索投影 scoreKind 无效。")
+        event_id = row.get("eventId")
+        if type(event_id) is not str or not event_id:
+            raise _fail("retrieval.contract", "单任务检索投影候选 eventId 无效。")
+        # Persisted timelines use "{runId}:..."; synthetic unit fixtures may use bare ids.
+        if ":" in event_id and not event_id.startswith(f"{run_id}:"):
+            raise _fail("retrieval.contract", "单任务检索投影候选 eventId 不属于该任务。")
+        media_id = row.get("mediaId")
+        if type(media_id) is not str or not media_id:
+            raise _fail("retrieval.contract", "单任务检索投影候选 mediaId 无效。")
 
 
 def assert_project_search_document_contract(document: dict[str, object]) -> None:

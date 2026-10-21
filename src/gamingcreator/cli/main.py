@@ -71,6 +71,7 @@ from gamingcreator.application.retrieval import (
     RetrievalMode,
     SearchResult,
     assert_project_search_document_contract,
+    assert_run_search_document_contract,
     assert_search_document_contract,
     load_searchable_timeline,
     search_timeline,
@@ -311,7 +312,7 @@ def _search_document(
             for rank, item in enumerate(result.candidates, 1)
         ],
     }
-    assert_search_document_contract(document)
+    assert_run_search_document_contract(document)
     return document
 
 
