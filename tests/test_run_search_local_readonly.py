@@ -146,3 +146,48 @@ def test_assert_run_search_document_contract_accepts_none_event_id_for_transcrip
     with pytest.raises(AppError) as empty_err:
         assert_run_search_document_contract(empty, expected_run_id=run_id)
     assert empty_err.value.code == "retrieval.contract"
+
+
+def test_assert_search_document_contract_rejects_base_rank_media_span_and_score_kind() -> None:
+    """Shared search JSON gates: contiguous rank, mediaId, nonempty us span, scoreKind."""
+    files = _require_search_files()
+    document = None
+    for path in files:
+        loaded = json.loads(path.read_text(encoding="utf-8-sig"))
+        if loaded.get("candidates"):
+            document = loaded
+            break
+    if document is None:
+        pytest.skip("no local run search with candidates")
+    assert_search_document_contract(document)
+
+    bad_rank = json.loads(json.dumps(document))
+    bad_rank["candidates"][0]["rank"] = 99
+    with pytest.raises(AppError) as rank_err:
+        assert_search_document_contract(bad_rank)
+    assert rank_err.value.code == "retrieval.contract"
+
+    bad_media = json.loads(json.dumps(document))
+    bad_media["candidates"][0]["mediaId"] = ""
+    with pytest.raises(AppError) as media_err:
+        assert_search_document_contract(bad_media)
+    assert media_err.value.code == "retrieval.contract"
+
+    bad_span = json.loads(json.dumps(document))
+    start = bad_span["candidates"][0]["startUs"]
+    bad_span["candidates"][0]["endUs"] = start
+    with pytest.raises(AppError) as span_err:
+        assert_search_document_contract(bad_span)
+    assert span_err.value.code == "retrieval.contract"
+
+    bad_kind = json.loads(json.dumps(document))
+    bad_kind["candidates"][0]["scoreKind"] = "probability"
+    with pytest.raises(AppError) as kind_err:
+        assert_search_document_contract(bad_kind)
+    assert kind_err.value.code == "retrieval.contract"
+
+    bad_tc = json.loads(json.dumps(document))
+    bad_tc["candidates"][0]["startTimecode"] = ""
+    with pytest.raises(AppError) as tc_err:
+        assert_search_document_contract(bad_tc)
+    assert tc_err.value.code == "retrieval.contract"

@@ -703,9 +703,27 @@ def assert_search_document_contract(document: dict[str, object]) -> None:
         raise _fail("retrieval.contract", "检索投影候选必须是列表。")
     if abstention is not None and candidates:
         raise _fail("retrieval.contract", "弃权投影不能同时带有候选。")
-    for row in candidates:
+    for index, row in enumerate(candidates, start=1):
         if not isinstance(row, dict):
             raise _fail("retrieval.contract", "检索投影候选无效。")
+        if row.get("rank") != index:
+            raise _fail("retrieval.contract", "检索投影候选 rank 必须从 1 连续编号。")
+        candidate_id = row.get("candidateId")
+        if type(candidate_id) is not str or not candidate_id:
+            raise _fail("retrieval.contract", "检索投影候选 candidateId 无效。")
+        media_id = row.get("mediaId")
+        if type(media_id) is not str or not media_id:
+            raise _fail("retrieval.contract", "检索投影候选 mediaId 无效。")
+        if row.get("scoreKind") not in SCORE_KINDS:
+            raise _fail("retrieval.contract", "检索投影候选 scoreKind 无效。")
+        start_us = row.get("startUs")
+        end_us = row.get("endUs")
+        if type(start_us) is not int or type(end_us) is not int or not (start_us < end_us):
+            raise _fail("retrieval.contract", "检索投影候选时间范围无效。")
+        start_tc = row.get("startTimecode")
+        end_tc = row.get("endTimecode")
+        if type(start_tc) is not str or not start_tc or type(end_tc) is not str or not end_tc:
+            raise _fail("retrieval.contract", "检索投影候选 timecode 无效。")
         why = row.get("why")
         if type(why) is not str or "ranking signal, not probability" not in why:
             raise _fail("retrieval.contract", "检索投影候选缺少非概率声明。")
