@@ -1,6 +1,6 @@
 # Sprint：持久化检索信封 createdAt 时区加深
 
-**状态（2026-10-22）：已推送 origin/main FEATURE_SHA（docs 记录提交另记）。** 加深 `assert_persisted_retrieval_contract`：`createdAt` 必为非空字符串，`datetime.fromisoformat`（`Z`→`+00:00`）可解析，且必须带时区（拒绝 naive）。pytest + demo-phase0 `timeline.sqlite3` 只读（217 行）。验证＝**pytest + 只读 SQLite**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD004／TD010 关单**；不改写 SQLite；`RETRIEVAL_VERSION` 仍 `bm25-e5-rrf-v7`；攻击 tag-only 仍保留。
+**状态（2026-10-22）：已推送 origin/main a4ceb06（docs 记录提交另记）。** 加深 `assert_persisted_retrieval_contract`：`createdAt` 必为非空字符串，`datetime.fromisoformat`（`Z`→`+00:00`）可解析，且必须带时区（拒绝 naive）。pytest + demo-phase0 `timeline.sqlite3` 只读（217 行）。验证＝**pytest + 只读 SQLite**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD004／TD010 关单**；不改写 SQLite；`RETRIEVAL_VERSION` 仍 `bm25-e5-rrf-v7`；攻击 tag-only 仍保留。
 
 ## Assignment
 

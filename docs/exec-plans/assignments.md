@@ -1,3 +1,5 @@
+**2026-10-22 检索（createdAt 时区，a4ceb06）：** sprint-retrieval-persisted-created-at.md；不关单。
+
 **2026-10-22 TD009（settings／cost／metadata，fda69be）：** sprint-td009-match-report-sidecar-settings-cost-metadata.md；不关单。
 
 **2026-10-22 检索（标题／转场／标志，9d914f8）：** sprint-retrieval-scene-title-transition-logo.md；不关单。

@@ -1,3 +1,5 @@
+**2026-10-22 检索离线进展（持久化信封 createdAt 时区加深，已推送 a4ceb06）：** 见 sprint-retrieval-persisted-created-at.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+
 **2026-10-22 TD009 离线进展（match-report↔sidecar settings／cost／metadata 时间，已推送 fda69be）：** 见 sprint-td009-match-report-sidecar-settings-cost-metadata.md。复合人评／静态索引仍 open；不宣称 TD009／F010 关单。
 
 **2026-10-22 检索离线进展（场景跨语言 标题／转场／标志，已推送 9d914f8）：** 见 sprint-retrieval-scene-title-transition-logo.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
