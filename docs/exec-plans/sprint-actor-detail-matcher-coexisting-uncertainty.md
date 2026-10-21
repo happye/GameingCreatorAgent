@@ -1,6 +1,6 @@
 # Sprint：TD009 matcher 同居 UNCERTAIN 阻断 OBSERVED FULL
 
-**状态（2026-10-22）：代码已落地，待推送。** `_part_conditions`：同一 part 上同 kind／value 若同时存在 OBSERVED 与 UNCERTAIN，不得把 OBSERVED 记为 satisfied／FULL；改记 uncertain。`MATCHER_VERSION` → `actor-detail-matcher-v1.1`。验证=**pytest**（`test_actor_detail_matching`／`test_actor_details`）。0 付费；不代选 A／B／D；不标 F006/F009/F010 true；不宣称 TD009／人评关单。
+**状态（2026-10-22）：已推送 origin/main `8aac1d2`。** `_part_conditions`：同一 part 上同 kind／value 若同时存在 OBSERVED 与 UNCERTAIN，不得把 OBSERVED 记为 satisfied／FULL；改记 uncertain。`MATCHER_VERSION` → `actor-detail-matcher-v1.1`。验证=**pytest**（`test_actor_detail_matching`／`test_actor_details`）。0 付费；不代选 A／B／D；不标 F006/F009/F010 true；不宣称 TD009／人评关单。
 
 ## Assignment
 
@@ -18,4 +18,4 @@
 - [x] 同居 UNCERTAIN 阻断同值 OBSERVED → satisfied
 - [x] MATCHER_VERSION v1.1
 - [x] fixture pytest 绿（含 shape 仍 FULL、combined PARTIAL）
-- [ ] 已推送 `origin/main`（推送后勾）
+- [x] 已推送 `origin/main`（`8aac1d2`）
