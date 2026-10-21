@@ -1,5 +1,8 @@
 # Progress Log
 
+**2026-10-22 工作台只读验收就绪：** 对话框 + `/api/acceptance-readiness`；前端拒绝通过声明；任务 schema 对齐 v2；pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-workbench-acceptance-readiness.md。
+
+
 **2026-10-22 离线验收就绪只读汇总（已推送 d911068）：** 新增 `acceptance_readiness`／CLI `acceptance-readiness`；永不宣称 F006／人评／qualityGate 通过；pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-acceptance-readiness.md。
 
 

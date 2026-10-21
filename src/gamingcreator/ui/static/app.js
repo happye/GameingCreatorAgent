@@ -30,6 +30,7 @@
         "retrieval-diagnostics-summary", "retrieval-diagnostics-slots", "download-retrieval-diagnostics",
         "open-tasks", "tasks-dialog", "close-tasks", "tasks-list", "tasks-page-summary",
         "tasks-previous", "tasks-next", "refresh-tasks",
+        "open-readiness", "readiness-dialog", "close-readiness", "readiness-status", "readiness-body", "refresh-readiness",
         "open-search-sources", "single-search-source", "search-scope-label", "search-sources-dialog",
         "close-search-sources", "search-sources-list", "search-sources-summary", "apply-search-sources", "download-project-search",
         "open-preparation", "preparation-dialog", "close-preparation", "preparation-form", "preparation-project",
@@ -47,6 +48,7 @@
         draftController: null, draftRevision: 0, drafting: false, draftScope: "manual",
         diagnosticsContext: null,
         tasksController: null, tasksRevision: 0, tasksOffset: 0,
+        readinessController: null, readinessRevision: 0,
         searchRuns: [], projectSearch: null, projectSearchController: null,
         detailProjectScope: false, projectDetail: null, projectDetailAvailable: false,
         detailSearchScope: false, searchDetail: null, searchDetailAvailable: false,
@@ -417,7 +419,109 @@
         notice("已下载这次搜索的原排名、录像来源和证据清单。", true);
     }
 
+
+    function clearReadiness() {
+        state.readinessController?.abort();
+        state.readinessController = null;
+        state.readinessRevision += 1;
+        if (ui["readiness-dialog"].open) ui["readiness-dialog"].close();
+        ui["readiness-status"].textContent = "";
+        ui["readiness-body"].replaceChildren();
+    }
+
+    function renderReadiness(payload) {
+        ui["readiness-body"].replaceChildren();
+        const status = payload.formalAcceptanceStatusLabel || payload.formalAcceptanceStatus || "状态未知";
+        ui["readiness-status"].textContent = status;
+        if (payload.formalAcceptancePassed !== false || payload.humanEvalPassed !== false
+            || payload.featureClaims?.F006 !== false || payload.featureClaims?.F009 !== false
+            || payload.featureClaims?.F010 !== false || payload.coverageGapsCleared !== false) {
+            throw new Error("就绪报告含非法通过声明，已拒绝展示。");
+        }
+        const note = element("p", "readiness-note small",
+            payload.notes || "本报告只读汇总资格与阻断，不能代替人工评分，也不宣称验收通过。");
+        ui["readiness-body"].append(note);
+        const counts = payload.counts || {};
+        const grid = element("div", "readiness-counts");
+        const items = [
+            ["可检索运行", counts.searchableRuns],
+            ["覆盖缺口运行", counts.coverageGapRuns],
+            ["未完成运行", counts.incompleteRuns],
+            ["快照任务数", payload.taskRowsInSnapshot],
+        ];
+        for (const [label, value] of items) {
+            const cell = element("div", "readiness-count");
+            cell.append(element("strong", "", String(value ?? "—")));
+            cell.append(document.createTextNode(label));
+            grid.append(cell);
+        }
+        ui["readiness-body"].append(grid);
+        const blockers = Array.isArray(payload.projectBlockers) ? payload.projectBlockers : [];
+        if (blockers.length) {
+            ui["readiness-body"].append(element("h3", "", "项目阻断"));
+            const list = element("ul", "readiness-blockers");
+            for (const code of blockers) {
+                list.append(element("li", "small", String(code)));
+            }
+            ui["readiness-body"].append(list);
+        }
+        const searchable = Array.isArray(payload.searchableRunIds) ? payload.searchableRunIds.filter(Boolean) : [];
+        const gaps = Array.isArray(payload.coverageGapRunIds) ? payload.coverageGapRunIds.filter(Boolean) : [];
+        if (searchable.length) {
+            ui["readiness-body"].append(element("h3", "", "可检索 run（仍须人工标签／冻结）"));
+            const list = element("ul", "readiness-runs");
+            for (const id of searchable) list.append(element("li", "small", String(id)));
+            ui["readiness-body"].append(list);
+        }
+        if (gaps.length) {
+            ui["readiness-body"].append(element("h3", "", "覆盖缺口 run（不可验收）"));
+            const list = element("ul", "readiness-runs");
+            for (const id of gaps) list.append(element("li", "small", String(id)));
+            ui["readiness-body"].append(list);
+        }
+        const pending = Array.isArray(payload.userDecisionsPending) ? payload.userDecisionsPending : [];
+        if (pending.length) {
+            ui["readiness-body"].append(element("p", "muted small",
+                "仍待你决定：" + pending.join("、") + "（工具不会代选 A／B／D）。"));
+        }
+        ui["readiness-body"].append(element("p", "muted small",
+            `正式验收标记：未通过（formalAcceptancePassed=${String(payload.formalAcceptancePassed)}）。`));
+    }
+
+    async function loadReadiness() {
+        const project = state.project;
+        if (!project) return;
+        state.readinessController?.abort();
+        const controller = new AbortController();
+        state.readinessController = controller;
+        const revision = ++state.readinessRevision;
+        ui["readiness-status"].textContent = "正在读取验收就绪…";
+        empty(ui["readiness-body"], "正在汇总资格与阻断…");
+        if (!ui["readiness-dialog"].open) ui["readiness-dialog"].showModal();
+        try {
+            const payload = await request("/api/acceptance-readiness", { project, limit: 100, offset: 0 }, controller.signal);
+            if (state.project !== project || state.readinessRevision !== revision || state.readinessController !== controller) return;
+            if (payload.schemaVersion !== "acceptance-readiness-v1" || payload.project !== project
+                || payload.snapshotOnly !== true || payload.formalAcceptancePassed !== false
+                || payload.humanEvalPassed !== false || payload.coverageGapsCleared !== false
+                || !payload.featureClaims || payload.featureClaims.F006 !== false
+                || payload.featureClaims.F009 !== false || payload.featureClaims.F010 !== false
+                || typeof payload.formalAcceptanceStatus !== "string"
+                || payload.formalAcceptanceStatus === "passed") {
+                throw new Error("验收就绪来源无效或含通过声明。");
+            }
+            renderReadiness(payload);
+        } catch (error) {
+            if (error.name !== "AbortError" && state.project === project && state.readinessRevision === revision) {
+                empty(ui["readiness-body"], error.message);
+                ui["readiness-status"].textContent = "未读取，不能据此判断已通过。";
+            }
+        }
+    }
+
+
     function clearTasks() {
+        clearReadiness();
         state.tasksController?.abort();
         state.tasksController = null;
         state.tasksRevision += 1;
@@ -439,6 +543,7 @@
         ui["tasks-next"].disabled = !payload.hasMore;
         if (!payload.tasks.length) { empty(ui["tasks-list"], "这一页没有已保存任务。"); return; }
         const blockerLabels = {
+            coverage_gap: "保留覆盖缺口、未获完整资格，不能用于检索或正式验收。",
             material_integrity: "原文件或证据有问题，先核对素材。",
             explicit_retry_required: "旧调用未提交或费用未确认，需明确选择重试；原预留保留。",
             legacy_stopped: "旧分析流程已停止，不能直接重放。",
@@ -495,7 +600,7 @@
         try {
             const payload = await request("/api/tasks", { project, limit: TASK_PAGE_SIZE, offset }, controller.signal);
             if (state.project !== project || state.tasksRevision !== revision || state.tasksController !== controller) return;
-            if (payload.schemaVersion !== "material-tasks-v1" || payload.project !== project || payload.offset !== offset
+            if (payload.schemaVersion !== "material-tasks-v2" || payload.project !== project || payload.offset !== offset
                 || !Array.isArray(payload.tasks) || !Number.isSafeInteger(payload.total) || payload.total < 0
                 || payload.limit !== TASK_PAGE_SIZE || typeof payload.hasMore !== "boolean") throw new Error("任务清单来源或页码无效。");
             renderTasks(payload, project, revision);
@@ -1544,6 +1649,7 @@
     function resetView() {
         clearTasks();
         ui["open-tasks"].disabled = !state.project;
+        ui["open-readiness"].disabled = !state.project;
         clearRetrievalDiagnostics();
         invalidateDetailDraft(true);
         clearDetailCosts();
@@ -2362,6 +2468,14 @@
     ui["detail-query-form"].addEventListener("submit", (event) => { event.preventDefault(); void (state.detailSearchScope ? matchSearchDetails() : state.detailProjectScope ? matchProjectDetails() : matchDetailQuery()); });
     ui["open-detail-costs"].addEventListener("click", () => { void openDetailCosts(); });
     ui["open-tasks"].addEventListener("click", () => { void loadTasks(); });
+    ui["open-readiness"].addEventListener("click", () => { void loadReadiness(); });
+    ui["close-readiness"].addEventListener("click", clearReadiness);
+    ui["refresh-readiness"].addEventListener("click", () => { void loadReadiness(); });
+    ui["readiness-dialog"].addEventListener("close", () => {
+        state.readinessController?.abort();
+        state.readinessController = null;
+        state.readinessRevision += 1;
+    });
     ui["open-preparation"].addEventListener("click", () => {
         if (!ui["preparation-project"].value) {
             let saved = "";

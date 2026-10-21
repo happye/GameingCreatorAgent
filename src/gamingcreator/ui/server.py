@@ -20,6 +20,7 @@ from gamingcreator.ui.service import (
     detail_costs,
     inspect_run,
     match_details,
+    project_acceptance_readiness_payload,
     project_detail_payload,
     project_runs_payload,
     project_search_payload,
@@ -448,6 +449,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             "saved-detail-actor-semantics-v1",
                             "saved-detail-grouped-ranking-v1",
                             "detail-temporal-json-v1",
+                            "acceptance-readiness-v1",
                         ],
                         "repository": str(self.repository.resolve()),
                         "pid": os.getpid(),
@@ -538,6 +540,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
             if path not in {
                 "/api/runs",
                 "/api/tasks",
+                "/api/acceptance-readiness",
                 "/api/inspect",
                 "/api/media",
                 "/api/evidence",
@@ -557,6 +560,18 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             limit=int(query.get("limit", "100")),
                             offset=int(query.get("offset", "0")),
                             run_id=query.get("run"),
+                            project_reference=query.get("project"),
+                        )
+                    ),
+                )
+            elif path == "/api/acceptance-readiness":
+                self._json(
+                    200,
+                    asyncio.run(
+                        project_acceptance_readiness_payload(
+                            project,
+                            limit=int(query.get("limit", "100")),
+                            offset=int(query.get("offset", "0")),
                             project_reference=query.get("project"),
                         )
                     ),

@@ -6,6 +6,7 @@ from decimal import Decimal
 from pathlib import Path
 from urllib.parse import urlencode
 
+from gamingcreator.application.acceptance_readiness import build_acceptance_readiness
 from gamingcreator.application.detail_query import loads_constraint, query_options
 from gamingcreator.application.detail_refinement import (
     RefinementIdentity,
@@ -312,6 +313,25 @@ async def project_tasks_payload(
         return payload
     finally:
         await store.close()
+
+
+
+async def project_acceptance_readiness_payload(
+    project: Path,
+    *,
+    limit: int = 100,
+    offset: int = 0,
+    project_reference: str | None = None,
+) -> dict[str, object]:
+    """Read-only acceptance readiness for the workbench; never claims pass."""
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    try:
+        tasks_document = await tasks_payload(store, limit=limit, offset=offset)
+        reference = project_reference if project_reference is not None else str(project)
+        return build_acceptance_readiness(tasks_document, project=reference)
+    finally:
+        await store.close()
+
 
 
 async def registered_media(

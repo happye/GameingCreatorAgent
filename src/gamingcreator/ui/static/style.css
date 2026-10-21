@@ -386,3 +386,11 @@ dialog::backdrop { background: #030713d9; }
 .search-panel .search-options .detail-search-toggle input { width: 12px; height: 12px; padding: 0; margin: 0; }
 .candidate-detail-search { font-size: 11px; margin-top: 5px; overflow-wrap: anywhere; }
 .candidate-detail-search ul { margin: 4px 0; padding-left: 16px; }
+
+#readiness-dialog { width: min(720px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; }
+.readiness-body { display: grid; gap: 10px; }
+.readiness-counts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.readiness-count { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.readiness-count strong { display: block; font-size: 18px; }
+.readiness-note { padding: 10px 12px; border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.readiness-blockers, .readiness-runs { margin: 0; padding-left: 1.2em; }

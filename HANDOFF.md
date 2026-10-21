@@ -1,5 +1,8 @@
 # 当前交接：验收绑定已对齐覆盖缺口拒文，三缺口仍在
 
+**当前锚点（2026-10-22，工作台只读验收就绪）：** 「验收就绪 ↗」+ `/api/acceptance-readiness`；拒绝展示通过声明；任务清单 schema 对齐 material-tasks-v2。sprint：`docs/exec-plans/sprint-workbench-acceptance-readiness.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下 CLI readiness 为历史。
+
+
 **当前锚点（2026-10-22，离线验收就绪只读汇总，已推送 d911068）：** `acceptance-readiness` CLI + `acceptance_readiness` 从任务快照汇总资格／阻断；`formalAcceptancePassed`／人评／F006/F009/F010 恒 false；有可检索运行仅为 `awaiting_human_labels_and_freeze`。sprint：`docs/exec-plans/sprint-acceptance-readiness.md`；0 付费；F006/F009/F010 仍 false；**不声称验收／F006 通过**；**三缺口仍在**；**A／B／D 仍待用户**。以下验收绑定选项闸为历史。
 
 
