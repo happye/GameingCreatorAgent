@@ -1,3 +1,5 @@
+**2026-10-22 检索离线进展（场景／玩法跨语言 收集／骑乘／过场／滚动／冲击波，已推送 ebb92e7）：** 见 sprint-retrieval-scene-collect-mount-cutscene-scroll-shockwave.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+
 **2026-10-22 检索离线进展（单任务／项目 embedding 元数据 + topK 加深，已推送 7aad0df）：** lexical 禁 embedding；hybrid／semantic model 对齐；project candidates≤topK；见 sprint-retrieval-run-project-embedding-topk.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线进展（持久化信封 parameters／embeddingSpace 加深，已推送 3aa3ac4）：** mode／topK／阈值对齐；embeddingSpace 按 mode；见 sprint-retrieval-persisted-parameters-embedding-space.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。

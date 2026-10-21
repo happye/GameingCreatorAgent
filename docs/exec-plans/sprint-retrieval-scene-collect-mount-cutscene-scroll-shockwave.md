@@ -1,6 +1,6 @@
 # Sprint：检索场景／玩法跨语言 收集／骑乘／过场／滚动／冲击波
 
-**状态（2026-10-22）：已推送 origin/main FEATURE_SHA（docs 记录提交另记）。** `_CROSS_LINGUAL_TERMS` 增补：`collect*`→收集、`mount*`／`ride*`→骑乘、`cutscene*`／`cinematic*`→过场、`scroll*`→滚动、`shockwave*`→冲击波。语料依据 demo-phase0 真实 mechanic tags（收集／骑乘／过场画面／滚动）与检索查询（冲击波）。**不加**裸 `roll`／`shock`／`wave`（多义噪声）。验证＝**pytest**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD004／TD010／人评关单**；不发明 Boss／射击语料。`RETRIEVAL_VERSION` 仍 `bm25-e5-rrf-v7`。攻击 tag-only 与既有排除合同保留。
+**状态（2026-10-22）：已推送 origin/main ebb92e7（docs 记录提交另记）。** `_CROSS_LINGUAL_TERMS` 增补：`collect*`→收集、`mount*`／`ride*`→骑乘、`cutscene*`／`cinematic*`→过场、`scroll*`→滚动、`shockwave*`→冲击波。语料依据 demo-phase0 真实 mechanic tags（收集／骑乘／过场画面／滚动）与检索查询（冲击波）。**不加**裸 `roll`／`shock`／`wave`（多义噪声）。验证＝**pytest**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD004／TD010／人评关单**；不发明 Boss／射击语料。`RETRIEVAL_VERSION` 仍 `bm25-e5-rrf-v7`。攻击 tag-only 与既有排除合同保留。
 
 ## Assignment
 

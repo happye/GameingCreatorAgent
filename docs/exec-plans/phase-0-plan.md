@@ -1,3 +1,5 @@
+**2026-10-22 检索离线扩展（场景／玩法跨语言 收集／骑乘／过场／滚动／冲击波，已推送 ebb92e7）：** demo-phase0 真实收集／骑乘／过场／滚动／冲击波；见 sprint-retrieval-scene-collect-mount-cutscene-scroll-shockwave.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
+
 **2026-10-22 检索离线扩展（单任务／项目 embedding 元数据 + topK 加深，已推送 7aad0df）：** 见 sprint-retrieval-run-project-embedding-topk.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线扩展（持久化信封 parameters／embeddingSpace 加深，已推送 3aa3ac4）：** 见 sprint-retrieval-persisted-parameters-embedding-space.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。

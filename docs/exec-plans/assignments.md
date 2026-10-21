@@ -1,3 +1,5 @@
+**2026-10-22 检索（收集／骑乘／过场／滚动／冲击波，ebb92e7）：** sprint-retrieval-scene-collect-mount-cutscene-scroll-shockwave.md；不关单。
+
 **2026-10-22 检索（run／project embedding＋topK，7aad0df）：** sprint-retrieval-run-project-embedding-topk.md；不关单。
 
 **2026-10-22 检索（parameters／embeddingSpace，3aa3ac4）：** sprint-retrieval-persisted-parameters-embedding-space.md；不关单。
