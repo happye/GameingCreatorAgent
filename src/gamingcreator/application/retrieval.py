@@ -132,6 +132,19 @@ _CROSS_LINGUAL_TERMS = (
     ("glowing", "光效"),
     ("glows", "光效"),
     ("glow", "光效"),
+    ("healthbars", "血条"),
+    ("healthbar", "血条"),
+    ("hp", "血条"),
+    ("buildings", "建筑"),
+    ("building", "建筑"),
+    ("arenas", "场地"),
+    ("arena", "场地"),
+    ("fields", "场地"),
+    ("field", "场地"),
+    ("grasses", "草地"),
+    ("grass", "草地"),
+    ("covers", "掩体"),
+    ("cover", "掩体"),
 )
 # A small explicit-language guard, not a language model. Apply this only to
 # positive action queries; passage identities follow the observation projection.

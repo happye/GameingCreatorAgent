@@ -736,3 +736,47 @@ def test_local_completed_demo_phase0_avatar_icon_vfx_glow_cross_lingual():
                 )
 
     asyncio.run(run())
+
+
+def test_local_completed_demo_phase0_scene_healthbar_arena_grass_cross_lingual():
+    """demo-phase0: healthbar／building／arena／grass／cover hit Chinese scene／HUD text."""
+    _require_sqlite(DEMO_PHASE0)
+
+    async def run() -> None:
+        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
+        docs = {doc.event_id: doc for doc in _documents(timeline)}
+        checks = (
+            ("healthbar", ("血条",)),
+            ("hp", ("血条",)),
+            ("building", ("建筑",)),
+            ("buildings", ("建筑",)),
+            ("arena", ("场地",)),
+            ("field", ("场地",)),
+            ("grass", ("草地", "草丛")),
+            ("cover", ("掩体",)),
+        )
+        for query, needles in checks:
+            result = await search_timeline(timeline, query, mode="lexical", top_k=20)
+            assert result.candidates, query
+            primary = needles[0]
+            assert any(
+                primary
+                in (
+                    docs[item.event_id].positive_text
+                    + "\n"
+                    + "\n".join(docs[item.event_id].tags)
+                )
+                for item in result.candidates
+            ), (query, primary)
+            for item in result.candidates:
+                doc = docs[item.event_id]
+                blob = doc.positive_text + "\n" + "\n".join(doc.tags)
+                assert any(n in blob for n in needles), (
+                    query,
+                    item.event_id,
+                    doc.positive_text[:80],
+                    doc.tags,
+                )
+
+    asyncio.run(run())

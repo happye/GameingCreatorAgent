@@ -1133,3 +1133,50 @@ def test_avatar_alone_is_not_empty_query_stopword():
 def test_avatar_icon_vfx_glow_non_words_do_not_cross_lingual_match(query):
     data = timeline("顶部有双方角色头像与比分条。", "右侧有技能图标。", "出现绿色特效。", "黄色光效。")
     assert search(data, query, "lexical").candidates == ()
+
+
+@pytest.mark.parametrize(
+    "query,positive",
+    [
+        ("healthbar", "右上角显示红色血条和文字。"),
+        ("hp", "右上角显示红色血条。"),
+        ("building", "周围有多个角色和建筑。"),
+        ("buildings", "场景中可见石质建筑。"),
+        ("arena", "俯视视角的方形场地。"),
+        ("field", "绿色场地上有角色移动。"),
+        ("grass", "周围有绿色草地和石质建筑。"),
+        ("cover", "两侧有木制掩体与桶状物体。"),
+    ],
+)
+def test_scene_healthbar_arena_grass_cross_lingual_keeps_chinese_evidence(query, positive):
+    """English scene／HUD words expand to 血条／建筑／场地／草地／掩体 (lexical)."""
+    data = timeline(positive, "角色向左移动。")
+    result = search(data, query, "lexical")
+    assert [candidate.event_id for candidate in result.candidates] == ["event-0"]
+    assert result.candidates[0].observable_facts == (positive,)
+
+
+@pytest.mark.parametrize(
+    "query",
+    ["healthbarx", "hpx", "building2", "arenax", "grassland", "discover", "covering", "infield"],
+)
+def test_scene_healthbar_arena_grass_non_words_do_not_cross_lingual_match(query):
+    data = timeline(
+        "右上角显示红色血条。",
+        "周围有多个角色和建筑。",
+        "俯视视角的方形场地。",
+        "周围有绿色草丛。",
+        "两侧有木制掩体。",
+    )
+    assert search(data, query, "lexical").candidates == ()
+
+
+def test_avatar_still_searchable_after_scene_alias_sprint():
+    """Regression: avatar must remain a searchable portrait term (not a stopword)."""
+    from gamingcreator.application.retrieval import _STOP_WORDS
+
+    assert "avatar" not in _STOP_WORDS
+    data = timeline("顶部有双方角色头像与比分条。")
+    result = search(data, "avatar", "lexical")
+    assert result.abstention_reason != "empty_query"
+    assert [c.event_id for c in result.candidates] == ["event-0"]
