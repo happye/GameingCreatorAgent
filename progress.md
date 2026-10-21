@@ -1,6 +1,6 @@
 # Progress Log
 
-**2026-10-21 定向补窗草稿只读写出**：新增 write helper 与 `prepare-directed-gap-fill-draft` 脚本；输出含 draft／inventory／README／receipt，回读 inert；相关 pytest 绿。artifacts/ 已在 .gitignore。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-coverage-gap-draft-writer.md。
+**2026-10-21 定向补窗草稿只读写出（已推送 6ab066a）**：新增 write helper 与 `prepare-directed-gap-fill-draft` 脚本；输出含 draft／inventory／README／receipt，回读 inert；相关 pytest 绿。artifacts/ 已在 .gitignore。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-coverage-gap-draft-writer.md。
 
 **2026-10-21 定向补窗提案草稿模板（已推送 f833d55）**：新增离线 `build_directed_gap_fill_proposal_draft`／`assert_directed_gap_fill_draft_inert`；草稿恒未授权、不代选 B、不声称缺口已清；相关 pytest 绿。0 DeepSeek／0 launcher／F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-coverage-gap-proposal-draft.md；同步 HANDOFF／assignments／human-inputs。
 

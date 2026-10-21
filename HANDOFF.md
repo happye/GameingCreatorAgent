@@ -1,6 +1,6 @@
 # 当前交接：定向补窗草稿只读写出已落地，三缺口仍在
 
-**当前交接（2026-10-21）：只读脚本写出未授权提案草稿。** `write_directed_gap_fill_proposal_draft` + `scripts/prepare-directed-gap-fill-draft.py`／`.ps1` 从覆盖清单写入建议位于 `artifacts/`（已 ignore）的草稿包；回读断言 inert；README 标明未授权。sprint：`docs/exec-plans/sprint-coverage-gap-draft-writer.md`。0 付费／不启动 launcher／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。模板基线 f833d55／663a0ac。以下为模板／护栏／C 历史。
+**当前交接（2026-10-21）：定向补窗草稿只读写出已推送 6ab066a。** `write_directed_gap_fill_proposal_draft` + `scripts/prepare-directed-gap-fill-draft.py`／`.ps1` 从覆盖清单写入建议位于 `artifacts/`（已 ignore）的草稿包；回读断言 inert；README 标明未授权。sprint：`docs/exec-plans/sprint-coverage-gap-draft-writer.md`。0 付费／不启动 launcher／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。模板基线 f833d55／663a0ac。以下为模板／护栏／C 历史。
 
 **当前交接（2026-10-21）：定向补窗提案草稿模板已推送 f833d55。** 新增 `directed_gap_fill.py`：`build_directed_gap_fill_proposal_draft` 从覆盖清单生成 `directed-gap-fill-proposal-draft-v1`（`template-unfrozen`）；授权／选 B／消缺口标志恒为 false；目标仍经 `validate_directed_gap_fill_targets`。sprint：`docs/exec-plans/sprint-coverage-gap-proposal-draft.md`；示例：`docs/references/directed-gap-fill-proposal-draft.example.json`。0 付费／不重跑 launcher／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**（C 已决）。护栏基线 8fcc226／eba3f32。以下为护栏／选项 C／接续历史。
 
