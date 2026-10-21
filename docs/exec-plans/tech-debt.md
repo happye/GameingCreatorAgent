@@ -1,6 +1,6 @@
 # Technical debt
 
-**2026-10-22 检索离线进展（attack 施事别名 attacker／attackers，已推送 PLACEHOLDER）：** attacker 纳入 attack 动作，补齐 lexicalEvidence；attackers 可召回；TD010 tag-only 仍保留；见 sprint-retrieval-attack-attacker-aliases.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+**2026-10-22 检索离线进展（attack 施事别名 attacker／attackers，已推送 56171d3）：** attacker 纳入 attack 动作，补齐 lexicalEvidence；attackers 可召回；TD010 tag-only 仍保留；见 sprint-retrieval-attack-attacker-aliases.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线进展（fight 英文别名 fighter／duel／brawl，已推送 8416b0d）：** fighter 等纳入 fight 动作，避免仅跨语言扩展漏进裸战斗标签；见 sprint-retrieval-fight-fighter-duel-brawl-en.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
