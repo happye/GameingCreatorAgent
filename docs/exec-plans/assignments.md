@@ -1,5 +1,8 @@
 # Active assignments
 
+**当前（2026-10-22）：root 单 Agent 交付离线验收就绪只读汇总。** sprint-acceptance-readiness.md 由 root／GamingCreatorAgent 拥有。改 acceptance_readiness、CLI、相关测试／公共 docs；0 付费。不代选 A／B／D；不改 feature_list；不宣称 F006／人评通过。以下验收绑定选项为历史。
+
+
 **当前（2026-10-22）：root 单 Agent 交付验收绑定选项覆盖缺口拒文。** sprint-acceptance-bind-eligibility.md 由 root／GamingCreatorAgent 拥有。改 benchmark_run_selection、验收流程 JS、相关测试／公共 docs；0 付费。不代选 A／B／D；不改 feature_list；不宣称 F006／人评通过。以下评测闸为历史。
 
 **当前（2026-10-22）：root 单 Agent 交付评测／绑定／细节核对检索资格闸。** sprint-benchmark-search-eligibility.md 由 root／GamingCreatorAgent 拥有。改 cli 评测／绑定／细节入口、相关测试／公共 docs；0 付费。不代选 A／B／D；不改 feature_list。以下假传输／失败诊断为历史。

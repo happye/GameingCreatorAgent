@@ -4,7 +4,9 @@
 
 可选本机命令（不自动执行付费）：
 `.\scripts\prepare-directed-gap-fill-draft.ps1 -Coverage <analysis_coverage.json> -OutputDirectory artifacts/directed-gap-fill-draft-<date>`
-（或直接调同名 `.py`）。本机已有一份未授权示例包（忽略目录、勿当批准）：`artifacts/directed-gap-fill-draft-20261021/`。
+（或直接调同名 `.py`）。
+可选本机只读（不花钱、不宣称通过）：`gamingcreator acceptance-readiness --project <项目目录>`（可加 `--output artifacts/acceptance-readiness.json`）。有可检索运行时也只显示「仍须人工标签／冻结绑定」，**不会**写成已通过。
+本机已有一份未授权示例包（忽略目录、勿当批准）：`artifacts/directed-gap-fill-draft-20261021/`。
 
 看任务进度时：长钟馗若显示「分析保留覆盖缺口，未获完整资格」，表示**不能**当正式 Completed 去检索／验收（检索入口、工作台、正式评测／绑定／细节核对／验收流程关联都会直接拒绝并提示覆盖缺口）；另两段「素材已保存，等待分析」仍须新费用授权才能分析。
 

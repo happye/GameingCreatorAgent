@@ -14,6 +14,10 @@ from typing import Never, cast
 from uuid import uuid4
 
 from gamingcreator import __version__
+from gamingcreator.application.acceptance_readiness import (
+    build_acceptance_readiness,
+    write_acceptance_readiness,
+)
 from gamingcreator.application.analysis import (
     AnalysisPorts,
     AnalyzeOutcome,
@@ -148,6 +152,18 @@ def _parser() -> CliParser:
     tasks.add_argument("--run", help="只查看一个任务")
     tasks.add_argument("--limit", type=int, default=100)
     tasks.add_argument("--offset", type=int, default=0)
+    readiness = commands.add_parser(
+        "acceptance-readiness",
+        help="只读汇总项目验收资格与阻断，不宣称通过",
+    )
+    readiness.add_argument("--project", type=Path, required=True)
+    readiness.add_argument("--limit", type=int, default=100)
+    readiness.add_argument("--offset", type=int, default=0)
+    readiness.add_argument(
+        "--output",
+        type=Path,
+        help="可选：把 readiness JSON 写到本地路径",
+    )
     freeze = commands.add_parser("freeze-benchmark", help="本地登记原素材并冻结验收查询，不分析")
     freeze.add_argument("--input", type=Path, required=True)
     freeze.add_argument("--output", type=Path, required=True)
@@ -1000,6 +1016,31 @@ async def execute_bind_benchmark(
         ) from None
 
 
+
+async def execute_acceptance_readiness(
+    project: Path,
+    *,
+    limit: int = 100,
+    offset: int = 0,
+    output: Path | None = None,
+) -> dict[str, object]:
+    """Read-only acceptance readiness from saved tasks; never claims pass."""
+    _require_project(project)
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    try:
+        tasks_document = await tasks_payload(store, limit=limit, offset=offset)
+        document = build_acceptance_readiness(
+            tasks_document, project=str(project.resolve())
+        )
+        if output is not None:
+            written = write_acceptance_readiness(document, output)
+            document = dict(document)
+            document["outputPath"] = str(written)
+        return document
+    finally:
+        await store.close()
+
+
 async def execute_tasks(
     project: Path, *, limit: int = 100, offset: int = 0, run_id: str | None = None
 ) -> dict[str, object]:
@@ -1260,6 +1301,15 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
         return asyncio.run(
             execute_tasks(
                 args.project.resolve(), limit=args.limit, offset=args.offset, run_id=args.run
+            )
+        )
+    if args.command == "acceptance-readiness":
+        return asyncio.run(
+            execute_acceptance_readiness(
+                args.project.resolve(),
+                limit=args.limit,
+                offset=args.offset,
+                output=args.output.resolve() if args.output is not None else None,
             )
         )
     if args.command == "match-search-details":
