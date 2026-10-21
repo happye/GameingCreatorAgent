@@ -1,6 +1,6 @@
 # Phase 0 开发任务与依赖
 
-**2026-10-22 检索离线扩展（场景／HUD 跨语言，已推送 PLACEHOLDER）：** healthbar／arena／grass／building／cover；见 sprint-retrieval-scene-healthbar-arena-grass.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
+**2026-10-22 检索离线扩展（场景／HUD 跨语言，已推送 73e75d1）：** healthbar／arena／grass／building／cover；见 sprint-retrieval-scene-healthbar-arena-grass.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线扩展（UI 肖像／图标／特效跨语言，已推送 da231a0）：** avatar 出停用词；avatar／icon／vfx／glow；见 sprint-retrieval-ui-avatar-icon-vfx-glow.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。
 
