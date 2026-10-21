@@ -1,6 +1,6 @@
 # Sprint：TD009 match-report↔sidecar payloadJson 身份／shots 覆盖加深
 
-**状态（2026-10-22）：已推送 origin/main FEATURE_SHA（docs 记录提交另记）。** 加深 `assert_match_report_sidecar_binding_contract`：解析 result `payloadJson`；`runId`／`eventId`／`candidateId`／`eventFingerprint`／`sourceRange` 对齐报告；`mediaSha256`／`configurationHash`／`pipelineVersion`／`basePromptHash`／`basePromptVersion` 对齐 request／canonical；`schemaVersion`／`vocabularyVersion`／`mediaId` 非空；`shots` 非空且 shotId 唯一，shot 区间不逃逸；报告 match `shotId` ⊆ payload shots。gaps 映射同步。pytest + demo-phase0 legacy 只读。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD009／F010 关单**；不改写旧 artifacts。
+**状态（2026-10-22）：已推送 origin/main 24f59ec（docs 记录提交另记）。** 加深 `assert_match_report_sidecar_binding_contract`：解析 result `payloadJson`；`runId`／`eventId`／`candidateId`／`eventFingerprint`／`sourceRange` 对齐报告；`mediaSha256`／`configurationHash`／`pipelineVersion`／`basePromptHash`／`basePromptVersion` 对齐 request／canonical；`schemaVersion`／`vocabularyVersion`／`mediaId` 非空；`shots` 非空且 shotId 唯一，shot 区间不逃逸；报告 match `shotId` ⊆ payload shots。gaps 映射同步。pytest + demo-phase0 legacy 只读。验证＝**pytest + 只读 JSON**。0 付费；不代选 A／B／D；不标 F006 true；**不宣称 TD009／F010 关单**；不改写旧 artifacts。
 
 ## Assignment
 
