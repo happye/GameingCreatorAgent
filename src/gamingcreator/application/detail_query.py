@@ -114,6 +114,22 @@ def _match_evidence_ids_owned(run_id: str, evidence_ids: object) -> bool:
     return True
 
 
+
+def _source_range_contains(outer: object, inner: object) -> bool:
+    """True when inner is null, outer is unbound, or inner sits inside outer (same durationUs)."""
+    if inner is None or outer is None:
+        return True
+    if not _valid_optional_source_range(outer):
+        return False
+    if not _valid_optional_source_range(inner):
+        return False
+    assert type(outer) is dict and type(inner) is dict
+    return (
+        int(outer["startUs"]) <= int(inner["startUs"]) < int(inner["endUs"]) <= int(outer["endUs"])
+        and int(inner["durationUs"]) == int(outer["durationUs"])
+    )
+
+
 def assert_match_report_contract(document: dict[str, object]) -> None:
     """Refuse match reports that claim human pass or open a static clothing index."""
     missing = REQUIRED_MATCH_REPORT_KEYS - set(document)
@@ -231,6 +247,109 @@ def assert_match_report_contract(document: dict[str, object]) -> None:
                     raise ValueError(f"Match report match.{bucket} evidenceIds are invalid.")
                 if "sourceRange" in entry and not _valid_optional_source_range(entry.get("sourceRange")):
                     raise ValueError(f"Match report match.{bucket} sourceRange is invalid.")
+                if not _source_range_contains(document.get("sourceRange"), entry.get("sourceRange")):
+                    raise ValueError(f"Match report match.{bucket} sourceRange escapes report range.")
+        if not _source_range_contains(document.get("sourceRange"), row.get("sourceRange")):
+            raise ValueError("Match report match sourceRange escapes report range.")
+
+
+def assert_match_report_sidecar_binding_contract(
+    report: dict[str, object],
+    request_document: dict[str, object],
+    result_document: dict[str, object] | None = None,
+) -> None:
+    """Readonly对照：match-report 身份／区间／证据必须挂回精分析 request／result 侧车.
+
+    Does not claim human-eval / F010 / TD009 closeout. Legacy v1 reports may bind.
+    """
+    if type(report) is not dict or type(request_document) is not dict:
+        raise ValueError("Match report sidecar binding requires objects.")
+    request_hash = report.get("refinementRequestHash")
+    if type(request_hash) is not str or not _HASH64.fullmatch(request_hash):
+        raise ValueError("Match report refinementRequestHash is invalid.")
+    if request_document.get("requestHash") != request_hash:
+        raise ValueError("Match report requestHash does not match sidecar request.")
+    if request_document.get("runId") != report.get("runId"):
+        raise ValueError("Match report runId does not match sidecar request.")
+    if request_document.get("eventFingerprint") != report.get("eventFingerprint"):
+        raise ValueError("Match report eventFingerprint does not match sidecar request.")
+    canonical = request_document.get("canonicalJson")
+    if type(canonical) is not str or not canonical:
+        raise ValueError("Sidecar request canonicalJson is invalid.")
+    try:
+        payload = json.loads(canonical)
+    except (TypeError, ValueError, RecursionError) as exc:
+        raise ValueError("Sidecar request canonicalJson must be JSON object.") from exc
+    if type(payload) is not dict:
+        raise ValueError("Sidecar request canonicalJson must be JSON object.")
+    if payload.get("candidateId") != report.get("candidateId"):
+        raise ValueError("Match report candidateId does not match sidecar request.")
+    if payload.get("interval") != report.get("sourceRange"):
+        raise ValueError("Match report sourceRange does not match sidecar interval.")
+    media_sha = payload.get("mediaSha256")
+    run_id = report.get("runId")
+    event_id = report.get("eventId")
+    if type(media_sha) is not str or not _HASH64.fullmatch(media_sha):
+        raise ValueError("Sidecar request mediaSha256 is invalid.")
+    if type(run_id) is not str or not run_id or type(event_id) is not str or not event_id:
+        raise ValueError("Match report runId/eventId invalid for sidecar binding.")
+    if not event_id.startswith(f"{run_id}:{media_sha}:"):
+        raise ValueError("Match report eventId does not match sidecar mediaSha256.")
+    evidence_rows = payload.get("evidence")
+    if type(evidence_rows) is not list or not evidence_rows:
+        raise ValueError("Sidecar request evidence is invalid.")
+    allowed_evidence = {
+        row.get("evidenceId")
+        for row in evidence_rows
+        if type(row) is dict and type(row.get("evidenceId")) is str
+    }
+    result = report.get("result")
+    if not isinstance(result, dict):
+        raise ValueError("Match report result must be an object for sidecar binding.")
+    matches = result.get("matches")
+    if type(matches) is not list:
+        raise ValueError("Match report matches must be a list for sidecar binding.")
+    outer_range = report.get("sourceRange")
+    for row in matches:
+        if type(row) is not dict:
+            raise ValueError("Match report match row invalid for sidecar binding.")
+        if not _source_range_contains(outer_range, row.get("sourceRange")):
+            raise ValueError("Match report match sourceRange escapes report/sidecar range.")
+        shared = row.get("sharedEvidenceIds") or []
+        if not _match_evidence_ids_owned(run_id, shared):
+            raise ValueError("Match report sharedEvidenceIds invalid for sidecar binding.")
+        if not set(shared) <= allowed_evidence:
+            raise ValueError("Match report sharedEvidenceIds not in sidecar evidence.")
+        for bucket in _MATCH_EVIDENCE_BUCKETS:
+            entries = row.get(bucket) or []
+            if type(entries) is not list:
+                raise ValueError(f"Match report match.{bucket} invalid for sidecar binding.")
+            for entry in entries:
+                if type(entry) is not dict:
+                    raise ValueError(f"Match report match.{bucket} entry invalid for sidecar binding.")
+                evidence_ids = entry.get("evidenceIds") or []
+                if not _match_evidence_ids_owned(run_id, evidence_ids):
+                    raise ValueError(
+                        f"Match report match.{bucket} evidenceIds invalid for sidecar binding."
+                    )
+                if not set(evidence_ids) <= allowed_evidence:
+                    raise ValueError(
+                        f"Match report match.{bucket} evidenceIds not in sidecar evidence."
+                    )
+                if not _source_range_contains(outer_range, entry.get("sourceRange")):
+                    raise ValueError(
+                        f"Match report match.{bucket} sourceRange escapes report range."
+                    )
+    if result_document is not None:
+        if type(result_document) is not dict:
+            raise ValueError("Sidecar result must be an object.")
+        payload_hash = report.get("refinementPayloadHash")
+        if type(payload_hash) is not str or not _HASH64.fullmatch(payload_hash):
+            raise ValueError("Match report refinementPayloadHash is invalid.")
+        if result_document.get("payloadHash") != payload_hash:
+            raise ValueError("Match report payloadHash does not match sidecar result.")
+        if result_document.get("requestHash") != request_hash:
+            raise ValueError("Sidecar result requestHash does not match match report.")
 
 
 def match_report_contract_gaps(document: dict[str, object]) -> tuple[str, ...]:

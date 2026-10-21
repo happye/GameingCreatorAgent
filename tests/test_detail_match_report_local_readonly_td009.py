@@ -15,6 +15,7 @@ import pytest
 from gamingcreator.application.detail_query import (
     MATCH_REPORT_VERSION,
     assert_match_report_contract,
+    assert_match_report_sidecar_binding_contract,
     match_report_contract_gaps,
 )
 from gamingcreator.domain.actor_details import MATCHER_VERSION, TEMPORAL_MATCHER_VERSION
@@ -106,17 +107,12 @@ def test_local_demo_phase0_legacy_match_reports_bind_refinement_sidecars() -> No
         sidecars = list(DEMO_PHASE0.glob(f"**/detail-refinements/{request_hash}/request.json"))
         assert len(sidecars) == 1, (path.name, request_hash)
         request_doc = json.loads(sidecars[0].read_text(encoding="utf-8-sig"))
-        assert request_doc["requestHash"] == request_hash
-        assert request_doc["runId"] == document["runId"]
-        assert request_doc["eventFingerprint"] == document["eventFingerprint"]
-        canonical = json.loads(request_doc["canonicalJson"])
-        assert canonical.get("candidateId") == document.get("candidateId")
-        assert canonical.get("interval") == document.get("sourceRange")
         result_path = sidecars[0].with_name("result.json")
         assert result_path.is_file(), path.name
         result_doc = json.loads(result_path.read_text(encoding="utf-8-sig"))
-        assert result_doc.get("payloadHash") == payload_hash
-        # Ownership: event id stays under the same run.
+        # Deepened binding: identity + media + evidence ⊆ sidecar + nested ranges.
+        assert_match_report_sidecar_binding_contract(document, request_doc, result_doc)
+        # Ownership: event id stays under the same run (kept as explicit guard).
         assert str(document["eventId"]).startswith(f'{document["runId"]}:')
 
 
@@ -252,3 +248,85 @@ def test_match_report_contract_gaps_flags_match_evidence_and_versions_on_legacy(
     assert "match_shared_evidence_invalid" in gaps
     assert "query_version_mismatch" in gaps
     assert "match_actor_id_invalid" in gaps
+
+
+def _load_first_legacy_binding() -> tuple[dict, dict, dict]:
+    path = _require_legacy_matches()[0]
+    document = json.loads(path.read_text(encoding="utf-8-sig"))
+    request_hash = document["refinementRequestHash"]
+    sidecar = list(DEMO_PHASE0.glob(f"**/detail-refinements/{request_hash}/request.json"))[0]
+    request_doc = json.loads(sidecar.read_text(encoding="utf-8-sig"))
+    result_doc = json.loads(sidecar.with_name("result.json").read_text(encoding="utf-8-sig"))
+    return document, request_doc, result_doc
+
+
+def test_assert_match_report_sidecar_binding_rejects_foreign_evidence_and_range() -> None:
+    document, request_doc, result_doc = _load_first_legacy_binding()
+    assert_match_report_sidecar_binding_contract(document, request_doc, result_doc)
+
+    forged = json.loads(json.dumps(document))
+    matches = forged["result"]["matches"]
+    assert matches, "legacy report should have matches"
+    # Inject foreign evidence id not present on the sidecar request.
+    bucket = None
+    for name in ("satisfied", "opposed", "counterEvidence", "uncertain"):
+        if matches[0].get(name):
+            bucket = name
+            break
+    assert bucket is not None
+    matches[0][bucket][0]["evidenceIds"] = [
+        f'{forged["runId"]}:{"a"*64}:evidence:forged-not-on-sidecar'
+    ]
+    with pytest.raises(ValueError, match="not in sidecar evidence"):
+        assert_match_report_sidecar_binding_contract(forged, request_doc, result_doc)
+
+    forged2 = json.loads(json.dumps(document))
+    outer = forged2["sourceRange"]
+    assert isinstance(outer, dict)
+    # Escape the report/sidecar interval.
+    forged2["result"]["matches"][0]["sourceRange"] = {
+        "startUs": int(outer["startUs"]) - 1_000_000,
+        "endUs": int(outer["endUs"]) + 1_000_000,
+        "durationUs": int(outer["durationUs"]),
+    }
+    with pytest.raises(ValueError, match="escapes report"):
+        assert_match_report_sidecar_binding_contract(forged2, request_doc, result_doc)
+
+
+def test_assert_match_report_sidecar_binding_rejects_media_and_payload_drift() -> None:
+    document, request_doc, result_doc = _load_first_legacy_binding()
+    forged = json.loads(json.dumps(document))
+    # Keep run prefix but swap media segment so eventId no longer matches sidecar media.
+    run_id = forged["runId"]
+    forged["eventId"] = f"{run_id}:{'b'*64}:event:forged"
+    with pytest.raises(ValueError, match="mediaSha256"):
+        assert_match_report_sidecar_binding_contract(forged, request_doc, result_doc)
+
+    forged_payload = json.loads(json.dumps(document))
+    forged_payload["refinementPayloadHash"] = "c" * 64
+    with pytest.raises(ValueError, match="payloadHash"):
+        assert_match_report_sidecar_binding_contract(forged_payload, request_doc, result_doc)
+
+
+def test_assert_match_report_contract_rejects_match_source_range_escape() -> None:
+    """When report sourceRange is bound, nested match ranges must stay inside."""
+    from test_detail_match_report_contract import _weapon_coexist_detail
+    from test_actor_detail_matching import EVENT, RUN, condition
+    from gamingcreator.application.detail_query import match_report
+    from gamingcreator.domain.actor_details import AttributeKind, QueryConstraint
+
+    query = QueryConstraint((condition(AttributeKind.HELD_CLASS, "weapon", "item"),))
+    document = match_report(
+        None,
+        _weapon_coexist_detail(),
+        query,
+        run_id=RUN,
+        event_id=EVENT,
+        request_digest=None,
+    )
+    document["sourceRange"] = {"startUs": 0, "endUs": 1_000_000, "durationUs": 5_000_000}
+    # Force an escape on the first match that has / can take a sourceRange.
+    row = document["result"]["matches"][0]
+    row["sourceRange"] = {"startUs": 0, "endUs": 2_000_000, "durationUs": 5_000_000}
+    with pytest.raises(ValueError, match="escapes report range"):
+        assert_match_report_contract(document)
