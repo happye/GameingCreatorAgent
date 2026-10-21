@@ -1,6 +1,6 @@
 # 当前交接：工作台检索已对齐覆盖缺口拒文，三缺口仍在
 
-**当前交接（2026-10-22）：工作台检索资格对齐已推送准备。** inspect／runs 下发 `searchEligible`／`completedEligible`／`errorCode`；覆盖缺口 abstention=`retrieval.coverage_gap`；工作台禁用搜索并显示与 CLI 相同白话拒文。sprint：`docs/exec-plans/sprint-workbench-search-eligibility.md`。0 付费／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。NL 检索闸基线 8ef7291／02bd7be。以下为检索闸／任务列表历史。
+**当前交接（2026-10-22）：工作台检索资格对齐已推送 aa114b8。** inspect／runs 下发 `searchEligible`／`completedEligible`／`errorCode`；覆盖缺口 abstention=`retrieval.coverage_gap`；工作台禁用搜索并显示与 CLI 相同白话拒文。sprint：`docs/exec-plans/sprint-workbench-search-eligibility.md`。0 付费／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。NL 检索闸基线 8ef7291／02bd7be。以下为检索闸／任务列表历史。
 
 **当前交接（2026-10-22）：NL 检索资格闸已推送 8ef7291。** `load_searchable_timeline`／`refuse_unsearchable_run`：`analysis.coverage_gap` → `retrieval.coverage_gap` 白话拒绝；未完成 run → 明确「只能检索已完成…」。单 run／项目搜索／详情查询入口已接。sprint：`docs/exec-plans/sprint-search-eligibility.md`。0 付费／F006/F009/F010 仍 false。**三缺口仍在**。**A／B／D 仍留给用户**。任务列表资格基线 3230651／539830a。以下为任务列表／缺口脚手架历史。
 

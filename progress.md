@@ -1,6 +1,6 @@
 # Progress Log
 
-**2026-10-22 工作台检索资格对齐**：inspect／runs／app.js 与 `retrieval.coverage_gap` 拒文对齐；相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-workbench-search-eligibility.md。
+**2026-10-22 工作台检索资格对齐（已推送 aa114b8）**：inspect／runs／app.js 与 `retrieval.coverage_gap` 拒文对齐；相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-workbench-search-eligibility.md。
 
 **2026-10-22 检索拒绝覆盖缺口／未完成 run（已推送 8ef7291）**：NL 搜索入口在排序前明确拒绝 `retrieval.coverage_gap` 与未完成记录；相关 pytest 绿。0 DeepSeek／0 launcher；F006/F009/F010 仍 false；A／B／D 仍待用户。sprint-search-eligibility.md。
 
