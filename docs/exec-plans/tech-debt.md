@@ -1,6 +1,6 @@
 # Technical debt
 
-**2026-10-22 检索离线进展（JSON 投影／candidate_sources 清单合同，已推送 `PLACEHOLDER`）：** `assert_search_document_contract`／`assert_candidate_sources_contract`；见 sprint-retrieval-search-document-sources-contract.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
+**2026-10-22 检索离线进展（JSON 投影／candidate_sources 清单合同，已推送 `6af5dd6`）：** `assert_search_document_contract`／`assert_candidate_sources_contract`；见 sprint-retrieval-search-document-sources-contract.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线进展（项目联合检索打分 inert 合同，已推送 `549adfc`）：** `assert_project_search_result_contract`；见 sprint-retrieval-project-ranking-inert-contract.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 

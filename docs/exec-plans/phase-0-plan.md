@@ -1,6 +1,6 @@
 # Phase 0 开发任务与依赖
 
-> **2026-10-22 离线补强：** 检索 JSON 投影／candidate_sources 清单合同（已推送 `PLACEHOLDER`）；不清除三缺口；不代选 A／B／D；不标 F006 true。
+> **2026-10-22 离线补强：** 检索 JSON 投影／candidate_sources 清单合同（已推送 `6af5dd6`）；不清除三缺口；不代选 A／B／D；不标 F006 true。
 
 > **2026-10-22 离线补强：** 项目联合检索打分 inert 合同（已推送 `549adfc`）；不清除三缺口；不代选 A／B／D；不标 F006 true。
 

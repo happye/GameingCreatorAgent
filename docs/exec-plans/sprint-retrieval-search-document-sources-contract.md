@@ -1,6 +1,6 @@
 # Sprint：检索 JSON 投影／candidate_sources 清单 inert 合同
 
-**状态（2026-10-22）：待推送 origin/main。** 新增 `assert_search_document_contract`：`scoreIsProbability=false`；弃权白名单；`qualityGate` 仅允许缺席或 null；禁止 formalAcceptancePassed／humanLabels 等声称字段；弃权与候选互斥；候选 why／lexicalEvidence 白名单。CLI `_search_document` 与项目检索落盘前强制校验。新增 `assert_candidate_sources_contract`：无分、时间序、id 唯一，挂在 `candidate_sources` 出口。验证=**pytest + demo-phase0 只读**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。
+**状态（2026-10-22）：已推送 origin/main 6af5dd6。** 新增 `assert_search_document_contract`：`scoreIsProbability=false`；弃权白名单；`qualityGate` 仅允许缺席或 null；禁止 formalAcceptancePassed／humanLabels 等声称字段；弃权与候选互斥；候选 why／lexicalEvidence 白名单。CLI `_search_document` 与项目检索落盘前强制校验。新增 `assert_candidate_sources_contract`：无分、时间序、id 唯一，挂在 `candidate_sources` 出口。验证=**pytest + demo-phase0 只读**。0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010／人评关单。`RETRIEVAL_VERSION` 仍为 `bm25-e5-rrf-v7`。
 
 ## Assignment
 
