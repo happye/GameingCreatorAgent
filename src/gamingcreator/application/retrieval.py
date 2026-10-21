@@ -36,6 +36,7 @@ SCORE_KINDS = frozenset({"bm25", "cosine", "rrf-bm25-cosine"})
 RETRIEVAL_MODES = frozenset({"lexical", "semantic", "hybrid"})
 RETRIEVAL_VERSION_PREFIX = "bm25-e5-rrf-v"
 LEXICAL_EVIDENCE_CHANNELS = frozenset({"positive_text", "mechanic_tags", "mixed"})
+FACTS_PROJECTION_VERSIONS = frozenset({"legacy-frame-alias-neutral-v1"})
 ABSTENTION_REASONS = frozenset(
     {
         "empty_query",
@@ -1001,6 +1002,15 @@ def assert_run_search_document_contract(
     min_margin = document.get("minSemanticMargin")
     if min_margin is not None and type(min_margin) not in {int, float}:
         raise _fail("retrieval.contract", "单任务检索投影 minSemanticMargin 无效。")
+    facts_projection_version = document.get("factsProjectionVersion")
+    if facts_projection_version is not None:
+        if (
+            type(facts_projection_version) is not str
+            or facts_projection_version not in FACTS_PROJECTION_VERSIONS
+        ):
+            raise _fail("retrieval.contract", "单任务检索投影 factsProjectionVersion 无效。")
+    if document.get("qualityGate") is not None:
+        raise _fail("retrieval.contract", "单任务检索投影不能声称 qualityGate。")
 
 
 def assert_persisted_retrieval_contract(document: dict[str, object]) -> None:
@@ -1219,7 +1229,10 @@ def assert_project_search_document_contract(document: dict[str, object]) -> None
     if type(elapsed_ms) is not int or elapsed_ms < 0:
         raise _fail("retrieval.contract", "项目检索投影 elapsedMs 无效。")
     facts_projection_version = document.get("factsProjectionVersion")
-    if type(facts_projection_version) is not str or not facts_projection_version:
+    if (
+        type(facts_projection_version) is not str
+        or facts_projection_version not in FACTS_PROJECTION_VERSIONS
+    ):
         raise _fail("retrieval.contract", "项目检索投影 factsProjectionVersion 无效。")
     if document.get("qualityGate") is not None:
         raise _fail("retrieval.contract", "项目检索投影不能声称 qualityGate。")

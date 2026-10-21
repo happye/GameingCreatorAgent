@@ -243,3 +243,38 @@ def test_assert_run_search_document_contract_rejects_embedding_mode_and_threshol
     with pytest.raises(AppError) as margin:
         assert_run_search_document_contract(bad_margin)
     assert margin.value.code == "retrieval.contract"
+
+
+def test_assert_run_search_document_contract_rejects_facts_projection_version_and_quality_gate() -> None:
+    files = _require_search_files()
+    with_fpv = None
+    without_fpv = None
+    for path in files:
+        document = json.loads(path.read_text(encoding="utf-8-sig"))
+        if document.get("factsProjectionVersion") is not None and with_fpv is None:
+            with_fpv = document
+        if document.get("factsProjectionVersion") is None and without_fpv is None:
+            without_fpv = document
+        if with_fpv is not None and without_fpv is not None:
+            break
+    assert with_fpv is not None and without_fpv is not None
+    assert_run_search_document_contract(with_fpv)
+    assert_run_search_document_contract(without_fpv)
+
+    forged = json.loads(json.dumps(with_fpv))
+    forged["factsProjectionVersion"] = "forged-facts-projection-v0"
+    with pytest.raises(AppError) as bad:
+        assert_run_search_document_contract(forged)
+    assert bad.value.code == "retrieval.contract"
+
+    empty = json.loads(json.dumps(with_fpv))
+    empty["factsProjectionVersion"] = ""
+    with pytest.raises(AppError) as blank:
+        assert_run_search_document_contract(empty)
+    assert blank.value.code == "retrieval.contract"
+
+    gated = json.loads(json.dumps(without_fpv))
+    gated["qualityGate"] = True
+    with pytest.raises(AppError) as gate:
+        assert_run_search_document_contract(gated)
+    assert gate.value.code == "retrieval.contract"

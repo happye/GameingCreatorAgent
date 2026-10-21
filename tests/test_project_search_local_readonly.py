@@ -242,3 +242,22 @@ def test_assert_project_search_document_contract_rejects_started_at_and_validati
     zulu = json.loads(json.dumps(document))
     zulu["startedAt"] = "2026-10-07T09:12:25.896681Z"
     assert_project_search_document_contract(zulu)
+
+
+def test_assert_project_search_document_contract_rejects_forged_facts_projection_version() -> None:
+    dirs = _require_project_search_dirs()
+    document = None
+    for directory in dirs:
+        result_path = directory / "result.json"
+        if not result_path.is_file():
+            continue
+        loaded = json.loads(result_path.read_text(encoding="utf-8-sig"))
+        if loaded.get("schemaVersion") == "project-search-v1":
+            document = loaded
+            break
+    assert document is not None
+    forged = json.loads(json.dumps(document))
+    forged["factsProjectionVersion"] = "forged-facts-projection-v0"
+    with pytest.raises(AppError) as bad:
+        assert_project_search_document_contract(forged)
+    assert bad.value.code == "retrieval.contract"
