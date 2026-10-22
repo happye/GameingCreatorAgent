@@ -1,13 +1,13 @@
 """Deterministic evidence-backed lexical and local semantic clip retrieval."""
 
 import hashlib
-from datetime import datetime
 import json
 import math
 import re
 import unicodedata
 from collections import Counter
 from dataclasses import dataclass, replace
+from datetime import datetime
 from typing import Literal
 
 from gamingcreator.application.observation_text import display_facts
@@ -37,6 +37,18 @@ RETRIEVAL_MODES = frozenset({"lexical", "semantic", "hybrid"})
 RETRIEVAL_VERSION_PREFIX = "bm25-e5-rrf-v"
 LEXICAL_EVIDENCE_CHANNELS = frozenset({"positive_text", "mechanic_tags", "mixed"})
 FACTS_PROJECTION_VERSIONS = frozenset({"legacy-frame-alias-neutral-v1"})
+DETAIL_RETRIEVAL_MANIFEST_VERSIONS = frozenset(
+    {"saved-detail-text-v1", "saved-detail-text-v2", "saved-detail-text-v3"}
+)
+DETAIL_REFINEMENT_PROFILES = frozenset({"v1", "v2", "v3", "v4", "v5"})
+DETAIL_RETRIEVAL_SOURCE_KEYS = (
+    "mediaId",
+    "sourceSha256",
+    "durationUs",
+    "configHash",
+    "pipelineHash",
+    "pipelineVersion",
+)
 ABSTENTION_REASONS = frozenset(
     {
         "empty_query",
@@ -497,8 +509,6 @@ class _Document:
         return "clip-" + digest[:24]
 
 
-
-
 # Liberally painted theme tags that often mark UI chrome without action language
 # in facts/transcripts (e.g. bare 战斗 on damage floaters, bare 角色移动).
 # Tag-only hits for these actions are noise. Attack tag-only recall stays
@@ -528,8 +538,8 @@ def _tag_only_action_noise_documents(
         return frozenset()
     noisy: set[str] = set()
     for document in documents:
-        positive = unicodedata.normalize("NFKC", document.positive_text).casefold().replace(
-            "’", "'"
+        positive = (
+            unicodedata.normalize("NFKC", document.positive_text).casefold().replace("’", "'")
         )
         positive_actions = {
             _ACTION_BY_TERM[match.group()]
@@ -538,9 +548,9 @@ def _tag_only_action_noise_documents(
         }
         if positive_actions:
             continue
-        tag_blob = unicodedata.normalize(
-            "NFKC", "\n".join(document.tags)
-        ).casefold().replace("’", "'")
+        tag_blob = (
+            unicodedata.normalize("NFKC", "\n".join(document.tags)).casefold().replace("’", "'")
+        )
         tag_actions = {
             _ACTION_BY_TERM[match.group()]
             for match in _ACTION_MENTION.finditer(tag_blob)
@@ -549,7 +559,6 @@ def _tag_only_action_noise_documents(
         if tag_actions:
             noisy.add(document.identifier)
     return frozenset(noisy)
-
 
 
 def _action_lexical_evidence(document: _Document, query: str) -> str | None:
@@ -566,12 +575,8 @@ def _action_lexical_evidence(document: _Document, query: str) -> str | None:
     actions = {_ACTION_BY_TERM[match.group()] for match in _ACTION_MENTION.finditer(folded_query)}
     if not actions:
         return None
-    positive = unicodedata.normalize("NFKC", document.positive_text).casefold().replace(
-        "’", "'"
-    )
-    tag_blob = unicodedata.normalize("NFKC", "\n".join(document.tags)).casefold().replace(
-        "’", "'"
-    )
+    positive = unicodedata.normalize("NFKC", document.positive_text).casefold().replace("’", "'")
+    tag_blob = unicodedata.normalize("NFKC", "\n".join(document.tags)).casefold().replace("’", "'")
     in_positive = bool(
         {
             _ACTION_BY_TERM[match.group()]
@@ -613,12 +618,14 @@ def _title_brand_action_noise_documents(
         return frozenset()
     noisy: set[str] = set()
     for document in documents:
-        original = unicodedata.normalize("NFKC", document.positive_text).casefold().replace(
-            "’", "'"
+        original = (
+            unicodedata.normalize("NFKC", document.positive_text).casefold().replace("’", "'")
         )
-        cleaned = unicodedata.normalize(
-            "NFKC", _neutralize_title_brands(document.positive_text)
-        ).casefold().replace("’", "'")
+        cleaned = (
+            unicodedata.normalize("NFKC", _neutralize_title_brands(document.positive_text))
+            .casefold()
+            .replace("’", "'")
+        )
         original_actions = {
             _ACTION_BY_TERM[match.group()]
             for match in _ACTION_MENTION.finditer(original)
@@ -634,10 +641,8 @@ def _title_brand_action_noise_documents(
     return frozenset(noisy)
 
 
-
 def _fail(code: str, message: str) -> AppError:
     return AppError(code, message, ExitCode.INPUT)
-
 
 
 def assert_search_result_contract(result: SearchResult) -> None:
@@ -669,7 +674,10 @@ def assert_search_result_contract(result: SearchResult) -> None:
             raise _fail("retrieval.contract", "未知的检索打分种类。")
         if "ranking signal, not probability" not in item.why:
             raise _fail("retrieval.contract", "候选缺少非概率声明。")
-        if item.lexical_evidence is not None and item.lexical_evidence not in LEXICAL_EVIDENCE_CHANNELS:
+        if (
+            item.lexical_evidence is not None
+            and item.lexical_evidence not in LEXICAL_EVIDENCE_CHANNELS
+        ):
             raise _fail("retrieval.contract", "未知的 lexicalEvidence 通道。")
         if not (item.source_range.start_us < item.source_range.end_us):
             raise _fail("retrieval.contract", "检索候选时间范围无效。")
@@ -747,7 +755,10 @@ def assert_project_search_result_contract(result: ProjectSearchResult) -> None:
             raise _fail("retrieval.contract", "未知的项目检索打分种类。")
         if "ranking signal, not probability" not in item.why:
             raise _fail("retrieval.contract", "项目候选缺少非概率声明。")
-        if item.lexical_evidence is not None and item.lexical_evidence not in LEXICAL_EVIDENCE_CHANNELS:
+        if (
+            item.lexical_evidence is not None
+            and item.lexical_evidence not in LEXICAL_EVIDENCE_CHANNELS
+        ):
             raise _fail("retrieval.contract", "未知的项目 lexicalEvidence 通道。")
         if type(item.media_id) is not str or not item.media_id:
             raise _fail("retrieval.contract", "项目候选 mediaId 无效。")
@@ -852,10 +863,6 @@ def assert_search_document_contract(document: dict[str, object]) -> None:
             raise _fail("retrieval.contract", "检索投影 lexicalEvidence 未知。")
 
 
-
-
-
-
 def _assert_search_embedding_metadata(
     mode: object,
     metadata: object,
@@ -877,7 +884,9 @@ def _assert_search_embedding_metadata(
         return
     if metadata is None:
         if has_candidates:
-            raise _fail("retrieval.contract", f"{scope} hybrid／semantic 候选结果缺少 embedding_metadata。")
+            raise _fail(
+                "retrieval.contract", f"{scope} hybrid／semantic 候选结果缺少 embedding_metadata。"
+            )
         return
     # Duck-typed to InvocationMetadata fields (avoid hard import cycles in asserts).
     provider = getattr(metadata, "provider", None)
@@ -927,7 +936,9 @@ def _assert_retrieval_embedding_metadata(mode: object, embedding: object, *, sco
     if type(actual) is not str or not actual:
         raise _fail("retrieval.contract", f"{scope} embedding.actual_model 无效。")
     if actual != requested:
-        raise _fail("retrieval.contract", f"{scope} embedding.actual_model 与 requested_model 不一致。")
+        raise _fail(
+            "retrieval.contract", f"{scope} embedding.actual_model 与 requested_model 不一致。"
+        )
     schema_version = embedding.get("schema_version")
     if type(schema_version) is not str or not schema_version:
         raise _fail("retrieval.contract", f"{scope} embedding.schema_version 无效。")
@@ -1030,7 +1041,10 @@ def assert_persisted_retrieval_contract(document: dict[str, object]) -> None:
     if type(query) is not str:
         raise _fail("retrieval.contract", "持久化检索 query 无效。")
     query_hash = document.get("queryHash")
-    if type(query_hash) is not str or query_hash != hashlib.sha256(query.encode("utf-8")).hexdigest():
+    if (
+        type(query_hash) is not str
+        or query_hash != hashlib.sha256(query.encode("utf-8")).hexdigest()
+    ):
         raise _fail("retrieval.contract", "持久化检索 queryHash 不一致。")
     version = document.get("retrievalVersion")
     if type(version) is not str or not version.startswith(RETRIEVAL_VERSION_PREFIX):
@@ -1137,7 +1151,11 @@ def assert_persisted_retrieval_contract(document: dict[str, object]) -> None:
 
 
 def assert_project_search_document_contract(document: dict[str, object]) -> None:
-    """Refuse joint-search JSON that drops source ownership or claims paid/acceptance work."""
+    """Refuse joint-search JSON that drops source ownership or claims paid/acceptance work.
+
+    When detailRetrieval is present, bind its version, profile, sources, counts, facets and
+    snapshot digest to the same saved search so tampering is refused before any replay.
+    """
     assert_search_document_contract(document)
     if document.get("schemaVersion") != "project-search-v1":
         raise _fail("retrieval.contract", "项目检索投影 schema 与合同不一致。")
@@ -1187,7 +1205,7 @@ def assert_project_search_document_contract(document: dict[str, object]) -> None
             raise _fail("retrieval.contract", "项目检索源 sourceSha256 无效。")
         source_ids.add(run_id)
         sources_by_run[run_id] = source
-    for row in document.get("candidates") or []:
+    for row in project_candidates:
         if not isinstance(row, dict):
             raise _fail("retrieval.contract", "项目检索候选无效。")
         run_id = row.get("runId")
@@ -1243,6 +1261,383 @@ def assert_project_search_document_contract(document: dict[str, object]) -> None
     if type(search_id) is str and search_id not in record_path.replace("\\", "/"):
         raise _fail("retrieval.contract", "项目检索投影 recordPath 与 searchId 不一致。")
 
+    detail = document.get("detailRetrieval")
+    saved_prefix = PROJECT_RETRIEVAL_VERSION + "-saved-details-"
+    has_saved_suffix = type(version) is str and version.startswith(saved_prefix)
+    if detail is None:
+        if has_saved_suffix:
+            raise _fail(
+                "retrieval.detail_snapshot",
+                "项目检索投影 retrievalVersion 含 saved-details 时必须带 detailRetrieval。",
+            )
+    else:
+        if not has_saved_suffix:
+            raise _fail(
+                "retrieval.detail_snapshot",
+                "项目检索投影带 detailRetrieval 时 retrievalVersion 必须含 saved-details。",
+            )
+        if type(detail) is not dict:
+            raise _fail("retrieval.detail_snapshot", "项目检索 detailRetrieval 必须是对象。")
+        suffix = version[len(saved_prefix) :]
+        if type(suffix) is not str or not re.fullmatch(r"v[0-9]+", suffix):
+            raise _fail("retrieval.detail_snapshot", "项目检索 saved-details 版本后缀无效。")
+        manifest_version = detail.get("version")
+        if (
+            type(manifest_version) is not str
+            or manifest_version not in DETAIL_RETRIEVAL_MANIFEST_VERSIONS
+        ):
+            raise _fail("retrieval.detail_snapshot", "项目检索 detailRetrieval.version 无效。")
+        if manifest_version != f"saved-detail-text-{suffix}":
+            raise _fail(
+                "retrieval.detail_snapshot",
+                "项目检索 detailRetrieval.version 与 retrievalVersion 后缀不一致。",
+            )
+        profile = detail.get("profile")
+        if type(profile) is not str or profile not in DETAIL_REFINEMENT_PROFILES:
+            raise _fail("retrieval.detail_snapshot", "项目检索 detailRetrieval.profile 无效。")
+        for hash_key in ("promptHash", "settingsHash", "snapshotSha256"):
+            digest = detail.get(hash_key)
+            if type(digest) is not str or not re.fullmatch(r"[0-9a-f]{64}", digest):
+                raise _fail(
+                    "retrieval.detail_snapshot",
+                    f"项目检索 detailRetrieval.{hash_key} 无效。",
+                )
+        if detail.get("humanLabels") is not None:
+            raise _fail(
+                "retrieval.detail_snapshot", "项目检索 detailRetrieval 不能声称 humanLabels。"
+            )
+        if detail.get("qualityGate") is not None:
+            raise _fail(
+                "retrieval.detail_snapshot", "项目检索 detailRetrieval 不能声称 qualityGate。"
+            )
+        for count_key in ("totalVisualEvents", "publishedRefinements", "indexedEvents"):
+            count = detail.get(count_key)
+            if type(count) is not int or count < 0:
+                raise _fail(
+                    "retrieval.detail_snapshot",
+                    f"项目检索 detailRetrieval.{count_key} 无效。",
+                )
+        detail_sources = detail.get("sources")
+        if type(detail_sources) is not list or not detail_sources:
+            raise _fail("retrieval.detail_snapshot", "项目检索 detailRetrieval.sources 无效。")
+        detail_source_ids: set[str] = set()
+        for row in detail_sources:
+            if type(row) is not dict:
+                raise _fail("retrieval.detail_snapshot", "项目检索 detailRetrieval 源行无效。")
+            run_id = row.get("runId")
+            if type(run_id) is not str or run_id not in source_ids or run_id in detail_source_ids:
+                raise _fail(
+                    "retrieval.detail_snapshot",
+                    "项目检索 detailRetrieval 源运行不在项目源列表中或重复。",
+                )
+            detail_source_ids.add(run_id)
+            for hash_key in ("sourceSha256", "configHash", "pipelineHash"):
+                digest = row.get(hash_key)
+                if type(digest) is not str or not re.fullmatch(r"[0-9a-f]{64}", digest):
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        f"项目检索 detailRetrieval 源 {hash_key} 无效。",
+                    )
+            media_id = row.get("mediaId")
+            if type(media_id) is not str or not media_id:
+                raise _fail(
+                    "retrieval.detail_snapshot", "项目检索 detailRetrieval 源 mediaId 无效。"
+                )
+            pipeline_version = row.get("pipelineVersion")
+            if type(pipeline_version) is not str or not pipeline_version:
+                raise _fail(
+                    "retrieval.detail_snapshot",
+                    "项目检索 detailRetrieval 源 pipelineVersion 无效。",
+                )
+            duration = row.get("durationUs")
+            if type(duration) is not int or duration < 0:
+                raise _fail(
+                    "retrieval.detail_snapshot",
+                    "项目检索 detailRetrieval 源 durationUs 无效。",
+                )
+            project_source = sources_by_run[run_id]
+            if any(row.get(key) != project_source.get(key) for key in DETAIL_RETRIEVAL_SOURCE_KEYS):
+                raise _fail(
+                    "retrieval.detail_snapshot",
+                    "项目检索 detailRetrieval 源与项目源身份不一致。",
+                )
+        if detail_source_ids != source_ids:
+            raise _fail(
+                "retrieval.detail_snapshot",
+                "项目检索 detailRetrieval.sources 必须覆盖全部项目源。",
+            )
+        refinements = detail.get("refinements")
+        if type(refinements) is not list:
+            raise _fail(
+                "retrieval.detail_snapshot",
+                "项目检索 detailRetrieval.refinements 必须是列表。",
+            )
+        record_attributes: dict[tuple[str, str, str], list[dict[str, object]]] = {}
+        indexed_records = 0
+        for row in refinements:
+            if type(row) is not dict:
+                raise _fail("retrieval.detail_snapshot", "项目检索 detailRetrieval 精进行无效。")
+            run_id = row.get("runId")
+            if type(run_id) is not str or run_id not in source_ids:
+                raise _fail(
+                    "retrieval.detail_snapshot",
+                    "项目检索 detailRetrieval 精进运行不在项目源列表中。",
+                )
+            event_id = row.get("eventId")
+            if type(event_id) is not str or not event_id:
+                raise _fail(
+                    "retrieval.detail_snapshot",
+                    "项目检索 detailRetrieval 精进 eventId 无效。",
+                )
+            candidate_id = row.get("candidateId")
+            if type(candidate_id) is not str or not candidate_id:
+                raise _fail(
+                    "retrieval.detail_snapshot",
+                    "项目检索 detailRetrieval 精进 candidateId 无效。",
+                )
+            if ":" in event_id and not event_id.startswith(f"{run_id}:"):
+                raise _fail(
+                    "retrieval.detail_snapshot",
+                    "项目检索 detailRetrieval 精进 eventId 不属于源运行。",
+                )
+            for hash_key in ("requestHash", "payloadHash"):
+                digest = row.get(hash_key)
+                if type(digest) is not str or not re.fullmatch(r"[0-9a-f]{64}", digest):
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        f"项目检索 detailRetrieval 精进 {hash_key} 无效。",
+                    )
+            attributes = row.get("attributes")
+            if type(attributes) is not list:
+                raise _fail(
+                    "retrieval.detail_snapshot",
+                    "项目检索 detailRetrieval 精进 attributes 必须是列表。",
+                )
+            validated: list[dict[str, object]] = []
+            for attribute in attributes:
+                if type(attribute) is not dict:
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        "项目检索 detailRetrieval 属性行无效。",
+                    )
+                shot_id = attribute.get("shotId")
+                actor_id = attribute.get("actorId")
+                part_id = attribute.get("partId")
+                if (
+                    type(shot_id) is not str
+                    or not shot_id
+                    or type(part_id) is not str
+                    or not part_id
+                    or (actor_id is not None and (type(actor_id) is not str or not actor_id))
+                ):
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        "项目检索 detailRetrieval 属性镜头／主体／部件无效。",
+                    )
+                for text_key in ("kind", "value", "text"):
+                    text = attribute.get(text_key)
+                    if type(text) is not str or not text:
+                        raise _fail(
+                            "retrieval.detail_snapshot",
+                            f"项目检索 detailRetrieval 属性 {text_key} 无效。",
+                        )
+                if attribute.get("status") != "observed":
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        "项目检索 detailRetrieval 属性必须来自 observed。",
+                    )
+                evidence_ids = attribute.get("evidenceIds")
+                if type(evidence_ids) is not list or any(
+                    type(item) is not str or not item for item in evidence_ids
+                ):
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        "项目检索 detailRetrieval 属性 evidenceIds 无效。",
+                    )
+                start_us = attribute.get("startUs")
+                end_us = attribute.get("endUs")
+                if (
+                    type(start_us) is not int
+                    or type(end_us) is not int
+                    or not 0 <= start_us <= end_us
+                ):
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        "项目检索 detailRetrieval 属性时间范围无效。",
+                    )
+                validated.append(attribute)
+            record_key = (run_id, event_id, candidate_id)
+            if record_key in record_attributes:
+                raise _fail(
+                    "retrieval.detail_snapshot",
+                    "项目检索 detailRetrieval 精进 eventId／candidateId 重复。",
+                )
+            record_attributes[record_key] = validated
+            if validated:
+                indexed_records += 1
+        total = detail.get("totalVisualEvents")
+        published = detail.get("publishedRefinements")
+        indexed = detail.get("indexedEvents")
+        if (
+            type(total) is not int
+            or type(published) is not int
+            or type(indexed) is not int
+            or published != len(refinements)
+            or indexed != indexed_records
+            or indexed > published
+            or published > total
+        ):
+            raise _fail(
+                "retrieval.detail_snapshot",
+                "项目检索 detailRetrieval 计数与精进内容不一致。",
+            )
+        facets = detail.get("semanticFacets")
+        facet_count = detail.get("semanticFacetCount")
+        if manifest_version == "saved-detail-text-v1":
+            if "semanticFacets" in detail or "semanticFacetCount" in detail:
+                raise _fail(
+                    "retrieval.detail_snapshot",
+                    "旧 saved-detail-text-v1 不能声称 semanticFacets。",
+                )
+        else:
+            if type(facets) is not list:
+                raise _fail(
+                    "retrieval.detail_snapshot",
+                    "项目检索 detailRetrieval.semanticFacets 无效。",
+                )
+            if type(facet_count) is not int or facet_count != len(facets):
+                raise _fail(
+                    "retrieval.detail_snapshot",
+                    "项目检索 detailRetrieval.semanticFacetCount 与 facets 不一致。",
+                )
+            seen_facet_ids: set[str] = set()
+            for facet in facets:
+                if type(facet) is not dict:
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        "项目检索 detailRetrieval semanticFacet 行无效。",
+                    )
+                facet_id = facet.get("facetId")
+                if (
+                    type(facet_id) is not str
+                    or not re.fullmatch(r"facet-[a-f0-9]{24}", facet_id)
+                    or facet_id in seen_facet_ids
+                ):
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        "项目检索 detailRetrieval semanticFacet.facetId 无效或重复。",
+                    )
+                seen_facet_ids.add(facet_id)
+                run_id = facet.get("runId")
+                if type(run_id) is not str or run_id not in source_ids:
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        "项目检索 detailRetrieval semanticFacet 运行不在项目源列表中。",
+                    )
+                event_id = facet.get("eventId")
+                if type(event_id) is not str or not event_id:
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        "项目检索 detailRetrieval semanticFacet.eventId 无效。",
+                    )
+                candidate_id = facet.get("candidateId")
+                if type(candidate_id) is not str or not candidate_id:
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        "项目检索 detailRetrieval semanticFacet.candidateId 无效。",
+                    )
+                attributes = record_attributes.get((run_id, event_id, candidate_id))
+                if attributes is None:
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        "项目检索 detailRetrieval semanticFacet 未对应已保存精进。",
+                    )
+                shot_id = facet.get("shotId")
+                actor_id = facet.get("actorId")
+                if (
+                    type(shot_id) is not str
+                    or not shot_id
+                    or (actor_id is not None and (type(actor_id) is not str or not actor_id))
+                ):
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        "项目检索 detailRetrieval semanticFacet 镜头／主体无效。",
+                    )
+                expected_facet_id = (
+                    "facet-"
+                    + hashlib.sha256(
+                        json.dumps([candidate_id, shot_id, actor_id]).encode()
+                    ).hexdigest()[:24]
+                )
+                if facet_id != expected_facet_id:
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        "项目检索 detailRetrieval semanticFacet.facetId 与身份不一致。",
+                    )
+                positions = facet.get("attributeIndexes")
+                if (
+                    type(positions) is not list
+                    or not positions
+                    or any(type(position) is not int for position in positions)
+                ):
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        "项目检索 detailRetrieval semanticFacet.attributeIndexes 无效。",
+                    )
+                first = positions[0]
+                if (
+                    positions != list(range(first, first + len(positions)))
+                    or first < 0
+                    or first + len(positions) > len(attributes)
+                ):
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        "项目检索 detailRetrieval semanticFacet.attributeIndexes 越界。",
+                    )
+                picked = [attributes[position] for position in positions]
+                if any(
+                    attribute.get("shotId") != shot_id or attribute.get("actorId") != actor_id
+                    for attribute in picked
+                ):
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        "项目检索 detailRetrieval semanticFacet 属性归属不一致。",
+                    )
+                facts = facet.get("facts")
+                if (
+                    type(facts) is not list
+                    or not facts
+                    or any(type(fact) is not str or not fact for fact in facts)
+                ):
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        "项目检索 detailRetrieval semanticFacet.facts 无效。",
+                    )
+                expected_facts = list(dict.fromkeys(str(attribute["text"]) for attribute in picked))
+                if facts != expected_facts:
+                    raise _fail(
+                        "retrieval.detail_snapshot",
+                        "项目检索 detailRetrieval semanticFacet.facts 与属性不一致。",
+                    )
+        snapshot = detail.get("snapshotSha256")
+        try:
+            canonical = json.dumps(
+                {key: value for key, value in detail.items() if key != "snapshotSha256"},
+                ensure_ascii=False,
+                sort_keys=True,
+                allow_nan=False,
+            ).encode()
+        except (TypeError, ValueError) as exc:
+            raise _fail(
+                "retrieval.detail_snapshot",
+                "项目检索 detailRetrieval 快照无法规范化。",
+            ) from exc
+        if hashlib.sha256(canonical).hexdigest() != snapshot:
+            raise _fail(
+                "retrieval.detail_snapshot",
+                "项目检索 detailRetrieval 快照与内容不一致。",
+            )
+
 
 def assert_project_search_receipt_contract(
     receipt: object,
@@ -1268,7 +1663,6 @@ def assert_project_search_receipt_contract(
     }
     if receipt != expected:
         raise _fail("retrieval.contract", "项目检索 receipt 与 result 校验失败。")
-
 
 
 def refuse_unsearchable_run(run: StoredRun) -> None:
@@ -1871,21 +2265,23 @@ async def _search_documents(
             *(f"passage: {item.text}" for item in documents),
             *("passage: " + "\n".join(item.facts) for item in facets),
         )
-        result = await embedding_provider.embed(
+        embedding_result = await embedding_provider.embed(
             EmbeddingRequest(run_id, texts, "embedding-v1"),
             context or CancellationContext(run_id, 120),
         )
         if context is not None:
             context.check_cancelled()
-        if result.status != ProviderStatus.COMPLETED or result.output is None:
+        if embedding_result.status != ProviderStatus.COMPLETED or embedding_result.output is None:
             raise AppError(
-                result.error.code if result.error is not None else "retrieval.embedding_failed",
+                embedding_result.error.code
+                if embedding_result.error is not None
+                else "retrieval.embedding_failed",
                 "本地语义模型未完成检索向量计算。",
                 ExitCode.CANCELLED
-                if result.status == ProviderStatus.CANCELLED
+                if embedding_result.status == ProviderStatus.CANCELLED
                 else ExitCode.PROVIDER,
             )
-        embeddings = result.output
+        embeddings = embedding_result.output
         if len(embeddings) != len(texts) or any(
             embedding.space != embeddings[0].space
             or embedding.text_hash != hashlib.sha256(text.encode("utf-8")).hexdigest()
@@ -1893,7 +2289,7 @@ async def _search_documents(
             for index, (embedding, text) in enumerate(zip(embeddings, texts, strict=True))
         ):
             raise _fail("retrieval.embedding_invalid", "模型返回的向量空间、数量或文本关联不一致。")
-        metadata = result.metadata
+        metadata = embedding_result.metadata
         document_embeddings = embeddings[1 : 1 + len(documents)]
         event_embeddings = tuple(
             replace(embedding, subject_id=document.event_id)
@@ -2009,8 +2405,7 @@ async def _search_documents(
         folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
         if not _NEGATIVE_QUERY_INTENT.search(folded_query):
             actions = {
-                _ACTION_BY_TERM[match.group()]
-                for match in _ACTION_MENTION.finditer(folded_query)
+                _ACTION_BY_TERM[match.group()] for match in _ACTION_MENTION.finditer(folded_query)
             }
             if actions:
                 # Action query produced no survivors after denial / title-brand /

@@ -468,6 +468,25 @@ def test_saved_record_is_exclusive_and_refuses_missing_or_changed_receipt(tmp_pa
     asyncio.run(scenario())
 
 
+def test_project_document_refuses_saved_detail_suffix_without_manifest(tmp_path):
+    from gamingcreator.application.retrieval import assert_project_search_document_contract
+
+    async def scenario():
+        project, _ = await completed_pool(tmp_path)
+        result = await cli.execute_project_search(
+            project, ["run-0"], "建造房屋", tmp_path, mode="lexical"
+        )
+        assert "detailRetrieval" not in result
+        assert_project_search_document_contract(result)
+        forged = json.loads(json.dumps(result))
+        forged["retrievalVersion"] = PROJECT_RETRIEVAL_VERSION + "-saved-details-v3"
+        with pytest.raises(AppError) as caught:
+            assert_project_search_document_contract(forged)
+        assert caught.value.code == "retrieval.detail_snapshot"
+
+    asyncio.run(scenario())
+
+
 def test_assert_project_search_result_contract_accepts_joint_hits_and_action_abstention():
     from gamingcreator.application.retrieval import assert_project_search_result_contract
 

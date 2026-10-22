@@ -149,3 +149,11 @@ Parallel follow-up workers must remain in separate worktrees. Preserve newly int
 
 Existing-run selection is a read-only metadata projection, not source/evidence integrity verification. Keep all matching versions explicit, preserve unknown recording declarations, carry the freeze digest to submission, and let original binding verify media. Restore only previously saved user choices; never select newest/first as a default or turn one recording's versions into independent samples. Workflow terminal-state reads may race with the recorded running snapshot; observed failures remain TD014, not a claimed environmental fix.
 
+
+## [LRN-20261022-DSH] correction: explicit native workspace and finite contract delivery
+
+User requires DeepSeek to have its own native workspace at the same project directory and a new native conversation. Register/read back workspace membership before dispatch; an empty earlier session was stopped without prompts. Preserve existing dirty changes before taking over (153 retrieval contract lines in this case); inspect actual producers before accepting an explorer's feature-gap guess.
+
+After a finite implementation passes, capture current receipts plus exact source/blob identities before shared documentation and Git changes. The bridge keeps the original HEAD/index/out-of-scope baseline across revisions: old receipts are historical after integration, and a future milestone must use a supported current-baseline workflow. Never edit bridge state or silently replay a completed/unknown request to work around this. Keep native development usage separate from footage API fees; logical sends, model usage samples and provider bill totals are distinct.
+
+Source: user correction and actual execution. Related: docs/exec-plans/sprint-dsh-project-detail-manifest.md.

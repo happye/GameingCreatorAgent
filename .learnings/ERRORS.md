@@ -448,3 +448,16 @@ Ignore `OSError` from the cache write and return the verified vector. Do not del
 ---
 
 2026-10-08真实v4执行：初预检误把旧提案全项目DB字节当当前要求，后续合法任务登记导致历史DB／wal／shm不同；原请求／六帧／wire精确一致、其余历史保护不变，改用当前执行基线，不改冻结请求。两HTTP400无错误正文和用量，失败回执保留，不重发；用户核实零扣费单独保存，不伪造Provider费用。一次临时文档打印未加载隔离env而GBK不支持¥，未改文件；后续按项目env执行。
+
+## [ERR-20261022-DSH] local contract execution prerequisites
+
+**Logged**: 2026-10-22
+**Priority**: medium
+**Status**: resolved
+**Area**: workflow
+
+DSH run rejected before any execution intent with UNSAFE_STATE_PATH because uv packages were project-local hardlinks. Confirmed executionIntents=[] and contractRuns=0 before retry; no unknown execution was replayed. Materialized 4652 byte-identical local .venv copies inside verified project paths, preserving cache/global bytes. Also restored 143 pinned stdlib pyc from the verified cached archive without changing toolchain receipt. init then passed.
+
+Actual first regression was 81 passed/17 failed: copied search IDs retained old recordPath, so correct identity checks prevented reaching the intended detail checks. Fixed fixtures, not production guards, in the same native session; full Ruff import order and four direct module type diagnostics also fixed. Retained original failure assets; final 98 tests, Ruff and mypy passed. tasks does not accept --view summary; use only flags documented for that command.
+
+Evidence: docs/exec-plans/report-2026-10-22-dsh-project-detail-manifest.md and ignored artifacts/dsh-phase0-20261022/.

@@ -1,3 +1,5 @@
+**已交付（2026-10-22，DSH协作）**：同目录独立原生workspace／新对话实际完成已有细节联合检索记录兼容与来源绑定，保留原153行未提交成果；正常v1/v2/v3及无细节结果可保存重读，损坏元数据明确拒绝。98项回归／Ruff／mypy通过，唯一Sol/high评估PASS，32份旧记录可读且原字节保持。首轮17项夹具失败及静态错误保留，追修后通过，未放宽正式守卫。见[验收报告](docs/exec-plans/report-2026-10-22-dsh-project-detail-manifest.md)。无录像调用／新增录像费用／标注要求；DSH开发模型调用用量另存。长钟馗既有P1接续终态与三缺口保持，F006/F009/F010false。下一回到独立质量路径，保留原人工参考与授权边界，不重跑旧任务。下方均为此前节点。
+
 # Progress Log
 
 **2026-10-22 TD009 匹配报告 inert／禁静态索引 v1.1（已推送 d428825）：** humanLabels/qualityGate 恒 null；independentStaticClothingIndex=false；constraintHash；pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户；不宣称 TD009 关单。sprint-detail-match-report-inert-v1_1.md。

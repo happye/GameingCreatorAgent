@@ -1,3 +1,5 @@
+**当前交付（2026-10-22，DSH协作）**：已完成既有细节联合检索记录兼容与来源绑定，98项／Ruff／mypy及独立评估通过，32份历史记录保持；见[sprint](sprint-dsh-project-detail-manifest.md)。仍Phase 0；F006/F009/F010false，三缺口未消除，无新录像API或新人工项。下一沿本计划独立质量验收合同推进，保留已填原片参考，不用本轮元数据校验替代真人质量门槛。以下为历史离线扩展节点。
+
 **2026-10-22 TD009 离线扩展（match-report↔sidecar 证据 partId／condition 加深，已推送 daecce3）：** 见 sprint-td009-match-report-sidecar-evidence-part-condition.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD009 关单。
 
 **2026-10-22 检索离线扩展（项目联合检索 receipt↔resultSha256 绑定加深，已推送 899c8a3）：** 见 sprint-retrieval-project-search-receipt-binding.md；0 付费；不代选 A／B／D；不标 F006 true；不宣称 TD004／TD010 关单。

@@ -19,7 +19,12 @@ from gamingcreator.application.detail_refinement import prepare_refinement
 from gamingcreator.application.detail_refinement_budget import canonical_detail_json, payload_hash
 from gamingcreator.application.detail_retrieval import build_saved_detail_corpus
 from gamingcreator.application.providers import ProviderResult, ProviderStatus
-from gamingcreator.application.retrieval import CandidateText, RetrievalSupplement, search_timelines
+from gamingcreator.application.retrieval import (
+    PROJECT_RETRIEVAL_VERSION,
+    CandidateText,
+    RetrievalSupplement,
+    search_timelines,
+)
 from gamingcreator.application.search_detail_query import search_snapshot_sha256
 from gamingcreator.cli import main as cli
 from gamingcreator.domain.errors import AppError
@@ -267,6 +272,34 @@ def search(project, tmp_path, **kwargs):
     )
 
 
+def search_with_saved_detail_version(project, tmp_path, monkeypatch, version):
+    reader = cli.read_saved_detail_corpus
+    monkeypatch.setattr(
+        cli,
+        "read_saved_detail_corpus",
+        lambda project, timelines, profile: reader(project, timelines, profile, version=version),
+    )
+    try:
+        return search(project, tmp_path, detail_profile="v2")
+    finally:
+        monkeypatch.setattr(cli, "read_saved_detail_corpus", reader)
+
+
+def resave_with_new_identity(project, document):
+    search_id = uuid4().hex
+    document["searchId"] = search_id
+    document["recordPath"] = str(project / "project-searches" / search_id / "result.json")
+    write_project_search(project, document)
+    return search_id
+
+
+def refresh_manifest_digest(detail):
+    body = {key: value for key, value in detail.items() if key != "snapshotSha256"}
+    detail["snapshotSha256"] = hashlib.sha256(
+        json.dumps(body, ensure_ascii=False, sort_keys=True, allow_nan=False).encode()
+    ).hexdigest()
+
+
 def test_saved_ranking_and_matching_keep_exact_index_snapshot_with_only_two_new_files(
     detail_pool, tmp_path
 ):
@@ -344,14 +377,13 @@ def test_tampered_index_attributes_even_with_valid_search_receipt_are_refused(
     project, _, _, _ = detail_pool
     saved = search(project, tmp_path, detail_profile="v2")
     saved = json.loads(json.dumps(saved))
-    saved["searchId"] = uuid4().hex
     saved["candidates"][0]["detailSearchEvidence"]["attributes"][0]["value"] = "black"
-    write_project_search(project, saved)
+    search_id = resave_with_new_identity(project, saved)
     with pytest.raises(AppError) as caught:
         asyncio.run(
             cli.execute_search_detail_match(
                 project,
-                saved["searchId"],
+                search_id,
                 search_snapshot_sha256(saved),
                 json.dumps(manifest()),
                 profile="v2",
@@ -395,3 +427,112 @@ def test_http_optional_profile_is_explicit_and_preserves_legacy_request(
         )
         assert status == 200 and not json.loads(data)["candidates"]
         assert "detailRetrieval" not in json.loads(data)
+
+
+@pytest.mark.parametrize(
+    "version",
+    ["saved-detail-text-v1", "saved-detail-text-v2", "saved-detail-text-v3"],
+)
+def test_every_saved_detail_text_version_round_trips_with_its_own_manifest(
+    detail_pool, tmp_path, monkeypatch, version
+):
+    project, _, _, _ = detail_pool
+    saved = search_with_saved_detail_version(project, tmp_path, monkeypatch, version)
+    detail = saved["detailRetrieval"]
+    assert detail["version"] == version
+    assert saved["retrievalVersion"].endswith("-saved-details-" + version.rsplit("-", 1)[1])
+    assert ("semanticFacets" in detail) is (version != "saved-detail-text-v1")
+    assert detail["publishedRefinements"] == len(detail["refinements"])
+    assert detail["indexedEvents"] == sum(1 for row in detail["refinements"] if row["attributes"])
+    assert read_project_search(project, saved["searchId"]) == saved
+
+
+def test_base_search_without_saved_details_round_trips_without_detail_claims(detail_pool, tmp_path):
+    project, _, _, _ = detail_pool
+    saved = asyncio.run(
+        cli.execute_project_search(project, ["run-1", "run-2"], "白色", tmp_path, mode="lexical")
+    )
+    assert saved["candidates"]
+    assert "detailRetrieval" not in saved
+    assert "-saved-details-" not in saved["retrievalVersion"]
+    assert all("detailSearchEvidence" not in row for row in saved["candidates"])
+    assert read_project_search(project, saved["searchId"]) == saved
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "profile",
+        "version",
+        "source",
+        "source_pipeline",
+        "source_coverage",
+        "counts",
+        "snapshot",
+        "attribute_status",
+        "attribute_text",
+        "facets_missing",
+        "facet_count",
+        "facet_id",
+        "attribute_indexes",
+        "suffix",
+        "manifest",
+    ],
+)
+def test_tampered_saved_detail_manifest_is_refused_at_read(detail_pool, tmp_path, damage):
+    project, _, _, _ = detail_pool
+    saved = search(project, tmp_path, detail_profile="v2")
+    document = json.loads(json.dumps(saved))
+    detail = document["detailRetrieval"]
+    if damage == "profile":
+        detail["profile"] = "latest"
+    elif damage == "version":
+        assert detail["version"] == "saved-detail-text-v3"
+        detail["version"] = "saved-detail-text-v2"
+    elif damage == "source":
+        detail["sources"][0]["sourceSha256"] = "f" * 64
+    elif damage == "source_pipeline":
+        detail["sources"][0]["pipelineVersion"] = "phase0-analyze-v9"
+    elif damage == "source_coverage":
+        assert len(detail["sources"]) == 2
+        detail["sources"].pop()
+    elif damage == "counts":
+        detail["publishedRefinements"] += 1
+    elif damage == "snapshot":
+        detail["snapshotSha256"] = "f" * 64
+    elif damage == "attribute_status":
+        detail["refinements"][0]["attributes"][0]["status"] = "uncertain"
+    elif damage == "attribute_text":
+        detail["refinements"][0]["attributes"][0]["text"] = "forged"
+    elif damage == "facets_missing":
+        detail.pop("semanticFacets")
+        detail.pop("semanticFacetCount")
+    elif damage == "facet_count":
+        detail["semanticFacetCount"] += 1
+    elif damage == "facet_id":
+        detail["semanticFacets"][0]["facetId"] = "facet-" + "f" * 24
+    elif damage == "attribute_indexes":
+        detail["semanticFacets"][0]["attributeIndexes"] = [999]
+    elif damage == "suffix":
+        document["retrievalVersion"] = PROJECT_RETRIEVAL_VERSION
+    else:
+        document.pop("detailRetrieval")
+    search_id = resave_with_new_identity(project, document)
+    with pytest.raises(AppError) as caught:
+        read_project_search(project, search_id)
+    assert caught.value.code == "retrieval.detail_snapshot"
+
+
+def test_legacy_v1_record_cannot_gain_semantic_facets_even_with_matching_digest(
+    detail_pool, tmp_path, monkeypatch
+):
+    project, _, _, _ = detail_pool
+    saved = search_with_saved_detail_version(project, tmp_path, monkeypatch, "saved-detail-text-v1")
+    document = json.loads(json.dumps(saved))
+    document["detailRetrieval"]["semanticFacets"] = []
+    document["detailRetrieval"]["semanticFacetCount"] = 0
+    refresh_manifest_digest(document["detailRetrieval"])
+    search_id = resave_with_new_identity(project, document)
+    with pytest.raises(AppError) as caught:
+        read_project_search(project, search_id)
+    assert caught.value.code == "retrieval.detail_snapshot"
