@@ -1,6 +1,6 @@
 # Phase 0 工程规格 v5
 
-独立精分析profile v5明确要求JSON输出，沿用v4连续实体／归属／部件及严格证据解析、schema-v2／matcher-v2／4096设置；旧v4提示词／请求身份不改，缺准确v5结果仍unverified。公开只读入口和冻结工具支持v5，页面由detail-temporal-json-v1启用，默认v2；没有真实v5输出，不代表F009／F010或F006质量通过。工程规格版本与精分析profile分别管理；见[当前精分析任务](../exec-plans/sprint-detail-temporal-json.md)。
+独立精分析profile v5明确要求JSON输出，沿用v4连续实体／归属／部件及严格证据解析、schema-v2／matcher-v2／4096设置；旧v4提示词／请求身份不改，缺准确v5结果仍unverified。公开只读入口和冻结工具支持v5，页面由detail-temporal-json-v1启用，默认v2；2026-10-11已有两次授权真实尝试（一份发布、一份结构拒绝），人工质量判断仍待完成，不代表F009／F010或F006质量通过。工程规格版本与精分析profile分别管理；见[当前精分析任务](../exec-plans/sprint-detail-temporal-json.md)。
 
 文字投影saved-detail-text-v3沿用准确observed分组与有界合同，基础原文档不拼补充属性；BM25和E5分别在原描述及独立人物／环境组计算，原事件每分量最大分数、RRF一次。排名保存关键词与语义实际组并复核所属候选，旧文字v1／v2原投影保持可验证。组相关不保证同人／同部件／同帧AND；严格条件需要用户明确确认后用既有matcher，不自动消费未确认草稿。无新模型分析／费用／SQL写入。见[当前任务](../exec-plans/sprint-saved-detail-grouped-ranking.md)，下方v2合同为兼容机制。
 

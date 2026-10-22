@@ -2,11 +2,13 @@
 
 长录像新增显式`analyze --resume --window-failure-policy isolate-schema-v1`操作策略，只改变窗口失败后的调度；原run/config/pipeline/模型/提示词/媒体及账本保持。`policy-isolate-schema-v1`检查点将策略版本与run/source/config/pipeline SHA关联，恢复必须显式选择相同策略。Application从持久调用核对图片、请求／模型／提示词和已知费用，仅白名单内容拒绝可跳过，整窗仍失败；成功与已拒绝付费窗口不重发。预算／认证／存储／身份／费用不确定问题继续停止，使用原writer锁。`analysis_coverage.json`记录预期全部窗口的完成、拒绝及未执行源范围；有缺口仍非Completed，不进入正式检索／验收绑定。Provider结构错误新增有界白名单边界投影及响应SHA／大小，不保存原始响应／任意正文。合同及离线证据见[长录像可靠性sprint](../exec-plans/sprint-long-analysis-reliability.md)，真实理解／人工U10仍未验证。
 
-明确JSON的新v5独立Provider复用v4 payload构造、temporal settings及解码器，注入预期身份后严格解析；只有提示词／请求身份变化，原v4 PROMPT／SHA／canonical保持。公开精确读取与CLI支持v5，默认v2；detail-temporal-json-v1仅开启页面新版本选项。旧数据不能借用／重标为v5，缺结果仍unverified；冻结工具--profile v5只生成具体新提案，不发送或预留预算。当前无真实v5结果，见[本轮sprint](../exec-plans/sprint-detail-temporal-json.md)。
+明确JSON的新v5独立Provider复用v4 payload构造、temporal settings及解码器，注入预期身份后严格解析；只有提示词／请求身份变化，原v4 PROMPT／SHA／canonical保持。公开精确读取与CLI支持v5，默认v2；detail-temporal-json-v1仅开启页面新版本选项。旧数据不能借用／重标为v5，缺结果仍unverified；冻结工具--profile v5只生成具体新提案，不发送或预留预算。2026-10-11两次已授权真实尝试已结束，一份发布、一份结构拒绝，真人判断仍未完成；见[真实试验报告](../exec-plans/report-2026-10-11-detail-json-pilot.md)。
 
 已有细节当前采用saved-detail-text-v3：基础原文档与准确shot／actor／环境组分别参与BM25及E5，按原事件每分量最大分数、RRF一次；不追加合并的跨人物属性到原文档。保存lexicalDetailFacetId及semanticDetailFacetId，两组可能不同，不形成同actor／同part AND结论。纯Application v3投影、scope身份及侧车来源复核保持；旧v1／v2按原version重建并精确比对，原facts／证据／时钟与未选细节默认行为不变。当前证据见[分组任务](../exec-plans/sprint-saved-detail-grouped-ranking.md)。下方文字v2机制为兼容历史。
 
 准确已有细节检索由纯Application `detail_retrieval`调用注入reader，复核原RefinementRequest／payload／投影并产生固定双语observed文字、带镜头／主体／部件／帧的依据及全语料SHA。新saved-detail-text-v2还按shot／actor分组、环境独立形成SemanticFacet，绑定原属性索引及候选身份；`retrieval.search_timelines`可选`RetrievalSupplement`增排名文字和scope版本，基础及各组相似度按原事件取最大，RRF每事件每分量一次，原facts／时钟／证据不变。margin按原facts＋补充文字区分。Infrastructure准确只读sidecar供CLI组合，原SQLite／旧默认检索保持。保存文件附detailRetrieval／逐候选detailSearchEvidence／实际semanticDetailFacetId；核对按原version和profile重建语料并精确对照，v1仍按原投影，变化或外来组拒绝。v4／v5消费通过结构与证据校验的actor／ownership，uncertain／同部件互斥冲突不索引；20,000组及有界文字先于模型拒绝，不称同actor AND或质量通过。见[指南](../references/saved-detail-retrieval-guide.md)。
+
+已有细节联合排名的文档入口合同还核对retrievalVersion与detailRetrieval配对、支持profile、完整来源、计数、属性／facet身份及规范摘要；v1/v2/v3及无细节结果均须保存读回兼容。Infrastructure读取先核result／receipt原字节绑定，再走Application文档合同；回放继续按准确已保存语料复核，不重新调用模型。普通SHA摘要只证自洽，不认证恶意重算。见[兼容交付报告](../exec-plans/report-2026-10-22-dsh-project-detail-manifest.md)。
 
 保存排名的条件依据由纯Application `search_detail_query`复用TimelineStore、retrieval纯来源投影`candidate_sources`与准确已保存结果回调；读取原`project-search-v1`内容并核对来源／区间／事实／证据后，对全部原候选补状态，不重排、筛掉未知或重新检索。CLI只读原文件SHA回执和SQLite，POST再绑定规范内容摘要；语音候选不进入视觉matcher，最多100来源／100候选／8MiB。原搜索响应只增摘要，原文件保持。页面独立保留依据及原排名，换条件／profile／查询清除、跨源回看保持。见[候选指南](../references/search-detail-evidence-guide.md)。
 

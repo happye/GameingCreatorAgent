@@ -157,3 +157,7 @@ User requires DeepSeek to have its own native workspace at the same project dire
 After a finite implementation passes, capture current receipts plus exact source/blob identities before shared documentation and Git changes. The bridge keeps the original HEAD/index/out-of-scope baseline across revisions: old receipts are historical after integration, and a future milestone must use a supported current-baseline workflow. Never edit bridge state or silently replay a completed/unknown request to work around this. Keep native development usage separate from footage API fees; logical sends, model usage samples and provider bill totals are distinct.
 
 Source: user correction and actual execution. Related: docs/exec-plans/sprint-dsh-project-detail-manifest.md.
+
+## [LRN-20261022-STATUS] correction: current documentation and elapsed time
+
+Updating HANDOFF/sprint alone did not align all user-facing entries: README still claimed P1 was unfixed and live design/guides still said v5 had no real results. Reconcile those against actual execution receipts, and archive repeated current anchors rather than prepend another one. The continuation outcome elapsedSeconds=842.598 is wall-clock execution time; source duration is about 952.102 seconds, so never call elapsedSeconds a source timecode. Fixed the current DSH report wording. Preserve old experiment records as explicit history and distinguish targeted current-document checks from revalidating every historical experiment.
