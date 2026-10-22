@@ -1,5 +1,9 @@
 # Errors
 
+## [ERR-20261022-PUBLISH] GitHub unavailable during documentation publication
+
+Two ordinary, non-force pushes of the status/documentation milestone failed to connect to github.com:443 after about 21 seconds each. Local documentation commit 11bbf80 and subsequent handoff/freeze-order clarification remain saved; source-code delivery caa29d0 had been pushed previously. No more retries in this audit. Resume with `git push origin main` after connectivity returns; do not repeat footage or labeling work. Current publication details are in HANDOFF.md and ignored artifacts/status-alignment-20261022/.
+
 2026-10-12补充：多文件文档补丁中任一完整行／标题锚点不存在会使整批无写入。P1记录首次误用human-inputs英文标题、tech-debt短前缀当完整行，均无文件修改；读实际首行后修正。后续批处理先核对全部目标，不猜标题或以未落盘内容继续交接。
 
 2026-10-11 P1主控只读提案助手首次假设_payload返回tuple，实际返回dict；报too many values to unpack，未保存提案或调用模型。按实际签名改为单值，待源码冻结后重新生成。来源及3160文件保护核对已完成，数据库未改；不作为产品缺陷或付费重试。
