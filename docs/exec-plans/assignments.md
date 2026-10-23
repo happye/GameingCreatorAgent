@@ -2,6 +2,8 @@
 
 更新：2026-10-24，main。本轮交付见[静态观察sprint](sprint-static-observation-index.md)，产品状态见[总览](current-status.md)，恢复身份见[HANDOFF](../../HANDOFF.md)。旧节点与执行中／待授权分工见[历史快照](assignments-history-2026-10-22.md)，不据历史PID、许可或owner启动任务。
 
+用户因剩约12%额度要求当前交付后暂停；无新实施派发。自动生成只读设计已返回并保存next-static-observation-generation.md。当前task三请求已结束，stop接受但控制器仍STOP_PENDING（无运行轮次／队列，后台工具静止未证），恢复先核活动，禁止重投旧任务。
+
 | 工作 | 负责人／文件责任 | 当前状态 |
 | --- | --- | --- |
 | 特殊源时钟验收资格／TD006 | 原生DSH唯一写benchmark_review.py与两测试；Codex合同／测试／公共docs／Git，唯一Sol/high评估 | 已完成：64项／静态检查／R1–R5 PASS；两请求结束，非零自动映射仍待做 |

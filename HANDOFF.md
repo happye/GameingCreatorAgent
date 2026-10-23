@@ -1,5 +1,9 @@
 # 当前交接：Phase 0质量验收前，工程交付已保存
 
+**用户要求暂停（2026-10-24）**：额度剩约12%，手头交付已完成后停止。产品本地提交81216a5（含静态观察闭环），源时钟9eb55f3亦保存；普通push仍连接GitHub:443失败，未称远端同步。新六视频已登记，无需重标或继续补。下一仅有[自动生成设计草案](docs/exec-plans/next-static-observation-generation.md)，没有新合同／新DSH对话／真实图片许可。
+
+当前DSH task停止指令已接受，三个请求COMPLETED，after.running=false／queueCount=0；控制器因无法证明全部后台工具静止保留`STOP_PENDING / STOP_ACTIVITY_UNRESOLVED`，recover一次仍同态。已禁止新send/run/审批；不重复cancel、不杀共享Host、不归档、不改账本。证据ignored artifacts/dsh-static-observations-20261023/stop-user-pause.json及recover-after-stop.json。下次先只读核活动再确定续作，不能把该状态说成已完全停止或重投旧请求。
+
 更新：2026-10-24。已交付[独立静态声明导入和检索](docs/exec-plans/report-2026-10-24-static-observation-index.md)：没有动作事件的Completed注册帧可独立保存，另一进程按同人物／同部件条件查回证据和源时间；原时间线只读。202通过／1符号链接权限skip、八文件Ruff／格式／六源码mypy及唯一Sol/high R1–R9 PASS。三项边界缺陷与三项测试夹具错误已修，原失败证据保留。交付是声明保存／检索，自动生成与真实外观质量尚未验证，F006/F009/F010false。
 
 同目录workspace `f4395711-a8fb-49a3-ad95-7305ce9ea1e8`；task `gamingcreator-static-observations-20261023`／session `codex-35d31548-8d46-4f1b-b8dc-1886e7f8f355`，三个distinct请求均结束，不重投。最终rev4 dfc21b73d68027cd5c394413972fac34a576b006507e067816ea45c4334196ac，两正式回执已在文档／Git变化前验有效并保存tested blobs；合入后只作历史证据。见[sprint](docs/exec-plans/sprint-static-observation-index.md)、[设计](docs/design-docs/static-observation-index-spec.md)与[使用](docs/references/static-observation-guide.md)。当前无录像分析／源码写者；下一设计静态观察自动生成的Provider、费用及恢复边界，再按新Git基线冻结有限合同继续DSH，不以素材可用推定录像发图授权。

@@ -16,4 +16,4 @@
 
 已向用户汇报：无动作事件的注册帧有独立导入／新进程搜索闭环，旧数据库及费用／动作prompt保护实际通过；自动识别和真实质量尚未验证。F006/F009/F010false，长钟馗三缺口／旧费用／12原标注及纠正保持。用户补3游戏6文件已目录登记，见[清单](material-availability-2026-10-24.md)，当前无需再补或重标；未做媒体分析或推定新API许可。
 
-下一：Astra/low已获只读设计任务，确定注册帧自动静态生成的Provider、费用与恢复最小闭环，尚未派DSH实施。主控完成当前Git检查点后按新基线冻结下一合同；原task不得重基或复用提交前回执为新证据。
+下一设计已由Astra/low返回，见[next草案](next-static-observation-generation.md)，尚未评新合同／派DSH实施。用户提醒剩约12%额度并要求当前交付后暂停，故本轮不继续开工。产品81216a5本地保存、普通push仍连接GitHub:443失败。stop已接受，三请求完成、running=false／queue=0但控制器STOP_PENDING无法证明后台工具全静止，recover一次同态；不重复cancel／kill共享Host。恢复先核活动，再按新Git基线冻结下一合同，旧task／回执只作历史。
