@@ -1,5 +1,7 @@
 # Codex子Agent按能力分工
 
+2026-10-24执行补记：本轮工具已接受task_architect具名角色，独立静态切片的一次实际设计从turn_context核实为gpt-6-astra／low；既有Luna/high定位及Sol/high评估继续复用，未追加重复reviewer。证据在artifacts/dsh-static-observations-20261023/architect-runtime.json及reused-role-runtime.json。下方2026-10-11的unknown-role／fallback为历史节点，不当作当前角色不可用证明，也不据一个角色成功声称全部角色已热加载。
+
 2026-10-11新增[可移植harness技能与开发三角色](development-agent-pipeline.md)：技能仓库已合并e3ae40a、本机三工具副本同步；项目补harness_planner／harness_generator／harness_evaluator（Sol/medium），原六专家及个人安装保持。关键交付按合同独立评估，简单工作直接做；新三角色名称本轮未执行，当前聊天按显式模型路由立即可用。
 
 用户于2026-10-11要求参考个人及投资项目的Claude Agent，把子任务分给合适模型以节省额度。这里使用Codex原生配置，并保留当前聊天可立即执行的明确模型分配方式。

@@ -1,10 +1,12 @@
 # 当前交接：Phase 0质量验收前，工程交付已保存
 
-更新：2026-10-23。已完成[特殊源时钟验收回看资格对齐](docs/exec-plans/report-2026-10-23-source-clock-acceptance.md)：两页只对素材origin及所有流均从0开始的录像自动操作；非零／异步保留手动核对，零起点真实seek／区间停播继续有效。64项回归、Ruff／格式／mypy与唯一Sol/high评估R1–R5 PASS。保守规则一致不代表已证明旧实现错播，也未实现特殊时钟自动映射。原生DSH task `gamingcreator-source-clock-20261023`／session `codex-e56e7df0-ed06-4054-8602-833e984bb533`两逻辑请求均结束，不重投；详见[sprint](docs/exec-plans/sprint-source-clock-acceptance.md)。
+更新：2026-10-24。已交付[独立静态声明导入和检索](docs/exec-plans/report-2026-10-24-static-observation-index.md)：没有动作事件的Completed注册帧可独立保存，另一进程按同人物／同部件条件查回证据和源时间；原时间线只读。202通过／1符号链接权限skip、八文件Ruff／格式／六源码mypy及唯一Sol/high R1–R9 PASS。三项边界缺陷与三项测试夹具错误已修，原失败证据保留。交付是声明保存／检索，自动生成与真实外观质量尚未验证，F006/F009/F010false。
 
-下一项：Phase 0／TD009独立静态外观观察。Astra/low已完成只读设计，最小离线切片为已有注册帧的独立静态声明导入、持久化、同主体／同部件条件搜索及证据回看信息；不依赖动作事件、不放松V6动作保护，不宣称自动识别或真实素材覆盖已增加。尚未启动新实施请求；先冻结合同并独立核数据边界，再在同workspace新对话开发。现有素材够离线实现，无需重标；真实质量仍需原人工依赖，见[总览](docs/exec-plans/current-status.md)。
+同目录workspace `f4395711-a8fb-49a3-ad95-7305ce9ea1e8`；task `gamingcreator-static-observations-20261023`／session `codex-35d31548-8d46-4f1b-b8dc-1886e7f8f355`，三个distinct请求均结束，不重投。最终rev4 dfc21b73d68027cd5c394413972fac34a576b006507e067816ea45c4334196ac，两正式回执已在文档／Git变化前验有效并保存tested blobs；合入后只作历史证据。见[sprint](docs/exec-plans/sprint-static-observation-index.md)、[设计](docs/design-docs/static-observation-index-spec.md)与[使用](docs/references/static-observation-guide.md)。当前无录像分析／源码写者；下一设计静态观察自动生成的Provider、费用及恢复边界，再按新Git基线冻结有限合同继续DSH，不以素材可用推定录像发图授权。
 
-此前TD014修复与文档已正常推送main `958f70c`；本轮集成／发布证据保存到ignored `artifacts/dsh-source-clock-20261023/publication.json`，以实际Git与该记录为准。原片／费用／标注不变，F006/F009/F010仍false，旧节点见[历史](docs/exec-plans/handoff-history-2026-10-22.md)。
+用户已补充苍翼：混沌效应、奇迹暖暖、心动小镇各宣传片／实机，共6 MP4，路径与字节数已登记在[素材清单](docs/exec-plans/material-availability-2026-10-24.md)。先作为按需可用材料，无需现在再补或重标；录制独立性、内容与事前参考尚未核验，不直接计入正式验收组。原片／费用／原12标注及纠正保持。
+
+此前TD014已正常推送958f70c；源时钟修复本地9eb55f3已保存，曾普通push连接GitHub:443失败。当前发布事实以Git及ignored `artifacts/dsh-static-observations-20261023/publication.json`为准；若未推成功，下一正常push一并补推，不force。源时钟交付[报告](docs/exec-plans/report-2026-10-23-source-clock-acceptance.md)保留非零自动映射后续项；完整里程碑见[总览](docs/exec-plans/current-status.md)，旧节点见[历史](docs/exec-plans/handoff-history-2026-10-22.md)。
 
 ## 已交付与待验收
 
@@ -17,7 +19,7 @@
 
 已保存原12条标注及纠正副本，10有效样例为Boss1／连招5／剧情4，无需重标。三登记来源按两个保守录制组，完整10–20代表集及主查询至少10个独立参考事件尚未满足；本机8视频文件不等于8独立会话。先核现有来源，再分批补真实玩法素材；新增原片参考须在看模型结果前登记。
 
-下一主交付回到真实检索质量：来源／查询／事前参考及冻结 → 具体新费用提案与授权（如需要） → 分析后明确Completed版本并绑定原冻结计划 → 固定Top10人评 → 按漏检／误检改进F009/F010。先用已有素材和标注推进独立工作，不循环堆元数据断言替代质量进展。当前无运行中录像分析；静态观察切片先做合同，不复用旧实施请求。
+下一主交付回到真实检索质量：来源／查询／事前参考及冻结 → 具体新费用提案与授权（如需要） → 分析后明确Completed版本并绑定原冻结计划 → 固定Top10人评 → 按漏检／误检改进F009/F010。先用已有素材和标注推进独立工作，不循环堆元数据断言替代质量进展。当前无运行中录像分析；独立静态切片已交付，下一另立自动生成合同，不复用旧实施请求。
 
 长钟馗已选C离线改进；三缺口的A保留／B定向补窗新提案／D暂缓仍沿原待办，未代选。禁止重跑新旧launcher、旧付费窗或重新标注；原许可／余额不授权补缺口或另两段录像分析。保留其他任务原未知费用。具体触发及用户入口见[human-inputs](docs/exec-plans/human-inputs.md)。
 

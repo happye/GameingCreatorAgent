@@ -18,10 +18,6 @@ from gamingcreator.application.acceptance_readiness import (
     build_acceptance_readiness,
     write_acceptance_readiness,
 )
-from gamingcreator.application.coverage_gap_report import (
-    build_coverage_gap_report,
-    write_coverage_gap_report,
-)
 from gamingcreator.application.analysis import (
     AnalysisPorts,
     AnalyzeOutcome,
@@ -45,6 +41,10 @@ from gamingcreator.application.benchmark_preparation import (
     loads_plan,
 )
 from gamingcreator.application.budget import BudgetLedger, InvocationRecorder
+from gamingcreator.application.coverage_gap_report import (
+    build_coverage_gap_report,
+    write_coverage_gap_report,
+)
 from gamingcreator.application.detail_query import MAX_MANIFEST_BYTES, loads_constraint
 from gamingcreator.application.inputs import (
     AnalysisConfig,
@@ -72,7 +72,6 @@ from gamingcreator.application.retrieval import (
     SearchResult,
     assert_project_search_document_contract,
     assert_run_search_document_contract,
-    assert_search_document_contract,
     load_searchable_timeline,
     search_timeline,
     search_timelines,
@@ -80,6 +79,10 @@ from gamingcreator.application.retrieval import (
 from gamingcreator.application.search_detail_query import match_search_details, search_run_ids
 from gamingcreator.application.storage import RunStatus
 from gamingcreator.application.tasks import tasks_payload
+from gamingcreator.cli.static_observations import (
+    execute_import_static_observations,
+    execute_search_static_observations,
+)
 from gamingcreator.domain.errors import AppError, ExitCode, invalid_config
 from gamingcreator.infrastructure.benchmark_preparation_files import (
     read_bounded,
@@ -256,6 +259,24 @@ def _parser() -> CliParser:
     search_detail.add_argument("--search-sha256", required=True)
     search_detail.add_argument("--input", type=Path, required=True)
     search_detail.add_argument("--profile", choices=("v1", "v2", "v3", "v4", "v5"), default="v2")
+    import_static = commands.add_parser(
+        "import-static-observations",
+        help="导入一个已完成录像上的不可变静态声明集合",
+    )
+    import_static.add_argument("--project", type=Path, required=True)
+    import_static.add_argument("--run", required=True)
+    import_static.add_argument("--collection", required=True)
+    import_static.add_argument("--input", type=Path, required=True)
+    import_static.add_argument("--format", choices=("json",), default="json")
+    search_static = commands.add_parser(
+        "search-static-observations",
+        help="按同主体／同部件 typed 条件检索一个静态声明集合",
+    )
+    search_static.add_argument("--project", type=Path, required=True)
+    search_static.add_argument("--run", required=True)
+    search_static.add_argument("--collection", required=True)
+    search_static.add_argument("--input", type=Path, required=True)
+    search_static.add_argument("--format", choices=("json",), default="json")
     return parser
 
 
@@ -1044,7 +1065,6 @@ async def execute_bind_benchmark(
         ) from None
 
 
-
 async def execute_acceptance_readiness(
     project: Path,
     *,
@@ -1057,9 +1077,7 @@ async def execute_acceptance_readiness(
     store = await SqliteTimelineStore.open(project, read_only=True)
     try:
         tasks_document = await tasks_payload(store, limit=limit, offset=offset)
-        document = build_acceptance_readiness(
-            tasks_document, project=str(project.resolve())
-        )
+        document = build_acceptance_readiness(tasks_document, project=str(project.resolve()))
         if output is not None:
             written = write_acceptance_readiness(document, output)
             document = dict(document)
@@ -1313,6 +1331,24 @@ async def execute_prepare_media(
 
 
 def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | None:
+    if args.command == "import-static-observations":
+        return asyncio.run(
+            execute_import_static_observations(
+                args.project.resolve(),
+                args.run,
+                args.collection,
+                args.input.resolve(),
+            )
+        )
+    if args.command == "search-static-observations":
+        return asyncio.run(
+            execute_search_static_observations(
+                args.project.resolve(),
+                args.run,
+                args.collection,
+                args.input.resolve(),
+            )
+        )
     if args.command == "search-project":
         return asyncio.run(
             execute_project_search(

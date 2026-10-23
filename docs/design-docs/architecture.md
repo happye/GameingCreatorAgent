@@ -1,5 +1,7 @@
 # Phase 0 架构基线 v2
 
+独立静态声明新增Domain静态类型→Application身份／纯AND与Store port→Infrastructure严格codec／独立SQLite→CLI装配。原TimelineStore只读且保留Completed／完整性门，新库不承担旧费用／动作事件；真实新进程闭环已验证，自动生成留后续。见[设计](static-observation-index-spec.md)。四层方向、ADR-001／002与原数据资产不变。
+
 长录像新增显式`analyze --resume --window-failure-policy isolate-schema-v1`操作策略，只改变窗口失败后的调度；原run/config/pipeline/模型/提示词/媒体及账本保持。`policy-isolate-schema-v1`检查点将策略版本与run/source/config/pipeline SHA关联，恢复必须显式选择相同策略。Application从持久调用核对图片、请求／模型／提示词和已知费用，仅白名单内容拒绝可跳过，整窗仍失败；成功与已拒绝付费窗口不重发。预算／认证／存储／身份／费用不确定问题继续停止，使用原writer锁。`analysis_coverage.json`记录预期全部窗口的完成、拒绝及未执行源范围；有缺口仍非Completed，不进入正式检索／验收绑定。Provider结构错误新增有界白名单边界投影及响应SHA／大小，不保存原始响应／任意正文。合同及离线证据见[长录像可靠性sprint](../exec-plans/sprint-long-analysis-reliability.md)，真实理解／人工U10仍未验证。
 
 明确JSON的新v5独立Provider复用v4 payload构造、temporal settings及解码器，注入预期身份后严格解析；只有提示词／请求身份变化，原v4 PROMPT／SHA／canonical保持。公开精确读取与CLI支持v5，默认v2；detail-temporal-json-v1仅开启页面新版本选项。旧数据不能借用／重标为v5，缺结果仍unverified；冻结工具--profile v5只生成具体新提案，不发送或预留预算。2026-10-11两次已授权真实尝试已结束，一份发布、一份结构拒绝，真人判断仍未完成；见[真实试验报告](../exec-plans/report-2026-10-11-detail-json-pilot.md)。
