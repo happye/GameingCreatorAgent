@@ -286,7 +286,10 @@ def build_review_context(
                 "path": str(value.run.asset.source_path),
                 "durationUs": value.run.asset.duration_us,
                 "originSeconds": str(value.run.asset.origin_seconds),
-                "automaticPlaybackSupported": value.run.asset.origin_seconds == 0,
+                # Same conservative rule as the raw-footage reference page: a shared
+                # zero origin is not enough when a stream starts later (async A/V).
+                "automaticPlaybackSupported": value.run.asset.origin_seconds == 0
+                and all(stream.start_seconds == 0 for stream in value.run.asset.streams),
             }
             for key, value in timelines.items()
         ],

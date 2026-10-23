@@ -1,10 +1,12 @@
+# Progress Log
+
+**2026-10-23 DSH协作交付TD006本轮**：候选评审与原片参考对齐特殊源时钟保守资格；真实合成零起点／非零PTS／异步A/V经probe与两个真实构造器、Chromium验证手动保存及正常seek／区间末尾暂停。最终64passed／0skip、Ruff／格式／mypy与唯一Sol/high R1–R5 PASS。初轮测试证据缺口由DSH在原对话补强，不放宽生产保护；未证明旧实现必然错播，未实现非零自动映射。无录像API／标注／费用变更，F006/F009/F010false。下一TD009独立静态观察离线切片已完成Astra/low设计，待合同与实施。[报告](docs/exec-plans/report-2026-10-23-source-clock-acceptance.md)。
+
 **2026-10-23 DSH协作已交付TD014**：验收步骤完成状态可靠读取，29项相关回归／Ruff／格式／mypy通过，唯一Sol/high评估R1–R6 PASS；86旧验收文件摘要不变。一个原生实施请求已结束，恢复未重投；无录像调用、重标或新质量结论，三缺口及F006/F009/F010false保持。[报告](docs/exec-plans/report-2026-10-23-acceptance-state.md)。下一先核TD006原片回看源时间边界，以实际证据确定新交付。下方为历史。
 
 **2026-10-22状态与文档对齐**：当前里程碑、技术已交付／质量未通过及素材需求统一见[总览](docs/exec-plans/current-status.md)。README的未修P1、设计／指南的无v5结果、续跑耗时误作片尾时间已纠正；交接／计划／分工／人工待办旧节点归档保留，不改标注、费用或feature_list。正式F006仍需更多确认独立的真实玩法素材，先复用既有10个样例、不重标；先冻结事前参考计划再分析，Completed后绑定原计划。当前无录像分析／产品源码worker，后续沿独立质量路径。文档11bbf80及后补记本地保存，两次普通push连接GitHub:443失败，网络恢复后补推`git push origin main`；产品代码caa29d0此前已推送。下方为历史节点，不据其中“当前／下一步”启动任务。
 
 **已交付（2026-10-22，DSH协作）**：同目录独立原生workspace／新对话实际完成已有细节联合检索记录兼容与来源绑定，保留原153行未提交成果；正常v1/v2/v3及无细节结果可保存重读，损坏元数据明确拒绝。98项回归／Ruff／mypy通过，唯一Sol/high评估PASS，32份旧记录可读且原字节保持。首轮17项夹具失败及静态错误保留，追修后通过，未放宽正式守卫。见[验收报告](docs/exec-plans/report-2026-10-22-dsh-project-detail-manifest.md)。无录像调用／新增录像费用／标注要求；DSH开发模型调用用量另存。长钟馗既有P1接续终态与三缺口保持，F006/F009/F010false。下一回到独立质量路径，保留原人工参考与授权边界，不重跑旧任务。下方均为此前节点。
-
-# Progress Log
 
 **2026-10-22 TD009 匹配报告 inert／禁静态索引 v1.1（已推送 d428825）：** humanLabels/qualityGate 恒 null；independentStaticClothingIndex=false；constraintHash；pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户；不宣称 TD009 关单。sprint-detail-match-report-inert-v1_1.md。
 

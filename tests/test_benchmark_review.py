@@ -5,6 +5,8 @@ import hashlib
 import importlib.util
 import json
 from copy import deepcopy
+from dataclasses import replace
+from fractions import Fraction
 from pathlib import Path
 
 import pytest
@@ -23,6 +25,7 @@ from gamingcreator.application.benchmark_review import (
 )
 from gamingcreator.application.storage import RunStatus, StoredRun, StoredTimeline
 from gamingcreator.cli import main as cli
+from gamingcreator.domain.media import MediaStream
 from gamingcreator.infrastructure.benchmark_preparation_files import (
     read_freeze,
     write_binding,
@@ -131,6 +134,39 @@ def build(fixture):
         timelines=sources,
         retrievals=retrievals,
     )
+
+
+def reclocked(fixture, streams, origin):
+    raw, report, sources, retrievals, hits = fixture
+    base = sources["run-1"].run.asset
+    asset = replace(base, streams=streams, origin_seconds=origin, duration_us=base.duration_us)
+    timeline = replace(sources["run-1"], run=replace(sources["run-1"].run, asset=asset))
+    return build((raw, report, {"run-1": timeline}, retrievals, hits))
+
+
+def test_automatic_playback_needs_zero_origin_and_synchronous_stream_starts(tmp_path):
+    fixture = review_fixture(tmp_path, 2)
+    video = MediaStream(0, "video", Fraction(1, 1000), 0, 2000)
+    synchronous = MediaStream(1, "audio", Fraction(1, 48000), 0, 48000)
+    late_audio = MediaStream(1, "audio", Fraction(1, 48000), 24000, 48000)
+    late_video = MediaStream(0, "video", Fraction(1, 1000), 1000, 2000)
+    shifted_audio = MediaStream(1, "audio", Fraction(1, 48000), 48000, 48000)
+    for streams, origin, automatic in (
+        ((video, synchronous), Fraction(0), True),
+        ((video, late_audio), Fraction(0), False),
+        ((late_video, shifted_audio), Fraction(1), False),
+    ):
+        context, _ = reclocked(fixture, streams, origin)
+        row = context["media"][0]
+        assert row["automaticPlaybackSupported"] is automatic
+        assert set(row) == {
+            "runId",
+            "name",
+            "path",
+            "durationUs",
+            "originSeconds",
+            "automaticPlaybackSupported",
+        }
 
 
 def test_audio_candidate_keeps_persisted_identity_without_visual_event(tmp_path):

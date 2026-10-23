@@ -469,3 +469,5 @@ Evidence: docs/exec-plans/report-2026-10-22-dsh-project-detail-manifest.md and i
 ## [ERR-20261023-DSH] contract input path enumeration
 
 Resolved before any test execution: full git ls-files quoted the Chinese product-plan filename, so revision binding rejected INVALID_CONTRACT_PATH. Use per-command git -c core.quotepath=false ls-files, not a global configuration change. Requirements and original task stayed intact; there was no model replay or unknown execution. Earlier recovery USAGE came from unsupported --view on recover; recover takes no summary flag. Locate files with rg --files before reading, and use rg -g for Windows wildcard filtering. One failed multi-file doc patch was atomic and left git status unchanged; corrected exact-line contexts before applying.
+
+2026-10-23 source-clock验收计划更新曾用错误argv下标（8项数组访问第9项），该rev4未运行。后续用参数前缀替换并先打印全argv，rev5保留pytest三文件、独立basetemp与JUnit路径后才执行。PowerShell任务脚本显式ErrorActionPreference=Stop，避免单步错误后继续绑定；不因计划编辑失败重发模型请求。参考指南路径先用rg --files定位，实际名为benchmark-candidate-review-guide.md。

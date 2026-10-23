@@ -1,9 +1,11 @@
 # 当前分工与恢复入口
 
-更新：2026-10-23，main。当前协作修复见[TD014 sprint](sprint-dsh-acceptance-state.md)，产品状态见[总览](current-status.md)，恢复身份见[HANDOFF](../../HANDOFF.md)。旧节点与执行中／待授权分工见[历史快照](assignments-history-2026-10-22.md)，不据历史PID、许可或owner启动任务。
+更新：2026-10-23，main。本轮交付见[源时钟sprint](sprint-source-clock-acceptance.md)，产品状态见[总览](current-status.md)，恢复身份见[HANDOFF](../../HANDOFF.md)。旧节点与执行中／待授权分工见[历史快照](assignments-history-2026-10-22.md)，不据历史PID、许可或owner启动任务。
 
 | 工作 | 负责人／文件责任 | 当前状态 |
 | --- | --- | --- |
+| 特殊源时钟验收资格／TD006 | 原生DSH唯一写benchmark_review.py与两测试；Codex合同／测试／公共docs／Git，唯一Sol/high评估 | 已完成：64项／静态检查／R1–R5 PASS；两请求结束，非零自动映射仍待做 |
+| 独立静态观察／TD009 | Astra/low只读设计已完成；Codex冻结合同；未来DSH唯一写新切片 | 尚未实施；仅已有注册帧声明导入／独立持久化／条件搜索，不新增录像调用 |
 | 验收步骤完成状态可靠读取／TD014 | 原生DSH唯一写benchmark_workflow.py及其测试；Codex合同／测试／公共docs／Git，Luna/high定位，唯一Sol/high并发评估 | 已完成：29项／静态检查及独立评估PASS，86旧文件不变；task/session已结束，不运行旧录像 |
 | 进度、里程碑、素材需求与文档事实对齐 | Codex唯一写公共Markdown；既有task_explorer Luna/high只读核素材 | 本次已完成；不改产品代码／数据／费用 |
 | DSH已有细节排名兼容与来源绑定 | 原生DSH唯一写retrieval.py及两个测试文件；Codex合同／测试／集成；唯一Sol/high独立评估 | 已交付caa29d0，98项／Ruff／mypy与评估PASS；无活跃源码写者 |
