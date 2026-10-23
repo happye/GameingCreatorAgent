@@ -465,3 +465,7 @@ DSH run rejected before any execution intent with UNSAFE_STATE_PATH because uv p
 Actual first regression was 81 passed/17 failed: copied search IDs retained old recordPath, so correct identity checks prevented reaching the intended detail checks. Fixed fixtures, not production guards, in the same native session; full Ruff import order and four direct module type diagnostics also fixed. Retained original failure assets; final 98 tests, Ruff and mypy passed. tasks does not accept --view summary; use only flags documented for that command.
 
 Evidence: docs/exec-plans/report-2026-10-22-dsh-project-detail-manifest.md and ignored artifacts/dsh-phase0-20261022/.
+
+## [ERR-20261023-DSH] contract input path enumeration
+
+Resolved before any test execution: full git ls-files quoted the Chinese product-plan filename, so revision binding rejected INVALID_CONTRACT_PATH. Use per-command git -c core.quotepath=false ls-files, not a global configuration change. Requirements and original task stayed intact; there was no model replay or unknown execution. Earlier recovery USAGE came from unsupported --view on recover; recover takes no summary flag. Locate files with rg --files before reading, and use rg -g for Windows wildcard filtering. One failed multi-file doc patch was atomic and left git status unchanged; corrected exact-line contexts before applying.

@@ -174,28 +174,40 @@ class BenchmarkWorkflows:
             attempts.append(row)
         return attempts
 
-    def _busy(self, identifier: str) -> bool:
-        lock = ProjectWriterLock(self.directory(identifier))
-        _plain(self.directory(identifier) / ".analysis-writer.lock")
+    def _fresh_attempts(self, identifier: str) -> list[dict[str, object]] | None:
+        """Read attempts only after proving no writer can persist a terminal state any more.
+
+        A worker writes its terminal status before releasing the OS lock, so a free lock means
+        this read is stable. ``None`` keeps a still-owned running snapshot untouched; other lock
+        and storage errors propagate, and every branch closes the observation lock.
+        """
+        directory = self.directory(identifier)
+        lock = ProjectWriterLock(directory)
+        _plain(directory / ".analysis-writer.lock")
         try:
-            lock.acquire()
-        except AppError as error:
-            if error.code == "storage.writer_busy":
-                return True
-            raise
+            try:
+                lock.acquire()
+            except AppError as error:
+                if error.code != "storage.writer_busy":
+                    raise
+                return None
+            return self._attempts(identifier)
         finally:
             lock.close()
-        return False
 
     def get(self, identifier: str) -> dict[str, object]:
         with self._lock:
             metadata = self._metadata(identifier)
             attempts = self._attempts(identifier)
-            busy = (
-                self._busy(identifier)
-                if any(row["status"] == "running" for row in attempts)
-                else False
-            )
+            busy = any(row["status"] == "running" for row in attempts)
+            if busy:
+                fresh = self._fresh_attempts(identifier)
+                if fresh is None:
+                    busy = True
+                else:
+                    # The free lock proves any still-running row has lost its worker: read the
+                    # terminal status the worker persisted first, never the stale snapshot.
+                    attempts, busy = fresh, False
             for row in attempts:
                 if row["status"] == "running" and not busy:
                     row["status"] = "interrupted"

@@ -1,5 +1,6 @@
 """Persistent step ownership, immutable outputs and existing acceptance boundaries."""
 
+import hashlib
 import json
 import threading
 import time
@@ -12,8 +13,9 @@ from test_benchmark_reference_browser import (
 from test_inspection_http import get, workspace
 
 from gamingcreator.application.benchmark_preparation import canonical_json
-from gamingcreator.domain.errors import AppError
+from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.benchmark_review_files import publish_review_bundle
+from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
 from gamingcreator.ui.benchmark_workflow import BenchmarkWorkflows
 
 
@@ -96,7 +98,8 @@ def test_actual_os_lock_blocks_duplicate_and_released_ownership_is_interrupted(
     manager.submit(document)
     assert entered.wait(5)
     second = BenchmarkWorkflows(tmp_path)
-    assert second.get(identifier)["busy"] is True
+    value = second.get(identifier)
+    assert value["busy"] is True and value["attempts"][-1]["status"] == "running"
     with pytest.raises(AppError, match="已有写入"):
         second.submit(document)
     release.set()
@@ -111,6 +114,132 @@ def test_actual_os_lock_blocks_duplicate_and_released_ownership_is_interrupted(
     value = submit(second, identifier, "register", {"inputText": ""})
     assert len(value["attempts"]) == 2
     manager.close()
+
+
+def persist_running_attempt(manager, identifier, attempt="000001-" + "a" * 32):
+    """Persist one running attempt exactly like submit does before its worker finishes."""
+    parent = manager.directory(identifier) / attempt
+    parent.mkdir()
+    request = canonical_json(
+        {"action": "register", "fields": {"inputText": ""}, "dependencies": {}}
+    )
+    (parent / "request.json").write_bytes(request)
+    row = {
+        "attemptId": attempt,
+        "action": "register",
+        "startedAt": "2026-10-23T00:00:00+00:00",
+        "status": "running",
+        "exitCode": None,
+        "files": {},
+        "error": None,
+        "project": None,
+        "qualityGate": None,
+        "elapsedMs": None,
+        "dependencies": {},
+    }
+    status = parent / "status.json"
+    status.write_bytes(canonical_json(row))
+    return parent, status, row, request
+
+
+@pytest.mark.parametrize(
+    ("terminal", "exit_code", "error"),
+    [
+        ("finished", 0, None),
+        ("failed", 2, "资料读取或保存失败；保留已有文件，检查后明确重试。"),
+    ],
+)
+def test_terminal_status_between_running_read_and_lock_observation_is_returned(
+    tmp_path, monkeypatch, terminal, exit_code, error
+):
+    manager = BenchmarkWorkflows(tmp_path)
+    identifier = manager.create({"name": "terminal-interleave"})["id"]
+    parent, status, row, request = persist_running_attempt(manager, identifier)
+    ownership = ProjectWriterLock(manager.directory(identifier))
+    ownership.acquire()  # a worker that has not persisted its terminal status yet
+    real_acquire = ProjectWriterLock.acquire
+    persisted = []
+
+    def acquire_after_terminal(self_lock):
+        if not persisted:
+            terminal_row = {
+                **row,
+                "status": terminal,
+                "exitCode": exit_code,
+                "error": error,
+                "elapsedMs": 1.5,
+            }
+            if terminal == "finished":
+                output = parent / "output"
+                output.mkdir()
+                (output / "draft.json").write_bytes(b"registered")
+                terminal_row["files"] = {"draft.json": hashlib.sha256(b"registered").hexdigest()}
+            status.write_bytes(canonical_json(terminal_row))
+            persisted.append(terminal_row)
+            ownership.close()
+        return real_acquire(self_lock)
+
+    monkeypatch.setattr(ProjectWriterLock, "acquire", acquire_after_terminal)
+    value = manager.get(identifier)
+
+    assert persisted, "get did not read the old running snapshot before the lock observation"
+    assert value["busy"] is False and value["qualityGate"] is None
+    current = value["attempts"][-1]
+    assert current["status"] == terminal and current["exitCode"] == exit_code
+    assert current["error"] == error
+    assert current["files"] == persisted[0]["files"]
+    # The query only projects; it never rewrites the persisted status/input/output history.
+    assert status.read_bytes() == canonical_json(persisted[0])
+    assert (parent / "request.json").read_bytes() == request
+    if terminal == "finished":
+        assert manager.file(identifier, row["attemptId"], "draft.json") == b"registered"
+    else:
+        with pytest.raises(AppError):
+            manager.file(identifier, row["attemptId"], "draft.json")
+    monkeypatch.setattr(ProjectWriterLock, "acquire", real_acquire)
+    probe = ProjectWriterLock(manager.directory(identifier))
+    probe.acquire()  # a leaked observation lock would make this raise storage.writer_busy
+    probe.close()
+    assert manager.get(identifier)["attempts"][-1]["status"] == terminal
+
+
+def test_fresh_snapshot_error_closes_the_observation_lock(tmp_path, monkeypatch):
+    manager = BenchmarkWorkflows(tmp_path)
+    identifier = manager.create({"name": "read-error"})["id"]
+    persist_running_attempt(manager, identifier)
+    original = manager._attempts
+    calls = []
+
+    def flaky(workflow):
+        calls.append(workflow)
+        if len(calls) == 2:
+            raise AppError("input.benchmark_workflow", "验收资料已改变。", ExitCode.INPUT)
+        return original(workflow)
+
+    monkeypatch.setattr(manager, "_attempts", flaky)
+    with pytest.raises(AppError) as caught:
+        manager.get(identifier)
+    assert caught.value.code == "input.benchmark_workflow" and len(calls) == 2
+    monkeypatch.undo()
+    probe = ProjectWriterLock(manager.directory(identifier))
+    probe.acquire()  # the failed fresh read must already have released the lock it held
+    probe.close()
+    value = manager.get(identifier)
+    assert value["busy"] is False and value["attempts"][-1]["status"] == "interrupted"
+
+
+def test_writer_lock_error_is_not_reported_as_busy_or_interrupted(tmp_path, monkeypatch):
+    manager = BenchmarkWorkflows(tmp_path)
+    identifier = manager.create({"name": "lock-error"})["id"]
+    persist_running_attempt(manager, identifier)
+
+    def broken(self_lock):
+        raise AppError("storage.writer_lock", "无法获取项目写入锁。", ExitCode.STORAGE)
+
+    monkeypatch.setattr(ProjectWriterLock, "acquire", broken)
+    with pytest.raises(AppError) as caught:
+        manager.get(identifier)
+    assert caught.value.code == "storage.writer_lock"
 
 
 def test_failed_attempt_retains_input_and_explicit_retry_uses_new_directory(tmp_path):
