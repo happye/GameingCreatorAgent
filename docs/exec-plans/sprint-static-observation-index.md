@@ -1,5 +1,7 @@
 # 无动作事件的独立静态观察：离线导入与检索
 
+2026-10-24交接补正：已完成本轮协作重复内容审计，并读取用户另一对话更新的Skill；未验收其工具代码加载。四项DSH任务、最新STOP_PENDING和下一自动生成合同入口统一见[接续清单](report-2026-10-24-dsh-resumption.md)，禁止把10月22日旧排名session当作当前恢复身份。本次不恢复开发。
+
 2026-10-23启动、2026-10-24离线交付，Phase 0／TD009。用户要求持续使用Codex DSH协作、在GameingCreatorAgent同目录独立workspace开新对话；无需重标／不重跑旧付费任务。上轮源时钟本地9eb55f3已保存，普通push曾连GitHub:443失败；本轮正常发布一并补推，不force，以Git及publication.json为准。
 
 本轮主要效果：没有基础动作事件的注册帧，也能保存独立静态声明，并按同主体／同部件条件检索到证据及源时间。尚未接自动视觉生成；不把合成输入冒充真实素材理解进展。详细边界见[设计](../design-docs/static-observation-index-spec.md)。

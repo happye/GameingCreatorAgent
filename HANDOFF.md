@@ -1,5 +1,7 @@
 # 当前交接：Phase 0质量验收前，工程交付已保存
 
+**新对话接手入口已补正（2026-10-24）**：[本次DSH任务、审计与新版协作规则接续清单](docs/exec-plans/report-2026-10-24-dsh-resumption.md)汇总四项已交付任务、各自证据和下一交付。用户在另一对话修改了工具代码及Skill；本对话已读到新版Skill，未验证外部工具代码的实际加载。接手先读该清单及磁盘最新版Skill，核旧STOP_PENDING，不重投已完成请求，再按当前Git基线准备静态观察自动生成合同。本对话仍暂停，未启动新开发。
+
 **用户要求暂停（2026-10-24）**：额度剩约12%，手头交付已完成后停止。产品本地提交81216a5（含静态观察闭环），源时钟9eb55f3亦保存；普通push仍连接GitHub:443失败，未称远端同步。新六视频已登记，无需重标或继续补。下一仅有[自动生成设计草案](docs/exec-plans/next-static-observation-generation.md)，没有新合同／新DSH对话／真实图片许可。
 
 当前DSH task停止指令已接受，三个请求COMPLETED，after.running=false／queueCount=0；控制器因无法证明全部后台工具静止保留`STOP_PENDING / STOP_ACTIVITY_UNRESOLVED`，recover一次仍同态。已禁止新send/run/审批；不重复cancel、不杀共享Host、不归档、不改账本。证据ignored artifacts/dsh-static-observations-20261023/stop-user-pause.json及recover-after-stop.json。下次先只读核活动再确定续作，不能把该状态说成已完全停止或重投旧请求。
@@ -27,12 +29,11 @@
 
 长钟馗已选C离线改进；三缺口的A保留／B定向补窗新提案／D暂缓仍沿原待办，未代选。禁止重跑新旧launcher、旧付费窗或重新标注；原许可／余额不授权补缺口或另两段录像分析。保留其他任务原未知费用。具体触发及用户入口见[human-inputs](docs/exec-plans/human-inputs.md)。
 
-## DSH恢复身份
+## 当前DSH身份与历史任务
 
-- 同目录独立workspace：`f4395711-a8fb-49a3-ad95-7305ce9ea1e8`；路径`G:/Tools/ChatGPTRepo/GameingCreatorAgent`。
-- 新原生对话：`codex-a18e5d7c-0550-4920-a860-ea1da4d61a2c`，标题`GamingCreator Phase 0 · DSH 协作开发`。
-- 已交付task：`gamingcreator-workspace-phase0-20261022`；connection `native`；账本`C:/Users/Crux/.codex/codex-dsh-state`。两逻辑派发均完成，不因断线重投。
-- 原空task `gamingcreator-phase0-20261022`没有prompt且已STOPPED，勿复用。
-- 三组rev4回执在文档／Git变化前验有效；`artifacts/dsh-phase0-20261022/validated-source.json`与`publication.json`关联已测字节和提交。提交后只作历史证据，下一新工程里程碑按工具支持流程建立当前Git基线，禁止改旧账本或沿旧合同直接send。
+- 同目录独立workspace：`f4395711-a8fb-49a3-ad95-7305ce9ea1e8`；路径`G:/Tools/ChatGPTRepo/GameingCreatorAgent`；connection `native`；账本`C:/Users/Crux/.codex/codex-dsh-state`。
+- 最后一项已交付task：`gamingcreator-static-observations-20261023`；session `codex-35d31548-8d46-4f1b-b8dc-1886e7f8f355`。三个请求COMPLETED，停止记录仍STOP_PENDING；这是接手核状态的对象，不是继续发送旧实施请求的入口。
+- 其他三个已交付task／session见[完整清单](docs/exec-plans/report-2026-10-24-dsh-resumption.md)。其中10月22日的`gamingcreator-workspace-phase0-20261022`及session `codex-a18e5d7c-0550-4920-a860-ea1da4d61a2c`是历史排名任务，不再标为当前新对话。原空task `gamingcreator-phase0-20261022`没有prompt且已STOPPED，勿复用。
+- 已保存回执与tested blobs只证明各自交付版本。下一静态自动生成尚无合同／DSH会话；先核当前Git和更新后的工具加载，冻结新合同，再按Skill在同workspace创建下一里程碑对话。不改旧账本、不沿旧合同send、不为恢复而重跑已结束检查。
 
 公共文档与Git由Codex集成；DSH按每轮合同唯一写源码，角色及验收证据见对应报告。feature_list、原片、数据库、标注与费用本轮未改。项目阶段和新费用授权边界不变；完整规则继续按AGENTS与[协作协议](docs/references/agent-workflow.md)。

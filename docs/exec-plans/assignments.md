@@ -4,6 +4,8 @@
 
 用户因剩约12%额度要求当前交付后暂停；无新实施派发。自动生成只读设计已返回并保存next-static-observation-generation.md。当前task三请求已结束，stop接受但控制器仍STOP_PENDING（无运行轮次／队列，后台工具静止未证），恢复先核活动，禁止重投旧任务。
 
+接手统一先看[四项DSH交付与新版规则接续清单](report-2026-10-24-dsh-resumption.md)。本对话的协作审计已保存；用户在另一对话修改工具代码与Skill，本对话仅确认新版Skill内容，外部代码加载／验收待定向核实。
+
 | 工作 | 负责人／文件责任 | 当前状态 |
 | --- | --- | --- |
 | 特殊源时钟验收资格／TD006 | 原生DSH唯一写benchmark_review.py与两测试；Codex合同／测试／公共docs／Git，唯一Sol/high评估 | 已完成：64项／静态检查／R1–R5 PASS；两请求结束，非零自动映射仍待做 |
@@ -16,6 +18,6 @@
 | 长钟馗P1修复与同run接续 | 既有Generator／guard与主控 | 已结束，269成功／3缺口；禁止重启旧launcher |
 | F006独立质量、F009/F010真实理解验收 | Codex协调；真人负责真实来源／事前参考／固定候选判断 | 待现有记录分组与新增代表素材等依赖，未分配新的付费执行或实现worker |
 
-DSH同项目目录workspace `f4395711-a8fb-49a3-ad95-7305ce9ea1e8`；session `codex-a18e5d7c-0550-4920-a860-ea1da4d61a2c`；已交付task `gamingcreator-workspace-phase0-20261022`。完整原生执行、费用用量边界、验证范围见[交付报告](report-2026-10-22-dsh-project-detail-manifest.md)。本轮开发模型调用与录像API账本分开，不把协作声称免费。
+DSH同项目目录workspace `f4395711-a8fb-49a3-ad95-7305ce9ea1e8`；最后已交付task `gamingcreator-static-observations-20261023`／session `codex-35d31548-8d46-4f1b-b8dc-1886e7f8f355`，三请求完成、停止状态STOP_PENDING。10月22日排名task是历史任务，其余task／session见[清单](report-2026-10-24-dsh-resumption.md)，不再作为当前恢复身份。本轮开发模型调用与录像API账本分开，不把协作声称免费。
 
 后续按[依赖计划](phase-0-plan.md)及[人工待办](human-inputs.md)先确定一个有用户效果的主要交付，再分配源码owner；有独立写任务才建worktree。已存标注继续用，旧费用和未知保持；无新录像授权，不开展补窗／另两段分析。正式质量通过前不转入创作规划、成片渲染、桌面和商业阶段。新工程合同先核当前Git基线，不复用提交前回执作当前证据。
