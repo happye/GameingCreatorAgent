@@ -40,3 +40,5 @@ Claude Code只在会话启动时发现`.claude/agents/`；文件写入后不会�
 - 评估发现的8项（CLAUDE.md删句、commander可派子Agent、回退不执行白名单、角色缺先读AGENTS.md、monitor默认长轮询等）已在同一轮修正，详见[接入sprint](../exec-plans/sprint-claude-harness-adapter.md)。
 - 未验证：opus角色尚未实际派发；Windows本机Claude Code按角色名的原生发现尚未实测，首次使用时用`/agents`确认列表后补记。配置选择不代表节省比例或内容质量通过。
 - 2026-10-24本机Windows Code会话：角色提交合入main（cherry-pick为e8a0b07之后），本会话启动时工作树尚无`.claude/agents/`，可用类型列表未出现gc-*角色，符合“只在启动时发现”；下次从仓库根新开会话后用`/agents`确认九个角色并补记结果。
+- 2026-10-24／25本机Windows Code会话实际派发（general-purpose回退＋显式型号＋角色正文；型号取自子Agent转录`model`字段计数）：opus——code-quality-guard两次（32、111条回复）、gc-architect一次（56条）；sonnet——gc-coder四次（70／175／86／129条，其中一次`isolation: worktree`）、gc-reviewer四次（81／42／50／74条，含工作流内只读扫描）。每次结束后`git status`核对只读角色无写入。opus角色“尚未实际派发”的旧记录由此更新；按角色名的原生`/agents`发现仍待新会话确认。
+- 本地经验：子Agent须一律带`-B`运行Python（标准库pyc重写会使工具链回执校验失败）；worktree隔离时在worktree内建`.tools`目录链接到主仓库，清理前先单独删除该链接再删目录。
