@@ -1,6 +1,6 @@
 # 当前需要用户参与的事项
 
-**2026-10-24单帧真实试验许可：具体提案已准备，未授权。** 离线生成能力已验收，不需要重做任何标注。仅拟将原28–29秒样例中28.5秒这一张登记图＋静态parts-v2提示词送至DeepSeek的chat/completions，deepseek-flash；1请求／1图／无重试，新增上限¥0.50，冻结保守预留¥0.416。提案hash 95880840d38ea2f6e6bda85427ecfab8806cab9ec02422b1bd3d4a449a5f2b59，操作入口为本次Codex的许可询问；[具体提案](../../artifacts/dsh-static-generation-20261024/real-single-frame-proposal.json)。明确同意后才生成真实授权文件并发送；拒绝／未答仅阻断此真实试验，独立离线开发可继续。当前零发送、无授权／占用，922旧项目文件（排除共享内存）不变。完成证据须是用户明确答复＋该新attempt记录；不以沉默、原预算或已有素材作许可。
+**2026-10-24单帧许可已执行完成，勿重复询问或发送**：用户明确回复“允许仅这一次，预算¥0.50”，对应固定28.5秒登记图＋parts-v2提示词。唯一请求／一图返回HTTP200并发布草案；本地resume零发送，正例1／跨衣物负例0，922旧文件SHA不变。attempt `attempt-205f8efdee85311c7190dfc57bfb4a13`，估算¥0.001492（未核账单）；原¥0.416预留已由估算额替代，本授权一次额度已耗尽。原Sol/high核授权与实际结果PASS，旧费用许可／unknown及标注保持。完成证据见[真实试验报告](report-2026-10-24-static-observation-pilot.md)、[sprint](sprint-static-observation-pilot.md)及本机real-user-approval／typed attempt／ledger；提案hash 95880840d38ea2f6e6bda85427ecfab8806cab9ec02422b1bd3d4a449a5f2b59。画面对错仍未知，不要求重标；下一TD006离线开发无需新人工帮助。
 
 更新：2026-10-24。当前里程碑见[总览](current-status.md)。用户已提供三个游戏宣传片／实机共6 MP4，可按需用；路径登记完成，当前不要求继续补片或重标。正式质量仍在相应触发时核录制独立性／事前参考，不阻断独立离线开发。所有原始答复、历史批准／未批准提案及已完成事项保留在[历史快照](human-inputs-history-2026-10-22.md)和各原证据包。
 

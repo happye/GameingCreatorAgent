@@ -1,5 +1,9 @@
 # Progress Log
 
+**2026-10-24固定单帧真实试验完成**：已按新¥0.50具体许可唯一发送原28.5秒登记图／parts-v2，HTTP200、deepseek-flash生成1主体／7属性并发布。三新进程本地resume零发送／unchanged、正例1／跨衣物负例0；922旧文件SHA不变，原Sol/high最终PASS。1016输入／119输出tokens估算¥0.001492，未核账单，原¥0.416预留已由估算额替代；本授权一次已用尽，剩余额度不允许再发。原费用／unknown／12标注纠正／六素材保持，F006/F009/F010false。下一原Luna/high定位TD006特殊源时钟自动映射，DSH后续唯一实施，不新增录像API或重标。见[报告](docs/exec-plans/report-2026-10-24-static-observation-pilot.md)及[sprint](docs/exec-plans/sprint-static-observation-pilot.md)。下方为此前节点。
+
+**2026-10-24固定单帧真实试验获授权**：用户明确同意仅原28.5秒登记图1次／1图／无重试、新增预算¥0.50。已保存专属授权，生产loader核源与提案／9源码SHA，原Sol/high预核PASS；Codex将仅执行一次新生产dispatch，不重跑旧任务。不要求重标，旧费用保持；结果及续作见[真实试验sprint](docs/exec-plans/sprint-static-observation-pilot.md)。
+
 **2026-10-24普通推送恢复成功**：源码／主报告fdd83d6已从原远端958f70c正常快进到origin/main，先前未推的源时钟／静态导入及交接成果同步保留。此次未force；后续仅补发布状态文档，不改变已验源码、不重复整套检查。本轮新真实单帧仍未授权。
 
 **2026-10-24单注册帧自动静态生成离线交付**：已有Completed注册帧可prepare冻结、专属具体授权下一次生成、typed保存／发布并由新进程同actor／part查询；resume只做本地工作。唯一Sol/high首评五项反例已一次集中追修：独立授权额度、损坏账本失败关闭、既有授权身份、os._exit四断点、显式parts-v2防跨衣物／持有物拼条件。最终159passed／1权限skip、九文件Ruff／格式／六源码mypy、相同双wheel及隔离导入、独评PASS；37保护SHA不变，原数据／费用／12标注及纠正保持。真实28.5秒单帧提案仅本地prepare，922旧项目文件不变，零发送／未授权；拟¥0.50上限的1次试验等具体许可，不重跑旧任务、不重标。F006/F009/F010false，旧STOP_PENDING保留。见[交付报告](docs/exec-plans/report-2026-10-24-static-observation-generation.md)、[sprint](docs/exec-plans/sprint-static-observation-generation.md)。下方为本次恢复和此前历史节点。

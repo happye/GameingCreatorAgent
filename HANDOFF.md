@@ -1,6 +1,8 @@
-# 当前交接：单注册帧自动静态观察已离线交付
+# 当前交接：单注册帧真实协议试验已完成
 
-更新：2026-10-24，main，用户已明确恢复持续DSH协作。当前仍为Phase 0，F006/F009/F010=false。没有运行中的产品源码写者／录像分析；下一项是已准备好的单帧真实试验授权，不重投已完成工程请求。
+**最新交付（2026-10-24）**：原28.5秒登记帧已按用户¥0.50新许可唯一发送一次，HTTP200，生成1主体／7条typed属性并发布。另一进程查询正例1／跨衣物负例0；本地resume零发送／unchanged。估算¥0.001492（1016输入／119输出tokens，未核供应商账单），原¥0.416预留已由估算额替代；一次额度已用尽，剩余金额不允许再发。922旧项目文件SHA不变，唯一原Sol/high复核PASS。见[真实试验报告](docs/exec-plans/report-2026-10-24-static-observation-pilot.md)和[sprint](docs/exec-plans/sprint-static-observation-pilot.md)。
+
+更新：2026-10-24，main，用户已明确恢复持续DSH协作。当前仍为Phase 0，F006/F009/F010=false。没有运行中的产品源码写者／录像分析；下一项是原计划TD006特殊源时钟自动映射的有限离线切片，由原Luna/high只读定位。不重投已完成工程请求或真实单帧请求。
 
 发布事实：源码及主报告提交`fdd83d6`已于本轮普通push成功到origin/main（原远端958f70c→fdd83d6），此前9eb55f3／81216a5等本地成果亦随之同步；原GitHub不可连接为历史状态。本行的后续文档提交不改变已验源码。
 
@@ -21,8 +23,8 @@
 
 ## 人工待办与下一步
 
-1. 原28–29秒样例的28.5秒注册帧已由新prepare完全本地冻结：run f601fb9b3e734d5ea188fc15c790acbb，proposalHash 95880840d38ea2f6e6bda85427ecfab8806cab9ec02422b1bd3d4a449a5f2b59；real-single-frame-proposal.json位于本轮证据目录。922旧项目文件（排除SQLite共享内存）SHA不变，零发送、无授权文件、无预算占用。
-2. 真实试验尚未授权：仅该单帧＋静态parts-v2提示词，目的地api.deepseek.com/chat/completions，deepseek-flash，一次请求／一张图／无重试，拟新增上限¥0.50，当前冻结预留¥0.416，官方现价已核。只有明确同意后才保存专属授权并dispatch；不重跑旧多帧任务，不要求重标。若未批准，保留提案继续独立离线工作。
+1. 本次单帧试验已结束：run f601fb9b3e734d5ea188fc15c790acbb，proposalHash 95880840d38ea2f6e6bda85427ecfab8806cab9ec02422b1bd3d4a449a5f2b59，attempt-205f8efdee85311c7190dfc57bfb4a13。API仅一次，deepseek-flash；实际结果、不可覆盖发送intent／completion及本地读回在ignored artifacts/dsh-static-generation-20261024/real-*。恢复只读原记录，绝不重发。
+2. 下一由Codex制定TD006自动映射合同、DSH唯一写者实施、单一评估者验收；使用本地合成录像和真实浏览器，不依赖新素材、人评或录像API许可。未知／不支持时钟仍保守退化，不改旧来源、页面包或标注。真实检索质量仍沿原计划的来源独立性、事前参考和固定Top10人评门槛。
 3. 原v5画面对错按用户“稍后核对”继续留空；真实Provider接受性不等于准确率。正式F006仍须原来源／事前参考／固定Top10人评，未过门槛不转入创作成片、正式桌面或商业阶段。
 4. 原12条标注及纠正、六新增素材无需重做或继续补文件。已有来源录制独立性和正式参考仅在相应验收触发时确认，见[人工清单](docs/exec-plans/human-inputs.md)。
 
