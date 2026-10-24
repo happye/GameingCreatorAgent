@@ -11,6 +11,7 @@ Gaming Creator Agent turns local game footage and a brief into content. Phase 0'
 - `docs/exec-plans/`: reverse review, validation evidence, task plan, feedback, and debt; `docs/references/`: benchmark and environment rules.
 - `prompts/`, `templates/`, `music/`: future versioned assets. Do not commit user footage or credentials.
 - `CODEX.md`, `CLAUDE.md`, `.grok/rules/project.md`: tool adapters; shared rules live here and in `docs/`.
+- `.claude/agents/`: nine Claude Code subagent roles; routing and Codex mapping in `docs/references/claude-agent-routing-guide.md`.
 - `HANDOFF.md`: latest resumption snapshot; `progress.md`: historical work log.
 
 ## Environment and commands

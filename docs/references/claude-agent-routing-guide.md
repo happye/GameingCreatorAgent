@@ -39,3 +39,4 @@ Claude Code只在会话启动时发现`.claude/agents/`；文件写入后不会�
 - 实际执行（2026-10-24云端会话，general-purpose回退＋显式型号）：一次gc-explorer只读定位任务，转录记录26条回复均为`claude-haiku-5-5`；一次gc-reviewer只读评估，23条回复均为`claude-sonnet-5-5`。两者结束后`git status`显示无子Agent写入。型号取自运行转录的model字段，不是子Agent自报。
 - 评估发现的8项（CLAUDE.md删句、commander可派子Agent、回退不执行白名单、角色缺先读AGENTS.md、monitor默认长轮询等）已在同一轮修正，详见[接入sprint](../exec-plans/sprint-claude-harness-adapter.md)。
 - 未验证：opus角色尚未实际派发；Windows本机Claude Code按角色名的原生发现尚未实测，首次使用时用`/agents`确认列表后补记。配置选择不代表节省比例或内容质量通过。
+- 2026-10-24本机Windows Code会话：角色提交合入main（cherry-pick为e8a0b07之后），本会话启动时工作树尚无`.claude/agents/`，可用类型列表未出现gc-*角色，符合“只在启动时发现”；下次从仓库根新开会话后用`/agents`确认九个角色并补记结果。
