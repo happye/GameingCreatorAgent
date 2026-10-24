@@ -31,6 +31,24 @@
     }
     const inventorySources={auto:"自动盘点（本机生成，未上传）",provided:"上传的盘点报告"};
     const inventoryStates={compared:"已比较",notComparable:"有效画面不足，未比较",failed:"盘点时读取失败",absent:"报告中没有此录像"};
+    const preparationBlockers={
+        recording_group_missing:"有录像还没填录制组：请在登记表里为每段录像填写它来自哪次原始录制。",
+        test_results_already_viewed:"测试用录像已经看过模型结果：它不能再当独立测试，请改为开发用途或换一段没看过结果的录像。",
+        recording_group_crosses_partitions:"同一录制组同时出现在开发和测试里：同一次录制只能放在一边。",
+        same_content_crosses_partitions:"同一个文件（字节相同）同时用于开发和测试：请只保留在一边。",
+        same_content_has_different_recording_groups:"同一个文件被填成了不同录制组：请改成同一组。",
+        representative_recordings_below_ten:"独立录制组不足10个：正式验收需要10–20段来自不同原始录制的代表录像。",
+        test_reference_events_incomplete:"测试查询的事前参考事件不够：主查询至少需要10个不同可用事件，少例查询1–9个。",
+        query_family_crosses_partitions:"同一类查询同时出现在开发和测试里：请只放在一边。",
+        test_main_query_missing:"测试部分还没有主查询：至少需要一个主查询并标好事前参考。",
+        test_source_has_no_query:"有测试录像没有任何查询：请为它登记查询，或移出测试部分。",
+        human_references_unconfirmed:"人工参考还没确认：请在标注页核对后勾选确认。",
+        source_inventory_missing:"没有素材盘点：请勾选“冻结时自动盘点”后重新冻结。",
+        source_inventory_incomplete:"有录像不在盘点里或读取失败：请检查文件后重新冻结（自动盘点会重新读取）。",
+        source_inventory_not_comparable:"有录像画面信息不足无法比对（例如全黑、只有声音）：请换成有游戏画面的录像。",
+        shared_footage_has_different_recording_groups:"有两段录像检测到共用画面，却填成了不同录制组：请看上方共用画面提示，确认同源后改成同一组再冻结。",
+        shared_footage_crosses_partitions:"有共用画面的两段录像分别放在开发和测试里：请放到同一边。"
+    };
     async function showInventory(card,row) {
         const identity=current.id, holder=text("div","","inventory"); card.append(holder);
         try {
@@ -49,7 +67,7 @@
             for(const pair of inventory.sharedFootage) holder.append(text("p",`${pair.sourceA} 与 ${pair.sourceB} 疑似共用画面：偏移 ${pair.offsetSeconds>=0?"+":""}${Number(pair.offsetSeconds).toFixed(1)} 秒，${pair.matchedVotes}/${pair.comparedVotes} 票，log10 概率 ${Number(pair.log10CorrectedPValue).toFixed(1)}。`,"state"));
             if(inventory.unplannedSourceEvidenceCount) holder.append(text("p",`另有 ${inventory.unplannedSourceEvidenceCount} 处证据涉及未登记的来源。`,"state"));
             const blockers=Array.isArray(frozen.preparation?.blockers)?frozen.preparation.blockers:[];
-            if(blockers.length) holder.append(text("p","当前阻断："+blockers.join("、"),"failed"));
+            if(blockers.length){holder.append(text("p","当前阻断（需要处理后重新冻结）：","failed"));const list=document.createElement("ul");for(const code of blockers) list.append(text("li",(preparationBlockers[code] || "其他准备条件未满足。")+"（"+code+"）","failed"));holder.append(list);}
             const notes=document.createElement("ul"); for(const note of inventory.limitations) notes.append(text("li",note)); holder.append(notes);
         } catch(error) {if(holder.isConnected)holder.append(text("p","素材盘点覆盖情况读取失败："+error.message,"failed"));}
     }

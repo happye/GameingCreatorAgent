@@ -26,3 +26,4 @@ benchmark-freeze-v2要求盘点报告，否则阻断`source_inventory_missing`�
 - 评估：gc-reviewer（请求sonnet，只读）PASS。确认共享序列化不改变其他JSON写出字节、临时目录随上下文管理器删除（env下位于`.cache/tmp`）、整个盘点工具失败不留冻结包、字段校验与互斥有效。低严重度：状态行`inventorySource`为列表／字典时抛TypeError而非“记录已改变”，主控已改为元组成员判断并补3个用例；脚本互斥与临时目录删除无自动化测试（已手工核实）。
 - 真实验证：Atom异组反例计划`prepare-benchmark.ps1 -AutoInventory`12.3秒冻结，自动盘点2个来源、1对共用画面，得到`shared_footage_has_different_recording_groups`，`generated: auto`，包内含`source-inventory.json`；5个已存冻结读取与SHA不变。
 - 验证：定向8文件214项通过（-W error），工作台40项（含新3例）通过，ruff／mypy全仓干净，脚本PowerShell 5.1解析0错误。同日合入前完整verify：3517 passed／1 failed（TD012既有WinError10053）／3 skipped，未挂起。
+- 浏览器端到端走查（主控，内置浏览器，本机8791）：新建“Claude 冒烟测试 2026-10-24（可删除）”流程（artifacts/benchmark-workflows/fc2f5703a0684d149a0986ad40f501b3），用Atom异组计划依次完成第2步原片核对／第3步导入记录模板／第4步默认自动盘点冻结，页面显示自动来源、覆盖表、+10.0秒共用画面与阻断。发现阻断只显示英文代码，已为全部16种冻结阻断加通俗中文说明（代码保留在括号内）并补浏览器断言；工作台浏览器／HTTP／静态48项通过。

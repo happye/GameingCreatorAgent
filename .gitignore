@@ -51,3 +51,4 @@ htmlcov/
 build/
 dist/
 .claude/worktrees/
+.claude/launch.json

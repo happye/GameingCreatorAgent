@@ -12,7 +12,7 @@
 
 ## 2026-10-24冻结时自动盘点（最新）
 
-工作台冻结步骤默认勾选“冻结时自动盘点登记的录像”，CLI为`freeze-benchmark --auto-inventory`／`prepare-benchmark.ps1 -AutoInventory`：不必先单独运行盘点命令，冻结时本机自动比对计划内来源并打包报告，异组共用画面直接给出阻断。真实Atom异组计划12秒被拦。完整verify 3517 passed（1项TD012偶发）。见[sprint](docs/exec-plans/sprint-freeze-auto-inventory.md)。
+工作台冻结步骤默认勾选“冻结时自动盘点登记的录像”，CLI为`freeze-benchmark --auto-inventory`／`prepare-benchmark.ps1 -AutoInventory`：不必先单独运行盘点命令，冻结时本机自动比对计划内来源并打包报告，异组共用画面直接给出阻断。真实Atom异组计划12秒被拦；浏览器端到端走查通过，阻断改为通俗中文说明。完整verify 3517 passed（1项TD012偶发）。见[sprint](docs/exec-plans/sprint-freeze-auto-inventory.md)。
 
 ## 2026-10-24盘点识别黑边与镜像
 

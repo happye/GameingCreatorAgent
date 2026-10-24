@@ -250,6 +250,9 @@ def test_freeze_step_shows_inventory_coverage_upload_and_legacy_notice(
             assert "盘点报告来源：上传的盘点报告" in text
             assert "另有 1 处证据涉及未登记的来源" in text
             assert "未匹配不证明独立" in text
+            # Blockers read as plain guidance, with the code kept only for diagnosis.
+            assert "独立录制组不足10个" in text
+            assert "（representative_recordings_below_ten）" in text
             playwright.expect(
                 freeze.get_by_role("link", name="查看素材盘点报告", exact=True)
             ).to_be_visible()
