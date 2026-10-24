@@ -54,7 +54,9 @@ def test_coverage_gap_report_http_is_read_only_and_never_cleared(tmp_path, monke
     before = snapshot(project)
     refuse_work(monkeypatch)
     coverage = tmp_path / "analysis_coverage.json"
-    coverage.write_text(json.dumps(_minimal_coverage(run_id="solo"), ensure_ascii=False), encoding="utf-8")
+    coverage.write_text(
+        json.dumps(_minimal_coverage(run_id="solo"), ensure_ascii=False), encoding="utf-8"
+    )
     with workspace(tmp_path) as base:
         query = urlencode({"project": str(project), "limit": 100, "coverage": str(coverage)})
         status, headers, raw = get(base, "/api/coverage-gap-report?" + query)
@@ -91,6 +93,6 @@ def test_workbench_static_exposes_coverage_gap_controls():
     assert "/api/coverage-gap-report" in js
     assert "function loadCoverageGaps" in js
     assert "function renderCoverageGaps" in js
-    assert 'coverageGapsCleared !== false' in js
+    assert "coverageGapsCleared !== false" in js
     assert "coverage-gap-report-v1" in js
     assert "coverageGapSummary" in js

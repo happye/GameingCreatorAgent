@@ -66,7 +66,7 @@ def test_workbench_static_exposes_readiness_controls():
     assert 'id="readiness-dialog"' in html
     assert "acceptance-readiness-v1" in js or "/api/acceptance-readiness" in js
     assert "function loadReadiness" in js
-    assert 'material-tasks-v2' in js
+    assert "material-tasks-v2" in js
     assert "formalAcceptancePassed !== false" in js
     assert "acceptance-readiness-inert-v1" in js
     assert "inertContract" in js

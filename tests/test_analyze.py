@@ -145,7 +145,6 @@ class ScriptedVision:
         return ProviderResult(ProviderStatus.COMPLETED, (self.event,), metadata)
 
 
-
 def asr_metadata() -> InvocationMetadata:
     return InvocationMetadata(
         "fake-asr",

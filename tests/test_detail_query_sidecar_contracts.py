@@ -12,7 +12,7 @@ import pytest
 from test_detail_inspection import publish_fixture, refuse_sends, seed_project
 from test_detail_query import constraint
 
-from gamingcreator.application.detail_refinement import prepare_refinement, request_hash
+from gamingcreator.application.detail_refinement import prepare_refinement
 from gamingcreator.application.inputs import AnalysisConfig
 from gamingcreator.application.storage import RunConfiguration, RunStatus, StoredRun, StoredTimeline
 from gamingcreator.domain.actor_details import MATCHER_VERSION
@@ -115,9 +115,7 @@ def test_match_refinement_readonly_exposes_matcher_v1_2_without_writes(
     assert not list((project / "runs").rglob("matches/*.json"))
 
 
-def test_match_refinement_save_uses_matcher_versioned_filename(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_match_refinement_save_uses_matcher_versioned_filename(tmp_path: Path, monkeypatch) -> None:
     project, _, timeline = seed_project(tmp_path)
     directory, _, _ = publish_fixture(project, timeline)
     refuse_sends(monkeypatch)

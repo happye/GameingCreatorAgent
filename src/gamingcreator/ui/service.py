@@ -319,7 +319,6 @@ async def project_tasks_payload(
         await store.close()
 
 
-
 async def project_acceptance_readiness_payload(
     project: Path,
     *,
@@ -358,7 +357,6 @@ async def project_coverage_gap_report_payload(
         )
     finally:
         await store.close()
-
 
 
 async def registered_media(

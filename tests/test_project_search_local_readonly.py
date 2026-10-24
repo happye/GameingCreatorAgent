@@ -129,7 +129,6 @@ def test_assert_project_search_document_contract_rejects_media_sha_timecode_and_
     assert cand_sha_err.value.code == "retrieval.contract"
 
     owned = json.loads(json.dumps(document))
-    run_id = owned["candidates"][0]["runId"]
     owned["candidates"][0]["eventId"] = f"foreign-run:{owned['candidates'][0]['mediaId']}:event:x"
     with pytest.raises(AppError) as owned_err:
         assert_project_search_document_contract(owned)
@@ -207,7 +206,9 @@ def test_assert_project_search_document_contract_rejects_embedding_and_topk_over
     assert mismatched.value.code == "retrieval.contract"
 
 
-def test_assert_project_search_document_contract_rejects_started_at_and_validation_timing_drift() -> None:
+def test_assert_project_search_document_contract_rejects_started_at_and_validation_timing_drift() -> (
+    None
+):
     dirs = _require_project_search_dirs()
     document = None
     for directory in dirs:

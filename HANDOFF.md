@@ -10,7 +10,11 @@
 
 工作台扩展组原2项失败已修复（2026-10-24 Claude Code）：根因是Windows替换正被读取的状态文件会被拒绝（WinError5），验收流程status.json与素材批量state.json现由进程内锁串行；同组还更新了一条与ce934e0免责文字不符的过时断言。扩展10文件129项全部通过，独立code-quality-guard PASS；整仓verify未重跑，跨进程占用仍归TD012。见[sprint](docs/exec-plans/sprint-workbench-status-replace-race.md)。Claude原生九角色已合入（`.claude/agents/`，见[Claude分工指南](docs/references/claude-agent-routing-guide.md)），新会话需用`/agents`确认发现。
 
-## 2026-10-24素材来源盘点（最新）
+## 2026-10-24正式检查门禁恢复（最新）
+
+`verify.ps1`静态门禁恢复通过；全量不再在20%处挂起（3440 passed，余3项为TD012高负载偶发、单独通过）。修复了已交付功能回归TD016：多录像联合检索hybrid／semantic（含“已有细节”）保存失败，真实数据实跑恢复；三个中文PowerShell脚本加BOM后可在用户本机PowerShell 5.1运行。见[sprint](docs/exec-plans/sprint-verify-gate-restore.md)。下一主线：按[freeze-v2合同](docs/exec-plans/sprint-freeze-source-inventory.md)让冻结计划绑定素材盘点。
+
+## 2026-10-24素材来源盘点
 
 新增只读命令`./scripts/inventory-sources.ps1`：本地探测时长／编码／SHA并检测不同文件间共用画面，不分组、不调用模型。实跑17素材：代号：Atom的PV与实机共用画面（PV晚10秒），Atom录音275秒画面全黑只有声音，新增6个TapTap文件均30–128秒短展示片；可用长录像仅钟馗两段。见[盘点结果](docs/exec-plans/source-inventory-2026-10-24.md)与[sprint](docs/exec-plans/sprint-source-footage-overlap.md)；52项定向测试通过、gc-reviewer PASS。已在[人工清单](docs/exec-plans/human-inputs.md)请用户确认分组、是否补原始游玩录像。另发现main静态门禁失败（TD015），下一步先机械修复并跑一次完整verify。
 

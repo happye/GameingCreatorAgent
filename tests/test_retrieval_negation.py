@@ -251,7 +251,9 @@ def timeline_with_tags(*rows: tuple[str, tuple[str, ...]]) -> StoredTimeline:
         )
         for event, (_fact, tags) in zip(base.events, rows, strict=True)
     )
-    return StoredTimeline(base.run, base.checkpoints, base.evidence, base.transcripts, events, base.invocations)
+    return StoredTimeline(
+        base.run, base.checkpoints, base.evidence, base.transcripts, events, base.invocations
+    )
 
 
 def test_bare_mechanic_tags_cannot_defeat_explicit_fact_denial():
@@ -272,7 +274,6 @@ def test_bare_mechanic_tags_cannot_defeat_explicit_fact_denial():
     event_ids = [item.event_id for item in result.candidates]
     assert "event-0" not in event_ids
     assert "event-1" in event_ids
-
 
 
 def timeline_db_shaped(
@@ -335,9 +336,7 @@ def timeline_db_shaped(
                     transcript,
                 )
             )
-    return StoredTimeline(
-        run, (), evidence, tuple(transcripts), tuple(events), ()
-    )
+    return StoredTimeline(run, (), evidence, tuple(transcripts), tuple(events), ())
 
 
 def test_tags_only_event_remains_searchable_without_fact_fallback():

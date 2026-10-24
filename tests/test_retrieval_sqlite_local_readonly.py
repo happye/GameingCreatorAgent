@@ -26,6 +26,22 @@ from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 REPO = Path(__file__).resolve().parents[1]
 DEMO_PHASE0 = REPO / "artifacts" / "demo-phase0"
 
+_OPENED: list[SqliteTimelineStore] = []
+
+
+async def _open(project: Path) -> SqliteTimelineStore:
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    _OPENED.append(store)
+    return store
+
+
+@pytest.fixture(autouse=True)
+def _close_opened_stores():
+    # Close read-only stores opened inside asyncio.run so -W error never sees a leak.
+    yield
+    while _OPENED:
+        asyncio.run(_OPENED.pop().close())
+
 
 def _require_sqlite() -> Path:
     db = DEMO_PHASE0 / "timeline.sqlite3"
@@ -55,16 +71,14 @@ def test_local_demo_phase0_sqlite_retrieval_runs_pass_persisted_contract() -> No
     assert len(ids) >= 1
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         for retrieval_id in ids:
             document = await store.load_retrieval(retrieval_id)
             assert_persisted_retrieval_contract(document)
             assert document["retrievalId"] == retrieval_id
             result = document["result"]
             assert isinstance(result, dict)
-            assert_run_search_document_contract(
-                result, expected_run_id=str(document["runId"])
-            )
+            assert_run_search_document_contract(result, expected_run_id=str(document["runId"]))
 
     asyncio.run(run())
 
@@ -76,7 +90,7 @@ def test_assert_persisted_retrieval_contract_rejects_hit_drift_and_acceptance() 
         pytest.skip("local retrieval_runs empty")
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         # Prefer a row with candidates for drift checks.
         document = None
         for retrieval_id in ids:
@@ -117,7 +131,7 @@ def test_assert_persisted_retrieval_contract_rejects_evidence_and_range_drift() 
         pytest.skip("local retrieval_runs empty")
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         document = None
         for retrieval_id in ids:
             loaded = await store.load_retrieval(retrieval_id)
@@ -148,7 +162,7 @@ def test_assert_persisted_retrieval_contract_rejects_media_why_timecode_drift() 
         pytest.skip("local retrieval_runs empty")
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         document = None
         for retrieval_id in ids:
             loaded = await store.load_retrieval(retrieval_id)
@@ -197,7 +211,7 @@ def test_assert_persisted_retrieval_contract_rejects_mode_rank_elapsed_and_empty
         pytest.skip("local retrieval_runs empty")
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         document = None
         for retrieval_id in ids:
             loaded = await store.load_retrieval(retrieval_id)
@@ -246,7 +260,7 @@ def test_assert_persisted_retrieval_contract_rejects_parameters_and_embedding_sp
         pytest.skip("local retrieval_runs empty")
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         hybrid_doc = None
         lexical_doc = None
         for retrieval_id in ids:
@@ -332,7 +346,7 @@ def test_assert_persisted_retrieval_contract_rejects_created_at_timezone_drift()
         pytest.skip("local retrieval_runs empty")
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         document = await store.load_retrieval(ids[0])
         assert_persisted_retrieval_contract(document)
 

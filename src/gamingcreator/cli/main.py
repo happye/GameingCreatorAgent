@@ -501,6 +501,8 @@ async def execute_project_search(
         )
         details: dict[str, dict[str, object]] = {}
         for timeline in timelines:
+            # Rows are rendered through the run document contract, which requires the
+            # joint search's embedding identity for hybrid/semantic modes.
             subset = SearchResult(
                 timeline.run.run_id,
                 result.query,
@@ -508,6 +510,9 @@ async def execute_project_search(
                 tuple(
                     item.clip for item in result.candidates if item.run_id == timeline.run.run_id
                 ),
+                result.embedding_metadata,
+                min_similarity=result.min_similarity,
+                min_semantic_margin=result.min_semantic_margin,
             )
             rows = cast(
                 list[dict[str, object]],

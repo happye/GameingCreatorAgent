@@ -79,9 +79,7 @@ def test_execute_benchmark_refuses_coverage_gap(tmp_path: Path):
         output_path = tmp_path / "out.json"
         input_path.write_text(json.dumps(raw), encoding="utf-8")
         with pytest.raises(AppError) as refused:
-            await execute_benchmark(
-                project, input_path, output_path, tmp_path, mode="lexical"
-            )
+            await execute_benchmark(project, input_path, output_path, tmp_path, mode="lexical")
         assert refused.value.code == "retrieval.coverage_gap"
         assert "覆盖缺口" in refused.value.message
 

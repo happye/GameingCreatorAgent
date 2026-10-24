@@ -250,6 +250,7 @@ def test_cli_records_winning_group_and_refuses_foreign_group_provenance(
         result["detailRetrieval"]["version"] = value
     else:
         row[field] = value
+    result["recordPath"] = result["recordPath"].replace(result["searchId"], "c" * 32)
     result["searchId"] = "c" * 32
     write_project_search(project, result)
     with pytest.raises(AppError) as caught:
@@ -262,4 +263,4 @@ def test_cli_records_winning_group_and_refuses_foreign_group_provenance(
                 profile="v2",
             )
         )
-    assert caught.value.code == "retrieval.detail_snapshot"
+    assert caught.value.code == "retrieval.detail_snapshot", caught.value.message

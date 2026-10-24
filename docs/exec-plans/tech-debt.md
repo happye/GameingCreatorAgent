@@ -168,6 +168,8 @@ TD004补充（2026-10-07跨素材检索）：真实三开发片的长负面词�
 
 TD012补充（同轮）：一次完整回归的旧test_coverage_is_reported_without_analysis_command_or_new_budget遇storage.batch_checkpoint，.cache/project-retrieval-tests.xml／verify.log留证；唯一失败仅一次窄复查1passed0.648s（old-failure.xml）。40新增联合检索全部通过，无生产重试／状态持久化修改，不重跑无变化整套。
 
+TD012补充（2026-10-24全量恢复后）：一次全量3440 passed中4失败，其中`test_benchmark_source_clock_browser`非零PTS区间末停（30秒等待超时、currentTime 2.73未到3.178）、`test_saved_detail_actor_browser`[390]、`test_media_preparation_jobs`“准备项目须位于artifacts内”／另一次“取消范围400而非404”均只在18分钟高负载全量中出现，单独连跑3次／单独重跑均通过；原因未定位、未加重试。
+
 Record debt when it is discovered; do not hide it in a passing feature. Review related entries during each sprint and close them with a tested change.
 
 | ID | Found | Severity | Impact | Proposed fix | Status |
@@ -186,7 +188,8 @@ Record debt when it is discovered; do not hide it in a passing feature. Review r
 | TD011 | 2026-10-07/F002 | low; local shell compatibility | 从当前Codex PowerShell 7环境拉起Windows PowerShell 5时，媒体校验包装脚本遇Get-FileHash不可用；移除继承模块路径也未解决，不继续反复定位 | 当前使用已有PowerShell 7执行同一脚本和真实入口验证，不改全局环境／安装组件；后续需验证独立Windows PowerShell 5环境，不能称其通过 | deferred; use prepared PowerShell 7 |
 | TD012 | 2026-10-07/F006 | low; intermittent verification environment | 2026-10-24已定位并修复同进程根因：Windows替换正被打开的文件抛WinError5、替换中打开亦失败；验收流程status.json与素材批量state.json读写现共用进程内锁，工作台扩展129项全通过。跨进程占用、WinError10053本机HTTP中断及validate脚本report.json改写仍未解决 | 见[sprint](sprint-workbench-status-replace-race.md)；跨进程再现时评估对WinError5／32有界重试；10053另行复现。不重跑无变化全套 | partial: in-process status/state replace race fixed; cross-process and 10053 open |
 | TD013 | 2026-10-07/F002 | low; before first task only | 批次plan已冻结但SQLite尚未创建就中断时，resume的原项目存在性检查拒绝；尚无已创建任务，不影响已有任务恢复 | 保留批次冻结资料，恢复环境后重新提交清单；后续明确仅对未创建任务的批次放开初始化，不能重建已丢失DB中的分析或未知费用。由本轮代码路径检查发现，未宣称真实硬杀在此窗口验证 | deferred per user delivery priority |
-| TD015 | 2026-10-24/F000 | medium; verification gate | main上`./scripts/verify.ps1`的静态门禁不通过：ruff check 43项、format 30文件、mypy 4文件50项（coverage_gap_report、detail_refinement_budget、tasks、detail_refinement_sidecar），均来自2026-10-22提交；此后各交付只跑定向文件检查，未发现 | 机械修复：ruff安全fix＋format、JSON object先收窄类型；不改行为，修后跑一次完整verify | open |
+| TD015 | 2026-10-24/F000 | medium; verification gate | 2026-10-24已恢复：静态门禁（ruff 43项、format 30文件、mypy 50项，均2026-10-22引入）修复；全量从“20%处无限挂起＋大量失败”恢复为3440 passed／4 failed／3 skipped，其中3项为高负载下TD012既有偶发、单独连跑通过，第4项（前序测试泄漏sqlite连接）已修 | 见sprint-verify-gate-restore.md；剩余偶发归TD012 | resolved; full suite no longer hangs |
+| TD016 | 2026-10-24/F005 | high; delivered feature regression (fixed) | 2026-10-22合同提交7aad0df后，多录像联合检索hybrid／semantic（含“已有细节”）在保存时被“单任务检索投影缺少embedding”拒绝：`cli/main.py`为渲染候选行临时构造的单任务结果未带联合检索的embedding身份。真实demo复现后已修并实跑成功 | 修复见sprint-verify-gate-restore.md | resolved |
 | TD014 | 2026-10-07/F006 | medium; workflow status display | 读旧running后worker落终态释放锁导致误报interrupted的竞态已修复 | 2026-10-23取得空闲OS锁后持锁重读；29项完成／失败交错、真实中断／错误释放及HTTP／版本选择通过，86原资料不变；见[报告](report-2026-10-23-acceptance-state.md)。未重跑整仓或将其他存储／HTTP问题视为解决 | resolved stale-snapshot race; targeted verification only |
 
 TD012补充（2026-10-07多素材准备）：定向批次state替换也偶发storage.batch_checkpoint，保留.cache/media-batch-behavior.xml／complete-targeted.xml；最终23新增在一次完整回归均通过。该次旧HTTP oversized请求WinError10053失败，.cache/media-batch-tests.xml／verify.log保留，唯一失败一次窄复查1passed0.981s（old-failure-recheck.xml）。没有定位环境原因、加生产重试或重跑无变化全套，继续按用户优先级延期。

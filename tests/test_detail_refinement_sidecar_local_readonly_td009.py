@@ -80,7 +80,9 @@ def test_assert_refinement_request_document_contract_rejects_hash_drift_and_acce
     assert claimed.value.code == "refinement.contract"
 
 
-def test_assert_refinement_result_document_contract_rejects_payload_and_acceptance_forgeries() -> None:
+def test_assert_refinement_result_document_contract_rejects_payload_and_acceptance_forgeries() -> (
+    None
+):
     dirs = [path for path in _require_sidecar_dirs() if (path / "result.json").is_file()]
     if not dirs:
         pytest.skip("local detail-refinements results missing")
@@ -131,7 +133,6 @@ def test_assert_refinement_request_rejects_canonical_identity_interval_evidence_
     aligned = json.loads(json.dumps(document))
     payload = json.loads(aligned["canonicalJson"])
     payload["mediaSha256"] = "0" * 64
-    body = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     # Use exact canonical string style from file when possible.
     original = aligned["canonicalJson"]
     payload = json.loads(original)

@@ -131,9 +131,7 @@ def match_refinement(
         )
         document["refinementProfile"] = profile
         assert_match_report_contract(document)
-        expected_matcher = (
-            TEMPORAL_MATCHER_VERSION if profile in {"v4", "v5"} else MATCHER_VERSION
-        )
+        expected_matcher = TEMPORAL_MATCHER_VERSION if profile in {"v4", "v5"} else MATCHER_VERSION
         result = document.get("result")
         if not isinstance(result, dict) or result.get("matcherVersion") != expected_matcher:
             raise AppError(

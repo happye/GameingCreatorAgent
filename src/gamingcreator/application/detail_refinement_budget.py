@@ -337,7 +337,8 @@ def assert_refinement_request_document_contract(document: dict[str, object]) -> 
     """Refuse sidecar request.json that drifts hash, fingerprint, or claims acceptance."""
     if type(document) is not dict:
         raise _refinement_contract_fail("精分析请求投影必须是对象。")
-    run_id = document.get("runId") if type(document.get("runId")) is str else None
+    raw_run_id = document.get("runId")
+    run_id = raw_run_id if type(raw_run_id) is str else None
     if document.get("schemaVersion") != REQUEST_DOCUMENT_SCHEMA_VERSION:
         raise _refinement_contract_fail("精分析请求 schemaVersion 无效。", run_id)
     digest = document.get("requestHash")
@@ -418,7 +419,9 @@ def assert_refinement_request_document_contract(document: dict[str, object]) -> 
         if type(source_us) is not int or type(row_duration) is not int:
             raise _refinement_contract_fail("精分析请求 evidence 时间字段无效。", run_id)
         if row_duration != duration_us:
-            raise _refinement_contract_fail("精分析请求 evidence durationUs 与 interval 不一致。", run_id)
+            raise _refinement_contract_fail(
+                "精分析请求 evidence durationUs 与 interval 不一致。", run_id
+            )
         # Interval is half-open [startUs, endUs).
         if not (start_us <= source_us < end_us):
             raise _refinement_contract_fail("精分析请求 evidence sourceUs 超出 interval。", run_id)
@@ -474,7 +477,8 @@ def assert_refinement_sidecar_pair_contract(
     if result_document is None:
         return
     assert_refinement_result_document_contract(result_document)
-    run_id = request_document.get("runId") if type(request_document.get("runId")) is str else None
+    raw_run_id = request_document.get("runId")
+    run_id = raw_run_id if type(raw_run_id) is str else None
     if result_document.get("requestHash") != request_document.get("requestHash"):
         raise _refinement_contract_fail("精分析 request／result 的 requestHash 不一致。", run_id)
     payload_json = result_document["payloadJson"]

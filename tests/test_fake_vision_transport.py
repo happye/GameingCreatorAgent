@@ -94,4 +94,3 @@ def test_waiting_transport_signals_start_and_marks_closed_on_cancel():
         assert transport.closed is True
 
     asyncio.run(scenario())
-

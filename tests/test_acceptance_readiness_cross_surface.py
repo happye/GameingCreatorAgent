@@ -8,10 +8,10 @@ from gamingcreator.application.acceptance_readiness import (
     ACCEPTANCE_READINESS_VERSION,
     FORBIDDEN_FORMAL_STATUSES,
     FORBIDDEN_STATUS_LABELS,
+    INERT_CONTRACT_VERSION,
     assert_acceptance_readiness_inert,
     build_acceptance_readiness,
     build_inert_contract,
-    INERT_CONTRACT_VERSION,
     surface_js_inert_guards,
 )
 from gamingcreator.application.tasks import TASKS_VERSION

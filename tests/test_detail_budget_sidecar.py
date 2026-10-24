@@ -44,7 +44,8 @@ from gamingcreator.infrastructure.detail_refinement_sidecar import (
 )
 
 RUN = "run-1"
-MEDIA = "media-1"
+# Production evidence ids embed the media id, which is the source SHA256.
+MEDIA = "b" * 64
 EVENT = f"{RUN}:{MEDIA}:event:" + "ab" * 12
 OTHER = f"{RUN}:{MEDIA}:event:" + "cd" * 12
 DURATION = 54_743_220
@@ -54,7 +55,7 @@ def _asset() -> MediaAsset:
     return MediaAsset(
         MEDIA,
         Path("fixture-source.mp4"),
-        "b" * 64,
+        MEDIA,
         (MediaStream(0, "video", Fraction(1, 1_000_000), 0, DURATION),),
         Fraction(0),
         DURATION,

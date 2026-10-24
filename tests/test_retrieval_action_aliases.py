@@ -1,11 +1,12 @@
 """Known gameplay aliases retrieve Chinese descriptions without inventing actions."""
 
+import asyncio
 import hashlib
 
 import pytest
 from test_retrieval_negation import EqualSimilarity, search, timeline
+
 from gamingcreator.application.retrieval import search_timeline
-import asyncio
 
 
 @pytest.mark.parametrize("mode", ["lexical", "hybrid"])
@@ -161,7 +162,6 @@ def test_negative_intent_does_not_translate_chinese_aliases(query):
     assert search(data, query, "lexical").candidates == ()
 
 
-
 @pytest.mark.parametrize("query", ["jump", "JUMP", "jumping"])
 def test_jump_title_brands_excluded_in_hybrid_against_adversarial_embeddings(query):
     """TD004: semantic channel must not revive JUMP title cards for jump queries."""
@@ -190,9 +190,11 @@ def test_fight_tag_only_mechanic_noise_excluded_keeps_fact_evidence(mode, query)
     import asyncio
     from dataclasses import replace
 
+    from test_retrieval_negation import EqualSimilarity
+    from test_retrieval_negation import timeline as _base_timeline
+
     from gamingcreator.application.retrieval import search_timeline
     from gamingcreator.application.storage import StoredTimeline
-    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
 
     base = _base_timeline(
         "红色爆炸特效持续，出现数字820",
@@ -223,9 +225,11 @@ def test_attack_tag_only_recall_still_kept(mode):
     import asyncio
     from dataclasses import replace
 
+    from test_retrieval_negation import EqualSimilarity
+    from test_retrieval_negation import timeline as _base_timeline
+
     from gamingcreator.application.retrieval import search_timeline
     from gamingcreator.application.storage import StoredTimeline
-    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
 
     base = _base_timeline(
         "画面中央偏下出现蓝色光效和伤害数字",
@@ -254,9 +258,11 @@ def test_move_tag_only_mechanic_noise_excluded_keeps_fact_evidence(mode, query):
     import asyncio
     from dataclasses import replace
 
+    from test_retrieval_negation import EqualSimilarity
+    from test_retrieval_negation import timeline as _base_timeline
+
     from gamingcreator.application.retrieval import search_timeline
     from gamingcreator.application.storage import StoredTimeline
-    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
 
     base = _base_timeline(
         "画面中央出现绿色光效和伤害数字",
@@ -288,9 +294,11 @@ def test_interact_tag_only_mechanic_noise_excluded_keeps_fact_evidence(mode, que
     import asyncio
     from dataclasses import replace
 
+    from test_retrieval_negation import EqualSimilarity
+    from test_retrieval_negation import timeline as _base_timeline
+
     from gamingcreator.application.retrieval import search_timeline
     from gamingcreator.application.storage import StoredTimeline
-    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
 
     base = _base_timeline(
         "画面右下角弹出商店图标",
@@ -320,9 +328,11 @@ def test_candidate_sources_are_score_free_time_ordered_and_align_with_search():
     import asyncio
     from dataclasses import replace
 
+    from test_retrieval_negation import EqualSimilarity
+    from test_retrieval_negation import timeline as _base_timeline
+
     from gamingcreator.application.retrieval import candidate_sources, search_timeline
     from gamingcreator.application.storage import StoredTimeline
-    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
 
     base = _base_timeline(
         "角色向左移动。",
@@ -341,7 +351,9 @@ def test_candidate_sources_are_score_free_time_ordered_and_align_with_search():
     )
     sources = candidate_sources(data)
     assert [s.event_id for s in sources] == ["event-0", "event-1", "event-2"]
-    assert [s.source_range.start_us for s in sources] == sorted(s.source_range.start_us for s in sources)
+    assert [s.source_range.start_us for s in sources] == sorted(
+        s.source_range.start_us for s in sources
+    )
     assert not hasattr(sources[0], "score")
     assert "战斗" not in "\n".join(sources[1].observable_facts)
     result = asyncio.run(
@@ -358,10 +370,11 @@ def test_candidate_sources_refuse_coverage_gap_run():
     """coverage-gap timelines cannot project a candidate inventory."""
     from dataclasses import replace
 
+    from test_retrieval_negation import timeline as _base_timeline
+
     from gamingcreator.application.retrieval import candidate_sources
     from gamingcreator.application.storage import RunStatus
     from gamingcreator.domain.errors import AppError
-    from test_retrieval_negation import timeline as _base_timeline
 
     data = _base_timeline("角色跳跃。")
     failed = replace(data.run, status=RunStatus.FAILED, error_code="analysis.coverage_gap")
@@ -386,9 +399,11 @@ def test_lexical_evidence_marks_attack_tag_only_as_mechanic_tags(mode):
     import asyncio
     from dataclasses import replace
 
+    from test_retrieval_negation import EqualSimilarity
+    from test_retrieval_negation import timeline as _base_timeline
+
     from gamingcreator.application.retrieval import search_timeline
     from gamingcreator.application.storage import StoredTimeline
-    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
 
     base = _base_timeline(
         "画面中央偏下出现蓝色光效和伤害数字",
@@ -423,9 +438,11 @@ def test_lexical_evidence_marks_fight_fact_hits_as_positive_text(mode):
     import asyncio
     from dataclasses import replace
 
+    from test_retrieval_negation import EqualSimilarity
+    from test_retrieval_negation import timeline as _base_timeline
+
     from gamingcreator.application.retrieval import search_timeline
     from gamingcreator.application.storage import StoredTimeline
-    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
 
     base = _base_timeline(
         "红色爆炸特效持续，出现数字820",
@@ -521,8 +538,9 @@ def test_non_action_empty_corpus_does_not_set_action_abstention():
 
 
 def test_assert_search_result_contract_accepts_live_hits_and_known_abstentions():
-    from gamingcreator.application.retrieval import assert_search_result_contract
     from test_retrieval_negation import search, timeline
+
+    from gamingcreator.application.retrieval import assert_search_result_contract
 
     hit = search(timeline("角色跳跃并落地。"), "jump", "lexical")
     assert hit.abstention_reason is None
@@ -548,10 +566,10 @@ def test_assert_search_result_contract_rejects_probability_flag_and_unknown_kind
     from dataclasses import replace
 
     import pytest
+    from test_retrieval_negation import search, timeline
 
     from gamingcreator.application.retrieval import assert_search_result_contract
     from gamingcreator.domain.errors import AppError
-    from test_retrieval_negation import search, timeline
 
     hit = search(timeline("角色跳跃并落地。"), "jump", "lexical")
     with pytest.raises(AppError) as flagged:
@@ -577,10 +595,10 @@ def test_assert_search_result_contract_rejects_mode_media_event_and_duplicate_ca
     from dataclasses import replace
 
     import pytest
+    from test_retrieval_negation import search, timeline
 
     from gamingcreator.application.retrieval import assert_search_result_contract
     from gamingcreator.domain.errors import AppError
-    from test_retrieval_negation import search, timeline
 
     hit = search(timeline("角色向左移动。"), "移动", "lexical")
     assert hit.candidates
@@ -602,7 +620,9 @@ def test_assert_search_result_contract_rejects_mode_media_event_and_duplicate_ca
     foreign = replace(
         hit,
         candidates=(
-            replace(hit.candidates[0], event_id=f"foreign-run:{hit.candidates[0].media_id}:event:x"),
+            replace(
+                hit.candidates[0], event_id=f"foreign-run:{hit.candidates[0].media_id}:event:x"
+            ),
         ),
     )
     with pytest.raises(AppError) as event_err:
@@ -640,13 +660,13 @@ def test_assert_candidate_sources_contract_rejects_blank_media_and_empty_span():
     from dataclasses import replace
 
     import pytest
+    from test_retrieval_negation import timeline
 
     from gamingcreator.application.retrieval import (
         assert_candidate_sources_contract,
         candidate_sources,
     )
     from gamingcreator.domain.errors import AppError
-    from test_retrieval_negation import timeline
 
     sources = candidate_sources(timeline("角色跳跃。", "角色向左移动。"))
     assert_candidate_sources_contract(sources)
@@ -665,8 +685,9 @@ def test_assert_candidate_sources_contract_rejects_blank_media_and_empty_span():
 
 
 def test_cli_search_document_projects_score_is_probability_false():
-    from gamingcreator.cli.main import _search_document
     from test_retrieval_negation import search, timeline
+
+    from gamingcreator.cli.main import _search_document
 
     result = search(timeline("角色向左移动。"), "移动", "lexical")
     document = _search_document(result, elapsed_ms=1)
@@ -679,10 +700,11 @@ def test_cli_search_document_projects_score_is_probability_false():
 
 
 def test_assert_search_document_contract_accepts_cli_projection_and_rejects_claims():
+    from test_retrieval_negation import search, timeline
+
     from gamingcreator.application.retrieval import assert_search_document_contract
     from gamingcreator.cli.main import _search_document
     from gamingcreator.domain.errors import AppError
-    from test_retrieval_negation import search, timeline
 
     hit = search(timeline("角色向左移动。"), "移动", "lexical")
     document = _search_document(hit, elapsed_ms=3)
@@ -710,11 +732,12 @@ def test_assert_search_document_contract_accepts_cli_projection_and_rejects_clai
 
 
 def test_assert_candidate_sources_contract_pins_inventory_without_scores():
+    from test_retrieval_negation import timeline
+
     from gamingcreator.application.retrieval import (
         assert_candidate_sources_contract,
         candidate_sources,
     )
-    from test_retrieval_negation import timeline
 
     sources = candidate_sources(timeline("角色跳跃。", "角色向左移动。"))
     assert len(sources) == 2
@@ -748,9 +771,11 @@ def test_fight_duel_brawl_tag_only_mechanic_noise_excluded(mode, query):
     import asyncio
     from dataclasses import replace
 
+    from test_retrieval_negation import EqualSimilarity
+    from test_retrieval_negation import timeline as _base_timeline
+
     from gamingcreator.application.retrieval import search_timeline
     from gamingcreator.application.storage import StoredTimeline
-    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
 
     base = _base_timeline(
         "俯视视角的绿色场地，中央有角色释放蓝色光效技能。",
@@ -781,9 +806,11 @@ def test_duel_query_with_only_tag_noise_abstains():
     import asyncio
     from dataclasses import replace
 
+    from test_retrieval_negation import EqualSimilarity
+    from test_retrieval_negation import timeline as _base_timeline
+
     from gamingcreator.application.retrieval import search_timeline
     from gamingcreator.application.storage import StoredTimeline
-    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
 
     base = _base_timeline("俯视视角的绿色场地，中央有角色释放蓝色光效技能。")
     events = list(base.events)
@@ -797,7 +824,9 @@ def test_duel_query_with_only_tag_noise_abstains():
         base.invocations,
     )
     result = asyncio.run(
-        search_timeline(data, "对战", mode="lexical", embedding_provider=EqualSimilarity(), top_k=10)
+        search_timeline(
+            data, "对战", mode="lexical", embedding_provider=EqualSimilarity(), top_k=10
+        )
     )
     assert result.candidates == ()
     assert result.abstention_reason == "no_positive_action_evidence"
@@ -830,9 +859,11 @@ def test_fighter_duel_brawl_tag_only_mechanic_noise_excluded(mode, query):
     import asyncio
     from dataclasses import replace
 
+    from test_retrieval_negation import EqualSimilarity
+    from test_retrieval_negation import timeline as _base_timeline
+
     from gamingcreator.application.retrieval import search_timeline
     from gamingcreator.application.storage import StoredTimeline
-    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
 
     base = _base_timeline(
         "红色爆炸特效持续，出现数字820",
@@ -873,9 +904,11 @@ def test_attacker_aliases_keep_attack_tag_only_td010(mode, query):
     import asyncio
     from dataclasses import replace
 
+    from test_retrieval_negation import EqualSimilarity
+    from test_retrieval_negation import timeline as _base_timeline
+
     from gamingcreator.application.retrieval import search_timeline
     from gamingcreator.application.storage import StoredTimeline
-    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
 
     base = _base_timeline(
         "画面中央偏下出现蓝色光效和伤害数字",
@@ -949,9 +982,11 @@ def test_walk_gait_tag_only_mechanic_noise_excluded(mode, query):
     import asyncio
     from dataclasses import replace
 
+    from test_retrieval_negation import EqualSimilarity
+    from test_retrieval_negation import timeline as _base_timeline
+
     from gamingcreator.application.retrieval import search_timeline
     from gamingcreator.application.storage import StoredTimeline
-    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
 
     base = _base_timeline(
         "俯视视角的绿色场地，中央有角色释放蓝色光效技能。",
@@ -1064,9 +1099,11 @@ def test_cast_skill_tag_only_mechanic_noise_excluded(mode, query):
     import asyncio
     from dataclasses import replace
 
+    from test_retrieval_negation import EqualSimilarity
+    from test_retrieval_negation import timeline as _base_timeline
+
     from gamingcreator.application.retrieval import search_timeline
     from gamingcreator.application.storage import StoredTimeline
-    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
 
     base = _base_timeline("角色向左移动。", "地面出现橙色区域。")
     events = list(base.events)
@@ -1087,9 +1124,11 @@ def test_cast_skill_tag_only_excluded_keeps_fact_evidence(mode):
     import asyncio
     from dataclasses import replace
 
+    from test_retrieval_negation import EqualSimilarity
+    from test_retrieval_negation import timeline as _base_timeline
+
     from gamingcreator.application.retrieval import search_timeline
     from gamingcreator.application.storage import StoredTimeline
-    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
 
     base = _base_timeline("角色释放蓝色环形技能。", "角色向左移动。")
     events = list(base.events)
@@ -1173,9 +1212,10 @@ def test_jiaozhan_tag_only_mechanic_noise_excluded_lexical():
     import asyncio
     from dataclasses import replace
 
+    from test_retrieval_negation import timeline as _base_timeline
+
     from gamingcreator.application.retrieval import search_timeline
     from gamingcreator.application.storage import StoredTimeline
-    from test_retrieval_negation import timeline as _base_timeline
 
     base = _base_timeline("角色向左移动。", "地面出现橙色区域。")
     events = list(base.events)
@@ -1223,7 +1263,9 @@ def test_avatar_alone_is_not_empty_query_stopword():
     ["avatarx", "iconic2", "vfxz", "glowworm", "prefix", "postfix"],
 )
 def test_avatar_icon_vfx_glow_non_words_do_not_cross_lingual_match(query):
-    data = timeline("顶部有双方角色头像与比分条。", "右侧有技能图标。", "出现绿色特效。", "黄色光效。")
+    data = timeline(
+        "顶部有双方角色头像与比分条。", "右侧有技能图标。", "出现绿色特效。", "黄色光效。"
+    )
     assert search(data, query, "lexical").candidates == ()
 
 
@@ -1303,9 +1345,11 @@ def test_run_gait_tag_only_mechanic_noise_excluded(mode, query):
     import asyncio
     from dataclasses import replace
 
+    from test_retrieval_negation import EqualSimilarity
+    from test_retrieval_negation import timeline as _base_timeline
+
     from gamingcreator.application.retrieval import search_timeline
     from gamingcreator.application.storage import StoredTimeline
-    from test_retrieval_negation import EqualSimilarity, timeline as _base_timeline
 
     base = _base_timeline(
         "俯视视角的绿色场地，中央有角色释放蓝色光效技能。",

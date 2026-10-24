@@ -1,8 +1,8 @@
 """Explicit query manifests and evidence reports. No free-text constraint inference or I/O."""
 
 import hashlib
-import re
 import json
+import re
 from dataclasses import asdict, replace
 
 from gamingcreator.application.actor_detail_matching import match_actor_details
@@ -17,8 +17,6 @@ from gamingcreator.application.detail_refinement_budget import (
 )
 from gamingcreator.domain.actor_details import (
     DETAIL_SCHEMA_VERSION,
-    DETAIL_TEMPORAL_SCHEMA_VERSION,
-    DETAIL_VOCABULARY_VERSION,
     DETAIL_TEMPORAL_SCHEMA_VERSION,
     DETAIL_VOCABULARY_VERSION,
     MATCHER_VERSION,
@@ -106,7 +104,6 @@ def _valid_optional_source_range(value: object) -> bool:
     return 0 <= start_us < end_us <= duration_us
 
 
-
 _MATCH_EVIDENCE_BUCKETS = ("satisfied", "opposed", "counterEvidence", "uncertain")
 
 
@@ -121,7 +118,6 @@ def _match_evidence_ids_owned(run_id: str, evidence_ids: object) -> bool:
     return True
 
 
-
 def _source_range_contains(outer: object, inner: object) -> bool:
     """True when inner is null, outer is unbound, or inner sits inside outer (same durationUs)."""
     if inner is None or outer is None:
@@ -131,10 +127,9 @@ def _source_range_contains(outer: object, inner: object) -> bool:
     if not _valid_optional_source_range(inner):
         return False
     assert type(outer) is dict and type(inner) is dict
-    return (
-        int(outer["startUs"]) <= int(inner["startUs"]) < int(inner["endUs"]) <= int(outer["endUs"])
-        and int(inner["durationUs"]) == int(outer["durationUs"])
-    )
+    return int(outer["startUs"]) <= int(inner["startUs"]) < int(inner["endUs"]) <= int(
+        outer["endUs"]
+    ) and int(inner["durationUs"]) == int(outer["durationUs"])
 
 
 def assert_match_report_contract(document: dict[str, object]) -> None:
@@ -252,10 +247,16 @@ def assert_match_report_contract(document: dict[str, object]) -> None:
                     evidence_ids = []
                 if not _match_evidence_ids_owned(run_id, evidence_ids):
                     raise ValueError(f"Match report match.{bucket} evidenceIds are invalid.")
-                if "sourceRange" in entry and not _valid_optional_source_range(entry.get("sourceRange")):
+                if "sourceRange" in entry and not _valid_optional_source_range(
+                    entry.get("sourceRange")
+                ):
                     raise ValueError(f"Match report match.{bucket} sourceRange is invalid.")
-                if not _source_range_contains(document.get("sourceRange"), entry.get("sourceRange")):
-                    raise ValueError(f"Match report match.{bucket} sourceRange escapes report range.")
+                if not _source_range_contains(
+                    document.get("sourceRange"), entry.get("sourceRange")
+                ):
+                    raise ValueError(
+                        f"Match report match.{bucket} sourceRange escapes report range."
+                    )
         if not _source_range_contains(document.get("sourceRange"), row.get("sourceRange")):
             raise ValueError("Match report match sourceRange escapes report range.")
 
@@ -397,7 +398,9 @@ def assert_match_report_sidecar_binding_contract(
                 raise ValueError(f"Match report match.{bucket} invalid for sidecar binding.")
             for entry in entries:
                 if type(entry) is not dict:
-                    raise ValueError(f"Match report match.{bucket} entry invalid for sidecar binding.")
+                    raise ValueError(
+                        f"Match report match.{bucket} entry invalid for sidecar binding."
+                    )
                 part_id = entry.get("partId")
                 if type(part_id) is not str or not part_id:
                     raise ValueError(
@@ -682,8 +685,14 @@ def match_report_sidecar_binding_gaps(
             ("shotIds are not covered by sidecar payload shots", "match_shot_ids_not_in_payload"),
             ("partId invalid for sidecar binding", "match_evidence_part_id_invalid"),
             ("condition.kind invalid for sidecar binding", "match_evidence_condition_kind_invalid"),
-            ("condition.partGroup invalid for sidecar binding", "match_evidence_condition_part_group_invalid"),
-            ("condition.value invalid for sidecar binding", "match_evidence_condition_value_invalid"),
+            (
+                "condition.partGroup invalid for sidecar binding",
+                "match_evidence_condition_part_group_invalid",
+            ),
+            (
+                "condition.value invalid for sidecar binding",
+                "match_evidence_condition_value_invalid",
+            ),
             ("condition invalid for sidecar binding", "match_evidence_condition_invalid"),
             ("binding requires objects", "binding_not_object"),
         )
@@ -725,7 +734,10 @@ def match_report_contract_gaps(document: dict[str, object]) -> tuple[str, ...]:
         and document.get("independentStaticClothingIndex") is not False
     ):
         gaps.append("static_clothing_index_enabled")
-    if "inertContract" in document and document.get("inertContract") != build_match_report_inert_contract():
+    if (
+        "inertContract" in document
+        and document.get("inertContract") != build_match_report_inert_contract()
+    ):
         gaps.append("inert_contract_mismatch")
     run_id = document.get("runId")
     event_id = document.get("eventId")
@@ -738,7 +750,9 @@ def match_report_contract_gaps(document: dict[str, object]) -> tuple[str, ...]:
     candidate_id = document.get("candidateId")
     if candidate_id is not None and (type(candidate_id) is not str or not candidate_id):
         gaps.append("candidate_id_invalid")
-    if "eventFingerprint" in document and not _valid_optional_hash64(document.get("eventFingerprint")):
+    if "eventFingerprint" in document and not _valid_optional_hash64(
+        document.get("eventFingerprint")
+    ):
         gaps.append("event_fingerprint_invalid")
     if "sourceRange" in document and not _valid_optional_source_range(document.get("sourceRange")):
         gaps.append("source_range_invalid")
@@ -792,10 +806,10 @@ def match_report_contract_gaps(document: dict[str, object]) -> tuple[str, ...]:
                 gaps.append("constraint_json_invalid")
     if isinstance(result, dict):
         result_schema = result.get("schemaVersion")
-        if (
-            "schemaVersion" in result
-            and result_schema not in {DETAIL_SCHEMA_VERSION, DETAIL_TEMPORAL_SCHEMA_VERSION}
-        ):
+        if "schemaVersion" in result and result_schema not in {
+            DETAIL_SCHEMA_VERSION,
+            DETAIL_TEMPORAL_SCHEMA_VERSION,
+        }:
             gaps.append("result_schema_version_invalid")
         if (
             "querySchemaVersion" in result
@@ -826,7 +840,9 @@ def match_report_contract_gaps(document: dict[str, object]) -> tuple[str, ...]:
                     gaps.append("match_actor_id_invalid")
                 if type(row.get("shotId")) is not str or not row.get("shotId"):
                     gaps.append("match_shot_id_invalid")
-                if "sourceRange" in row and not _valid_optional_source_range(row.get("sourceRange")):
+                if "sourceRange" in row and not _valid_optional_source_range(
+                    row.get("sourceRange")
+                ):
                     gaps.append("match_source_range_invalid")
                 shared = row.get("sharedEvidenceIds")
                 if shared is not None and not _match_evidence_ids_owned(run_id, shared):
@@ -852,8 +868,6 @@ def match_report_contract_gaps(document: dict[str, object]) -> tuple[str, ...]:
                         ):
                             gaps.append(f"match_{bucket}_range_invalid")
     return tuple(gaps)
-
-
 
 
 def query_options() -> dict[str, object]:

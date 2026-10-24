@@ -244,7 +244,6 @@ def test_fixture_3_uncertain_weapon_class_cannot_override_observed_shape() -> No
     assert combined.status == MatchStatus.PARTIAL
 
 
-
 def test_fixture_3_coexisting_uncertain_class_blocks_observed_full() -> None:
     """TD009: OBSERVED+UNCERTAIN weapon on the same part cannot count as FULL."""
     registry = evidence()
@@ -478,6 +477,7 @@ def test_partial_preserves_same_actor_support_without_mutating_the_candidate() -
     assert result.matches[0].missing == (condition(AttributeKind.HELD_CLASS, "weapon", "item"),)
     assert repr(observed) == before
 
+
 def test_and_boundary_held_shape_class_different_parts_cannot_full() -> None:
     """TD009: same part_group held shape+class on different parts is not FULL."""
     registry = evidence()
@@ -548,5 +548,3 @@ def test_match_report_carries_matcher_v1_2_and_and_demotion() -> None:
     assert document["result"]["matcherVersion"] == MATCHER_VERSION
     assert document["result"]["status"] == MatchStatus.UNVERIFIED.value
     assert MATCHER_VERSION == "actor-detail-matcher-v1.2"
-
-

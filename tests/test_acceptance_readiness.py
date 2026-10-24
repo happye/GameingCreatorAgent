@@ -8,10 +8,10 @@ from pathlib import Path
 import pytest
 
 from gamingcreator.application.acceptance_readiness import (
-    build_inert_contract,
     ACCEPTANCE_READINESS_VERSION,
     assert_acceptance_readiness_inert,
     build_acceptance_readiness,
+    build_inert_contract,
     write_acceptance_readiness,
 )
 from gamingcreator.application.tasks import TASKS_VERSION
@@ -88,9 +88,7 @@ def test_coverage_gap_only_not_searchable() -> None:
 
 
 def test_searchable_still_awaits_human_never_passed() -> None:
-    doc = build_acceptance_readiness(
-        _tasks(_row("ok-1", phase="completed", search_eligible=True))
-    )
+    doc = build_acceptance_readiness(_tasks(_row("ok-1", phase="completed", search_eligible=True)))
     assert doc["formalAcceptanceStatus"] == "awaiting_human_labels_and_freeze"
     assert doc["counts"]["searchableRuns"] == 1
     assert doc["searchableRunIds"] == ["ok-1"]
@@ -169,7 +167,6 @@ def test_forbidden_pass_labels_are_rejected() -> None:
     bad["formalAcceptanceStatusLabel"] = "验收通过"
     with pytest.raises(AssertionError, match="forbidden formalAcceptanceStatusLabel"):
         assert_acceptance_readiness_inert(bad)
-
 
 
 def test_inert_contract_is_embedded_and_stable() -> None:

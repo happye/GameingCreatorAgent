@@ -65,9 +65,10 @@ def test_match_report_v1_1_inert_fields_and_constraint_hash() -> None:
     assert document["qualityGate"] is None
     assert document["independentStaticClothingIndex"] is False
     assert document["inertContract"] == build_match_report_inert_contract()
-    assert document["constraintHash"] == hashlib.sha256(
-        document["constraintJson"].encode("utf-8")
-    ).hexdigest()
+    assert (
+        document["constraintHash"]
+        == hashlib.sha256(document["constraintJson"].encode("utf-8")).hexdigest()
+    )
     assert document["result"]["matcherVersion"] == MATCHER_VERSION
     assert document["result"]["status"] == MatchStatus.UNVERIFIED.value
     assert_match_report_contract(document)
@@ -113,9 +114,7 @@ def test_assert_match_report_contract_rejects_pass_claims_and_static_index(damag
         assert_match_report_contract(broken)
 
 
-def test_match_refinement_readonly_keeps_inert_and_no_static_index(
-    tmp_path, monkeypatch
-) -> None:
+def test_match_refinement_readonly_keeps_inert_and_no_static_index(tmp_path, monkeypatch) -> None:
     project, _, timeline = seed_project(tmp_path)
     publish_fixture(project, timeline)
     refuse_sends(monkeypatch)
@@ -130,7 +129,8 @@ def test_match_refinement_readonly_keeps_inert_and_no_static_index(
     assert document["schemaVersion"] == "actor-detail-match-report-v1.1"
     assert document["humanLabels"] is document["qualityGate"] is None
     assert document["independentStaticClothingIndex"] is False
-    assert document["constraintHash"] == hashlib.sha256(
-        document["constraintJson"].encode("utf-8")
-    ).hexdigest()
+    assert (
+        document["constraintHash"]
+        == hashlib.sha256(document["constraintJson"].encode("utf-8")).hexdigest()
+    )
     assert_match_report_contract(document)

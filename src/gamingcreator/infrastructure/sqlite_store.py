@@ -57,7 +57,6 @@ from gamingcreator.infrastructure.retrieval_persistence import (
 )
 from gamingcreator.infrastructure.retrieval_persistence import (
     load_retrieval as read_retrieval,
-
 )
 from gamingcreator.infrastructure.sqlite_schema import migrate, validate_schema
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock

@@ -26,9 +26,7 @@ TASKS_VERSION = "material-tasks-v2"
 _USER_DECISIONS = ("A_retain_gaps", "B_directed_gap_fill", "D_defer")
 
 
-def build_coverage_gap_task_summary(
-    project: Path | None, run_id: str
-) -> dict[str, Any]:
+def build_coverage_gap_task_summary(project: Path | None, run_id: str) -> dict[str, Any]:
     """Compact inert gap summary for a task row; never marks cleared or chooses B."""
     summary: dict[str, Any] = {
         "coverageLoaded": False,
@@ -45,7 +43,7 @@ def build_coverage_gap_task_summary(
     coverage_path = resolve_run_coverage_path(project, run_id)
     if coverage_path is None:
         return summary
-    inventory = directed_gap_fill_inventory(load_coverage_document(coverage_path))
+    inventory: dict[str, Any] = directed_gap_fill_inventory(load_coverage_document(coverage_path))
     rejected = list(inventory.get("allowedRejectedStageIds") or [])
     summary.update(
         {
@@ -61,7 +59,6 @@ def build_coverage_gap_task_summary(
     if summary["coverageGapsCleared"] is not False or summary["optionChosen"] is not None:
         raise AssertionError("coverage gap summary must stay uncleared and unchosen")
     return summary
-
 
 
 def _reservation(details: str | None) -> tuple[int, Decimal] | None:
@@ -264,11 +261,8 @@ def task_payload(snapshot: RunTaskSnapshot, *, project: Path | None = None) -> d
         "humanQualityGate": None,
     }
     if coverage_gap:
-        payload["coverageGapSummary"] = build_coverage_gap_task_summary(
-            project, run.run_id
-        )
+        payload["coverageGapSummary"] = build_coverage_gap_task_summary(project, run.run_id)
     return payload
-
 
 
 async def tasks_payload(
@@ -290,8 +284,7 @@ async def tasks_payload(
     return {
         "schemaVersion": TASKS_VERSION,
         "tasks": [
-            task_payload(item, project=getattr(store, "project", None))
-            for item in page.tasks
+            task_payload(item, project=getattr(store, "project", None)) for item in page.tasks
         ],
         "total": page.total,
         "offset": page.offset,

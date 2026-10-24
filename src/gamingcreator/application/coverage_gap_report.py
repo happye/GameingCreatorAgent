@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from gamingcreator.application.analysis_reliability import (
     directed_gap_fill_inventory,
@@ -50,9 +51,10 @@ def resolve_run_coverage_path(project: Path, run_id: str) -> Path | None:
 
 
 def _window_summary(coverage: Mapping[str, Any]) -> dict[str, Any]:
-    inventory = directed_gap_fill_inventory(dict(coverage))
+    inventory: dict[str, Any] = directed_gap_fill_inventory(dict(coverage))
     rejected = list(inventory.get("allowedRejectedStageIds") or [])
-    counts = inventory.get("counts") if isinstance(inventory.get("counts"), Mapping) else {}
+    raw_counts = inventory.get("counts")
+    counts = raw_counts if isinstance(raw_counts, Mapping) else {}
     return {
         "runId": inventory.get("runId"),
         "completedEligible": inventory.get("completedEligible") is True,
@@ -143,9 +145,9 @@ def build_coverage_gap_report(
 
     total_rejected = 0
     for run in runs:
-        summary = run.get("windowSummary")
-        if isinstance(summary, Mapping):
-            total_rejected += len(list(summary.get("rejectedStageIds") or []))
+        window = run.get("windowSummary")
+        if isinstance(window, Mapping):
+            total_rejected += len(list(window.get("rejectedStageIds") or []))
 
     document = {
         "schemaVersion": COVERAGE_GAP_REPORT_VERSION,

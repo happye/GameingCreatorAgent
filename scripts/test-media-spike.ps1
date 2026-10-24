@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$SourcePath,
     [switch]$Synthetic,
     [switch]$WithoutAudio,

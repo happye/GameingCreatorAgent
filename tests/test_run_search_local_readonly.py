@@ -53,9 +53,7 @@ def test_local_demo_phase0_run_searches_pass_run_document_contract() -> None:
 def test_assert_run_search_document_contract_rejects_foreign_event_and_acceptance() -> None:
     files = _require_search_files()
     with_candidates = [
-        path
-        for path in files
-        if json.loads(path.read_text(encoding="utf-8-sig")).get("candidates")
+        path for path in files if json.loads(path.read_text(encoding="utf-8-sig")).get("candidates")
     ]
     if not with_candidates:
         pytest.skip("no local run searches with candidates")
@@ -245,7 +243,9 @@ def test_assert_run_search_document_contract_rejects_embedding_mode_and_threshol
     assert margin.value.code == "retrieval.contract"
 
 
-def test_assert_run_search_document_contract_rejects_facts_projection_version_and_quality_gate() -> None:
+def test_assert_run_search_document_contract_rejects_facts_projection_version_and_quality_gate() -> (
+    None
+):
     files = _require_search_files()
     with_fpv = None
     without_fpv = None

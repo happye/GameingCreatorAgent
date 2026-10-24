@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import asyncio
 import sqlite3
+import sys
 from pathlib import Path
+from pathlib import Path as _Path
 
 import pytest
 
@@ -21,8 +23,7 @@ from gamingcreator.application.retrieval import (
 )
 from gamingcreator.domain.errors import AppError
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
-import sys
-from pathlib import Path as _Path
+
 sys.path.insert(0, str(_Path(__file__).resolve().parent))
 from test_retrieval_negation import EqualSimilarity
 
@@ -32,6 +33,23 @@ INDEPENDENT_FOOTAGE = REPO / "artifacts" / "independent-footage-20261011"
 
 COMPLETED_RUN_DEMO = "f76f5d6495314c04ae04083614d4afd6"
 COVERAGE_GAP_RUN = "5c7894aa10e94b8aa82533bd77f9871e"
+
+_OPENED: list[SqliteTimelineStore] = []
+
+
+async def _open(project: Path) -> SqliteTimelineStore:
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    _OPENED.append(store)
+    return store
+
+
+@pytest.fixture(autouse=True)
+def _close_opened_stores():
+    # Each test opens read-only stores inside asyncio.run; close them so -W error
+    # does not turn an unclosed sqlite connection into a failure.
+    yield
+    while _OPENED:
+        asyncio.run(_OPENED.pop().close())
 
 
 def _require_sqlite(project: Path) -> Path:
@@ -60,7 +78,7 @@ def test_local_completed_demo_phase0_positive_text_excludes_mechanic_tags():
     assert COMPLETED_RUN_DEMO in _completed_run_ids(DEMO_PHASE0 / "timeline.sqlite3")
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = _documents(timeline)
         assert len(docs) >= 50
@@ -87,15 +105,13 @@ def test_local_completed_demo_phase0_denial_guard_never_leaks_into_lexical_hits(
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await load_searchable_timeline(store, COMPLETED_RUN_DEMO)
         docs = _documents(timeline)
         for query in ("跳跃", "jump", "攻击", "attack", "射击", "shooting"):
             denied = _denied_action_documents(docs, query)
             result = await search_timeline(timeline, query, mode="lexical", top_k=20)
-            hit_ids = {
-                f"event:{item.event_id}" for item in result.candidates if item.event_id
-            }
+            hit_ids = {f"event:{item.event_id}" for item in result.candidates if item.event_id}
             assert hit_ids.isdisjoint(denied), (query, sorted(hit_ids & denied))
 
     asyncio.run(run())
@@ -106,7 +122,7 @@ def test_local_completed_demo_phase0_tag_only_attack_still_lexical_reachable():
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = _documents(timeline)
         by_event = {doc.event_id: doc for doc in docs}
@@ -131,7 +147,7 @@ def test_local_independent_footage_coverage_gap_refuses_searchable_load():
     _require_sqlite(INDEPENDENT_FOOTAGE)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(INDEPENDENT_FOOTAGE, read_only=True)
+        store = await _open(INDEPENDENT_FOOTAGE)
         with pytest.raises(AppError) as refused:
             await load_searchable_timeline(store, COVERAGE_GAP_RUN)
         assert refused.value.code == "retrieval.coverage_gap"
@@ -144,7 +160,7 @@ def test_local_completed_demo_phase0_jump_titles_not_lexical_hits():
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = {doc.event_id: doc for doc in _documents(timeline)}
         title_events = {
@@ -168,7 +184,7 @@ def test_local_completed_demo_phase0_jump_titles_excluded_in_hybrid():
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = {doc.event_id: doc for doc in _documents(timeline)}
         title_events = {
@@ -197,11 +213,36 @@ def test_local_completed_demo_phase0_fight_tag_only_noise_excluded():
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = {doc.event_id: doc for doc in _documents(timeline)}
-        fight_terms = ("战斗", "打斗", "打架", "对战", "团战", "fight", "fights", "fighting", "fighter", "fighters", "combat", "duel", "brawl")
-        for query in ("fight", "combat", "fighter", "fighters", "duel", "brawl", "战斗", "打斗", "对战", "团战"):
+        fight_terms = (
+            "战斗",
+            "打斗",
+            "打架",
+            "对战",
+            "团战",
+            "fight",
+            "fights",
+            "fighting",
+            "fighter",
+            "fighters",
+            "combat",
+            "duel",
+            "brawl",
+        )
+        for query in (
+            "fight",
+            "combat",
+            "fighter",
+            "fighters",
+            "duel",
+            "brawl",
+            "战斗",
+            "打斗",
+            "对战",
+            "团战",
+        ):
             result = await search_timeline(timeline, query, mode="lexical", top_k=20)
             assert result.candidates, f"expected some fight-in-facts hits for {query!r}"
             for item in result.candidates:
@@ -224,7 +265,7 @@ def test_local_completed_demo_phase0_attack_tag_only_still_reachable_after_fight
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = _documents(timeline)
         tag_only_attack = [
@@ -245,7 +286,7 @@ def test_local_completed_demo_phase0_move_hits_require_positive_text_action():
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = {doc.event_id: doc for doc in _documents(timeline)}
         move_terms = ("移动", "move", "moves", "moving", "movement")
@@ -271,7 +312,7 @@ def test_local_completed_demo_phase0_candidate_sources_contract():
     async def run() -> None:
         from gamingcreator.application.retrieval import candidate_sources
 
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = _documents(timeline)
         sources = candidate_sources(timeline)
@@ -312,16 +353,14 @@ def test_local_completed_demo_phase0_lexical_evidence_channels():
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = {doc.event_id: doc for doc in _documents(timeline)}
 
         attack = await search_timeline(timeline, "攻击", mode="lexical", top_k=20)
         assert attack.candidates
         tag_only = [
-            item
-            for item in attack.candidates
-            if "攻击" not in docs[item.event_id].positive_text
+            item for item in attack.candidates if "攻击" not in docs[item.event_id].positive_text
         ]
         assert tag_only, "fixture regression: expected tag-only attack hits"
         for item in tag_only:
@@ -329,8 +368,25 @@ def test_local_completed_demo_phase0_lexical_evidence_channels():
             assert "lexicalEvidence=mechanic_tags" in item.why
 
         for query, terms in (
-            ("战斗", ("战斗", "打斗", "打架", "对战", "团战", "fight", "combat", "fighter", "duel", "brawl")),
-            ("移动", ("移动", "行走", "走动", "位移", "move", "moving", "movement", "walk", "walking")),
+            (
+                "战斗",
+                (
+                    "战斗",
+                    "打斗",
+                    "打架",
+                    "对战",
+                    "团战",
+                    "fight",
+                    "combat",
+                    "fighter",
+                    "duel",
+                    "brawl",
+                ),
+            ),
+            (
+                "移动",
+                ("移动", "行走", "走动", "位移", "move", "moving", "movement", "walk", "walking"),
+            ),
         ):
             result = await search_timeline(timeline, query, mode="lexical", top_k=20)
             assert result.candidates, query
@@ -352,7 +408,7 @@ def test_local_completed_demo_phase0_jump_title_only_abstains():
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         for query in ("jump", "跳跃", "JUMP"):
             result = await search_timeline(timeline, query, mode="lexical", top_k=10)
@@ -377,7 +433,7 @@ def test_local_completed_demo_phase0_search_result_ranking_contract():
     async def run() -> None:
         from gamingcreator.application.retrieval import assert_search_result_contract
 
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         for query in ("移动", "攻击", "战斗", "jump", "草地", ""):
             result = await search_timeline(timeline, query, mode="lexical", top_k=10)
@@ -402,7 +458,7 @@ def test_local_completed_demo_phase0_project_search_ranking_contract():
             search_timelines,
         )
 
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         move = await search_timelines((timeline,), "移动", mode="lexical", top_k=5)
         assert move.candidates
@@ -431,7 +487,7 @@ def test_local_completed_demo_phase0_search_document_and_sources_contracts():
         )
         from gamingcreator.cli.main import _search_document
 
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         sources = candidate_sources(timeline)
         assert_candidate_sources_contract(sources)
@@ -440,7 +496,10 @@ def test_local_completed_demo_phase0_search_document_and_sources_contracts():
         move = await search_timeline(timeline, "移动", mode="lexical", top_k=5)
         move_doc = _search_document(move, elapsed_ms=2)
         assert_search_document_contract(move_doc)
-        assert all(row["candidateId"] in {s.candidate_id for s in sources} for row in move_doc["candidates"])
+        assert all(
+            row["candidateId"] in {s.candidate_id for s in sources}
+            for row in move_doc["candidates"]
+        )
 
         jump = await search_timeline(timeline, "jump", mode="lexical", top_k=5)
         jump_doc = _search_document(jump, elapsed_ms=1)
@@ -456,10 +515,24 @@ def test_local_completed_demo_phase0_duel_brawl_tag_only_noise_excluded():
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = {doc.event_id: doc for doc in _documents(timeline)}
-        fight_terms = ("战斗", "打斗", "打架", "对战", "团战", "fight", "fights", "fighting", "fighter", "fighters", "combat", "duel", "brawl")
+        fight_terms = (
+            "战斗",
+            "打斗",
+            "打架",
+            "对战",
+            "团战",
+            "fight",
+            "fights",
+            "fighting",
+            "fighter",
+            "fighters",
+            "combat",
+            "duel",
+            "brawl",
+        )
         for query in ("对战", "团战", "打架"):
             result = await search_timeline(timeline, query, mode="lexical", top_k=20)
             for item in result.candidates:
@@ -479,7 +552,7 @@ def test_local_completed_demo_phase0_fighter_duel_brawl_tag_only_noise_excluded(
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = {doc.event_id: doc for doc in _documents(timeline)}
         fight_terms = (
@@ -514,7 +587,7 @@ def test_local_completed_demo_phase0_attacker_aliases_keep_tag_only():
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = {doc.event_id: doc for doc in _documents(timeline)}
         baseline = await search_timeline(timeline, "攻击", mode="lexical", top_k=20)
@@ -527,7 +600,11 @@ def test_local_completed_demo_phase0_attacker_aliases_keep_tag_only():
             for item in result.candidates:
                 doc = docs[item.event_id]
                 if "攻击" not in doc.positive_text:
-                    assert item.lexical_evidence == "mechanic_tags", (query, item.event_id, doc.tags)
+                    assert item.lexical_evidence == "mechanic_tags", (
+                        query,
+                        item.event_id,
+                        doc.tags,
+                    )
                     assert "攻击" in doc.tags
 
     asyncio.run(run())
@@ -538,7 +615,7 @@ def test_local_completed_demo_phase0_walk_gait_aliases():
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = {doc.event_id: doc for doc in _documents(timeline)}
         move_terms = ("移动", "行走", "走动", "位移", "move", "walk", "walking")
@@ -566,7 +643,7 @@ def test_local_completed_demo_phase0_heal_damage_cross_lingual():
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = {doc.event_id: doc for doc in _documents(timeline)}
         for query, needle in (
@@ -590,7 +667,7 @@ def test_local_completed_demo_phase0_cast_skill_aliases():
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = {doc.event_id: doc for doc in _documents(timeline)}
         baseline = await search_timeline(timeline, "技能", mode="lexical", top_k=20)
@@ -605,7 +682,9 @@ def test_local_completed_demo_phase0_cast_skill_aliases():
             for item in result.candidates:
                 doc = docs[item.event_id]
                 blob = doc.positive_text + "\n" + "\n".join(doc.tags)
-                assert ("技能" in blob) or ("释放" in blob) or ("施放" in blob) or ("施法" in blob), (
+                assert (
+                    ("技能" in blob) or ("释放" in blob) or ("施放" in blob) or ("施法" in blob)
+                ), (
                     query,
                     item.event_id,
                     doc.positive_text[:80],
@@ -622,7 +701,7 @@ def test_local_completed_demo_phase0_explode_cross_lingual():
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = {doc.event_id: doc for doc in _documents(timeline)}
         for query in ("explode", "exploding", "explosion"):
@@ -641,7 +720,7 @@ def test_local_completed_demo_phase0_countdown_timer_score_beam_cross_lingual():
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = {doc.event_id: doc for doc in _documents(timeline)}
         checks = (
@@ -658,13 +737,19 @@ def test_local_completed_demo_phase0_countdown_timer_score_beam_cross_lingual():
             # Primary needle should appear at least once (BM25 may also hit 计时器 via 计时 overlap).
             primary = needles[0]
             assert any(
-                primary in (docs[item.event_id].positive_text + "\n" + "\n".join(docs[item.event_id].tags))
+                primary
+                in (docs[item.event_id].positive_text + "\n" + "\n".join(docs[item.event_id].tags))
                 for item in result.candidates
             ), query
             for item in result.candidates:
                 doc = docs[item.event_id]
                 blob = doc.positive_text + "\n" + "\n".join(doc.tags)
-                assert any(n in blob for n in needles), (query, item.event_id, doc.positive_text[:80], doc.tags)
+                assert any(n in blob for n in needles), (
+                    query,
+                    item.event_id,
+                    doc.positive_text[:80],
+                    doc.tags,
+                )
 
     asyncio.run(run())
 
@@ -674,7 +759,7 @@ def test_local_completed_demo_phase0_jiaozhan_fight_alias():
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = {doc.event_id: doc for doc in _documents(timeline)}
         result = await search_timeline(timeline, "交战", mode="lexical", top_k=20)
@@ -698,7 +783,7 @@ def test_local_completed_demo_phase0_avatar_icon_vfx_glow_cross_lingual():
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = {doc.event_id: doc for doc in _documents(timeline)}
         checks = (
@@ -718,11 +803,7 @@ def test_local_completed_demo_phase0_avatar_icon_vfx_glow_cross_lingual():
             primary = needles[0]
             assert any(
                 primary
-                in (
-                    docs[item.event_id].positive_text
-                    + "\n"
-                    + "\n".join(docs[item.event_id].tags)
-                )
+                in (docs[item.event_id].positive_text + "\n" + "\n".join(docs[item.event_id].tags))
                 for item in result.candidates
             ), query
             for item in result.candidates:
@@ -743,7 +824,7 @@ def test_local_completed_demo_phase0_scene_healthbar_arena_grass_cross_lingual()
     _require_sqlite(DEMO_PHASE0)
 
     async def run() -> None:
-        store = await SqliteTimelineStore.open(DEMO_PHASE0, read_only=True)
+        store = await _open(DEMO_PHASE0)
         timeline = await store.load_completed_timeline(COMPLETED_RUN_DEMO)
         docs = {doc.event_id: doc for doc in _documents(timeline)}
         checks = (
@@ -762,11 +843,7 @@ def test_local_completed_demo_phase0_scene_healthbar_arena_grass_cross_lingual()
             primary = needles[0]
             assert any(
                 primary
-                in (
-                    docs[item.event_id].positive_text
-                    + "\n"
-                    + "\n".join(docs[item.event_id].tags)
-                )
+                in (docs[item.event_id].positive_text + "\n" + "\n".join(docs[item.event_id].tags))
                 for item in result.candidates
             ), (query, primary)
             for item in result.candidates:

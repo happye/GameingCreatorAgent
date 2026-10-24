@@ -7,17 +7,15 @@ import json
 from pathlib import Path
 
 import pytest
+from test_material_tasks import seed_tasks
 
 from gamingcreator.application.coverage_gap_report import (
     COVERAGE_GAP_REPORT_VERSION,
     assert_coverage_gap_report_inert,
     build_coverage_gap_report,
-    write_coverage_gap_report,
 )
 from gamingcreator.application.tasks import TASKS_VERSION
 from gamingcreator.cli.main import execute_coverage_gap_report
-from test_material_tasks import seed_tasks
-from test_sqlite_store import bundle_fixture
 
 
 def _tasks(*rows: dict) -> dict:

@@ -99,7 +99,6 @@ def FakeTransport(
     return FakeVisionTransport(replies, before_post=before_post)
 
 
-
 def request_fixture(tmp_path: Path, *, frames: int = 1, width: int = 512) -> VisionRequest:
     # FFmpeg-generated 512x288 black JPEG, kept inline so contracts need no native tool.
     data = bytearray(

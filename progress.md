@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-24正式检查门禁恢复（Claude Code）**：修复10-22遗留的ruff／format／mypy门禁与全量挂起（共享夹具media_id≠SHA致精分析合同拒绝、测试无限等待），修复联合检索hybrid／semantic保存回归TD016并真实实跑，三个中文ps1加BOM适配PowerShell 5.1，更新过时测试、关闭测试泄漏的sqlite连接。完整verify 3440 passed，余3项TD012偶发单独通过。
+
 **2026-10-24素材来源盘点（Claude Code）**：新增只读`inventory-sources`（dHash同偏移投票＋Bonferroni、静止画面保护、最密集段范围、不可比较／失败来源列表），实跑17素材仅报告Atom PV／实机共用画面，Atom录音画面全黑，新增6片均为短展示片。52定向测试通过，gc-reviewer PASS（sonnet实现／评估，转录核实）。人工清单请用户确认分组与是否补原始录像。发现main静态门禁失败记TD015。
 
 **2026-10-24工作台状态可靠性修复（Claude Code）**：TD006回归遗留的登记interrupted与导入缺busy两项失败定位为Windows替换正被读取文件的WinError5同进程竞态，验收status.json与素材批量state.json读写加进程内锁；3新确定性测试先红后绿，扩展129项全通过，code-quality-guard PASS，整仓未重跑。Claude九角色bundle提交cherry-pick合入main，AGENTS.md补指针，积压文档与新提交已推送。F006/F009/F010仍false，无新付费调用。见sprint-workbench-status-replace-race.md。

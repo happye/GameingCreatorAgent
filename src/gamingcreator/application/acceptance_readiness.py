@@ -80,7 +80,6 @@ def build_inert_contract() -> dict[str, Any]:
     }
 
 
-
 def _as_task_rows(tasks_document: Mapping[str, Any]) -> list[dict[str, Any]]:
     raw = tasks_document.get("tasks")
     if not isinstance(raw, list):
@@ -133,8 +132,7 @@ def build_acceptance_readiness(
     incomplete = [
         row
         for row in rows
-        if row.get("phase")
-        in ("analysis_incomplete", "media_prepared", "preparation_incomplete")
+        if row.get("phase") in ("analysis_incomplete", "media_prepared", "preparation_incomplete")
     ]
 
     if not rows:
@@ -174,9 +172,7 @@ def build_acceptance_readiness(
             "searchableRuns": len(searchable),
             "coverageGapRuns": len(coverage_gap),
             "incompleteRuns": len(incomplete),
-            "otherRuns": max(
-                0, len(rows) - len(searchable) - len(coverage_gap) - len(incomplete)
-            ),
+            "otherRuns": max(0, len(rows) - len(searchable) - len(coverage_gap) - len(incomplete)),
         },
         "formalAcceptanceStatus": status,
         "formalAcceptanceStatusLabel": _STATUS_LABELS[status],

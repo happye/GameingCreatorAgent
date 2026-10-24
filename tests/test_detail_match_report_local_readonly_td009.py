@@ -66,11 +66,11 @@ def test_local_demo_phase0_legacy_match_reports_fail_current_v1_1_contract() -> 
 
 def test_match_report_contract_gaps_empty_for_current_fixture_shape() -> None:
     """Fresh v1.1 reports (built via match_report) still report zero gaps."""
+    from test_actor_detail_matching import EVENT, RUN, condition
     from test_detail_match_report_contract import _weapon_coexist_detail
-    from test_actor_detail_matching import EVENT, RUN
+
     from gamingcreator.application.detail_query import match_report
     from gamingcreator.domain.actor_details import AttributeKind, QueryConstraint
-    from test_actor_detail_matching import condition
 
     query = QueryConstraint((condition(AttributeKind.HELD_CLASS, "weapon", "item"),))
     document = match_report(
@@ -115,12 +115,13 @@ def test_local_demo_phase0_legacy_match_reports_bind_refinement_sidecars() -> No
         assert_match_report_sidecar_binding_contract(document, request_doc, result_doc)
         assert match_report_sidecar_binding_gaps(document, request_doc, result_doc) == ()
         # Ownership: event id stays under the same run (kept as explicit guard).
-        assert str(document["eventId"]).startswith(f'{document["runId"]}:')
+        assert str(document["eventId"]).startswith(f"{document['runId']}:")
 
 
 def test_assert_match_report_contract_rejects_identity_range_matcher_and_claims() -> None:
-    from test_detail_match_report_contract import _weapon_coexist_detail
     from test_actor_detail_matching import EVENT, RUN, condition
+    from test_detail_match_report_contract import _weapon_coexist_detail
+
     from gamingcreator.application.detail_query import match_report
     from gamingcreator.domain.actor_details import AttributeKind, QueryConstraint
 
@@ -181,8 +182,9 @@ def test_match_report_contract_gaps_flags_identity_and_forbidden_claims() -> Non
 
 def test_assert_match_report_contract_rejects_match_row_evidence_and_result_versions() -> None:
     """Deeper v1.1 gates: match actor/shot, owned evidenceIds, result/constraint versions."""
-    from test_detail_match_report_contract import _weapon_coexist_detail
     from test_actor_detail_matching import EVENT, RUN, condition
+    from test_detail_match_report_contract import _weapon_coexist_detail
+
     from gamingcreator.application.detail_query import match_report
     from gamingcreator.domain.actor_details import AttributeKind, QueryConstraint
 
@@ -229,10 +231,12 @@ def test_assert_match_report_contract_rejects_match_row_evidence_and_result_vers
     bad_constraint = dict(document)
     payload = json.loads(document["constraintJson"])
     del payload["vocabularyVersion"]
-    bad_constraint["constraintJson"] = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
-    bad_constraint["constraintHash"] = __import__("hashlib").sha256(
-        bad_constraint["constraintJson"].encode("utf-8")
-    ).hexdigest()
+    bad_constraint["constraintJson"] = json.dumps(
+        payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True
+    )
+    bad_constraint["constraintHash"] = (
+        __import__("hashlib").sha256(bad_constraint["constraintJson"].encode("utf-8")).hexdigest()
+    )
     bad_constraint["result"] = json.loads(json.dumps(document["result"], default=str))
     bad_constraint["result"]["constraintHash"] = bad_constraint["constraintHash"]
     with pytest.raises(ValueError, match="vocabularyVersion"):
@@ -277,7 +281,7 @@ def test_assert_match_report_sidecar_binding_rejects_foreign_evidence_and_range(
             break
     assert bucket is not None
     matches[0][bucket][0]["evidenceIds"] = [
-        f'{forged["runId"]}:{"a"*64}:evidence:forged-not-on-sidecar'
+        f"{forged['runId']}:{'a' * 64}:evidence:forged-not-on-sidecar"
     ]
     with pytest.raises(ValueError, match="not in sidecar evidence"):
         assert_match_report_sidecar_binding_contract(forged, request_doc, result_doc)
@@ -300,7 +304,7 @@ def test_assert_match_report_sidecar_binding_rejects_media_and_payload_drift() -
     forged = json.loads(json.dumps(document))
     # Keep run prefix but swap media segment so eventId no longer matches sidecar media.
     run_id = forged["runId"]
-    forged["eventId"] = f"{run_id}:{'b'*64}:event:forged"
+    forged["eventId"] = f"{run_id}:{'b' * 64}:event:forged"
     with pytest.raises(ValueError, match="mediaSha256"):
         assert_match_report_sidecar_binding_contract(forged, request_doc, result_doc)
 
@@ -312,8 +316,9 @@ def test_assert_match_report_sidecar_binding_rejects_media_and_payload_drift() -
 
 def test_assert_match_report_contract_rejects_match_source_range_escape() -> None:
     """When report sourceRange is bound, nested match ranges must stay inside."""
-    from test_detail_match_report_contract import _weapon_coexist_detail
     from test_actor_detail_matching import EVENT, RUN, condition
+    from test_detail_match_report_contract import _weapon_coexist_detail
+
     from gamingcreator.application.detail_query import match_report
     from gamingcreator.domain.actor_details import AttributeKind, QueryConstraint
 
@@ -348,7 +353,7 @@ def test_match_report_sidecar_binding_gaps_flags_forged_evidence_range_media_pay
             break
     assert bucket is not None
     matches[0][bucket][0]["evidenceIds"] = [
-        f'{forged["runId"]}:{"a"*64}:evidence:forged-not-on-sidecar'
+        f"{forged['runId']}:{'a' * 64}:evidence:forged-not-on-sidecar"
     ]
     gaps = match_report_sidecar_binding_gaps(forged, request_doc, result_doc)
     assert "match_evidence_not_in_sidecar" in gaps, gaps
@@ -366,7 +371,7 @@ def test_match_report_sidecar_binding_gaps_flags_forged_evidence_range_media_pay
     assert "match_source_range_escape" in gaps2, gaps2
 
     forged3 = json.loads(json.dumps(document))
-    forged3["eventId"] = f'{forged3["runId"]}:{"b"*64}:event:forged'
+    forged3["eventId"] = f"{forged3['runId']}:{'b' * 64}:event:forged"
     gaps3 = match_report_sidecar_binding_gaps(forged3, request_doc, result_doc)
     assert "event_media_mismatch" in gaps3, gaps3
 
@@ -464,9 +469,7 @@ def test_assert_match_report_sidecar_binding_rejects_settings_cost_and_metadata_
     bad_cost["costCny"] = "not-a-decimal"
     with pytest.raises(ValueError, match="costCny"):
         assert_match_report_sidecar_binding_contract(document, request_doc, bad_cost)
-    assert "cost_cny_invalid" in match_report_sidecar_binding_gaps(
-        document, request_doc, bad_cost
-    )
+    assert "cost_cny_invalid" in match_report_sidecar_binding_gaps(document, request_doc, bad_cost)
 
     bad_attempt = json.loads(json.dumps(result_doc))
     bad_attempt["metadata"] = dict(bad_attempt["metadata"])
@@ -539,7 +542,9 @@ def test_assert_match_report_sidecar_binding_rejects_duplicate_actor_and_usage_c
     )
 
 
-def test_assert_match_report_sidecar_binding_rejects_payload_identity_and_shot_coverage_drift() -> None:
+def test_assert_match_report_sidecar_binding_rejects_payload_identity_and_shot_coverage_drift() -> (
+    None
+):
     document, request_doc, result_doc = _load_first_legacy_binding()
     assert_match_report_sidecar_binding_contract(document, request_doc, result_doc)
     assert match_report_sidecar_binding_gaps(document, request_doc, result_doc) == ()

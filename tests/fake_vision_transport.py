@@ -94,4 +94,3 @@ class WaitingTransport:
         finally:
             self.closed = True
         raise AssertionError("Cancelled request cannot complete.")
-

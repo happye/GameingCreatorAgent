@@ -710,7 +710,7 @@ def _publish(
     detail: CandidateDetail,
     metadata: InvocationMetadata,
 ) -> None:
-    document = {
+    document: dict[str, object] = {
         "schemaVersion": RESULT_SCHEMA_VERSION,
         "requestHash": request_hash(request),
         "payloadHash": payload_hash(detail),
@@ -723,7 +723,9 @@ def _publish(
         "metadata": metadata_payload(metadata),
     }
     assert_refinement_result_document_contract(document)
-    request_path = sidecar_directory(project, request.run_id, request_hash(request)) / "request.json"
+    request_path = (
+        sidecar_directory(project, request.run_id, request_hash(request)) / "request.json"
+    )
     if request_path.exists():
         assert_refinement_sidecar_pair_contract(_loads(request_path, project.resolve()), document)
     result_path = sidecar_directory(project, request.run_id, request_hash(request)) / "result.json"
