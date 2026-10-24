@@ -1,4 +1,4 @@
-# 当前交接：素材来源盘点已交付，等待用户确认分组
+# 当前交接：冻结计划已绑定素材盘点，等待用户确认分组
 
 更新：2026-10-24，Phase 0，main。新准备的两种验收页面，对已验证Chromium／MP4非零PTS及异步音视频可自动换算、取时、定位同规范区间并末停；未知／不支持仍手填。旧页面包、原12标注及纠正保持，不要求重标。见[报告](docs/exec-plans/report-2026-10-24-source-clock-mapping.md)、[sprint](docs/exec-plans/sprint-source-clock-mapping.md)及[当前里程碑](docs/exec-plans/current-status.md)。
 
@@ -10,7 +10,11 @@
 
 工作台扩展组原2项失败已修复（2026-10-24 Claude Code）：根因是Windows替换正被读取的状态文件会被拒绝（WinError5），验收流程status.json与素材批量state.json现由进程内锁串行；同组还更新了一条与ce934e0免责文字不符的过时断言。扩展10文件129项全部通过，独立code-quality-guard PASS；整仓verify未重跑，跨进程占用仍归TD012。见[sprint](docs/exec-plans/sprint-workbench-status-replace-race.md)。Claude原生九角色已合入（`.claude/agents/`，见[Claude分工指南](docs/references/claude-agent-routing-guide.md)），新会话需用`/agents`确认发现。
 
-## 2026-10-24正式检查门禁恢复（最新）
+## 2026-10-24冻结计划绑定素材盘点（最新）
+
+新冻结一律为`benchmark-freeze-v2`：`freeze-benchmark --inventory <盘点报告>`（工作台冻结步骤可上传）把报告原样打包并核对每个来源；缺盘点、来源缺失／失败／无法比较、共用画面分到不同组或跨开发／测试都会阻断就绪。v1保持字节不变但不再能给出独立测试集。真实反例（Atom PV／实机异组）被拦下。326定向测试通过、code-quality-guard PASS。见[sprint](docs/exec-plans/sprint-freeze-source-inventory.md)。下一步仍待用户确认分组与是否补原始录像；离线可继续的是F009／F010等不依赖人工的改进。
+
+## 2026-10-24正式检查门禁恢复
 
 `verify.ps1`静态门禁恢复通过；全量不再在20%处挂起（3440 passed，余3项为TD012高负载偶发、单独通过）。修复了已交付功能回归TD016：多录像联合检索hybrid／semantic（含“已有细节”）保存失败，真实数据实跑恢复；三个中文PowerShell脚本加BOM后可在用户本机PowerShell 5.1运行。见[sprint](docs/exec-plans/sprint-verify-gate-restore.md)。下一主线：按[freeze-v2合同](docs/exec-plans/sprint-freeze-source-inventory.md)让冻结计划绑定素材盘点。
 

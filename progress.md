@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-24冻结绑定素材盘点（Claude Code）**：新增benchmark-freeze-v2，冻结包原样保存source-inventory报告并按SHA核对来源，五类盘点阻断；v1字节与读取不变但绑定不再给独立测试集。opus设计／sonnet实现／opus独立评估PASS，326定向测试通过，5个已存冻结前后一致，真实Atom异组反例被拦。
+
 **2026-10-24正式检查门禁恢复（Claude Code）**：修复10-22遗留的ruff／format／mypy门禁与全量挂起（共享夹具media_id≠SHA致精分析合同拒绝、测试无限等待），修复联合检索hybrid／semantic保存回归TD016并真实实跑，三个中文ps1加BOM适配PowerShell 5.1，更新过时测试、关闭测试泄漏的sqlite连接。完整verify 3440 passed，余3项TD012偶发单独通过。
 
 **2026-10-24素材来源盘点（Claude Code）**：新增只读`inventory-sources`（dHash同偏移投票＋Bonferroni、静止画面保护、最密集段范围、不可比较／失败来源列表），实跑17素材仅报告Atom PV／实机共用画面，Atom录音画面全黑，新增6片均为短展示片。52定向测试通过，gc-reviewer PASS（sonnet实现／评估，转录核实）。人工清单请用户确认分组与是否补原始录像。发现main静态门禁失败记TD015。

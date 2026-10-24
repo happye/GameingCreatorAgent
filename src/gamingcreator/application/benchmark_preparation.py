@@ -7,11 +7,16 @@ from datetime import datetime
 from typing import cast
 
 from gamingcreator.application.benchmark import MAX_SOURCE_US, BenchmarkManifest, parse_manifest
+from gamingcreator.application.benchmark_inventory_binding import (
+    derive_source_inventory,
+    inventory_blockers,
+)
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.media import MediaAsset
 
 PLAN_VERSION = "benchmark-plan-v1"
 FREEZE_VERSION = "benchmark-freeze-v1"
+FREEZE_VERSION_V2 = "benchmark-freeze-v2"
 MAX_PLAN_BYTES = 1_048_576
 
 
@@ -272,12 +277,55 @@ def freeze_document(
     }
 
 
+def preparation_status_v2(
+    plan: BenchmarkPlan,
+    sources: list[dict[str, object]],
+    source_inventory: Mapping[str, object] | None,
+) -> dict[str, object]:
+    """The v1 rules plus inventory blockers; v1 documents never go through this."""
+    status = preparation_status(plan, sources)
+    policy = {row.source_id: (row.recording_group, row.partition) for row in plan.sources}
+    blockers = set(cast(list[str], status["blockers"])) | inventory_blockers(
+        source_inventory, policy
+    )
+    return {**status, "readyForIndependentEvaluation": not blockers, "blockers": sorted(blockers)}
+
+
+def freeze_document_v2(
+    plan: BenchmarkPlan,
+    assets: Mapping[str, MediaAsset],
+    frozen_at: str,
+    inventory: bytes | None,
+) -> dict[str, object]:
+    """New freezes: v1 content plus the derived source inventory (null when not provided)."""
+    document = freeze_document(plan, assets, frozen_at)
+    sources = cast(list[dict[str, object]], document["sources"])
+    derived = None if inventory is None else derive_source_inventory(inventory, sources)
+    document["schemaVersion"] = FREEZE_VERSION_V2
+    document["sourceInventory"] = derived
+    document["preparation"] = preparation_status_v2(plan, sources, derived)
+    return document
+
+
+def freeze_preparation(
+    plan: BenchmarkPlan, frozen: Mapping[str, object], sources: list[dict[str, object]]
+) -> dict[str, object]:
+    """Recompute preparation for either freeze version; unknown versions are refused."""
+    if frozen["schemaVersion"] == FREEZE_VERSION:
+        return preparation_status(plan, sources)
+    if frozen["schemaVersion"] == FREEZE_VERSION_V2:
+        return preparation_status_v2(
+            plan, sources, cast("Mapping[str, object] | None", frozen["sourceInventory"])
+        )
+    raise ValueError("未知冻结版本。")
+
+
 def bind_manifest(
     frozen: dict[str, object], timelines: Mapping[str, StoredTimeline], partition: str
 ) -> dict[str, object]:
     plan = loads_plan(canonical_json(frozen["plan"]).decode("utf-8"))
     sources = cast(list[dict[str, object]], frozen["sources"])
-    status = preparation_status(plan, sources)
+    status = freeze_preparation(plan, frozen, sources)
     selected = {row.source_id for row in plan.sources if row.partition == partition}
     wanted = {
         row["sourceId"]
@@ -320,8 +368,11 @@ def bind_manifest(
         and references_complete
     )
     human["frozenAt"] = frozen["frozenAt"]
+    # Only a v2 freeze (source inventory checked) may yield an independent test set.
     human["independentTestSet"] = (
-        partition == "test" and status["readyForIndependentEvaluation"] is True
+        partition == "test"
+        and frozen["schemaVersion"] == FREEZE_VERSION_V2
+        and status["readyForIndependentEvaluation"] is True
     )
     parse_manifest(document)
     return document

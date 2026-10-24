@@ -28,8 +28,12 @@
 在仓库根目录，用已有PowerShell 7：
 
 ```powershell
-./scripts/prepare-benchmark.ps1 -InputPath artifacts/acceptance-plan.json -OutputDirectory artifacts/acceptance-freeze-001
+./scripts/prepare-benchmark.ps1 -InputPath artifacts/acceptance-plan.json -OutputDirectory artifacts/acceptance-freeze-001 -InventoryPath artifacts/source-inventory.json
 ```
+
+`-InventoryPath`（命令行`--inventory`）可选，指向[素材盘点](./source-inventory-guide.md)生成的`source-inventory-v1`报告（最大4MiB，超出会拒绝，不静默放宽）。新冻结一律写`benchmark-freeze-v2`：报告字节原样保存为`source-inventory.json`（回执列3个文件），并按SHA256把每个冻结录像对到盘点来源。盘点必须来自冻结用的原字节；重编码副本SHA不同，会显示为“报告中没有”，须对原文件重跑盘点。同一SHA但时长不同视为输入错误，拒绝冻结。没有提供报告时只存2个文件，`sourceInventory`为null，并记录阻断`source_inventory_missing`。旧的`benchmark-freeze-v1`冻结（含已保存的原片参考页）按原规则继续可读，只是从未核对素材盘点，工作台标注“未核对素材盘点”，不因此升级或改写。**v1冻结绑定后永远不会产生独立测试集**（`independentTestSet`恒为false，即使其v1准备状态显示就绪）；独立测试集只能来自带完整盘点的v2冻结。冻结包回执只能发现不一致的单处改动，无法阻止有人一致地同时改写多个文件，它不是身份认证。
+
+v2在原有缺口之外新增阻断：`source_inventory_incomplete`（有录像在报告中缺失或盘点失败）、`source_inventory_not_comparable`（有效画面不足，没参与比较）、`shared_footage_has_different_recording_groups`（盘点发现共用画面的两段录像登记在不同录制组）、`shared_footage_crosses_partitions`（共用画面跨开发／测试）。这些阻断不会替你分组，只提示你回头核对；盘点没发现共用画面只表示“无证据”，不证明独立，也不会自动把阻断以外的独立性声明变成认证。命令结果的`sourceInventory`字段列出各来源的盘点状态；工作台冻结步骤可选上传盘点JSON，并显示覆盖表和限制说明。
 
 程序本地探测并核对原视频SHA和时长，保存原输入字节、规范计划、实际来源、冻结时间及准备缺口。输出必须是新目录，不覆盖旧冻结；完成回执最后写入，中断留下的目录不能作为完整冻结读取，另用新目录重做。
 

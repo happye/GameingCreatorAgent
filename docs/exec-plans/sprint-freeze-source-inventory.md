@@ -40,4 +40,8 @@
 
 ## 结果
 
-（实现与评估后由主控填写。）
+- 规划：gc-architect（请求opus，只读）给出v2方案；实现：gc-coder（请求sonnet，转录175条回复为claude-sonnet-5-5）；评估：code-quality-guard（请求opus，只读）。
+- 实现：新`application/benchmark_inventory_binding.py`（严格解析、按SHA／失败按路径匹配、派生`sourceInventory`、v2阻断）；`benchmark_preparation.py`新增`FREEZE_VERSION_V2`／`preparation_status_v2`／`freeze_document_v2`／按版本取就绪；`benchmark_preparation_files.py`写入重读报告、版本区分回执2／3文件、读取重建比较；CLI `--inventory`、`prepare-benchmark.ps1 -InventoryPath`、工作台冻结步骤可选上传与覆盖表。
+- 独立评估PASS（无P0／P1）：15个变异中13个被测试发现；两处防御检查无测试已补（主控另行把“回执缺报告文件”检查删去复验，新测试`forged_without_file`随即失败）。评估发现一致改写多文件可把被阻断的v2伪造成v1，据此加固：**v1冻结绑定一律`independentTestSet=false`**，独立测试集只能来自盘点完整的v2；指南写明回执只能发现不一致修改、不是认证，以及BOM另存会改变报告SHA。
+- 验证：定向14文件326项全部通过（-W error），ruff check／format（251文件）／mypy（119源文件）通过；5个已存v1冻结改动前后读取结果与SHA逐字一致；v1固定SHA测试`444c176f…1109`经评估者用HEAD旧代码复算一致。真实试跑：试点计划＋17素材盘点冻结为v2（1来源已比较、0对）；把Atom PV／实机分到不同组的反例得到`shared_footage_has_different_recording_groups`。
+- 未做：本次未重跑完整verify；PowerShell参数无脚本级测试（已实跑）。

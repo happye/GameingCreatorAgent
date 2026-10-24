@@ -349,11 +349,13 @@ class BenchmarkWorkflows:
         allowed = FIELDS[action]
         if action == "bind" and "freezeSha256" in fields:
             allowed = allowed | {"freezeSha256"}
+        if action == "freeze" and "inputText" in fields:
+            allowed = {"inputText"}  # optional source-inventory report; old clients send none
         if set(fields) != allowed or any(type(value) is not str for value in fields.values()):
             raise _invalid()
         if "inputText" in fields:
             value = cast(str, fields["inputText"])
-            if value or action != "register":
+            if value or action not in {"register", "freeze"}:
                 uploaded = decode_object(value.encode())
                 if action == "register":
                     sources = uploaded.get("sources", [])
@@ -482,6 +484,7 @@ class BenchmarkWorkflows:
                     self._output(identifier, rows["references-import"]) / "benchmark-plan.json",
                     output,
                     self.repository,
+                    input_path if input_path.exists() else None,
                 )
             )
             return 0, None

@@ -35,9 +35,13 @@ from gamingcreator.application.benchmark import (
     run_benchmark,
 )
 from gamingcreator.application.benchmark_analysis_costs import benchmark_analysis_costs
+from gamingcreator.application.benchmark_inventory_binding import (
+    MAX_INVENTORY_BYTES,
+    inventory_result,
+)
 from gamingcreator.application.benchmark_preparation import (
     bind_manifest,
-    freeze_document,
+    freeze_document_v2,
     loads_plan,
 )
 from gamingcreator.application.budget import BudgetLedger, InvocationRecorder
@@ -212,6 +216,7 @@ def _parser() -> CliParser:
     freeze = commands.add_parser("freeze-benchmark", help="本地登记原素材并冻结验收查询，不分析")
     freeze.add_argument("--input", type=Path, required=True)
     freeze.add_argument("--output", type=Path, required=True)
+    freeze.add_argument("--inventory", type=Path, help="素材盘点报告JSON（可选，最大4MiB）")
     bind = commands.add_parser("bind-benchmark", help="把冻结验收素材绑定到已完成运行，不检索")
     bind.add_argument("--freeze", type=Path, required=True)
     bind.add_argument("--project", type=Path, required=True)
@@ -1004,10 +1009,15 @@ async def execute_analyze(prepared: PreparedAnalyze, repository: Path) -> Analyz
 
 
 async def execute_freeze_benchmark(
-    input_path: Path, output: Path, repository: Path
+    input_path: Path, output: Path, repository: Path, inventory_path: Path | None = None
 ) -> dict[str, object]:
     try:
         data = read_bounded(input_path)
+        inventory = (
+            None
+            if inventory_path is None
+            else (inventory_path, read_bounded(inventory_path, MAX_INVENTORY_BYTES))
+        )
         plan = loads_plan(data.decode("utf-8-sig"))
         processor = FfmpegMediaProcessor(repository)
         assets = {}
@@ -1018,14 +1028,19 @@ async def execute_freeze_benchmark(
             assets[source.source_id] = await processor.probe(
                 path.resolve(), CancellationContext("benchmark-freeze", timeout_seconds=300)
             )
-        frozen = freeze_document(plan, assets, datetime.now(UTC).isoformat())
-        hashes = write_freeze(input_path, data, frozen, output)
+        frozen = freeze_document_v2(
+            plan, assets, datetime.now(UTC).isoformat(), None if inventory is None else inventory[1]
+        )
+        hashes = write_freeze(input_path, data, frozen, output, inventory)
         return {
             "schemaVersion": "benchmark-preparation-result-v1",
             "output": str(output.resolve()),
             "files": hashes,
             "frozenAt": frozen["frozenAt"],
             "preparation": frozen["preparation"],
+            "sourceInventory": inventory_result(
+                cast("dict[str, object] | None", frozen["sourceInventory"])
+            ),
             "qualityGate": None,
             "paidRequestsSent": 0,
         }
@@ -1461,7 +1476,12 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
         )
     if args.command == "freeze-benchmark":
         return asyncio.run(
-            execute_freeze_benchmark(args.input.resolve(), args.output.resolve(), Path.cwd())
+            execute_freeze_benchmark(
+                args.input.resolve(),
+                args.output.resolve(),
+                Path.cwd(),
+                args.inventory.resolve() if args.inventory is not None else None,
+            )
         )
     if args.command == "bind-benchmark":
         return asyncio.run(

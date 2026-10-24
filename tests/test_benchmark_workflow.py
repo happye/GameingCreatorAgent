@@ -437,3 +437,99 @@ def test_http_cross_origin_and_path_boundaries(tmp_path, method, path, body):
         assert get(base, path, method=method, data=body, headers=headers)[0] == 403
         if method == "GET" and "benchmark-file" in path:
             assert get(base, path)[0] == 400
+
+
+def references_imported(tmp_path, request, monkeypatch):
+    """A workflow through step 3 with real reference steps; freeze probing uses the fixture."""
+    import gamingcreator.cli.main as cli_main
+
+    _, context, template, assets = request.getfixturevalue("reference_page")
+    manager = BenchmarkWorkflows(tmp_path)
+    identifier = manager.create({"name": "冻结盘点"})["id"]
+    row = submit(manager, identifier, "references", {"inputText": json.dumps(context["plan"])})[
+        "attempts"
+    ][-1]
+    assert row["status"] == "finished", row
+    record = manager.file(identifier, row["attemptId"], "record-template.json")
+    row = submit(manager, identifier, "references-import", {"inputText": record.decode()})[
+        "attempts"
+    ][-1]
+    assert row["status"] == "finished", row
+
+    class FixtureProbe:
+        def __init__(self, repository):
+            pass
+
+        async def probe(self, path, context):
+            return next(asset for asset in assets.values() if asset.source_path == path)
+
+    monkeypatch.setattr(cli_main, "FfmpegMediaProcessor", FixtureProbe)
+    return manager, identifier, assets
+
+
+def freeze_row(manager, identifier, fields):
+    return submit(manager, identifier, "freeze", fields)["attempts"][-1]
+
+
+def test_freeze_step_with_inventory_saves_report_and_v2_coverage(tmp_path, request, monkeypatch):
+    from test_benchmark_inventory_binding import encode, report_for
+
+    from gamingcreator.infrastructure.benchmark_preparation_files import read_freeze
+
+    manager, identifier, assets = references_imported(tmp_path, request, monkeypatch)
+    report = encode(report_for(assets))
+    row = freeze_row(manager, identifier, {"inputText": report.decode()})
+    assert row["status"] == "finished", row
+    assert set(row["files"]) == {
+        "plan-input.json",
+        "freeze.json",
+        "source-inventory.json",
+        "receipt.json",
+    }
+    assert manager.file(identifier, row["attemptId"], "source-inventory.json") == report
+    frozen, _ = read_freeze(manager._output(identifier, row))
+    assert frozen["schemaVersion"] == "benchmark-freeze-v2"
+    assert [item["status"] for item in frozen["sourceInventory"]["sources"]] == ["compared"]
+    assert "source_inventory_missing" not in frozen["preparation"]["blockers"]
+    assert (manager.directory(identifier) / row["attemptId"] / "input.json").read_bytes() == report
+
+
+@pytest.mark.parametrize("fields", [{}, {"inputText": ""}])
+def test_freeze_step_without_inventory_records_missing_blocker(
+    tmp_path, request, monkeypatch, fields
+):
+    from gamingcreator.infrastructure.benchmark_preparation_files import read_freeze
+
+    manager, identifier, _ = references_imported(tmp_path, request, monkeypatch)
+    row = freeze_row(manager, identifier, fields)
+    assert row["status"] == "finished", row
+    assert set(row["files"]) == {"plan-input.json", "freeze.json", "receipt.json"}
+    frozen, _ = read_freeze(manager._output(identifier, row))
+    assert frozen["sourceInventory"] is None
+    assert "source_inventory_missing" in frozen["preparation"]["blockers"]
+    assert frozen["preparation"]["readyForIndependentEvaluation"] is False
+
+
+def test_freeze_step_bad_inventory_fails_keeps_input_and_retry_uses_new_directory(
+    tmp_path, request, monkeypatch
+):
+    manager, identifier, _ = references_imported(tmp_path, request, monkeypatch)
+    bad = '{"schemaVersion":"source-inventory-v1"}'
+    failed = freeze_row(manager, identifier, {"inputText": bad})
+    assert failed["status"] == "failed" and failed["files"] == {}
+    parent = manager.directory(identifier) / failed["attemptId"]
+    assert (parent / "input.json").read_text() == bad
+    retry = freeze_row(manager, identifier, {"inputText": ""})
+    assert retry["status"] == "finished" and retry["attemptId"] != failed["attemptId"]
+    assert (parent / "input.json").read_text() == bad
+
+
+@pytest.mark.parametrize("text", ["not json", '{"a":1,"a":2}', "[]"])
+def test_freeze_step_rejects_unreadable_inventory_before_any_attempt(
+    tmp_path, request, monkeypatch, text
+):
+    manager, identifier, _ = references_imported(tmp_path, request, monkeypatch)
+    before = len(manager.get(identifier)["attempts"])
+    with pytest.raises((AppError, ValueError)):
+        manager.submit({"workflow": identifier, "action": "freeze", "fields": {"inputText": text}})
+    assert len(manager.get(identifier)["attempts"]) == before

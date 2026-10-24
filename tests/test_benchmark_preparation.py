@@ -119,8 +119,10 @@ def test_draft_freeze_bind_cannot_create_human_ratings_or_quality_gate(tmp_path)
 
 
 def test_ready_plan_still_needs_candidate_judgments_for_quality(tmp_path):
+    from test_benchmark_inventory_binding import frozen_v2, report_for
+
     raw, assets = plan_fixture(tmp_path, 10, confirmed=True)
-    frozen = freeze(raw, assets)
+    frozen, _ = frozen_v2(raw, assets, report_for(assets))
     assert frozen["preparation"]["readyForIndependentEvaluation"] is True
     manifest = loads_manifest(
         canonical_json(bind_manifest(frozen, timelines(assets), "test")).decode()

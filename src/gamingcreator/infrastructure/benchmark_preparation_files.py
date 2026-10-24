@@ -7,12 +7,18 @@ from pathlib import Path
 from typing import cast
 
 from gamingcreator.application.benchmark import loads_manifest
+from gamingcreator.application.benchmark_inventory_binding import (
+    INVENTORY_FILE,
+    MAX_INVENTORY_BYTES,
+    derive_source_inventory,
+)
 from gamingcreator.application.benchmark_preparation import (
     FREEZE_VERSION,
+    FREEZE_VERSION_V2,
     MAX_PLAN_BYTES,
     canonical_json,
+    freeze_preparation,
     loads_plan,
-    preparation_status,
 )
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
 
@@ -71,26 +77,44 @@ def _publish(output: Path, files: dict[str, bytes], protected: list[Path]) -> di
 
 
 def write_freeze(
-    input_path: Path, input_bytes: bytes, frozen: dict[str, object], output: Path
+    input_path: Path,
+    input_bytes: bytes,
+    frozen: dict[str, object],
+    output: Path,
+    inventory: tuple[Path, bytes] | None = None,
 ) -> dict[str, str]:
     if read_bounded(input_path) != input_bytes:
         raise ValueError("冻结期间输入计划已改变。")
+    files = {"plan-input.json": input_bytes, "freeze.json": canonical_json(frozen)}
+    protected = [input_path]
+    derived = frozen.get("sourceInventory")
+    if (
+        frozen["schemaVersion"] not in (FREEZE_VERSION, FREEZE_VERSION_V2)
+        or (frozen["schemaVersion"] == FREEZE_VERSION and inventory is not None)
+        or (frozen["schemaVersion"] == FREEZE_VERSION_V2 and "sourceInventory" not in frozen)
+        or (derived is None) != (inventory is None)
+    ):
+        raise ValueError("冻结版本与素材盘点报告不匹配。")
+    if inventory is not None:
+        inventory_path, inventory_bytes = inventory
+        if read_bounded(inventory_path, MAX_INVENTORY_BYTES) != inventory_bytes:
+            raise ValueError("冻结期间素材盘点报告已改变。")
+        if cast(dict[str, object], derived)["reportSha256"] != _sha(inventory_bytes):
+            raise ValueError("冻结的素材盘点与报告字节不符。")
+        files[INVENTORY_FILE] = inventory_bytes
+        protected.append(inventory_path)
     sources = cast(list[dict[str, object]], frozen["sources"])
     for source in sources:
         if hash_file(Path(cast(str, source["path"]))) != source["sha256"]:
             raise ValueError("冻结期间原录像已改变。")
-    return _publish(
-        output,
-        {"plan-input.json": input_bytes, "freeze.json": canonical_json(frozen)},
-        [input_path, *(Path(cast(str, row["path"])) for row in sources)],
-    )
+    return _publish(output, files, [*protected, *(Path(cast(str, row["path"])) for row in sources)])
 
 
 def read_freeze(directory: Path) -> tuple[dict[str, object], str]:
     directory = directory.resolve()
     if any(
         (directory / name).is_symlink() or (directory / name).is_junction()
-        for name in ("receipt.json", "freeze.json", "plan-input.json")
+        for name in ("receipt.json", "freeze.json", "plan-input.json", INVENTORY_FILE)
     ):
         raise ValueError("冻结文件不能是链接。")
     receipt = _json(read_bounded(directory / "receipt.json", MAX_BUNDLE_BYTES))
@@ -100,18 +124,25 @@ def read_freeze(directory: Path) -> tuple[dict[str, object], str]:
     ):
         raise ValueError("未知冻结回执。")
     hashes = receipt["files"]
-    if type(hashes) is not dict or set(hashes) != {"plan-input.json", "freeze.json"}:
+    base = {"plan-input.json", "freeze.json"}
+    if type(hashes) is not dict or set(hashes) not in (base, {*base, INVENTORY_FILE}):
         raise ValueError("冻结回执资料不完整。")
     data = read_bounded(directory / "freeze.json", MAX_BUNDLE_BYTES)
     original = read_bounded(directory / "plan-input.json")
     if _sha(data) != hashes["freeze.json"] or _sha(original) != hashes["plan-input.json"]:
         raise ValueError("冻结资料已改变。")
     frozen = _json(data)
-    if (
-        set(frozen) != {"schemaVersion", "frozenAt", "plan", "sources", "preparation"}
-        or frozen["schemaVersion"] != FREEZE_VERSION
-    ):
+    fields = {"schemaVersion", "frozenAt", "plan", "sources", "preparation"}
+    if frozen.get("schemaVersion") == FREEZE_VERSION:
+        if set(hashes) != base or set(frozen) != fields:
+            raise ValueError("未知冻结版本／字段。")
+    elif frozen.get("schemaVersion") != FREEZE_VERSION_V2 or set(frozen) != {
+        *fields,
+        "sourceInventory",
+    }:
         raise ValueError("未知冻结版本／字段。")
+    elif (frozen["sourceInventory"] is None) != (INVENTORY_FILE not in hashes):
+        raise ValueError("冻结素材盘点与回执不一致。")
     plan = loads_plan(original.decode("utf-8-sig"))
     if frozen["plan"] != plan.document:
         raise ValueError("冻结计划与原输入不同。")
@@ -139,7 +170,13 @@ def read_freeze(directory: Path) -> tuple[dict[str, object], str]:
             raise ValueError("冻结来源时长无效。")
     if {row["id"] for row in sources} != {row.source_id for row in plan.sources}:
         raise ValueError("冻结来源身份不同。")
-    if frozen["preparation"] != preparation_status(plan, sources):
+    if INVENTORY_FILE in hashes:
+        report = read_bounded(directory / INVENTORY_FILE, MAX_INVENTORY_BYTES)
+        if _sha(report) != hashes[INVENTORY_FILE]:
+            raise ValueError("冻结资料已改变。")
+        if frozen["sourceInventory"] != derive_source_inventory(report, sources):
+            raise ValueError("冻结素材盘点与报告不同。")
+    if frozen["preparation"] != freeze_preparation(plan, frozen, sources):
         raise ValueError("冻结准备状态不同。")
     return frozen, _sha(data)
 

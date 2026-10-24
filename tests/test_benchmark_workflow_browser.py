@@ -190,3 +190,96 @@ def test_http_candidate_relative_url_seeks_plays_and_pauses_at_original_end(
             assert page.locator("[data-field=grade]").first.input_value() == ""
         finally:
             browser.close()
+
+
+@pytest.mark.parametrize("width", [1366, 390])
+def test_freeze_step_shows_inventory_coverage_upload_and_legacy_notice(
+    tmp_path, request, monkeypatch, width
+):
+    from test_benchmark_inventory_binding import FIXED_TIME, encode, report_for
+    from test_benchmark_workflow import freeze_row, references_imported
+
+    import gamingcreator.ui.benchmark_workflow as workflow_module
+    from gamingcreator.application.benchmark_preparation import freeze_document, loads_plan
+    from gamingcreator.infrastructure.benchmark_preparation_files import write_freeze
+
+    playwright = pytest.importorskip("playwright.sync_api")
+    manager, covered, assets = references_imported(tmp_path, request, monkeypatch)
+    report = report_for(assets, extra=["e" * 64], pairs=[(1, 2)])
+    freeze_row(manager, covered, {"inputText": encode(report).decode()})
+    uploaded = references_imported(tmp_path, request, monkeypatch)[1]
+    missing = references_imported(tmp_path, request, monkeypatch)[1]
+    freeze_row(manager, missing, {})
+    legacy = references_imported(tmp_path, request, monkeypatch)[1]
+
+    async def legacy_freeze(input_path, output, repository, inventory_path=None):
+        data = input_path.read_bytes()
+        frozen = freeze_document(loads_plan(data.decode()), assets, FIXED_TIME)
+        write_freeze(input_path, data, frozen, output)
+        return {}
+
+    with monkeypatch.context() as patch:
+        patch.setattr(workflow_module, "execute_freeze_benchmark", legacy_freeze)
+        freeze_row(manager, legacy, {})
+
+    with workspace(tmp_path) as base, playwright.sync_playwright() as runtime:
+        browser = runtime.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(viewport={"width": width, "height": 900})
+            errors, foreign = [], []
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            page.on(
+                "request",
+                lambda item: (
+                    foreign.append(item.url)
+                    if not item.url.startswith((base, "blob:", "data:"))
+                    else None
+                ),
+            )
+            freeze = page.locator("[data-step=freeze]")
+
+            def open_workflow(identifier):
+                page.goto(base + "/acceptance#" + identifier)
+                page.reload()
+                playwright.expect(page.locator("#current-name")).to_have_text("冻结盘点")
+
+            open_workflow(covered)
+            playwright.expect(freeze.locator(".inventory table")).to_be_visible(timeout=15000)
+            assert "已比较" in freeze.locator(".inventory table").inner_text()
+            text = freeze.locator(".inventory").inner_text()
+            assert "另有 1 处证据涉及未登记的来源" in text
+            assert "未匹配不证明独立" in text
+            playwright.expect(
+                freeze.get_by_role("link", name="查看素材盘点报告", exact=True)
+            ).to_be_visible()
+            assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+
+            open_workflow(missing)
+            playwright.expect(freeze.locator(".inventory .failed")).to_contain_text(
+                "没有报告不等于素材独立", timeout=15000
+            )
+            assert freeze.locator(".inventory table").count() == 0
+
+            open_workflow(legacy)
+            playwright.expect(freeze.locator(".inventory")).to_contain_text(
+                "旧版冻结：未核对素材盘点", timeout=15000
+            )
+
+            open_workflow(uploaded)
+            freeze.locator("input[type=file]").set_input_files(
+                {
+                    "name": "盘点.json",
+                    "mimeType": "application/json",
+                    "buffer": encode(report_for(assets)),
+                }
+            )
+            freeze.locator("button[type=submit]").click()
+            playwright.expect(freeze.locator(".inventory table")).to_be_visible(timeout=20000)
+            assert (
+                "未发现共用画面证据（无证据，不等于独立）"
+                in freeze.locator(".inventory").inner_text()
+            )
+            assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+            assert not errors and not foreign
+        finally:
+            browser.close()
