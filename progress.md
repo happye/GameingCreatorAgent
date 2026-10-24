@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-24试验文档发布受网络阻断**：本地提交9e8e525已保存；一次普通push连接GitHub:443失败，远端仍e9361e2。不强推或循环重试，后续实质交付再补推；单帧试验结果、授权与费用账目均不受影响。
+
 **2026-10-24固定单帧真实试验完成**：已按新¥0.50具体许可唯一发送原28.5秒登记图／parts-v2，HTTP200、deepseek-flash生成1主体／7属性并发布。三新进程本地resume零发送／unchanged、正例1／跨衣物负例0；922旧文件SHA不变，原Sol/high最终PASS。1016输入／119输出tokens估算¥0.001492，未核账单，原¥0.416预留已由估算额替代；本授权一次已用尽，剩余额度不允许再发。原费用／unknown／12标注纠正／六素材保持，F006/F009/F010false。下一原Luna/high定位TD006特殊源时钟自动映射，DSH后续唯一实施，不新增录像API或重标。见[报告](docs/exec-plans/report-2026-10-24-static-observation-pilot.md)及[sprint](docs/exec-plans/sprint-static-observation-pilot.md)。下方为此前节点。
 
 **2026-10-24固定单帧真实试验获授权**：用户明确同意仅原28.5秒登记图1次／1图／无重试、新增预算¥0.50。已保存专属授权，生产loader核源与提案／9源码SHA，原Sol/high预核PASS；Codex将仅执行一次新生产dispatch，不重跑旧任务。不要求重标，旧费用保持；结果及续作见[真实试验sprint](docs/exec-plans/sprint-static-observation-pilot.md)。

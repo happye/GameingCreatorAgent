@@ -4,7 +4,7 @@
 
 更新：2026-10-24，main。[本轮生成sprint](sprint-static-observation-generation.md)已离线交付；[HANDOFF](../../HANDOFF.md)是最新恢复入口。旧阶段见[接续清单](report-2026-10-24-dsh-resumption.md)及[历史分工](assignments-history-2026-10-22.md)。
 
-发布节点：源码／主报告fdd83d6及后续文档e9361e2已普通push成功。当前真实试验报告由Codex保存；无活跃源码写者，TD006仅只读定位。
+发布节点：源码／主报告fdd83d6及后续文档e9361e2已普通push成功。真实试验报告9e8e525本地保存，一次push因GitHub:443连接失败；不循环重试。无活跃源码写者，TD006仅只读定位。
 
 | 工作 | 负责人／范围 | 当前状态 |
 | --- | --- | --- |

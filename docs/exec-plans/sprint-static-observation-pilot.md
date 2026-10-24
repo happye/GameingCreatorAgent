@@ -25,3 +25,5 @@ Codex唯一执行者；同一评估者仅复核此次授权／实际typed结果�
 另三进程只做本地resume和两次查询：resume published／unchanged、providerRequestsSent0；按草案的同主体7条件命中1条，橙色＋上衣同部件条件命中0条，未把橙裤色拼给灰上衣。源时间28.5秒及原图片hash／evidence／partId读回一致。922旧文件前后及读回后SHA不变，新增7文件仅新静态库和新ledger／锁／attempt，无原响应落盘。唯一原Sol/high实际结果复核PASS（同角色，无重复源码评审）。
 
 本次用户已收到：能生成／保存／检索草案；费用为估算、视觉仍未知；下一推进TD006特殊源时钟自动映射的离线切片，不新增API或重标要求。人类画面对错仍null，F006/F009/F010false。证据位于ignored `artifacts/dsh-static-generation-20261024/real-*`，人类授权引用为本次request_user_input_async call_8170e4dce3eb450c8bbf162c18421a3a item0明确答复。详见[报告](report-2026-10-24-static-observation-pilot.md)。
+
+发布：文档9e8e525已本地提交；一次普通push于GitHub:443连接失败，远端仍e9361e2。不强推／循环重试；所有本机结果与授权／attempt已保留，后续实质节点再补推。

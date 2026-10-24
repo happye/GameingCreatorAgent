@@ -6,6 +6,8 @@
 
 发布事实：源码及主报告提交`fdd83d6`已于本轮普通push成功到origin/main（原远端958f70c→fdd83d6），此前9eb55f3／81216a5等本地成果亦随之同步；原GitHub不可连接为历史状态。本行的后续文档提交不改变已验源码。
 
+最新发布：真实试验文档提交`9e8e525`已本地保存，本次普通push遇GitHub:443连接失败（约21秒）；远端仍e9361e2，未把本次文档称为已推送。无强推／循环重试，后续有实质交付时再普通push；本机试验结果和账目不受影响。
+
 ## 已交付、验证和使用
 
 - 从Completed已登记单帧本地冻结proposal；具体新授权下至多一次生成；typed草案独立保存／发布；另一进程按同主体／同part查询；resume只补本地工作，不重新发图。合法空主体不造人。见[交付报告](docs/exec-plans/report-2026-10-24-static-observation-generation.md)、[sprint](docs/exec-plans/sprint-static-observation-generation.md)和[使用指南](docs/references/static-observation-generation-guide.md)。
