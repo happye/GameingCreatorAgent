@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-24冻结时自动盘点（Claude Code）**：freeze-benchmark --auto-inventory／工作台默认勾选，冻结时自动盘点计划来源并打包报告，结果与单独盘点字节一致。worktree隔离实现（sonnet）＋sonnet评估PASS，真实Atom异组12秒被拦；合入前完整verify 3517 passed／1项TD012偶发。
+
 **2026-10-24盘点识别黑边与镜像（Claude Code）**：source-inventory-v2自动裁黑边（cropdetect，保守只漏检不误判）并比较镜像；冻结同时接受v1／v2。真实加黑边／镜像片段由0候选变为正确偏移命中，17素材无新增误报。sonnet实现（86条）／sonnet评估PASS（42条），214定向测试通过。
 
 **2026-10-24冻结绑定素材盘点（Claude Code）**：新增benchmark-freeze-v2，冻结包原样保存source-inventory报告并按SHA核对来源，五类盘点阻断；v1字节与读取不变但绑定不再给独立测试集。opus设计／sonnet实现／opus独立评估PASS，326定向测试通过，5个已存冻结前后一致，真实Atom异组反例被拦。

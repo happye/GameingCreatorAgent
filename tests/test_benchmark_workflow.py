@@ -255,6 +255,17 @@ def test_status_query_waits_for_the_terminal_write(tmp_path, monkeypatch):
     assert value["busy"] is False and value["attempts"][-1]["status"] == "finished"
 
 
+@pytest.mark.parametrize("value", [[], {}, "bogus"])
+def test_malformed_inventory_source_is_rejected_as_changed_record(tmp_path, value):
+    manager = BenchmarkWorkflows(tmp_path)
+    identifier = manager.create({"name": "inventory-source"})["id"]
+    _, status, row, _ = persist_running_attempt(manager, identifier)
+    status.write_bytes(canonical_json({**row, "action": "freeze", "inventorySource": value}))
+    with pytest.raises(AppError) as caught:
+        manager.get(identifier)
+    assert caught.value.code == "input.benchmark_workflow"
+
+
 def test_fresh_snapshot_error_closes_the_observation_lock(tmp_path, monkeypatch):
     manager = BenchmarkWorkflows(tmp_path)
     identifier = manager.create({"name": "read-error"})["id"]

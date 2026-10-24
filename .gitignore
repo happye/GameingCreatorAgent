@@ -50,3 +50,4 @@ __pycache__/
 htmlcov/
 build/
 dist/
+.claude/worktrees/

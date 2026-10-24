@@ -10,7 +10,11 @@
 
 工作台扩展组原2项失败已修复（2026-10-24 Claude Code）：根因是Windows替换正被读取的状态文件会被拒绝（WinError5），验收流程status.json与素材批量state.json现由进程内锁串行；同组还更新了一条与ce934e0免责文字不符的过时断言。扩展10文件129项全部通过，独立code-quality-guard PASS；整仓verify未重跑，跨进程占用仍归TD012。见[sprint](docs/exec-plans/sprint-workbench-status-replace-race.md)。Claude原生九角色已合入（`.claude/agents/`，见[Claude分工指南](docs/references/claude-agent-routing-guide.md)），新会话需用`/agents`确认发现。
 
-## 2026-10-24盘点识别黑边与镜像（最新）
+## 2026-10-24冻结时自动盘点（最新）
+
+工作台冻结步骤默认勾选“冻结时自动盘点登记的录像”，CLI为`freeze-benchmark --auto-inventory`／`prepare-benchmark.ps1 -AutoInventory`：不必先单独运行盘点命令，冻结时本机自动比对计划内来源并打包报告，异组共用画面直接给出阻断。真实Atom异组计划12秒被拦。完整verify 3517 passed（1项TD012偶发）。见[sprint](docs/exec-plans/sprint-freeze-auto-inventory.md)。
+
+## 2026-10-24盘点识别黑边与镜像
 
 `inventory-sources`报告升级为`source-inventory-v2`：自动裁掉均匀黑边再比对，并额外比较左右镜像；冻结同时接受v1与v2报告。真实验证中加黑边与镜像的同源片段由“认不出”变为在正确偏移报告；17素材重跑无新增误报（仍仅Atom PV／实机）。见[sprint](docs/exec-plans/sprint-inventory-crop-mirror.md)。新报告`artifacts/source-inventory-20261024/report-v2.json`。
 

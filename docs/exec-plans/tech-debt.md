@@ -170,6 +170,8 @@ TD012补充（同轮）：一次完整回归的旧test_coverage_is_reported_with
 
 TD012补充（2026-10-24全量恢复后）：一次全量3440 passed中4失败，其中`test_benchmark_source_clock_browser`非零PTS区间末停（30秒等待超时、currentTime 2.73未到3.178）、`test_saved_detail_actor_browser`[390]、`test_media_preparation_jobs`“准备项目须位于artifacts内”／另一次“取消范围400而非404”均只在18分钟高负载全量中出现，单独连跑3次／单独重跑均通过；原因未定位、未加重试。
 
+TD012补充（2026-10-24 freeze-v2后完整verify）：3517 passed中唯一失败`test_detail_query_http::test_bad_match_requests_are_rejected_before_source_mutation[content_type]`为WinError10053本机连接中止，与2026-10-07记录同型；未定位、未加重试。
+
 Record debt when it is discovered; do not hide it in a passing feature. Review related entries during each sprint and close them with a tested change.
 
 | ID | Found | Severity | Impact | Proposed fix | Status |

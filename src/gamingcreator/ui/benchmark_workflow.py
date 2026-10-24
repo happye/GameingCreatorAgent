@@ -170,7 +170,7 @@ class BenchmarkWorkflows:
                 or re.fullmatch(r"\d{6}-[a-f0-9]{32}", path.parent.name) is None
                 or row["action"] not in STEPS
                 or ("inventorySource" in row and row["action"] != "freeze")
-                or row.get("inventorySource") not in {None, "auto", "provided"}
+                or row.get("inventorySource") not in (None, "auto", "provided")
                 or row["status"] not in {"running", "finished", "failed"}
                 or type(row["files"]) is not dict
                 or type(row["dependencies"]) is not dict
