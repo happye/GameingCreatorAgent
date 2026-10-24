@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-24 TD006发布成功**：c8b9667普通push到origin/main，原远端e9361e2及先前积压试验文档9e8e525／0790976一起同步；12个已验源码／测试Git blob与提交相同。256核心回归、静态与旧10参考生产CLI复用通过；工作台扩展275项2失败和唯一2passed窄probe保留，下一先修此可靠性边界再回真实质量门槛。原标注／费用／三缺口保持，当前无DSH watcher／源码写者。以下旧网络失败／RUNNING均为历史。
+
 **2026-10-24 TD006特殊源时钟自动映射已交付**：新两验收页对实证Chromium／MP4非零PTS及异步A/V自动换算、取时和区间末停，异常／无画面仍手动。正式256passed／0skip、静态检查、原Sol/high R1–R8 PASS；实际旧编辑包＋10参考生产CLI复用，37保护／922原项目SHA不变。四原生工程请求全COMPLETED且完整结果已取回，无watcher；主控监督遗漏、ignored只读基线入册及测试目录误选均纠正，原失败保留。F006/F009/F010false，旧费用／12标注纠正／六素材不变、无新录像API。下一回工作台状态可靠性，再回原真实质量路径。见[报告](docs/exec-plans/report-2026-10-24-source-clock-mapping.md)与[当前交接](HANDOFF.md)。下方旧RUNNING／下一TD006等均为历史。
 
 **2026-10-24额度恢复后接续原DSH并集中追修**：原时钟请求29a141ad…c232实际COMPLETED，已按resultHash读取保存报告，无重投。原Sol/high发现旧reference身份、seek超时假成功及可见播放器动态有效态三P1；同task新请求87da2a18…11ed RUNNING集中修R2/R3/R4/R6，不重做条码oracle、不要求重标或重新生成原包，正式计划／测试尚未跑。原Luna/high实际只读来源对齐：10有效参考只对应钟馗failed/coverage_gap，无同源Completed；32排名均异源，不能拿来替代真人质量证据。数据／费用保持，F006/F009/F010false；见[sprint](docs/exec-plans/sprint-source-clock-mapping.md)与ignored两个review／alignment记录。

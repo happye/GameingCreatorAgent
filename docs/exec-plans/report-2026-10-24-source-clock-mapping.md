@@ -17,13 +17,13 @@
 | source-clock-existing-reference | 1ea70b14-b505-4ec9-8fc8-a6ba8588e6b8 | valid／evidenceComplete／passed |
 | source-clock-direct | 7aae003a-80e1-4244-8373-dea824ff8a6c | valid／evidenceComplete／passed |
 
-12源码／测试原始SHA及规范Git blob已冻结，正式执行前后相同；最终提交再核对blob。回执捕获原stdout/stderr及执行、源、完整声明运行依赖指纹；command runner本身不证明pytest收集完整，主控另核JUnit非空、无失败／跳过。最终文档与Git保存之后不把旧sourceFingerprint称为当前完整树有效。
+12源码／测试原始SHA及规范Git blob已冻结，正式执行前后相同；最终源码提交c8b9667逐一核对12个blob相同，已普通push到origin/main。回执捕获原stdout/stderr及执行、源、完整声明运行依赖指纹；command runner本身不证明pytest收集完整，主控另核JUnit非空、无失败／跳过。最终文档与Git保存之后不把旧sourceFingerprint称为当前完整树有效。
 
 ## 工作台扩展回归的已知失败
 
 广回归275项273通过／2失败（137.239秒）。登记输出成功后替换status.json遇WinError5，残留状态变interrupted，会阻断该工作台步骤；HTTP参考导入CLI成功但返回缺busy的确切原因仍未证明。ui/benchmark_workflow.py本轮未改，不能称两故障已修或都属于同一竞态。原失败JUnit／stdout及guard计划保留；本次独立页面映射与生产CLI旧包复用通过，工作台整流程未通过。TD012新增复现，继续使用受影响工作台步骤前优先处理。
 
-最终运行清单仅排除已证在测试中被Chrome改写的debug.log输出，其他运行依赖保留；完整init通过，无工具链pyc漂移，另显式设置PYTHONDONTWRITEBYTECODE保护子进程。唯一窄复查两旧失败仅作probe，结果另存，不当根因已修证据。
+最终运行清单仅排除已证在测试中被Chrome改写的debug.log输出，其他运行依赖保留；完整init通过，无工具链pyc漂移，另显式设置PYTHONDONTWRITEBYTECODE保护子进程。唯一窄复查两旧失败2passed仅作probe，结果另存，不当根因已修证据。
 
 ## 支持范围与保护
 
