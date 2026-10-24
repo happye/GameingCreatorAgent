@@ -152,7 +152,7 @@ class BenchmarkWorkflows:
             with self._lock:
                 row = decode_object(read_bounded(_plain(path)))
             if (
-                set(row)
+                set(row) - {"inventorySource"}
                 != {
                     "attemptId",
                     "action",
@@ -169,6 +169,8 @@ class BenchmarkWorkflows:
                 or row["attemptId"] != path.parent.name
                 or re.fullmatch(r"\d{6}-[a-f0-9]{32}", path.parent.name) is None
                 or row["action"] not in STEPS
+                or ("inventorySource" in row and row["action"] != "freeze")
+                or row.get("inventorySource") not in {None, "auto", "provided"}
                 or row["status"] not in {"running", "finished", "failed"}
                 or type(row["files"]) is not dict
                 or type(row["dependencies"]) is not dict
@@ -349,10 +351,19 @@ class BenchmarkWorkflows:
         allowed = FIELDS[action]
         if action == "bind" and "freezeSha256" in fields:
             allowed = allowed | {"freezeSha256"}
-        if action == "freeze" and "inputText" in fields:
-            allowed = {"inputText"}  # optional source-inventory report; old clients send none
+        if action == "freeze":
+            # Optional uploaded source-inventory report or the automatic-inventory switch; old
+            # clients send nothing or only ``inputText``.
+            if not set(fields) <= {"inputText", "autoInventory"}:
+                raise _invalid()
+            allowed = set(fields)
         if set(fields) != allowed or any(type(value) is not str for value in fields.values()):
             raise _invalid()
+        if action == "freeze" and "autoInventory" in fields:
+            if fields["autoInventory"] not in {"true", "false"}:
+                raise _invalid()
+            if fields["autoInventory"] == "true" and fields.get("inputText"):
+                raise _invalid("上传盘点报告与自动盘点只能选一个。")
         if "inputText" in fields:
             value = cast(str, fields["inputText"])
             if value or action not in {"register", "freeze"}:
@@ -430,6 +441,14 @@ class BenchmarkWorkflows:
                     "elapsedMs": None,
                     "dependencies": dependencies,
                 }
+                if action == "freeze":
+                    row["inventorySource"] = (
+                        "auto"
+                        if fields.get("autoInventory") == "true"
+                        else "provided"
+                        if fields.get("inputText")
+                        else None
+                    )
                 _write(
                     parent / "request.json",
                     {"action": action, "fields": fields, "dependencies": dependencies},
@@ -479,14 +498,22 @@ class BenchmarkWorkflows:
                 )
             return _script("prepare-benchmark-references.py", arguments, self.repository), None
         if action == "freeze":
-            asyncio.run(
-                execute_freeze_benchmark(
-                    self._output(identifier, rows["references-import"]) / "benchmark-plan.json",
-                    output,
-                    self.repository,
-                    input_path if input_path.exists() else None,
+            plan_path = self._output(identifier, rows["references-import"]) / "benchmark-plan.json"
+            if fields.get("autoInventory") == "true":
+                asyncio.run(
+                    execute_freeze_benchmark(
+                        plan_path, output, self.repository, auto_inventory=True
+                    )
                 )
-            )
+            else:
+                asyncio.run(
+                    execute_freeze_benchmark(
+                        plan_path,
+                        output,
+                        self.repository,
+                        input_path if input_path.exists() else None,
+                    )
+                )
             return 0, None
         if action == "bind":
             asyncio.run(

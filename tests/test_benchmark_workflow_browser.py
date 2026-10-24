@@ -247,6 +247,7 @@ def test_freeze_step_shows_inventory_coverage_upload_and_legacy_notice(
             playwright.expect(freeze.locator(".inventory table")).to_be_visible(timeout=15000)
             assert "已比较" in freeze.locator(".inventory table").inner_text()
             text = freeze.locator(".inventory").inner_text()
+            assert "盘点报告来源：上传的盘点报告" in text
             assert "另有 1 处证据涉及未登记的来源" in text
             assert "未匹配不证明独立" in text
             playwright.expect(
@@ -259,6 +260,7 @@ def test_freeze_step_shows_inventory_coverage_upload_and_legacy_notice(
                 "没有报告不等于素材独立", timeout=15000
             )
             assert freeze.locator(".inventory table").count() == 0
+            assert "盘点报告来源：未提供" in freeze.locator(".inventory").inner_text()
 
             open_workflow(legacy)
             playwright.expect(freeze.locator(".inventory")).to_contain_text(
@@ -279,6 +281,68 @@ def test_freeze_step_shows_inventory_coverage_upload_and_legacy_notice(
                 "未发现共用画面证据（无证据，不等于独立）"
                 in freeze.locator(".inventory").inner_text()
             )
+            assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+            assert not errors and not foreign
+        finally:
+            browser.close()
+
+
+@pytest.mark.parametrize("width", [1366, 390])
+def test_freeze_step_auto_inventory_checkbox_defaults_on_excludes_upload_and_shows_origin(
+    tmp_path, request, monkeypatch, width
+):
+    from test_benchmark_inventory_binding import encode, report_for
+    from test_benchmark_workflow import fake_auto_inventory, references_imported
+
+    playwright = pytest.importorskip("playwright.sync_api")
+    manager, identifier, assets = references_imported(tmp_path, request, monkeypatch)
+    calls = fake_auto_inventory(monkeypatch, assets)
+    del manager
+    with workspace(tmp_path) as base, playwright.sync_playwright() as runtime:
+        browser = runtime.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(viewport={"width": width, "height": 900})
+            errors, foreign, posted = [], [], []
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            page.on(
+                "request",
+                lambda item: (
+                    foreign.append(item.url)
+                    if not item.url.startswith((base, "blob:", "data:"))
+                    else (
+                        posted.append(json.loads(item.post_data))
+                        if item.url.endswith("/api/benchmark-step")
+                        else None
+                    )
+                ),
+            )
+            page.goto(base + "/acceptance#" + identifier)
+            page.reload()
+            playwright.expect(page.locator("#current-name")).to_have_text("冻结盘点")
+            freeze = page.locator("[data-step=freeze]")
+            box = freeze.locator("#auto-inventory")
+            playwright.expect(box).to_be_checked()
+            playwright.expect(freeze).to_contain_text("冻结时自动盘点登记的录像")
+            report = {
+                "name": "盘点.json",
+                "mimeType": "application/json",
+                "buffer": encode(report_for(assets)),
+            }
+            file_input = freeze.locator("input[type=file]")
+            file_input.set_input_files(report)  # choosing a report switches automatic off
+            playwright.expect(box).not_to_be_checked()
+            box.check()  # and checking automatic again drops the chosen report
+            assert file_input.evaluate("node=>node.files.length") == 0
+            assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+            freeze.locator("button[type=submit]").click()
+            playwright.expect(freeze.locator(".inventory table")).to_be_visible(timeout=20000)
+            playwright.expect(freeze.locator(".inventory")).to_contain_text(
+                "盘点报告来源：自动盘点", timeout=15000
+            )
+            assert [item["fields"] for item in posted] == [
+                {"inputText": "", "autoInventory": "true"}
+            ]
+            assert len(calls) == 1
             assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
             assert not errors and not foreign
         finally:

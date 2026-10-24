@@ -4,7 +4,7 @@
         {id:"register", title:"1 · 登记录像和事前查询", help:"可从空表单开始，或选择已保存的登记草稿。完整计划导出前请明确用途和是否看过模型结果。", file:"登记草稿或没有人工判断的旧计划（可选）", button:"打开登记表单"},
         {id:"references", title:"2 · 看原片，登记人工参考", help:"选择登记表单导出的计划，也可从已有人工参考的计划开始。核对实际原片后打开标注页，来源与查询保持不变。", file:"待核对计划", button:"核对原片并打开标注页"},
         {id:"references-import", title:"3 · 保存并核对原片标注", help:"选择标注页下载的记录。再次核对原片身份和来源声明，生成待冻结计划；未确认的参考保持未确认。", file:"原片标注记录", button:"核对标注记录"},
-        {id:"freeze", title:"4 · 冻结来源、查询与参考", help:"保存事前资料和实际原片身份。可附上素材盘点报告，核对不同文件是否共用画面；没有报告会记录为阻断。准备不足时说明缺什么；冻结成功不会自动证明数据独立或验收通过。", file:"素材盘点报告（可选）", button:"冻结已核对计划"},
+        {id:"freeze", title:"4 · 冻结来源、查询与参考", help:"保存事前资料和实际原片身份。默认在本机自动盘点登记的录像，核对不同文件是否共用画面（不花钱）；也可改为上传已有报告。两者都没有会记录为阻断。准备不足时说明缺什么；冻结成功不会自动证明数据独立或验收通过。", file:"或上传已有素材盘点报告（可选，与自动盘点二选一）", button:"冻结已核对计划"},
         {id:"bind", title:"5 · 关联已完成的分析", help:"选择已有项目和本次用途，读取冻结录像对应的分析版本，再逐段明确选择。只读核对已有结果，不会开始视频分析。", file:"已有来源与任务对应表（可选）", button:"关联已完成分析"},
         {id:"ranking", title:"6 · 明确生成一次检索报告", help:"只在点击后按冻结查询搜索已有结果，保存原十位排名。混合与语义方式使用已有本机模型；不发送视觉分析，不付费。", button:"生成这次固定检索报告"},
         {id:"review", title:"7 · 回看固定十位，填写判断", help:"打开本次报告的候选评审页。缺位与重复不补位，可用评分必须对应事前参考；下载判断后回到这里计分。", button:"打开固定候选评审页"},
@@ -29,6 +29,7 @@
         const labels={"edit.html":"打开登记表单","review.html":row.action==="references"?"打开原片标注页":"打开候选评审页","benchmark-fixed-report.json":"查看原排名评分报告","record-template.json":"下载空记录模板","draft.json":"下载登记草稿","benchmark-plan.json":"下载待冻结计划","freeze.json":"查看冻结资料","source-inventory.json":"查看素材盘点报告","benchmark.json":"查看关联资料","benchmark-report.json":"查看固定检索报告","reference-record.json":"下载核对后的标注","review-record.json":"下载核对后的判断"};
         const links=text("div","","links"); for(const name of names){const link=text("a",labels[name] || name); link.href=fileUrl(row,name); if(name.endsWith(".html")){link.target="_blank";link.rel="noopener";}else{link.download=name;} links.append(link);} parent.append(links);
     }
+    const inventorySources={auto:"自动盘点（本机生成，未上传）",provided:"上传的盘点报告"};
     const inventoryStates={compared:"已比较",notComparable:"有效画面不足，未比较",failed:"盘点时读取失败",absent:"报告中没有此录像"};
     async function showInventory(card,row) {
         const identity=current.id, holder=text("div","","inventory"); card.append(holder);
@@ -37,7 +38,8 @@
             if(current?.id!==identity || !holder.isConnected) return;
             if(frozen.schemaVersion==="benchmark-freeze-v1"){holder.append(text("p","旧版冻结：未核对素材盘点，不能据此判断不同文件是否共用画面。","state"));return;}
             const inventory=frozen.sourceInventory;
-            if(!inventory){holder.append(text("p","未提供素材盘点报告，已记录阻断；没有报告不等于素材独立。","failed"));return;}
+            if(!inventory){holder.append(text("p","盘点报告来源：未提供","state"),text("p","未提供素材盘点报告，已记录阻断；没有报告不等于素材独立。","failed"));return;}
+            holder.append(text("p","盘点报告来源："+(inventorySources[row.inventorySource] || "来源未记录"),"state"));
             const table=document.createElement("table"), head=table.createTHead().insertRow();table.style.width="100%";table.style.tableLayout="fixed";table.style.overflowWrap="anywhere";
             for(const name of ["录像","盘点结果","盘点编号"]) head.append(text("th",name));
             const body=table.createTBody();
@@ -145,6 +147,12 @@
             card.append(text("p",latest?states[latest.status] || "状态无法识别":"尚未执行","state"));
             const locked=value.busy || (required[step.id] && !completed[required[step.id]]) || steps.slice(index+1).some(next=>completed[next.id]);
             if(step.file) inputLabel(form,step.file,"input-"+step.id,"file");
+            if(step.id==="freeze") {
+                const file=form.querySelector("input[type=file]"), wrapper=text("label","冻结时自动盘点登记的录像（本机，不花钱，较长素材需几分钟）"), box=document.createElement("input");
+                box.type="checkbox";box.id="auto-inventory";box.checked=true;wrapper.prepend(box);form.append(wrapper);
+                file.addEventListener("change",()=>{if(file.files.length)box.checked=false;});
+                box.addEventListener("change",()=>{if(box.checked)file.value="";});
+            }
             if(step.id==="bind") {inputLabel(form,"选择或填写已有项目（例如 artifacts/demo-phase0）","bind-project");selectLabel(form,"本次用途","bind-partition",[["","请明确选择"],["development","开发练习"],["test","独立验收测试"]]);if(pickerAvailable)installPicker(form,completed,locked);}
             if(step.id==="ranking") selectLabel(form,"检索方式","ranking-mode",[["hybrid","混合检索"],["lexical","词法检索"],["semantic","语义检索"]]);
             const button=text("button",step.button);button.type="submit";form.append(button);
@@ -163,7 +171,7 @@
         const identity=current.id, guard=revision, fields={}; let activeRevision=guard;
         for(const node of form.querySelectorAll("input,select,button")) node.disabled=true;
         try {
-            if(step.file) {const file=form.querySelector("input[type=file]").files[0];if(!file && step.id!=="register" && step.id!=="freeze" && !(step.id==="bind" && pickerAvailable))throw new Error("请先选择本步骤所需的JSON文件。");if(file && file.size>4194304)throw new Error("资料最多4MiB，请保留原文件并检查。");fields.inputText=file?await file.text():"";}
+            if(step.file) {const file=form.querySelector("input[type=file]").files[0];if(!file && step.id!=="register" && step.id!=="freeze" && !(step.id==="bind" && pickerAvailable))throw new Error("请先选择本步骤所需的JSON文件。");if(file && file.size>4194304)throw new Error("资料最多4MiB，请保留原文件并检查。");fields.inputText=file?await file.text():"";if(step.id==="freeze" && !file && form.querySelector("#auto-inventory").checked)fields.autoInventory="true";}
             if(guard!==revision || current?.id!==identity) return;
             if(step.id==="bind"){
                 fields.project=byId("bind-project").value.trim();fields.partition=byId("bind-partition").value;

@@ -42,7 +42,7 @@
 
 ## 用于冻结（`benchmark-freeze-v2`）
 
-冻结时可把本报告交给[验收准备](./benchmark-preparation-guide.md)（`-InventoryPath`／`--inventory`，工作台冻结步骤也可上传）。冻结包原样保存报告为`source-inventory.json`，严格接受`source-inventory-v1`（今天之前生成的报告继续有效，原字段集与原限制文案）和`source-inventory-v2`（来源多`crop`、候选多`mirrored`，新限制文案）。两者都校验字段集、`humanDecisionRequired`为true、`limitations`与对应版本的生成端文案完全一致、SHA256格式、来源编号唯一、候选引用已知来源，v2另校验`crop`为null或画面内的框、`mirrored`为布尔值；最大4MiB。限制文案若再修改，需要升级为新的报告版本。冻结派生记录里，v2的共用画面对带`mirrored`，v1报告派生内容与此前字节一致。冻结录像按SHA256匹配盘点来源（同SHA不同时长拒绝）；匹配不到时，仅当盘点失败项的路径（不区分大小写）相同才记为“读取失败”，否则记为“报告中没有”。
+冻结时可把本报告交给[验收准备](./benchmark-preparation-guide.md)（`-InventoryPath`／`--inventory`，工作台冻结步骤也可上传）；也可让冻结自己盘点（`-AutoInventory`／`--auto-inventory`，工作台默认勾选），用同一套代码对计划中的全部录像生成同样的报告字节并存进冻结包，无需先单独运行本命令，与上传互斥。冻结包原样保存报告为`source-inventory.json`，严格接受`source-inventory-v1`（今天之前生成的报告继续有效，原字段集与原限制文案）和`source-inventory-v2`（来源多`crop`、候选多`mirrored`，新限制文案）。两者都校验字段集、`humanDecisionRequired`为true、`limitations`与对应版本的生成端文案完全一致、SHA256格式、来源编号唯一、候选引用已知来源，v2另校验`crop`为null或画面内的框、`mirrored`为布尔值；最大4MiB。限制文案若再修改，需要升级为新的报告版本。冻结派生记录里，v2的共用画面对带`mirrored`，v1报告派生内容与此前字节一致。冻结录像按SHA256匹配盘点来源（同SHA不同时长拒绝）；匹配不到时，仅当盘点失败项的路径（不区分大小写）相同才记为“读取失败”，否则记为“报告中没有”。
 
 共用画面证据映射到冻结录像后，若两段登记在不同录制组、或跨开发／测试，冻结准备会列出阻断；有录像缺失、失败或有效画面不足也会阻断。未发现证据只显示“无证据”，不是“独立”；分组始终由人决定。旧v1冻结不核对盘点。
 

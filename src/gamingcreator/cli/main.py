@@ -1,8 +1,10 @@
 import argparse
 import asyncio
 import json
+import os
 import shutil
 import sys
+import tempfile
 from collections.abc import Callable, Sequence
 from dataclasses import asdict
 from datetime import UTC, datetime
@@ -217,6 +219,11 @@ def _parser() -> CliParser:
     freeze.add_argument("--input", type=Path, required=True)
     freeze.add_argument("--output", type=Path, required=True)
     freeze.add_argument("--inventory", type=Path, help="素材盘点报告JSON（可选，最大4MiB）")
+    freeze.add_argument(
+        "--auto-inventory",
+        action="store_true",
+        help="冻结时对计划中的全部录像本机盘点（不花钱，与--inventory互斥）",
+    )
     bind = commands.add_parser("bind-benchmark", help="把冻结验收素材绑定到已完成运行，不检索")
     bind.add_argument("--freeze", type=Path, required=True)
     bind.add_argument("--project", type=Path, required=True)
@@ -383,13 +390,15 @@ def _search_document(
     return document
 
 
+def _json_text(value: object) -> str:
+    return json.dumps(value, ensure_ascii=False, indent=2, default=str)
+
+
 def _write_json(path: Path, value: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + "." + uuid4().hex + ".tmp")
     try:
-        temporary.write_text(
-            json.dumps(value, ensure_ascii=False, indent=2, default=str), encoding="utf-8"
-        )
+        temporary.write_text(_json_text(value), encoding="utf-8")
         temporary.replace(path)
     finally:
         temporary.unlink(missing_ok=True)
@@ -1009,8 +1018,18 @@ async def execute_analyze(prepared: PreparedAnalyze, repository: Path) -> Analyz
 
 
 async def execute_freeze_benchmark(
-    input_path: Path, output: Path, repository: Path, inventory_path: Path | None = None
+    input_path: Path,
+    output: Path,
+    repository: Path,
+    inventory_path: Path | None = None,
+    auto_inventory: bool = False,
 ) -> dict[str, object]:
+    if auto_inventory and inventory_path is not None:
+        raise AppError(
+            "input.benchmark_preparation",
+            "自动盘点与上传盘点报告不能同时使用。",
+            ExitCode.INPUT,
+        )
     try:
         data = read_bounded(input_path)
         inventory = (
@@ -1021,26 +1040,44 @@ async def execute_freeze_benchmark(
         plan = loads_plan(data.decode("utf-8-sig"))
         processor = FfmpegMediaProcessor(repository)
         assets = {}
+        planned: list[Path] = []
         for source in plan.sources:
             path = Path(source.path)
             if not path.is_absolute():
                 path = input_path.parent / path
+            planned.append(path.resolve())
             assets[source.source_id] = await processor.probe(
-                path.resolve(), CancellationContext("benchmark-freeze", timeout_seconds=300)
+                planned[-1], CancellationContext("benchmark-freeze", timeout_seconds=300)
             )
-        frozen = freeze_document_v2(
-            plan, assets, datetime.now(UTC).isoformat(), None if inventory is None else inventory[1]
-        )
-        hashes = write_freeze(input_path, data, frozen, output, inventory)
+        with tempfile.TemporaryDirectory(prefix="gc-auto-inventory-") as scratch:
+            if auto_inventory:
+                # Same builder and serializer as ``inventory-sources``. The report reaches disk
+                # only inside the freeze bundle; the scratch copy feeds the writer's recheck.
+                report = await build_source_inventory(
+                    discover_sources(planned), processor, FfmpegSignatureExtractor(repository)
+                )
+                report_bytes = _json_text(report).replace("\n", os.linesep).encode("utf-8")
+                scratch_report = Path(scratch) / "source-inventory.json"
+                scratch_report.write_bytes(report_bytes)
+                inventory = (scratch_report, report_bytes)
+            frozen = freeze_document_v2(
+                plan,
+                assets,
+                datetime.now(UTC).isoformat(),
+                None if inventory is None else inventory[1],
+            )
+            hashes = write_freeze(input_path, data, frozen, output, inventory)
+        generated = "auto" if auto_inventory else "provided" if inventory is not None else None
         return {
             "schemaVersion": "benchmark-preparation-result-v1",
             "output": str(output.resolve()),
             "files": hashes,
             "frozenAt": frozen["frozenAt"],
             "preparation": frozen["preparation"],
-            "sourceInventory": inventory_result(
-                cast("dict[str, object] | None", frozen["sourceInventory"])
-            ),
+            "sourceInventory": {
+                **inventory_result(cast("dict[str, object] | None", frozen["sourceInventory"])),
+                "generated": generated,
+            },
             "qualityGate": None,
             "paidRequestsSent": 0,
         }
@@ -1481,6 +1518,7 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
                 args.output.resolve(),
                 Path.cwd(),
                 args.inventory.resolve() if args.inventory is not None else None,
+                args.auto_inventory,
             )
         )
     if args.command == "bind-benchmark":

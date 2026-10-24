@@ -533,3 +533,147 @@ def test_freeze_step_rejects_unreadable_inventory_before_any_attempt(
     with pytest.raises((AppError, ValueError)):
         manager.submit({"workflow": identifier, "action": "freeze", "fields": {"inputText": text}})
     assert len(manager.get(identifier)["attempts"]) == before
+
+
+def fake_auto_inventory(monkeypatch, assets, **report_options):
+    """Stand in for the FFmpeg inventory builder; discovery and freezing stay real."""
+    from test_benchmark_inventory_binding import report_for
+
+    import gamingcreator.cli.main as cli_main
+
+    calls = []
+
+    async def build(sources, prober, signer, *args, **kwargs):
+        calls.append(tuple(sources))
+        return report_for(assets, **report_options)
+
+    monkeypatch.setattr(cli_main, "build_source_inventory", build)
+    monkeypatch.setattr(cli_main, "FfmpegSignatureExtractor", lambda repository: object())
+    return calls
+
+
+@pytest.mark.parametrize(
+    "fields", [{"autoInventory": "true"}, {"inputText": "", "autoInventory": "true"}]
+)
+def test_freeze_step_auto_inventory_saves_generated_report_and_marks_origin(
+    tmp_path, request, monkeypatch, fields
+):
+    from gamingcreator.infrastructure.benchmark_preparation_files import read_freeze
+
+    manager, identifier, assets = references_imported(tmp_path, request, monkeypatch)
+    calls = fake_auto_inventory(monkeypatch, assets)
+    row = freeze_row(manager, identifier, fields)
+    assert row["status"] == "finished", row
+    assert row["inventorySource"] == "auto"
+    assert calls == [tuple(asset.source_path for asset in assets.values())]
+    assert set(row["files"]) == {
+        "plan-input.json",
+        "freeze.json",
+        "source-inventory.json",
+        "receipt.json",
+    }
+    frozen, _ = read_freeze(manager._output(identifier, row))
+    assert [item["status"] for item in frozen["sourceInventory"]["sources"]] == ["compared"]
+    assert "source_inventory_missing" not in frozen["preparation"]["blockers"]
+    assert not (manager.directory(identifier) / row["attemptId"] / "input.json").exists()
+    assert manager.get(identifier)["attempts"][-1]["inventorySource"] == "auto"
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"inputText": "UPLOAD", "autoInventory": "true"},
+        {"autoInventory": "yes"},
+        {"autoInventory": 1},
+        {"autoInventory": "true", "extra": ""},
+    ],
+)
+def test_freeze_step_rejects_conflicting_or_malformed_inventory_choice(
+    tmp_path, request, monkeypatch, fields
+):
+    from test_benchmark_inventory_binding import encode, report_for
+
+    manager, identifier, assets = references_imported(tmp_path, request, monkeypatch)
+    calls = fake_auto_inventory(monkeypatch, assets)
+    fields = {
+        key: encode(report_for(assets)).decode() if value == "UPLOAD" else value
+        for key, value in fields.items()
+    }
+    before = len(manager.get(identifier)["attempts"])
+    with pytest.raises((AppError, ValueError)):
+        manager.submit({"workflow": identifier, "action": "freeze", "fields": fields})
+    assert len(manager.get(identifier)["attempts"]) == before and not calls
+
+
+def test_freeze_step_origin_is_recorded_and_old_rows_stay_readable(tmp_path, request, monkeypatch):
+    from test_benchmark_inventory_binding import encode, report_for
+
+    manager, identifier, assets = references_imported(tmp_path, request, monkeypatch)
+    fake_auto_inventory(monkeypatch, assets)
+    declined = freeze_row(manager, identifier, {"inputText": "", "autoInventory": "false"})
+    assert declined["status"] == "finished" and declined["inventorySource"] is None
+    assert "source-inventory.json" not in declined["files"]
+    uploaded = freeze_row(manager, identifier, {"inputText": encode(report_for(assets)).decode()})
+    assert uploaded["inventorySource"] == "provided"
+    status = manager.directory(identifier) / uploaded["attemptId"] / "status.json"
+    document = json.loads(status.read_text(encoding="utf-8"))
+    del document["inventorySource"]  # rows written before this field existed
+    status.write_bytes(canonical_json(document))
+    assert "inventorySource" not in manager.get(identifier)["attempts"][-1]
+
+
+def test_freeze_step_auto_inventory_failure_keeps_attempt_and_retry_works(
+    tmp_path, request, monkeypatch
+):
+    import gamingcreator.cli.main as cli_main
+
+    manager, identifier, assets = references_imported(tmp_path, request, monkeypatch)
+
+    async def broken(sources, prober, signer, *args, **kwargs):
+        raise AppError("environment.media_tool", "媒体工具不可用。", ExitCode.ENVIRONMENT)
+
+    monkeypatch.setattr(cli_main, "build_source_inventory", broken)
+    monkeypatch.setattr(cli_main, "FfmpegSignatureExtractor", lambda repository: object())
+    failed = freeze_row(manager, identifier, {"autoInventory": "true"})
+    assert failed["status"] == "failed" and failed["files"] == {}
+    assert failed["inventorySource"] == "auto"
+    fake_auto_inventory(monkeypatch, assets)
+    retry = freeze_row(manager, identifier, {"autoInventory": "true"})
+    assert retry["status"] == "finished" and retry["attemptId"] != failed["attemptId"]
+
+
+def test_http_freeze_step_auto_inventory_succeeds_and_upload_conflict_is_rejected(
+    tmp_path, request, monkeypatch
+):
+    from test_benchmark_inventory_binding import encode, report_for
+
+    _, identifier, assets = references_imported(tmp_path, request, monkeypatch)
+    calls = fake_auto_inventory(monkeypatch, assets)
+    with workspace(tmp_path) as base:
+
+        def post(fields):
+            code, _, body = get(
+                base,
+                "/api/benchmark-step",
+                method="POST",
+                data=json.dumps(
+                    {"workflow": identifier, "action": "freeze", "fields": fields}
+                ).encode(),
+                headers={"Content-Type": "application/json"},
+            )
+            return code, json.loads(body)
+
+        both = {"inputText": encode(report_for(assets)).decode(), "autoInventory": "true"}
+        code, _ = post(both)
+        assert code == 400 and not calls
+        code, value = post({"inputText": "", "autoInventory": "true"})
+        assert code == 202
+        deadline = time.monotonic() + 20
+        while value["busy"] and time.monotonic() < deadline:
+            time.sleep(0.03)
+            _, _, body = get(base, "/api/benchmark-workflow?" + urlencode({"workflow": identifier}))
+            value = json.loads(body)
+        row = value["attempts"][-1]
+        assert row["status"] == "finished", row
+        assert row["action"] == "freeze" and row["inventorySource"] == "auto"
+        assert "source-inventory.json" in row["files"] and len(calls) == 1

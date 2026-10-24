@@ -31,6 +31,14 @@
 ./scripts/prepare-benchmark.ps1 -InputPath artifacts/acceptance-plan.json -OutputDirectory artifacts/acceptance-freeze-001 -InventoryPath artifacts/source-inventory.json
 ```
 
+不想单独跑盘点时，改用`-AutoInventory`（命令行`--auto-inventory`，与`-InventoryPath`互斥，同时给出按输入错误拒绝）：
+
+```powershell
+./scripts/prepare-benchmark.ps1 -InputPath artifacts/acceptance-plan.json -OutputDirectory artifacts/acceptance-freeze-001 -AutoInventory
+```
+
+冻结时对计划中的全部录像（路径解析与冻结相同：相对路径按计划文件所在目录）本机运行同一个盘点（和`inventory-sources`同一套代码与序列化，报告字节一致），再把得到的报告作为`source-inventory.json`存进冻结包；报告不写进素材目录。本机不花钱，较长素材需要几分钟。单个录像盘点失败按报告规则记入`failedSources`，冻结照常完成并由`source_inventory_incomplete`阻断；盘点工具本身不可用（例如缺ffmpeg）则整次冻结失败，不写出不完整的冻结包。结果JSON的`sourceInventory.generated`为`auto`（自动）、`provided`（上传）或`null`（未提供）。工作台冻结步骤默认勾选“冻结时自动盘点登记的录像”，选择上传报告会取消勾选，两者只能选一个；步骤记录与页面显示报告来源。
+
 `-InventoryPath`（命令行`--inventory`）可选，指向[素材盘点](./source-inventory-guide.md)生成的`source-inventory-v1`报告（最大4MiB，超出会拒绝，不静默放宽）。新冻结一律写`benchmark-freeze-v2`：报告字节原样保存为`source-inventory.json`（回执列3个文件），并按SHA256把每个冻结录像对到盘点来源。盘点必须来自冻结用的原字节；重编码副本SHA不同，会显示为“报告中没有”，须对原文件重跑盘点。同一SHA但时长不同视为输入错误，拒绝冻结。没有提供报告时只存2个文件，`sourceInventory`为null，并记录阻断`source_inventory_missing`。旧的`benchmark-freeze-v1`冻结（含已保存的原片参考页）按原规则继续可读，只是从未核对素材盘点，工作台标注“未核对素材盘点”，不因此升级或改写。**v1冻结绑定后永远不会产生独立测试集**（`independentTestSet`恒为false，即使其v1准备状态显示就绪）；独立测试集只能来自带完整盘点的v2冻结。冻结包回执只能发现不一致的单处改动，无法阻止有人一致地同时改写多个文件，它不是身份认证。
 
 v2在原有缺口之外新增阻断：`source_inventory_incomplete`（有录像在报告中缺失或盘点失败）、`source_inventory_not_comparable`（有效画面不足，没参与比较）、`shared_footage_has_different_recording_groups`（盘点发现共用画面的两段录像登记在不同录制组）、`shared_footage_crosses_partitions`（共用画面跨开发／测试）。这些阻断不会替你分组，只提示你回头核对；盘点没发现共用画面只表示“无证据”，不证明独立，也不会自动把阻断以外的独立性声明变成认证。命令结果的`sourceInventory`字段列出各来源的盘点状态；工作台冻结步骤可选上传盘点JSON，并显示覆盖表和限制说明。
