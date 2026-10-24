@@ -1,23 +1,18 @@
 # 当前分工与恢复入口
 
-更新：2026-10-24，main。本轮交付见[静态观察sprint](sprint-static-observation-index.md)，产品状态见[总览](current-status.md)，恢复身份见[HANDOFF](../../HANDOFF.md)。旧节点与执行中／待授权分工见[历史快照](assignments-history-2026-10-22.md)，不据历史PID、许可或owner启动任务。
+更新：2026-10-24，main。[本轮生成sprint](sprint-static-observation-generation.md)已离线交付；[HANDOFF](../../HANDOFF.md)是最新恢复入口。旧阶段见[接续清单](report-2026-10-24-dsh-resumption.md)及[历史分工](assignments-history-2026-10-22.md)。
 
-用户因剩约12%额度要求当前交付后暂停；无新实施派发。自动生成只读设计已返回并保存next-static-observation-generation.md。当前task三请求已结束，stop接受但控制器仍STOP_PENDING（无运行轮次／队列，后台工具静止未证），恢复先核活动，禁止重投旧任务。
-
-接手统一先看[四项DSH交付与新版规则接续清单](report-2026-10-24-dsh-resumption.md)。本对话的协作审计已保存；用户在另一对话修改工具代码与Skill，本对话仅确认新版Skill内容，外部代码加载／验收待定向核实。
-
-| 工作 | 负责人／文件责任 | 当前状态 |
+| 工作 | 负责人／范围 | 当前状态 |
 | --- | --- | --- |
-| 特殊源时钟验收资格／TD006 | 原生DSH唯一写benchmark_review.py与两测试；Codex合同／测试／公共docs／Git，唯一Sol/high评估 | 已完成：64项／静态检查／R1–R5 PASS；两请求结束，非零自动映射仍待做 |
-| 独立静态观察／TD009 | Astra/low一次设计，DSH唯一写八源码／测试，Codex合同／测试／docs／Git，唯一Sol/high评估 | 已交付：202通过／1权限skip，质量检查与R1–R9 PASS；三个请求结束，无活跃源码写者 |
-| 静态观察自动生成的下一合同 | Codex协调／只读设计，尚未派实施 | 先定Provider／费用／恢复边界；禁止把新素材可用当作发图授权 |
-| 新增三游戏六素材 | 用户已提供；Luna/high只读目录盘点，Codex记录 | 路径登记完成；无probe／分析／真人参考，无需现在再补 |
-| 验收步骤完成状态可靠读取／TD014 | 原生DSH唯一写benchmark_workflow.py及其测试；Codex合同／测试／公共docs／Git，Luna/high定位，唯一Sol/high并发评估 | 已完成：29项／静态检查及独立评估PASS，86旧文件不变；task/session已结束，不运行旧录像 |
-| 进度、里程碑、素材需求与文档事实对齐 | Codex唯一写公共Markdown；既有task_explorer Luna/high只读核素材 | 本次已完成；不改产品代码／数据／费用 |
-| DSH已有细节排名兼容与来源绑定 | 原生DSH唯一写retrieval.py及两个测试文件；Codex合同／测试／集成；唯一Sol/high独立评估 | 已交付caa29d0，98项／Ruff／mypy与评估PASS；无活跃源码写者 |
-| 长钟馗P1修复与同run接续 | 既有Generator／guard与主控 | 已结束，269成功／3缺口；禁止重启旧launcher |
-| F006独立质量、F009/F010真实理解验收 | Codex协调；真人负责真实来源／事前参考／固定候选判断 | 待现有记录分组与新增代表素材等依赖，未分配新的付费执行或实现worker |
+| 单注册帧生成、专属授权、一次发送与本地恢复 | DSH唯一写六源码／三测试；Codex合同／正式检查／docs／Git | 两请求COMPLETED；159passed／1权限skip、静态、包通过，无活跃源码写者 |
+| 接口定位 | task_explorer，gpt-6-luna/high，只读 | 已完成，实际型号核实，未重复委派 |
+| 合同及费用／持久化／并发／部件语义评估 | 唯一task_quality_guard，gpt-6.1-sol/high | 五项首轮FAIL后同角色复核PASS；不叠普通reviewer |
+| 真实单帧试验 | Codex本地prepare；用户决定具体新费用许可 | 28.5秒单帧proposal已冻结，零发送；未授权，不重跑旧任务 |
+| 独立静态声明导入／检索 | 前轮DSH、Codex及唯一评估 | 81216a5已交付；202passed／1skip；本轮旧store／matcher保持 |
+| TD014／TD006／已有细节排名 | 原DSH与Codex | 各已交付，报告和验证保留；特殊源时钟非零自动映射仍后续 |
+| 长钟馗与已存人评／素材 | 原工程结果与用户既有输入 | 269成功／3缺口、469观察及费用保存；12标注／纠正、6新增素材保留，不重做 |
+| F006/F009/F010真实质量 | Codex协调；真人真实判断 | 尚未通过；旧待核画面不催，依赖只阻断相应质量步骤 |
 
-DSH同项目目录workspace `f4395711-a8fb-49a3-ad95-7305ce9ea1e8`；最后已交付task `gamingcreator-static-observations-20261023`／session `codex-35d31548-8d46-4f1b-b8dc-1886e7f8f355`，三请求完成、停止状态STOP_PENDING。10月22日排名task是历史任务，其余task／session见[清单](report-2026-10-24-dsh-resumption.md)，不再作为当前恢复身份。本轮开发模型调用与录像API账本分开，不把协作声称免费。
+同workspace f4395711-a8fb-49a3-ad95-7305ce9ea1e8；当前已交付task gamingcreator-static-generation-20261024／session codex-d988fa9d-3d21-4604-b2f2-26c5b46d9d90。旧静态task STOP_PENDING保留，当前无轮次／队列，不重投或再次cancel；其它历史任务不恢复成新写者。工程DSH模型用量关联partial，费用未知，与录像API旧账分开。
 
-后续按[依赖计划](phase-0-plan.md)及[人工待办](human-inputs.md)先确定一个有用户效果的主要交付，再分配源码owner；有独立写任务才建worktree。已存标注继续用，旧费用和未知保持；无新录像授权，不开展补窗／另两段分析。正式质量通过前不转入创作规划、成片渲染、桌面和商业阶段。新工程合同先核当前Git基线，不复用提交前回执作当前证据。
+下一按[单帧提案](../../artifacts/dsh-static-generation-20261024/real-single-frame-proposal.json)的具体新授权决定是否做一次真实接受性验证；未批准前不发图、不修改真实静态账本。现有授权内独立离线工作可继续，F006/F009/F010保持false。

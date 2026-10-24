@@ -1,5 +1,9 @@
 # Progress Log
 
+**2026-10-24单注册帧自动静态生成离线交付**：已有Completed注册帧可prepare冻结、专属具体授权下一次生成、typed保存／发布并由新进程同actor／part查询；resume只做本地工作。唯一Sol/high首评五项反例已一次集中追修：独立授权额度、损坏账本失败关闭、既有授权身份、os._exit四断点、显式parts-v2防跨衣物／持有物拼条件。最终159passed／1权限skip、九文件Ruff／格式／六源码mypy、相同双wheel及隔离导入、独评PASS；37保护SHA不变，原数据／费用／12标注及纠正保持。真实28.5秒单帧提案仅本地prepare，922旧项目文件不变，零发送／未授权；拟¥0.50上限的1次试验等具体许可，不重跑旧任务、不重标。F006/F009/F010false，旧STOP_PENDING保留。见[交付报告](docs/exec-plans/report-2026-10-24-static-observation-generation.md)、[sprint](docs/exec-plans/sprint-static-observation-generation.md)。下方为本次恢复和此前历史节点。
+
+**2026-10-24恢复下一主交付**：用户/goal明确持续DSH协作；读取最新版Skill、HANDOFF和接手清单，旧三个请求均COMPLETED，实时running=false／queue=0，STOP_PENDING及旧阻断保留。工具fc47d97的优化仅Skill／手册／benchmark；本次CLI已加载当前模块，无Host重启需求。环境85份pyc从已验SHA原安装包恢复并备份原字节，未改回执／系统配置。Luna/high接口地图完成，唯一Sol/high正评单帧静态生成R1–R9合同；DSH尚未派发，本轮合成素材/fake transport，旧API任务与标注保持。见[sprint](docs/exec-plans/sprint-static-observation-generation.md)。
+
 **2026-10-24补正DSH交接入口**：工程交付此前有记录，但首页／分工下方恢复身份仍指向10月22日旧任务，暂停后审计及用户外部优化也缺入口。已统一四项交付的报告、task／session、验证、最新STOP_PENDING及下一自动生成草案；已读新版Skill，外部工具代码加载尚未验证。见[接续清单](docs/exec-plans/report-2026-10-24-dsh-resumption.md)。仅文档补正，无新DSH派发、测试或录像费用，保留暂停状态。
 
 **2026-10-24按用户要求暂停**：剩约12%额度，手头静态声明入口已交付本地81216a5；当前产品与资料已保存，普通push仍GitHub:443失败。自动生成只完成Astra/low设计，尚未开新实施。DSH三个请求COMPLETED，stop接受且原生无运行轮次／队列，控制器因后台工具静止未证保留STOP_PENDING；不再派新send/run／审批，不杀共享Host，下次先只读核状态。六新增素材已记，原片／费用／标注保持。

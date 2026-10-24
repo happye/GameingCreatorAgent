@@ -1,5 +1,9 @@
 # Errors
 
+## 2026-10-24: resumption command and output discipline
+
+`/goal` already created an active goal; read it rather than creating a second goal. `recover` accepts task selectors but no summary/view flags; use plain recover and save its output, then summary on supported commands. Native session/list uses `_request`, not request or an empty envelope. PowerShell scripts may leave a stale LASTEXITCODE; check script success/explicit behavior, and external process codes immediately. Keep returned batches bounded; never dump whole receipts, wide historical docs, or arrays to diagnose a single state. Search existing exact paths, avoid Windows wildcard path operands, and use verified archive bytes to repair drift rather than rewriting installation receipts.
+
 ## [ERR-20261022-PUBLISH] GitHub unavailable during documentation publication
 
 Two ordinary, non-force pushes of the status/documentation milestone failed to connect to github.com:443 after about 21 seconds each. Local documentation commit 11bbf80 and subsequent handoff/freeze-order clarification remain saved; source-code delivery caa29d0 had been pushed previously. No more retries in this audit. Resume with `git push origin main` after connectivity returns; do not repeat footage or labeling work. Current publication details are in HANDOFF.md and ignored artifacts/status-alignment-20261022/.

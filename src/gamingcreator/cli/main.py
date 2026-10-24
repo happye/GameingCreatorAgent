@@ -79,6 +79,11 @@ from gamingcreator.application.retrieval import (
 from gamingcreator.application.search_detail_query import match_search_details, search_run_ids
 from gamingcreator.application.storage import RunStatus
 from gamingcreator.application.tasks import tasks_payload
+from gamingcreator.cli.static_observation_generation import (
+    execute_dispatch_static_observation_generation,
+    execute_prepare_static_observation_generation,
+    execute_resume_static_observation_generation,
+)
 from gamingcreator.cli.static_observations import (
     execute_import_static_observations,
     execute_search_static_observations,
@@ -277,6 +282,29 @@ def _parser() -> CliParser:
     search_static.add_argument("--collection", required=True)
     search_static.add_argument("--input", type=Path, required=True)
     search_static.add_argument("--format", choices=("json",), default="json")
+    prepare_static = commands.add_parser(
+        "prepare-static-observation-generation",
+        help="离线冻结一个已完成注册帧的静态生成提案，不调用模型",
+    )
+    prepare_static.add_argument("--project", type=Path, required=True)
+    prepare_static.add_argument("--run", required=True)
+    prepare_static.add_argument("--collection", required=True)
+    prepare_static.add_argument("--evidence", required=True)
+    prepare_static.add_argument("--output", type=Path, required=True)
+    dispatch_static = commands.add_parser(
+        "dispatch-static-observation-generation",
+        help="按冻结提案与人类授权至多显式发送一次单帧静态观察请求",
+    )
+    dispatch_static.add_argument("--project", type=Path, required=True)
+    dispatch_static.add_argument("--proposal", type=Path, required=True)
+    dispatch_static.add_argument("--authorization", type=Path, required=True)
+    resume_static = commands.add_parser(
+        "resume-static-observation-generation",
+        help="只恢复既有尝试的本地结算与发布，不重新发送图片",
+    )
+    resume_static.add_argument("--project", type=Path, required=True)
+    resume_static.add_argument("--proposal", type=Path, required=True)
+    resume_static.add_argument("--authorization", type=Path, required=True)
     return parser
 
 
@@ -1349,6 +1377,32 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
                 args.input.resolve(),
             )
         )
+    if args.command == "prepare-static-observation-generation":
+        return asyncio.run(
+            execute_prepare_static_observation_generation(
+                args.project.resolve(),
+                args.run,
+                args.collection,
+                args.evidence,
+                args.output.resolve(),
+            )
+        )
+    if args.command == "dispatch-static-observation-generation":
+        return asyncio.run(
+            execute_dispatch_static_observation_generation(
+                args.project.resolve(),
+                args.proposal.resolve(),
+                args.authorization.resolve(),
+            )
+        )
+    if args.command == "resume-static-observation-generation":
+        return asyncio.run(
+            execute_resume_static_observation_generation(
+                args.project.resolve(),
+                args.proposal.resolve(),
+                args.authorization.resolve(),
+            )
+        )
     if args.command == "search-project":
         return asyncio.run(
             execute_project_search(
@@ -1517,6 +1571,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             if args.command == "benchmark" and outcome.get("qualityGate") is not True:
                 return int(ExitCode.BENCHMARK)
             if args.command == "prepare-media-batch":
+                return int(cast(int, outcome["exitCode"]))
+            if args.command in (
+                "dispatch-static-observation-generation",
+                "resume-static-observation-generation",
+            ):
                 return int(cast(int, outcome["exitCode"]))
         elif outcome is not None:
             print(
