@@ -96,7 +96,7 @@
         human_labels_required:"还需要人工事前参考和候选评分",
         freeze_and_bind_required:"还需要冻结评测计划并关联已完成分析",
         feature_claims_remain_false:"检索质量（F006）和理解改进（F009／F010）尚未通过，这里不会标记为通过",
-        A_or_B_or_D_coverage_gap:"长钟馗3个拒绝窗口如何处理：A保留缺口／B另立补窗费用提案／D暂缓（工具不会替你选）"
+        A_or_B_or_D_coverage_gap:"长钟馗3个拒绝窗口如何处理：A保留缺口／B另立补窗费用提案／D暂缓"
     };
     const readinessText=(code)=>(readinessLabels[code] || "其他条件未满足")+"（"+code+"）";
     function fillBindReadiness(panel, statusNode, payload) {
