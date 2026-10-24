@@ -375,6 +375,41 @@ def test_live_batch_lock_refuses_second_writer(batch):
     asyncio.run(scenario())
 
 
+def test_checkpoint_waits_for_an_open_state_read(batch, monkeypatch):
+    # Windows refuses os.replace onto an open file; a UI read must not fail the job checkpoint.
+    import threading
+
+    import gamingcreator.infrastructure.media_batch_files as module
+
+    project, _, _, _, execute = batch
+    first = asyncio.run(execute())
+    reading, hold, real_read = threading.Event(), [True], module.read_batch_bytes
+
+    def slow_read(path):
+        if hold and path.name == "state.json":
+            hold.clear()
+            with path.open("rb"):
+                reading.set()
+                time.sleep(0.3)
+        return real_read(path)
+
+    monkeypatch.setattr(module, "read_batch_bytes", slow_read)
+    files = MediaBatchFiles(project, first["batchId"])
+    files.acquire()
+    try:
+        hold.clear()
+        plan, state, digest = files.load()
+        hold.append(True)
+        reader = threading.Thread(target=MediaBatchFiles(project, first["batchId"]).load)
+        reader.start()
+        assert reading.wait(5)
+        files.save(state, plan, digest)
+        reader.join(5)
+    finally:
+        files.close()
+    assert MediaBatchFiles(project, first["batchId"]).load()[1] == state
+
+
 def test_killed_preparation_process_resumes_original_running_task(batch, tmp_path):
     project, input_path, config_path, media, execute = batch
     data = json.loads(input_path.read_text(encoding="utf-8-sig"))

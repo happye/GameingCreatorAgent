@@ -94,7 +94,9 @@ def test_workspace_flow_forms_playback_download_import_and_reload(tmp_path, requ
             playwright.expect(
                 page.locator("[data-step=freeze] button[type=submit]")
             ).to_be_enabled()
-            assert page.locator("#overall").inner_text().endswith("检索质量尚未验证")
+            overall = page.locator("#overall").inner_text()
+            assert " · 检索质量尚未验证 · " in overall
+            assert overall.endswith("验收就绪只是资格汇总，不等于已验收或 F006 通过。")
             page.locator("[data-step=freeze] button[type=submit]").click()
             # tmp repository has no toolchain: failure is retained, with an explicit retry button.
             playwright.expect(page.locator("[data-step=freeze] .failed")).to_be_visible(

@@ -1,4 +1,4 @@
-# 当前交接：TD006特殊源时钟自动映射已交付
+# 当前交接：工作台状态可靠性已修复，回到真实质量路径
 
 更新：2026-10-24，Phase 0，main。新准备的两种验收页面，对已验证Chromium／MP4非零PTS及异步音视频可自动换算、取时、定位同规范区间并末停；未知／不支持仍手填。旧页面包、原12标注及纠正保持，不要求重标。见[报告](docs/exec-plans/report-2026-10-24-source-clock-mapping.md)、[sprint](docs/exec-plans/sprint-source-clock-mapping.md)及[当前里程碑](docs/exec-plans/current-status.md)。
 
@@ -8,7 +8,7 @@
 - 单注册帧真实试验已结束：原28.5秒图＋parts-v2唯一一次HTTP200，1主体／7typed属性，另进程正例1／跨衣物负例0，本地resume零发送。估算¥0.001492（1016输入／119输出tokens，未核账单）；¥0.50许可的一次额度已用尽，剩余钱不允许追加。run f601fb9b3e734d5ea188fc15c790acbb，attempt205f8efdee85311c7190dfc57bfb4a13。见[试验报告](docs/exec-plans/report-2026-10-24-static-observation-pilot.md)。
 - 静态声明导入／parts查询、单帧prepare／具体授权／一次发送／本地resume，以及TD014状态可靠性均已交付；历史证据沿原报告保留。F006／F009／F010仍false，真人准确性未通过。
 
-工作台扩展组另有2项失败（登记终态写status.json的WinError5、导入HTTP缺busy，后者根因未定）；275项273通过，不能声称整流程通过。原失败及生成日志指纹问题保留；最终三组通过只证明独立TD006与旧包CLI。下一在复用受影响工作台步骤前先处理该可靠性边界，详见TD012及报告。
+工作台扩展组原2项失败已修复（2026-10-24 Claude Code）：根因是Windows替换正被读取的状态文件会被拒绝（WinError5），验收流程status.json与素材批量state.json现由进程内锁串行；同组还更新了一条与ce934e0免责文字不符的过时断言。扩展10文件129项全部通过，独立code-quality-guard PASS；整仓verify未重跑，跨进程占用仍归TD012。见[sprint](docs/exec-plans/sprint-workbench-status-replace-race.md)。Claude原生九角色已合入（`.claude/agents/`，见[Claude分工指南](docs/references/claude-agent-routing-guide.md)），新会话需用`/agents`确认发现。
 
 ## DSH恢复入口与加载
 
@@ -24,7 +24,7 @@
 
 已有12标注与用户纠正（10有效：Boss1／连招5／剧情4）、六新增素材全部保留，当前不要求重做或再补文件。只读来源对齐证明10正例对应钟馗failed／coverage_gap，32旧排名均异源，无同源Completed可作有效覆盖投影。F006须原来源独立性／事前参考／明确Completed绑定／固定Top10人评；原v5画面对错按“稍后核对”留空。
 
-下一先处理已复现工作台完成状态可靠性，再回原真实质量计划，复用已有资料；仅在实际触发来源确认、新参考或具体新费用提案时按[人工清单](docs/exec-plans/human-inputs.md)提醒，不重复催同待办。不转入后续成片／正式桌面／商业阶段。发布状态另见本文件末尾及本机publication.json，不能从旧网络失败推定当前远端。
+工作台可靠性已处理；下一回原真实质量计划，复用已有资料；仅在实际触发来源确认、新参考或具体新费用提案时按[人工清单](docs/exec-plans/human-inputs.md)提醒，不重复催同待办。不转入后续成片／正式桌面／商业阶段。发布状态另见本文件末尾及本机publication.json，不能从旧网络失败推定当前远端。
 
 发布：功能／报告提交`c8b9667`已普通push成功（origin/main从e9361e2更新到c8b9667），此前单帧试验文档9e8e525和0790976亦已同步。25文件保存，12个已验源码／测试Git blob与最终提交一致，工作树干净。此前GitHub连接失败为历史，不是当前阻塞；隔离工具修复51f42dd仍仅本地工具分支，未合入主工具安装。
 

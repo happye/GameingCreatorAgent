@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import re
+import threading
 from contextlib import suppress
 from dataclasses import asdict
 from datetime import UTC, datetime
@@ -23,6 +24,10 @@ from gamingcreator.application.media_batch import (
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.local_files import LocalInputReader
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
+
+# Windows refuses to replace an open file and to open one being replaced, so state.json reads
+# (UI catalog/resume threads) and the job thread's checkpoint replace share one process lock.
+_STATE_IO = threading.Lock()
 
 
 def read_batch_bytes(path: Path) -> bytes:
@@ -200,11 +205,12 @@ class MediaBatchFiles:
         )
         digest = _sha(files["plan.json"])
         state_path = self.directory / "state.json"
-        state = (
-            _decode(read_batch_bytes(state_path))
-            if state_path.exists()
-            else initial_batch_state(plan, digest)
-        )
+        with _STATE_IO:
+            state = (
+                _decode(read_batch_bytes(state_path))
+                if state_path.exists()
+                else initial_batch_state(plan, digest)
+            )
         validate_batch_state(state, plan, digest)
         return plan, state, digest
 
@@ -221,7 +227,8 @@ class MediaBatchFiles:
                 stream.write(data)
                 stream.flush()
                 os.fsync(stream.fileno())
-            temporary.replace(self.directory / "state.json")
+            with _STATE_IO:
+                temporary.replace(self.directory / "state.json")
         except (OSError, ValueError, UnicodeError):
             raise AppError(
                 "storage.batch_checkpoint",

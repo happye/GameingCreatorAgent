@@ -203,6 +203,58 @@ def test_terminal_status_between_running_read_and_lock_observation_is_returned(
     assert manager.get(identifier)["attempts"][-1]["status"] == terminal
 
 
+def test_terminal_write_waits_for_an_open_status_read(tmp_path, monkeypatch):
+    # Windows refuses os.replace onto an open file (WinError 5); the terminal write must wait.
+    import gamingcreator.ui.benchmark_workflow as module
+
+    manager = BenchmarkWorkflows(tmp_path)
+    identifier = manager.create({"name": "open-read"})["id"]
+    reading, hold = threading.Event(), []
+    real_read, real_execute = module.read_bounded, manager._execute
+
+    def slow_read(path, *arguments):
+        if hold and path.name == "status.json":
+            hold.clear()
+            with path.open("rb"):
+                reading.set()
+                time.sleep(0.3)
+        return real_read(path, *arguments)
+
+    def gated_execute(*arguments):
+        result = real_execute(*arguments)
+        assert reading.wait(5)
+        return result
+
+    monkeypatch.setattr(module, "read_bounded", slow_read)
+    monkeypatch.setattr(manager, "_execute", gated_execute)
+    manager.submit({"workflow": identifier, "action": "register", "fields": {"inputText": ""}})
+    hold.append(True)
+    manager.get(identifier)
+    row = completed(manager, identifier)["attempts"][-1]
+    assert row["status"] == "finished" and row["exitCode"] == 0
+
+
+def test_status_query_waits_for_the_terminal_write(tmp_path, monkeypatch):
+    # Contract: a status query started during the terminal write waits for it to finish.
+    import gamingcreator.ui.benchmark_workflow as module
+
+    manager = BenchmarkWorkflows(tmp_path)
+    identifier = manager.create({"name": "terminal-write"})["id"]
+    writing, real_write = threading.Event(), module._write
+
+    def slow_write(path, document):
+        if path.name == "status.json" and document["status"] != "running":
+            writing.set()
+            time.sleep(0.3)
+        real_write(path, document)
+
+    monkeypatch.setattr(module, "_write", slow_write)
+    manager.submit({"workflow": identifier, "action": "register", "fields": {"inputText": ""}})
+    assert writing.wait(20)
+    value = manager.get(identifier)
+    assert value["busy"] is False and value["attempts"][-1]["status"] == "finished"
+
+
 def test_fresh_snapshot_error_closes_the_observation_lock(tmp_path, monkeypatch):
     manager = BenchmarkWorkflows(tmp_path)
     identifier = manager.create({"name": "read-error"})["id"]

@@ -10,6 +10,7 @@
 
 | 工作 | 负责人／范围 | 当前状态 |
 | --- | --- | --- |
+| 工作台状态文件并发替换修复（TD012子项） | Claude Code主控单Agent写两源码／三测试；code-quality-guard（请求opus）独立评估、替换站点扫描（请求sonnet）均只读 | 2026-10-24完成：扩展129passed，评估PASS；见sprint-workbench-status-replace-race.md |
 | 单注册帧生成、专属授权、一次发送与本地恢复 | DSH唯一写六源码／三测试；Codex合同／正式检查／docs／Git | 两请求COMPLETED；159passed／1权限skip、静态、包通过，无活跃源码写者 |
 | 接口定位 | task_explorer，gpt-6-luna/high，只读 | 已完成，实际型号核实，未重复委派 |
 | 合同及费用／持久化／并发／部件语义评估 | 唯一task_quality_guard，gpt-6.1-sol/high | 五项首轮FAIL后同角色复核PASS；不叠普通reviewer |

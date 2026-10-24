@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-24工作台状态可靠性修复（Claude Code）**：TD006回归遗留的登记interrupted与导入缺busy两项失败定位为Windows替换正被读取文件的WinError5同进程竞态，验收status.json与素材批量state.json读写加进程内锁；3新确定性测试先红后绿，扩展129项全通过，code-quality-guard PASS，整仓未重跑。Claude九角色bundle提交cherry-pick合入main，AGENTS.md补指针，积压文档与新提交已推送。F006/F009/F010仍false，无新付费调用。见sprint-workbench-status-replace-race.md。
+
 **2026-10-24发布补记**：源码c8b9667已普通push成功；后续发布事实文档23a812e的push又遇GitHub:443连接失败，文档及本记录本地保存，未称远端已同步。本节点不再重试，后续有实质交付再补推；不重跑源码验收／DSH／旧录像任务。下方源码发布成功事实保持。
 
 **2026-10-24 TD006发布成功**：c8b9667普通push到origin/main，原远端e9361e2及先前积压试验文档9e8e525／0790976一起同步；12个已验源码／测试Git blob与提交相同。256核心回归、静态与旧10参考生产CLI复用通过；工作台扩展275项2失败和唯一2passed窄probe保留，下一先修此可靠性边界再回真实质量门槛。原标注／费用／三缺口保持，当前无DSH watcher／源码写者。以下旧网络失败／RUNNING均为历史。

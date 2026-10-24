@@ -147,7 +147,10 @@ class BenchmarkWorkflows:
         directory = self.directory(identifier)
         attempts = []
         for path in sorted(directory.glob("[0-9]*-*/status.json")):
-            row = decode_object(read_bounded(_plain(path)))
+            # Windows refuses to replace an open file and to open one being replaced, so status
+            # reads and the worker's terminal write are serialized by the same in-process lock.
+            with self._lock:
+                row = decode_object(read_bounded(_plain(path)))
             if (
                 set(row)
                 != {
@@ -581,9 +584,11 @@ class BenchmarkWorkflows:
         finally:
             row["elapsedMs"] = round((time.perf_counter() - start) * 1000, 3)
             try:
-                _write(
-                    self.directory(identifier) / cast(str, row["attemptId"]) / "status.json", row
-                )
+                with self._lock:
+                    _write(
+                        self.directory(identifier) / cast(str, row["attemptId"]) / "status.json",
+                        row,
+                    )
             finally:
                 lock.close()
 
