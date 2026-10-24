@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 
+from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.source_inventory import (
     build_source_inventory,
     discover_sources,
@@ -18,11 +19,16 @@ from gamingcreator.application.source_inventory import (
 from gamingcreator.cli.main import main
 from gamingcreator.domain.errors import AppError
 from gamingcreator.domain.footage_overlap import (
+    CropBox,
     OverlapParameters,
     binomial_log_sf,
+    choose_crop,
     difference_hash,
+    find_shared_footage,
     find_shared_offsets,
     frame_signature,
+    frame_signature_pair,
+    mirror_rows,
     pixel_stdev,
 )
 from gamingcreator.infrastructure.ffmpeg_media import FfmpegMediaProcessor
@@ -223,6 +229,74 @@ def test_parameters_validate_and_serialize() -> None:
             OverlapParameters(**bad)  # type: ignore[arg-type]
 
 
+def test_mirror_rows_flips_each_row_and_the_pair_hashes_one_buffer() -> None:
+    pixels = list(range(18))
+    assert mirror_rows(pixels, 9) == [*range(8, -1, -1), *range(17, 8, -1)]
+    assert mirror_rows(mirror_rows(pixels, 9), 9) == pixels
+    with pytest.raises(ValueError):
+        mirror_rows([1, 2, 3, 4], 3)
+    generator = random.Random(5)
+    frame = [generator.randrange(256) for _ in range(72)]
+    normal, mirrored = frame_signature_pair(frame)
+    assert normal == frame_signature(frame)
+    assert mirrored == difference_hash(mirror_rows(frame))
+    assert mirrored != normal
+    assert frame_signature_pair([7] * 72) == (None, None)
+    # A frame and its mirror hash alike only when the mirror equals the original.
+    flipped_normal, flipped_mirrored = frame_signature_pair(mirror_rows(frame))
+    assert flipped_normal == mirrored and flipped_mirrored == normal
+
+
+def test_choose_crop_adopts_only_dark_border_trims_of_enough_area() -> None:
+    wide = CropBox(1920, 800, 0, 140)
+    assert choose_crop(wide, 1920, 1080) == wide
+    assert choose_crop(None, 1920, 1080) is None
+    assert choose_crop(CropBox(1920, 1080, 0, 0), 1920, 1080) is None  # nothing removed
+    assert choose_crop(CropBox(1912, 1074, 4, 3), 1920, 1080) is None  # vignette under 2%
+    assert choose_crop(CropBox(600, 400, 100, 100), 1920, 1080) is None  # below 40% of the area
+    assert choose_crop(CropBox(1920, 800, 0, 400), 1920, 1080) is None  # outside the frame
+    assert choose_crop(CropBox(0, 800, 0, 0), 1920, 1080) is None
+    assert choose_crop(CropBox(1920, 800, -2, 0), 1920, 1080) is None
+    assert choose_crop(wide, 0, 1080) is None
+    assert wide.to_dict() == {"width": 1920, "height": 800, "x": 0, "y": 140}
+
+
+def test_mirrored_match_is_reported_and_a_same_range_duplicate_is_merged() -> None:
+    generator = random.Random(41)
+    a = random_sequence(42, 200)
+    # B shows A[40:120] only after the left-right mirror (hashes then live in b_mirrored).
+    mirror_hits: list[int | None] = [
+        *random_sequence(44, 20),
+        *(flip_bits(value or 0, 4, generator) for value in a[40:120]),
+        *random_sequence(45, 30),
+    ]
+    plain = random_sequence(46, len(mirror_hits))
+    assert find_shared_footage(a, plain, plain) == ()
+    found = find_shared_footage(a, plain, mirror_hits)
+    assert [(item.mirrored, item.shared.offset_samples) for item in found] == [(True, 20)]
+    assert find_shared_footage(a, plain, None) == ()
+    assert find_shared_footage(a, mirror_hits, plain)[0].mirrored is False
+    # Symmetric footage matches in both orientations over the same range: reported once.
+    both = find_shared_footage(a, mirror_hits, mirror_hits)
+    assert len(both) == 1 and both[0].mirrored is False
+    with pytest.raises(ValueError):
+        find_shared_footage(a, plain, mirror_hits[:-1])
+
+
+def test_two_distant_segments_in_different_orientations_are_both_kept() -> None:
+    a = random_sequence(47, 300)
+    plain = list(random_sequence(48, 300))
+    mirrored = list(random_sequence(49, 300))
+    for index in range(80):
+        plain[index] = a[index + 150]  # offset +150, as filmed
+        mirrored[200 + index] = a[20 + index]  # offset -180, only as mirrored
+    found = find_shared_footage(a, plain, mirrored)
+    assert sorted((item.mirrored, item.shared.offset_samples) for item in found) == [
+        (False, 150),
+        (True, -180),
+    ]
+
+
 def make_video(destination: Path, spec: str, seconds: int) -> None:
     subprocess.run(
         [
@@ -316,7 +390,7 @@ def test_inventory_reports_derived_overlap_duplicates_and_nothing_else(
     media_directory: Path,
 ) -> None:
     report = run_inventory([media_directory])
-    assert report["schemaVersion"] == "source-inventory-v1"
+    assert report["schemaVersion"] == "source-inventory-v2"
     assert report["humanDecisionRequired"] is True
     sources = {Path(str(s["path"])).name: s for s in report["sources"]}  # type: ignore[attr-defined]
     assert set(sources) == {"原片.mp4", "派生 片.mp4", "无关.mp4", "纯色.mp4", "副本.mp4"}
@@ -368,7 +442,7 @@ def test_cli_writes_atomic_report_and_refuses_source_directory_output(
     assert "处理失败" in printed and "损坏.mp4" in printed
     assert "票／" in printed and "帧相近" not in printed
     document = json.loads(output.read_text(encoding="utf-8"))
-    assert document["schemaVersion"] == "source-inventory-v1"
+    assert document["schemaVersion"] == "source-inventory-v2"
     assert not list(output.parent.glob("*.tmp"))
     before = sorted(path.name for path in media_directory.iterdir())
     inside = media_directory / "report.json"
@@ -395,3 +469,162 @@ def test_discovery_orders_recursively_and_rejects_missing_or_empty_inputs(tmp_pa
     with pytest.raises(AppError):
         ensure_output_outside_sources(tmp_path / "out.json", [tmp_path], found)
     ensure_output_outside_sources(tmp_path.parent / "elsewhere" / "out.json", [tmp_path], found)
+
+
+def make_variant(original: Path, destination: Path, scale: str, post: str) -> None:
+    """Other footage first, then the original at ``scale``, then ``post`` (pad or hflip)."""
+    subprocess.run(
+        [
+            str(FFMPEG),
+            "-hide_banner",
+            "-nostdin",
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-t",
+            "3",
+            "-i",
+            "gradients=size=160x96:rate=10:speed=0.05",
+            "-t",
+            "16",
+            "-i",
+            str(original),
+            "-filter_complex",
+            f"[0:v]scale={scale},setsar=1,fps=10[p];[1:v]scale={scale},setsar=1,fps=10[o];"
+            f"[p][o]concat=n=2:v=1:a=0,{post}[v]",
+            "-map",
+            "[v]",
+            "-c:v",
+            "libx264",
+            "-crf",
+            "30",
+            "-pix_fmt",
+            "yuv420p",
+            "-y",
+            str(destination),
+        ],
+        check=True,
+        capture_output=True,
+        creationflags=subprocess.CREATE_NO_WINDOW,
+    )
+
+
+@pytest.fixture(scope="module")
+def crop_mirror_directory(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    if not FFMPEG.is_file():
+        pytest.skip("Project-local FFmpeg not prepared")
+    directory = tmp_path_factory.mktemp("黑边 镜像")
+    make_video(directory / "原片.mp4", "mandelbrot=size=160x96:rate=10", 24)
+    # Same footage shrunk into a 320x192 canvas with black borders (pillar and letter box).
+    make_variant(
+        directory / "原片.mp4", directory / "黑边.mp4", "224:128", "pad=320:192:48:32:black"
+    )
+    make_variant(directory / "原片.mp4", directory / "镜像.mp4", "320:192", "hflip")
+    make_video(directory / "无关.mp4", "testsrc2=size=160x96:rate=10", 20)
+    return directory
+
+
+def plain_v1_hashes(source: Path) -> list[int | None]:
+    """Signature hashes with the literal v1 filter, independent of the extractor's code."""
+    raw = subprocess.run(
+        [
+            str(FFMPEG),
+            "-hide_banner",
+            "-nostdin",
+            "-v",
+            "error",
+            "-i",
+            str(source),
+            "-an",
+            "-vf",
+            "fps=2,scale=9:8:flags=area,format=gray",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "gray",
+            "pipe:1",
+        ],
+        check=True,
+        capture_output=True,
+        creationflags=subprocess.CREATE_NO_WINDOW,
+    ).stdout
+    return [frame_signature(list(raw[i : i + 72])) for i in range(0, len(raw), 72)]
+
+
+def test_uncropped_source_has_no_crop_and_the_v1_signature(crop_mirror_directory: Path) -> None:
+    extractor = FfmpegSignatureExtractor(ROOT)
+    context = CancellationContext("test", 120)
+    source = crop_mirror_directory / "无关.mp4"
+    signature = asyncio.run(extractor.signature(source, 20_000_000, context))
+    assert signature.crop is None
+    assert list(signature.hashes) == plain_v1_hashes(source)
+    assert signature.informative_frames > 30
+    assert len(signature.mirrored_hashes) == len(signature.hashes)
+    assert [m is None for m in signature.mirrored_hashes] == [h is None for h in signature.hashes]
+
+
+def test_inventory_finds_black_border_and_mirrored_derivatives_with_offsets(
+    crop_mirror_directory: Path,
+) -> None:
+    report = run_inventory([crop_mirror_directory])
+    assert report["schemaVersion"] == "source-inventory-v2"
+    sources = {Path(str(s["path"])).name: s for s in report["sources"]}  # type: ignore[attr-defined]
+    assert set(sources) == {"原片.mp4", "黑边.mp4", "镜像.mp4", "无关.mp4"}
+    assert sources["无关.mp4"]["crop"] is None
+    assert sources["镜像.mp4"]["crop"] is None
+    box = sources["黑边.mp4"]["crop"]
+    assert box is not None
+    assert (box["x"], box["y"]) == pytest.approx((48, 32), abs=4)  # type: ignore[index]
+    assert (box["width"], box["height"]) == pytest.approx((224, 128), abs=6)  # type: ignore[index]
+    parameters = report["parameters"]
+    identity = FfmpegSignatureExtractor.identity
+    assert parameters["cropDetectFilter"] == identity.crop_detect_filter  # type: ignore[index]
+    assert parameters["cropFilter"] == "crop=W:H:X:Y"  # type: ignore[index]
+    assert parameters["minCropAreaFraction"] == 0.4  # type: ignore[index]
+    assert parameters["mirror"] is True  # type: ignore[index]
+    assert "cropdetect=limit=24:round=2:reset=0" in parameters["cropDetectFilter"]  # type: ignore[index]
+    found = {
+        (Path(c["pathA"]).name, Path(c["pathB"]).name): c
+        for c in report["sharedFootageCandidates"]  # type: ignore[attr-defined]
+    }
+    # The two derivatives also share the original's footage with each other (mirrored).
+    assert set(found) == {
+        ("原片.mp4", "黑边.mp4"),
+        ("原片.mp4", "镜像.mp4"),
+        ("镜像.mp4", "黑边.mp4"),
+    }
+    bordered = found[("原片.mp4", "黑边.mp4")]
+    mirrored = found[("原片.mp4", "镜像.mp4")]
+    assert bordered["mirrored"] is False and mirrored["mirrored"] is True
+    assert found[("镜像.mp4", "黑边.mp4")]["mirrored"] is True
+    for key, item in found.items():
+        # Both derivatives start with 3 s of other footage, so they line up with each other.
+        expected = 0.0 if key[0] == "镜像.mp4" else -3.0
+        assert item["offsetSeconds"] == pytest.approx(expected, abs=1.0)
+        assert item["matchedVotes"] >= 20 and item["correctedPValue"] <= 1e-6
+    assert report["limitations"][1] == (  # type: ignore[index]
+        "裁切（非均匀黑边）、大面积叠字、变速及很短的低动作镜头仍可能漏检。"
+    )
+    assert len(report["limitations"]) == 4  # type: ignore[arg-type]
+
+
+def test_black_border_is_missed_without_the_crop_step(crop_mirror_directory: Path) -> None:
+    """Guards the fixture: the v1 signature (no crop) cannot see the bordered derivative."""
+    original = plain_v1_hashes(crop_mirror_directory / "原片.mp4")
+    bordered = plain_v1_hashes(crop_mirror_directory / "黑边.mp4")
+    assert find_shared_offsets(original, bordered) == ()
+
+
+def test_summary_marks_mirrored_evidence(
+    crop_mirror_directory: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    output = tmp_path / "out" / "inventory.json"
+    assert (
+        main(["inventory-sources", "--input", str(crop_mirror_directory), "--output", str(output)])
+        == 0
+    )
+    printed = capsys.readouterr().out
+    assert "镜像，偏移" in printed and printed.count("偏移") == 3
+    document = json.loads(output.read_text(encoding="utf-8"))
+    assert any(c["mirrored"] for c in document["sharedFootageCandidates"])

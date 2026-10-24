@@ -10,7 +10,11 @@
 
 工作台扩展组原2项失败已修复（2026-10-24 Claude Code）：根因是Windows替换正被读取的状态文件会被拒绝（WinError5），验收流程status.json与素材批量state.json现由进程内锁串行；同组还更新了一条与ce934e0免责文字不符的过时断言。扩展10文件129项全部通过，独立code-quality-guard PASS；整仓verify未重跑，跨进程占用仍归TD012。见[sprint](docs/exec-plans/sprint-workbench-status-replace-race.md)。Claude原生九角色已合入（`.claude/agents/`，见[Claude分工指南](docs/references/claude-agent-routing-guide.md)），新会话需用`/agents`确认发现。
 
-## 2026-10-24冻结计划绑定素材盘点（最新）
+## 2026-10-24盘点识别黑边与镜像（最新）
+
+`inventory-sources`报告升级为`source-inventory-v2`：自动裁掉均匀黑边再比对，并额外比较左右镜像；冻结同时接受v1与v2报告。真实验证中加黑边与镜像的同源片段由“认不出”变为在正确偏移报告；17素材重跑无新增误报（仍仅Atom PV／实机）。见[sprint](docs/exec-plans/sprint-inventory-crop-mirror.md)。新报告`artifacts/source-inventory-20261024/report-v2.json`。
+
+## 2026-10-24冻结计划绑定素材盘点
 
 新冻结一律为`benchmark-freeze-v2`：`freeze-benchmark --inventory <盘点报告>`（工作台冻结步骤可上传）把报告原样打包并核对每个来源；缺盘点、来源缺失／失败／无法比较、共用画面分到不同组或跨开发／测试都会阻断就绪。v1保持字节不变但不再能给出独立测试集。真实反例（Atom PV／实机异组）被拦下。326定向测试通过、code-quality-guard PASS。见[sprint](docs/exec-plans/sprint-freeze-source-inventory.md)。下一步仍待用户确认分组与是否补原始录像；离线可继续的是F009／F010等不依赖人工的改进。
 

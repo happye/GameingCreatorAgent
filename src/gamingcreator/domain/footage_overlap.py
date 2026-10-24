@@ -47,6 +47,83 @@ def frame_signature(
     return difference_hash(pixels, width, height)
 
 
+def mirror_rows(pixels: Sequence[int], width: int = HASH_WIDTH) -> list[int]:
+    """The same pixel buffer flipped left-right (every row reversed)."""
+    if width < 1 or not pixels or len(pixels) % width:
+        raise ValueError("Pixel count must be a positive multiple of width.")
+    mirrored: list[int] = []
+    for base in range(0, len(pixels), width):
+        mirrored.extend(reversed(pixels[base : base + width]))
+    return mirrored
+
+
+def frame_signature_pair(
+    pixels: Sequence[int],
+    width: int = HASH_WIDTH,
+    height: int = HASH_HEIGHT,
+    min_stdev: float = MIN_FRAME_STDEV,
+) -> tuple[int | None, int | None]:
+    """Hashes of the frame and of its left-right mirror from one buffer (both ``None`` if flat)."""
+    normal = frame_signature(pixels, width, height, min_stdev)
+    if normal is None:
+        return None, None
+    return normal, difference_hash(mirror_rows(pixels, width), width, height)
+
+
+MIN_CROP_AREA_FRACTION = 0.4
+MIN_CROP_REMOVED_FRACTION = 0.02
+
+
+@dataclass(frozen=True, slots=True)
+class CropBox:
+    """Content rectangle inside a frame, in source pixels."""
+
+    width: int
+    height: int
+    x: int
+    y: int
+
+    def to_dict(self) -> dict[str, int]:
+        return {"width": self.width, "height": self.height, "x": self.x, "y": self.y}
+
+
+def choose_crop(
+    detected: CropBox | None,
+    frame_width: int,
+    frame_height: int,
+    min_area_fraction: float = MIN_CROP_AREA_FRACTION,
+    min_removed_fraction: float = MIN_CROP_REMOVED_FRACTION,
+) -> CropBox | None:
+    """Adopt a detected content box only when it plausibly is a border-trimmed picture.
+
+    The detector (a dark-edge scan over the whole video) already guarantees that everything
+    outside the box was dark. The box must lie inside the frame, remove at least
+    ``min_removed_fraction`` of the width or of the height (tiny vignettes are ignored so
+    uncropped footage keeps its plain signature) and keep at least ``min_area_fraction`` of the
+    frame area (a mostly dark video must not shrink to a sliver).
+    """
+    if detected is None or frame_width <= 0 or frame_height <= 0:
+        return None
+    if (
+        detected.width <= 0
+        or detected.height <= 0
+        or detected.x < 0
+        or detected.y < 0
+        or detected.x + detected.width > frame_width
+        or detected.y + detected.height > frame_height
+    ):
+        return None
+    removed_width = frame_width - detected.width
+    removed_height = frame_height - detected.height
+    if removed_width < frame_width * min_removed_fraction and (
+        removed_height < frame_height * min_removed_fraction
+    ):
+        return None
+    if detected.width * detected.height < frame_width * frame_height * min_area_fraction:
+        return None
+    return detected
+
+
 @dataclass(frozen=True, slots=True)
 class OverlapParameters:
     """Explicit detection parameters; every value is recorded in the inventory report."""
@@ -290,3 +367,48 @@ def find_shared_offsets(
             )
         )
     return tuple(accepted)
+
+
+@dataclass(frozen=True, slots=True)
+class SharedFootage:
+    """A shared offset and whether B had to be mirrored left-right to match A."""
+
+    shared: SharedOffset
+    mirrored: bool
+
+
+def find_shared_footage(
+    a: Sequence[int | None],
+    b: Sequence[int | None],
+    b_mirrored: Sequence[int | None] | None,
+    parameters: OverlapParameters | None = None,
+) -> tuple[SharedFootage, ...]:
+    """Evidence from A against B as-is and, when given, against B's left-right mirror.
+
+    Both orientations are tested independently (the multiple-testing correction is per
+    orientation). Results are merged by significance, and a less significant one whose A or B
+    time range overlaps an already kept result is dropped, as within a single orientation.
+    """
+    candidates = [SharedFootage(item, False) for item in find_shared_offsets(a, b, parameters)]
+    if b_mirrored is not None:
+        if len(b_mirrored) != len(b):
+            raise ValueError("Mirrored sequence must have the same length.")
+        candidates.extend(
+            SharedFootage(item, True) for item in find_shared_offsets(a, b_mirrored, parameters)
+        )
+    candidates.sort(
+        key=lambda item: (item.shared.log10_corrected_p, -item.shared.matched_votes, item.mirrored)
+    )
+    kept: list[SharedFootage] = []
+    for item in candidates:
+        shared = item.shared
+        if any(
+            shared.a_first_seconds <= other.shared.a_last_seconds
+            and other.shared.a_first_seconds <= shared.a_last_seconds
+            or shared.b_first_seconds <= other.shared.b_last_seconds
+            and other.shared.b_first_seconds <= shared.b_last_seconds
+            for other in kept
+        ):
+            continue
+        kept.append(item)
+    return tuple(kept)

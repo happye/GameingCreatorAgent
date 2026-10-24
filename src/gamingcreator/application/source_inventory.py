@@ -12,15 +12,24 @@ from typing import Protocol
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.footage_overlap import (
+    CropBox,
     OverlapParameters,
-    SharedOffset,
-    find_shared_offsets,
+    SharedFootage,
+    find_shared_footage,
 )
 from gamingcreator.domain.media import MediaAsset
 
-SCHEMA = "source-inventory-v1"
+SCHEMA = "source-inventory-v2"
+SCHEMA_V1 = "source-inventory-v1"
 DEFAULT_TIMEOUT_SECONDS = 3600.0
 LIMITATIONS = (
+    "匹配是共用画面的证据；未匹配不证明独立。",
+    "裁切（非均匀黑边）、大面积叠字、变速及很短的低动作镜头仍可能漏检。",
+    "票数是相邻偏移上的相关投票，概率只是名义排序分数，不是精确概率。",
+    "本报告不自动分配录制组，也不改变冻结计划，分组须人工决定。",
+)
+# Texts of reports already written as source-inventory-v1; they stay valid for freezing.
+LIMITATIONS_V1 = (
     "匹配是共用画面的证据；未匹配不证明独立。",
     "裁切、黑边、镜像、大面积叠字、变速可能导致漏检。",
     "票数是相邻偏移上的相关投票，概率只是名义排序分数，不是精确概率。",
@@ -44,6 +53,11 @@ class SignatureIdentity:
     sampling_filter: str
     min_stdev: float
     samples_per_second: int
+    crop_detect_filter: str
+    crop_filter: str
+    min_crop_area_fraction: float
+    min_crop_removed_fraction: float
+    mirror: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,6 +66,12 @@ class SourceSignature:
 
     hashes: tuple[int | None, ...]
     samples_per_second: int
+    mirrored_hashes: tuple[int | None, ...]
+    crop: CropBox | None
+
+    def __post_init__(self) -> None:
+        if len(self.mirrored_hashes) != len(self.hashes):
+            raise ValueError("Mirrored hashes must align with the hashes.")
 
     @property
     def sampled_frames(self) -> int:
@@ -123,8 +143,9 @@ def _context(timeout_seconds: float) -> CancellationContext:
 
 
 def _candidate(
-    source_a: str, source_b: str, paths: tuple[str, str], shared: SharedOffset
+    source_a: str, source_b: str, paths: tuple[str, str], footage: SharedFootage
 ) -> dict[str, object]:
+    shared = footage.shared
     return {
         "sourceA": source_a,
         "sourceB": source_b,
@@ -144,6 +165,7 @@ def _candidate(
         "aLastSeconds": shared.a_last_seconds,
         "bFirstSeconds": shared.b_first_seconds,
         "bLastSeconds": shared.b_last_seconds,
+        "mirrored": footage.mirrored,
     }
 
 
@@ -199,6 +221,7 @@ async def build_source_inventory(
             },
             "sampledFrames": signature.sampled_frames,
             "informativeFrames": signature.informative_frames,
+            "crop": None if signature.crop is None else signature.crop.to_dict(),
         }
         entries.append(entry)
         if signature.informative_frames < settings.min_compared:
@@ -237,13 +260,18 @@ async def build_source_inventory(
             (entry_a, signature_a), (entry_b, signature_b) = usable[first], usable[second]
             if entry_a["sha256"] == entry_b["sha256"]:
                 continue
-            for shared in find_shared_offsets(signature_a.hashes, signature_b.hashes, settings):
+            for footage in find_shared_footage(
+                signature_a.hashes,
+                signature_b.hashes,
+                signature_b.mirrored_hashes if identity.mirror else None,
+                settings,
+            ):
                 candidates.append(
                     _candidate(
                         str(entry_a["sourceId"]),
                         str(entry_b["sourceId"]),
                         (str(entry_a["path"]), str(entry_b["path"])),
-                        shared,
+                        footage,
                     )
                 )
     return {
@@ -254,6 +282,11 @@ async def build_source_inventory(
             "hash": identity.hash_name,
             "samplingFilter": identity.sampling_filter,
             "minFrameStdev": identity.min_stdev,
+            "cropDetectFilter": identity.crop_detect_filter,
+            "cropFilter": identity.crop_filter,
+            "minCropAreaFraction": identity.min_crop_area_fraction,
+            "minCropRemovedFraction": identity.min_crop_removed_fraction,
+            "mirror": identity.mirror,
             "sampleTimeBasis": (
                 "序号/采样率，相对首个视频帧的近似秒；不代表逐帧 PTS 精度。"
                 "offsetSeconds = A 时间 - B 时间。"
@@ -284,7 +317,8 @@ def inventory_summary(report: dict[str, object]) -> list[str]:
     ]
     for item in candidates:
         lines.append(
-            f"  {item['sourceA']} 与 {item['sourceB']}：偏移 {item['offsetSeconds']:+.1f} 秒，"
+            f"  {item['sourceA']} 与 {item['sourceB']}："
+            f"{'镜像，' if item['mirrored'] else ''}偏移 {item['offsetSeconds']:+.1f} 秒，"
             f"{item['matchedVotes']} 票／{item['comparedVotes']} 票，"
             f"A 方 {item['matchedFramesA']} 个不同采样。"
         )

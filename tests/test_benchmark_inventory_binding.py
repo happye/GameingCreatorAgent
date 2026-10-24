@@ -23,7 +23,7 @@ from gamingcreator.application.benchmark_preparation import (
     freeze_document_v2,
     loads_plan,
 )
-from gamingcreator.application.source_inventory import LIMITATIONS
+from gamingcreator.application.source_inventory import LIMITATIONS, LIMITATIONS_V1
 from gamingcreator.cli import main as cli
 from gamingcreator.domain.media import MediaAsset, MediaStream
 from gamingcreator.infrastructure.benchmark_preparation_files import read_freeze, write_freeze
@@ -123,8 +123,12 @@ def candidate(first, second, paths, **changes):
 VIDEO = {"codec": "h264", "width": 1920, "height": 1080, "frameRate": "30/1"}
 
 
-def report_for(assets, *, skip=(), fail=(), drop=(), pairs=(), extra=()):
-    """Synthetic source-inventory-v1 report; ``pairs`` are 1-based indexes of covered sources."""
+def report_for(assets, *, skip=(), fail=(), drop=(), pairs=(), extra=(), version=1, mirrored=()):
+    """Synthetic source-inventory report; ``pairs`` are 1-based indexes of covered sources.
+
+    ``version=1`` is the report format written before crop/mirror detection; ``mirrored`` lists
+    the (v2 only) pairs that matched through the left-right mirror.
+    """
     entries, skipped, failed = [], [], []
     for index, (key, asset) in enumerate(assets.items(), 1):
         identifier = f"source-{index:03d}"
@@ -184,8 +188,13 @@ def report_for(assets, *, skip=(), fail=(), drop=(), pairs=(), extra=()):
         )
         for a, b in pairs
     ]
+    if version == 2:
+        for row in entries:
+            row["crop"] = None
+        for item, pair in zip(candidates, pairs, strict=True):
+            item["mirrored"] = pair in mirrored
     return {
-        "schemaVersion": "source-inventory-v1",
+        "schemaVersion": f"source-inventory-v{version}",
         "humanDecisionRequired": True,
         "parameters": {"samplesPerSecond": 2, "hash": "dhash-64"},
         "ffmpegVersion": "synthetic ffmpeg",
@@ -194,7 +203,7 @@ def report_for(assets, *, skip=(), fail=(), drop=(), pairs=(), extra=()):
         "notComparable": skipped,
         "failedSources": failed,
         "sharedFootageCandidates": candidates,
-        "limitations": list(LIMITATIONS),
+        "limitations": list(LIMITATIONS if version == 2 else LIMITATIONS_V1),
     }
 
 
@@ -230,7 +239,8 @@ def test_full_coverage_without_evidence_has_no_inventory_blocker(tmp_path):
     assert derived["sharedFootage"] == [] and derived["absenceIsNotIndependence"] is True
     assert derived["humanDecisionRequired"] is True
     assert [row["status"] for row in derived["sources"]] == ["compared"] * 10
-    assert derived["limitations"] == list(LIMITATIONS)
+    assert derived["limitations"] == list(LIMITATIONS_V1)
+    assert derived["reportVersion"] == "source-inventory-v1"
     manifest = bind_manifest(frozen, timelines(assets), "test")
     assert manifest["humanLabels"]["independentTestSet"] is True
 
@@ -357,7 +367,7 @@ def test_report_is_parsed_strictly(tmp_path, mutation):
     if mutation == "extra":
         report["recordingGroup"] = "suggested"
     if mutation == "version":
-        report["schemaVersion"] = "source-inventory-v2"
+        report["schemaVersion"] = "source-inventory-v3"
     if mutation == "human":
         report["humanDecisionRequired"] = False
     if mutation == "limitations":
@@ -384,6 +394,104 @@ def test_report_is_parsed_strictly(tmp_path, mutation):
         report["ffmpegVersion"] = ""
     with pytest.raises(ValueError, match="素材盘点报告无效"):
         parse_inventory(encode(report))
+
+
+def test_v2_report_freezes_and_records_the_mirror_flag_on_pairs(tmp_path):
+    raw, assets = ready_fixture(tmp_path)
+    raw["sources"][1]["recordingGroup"] = raw["sources"][0]["recordingGroup"]
+    raw["sources"][2]["recordingGroup"] = raw["sources"][0]["recordingGroup"]
+    report = report_for(assets, pairs=[(1, 2), (1, 3)], version=2, mirrored=[(1, 3)])
+    report["sources"][0]["crop"] = {"width": 1920, "height": 800, "x": 0, "y": 140}
+    report["sources"][0]["video"] = {**VIDEO, "height": 1080}
+    frozen, _ = frozen_v2(raw, assets, report)
+    derived = frozen["sourceInventory"]
+    assert derived["reportVersion"] == "source-inventory-v2"
+    assert derived["limitations"] == list(LIMITATIONS)
+    assert [(p["sourceA"], p["sourceB"], p["mirrored"]) for p in derived["sharedFootage"]] == [
+        ("source-0", "source-1", False),
+        ("source-0", "source-2", True),
+    ]
+    assert not {b for b in frozen["preparation"]["blockers"] if "inventory" in b or "shared" in b}
+
+
+def test_v1_report_derives_pairs_without_a_mirror_field_and_with_pinned_shape(tmp_path):
+    raw, assets = ready_fixture(tmp_path)
+    v1 = frozen_v2(raw, assets, report_for(assets, pairs=[(1, 2)]))[0]["sourceInventory"]
+    v2 = frozen_v2(raw, assets, report_for(assets, pairs=[(1, 2)], version=2))[0]["sourceInventory"]
+    assert set(v1["sharedFootage"][0]) == {
+        "sourceA",
+        "sourceB",
+        "inventorySourceA",
+        "inventorySourceB",
+        "offsetSamples",
+        "offsetSeconds",
+        "comparedVotes",
+        "matchedVotes",
+        "log10CorrectedPValue",
+    }
+    assert set(v2["sharedFootage"][0]) == {*v1["sharedFootage"][0], "mirrored"}
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "v1_limitations",
+        "no_crop",
+        "crop_outside",
+        "crop_extra_key",
+        "crop_zero",
+        "mirrored_missing",
+        "mirrored_not_bool",
+        "v1_fields_with_v2_text",
+    ],
+)
+def test_v2_report_is_parsed_strictly(tmp_path, mutation):
+    _, assets = ready_fixture(tmp_path, 10)
+    report = report_for(assets, pairs=[(1, 2)], version=2)
+    crop = {"width": 1920, "height": 800, "x": 0, "y": 140}
+    if mutation == "v1_limitations":
+        report["limitations"] = list(LIMITATIONS_V1)
+    if mutation == "no_crop":
+        del report["sources"][0]["crop"]
+    if mutation == "crop_outside":
+        report["sources"][0]["crop"] = {**crop, "y": 300}  # 300 + 800 > 1080
+    if mutation == "crop_extra_key":
+        report["sources"][0]["crop"] = {**crop, "extra": 1}
+    if mutation == "crop_zero":
+        report["sources"][0]["crop"] = {**crop, "width": 0}
+    if mutation == "mirrored_missing":
+        del report["sharedFootageCandidates"][0]["mirrored"]
+    if mutation == "mirrored_not_bool":
+        report["sharedFootageCandidates"][0]["mirrored"] = 1
+    if mutation == "v1_fields_with_v2_text":
+        for row in report["sources"]:
+            del row["crop"]
+        report["schemaVersion"] = "source-inventory-v1"
+    with pytest.raises(ValueError, match="素材盘点报告无效"):
+        parse_inventory(encode(report))
+
+
+def test_v1_report_with_v2_fields_or_text_is_refused(tmp_path):
+    _, assets = ready_fixture(tmp_path, 10)
+    report = report_for(assets, pairs=[(1, 2)])
+    report["limitations"] = list(LIMITATIONS)
+    with pytest.raises(ValueError, match="素材盘点报告无效"):
+        parse_inventory(encode(report))
+    report = report_for(assets, pairs=[(1, 2)])
+    report["sharedFootageCandidates"][0]["mirrored"] = False
+    with pytest.raises(ValueError, match="素材盘点报告无效"):
+        parse_inventory(encode(report))
+
+
+def test_v2_bundle_with_v2_report_reads_back_and_rejects_tampering(tmp_path):
+    raw, assets = ready_fixture(tmp_path, 10)
+    report = report_for(assets, pairs=[(1, 2)], version=2)
+    frozen, output, hashes = write_v2(tmp_path, raw, assets, report)
+    assert read_freeze(output)[0] == frozen
+    tampered = report_for(assets, pairs=[(1, 2)], version=2, mirrored=[(1, 2)])
+    retarget(output, "source-inventory.json", encode(tampered))
+    with pytest.raises(ValueError):
+        read_freeze(output)
 
 
 @pytest.mark.parametrize(

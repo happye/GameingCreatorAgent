@@ -12,7 +12,12 @@ from collections.abc import Mapping, Sequence
 from pathlib import PureWindowsPath
 from typing import cast
 
-from gamingcreator.application.source_inventory import LIMITATIONS, SCHEMA
+from gamingcreator.application.source_inventory import (
+    LIMITATIONS,
+    LIMITATIONS_V1,
+    SCHEMA,
+    SCHEMA_V1,
+)
 
 INVENTORY_FILE = "source-inventory.json"
 MAX_INVENTORY_BYTES = 4_194_304
@@ -41,6 +46,8 @@ _SOURCE_FIELDS = {
     "sampledFrames",
     "informativeFrames",
 }
+_SOURCE_FIELDS_V2 = {*_SOURCE_FIELDS, "crop"}
+_CROP_FIELDS = {"width", "height", "x", "y"}
 _VIDEO_FIELDS = {"codec", "width", "height", "frameRate"}
 _DUPLICATE_FIELDS = {"sha256", "sourceIds", "paths"}
 _SKIPPED_FIELDS = {"sourceId", "path", "informativeFrames", "sampledFrames", "reason"}
@@ -64,6 +71,7 @@ _FLOAT_CANDIDATE = (
     "bLastSeconds",
 )
 _CANDIDATE_FIELDS = {"sourceA", "sourceB", "pathA", "pathB", *_INT_CANDIDATE, *_FLOAT_CANDIDATE}
+_CANDIDATE_FIELDS_V2 = {*_CANDIDATE_FIELDS, "mirrored"}
 
 
 def _bad(message: str) -> ValueError:
@@ -113,8 +121,21 @@ def _float(value: object, name: str) -> float:
     return float(cast(float, value))
 
 
+def _check_crop(value: object, width: int, height: int) -> None:
+    """``crop`` is null or a box fully inside the probed frame."""
+    if value is None:
+        return
+    box = _object(value, _CROP_FIELDS, "crop")
+    crop_width = _int(box["width"], "crop.width", minimum=1)
+    crop_height = _int(box["height"], "crop.height", minimum=1)
+    left = _int(box["x"], "crop.x")
+    top = _int(box["y"], "crop.y")
+    if left + crop_width > width or top + crop_height > height:
+        raise _bad("crop超出视频画面。")
+
+
 def parse_inventory(data: bytes) -> dict[str, object]:
-    """Strictly validate one ``source-inventory-v1`` report; the bytes stay the source of truth."""
+    """Strictly validate one ``source-inventory-v1`` or ``-v2`` report; bytes stay the truth."""
     if len(data) > MAX_INVENTORY_BYTES:
         raise _bad("超过4MiB上限，未静默放宽。")
     try:
@@ -124,11 +145,12 @@ def parse_inventory(data: bytes) -> dict[str, object]:
     except (UnicodeError, RecursionError, json.JSONDecodeError):
         raise _bad("不是有效的UTF-8 JSON。") from None
     report = _object(loaded, _REPORT_FIELDS, "报告")
-    if report["schemaVersion"] != SCHEMA:
-        raise _bad("版本不是source-inventory-v1。")
+    if report["schemaVersion"] not in (SCHEMA_V1, SCHEMA):
+        raise _bad("版本不是source-inventory-v1或source-inventory-v2。")
+    current = report["schemaVersion"] == SCHEMA
     if report["humanDecisionRequired"] is not True:
         raise _bad("humanDecisionRequired必须为true。")
-    if report["limitations"] != list(LIMITATIONS):
+    if report["limitations"] != list(LIMITATIONS if current else LIMITATIONS_V1):
         raise _bad("限制说明与生成端不一致。")
     _text(report["ffmpegVersion"], "ffmpegVersion")
     parameters = report["parameters"]
@@ -136,7 +158,7 @@ def parse_inventory(data: bytes) -> dict[str, object]:
         raise _bad("parameters必须是非空对象。")
     known: dict[str, dict[str, object]] = {}
     for item in _list(report["sources"], "sources"):
-        row = _object(item, _SOURCE_FIELDS, "来源")
+        row = _object(item, _SOURCE_FIELDS_V2 if current else _SOURCE_FIELDS, "来源")
         identifier = _text(row["sourceId"], "sourceId")
         if identifier in known:
             raise _bad("sourceId重复。")
@@ -150,6 +172,8 @@ def parse_inventory(data: bytes) -> dict[str, object]:
         _int(video["width"], "width", minimum=1)
         _int(video["height"], "height", minimum=1)
         _text(video["frameRate"], "frameRate")
+        if current:
+            _check_crop(row["crop"], cast(int, video["width"]), cast(int, video["height"]))
         sampled = _int(row["sampledFrames"], "sampledFrames")
         if _int(row["informativeFrames"], "informativeFrames") > sampled:
             raise _bad("有效帧数不能超过采样帧数。")
@@ -189,7 +213,7 @@ def parse_inventory(data: bytes) -> dict[str, object]:
         ):
             raise _bad("重复组与来源不一致。")
     for item in _list(report["sharedFootageCandidates"], "sharedFootageCandidates"):
-        row = _object(item, _CANDIDATE_FIELDS, "共用画面候选")
+        row = _object(item, _CANDIDATE_FIELDS_V2 if current else _CANDIDATE_FIELDS, "共用画面候选")
         first, second = row["sourceA"], row["sourceB"]
         if (
             type(first) is not str
@@ -206,6 +230,8 @@ def parse_inventory(data: bytes) -> dict[str, object]:
             _int(row[key], key, minimum=-(2**62))
         for key in _FLOAT_CANDIDATE:
             _float(row[key], key)
+        if current and type(row["mirrored"]) is not bool:
+            raise _bad("mirrored必须是布尔值。")
         if cast(int, row["matchedVotes"]) > cast(int, row["comparedVotes"]):
             raise _bad("相近票数不能超过可比票数。")
     return report
@@ -253,6 +279,7 @@ def derive_source_inventory(
         for value in matches:
             frozen_ids.setdefault(value, []).append(identifier)
     pairs: list[dict[str, object]] = []
+    mirrored_known = report["schemaVersion"] == SCHEMA
     unplanned = 0
     for item in cast(list[dict[str, object]], report["sharedFootageCandidates"]):
         first = frozen_ids.get(cast(str, item["sourceA"]), [])
@@ -262,19 +289,20 @@ def derive_source_inventory(
             continue
         for left in first:
             for right in second:
-                pairs.append(
-                    {
-                        "sourceA": left,
-                        "sourceB": right,
-                        "inventorySourceA": item["sourceA"],
-                        "inventorySourceB": item["sourceB"],
-                        "offsetSamples": item["offsetSamples"],
-                        "offsetSeconds": item["offsetSeconds"],
-                        "comparedVotes": item["comparedVotes"],
-                        "matchedVotes": item["matchedVotes"],
-                        "log10CorrectedPValue": item["log10CorrectedPValue"],
-                    }
-                )
+                pair: dict[str, object] = {
+                    "sourceA": left,
+                    "sourceB": right,
+                    "inventorySourceA": item["sourceA"],
+                    "inventorySourceB": item["sourceB"],
+                    "offsetSamples": item["offsetSamples"],
+                    "offsetSeconds": item["offsetSeconds"],
+                    "comparedVotes": item["comparedVotes"],
+                    "matchedVotes": item["matchedVotes"],
+                    "log10CorrectedPValue": item["log10CorrectedPValue"],
+                }
+                if mirrored_known:  # v1 reports have no such field; their derived bytes stay as-is
+                    pair["mirrored"] = item["mirrored"]
+                pairs.append(pair)
     return {
         "reportSha256": hashlib.sha256(data).hexdigest(),
         "reportVersion": report["schemaVersion"],

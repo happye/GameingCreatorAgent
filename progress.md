@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-24盘点识别黑边与镜像（Claude Code）**：source-inventory-v2自动裁黑边（cropdetect，保守只漏检不误判）并比较镜像；冻结同时接受v1／v2。真实加黑边／镜像片段由0候选变为正确偏移命中，17素材无新增误报。sonnet实现（86条）／sonnet评估PASS（42条），214定向测试通过。
+
 **2026-10-24冻结绑定素材盘点（Claude Code）**：新增benchmark-freeze-v2，冻结包原样保存source-inventory报告并按SHA核对来源，五类盘点阻断；v1字节与读取不变但绑定不再给独立测试集。opus设计／sonnet实现／opus独立评估PASS，326定向测试通过，5个已存冻结前后一致，真实Atom异组反例被拦。
 
 **2026-10-24正式检查门禁恢复（Claude Code）**：修复10-22遗留的ruff／format／mypy门禁与全量挂起（共享夹具media_id≠SHA致精分析合同拒绝、测试无限等待），修复联合检索hybrid／semantic保存回归TD016并真实实跑，三个中文ps1加BOM适配PowerShell 5.1，更新过时测试、关闭测试泄漏的sqlite连接。完整verify 3440 passed，余3项TD012偶发单独通过。

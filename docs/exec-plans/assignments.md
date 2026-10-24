@@ -11,6 +11,7 @@
 | 工作 | 负责人／范围 | 当前状态 |
 | --- | --- | --- |
 | 正式检查门禁恢复（TD015／TD016） | Claude Code主控单Agent | 2026-10-24完成：静态门禁通过，全量3440 passed不再挂起；联合检索回归修复并实跑；见sprint-verify-gate-restore.md |
+| 盘点识别黑边与镜像（source-inventory-v2） | gc-coder（sonnet，86条回复核实）实现；gc-reviewer（sonnet，42条）只读评估；主控真实验证／文档／提交 | 2026-10-24完成：214passed、评估PASS；见sprint-inventory-crop-mirror.md |
 | 冻结计划绑定素材盘点（freeze-v2） | gc-architect（opus）设计、gc-coder（sonnet，转录核实）实现、code-quality-guard（opus）评估；主控真实试跑／文档／提交 | 2026-10-24完成：326passed，评估PASS；见sprint-freeze-source-inventory.md |
 | 素材来源盘点与共用画面检测 | 主控合同／真实运行／文档／提交；gc-coder（sonnet，转录核实）写三源码＋CLI子命令＋测试＋脚本＋指南；gc-reviewer（sonnet）只读评估 | 2026-10-24完成：52passed、实跑17素材、评估PASS；见sprint-source-footage-overlap.md |
 | 工作台状态文件并发替换修复（TD012子项） | Claude Code主控单Agent写两源码／三测试；code-quality-guard（请求opus）独立评估、替换站点扫描（请求sonnet）均只读 | 2026-10-24完成：扩展129passed，评估PASS；见sprint-workbench-status-replace-race.md |
