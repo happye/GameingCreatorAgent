@@ -64,7 +64,7 @@
             for(const source of inventory.sources){const line=body.insertRow();line.insertCell().textContent=source.id;line.insertCell().textContent=inventoryStates[source.status] || "状态无法识别";line.insertCell().textContent=source.inventorySourceIds.join("、") || "—";}
             holder.append(text("p","素材盘点覆盖情况（只是共用画面证据，分组仍由你决定）：","state"),table);
             if(!inventory.sharedFootage.length) holder.append(text("p","未发现共用画面证据（无证据，不等于独立）。","state"));
-            for(const pair of inventory.sharedFootage) holder.append(text("p",`${pair.sourceA} 与 ${pair.sourceB} 疑似共用画面：偏移 ${pair.offsetSeconds>=0?"+":""}${Number(pair.offsetSeconds).toFixed(1)} 秒，${pair.matchedVotes}/${pair.comparedVotes} 票，log10 概率 ${Number(pair.log10CorrectedPValue).toFixed(1)}。`,"state"));
+            for(const pair of inventory.sharedFootage) holder.append(text("p",`${pair.sourceA} 与 ${pair.sourceB} 疑似共用画面${pair.mirrored===true?"（左右镜像）":""}：偏移 ${pair.offsetSeconds>=0?"+":""}${Number(pair.offsetSeconds).toFixed(1)} 秒，${pair.matchedVotes}/${pair.comparedVotes} 票，log10 概率 ${Number(pair.log10CorrectedPValue).toFixed(1)}。`,"state"));
             if(inventory.unplannedSourceEvidenceCount) holder.append(text("p",`另有 ${inventory.unplannedSourceEvidenceCount} 处证据涉及未登记的来源。`,"state"));
             const blockers=Array.isArray(frozen.preparation?.blockers)?frozen.preparation.blockers:[];
             if(blockers.length){holder.append(text("p","当前阻断（需要处理后重新冻结）：","failed"));const list=document.createElement("ul");for(const code of blockers) list.append(text("li",(preparationBlockers[code] || "其他准备条件未满足。")+"（"+code+"）","failed"));holder.append(list);}
