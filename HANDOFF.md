@@ -1,4 +1,4 @@
-# 当前交接：工作台状态可靠性已修复，回到真实质量路径
+# 当前交接：素材来源盘点已交付，等待用户确认分组
 
 更新：2026-10-24，Phase 0，main。新准备的两种验收页面，对已验证Chromium／MP4非零PTS及异步音视频可自动换算、取时、定位同规范区间并末停；未知／不支持仍手填。旧页面包、原12标注及纠正保持，不要求重标。见[报告](docs/exec-plans/report-2026-10-24-source-clock-mapping.md)、[sprint](docs/exec-plans/sprint-source-clock-mapping.md)及[当前里程碑](docs/exec-plans/current-status.md)。
 
@@ -9,6 +9,10 @@
 - 静态声明导入／parts查询、单帧prepare／具体授权／一次发送／本地resume，以及TD014状态可靠性均已交付；历史证据沿原报告保留。F006／F009／F010仍false，真人准确性未通过。
 
 工作台扩展组原2项失败已修复（2026-10-24 Claude Code）：根因是Windows替换正被读取的状态文件会被拒绝（WinError5），验收流程status.json与素材批量state.json现由进程内锁串行；同组还更新了一条与ce934e0免责文字不符的过时断言。扩展10文件129项全部通过，独立code-quality-guard PASS；整仓verify未重跑，跨进程占用仍归TD012。见[sprint](docs/exec-plans/sprint-workbench-status-replace-race.md)。Claude原生九角色已合入（`.claude/agents/`，见[Claude分工指南](docs/references/claude-agent-routing-guide.md)），新会话需用`/agents`确认发现。
+
+## 2026-10-24素材来源盘点（最新）
+
+新增只读命令`./scripts/inventory-sources.ps1`：本地探测时长／编码／SHA并检测不同文件间共用画面，不分组、不调用模型。实跑17素材：代号：Atom的PV与实机共用画面（PV晚10秒），Atom录音275秒画面全黑只有声音，新增6个TapTap文件均30–128秒短展示片；可用长录像仅钟馗两段。见[盘点结果](docs/exec-plans/source-inventory-2026-10-24.md)与[sprint](docs/exec-plans/sprint-source-footage-overlap.md)；52项定向测试通过、gc-reviewer PASS。已在[人工清单](docs/exec-plans/human-inputs.md)请用户确认分组、是否补原始游玩录像。另发现main静态门禁失败（TD015），下一步先机械修复并跑一次完整verify。
 
 ## DSH恢复入口与加载
 

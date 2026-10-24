@@ -10,6 +10,7 @@
 
 | 工作 | 负责人／范围 | 当前状态 |
 | --- | --- | --- |
+| 素材来源盘点与共用画面检测 | 主控合同／真实运行／文档／提交；gc-coder（sonnet，转录核实）写三源码＋CLI子命令＋测试＋脚本＋指南；gc-reviewer（sonnet）只读评估 | 2026-10-24完成：52passed、实跑17素材、评估PASS；见sprint-source-footage-overlap.md |
 | 工作台状态文件并发替换修复（TD012子项） | Claude Code主控单Agent写两源码／三测试；code-quality-guard（请求opus）独立评估、替换站点扫描（请求sonnet）均只读 | 2026-10-24完成：扩展129passed，评估PASS；见sprint-workbench-status-replace-race.md |
 | 单注册帧生成、专属授权、一次发送与本地恢复 | DSH唯一写六源码／三测试；Codex合同／正式检查／docs／Git | 两请求COMPLETED；159passed／1权限skip、静态、包通过，无活跃源码写者 |
 | 接口定位 | task_explorer，gpt-6-luna/high，只读 | 已完成，实际型号核实，未重复委派 |

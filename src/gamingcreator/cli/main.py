@@ -77,6 +77,12 @@ from gamingcreator.application.retrieval import (
     search_timelines,
 )
 from gamingcreator.application.search_detail_query import match_search_details, search_run_ids
+from gamingcreator.application.source_inventory import (
+    build_source_inventory,
+    discover_sources,
+    ensure_output_outside_sources,
+    inventory_summary,
+)
 from gamingcreator.application.storage import RunStatus
 from gamingcreator.application.tasks import tasks_payload
 from gamingcreator.cli.static_observation_generation import (
@@ -108,6 +114,7 @@ from gamingcreator.infrastructure.detail_query_sidecar import (
     refinement_identity_for_profile,
 )
 from gamingcreator.infrastructure.ffmpeg_media import FfmpegMediaProcessor
+from gamingcreator.infrastructure.ffmpeg_signatures import FfmpegSignatureExtractor
 from gamingcreator.infrastructure.http_transport import HttpxVisionTransport
 from gamingcreator.infrastructure.local_asr import LocalAsrProvider
 from gamingcreator.infrastructure.local_embeddings import LocalEmbeddingProvider
@@ -196,6 +203,12 @@ def _parser() -> CliParser:
         type=Path,
         help="可选：把 coverage-gap-report JSON 写到本地路径",
     )
+    inventory = commands.add_parser(
+        "inventory-sources",
+        help="盘点本地素材并检测共用画面证据，不分析、不分组",
+    )
+    inventory.add_argument("--input", type=Path, nargs="+", required=True)
+    inventory.add_argument("--output", type=Path, required=True)
     freeze = commands.add_parser("freeze-benchmark", help="本地登记原素材并冻结验收查询，不分析")
     freeze.add_argument("--input", type=Path, required=True)
     freeze.add_argument("--output", type=Path, required=True)
@@ -1142,6 +1155,19 @@ async def execute_coverage_gap_report(
         await store.close()
 
 
+async def execute_inventory_sources(inputs: list[Path], output: Path, repository: Path) -> None:
+    """Local source inventory: hashes, probes and shared-footage evidence; no grouping."""
+    sources = discover_sources(inputs)
+    ensure_output_outside_sources(output, inputs, sources)
+    report = await build_source_inventory(
+        sources, FfmpegMediaProcessor(repository), FfmpegSignatureExtractor(repository)
+    )
+    _write_json(output, report)
+    for line in inventory_summary(report):
+        print(line)
+    print(f"报告已保存：{output}")
+
+
 async def execute_tasks(
     project: Path, *, limit: int = 100, offset: int = 0, run_id: str | None = None
 ) -> dict[str, object]:
@@ -1442,6 +1468,9 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
                 args.output.resolve(),
             )
         )
+    if args.command == "inventory-sources":
+        asyncio.run(execute_inventory_sources(args.input, args.output.resolve(), Path.cwd()))
+        return None
     if args.command == "tasks":
         return asyncio.run(
             execute_tasks(
