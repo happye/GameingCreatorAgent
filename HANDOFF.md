@@ -2,6 +2,8 @@
 
 更新：2026-10-24，main，用户已明确恢复持续DSH协作。当前仍为Phase 0，F006/F009/F010=false。没有运行中的产品源码写者／录像分析；下一项是已准备好的单帧真实试验授权，不重投已完成工程请求。
 
+发布事实：源码及主报告提交`fdd83d6`已于本轮普通push成功到origin/main（原远端958f70c→fdd83d6），此前9eb55f3／81216a5等本地成果亦随之同步；原GitHub不可连接为历史状态。本行的后续文档提交不改变已验源码。
+
 ## 已交付、验证和使用
 
 - 从Completed已登记单帧本地冻结proposal；具体新授权下至多一次生成；typed草案独立保存／发布；另一进程按同主体／同part查询；resume只补本地工作，不重新发图。合法空主体不造人。见[交付报告](docs/exec-plans/report-2026-10-24-static-observation-generation.md)、[sprint](docs/exec-plans/sprint-static-observation-generation.md)和[使用指南](docs/references/static-observation-generation-guide.md)。

@@ -2,6 +2,8 @@
 
 更新：2026-10-24，main。[本轮生成sprint](sprint-static-observation-generation.md)已离线交付；[HANDOFF](../../HANDOFF.md)是最新恢复入口。旧阶段见[接续清单](report-2026-10-24-dsh-resumption.md)及[历史分工](assignments-history-2026-10-22.md)。
 
+发布节点：源码／主报告fdd83d6已普通push成功，原远端958f70c至fdd83d6之间成果全部同步。当前仅待具体新单帧许可，无活跃源码任务。
+
 | 工作 | 负责人／范围 | 当前状态 |
 | --- | --- | --- |
 | 单注册帧生成、专属授权、一次发送与本地恢复 | DSH唯一写六源码／三测试；Codex合同／正式检查／docs／Git | 两请求COMPLETED；159passed／1权限skip、静态、包通过，无活跃源码写者 |
