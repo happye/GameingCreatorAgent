@@ -1,4 +1,4 @@
-# 当前交接：冻结计划已绑定素材盘点，等待用户确认分组
+# 当前交接：验收流程端到端可用，等待用户确认分组与补素材
 
 更新：2026-10-24，Phase 0，main。新准备的两种验收页面，对已验证Chromium／MP4非零PTS及异步音视频可自动换算、取时、定位同规范区间并末停；未知／不支持仍手填。旧页面包、原12标注及纠正保持，不要求重标。见[报告](docs/exec-plans/report-2026-10-24-source-clock-mapping.md)、[sprint](docs/exec-plans/sprint-source-clock-mapping.md)及[当前里程碑](docs/exec-plans/current-status.md)。
 
@@ -10,7 +10,13 @@
 
 工作台扩展组原2项失败已修复（2026-10-24 Claude Code）：根因是Windows替换正被读取的状态文件会被拒绝（WinError5），验收流程status.json与素材批量state.json现由进程内锁串行；同组还更新了一条与ce934e0免责文字不符的过时断言。扩展10文件129项全部通过，独立code-quality-guard PASS；整仓verify未重跑，跨进程占用仍归TD012。见[sprint](docs/exec-plans/sprint-workbench-status-replace-race.md)。Claude原生九角色已合入（`.claude/agents/`，见[Claude分工指南](docs/references/claude-agent-routing-guide.md)），新会话需用`/agents`确认发现。
 
-## 2026-10-24冻结时自动盘点（最新）
+## 2026-10-25验收流程浏览器走查与提示改进（最新，本会话收尾）
+
+内置浏览器用真实素材完整走通`/acceptance`八步（流程“Claude 冒烟测试 2026-10-24（可删除）”）。修复：关联步骤选错用途时原因被吞成“读取失败”（现显示具体原因）；冻结阻断、就绪阻断和“仍待你决定”代码改为通俗中文说明（代码保留括号内）。相关测试通过；就绪中文说明的浏览器实际显示未在页面复核（关联已完成后重读被页面状态阻止），由静态测试覆盖。
+
+**下一会话恢复顺序**：①用户若已确认分组或补了原始游玩录像，先用工作台冻结（默认自动盘点）核对；②否则按technical debt继续离线项（TD012偶发、TD005长素材资源）；③新付费分析须先给具体提案。新会话从仓库根启动后用`/agents`确认9个gc-*角色并补记[Claude分工指南](docs/references/claude-agent-routing-guide.md)。
+
+## 2026-10-24冻结时自动盘点
 
 工作台冻结步骤默认勾选“冻结时自动盘点登记的录像”，CLI为`freeze-benchmark --auto-inventory`／`prepare-benchmark.ps1 -AutoInventory`：不必先单独运行盘点命令，冻结时本机自动比对计划内来源并打包报告，异组共用画面直接给出阻断。真实Atom异组计划12秒被拦；浏览器端到端走查通过，阻断改为通俗中文说明。完整verify 3517 passed（1项TD012偶发）。见[sprint](docs/exec-plans/sprint-freeze-auto-inventory.md)。
 

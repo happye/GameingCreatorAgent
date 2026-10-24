@@ -215,13 +215,12 @@ def test_http_choices_exact_identity_and_no_paid_or_quality_claim(selection_work
         assert len(payload["sources"][0]["candidates"]) == 3
         assert get(base, path + "&extra=value")[0] == 400
         assert get(base, path, headers={"Origin": "https://outside.invalid"})[0] == 403
-        assert (
-            get(
-                base,
-                "/api/benchmark-bind-options?" + urlencode({**query, "partition": "development"}),
-            )[0]
-            == 400
+        code, _, body = get(
+            base,
+            "/api/benchmark-bind-options?" + urlencode({**query, "partition": "development"}),
         )
+        # The reviewer sees why: no frozen query for this purpose, not a generic read failure.
+        assert code == 400 and "这个用途没有已冻结的事前查询" in json.loads(body)["message"]
         assert (
             get(
                 base, "/api/benchmark-bind-options?" + urlencode({**query, "project": "../outside"})

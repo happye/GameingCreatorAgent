@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-25验收流程走查（Claude Code）**：浏览器真实走通八步；关联步骤显示具体拒绝原因；冻结／就绪阻断与待决定代码改为通俗中文。工作台／就绪相关测试通过。本会话收尾，下一步见HANDOFF恢复顺序。
+
 **2026-10-24冻结时自动盘点（Claude Code）**：freeze-benchmark --auto-inventory／工作台默认勾选，冻结时自动盘点计划来源并打包报告，结果与单独盘点字节一致。worktree隔离实现（sonnet）＋sonnet评估PASS，真实Atom异组12秒被拦；合入前完整verify 3517 passed／1项TD012偶发。
 
 **2026-10-24盘点识别黑边与镜像（Claude Code）**：source-inventory-v2自动裁黑边（cropdetect，保守只漏检不误判）并比较镜像；冻结同时接受v1／v2。真实加黑边／镜像片段由0候选变为正确偏移命中，17素材无新增误报。sonnet实现（86条）／sonnet评估PASS（42条），214定向测试通过。

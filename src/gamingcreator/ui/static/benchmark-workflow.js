@@ -88,6 +88,17 @@
             throw new Error("验收就绪来源无效或含通过声明，已拒绝展示。");
         }
     }
+    const readinessLabels={
+        no_runs:"项目里还没有分析任务",
+        no_searchable_run:"还没有可检索的已完成分析",
+        coverage_gap_present:"有分析保留了覆盖缺口（部分窗口被拒），这些任务不能用于验收",
+        incomplete_runs_present:"有分析尚未完成，未完成的任务不能关联",
+        human_labels_required:"还需要人工事前参考和候选评分",
+        freeze_and_bind_required:"还需要冻结评测计划并关联已完成分析",
+        feature_claims_remain_false:"检索质量（F006）和理解改进（F009／F010）尚未通过，这里不会标记为通过",
+        A_or_B_or_D_coverage_gap:"长钟馗3个拒绝窗口如何处理：A保留缺口／B另立补窗费用提案／D暂缓（工具不会替你选）"
+    };
+    const readinessText=(code)=>(readinessLabels[code] || "其他条件未满足")+"（"+code+"）";
     function fillBindReadiness(panel, statusNode, payload) {
         assertReadinessInert(payload);
         panel.replaceChildren();
@@ -100,14 +111,14 @@
             "state"));
         const blockers = Array.isArray(payload.projectBlockers) ? payload.projectBlockers : [];
         if (blockers.length) {
-            panel.append(text("p", "阻断：" + blockers.join("、"), "state"));
+            panel.append(text("p", "阻断：" + blockers.map(readinessText).join("；"), "state"));
         }
         const note = text("p",
             payload.notes || "本汇总不能代替人工评分，也不宣称验收通过。",
             "bind-readiness-note");
         panel.append(note);
         if (Array.isArray(payload.userDecisionsPending) && payload.userDecisionsPending.length) {
-            panel.append(text("p", "仍待你决定：" + payload.userDecisionsPending.join("、") + "（不代选 A／B／D）。", "state"));
+            panel.append(text("p", "仍待你决定：" + payload.userDecisionsPending.map(readinessText).join("；") + "（不代选 A／B／D）。", "state"));
         }
         panel.append(text("p", "formalAcceptancePassed=false · humanEvalPassed=false · F006/F009/F010=false", "state"));
     }

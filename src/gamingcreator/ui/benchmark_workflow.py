@@ -309,7 +309,11 @@ class BenchmarkWorkflows:
             if len(run_ids) > 5000:
                 raise _invalid("项目任务超过5000个，请保留资料并选较小的验收项目。")
             runs = [await store.load_run(run_id) for run_id, _ in run_ids]
-            sources = binding_choices(frozen, runs, partition)
+            try:
+                sources = binding_choices(frozen, runs, partition)
+            except ValueError as error:
+                # binding_choices only raises authored guidance; show it instead of a generic error.
+                raise _invalid(str(error)) from None
         finally:
             await store.close()
         previous: dict[str, str] = {}
