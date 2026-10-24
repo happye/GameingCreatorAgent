@@ -14,15 +14,31 @@ from gamingcreator.application.benchmark_preparation import (
     loads_plan,
 )
 from gamingcreator.application.benchmark_review import decode_object
+from gamingcreator.application.browser_source_clock import build_source_clock, clock_document
 from gamingcreator.domain.media import MediaAsset
 
 CONTEXT_VERSION = "benchmark-reference-context-v1"
 RECORD_VERSION = "benchmark-reference-record-v1"
 MAX_RECORD_BYTES = MAX_PLAN_BYTES + 1024
+# Runtime-only page projection of the browser clock. It is derived from the probed assets and
+# explicitly excluded from the stored context identity/hash, so contexts and filled records
+# produced before this feature keep their exact contextSha256 and remain valid.
+RUNTIME_CLOCKS = "runtimeClocks"
+
+
+def _identity(context: dict[str, object]) -> dict[str, object]:
+    """The stored context without the derived runtime clock projection."""
+    return {key: value for key, value in context.items() if key != RUNTIME_CLOCKS}
 
 
 def context_hash(context: dict[str, object]) -> str:
-    return hashlib.sha256(canonical_json(context)).hexdigest()
+    """Hash the stored identity only; the runtime projection can never change it."""
+    return hashlib.sha256(canonical_json(_identity(context))).hexdigest()
+
+
+def _legacy_automatic_time_capture(asset: MediaAsset) -> bool:
+    """The original zero-origin eligibility flag, kept byte-identical for old packages."""
+    return asset.origin_seconds == 0 and all(stream.start_seconds == 0 for stream in asset.streams)
 
 
 def build_reference_context(
@@ -42,14 +58,14 @@ def build_reference_context(
         row["path"] = str(asset.source_path)
     normalized = loads_plan(canonical_json(document).decode())
     verified = freeze_document(normalized, assets, prepared_at)
-    media = [
-        {
-            **row,
-            "automaticTimeCapture": assets[cast(str, row["id"])].origin_seconds == 0
-            and all(stream.start_seconds == 0 for stream in assets[cast(str, row["id"])].streams),
-        }
-        for row in cast(list[dict[str, object]], verified["sources"])
-    ]
+    media = []
+    runtime_clocks: dict[str, object] = {}
+    for row in cast(list[dict[str, object]], verified["sources"]):
+        asset = assets[cast(str, row["id"])]
+        # The stored media row keeps its pre-feature shape and identity semantics.
+        media.append({**row, "automaticTimeCapture": _legacy_automatic_time_capture(asset)})
+        clock = build_source_clock(asset)
+        runtime_clocks[cast(str, row["id"])] = None if clock is None else clock_document(clock)
     context: dict[str, object] = {
         "schemaVersion": CONTEXT_VERSION,
         "preparedAt": prepared_at,
@@ -58,6 +74,8 @@ def build_reference_context(
         "preparation": verified["preparation"],
         "isFrozen": False,
         "qualityGate": None,
+        # Runtime-only projection for the page; excluded from context_hash by construction.
+        RUNTIME_CLOCKS: runtime_clocks,
     }
     template: dict[str, object] = {
         "schemaVersion": RECORD_VERSION,
@@ -89,8 +107,12 @@ def validate_reference_record(
         raise ValueError("标注记录不属于这份原片资料。")
     original = loads_plan(canonical_json(context["plan"]).decode())
     rebuilt, _ = build_reference_context(original, assets, cast(str, context["preparedAt"]))
-    if rebuilt != context:
+    if _identity(rebuilt) != _identity(context):
         raise ValueError("原片或原准备资料已经改变。")
+    # A context that carries the runtime projection must carry the one derived from the real
+    # assets; a context from before this feature simply has no projection to check.
+    if RUNTIME_CLOCKS in context and context[RUNTIME_CLOCKS] != rebuilt[RUNTIME_CLOCKS]:
+        raise ValueError("页面时钟投影与原片不一致。")
     edited = loads_plan(canonical_json(record["plan"]).decode())
     if _fixed_fields(edited.document) != _fixed_fields(original.document):
         raise ValueError("来源、查询或独立性声明不能随标注记录改变。")

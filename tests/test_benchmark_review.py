@@ -23,6 +23,11 @@ from gamingcreator.application.benchmark_review import (
     judged_manifest,
     validate_review,
 )
+from gamingcreator.application.browser_source_clock import (
+    BrowserSourceClock,
+    capture_source_us,
+    interval_replayable,
+)
 from gamingcreator.application.storage import RunStatus, StoredRun, StoredTimeline
 from gamingcreator.cli import main as cli
 from gamingcreator.domain.media import MediaStream
@@ -136,37 +141,88 @@ def build(fixture):
     )
 
 
-def reclocked(fixture, streams, origin):
+def reclocked(fixture, streams, origin, duration_us=None):
     raw, report, sources, retrievals, hits = fixture
     base = sources["run-1"].run.asset
-    asset = replace(base, streams=streams, origin_seconds=origin, duration_us=base.duration_us)
+    asset = replace(
+        base,
+        streams=streams,
+        origin_seconds=origin,
+        duration_us=base.duration_us if duration_us is None else duration_us,
+    )
     timeline = replace(sources["run-1"], run=replace(sources["run-1"].run, asset=asset))
     return build((raw, report, {"run-1": timeline}, retrievals, hits))
 
 
-def test_automatic_playback_needs_zero_origin_and_synchronous_stream_starts(tmp_path):
+def test_media_rows_carry_runtime_clock_documents_without_touching_the_record(tmp_path):
     fixture = review_fixture(tmp_path, 2)
     video = MediaStream(0, "video", Fraction(1, 1000), 0, 2000)
     synchronous = MediaStream(1, "audio", Fraction(1, 48000), 0, 48000)
     late_audio = MediaStream(1, "audio", Fraction(1, 48000), 24000, 48000)
     late_video = MediaStream(0, "video", Fraction(1, 1000), 1000, 2000)
     shifted_audio = MediaStream(1, "audio", Fraction(1, 48000), 48000, 48000)
-    for streams, origin, automatic in (
+    negative_start = MediaStream(0, "video", Fraction(1, 1000), -1000, 2000)
+    for streams, origin, supported in (
         ((video, synchronous), Fraction(0), True),
-        ((video, late_audio), Fraction(0), False),
-        ((late_video, shifted_audio), Fraction(1), False),
+        ((video, late_audio), Fraction(0), True),
+        ((late_video, shifted_audio), Fraction(1), True),
+        ((negative_start,), Fraction(-1), False),
     ):
-        context, _ = reclocked(fixture, streams, origin)
+        context, template = reclocked(fixture, streams, origin)
         row = context["media"][0]
-        assert row["automaticPlaybackSupported"] is automatic
         assert set(row) == {
             "runId",
             "name",
             "path",
             "durationUs",
             "originSeconds",
+            "sourceClock",
             "automaticPlaybackSupported",
         }
+        assert row["automaticPlaybackSupported"] is supported
+        clock = row["sourceClock"]
+        if not supported:
+            assert clock is None
+            continue
+        assert clock["schemaVersion"] == "browser-source-clock-v1"
+        assert clock["originUs"] == round(float(origin) * 1_000_000)
+        assert clock["durationUs"] == row["durationUs"] == 2_000_000
+        assert 0 <= clock["videoStartUs"] < clock["videoEndUs"] <= clock["durationUs"]
+        # Mapping parameters stay in the page run context only, never in the saved record.
+        for slot in template["queries"][0]["slots"]:
+            assert "sourceClock" not in slot and "automaticPlaybackSupported" not in slot
+
+
+def runtime_clock(clock):
+    return BrowserSourceClock(
+        origin_us=clock["originUs"],
+        duration_us=clock["durationUs"],
+        video_start_us=clock["videoStartUs"],
+        video_end_us=clock["videoEndUs"],
+        audio_start_us=clock["audioStartUs"],
+        audio_end_us=clock["audioEndUs"],
+    )
+
+
+def test_late_audio_starts_are_part_of_the_runtime_clock_and_late_video_limits_replay(tmp_path):
+    fixture = review_fixture(tmp_path, 2)
+    video = MediaStream(0, "video", Fraction(1, 1000), 0, 2000)
+    late_audio = MediaStream(1, "audio", Fraction(1, 48000), 24000, 48000)
+    context, _ = reclocked(fixture, (video, late_audio), Fraction(0))
+    clock = runtime_clock(context["media"][0]["sourceClock"])
+    assert (clock.audio_start_us, clock.audio_end_us) == (500_000, 1_500_000)
+    assert (clock.video_start_us, clock.video_end_us) == (0, 2_000_000)
+    assert interval_replayable(clock, 300_000, 700_000)
+
+    late_video = MediaStream(0, "video", Fraction(1, 1000), 500, 1500)
+    early_audio = MediaStream(1, "audio", Fraction(1, 48000), 0, 96000)
+    context, _ = reclocked(fixture, (late_video, early_audio), Fraction(0))
+    clock = runtime_clock(context["media"][0]["sourceClock"])
+    assert (clock.video_start_us, clock.video_end_us) == (500_000, 2_000_000)
+    assert not interval_replayable(clock, 300_000, 700_000)
+    assert interval_replayable(clock, 600_000, 1_000_000)
+    assert capture_source_us(clock, 0.2) is None
+    assert capture_source_us(clock, 1.2) == 1_200_000
 
 
 def test_audio_candidate_keeps_persisted_identity_without_visual_event(tmp_path):

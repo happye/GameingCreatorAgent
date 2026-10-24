@@ -1,5 +1,6 @@
 """Pre-inference human-reference records, never real human acceptance evidence."""
 
+import hashlib
 import html
 import importlib.util
 import json
@@ -14,10 +15,13 @@ from test_benchmark_preparation import plan_fixture
 from gamingcreator.application.benchmark_preparation import canonical_json, loads_plan
 from gamingcreator.application.benchmark_reference_review import (
     MAX_RECORD_BYTES,
+    RUNTIME_CLOCKS,
     build_reference_context,
+    context_hash,
     validate_reference_record,
 )
 from gamingcreator.domain.media import MediaStream
+from gamingcreator.infrastructure.benchmark_review_files import publish_review_bundle
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.ui.benchmark_reference_review import render_reference_review
 
@@ -126,26 +130,156 @@ def test_changed_actual_source_duplicate_json_nonfinite_and_size_rejected(tmp_pa
             validate_reference_record(data, context, assets)
 
 
-def test_nonzero_or_different_stream_starts_disable_automatic_player_capture(tmp_path):
+def stored_identity(context):
+    return {key: value for key, value in context.items() if key != RUNTIME_CLOCKS}
+
+
+def storage_rule_hash(context):
+    """The historical hash formula: sha256 over the whole stored context."""
+    return hashlib.sha256(canonical_json(context)).hexdigest()
+
+
+def test_reference_context_keeps_stored_identity_and_only_projects_the_runtime_clock(tmp_path):
+    _, assets, context, template = preparation(tmp_path)
+    identity = stored_identity(context)
+    media = context["media"][0]
+    # The stored media row keeps its pre-feature shape: no clock field, original flag rule.
+    assert "sourceClock" not in media
+    assert media["automaticTimeCapture"] is False  # fixture media starts at 1 s
+    clock = context[RUNTIME_CLOCKS][media["id"]]
+    assert clock["originUs"] == 1_000_000 and clock["durationUs"] == media["durationUs"]
+    # The runtime projection never changes the stored identity or the template hash.
+    assert context_hash(context) == storage_rule_hash(identity)
+    assert template["contextSha256"] == storage_rule_hash(identity) == context_hash(context)
+    record = add_reference(deepcopy(template))
+    record["plan"]["labelVersion"] = "fixture-reference-v1"
+    record["plan"]["humanReferences"] = {
+        "confirmed": True,
+        "annotators": ["synthetic-fixture"],
+        "reviewed": True,
+    }
+    # The exact context bytes and the exact record bytes from before this feature stay valid.
+    assert validate_reference_record(canonical_json(record), identity, assets) == record
+    assert validate_reference_record(canonical_json(record), context, assets) == record
+    # A context that carries the projection must carry the true derived one.
+    tampered = deepcopy(context)
+    tampered[RUNTIME_CLOCKS][media["id"]]["originUs"] += 1
+    with pytest.raises(ValueError, match="投影"):
+        validate_reference_record(canonical_json(record), tampered, assets)
+    extra = deepcopy(identity)
+    extra["unexpected"] = True
+    with pytest.raises(ValueError):
+        validate_reference_record(canonical_json(record), extra, assets)
+
+
+def test_reference_media_rows_keep_legacy_capture_flag_and_add_runtime_clock(tmp_path):
     raw, assets, _, _ = preparation(tmp_path)
-    for origin, streams in [
-        (Fraction(3), (MediaStream(0, "video", Fraction(1), 3, 5),)),
+    cases = [
+        (Fraction(0), (MediaStream(0, "video", Fraction(1), 0, 5),), 5_000_000, True, 0, 0),
+        (
+            Fraction(3),
+            (MediaStream(0, "video", Fraction(1), 3, 5),),
+            5_000_000,
+            False,
+            3_000_000,
+            0,
+        ),
         (
             Fraction(0),
             (
                 MediaStream(0, "video", Fraction(1), 2, 3),
                 MediaStream(1, "audio", Fraction(1), 0, 5),
             ),
+            5_000_000,
+            False,
+            0,
+            2_000_000,
         ),
-    ]:
+        (
+            Fraction(-1),
+            (MediaStream(0, "video", Fraction(1), -1, 2),),
+            2_000_000,
+            False,
+            None,
+            None,
+        ),
+    ]
+    for origin, streams, duration_us, legacy_capture, origin_us, video_start_us in cases:
         shifted = {
-            key: replace(asset, origin_seconds=origin, streams=streams, duration_us=5000000)
+            key: replace(asset, origin_seconds=origin, streams=streams, duration_us=duration_us)
             for key, asset in assets.items()
         }
-        context, _ = build_reference_context(
+        context, template = build_reference_context(
             loads_plan(json.dumps(raw)), shifted, "2026-10-07T10:00:00+08:00"
         )
-        assert context["media"][0]["automaticTimeCapture"] is False
+        row = context["media"][0]
+        assert row["automaticTimeCapture"] is legacy_capture
+        assert "sourceClock" not in row
+        clock = context[RUNTIME_CLOCKS][row["id"]]
+        if origin_us is None:
+            assert clock is None
+        else:
+            assert clock["originUs"] == origin_us
+            assert clock["durationUs"] == duration_us
+            assert clock["videoStartUs"] == video_start_us
+            assert clock["videoEndUs"] == duration_us
+        assert "sourceClock" not in template["plan"]["sources"][0]
+        validate_reference_record(canonical_json(template), context, shifted)
+
+
+def test_legacy_package_and_record_bytes_pass_the_production_cli(tmp_path, monkeypatch, capsys):
+    raw, assets, context, template = preparation(tmp_path)
+    identity = stored_identity(context)
+    assert context_hash(identity) == template["contextSha256"]
+    record = add_reference(deepcopy(template))
+    record["plan"]["labelVersion"] = "legacy-reference-v1"
+    record["plan"]["humanReferences"] = {
+        "confirmed": True,
+        "annotators": ["legacy-annotator"],
+        "reviewed": True,
+    }
+    record_bytes = canonical_json(record)
+    record_path = tmp_path / "旧 记录.json"
+    record_path.write_bytes(record_bytes)
+    package = tmp_path / "旧 标注包"
+    # Exactly the files a pre-feature run produced for the same plan/media: the stored context
+    # has no runtime projection and the template hash follows the historical formula.
+    publish_review_bundle(
+        package,
+        {
+            "plan-input.json": canonical_json(raw),
+            "context.json": canonical_json(identity),
+            "record-template.json": canonical_json(template),
+            "review.html": b"legacy review page bytes",
+        },
+        [],
+    )
+
+    async def probe(document, base):
+        return {
+            key: replace(asset, sha256=hash_file(asset.source_path))
+            for key, asset in assets.items()
+        }
+
+    monkeypatch.setattr(script, "probe_plan", probe)
+    output = tmp_path / "导出的 计划"
+    arguments = [
+        "--review-directory",
+        str(package),
+        "--record",
+        str(record_path),
+        "--output",
+        str(output),
+    ]
+    assert script.main(arguments) == 0
+    receipt = json.loads(capsys.readouterr().out)
+    assert receipt["schemaVersion"] == "benchmark-reference-result-v1"
+    # Original stored bytes and filled record survive unchanged through the production CLI.
+    assert (output / "context.json").read_bytes() == (package / "context.json").read_bytes()
+    assert (output / "record-input.json").read_bytes() == record_bytes
+    assert (output / "reference-record.json").read_bytes() == record_bytes
+    assert (output / "benchmark-plan.json").read_bytes() == canonical_json(record["plan"])
+    assert script.main(arguments) == 2  # never overwrite an existing output directory
 
 
 def test_public_script_create_import_and_source_change_without_model_work(

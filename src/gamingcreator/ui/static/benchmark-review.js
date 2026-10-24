@@ -5,8 +5,27 @@ const controls = new Map();
 const status = document.getElementById("status");
 const video = document.getElementById("source-video");
 const playState = document.getElementById("play-state");
+const clockState = document.getElementById("clock-state");
+const openSource = document.getElementById("open-source");
 source.context.media.forEach(media => { media.videoUrl = new URL(media.videoUrl, location.href).href; });
-let editRevision = 0, loadRevision = 0, playRevision = 0, playing = null;
+let editRevision = 0, loadRevision = 0, playToken = 0, playing = null, preparing = 0;
+let visibleGeneration = 0, visibleHeaderDuration = null, visibleValidatedGeneration = -1;
+let visibleSeekedGeneration = -1, visibleDurationInvalid = false, visibleDurationReason = null, visibleClock = null;
+const clocks = new Map();
+const replayButtons = [];
+const REASONS = {
+  seek_unavailable: "浏览器没有给出可定位的原片时间范围",
+  seek_incomplete: "浏览器的原片定位没有完成",
+  duration_unavailable: "浏览器没有读到可用的原片时长",
+  duration_mismatch: "浏览器读到的原片时长与保存的原片时长不一致",
+  duration_changed: "浏览器读到的原片时长发生了意外变化",
+  axis_unavailable: "浏览器没有返回可核对的播放位置",
+  axis_unstable: "浏览器播放位置在核对过程中发生了变化",
+  axis_mismatch: "浏览器播放起点与保存的原片起点不一致",
+  media_unavailable: "浏览器不能读取这段原片",
+  observation_invalid: "浏览器返回的原片时间信息不完整",
+  clock_unavailable: "这段原片的时间不能建立浏览器映射",
+};
 const clone = value => JSON.parse(JSON.stringify(value));
 const canonical = value => JSON.stringify(value, (key, item) => item && !Array.isArray(item) && typeof item === "object" ? Object.fromEntries(Object.keys(item).sort().map(name => [name, item[name]])) : item);
 const same = (left, right) => canonical(left) === canonical(right);
@@ -78,26 +97,171 @@ function validate(record) {
   });
   return record;
 }
-function play(media, slot, query) {
-  const revision = ++playRevision;
-  video.pause(); playing = null;
-  const link = document.getElementById("open-source");
-  link.href = media.videoUrl; link.hidden = false;
-  if (!media.automaticPlaybackSupported) { playState.textContent = "这段原片的时钟尚未联调，请手动核对原区间。"; return; }
-  const start = slot.startUs / 1000000, end = slot.endUs / 1000000;
-  const ready = () => {
-    if (revision !== playRevision || video.currentSrc !== media.videoUrl) return;
-    playing = {url: media.videoUrl, end};
-    video.currentTime = start;
-    playState.textContent = `${query.text} · 第${slot.slot}位 · ${start.toFixed(3)}–${end.toFixed(3)}秒`;
-    video.play().catch(() => { if (revision === playRevision) playState.textContent = "浏览器未能播放，请打开本机原片核对这段区间。"; });
-  };
-  if (video.currentSrc === media.videoUrl && video.readyState >= 1) ready();
-  else { video.addEventListener("loadedmetadata", ready, {once: true}); video.src = media.videoUrl; video.load(); }
+function clockStateOf(media) {
+  return clocks.get(media.runId) || {state: "probing", clock: null, reason: null};
 }
-video.addEventListener("timeupdate", () => { if (playing && video.currentSrc === playing.url && video.currentTime >= playing.end) { video.pause(); playing = null; } });
+function clockReason(state) {
+  if (state.state === "probing") return "正在核对原片时钟…";
+  if (state.reason === "clock_unavailable") return REASONS.clock_unavailable + "，请打开本机原片手动核对；评分仍按原区间。";
+  return `${REASONS[state.reason] || "浏览器时间无法核对为规范源时间"}，请打开本机原片手动核对；评分仍按原区间。`;
+}
+function refreshClockState() {
+  const states = context.media.map(media => ({media, state: clockStateOf(media)}));
+  if (states.some(row => row.state.state === "probing")) clockState.textContent = "正在核对这段原片的浏览器时钟；核对完成前不能自动播放。";
+  else if (states.some(row => row.state.state !== "ready")) clockState.textContent = "有原片的浏览器时间无法核对为规范源时间；请打开本机原片手动核对，评分仍按原区间。";
+  else clockState.textContent = "已把浏览器播放位置核对为规范源时间，可以自动播放规范区间；评分仍须人工判断。";
+  const unavailable = states.find(row => row.state.state !== "ready");
+  if (unavailable) { openSource.href = unavailable.media.videoUrl; openSource.hidden = false; }
+  for (const entry of replayButtons) {
+    const state = clockStateOf(entry.media);
+    const ready = state.state === "ready" && state.clock;
+    const replayable = ready && SourceClock.intervalReplayable(state.clock, entry.startUs, entry.endUs);
+    entry.button.disabled = !replayable;
+    if (!ready) entry.note.textContent = clockReason(state);
+    else if (!replayable) entry.note.textContent = "此规范区间超出原片有画面的部分，不能可靠自动回看；请打开本机原片手动核对。";
+    else entry.note.textContent = "";
+  }
+  const blocked = replayButtons.find(entry => entry.button.disabled);
+  if (blocked && !unavailable) { openSource.href = blocked.media.videoUrl; openSource.hidden = false; }
+}
+function play(media, slot, query) {
+  const token = ++playToken;
+  video.pause(); playing = null;
+  openSource.href = media.videoUrl; openSource.hidden = false;
+  const state = clockStateOf(media);
+  if (state.state !== "ready" || !state.clock) { playState.textContent = clockReason(state); return; }
+  const clock = state.clock;
+  if (!SourceClock.intervalReplayable(clock, slot.startUs, slot.endUs)) { playState.textContent = "此规范区间超出原片有画面的部分，不能可靠自动回看；请打开本机原片手动核对。"; return; }
+  const start = SourceClock.sourceUsToPlayerSeconds(clock, slot.startUs);
+  const end = SourceClock.sourceUsToPlayerSeconds(clock, slot.endUs);
+  if (start === null || end === null) { playState.textContent = "规范源区间不能换算为浏览器位置，请打开本机原片手动核对。"; return; }
+  void startPlayback(token, media, clock, slot, query, start, end);
+}
+function durationProblemMessage(reason) {
+  if (reason === "duration_unavailable") return "浏览器读到的原片时长无效，请重新载入原片或打开本机原片手动核对。";
+  return "浏览器读到的原片时长发生了意外变化，请重新载入原片或打开本机原片手动核对。";
+}
+async function startPlayback(token, media, clock, slot, query, start, end) {
+  const expectedUrl = media.videoUrl;
+  let generation = visibleGeneration;
+  const current = () => token === playToken
+    && generation === visibleGeneration
+    && video.currentSrc === expectedUrl;
+  try {
+    preparing += 1;
+    try {
+      await SourceClock.prepare(video, expectedUrl);
+    } finally {
+      preparing -= 1;
+    }
+    // Freeze the load generation produced by this prepare; every later await has to still be
+    // on it, so a reload (even of the same URL) cannot let a late seek validate a new element
+    // and play the older request.
+    generation = visibleGeneration;
+    if (token !== playToken) return;
+    if (!current()) return;
+    if (visibleDurationInvalid) {
+      playState.textContent = durationProblemMessage(visibleDurationReason);
+      return;
+    }
+    if (visibleValidatedGeneration !== generation || video.currentSrc !== expectedUrl) {
+      // Validate the element that will really play this interval, bound to the frozen load
+      // generation: the header duration recorded when that load's metadata arrived (before
+      // any seek could legitimately change it) and the position it clamps a low seek to.
+      if (video.currentSrc !== expectedUrl) {
+        playState.textContent = "浏览器实际载入的原片与当前查询的原片不同，请重新选择查询或打开本机原片核对。";
+        return;
+      }
+      if (!Number.isFinite(visibleHeaderDuration) || Math.abs(visibleHeaderDuration * 1000000 - clock.durationUs) > clock.durationToleranceUs) {
+        playState.textContent = "浏览器的原片时长与保存的原片不一致，请打开本机原片手动核对。";
+        return;
+      }
+      const axis = await SourceClock.settle(video, 0.000001);
+      if (!current()) return;
+      if (axis === null || Math.abs(axis * 1000000 - clock.originUs) > clock.axisToleranceUs) {
+        playState.textContent = "浏览器的播放起点与保存的原片起点不一致，请打开本机原片手动核对。";
+        return;
+      }
+      if (!(video.videoWidth > 0)) {
+        playState.textContent = "浏览器还没有准备好这段原片的画面，请稍后重试或打开本机原片手动核对。";
+        return;
+      }
+      visibleValidatedGeneration = generation;
+      visibleClock = clock;
+    }
+    const settled = await SourceClock.settle(video, start);
+    if (!current()) return;
+    if (settled === null || Math.abs(settled - start) > clock.axisToleranceUs / 1000000) {
+      playState.textContent = "浏览器未能定位到规范区间起点，请打开本机原片手动核对。";
+      return;
+    }
+    if (video.seeking) {
+      playState.textContent = "浏览器仍在定位原片，请稍后重试或打开本机原片手动核对。";
+      return;
+    }
+  } catch (error) {
+    if (token === playToken && generation === visibleGeneration) playState.textContent = "浏览器不能读取这段原片，请用本机播放器核对；评分保持原区间。";
+    return;
+  }
+  if (!current()) return;
+  playing = {url: expectedUrl, end, token, generation, reachesEnd: clock.durationUs - slot.endUs <= 1000};
+  playState.textContent = `${query.text} · 第${slot.slot}位 · 规范源 ${(slot.startUs / 1000000).toFixed(3)}–${(slot.endUs / 1000000).toFixed(3)}秒`;
+  try {
+    await video.play();
+  } catch (error) {
+    if (token === playToken) { playing = null; playState.textContent = "浏览器未能播放，请打开本机原片核对这段区间。"; }
+  }
+}
+video.addEventListener("timeupdate", () => {
+  if (playing && playing.token === playToken && playing.generation === visibleGeneration && video.currentSrc === playing.url && video.currentTime >= playing.end) { video.pause(); playing = null; }
+});
+video.addEventListener("ended", () => {
+  if (playing && playing.token === playToken && playing.generation === visibleGeneration && video.currentSrc === playing.url) {
+    const reached = playing.reachesEnd;
+    playing = null;
+    playState.textContent = reached ? "已播放到原片结尾，请核对是否覆盖完整区间。" : "播放到原片结尾前未能按区间末尾暂停，请打开本机原片手动核对。";
+  }
+});
+video.addEventListener("seeking", () => {
+  if (playing && playing.token === playToken && playing.generation === visibleGeneration && video.currentSrc === playing.url && video.currentTime > playing.end) { video.pause(); playing = null; }
+});
 video.addEventListener("error", () => { playing = null; playState.textContent = "浏览器不能播放此原片，请用本机播放器核对；评分保持原区间。"; });
-video.addEventListener("seeking", () => { if (playing && video.currentTime > playing.end) { video.pause(); playing = null; } });
+video.addEventListener("loadstart", () => {
+  // A new load generation: forget the previous element validation and its pre-seek duration.
+  // A load the page did not ask for is an external reload: cancel in-flight requests and any
+  // interval state so a late seek from the old request can never act on the new element.
+  visibleGeneration += 1; visibleHeaderDuration = null; visibleValidatedGeneration = -1;
+  visibleSeekedGeneration = -1; visibleDurationInvalid = false; visibleDurationReason = null;
+  if (preparing === 0) { playToken += 1; playing = null; }
+});
+video.addEventListener("loadedmetadata", () => {
+  if (visibleHeaderDuration === null && Number.isFinite(video.duration) && video.duration > 0) visibleHeaderDuration = video.duration;
+});
+video.addEventListener("emptied", () => {
+  visibleGeneration += 1; visibleHeaderDuration = null; visibleValidatedGeneration = -1;
+  visibleSeekedGeneration = -1; visibleDurationInvalid = false; visibleDurationReason = null;
+  if (preparing === 0) { playToken += 1; playing = null; }
+});
+video.addEventListener("seeked", () => { visibleSeekedGeneration = visibleGeneration; });
+video.addEventListener("durationchange", () => {
+  // Recheck every reported change against the clock; only the measured bounded non-zero-PTS
+  // growth after a seek on this element may stay valid. Any shrink, non-finite value or
+  // unexpected growth revokes the generation before a replay can use it.
+  if (visibleValidatedGeneration !== visibleGeneration || !visibleClock) return;
+  const verdict = SourceClock.durationChangeVerdict(visibleClock, video.duration, visibleSeekedGeneration === visibleGeneration);
+  if (verdict === null) return;
+  visibleDurationInvalid = true; visibleDurationReason = verdict;
+  visibleValidatedGeneration = -1; visibleClock = null;
+});
+for (const media of context.media) {
+  const candidates = SourceClock.clockCandidates(media);
+  if (!candidates.length) { clocks.set(media.runId, {state: "unavailable", clock: null, reason: "clock_unavailable"}); continue; }
+  clocks.set(media.runId, {state: "probing", clock: null, reason: null});
+  SourceClock.establish(candidates, media.videoUrl).then(verdict => {
+    clocks.set(media.runId, {state: verdict.established ? "ready" : "unavailable", clock: verdict.clock, reason: verdict.reason});
+    refreshClockState();
+  });
+}
 const container = document.getElementById("queries");
 context.queries.forEach(query => {
   const section = add(container, "section"); section.dataset.query = query.queryId;
@@ -113,8 +277,10 @@ context.queries.forEach(query => {
     add(card, "p", `${(slot.startUs / 1000000).toFixed(3)}–${(slot.endUs / 1000000).toFixed(3)}秒 · 原排名 ${slot.reportedRank}`);
     add(card, "p", "模型描述（需回看）：" + slot.facts.join("；"));
     const media = context.media.find(row => row.runId === query.runId);
-    const button = add(card, "button", "播放此区间"); button.type = "button";
+    const button = add(card, "button", "播放此区间"); button.type = "button"; button.disabled = true;
     button.addEventListener("click", () => play(media, slot, query));
+    const note = add(card, "p", "正在核对原片时钟…"); note.className = "empty"; note.dataset.clock = "note";
+    replayButtons.push({button, note, media, startUs: slot.startUs, endUs: slot.endUs});
     if (slot.state === "known_duplicate") { add(card, "p", "已知重复事件，保留此位，不再填写第二份评分。").className = "empty"; return; }
     const fields = add(card, "div"); fields.className = "fields";
     const gradeLabel = add(fields, "label", "评分"); const grade = add(gradeLabel, "select"); grade.dataset.field = "grade";
@@ -126,6 +292,7 @@ context.queries.forEach(query => {
     controls.set(`${query.queryId}:${slot.slot}`, {grade, human, reason});
   });
 });
+refreshClockState();
 document.addEventListener("input", () => { editRevision++; });
 document.getElementById("reviewed").addEventListener("change", () => { editRevision++; });
 function collect() {

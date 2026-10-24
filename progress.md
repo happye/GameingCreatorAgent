@@ -1,5 +1,11 @@
 # Progress Log
 
+**2026-10-24 TD006特殊源时钟自动映射已交付**：新两验收页对实证Chromium／MP4非零PTS及异步A/V自动换算、取时和区间末停，异常／无画面仍手动。正式256passed／0skip、静态检查、原Sol/high R1–R8 PASS；实际旧编辑包＋10参考生产CLI复用，37保护／922原项目SHA不变。四原生工程请求全COMPLETED且完整结果已取回，无watcher；主控监督遗漏、ignored只读基线入册及测试目录误选均纠正，原失败保留。F006/F009/F010false，旧费用／12标注纠正／六素材不变、无新录像API。下一回工作台状态可靠性，再回原真实质量路径。见[报告](docs/exec-plans/report-2026-10-24-source-clock-mapping.md)与[当前交接](HANDOFF.md)。下方旧RUNNING／下一TD006等均为历史。
+
+**2026-10-24额度恢复后接续原DSH并集中追修**：原时钟请求29a141ad…c232实际COMPLETED，已按resultHash读取保存报告，无重投。原Sol/high发现旧reference身份、seek超时假成功及可见播放器动态有效态三P1；同task新请求87da2a18…11ed RUNNING集中修R2/R3/R4/R6，不重做条码oracle、不要求重标或重新生成原包，正式计划／测试尚未跑。原Luna/high实际只读来源对齐：10有效参考只对应钟馗failed/coverage_gap，无同源Completed；32排名均异源，不能拿来替代真人质量证据。数据／费用保持，F006/F009/F010false；见[sprint](docs/exec-plans/sprint-source-clock-mapping.md)与ignored两个review／alignment记录。
+
+**2026-10-24进入TD006自动映射离线切片**：原Luna/high地图及同Sol/high合同审阅PASS；新DSH task gamingcreator-source-clock-mapping-20261024／session codex-94269cc4-7c00-4bbe-917e-bdd6205a1a9f、合同ce3fcecf…6fe19f、唯一请求29a141ad…c232已RUNNING，由单60秒cursor增量watcher监督。基线0790976、完整init通过；目标是真实合成非零PTS／异步A/V的浏览器映射，未知继续手动，保护原源时钟／标注／费用。Codex合同及验收、DSH唯一写者、原Sol/high独评，不新增录像API。见[sprint](docs/exec-plans/sprint-source-clock-mapping.md)。
+
 **2026-10-24试验文档发布受网络阻断**：本地提交9e8e525已保存；一次普通push连接GitHub:443失败，远端仍e9361e2。不强推或循环重试，后续实质交付再补推；单帧试验结果、授权与费用账目均不受影响。
 
 **2026-10-24固定单帧真实试验完成**：已按新¥0.50具体许可唯一发送原28.5秒登记图／parts-v2，HTTP200、deepseek-flash生成1主体／7属性并发布。三新进程本地resume零发送／unchanged、正例1／跨衣物负例0；922旧文件SHA不变，原Sol/high最终PASS。1016输入／119输出tokens估算¥0.001492，未核账单，原¥0.416预留已由估算额替代；本授权一次已用尽，剩余额度不允许再发。原费用／unknown／12标注纠正／六素材保持，F006/F009/F010false。下一原Luna/high定位TD006特殊源时钟自动映射，DSH后续唯一实施，不新增录像API或重标。见[报告](docs/exec-plans/report-2026-10-24-static-observation-pilot.md)及[sprint](docs/exec-plans/sprint-static-observation-pilot.md)。下方为此前节点。

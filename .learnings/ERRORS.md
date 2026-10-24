@@ -1,5 +1,9 @@
 # Errors
 
+## 2026-10-24: terminal supervision and readonly input enrollment
+
+Resolved: do not end on stale RUNNING after a watcher expires; continue the single watcher and read each new terminal request/hash once. Quota resumption reads the same persisted native session, never replays accepted prompts. Contract revisions preserve the original baseline: adding ignored protected/test-only files later requires explicit immutable exact-SHA enrollment, not whole-tree resnapshot, moving files, or ledger edits. This recovery preserved 654 old entries and added exactly27, with the same guard independently reviewing it. Distinguish original reference editor receipt (plan-input/template/html) from imported result receipt (benchmark-plan/record-input/reference-record); the first real readback correctly rejected the latter. Preserve failed helper/logs and correct test-only input paths in a new revision. PowerShell interpolation before ':' uses ${code}; parse rejection means the native send never started.
+
 ## 2026-10-24: resumption command and output discipline
 
 `/goal` already created an active goal; read it rather than creating a second goal. `recover` accepts task selectors but no summary/view flags; use plain recover and save its output, then summary on supported commands. Native session/list uses `_request`, not request or an empty envelope. PowerShell scripts may leave a stale LASTEXITCODE; check script success/explicit behavior, and external process codes immediately. Keep returned batches bounded; never dump whole receipts, wide historical docs, or arrays to diagnose a single state. Search existing exact paths, avoid Windows wildcard path operands, and use verified archive bytes to repair drift rather than rewriting installation receipts.

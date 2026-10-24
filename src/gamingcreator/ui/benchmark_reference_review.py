@@ -8,7 +8,33 @@ from importlib.resources import files
 from pathlib import Path
 from typing import cast
 
+from gamingcreator.application.benchmark_reference_review import RUNTIME_CLOCKS
 from gamingcreator.ui.benchmark_review import STYLE
+
+
+def _page_media(
+    context: dict[str, object], media_urls: dict[str, str] | None
+) -> list[dict[str, object]]:
+    """Media rows for the page: add video URLs and the derived runtime clock projection.
+
+    The clock is injected here only, never written back into the stored context, so the
+    stored identity/hash and any already-saved record keep their exact bytes.
+    """
+    runtime = context.get(RUNTIME_CLOCKS)
+    clocks = cast(dict[str, object], runtime) if type(runtime) is dict else None
+    rows = []
+    for row in cast(list[dict[str, object]], context["media"]):
+        identifier = cast(str, row["id"])
+        item: dict[str, object] = {
+            **row,
+            "videoUrl": media_urls[identifier]
+            if media_urls is not None
+            else Path(cast(str, row["path"])).as_uri(),
+        }
+        if clocks is not None and identifier in clocks:
+            item["sourceClock"] = clocks[identifier]
+        rows.append(item)
+    return rows
 
 
 def render_reference_review(
@@ -17,15 +43,7 @@ def render_reference_review(
     *,
     media_urls: dict[str, str] | None = None,
 ) -> str:
-    media = [
-        {
-            **row,
-            "videoUrl": media_urls[cast(str, row["id"])]
-            if media_urls is not None
-            else Path(cast(str, row["path"])).as_uri(),
-        }
-        for row in cast(list[dict[str, object]], context["media"])
-    ]
+    media = _page_media(context, media_urls)
     encoded = base64.b64encode(
         json.dumps(
             {"context": {**context, "media": media}, "template": template},
@@ -37,6 +55,8 @@ def render_reference_review(
         "const source=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob('"
         + encoded
         + "'),c=>c.charCodeAt(0))));\n"
+        + files("gamingcreator.ui").joinpath("static/source-clock.js").read_text(encoding="utf-8")
+        + "\n"
         + files("gamingcreator.ui")
         .joinpath("static/benchmark-references.js")
         .read_text(encoding="utf-8")
@@ -54,7 +74,7 @@ def render_reference_review(
 <button id="download-record" type="button">保存当前标注记录</button>
 <p id="status" role="status" aria-live="polite">尚未新增人工参考。</p></header>
 <section><label>选择事前查询<select id="query-select"></select></label><p id="query-info"></p>
-<video id="source-video" controls preload="metadata"></video><p id="clock-state"></p>
+<video id="source-video" controls preload="metadata"></video><p id="clock-state"></p><a id="open-source" hidden>打开本机原片</a>
 <div class="fields"><label>可用起点（源时间秒）<input id="start-seconds" type="text" inputmode="decimal" placeholder="0.000000"><button id="capture-start" type="button">用当前位置标记起点</button></label>
 <label>可用终点（源时间秒）<input id="end-seconds" type="text" inputmode="decimal" placeholder="1.000000"><button id="capture-end" type="button">用当前位置标记终点</button></label></div>
 <div class="fields"><label>真实事件名称<input id="event-id" type="text" placeholder="例如：第一次闪避"></label><label>独立动作归组<input id="event-group" type="text" placeholder="同一动作的不同区间填相同名称"></label></div>

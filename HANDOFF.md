@@ -1,37 +1,27 @@
-# 当前交接：单注册帧真实协议试验已完成
+# 当前交接：TD006特殊源时钟自动映射已交付
 
-**最新交付（2026-10-24）**：原28.5秒登记帧已按用户¥0.50新许可唯一发送一次，HTTP200，生成1主体／7条typed属性并发布。另一进程查询正例1／跨衣物负例0；本地resume零发送／unchanged。估算¥0.001492（1016输入／119输出tokens，未核供应商账单），原¥0.416预留已由估算额替代；一次额度已用尽，剩余金额不允许再发。922旧项目文件SHA不变，唯一原Sol/high复核PASS。见[真实试验报告](docs/exec-plans/report-2026-10-24-static-observation-pilot.md)和[sprint](docs/exec-plans/sprint-static-observation-pilot.md)。
+更新：2026-10-24，Phase 0，main。新准备的两种验收页面，对已验证Chromium／MP4非零PTS及异步音视频可自动换算、取时、定位同规范区间并末停；未知／不支持仍手填。旧页面包、原12标注及纠正保持，不要求重标。见[报告](docs/exec-plans/report-2026-10-24-source-clock-mapping.md)、[sprint](docs/exec-plans/sprint-source-clock-mapping.md)及[当前里程碑](docs/exec-plans/current-status.md)。
 
-更新：2026-10-24，main，用户已明确恢复持续DSH协作。当前仍为Phase 0，F006/F009/F010=false。没有运行中的产品源码写者／录像分析；下一项是原计划TD006特殊源时钟自动映射的有限离线切片，由原Luna/high只读定位。不重投已完成工程请求或真实单帧请求。
+## 已交付与验收
 
-发布事实：源码及主报告提交`fdd83d6`已于本轮普通push成功到origin/main（原远端958f70c→fdd83d6），此前9eb55f3／81216a5等本地成果亦随之同步；原GitHub不可连接为历史状态。本行的后续文档提交不改变已验源码。
+- TD006：正式256passed／0skip、九文件Ruff／格式／五源码mypy／三JS语法通过，原Sol/high R1–R8 PASS。实际旧编辑包＋10有效参考经生产CLI复用成功，37保护／922原项目SHA不变。12源码／测试SHA与Git blob前后相同。仅实证范围通过，不是逐帧裁切或通用编码兼容。
+- 单注册帧真实试验已结束：原28.5秒图＋parts-v2唯一一次HTTP200，1主体／7typed属性，另进程正例1／跨衣物负例0，本地resume零发送。估算¥0.001492（1016输入／119输出tokens，未核账单）；¥0.50许可的一次额度已用尽，剩余钱不允许追加。run f601fb9b3e734d5ea188fc15c790acbb，attempt205f8efdee85311c7190dfc57bfb4a13。见[试验报告](docs/exec-plans/report-2026-10-24-static-observation-pilot.md)。
+- 静态声明导入／parts查询、单帧prepare／具体授权／一次发送／本地resume，以及TD014状态可靠性均已交付；历史证据沿原报告保留。F006／F009／F010仍false，真人准确性未通过。
 
-最新发布：真实试验文档提交`9e8e525`已本地保存，本次普通push遇GitHub:443连接失败（约21秒）；远端仍e9361e2，未把本次文档称为已推送。无强推／循环重试，后续有实质交付时再普通push；本机试验结果和账目不受影响。
+工作台扩展组另有2项失败（登记终态写status.json的WinError5、导入HTTP缺busy，后者根因未定）；275项273通过，不能声称整流程通过。原失败及生成日志指纹问题保留；最终三组通过只证明独立TD006与旧包CLI。下一在复用受影响工作台步骤前先处理该可靠性边界，详见TD012及报告。
 
-## 已交付、验证和使用
+## DSH恢复入口与加载
 
-- 从Completed已登记单帧本地冻结proposal；具体新授权下至多一次生成；typed草案独立保存／发布；另一进程按同主体／同part查询；resume只补本地工作，不重新发图。合法空主体不造人。见[交付报告](docs/exec-plans/report-2026-10-24-static-observation-generation.md)、[sprint](docs/exec-plans/sprint-static-observation-generation.md)和[使用指南](docs/references/static-observation-generation-guide.md)。
-- 显式parts-v2避免棕短裤＋白外套被拼为棕外套，持有物也按实际声明的局部part分开。未知费用／次数保留；空／缺／损坏账本失败关闭；新授权独立核额，同proposal换授权拒绝。真实视觉准确率仍未知。
-- 最终159passed／1 Windows符号链接权限skip、九文件Ruff／格式／六源码scoped mypy、两次相同离线wheel及隔离CLI导入、唯一Sol/high五项复核PASS。37保护文件SHA不变。初轮134passed仍被独评证伪的五问题已一次集中追修，原证据保留。
-- v4合同a1881905d1290c68bd826e77d824f69006fd98d99332ee9f497455a82c465187；三正式回执在最终docs／Git变化前均验证有效，源前后一致，九源码／测试SHA另存。本次不声称整仓verify、真实Provider或人类质量通过。
+- 配置：个人Skill codex-dsh-collab（本轮核最新版SHA c36cc6c2…854a），toolRoot G:/Tools/ChatGPTRepo/codex-dsh-双端联通，stateDir C:/Users/Crux/.codex/codex-dsh-state，native http://127.0.0.1:3080，workspace f4395711-a8fb-49a3-ad95-7305ce9ea1e8。
+- TD006 task gamingcreator-source-clock-mapping-20261024／session codex-94269cc4-7c00-4bbe-917e-bdd6205a1a9f。四请求29a141ad／87da2a18／b90f9594／93834a15全部COMPLETED，完整终态报告各按hash读一次；当前无watcher、无源码写者，**不重投**。最终合同v6 `1155ea481af6e9e3507250ddb5b56c8a6b660d87b7ef485dadd4fd512b3c7311`。结果、回执与源码证据在ignored artifacts/dsh-source-clock-mapping-20261024/。
+- v2漏登记27个ignored只读条目形成的scope阻断已恢复。隔离工具分支codex/contract-enrollment-20261024提交51f42dd；一次显式baseline-supplement只追加27项，原654条目和Git身份不变，旧资产保留，configured原CLI已正常bind/run。主工具安装仍fc47d97；不手改旧ledger、不移动材料、不另建任务绕门。
+- 旧静态task gamingcreator-static-observations-20261023／session codex-35d31548-8d46-4f1b-b8dc-1886e7f8f355：本轮已核running=false、queue0、三请求COMPLETED；STOP_PENDING／STOP_ACTIVITY_UNRESOLVED继续保留。不再cancel、杀共享Host、归档或重发。Skill／手册更新已由CLI当前磁盘导入，不需要重启现有Host。
+- 主控额度中断后可从原会话恢复报告；不能承诺停顿期间自动验收／派下一轮。本轮已纠正用旧RUNNING结束监督的问题，单watcher60秒cursor／generation增量，终态及时读一次结果。工程模型用量另存且关联有限，未知费用不补零。
 
-## 当前DSH与加载证据
+## 保留进度、人工依赖与下一步
 
-- workspace `f4395711-a8fb-49a3-ad95-7305ce9ea1e8`，项目 `G:/Tools/ChatGPTRepo/GameingCreatorAgent`，connection native，原账本 `C:/Users/Crux/.codex/codex-dsh-state`。
-- 新task `gamingcreator-static-generation-20261024`／session `codex-d988fa9d-3d21-4604-b2f2-26c5b46d9d90`；两个请求754ee660-07dc-4243-b173-2c4a7c887b2d、e75d4f30-871b-4e72-890a-90acf7ec63b4均COMPLETED，完整新答复各按hash读一次。新工程勿重投这两个已完成请求。
-- 旧task `gamingcreator-static-observations-20261023`／session `codex-35d31548-8d46-4f1b-b8dc-1886e7f8f355`：本轮只读核实running=false、queue=0，三个请求COMPLETED；STOP_PENDING仍保留且旧task阻断，不声称后台子树停净，不再次cancel／杀Host／归档。
-- 工具fc47d97；新CLI直接导入当前磁盘模块。最近优化只改Skill／手册／离线benchmark，不涉及Host更新。个人Skill与仓库副本逐字节一致，现有Host未重启。85份pyc从已验SHA原包恢复、原字节和回执保留，完整init通过；未改系统环境。
-- 单watcher、60秒cursor/generation增量、最多三窗口有限脚本；仅阶段读usage。用量投影partial，208事件关联不明被排除，总token／费用未知；不是零费用或节省证明。本机证据在ignored artifacts/dsh-static-generation-20261024/。
+长钟馗269成功／3拒绝／469观察保持，原片约15分52秒，842.598秒是续跑墙钟；累计API估算¥1.49022124，本rununknown／预留0，其他未知账独立保留。3缺口仍非Completed；用户选C离线改进，未代选A/B/D，不补窗或重跑成功窗。
 
-## 人工待办与下一步
+已有12标注与用户纠正（10有效：Boss1／连招5／剧情4）、六新增素材全部保留，当前不要求重做或再补文件。只读来源对齐证明10正例对应钟馗failed／coverage_gap，32旧排名均异源，无同源Completed可作有效覆盖投影。F006须原来源独立性／事前参考／明确Completed绑定／固定Top10人评；原v5画面对错按“稍后核对”留空。
 
-1. 本次单帧试验已结束：run f601fb9b3e734d5ea188fc15c790acbb，proposalHash 95880840d38ea2f6e6bda85427ecfab8806cab9ec02422b1bd3d4a449a5f2b59，attempt-205f8efdee85311c7190dfc57bfb4a13。API仅一次，deepseek-flash；实际结果、不可覆盖发送intent／completion及本地读回在ignored artifacts/dsh-static-generation-20261024/real-*。恢复只读原记录，绝不重发。
-2. 下一由Codex制定TD006自动映射合同、DSH唯一写者实施、单一评估者验收；使用本地合成录像和真实浏览器，不依赖新素材、人评或录像API许可。未知／不支持时钟仍保守退化，不改旧来源、页面包或标注。真实检索质量仍沿原计划的来源独立性、事前参考和固定Top10人评门槛。
-3. 原v5画面对错按用户“稍后核对”继续留空；真实Provider接受性不等于准确率。正式F006仍须原来源／事前参考／固定Top10人评，未过门槛不转入创作成片、正式桌面或商业阶段。
-4. 原12条标注及纠正、六新增素材无需重做或继续补文件。已有来源录制独立性和正式参考仅在相应验收触发时确认，见[人工清单](docs/exec-plans/human-inputs.md)。
-
-## 保留进度与发布
-
-长钟馗269成功窗／3拒绝／0未执行、469观察；原片约15分52秒，842.598秒为续跑墙钟，累计API估算¥1.49022124，本rununknown／预留0，其他历史未知独立保留。3缺口仍非Completed；已选C离线改进，A/B/D未代选，不运行任何旧launcher或补窗。特殊源时钟自动映射仍是后续项。
-
-原排名兼容、TD014、TD006、独立静态导入四项交付与旧暂停／审计见[历史接续清单](docs/exec-plans/report-2026-10-24-dsh-resumption.md)。旧暂停已由本次明确恢复取代。源码／文档由Codex本地Git保存，普通push及远端实际状态见Git与本机publication.json，不强推；旧网络失败不当作当前远端事实。
+下一先处理已复现工作台完成状态可靠性，再回原真实质量计划，复用已有资料；仅在实际触发来源确认、新参考或具体新费用提案时按[人工清单](docs/exec-plans/human-inputs.md)提醒，不重复催同待办。不转入后续成片／正式桌面／商业阶段。发布状态另见本文件末尾及本机publication.json，不能从旧网络失败推定当前远端。

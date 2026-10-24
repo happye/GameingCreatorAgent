@@ -8,7 +8,9 @@ from typing import cast
 
 from gamingcreator.application.benchmark import parse_manifest
 from gamingcreator.application.benchmark_preparation import canonical_json
+from gamingcreator.application.browser_source_clock import build_source_clock, clock_document
 from gamingcreator.application.storage import StoredTimeline
+from gamingcreator.domain.media import MediaAsset
 
 REVIEW_VERSION = "benchmark-candidate-review-v1"
 MAX_REVIEW_BYTES = 4_194_304
@@ -279,23 +281,27 @@ def build_review_context(
     context: dict[str, object] = {
         **basis,
         "template": template,
-        "media": [
-            {
-                "runId": key,
-                "name": value.run.asset.source_path.name,
-                "path": str(value.run.asset.source_path),
-                "durationUs": value.run.asset.duration_us,
-                "originSeconds": str(value.run.asset.origin_seconds),
-                # Same conservative rule as the raw-footage reference page: a shared
-                # zero origin is not enough when a stream starts later (async A/V).
-                "automaticPlaybackSupported": value.run.asset.origin_seconds == 0
-                and all(stream.start_seconds == 0 for stream in value.run.asset.streams),
-            }
-            for key, value in timelines.items()
-        ],
+        "media": [_review_media(key, value.run.asset) for key, value in timelines.items()],
         "qualityGate": None,
     }
     return context, template
+
+
+def _review_media(run_id: str, asset: MediaAsset) -> dict[str, object]:
+    """Runtime page context for one media; the browser clock is never part of the record."""
+    clock = build_source_clock(asset)
+    return {
+        "runId": run_id,
+        "name": asset.source_path.name,
+        "path": str(asset.source_path),
+        "durationUs": asset.duration_us,
+        "originSeconds": str(asset.origin_seconds),
+        # Static eligibility only: the page still has to observe the browser timeline and
+        # confirm the measured axis before any automatic button is enabled. The document
+        # lives only in the page run context and never reaches frozen plans or annotations.
+        "sourceClock": None if clock is None else clock_document(clock),
+        "automaticPlaybackSupported": clock is not None,
+    }
 
 
 def validate_review(

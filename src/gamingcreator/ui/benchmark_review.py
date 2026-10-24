@@ -42,10 +42,13 @@ def render_benchmark_review(
     asset = (
         files("gamingcreator.ui").joinpath("static/benchmark-review.js").read_text(encoding="utf-8")
     )
+    clock = files("gamingcreator.ui").joinpath("static/source-clock.js").read_text(encoding="utf-8")
     script = (
         "const source=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob('"
         + encoded
         + "'),c=>c.charCodeAt(0))));\n"
+        + clock
+        + "\n"
         + asset
     )
     digest = base64.b64encode(hashlib.sha256(script.encode()).digest()).decode("ascii")
@@ -59,7 +62,7 @@ def render_benchmark_review(
 <label><input id="reviewed" type="checkbox"> 本次候选记录已由人复核</label>
 <label>继续填写已有记录<input id="load-record" type="file" accept=".json,application/json"></label>
 <button id="download-record" type="button">下载当前记录</button><p id="status" role="status" aria-live="polite">尚未填写评分。</p></header>
-<div class="player"><video id="source-video" controls preload="none"></video><p id="play-state">选择“播放此区间”回看原片。</p><a id="open-source" hidden>打开本机原片</a></div>
+<div class="player"><video id="source-video" controls preload="none"></video><p id="clock-state">正在核对这段原片的浏览器时钟；核对完成前不能自动播放。</p><p id="play-state">选择“播放此区间”回看原片。</p><a id="open-source" hidden>打开本机原片</a></div>
 <div id="queries"></div>"""
     return (
         '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'

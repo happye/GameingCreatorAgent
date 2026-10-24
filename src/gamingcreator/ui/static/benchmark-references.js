@@ -5,8 +5,30 @@
     let record = structuredClone(source.template);
     let queryIndex = 0;
     let revision = 0;
+    let loadGeneration = 0;
+    let validationToken = 0;
+    let activeGeneration = -1;
+    // Bounded re-validation of the visible axis after the player was busy or moved during a
+    // probe. Interaction or the probe target itself is never treated as axis evidence.
+    const AXIS_RETRY_DELAYS_MS = [1500, 2500];
     const byId = (id) => document.getElementById(id);
     const video = byId("source-video");
+    const REASONS = {
+        seek_unavailable: "浏览器没有给出可定位的原片时间范围",
+        seek_incomplete: "浏览器的原片定位没有完成",
+        duration_unavailable: "浏览器没有读到可用的原片时长",
+        duration_mismatch: "浏览器读到的原片时长与保存的原片时长不一致",
+        duration_changed: "浏览器读到的原片时长发生了意外变化",
+        axis_unavailable: "浏览器没有返回可核对的播放位置",
+        axis_unstable: "浏览器播放位置在核对过程中发生了变化",
+        axis_mismatch: "浏览器播放起点与保存的原片起点不一致",
+        media_unavailable: "浏览器不能读取这段原片",
+        source_mismatch: "浏览器实际载入的原片与当前查询的原片不同",
+        observation_invalid: "浏览器返回的原片时间信息不完整",
+        clock_unavailable: "这段原片没有可核对的浏览器时钟",
+    };
+    const EMPTY_SESSION = () => ({ generation: loadGeneration, url: null, headerDuration: null, status: "pending", clock: null, reason: null, axisAttempts: 0, axisReason: null, seeked: false });
+    let session = EMPTY_SESSION();
     const canonical = (value) => {
         if (Array.isArray(value)) return value.map(canonical);
         if (value && typeof value === "object") return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])]));
@@ -77,6 +99,117 @@
         byId("confirmed").checked = record.plan.humanReferences.confirmed;
         byId("reviewed").checked = record.plan.humanReferences.reviewed;
     }
+    function unavailableText(state) {
+        const reason = state.status === "pending"
+            ? (state.reason === "axis_unconfirmed"
+                ? "原片播放起点尚未确认，正在等待播放器空闲后重新核对"
+                : "正在核对原片浏览器时钟")
+            : REASONS[state.reason] || "浏览器时间无法核对为规范源时间";
+        return `${reason}；请手填规范源时间并打开本机原片核对。`;
+    }
+    function resetSession() {
+        loadGeneration += 1;
+        session = EMPTY_SESSION();
+    }
+    function markUnavailable(reason) {
+        session = { ...session, status: "unavailable", clock: null, reason };
+        renderClockState();
+    }
+    function deferAxis(generation, token, axisReason) {
+        // No acceptable axis evidence yet: keep the page pending/manual and retry a bounded
+        // number of times only while the player is idle. Interaction is never proof.
+        const attempts = (session.axisAttempts || 0) + 1;
+        session = { ...session, status: "pending", clock: null, reason: "axis_unconfirmed", axisAttempts: attempts, axisReason };
+        renderClockState();
+        if (attempts > AXIS_RETRY_DELAYS_MS.length) { markUnavailable(axisReason); return; }
+        const delay = AXIS_RETRY_DELAYS_MS[attempts - 1];
+        setTimeout(() => {
+            if (generation !== loadGeneration || token !== validationToken) return;
+            if (session.status !== "pending" || session.reason !== "axis_unconfirmed") return;
+            if (video.seeking) { deferAxis(generation, token, axisReason); return; }
+            void validateVisibleClock(generation);
+        }, delay);
+    }
+    function renderClockState() {
+        const media = selectedMedia();
+        const link = byId("open-source");
+        link.href = media.videoUrl;
+        const ready = session.status === "ready" && session.clock && session.generation === loadGeneration && session.url === media.videoUrl;
+        if (ready) {
+            const clock = session.clock;
+            link.hidden = true;
+            byId("capture-start").disabled = byId("capture-end").disabled = false;
+            byId("clock-state").textContent = clock.videoStartUs > 0
+                ? `已把浏览器播放位置换算为规范源时间；原片开头 ${(clock.videoStartUs / 1000000).toFixed(3)} 秒没有画面，该段不能标记。`
+                : "已把浏览器播放位置换算为规范源时间；可用“用当前位置标记”，保存前请核对完整动作与区间。";
+        } else {
+            link.hidden = false;
+            byId("capture-start").disabled = byId("capture-end").disabled = true;
+            byId("clock-state").textContent = unavailableText(session);
+        }
+    }
+    async function validateVisibleClock(generation) {
+        if (generation !== loadGeneration || activeGeneration === generation) return;
+        const token = ++validationToken;
+        const media = selectedMedia();
+        const url = video.currentSrc;
+        if (!url || url !== media.videoUrl) {
+            // The element has not selected the query's media yet, or it selected another file.
+            if (url && url !== media.videoUrl) markUnavailable("source_mismatch");
+            return;
+        }
+        if (session.status === "ready" && session.generation === generation && session.url === url) return;
+        if (session.headerDuration === null) return; // Wait for the current load's metadata.
+        const candidates = SourceClock.clockCandidates(media);
+        if (!candidates.length) { markUnavailable("clock_unavailable"); return; }
+        activeGeneration = generation;
+        try {
+            // The mapping is re-established for every visible load generation, never cached
+            // by URL: the probe element is created fresh from the current `currentSrc`.
+            const verdict = await SourceClock.establish(candidates, url);
+            if (token !== validationToken || generation !== loadGeneration) return;
+            if (!verdict.established) { markUnavailable(verdict.reason); return; }
+            const clock = verdict.clock;
+            if (Math.abs(session.headerDuration * 1000000 - clock.durationUs) > clock.durationToleranceUs) {
+                markUnavailable("duration_mismatch");
+                return;
+            }
+            if (video.readyState < 1 || !(video.videoWidth > 0)) { markUnavailable("duration_unavailable"); return; }
+            // Confirm the axis on the element the reviewer is actually using. Only the probed
+            // origin is evidence; the probe target and any user interaction are not. The first
+            // attempt runs only while the player is still untouched at its initial position; a
+            // bounded retry may probe an idle player and restores its position afterwards.
+            const retrying = (session.axisAttempts || 0) > 0;
+            const idle = !video.seeking;
+            const atStart = idle && Math.abs(video.currentTime) <= 0.000001;
+            if (!atStart && !(retrying && idle && Number.isFinite(video.currentTime))) {
+                deferAxis(generation, token, "axis_mismatch");
+                return;
+            }
+            const restoreTo = atStart ? null : video.currentTime;
+            // The axis probe may be woken by a late event from a media that has already been
+            // switched or reloaded. Every await below must still belong to the same validation
+            // before anything (especially the restore write) is applied to the visible player.
+            const sameVisibleMedia = () => token === validationToken
+                && generation === loadGeneration
+                && video.currentSrc === url;
+            const axis = await SourceClock.settle(video, 0.000001);
+            if (!sameVisibleMedia()) return;
+            if (restoreTo !== null) {
+                await SourceClock.settle(video, restoreTo);
+                if (!sameVisibleMedia()) return;
+            }
+            if (axis === null) { deferAxis(generation, token, "seek_incomplete"); return; }
+            if (Math.abs(axis * 1000000 - clock.originUs) > clock.axisToleranceUs) {
+                deferAxis(generation, token, "axis_mismatch");
+                return;
+            }
+            session = { ...session, generation, url, status: "ready", clock, reason: null, axisAttempts: 0, axisReason: null };
+            renderClockState();
+        } finally {
+            if (activeGeneration === generation) activeGeneration = -1;
+        }
+    }
     function renderReferences() {
         const query = record.plan.queries[queryIndex];
         byId("reference-summary").textContent = `已登记 ${query.referenceEvents.length} 个真实事件 · ${query.kind === "main" ? "主查询须有至少十个独立可用参考" : query.kind === "negative" ? "负例不登记可用事件" : "少例单独评估"}`;
@@ -94,15 +227,46 @@
     function switchQuery() {
         queryIndex = Number(byId("query-select").value); revision += 1;
         video.pause();
+        resetSession();
         const query = record.plan.queries[queryIndex]; const media = selectedMedia();
         video.src = media.videoUrl;
         byId("query-info").textContent = `${query.text} · ${media.path.split(/[\\/]/).pop()} · ${seconds(media.durationUs)} 秒`;
-        byId("clock-state").textContent = media.automaticTimeCapture ? "可用播放器位置标记；保存前请核对完整动作与区间。" : "此录像起始时间特殊，请手填规范源时间；不自动采用播放器位置。";
-        byId("capture-start").disabled = byId("capture-end").disabled = !media.automaticTimeCapture;
         byId("add-reference").disabled = query.kind === "negative";
         for (const id of ["start-seconds", "end-seconds", "event-id", "event-group", "reason"]) byId(id).value = "";
+        renderClockState();
         renderReferences();
+        void validateVisibleClock(loadGeneration);
     }
+    video.addEventListener("loadstart", () => {
+        resetSession();
+        renderClockState();
+        void validateVisibleClock(loadGeneration);
+    });
+    video.addEventListener("loadedmetadata", () => {
+        if (!Number.isFinite(video.duration) || video.duration <= 0) { markUnavailable("duration_unavailable"); return; }
+        if (session.headerDuration === null) session.headerDuration = video.duration;
+        if (video.currentSrc) session.url = video.currentSrc;
+        renderClockState();
+        void validateVisibleClock(loadGeneration);
+    });
+    video.addEventListener("seeked", () => {
+        if (session.generation === loadGeneration) session.seeked = true;
+    });
+    video.addEventListener("emptied", () => {
+        resetSession();
+        renderClockState();
+    });
+    video.addEventListener("durationchange", () => {
+        if (session.status !== "ready" || !session.clock) return;
+        // Only the measured bounded non-zero-PTS growth after a seek may stay ready; any
+        // shrink, non-finite value or unexpected growth revokes the capability.
+        const verdict = SourceClock.durationChangeVerdict(session.clock, video.duration, session.seeked);
+        if (verdict !== null) markUnavailable(verdict);
+    });
+    video.addEventListener("error", () => {
+        markUnavailable("media_unavailable");
+        notify("原片无法播放；请检查原文件和浏览器编码支持，已填标注保留。");
+    });
     for (const [index, query] of record.plan.queries.entries()) {
         const option = document.createElement("option"); option.value = String(index); option.textContent = `${query.text} · ${selectedMedia(index).path.split(/[\\/]/).pop()}`; byId("query-select").append(option);
     }
@@ -110,10 +274,16 @@
     for (const id of ["label-version", "annotators", "confirmed", "reviewed"]) byId(id).addEventListener("input", () => { readMetadata(); edited(); });
     for (const id of ["start-seconds", "end-seconds", "event-id", "event-group", "reason"]) byId(id).addEventListener("input", () => { revision += 1; });
     for (const [button, field] of [["capture-start", "start-seconds"], ["capture-end", "end-seconds"]]) byId(button).addEventListener("click", () => {
-        if (!selectedMedia().automaticTimeCapture || video.readyState < 1 || !Number.isFinite(video.currentTime)) return notify("等待原片载入，或手填源时间。");
-        const position = Math.round(video.currentTime * 1000000);
-        if (position < 0 || position > selectedMedia().durationUs) return notify("播放器位置超出原源时间，请手填核对。");
-        byId(field).value = seconds(position); revision += 1;
+        const media = selectedMedia();
+        if (session.status !== "ready" || !session.clock || session.generation !== loadGeneration || session.url !== media.videoUrl) return notify(unavailableText(session));
+        if (video.seeking || video.readyState < 2 || video.currentSrc !== media.videoUrl || !Number.isFinite(video.currentTime)) return notify("浏览器仍在定位原片，请等定位完成后再标记，或手填规范源时间。");
+        // The duration is rechecked at capture time as well, so a change that arrived without a
+        // usable event can never be turned into a canonical source value.
+        const verdict = SourceClock.durationChangeVerdict(session.clock, video.duration, session.seeked);
+        if (verdict !== null) { markUnavailable(verdict); return notify(unavailableText(session)); }
+        const sourcePosition = SourceClock.captureSourceUs(session.clock, video.currentTime);
+        if (sourcePosition === null) return notify("当前位置没有可核对的原片画面，请移到有画面的位置，或手填规范源时间。");
+        byId(field).value = seconds(sourcePosition); revision += 1; notify("已把当前位置换算为规范源时间；保存前请核对完整动作与区间。");
     });
     byId("add-reference").addEventListener("click", () => {
         try {
@@ -147,6 +317,5 @@
             record = proposed; revision += 1; fillMetadata(); renderReferences(); notify("已有标注已载入；请继续核对原片并下载保存。");
         } catch (error) { notify(`${error.message} 当前标注保持。`); }
     });
-    video.addEventListener("error", () => notify("原片无法播放；请检查原文件和浏览器编码支持，已填标注保留。"));
     fillMetadata(); switchQuery();
 })();
