@@ -15,3 +15,5 @@ Run `grok inspect` from the repository root to check discovered instruction path
 Load the shared capability-based subagent routing preference. The [Codex mapping](../../docs/references/codex-agent-routing-guide.md) is specific to Codex models and configuration; do not claim those names work in Grok. Use this tool's actual supported models, bounded context and explicit ownership, and verify execution before claiming routing succeeded.
 
 For substantive milestones follow the shared Planner -> Generator -> independent Evaluator contract in `docs/references/development-agent-pipeline.md`; simple work stays in the parent and is recorded as single-agent work. The portable harness-project-init skill now supplies this tool's native routing adapter; verify actual discovery/model before use rather than treating Codex TOML as this tool's configuration. The integrator persists read-only role outputs.
+
+Load the persistent progress-board rule in `AGENTS.md`: update `docs/exec-plans/progress-board.md` with every major change in the same commit as HANDOFF/sprint/progress/assignments, using verifiable counts only.

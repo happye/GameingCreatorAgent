@@ -18,3 +18,5 @@ color: yellow
 - 需求不清或与代码冲突 → 停下报告。不 commit、不 push。
 
 回复（≤10 行）：写了哪些文件、覆盖的段落、待确认项。
+
+每次重大改动同时更新 `docs/exec-plans/progress-board.md`（用户量化监督入口）：数字只取自 feature_list.json、tech-debt.md 状态列和 human-inputs.md 待办表，改“最后更新”行，并在回复中列出看板数字变化。

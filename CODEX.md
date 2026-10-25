@@ -16,3 +16,5 @@ Read [AGENTS.md](./AGENTS.md) first; it is the repository-wide source of truth. 
 Codex discovers `AGENTS.md` natively; this file is linked guidance, not an assumed native configuration filename. Current status and environment findings belong in `HANDOFF.md`.
 
 Use the persistent subagent model routing in `AGENTS.md` and [the routing guide](docs/references/codex-agent-routing-guide.md). Choose the task's model and effort explicitly when this session cannot resolve a new custom role; use minimal fresh context and verify actual execution metadata. Do not send every task to the parent model or duplicate specialist checks.
+
+9. Load the persistent progress-board rule in `AGENTS.md`: update `docs/exec-plans/progress-board.md` with every major change, in the same commit as the other alignment documents, using counts from `feature_list.json`, `tech-debt.md` and `human-inputs.md`.

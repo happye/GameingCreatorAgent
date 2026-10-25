@@ -2,6 +2,8 @@
 
 ## 新对话接手清单（2026-10-25，Claude Code会话交接，最先读这里）
 
+**进度看板**：用户量化监督入口为[docs/exec-plans/progress-board.md](docs/exec-plans/progress-board.md)；每次重大改动必须同提交更新（规则见AGENTS.md“Persistent progress board”）。
+
 **最新收尾（第三会话结束，用户额度不足主动收尾）**：
 - 已push到origin/main（c5a3c83及其后收尾提交，见`git log origin/main -1`）。本会话交付：跨改动审查及两P2修复、TD008预览缓存ChangeTime、TD012批次路径、TD005检索期间文件变化重哈希、TD003来源核对、TD005第B步测量；F006验收流程两轮对抗审查——第一轮1个P0（计分去重）＋4个P2＋1降级项全部修复（见[sprint](docs/exec-plans/sprint-f006-pipeline-review.md)），第二轮无P0／P1、3个P2。
 - 第二轮P2处理：①失败查询的计数改为null而非0、部分判定时`usefulIndependentEvents`为null——代码与2个新测试已写（`application/benchmark.py`、`tests/test_benchmark.py`），提交状态见下一条；②③验收就绪摘要两处显示问题记为TD017，未修。

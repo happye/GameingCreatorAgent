@@ -13,6 +13,7 @@ Gaming Creator Agent turns local game footage and a brief into content. Phase 0'
 - `CODEX.md`, `CLAUDE.md`, `.grok/rules/project.md`: tool adapters; shared rules live here and in `docs/`.
 - `.claude/agents/`: nine Claude Code subagent roles; routing and Codex mapping in `docs/references/claude-agent-routing-guide.md`.
 - `HANDOFF.md`: latest resumption snapshot; `progress.md`: historical work log.
+- `docs/exec-plans/progress-board.md`: quantified progress board for the user; update it with every major change.
 
 ## Environment and commands
 
@@ -73,3 +74,7 @@ All agents share acceptance criteria; start with `HANDOFF.md` and `docs/referenc
 用户于2026-10-07要求：发现需要用户标注、确认素材、手动操作或提供其他帮助时，第一时间用通俗语言提醒，并记录到 `docs/exec-plans/human-inputs.md`。记录具体事项、操作入口、触发时点、影响范围、状态及完成证据；不要等用户追问，也不要替用户填写真实判断。待人工事项仅阻断依赖它的工作，继续推进可以独立完成的开发。需要新费用授权时保留原问题与提案，不把开发继续当作授权。
 
 持续对齐里程碑和进度：关键实现／验证／发布节点同步当前 sprint、`HANDOFF.md`、`docs/exec-plans/assignments.md` 与 `progress.md` 的当前摘要；阶段或验收状态变化同时核对规格与 `feature_list.json`。顶部明确已交付、开发中、人工待办和下一步，旧失败／旧发布记录保留为历史，不能覆盖当前事实。所有项目 Agent、子任务及工具切换共同遵守。
+
+## Persistent progress board
+
+用户于2026-10-25明确要求：开发迭代时必须让用户能量化看到“做到哪、完成多少、还剩多少”。唯一入口是[进度看板](docs/exec-plans/progress-board.md)（阶段、功能完成数、F006真实验收步骤、人工待办数、技术债计数、正在做／下一步）。所有项目Agent（Claude Code、Codex、Grok及其子Agent）在每次重大改动后，与HANDOFF／sprint／progress／assignments／human-inputs／tech-debt**同一次提交内**更新看板及“最后更新”行；数字只取自`feature_list.json`、`tech-debt.md`状态列和`human-inputs.md`待办表，不估算，不把“工具就绪”写成“验收通过”。任务开始先读看板第6节，结束或交接前更新它；子Agent结果由主控写入。向用户汇报时附带看板上的关键数字变化。此规则跨会话、工具切换和子任务持续生效。
