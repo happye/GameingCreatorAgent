@@ -15,6 +15,7 @@
 2c. ~~TD005详情加载优化~~：实测拆分后决定暂不改（主要耗时是每次打开的完整性哈希这一保护，要改需“按文件身份缓存哈希”的设计决定，关联TD008），已记TD005。
 2d. 本会话后段（均已提交）：目录扫描纳入MKV／WebM（`domain.media.LOCAL_VIDEO_SUFFIXES`）；验收页时钟映射按容器固定测试（零起点MKV／WebM与音频晚起WebM精确，非零起点MKV／WebM与音频晚起MKV退回手动）；TD011在独立Windows PowerShell 5.1验证通过后关闭；验证脚本report.json遇外部句柄的WinError5改为有界等待；TD013冻结后未建库的批次可续跑（命令行与工作台同一规则，其他任何痕迹仍拒绝，code-quality-guard PASS）。
 2d+. TD005第A步已交付（见sprint-inspect-integrity-single-pass.md）：工作台带查询打开每文件哈希3→1次，真实15分钟打开约1.7→1.0秒，保证不变，code-quality-guard PASS。第B步并行哈希、界面“已核对”小字、一小时冷缓存首次等待是否调大，列为业主决定事项（见该sprint第七节）。本批前一轮完整verify：3584 passed／0 failed／3 skipped。
+2f. 未完成（额度不足时停止，下一会话先做）：①对e58fc1a之后全部提交的整仓verify正在跑（日志.cache/verify-20261025-session2c.log），结果若未补记在此，下一会话先读该日志末尾；②全会话跨改动审查工作流（4视角＋每发现2票核实）因额度停止、无结果，脚本在本机会话目录`workflows/scripts/session-cross-change-review-*.js`，下一会话可用同样提示重跑（范围`git diff ad6be26..HEAD`）；③本会话所有提交仅在本地main，尚未push。
 2e. 剩余离线候选：TD012跨进程状态文件占用（仅再现时评估有界重试）；检查与使用之间的junction换入（需句柄式打开，L）；TD008哈希缓存身份；TD003发布前固定FFmpeg来源。下一会话可从这里或总方案下一阶段规划继续，仍不催分组。
 3. 若用户确认分组或补了原始游玩录像：工作台“验收流程”冻结步骤默认自动盘点即可核对；新付费分析必须先给具体提案并获明确批准。
 
