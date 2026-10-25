@@ -447,6 +447,18 @@ def require_resumable_project(project: Path, files: MediaBatchFiles) -> None:
         _require_project(project)
 
 
+def _file_identities(timeline: StoredTimeline) -> tuple[tuple[int, int, int], ...] | None:
+    """Stat identities of a verified timeline's source and evidence; None if any is gone."""
+    paths = (timeline.run.asset.source_path, *(item.artifact_path for item in timeline.evidence))
+    try:
+        return tuple(
+            (status.st_ino, status.st_size, status.st_mtime_ns)
+            for status in (os.stat(path) for path in paths)
+        )
+    except OSError:
+        return None
+
+
 async def execute_search(
     project: Path,
     run_id: str,
@@ -474,6 +486,7 @@ async def execute_search(
             timeline = verified_timeline
         else:
             timeline = await load_searchable_timeline(store, run_id)
+        verified_files = _file_identities(timeline)
         provider = LocalEmbeddingProvider.from_manifest(repository) if mode != "lexical" else None
         started = perf_counter()
         result = await search_timeline(
@@ -496,8 +509,10 @@ async def execute_search(
             top_k=top_k,
             embedding_space=provider.space if provider else None,
             # Either loaded and fully verified above, or reused after the caller's full
-            # verification in this request with an identical run record.
-            timeline_verified=True,
+            # verification in this request with an identical run record. A file whose
+            # identity changed while the search ran gets the full hash again.
+            timeline_verified=verified_files is not None
+            and _file_identities(timeline) == verified_files,
         )
         _write_json(project / "runs" / run_id / "searches" / (uuid4().hex + ".json"), document)
         return document

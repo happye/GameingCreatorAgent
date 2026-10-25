@@ -124,3 +124,42 @@ def test_persist_without_the_verified_flag_still_hashes_every_artifact(tmp_path,
 
     files = asyncio.run(scenario())
     assert files and not hashed
+
+
+def test_a_file_replaced_during_the_search_is_hashed_again_before_saving(
+    tmp_path, monkeypatch, hashed
+):
+    from gamingcreator.cli import main
+
+    project, _, _ = seed_project(tmp_path)
+    refuse_sends(monkeypatch)
+
+    async def verified():
+        store = await SqliteTimelineStore.open(project, read_only=True)
+        try:
+            return await store.load_timeline("run-1")
+        finally:
+            await store.close()
+
+    timeline = asyncio.run(verified())
+    evidence = timeline.evidence[0].artifact_path
+    original = main.search_timeline
+
+    async def swap_then_search(*args, **kwargs):
+        # Another process replaces an evidence file while local embedding would run.
+        replacement = evidence.with_suffix(".swap")
+        data = bytearray(evidence.read_bytes())
+        data[-1] ^= 0xFF
+        replacement.write_bytes(bytes(data))
+        os.replace(replacement, evidence)
+        return await original(*args, **kwargs)
+
+    monkeypatch.setattr(main, "search_timeline", swap_then_search)
+    hashed.clear()
+    with pytest.raises(AppError) as refused:
+        asyncio.run(
+            execute_search(
+                project, "run-1", "白色", tmp_path, mode="lexical", verified_timeline=timeline
+            )
+        )
+    assert refused.value.code == "storage.integrity" and hashed
