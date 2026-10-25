@@ -81,7 +81,7 @@ def render_reference_review(
 <label>为什么这个区间可用<textarea id="reason"></textarea></label>
 <button id="add-reference" type="button">登记这个可用区间</button><p id="reference-summary"></p><div id="reference-list"></div></section>
 <section><h2>保存后怎么做</h2><p>下载并保留标注记录。导入工具会重新核对原录像和事前查询，生成可交给已有冻结入口的计划；没有自动冻结、分析或人工评分。</p>
-<p>同一真实事件可以登记多个不同可用区间；名字相同会归到同一参考。同一个动作即使起多个名字，也应保持相同独立动作归组。</p></section>"""
+<p>同一真实事件可以登记多个不同可用区间；名字相同会归到同一参考。同一个动作只用一个事件名称登记；每个动作归组只属于一个事件名称，页面会拒绝两个名称共用一个归组。</p></section>"""
     return (
         '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         + '<meta http-equiv="Content-Security-Policy" content="'

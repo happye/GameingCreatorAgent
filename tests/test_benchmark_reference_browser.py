@@ -150,3 +150,28 @@ def test_real_file_player_manual_ranges_download_load_and_late_edit_guard(refere
             assert not requests and not errors
         finally:
             browser.close()
+
+
+def test_two_event_names_cannot_share_one_action_group(reference_page):
+    playwright = pytest.importorskip("playwright.sync_api")
+    page_path, _, _, _ = reference_page
+    with playwright.sync_playwright() as runtime:
+        browser = runtime.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(viewport={"width": 1366, "height": 900})
+            page.goto(page_path.as_uri())
+            for name, start, end in (
+                ("first-name", "0.100000", "0.500000"),
+                ("second-name", "1.000000", "1.500000"),
+            ):
+                page.locator("#start-seconds").fill(start)
+                page.locator("#end-seconds").fill(end)
+                page.locator("#event-id").fill(name)
+                page.locator("#event-group").fill("one-action")
+                page.locator("#reason").fill("Synthetic browser fixture, not human acceptance.")
+                page.locator("#add-reference").click()
+            # Freezing rejects a shared group, so the page refuses it with the reason.
+            playwright.expect(page.locator(".slot")).to_have_count(1)
+            playwright.expect(page.locator("#status")).to_contain_text("已由另一个事件名称使用")
+        finally:
+            browser.close()

@@ -68,8 +68,11 @@
             if (!Array.isArray(query.referenceEvents) || query.referenceEvents.length > 10000
                 || (query.kind === "negative" && query.referenceEvents.length)) throw new Error("查询参考事件无效。");
             const media = context.media.find((row) => row.id === query.sourceId);
-            const identifiers = new Set();
+            const identifiers = new Set(); const groups = new Set();
             for (const event of query.referenceEvents) {
+                // One action is one reference event: freezing rejects a group shared by two names.
+                if (event && groups.has(event.independenceGroup)) throw new Error(`动作归组“${event.independenceGroup}”已由另一个事件名称使用：同一个动作请用同一个事件名称登记，不同动作请换一个归组。`);
+                if (event) groups.add(event.independenceGroup);
                 if (!event || !equal(Object.keys(event).sort(), ["humanEventId", "independenceGroup", "reason", "usableRanges"])
                     || !text(event.humanEventId) || !text(event.independenceGroup) || !text(event.reason)
                     || identifiers.has(event.humanEventId) || !Array.isArray(event.usableRanges) || !event.usableRanges.length) throw new Error("请填写不同的真实事件名称、动作归组、可用区间和理由。");
