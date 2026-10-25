@@ -79,6 +79,7 @@ from gamingcreator.application.retrieval import (
     assert_project_search_document_contract,
     assert_run_search_document_contract,
     load_searchable_timeline,
+    refuse_unsearchable_run,
     search_timeline,
     search_timelines,
 )
@@ -89,7 +90,7 @@ from gamingcreator.application.source_inventory import (
     ensure_output_outside_sources,
     inventory_summary,
 )
-from gamingcreator.application.storage import RunStatus
+from gamingcreator.application.storage import RunStatus, StoredTimeline
 from gamingcreator.application.tasks import tasks_payload
 from gamingcreator.cli.static_observation_generation import (
     execute_dispatch_static_observation_generation,
@@ -454,11 +455,24 @@ async def execute_search(
     top_k: int = 10,
     mode: RetrievalMode = "hybrid",
     min_similarity: float = 0.80,
+    verified_timeline: StoredTimeline | None = None,
 ) -> dict[str, object]:
     _require_project(project)
     store = await SqliteTimelineStore.open(project)
     try:
-        timeline = await load_searchable_timeline(store, run_id)
+        # The workbench passes the Completed timeline it fully verified moments ago in the
+        # same request; reuse it only if the run record is still identical, otherwise load
+        # and re-verify every byte as before (TD005: no second full hash per search).
+        current = await store.load_run(run_id) if verified_timeline is not None else None
+        if (
+            verified_timeline is not None
+            and current == verified_timeline.run
+            and current.status == RunStatus.COMPLETED
+        ):
+            refuse_unsearchable_run(current)
+            timeline = verified_timeline
+        else:
+            timeline = await load_searchable_timeline(store, run_id)
         provider = LocalEmbeddingProvider.from_manifest(repository) if mode != "lexical" else None
         started = perf_counter()
         result = await search_timeline(
@@ -480,6 +494,9 @@ async def execute_search(
             elapsed_ms=cast(int, document["elapsedMs"]),
             top_k=top_k,
             embedding_space=provider.space if provider else None,
+            # Either loaded and fully verified above, or reused after the caller's full
+            # verification in this request with an identical run record.
+            timeline_verified=True,
         )
         _write_json(project / "runs" / run_id / "searches" / (uuid4().hex + ".json"), document)
         return document

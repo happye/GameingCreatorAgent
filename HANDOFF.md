@@ -14,6 +14,7 @@
 2b. ~~TD012 WinError10053~~：`ui/server.py:do_POST`改为先读完有界请求体再拒绝错误Content-Type／超限请求（超限最多丢弃读取1MiB）；压测旧代码400次中2次10053，修复后1600次全收到400，新增并发回归测试。~~TD012“取消范围400而非404”~~：根因是Windows非严格`resolve()`遇父目录被并发创建时保留`\\?\`前缀；新增`infrastructure/local_paths.py`（`resolve_existing`／`is_link`），并经工作流扫查全仓约180处`resolve()`后修复另4处同类问题（精分析sidecar、嵌入缓存、静态观察账本路径、联合检索目录）。TD012仅剩跨进程状态文件占用。
 2c. ~~TD005详情加载优化~~：实测拆分后决定暂不改（主要耗时是每次打开的完整性哈希这一保护，要改需“按文件身份缓存哈希”的设计决定，关联TD008），已记TD005。
 2d. 本会话后段（均已提交）：目录扫描纳入MKV／WebM（`domain.media.LOCAL_VIDEO_SUFFIXES`）；验收页时钟映射按容器固定测试（零起点MKV／WebM与音频晚起WebM精确，非零起点MKV／WebM与音频晚起MKV退回手动）；TD011在独立Windows PowerShell 5.1验证通过后关闭；验证脚本report.json遇外部句柄的WinError5改为有界等待；TD013冻结后未建库的批次可续跑（命令行与工作台同一规则，其他任何痕迹仍拒绝，code-quality-guard PASS）。
+2d+. TD005第A步已交付（见sprint-inspect-integrity-single-pass.md）：工作台带查询打开每文件哈希3→1次，真实15分钟打开约1.7→1.0秒，保证不变，code-quality-guard PASS。第B步并行哈希、界面“已核对”小字、一小时冷缓存首次等待是否调大，列为业主决定事项（见该sprint第七节）。本批前一轮完整verify：3584 passed／0 failed／3 skipped。
 2e. 剩余离线候选：TD012跨进程状态文件占用（仅再现时评估有界重试）；检查与使用之间的junction换入（需句柄式打开，L）；TD008哈希缓存身份；TD003发布前固定FFmpeg来源。下一会话可从这里或总方案下一阶段规划继续，仍不催分组。
 3. 若用户确认分组或补了原始游玩录像：工作台“验收流程”冻结步骤默认自动盘点即可核对；新付费分析必须先给具体提案并获明确批准。
 

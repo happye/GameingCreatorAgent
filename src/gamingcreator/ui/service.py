@@ -428,7 +428,16 @@ async def inspect_run(
     candidates: tuple[CandidateClip, ...] = ()
     abstention = search_abstention_for_run(timeline.run)
     if abstention is None and query.strip():
-        document = await execute_search(project, run_id, query, repository, top_k=top_k, mode=mode)
+        document = await execute_search(
+            project,
+            run_id,
+            query,
+            repository,
+            top_k=top_k,
+            mode=mode,
+            # Just fully verified above; execute_search re-checks the run record (TD005).
+            verified_timeline=timeline if timeline.run.status == RunStatus.COMPLETED else None,
+        )
         candidates = _candidates(document, timeline.run.asset.duration_us)
         reason = document["abstentionReason"]
         abstention = None if reason is None else str(reason)

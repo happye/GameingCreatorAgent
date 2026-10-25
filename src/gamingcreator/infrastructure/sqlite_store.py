@@ -525,12 +525,18 @@ class SqliteTimelineStore:
         elapsed_ms: int,
         top_k: int,
         embedding_space: EmbeddingSpace | None = None,
+        timeline_verified: bool = False,
     ) -> str:
-        """Append retrieval provenance without changing immutable analysis results."""
+        """Append retrieval provenance without changing immutable analysis results.
+
+        timeline_verified: the caller searched a timeline whose artifacts were fully hashed
+        in this same request, so only the database consistency checks are repeated here
+        rather than hashing every file again (TD005). Every later load still hashes all.
+        """
 
         def persist() -> str:
             self._writer()
-            self._consistent(result.run_id)
+            self._consistent(result.run_id, hash_artifacts=not timeline_verified)
             hits = tuple(
                 PersistedRetrievalHit(
                     rank,
@@ -708,12 +714,18 @@ class SqliteTimelineStore:
             raise _error("storage.artifact_path")
         return resolved.relative_to(self.project).as_posix()
 
-    def _stored_artifact(self, run_id: str, path: str) -> Path:
+    def _run_directory(self, run_id: str) -> Path:
+        return (self.project / "runs" / _id(run_id)).resolve()
+
+    def _stored_artifact(self, run_id: str, path: str, run_directory: Path | None = None) -> Path:
+        # A caller checking many artifacts of one run passes the run directory it resolved
+        # once for that operation; the containment rules are unchanged (TD005).
         relative = Path(path)
         if relative.is_absolute() or ".." in relative.parts:
             raise _error("storage.artifact_path")
         resolved = (self.project / relative).resolve()
-        run_directory = (self.project / "runs" / _id(run_id)).resolve()
+        if run_directory is None:
+            run_directory = self._run_directory(run_id)
         if not run_directory.is_relative_to(self.project) or not resolved.is_relative_to(
             run_directory
         ):
@@ -1239,13 +1251,21 @@ class SqliteTimelineStore:
             )
         )
 
-    def _integrity(self, run_id: str) -> tuple[IntegrityIssue, ...]:
+    def _integrity(
+        self, run_id: str, verified_paths: dict[str, Path] | None = None
+    ) -> tuple[IntegrityIssue, ...]:
+        """Hash every artifact; optionally record each evidence_id's checked path.
+
+        load_timeline reuses those exact paths for its evidence references instead of
+        resolving every file a second time (TD005).
+        """
         row = self._run_row(run_id)
         try:
             asset = self._load_run(run_id).asset
         except (AppError, ValueError, KeyError, TypeError, ArithmeticError, AttributeError):
             return (IntegrityIssue(run_id, "storage.integrity", self.project / "timeline.sqlite3"),)
         issues = []
+        run_directory = self._run_directory(run_id)
         items: list[tuple[Path, str, str]] = [
             (asset.source_path, asset.sha256, "storage.source_integrity")
         ]
@@ -1253,7 +1273,7 @@ class SqliteTimelineStore:
             try:
                 items.append(
                     (
-                        self._stored_artifact(run_id, row["manifest_path"]),
+                        self._stored_artifact(run_id, row["manifest_path"], run_directory),
                         row["manifest_hash"],
                         "storage.artifact_integrity",
                     )
@@ -1266,13 +1286,10 @@ class SqliteTimelineStore:
                 )
         for evidence in self._db.execute("SELECT * FROM evidence WHERE run_id=?", (run_id,)):
             try:
-                items.append(
-                    (
-                        self._stored_artifact(run_id, evidence["artifact_path"]),
-                        evidence["content_hash"],
-                        "storage.artifact_integrity",
-                    )
-                )
+                path = self._stored_artifact(run_id, evidence["artifact_path"], run_directory)
+                items.append((path, evidence["content_hash"], "storage.artifact_integrity"))
+                if verified_paths is not None:
+                    verified_paths[evidence["evidence_id"]] = path
             except AppError:
                 issues.append(
                     IntegrityIssue(
@@ -1288,7 +1305,13 @@ class SqliteTimelineStore:
                 issues.append(IntegrityIssue(run_id, code, path))
         return tuple(issues)
 
-    def _consistent(self, run_id: str) -> None:
+    def _consistent(
+        self,
+        run_id: str,
+        verified_paths: dict[str, Path] | None = None,
+        *,
+        hash_artifacts: bool = True,
+    ) -> None:
         row = self._run_row(run_id)
         checkpoints = self._checkpoints(run_id)
         completed = {
@@ -1311,8 +1334,8 @@ class SqliteTimelineStore:
             (run_id,),
         ).fetchone():
             raise _error("storage.invalid_event")
-        if self._db.execute("PRAGMA foreign_key_check").fetchone() is not None or self._integrity(
-            run_id
+        if self._db.execute("PRAGMA foreign_key_check").fetchone() is not None or (
+            hash_artifacts and self._integrity(run_id, verified_paths)
         ):
             raise _error("storage.integrity")
 
@@ -1412,10 +1435,12 @@ class SqliteTimelineStore:
             run = self._load_run(run_id)
             if require_completed and run.status != RunStatus.COMPLETED:
                 raise _error("storage.run_incomplete")
+            verified: dict[str, Path] = {}
             if require_completed:
-                self._consistent(run_id)
-            elif self._integrity(run_id):
+                self._consistent(run_id, verified)
+            elif self._integrity(run_id, verified):
                 raise _error("storage.integrity")
+            run_directory = self._run_directory(run_id)
             duration = run.asset.duration_us
             evidence = tuple(
                 EvidenceReference(
@@ -1425,7 +1450,9 @@ class SqliteTimelineStore:
                     SourceInstant(row["start_us"], duration)
                     if row["kind"] == "image"
                     else SourceRange(row["start_us"], row["end_us"], duration),
-                    self._stored_artifact(run_id, row["artifact_path"]),
+                    # The path just hashed above, not a second resolution of the same file.
+                    verified.get(row["evidence_id"])
+                    or self._stored_artifact(run_id, row["artifact_path"], run_directory),
                     row["content_hash"],
                     row["transform_version"],
                 )
