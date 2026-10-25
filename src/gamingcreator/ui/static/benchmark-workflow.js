@@ -198,6 +198,9 @@
     }
     async function submit(step,form) {
         if(!current) return;
+        // A new references page has a new identity, so records saved on the old page no longer import here.
+        if(step.id==="references" && current.attempts.some(row=>row.action==="references" && row.status==="finished")
+            && !confirm("重新核对会生成一个新的原片标注页。已在旧标注页下载的记录只能配旧页面包导入，不能导入新页面。\n\n只是想继续标注的话，请取消，并点上方“打开原片标注页”，用“继续已有标注”载入记录。\n\n确定要重新生成标注页吗？")) return;
         const identity=current.id, guard=revision, fields={}; let activeRevision=guard;
         for(const node of form.querySelectorAll("input,select,button")) node.disabled=true;
         try {

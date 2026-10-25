@@ -79,6 +79,15 @@ def test_workspace_flow_forms_playback_download_import_and_reload(tmp_path, requ
             data = Path(pending.value.path()).read_bytes()
             assert json.loads(data)["plan"]["humanReferences"]["confirmed"] is False
             editor.close()
+            # Re-running a finished step 2 warns first: the saved record would not import into
+            # a new page. Dismissing keeps the current page and starts nothing.
+            attempts = page.locator("#history .record").count()
+            dialogs = []
+            page.once("dialog", lambda dialog: (dialogs.append(dialog.message), dialog.dismiss()))
+            reference.locator("button[type=submit]").click()
+            page.wait_for_timeout(500)
+            assert dialogs and "旧页面包" in dialogs[0]
+            assert page.locator("#history .record").count() == attempts
             imported = page.locator("[data-step=references-import]")
             imported.locator("input[type=file]").set_input_files(
                 {"name": "标注.json", "mimeType": "application/json", "buffer": data}
