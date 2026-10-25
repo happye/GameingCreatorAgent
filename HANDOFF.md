@@ -2,6 +2,9 @@
 
 ## 新对话接手清单（2026-10-25，Claude Code会话交接，最先读这里）
 
+**第三会话（最新）**：上一会话遗留的三件事已处理——①session2c的verify为3588 passed／2 failed，2项`test_writer_lock`子进程无输出发生在会话退出、控制台被关闭期间，单独重跑通过；本会话重跑完整verify结果见下一行；②跨改动审查（`ad6be26..HEAD`，code-quality-guard opus）PASS，无P0／P1，两P2已修（TD012批次路径`resolve_existing`；TD005检索期间文件变化则保存前完整重哈希）；③push见本节末。另交付：TD008视频预览缓存签名加NTFS ChangeTime（同大小改写＋恢复修改时间现可识别）；TD012`MediaBatchFiles`同类路径竞态；TD003核对到原FFmpeg日构建已无法从BtbN重新取得（只留月末构建），发布前须换固定一个可取得构建并经用户许可下载。`.codex/agents/gc-*.toml`九个未跟踪文件是其他工具／用户于2026-10-25 19:33创建，本会话未改、未提交。Phase 0不变，F006／F009／F010仍false，无付费调用。
+**第三会话verify**：对8daef7c（运行期间陆续加入TD008／TD012修复）完整`./scripts/verify.ps1`为3590 passed／0 failed／3 skipped（14分29秒）、`All project checks passed`、退出码0（.cache/verify-20261025-session3.log），`test_writer_lock`本次通过。对最终HEAD（含TD005与MediaBatchFiles修复）另跑一次，日志.cache/verify-20261025-session3b.log；结果若未补记在此，下一会话先读该日志末尾。
+
 **当前状态**：本会话（2026-10-25第二会话）在main本地新增提交22d886a／389155e／e58fc1a等，尚未push；对e58fc1a跑完整`./scripts/verify.ps1`为3566 passed／0 failed／3 skipped（14分30秒）、静态门禁与离线包通过、退出码0（日志.cache/verify-20261025-session2.log）。注意：在PowerShell 5.1里用`*>`重定向verify会把uv的正常stderr当成终止错误，应从bash调用`powershell -File scripts/verify.ps1 > log 2>&1`。Phase 0；F006／F009／F010仍false；无新付费调用、无待批费用提案。
 
 **上一会话交付（详见下方各节与sprint）**：TD012工作台状态文件竞态修复；只读素材盘点`inventory-sources`（source-inventory-v2，识别黑边／镜像）；`benchmark-freeze-v2`冻结强制核对盘点并默认自动盘点；TD015检查门禁恢复与TD016联合检索回归修复；三个中文ps1加BOM适配PowerShell 5.1；验收流程浏览器八步走查与阻断／就绪提示中文化；`.claude/agents/`九个Claude角色合入。
@@ -15,7 +18,7 @@
 2c. ~~TD005详情加载优化~~：实测拆分后决定暂不改（主要耗时是每次打开的完整性哈希这一保护，要改需“按文件身份缓存哈希”的设计决定，关联TD008），已记TD005。
 2d. 本会话后段（均已提交）：目录扫描纳入MKV／WebM（`domain.media.LOCAL_VIDEO_SUFFIXES`）；验收页时钟映射按容器固定测试（零起点MKV／WebM与音频晚起WebM精确，非零起点MKV／WebM与音频晚起MKV退回手动）；TD011在独立Windows PowerShell 5.1验证通过后关闭；验证脚本report.json遇外部句柄的WinError5改为有界等待；TD013冻结后未建库的批次可续跑（命令行与工作台同一规则，其他任何痕迹仍拒绝，code-quality-guard PASS）。
 2d+. TD005第A步已交付（见sprint-inspect-integrity-single-pass.md）：工作台带查询打开每文件哈希3→1次，真实15分钟打开约1.7→1.0秒，保证不变，code-quality-guard PASS。第B步并行哈希、界面“已核对”小字、一小时冷缓存首次等待是否调大，列为业主决定事项（见该sprint第七节）。本批前一轮完整verify：3584 passed／0 failed／3 skipped。
-2f. 未完成（额度不足时停止，下一会话先做）：①对e58fc1a之后全部提交的整仓verify正在跑（日志.cache/verify-20261025-session2c.log），结果若未补记在此，下一会话先读该日志末尾；②全会话跨改动审查工作流（4视角＋每发现2票核实）因额度停止、无结果，脚本在本机会话目录`workflows/scripts/session-cross-change-review-*.js`，下一会话可用同样提示重跑（范围`git diff ad6be26..HEAD`）；③本会话所有提交仅在本地main，尚未push。
+2f. ~~上一会话未完成三项~~：第三会话已处理（verify结果、跨改动审查PASS及两P2修复、push，见本清单顶部“第三会话”）。原记录：①对e58fc1a之后全部提交的整仓verify正在跑（日志.cache/verify-20261025-session2c.log），结果若未补记在此，下一会话先读该日志末尾；②全会话跨改动审查工作流（4视角＋每发现2票核实）因额度停止、无结果，脚本在本机会话目录`workflows/scripts/session-cross-change-review-*.js`，下一会话可用同样提示重跑（范围`git diff ad6be26..HEAD`）；③本会话所有提交仅在本地main，尚未push。
 2e. 剩余离线候选：TD012跨进程状态文件占用（仅再现时评估有界重试）；检查与使用之间的junction换入（需句柄式打开，L）；TD008哈希缓存身份；TD003发布前固定FFmpeg来源。下一会话可从这里或总方案下一阶段规划继续，仍不催分组。
 3. 若用户确认分组或补了原始游玩录像：工作台“验收流程”冻结步骤默认自动盘点即可核对；新付费分析必须先给具体提案并获明确批准。
 
