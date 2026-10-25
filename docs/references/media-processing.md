@@ -16,7 +16,7 @@
 
 ## 源时钟与音频映射
 
-- 选择首个非封面视频和首个音轨。必须有有效 `start_pts`、`duration_ts`、正 timebase；缺失则明确输入错误，暂不猜测 format.duration。
+- 选择首个非封面视频和首个音轨。必须有有效 `start_pts`、正 timebase；容器给出 `duration_ts` 时原样使用（MP4不变、不额外探测）。Matroska／WebM（如OBS的`.mkv`录像）不存 `duration_ts`，此时（仅限ffprobe识别为matroska／webm的容器；MPEG-TS、FLV等缺时长仍拒绝）对该流逐包读取 `pts,duration`，以 `max(pts+duration)` 作为同一流时钟下的终点。包的pts是文件实存值，但包时长可能来自轨道DefaultDuration（毫秒取整）或解复用器推算，终点最多可差一个标称帧长，与MP4末帧时长由封装器给出属同类误差；每包须有整数 pts，缺时长的包（如AAC预滚包）只有在其后还有带时长的包时才接受，否则仍明确输入错误。始终不猜测 format.duration；首帧／首样本起点、音频裁尾和逐样本映射检查照旧兜底。2026-10-25内置Chromium经工作台`/api/media`（`video/x-matroska`）实测播放零起点H.264／AAC MKV：时长406.762秒、跳转200秒正常；验收页面的非零PTS自动映射仍只实证MP4（TD006）。
 - origin 是选中流最早 presentation start；总时长由最大流 end 减 origin。保留原始整数 PTS 与 Fraction 时基，点/起点向下取微秒、终点/时长向上取微秒。
 - 图片采用 `-copyts`、时间驱动 select、showinfo 和 passthrough。按整数 PTS 映射，核对文件/日志数量并检查选中帧递增；不按 FPS 推时间，也不声称校验了所有未选中源帧。
 - WAV 样本轴与源时轴通过逐输出音频帧映射。`map_interval(start_sample,end_sample,asset)` 返回源范围、跨越的 gap/overlap 和精确边界裁切量。跨越不连续点的范围包含不确定性，F003 不得改用单一 offset。

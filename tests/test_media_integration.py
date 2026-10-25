@@ -113,6 +113,40 @@ def test_vfr_nonzero_start_and_delayed_audio_are_traceable(
         assert image.source_time.time_us == expected and hash_file(image.path) == image.sha256
 
 
+def test_matroska_without_stream_durations_uses_exact_packet_ends(
+    make_video: Callable[..., Path], tmp_path: Path
+) -> None:
+    """TD002: OBS-style .mkv stores no duration_ts; packet timestamps supply the exact end."""
+    source = make_video("中文 obs录像.mkv", video_shift="5", audio_shift="5.1")
+    twin = make_video("twin.mp4", video_shift="5", audio_shift="5.1")
+    processor = FfmpegMediaProcessor(REPOSITORY)
+    raw = subprocess.run(
+        [
+            str(FFMPEG.with_name("ffprobe.exe")),
+            "-v",
+            "error",
+            "-show_streams",
+            "-of",
+            "json",
+            source,
+        ],
+        capture_output=True,
+        check=True,
+    ).stdout
+    assert all("duration_ts" not in stream for stream in json.loads(raw)["streams"])
+    result = asyncio.run(
+        processor.preprocess(
+            source, tmp_path / "evidence", SamplingParameters(), CancellationContext("run", 15)
+        )
+    )
+    reference = asyncio.run(processor.probe(twin, CancellationContext("twin", 15)))
+    assert result.asset.origin_seconds >= 5 and result.images and result.audio is not None
+    assert abs(result.asset.duration_us - reference.duration_us) <= 34_000
+    assert result.audio.map_interval(0, result.audio.sample_count, result.asset)
+    manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    assert manifest["status"] == "completed"
+
+
 def test_audio_before_video_uses_a_common_origin(
     make_video: Callable[..., Path], tmp_path: Path
 ) -> None:

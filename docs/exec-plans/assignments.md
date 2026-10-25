@@ -10,6 +10,7 @@
 
 | 工作 | 负责人／范围 | 当前状态 |
 | --- | --- | --- |
+| TD002 MKV／WebM逐包补探测；TD005真实长素材实测 | Claude Code主控实现／实测；code-quality-guard（opus）只读评估 | 2026-10-25完成：94passed、评估PASS（两P2已修）；见tech-debt TD002／TD005及media-processing.md |
 | TD012媒体准备路径误拒（并发删除时路径解析） | Claude Code主控单Agent | 2026-10-25完成：稳定复现＋`lstat`修复，22passed；见tech-debt TD012 2026-10-25段 |
 | 正式检查门禁恢复（TD015／TD016） | Claude Code主控单Agent | 2026-10-24完成：静态门禁通过，全量3440 passed不再挂起；联合检索回归修复并实跑；见sprint-verify-gate-restore.md |
 | 验收流程浏览器走查与提示改进 | Claude Code主控单Agent | 2026-10-25完成：八步走通，关联原因与阻断中文化；相关测试通过 |

@@ -10,7 +10,8 @@
 
 **下一步按顺序（均离线、不花钱）**：
 1. ~~TD012媒体准备偶发“准备项目须位于当前仓库的artifacts目录内”~~：2026-10-25已复现并修复（并发删除数据库时`resolve()`约9%返回`\\?\`／`$Deleted`路径；改为`lstat`链接检查，新增并发与链接两测试，22项通过）。见tech-debt TD012 2026-10-25段。
-2. TD005真实长素材资源（钟馗15分钟等已有素材的准备／盘点耗时与内存），TD002缺精确时钟容器的可验证补探测。
+2. ~~TD005真实长素材资源~~：2026-10-25实测钟馗15分52秒准备25.1秒／进程树峰值227MiB，两段盘点35.8秒／226MiB，工作台详情1.7–2.3秒（一小时估7–9秒，候选优化触及存储边界，已记TD005待评估）。~~TD002~~：OBS式MKV／WebM缺`duration_ts`现逐包补探测（仅matroska／webm，MP4不变），code-quality-guard PASS；真实6分钟钟馗转MKV经CLI准备成功，内置Chromium可预览播放。
+2b. 进行中：TD012剩余WinError10053——`ui/server.py:do_POST`对错误Content-Type／超大请求在读请求体之前就拒绝，Windows关闭含未读数据的套接字会重置连接；拟改为有界读完再拒绝（同403路径已有做法）。
 3. 若用户确认分组或补了原始游玩录像：工作台“验收流程”冻结步骤默认自动盘点即可核对；新付费分析必须先给具体提案并获明确批准。
 
 **环境规则（违反会造成假失败或破坏工具链）**：Python一律`-B`并设`PYTHONDONTWRITEBYTECODE=1`；测试在仓库根、先`. ./scripts/env.ps1`；pytest用`-W error -o cache_dir=.cache/...`，不要与`-p no:cacheprovider`同用；推送用`git -c http.proxy=http://127.0.0.1:7890 -c https.proxy=http://127.0.0.1:7890 push origin main`；子Agent隔离worktree需`.tools`目录链接，清理前先单独删链接（见Claude分工指南）。用户本机只有Windows PowerShell 5.1。

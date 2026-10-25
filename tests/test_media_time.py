@@ -16,10 +16,12 @@ from gamingcreator.domain.media import (
     floor_us,
 )
 from gamingcreator.infrastructure.ffmpeg_media import (
+    PacketEndParser,
     hash_source,
     parse_audio_log,
     parse_probe,
     parse_visual_log,
+    streams_without_duration,
 )
 
 
@@ -141,6 +143,83 @@ def test_probe_selects_actual_video_and_common_audio_origin() -> None:
 def test_probe_fails_explicitly_when_exact_timing_is_unavailable(raw: bytes) -> None:
     with pytest.raises(AppError):
         parse_probe(raw, Path("private"), "hash", "probe")
+
+
+MATROSKA_PROBE = {
+    "streams": [
+        {"index": 0, "codec_type": "video", "time_base": "1/1000", "start_pts": 0},
+        {"index": 1, "codec_type": "audio", "time_base": "1/1000", "start_pts": 0},
+    ],
+    "format": {"format_name": "matroska,webm"},
+}
+
+
+@pytest.mark.parametrize("container", ["mpegts", "flv", "mov,mp4,m4a,3gp,3g2,mj2", None])
+def test_only_matroska_streams_are_rescanned(container: str | None) -> None:
+    raw = {**MATROSKA_PROBE, "format": {"format_name": container}}
+    assert streams_without_duration(json.dumps(raw).encode()) == ()
+    with pytest.raises(AppError):
+        parse_probe(json.dumps(raw).encode(), Path("source"), "hash", "probe")
+
+
+def test_probe_uses_packet_ends_only_for_streams_without_container_duration() -> None:
+    raw = json.dumps(MATROSKA_PROBE).encode()
+    assert streams_without_duration(raw) == (0, 1)
+    media = parse_probe(raw, Path("source"), "hash", "probe", {0: 3000, 1: 3008})
+    assert [stream.duration_ts for stream in media.streams] == [3000, 3008]
+    assert media.duration_us == 3_008_000
+    with pytest.raises(AppError):
+        parse_probe(raw, Path("source"), "hash", "probe")
+    with pytest.raises(AppError):
+        parse_probe(raw, Path("source"), "hash", "probe", {0: 3000})
+
+
+def test_container_duration_is_never_replaced_or_rescanned() -> None:
+    raw = {
+        "streams": [
+            {
+                "index": 0,
+                "codec_type": "video",
+                "time_base": "1/1000",
+                "start_pts": 0,
+                "duration_ts": 2000,
+            }
+        ]
+    }
+    encoded = json.dumps(raw).encode()
+    assert streams_without_duration(encoded) == ()
+    assert (
+        parse_probe(encoded, Path("s"), "hash", "probe", {0: 9999}).streams[0].duration_ts == 2000
+    )
+
+
+def test_packet_end_is_the_latest_pts_plus_duration_in_any_order() -> None:
+    parser = PacketEndParser()
+    for line in ("-21,N/A,\n", "-40,20\n", "0,33\n", "100,33\n", "67,33\n", "\n"):
+        assert parser.consume(line)
+    assert parser.finish() == 133
+
+
+def test_untimed_packets_before_a_timed_one_keep_negative_and_zero_clocks() -> None:
+    parser = PacketEndParser()
+    for line in ("0,N/A", "-50,10", "-20,10"):
+        parser.consume(line)
+    with pytest.raises(ValueError):
+        parser.finish()
+    parser.consume("1,5")
+    assert parser.finish() == 6
+
+
+@pytest.mark.parametrize(
+    "lines",
+    [(), ("0,33", "N/A,33"), ("0,33", "33,N/A"), ("0,33", "33,0"), ("0,33", "33"), ("0,N/A",)],
+)
+def test_packet_end_is_unknown_when_any_packet_lacks_exact_timing(lines: tuple[str, ...]) -> None:
+    parser = PacketEndParser()
+    for line in lines:
+        parser.consume(line)
+    with pytest.raises(ValueError):
+        parser.finish()
 
 
 @pytest.mark.parametrize("pts", [(1, 1), (2, 1)])

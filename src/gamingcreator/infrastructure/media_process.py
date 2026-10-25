@@ -65,6 +65,7 @@ async def run_media_process(
     max_stderr_bytes: int = 16 * 1024 * 1024,
     *,
     stderr_line_consumer: Callable[[str], bool] | None = None,
+    stdout_line_consumer: Callable[[str], bool] | None = None,
 ) -> ProcessOutput:
     context.check_cancelled()
     job = None
@@ -95,7 +96,11 @@ async def run_media_process(
         raise
     assert process.stdout is not None and process.stderr is not None
     overflow = asyncio.Event()
-    stdout_task = asyncio.create_task(_read_bounded(process.stdout, max_stdout_bytes, overflow))
+    stdout_task = asyncio.create_task(
+        _read_bounded(process.stdout, max_stdout_bytes, overflow)
+        if stdout_line_consumer is None
+        else _read_consumed_lines(process.stdout, max_stdout_bytes, overflow, stdout_line_consumer)
+    )
     stderr_task = asyncio.create_task(
         _read_bounded(process.stderr, max_stderr_bytes, overflow)
         if stderr_line_consumer is None

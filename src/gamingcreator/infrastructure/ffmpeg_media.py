@@ -6,6 +6,7 @@ import re
 import wave
 from fractions import Fraction
 from pathlib import Path
+from typing import Literal, cast
 
 from gamingcreator.application.media import SamplingParameters
 from gamingcreator.application.providers import CancellationContext
@@ -61,29 +62,115 @@ def _fraction(value: object) -> Fraction:
     return result
 
 
-def parse_probe(raw: bytes, source: Path, source_hash: str, version: str) -> MediaAsset:
+def _probe_streams(raw: bytes) -> list[dict[str, object]]:
+    """The first non-cover video stream and first audio stream, as ffprobe reported them."""
+    streams = json.loads(raw)["streams"]
+    if not isinstance(streams, list):
+        raise ValueError("No stream metadata.")
+    selected = []
+    for kind in ("video", "audio"):
+        candidates = [
+            s
+            for s in streams
+            if isinstance(s, dict)
+            and s.get("codec_type") == kind
+            and not s.get("disposition", {}).get("attached_pic")
+        ]
+        if candidates:
+            selected.append(candidates[0])
+    return selected
+
+
+def streams_without_duration(raw: bytes) -> tuple[int, ...]:
+    """Selected Matroska/WebM stream indexes without duration_ts; other containers stay rejected."""
     try:
-        data = json.loads(raw)
-        streams = data["streams"]
-        if not isinstance(streams, list):
-            raise ValueError("No stream metadata.")
+        container = json.loads(raw)["format"]["format_name"]
+        if not isinstance(container, str) or not {"matroska", "webm"} & set(container.split(",")):
+            return ()
+        return tuple(
+            _integer(stream.get("index"))
+            for stream in _probe_streams(raw)
+            if "duration_ts" not in stream
+        )
+    except (ValueError, TypeError, KeyError, AttributeError):
+        return ()
+
+
+def _latest(current: int | None, value: int) -> int:
+    return value if current is None else max(current, value)
+
+
+class PacketEndParser:
+    """Stream end, max(pts + duration), from every demuxed packet's timestamps.
+
+    Used only for Matroska/WebM without duration_ts; it never reads format.duration. Packet
+    pts are stored values, but a packet's duration may come from the track DefaultDuration
+    (millisecond-rounded) or the demuxer, so the end can differ from the true end by up to
+    one nominal frame, like an MP4 muxer's last-sample duration. Every packet needs an
+    integer pts. A packet without a positive duration (e.g. the
+    Matroska AAC priming packet) is accepted only when a timed packet starts after it,
+    so it cannot be the packet that ends the stream; otherwise the end stays unknown.
+    """
+
+    def __init__(self) -> None:
+        self._end: int | None = None
+        self._last_timed_pts: int | None = None
+        self._last_untimed_pts: int | None = None
+        self._valid = True
+
+    def consume(self, line: str) -> bool:
+        fields = line.strip().split(",")
+        if fields == [""]:
+            return True
+        try:
+            pts = int(fields[0])
+            duration = int(fields[1]) if len(fields) > 1 and fields[1] != "N/A" else 0
+        except ValueError:
+            self._valid = False
+            return True
+        if duration <= 0:
+            self._last_untimed_pts = _latest(self._last_untimed_pts, pts)
+        else:
+            self._end = _latest(self._end, pts + duration)
+            self._last_timed_pts = _latest(self._last_timed_pts, pts)
+        return True
+
+    def finish(self) -> int:
+        if (
+            not self._valid
+            or self._end is None
+            or self._last_timed_pts is None
+            or (
+                self._last_untimed_pts is not None
+                and self._last_untimed_pts >= self._last_timed_pts
+            )
+        ):
+            raise ValueError("Packet timestamps do not give an exact stream end.")
+        return self._end
+
+
+def parse_probe(
+    raw: bytes,
+    source: Path,
+    source_hash: str,
+    version: str,
+    packet_ends: dict[int, int] | None = None,
+) -> MediaAsset:
+    try:
         selected: list[MediaStream] = []
-        for kind in ("video", "audio"):
-            candidates = [
-                s
-                for s in streams
-                if isinstance(s, dict)
-                and s.get("codec_type") == kind
-                and not s.get("disposition", {}).get("attached_pic")
-            ]
-            if not candidates:
-                continue
-            stream = candidates[0]
+        for stream in _probe_streams(raw):
+            kind = stream.get("codec_type")
+            index = _integer(stream.get("index"))
             time_base = _fraction(stream.get("time_base"))
             start = _integer(stream.get("start_pts"))
-            duration = _integer(stream.get("duration_ts"))
+            if "duration_ts" in stream:
+                duration = _integer(stream.get("duration_ts"))
+            else:
+                duration = (packet_ends or {})[index] - start
             selected.append(
-                MediaStream(_integer(stream.get("index")), kind, time_base, start, duration)
+                MediaStream(
+                    index, cast(Literal["video", "audio"], kind), time_base, start, duration
+                )
             )
         origin = min(s.start_seconds for s in selected)
         duration_us = ceil_us(max(s.end_seconds for s in selected) - origin)
@@ -291,11 +378,37 @@ class FfmpegMediaProcessor:
             ],
             context,
         )
+        packet_ends = {}
+        for index in streams_without_duration(output.stdout):
+            parser = PacketEndParser()
+            await run_media_process(
+                [
+                    probe,
+                    "-v",
+                    "error",
+                    "-protocol_whitelist",
+                    "file,pipe",
+                    "-select_streams",
+                    str(index),
+                    "-show_entries",
+                    "packet=pts,duration",
+                    "-of",
+                    "csv=p=0",
+                    str(source),
+                ],
+                context,
+                stdout_line_consumer=parser.consume,
+            )
+            try:
+                packet_ends[index] = parser.finish()
+            except ValueError:
+                break
         return parse_probe(
             output.stdout,
             source,
             source_hash,
             version.stdout.decode("utf-8", "replace").splitlines()[0],
+            packet_ends,
         )
 
     async def preprocess(

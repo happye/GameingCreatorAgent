@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-25 TD002 MKV／WebM录像可直接准备＋TD005真实长素材实测（Claude Code）**：OBS式`.mkv`／WebM不存每流`duration_ts`，原先一律拒绝；现仅对matroska／webm逐包读取`pts,duration`取`max(pts+duration)`（不读format.duration，MP4路径与字节不变）。真实6分钟钟馗无损转MKV经CLI准备成功（406.762秒对MP4 406.7627秒，407图、音轨保留、零模型调用），内置Chromium经工作台播放／跳转正常。code-quality-guard（opus）PASS，两P2（包时长可能来自DefaultDuration的表述、范围限定）已修；媒体／盘点／批次94项通过。TD005：15分52秒准备25.1秒／峰值227MiB，盘点35.8秒／226MiB，详情1.7–2.3秒；TD003记录FFmpeg构建识别。整仓verify未重跑。
+
 **2026-10-25 TD012媒体准备路径误拒修复（Claude Code单Agent）**：用“另一线程反复建删数据库”稳定复现偶发的“准备项目须位于artifacts目录内”（`resolve()`约9%返回`\\?\`／`$Deleted`路径）；`preparation_project`改为`lstat`判断链接／重解析点，不再打开文件。新并发测试旧红新绿、链接拒绝测试前后一致，`test_media_preparation_jobs.py`22项通过，静态检查通过；整仓verify未重跑。
 
 **2026-10-25验收流程走查（Claude Code）**：浏览器真实走通八步；关联步骤显示具体拒绝原因；冻结／就绪阻断与待决定代码改为通俗中文。工作台／就绪相关测试通过。本会话收尾，下一步见HANDOFF恢复顺序。
