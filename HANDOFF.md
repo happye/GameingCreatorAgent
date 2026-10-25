@@ -1,5 +1,25 @@
 # 当前交接：验收流程端到端可用，等待用户确认分组与补素材
 
+## 新对话接手清单（2026-10-25，Claude Code会话交接，最先读这里）
+
+**当前状态**：main与GitHub同步，工作区干净；2026-10-25对全部改动跑完整`./scripts/verify.ps1`为3538 passed／0 failed／3 skipped、退出码0。Phase 0；F006／F009／F010仍false；无新付费调用、无待批费用提案。
+
+**上一会话交付（详见下方各节与sprint）**：TD012工作台状态文件竞态修复；只读素材盘点`inventory-sources`（source-inventory-v2，识别黑边／镜像）；`benchmark-freeze-v2`冻结强制核对盘点并默认自动盘点；TD015检查门禁恢复与TD016联合检索回归修复；三个中文ps1加BOM适配PowerShell 5.1；验收流程浏览器八步走查与阻断／就绪提示中文化；`.claude/agents/`九个Claude角色合入。
+
+**用户决定**：2026-10-25答复分组尚未决定，先做离线工作；在用户主动提出前不再催分组或补片（见human-inputs）。
+
+**下一步按顺序（均离线、不花钱）**：
+1. TD012媒体准备偶发“准备项目须位于当前仓库的artifacts目录内”：tech-debt已记假设（`ui/media_preparation.py:preparation_project`对已存在的`timeline.sqlite3`做`resolve()`，Windows非严格回退可能保留长路径前缀）。先写能稳定复现的测试（另一线程持有该文件句柄时调用），复现后再按候选修法改为检查`is_symlink()／is_junction()`；复现不了就保持记录，不反复试错。
+2. TD005真实长素材资源（钟馗15分钟等已有素材的准备／盘点耗时与内存），TD002缺精确时钟容器的可验证补探测。
+3. 若用户确认分组或补了原始游玩录像：工作台“验收流程”冻结步骤默认自动盘点即可核对；新付费分析必须先给具体提案并获明确批准。
+
+**环境规则（违反会造成假失败或破坏工具链）**：Python一律`-B`并设`PYTHONDONTWRITEBYTECODE=1`；测试在仓库根、先`. ./scripts/env.ps1`；pytest用`-W error -o cache_dir=.cache/...`，不要与`-p no:cacheprovider`同用；推送用`git -c http.proxy=http://127.0.0.1:7890 -c https.proxy=http://127.0.0.1:7890 push origin main`；子Agent隔离worktree需`.tools`目录链接，清理前先单独删链接（见Claude分工指南）。用户本机只有Windows PowerShell 5.1。
+
+**Claude角色**：新会话从仓库根启动后先用`/agents`确认9个gc-*角色出现，并补记到[Claude分工指南](docs/references/claude-agent-routing-guide.md)；未出现时按指南回退方式派发。
+
+**浏览器说明**：上一会话的浏览器标签是Claude自己的内置浏览器，用于本机8791端口测试工作台，不需要用户操作；会话结束时已关闭预览服务器，所以标签打不开属正常。走查留下的“Claude 冒烟测试 2026-10-24（可删除）”流程可由用户在工作台删除，不影响正式数据。
+
+
 更新：2026-10-24，Phase 0，main。新准备的两种验收页面，对已验证Chromium／MP4非零PTS及异步音视频可自动换算、取时、定位同规范区间并末停；未知／不支持仍手填。旧页面包、原12标注及纠正保持，不要求重标。见[报告](docs/exec-plans/report-2026-10-24-source-clock-mapping.md)、[sprint](docs/exec-plans/sprint-source-clock-mapping.md)及[当前里程碑](docs/exec-plans/current-status.md)。
 
 ## 已交付与验收
