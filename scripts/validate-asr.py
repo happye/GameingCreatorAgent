@@ -21,6 +21,7 @@ from gamingcreator.application.providers import (
     ProviderUsage,
 )
 from gamingcreator.application.storage import InvocationStatus, RunConfiguration, RunStatus
+from gamingcreator.domain.media import LOCAL_VIDEO_SUFFIXES
 from gamingcreator.domain.models import EvidenceReference
 from gamingcreator.infrastructure.ffmpeg_media import FfmpegMediaProcessor
 from gamingcreator.infrastructure.local_asr import LocalAsrProvider
@@ -237,7 +238,11 @@ def main() -> int:
     args = parser.parse_args()
     repository = Path(__file__).resolve().parents[1]
     sources = (
-        sorted((repository / "GameVideos").rglob("*.mp4"))
+        sorted(
+            path
+            for path in (repository / "GameVideos").rglob("*")
+            if path.is_file() and path.suffix.lower() in LOCAL_VIDEO_SUFFIXES
+        )
         if args.all_local
         else ([args.input.resolve()] if args.input else [])
     )

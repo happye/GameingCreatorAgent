@@ -5,6 +5,12 @@ from typing import Literal
 
 from gamingcreator.domain.time import INT64_MAX, SourceInstant, SourceRange
 
+# Containers whose exact stream clocks the media probe is verified to read: MP4 through
+# duration_ts, Matroska/WebM (e.g. OBS .mkv) through packet timestamps (TD002). Folder
+# scans pick these up; an explicitly named file of any type is still probed and refused
+# if its timing is unavailable.
+LOCAL_VIDEO_SUFFIXES = frozenset({".mp4", ".mkv", ".webm"})
+
 
 def floor_us(seconds: Fraction) -> int:
     return (seconds * 1_000_000).__floor__()

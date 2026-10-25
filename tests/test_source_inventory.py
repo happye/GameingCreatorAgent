@@ -458,8 +458,11 @@ def test_discovery_orders_recursively_and_rejects_missing_or_empty_inputs(tmp_pa
     (tmp_path / "b" / "z.MP4").write_bytes(b"x")
     (tmp_path / "a.mp4").write_bytes(b"x")
     (tmp_path / "notes.txt").write_text("x", encoding="utf-8")
+    (tmp_path / "b" / "obs.MKV").write_bytes(b"x")
+    (tmp_path / "clip.webm").write_bytes(b"x")
+    (tmp_path / "old.avi").write_bytes(b"x")
     found = discover_sources([tmp_path, tmp_path / "a.mp4"])
-    assert [path.name for path in found] == ["a.mp4", "z.MP4"]
+    assert [path.name for path in found] == ["a.mp4", "obs.MKV", "z.MP4", "clip.webm"]
     with pytest.raises(AppError):
         discover_sources([tmp_path / "missing.mp4"])
     empty = tmp_path / "empty"

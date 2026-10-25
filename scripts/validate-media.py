@@ -12,6 +12,7 @@ from pathlib import Path
 from gamingcreator.application.media import SamplingParameters
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.domain.errors import AppError
+from gamingcreator.domain.media import LOCAL_VIDEO_SUFFIXES
 from gamingcreator.infrastructure.ffmpeg_media import FfmpegMediaProcessor, hash_file
 
 
@@ -87,7 +88,11 @@ def main() -> int:
     if args.max_frames <= 0 or args.interval_ms <= 0 or args.timeout_seconds <= 0:
         parser.error("帧数上限、采样间隔和处理期限须为正整数。")
     sources = (
-        sorted((repository / "GameVideos").rglob("*.mp4"))
+        sorted(
+            path
+            for path in (repository / "GameVideos").rglob("*")
+            if path.is_file() and path.suffix.lower() in LOCAL_VIDEO_SUFFIXES
+        )
         if args.all_local
         else [args.input.resolve()]
     )

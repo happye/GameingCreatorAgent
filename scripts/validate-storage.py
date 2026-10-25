@@ -19,6 +19,7 @@ from gamingcreator.application.media import SamplingParameters
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.storage import RunConfiguration
 from gamingcreator.domain.errors import AppError
+from gamingcreator.domain.media import LOCAL_VIDEO_SUFFIXES
 from gamingcreator.infrastructure.ffmpeg_media import FfmpegMediaProcessor
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 
@@ -143,7 +144,11 @@ def main() -> int:
             print(json.dumps(asyncio.run(read_project(args.read_project, args.runs))))
         else:
             sources = (
-                sorted((repository / "GameVideos").rglob("*.mp4"))
+                sorted(
+                    path
+                    for path in (repository / "GameVideos").rglob("*")
+                    if path.is_file() and path.suffix.lower() in LOCAL_VIDEO_SUFFIXES
+                )
                 if args.all_local
                 else [args.input.resolve()]
             )

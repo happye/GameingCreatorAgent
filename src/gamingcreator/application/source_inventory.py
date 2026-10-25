@@ -17,7 +17,7 @@ from gamingcreator.domain.footage_overlap import (
     SharedFootage,
     find_shared_footage,
 )
-from gamingcreator.domain.media import MediaAsset
+from gamingcreator.domain.media import LOCAL_VIDEO_SUFFIXES, MediaAsset
 
 SCHEMA = "source-inventory-v2"
 SCHEMA_V1 = "source-inventory-v1"
@@ -100,7 +100,7 @@ class SignatureSource(Protocol):
 
 
 def discover_sources(inputs: Sequence[Path]) -> tuple[Path, ...]:
-    """Explicit files and recursive ``*.mp4`` under directories, de-duplicated and sorted."""
+    """Explicit files and recursive local videos under directories, de-duplicated and sorted."""
     found: dict[str, Path] = {}
     for item in inputs:
         try:
@@ -109,7 +109,7 @@ def discover_sources(inputs: Sequence[Path]) -> tuple[Path, ...]:
                 candidates = [
                     path.resolve()
                     for path in resolved.rglob("*")
-                    if path.is_file() and path.suffix.lower() == ".mp4"
+                    if path.is_file() and path.suffix.lower() in LOCAL_VIDEO_SUFFIXES
                 ]
             elif resolved.is_file():
                 candidates = [resolved]

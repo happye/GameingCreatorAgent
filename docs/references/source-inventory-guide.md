@@ -10,7 +10,7 @@
 ./scripts/inventory-sources.ps1 -InputPath GameVideos -OutputPath artifacts/source-inventory.json
 ```
 
-`-InputPath`可给多个文件或目录；目录会递归查找`.mp4`并固定排序。输出文件必须放在素材所在目录之外，先写临时文件再原子替换。也可直接运行`python -m gamingcreator inventory-sources --input <路径...> --output <json>`。
+`-InputPath`可给多个文件或目录；目录会递归查找`.mp4`、`.mkv`、`.webm`（OBS的MKV录像也在内，2026-10-25起）并固定排序，其他扩展名的文件需逐个写明路径。输出文件必须放在素材所在目录之外，先写临时文件再原子替换。也可直接运行`python -m gamingcreator inventory-sources --input <路径...> --output <json>`。
 
 ## 报告内容（`source-inventory-v2`）
 
