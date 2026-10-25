@@ -94,3 +94,33 @@ def test_evidence_references_use_the_paths_that_were_hashed(tmp_path, hashed):
     hashed.clear()
     timeline = asyncio.run(load())
     assert {str(item.artifact_path) for item in timeline.evidence} <= set(hashed)
+
+
+def test_persist_without_the_verified_flag_still_hashes_every_artifact(tmp_path, hashed):
+    """The benchmark (formal acceptance) path keeps its full re-hash before persisting."""
+    from gamingcreator.application.retrieval import search_timeline
+    from gamingcreator.cli.main import _search_document
+
+    project, _, _ = seed_project(tmp_path)
+
+    async def scenario():
+        store = await SqliteTimelineStore.open(project)
+        try:
+            timeline = await store.load_timeline("run-1")
+            result = await search_timeline(timeline, "白色", top_k=10, mode="lexical")
+            document = _search_document(
+                result, 0, {e.event_id: e.uncertainty for e in timeline.events}
+            )
+            hashed.clear()
+            await store.persist_search(result, document, elapsed_ms=0, top_k=10)
+            files = set(hashed)
+            hashed.clear()
+            await store.persist_search(
+                result, document, elapsed_ms=0, top_k=10, timeline_verified=True
+            )
+            return files
+        finally:
+            await store.close()
+
+    files = asyncio.run(scenario())
+    assert files and not hashed
