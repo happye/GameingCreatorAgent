@@ -78,13 +78,22 @@
         const node = document.createElement(tag); if (text !== undefined) node.textContent = text;
         parent.append(node); return node;
     }
+    // Which source row each query belongs to, by object rather than by its editable ID, so
+    // renaming one source never moves another's queries while IDs collide mid-typing.
+    const owners = new WeakMap();
+    function ownerOf(query) {
+        if (!owners.has(query)) owners.set(query, query.sourceId ? draft.sources.find(source => source.id === query.sourceId) || null : null);
+        return owners.get(query);
+    }
     function field(parent, label, row, key, placeholder = "") {
         const node = add(add(parent, "label", label), "input"); node.type = "text";
         node.dataset.field = key; node.value = row[key] || ""; node.placeholder = placeholder;
         node.addEventListener("input", () => {
-            const previous = row[key]; row[key] = key === "recordingGroup" ? node.value.trim() || null : node.value;
-            if (key === "id" && draft.sources.includes(row)) {
-                if (previous) draft.queries.forEach(query => { if (query.sourceId === previous) query.sourceId = row.id; });
+            const renamed = key === "id" && draft.sources.includes(row);
+            const owned = renamed ? draft.queries.filter(query => ownerOf(query) === row) : [];
+            row[key] = key === "recordingGroup" ? node.value.trim() || null : node.value;
+            if (renamed) {
+                owned.forEach(query => { query.sourceId = row.id; });
                 updateSourceOptions();
             }
             edited();
@@ -95,7 +104,7 @@
         const node = add(add(parent, "label", label), "select"); node.dataset.field = key;
         for (const [value, title] of options) { const option = add(node, "option", title); option.value = value; }
         node.value = key === "modelResultsViewed" ? row[key] === null ? "" : row[key] ? "yes" : "no" : row[key];
-        node.addEventListener("change", () => { row[key] = decode(node.value); edited(); });
+        node.addEventListener("change", () => { row[key] = decode(node.value); if (key === "sourceId") owners.delete(row); edited(); });
         return node;
     }
     function updateSourceOptions() {

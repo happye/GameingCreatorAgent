@@ -110,3 +110,32 @@ def test_plan_form_unknown_save_reload_binding_protection_and_existing_plan_expo
             assert json.loads(plan_data)["labelVersion"] is None
         finally:
             browser.close()
+
+
+def test_renaming_a_source_through_another_sources_id_keeps_each_query(tmp_path):
+    playwright = pytest.importorskip("playwright.sync_api")
+    path = tmp_path / "登记.html"
+    path.write_text(render_plan_editor(empty_draft()), encoding="utf-8")
+    with playwright.sync_playwright() as runtime:
+        browser = runtime.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(viewport={"width": 1366, "height": 900}, accept_downloads=True)
+            page.goto(path.as_uri())
+            for index in range(2):
+                page.locator("#add-source").click()
+                page.locator("#add-query").click()
+                page.locator(".query-row").nth(index).locator(
+                    "[data-field='sourceId']"
+                ).select_option(f"source-{index + 1}")
+            # "source-2" -> "source-" -> "source-1" (briefly the other row's ID) -> "source-11"
+            renamed = page.locator(".source-row").nth(1).locator("[data-field='id']")
+            renamed.click()
+            renamed.press("End")
+            renamed.press("Backspace")
+            renamed.press_sequentially("11")
+            with page.expect_download() as pending:
+                page.locator("#save-draft").click()
+            draft = decode_draft(Path(pending.value.path()).read_bytes())
+            assert [query["sourceId"] for query in draft["queries"]] == ["source-1", "source-11"]
+        finally:
+            browser.close()
