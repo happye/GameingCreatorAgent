@@ -364,20 +364,22 @@ def _score_query(
             continue
         hit = hits[slot_number - 1]
         label = labels.get(hit.event_id) if labels_confirmed else None
-        reference = references.get(label.human_event_id or "") if label is not None else None
         # A judgment belongs to the reviewed clip; changed clip boundaries need review.
         if label is not None and (label.start_us, label.end_us) != (hit.start_us, hit.end_us):
             label = None
+        reference = references.get(label.human_event_id or "") if label is not None else None
         group = reference.independence_group if reference is not None else None
+        # Only an event already counted usable makes a later clip of it a duplicate; a clip
+        # graded 0/1 does not use up its event (U10 counts distinct events graded 2/3).
         duplicate = hit.event_id in seen_ids or (group is not None and group in seen_groups)
         seen_ids.add(hit.event_id)
-        if group is not None:
-            seen_groups.add(group)
         outside = hit.end_us > duration_us
         out_of_bounds += outside
         duplicates += duplicate
         unjudged += label is None and not duplicate
         useful = label is not None and label.grade >= 2 and not duplicate and not outside
+        if useful and group is not None:
+            seen_groups.add(group)
         if useful and reference is not None:
             useful_ids.add(reference.human_event_id)
         start_error = end_error = None

@@ -129,6 +129,49 @@ def test_same_human_event_with_different_candidate_ids_is_zero_duplicate_slot() 
     assert report["qualityGate"] is False
 
 
+def test_a_low_graded_clip_does_not_use_up_its_event_for_a_later_usable_clip() -> None:
+    raw = document()
+    low = copy.deepcopy(raw["queries"][0]["candidateLabels"][0])
+    low.update(eventId="low", endUs=20, grade=1)  # cut too short, same human event
+    raw["queries"][0]["candidateLabels"].append(low)
+    returned = (BenchmarkHit("low", 0, 20, 1),) + hits(9)
+    report = run(raw, returned)
+    query = report["queries"][0]
+    # human-0..human-6 are each usable once inside the ten slots: U10 = 7/10.
+    assert query["usefulRateAt10"] == 0.7
+    assert query["duplicateSlots"] == 0
+    assert query["slots"][0]["useful"] is False
+    assert query["slots"][1]["status"] == "judged" and query["slots"][1]["useful"] is True
+    assert "human-0" not in query["missingHumanEventIds"]
+    assert report["qualityGate"] is True
+
+
+def test_a_usable_clip_still_makes_later_clips_of_its_event_duplicates() -> None:
+    raw = document()
+    low = copy.deepcopy(raw["queries"][0]["candidateLabels"][0])
+    low.update(eventId="low", endUs=20, grade=1)
+    raw["queries"][0]["candidateLabels"].append(low)
+    returned = hits(1) + (BenchmarkHit("low", 0, 20, 2),) + hits()[1:9]
+    query = run(raw, returned)["queries"][0]
+    assert query["slots"][1]["status"] == "duplicate"
+    assert query["duplicateSlots"] == 1
+    assert query["usefulRateAt10"] == 0.7
+
+
+def test_a_stale_label_neither_counts_nor_hides_as_a_duplicate() -> None:
+    raw = document()
+    alias = copy.deepcopy(raw["queries"][0]["candidateLabels"][0])
+    alias["eventId"] = "alias"
+    raw["queries"][0]["candidateLabels"].append(alias)
+    # The reviewed clip was 0-50 us; the retrieved one is 0-40 us, so it needs review.
+    returned = hits(1) + (BenchmarkHit("alias", 0, 40, 2),) + hits()[1:9]
+    query = run(raw, returned)["queries"][0]
+    assert query["slots"][1]["status"] == "unjudged"
+    assert query["slots"][1]["independenceGroup"] is None
+    assert query["unjudgedSlots"] == 1
+    assert query["usefulRateAt10"] is None
+
+
 def test_duplicate_unknown_event_is_not_counted_twice_as_unjudged() -> None:
     report = run(document(), (BenchmarkHit("new", 0, 50, 1), BenchmarkHit("new", 0, 50, 2)))
     query = report["queries"][0]

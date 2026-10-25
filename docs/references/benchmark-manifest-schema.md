@@ -40,7 +40,7 @@ After viewing returned clips, add candidate judgments:
 }
 ```
 
-Grades are integer 0 (irrelevant), 1 (related but unusable), 2 (usable), 3 (highly relevant). Grades 2/3 require a matching human reference ID. Each model event may have one judgment; bind it to the exact reviewed start/end. Changed boundaries need fresh review. Different model events mapped to the same human event count as duplicates.
+Grades are integer 0 (irrelevant), 1 (related but unusable), 2 (usable), 3 (highly relevant). Grades 2/3 require a matching human reference ID. Each model event may have one judgment; bind it to the exact reviewed start/end. Changed boundaries need fresh review. Different model events mapped to the same human event count as duplicates once that human event has already been counted usable (grade 2/3); an earlier 0/1 clip does not use up the event. (Labels must lie inside the source, so an out-of-bounds hit is always unjudged.) A label whose boundaries no longer match carries no event, so the slot is unjudged rather than a duplicate.
 
 ## Scoring and report
 

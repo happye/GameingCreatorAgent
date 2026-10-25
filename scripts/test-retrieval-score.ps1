@@ -8,13 +8,15 @@ $duplicateHits = $sevenGood + @(@{eventId='event-1';grade=3},@{eventId='event-1'
 $fixture = @{schemaVersion=1;evidenceType='synthetic_metric_test';datasetId='metric-regression-v1';queries=@(
     @{id='seven';kind='main';referenceEventIds=$references;hits=$duplicateHits},
     @{id='one';kind='main';referenceEventIds=$references;hits=@(@{eventId='event-1';grade=3})},
-    @{id='negative';kind='negative';referenceEventIds=@();hits=@(@{eventId='irrelevant-1';grade=0})}
+    @{id='negative';kind='negative';referenceEventIds=@();hits=@(@{eventId='irrelevant-1';grade=0})},
+    @{id='lowFirst';kind='main';referenceEventIds=$references;hits=(@(@{eventId='event-1';grade=1}) + $sevenGood + @(@{eventId='other-1';grade=0},@{eventId='other-2';grade=0}))}
 )}
 $inputPath = Join-Path $testDirectory 'input.json'
 $fixture | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $inputPath -Encoding utf8
 $report = (& (Join-Path $PSScriptRoot 'score-retrieval.ps1') -InputPath $inputPath) | ConvertFrom-Json
 if ($report.queries[0].usefulRateAt10 -ne 0.7 -or $report.queries[0].duplicateSlots -ne 3 -or -not $report.queries[0].mainMetricPassed) { throw 'Fixed denominator or event deduplication regression.' }
 if ($report.queries[1].usefulRateAt10 -ne 0.1 -or $report.queries[1].mainMetricPassed) { throw 'Short-return inflation regression.' }
+if ($report.queries[3].usefulRateAt10 -ne 0.7 -or $report.queries[3].duplicateSlots -ne 0 -or -not $report.queries[3].mainMetricPassed) { throw 'A low-graded hit used up its event.' }
 if (-not $report.queries[2].negativeReturnedAny -or $report.phase0QualityVerified) { throw 'Negative query or synthetic verification regression.' }
 foreach ($invalidGrade in @($null, $true, '2', 2.5, 4, -1)) {
     $fixture.queries[1].hits[0].grade = $invalidGrade

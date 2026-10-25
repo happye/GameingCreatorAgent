@@ -20,9 +20,10 @@ foreach ($query in $benchmark.queries) {
     foreach ($hit in $hits) {
         if (-not $hit.eventId -or $null -eq $hit.grade -or ($hit.grade -isnot [int] -and $hit.grade -isnot [long]) -or $hit.grade -notin @(0,1,2,3)) { throw 'Every hit needs an eventId and a judged integer grade.' }
         if ($hit.grade -ge 2 -and $hit.eventId -notin $references) { throw 'Useful labels must match a reference event.' }
+        # Only an event already counted usable makes a later hit a duplicate; a 0/1 hit
+        # does not use up its event (U10 counts distinct events graded 2/3).
         if ($hit.eventId -in $seenEvents) { $duplicates++; continue }
-        $seenEvents += $hit.eventId
-        if ($hit.grade -ge 2) { $useful++ }
+        if ($hit.grade -ge 2) { $seenEvents += $hit.eventId; $useful++ }
     }
     $u10 = $useful / 10.0
     $results += [pscustomobject]@{
