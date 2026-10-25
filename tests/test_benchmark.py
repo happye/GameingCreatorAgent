@@ -359,6 +359,34 @@ def test_search_failure_is_not_converted_to_empty_success_and_other_queries_run(
     assert "private diagnostic" not in json.dumps(report)
 
 
+def test_a_failed_search_reports_unknown_counts_not_measured_zeros() -> None:
+    raw = document()
+    raw["queries"][0].update(kind="negative", referenceEvents=[], candidateLabels=[])
+
+    async def search(query: BenchmarkQuery) -> tuple[BenchmarkHit, ...]:
+        raise RuntimeError("retrieval never ran")
+
+    query: Any = asyncio.run(run_benchmark(parse_manifest(raw), search))["queries"][0]
+    assert query["status"] == "failed"
+    # Retrieval never ran, so "returned nothing" would read as a correct refusal.
+    assert query["negativeReturnedAny"] is None
+    for key in ("returnedTop10", "totalReturned", "missingSlots", "duplicateSlots"):
+        assert query[key] is None, key
+    assert query["duplicateRateAt10"] is None and query["unjudgedSlots"] is None
+    assert query["timecodeErrors"]["outOfBoundsSlots"] is None
+    assert all(slot["status"] == "missing" for slot in query["slots"])
+
+
+def test_partly_judged_query_does_not_report_a_partial_useful_count() -> None:
+    query = run(document(), hits() + ())["queries"][0]
+    assert query["usefulIndependentEvents"] == 7
+    raw = document()
+    raw["queries"][0]["candidateLabels"].pop()  # slot 10 is now unjudged
+    partial = run(raw, hits())["queries"][0]
+    assert partial["status"] == "unverified_labels"
+    assert partial["usefulIndependentEvents"] is None
+
+
 def test_media_verification_failure_prevents_search_and_records_stable_failure() -> None:
     called = False
 

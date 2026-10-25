@@ -5,7 +5,7 @@
 **最新收尾（第三会话结束，用户额度不足主动收尾）**：
 - 已push到origin/main（c5a3c83及其后收尾提交，见`git log origin/main -1`）。本会话交付：跨改动审查及两P2修复、TD008预览缓存ChangeTime、TD012批次路径、TD005检索期间文件变化重哈希、TD003来源核对、TD005第B步测量；F006验收流程两轮对抗审查——第一轮1个P0（计分去重）＋4个P2＋1降级项全部修复（见[sprint](docs/exec-plans/sprint-f006-pipeline-review.md)），第二轮无P0／P1、3个P2。
 - 第二轮P2处理：①失败查询的计数改为null而非0、部分判定时`usefulIndependentEvents`为null——代码与2个新测试已写（`application/benchmark.py`、`tests/test_benchmark.py`），提交状态见下一条；②③验收就绪摘要两处显示问题记为TD017，未修。
-- **下一会话第一步**：`git status`看`application/benchmark.py`／`tests/test_benchmark.py`是否已提交；若未提交，跑`tests/test_benchmark*.py`（约1分钟），通过则按`fix(F006): report unknown counts for a failed query`提交并push；失败则看断言后修正。之后可做TD017（小）。本轮最后一次完整verify为3598 passed／0 failed（源码5879f98）；该P2修复只跑定向测试。
+- 第二轮P2①已提交并push（`fix(F006): report unknown counts for a failed query`），基准测试文件全部通过、Ruff／mypy通过；未另跑完整verify。**下一会话第一步**：可先跑一次完整`verify.ps1`确认，再做TD017（小）或等待用户分组决定。本轮最后一次完整verify为3598 passed／0 failed（源码5879f98）；该P2修复只跑定向测试。
 - 不变：Phase 0；F006／F009／F010仍false；无付费调用、无待批费用提案；用户尚未决定素材分组（不催）；TD005第B步是否并行哈希待业主决定（热缓存4线程1.14→0.67秒）。`.codex/agents/gc-*.toml`九个未跟踪文件非本会话所建，未动。
 
 **第三会话（最新）**：上一会话遗留的三件事已处理——①session2c的verify为3588 passed／2 failed，2项`test_writer_lock`子进程无输出发生在会话退出、控制台被关闭期间，单独重跑通过；本会话重跑完整verify结果见下一行；②跨改动审查（`ad6be26..HEAD`，code-quality-guard opus）PASS，无P0／P1，两P2已修（TD012批次路径`resolve_existing`；TD005检索期间文件变化则保存前完整重哈希）；③已普通push：origin/main由ad6be26更新到6286d80（含上一会话与本会话全部提交）。另交付：TD008视频预览缓存签名加NTFS ChangeTime（同大小改写＋恢复修改时间现可识别）；TD012`MediaBatchFiles`同类路径竞态；TD003核对到原FFmpeg日构建已无法从BtbN重新取得（只留月末构建），发布前须换固定一个可取得构建并经用户许可下载。`.codex/agents/gc-*.toml`九个未跟踪文件是其他工具／用户于2026-10-25 19:33创建，本会话未改、未提交。Phase 0不变，F006／F009／F010仍false，无付费调用。

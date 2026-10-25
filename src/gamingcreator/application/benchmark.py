@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from statistics import median
 from time import perf_counter
-from typing import Literal, Protocol
+from typing import Literal, Protocol, cast
 
 from gamingcreator.domain.errors import AppError
 
@@ -427,7 +427,7 @@ def _score_query(
         "totalReturned": len(hits),
         "referenceIndependentEvents": len(references) if labels_confirmed else None,
         "slots": slots,
-        "usefulIndependentEvents": len(useful_ids) if labels_confirmed else None,
+        "usefulIndependentEvents": len(useful_ids) if measured else None,
         "duplicateSlots": duplicates,
         "duplicateRateAt10": duplicates / 10,
         "missingSlots": max(0, 10 - len(hits)),
@@ -541,6 +541,19 @@ async def run_benchmark(
             )
             result["status"] = "failed"
             result["errorCode"] = "benchmark.search_failed"
+            # Retrieval never ran: counts are unknown, not zero ("returned nothing" would
+            # read as a correct refusal for a negative query).
+            for key in (
+                "returnedTop10",
+                "totalReturned",
+                "duplicateSlots",
+                "duplicateRateAt10",
+                "missingSlots",
+                "unjudgedSlots",
+                "negativeReturnedAny",
+            ):
+                result[key] = None
+            cast(dict[str, JsonValue], result["timecodeErrors"])["outOfBoundsSlots"] = None
         result["elapsedMs"] = round((perf_counter() - began) * 1000, 3)
         results.append(result)
     mains = [result for result in results if result["kind"] == "main"]
