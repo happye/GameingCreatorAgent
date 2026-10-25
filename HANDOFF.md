@@ -3,7 +3,7 @@
 ## 新对话接手清单（2026-10-25，Claude Code会话交接，最先读这里）
 
 **第三会话（最新）**：上一会话遗留的三件事已处理——①session2c的verify为3588 passed／2 failed，2项`test_writer_lock`子进程无输出发生在会话退出、控制台被关闭期间，单独重跑通过；本会话重跑完整verify结果见下一行；②跨改动审查（`ad6be26..HEAD`，code-quality-guard opus）PASS，无P0／P1，两P2已修（TD012批次路径`resolve_existing`；TD005检索期间文件变化则保存前完整重哈希）；③push见本节末。另交付：TD008视频预览缓存签名加NTFS ChangeTime（同大小改写＋恢复修改时间现可识别）；TD012`MediaBatchFiles`同类路径竞态；TD003核对到原FFmpeg日构建已无法从BtbN重新取得（只留月末构建），发布前须换固定一个可取得构建并经用户许可下载。`.codex/agents/gc-*.toml`九个未跟踪文件是其他工具／用户于2026-10-25 19:33创建，本会话未改、未提交。Phase 0不变，F006／F009／F010仍false，无付费调用。
-**第三会话verify**：对8daef7c（运行期间陆续加入TD008／TD012修复）完整`./scripts/verify.ps1`为3590 passed／0 failed／3 skipped（14分29秒）、`All project checks passed`、退出码0（.cache/verify-20261025-session3.log），`test_writer_lock`本次通过。对最终HEAD（含TD005与MediaBatchFiles修复）另跑一次，日志.cache/verify-20261025-session3b.log；结果若未补记在此，下一会话先读该日志末尾。
+**第三会话verify**：对8daef7c（运行期间陆续加入TD008／TD012修复）完整`./scripts/verify.ps1`为3590 passed／0 failed／3 skipped（14分29秒）、`All project checks passed`、退出码0（.cache/verify-20261025-session3.log），`test_writer_lock`本次通过。对最终HEAD（含TD005与MediaBatchFiles修复）另跑一次，日志.cache/verify-20261025-session3b.log；结果：3592 passed／0 failed／3 skipped（14分58秒）、`All project checks passed`、退出码0（源码HEAD 275acba，其后仅文档提交）。
 
 **当前状态**：本会话（2026-10-25第二会话）在main本地新增提交22d886a／389155e／e58fc1a等，尚未push；对e58fc1a跑完整`./scripts/verify.ps1`为3566 passed／0 failed／3 skipped（14分30秒）、静态门禁与离线包通过、退出码0（日志.cache/verify-20261025-session2.log）。注意：在PowerShell 5.1里用`*>`重定向verify会把uv的正常stderr当成终止错误，应从bash调用`powershell -File scripts/verify.ps1 > log 2>&1`。Phase 0；F006／F009／F010仍false；无新付费调用、无待批费用提案。
 
