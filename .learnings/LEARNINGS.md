@@ -161,3 +161,9 @@ Source: user correction and actual execution. Related: docs/exec-plans/sprint-ds
 ## [LRN-20261022-STATUS] correction: current documentation and elapsed time
 
 Updating HANDOFF/sprint alone did not align all user-facing entries: README still claimed P1 was unfixed and live design/guides still said v5 had no real results. Reconcile those against actual execution receipts, and archive repeated current anchors rather than prepend another one. The continuation outcome elapsedSeconds=842.598 is wall-clock execution time; source duration is about 952.102 seconds, so never call elapsedSeconds a source timecode. Fixed the current DSH report wording. Preserve old experiment records as explicit history and distinguish targeted current-document checks from revalidating every historical experiment.
+
+## [LRN-20261025-WINSTAT] best_practice: Windows stat identity and long-running verify
+
+On Windows (CPython 3.12+) `st_ctime_ns` is the creation time, so (ino, size, mtime, ctime) cannot see a same-size rewrite whose mtime was restored; NTFS ChangeTime (GetFileInformationByHandleEx FileBasicInfo on an open handle, `infrastructure/file_identity.py`) advances on any data or metadata change, including the `os.utime` call itself. Any new Windows path canonicalisation must use `local_paths.resolve_existing`, not `Path.resolve()`, including in lower layers that re-resolve an already-resolved path (`MediaBatchFiles` repeated the CLI's race). A full verify left running while a session exits can fail subprocess tests (`test_writer_lock` children printed nothing, console torn down); rerun before treating it as a regression. Do not temporarily revert source files while a background verify is running. BtbN FFmpeg-Builds keeps only month-end autobuilds for older dates, so a daily build cannot be re-downloaded later; pin a retained build at release time.
+
+Source: 2026-10-25 session three. Related: tech-debt TD003/TD005/TD008/TD012.
