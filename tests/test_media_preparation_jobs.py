@@ -14,6 +14,7 @@ import pytest
 from test_inspection_http import get, workspace
 from test_media_batch import batch, task_snapshot  # noqa: F401 - pytest fixture
 
+from gamingcreator.cli import main as cli
 from gamingcreator.domain.errors import AppError
 from gamingcreator.ui.media_preparation import MediaPreparationJobs, preparation_project
 
@@ -141,6 +142,40 @@ def test_stop_saves_current_item_and_resume_keeps_allocated_ids(preparation):
     )
     assert [row["runId"] for row in result["result"]["items"]] == original_ids
     assert result["status"] == "finished"
+
+
+def test_workspace_resumes_a_batch_frozen_before_its_database(preparation, request, monkeypatch):
+    """TD013 through the workspace: resubmitting would orphan the frozen batch."""
+    jobs, document, media = preparation
+    _, input_path, config_path, _, _ = request.getfixturevalue("batch")
+    project = jobs.repository / document["project"]
+    original = cli.SqliteTimelineStore.open
+
+    async def stopped(*args, **kwargs):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(cli.SqliteTimelineStore, "open", stopped)
+    with pytest.raises(KeyboardInterrupt):
+        asyncio.run(
+            cli.execute_prepare_media_batch(
+                project,
+                jobs.repository,
+                input_path=input_path,
+                config_path=config_path,
+                max_cost_cny="1.25",
+            )
+        )
+    monkeypatch.setattr(cli.SqliteTimelineStore, "open", original)
+    assert not (project / "timeline.sqlite3").exists()
+    batch_id = next((project / "media-batches").iterdir()).name
+    resume = {"project": document["project"], "resume": batch_id, "timeoutSeconds": 30}
+    done = wait_job(jobs, jobs.submit(resume))
+    assert done["status"] == "finished"
+    assert [row["status"] for row in done["result"]["items"]] == ["prepared"] * 3
+    (project / "media-batches" / ("f" * 32)).mkdir()
+    (project / "timeline.sqlite3").rename(project / "lost.sqlite3")
+    with pytest.raises(AppError, match="不能安全续跑"):
+        jobs.submit(resume)
 
 
 def test_one_worker_scope_guard_close_and_no_implicit_restart(preparation):

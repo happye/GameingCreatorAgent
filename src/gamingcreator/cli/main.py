@@ -409,6 +409,42 @@ def _require_project(project: Path) -> None:
         raise AppError("input.project", "找不到已分析的项目数据库。", ExitCode.INPUT)
 
 
+_UNSTARTED_BATCH_FILES = frozenset(
+    {
+        "source-input.json",
+        "analysis-config.json",
+        "plan.json",
+        "receipt.json",
+        ".analysis-writer.lock",
+    }
+)
+
+
+def require_resumable_project(project: Path, files: MediaBatchFiles) -> None:
+    """Resume needs the project database, unless the batch provably never started (TD013).
+
+    A hard stop between freezing a new batch and creating timeline.sqlite3 leaves only the
+    frozen plan. Resuming is safe then and only then: the project holds nothing but this
+    batch's frozen files (no runs, database, journal or batch state). A lost database with
+    any other trace keeps the refusal, so lost analyses or unknown costs are never rebuilt.
+    """
+    if (project / "timeline.sqlite3").is_file():
+        return
+    try:
+        top = {entry.name for entry in project.iterdir()}
+        batches = {entry.name for entry in (project / "media-batches").iterdir()}
+        own = {entry.name for entry in files.directory.iterdir()}
+    except OSError:
+        top = batches = own = set()
+    if not (
+        top <= {"media-batches", ".analysis-writer.lock"}
+        and batches == {files.batch_id}
+        and "receipt.json" in own
+        and own <= _UNSTARTED_BATCH_FILES
+    ):
+        _require_project(project)
+
+
 async def execute_search(
     project: Path,
     run_id: str,
@@ -1287,8 +1323,8 @@ async def execute_prepare_media_batch(
         if resume is not None:
             if input_path is not None or config_path is not None or max_cost_cny is not None:
                 raise ValueError("续批次不能覆盖清单／配置／限额。")
-            _require_project(project)
             files = MediaBatchFiles(project, resume)
+            require_resumable_project(project, files)
         else:
             if input_path is None or config_path is None or max_cost_cny is None:
                 raise ValueError("新批次需要清单／配置／每任务后续上限。")
@@ -1319,6 +1355,9 @@ async def execute_prepare_media_batch(
             files = MediaBatchFiles(project, plan.batch_id)
             files.create(plan, input_path.parent, source_bytes, config_bytes)
         files.acquire()
+        if resume is not None:
+            # Re-check under the batch lock: nothing may have started in between.
+            require_resumable_project(project, files)
         plan, state, digest = files.load()
         _media_preparation_config(plan.config)
         _require_space(project)

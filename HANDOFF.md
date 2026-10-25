@@ -12,7 +12,9 @@
 1. ~~TD012媒体准备偶发“准备项目须位于当前仓库的artifacts目录内”~~：2026-10-25已复现并修复（并发删除数据库时`resolve()`约9%返回`\\?\`／`$Deleted`路径；改为`lstat`链接检查，新增并发与链接两测试，22项通过）。见tech-debt TD012 2026-10-25段。
 2. ~~TD005真实长素材资源~~：2026-10-25实测钟馗15分52秒准备25.1秒／进程树峰值227MiB，两段盘点35.8秒／226MiB，工作台详情1.7–2.3秒（一小时估7–9秒，候选优化触及存储边界，已记TD005待评估）。~~TD002~~：OBS式MKV／WebM缺`duration_ts`现逐包补探测（仅matroska／webm，MP4不变），code-quality-guard PASS；真实6分钟钟馗转MKV经CLI准备成功，内置Chromium可预览播放。
 2b. ~~TD012 WinError10053~~：`ui/server.py:do_POST`改为先读完有界请求体再拒绝错误Content-Type／超限请求（超限最多丢弃读取1MiB）；压测旧代码400次中2次10053，修复后1600次全收到400，新增并发回归测试。~~TD012“取消范围400而非404”~~：根因是Windows非严格`resolve()`遇父目录被并发创建时保留`\\?\`前缀；新增`infrastructure/local_paths.py`（`resolve_existing`／`is_link`），并经工作流扫查全仓约180处`resolve()`后修复另4处同类问题（精分析sidecar、嵌入缓存、静态观察账本路径、联合检索目录）。TD012仅剩跨进程状态文件占用。
-2c. 评估中：TD005工作台详情加载重复解析run目录的优化（触及存储路径边界，收益先实测再决定是否做并送code-quality-guard）。
+2c. ~~TD005详情加载优化~~：实测拆分后决定暂不改（主要耗时是每次打开的完整性哈希这一保护，要改需“按文件身份缓存哈希”的设计决定，关联TD008），已记TD005。
+2d. 本会话后段（均已提交）：目录扫描纳入MKV／WebM（`domain.media.LOCAL_VIDEO_SUFFIXES`）；验收页时钟映射按容器固定测试（零起点MKV／WebM与音频晚起WebM精确，非零起点MKV／WebM与音频晚起MKV退回手动）；TD011在独立Windows PowerShell 5.1验证通过后关闭；验证脚本report.json遇外部句柄的WinError5改为有界等待；TD013冻结后未建库的批次可续跑（命令行与工作台同一规则，其他任何痕迹仍拒绝，code-quality-guard PASS）。
+2e. 剩余离线候选：TD012跨进程状态文件占用（仅再现时评估有界重试）；检查与使用之间的junction换入（需句柄式打开，L）；TD008哈希缓存身份；TD003发布前固定FFmpeg来源。下一会话可从这里或总方案下一阶段规划继续，仍不催分组。
 3. 若用户确认分组或补了原始游玩录像：工作台“验收流程”冻结步骤默认自动盘点即可核对；新付费分析必须先给具体提案并获明确批准。
 
 **环境规则（违反会造成假失败或破坏工具链）**：Python一律`-B`并设`PYTHONDONTWRITEBYTECODE=1`；测试在仓库根、先`. ./scripts/env.ps1`；pytest用`-W error -o cache_dir=.cache/...`，不要与`-p no:cacheprovider`同用；推送用`git -c http.proxy=http://127.0.0.1:7890 -c https.proxy=http://127.0.0.1:7890 push origin main`；子Agent隔离worktree需`.tools`目录链接，清理前先单独删链接（见Claude分工指南）。用户本机只有Windows PowerShell 5.1。

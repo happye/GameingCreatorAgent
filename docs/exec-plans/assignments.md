@@ -10,6 +10,7 @@
 
 | 工作 | 负责人／范围 | 当前状态 |
 | --- | --- | --- |
+| MKV目录扫描、容器时钟测试、TD011、报告改写、TD013续跑 | Claude Code主控实现；工作流：后续工作扫描排名（sonnet×3＋排名）、TD013 code-quality-guard（opus）对抗审查 | 2026-10-25完成并分别提交（fd23ce3／e2bc6b5／4268c7b及TD013提交）；见tech-debt TD002／TD006／TD011／TD012／TD013 |
 | TD012并发路径解析与POST重置 | Claude Code主控实现；工作流：4扫查＋每候选3票核实、code-quality-guard／gc-reviewer独立审查两轮（opus／sonnet） | 2026-10-25：389项387passed／2skip；两P1已修；见tech-debt TD012 2026-10-25段 |
 | TD002 MKV／WebM逐包补探测；TD005真实长素材实测 | Claude Code主控实现／实测；code-quality-guard（opus）只读评估 | 2026-10-25完成：94passed、评估PASS（两P2已修）；见tech-debt TD002／TD005及media-processing.md |
 | TD012媒体准备路径误拒（并发删除时路径解析） | Claude Code主控单Agent | 2026-10-25完成：稳定复现＋`lstat`修复，22passed；见tech-debt TD012 2026-10-25段 |

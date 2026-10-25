@@ -15,7 +15,11 @@ from typing import cast
 from uuid import uuid4
 
 from gamingcreator.application.media_batch import MediaBatchPlan
-from gamingcreator.cli.main import _media_preparation_config, execute_prepare_media_batch
+from gamingcreator.cli.main import (
+    _media_preparation_config,
+    execute_prepare_media_batch,
+    require_resumable_project,
+)
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.local_files import LocalInputReader
 from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
@@ -145,8 +149,14 @@ class MediaPreparationJobs:
             batch_id = document["resume"]
             if type(batch_id) is not str or not re.fullmatch(r"[a-f0-9]{32}", batch_id):
                 raise _invalid("批次号无效。")
-            if not (project / "timeline.sqlite3").is_file():
-                raise _invalid("原项目数据库尚未创建，请保留批次资料后重新提交。")
+            try:
+                # Same rule as the CLI: without the database, only a batch that provably
+                # never started may resume (TD013); resubmitting would orphan it.
+                require_resumable_project(project, MediaBatchFiles(project, batch_id))
+            except (ValueError, AppError):
+                raise _invalid(
+                    "原项目数据库缺失且项目里已有其他记录，不能安全续跑；请保留项目资料并检查。"
+                ) from None
             try:
                 plan, _, _ = MediaBatchFiles(project, batch_id).load()
                 _media_preparation_config(plan.config)

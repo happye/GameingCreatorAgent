@@ -318,6 +318,102 @@ def test_missing_batch_checkpoint_recovers_committed_tasks_from_frozen_ids(batch
     asyncio.run(scenario())
 
 
+def _stop_before_database(monkeypatch):
+    """Simulate a hard stop after the plan is frozen but before timeline.sqlite3 exists."""
+    original = cli.SqliteTimelineStore.open
+
+    async def stopped(*args, **kwargs):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(cli.SqliteTimelineStore, "open", stopped)
+    return original
+
+
+def test_batch_frozen_before_database_creation_can_resume(batch, monkeypatch):
+    project, _, _, media, execute = batch
+
+    async def scenario():
+        original = _stop_before_database(monkeypatch)
+        with pytest.raises(KeyboardInterrupt):
+            await execute()
+        assert not (project / "timeline.sqlite3").exists()
+        (batch_id,) = [entry.name for entry in (project / "media-batches").iterdir()]
+        monkeypatch.setattr(cli.SqliteTimelineStore, "open", original)
+        result = await execute(resume=batch_id)
+        assert result["status"] == "finished" and result["exitCode"] == 0
+        assert [row["status"] for row in result["items"]] == ["prepared"] * 3
+        assert len(media.extractions) == 3
+
+    asyncio.run(scenario())
+
+
+def test_stop_inside_store_open_leaves_only_the_project_lock_and_can_resume(batch, monkeypatch):
+    """The store takes the project writer lock before sqlite3.connect creates the database."""
+    project, _, _, media, execute = batch
+
+    async def scenario():
+        original = _stop_before_database(monkeypatch)
+        with pytest.raises(KeyboardInterrupt):
+            await execute()
+        monkeypatch.setattr(cli.SqliteTimelineStore, "open", original)
+        (project / ".analysis-writer.lock").write_bytes(b"")
+        batch_id = next((project / "media-batches").iterdir()).name
+        result = await execute(resume=batch_id)
+        assert result["status"] == "finished" and len(media.extractions) == 3
+
+    asyncio.run(scenario())
+
+
+def test_trace_appearing_before_the_batch_lock_is_refused_under_the_lock(batch, monkeypatch):
+    project, _, _, media, execute = batch
+
+    async def scenario():
+        original = _stop_before_database(monkeypatch)
+        with pytest.raises(KeyboardInterrupt):
+            await execute()
+        monkeypatch.setattr(cli.SqliteTimelineStore, "open", original)
+        acquire = cli.MediaBatchFiles.acquire
+
+        def acquire_after_another_writer(files):
+            (project / "runs").mkdir()
+            acquire(files)
+
+        monkeypatch.setattr(cli.MediaBatchFiles, "acquire", acquire_after_another_writer)
+        monkeypatch.setattr(media, "probe", forbidden)
+        with pytest.raises(AppError) as refused:
+            await execute(resume=next((project / "media-batches").iterdir()).name)
+        assert refused.value.code == "input.project"
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("trace", ["runs", "state", "other_batch", "wal"])
+def test_lost_database_with_any_other_trace_still_refuses_resume(batch, monkeypatch, trace):
+    project, _, _, media, execute = batch
+
+    async def scenario():
+        original = _stop_before_database(monkeypatch)
+        with pytest.raises(KeyboardInterrupt):
+            await execute()
+        monkeypatch.setattr(cli.SqliteTimelineStore, "open", original)
+        directory = next((project / "media-batches").iterdir())
+        if trace == "runs":
+            (project / "runs" / ("0" * 32)).mkdir(parents=True)
+        elif trace == "state":
+            (directory / "state.json").write_text("{}", encoding="utf-8")
+        elif trace == "other_batch":
+            (project / "media-batches" / ("f" * 32)).mkdir()
+        else:
+            (project / "timeline.sqlite3-wal").write_bytes(b"")
+        monkeypatch.setattr(media, "probe", forbidden)
+        with pytest.raises(AppError) as refused:
+            await execute(resume=directory.name)
+        assert refused.value.code == "input.project"
+        assert not (project / "timeline.sqlite3").exists()
+
+    asyncio.run(scenario())
+
+
 @pytest.mark.parametrize("override", ["input_path", "config_path", "max_cost_cny"])
 def test_resume_cannot_replace_frozen_input_configuration_or_limit(batch, override):
     _, input_path, config_path, _, execute = batch
