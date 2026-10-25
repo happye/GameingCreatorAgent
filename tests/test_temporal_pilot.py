@@ -4,6 +4,8 @@ import asyncio
 import importlib.util
 import json
 import sys
+import threading
+import time
 from decimal import Decimal
 from fractions import Fraction
 from pathlib import Path
@@ -178,3 +180,23 @@ def test_dry_pilot_freezes_before_any_transport(
     assert report["cost"]["requestCount"] == 0
     assert report["cost"]["totalApiCostCny"] == "0"
     assert json.loads((output / "invocations.json").read_text()) == []
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows file-sharing semantics")
+def test_report_rewrite_waits_for_a_briefly_open_reader(tmp_path: Path) -> None:
+    """TD012: another process holding report.json open made os.replace fail (WinError 5)."""
+    target = tmp_path / "report.json"
+    pilot.write_json(target, {"n": 0})
+    opened = threading.Event()
+
+    def hold() -> None:
+        with target.open("rb"):
+            opened.set()
+            time.sleep(0.3)
+
+    reader = threading.Thread(target=hold)
+    reader.start()
+    opened.wait()
+    pilot.write_json(target, {"n": 1})
+    reader.join()
+    assert json.loads(target.read_text(encoding="utf-8")) == {"n": 1}

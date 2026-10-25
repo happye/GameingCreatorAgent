@@ -8,6 +8,7 @@ import asyncio
 import json
 import os
 import sys
+import time
 from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -57,7 +58,17 @@ def write_json(path: Path, value: object) -> None:
         stream.write("\n")
         stream.flush()
         os.fsync(stream.fileno())
-    temporary.replace(path)
+    # Windows refuses to replace a file another process has open (antivirus, indexer or a
+    # reader polling the report: WinError 5/32, TD012). Snapshots are complete either way,
+    # so wait briefly for that handle instead of losing the report; other errors propagate.
+    for attempt in range(40):
+        try:
+            temporary.replace(path)
+            return
+        except PermissionError as error:
+            if getattr(error, "winerror", None) not in (5, 32) or attempt == 39:
+                raise
+            time.sleep(0.05)
 
 
 class JsonInvocationRecorder:
