@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-25 TD012媒体准备路径误拒修复（Claude Code单Agent）**：用“另一线程反复建删数据库”稳定复现偶发的“准备项目须位于artifacts目录内”（`resolve()`约9%返回`\\?\`／`$Deleted`路径）；`preparation_project`改为`lstat`判断链接／重解析点，不再打开文件。新并发测试旧红新绿、链接拒绝测试前后一致，`test_media_preparation_jobs.py`22项通过，静态检查通过；整仓verify未重跑。
+
 **2026-10-25验收流程走查（Claude Code）**：浏览器真实走通八步；关联步骤显示具体拒绝原因；冻结／就绪阻断与待决定代码改为通俗中文。工作台／就绪相关测试通过。本会话收尾，下一步见HANDOFF恢复顺序。
 
 **2026-10-24冻结时自动盘点（Claude Code）**：freeze-benchmark --auto-inventory／工作台默认勾选，冻结时自动盘点计划来源并打包报告，结果与单独盘点字节一致。worktree隔离实现（sonnet）＋sonnet评估PASS，真实Atom异组12秒被拦；合入前完整verify 3517 passed／1项TD012偶发。

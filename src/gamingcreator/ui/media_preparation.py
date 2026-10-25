@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import os
 import re
 import threading
 from copy import deepcopy
@@ -10,6 +11,7 @@ from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from math import isfinite
 from pathlib import Path
+from stat import FILE_ATTRIBUTE_REPARSE_POINT, S_ISLNK
 from typing import cast
 from uuid import uuid4
 
@@ -42,10 +44,24 @@ def preparation_project(repository: Path, value: str) -> Path:
         not artifacts.is_relative_to(root)
         or project == artifacts
         or not project.is_relative_to(artifacts)
-        or not (project / "timeline.sqlite3").resolve().is_relative_to(project)
+        or _is_link(project / "timeline.sqlite3")
     ):
         raise _invalid("准备项目须位于当前仓库的artifacts目录内。")
     return project
+
+
+def _is_link(path: Path) -> bool:
+    # lstat reads the directory entry without opening the file, so a database
+    # that is being released, replaced or deleted cannot make resolve() fall back
+    # to a \\?\ or $Extend\$Deleted path and spuriously reject the project (TD012).
+    try:
+        status = os.lstat(path)
+    except FileNotFoundError:
+        return False
+    except OSError:
+        return True
+    attributes = getattr(status, "st_file_attributes", 0)
+    return S_ISLNK(status.st_mode) or bool(attributes & FILE_ATTRIBUTE_REPARSE_POINT)
 
 
 def _timeout(value: object) -> float:

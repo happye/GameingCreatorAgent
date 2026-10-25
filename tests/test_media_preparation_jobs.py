@@ -1,8 +1,11 @@
 """A live local worker owns preparation; saved state never claims another worker is alive."""
 
 import asyncio
+import contextlib
 import hashlib
 import json
+import sys
+import threading
 import time
 from urllib.parse import urlencode
 
@@ -11,7 +14,7 @@ from test_inspection_http import get, workspace
 from test_media_batch import batch, task_snapshot  # noqa: F401 - pytest fixture
 
 from gamingcreator.domain.errors import AppError
-from gamingcreator.ui.media_preparation import MediaPreparationJobs
+from gamingcreator.ui.media_preparation import MediaPreparationJobs, preparation_project
 
 
 @pytest.fixture
@@ -187,6 +190,50 @@ def test_invalid_request_creates_no_job_batch_or_staging_files(preparation, chan
         jobs.submit({**document, **changes})
     assert hashes(jobs.repository) == before
     assert media.probes == media.extractions == []
+
+
+def test_project_check_survives_concurrent_database_churn(tmp_path):
+    """TD012: resolve() of a file being deleted may return a \\\\?\\ or $Deleted path."""
+    project = tmp_path / "artifacts" / "准备项目"
+    project.mkdir(parents=True)
+    database = project / "timeline.sqlite3"
+    stop = threading.Event()
+
+    def churn():
+        while not stop.is_set():
+            with contextlib.suppress(OSError):
+                database.write_bytes(b"x")
+                database.unlink()
+
+    worker = threading.Thread(target=churn)
+    worker.start()
+    try:
+        began = time.monotonic()
+        while time.monotonic() - began < 1:
+            assert preparation_project(tmp_path, "artifacts/准备项目") == project.resolve()
+    finally:
+        stop.set()
+        worker.join()
+
+
+def test_linked_project_database_is_rejected(tmp_path):
+    project = tmp_path / "artifacts" / "准备项目"
+    project.mkdir(parents=True)
+    outside = tmp_path / "outside.sqlite3"
+    outside.write_bytes(b"")
+    database = project / "timeline.sqlite3"
+    try:
+        database.symlink_to(outside)
+    except OSError:
+        if sys.platform != "win32":
+            raise
+        # Unprivileged Windows cannot create file symlinks; a junction is the
+        # other reparse point that could redirect the database out of the project.
+        import _winapi
+
+        _winapi.CreateJunction(str(tmp_path), str(database))
+    with pytest.raises(AppError, match="artifacts"):
+        preparation_project(tmp_path, "artifacts/准备项目")
 
 
 def post(base, path, value, **headers):
