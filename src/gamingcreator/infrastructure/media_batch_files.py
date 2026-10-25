@@ -23,6 +23,7 @@ from gamingcreator.application.media_batch import (
 )
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.local_files import LocalInputReader
+from gamingcreator.infrastructure.local_paths import resolve_existing
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
 
 # Windows refuses to replace an open file and to open one being replaced, so state.json reads
@@ -67,9 +68,15 @@ class MediaBatchFiles:
     def __init__(self, project: Path, batch_id: str) -> None:
         if not re.fullmatch(r"[a-f0-9]{32}", batch_id):
             raise ValueError("批次身份无效。")
-        self.project = project.resolve()
-        self.directory = self.project / "media-batches" / batch_id
-        if not self.directory.resolve().is_relative_to(self.project):
+        # resolve_existing, not Path.resolve(): the project or batch folder may be created
+        # concurrently, and a kept \\?\ prefix would refuse an in-tree batch (TD012).
+        try:
+            self.project = resolve_existing(project)
+            self.directory = self.project / "media-batches" / batch_id
+            inside = resolve_existing(self.directory).is_relative_to(self.project)
+        except OSError:
+            inside = False
+        if not inside:
             raise ValueError("批次目录超出项目。")
         self.batch_id = batch_id
         self._lock: ProjectWriterLock | None = None
