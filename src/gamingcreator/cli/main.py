@@ -126,6 +126,7 @@ from gamingcreator.infrastructure.http_transport import HttpxVisionTransport
 from gamingcreator.infrastructure.local_asr import LocalAsrProvider
 from gamingcreator.infrastructure.local_embeddings import LocalEmbeddingProvider
 from gamingcreator.infrastructure.local_files import LocalInputReader
+from gamingcreator.infrastructure.local_paths import resolve_existing
 from gamingcreator.infrastructure.media_batch_files import MediaBatchFiles, read_batch_bytes
 from gamingcreator.infrastructure.project_search_files import (
     read_project_search,
@@ -1334,7 +1335,12 @@ async def execute_prepare_media_batch(
 ) -> dict[str, object]:
     if timeout_seconds is not None and (not isfinite(timeout_seconds) or timeout_seconds <= 0):
         raise AppError("input.media_batch", "每素材期限须为有限正数。", ExitCode.INPUT)
-    project = project.resolve()
+    # Not Path.resolve(): a folder created concurrently can keep a \\?\ prefix there, and
+    # the frozen plan would then never match this project on resume (TD012).
+    try:
+        project = resolve_existing(project)
+    except OSError:
+        raise AppError("input.media_batch", "素材批次项目路径无法解析。", ExitCode.INPUT) from None
     files = None
     try:
         if resume is not None:
