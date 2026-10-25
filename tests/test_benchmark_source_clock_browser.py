@@ -65,6 +65,19 @@ CONTENT_TOLERANCE_US = FRAME_US + 5_000
 PAUSE_CONTENT_TOLERANCE_US = 4 * FRAME_US + 5_000
 SUPPORTED = ("zero", "nonzero", "audio_late")
 ALL_KINDS = ("zero", "nonzero", "audio_late", "video_late", "extra_track")
+# Matroska/WebM enter the same automatic path since TD002 (packet-timestamp durations).
+# Chromium maps these exactly; the refused ones below must fall back to manual entry.
+AUTOMATIC = (
+    *((kind, "mp4") for kind in SUPPORTED),
+    ("zero", "mkv"),
+    ("zero", "webm"),
+    ("audio_late", "webm"),
+)
+REFUSED = {
+    ("nonzero", "mkv"): "时长与保存的原片时长不一致",
+    ("nonzero", "webm"): "时长与保存的原片时长不一致",
+    ("audio_late", "mkv"): "起点与保存的原片起点不一致",
+}
 
 
 def _reference_script():
@@ -120,16 +133,25 @@ def synthesize(path: Path, kind: str) -> None:
         mapping += ["-map", "2:a"]
     if kind == "nonzero":
         command += ["-output_ts_offset", "2.5"]
+    # OBS-style .mkv keeps H.264/AAC; WebM only allows VP8/VP9/AV1 with Opus/Vorbis.
+    video_codec, audio_codec = (
+        ("libvpx-vp9", "libopus")
+        if path.suffix == ".webm"
+        else (
+            "libx264",
+            "aac",
+        )
+    )
     command += [
         *mapping,
         "-vf",
         f"format=gray,geq=lum='{marker_expression()}',format=yuv420p",
         "-c:v",
-        "libx264",
+        video_codec,
         "-pix_fmt",
         "yuv420p",
         "-c:a",
-        "aac",
+        audio_codec,
     ]
     if kind != "extra_track":
         command += ["-shortest"]
@@ -282,9 +304,10 @@ def clock_case(
     *,
     ranges: tuple[tuple[int, int], ...] = ((START_US, END_US),),
     second_media: MediaAsset | None = None,
+    container: str = "mp4",
 ) -> ClockCase:
     tmp_path.mkdir(parents=True, exist_ok=True)
-    source = tmp_path / f"{kind} 源 空格.mp4"
+    source = tmp_path / f"{kind} 源 空格.{container}"
     synthesize(source, kind)
     asset = probe_source(source)
     frames = video_frame_sources(source, asset)
@@ -570,10 +593,12 @@ def test_synthetic_probe_and_builders_expose_the_measured_clock(tmp_path, kind):
         assert starts["video"] == 0 and starts["audio"] == 0
 
 
-@pytest.mark.parametrize("kind", SUPPORTED)
-def test_candidate_page_seeks_plays_and_pauses_inside_the_canonical_interval(tmp_path, kind):
+@pytest.mark.parametrize(("kind", "container"), AUTOMATIC)
+def test_candidate_page_seeks_plays_and_pauses_inside_the_canonical_interval(
+    tmp_path, kind, container
+):
     playwright = pytest.importorskip("playwright.sync_api")
-    case = clock_case(tmp_path, kind)
+    case = clock_case(tmp_path, kind, container=container)
     clock = selected_media(case.candidate[0])["sourceClock"]
     assert clock is not None
     start_player = (START_US + clock["originUs"]) / 1_000_000
@@ -674,10 +699,10 @@ def test_candidate_page_seeks_plays_and_pauses_inside_the_canonical_interval(tmp
             browser.close()
 
 
-@pytest.mark.parametrize("kind", SUPPORTED)
-def test_reference_page_capture_equals_the_picture_canonical_moment(tmp_path, kind):
+@pytest.mark.parametrize(("kind", "container"), AUTOMATIC)
+def test_reference_page_capture_equals_the_picture_canonical_moment(tmp_path, kind, container):
     playwright = pytest.importorskip("playwright.sync_api")
-    case = clock_case(tmp_path, kind)
+    case = clock_case(tmp_path, kind, container=container)
     clock = reference_clock(case.reference[0])
     assert clock is not None
     start_player = (START_US + clock["originUs"]) / 1_000_000
@@ -724,6 +749,41 @@ def test_reference_page_capture_equals_the_picture_canonical_moment(tmp_path, ki
             record = validate_reference_record(saved, case.reference[0], case.reference_assets)
             events = record["plan"]["queries"][0]["referenceEvents"]
             assert events[0]["usableRanges"] == [{"startUs": 300_000, "endUs": 1_500_000}]
+            assert not requests and not errors
+        finally:
+            browser.close()
+
+
+@pytest.mark.parametrize(("kind", "container"), list(REFUSED))
+def test_unverifiable_matroska_clock_falls_back_to_manual_on_both_pages(tmp_path, kind, container):
+    """Where Chromium's Matroska timeline disagrees with the probe, nothing is mapped."""
+    playwright = pytest.importorskip("playwright.sync_api")
+    case = clock_case(tmp_path, kind, container=container)
+    reason = REFUSED[(kind, container)]
+    with playwright.sync_playwright() as runtime:
+        browser = runtime.chromium.launch(headless=True)
+        try:
+            page, requests, errors = open_page(browser, case.candidate_page)
+            page.wait_for_function(
+                "() => document.getElementById('clock-state').textContent.includes('无法核对')",
+                timeout=30000,
+            )
+            assert page.locator(".slot button").first.is_disabled()
+            playwright.expect(page.locator("[data-clock=note]").first).to_contain_text(reason)
+            assert (
+                page.locator("#open-source").get_attribute("href")
+                == case.asset.source_path.as_uri()
+            )
+            page.close()
+            page, requests, errors = open_page(browser, case.reference_page)
+            page.wait_for_function(
+                "reason => document.getElementById('clock-state').textContent.includes(reason)",
+                arg=reason,
+                timeout=30000,
+            )
+            assert page.locator("#capture-start").is_disabled()
+            assert page.locator("#capture-end").is_disabled()
+            playwright.expect(page.locator("#open-source")).to_be_visible()
             assert not requests and not errors
         finally:
             browser.close()
