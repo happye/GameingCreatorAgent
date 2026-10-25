@@ -176,7 +176,9 @@ def preparation_status(plan: BenchmarkPlan, sources: list[dict[str, object]]) ->
     groups: dict[str, set[str]] = {}
     content: dict[str, set[str]] = {}
     content_groups: dict[str, set[str]] = {}
+    copies: dict[str, int] = {}
     for row in sources:
+        copies[cast(str, row["sha256"])] = copies.get(cast(str, row["sha256"]), 0) + 1
         source = index[cast(str, row["id"])]
         if source.recording_group is None:
             blockers.add("recording_group_missing")
@@ -192,6 +194,9 @@ def preparation_status(plan: BenchmarkPlan, sources: list[dict[str, object]]) ->
         blockers.add("same_content_crosses_partitions")
     if any(len(value) > 1 for value in content_groups.values()):
         blockers.add("same_content_has_different_recording_groups")
+    # Binding keys media by content hash, so a byte-identical second copy can never bind.
+    if any(count > 1 for count in copies.values()):
+        blockers.add("same_content_registered_twice")
     if min(len(groups), len(content)) < 10:
         blockers.add("representative_recordings_below_ten")
     families: dict[str, set[str]] = {}

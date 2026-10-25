@@ -34,8 +34,10 @@
 
 ```powershell
 ./scripts/prepare-benchmark-references.ps1 -ReviewDirectory artifacts/reference-review-001 -RecordPath artifacts/reference-record.json -OutputDirectory artifacts/reference-plan-001
-./scripts/prepare-benchmark.ps1 -InputPath artifacts/reference-plan-001/benchmark-plan.json -OutputDirectory artifacts/acceptance-freeze-001
+./scripts/prepare-benchmark.ps1 -InputPath artifacts/reference-plan-001/benchmark-plan.json -OutputDirectory artifacts/acceptance-freeze-001 -AutoInventory
 ```
+
+`-AutoInventory`（或`-InventoryPath <盘点报告>`）不能省：没有素材盘点的冻结会带`source_inventory_missing`阻断，之后永远不能算独立测试集，见[准备指南](./benchmark-preparation-guide.md)第2节。
 
 导入重新核对原页面包、原录像SHA和时长，以及事前来源／录制组／分区／已看结果声明／查询。只允许修改人工参考及版本、填写人、确认和复核；来源或查询变化必须重新准备并如实披露，不能沿用旧标注包。
 

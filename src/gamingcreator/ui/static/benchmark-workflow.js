@@ -36,6 +36,7 @@
         test_results_already_viewed:"测试用录像已经看过模型结果：它不能再当独立测试，请改为开发用途或换一段没看过结果的录像。",
         recording_group_crosses_partitions:"同一录制组同时出现在开发和测试里：同一次录制只能放在一边。",
         same_content_crosses_partitions:"同一个文件（字节相同）同时用于开发和测试：请只保留在一边。",
+        same_content_registered_twice:"同一个文件（字节相同）登记了两次：请删掉重复的那一条，只保留一份。",
         same_content_has_different_recording_groups:"同一个文件被填成了不同录制组：请改成同一组。",
         representative_recordings_below_ten:"独立录制组不足10个：正式验收需要10–20段来自不同原始录制的代表录像。",
         test_reference_events_incomplete:"测试查询的事前参考事件不够：主查询至少需要10个不同可用事件，少例查询1–9个。",

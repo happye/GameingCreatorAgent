@@ -191,6 +191,17 @@ def test_leakage_is_saved_as_explicit_blocked_preparation(tmp_path, mutation, bl
     assert blocker in status["blockers"]
 
 
+def test_same_bytes_registered_twice_are_blocked_before_binding_fails(tmp_path):
+    # Same content, same recording group, same partition: bind would reject the duplicate
+    # media identity, so freeze must not call the plan ready (11 sources keep 10 groups).
+    raw, assets = plan_fixture(tmp_path, 11, confirmed=True)
+    raw["sources"][1]["recordingGroup"] = raw["sources"][0]["recordingGroup"]
+    assets["source-1"] = replace(assets["source-1"], sha256=assets["source-0"].sha256)
+    status = freeze(raw, assets)["preparation"]
+    assert status["blockers"] == ["same_content_registered_twice"]
+    assert status["readyForIndependentEvaluation"] is False
+
+
 @pytest.mark.parametrize(
     "mutation",
     [
