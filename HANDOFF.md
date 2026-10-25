@@ -2,7 +2,7 @@
 
 ## 新对话接手清单（2026-10-25，Claude Code会话交接，最先读这里）
 
-**当前状态**：main与GitHub同步，工作区干净；2026-10-25对全部改动跑完整`./scripts/verify.ps1`为3538 passed／0 failed／3 skipped、退出码0。Phase 0；F006／F009／F010仍false；无新付费调用、无待批费用提案。
+**当前状态**：本会话（2026-10-25第二会话）在main本地新增提交22d886a／389155e／e58fc1a等，尚未push；对e58fc1a跑完整`./scripts/verify.ps1`为3566 passed／0 failed／3 skipped（14分30秒）、静态门禁与离线包通过、退出码0（日志.cache/verify-20261025-session2.log）。注意：在PowerShell 5.1里用`*>`重定向verify会把uv的正常stderr当成终止错误，应从bash调用`powershell -File scripts/verify.ps1 > log 2>&1`。Phase 0；F006／F009／F010仍false；无新付费调用、无待批费用提案。
 
 **上一会话交付（详见下方各节与sprint）**：TD012工作台状态文件竞态修复；只读素材盘点`inventory-sources`（source-inventory-v2，识别黑边／镜像）；`benchmark-freeze-v2`冻结强制核对盘点并默认自动盘点；TD015检查门禁恢复与TD016联合检索回归修复；三个中文ps1加BOM适配PowerShell 5.1；验收流程浏览器八步走查与阻断／就绪提示中文化；`.claude/agents/`九个Claude角色合入。
 
