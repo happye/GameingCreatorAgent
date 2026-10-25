@@ -11,7 +11,6 @@ from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from math import isfinite
 from pathlib import Path
-from stat import FILE_ATTRIBUTE_REPARSE_POINT, S_ISLNK
 from typing import cast
 from uuid import uuid4
 
@@ -19,6 +18,7 @@ from gamingcreator.application.media_batch import MediaBatchPlan
 from gamingcreator.cli.main import _media_preparation_config, execute_prepare_media_batch
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.local_files import LocalInputReader
+from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
 from gamingcreator.infrastructure.media_batch_files import MediaBatchFiles
 
 PROFILES = {
@@ -36,32 +36,35 @@ def _invalid(message: str = "请填写有效的项目、录像路径和准备参
 def preparation_project(repository: Path, value: str) -> Path:
     if type(value) is not str or not value.strip() or len(value) > 8192 or "\0" in value:
         raise _invalid()
-    root = repository.resolve()
-    artifacts = (root / "artifacts").resolve()
     requested = Path(value)
-    project = (requested if requested.is_absolute() else root / requested).resolve()
+    try:
+        # resolve_existing/is_link instead of Path.resolve(): the project folder may be
+        # created and its database deleted concurrently by a running job (TD012).
+        root = resolve_existing(repository)
+        artifacts = resolve_existing(root / "artifacts")
+        project = resolve_existing(requested if requested.is_absolute() else root / requested)
+    except OSError:
+        raise _invalid("准备项目须位于当前仓库的artifacts目录内。") from None
     if (
         not artifacts.is_relative_to(root)
         or project == artifacts
         or not project.is_relative_to(artifacts)
-        or _is_link(project / "timeline.sqlite3")
+        or is_link(project / "timeline.sqlite3")
+        or _hard_linked(project / "timeline.sqlite3")
     ):
         raise _invalid("准备项目须位于当前仓库的artifacts目录内。")
     return project
 
 
-def _is_link(path: Path) -> bool:
-    # lstat reads the directory entry without opening the file, so a database
-    # that is being released, replaced or deleted cannot make resolve() fall back
-    # to a \\?\ or $Extend\$Deleted path and spuriously reject the project (TD012).
+def _hard_linked(path: Path) -> bool:
+    # A second name for the database could be an outside file that preparation would
+    # then write into. Only >1 is evidence: a file mid-deletion reports 0 (TD012).
     try:
-        status = os.lstat(path)
+        return os.lstat(path).st_nlink > 1
     except FileNotFoundError:
         return False
     except OSError:
         return True
-    attributes = getattr(status, "st_file_attributes", 0)
-    return S_ISLNK(status.st_mode) or bool(attributes & FILE_ATTRIBUTE_REPARSE_POINT)
 
 
 def _timeout(value: object) -> float:

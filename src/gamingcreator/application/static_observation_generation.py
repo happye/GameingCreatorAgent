@@ -314,7 +314,10 @@ def generation_paths(project: Path) -> tuple[Path, Path, Path]:
                 raise _input_error("静态生成账本根不能是符号链接或目录联接。")
         except OSError:
             raise _input_error("无法核对静态生成账本根。") from None
-    return project_root, database, ledger_root.resolve()
+    # project_root is canonical and each ledger component was just checked not to be a
+    # link, so the lexical path is exact; resolve() could race a concurrent first mkdir
+    # into a \\?\ path that a frozen proposal would then carry forever (TD012).
+    return project_root, database, ledger_root
 
 
 @dataclass(frozen=True, slots=True)

@@ -54,6 +54,7 @@ from gamingcreator.application.storage import RunStatus, StoredTimeline
 from gamingcreator.domain.actor_details import CandidateDetail, MatchStatus
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.models import SemanticEvent
+from gamingcreator.infrastructure.local_paths import resolve_existing
 
 _RUN_ID = re.compile(r"[A-Za-z0-9_-]{1,128}\Z")
 _BUDGET_ID = re.compile(r"[A-Za-z0-9_-]{1,64}\Z")
@@ -71,7 +72,12 @@ def _linked(path: Path) -> bool:
 
 
 def _confined(root: Path, path: Path) -> Path:
-    resolved_root = root.resolve()
+    # resolve_existing, not resolve(): another process may be creating the missing
+    # refinement folders at this moment, which can make resolve() look foreign (TD012).
+    try:
+        resolved_root = resolve_existing(root)
+    except OSError:
+        raise _fail("refinement.path", "精分析路径逃出了项目目录。") from None
     if _linked(resolved_root):
         raise _fail("refinement.path", "项目目录不能是符号链接。")
     current = path
@@ -85,7 +91,10 @@ def _confined(root: Path, path: Path) -> Path:
         if current.parent == current:
             raise _fail("refinement.path", "精分析路径逃出了项目目录。")
         current = current.parent
-    resolved = path.resolve()
+    try:
+        resolved = resolve_existing(path)
+    except OSError:
+        raise _fail("refinement.path", "精分析路径逃出了项目目录。") from None
     if not resolved.is_relative_to(resolved_root):
         raise _fail("refinement.path", "精分析路径逃出了项目目录。")
     return resolved

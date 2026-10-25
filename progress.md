@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-25 TD012并发路径与HTTP重置修复（Claude Code＋工作流）**：①POST错误Content-Type／超限请求改为先有界读完请求体再拒绝，WinError10053压测由400次2次降为1600次0次；②“取消范围400而非404”根因为Windows非严格`resolve()`遇父目录并发创建保留`\\?\`前缀，新增`infrastructure/local_paths.py`（`resolve_existing`／`is_link`）；③工作流扫查约180处`resolve()`，3票对抗核实确认4处同类问题并修复（精分析sidecar、嵌入缓存、静态观察账本路径、联合检索目录）；④两轮独立审查各发现1个P1（缺失尾部盘符名被改写、悬空junction被当作缺失名可致写出仓库），均已修复并加测试。受影响389项：387 passed／2权限skip。整仓verify未重跑。
+
 **2026-10-25 TD002 MKV／WebM录像可直接准备＋TD005真实长素材实测（Claude Code）**：OBS式`.mkv`／WebM不存每流`duration_ts`，原先一律拒绝；现仅对matroska／webm逐包读取`pts,duration`取`max(pts+duration)`（不读format.duration，MP4路径与字节不变）。真实6分钟钟馗无损转MKV经CLI准备成功（406.762秒对MP4 406.7627秒，407图、音轨保留、零模型调用），内置Chromium经工作台播放／跳转正常。code-quality-guard（opus）PASS，两P2（包时长可能来自DefaultDuration的表述、范围限定）已修；媒体／盘点／批次94项通过。TD005：15分52秒准备25.1秒／峰值227MiB，盘点35.8秒／226MiB，详情1.7–2.3秒；TD003记录FFmpeg构建识别。整仓verify未重跑。
 
 **2026-10-25 TD012媒体准备路径误拒修复（Claude Code单Agent）**：用“另一线程反复建删数据库”稳定复现偶发的“准备项目须位于artifacts目录内”（`resolve()`约9%返回`\\?\`／`$Deleted`路径）；`preparation_project`改为`lstat`判断链接／重解析点，不再打开文件。新并发测试旧红新绿、链接拒绝测试前后一致，`test_media_preparation_jobs.py`22项通过，静态检查通过；整仓verify未重跑。

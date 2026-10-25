@@ -31,6 +31,8 @@ from gamingcreator.ui.service import (
 )
 
 STATIC = Path(__file__).with_name("static")
+# Largest rejected request body still read before replying, so the reply is not lost.
+DISCARD_LIMIT = 1_048_576
 ASSETS = {
     "/": ("index.html", "text/html; charset=utf-8"),
     "/assets/app.js": ("app.js", "text/javascript; charset=utf-8"),
@@ -198,29 +200,37 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self.wfile.write(chunk)
                 remaining -= len(chunk)
 
+    def _discard_body(self, length: int) -> None:
+        remaining = length if 0 < length <= DISCARD_LIMIT else 0
+        while remaining > 0 and (chunk := self.rfile.read(min(65536, remaining))):
+            remaining -= len(chunk)
+
     def do_HEAD(self) -> None:  # noqa: N802 - stdlib handler name
         self.do_GET()
 
     def do_POST(self) -> None:  # noqa: N802 - stdlib handler name
         try:
             if (
-                self.headers.get_content_type() != "application/json"
-                or self.headers.get("Transfer-Encoding") is not None
+                self.headers.get("Transfer-Encoding") is not None
                 or len(self.headers.get_all("Content-Length", [])) != 1
             ):
                 raise ValueError("Expected a bounded JSON body.")
             length = int(self.headers["Content-Length"])
             path = urlparse(self.path).path
             body_limit = 8_388_608 if path == "/api/benchmark-step" else 65536
-            if not 0 < length <= body_limit:
-                raise ValueError("Request is too large.")
             # Socket read timeout prevents a partial body from retaining a handler indefinitely.
             self.connection.settimeout(10)
+            # Read the bounded body before any rejection: closing a Windows socket with
+            # unread request bytes can reset the connection before the 400/403 arrives
+            # (WinError 10053, TD012). Oversized bodies are drained up to a fixed cap.
+            if not 0 < length <= body_limit:
+                self._discard_body(length)
+                raise ValueError("Request is too large.")
             body = self.rfile.read(length)
             if len(body) != length:
                 raise ValueError("Incomplete JSON body.")
-            # Drain the bounded body before rejection: closing a Windows socket with
-            # unread request bytes can reset the connection before the 403 arrives.
+            if self.headers.get_content_type() != "application/json":
+                raise ValueError("Expected a bounded JSON body.")
             if not self._local_request():
                 self._json(403, {"code": "input.origin", "message": "请从本机工作台访问。"})
                 return

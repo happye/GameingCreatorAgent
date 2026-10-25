@@ -206,6 +206,33 @@ def test_bad_match_requests_are_rejected_before_source_mutation(tmp_path, damage
     assert snapshot(project) == before
 
 
+@pytest.mark.parametrize(
+    ("content_type", "body"),
+    [("text/plain", b"{" + b" " * 65000 + b"}"), ("application/json", b" " * 65537)],
+    ids=["content_type", "oversize"],
+)
+def test_rejected_post_bodies_are_read_so_the_reply_is_not_reset(tmp_path, content_type, body):
+    """TD012: rejecting before reading the body made Windows reset some replies (10053)."""
+    import http.client
+    from concurrent.futures import ThreadPoolExecutor
+
+    with workspace(tmp_path) as base:
+        host, port = base.removeprefix("http://").split(":")
+
+        def reject() -> int:
+            connection = http.client.HTTPConnection(host, int(port), timeout=10)
+            try:
+                connection.request(
+                    "POST", "/api/match-details", body=body, headers={"Content-Type": content_type}
+                )
+                return connection.getresponse().status
+            finally:
+                connection.close()
+
+        with ThreadPoolExecutor(8) as pool:
+            assert set(pool.map(lambda _: reject(), range(200))) == {400}
+
+
 @pytest.mark.parametrize("change", ["condition", "close", "profile", "run"])
 def test_late_match_response_cannot_restore_changed_context(tmp_path, monkeypatch, change):
     import asyncio

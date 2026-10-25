@@ -4,6 +4,7 @@ import asyncio
 import contextlib
 import hashlib
 import json
+import os
 import sys
 import threading
 import time
@@ -236,6 +237,16 @@ def test_linked_project_database_is_rejected(tmp_path):
         preparation_project(tmp_path, "artifacts/准备项目")
 
 
+def test_hard_linked_project_database_is_rejected(tmp_path):
+    project = tmp_path / "artifacts" / "准备项目"
+    project.mkdir(parents=True)
+    outside = tmp_path / "outside.sqlite3"
+    outside.write_bytes(b"")
+    os.link(outside, project / "timeline.sqlite3")
+    with pytest.raises(AppError, match="artifacts"):
+        preparation_project(tmp_path, "artifacts/准备项目")
+
+
 def post(base, path, value, **headers):
     return get(
         base,
@@ -256,14 +267,12 @@ def test_http_submit_is_nonblocking_poll_and_explicit_cancel_scope(preparation):
         job = json.loads(raw)
         query = urlencode({"project": document["project"], "job": job["jobId"]})
         assert get(base, "/api/media-preparation?" + query)[0] == 200
-        assert (
-            post(
-                base,
-                "/api/cancel-media-preparation",
-                {"project": "artifacts/other", "job": job["jobId"]},
-            )[0]
-            == 404
+        scoped = post(
+            base,
+            "/api/cancel-media-preparation",
+            {"project": "artifacts/other", "job": job["jobId"]},
         )
+        assert scoped[0] == 404, scoped[2]
         assert post(base, "/api/prepare-media-batch", document)[0] == 409
         assert (
             post(

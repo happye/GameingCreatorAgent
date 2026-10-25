@@ -11,6 +11,7 @@ from gamingcreator.application.retrieval import (
     assert_project_search_receipt_contract,
 )
 from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.infrastructure.local_paths import resolve_existing
 
 MAX_RECORD_BYTES = 8 * 1024 * 1024
 
@@ -18,9 +19,15 @@ MAX_RECORD_BYTES = 8 * 1024 * 1024
 def _directory(project: Path, search_id: str) -> Path:
     if not re.fullmatch(r"[a-f0-9]{32}", search_id):
         raise AppError("input.project_search", "查询记录身份无效。", ExitCode.INPUT)
-    project = project.resolve()
-    directory = project / "project-searches" / search_id
-    if not directory.resolve().is_relative_to(project):
+    # resolve_existing, not resolve(): a concurrent search may be creating the shared
+    # project-searches folder, which can make resolve() look foreign (TD012).
+    try:
+        project = resolve_existing(project)
+        directory = project / "project-searches" / search_id
+        inside = resolve_existing(directory).is_relative_to(project)
+    except OSError:
+        inside = False
+    if not inside:
         raise AppError("storage.project_search", "查询目录超出项目。", ExitCode.STORAGE)
     return directory
 

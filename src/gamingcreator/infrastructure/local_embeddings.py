@@ -27,6 +27,7 @@ from gamingcreator.application.providers import (
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.models import Embedding, EmbeddingSpace
 from gamingcreator.infrastructure.asr_runtime import verify_native
+from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
 from gamingcreator.infrastructure.media_process import run_media_process
 
 WORKER_SCHEMA = "local-e5-onnx-v2"
@@ -243,9 +244,14 @@ class LocalEmbeddingProvider:
                 }
             )
         ).hexdigest()
-        directory = self.repository / ".cache/embeddings"
-        path = (directory / f"{key}.json").resolve()
-        if not path.is_relative_to(self.repository):
+        # Concurrent writers create the folder and os.replace entries, so resolve only the
+        # folder (racing resolve() on the entry could look foreign, TD012) and refuse links.
+        try:
+            directory = resolve_existing(self.repository / ".cache/embeddings")
+        except OSError:
+            raise ValueError("embedding.cache_path") from None
+        path = directory / f"{key}.json"
+        if not directory.is_relative_to(self.repository) or is_link(path):
             raise ValueError("embedding.cache_path")
         return path
 
@@ -322,7 +328,10 @@ class LocalEmbeddingProvider:
                 missing = [index for index, vector in enumerate(vectors) if vector is None]
                 native = None
                 if missing:
-                    cache = (self.repository / ".cache/embedding-requests").resolve()
+                    try:
+                        cache = resolve_existing(self.repository / ".cache/embedding-requests")
+                    except OSError:
+                        raise ValueError("embedding.cache_path") from None
                     if not cache.is_relative_to(self.repository):
                         raise ValueError("embedding.cache_path")
                     cache.mkdir(parents=True, exist_ok=True)
