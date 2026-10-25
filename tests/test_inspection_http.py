@@ -214,6 +214,30 @@ def test_verified_media_invalidates_cached_stat(tmp_path):
             pass
 
 
+def test_verified_media_detects_rewrite_with_restored_times(tmp_path):
+    path = tmp_path / "source.mp4"
+    path.write_bytes(b"original")
+    resource = MediaResource(path, hashlib.sha256(b"original").hexdigest(), "video/mp4")
+    cache = VerifiedMediaCache()
+    with cache.open(resource) as stream:
+        assert stream.read() == b"original"
+    before = path.stat()
+    # Same size, same inode, and both visible timestamps put back exactly (TD008). Windows
+    # st_ctime is the creation time, so only the file system's own change time can tell.
+    with path.open("r+b") as handle:
+        handle.write(b"mutation")
+    os.utime(path, ns=(before.st_atime_ns, before.st_mtime_ns))
+    after = path.stat()
+    assert (after.st_ino, after.st_size, after.st_mtime_ns) == (
+        before.st_ino,
+        before.st_size,
+        before.st_mtime_ns,
+    )
+    with pytest.raises(AppError, match="媒体已更改"):
+        with cache.open(resource):
+            pass
+
+
 def test_workspace_cannot_bind_public_interface(tmp_path):
     with pytest.raises(ValueError, match="127.0.0.1"):
         create_server("0.0.0.0", 0, tmp_path)

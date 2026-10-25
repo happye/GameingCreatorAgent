@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import BinaryIO
 
 from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.infrastructure.file_identity import change_time_ns
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,6 +71,7 @@ class VerifiedMediaCache:
                     before.st_size,
                     before.st_mtime_ns,
                     before.st_ctime_ns,
+                    change_time_ns(stream.fileno()),
                 )
                 identity = signature, resource.sha256
                 if self._verified.get(resource.path) != identity:
@@ -77,18 +79,13 @@ class VerifiedMediaCache:
                     while chunk := stream.read(1024 * 1024):
                         digest.update(chunk)
                     after = resource.path.stat()
-                    unchanged = (
-                        before.st_dev,
-                        before.st_ino,
-                        before.st_size,
-                        before.st_mtime_ns,
-                        before.st_ctime_ns,
-                    ) == (
+                    unchanged = signature == (
                         after.st_dev,
                         after.st_ino,
                         after.st_size,
                         after.st_mtime_ns,
                         after.st_ctime_ns,
+                        change_time_ns(stream.fileno()),
                     )
                     if digest.hexdigest() != resource.sha256 or not unchanged:
                         raise AppError(
