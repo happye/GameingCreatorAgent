@@ -77,4 +77,4 @@ All agents share acceptance criteria; start with `HANDOFF.md` and `docs/referenc
 
 ## Persistent progress board
 
-用户于2026-10-25明确要求：开发迭代时必须让用户能量化看到“做到哪、完成多少、还剩多少”。唯一入口是[进度看板](docs/exec-plans/progress-board.md)（阶段、功能完成数、F006真实验收步骤、人工待办数、技术债计数、正在做／下一步）。所有项目Agent（Claude Code、Codex、Grok及其子Agent）在每次重大改动后，与HANDOFF／sprint／progress／assignments／human-inputs／tech-debt**同一次提交内**更新看板及“最后更新”行；数字只取自`feature_list.json`、`tech-debt.md`状态列和`human-inputs.md`待办表，不估算，不把“工具就绪”写成“验收通过”。任务开始先读看板第6节，结束或交接前更新它；子Agent结果由主控写入。向用户汇报时附带看板上的关键数字变化。此规则跨会话、工具切换和子任务持续生效。
+用户于2026-10-25明确要求：开发迭代时必须让用户能量化看到“做到哪、完成多少、还剩多少”。唯一入口是[进度看板](docs/exec-plans/progress-board.md)，**分母是总方案全部计划功能（当前51项，含★“第一个可用产品”22项）**，另列阶段里程碑、Phase 0验收步骤、人工待办数、技术债计数、正在做／下一步；不能只报当前阶段。所有项目Agent（Claude Code、Codex、Grok及其子Agent）在每次重大改动后，与HANDOFF／sprint／progress／assignments／human-inputs／tech-debt**同一次提交内**更新看板及“最后更新”行；数字只取自`feature_list.json`、`tech-debt.md`状态列和`human-inputs.md`待办表，不估算，不把“工具就绪”写成“验收通过”。任务开始先读看板第6节，结束或交接前更新它；子Agent结果由主控写入。向用户汇报时附带看板上的关键数字变化。此规则跨会话、工具切换和子任务持续生效。
