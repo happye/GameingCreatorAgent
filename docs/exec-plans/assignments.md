@@ -10,6 +10,7 @@
 
 | 工作 | 负责人／范围 | 当前状态 |
 | --- | --- | --- |
+| F006验收流程对抗审查与修复 | 工作流（4维度审查＋每P0/P1三票反驳）；Claude Code主控修复；code-quality-guard（opus）审计分修复 | 2026-10-25完成：1 P0＋4 P2＋1降级项全部修复，评估PASS；见sprint-f006-pipeline-review.md |
 | 跨改动审查与离线加固（TD003／TD005／TD008／TD012） | Claude Code主控实现；code-quality-guard（opus）跨改动审查＋复审 | 2026-10-25完成：审查PASS，两P2已修；TD008 ChangeTime签名；TD003来源核对结论；见tech-debt对应行 |
 | TD005详情提速第A步 | 设计工作流（3方案／2评审／综合）；Claude Code主控实现与测量；code-quality-guard（opus）审查 | 2026-10-25完成（dae34f4）：哈希3→1次，15分钟打开约1.7→1.0秒；见sprint-inspect-integrity-single-pass.md |
 | MKV目录扫描、容器时钟测试、TD011、报告改写、TD013续跑 | Claude Code主控实现；工作流：后续工作扫描排名（sonnet×3＋排名）、TD013 code-quality-guard（opus）对抗审查 | 2026-10-25完成并分别提交（fd23ce3／e2bc6b5／4268c7b及TD013提交）；见tech-debt TD002／TD006／TD011／TD012／TD013 |
