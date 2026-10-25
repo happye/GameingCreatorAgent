@@ -172,7 +172,7 @@ TD012补充（2026-10-24全量恢复后）：一次全量3440 passed中4失败�
 
 TD012补充（2026-10-24 freeze-v2后完整verify）：3517 passed中唯一失败`test_detail_query_http::test_bad_match_requests_are_rejected_before_source_mutation[content_type]`为WinError10053本机连接中止，与2026-10-07记录同型；未定位、未加重试。
 
-TD012假设（2026-10-25，未复现、未改代码）：`ui/media_preparation.py:preparation_project`以`(project / "timeline.sqlite3").resolve().is_relative_to(project)`防止数据库链接越界。Windows上`resolve()`需打开目标文件取最终路径；高负载下上一任务若尚未完全释放该SQLite文件，`ntpath.realpath`可能走非严格回退，并在两次错误码不同时保留`\?\`前缀，使比较失败，表现为“准备项目须位于当前仓库的artifacts目录内”（续跑时数据库已存在，首次准备时不存在，符合只在resume等场景偶发）。候选修法：改为检查`timeline.sqlite3`本身`is_symlink()／is_junction()`（不需打开文件，且更严格），先写能稳定复现的测试（如在另一线程持有该文件句柄时调用）再改；未复现前不改生产代码、不称已修复。
+TD012假设（2026-10-25，未复现、未改代码）：`ui/media_preparation.py:preparation_project`以`(project / "timeline.sqlite3").resolve().is_relative_to(project)`防止数据库链接越界。Windows上`resolve()`需打开目标文件取最终路径；高负载下上一任务若尚未完全释放该SQLite文件，`ntpath.realpath`可能走非严格回退，并在两次错误码不同时保留`\\?\`前缀，使比较失败，表现为“准备项目须位于当前仓库的artifacts目录内”（续跑时数据库已存在，首次准备时不存在，符合只在resume等场景偶发）。候选修法：改为检查`timeline.sqlite3`本身`is_symlink()／is_junction()`（不需打开文件，且更严格），先写能稳定复现的测试（如在另一线程持有该文件句柄时调用）再改；未复现前不改生产代码、不称已修复。
 
 Record debt when it is discovered; do not hide it in a passing feature. Review related entries during each sprint and close them with a tested change.
 
