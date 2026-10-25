@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-25 TD005工作台详情提速第A步（Claude Code＋设计／审查工作流）**：设计工作流3方案＋2评审选定“不放宽保证、只去重”；实测发现带查询的打开每文件哈希3次（含保存检索记录前一次），改为1次——运行目录每次操作解析一次、证据引用复用刚核对路径、同请求内复用已核对时间线（运行记录须完全相同）、保存检索记录只做数据库一致性检查。真实15分钟打开约1.7→1.0秒，词法检索约4倍；每次打开仍逐字节核对。新增5测试，相关1248项通过，code-quality-guard PASS。后续选项已记human-inputs。
+
 **2026-10-25 MKV目录扫描、容器时钟测试、TD011／TD013及报告改写（Claude Code＋工作流）**：`inventory-sources`与`-AllLocal`校验脚本目录扫描纳入.mkv／.webm（实测含MKV／WebM目录全部发现并精确探测）；验收页自动时钟映射按容器参数化，Chromium对零起点MKV／WebM与音频晚起WebM逐帧精确，对非零起点MKV／WebM和音频晚起MKV确定性退回手动并加回退测试；TD011在独立PowerShell 5.1下媒体脚本与完整verify通过后关闭；视觉细节试验报告改写遇外部句柄WinError5（另一读者存在时一半改写失败）改为仅对5／32有界等待；TD013冻结后未建库的批次可续跑，规则由code-quality-guard对抗审查PASS。各项定向测试通过；本批改动后的整仓verify见HANDOFF。
 
 **2026-10-25 TD012并发路径与HTTP重置修复（Claude Code＋工作流）**：①POST错误Content-Type／超限请求改为先有界读完请求体再拒绝，WinError10053压测由400次2次降为1600次0次；②“取消范围400而非404”根因为Windows非严格`resolve()`遇父目录并发创建保留`\\?\`前缀，新增`infrastructure/local_paths.py`（`resolve_existing`／`is_link`）；③工作流扫查约180处`resolve()`，3票对抗核实确认4处同类问题并修复（精分析sidecar、嵌入缓存、静态观察账本路径、联合检索目录）；④两轮独立审查各发现1个P1（缺失尾部盘符名被改写、悬空junction被当作缺失名可致写出仓库），均已修复并加测试。受影响389项：387 passed／2权限skip。整仓verify未重跑。

@@ -10,6 +10,7 @@
 
 | 工作 | 负责人／范围 | 当前状态 |
 | --- | --- | --- |
+| TD005详情提速第A步 | 设计工作流（3方案／2评审／综合）；Claude Code主控实现与测量；code-quality-guard（opus）审查 | 2026-10-25完成（dae34f4）：哈希3→1次，15分钟打开约1.7→1.0秒；见sprint-inspect-integrity-single-pass.md |
 | MKV目录扫描、容器时钟测试、TD011、报告改写、TD013续跑 | Claude Code主控实现；工作流：后续工作扫描排名（sonnet×3＋排名）、TD013 code-quality-guard（opus）对抗审查 | 2026-10-25完成并分别提交（fd23ce3／e2bc6b5／4268c7b及TD013提交）；见tech-debt TD002／TD006／TD011／TD012／TD013 |
 | TD012并发路径解析与POST重置 | Claude Code主控实现；工作流：4扫查＋每候选3票核实、code-quality-guard／gc-reviewer独立审查两轮（opus／sonnet） | 2026-10-25：389项387passed／2skip；两P1已修；见tech-debt TD012 2026-10-25段 |
 | TD002 MKV／WebM逐包补探测；TD005真实长素材实测 | Claude Code主控实现／实测；code-quality-guard（opus）只读评估 | 2026-10-25完成：94passed、评估PASS（两P2已修）；见tech-debt TD002／TD005及media-processing.md |
