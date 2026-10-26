@@ -69,6 +69,7 @@ from gamingcreator.application.observation_text import (
     clean_observation_text,
     display_facts,
 )
+from gamingcreator.application.ocr_frames import DEFAULT_LANGUAGES
 from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
 from gamingcreator.application.project_detail_query import match_project_details
 from gamingcreator.application.providers import CancellationContext
@@ -92,6 +93,7 @@ from gamingcreator.application.source_inventory import (
 )
 from gamingcreator.application.storage import RunStatus, StoredTimeline
 from gamingcreator.application.tasks import all_tasks_payload, tasks_payload
+from gamingcreator.cli.ocr_frames import execute_ocr_frames
 from gamingcreator.cli.shot_boundaries import execute_detect_shots
 from gamingcreator.cli.static_observation_generation import (
     execute_dispatch_static_observation_generation,
@@ -121,6 +123,7 @@ from gamingcreator.infrastructure.detail_query_sidecar import (
     read_saved_detail_corpus,
     refinement_identity_for_profile,
 )
+from gamingcreator.infrastructure.ffmpeg_fullres import FfmpegFullResolutionFrames
 from gamingcreator.infrastructure.ffmpeg_media import FfmpegMediaProcessor
 from gamingcreator.infrastructure.ffmpeg_shots import FfmpegShotDetector
 from gamingcreator.infrastructure.ffmpeg_signatures import FfmpegSignatureExtractor
@@ -135,6 +138,7 @@ from gamingcreator.infrastructure.project_search_files import (
     write_project_search,
 )
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
+from gamingcreator.infrastructure.windows_ocr import WindowsOcrEngine
 
 
 class CliParser(argparse.ArgumentParser):
@@ -226,6 +230,20 @@ def _parser() -> CliParser:
     shots.add_argument("--project", type=Path, required=True)
     shots.add_argument("--run", required=True)
     shots.add_argument("--output", type=Path, required=True, help="新报告JSON路径")
+    ocr = commands.add_parser(
+        "ocr-frames",
+        help="用Windows自带文字识别读取一个任务取帧时刻的原片画面文字；只读、不下载、不花钱",
+    )
+    ocr.add_argument("--project", type=Path, required=True)
+    ocr.add_argument("--run", required=True)
+    ocr.add_argument("--output", type=Path, required=True, help="新报告JSON路径")
+    ocr.add_argument("--every", type=int, default=1, help="每N个取帧识别一个（默认全部）")
+    ocr.add_argument(
+        "--languages",
+        nargs="+",
+        default=list(DEFAULT_LANGUAGES),
+        help="识别语言标签，只用本机已有的（默认 zh-Hans-CN en-US）",
+    )
     freeze = commands.add_parser("freeze-benchmark", help="本地登记原素材并冻结验收查询，不分析")
     freeze.add_argument("--input", type=Path, required=True)
     freeze.add_argument("--output", type=Path, required=True)
@@ -1624,6 +1642,20 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
         )
     if args.command == "inventory-sources":
         asyncio.run(execute_inventory_sources(args.input, args.output.resolve(), Path.cwd()))
+        return None
+    if args.command == "ocr-frames":
+        asyncio.run(
+            execute_ocr_frames(
+                args.project.resolve(),
+                args.run,
+                args.output.resolve(),
+                FfmpegFullResolutionFrames(Path.cwd()),
+                WindowsOcrEngine(Path.cwd() / ".cache" / "ocr-frames"),
+                Path.cwd() / ".cache" / "ocr-frames",
+                every=args.every,
+                languages=tuple(args.languages),
+            )
+        )
         return None
     if args.command == "detect-shots":
         asyncio.run(

@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-26第四会话 本地画面文字识别（Claude Code主控＋侦察／评审工作流）**：新增只读命令`ocr-frames`（ocr-frames-v1）：按媒体准备同一取帧条件从原片重取原分辨率画面（时刻须与保存取帧整列相等，否则整体拒绝），用Windows自带Windows.Media.Ocr中英文识别（一次PowerShell 5.1进程、base64传请求路径、逐行JSON输出），报告每帧文字、位置与反复出现文字的时间段；不下载、不花钱、项目只读、临时帧用后删除，不进入检索／验收。长钟馗1903帧263秒，读出Boss名“大蚌真君”约550–763秒等。三视角评审＋反驳核实工作流均PASS，7个P2全部修复；33项定向测试（含真FFmpeg＋真Windows识别）通过。见docs/exec-plans/sprint-ocr-frames.md。
+
 **2026-10-26第四会话 TD017与本地镜头切分（Claude Code单Agent＋code-quality-guard）**：TD017验收就绪摘要改为默认读全部任务页、显式分页时标“部分快照”、A/B/D只在有覆盖缺口时提示（定向62项通过）。新增只读命令`detect-shots`（shot-boundaries-v1）：FFmpeg一次扫描（scdet＋blackdetect，`-copyts`与媒体准备同一时钟换算并逐条核对），报告镜头切换、黑屏、事件与多帧窗口是否跨镜头；扫描前后核对原片SHA256、只读打开项目、只写新文件。`vision_windows`抽出`window_slices`供重建窗口（行为不变，26项窗口相关测试通过）。真实长钟馗：18–21秒完成，41切换／10黑屏段，272窗中41窗跨镜头，数据库哈希不变；抽查2处真实。见docs/exec-plans/sprint-shot-boundaries.md。
 
 **2026-10-25第三会话 F006验收流程对抗审查（Claude Code＋工作流＋code-quality-guard）**：工作流（4维度审查＋3票反驳，13 Agent）找到计分P0——先出现的0/1分片段会“占用”事件，使后面同事件2/3分片段算重复，7个可用事件可被算成6/10不过关；Python计分与PowerShell计分已同规则修正，旧边界评分改为未判定。另修：冻结拦截同一文件登记两次、标注页拒绝两名称共用动作归组、登记表单改编号只搬自己的查询、重跑已完成第2步先确认、指南冻结命令补`-AutoInventory`。每项先写旧红新绿测试；code-quality-guard PASS。正式人工评分尚未开始。见docs/exec-plans/sprint-f006-pipeline-review.md。

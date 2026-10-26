@@ -5,12 +5,14 @@
 **进度看板**：用户量化监督入口为[docs/exec-plans/progress-board.md](docs/exec-plans/progress-board.md)；每次重大改动必须同提交更新（规则见AGENTS.md“Persistent progress board”）。
 
 **第四会话（2026-10-26，最新，Claude Code；用户以/goal要求持续推进直到发出额度不足信号）**：
-- 完整verify（会话开始时启动，期间写入TD017与镜头切分代码，新测试文件未被收集）：3600 passed／0 failed／3 skipped、`All project checks passed`、退出码0（.cache/verify-20261026-session4.log）。提交后对最终HEAD另跑一次，结果补记于此。
+- 完整verify（会话开始时启动，期间写入TD017与镜头切分代码，新测试文件未被收集）：3600 passed／0 failed／3 skipped、`All project checks passed`、退出码0（.cache/verify-20261026-session4.log）。提交51ef13a后另跑一次完整verify：3621 passed／0 failed／3 skipped（15分01秒）、`All project checks passed`、退出码0（.cache/verify-20261026-session4b.log）。
 - ~~TD017~~已解决：验收就绪摘要默认读全部任务页（命令行／工作台不再只读最新100个）；显式分页且未见可检索运行时报`unknown_partial_task_snapshot`而非“没有可检索运行”；A/B/D待决定只在确有覆盖缺口任务时出现。
 - 新交付`detect-shots`（shot-boundaries-v1，[sprint](docs/exec-plans/sprint-shot-boundaries.md)，[指南](docs/references/shot-boundaries-guide.md)）：本地只读、不花钱，检测原片镜头切换与黑屏，并标出已保存事件／多帧分析窗口是否跨镜头。长钟馗：41切换、10黑屏段；272窗中41窗（约15%）跨镜头；被拒第21窗跨2个切换，第248／253窗不跨。抽查2处为真实切换，准确率未人评。看板：场景切分⬜→🟡，整体25%→26%；技术债已解决8→9。
 - 工作台：左侧“镜头切分”卡片一键检测（缓存于仓库.cache/workspace/shots，分析变化即失效），时间轴切换刻度与“跨N个镜头切换”标签；内置浏览器实测通过。重建窗口经阶段输入哈希比对：长钟馗272窗0不一致。
 - 独立评估：code-quality-guard（opus）两轮——首轮FAIL（审查中途代码写坏的P0＋工作台缓存P1，均已修），复审PASS；剩余P2已修或记为已知限制（sprint第四、五节）。
-- 下一步（离线）：评估问题修复→提交→完整verify→工作台显示跨镜头提示／盘点加黑屏比例；主线仍等用户分组决定（不催）。
+- 新交付`ocr-frames`（ocr-frames-v1，[sprint](docs/exec-plans/sprint-ocr-frames.md)，[指南](docs/references/ocr-frames-guide.md)）：用Windows自带中英文识别读取任务取帧时刻的**原分辨率**原片画面文字（重取帧须与保存时刻整列相等）；不下载、不花钱、只读、不进检索。长钟馗1903帧／263秒，读出Boss血条名“大蚌真君”约550–763秒、片头“游戏科学”、片尾开发版声明；数据库不变。选题来自三视角侦察＋评审工作流（8.1/10），评估为三视角评审＋反驳核实工作流：均PASS、7个P2全部已修。看板：OCR⬜→🟡，整体26%→27%。
+- 素材盘点黑屏比例：已核实原盘点把Atom录音（552帧有效画面0）列为“无法比较”，无需改动；不再列为候选。
+- 下一步（离线，工作流排名）：跨镜头窗口与描述质量的离线归因（TD007）；按素材盘点预填登记表（减轻验收第1步）。主线仍等用户分组决定（不催）。
 
 **第三会话收尾（用户额度不足主动收尾）**：
 - 已push到origin/main（c5a3c83及其后收尾提交，见`git log origin/main -1`）。本会话交付：跨改动审查及两P2修复、TD008预览缓存ChangeTime、TD012批次路径、TD005检索期间文件变化重哈希、TD003来源核对、TD005第B步测量；F006验收流程两轮对抗审查——第一轮1个P0（计分去重）＋4个P2＋1降级项全部修复（见[sprint](docs/exec-plans/sprint-f006-pipeline-review.md)），第二轮无P0／P1、3个P2。
