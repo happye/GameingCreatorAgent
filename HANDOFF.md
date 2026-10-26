@@ -12,7 +12,9 @@
 - 新交付：原片标注页省力辅助（[sprint](docs/exec-plans/sprint-reference-page-aids.md)，[指南](docs/references/benchmark-reference-review-guide.md)“省力的辅助”）：主查询“x/10还差y个”、已登记区间条（点击跳转）、不同事件重叠先提醒再确认、键盘I／O标记起止（复用时钟保护）、逗号／句号约一帧、[ ]调速；记录格式与核对规则不变。三视角评审工作流PASS无P0／P1，P2已修；真实长钟馗页面实测通过。
 - a57fec6完整verify：3645 passed／0 failed／3 skipped、退出码0（.cache/verify-20261027-session5c.log）。
 - 新交付：工作台时间轴画面文字车道与键盘跳转（[sprint](docs/exec-plans/sprint-workbench-navigation.md)）：`[ ]`镜头切换、`, .`画面文字、`J K`按列表顺序走事件、`B`只加入片段篮，可关闭。两视角评审工作流确认1个P1（J/K按播放位置会漏同开始／嵌套事件）已修，P2已修；真实长钟馗实测通过。
-- 看板：OCR仍🟡，整体仍27%（10✅／8🟡／33⬜），技术债与人工待办数不变。下一步：完整verify、push，然后做排名第三项（防止同一视频重复付费分析的只读守卫，先读总方案§52与现有费用／预留代码，属费用边界须code-quality-guard评估）。
+- 8b435f5完整verify：3647 passed／0 failed／3 skipped、退出码0（.cache/verify-20261027-session5d.log），已push。
+- 新交付（费用边界）：同一项目内“同录像＋同设置”不重复付费分析（[sprint](docs/exec-plans/sprint-analysis-reuse-guard.md)，[用户手册](docs/references/user-manual.md)“同一项目里不为同一结果付两次钱”）：`analyze`新任务与准备任务首次`--resume`前，在任何模型连接／费用账本创建之前检查；按任务清单续跑规则给出正确下一步；`--allow-reanalysis`显式跳过；只读`check-analysis-reuse`。真实长钟馗用v6配置：报“已有同设置任务5c7894aa但有覆盖缺口不能直接续跑”。code-quality-guard首轮FAIL（2个P1：错误的续跑指引、准备→续跑绕过）已修，复审结论见sprint第五节。
+- 看板：OCR与缓存仍🟡，整体仍27%（10✅／8🟡／33⬜），技术债与人工待办数不变。下一步：守卫复审通过后提交、完整verify、push；再做一轮离线候选排名工作流。
 
 **第四会话（2026-10-26，Claude Code；用户以/goal要求持续推进，已于额度不足9%时收尾）**：
 - 完整verify（会话开始时启动，期间写入TD017与镜头切分代码，新测试文件未被收集）：3600 passed／0 failed／3 skipped、`All project checks passed`、退出码0（.cache/verify-20261026-session4.log）。提交51ef13a后另跑一次完整verify：3621 passed／0 failed／3 skipped（15分01秒）、`All project checks passed`、退出码0（.cache/verify-20261026-session4b.log）。

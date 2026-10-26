@@ -23,9 +23,19 @@ from gamingcreator.application.acceptance_readiness import (
 from gamingcreator.application.analysis import (
     AnalysisPorts,
     AnalyzeOutcome,
+    planned_identity,
     prepare_media,
     resume_analysis,
     run_new_analysis,
+)
+from gamingcreator.application.analysis_reuse import (
+    ReuseMatch,
+    find_matches,
+    paid_calls,
+    refuse_duplicate_analysis,
+    refuse_resuming_duplicate,
+    reuse_report,
+    stored_identity,
 )
 from gamingcreator.application.asr import LocalAsrSettings, ModelFile
 from gamingcreator.application.benchmark import (
@@ -163,10 +173,21 @@ def _parser() -> CliParser:
         help="显式隔离已结账的内容结构拒绝；有缺口仍不算完成",
     )
     analyze.add_argument(
+        "--allow-reanalysis",
+        action="store_true",
+        help="同一录像已有相同设置的任务时，仍另起一次付费分析（默认停止并给出任务ID）",
+    )
+    analyze.add_argument(
         "--retry-uncertain",
         action="store_true",
         help="显式允许重试费用未确认的未完成窗口，预留费用继续计入原预算",
     )
+    reuse = commands.add_parser(
+        "check-analysis-reuse", help="只读：这段录像用这份配置是否已有分析任务（不分析、不花钱）"
+    )
+    reuse.add_argument("video", type=Path)
+    reuse.add_argument("--project", type=Path, required=True)
+    reuse.add_argument("--config", type=Path, required=True)
     prepare = commands.add_parser("prepare-media", help="离线准备素材，保存后等待显式分析")
     prepare.add_argument("video", type=Path)
     prepare.add_argument("--project", type=Path, required=True)
@@ -1038,7 +1059,19 @@ def vision_for_run(
     )
 
 
-async def execute_analyze(prepared: PreparedAnalyze, repository: Path) -> AnalyzeOutcome:
+def _require_cli_analysis_config(config: AnalysisConfig) -> None:
+    """A new run's configuration must name the supported model and its pinned prompt."""
+    if config.provider != "deepseek" or config.model != MODEL:
+        raise invalid_config()
+    if config.vision_prompt_hash is not None and config.vision_prompt_hash != (
+        vision_prompt_fingerprint(config.vision_prompt_version)
+    ):
+        raise invalid_config()
+
+
+async def execute_analyze(
+    prepared: PreparedAnalyze, repository: Path, *, allow_reanalysis: bool = False
+) -> AnalyzeOutcome:
     project = prepared.project.resolve()
     _require_space(project)
     if prepared.resume is not None:
@@ -1067,6 +1100,20 @@ async def execute_analyze(prepared: PreparedAnalyze, repository: Path) -> Analyz
                     raise invalid_config()
                 if stored_config.provider != "deepseek" or stored_config.model != MODEL:
                     raise invalid_config()
+                if not allow_reanalysis and not paid_calls(
+                    await store.load_invocations(prepared.resume)
+                ):
+                    # A freely prepared run has paid for nothing yet; continuing it must not
+                    # repeat a result another run with the same settings already paid for.
+                    refuse_resuming_duplicate(
+                        await find_matches(
+                            store,
+                            stored.asset.sha256,
+                            stored_identity(stored.configuration),
+                            exclude=prepared.resume,
+                        ),
+                        prepared.resume,
+                    )
                 ledger = BudgetLedger(
                     stored.configuration.max_cost_cny,
                     stored_config.max_requests,
@@ -1086,19 +1133,20 @@ async def execute_analyze(prepared: PreparedAnalyze, repository: Path) -> Analyz
         finally:
             await store.close()
     config, budget = prepared.config, prepared.max_cost_cny
-    if config is None or budget is None or config.provider != "deepseek" or config.model != MODEL:
+    if config is None or budget is None:
         raise invalid_config()
-    if (
-        config.vision_prompt_hash is not None
-        and config.vision_prompt_hash != vision_prompt_fingerprint(config.vision_prompt_version)
-    ):
-        raise invalid_config()
+    _require_cli_analysis_config(config)
     asset = await FfmpegMediaProcessor(repository).probe(
         prepared.video, CancellationContext("probe", 120)
     )
-    asr_settings = _pinned_asr_settings(repository)
     store = await SqliteTimelineStore.open(project)
     try:
+        if not allow_reanalysis:
+            # Before any provider or budget ledger exists: never pay twice for one output.
+            refuse_duplicate_analysis(
+                await find_matches(store, asset.sha256, planned_identity(config)), prepared.video
+            )
+        asr_settings = _pinned_asr_settings(repository)
         ledger = BudgetLedger(budget, config.max_requests, config.max_input_frames)
         asr_provider = LocalAsrProvider(repository, asr_settings)
         ports = AnalysisPorts(
@@ -1111,6 +1159,39 @@ async def execute_analyze(prepared: PreparedAnalyze, repository: Path) -> Analyz
         return await run_new_analysis(prepared, ports, asset, project, run_id=uuid4().hex)
     finally:
         await store.close()
+
+
+async def execute_check_analysis_reuse(
+    video: Path, project: Path, config_path: Path, repository: Path
+) -> dict[str, object]:
+    """Would ``analyze`` stop for this recording and configuration? Read-only, no model."""
+    reader = LocalInputReader()
+    config = reader.load_config(config_path)
+    # The same acceptance rules as analyze, so the answer matches what analyze would do.
+    _require_cli_analysis_config(config)
+    video = reader.validate_video(video)
+    asset = await FfmpegMediaProcessor(repository).probe(video, CancellationContext("probe", 120))
+    matches: tuple[ReuseMatch, ...] = ()
+    if (project / "timeline.sqlite3").is_file():
+        try:
+            store = await SqliteTimelineStore.open(project, read_only=True)
+        except AppError as error:
+            if error.code != "storage.migration_required":
+                raise
+            # A read-only check cannot upgrade the project; analyze migrates it first.
+            return {
+                **reuse_report(asset.source_path.name, asset.sha256, video, ()),
+                "wouldStop": None,
+                "code": error.code,
+                "message": "项目数据库需要先升级，只读核对无法回答；运行分析时会先升级再检查。",
+                "project": str(project),
+            }
+        try:
+            matches = await find_matches(store, asset.sha256, planned_identity(config))
+        finally:
+            await store.close()
+    report = reuse_report(asset.source_path.name, asset.sha256, video, matches)
+    return {**report, "project": str(project)}
 
 
 async def execute_freeze_benchmark(
@@ -1726,6 +1807,12 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
                 save=args.save_match,
             )
         )
+    if args.command == "check-analysis-reuse":
+        return asyncio.run(
+            execute_check_analysis_reuse(
+                args.video, args.project.resolve(), args.config, Path.cwd()
+            )
+        )
     if args.command in ("analyze", "prepare-media"):
         prepared = prepare_analyze(
             AnalyzeInput(
@@ -1743,7 +1830,13 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
             return asyncio.run(
                 execute_prepare_media(prepared, Path.cwd(), timeout_seconds=args.timeout_seconds)
             )
-        return asyncio.run(execute_analyze(prepared, Path.cwd()))
+        return asyncio.run(
+            execute_analyze(
+                prepared,
+                Path.cwd(),
+                allow_reanalysis=args.command == "analyze" and args.allow_reanalysis,
+            )
+        )
     if args.command == "search" and (
         not args.query.strip() or not args.run.strip() or args.top_k <= 0
     ):

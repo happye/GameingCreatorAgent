@@ -28,6 +28,7 @@ from gamingcreator.application.analysis_reliability import (
     verify_successful_window,
     write_coverage,
 )
+from gamingcreator.application.analysis_reuse import analysis_identity
 from gamingcreator.application.inputs import AnalysisConfig, PreparedAnalyze
 from gamingcreator.application.media import MediaProcessor, SamplingParameters
 from gamingcreator.application.providers import (
@@ -201,6 +202,12 @@ def _run_configuration(prepared: PreparedAnalyze) -> RunConfiguration:
     return RunConfiguration(
         config, budget, version, hashlib.sha256(version.encode()).hexdigest(), REQUIRED_STAGES
     )
+
+
+def planned_identity(config: AnalysisConfig) -> dict[str, object]:
+    """Output-shaping settings a new run with this configuration would store."""
+    version = _pipeline_version(config)
+    return analysis_identity(config, hashlib.sha256(version.encode()).hexdigest(), REQUIRED_STAGES)
 
 
 def _media_width(config: AnalysisConfig, maximum: int) -> int:
