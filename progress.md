@@ -1,5 +1,7 @@
 # Progress Log
 
+**2026-10-26第四会话 TD017与本地镜头切分（Claude Code单Agent＋code-quality-guard）**：TD017验收就绪摘要改为默认读全部任务页、显式分页时标“部分快照”、A/B/D只在有覆盖缺口时提示（定向62项通过）。新增只读命令`detect-shots`（shot-boundaries-v1）：FFmpeg一次扫描（scdet＋blackdetect，`-copyts`与媒体准备同一时钟换算并逐条核对），报告镜头切换、黑屏、事件与多帧窗口是否跨镜头；扫描前后核对原片SHA256、只读打开项目、只写新文件。`vision_windows`抽出`window_slices`供重建窗口（行为不变，26项窗口相关测试通过）。真实长钟馗：18–21秒完成，41切换／10黑屏段，272窗中41窗跨镜头，数据库哈希不变；抽查2处真实。见docs/exec-plans/sprint-shot-boundaries.md。
+
 **2026-10-25第三会话 F006验收流程对抗审查（Claude Code＋工作流＋code-quality-guard）**：工作流（4维度审查＋3票反驳，13 Agent）找到计分P0——先出现的0/1分片段会“占用”事件，使后面同事件2/3分片段算重复，7个可用事件可被算成6/10不过关；Python计分与PowerShell计分已同规则修正，旧边界评分改为未判定。另修：冻结拦截同一文件登记两次、标注页拒绝两名称共用动作归组、登记表单改编号只搬自己的查询、重跑已完成第2步先确认、指南冻结命令补`-AutoInventory`。每项先写旧红新绿测试；code-quality-guard PASS。正式人工评分尚未开始。见docs/exec-plans/sprint-f006-pipeline-review.md。
 
 **2026-10-25第三会话 跨改动审查与离线加固（Claude Code＋code-quality-guard）**：对ad6be26..HEAD全部源码改动做跨改动审查（opus）PASS、无P0／P1，两P2均已修：TD012素材批次项目与批次目录改用`resolve_existing`（CLI与`MediaBatchFiles`），TD005检索期间文件若被替换则保存前改为完整重哈希（新测试旧红新绿）。TD008视频预览缓存签名加入NTFS ChangeTime，能识别“同大小改写＋恢复修改时间”（新测试旧红新绿，每次约2.6微秒，复审PASS）。TD003联网只读核对：BtbN对旧日期只保留月末构建，本机2026-03-10构建已无法从原来源取得，发布前须改固定一个仍可取得的构建。上一会话末verify的2项`test_writer_lock`失败发生在会话退出、控制台被关闭时，单独重跑通过。

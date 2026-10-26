@@ -13,6 +13,7 @@ from urllib.parse import parse_qs, urlparse
 from gamingcreator.application.detail_query_draft import draft_detail_query
 from gamingcreator.application.retrieval import RetrievalMode
 from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.infrastructure.ffmpeg_shots import FfmpegShotDetector
 from gamingcreator.ui.benchmark_workflow import BenchmarkWorkflows
 from gamingcreator.ui.media import MediaResource, VerifiedMediaCache, byte_range
 from gamingcreator.ui.media_preparation import MediaPreparationJobs
@@ -29,6 +30,7 @@ from gamingcreator.ui.service import (
     registered_media,
     search_detail_payload,
 )
+from gamingcreator.ui.shots import cached_shots_payload, detect_shots_payload
 
 STATIC = Path(__file__).with_name("static")
 # Largest rejected request body still read before replying, so the reply is not lost.
@@ -245,6 +247,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/cancel-media-preparation",
                 "/api/benchmark-workflows",
                 "/api/benchmark-step",
+                "/api/detect-shots",
             }:
                 self._json(404, {"code": "input.route", "message": "没有这个操作。"})
                 return
@@ -319,6 +322,27 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             top_k=value["top"],
                             project_reference=value["project"],
                             detail_profile=value.get("detailProfile"),
+                        )
+                    ),
+                )
+                return
+            if path == "/api/detect-shots":
+                if (
+                    type(value) is not dict
+                    or set(value) != {"project", "run"}
+                    or any(type(value[key]) is not str or not value[key] for key in value)
+                ):
+                    raise ValueError("Invalid shot detection request.")
+                project = resolve_project(self.repository, value["project"])
+                self._json(
+                    200,
+                    asyncio.run(
+                        detect_shots_payload(
+                            project,
+                            value["run"],
+                            self.repository,
+                            FfmpegShotDetector(self.repository),
+                            project_reference=value["project"],
                         )
                     ),
                 )
@@ -463,6 +487,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             "acceptance-readiness-v1",
                             "acceptance-readiness-inert-v1",
                             "coverage-gap-report-v1",
+                            "shot-boundaries-v1",
                         ],
                         "repository": str(self.repository.resolve()),
                         "pid": os.getpid(),
@@ -555,6 +580,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/tasks",
                 "/api/acceptance-readiness",
                 "/api/coverage-gap-report",
+                "/api/shot-boundaries",
                 "/api/inspect",
                 "/api/media",
                 "/api/evidence",
@@ -584,7 +610,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     asyncio.run(
                         project_acceptance_readiness_payload(
                             project,
-                            limit=int(query.get("limit", "100")),
+                            limit=int(query["limit"]) if "limit" in query else None,
                             offset=int(query.get("offset", "0")),
                             project_reference=query.get("project"),
                         )
@@ -600,6 +626,19 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             offset=int(query.get("offset", "0")),
                             coverage=query.get("coverage") or None,
                             project_reference=query.get("project"),
+                        )
+                    ),
+                )
+            elif path == "/api/shot-boundaries":
+                self._json(
+                    200,
+                    asyncio.run(
+                        cached_shots_payload(
+                            project,
+                            query.get("run", ""),
+                            self.repository,
+                            FfmpegShotDetector(self.repository),
+                            project_reference=query.get("project", ""),
                         )
                     ),
                 )

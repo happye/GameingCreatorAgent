@@ -15,12 +15,17 @@ _FEATURE_IDS = ("F006", "F009", "F010")
 _STATUS_NO_RUNS = "blocked_no_runs"
 _STATUS_NO_SEARCHABLE = "blocked_no_searchable_run"
 _STATUS_AWAITING_HUMAN = "awaiting_human_labels_and_freeze"
+_STATUS_PARTIAL_UNKNOWN = "unknown_partial_task_snapshot"
 
 _STATUS_LABELS = {
     _STATUS_NO_RUNS: "项目尚无任务，不能进入正式验收",
     _STATUS_NO_SEARCHABLE: "没有可检索的已完成运行（含覆盖缺口未获资格），不能正式验收",
     _STATUS_AWAITING_HUMAN: "已有可检索运行，但仍须人工标签、冻结与绑定；本报告不宣称通过",
+    _STATUS_PARTIAL_UNKNOWN: "只读到部分任务且其中没有可检索运行；全项目是否有可检索运行未知",
 }
+
+# Only real coverage-gap runs create the A/B/D decision for the user.
+_COVERAGE_GAP_DECISION = "A_or_B_or_D_coverage_gap"
 
 FORBIDDEN_FORMAL_STATUSES = frozenset(
     {
@@ -135,17 +140,24 @@ def build_acceptance_readiness(
         if row.get("phase") in ("analysis_incomplete", "media_prepared", "preparation_incomplete")
     ]
 
-    if not rows:
-        status = _STATUS_NO_RUNS
-    elif not searchable:
-        status = _STATUS_NO_SEARCHABLE
-    else:
+    offset = tasks_document.get("offset")
+    partial = tasks_document.get("hasMore") is True or (type(offset) is int and offset > 0)
+
+    if searchable:
         status = _STATUS_AWAITING_HUMAN
+    elif partial:
+        status = _STATUS_PARTIAL_UNKNOWN
+    elif not rows:
+        status = _STATUS_NO_RUNS
+    else:
+        status = _STATUS_NO_SEARCHABLE
 
     project_blockers: list[str] = []
-    if not rows:
+    if partial:
+        project_blockers.append("partial_task_snapshot")
+    elif not rows:
         project_blockers.append("no_runs")
-    if not searchable:
+    if not searchable and not partial:
         project_blockers.append("no_searchable_run")
     if coverage_gap:
         project_blockers.append("coverage_gap_present")
@@ -168,6 +180,7 @@ def build_acceptance_readiness(
         "tasksSchemaVersion": tasks_document.get("schemaVersion"),
         "taskTotal": tasks_document.get("total", len(rows)),
         "taskRowsInSnapshot": len(rows),
+        "partialSnapshot": partial,
         "counts": {
             "searchableRuns": len(searchable),
             "coverageGapRuns": len(coverage_gap),
@@ -189,7 +202,7 @@ def build_acceptance_readiness(
             "有可检索运行时状态仅为 awaiting_human_labels_and_freeze；永不输出 passed。"
         ),
         "coverageGapsCleared": False,
-        "userDecisionsPending": ["A_or_B_or_D_coverage_gap"],
+        "userDecisionsPending": [_COVERAGE_GAP_DECISION] if coverage_gap else [],
     }
     assert_acceptance_readiness_inert(document)
     return document

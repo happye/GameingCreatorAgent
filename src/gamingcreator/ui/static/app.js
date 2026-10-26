@@ -38,6 +38,7 @@
         "preparation-paths", "preparation-profile", "preparation-budget", "preparation-timeout", "start-preparation", "stop-preparation",
         "preparation-status", "preparation-summary", "preparation-items", "open-prepared-tasks", "download-preparation",
         "refresh-preparation", "preparation-history-summary", "preparation-batches", "preparation-previous", "preparation-next",
+        "shot-summary", "detect-shots",
     ].map((id) => [id, byId(id)]));
     const state = {
         project: "", run: "", revision: 0, runs: [], view: null, active: null,
@@ -54,6 +55,7 @@
         detailProjectScope: false, projectDetail: null, projectDetailAvailable: false,
         detailSearchScope: false, searchDetail: null, searchDetailAvailable: false,
         savedDetailRetrievalAvailable: false,
+        shotsAvailable: false, shots: null, shotsController: null, shotsBusy: false,
         preparationController: null, preparationRevision: 0, preparationTimer: null,
         preparationJob: null, preparationSubmitting: false, preparationOffset: 0, preparationCatalog: null,
     };
@@ -438,7 +440,8 @@
         human_labels_required:"还需要人工事前参考和候选评分",
         freeze_and_bind_required:"还需要冻结评测计划并关联已完成分析",
         feature_claims_remain_false:"检索质量（F006）和理解改进（F009／F010）尚未通过，这里不会标记为通过",
-        A_or_B_or_D_coverage_gap:"长钟馗3个拒绝窗口如何处理：A保留缺口／B另立补窗费用提案／D暂缓"
+        partial_task_snapshot:"只读到部分任务，结论可能不完整",
+        A_or_B_or_D_coverage_gap:"有覆盖缺口的任务（见列出的任务编号）如何处理：A保留缺口／B另立补窗费用提案／D暂缓"
     };
     const readinessText = (code) => (readinessLabels[code] || "其他条件未满足") + "（" + code + "）";
     function renderReadiness(payload) {
@@ -511,7 +514,7 @@
         empty(ui["readiness-body"], "正在汇总资格与阻断…");
         if (!ui["readiness-dialog"].open) ui["readiness-dialog"].showModal();
         try {
-            const payload = await request("/api/acceptance-readiness", { project, limit: 100, offset: 0 }, controller.signal);
+            const payload = await request("/api/acceptance-readiness", { project }, controller.signal);
             if (state.project !== project || state.readinessRevision !== revision || state.readinessController !== controller) return;
             if (payload.schemaVersion !== "acceptance-readiness-v1" || payload.project !== project
                 || payload.snapshotOnly !== true || payload.formalAcceptancePassed !== false
@@ -769,6 +772,78 @@
     function uncertaintyOf(row) {
         return typeof row?.uncertainty === "string" && row.uncertainty.trim()
             ? cleanObservationText(row.uncertainty) : "";
+    }
+
+    // Shot report edges and event edges round to whole microseconds on different sides.
+    const SHOT_EDGE_TOLERANCE_US = 1000;
+    function cutsInside(row) {
+        if (state.shots?.runId !== state.run || !validInterval(row)) return 0;
+        return state.shots.cuts.filter((cut) => row.startUs + SHOT_EDGE_TOLERANCE_US < cut.timeUs && cut.timeUs < row.endUs - SHOT_EDGE_TOLERANCE_US).length;
+    }
+
+    function appendShotBadge(container, row) {
+        const count = cutsInside(row);
+        if (count) container.append(element("span", "shot-badge", `跨 ${count} 个镜头切换`));
+    }
+
+    function validShots(payload) {
+        const integer = (value) => Number.isSafeInteger(value) && value >= 0;
+        return Boolean(payload) && payload.schemaVersion === "shot-boundaries-v1" && payload.runId === state.run
+            && payload.project === state.project
+            && payload.readOnly === true && payload.paidRequests === 0 && payload.humanReviewed === false
+            && payload.durationUs === state.view?.media?.durationUs
+            && Array.isArray(payload.cuts) && payload.cuts.every((cut) => integer(cut?.timeUs))
+            && Array.isArray(payload.blackIntervals) && payload.blackIntervals.every((range) => integer(range?.startUs) && integer(range?.endUs) && range.endUs > range.startUs)
+            && Boolean(payload.summary) && typeof payload.summary === "object";
+    }
+
+    function renderShots() {
+        const shots = state.shots?.runId === state.run ? state.shots : null;
+        ui["detect-shots"].hidden = !state.shotsAvailable;
+        ui["detect-shots"].disabled = !state.shotsAvailable || !state.view || state.shotsBusy;
+        ui["detect-shots"].textContent = state.shotsBusy ? "正在本机检测…" : shots ? "重新检测" : "检测镜头切换";
+        if (!state.shotsAvailable) ui["shot-summary"].textContent = "当前工作台未提供镜头切分。";
+        else if (state.shotsBusy) ui["shot-summary"].textContent = "正在本机扫描原片（15分钟录像约20秒），不发送任何请求。";
+        else if (!shots) ui["shot-summary"].textContent = state.view ? "尚未检测。点击后本机扫描原片，标出跨镜头的事件和候选。" : "选择分析结果后可检测原片镜头切换与黑屏";
+        else {
+            const summary = shots.summary;
+            const windows = Number.isSafeInteger(summary.windows) ? ` · 多帧窗口 ${summary.windowsSpanningCut}/${summary.windows} 跨镜头` : "";
+            ui["shot-summary"].textContent = `镜头切换 ${shots.cuts.length} 处 · 黑屏 ${shots.blackIntervals.length} 段 · 事件 ${summary.eventsCrossingCut}/${summary.events} 跨镜头${windows}。本机启发式，未经人工核对，不影响分析与排名。`;
+        }
+    }
+
+    function applyShots(payload) {
+        if (!validShots(payload)) throw new Error("镜头报告与当前分析结果不一致，已忽略。");
+        state.shots = payload;
+        renderShots();
+        renderTimeline();
+        renderCandidates();
+    }
+
+    async function loadShots(scan) {
+        if (!state.shotsAvailable || !state.project || !state.run || !state.view) return;
+        if (!scan && state.shotsBusy) return; // keep a running scan; its result arrives shortly
+        state.shotsController?.abort();
+        const controller = new AbortController();
+        state.shotsController = controller;
+        const run = state.run;
+        if (scan) { state.shotsBusy = true; renderShots(); }
+        try {
+            const payload = scan
+                ? await request("/api/detect-shots", {}, controller.signal, { project: state.project, run })
+                : await request("/api/shot-boundaries", { project: state.project, run }, controller.signal);
+            if (controller.signal.aborted || state.shotsController !== controller || state.run !== run) return;
+            if (payload.available === false) { state.shots = null; renderShots(); return; }
+            applyShots(payload);
+        } catch (error) {
+            if (error.name === "AbortError" || state.shotsController !== controller) return;
+            if (scan) notice(`镜头检测未完成：${error.message}`);
+        } finally {
+            if (state.shotsController === controller) {
+                state.shotsBusy = false;
+                renderShots();
+            }
+        }
     }
 
     function appendUncertainty(container, row) {
@@ -1788,6 +1863,11 @@
         for (const id of ["candidate-count", "timeline-count", "evidence-count", "transcript-tab-count"]) ui[id].textContent = "0";
         ui["cost-known"].textContent = "未读取";
         ui["cost-detail"].textContent = "估价与账单确认分开记录";
+        state.shotsController?.abort();
+        state.shotsController = null;
+        state.shotsBusy = false;
+        state.shots = null;
+        renderShots();
         ui["stage-list"].replaceChildren();
         ui["preview-badge"].textContent = "等待素材";
         ui["active-title"].textContent = "尚未选中片段";
@@ -1954,6 +2034,7 @@
                 || !payload.media || typeof payload.media.id !== "string"
                 || !Number.isSafeInteger(payload.media.durationUs) || payload.media.durationUs <= 0) throw new Error("分析视图的素材或运行身份不一致。");
             state.view = jointRowsForView(payload);
+            if (!query) void loadShots(false);
             const activeRow = previousActive && (previousActive.kind === "candidate" ? state.view.candidates : state.view.timeline)
                 .find((row) => selectionKey(row) === selectionKey(previousActive.row));
             state.active = activeRow ? { kind: previousActive.kind, row: activeRow } : null;
@@ -2105,6 +2186,7 @@
                 card.insertBefore(element("p", "candidate-source", `来源 · ${row.sourceName}`), copy);
             }
             appendUncertainty(card, row);
+            if (!joint) appendShotBadge(card, row);
             if(joint?.detailRetrieval){if(row.semanticDetailFacetId)card.dataset.semanticFacet=row.semanticDetailFacetId;if(row.lexicalDetailFacetId)card.dataset.lexicalFacet=row.lexicalDetailFacetId;appendSavedDetailSearchEvidence(card,row);}
             if (joint) appendSearchConditionProof(card,row);
             ui["candidate-list"].append(card);
@@ -2140,6 +2222,7 @@
                 for (const tag of row.mechanicTags) if (typeof tag === "string") tags.append(element("span", "tag", tag));
                 copy.append(tags);
             }
+            appendShotBadge(copy, row);
             item.append(preview, copy, selectionButton("event", row));
             ui["timeline-list"].append(item);
         }
@@ -2171,6 +2254,11 @@
         context.fillStyle = colors.getPropertyValue("--accent").trim() || "#789f67";
         for (const row of filteredTimeline()) {
             if (validInterval(row)) context.fillRect(width * row.startUs / duration, 9, Math.max(2, width * (row.endUs - row.startUs) / duration), 16);
+        }
+        if (state.shots?.runId === state.run) {
+            context.fillStyle = colors.getPropertyValue("--muted").trim() || "#9aa7ad";
+            for (const range of state.shots.blackIntervals) context.fillRect(width * range.startUs / duration, 27, Math.max(1, width * (range.endUs - range.startUs) / duration), 3);
+            for (const cut of state.shots.cuts) context.fillRect(width * cut.timeUs / duration, 0, 1, 8);
         }
         context.fillStyle = colors.getPropertyValue("--text").trim() || "#e8efdc";
         const position = Math.max(0, Math.min(duration, Math.round(ui["source-video"].currentTime * 1000000)));
@@ -2748,6 +2836,7 @@
         ui["playback-range"].textContent = "自由回看";
         seek(Math.round(Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width)) * state.view.media.durationUs));
     });
+    ui["detect-shots"].addEventListener("click", () => void loadShots(true));
     window.addEventListener("resize", drawTimeline);
     resetView();
     void (async () => {
@@ -2756,6 +2845,8 @@
             state.projectDetailAvailable=health.application==="gamingcreator-workspace" && health.capabilities?.includes("project-detail-query-v1");updateSearchScope();
             state.searchDetailAvailable=health.application==="gamingcreator-workspace" && health.capabilities?.includes("search-detail-query-v1");updateSearchScope();
             state.savedDetailRetrievalAvailable=health.application==="gamingcreator-workspace" && health.capabilities?.includes("saved-detail-retrieval-v1");updateSearchScope();
+            state.shotsAvailable = health.application === "gamingcreator-workspace" && health.capabilities?.includes("shot-boundaries-v1");
+            renderShots();
             ui["detail-profile"].querySelector('[value="v5"]').disabled = !(health.application === "gamingcreator-workspace" && health.capabilities?.includes("detail-temporal-json-v1"));
             document.getElementById("open-acceptance").hidden = !(health.application === "gamingcreator-workspace"
                 && health.capabilities?.includes("benchmark-workflow-v1"));

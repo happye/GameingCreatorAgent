@@ -147,32 +147,37 @@ def _image_requests(bundle: MediaPreprocessingResult, limit: int) -> tuple[Evide
     )
 
 
+def window_slices(count: int, config: AnalysisConfig) -> tuple[slice, ...]:
+    """Frame index slices of the vision windows over ``count`` frames in source order."""
+    stride = config.window_frames - config.window_overlap
+    slices = []
+    for offset in range(0, count, stride):
+        slices.append(slice(offset, offset + config.window_frames))
+        if offset + config.window_frames >= count:
+            break
+    return tuple(slices)
+
+
 def vision_windows(
     bundle: MediaPreprocessingResult, config: AnalysisConfig
 ) -> tuple[tuple[EvidenceReference, ...], ...]:
     """Cover every extracted frame; consecutive windows share the configured overlap."""
     images = bundle.images
-    stride = config.window_frames - config.window_overlap
-    windows = []
-    for offset in range(0, len(images), stride):
-        selected = images[offset : offset + config.window_frames]
-        windows.append(
-            tuple(
-                EvidenceReference(
-                    image.evidence_id,
-                    bundle.asset.media_id,
-                    "image",
-                    image.source_time,
-                    image.path,
-                    image.sha256,
-                    bundle.transform_version,
-                )
-                for image in selected
+    return tuple(
+        tuple(
+            EvidenceReference(
+                image.evidence_id,
+                bundle.asset.media_id,
+                "image",
+                image.source_time,
+                image.path,
+                image.sha256,
+                bundle.transform_version,
             )
+            for image in images[window]
         )
-        if offset + config.window_frames >= len(images):
-            break
-    return tuple(windows)
+        for window in window_slices(len(images), config)
+    )
 
 
 def _pipeline_version(config: AnalysisConfig) -> str:
@@ -335,6 +340,11 @@ async def prepare_media(
 def _digest(payload: object) -> str:
     encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(encoded.encode()).hexdigest()
+
+
+def window_input_hash(evidence_ids: list[str]) -> str:
+    """The input hash a vision window stage records for its ordered frame identifiers."""
+    return _digest(evidence_ids)
 
 
 def _asr_input_hash(asset: MediaAsset, metadata: InvocationMetadata) -> str:

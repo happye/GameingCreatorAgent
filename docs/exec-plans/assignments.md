@@ -10,6 +10,7 @@
 
 | 工作 | 负责人／范围 | 当前状态 |
 | --- | --- | --- |
+| TD017验收就绪显示修复；本地镜头切分与黑屏检测（detect-shots） | Claude Code主控单Agent实现／真实运行／文档；code-quality-guard（opus）只读评估 | 2026-10-26：定向测试与静态检查通过，真实长钟馗运行完成；见sprint-shot-boundaries.md |
 | F006验收流程对抗审查与修复 | 工作流（4维度审查＋每P0/P1三票反驳）；Claude Code主控修复；code-quality-guard（opus）审计分修复 | 2026-10-25完成：1 P0＋4 P2＋1降级项全部修复，评估PASS；见sprint-f006-pipeline-review.md |
 | 跨改动审查与离线加固（TD003／TD005／TD008／TD012） | Claude Code主控实现；code-quality-guard（opus）跨改动审查＋复审 | 2026-10-25完成：审查PASS，两P2已修；TD008 ChangeTime签名；TD003来源核对结论；见tech-debt对应行 |
 | TD005详情提速第A步 | 设计工作流（3方案／2评审／综合）；Claude Code主控实现与测量；code-quality-guard（opus）审查 | 2026-10-25完成（dae34f4）：哈希3→1次，15分钟打开约1.7→1.0秒；见sprint-inspect-integrity-single-pass.md |

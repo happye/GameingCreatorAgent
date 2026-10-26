@@ -62,7 +62,8 @@ def test_empty_project_blocked_no_runs() -> None:
     assert doc["featureClaims"] == {"F006": False, "F009": False, "F010": False}
     assert doc["coverageGapsCleared"] is False
     assert "no_runs" in doc["projectBlockers"]
-    assert "A_or_B_or_D_coverage_gap" in doc["userDecisionsPending"]
+    assert doc["partialSnapshot"] is False
+    assert doc["userDecisionsPending"] == []
 
 
 def test_coverage_gap_only_not_searchable() -> None:
@@ -85,6 +86,37 @@ def test_coverage_gap_only_not_searchable() -> None:
     assert "no_searchable_run" in doc["projectBlockers"]
     assert doc["formalAcceptancePassed"] is False
     assert doc["featureClaims"]["F006"] is False
+    assert doc["userDecisionsPending"] == ["A_or_B_or_D_coverage_gap"]
+    assert doc["coverageGapRunIds"] == ["gap-1"]
+
+
+def test_partial_snapshot_without_searchable_row_is_unknown_not_blocked() -> None:
+    # Page one of a larger project: an older completed run may be on a later page.
+    tasks = _tasks(_row("prep-1", phase="media_prepared", search_eligible=False), total=150)
+    tasks["hasMore"] = True
+    doc = build_acceptance_readiness(tasks)
+    assert doc["formalAcceptanceStatus"] == "unknown_partial_task_snapshot"
+    assert doc["partialSnapshot"] is True
+    assert doc["taskTotal"] == 150 and doc["taskRowsInSnapshot"] == 1
+    assert "partial_task_snapshot" in doc["projectBlockers"]
+    assert "no_searchable_run" not in doc["projectBlockers"]
+    assert doc["formalAcceptancePassed"] is False
+    later = _tasks(total=150)
+    later["offset"] = 100
+    empty_page = build_acceptance_readiness(later)
+    assert empty_page["formalAcceptanceStatus"] == "unknown_partial_task_snapshot"
+    assert "no_runs" not in empty_page["projectBlockers"]
+
+
+def test_no_gap_rows_leave_no_coverage_decision() -> None:
+    doc = build_acceptance_readiness(
+        _tasks(
+            _row("ok-1", phase="completed", search_eligible=True),
+            _row("prep-1", phase="media_prepared", search_eligible=False),
+        )
+    )
+    assert doc["userDecisionsPending"] == []
+    assert doc["coverageGapRunIds"] == []
 
 
 def test_searchable_still_awaits_human_never_passed() -> None:

@@ -97,7 +97,8 @@
         human_labels_required:"还需要人工事前参考和候选评分",
         freeze_and_bind_required:"还需要冻结评测计划并关联已完成分析",
         feature_claims_remain_false:"检索质量（F006）和理解改进（F009／F010）尚未通过，这里不会标记为通过",
-        A_or_B_or_D_coverage_gap:"长钟馗3个拒绝窗口如何处理：A保留缺口／B另立补窗费用提案／D暂缓"
+        partial_task_snapshot:"只读到部分任务，结论可能不完整",
+        A_or_B_or_D_coverage_gap:"有覆盖缺口的任务（见列出的任务编号）如何处理：A保留缺口／B另立补窗费用提案／D暂缓"
     };
     const readinessText=(code)=>(readinessLabels[code] || "其他条件未满足")+"（"+code+"）";
     function fillBindReadiness(panel, statusNode, payload) {
@@ -158,7 +159,7 @@
                     wrapper.append(select);holder.append(wrapper,text("p",`录制归组：${source.recordingGroup || "尚未确认"} · ${source.modelResultsViewed?"已看过模型结果":"声明未看过模型结果"}`,"state"));
                     if(!source.candidates.some(row=>row.selectable)){const gapOnly=source.candidates.length>0&&source.candidates.every(row=>row.errorCode==="analysis.coverage_gap"||(typeof row.reason==="string"&&row.reason.includes("覆盖缺口")));holder.append(text("p",gapOnly?"这段录像的分析保留覆盖缺口，未获完整资格，不能关联做正式验收。":"这段录像暂无可关联的已完成分析，请保留原任务并按已有流程处理。","failed"));}
                 }
-                message.textContent="已按保存的原片身份列出任务；选择后关联时会核对实际录像和证据。"+(Object.keys(value.previousSelection).length?" 已恢复上次明确选择。":" 不会自动选择最新版本。");if(readinessAvailable){try{const ready=await request("/api/acceptance-readiness?"+new URLSearchParams({project:identity.project,limit:"100"}),{signal:state.controller.signal});if(generation!==state.generation || current?.id!==identifier || !form.isConnected)return;if(ready.project!==identity.project)throw new Error("验收就绪项目不符，请重新读取。");fillBindReadiness(readiness,readinessStatus,ready);}catch(readyError){if(generation===state.generation){readiness.replaceChildren();readiness.append(readinessStatus);readinessStatus.textContent="验收就绪未读取："+readyError.message+"（不影响上方关联列表；不能据此判断已通过）。";}}}else{readinessStatus.textContent="当前工作台未提供验收就绪接口；关联仍可用。不宣称验收通过。";}
+                message.textContent="已按保存的原片身份列出任务；选择后关联时会核对实际录像和证据。"+(Object.keys(value.previousSelection).length?" 已恢复上次明确选择。":" 不会自动选择最新版本。");if(readinessAvailable){try{const ready=await request("/api/acceptance-readiness?"+new URLSearchParams({project:identity.project}),{signal:state.controller.signal});if(generation!==state.generation || current?.id!==identifier || !form.isConnected)return;if(ready.project!==identity.project)throw new Error("验收就绪项目不符，请重新读取。");fillBindReadiness(readiness,readinessStatus,ready);}catch(readyError){if(generation===state.generation){readiness.replaceChildren();readiness.append(readinessStatus);readinessStatus.textContent="验收就绪未读取："+readyError.message+"（不影响上方关联列表；不能据此判断已通过）。";}}}else{readinessStatus.textContent="当前工作台未提供验收就绪接口；关联仍可用。不宣称验收通过。";}
             }catch(error){if(generation===state.generation){state.options=null;holder.replaceChildren();message.textContent=error.message;}}
             finally{if(generation===state.generation)read.disabled=Boolean(locked);}
         })());

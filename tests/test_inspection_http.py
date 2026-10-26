@@ -138,6 +138,7 @@ def test_health_identifies_repository_and_pid_without_model_or_storage(tmp_path)
                 "acceptance-readiness-v1",
                 "acceptance-readiness-inert-v1",
                 "coverage-gap-report-v1",
+                "shot-boundaries-v1",
             ],
             "repository": str(tmp_path.resolve()),
             "pid": os.getpid(),

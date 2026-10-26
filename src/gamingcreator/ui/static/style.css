@@ -96,6 +96,8 @@ summary { cursor: pointer; color: var(--muted); font-size: 10px; }
 .cost-card { padding: 11px; border: 1px solid var(--line); border-radius: 7px; background: #141a23; }
 .cost-card strong { font-size: 17px; font-weight: 500; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .cost-card p { padding-top: 5px; }
+.shot-card { margin-top: 8px; }
+.shot-badge { display: inline-block; margin-top: 4px; padding: 1px 6px; border: 1px solid var(--line); border-radius: 4px; font-size: 11px; color: var(--muted, #9aa7ad); }
 .stage-details { margin: 14px 0; }
 .stage-details summary { display: flex; justify-content: space-between; gap: 5px; }
 .stage-list { margin-top: 9px; max-height: 150px; overflow: auto; }

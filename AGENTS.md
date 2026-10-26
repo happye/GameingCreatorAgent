@@ -34,6 +34,7 @@ Use Windows PowerShell. Keep runtimes in `.tools/`, packages in `.venv/`, and ca
 - `./scripts/prepare-benchmark-references.ps1`: prepare a local raw-footage reference page, or verify its saved record and export a plan for freezing; see `docs/references/benchmark-reference-review-guide.md`.
 - `./scripts/prepare-benchmark-plan.ps1`: prepare a local source/query form, save incomplete registration drafts and export unconfirmed plans; see `docs/references/benchmark-plan-editor-guide.md`.
 - `./scripts/inventory-sources.ps1 -InputPath <files|dirs> -OutputPath <json>`: read-only source inventory (stream-clock duration, SHA256, codec) and shared-footage evidence between different files; never assigns recording groups; see `docs/references/source-inventory-guide.md`.
+- `./scripts/detect-shots.ps1 -Project <dir> -Run <id> -OutputPath <new json>`: read-only local shot cuts/black intervals for one run, marking saved events and vision windows that span shots; no paid calls, never changes analysis or ranking; see `docs/references/shot-boundaries-guide.md`.
 
 ## Architecture and coding rules
 

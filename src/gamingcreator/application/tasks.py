@@ -265,6 +265,33 @@ def task_payload(snapshot: RunTaskSnapshot, *, project: Path | None = None) -> d
     return payload
 
 
+def _page_rows(document: dict[str, object]) -> list[object]:
+    rows = document.get("tasks")
+    return list(rows) if isinstance(rows, list) else []
+
+
+async def all_tasks_payload(store: TimelineStore, *, page_size: int = 200) -> dict[str, object]:
+    """Read every saved task page into one document for whole-project summaries."""
+    document = await tasks_payload(store, limit=page_size)
+    rows = _page_rows(document)
+    while document.get("hasMore") is True:
+        document = await tasks_payload(store, limit=page_size, offset=len(rows))
+        page = _page_rows(document)
+        if not page:
+            break
+        rows.extend(page)
+    raw_total = document.get("total")
+    total = raw_total if type(raw_total) is int else len(rows)
+    return {
+        **document,
+        "tasks": rows,
+        "total": total,
+        "offset": 0,
+        "limit": len(rows),
+        "hasMore": len(rows) < total,
+    }
+
+
 async def tasks_payload(
     store: TimelineStore, *, limit: int = 100, offset: int = 0, run_id: str | None = None
 ) -> dict[str, object]:

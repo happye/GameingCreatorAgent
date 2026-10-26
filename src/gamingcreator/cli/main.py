@@ -91,7 +91,8 @@ from gamingcreator.application.source_inventory import (
     inventory_summary,
 )
 from gamingcreator.application.storage import RunStatus, StoredTimeline
-from gamingcreator.application.tasks import tasks_payload
+from gamingcreator.application.tasks import all_tasks_payload, tasks_payload
+from gamingcreator.cli.shot_boundaries import execute_detect_shots
 from gamingcreator.cli.static_observation_generation import (
     execute_dispatch_static_observation_generation,
     execute_prepare_static_observation_generation,
@@ -121,6 +122,7 @@ from gamingcreator.infrastructure.detail_query_sidecar import (
     refinement_identity_for_profile,
 )
 from gamingcreator.infrastructure.ffmpeg_media import FfmpegMediaProcessor
+from gamingcreator.infrastructure.ffmpeg_shots import FfmpegShotDetector
 from gamingcreator.infrastructure.ffmpeg_signatures import FfmpegSignatureExtractor
 from gamingcreator.infrastructure.http_transport import HttpxVisionTransport
 from gamingcreator.infrastructure.local_asr import LocalAsrProvider
@@ -187,7 +189,7 @@ def _parser() -> CliParser:
         help="只读汇总项目验收资格与阻断，不宣称通过",
     )
     readiness.add_argument("--project", type=Path, required=True)
-    readiness.add_argument("--limit", type=int, default=100)
+    readiness.add_argument("--limit", type=int, help="可选：只读一页任务（默认读全部任务）")
     readiness.add_argument("--offset", type=int, default=0)
     readiness.add_argument(
         "--output",
@@ -217,6 +219,13 @@ def _parser() -> CliParser:
     )
     inventory.add_argument("--input", type=Path, nargs="+", required=True)
     inventory.add_argument("--output", type=Path, required=True)
+    shots = commands.add_parser(
+        "detect-shots",
+        help="本地检测一个任务原片的镜头切换与黑屏，并标出跨镜头事件；只读、不花钱",
+    )
+    shots.add_argument("--project", type=Path, required=True)
+    shots.add_argument("--run", required=True)
+    shots.add_argument("--output", type=Path, required=True, help="新报告JSON路径")
     freeze = commands.add_parser("freeze-benchmark", help="本地登记原素材并冻结验收查询，不分析")
     freeze.add_argument("--input", type=Path, required=True)
     freeze.add_argument("--output", type=Path, required=True)
@@ -1235,7 +1244,7 @@ async def execute_bind_benchmark(
 async def execute_acceptance_readiness(
     project: Path,
     *,
-    limit: int = 100,
+    limit: int | None = None,
     offset: int = 0,
     output: Path | None = None,
 ) -> dict[str, object]:
@@ -1243,7 +1252,12 @@ async def execute_acceptance_readiness(
     _require_project(project)
     store = await SqliteTimelineStore.open(project, read_only=True)
     try:
-        tasks_document = await tasks_payload(store, limit=limit, offset=offset)
+        if limit is None and offset == 0:
+            tasks_document = await all_tasks_payload(store)
+        else:
+            tasks_document = await tasks_payload(
+                store, limit=100 if limit is None else limit, offset=offset
+            )
         document = build_acceptance_readiness(tasks_document, project=str(project.resolve()))
         if output is not None:
             written = write_acceptance_readiness(document, output)
@@ -1610,6 +1624,16 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
         )
     if args.command == "inventory-sources":
         asyncio.run(execute_inventory_sources(args.input, args.output.resolve(), Path.cwd()))
+        return None
+    if args.command == "detect-shots":
+        asyncio.run(
+            execute_detect_shots(
+                args.project.resolve(),
+                args.run,
+                args.output.resolve(),
+                FfmpegShotDetector(Path.cwd()),
+            )
+        )
         return None
     if args.command == "tasks":
         return asyncio.run(

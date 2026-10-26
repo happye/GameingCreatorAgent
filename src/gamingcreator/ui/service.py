@@ -22,7 +22,7 @@ from gamingcreator.application.retrieval import RETRIEVAL_VERSION, CandidateClip
 from gamingcreator.application.retrieval_diagnostics import retrieval_diagnostics
 from gamingcreator.application.search_detail_query import search_snapshot_sha256
 from gamingcreator.application.storage import RunStatus, StoredInvocation, StoredRun, StoredTimeline
-from gamingcreator.application.tasks import tasks_payload
+from gamingcreator.application.tasks import all_tasks_payload, tasks_payload
 from gamingcreator.cli.main import (
     execute_project_detail_match,
     execute_project_search,
@@ -322,14 +322,22 @@ async def project_tasks_payload(
 async def project_acceptance_readiness_payload(
     project: Path,
     *,
-    limit: int = 100,
+    limit: int | None = None,
     offset: int = 0,
     project_reference: str | None = None,
 ) -> dict[str, object]:
-    """Read-only acceptance readiness for the workbench; never claims pass."""
+    """Read-only acceptance readiness for the workbench; never claims pass.
+
+    Without an explicit page the summary reads every saved task.
+    """
     store = await SqliteTimelineStore.open(project, read_only=True)
     try:
-        tasks_document = await tasks_payload(store, limit=limit, offset=offset)
+        if limit is None and offset == 0:
+            tasks_document = await all_tasks_payload(store)
+        else:
+            tasks_document = await tasks_payload(
+                store, limit=100 if limit is None else limit, offset=offset
+            )
         reference = project_reference if project_reference is not None else str(project)
         return build_acceptance_readiness(tasks_document, project=reference)
     finally:
