@@ -10,6 +10,7 @@
 
 | 工作 | 负责人／范围 | 当前状态 |
 | --- | --- | --- |
+| 工作台时间轴文字车道与键盘跳转 | 选题：排名工作流第二；Claude Code主控实现／真实测试；评估：两视角评审＋反驳工作流（只读） | 2026-10-27：1个P1经两票确认后修复，P2已修；浏览器与工作台测试通过；见sprint-workbench-navigation.md |
 | 原片标注页省力辅助（验收第2步） | 选题：排名工作流（3侦察＋3评委）；Claude Code主控实现／真实测试；评估：三视角评审＋反驳工作流（只读） | 2026-10-27：评审PASS、P2已修，67项相关测试与真实页面通过；见sprint-reference-page-aids.md |
 | 工作台“画面文字”卡片；登记预填评审P2修复 | Claude Code主控单Agent实现／真实走查／文档；code-quality-guard（opus）评审登记预填、gc-reviewer（sonnet）评审本批，均只读 | 2026-10-27：完整verify 3638 passed（修复前HEAD＋mypy修复）；定向测试与浏览器走查通过；见sprint-frame-text-panel.md |
 | 本地画面文字识别（ocr-frames） | 选题：侦察3视角＋评审工作流；Claude Code主控实现／真实运行／文档；评估：3视角评审＋每P0/P1两票反驳工作流（只读） | 2026-10-26：评估PASS、P2全修，33项定向测试与真实长钟馗运行通过；见sprint-ocr-frames.md |

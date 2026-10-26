@@ -882,6 +882,22 @@
         return ranges;
     }
 
+    // Text navigation stops and lane ranges: frames matching the card's query, else frames
+    // with likely text. Cached per report and query, since the timeline redraws every frame.
+    let frameTextStopsCache = { report: null, query: null, instants: [], ranges: [] };
+    function frameTextStops() {
+        const report = state.frameText?.runId === state.run ? state.frameText : null;
+        const query = ui["frame-text-query"].value.trim();
+        if (frameTextStopsCache.report === report && frameTextStopsCache.query === query) return frameTextStopsCache;
+        const needle = compactText(query);
+        const instants = !report ? [] : report.frames
+            .filter((frame) => frame.lines.some((line) => needle ? compactText(line.text).includes(needle) : line.likelyText === true))
+            .map((frame) => frame.timeUs);
+        const ranges = !report ? [] : needle ? frameTextHits(query) : instants.map((timeUs) => ({ firstUs: timeUs, lastUs: timeUs }));
+        frameTextStopsCache = { report, query, instants, ranges };
+        return frameTextStopsCache;
+    }
+
     function frameTextItem(span) {
         const item = element("li");
         const range = span.lastUs > span.firstUs ? `${timecode(span.firstUs)}–${timecode(span.lastUs)}` : timecode(span.firstUs);
@@ -915,6 +931,7 @@
         if (report && query && !spans.length) {
             ui["frame-text-results"].replaceChildren(element("li", "muted small", "画面文字里没有找到。识别可能有错字，可以试更短的词。"));
         } else ui["frame-text-results"].replaceChildren(...spans.slice(0, 50).map(frameTextItem));
+        drawTimeline();
     }
 
     async function loadFrameText(scan) {
@@ -2363,9 +2380,71 @@
             for (const range of state.shots.blackIntervals) context.fillRect(width * range.startUs / duration, 27, Math.max(1, width * (range.endUs - range.startUs) / duration), 3);
             for (const cut of state.shots.cuts) context.fillRect(width * cut.timeUs / duration, 0, 1, 8);
         }
+        if (state.frameText?.runId === state.run) {
+            // On-screen text lane: query hits as merged ranges, else every frame with likely text.
+            context.fillStyle = colors.getPropertyValue("--warning").trim() || "#edc58a";
+            for (const range of frameTextStops().ranges) context.fillRect(width * range.firstUs / duration, 36, Math.max(2, width * (range.lastUs - range.firstUs) / duration), 4);
+        }
         context.fillStyle = colors.getPropertyValue("--text").trim() || "#e8efdc";
         const position = Math.max(0, Math.min(duration, Math.round(ui["source-video"].currentTime * 1000000)));
         context.fillRect(width * position / duration, 3, 2, 32);
+    }
+
+    // Jump targets ahead must be clearly ahead; targets behind skip the one just reached, so
+    // repeated presses walk instead of sticking on the current stop.
+    const NAVIGATION_AHEAD_US = 50000;
+    const NAVIGATION_BEHIND_US = 300000;
+    function neighbour(times, forward) {
+        // A seek requested before metadata is the position the user is already at.
+        const position = state.pendingSeekUs ?? Math.round(ui["source-video"].currentTime * 1000000);
+        const sorted = [...times].filter(Number.isSafeInteger).sort((a, b) => a - b);
+        return forward ? sorted.find((time) => time > position + NAVIGATION_AHEAD_US)
+            : sorted.reverse().find((time) => time < position - NAVIGATION_BEHIND_US);
+    }
+
+    function navigate(kind, forward) {
+        if (!state.view || !state.sourceUrl) return;
+        if (kind === "event") {
+            // Events overlap and share start times, so step through the list from the active
+            // event; only without one does the playhead pick the starting point.
+            const rows = filteredTimeline().filter((row) => validInterval(row))
+                .map((row, index) => ({ row, index }))
+                .sort((a, b) => a.row.startUs - b.row.startUs || a.row.endUs - b.row.endUs || a.index - b.index)
+                .map((item) => item.row);
+            const activeKey = state.active?.kind === "event" ? selectionKey(state.active.row) : null;
+            const current = activeKey === null ? -1 : rows.findIndex((row) => selectionKey(row) === activeKey);
+            let row;
+            if (current >= 0) row = rows[current + (forward ? 1 : -1)];
+            else {
+                const target = neighbour(rows.map((item) => item.startUs), forward);
+                const starts = rows.map((item) => item.startUs);
+                if (target !== undefined) row = rows[forward ? starts.indexOf(target) : starts.lastIndexOf(target)];
+            }
+            if (row) void previewClip("event", row); else notice(forward ? "后面没有更多事件。" : "前面没有更多事件。");
+            return;
+        }
+        const times = kind === "cut"
+            ? (state.shots?.runId === state.run ? state.shots.cuts.map((cut) => cut.timeUs) : null)
+            : (state.frameText?.runId === state.run ? frameTextStops().instants : null);
+        if (times === null) return notice(kind === "cut" ? "请先在左侧“镜头切分”检测镜头切换。" : "请先在左侧“画面文字”识别画面文字。");
+        if (!times.length) {
+            const query = ui["frame-text-query"].value.trim();
+            return notice(kind === "cut" ? "这段录像没有检测到镜头切换。" : query ? `画面文字里没有找到“${query}”。` : "没有识别到像真实文字的画面。");
+        }
+        const target = neighbour(times, forward);
+        if (target === undefined) return notice(forward ? "后面没有更多位置。" : "前面没有更多位置。");
+        ui["source-video"].pause();
+        state.playbackEndUs = null;
+        ui["playback-range"].textContent = kind === "cut" ? "镜头切换处（本机检测，未经人工核对）" : "画面文字处（本机识别，未经人工核对）";
+        seek(target);
+        drawTimeline();
+    }
+
+    const NON_TEXT_INPUTS = new Set(["checkbox", "radio", "file", "button", "submit", "reset", "range", "color"]);
+    function typingTarget(target) {
+        if (!(target instanceof HTMLElement)) return false;
+        if (target.isContentEditable || target.tagName === "TEXTAREA" || target.tagName === "SELECT") return true;
+        return target.tagName === "INPUT" && !NON_TEXT_INPUTS.has(target.type);
     }
 
     function seek(us) {
@@ -2941,6 +3020,33 @@
     });
     ui["detect-shots"].addEventListener("click", () => void loadShots(true));
     ui["scan-frame-text"].addEventListener("click", () => void loadFrameText(true));
+    const NAVIGATION_KEYS_STORAGE = "gamingcreator:navigation-keys";
+    try { byId("navigation-keys").checked = localStorage.getItem(NAVIGATION_KEYS_STORAGE) !== "off"; } catch { /* default on */ }
+    byId("navigation-keys").addEventListener("change", () => {
+        try { localStorage.setItem(NAVIGATION_KEYS_STORAGE, byId("navigation-keys").checked ? "on" : "off"); } catch { /* per-viewer convenience only */ }
+    });
+    document.addEventListener("keydown", (event) => {
+        if (!byId("navigation-keys").checked) return;
+        if (event.defaultPrevented || event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
+        if (typingTarget(event.target) || document.querySelector("dialog[open]")) return;
+        // Physical keys, so layouts that type brackets with AltGr still have them.
+        const actions = {
+            BracketLeft: () => navigate("cut", false), BracketRight: () => navigate("cut", true),
+            Comma: () => navigate("text", false), Period: () => navigate("text", true),
+            KeyJ: () => navigate("event", false), KeyK: () => navigate("event", true),
+            KeyB: () => {
+                // Add only: removing from the basket stays an explicit click.
+                if (!state.active || ui["add-active"].disabled) return notice("请先选中一个事件或候选片段。");
+                if (state.selections.some((entry) => entry.key === selectionKey(state.active.row))) return notice("当前片段已在片段篮里；移出请点片段篮里的按钮。");
+                ui["add-active"].click();
+                notice(`已加入片段篮：${intervalLabel(state.active.row)}`, true);
+            },
+        };
+        const action = actions[event.code];
+        if (!action) return;
+        event.preventDefault();
+        action();
+    });
     ui["frame-text-query"].addEventListener("input", renderFrameText);
     window.addEventListener("resize", drawTimeline);
     resetView();
