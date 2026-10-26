@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import secrets
+import sys
 import threading
 from contextlib import contextmanager
 from dataclasses import replace
@@ -139,6 +140,8 @@ def test_health_identifies_repository_and_pid_without_model_or_storage(tmp_path)
                 "acceptance-readiness-inert-v1",
                 "coverage-gap-report-v1",
                 "shot-boundaries-v1",
+                # On-screen text uses the Windows recognizer, so only Windows offers it.
+                *(["frame-text-v1"] if sys.platform == "win32" else []),
             ],
             "repository": str(tmp_path.resolve()),
             "pid": os.getpid(),

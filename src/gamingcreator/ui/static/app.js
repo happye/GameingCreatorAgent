@@ -39,6 +39,7 @@
         "preparation-status", "preparation-summary", "preparation-items", "open-prepared-tasks", "download-preparation",
         "refresh-preparation", "preparation-history-summary", "preparation-batches", "preparation-previous", "preparation-next",
         "shot-summary", "detect-shots",
+        "frame-text-card", "frame-text-summary", "frame-text-density", "scan-frame-text", "frame-text-query", "frame-text-results",
     ].map((id) => [id, byId(id)]));
     const state = {
         project: "", run: "", revision: 0, runs: [], view: null, active: null,
@@ -56,6 +57,7 @@
         detailSearchScope: false, searchDetail: null, searchDetailAvailable: false,
         savedDetailRetrievalAvailable: false,
         shotsAvailable: false, shots: null, shotsController: null, shotsBusy: false,
+        frameTextAvailable: false, frameText: null, frameTextController: null, frameTextBusy: false,
         preparationController: null, preparationRevision: 0, preparationTimer: null,
         preparationJob: null, preparationSubmitting: false, preparationOffset: 0, preparationCatalog: null,
     };
@@ -842,6 +844,102 @@
             if (state.shotsController === controller) {
                 state.shotsBusy = false;
                 renderShots();
+            }
+        }
+    }
+
+    function validFrameText(payload) {
+        const integer = (value) => Number.isSafeInteger(value) && value >= 0;
+        return Boolean(payload) && payload.schemaVersion === "frame-text-v1" && payload.runId === state.run
+            && payload.project === state.project
+            && payload.readOnly === true && payload.paidRequests === 0 && payload.humanReviewed === false
+            && payload.durationUs === state.view?.media?.durationUs
+            && Boolean(payload.summary) && typeof payload.summary === "object"
+            && Array.isArray(payload.recurringTexts) && payload.recurringTexts.every((span) => typeof span?.text === "string"
+                && integer(span.firstUs) && integer(span.lastUs) && integer(span.frames))
+            && Array.isArray(payload.frames) && payload.frames.every((frame) => integer(frame?.timeUs)
+                && Array.isArray(frame.lines) && frame.lines.every((line) => typeof line?.text === "string"));
+    }
+
+    // Case and spaces are ignored: recognition splits or merges words unpredictably.
+    const compactText = (text) => text.toLowerCase().replace(/\s+/g, "");
+    // Hits closer than this on the source clock merge into one range: small text such as a
+    // boss name is read only every few frames, so a whole fight should stay one range.
+    const FRAME_TEXT_GAP_US = 30000000;
+    function frameTextHits(query) {
+        const needle = compactText(query);
+        const ranges = [];
+        if (!needle || !state.frameText) return ranges;
+        for (const frame of state.frameText.frames) {
+            const line = frame.lines.find((item) => compactText(item.text).includes(needle));
+            if (!line) continue;
+            const last = ranges.at(-1);
+            if (last && frame.timeUs - last.lastUs <= FRAME_TEXT_GAP_US) {
+                last.lastUs = frame.timeUs;
+                last.frames += 1;
+            } else ranges.push({ text: line.text, firstUs: frame.timeUs, lastUs: frame.timeUs, frames: 1 });
+        }
+        return ranges;
+    }
+
+    function frameTextItem(span) {
+        const item = element("li");
+        const range = span.lastUs > span.firstUs ? `${timecode(span.firstUs)}–${timecode(span.lastUs)}` : timecode(span.firstUs);
+        const jump = element("button", "text-button frame-text-jump", `${range} · ${span.text}`);
+        jump.type = "button";
+        jump.title = `出现 ${span.frames} 帧：${timecode(span.firstUs)} – ${timecode(span.lastUs)}，点击跳到首次出现`;
+        jump.addEventListener("click", () => seek(span.firstUs));
+        item.append(jump, element("span", "muted small", ` ${span.frames} 帧`));
+        return item;
+    }
+
+    function renderFrameText() {
+        const report = state.frameText?.runId === state.run ? state.frameText : null;
+        const enabled = state.frameTextAvailable && Boolean(state.view) && !state.frameTextBusy;
+        ui["frame-text-card"].hidden = !state.frameTextAvailable;
+        ui["scan-frame-text"].disabled = !enabled;
+        ui["frame-text-density"].disabled = !enabled;
+        ui["scan-frame-text"].textContent = state.frameTextBusy ? "正在本机识别…" : report ? "重新识别" : "识别画面文字";
+        ui["frame-text-query"].hidden = !report;
+        if (state.frameTextBusy) ui["frame-text-summary"].textContent = "正在本机识别原片画面文字（15分钟录像：快速约1分钟，完整约4–5分钟），不发送任何请求。";
+        else if (!report) ui["frame-text-summary"].textContent = state.view ? "尚未识别。点击后本机读出取帧时刻的画面文字（Boss名、字幕、菜单等）。" : "选择分析结果后可识别原片画面上的文字";
+        else {
+            const summary = report.summary;
+            const missing = Array.isArray(report.engine?.unavailableLanguages) && report.engine.unavailableLanguages.length
+                ? `本机缺少识别语言：${report.engine.unavailableLanguages.join("、")}。` : "";
+            const failed = Number.isSafeInteger(summary.failedFrames) && summary.failedFrames > 0 ? `其中 ${summary.failedFrames} 帧读取失败。` : "";
+            ui["frame-text-summary"].textContent = `${report.density === "full" ? "完整" : "快速"}识别 ${summary.frames} 帧 · 有文字 ${summary.framesWithText} 帧（像真实文字 ${summary.framesWithLikelyText} 帧）。${failed}${missing}点文字跳到出现处；本机识别，可能有错字，未经人工核对，不影响分析与排名。`;
+        }
+        const query = report ? ui["frame-text-query"].value.trim() : "";
+        const spans = !report ? [] : query ? frameTextHits(query) : report.recurringTexts.slice(0, 12);
+        if (report && query && !spans.length) {
+            ui["frame-text-results"].replaceChildren(element("li", "muted small", "画面文字里没有找到。识别可能有错字，可以试更短的词。"));
+        } else ui["frame-text-results"].replaceChildren(...spans.slice(0, 50).map(frameTextItem));
+    }
+
+    async function loadFrameText(scan) {
+        if (!state.frameTextAvailable || !state.project || !state.run || !state.view) return;
+        if (!scan && state.frameTextBusy) return; // keep a running scan; its result arrives later
+        state.frameTextController?.abort();
+        const controller = new AbortController();
+        state.frameTextController = controller;
+        const run = state.run;
+        if (scan) { state.frameTextBusy = true; renderFrameText(); }
+        try {
+            const payload = scan
+                ? await request("/api/ocr-frames", {}, controller.signal, { project: state.project, run, density: ui["frame-text-density"].value })
+                : await request("/api/frame-text", { project: state.project, run }, controller.signal);
+            if (controller.signal.aborted || state.frameTextController !== controller || state.run !== run) return;
+            if (payload.available === false) { state.frameText = null; renderFrameText(); return; }
+            if (!validFrameText(payload)) throw new Error("画面文字报告与当前分析结果不一致，已忽略。");
+            state.frameText = payload;
+        } catch (error) {
+            if (error.name === "AbortError" || state.frameTextController !== controller) return;
+            if (scan) notice(`画面文字识别未完成：${error.message}`);
+        } finally {
+            if (state.frameTextController === controller) {
+                state.frameTextBusy = false;
+                renderFrameText();
             }
         }
     }
@@ -1868,6 +1966,11 @@
         state.shotsBusy = false;
         state.shots = null;
         renderShots();
+        state.frameTextController?.abort();
+        state.frameTextController = null;
+        state.frameTextBusy = false;
+        state.frameText = null;
+        renderFrameText();
         ui["stage-list"].replaceChildren();
         ui["preview-badge"].textContent = "等待素材";
         ui["active-title"].textContent = "尚未选中片段";
@@ -2034,7 +2137,7 @@
                 || !payload.media || typeof payload.media.id !== "string"
                 || !Number.isSafeInteger(payload.media.durationUs) || payload.media.durationUs <= 0) throw new Error("分析视图的素材或运行身份不一致。");
             state.view = jointRowsForView(payload);
-            if (!query) void loadShots(false);
+            if (!query) { void loadShots(false); void loadFrameText(false); }
             const activeRow = previousActive && (previousActive.kind === "candidate" ? state.view.candidates : state.view.timeline)
                 .find((row) => selectionKey(row) === selectionKey(previousActive.row));
             state.active = activeRow ? { kind: previousActive.kind, row: activeRow } : null;
@@ -2837,6 +2940,8 @@
         seek(Math.round(Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width)) * state.view.media.durationUs));
     });
     ui["detect-shots"].addEventListener("click", () => void loadShots(true));
+    ui["scan-frame-text"].addEventListener("click", () => void loadFrameText(true));
+    ui["frame-text-query"].addEventListener("input", renderFrameText);
     window.addEventListener("resize", drawTimeline);
     resetView();
     void (async () => {
@@ -2847,6 +2952,8 @@
             state.savedDetailRetrievalAvailable=health.application==="gamingcreator-workspace" && health.capabilities?.includes("saved-detail-retrieval-v1");updateSearchScope();
             state.shotsAvailable = health.application === "gamingcreator-workspace" && health.capabilities?.includes("shot-boundaries-v1");
             renderShots();
+            state.frameTextAvailable = health.application === "gamingcreator-workspace" && health.capabilities?.includes("frame-text-v1");
+            renderFrameText();
             ui["detail-profile"].querySelector('[value="v5"]').disabled = !(health.application === "gamingcreator-workspace" && health.capabilities?.includes("detail-temporal-json-v1"));
             document.getElementById("open-acceptance").hidden = !(health.application === "gamingcreator-workspace"
                 && health.capabilities?.includes("benchmark-workflow-v1"));

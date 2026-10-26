@@ -128,7 +128,12 @@ def inventory_to_draft(data: bytes) -> tuple[dict[str, object], dict[str, object
     report = parse_inventory(data)
     sources = cast(list[dict[str, object]], report["sources"])
     failed = cast(list[dict[str, object]], report["failedSources"])
+    # Notes follow a file by path on the page, so one path listed twice would mix them up.
+    paths = [cast(str, row["path"]).casefold() for row in [*sources, *failed]]
+    if len(set(paths)) != len(paths):
+        raise ValueError("The inventory lists one path more than once.")
     notes: dict[str, list[str]] = {}
+    overlapping: set[str] = set()
     durations: dict[str, int] = {}
     for row in sources:
         identifier = cast(str, row["sourceId"])
@@ -147,6 +152,7 @@ def inventory_to_draft(data: bytes) -> tuple[dict[str, object], dict[str, object
         )
     for row in cast(list[dict[str, object]], report["duplicateGroups"]):
         members = cast(list[str], row["sourceIds"])
+        overlapping.update(members)
         for member in members:
             others = "、".join(item for item in members if item != member)
             notes[member].append(f"与 {others} 字节完全相同（同一文件登记两次会在冻结时被拦下）")
@@ -161,6 +167,7 @@ def inventory_to_draft(data: bytes) -> tuple[dict[str, object], dict[str, object
         )
         notes[first].append(detail)
         notes[second].append(detail)
+        overlapping.update((first, second))
     draft = validate_draft(
         {
             "schemaVersion": DRAFT_VERSION,
@@ -182,7 +189,11 @@ def inventory_to_draft(data: bytes) -> tuple[dict[str, object], dict[str, object
         "schemaVersion": EVIDENCE_VERSION,
         "inventorySchemaVersion": report["schemaVersion"],
         "sources": {
-            identifier: {"durationUs": durations.get(identifier), "notes": lines}
+            identifier: {
+                "durationUs": durations.get(identifier),
+                "sharedOrDuplicate": identifier in overlapping,
+                "notes": lines,
+            }
             for identifier, lines in notes.items()
         },
     }

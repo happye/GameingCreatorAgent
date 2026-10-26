@@ -29,6 +29,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         draft = empty_draft()
         evidence: dict[str, object] | None = None
+        from_inventory = False
         outputs: dict[str, bytes] = {}
         protected = []
         if args.input is not None:
@@ -40,6 +41,7 @@ def main(argv: list[str] | None = None) -> int:
                 draft = validate_draft(document)
             elif isinstance(version, str) and version.startswith("source-inventory-"):
                 # Identity fields only; groups, purposes and declarations stay unknown.
+                from_inventory = True
                 draft, evidence = inventory_to_draft(original)
             else:
                 draft = plan_to_draft(loads_plan(original.decode("utf-8-sig")))
@@ -58,7 +60,7 @@ def main(argv: list[str] | None = None) -> int:
             # Re-key by the final path so notes stay with a file even if its ID is edited.
             notes = cast(dict[str, object], evidence["sources"])
             evidence["sources"] = {
-                row["path"]: notes[cast(str, row["id"])]
+                row["path"]: notes[row["id"]]
                 for row in cast(list[dict[str, object]], draft["sources"])
                 if row["id"] in notes
             }
@@ -92,11 +94,18 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
     except (OSError, ValueError, UnicodeError, TypeError, KeyError, OverflowError, RecursionError):
+        message = (
+            "盘点报告无法作为登记起点：须是完整的source-inventory-v1/v2报告，"
+            "最多200段录像，每个路径只出现一次。请保留原报告并使用新输出目录。"
+            if from_inventory
+            else "登记资料不符或超过1MiB，请保留原输入并使用新输出目录；"
+            "已有人工参考请用原片标注继续。"
+        )
         print(
             json.dumps(
                 {
                     "code": "input.benchmark_plan_draft",
-                    "message": "登记资料不符，请保留原输入并使用新输出目录；已有人工参考请用原片标注继续。",
+                    "message": message,
                     "qualityGate": None,
                 },
                 ensure_ascii=False,

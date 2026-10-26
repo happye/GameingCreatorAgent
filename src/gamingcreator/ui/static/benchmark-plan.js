@@ -12,12 +12,16 @@
     function tally() {
         const groups = new Set(draft.sources.map(row => row.recordingGroup?.trim()).filter(Boolean));
         const minutes = { development: 0, test: 0 }, unknown = { development: 0, test: 0 };
+        const overlap = { development: false, test: false };
         for (const row of draft.sources) {
             if (!row.partition) continue;
             const duration = evidence?.[row.path]?.durationUs;
             if (Number.isSafeInteger(duration)) minutes[row.partition] += duration / 60000000; else unknown[row.partition] += 1;
+            // Byte duplicates and shared footage add the same pictures twice to a total.
+            if (evidence?.[row.path]?.sharedOrDuplicate === true) overlap[row.partition] = true;
         }
-        const extra = part => unknown[part] ? `（另有${unknown[part]}段时长未知）` : "";
+        const extra = part => (unknown[part] ? `（另有${unknown[part]}段时长未知）` : "")
+            + (overlap[part] ? "（含重复／共用画面，分钟可能重复计算）" : "");
         byId("tally").textContent = `已填 ${groups.size} 个不同录制组（规格目标 10–20 个独立录制组）；`
             + `开发 ${minutes.development.toFixed(1)} 分钟${extra("development")}，测试 ${minutes.test.toFixed(1)} 分钟${extra("test")}；`
             + `${draft.sources.filter(row => !row.partition || row.modelResultsViewed === null).length} 段录像的用途或声明还没选。只是计数，不判断是否合格。`;

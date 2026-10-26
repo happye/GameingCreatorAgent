@@ -97,6 +97,12 @@ summary { cursor: pointer; color: var(--muted); font-size: 10px; }
 .cost-card strong { font-size: 17px; font-weight: 500; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .cost-card p { padding-top: 5px; }
 .shot-card { margin-top: 8px; }
+.frame-text-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.frame-text-actions select { flex: 1 1 120px; min-width: 0; }
+#frame-text-query { width: 100%; margin-top: 6px; box-sizing: border-box; }
+.frame-text-results { list-style: none; margin: 6px 0 0; padding: 0; max-height: 220px; overflow-y: auto; }
+.frame-text-results li { margin: 2px 0; overflow-wrap: anywhere; }
+.frame-text-jump { text-align: left; white-space: normal; overflow-wrap: anywhere; }
 .shot-badge { display: inline-block; margin-top: 4px; padding: 1px 6px; border: 1px solid var(--line); border-radius: 4px; font-size: 11px; color: var(--muted, #9aa7ad); }
 .stage-details { margin: 14px 0; }
 .stage-details summary { display: flex; justify-content: space-between; gap: 5px; }

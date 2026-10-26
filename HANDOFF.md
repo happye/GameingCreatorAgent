@@ -1,10 +1,16 @@
-# 当前交接：TD017已修、新增本地镜头切分；仍等待用户确认分组与补素材
+# 当前交接：工作台可识别画面文字、完整verify恢复通过；仍等待用户确认分组与补素材
 
 ## 新对话接手清单（2026-10-25，Claude Code会话交接，最先读这里）
 
 **进度看板**：用户量化监督入口为[docs/exec-plans/progress-board.md](docs/exec-plans/progress-board.md)；每次重大改动必须同提交更新（规则见AGENTS.md“Persistent progress board”）。
 
-**第四会话（2026-10-26，最新，Claude Code；用户以/goal要求持续推进，已于额度不足9%时收尾）**：
+**第五会话（2026-10-27，最新，Claude Code；用户以/goal要求持续推进）**：
+- 登记预填（98c6035）独立评审已重跑：code-quality-guard（opus）PASS，无P0／P1；4个P2全部修复（指南说明证据只跟随盘点生成页、分钟计数标“含重复／共用画面”、盘点报告同一路径两次整体拒绝、盘点报告专属错误提示）。
+- 发现第四会话最终HEAD的完整verify其实会在mypy静态门禁失败（`scripts/prepare-benchmark-plan.py`冗余cast，该会话只跑了定向测试）；已修。修后完整verify（源码=e321523＋该一行修复，期间未改代码）：**3638 passed／0 failed／3 skipped（15分04秒）、`All project checks passed`、退出码0**（.cache/verify-20261027-session5b.log）。
+- 新交付：工作台“画面文字（本机识别，不花钱）”卡片（`frame-text-v1`，[sprint](docs/exec-plans/sprint-frame-text-panel.md)，[指南](docs/references/ocr-frames-guide.md)“在工作台里用”）：点击后复用`ocr-frames`本机识别（快速约每2秒一帧／完整），缓存在仓库`.cache/workspace/frame-text/`，原片／取帧时刻／引擎变化即失效；列出反复出现文字、点击跳转、按词查找（30秒内合并）。真实长钟馗快速76秒、476帧中57帧有文字，“大蚌”→09:12–09:24与10:08–12:43（Boss战）。定向测试与内置浏览器走查通过。独立评估gc-reviewer（sonnet）PASS、无P0／P1，5个P2中4个已修、1个记为已知限制（补装语言包后需手动重新识别），见sprint第五节。
+- 看板：OCR仍🟡，整体仍27%（10✅／8🟡／33⬜），技术债与人工待办数不变。
+
+**第四会话（2026-10-26，Claude Code；用户以/goal要求持续推进，已于额度不足9%时收尾）**：
 - 完整verify（会话开始时启动，期间写入TD017与镜头切分代码，新测试文件未被收集）：3600 passed／0 failed／3 skipped、`All project checks passed`、退出码0（.cache/verify-20261026-session4.log）。提交51ef13a后另跑一次完整verify：3621 passed／0 failed／3 skipped（15分01秒）、`All project checks passed`、退出码0（.cache/verify-20261026-session4b.log）。
 - ~~TD017~~已解决：验收就绪摘要默认读全部任务页（命令行／工作台不再只读最新100个）；显式分页且未见可检索运行时报`unknown_partial_task_snapshot`而非“没有可检索运行”；A/B/D待决定只在确有覆盖缺口任务时出现。
 - 新交付`detect-shots`（shot-boundaries-v1，[sprint](docs/exec-plans/sprint-shot-boundaries.md)，[指南](docs/references/shot-boundaries-guide.md)）：本地只读、不花钱，检测原片镜头切换与黑屏，并标出已保存事件／多帧分析窗口是否跨镜头。长钟馗：41切换、10黑屏段；272窗中41窗（约15%）跨镜头；被拒第21窗跨2个切换，第248／253窗不跨。抽查2处为真实切换，准确率未人评。看板：场景切分⬜→🟡，整体25%→26%；技术债已解决8→9。

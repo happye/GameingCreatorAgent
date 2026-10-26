@@ -5,6 +5,7 @@ import html
 import json
 import os
 import socket
+import sys
 from collections.abc import Sequence
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -13,8 +14,15 @@ from urllib.parse import parse_qs, urlparse
 from gamingcreator.application.detail_query_draft import draft_detail_query
 from gamingcreator.application.retrieval import RetrievalMode
 from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.infrastructure.ffmpeg_fullres import FfmpegFullResolutionFrames
 from gamingcreator.infrastructure.ffmpeg_shots import FfmpegShotDetector
+from gamingcreator.infrastructure.windows_ocr import WindowsOcrEngine
 from gamingcreator.ui.benchmark_workflow import BenchmarkWorkflows
+from gamingcreator.ui.frame_text import (
+    DENSITIES,
+    cached_frame_text_payload,
+    scan_frame_text_payload,
+)
 from gamingcreator.ui.media import MediaResource, VerifiedMediaCache, byte_range
 from gamingcreator.ui.media_preparation import MediaPreparationJobs
 from gamingcreator.ui.service import (
@@ -248,6 +256,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/benchmark-workflows",
                 "/api/benchmark-step",
                 "/api/detect-shots",
+                "/api/ocr-frames",
             }:
                 self._json(404, {"code": "input.route", "message": "没有这个操作。"})
                 return
@@ -342,6 +351,30 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             value["run"],
                             self.repository,
                             FfmpegShotDetector(self.repository),
+                            project_reference=value["project"],
+                        )
+                    ),
+                )
+                return
+            if path == "/api/ocr-frames":
+                if (
+                    type(value) is not dict
+                    or set(value) != {"project", "run", "density"}
+                    or any(type(value[key]) is not str or not value[key] for key in value)
+                    or value["density"] not in DENSITIES
+                ):
+                    raise ValueError("Invalid on-screen text request.")
+                project = resolve_project(self.repository, value["project"])
+                self._json(
+                    200,
+                    asyncio.run(
+                        scan_frame_text_payload(
+                            project,
+                            value["run"],
+                            self.repository,
+                            FfmpegFullResolutionFrames(self.repository),
+                            WindowsOcrEngine(self.repository / ".cache" / "ocr-frames"),
+                            density=value["density"],
                             project_reference=value["project"],
                         )
                     ),
@@ -488,6 +521,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             "acceptance-readiness-inert-v1",
                             "coverage-gap-report-v1",
                             "shot-boundaries-v1",
+                            *(["frame-text-v1"] if sys.platform == "win32" else []),
                         ],
                         "repository": str(self.repository.resolve()),
                         "pid": os.getpid(),
@@ -581,6 +615,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/acceptance-readiness",
                 "/api/coverage-gap-report",
                 "/api/shot-boundaries",
+                "/api/frame-text",
                 "/api/inspect",
                 "/api/media",
                 "/api/evidence",
@@ -638,6 +673,19 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             query.get("run", ""),
                             self.repository,
                             FfmpegShotDetector(self.repository),
+                            project_reference=query.get("project", ""),
+                        )
+                    ),
+                )
+            elif path == "/api/frame-text":
+                self._json(
+                    200,
+                    asyncio.run(
+                        cached_frame_text_payload(
+                            project,
+                            query.get("run", ""),
+                            self.repository,
+                            WindowsOcrEngine(self.repository / ".cache" / "ocr-frames"),
                             project_reference=query.get("project", ""),
                         )
                     ),

@@ -221,6 +221,10 @@ def test_inventory_starts_a_draft_with_identity_only_and_evidence_apart():
     assert any("source-001" in note for note in notes["source-002"]["notes"])
     assert any("有效画面 5/100" in note for note in notes["source-003"]["notes"])
     assert notes["source-004"]["durationUs"] is None
+    # Shared footage is flagged so the page can warn that minutes may count twice.
+    assert notes["source-001"]["sharedOrDuplicate"] is True
+    assert notes["source-002"]["sharedOrDuplicate"] is True
+    assert notes["source-004"]["sharedOrDuplicate"] is False
     assert any("盘点失败" in note for note in notes["source-004"]["notes"])
     # Evidence never leaks into the draft, and the draft still cannot export without people.
     assert "共用画面" not in canonical_json(draft).decode()
@@ -233,6 +237,28 @@ def test_inventory_input_must_be_a_valid_report_that_requires_human_decisions():
         inventory_to_draft(inventory_bytes(humanDecisionRequired=False))
     with pytest.raises(ValueError):
         inventory_to_draft(b'{"schemaVersion":"source-inventory-v2"}')
+
+
+def test_inventory_listing_one_path_twice_is_refused_with_its_own_message(tmp_path, capsys):
+    from test_benchmark_inventory_binding import encode, report_for, v1_fixture
+
+    _, assets = v1_fixture()
+    report = report_for(assets, fail=(list(assets)[3],), version=2)
+    # A hand-edited report: the failed entry repeats a listed source's path in other case.
+    report["failedSources"][0]["path"] = report["sources"][0]["path"].swapcase()
+    with pytest.raises(ValueError, match="more than once"):
+        inventory_to_draft(encode(report))
+    spec = importlib.util.spec_from_file_location(
+        "plan_editor_duplicate_inventory", ROOT / "scripts/prepare-benchmark-plan.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    source = tmp_path / "source-inventory.json"
+    source.write_bytes(encode(report))
+    capsys.readouterr()
+    assert module.main(["--input", str(source), "--output", str(tmp_path / "out")]) == 2
+    printed = json.loads(capsys.readouterr().out)
+    assert "盘点报告无法作为登记起点" in printed["message"] and not (tmp_path / "out").exists()
 
 
 def test_public_script_starts_from_an_inventory_and_shows_evidence_only_on_the_page(tmp_path):

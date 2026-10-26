@@ -10,6 +10,7 @@
 
 | 工作 | 负责人／范围 | 当前状态 |
 | --- | --- | --- |
+| 工作台“画面文字”卡片；登记预填评审P2修复 | Claude Code主控单Agent实现／真实走查／文档；code-quality-guard（opus）评审登记预填、gc-reviewer（sonnet）评审本批，均只读 | 2026-10-27：完整verify 3638 passed（修复前HEAD＋mypy修复）；定向测试与浏览器走查通过；见sprint-frame-text-panel.md |
 | 本地画面文字识别（ocr-frames） | 选题：侦察3视角＋评审工作流；Claude Code主控实现／真实运行／文档；评估：3视角评审＋每P0/P1两票反驳工作流（只读） | 2026-10-26：评估PASS、P2全修，33项定向测试与真实长钟馗运行通过；见sprint-ocr-frames.md |
 | TD017验收就绪显示修复；本地镜头切分与黑屏检测（detect-shots） | Claude Code主控单Agent实现／真实运行／文档；code-quality-guard（opus）只读评估 | 2026-10-26：定向测试与静态检查通过，真实长钟馗运行完成；见sprint-shot-boundaries.md |
 | F006验收流程对抗审查与修复 | 工作流（4维度审查＋每P0/P1三票反驳）；Claude Code主控修复；code-quality-guard（opus）审计分修复 | 2026-10-25完成：1 P0＋4 P2＋1降级项全部修复，评估PASS；见sprint-f006-pipeline-review.md |
