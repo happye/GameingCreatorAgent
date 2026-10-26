@@ -8,6 +8,7 @@ from typing import cast
 from gamingcreator.application.benchmark_plan_draft import (
     DRAFT_VERSION,
     empty_draft,
+    inventory_to_draft,
     plan_to_draft,
     validate_draft,
 )
@@ -27,17 +28,21 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         draft = empty_draft()
+        evidence: dict[str, object] | None = None
         outputs: dict[str, bytes] = {}
         protected = []
         if args.input is not None:
             input_path = args.input.resolve()
             original = read_bounded(input_path)
             document = decode_object(original)
-            draft = (
-                validate_draft(document)
-                if document.get("schemaVersion") == DRAFT_VERSION
-                else plan_to_draft(loads_plan(original.decode("utf-8-sig")))
-            )
+            version = document.get("schemaVersion")
+            if version == DRAFT_VERSION:
+                draft = validate_draft(document)
+            elif isinstance(version, str) and version.startswith("source-inventory-"):
+                # Identity fields only; groups, purposes and declarations stay unknown.
+                draft, evidence = inventory_to_draft(original)
+            else:
+                draft = plan_to_draft(loads_plan(original.decode("utf-8-sig")))
             for row in cast(list[dict[str, object]], draft["sources"]):
                 if row["path"]:
                     path = Path(cast(str, row["path"]))
@@ -49,13 +54,24 @@ def main(argv: list[str] | None = None) -> int:
             outputs["plan-input.json"] = original
             protected.append(input_path)
         draft = validate_draft(draft)
+        if evidence is not None:
+            # Re-key by the final path so notes stay with a file even if its ID is edited.
+            notes = cast(dict[str, object], evidence["sources"])
+            evidence["sources"] = {
+                row["path"]: notes[cast(str, row["id"])]
+                for row in cast(list[dict[str, object]], draft["sources"])
+                if row["id"] in notes
+            }
         protected.extend(
             Path(cast(str, row["path"]))
             for row in cast(list[dict[str, object]], draft["sources"])
             if row["path"]
         )
         outputs.update(
-            {"draft.json": canonical_json(draft), "edit.html": render_plan_editor(draft).encode()}
+            {
+                "draft.json": canonical_json(draft),
+                "edit.html": render_plan_editor(draft, evidence).encode(),
+            }
         )
         hashes = publish_review_bundle(args.output.resolve(), outputs, protected)
         print(
@@ -65,6 +81,8 @@ def main(argv: list[str] | None = None) -> int:
                     "output": str(args.output.resolve()),
                     "files": hashes,
                     "sourceMediaVerified": False,
+                    "startedFromInventory": evidence is not None,
+                    "humanFieldsFilled": False if evidence is not None else None,
                     "isFrozen": False,
                     "qualityGate": None,
                     "paidRequestsSent": 0,

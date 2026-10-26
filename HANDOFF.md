@@ -4,7 +4,7 @@
 
 **进度看板**：用户量化监督入口为[docs/exec-plans/progress-board.md](docs/exec-plans/progress-board.md)；每次重大改动必须同提交更新（规则见AGENTS.md“Persistent progress board”）。
 
-**第四会话（2026-10-26，最新，Claude Code；用户以/goal要求持续推进直到发出额度不足信号）**：
+**第四会话（2026-10-26，最新，Claude Code；用户以/goal要求持续推进，已于额度不足9%时收尾）**：
 - 完整verify（会话开始时启动，期间写入TD017与镜头切分代码，新测试文件未被收集）：3600 passed／0 failed／3 skipped、`All project checks passed`、退出码0（.cache/verify-20261026-session4.log）。提交51ef13a后另跑一次完整verify：3621 passed／0 failed／3 skipped（15分01秒）、`All project checks passed`、退出码0（.cache/verify-20261026-session4b.log）。
 - ~~TD017~~已解决：验收就绪摘要默认读全部任务页（命令行／工作台不再只读最新100个）；显式分页且未见可检索运行时报`unknown_partial_task_snapshot`而非“没有可检索运行”；A/B/D待决定只在确有覆盖缺口任务时出现。
 - 新交付`detect-shots`（shot-boundaries-v1，[sprint](docs/exec-plans/sprint-shot-boundaries.md)，[指南](docs/references/shot-boundaries-guide.md)）：本地只读、不花钱，检测原片镜头切换与黑屏，并标出已保存事件／多帧分析窗口是否跨镜头。长钟馗：41切换、10黑屏段；272窗中41窗（约15%）跨镜头；被拒第21窗跨2个切换，第248／253窗不跨。抽查2处为真实切换，准确率未人评。看板：场景切分⬜→🟡，整体25%→26%；技术债已解决8→9。
@@ -12,7 +12,10 @@
 - 独立评估：code-quality-guard（opus）两轮——首轮FAIL（审查中途代码写坏的P0＋工作台缓存P1，均已修），复审PASS；剩余P2已修或记为已知限制（sprint第四、五节）。
 - 新交付`ocr-frames`（ocr-frames-v1，[sprint](docs/exec-plans/sprint-ocr-frames.md)，[指南](docs/references/ocr-frames-guide.md)）：用Windows自带中英文识别读取任务取帧时刻的**原分辨率**原片画面文字（重取帧须与保存时刻整列相等）；不下载、不花钱、只读、不进检索。长钟馗1903帧／263秒，读出Boss血条名“大蚌真君”约550–763秒、片头“游戏科学”、片尾开发版声明；数据库不变。选题来自三视角侦察＋评审工作流（8.1/10），评估为三视角评审＋反驳核实工作流：均PASS、7个P2全部已修。看板：OCR⬜→🟡，整体26%→27%。
 - 素材盘点黑屏比例：已核实原盘点把Atom录音（552帧有效画面0）列为“无法比较”，无需改动；不再列为候选。
-- 下一步（离线，工作流排名）：跨镜头窗口与描述质量的离线归因（TD007）；按素材盘点预填登记表（减轻验收第1步）。主线仍等用户分组决定（不催）。
+- TD007离线归因（只读汇总）：41个跨镜头窗中39个在过场，玩法段仅2个；过场内跨／单镜头拒绝率与标签数几乎相同。结论：本素材跨镜头不是玩法理解差的主因，暂不提按镜头切窗口的付费提案（记入TD007与sprint-shot-boundaries第七节）。
+- 验收第1步可从素材盘点报告开始：工作台“验收流程”第1步或`prepare-benchmark-plan.ps1 -InputPath <盘点报告>`，自动列出编号与路径，录制组／用途／声明／查询全部留空，每段旁显示盘点证据（不写入草稿或计划），上方实时计数组数与开发／测试分钟。真实17素材报告实测页面正确；71项定向测试通过。**独立评审未完成**：两视角评审工作流因用户额度不足收尾而中止、无结果——下一会话第一步重跑它（脚本：本机会话目录workflows/scripts/review-registration-prefill-*.js，或按同一提示派code-quality-guard审`application/benchmark_plan_draft.py`的`inventory_to_draft`、`scripts/prepare-benchmark-plan.py`、`ui/benchmark_plan_editor.py`、`ui/static/benchmark-plan.js`）。
+- OCR提交e5c54e8的完整verify在收尾时仍在运行（日志.cache/verify-20261026-session4c.log，当时41%、无失败）；下一会话先读该日志末尾补记结果。登记预填提交只跑了定向测试。
+- 下一会话顺序：①读verify日志补记；②重跑登记预填评审并处理问题；③对最终HEAD跑一次完整verify；④再做一轮离线候选排名（工作流）。主线仍等用户分组决定（不催）。本会话于用户提示额度不足9%时收尾。
 
 **第三会话收尾（用户额度不足主动收尾）**：
 - 已push到origin/main（c5a3c83及其后收尾提交，见`git log origin/main -1`）。本会话交付：跨改动审查及两P2修复、TD008预览缓存ChangeTime、TD012批次路径、TD005检索期间文件变化重哈希、TD003来源核对、TD005第B步测量；F006验收流程两轮对抗审查——第一轮1个P0（计分去重）＋4个P2＋1降级项全部修复（见[sprint](docs/exec-plans/sprint-f006-pipeline-review.md)），第二轮无P0／P1、3个P2。

@@ -10,12 +10,20 @@ from gamingcreator.application.benchmark_preparation import canonical_json
 from gamingcreator.ui.benchmark_review import STYLE
 
 
-def render_plan_editor(draft: dict[str, object]) -> str:
-    encoded = base64.b64encode(canonical_json(validate_draft(draft))).decode("ascii")
-    script = (
-        "const initialDraft=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob('"
+def _embedded(name: str, value: object) -> str:
+    encoded = base64.b64encode(canonical_json(value)).decode("ascii")
+    return (
+        f"const {name}=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob('"
         + encoded
         + "'),c=>c.charCodeAt(0))));\n"
+    )
+
+
+def render_plan_editor(draft: dict[str, object], evidence: dict[str, object] | None = None) -> str:
+    """The registration page; ``evidence`` (inventory notes by path) is shown, never saved."""
+    script = (
+        _embedded("initialDraft", validate_draft(draft))
+        + _embedded("initialEvidence", evidence)
         + files("gamingcreator.ui").joinpath("static/benchmark-plan.js").read_text(encoding="utf-8")
     )
     digest = base64.b64encode(hashlib.sha256(script.encode()).digest()).decode("ascii")
@@ -29,6 +37,8 @@ def render_plan_editor(draft: dict[str, object]) -> str:
 <button id="export-plan" type="button">导出待核对计划</button>
 <p id="status" role="status" aria-live="polite">还没有修改登记资料。</p></header>
 <section><h2>原录像</h2><p>同一次录制的PV、剪辑或不同版本保持相同录制组；不知道时先留空。用途和是否看过模型结果请明确选择。</p>
+<p id="evidence-note" class="notice" hidden>本表由素材盘点报告开始：只填了录像编号和路径。每段录像下方的“盘点证据”只供参考，不会代填录制组、用途或声明，也不会保存进草稿或计划。</p>
+<p id="tally" role="status"></p>
 <button id="add-source" type="button">增加一段录像</button><div id="source-list"></div></section>
 <section><h2>事前查询</h2><p>填写实际想找的玩法。同一需求及其改写使用相同归组；主查询至少需要十个独立可用参考，少例和负例单独评估。</p>
 <button id="add-query" type="button">增加一个查询</button><div id="query-list"></div></section>
@@ -40,6 +50,7 @@ def render_plan_editor(draft: dict[str, object]) -> str:
         + html.escape(policy, quote=True)
         + '"><title>登记录像和事前查询</title><style>'
         + STYLE
+        + ".evidence{background:#eef4ff;padding:8px 12px;border-radius:8px;margin:8px 0}"
         + "</style></head><body><main>"
         + body
         + "</main><script>"

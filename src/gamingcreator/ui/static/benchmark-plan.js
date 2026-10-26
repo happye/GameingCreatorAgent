@@ -2,10 +2,26 @@
 
 (() => {
     let draft = structuredClone(initialDraft), revision = 0;
+    // Inventory notes by source path: evidence for the person deciding, never draft content.
+    const evidence = initialEvidence && initialEvidence.schemaVersion === "benchmark-plan-evidence-v1"
+        && initialEvidence.sources && typeof initialEvidence.sources === "object" ? initialEvidence.sources : null;
     const byId = id => document.getElementById(id);
     const fail = message => { throw new Error(message); };
     const notify = message => { byId("status").textContent = message; };
-    const edited = () => { revision += 1; notify("登记已修改，请保存草稿或导出计划。"); };
+    const edited = () => { revision += 1; notify("登记已修改，请保存草稿或导出计划。"); tally(); };
+    function tally() {
+        const groups = new Set(draft.sources.map(row => row.recordingGroup?.trim()).filter(Boolean));
+        const minutes = { development: 0, test: 0 }, unknown = { development: 0, test: 0 };
+        for (const row of draft.sources) {
+            if (!row.partition) continue;
+            const duration = evidence?.[row.path]?.durationUs;
+            if (Number.isSafeInteger(duration)) minutes[row.partition] += duration / 60000000; else unknown[row.partition] += 1;
+        }
+        const extra = part => unknown[part] ? `（另有${unknown[part]}段时长未知）` : "";
+        byId("tally").textContent = `已填 ${groups.size} 个不同录制组（规格目标 10–20 个独立录制组）；`
+            + `开发 ${minutes.development.toFixed(1)} 分钟${extra("development")}，测试 ${minutes.test.toFixed(1)} 分钟${extra("test")}；`
+            + `${draft.sources.filter(row => !row.partition || row.modelResultsViewed === null).length} 段录像的用途或声明还没选。只是计数，不判断是否合格。`;
+    }
     const keys = (value, expected) => value && typeof value === "object" && !Array.isArray(value)
         && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...expected].sort());
     const boundedText = value => typeof value === "string" && value.length <= 16384 && value.isWellFormed();
@@ -124,6 +140,13 @@
             field(fields, "来自哪次录制（未知可留空）", row, "recordingGroup");
             choice(fields, "用途", row, "partition", [["", "请选择用途"], ["development", "开发／调试"], ["test", "独立测试"]]);
             choice(fields, "是否看过模型结果", row, "modelResultsViewed", [["", "尚未确认"], ["no", "没有看过"], ["yes", "已经看过"]], value => value === "" ? null : value === "yes");
+            const notes = evidence?.[row.path]?.notes;
+            if (Array.isArray(notes) && notes.length) {
+                const box = add(card, "div"); box.className = "evidence";
+                add(box, "strong", "盘点证据（仅供参考）");
+                const list = add(box, "ul");
+                for (const note of notes) if (typeof note === "string") add(list, "li", note);
+            }
             const remove = add(card, "button", "删除这段录像"); remove.type = "button";
             remove.addEventListener("click", () => {
                 if (row.id && draft.queries.some(query => query.sourceId === row.id)) return notify("这段录像还有关联查询，请先删除或调整对应查询。");
@@ -141,6 +164,7 @@
             remove.addEventListener("click", () => { draft.queries = draft.queries.filter(query => query !== row); edited(); render(); });
         }
         updateSourceOptions();
+        tally();
     }
     function nextId(rows, prefix) { let number = 1; while (rows.some(row => row.id === `${prefix}-${number}`)) number++; return `${prefix}-${number}`; }
     function download(value, name) {
@@ -175,5 +199,6 @@
             draft = proposed; revision += 1; render(); notify("登记草稿已载入，未知项仍待填写。");
         } catch (error) { notify(`${error.message} 当前登记保持。`); }
     });
+    byId("evidence-note").hidden = !evidence;
     render();
 })();

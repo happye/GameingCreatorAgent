@@ -11,6 +11,7 @@ from gamingcreator.application.benchmark_plan_draft import (
     decode_draft,
     draft_to_plan,
     empty_draft,
+    inventory_to_draft,
     plan_to_draft,
     validate_draft,
 )
@@ -176,3 +177,77 @@ def test_public_script_preserves_input_normalizes_relative_path_and_refuses_over
     assert module.main(["--output", str(tmp_path / "空白登记")]) == 0
     html = render_plan_editor(empty_draft())
     assert "登记录像和事前查询" in html and "sha256-" in html and "connect-src" in html
+
+
+def inventory_bytes(root=None, **changes):
+    """Synthetic v2 inventory; ``root`` makes every listed path absolute under it."""
+    from test_benchmark_inventory_binding import encode, report_for, v1_fixture
+
+    _, assets = v1_fixture()
+    keys = list(assets)
+    report = report_for(
+        assets,
+        skip=(keys[2],),
+        fail=(keys[3],),
+        pairs=((1, 2),),
+        version=2,
+        mirrored=((1, 2),),
+    )
+    if root is not None:
+        place = lambda path: str(Path(root) / path)  # noqa: E731
+        for name in ("sources", "notComparable", "failedSources"):
+            for item in report[name]:
+                item["path"] = place(item["path"])
+        for item in report["sharedFootageCandidates"]:
+            item["pathA"], item["pathB"] = place(item["pathA"]), place(item["pathB"])
+    report.update(changes)
+    return encode(report)
+
+
+def test_inventory_starts_a_draft_with_identity_only_and_evidence_apart():
+    draft, evidence = inventory_to_draft(inventory_bytes())
+    assert draft["datasetId"] == "" and draft["queries"] == []
+    assert len(draft["sources"]) == 10
+    for row in draft["sources"]:
+        assert (row["recordingGroup"], row["partition"], row["modelResultsViewed"]) == (
+            None,
+            "",
+            None,
+        )
+        assert row["id"].startswith("source-") and row["path"]
+    notes = evidence["sources"]
+    assert evidence["schemaVersion"] == "benchmark-plan-evidence-v1"
+    assert any("共用画面" in note and "左右镜像" in note for note in notes["source-001"]["notes"])
+    assert any("source-001" in note for note in notes["source-002"]["notes"])
+    assert any("有效画面 5/100" in note for note in notes["source-003"]["notes"])
+    assert notes["source-004"]["durationUs"] is None
+    assert any("盘点失败" in note for note in notes["source-004"]["notes"])
+    # Evidence never leaks into the draft, and the draft still cannot export without people.
+    assert "共用画面" not in canonical_json(draft).decode()
+    with pytest.raises(ValueError):
+        loads_plan(canonical_json(draft_to_plan(draft).document).decode())
+
+
+def test_inventory_input_must_be_a_valid_report_that_requires_human_decisions():
+    with pytest.raises(ValueError):
+        inventory_to_draft(inventory_bytes(humanDecisionRequired=False))
+    with pytest.raises(ValueError):
+        inventory_to_draft(b'{"schemaVersion":"source-inventory-v2"}')
+
+
+def test_public_script_starts_from_an_inventory_and_shows_evidence_only_on_the_page(tmp_path):
+    spec = importlib.util.spec_from_file_location(
+        "plan_editor_inventory", ROOT / "scripts/prepare-benchmark-plan.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    report = tmp_path / "source-inventory.json"
+    report.write_bytes(inventory_bytes())
+    output = tmp_path / "登记表单"
+    assert module.main(["--input", str(report), "--output", str(output)]) == 0
+    draft = decode_draft((output / "draft.json").read_bytes())
+    assert all(row["partition"] == "" for row in draft["sources"])
+    assert "共用画面" not in (output / "draft.json").read_text(encoding="utf-8")
+    page = (output / "edit.html").read_text(encoding="utf-8")
+    assert "initialEvidence" in page and "盘点证据" in page and "evidence-note" in page
+    assert (output / "plan-input.json").read_bytes() == report.read_bytes()

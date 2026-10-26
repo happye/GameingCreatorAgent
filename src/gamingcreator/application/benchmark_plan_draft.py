@@ -4,6 +4,7 @@ from copy import deepcopy
 from pathlib import PureWindowsPath
 from typing import cast
 
+from gamingcreator.application.benchmark_inventory_binding import parse_inventory
 from gamingcreator.application.benchmark_preparation import (
     MAX_PLAN_BYTES,
     BenchmarkPlan,
@@ -13,6 +14,7 @@ from gamingcreator.application.benchmark_preparation import (
 from gamingcreator.application.benchmark_review import decode_object
 
 DRAFT_VERSION = "benchmark-plan-draft-v1"
+EVIDENCE_VERSION = "benchmark-plan-evidence-v1"
 
 
 def empty_draft() -> dict[str, object]:
@@ -108,3 +110,80 @@ def draft_to_plan(document: dict[str, object]) -> BenchmarkPlan:
             }
         ).decode()
     )
+
+
+def _minutes(duration_us: int) -> str:
+    seconds = duration_us // 1_000_000
+    return f"{seconds // 60}分{seconds % 60:02d}秒"
+
+
+def inventory_to_draft(data: bytes) -> tuple[dict[str, object], dict[str, object]]:
+    """Start a registration draft from a source-inventory report.
+
+    Only identity fields (source ID and path) are filled. Recording group, purpose and the
+    model-results declaration stay unknown: the inventory is evidence for the person who
+    decides, never a default. Evidence notes are returned separately, keyed by source ID,
+    and are not part of the draft or of any exported plan.
+    """
+    report = parse_inventory(data)
+    sources = cast(list[dict[str, object]], report["sources"])
+    failed = cast(list[dict[str, object]], report["failedSources"])
+    notes: dict[str, list[str]] = {}
+    durations: dict[str, int] = {}
+    for row in sources:
+        identifier = cast(str, row["sourceId"])
+        video = cast(dict[str, object], row["video"])
+        durations[identifier] = cast(int, row["durationUs"])
+        notes[identifier] = [
+            f"时长 {_minutes(cast(int, row['durationUs']))}，{video['width']}×{video['height']}，"
+            f"{video['codec']}"
+        ]
+    for row in failed:
+        notes[cast(str, row["sourceId"])] = [f"盘点失败（{row['code']}）：{row['message']}"]
+    for row in cast(list[dict[str, object]], report["notComparable"]):
+        notes[cast(str, row["sourceId"])].append(
+            f"有效画面 {row['informativeFrames']}/{row['sampledFrames']} 帧，"
+            "没能与其他录像比较（例如全黑或几乎不动）"
+        )
+    for row in cast(list[dict[str, object]], report["duplicateGroups"]):
+        members = cast(list[str], row["sourceIds"])
+        for member in members:
+            others = "、".join(item for item in members if item != member)
+            notes[member].append(f"与 {others} 字节完全相同（同一文件登记两次会在冻结时被拦下）")
+    for row in cast(list[dict[str, object]], report["sharedFootageCandidates"]):
+        first, second = cast(str, row["sourceA"]), cast(str, row["sourceB"])
+        # One wording for both members: the offset is stated for the pair (A relative to B).
+        detail = (
+            f"{first} 与 {second} 共用画面（{'左右镜像，' if row.get('mirrored') is True else ''}"
+            f"{first} 相对 {second} 偏移 {cast(float, row['offsetSeconds']):+.1f} 秒，"
+            f"{row['matchedVotes']}/{row['comparedVotes']} 票）。"
+            "分到不同录制组或跨开发／测试会在冻结时被拦下"
+        )
+        notes[first].append(detail)
+        notes[second].append(detail)
+    draft = validate_draft(
+        {
+            "schemaVersion": DRAFT_VERSION,
+            "datasetId": "",
+            "sources": [
+                {
+                    "id": row["sourceId"],
+                    "path": row["path"],
+                    "recordingGroup": None,
+                    "partition": "",
+                    "modelResultsViewed": None,
+                }
+                for row in [*sources, *failed]
+            ],
+            "queries": [],
+        }
+    )
+    evidence: dict[str, object] = {
+        "schemaVersion": EVIDENCE_VERSION,
+        "inventorySchemaVersion": report["schemaVersion"],
+        "sources": {
+            identifier: {"durationUs": durations.get(identifier), "notes": lines}
+            for identifier, lines in notes.items()
+        },
+    }
+    return draft, evidence

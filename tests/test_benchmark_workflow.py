@@ -688,3 +688,28 @@ def test_http_freeze_step_auto_inventory_succeeds_and_upload_conflict_is_rejecte
         assert row["status"] == "finished", row
         assert row["action"] == "freeze" and row["inventorySource"] == "auto"
         assert "source-inventory.json" in row["files"] and len(calls) == 1
+
+
+def test_registration_can_start_from_a_source_inventory_without_human_choices(tmp_path):
+    from test_benchmark_plan_draft import inventory_bytes
+
+    manager = BenchmarkWorkflows(tmp_path)
+    identifier = manager.create({"name": "从盘点开始"})["id"]
+    value = submit(
+        manager,
+        identifier,
+        "register",
+        {"inputText": inventory_bytes(tmp_path / "footage").decode()},
+    )
+    row = value["attempts"][-1]
+    assert row["status"] == "finished" and row["exitCode"] == 0
+    draft = json.loads(manager.file(identifier, row["attemptId"], "draft.json"))
+    assert len(draft["sources"]) == 10 and draft["queries"] == []
+    assert {
+        (item["recordingGroup"], item["partition"], item["modelResultsViewed"])
+        for item in draft["sources"]
+    } == {(None, "", None)}
+    page = manager.file(identifier, row["attemptId"], "edit.html").decode()
+    assert "盘点证据" in page
+    assert value["qualityGate"] is None and value["paidRequestsSent"] == 0
+    manager.close()
