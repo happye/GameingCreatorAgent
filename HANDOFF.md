@@ -14,8 +14,8 @@
 - 素材盘点黑屏比例：已核实原盘点把Atom录音（552帧有效画面0）列为“无法比较”，无需改动；不再列为候选。
 - TD007离线归因（只读汇总）：41个跨镜头窗中39个在过场，玩法段仅2个；过场内跨／单镜头拒绝率与标签数几乎相同。结论：本素材跨镜头不是玩法理解差的主因，暂不提按镜头切窗口的付费提案（记入TD007与sprint-shot-boundaries第七节）。
 - 验收第1步可从素材盘点报告开始：工作台“验收流程”第1步或`prepare-benchmark-plan.ps1 -InputPath <盘点报告>`，自动列出编号与路径，录制组／用途／声明／查询全部留空，每段旁显示盘点证据（不写入草稿或计划），上方实时计数组数与开发／测试分钟。真实17素材报告实测页面正确；71项定向测试通过。**独立评审未完成**：两视角评审工作流因用户额度不足收尾而中止、无结果——下一会话第一步重跑它（脚本：本机会话目录workflows/scripts/review-registration-prefill-*.js，或按同一提示派code-quality-guard审`application/benchmark_plan_draft.py`的`inventory_to_draft`、`scripts/prepare-benchmark-plan.py`、`ui/benchmark_plan_editor.py`、`ui/static/benchmark-plan.js`）。
-- OCR提交e5c54e8的完整verify在收尾时仍在运行（日志.cache/verify-20261026-session4c.log，当时41%、无失败）；下一会话先读该日志末尾补记结果。登记预填提交只跑了定向测试。
-- 下一会话顺序：①读verify日志补记；②重跑登记预填评审并处理问题；③对最终HEAD跑一次完整verify；④再做一轮离线候选排名（工作流）。主线仍等用户分组决定（不催）。本会话于用户提示额度不足9%时收尾。
+- OCR提交e5c54e8的完整verify：3626 passed／8 failed／7 errors／3 skipped（.cache/verify-20261026-session4c.log）。失败全部在`test_benchmark_workflow*.py`，原因是运行中途改了登记预填代码（`ImportError: inventory_to_draft`，进程先载入旧模块、子脚本读到新代码），不是产品缺陷；对最终HEAD 98c6035单独重跑这两个文件48项全部通过。**最终HEAD尚未跑过一次不受干扰的完整verify**。
+- 下一会话顺序：①重跑登记预填评审并处理问题；②对最终HEAD跑一次完整verify（期间不要改代码）；④再做一轮离线候选排名（工作流）。主线仍等用户分组决定（不催）。本会话于用户提示额度不足9%时收尾。
 
 **第三会话收尾（用户额度不足主动收尾）**：
 - 已push到origin/main（c5a3c83及其后收尾提交，见`git log origin/main -1`）。本会话交付：跨改动审查及两P2修复、TD008预览缓存ChangeTime、TD012批次路径、TD005检索期间文件变化重哈希、TD003来源核对、TD005第B步测量；F006验收流程两轮对抗审查——第一轮1个P0（计分去重）＋4个P2＋1降级项全部修复（见[sprint](docs/exec-plans/sprint-f006-pipeline-review.md)），第二轮无P0／P1、3个P2。
