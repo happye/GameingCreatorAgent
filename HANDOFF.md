@@ -8,7 +8,9 @@
 - 登记预填（98c6035）独立评审已重跑：code-quality-guard（opus）PASS，无P0／P1；4个P2全部修复（指南说明证据只跟随盘点生成页、分钟计数标“含重复／共用画面”、盘点报告同一路径两次整体拒绝、盘点报告专属错误提示）。
 - 发现第四会话最终HEAD的完整verify其实会在mypy静态门禁失败（`scripts/prepare-benchmark-plan.py`冗余cast，该会话只跑了定向测试）；已修。修后完整verify（源码=e321523＋该一行修复，期间未改代码）：**3638 passed／0 failed／3 skipped（15分04秒）、`All project checks passed`、退出码0**（.cache/verify-20261027-session5b.log）。
 - 新交付：工作台“画面文字（本机识别，不花钱）”卡片（`frame-text-v1`，[sprint](docs/exec-plans/sprint-frame-text-panel.md)，[指南](docs/references/ocr-frames-guide.md)“在工作台里用”）：点击后复用`ocr-frames`本机识别（快速约每2秒一帧／完整），缓存在仓库`.cache/workspace/frame-text/`，原片／取帧时刻／引擎变化即失效；列出反复出现文字、点击跳转、按词查找（30秒内合并）。真实长钟馗快速76秒、476帧中57帧有文字，“大蚌”→09:12–09:24与10:08–12:43（Boss战）。定向测试与内置浏览器走查通过。独立评估gc-reviewer（sonnet）PASS、无P0／P1，5个P2中4个已修、1个记为已知限制（补装语言包后需手动重新识别），见sprint第五节。
-- 看板：OCR仍🟡，整体仍27%（10✅／8🟡／33⬜），技术债与人工待办数不变。
+- 离线候选排名工作流（3视角侦察9候选＋3评委）：第一“验收第2步原片标注页省力辅助”8.05，第二“工作台时间轴标出画面文字／镜头并按键跳转”7.65，第三“防止同一视频重复付费分析（§52缓存守卫）”7.1；“剪辑篮FCPXML导出”因属后续阶段被判0分。
+- 新交付：原片标注页省力辅助（[sprint](docs/exec-plans/sprint-reference-page-aids.md)，[指南](docs/references/benchmark-reference-review-guide.md)“省力的辅助”）：主查询“x/10还差y个”、已登记区间条（点击跳转）、不同事件重叠先提醒再确认、键盘I／O标记起止（复用时钟保护）、逗号／句号约一帧、[ ]调速；记录格式与核对规则不变。三视角评审工作流PASS无P0／P1，P2已修；真实长钟馗页面实测通过。
+- 看板：OCR仍🟡，整体仍27%（10✅／8🟡／33⬜），技术债与人工待办数不变。下一步：完整verify，然后做排名第二项。
 
 **第四会话（2026-10-26，Claude Code；用户以/goal要求持续推进，已于额度不足9%时收尾）**：
 - 完整verify（会话开始时启动，期间写入TD017与镜头切分代码，新测试文件未被收集）：3600 passed／0 failed／3 skipped、`All project checks passed`、退出码0（.cache/verify-20261026-session4.log）。提交51ef13a后另跑一次完整verify：3621 passed／0 failed／3 skipped（15分01秒）、`All project checks passed`、退出码0（.cache/verify-20261026-session4b.log）。

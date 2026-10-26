@@ -175,3 +175,86 @@ def test_two_event_names_cannot_share_one_action_group(reference_page):
             playwright.expect(page.locator("#status")).to_contain_text("已由另一个事件名称使用")
         finally:
             browser.close()
+
+
+def test_progress_coverage_overlap_warning_and_keyboard_keep_the_record_format(reference_page):
+    playwright = pytest.importorskip("playwright.sync_api")
+    page_path, context, _, assets = reference_page
+    with playwright.sync_playwright() as runtime:
+        browser = runtime.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(viewport={"width": 1366, "height": 900})
+            errors = []
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            page.goto(page_path.as_uri())
+            playwright.expect(page.locator("#reference-summary")).to_contain_text("0/10")
+            playwright.expect(page.locator("#coverage-note")).to_contain_text("还没有登记")
+            page.wait_for_function("() => !document.getElementById('capture-start').disabled")
+            # Keyboard marking reuses the guarded capture buttons.
+            page.locator("#source-video").evaluate("video => { video.currentTime = 0.25; }")
+            page.wait_for_function(
+                "() => Math.abs(document.getElementById('source-video').currentTime - 0.25) < 0.01"
+            )
+            page.locator("body").press("i")
+            playwright.expect(page.locator("#start-seconds")).to_have_value("0.250000")
+            page.locator("body").press("]")
+            playwright.expect(page.locator("#playback-rate")).to_have_text("1.5")
+            assert page.locator("#source-video").evaluate("video => video.playbackRate") == 1.5
+            # Typing in a field never triggers the shortcuts.
+            page.locator("#event-id").fill("")
+            page.locator("#event-id").press("i")
+            playwright.expect(page.locator("#event-id")).to_have_value("i")
+
+            def add(name, group, start, end):
+                page.locator("#start-seconds").fill(start)
+                page.locator("#end-seconds").fill(end)
+                page.locator("#event-id").fill(name)
+                page.locator("#event-group").fill(group)
+                page.locator("#reason").fill("Synthetic browser fixture, not human acceptance.")
+                page.locator("#add-reference").click()
+
+            add("first-action", "group-a", "0.250000", "1.000000")
+            playwright.expect(page.locator("#reference-summary")).to_contain_text("1/10")
+            playwright.expect(page.locator("#reference-summary")).to_contain_text("还差 9 个")
+            playwright.expect(page.locator(".coverage-block.current")).to_have_count(1)
+            # A different event overlapping the first is warned once, then accepted.
+            add("second-action", "group-b", "0.800000", "1.500000")
+            playwright.expect(page.locator("#status")).to_contain_text("重叠")
+            playwright.expect(page.locator(".slot")).to_have_count(1)
+            page.locator("#add-reference").click()
+            playwright.expect(page.locator(".slot")).to_have_count(2)
+            # More ranges of the same event never warn.
+            add("first-action", "group-a", "1.600000", "1.900000")
+            playwright.expect(page.locator(".coverage-block")).to_have_count(3)
+            # Clicking a block seeks the player to that interval's source start.
+            page.locator(".coverage-block[aria-label*='second-action']").click()
+            page.wait_for_function(
+                "() => Math.abs(document.getElementById('source-video').currentTime - 0.8) < 0.01"
+            )
+            # Another query on the same recording shows these ranges in grey.
+            page.locator("#query-select").select_option("1")
+            playwright.expect(page.locator(".coverage-block")).to_have_count(3)
+            playwright.expect(page.locator(".coverage-block.current")).to_have_count(0)
+            # The reloaded player keeps the chosen speed and the label follows the player.
+            page.wait_for_function("() => document.getElementById('source-video').readyState >= 1")
+            rate = page.locator("#source-video").evaluate("video => video.playbackRate")
+            assert rate == 1.5
+            playwright.expect(page.locator("#playback-rate")).to_have_text("1.5")
+            page.locator("#query-select").select_option("0")
+            # A ticked checkbox keeps focus but does not swallow the shortcuts.
+            page.wait_for_function("() => !document.getElementById('capture-start').disabled")
+            page.locator("#start-seconds").fill("")
+            page.locator("#reviewed").click()
+            page.locator("#reviewed").press("i")
+            assert page.locator("#start-seconds").input_value() != ""
+            page.locator("#reviewed").click()
+            with page.expect_download() as pending:
+                page.locator("#download-record").click()
+            validated = validate_reference_record(
+                Path(pending.value.path()).read_bytes(), context, assets
+            )
+            events = validated["plan"]["queries"][0]["referenceEvents"]
+            assert [len(row["usableRanges"]) for row in events] == [2, 1]
+            assert not errors
+        finally:
+            browser.close()

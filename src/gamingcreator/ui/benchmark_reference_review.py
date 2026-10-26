@@ -37,6 +37,15 @@ def _page_media(
     return rows
 
 
+COVERAGE_STYLE = (
+    # Same width as the player so a block sits under the matching point of its seek bar.
+    ".coverage{position:relative;width:640px;max-width:100%;height:16px;margin:6px 0 2px;background:#e8edf5;border-radius:4px;overflow:hidden}"
+    ".coverage-block{position:absolute;top:2px;height:12px;min-width:3px;padding:0;border:0;border-radius:2px;background:#9aa7b8;cursor:pointer}"
+    ".coverage-block.current{background:#3d6fd6;z-index:1}.coverage-block:disabled{cursor:default;opacity:.7}"
+    ".hint{color:#66758a;font-size:14px;margin:4px 0}"
+)
+
+
 def render_reference_review(
     context: dict[str, object],
     template: dict[str, object],
@@ -74,7 +83,8 @@ def render_reference_review(
 <button id="download-record" type="button">保存当前标注记录</button>
 <p id="status" role="status" aria-live="polite">尚未新增人工参考。</p></header>
 <section><label>选择事前查询<select id="query-select"></select></label><p id="query-info"></p>
-<video id="source-video" controls preload="metadata"></video><p id="clock-state"></p><a id="open-source" hidden>打开本机原片</a>
+<video id="source-video" controls preload="metadata"></video><div id="coverage" class="coverage" role="group" aria-label="这段原片上已登记的区间"></div><p id="coverage-note" class="hint"></p>
+<p class="hint">键盘（焦点不在输入框时）：I 用当前位置标记起点、O 标记终点；逗号／句号 后退／前进约一帧；[ ] 调整播放速度（当前 <span id="playback-rate">1</span>×）。</p><p id="clock-state"></p><a id="open-source" hidden>打开本机原片</a>
 <div class="fields"><label>可用起点（源时间秒）<input id="start-seconds" type="text" inputmode="decimal" placeholder="0.000000"><button id="capture-start" type="button">用当前位置标记起点</button></label>
 <label>可用终点（源时间秒）<input id="end-seconds" type="text" inputmode="decimal" placeholder="1.000000"><button id="capture-end" type="button">用当前位置标记终点</button></label></div>
 <div class="fields"><label>真实事件名称<input id="event-id" type="text" placeholder="例如：第一次闪避"></label><label>独立动作归组<input id="event-group" type="text" placeholder="同一动作的不同区间填相同名称"></label></div>
@@ -88,6 +98,7 @@ def render_reference_review(
         + html.escape(policy, quote=True)
         + '"><title>原片 · 人工参考标注</title><style>'
         + STYLE
+        + COVERAGE_STYLE
         + "</style></head><body><main>"
         + body
         + "</main><script>"

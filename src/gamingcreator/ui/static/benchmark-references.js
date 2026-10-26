@@ -29,6 +29,13 @@
     };
     const EMPTY_SESSION = () => ({ generation: loadGeneration, url: null, headerDuration: null, status: "pending", clock: null, reason: null, axisAttempts: 0, axisReason: null, seeked: false });
     let session = EMPTY_SESSION();
+    // A main query needs at least this many independent usable references (freeze rule).
+    const MAIN_MINIMUM = 10;
+    // Keyboard frame step: the context does not carry a frame rate, so one 30 fps frame.
+    const FRAME_STEP_SECONDS = 1 / 30;
+    const PLAYBACK_RATES = [0.25, 0.5, 1, 1.5, 2];
+    // The interval the reviewer was warned about; adding it again confirms the overlap.
+    let acknowledgedOverlap = null;
     const canonical = (value) => {
         if (Array.isArray(value)) return value.map(canonical);
         if (value && typeof value === "object") return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])]));
@@ -142,6 +149,7 @@
             const clock = session.clock;
             link.hidden = true;
             byId("capture-start").disabled = byId("capture-end").disabled = false;
+            renderCoverage();
             byId("clock-state").textContent = clock.videoStartUs > 0
                 ? `已把浏览器播放位置换算为规范源时间；原片开头 ${(clock.videoStartUs / 1000000).toFixed(3)} 秒没有画面，该段不能标记。`
                 : "已把浏览器播放位置换算为规范源时间；可用“用当前位置标记”，保存前请核对完整动作与区间。";
@@ -149,6 +157,7 @@
             link.hidden = false;
             byId("capture-start").disabled = byId("capture-end").disabled = true;
             byId("clock-state").textContent = unavailableText(session);
+            renderCoverage();
         }
     }
     async function validateVisibleClock(generation) {
@@ -213,9 +222,64 @@
             if (activeGeneration === generation) activeGeneration = -1;
         }
     }
+    function referenceProgress(query) {
+        const count = query.referenceEvents.length;
+        if (query.kind === "main") {
+            const missing = Math.max(0, MAIN_MINIMUM - count);
+            return `主查询：已登记 ${count}/${MAIN_MINIMUM} 个真实事件${missing ? `，还差 ${missing} 个` : "，已达到数量下限"}（只计数；是否独立可用仍由你判断，冻结时再核对）`;
+        }
+        if (query.kind === "negative") return "负例：不登记可用事件";
+        const sparseHint = count > 9 ? "，超过9个，冻结时会被拒绝" : count ? "" : "，冻结时至少需要1个";
+        return `少例：已登记 ${count} 个真实事件（少例须1–9个${sparseHint}），单独评估`;
+    }
+    function playerReady(media) {
+        return session.status === "ready" && session.clock && session.generation === loadGeneration && session.url === media.videoUrl;
+    }
+    function renderCoverage() {
+        // Every interval already registered on this recording, across all queries: this
+        // query's in colour, other queries' in grey. Display only; the record is unchanged.
+        const strip = byId("coverage"); strip.replaceChildren();
+        const media = selectedMedia(); const current = record.plan.queries[queryIndex];
+        const ready = playerReady(media);
+        let total = 0;
+        for (const query of record.plan.queries) {
+            if (query.sourceId !== current.sourceId) continue;
+            for (const event of query.referenceEvents) {
+                for (const interval of event.usableRanges) {
+                    const block = document.createElement("button"); block.type = "button";
+                    block.className = query === current ? "coverage-block current" : "coverage-block";
+                    block.tabIndex = -1; // a mouse aid; keyboard users keep one path to the fields
+                    block.style.left = `${(100 * interval.startUs / media.durationUs).toFixed(4)}%`;
+                    block.style.width = `max(3px, ${(100 * (interval.endUs - interval.startUs) / media.durationUs).toFixed(4)}%)`;
+                    const label = `${query === current ? "" : `其他查询“${query.text}” · `}${event.humanEventId}：${seconds(interval.startUs)}–${seconds(interval.endUs)} 秒`;
+                    block.title = ready ? `${label}（点击跳到起点）` : `${label}（原片时钟核对后可点击跳转）`;
+                    block.setAttribute("aria-label", block.title);
+                    block.disabled = !ready;
+                    block.addEventListener("click", () => {
+                        if (!playerReady(selectedMedia())) return notify(unavailableText(session));
+                        const position = SourceClock.sourceUsToPlayerSeconds(session.clock, interval.startUs);
+                        if (position !== null) video.currentTime = position;
+                    });
+                    strip.append(block); total += 1;
+                }
+            }
+        }
+        byId("coverage-note").textContent = total
+            ? `这段原片上已登记 ${total} 个区间（彩色＝当前查询，灰色＝同一原片的其他查询）。`
+            : "这段原片上还没有登记区间。";
+    }
+    function overlappingReference(query, eventId, interval) {
+        for (const event of query.referenceEvents) {
+            if (event.humanEventId === eventId) continue;
+            const hit = event.usableRanges.find((row) => interval.startUs < row.endUs && row.startUs < interval.endUs);
+            if (hit) return { event, hit };
+        }
+        return null;
+    }
     function renderReferences() {
         const query = record.plan.queries[queryIndex];
-        byId("reference-summary").textContent = `已登记 ${query.referenceEvents.length} 个真实事件 · ${query.kind === "main" ? "主查询须有至少十个独立可用参考" : query.kind === "negative" ? "负例不登记可用事件" : "少例单独评估"}`;
+        byId("reference-summary").textContent = referenceProgress(query);
+        renderCoverage();
         const list = byId("reference-list"); list.replaceChildren();
         for (const event of query.referenceEvents) {
             const card = document.createElement("article"); card.className = "slot";
@@ -223,7 +287,7 @@
             const ranges = document.createElement("p"); ranges.textContent = `${event.usableRanges.map((row) => `${seconds(row.startUs)}–${seconds(row.endUs)} 秒`).join("；")} · 动作归组：${event.independenceGroup}`;
             const reason = document.createElement("p"); reason.textContent = event.reason;
             const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "删除这个参考";
-            remove.addEventListener("click", () => { query.referenceEvents = query.referenceEvents.filter((row) => row !== event); edited(); renderReferences(); });
+            remove.addEventListener("click", () => { query.referenceEvents = query.referenceEvents.filter((row) => row !== event); acknowledgedOverlap = null; edited(); renderReferences(); });
             card.append(title, ranges, reason, remove); list.append(card);
         }
     }
@@ -236,6 +300,7 @@
         byId("query-info").textContent = `${query.text} · ${media.path.split(/[\\/]/).pop()} · ${seconds(media.durationUs)} 秒`;
         byId("add-reference").disabled = query.kind === "negative";
         for (const id of ["start-seconds", "end-seconds", "event-id", "event-group", "reason"]) byId(id).value = "";
+        acknowledgedOverlap = null;
         renderClockState();
         renderReferences();
         void validateVisibleClock(loadGeneration);
@@ -266,6 +331,7 @@
         const verdict = SourceClock.durationChangeVerdict(session.clock, video.duration, session.seeked);
         if (verdict !== null) markUnavailable(verdict);
     });
+    video.addEventListener("ratechange", () => { byId("playback-rate").textContent = String(video.playbackRate); });
     video.addEventListener("error", () => {
         markUnavailable("media_unavailable");
         notify("原片无法播放；请检查原文件和浏览器编码支持，已填标注保留。");
@@ -275,7 +341,7 @@
     }
     byId("query-select").addEventListener("change", switchQuery);
     for (const id of ["label-version", "annotators", "confirmed", "reviewed"]) byId(id).addEventListener("input", () => { readMetadata(); edited(); });
-    for (const id of ["start-seconds", "end-seconds", "event-id", "event-group", "reason"]) byId(id).addEventListener("input", () => { revision += 1; });
+    for (const id of ["start-seconds", "end-seconds", "event-id", "event-group", "reason"]) byId(id).addEventListener("input", () => { revision += 1; acknowledgedOverlap = null; });
     for (const [button, field] of [["capture-start", "start-seconds"], ["capture-end", "end-seconds"]]) byId(button).addEventListener("click", () => {
         const media = selectedMedia();
         if (session.status !== "ready" || !session.clock || session.generation !== loadGeneration || session.url !== media.videoUrl) return notify(unavailableText(session));
@@ -294,6 +360,15 @@
             const proposed = structuredClone(record); const query = proposed.plan.queries[queryIndex];
             const eventId = byId("event-id").value.trim(); const group = byId("event-group").value.trim(); const reason = byId("reason").value.trim();
             const interval = { startUs: timeInput(byId("start-seconds").value), endUs: timeInput(byId("end-seconds").value) };
+            // Overlap with another event's range is often the same action named twice: warn
+            // once, and register only when the same interval is added again.
+            const overlap = overlappingReference(query, eventId, interval);
+            const overlapKey = overlap && JSON.stringify([queryIndex, eventId, interval.startUs, interval.endUs, overlap.event.humanEventId, overlap.hit.startUs, overlap.hit.endUs]);
+            if (overlap && acknowledgedOverlap !== overlapKey) {
+                acknowledgedOverlap = overlapKey;
+                return notify(`这个区间与“${overlap.event.humanEventId}”的 ${seconds(overlap.hit.startUs)}–${seconds(overlap.hit.endUs)} 秒重叠。同一个动作请用同一个事件名称；如果确认是不同动作，再点一次“登记这个可用区间”。`);
+            }
+            acknowledgedOverlap = null;
             const existing = query.referenceEvents.find((row) => row.humanEventId === eventId);
             if (existing) {
                 if (existing.independenceGroup !== group) throw new Error("同一真实事件请保持原动作归组。");
@@ -301,6 +376,34 @@
             } else query.referenceEvents.push({ humanEventId: eventId, independenceGroup: group, usableRanges: [interval], reason });
             record = validate(proposed); edited(); renderReferences();
         } catch (error) { notify(error.message); }
+    });
+    const NON_TEXT_INPUTS = new Set(["checkbox", "radio", "file", "button", "submit", "reset", "range", "color"]);
+    function typing(target) {
+        if (!(target instanceof HTMLElement)) return false;
+        if (target.isContentEditable || target.tagName === "TEXTAREA" || target.tagName === "SELECT") return true;
+        return target.tagName === "INPUT" && !NON_TEXT_INPUTS.has(target.type);
+    }
+    document.addEventListener("keydown", (event) => {
+        if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || typing(event.target)) return;
+        const key = event.key.toLowerCase();
+        if (key === "i" || key === "o") {
+            // The buttons carry every clock guard; a disabled button means no verified clock.
+            const button = byId(key === "i" ? "capture-start" : "capture-end");
+            if (button.disabled) notify(unavailableText(session)); else button.click();
+        } else if (key === "," || key === ".") {
+            if (!Number.isFinite(video.currentTime) || video.readyState < 1) return;
+            video.pause();
+            video.currentTime = Math.max(0, video.currentTime + (key === "," ? -FRAME_STEP_SECONDS : FRAME_STEP_SECONDS));
+        } else if (key === "[" || key === "]") {
+            const slower = key === "[";
+            const next = slower
+                ? [...PLAYBACK_RATES].reverse().find((rate) => rate < video.playbackRate) ?? PLAYBACK_RATES[0]
+                : PLAYBACK_RATES.find((rate) => rate > video.playbackRate) ?? PLAYBACK_RATES.at(-1);
+            // The default rate survives a query switch, which reloads the player.
+            video.defaultPlaybackRate = next;
+            video.playbackRate = next;
+        } else return;
+        event.preventDefault();
     });
     byId("download-record").addEventListener("click", () => {
         try {
@@ -317,7 +420,7 @@
             if (file.size > 1049600) throw new Error("标注记录过大。");
             const proposed = validate(JSON.parse((await file.text()).replace(/^\uFEFF/, "")));
             if (revision !== expectedRevision || byId("load-record").files[0] !== file) return notify("载入期间标注已变化，保留当前内容；请重新选择记录。");
-            record = proposed; revision += 1; fillMetadata(); renderReferences(); notify("已有标注已载入；请继续核对原片并下载保存。");
+            record = proposed; revision += 1; acknowledgedOverlap = null; fillMetadata(); renderReferences(); notify("已有标注已载入；请继续核对原片并下载保存。");
         } catch (error) { notify(`${error.message} 当前标注保持。`); }
     });
     fillMetadata(); switchQuery();
