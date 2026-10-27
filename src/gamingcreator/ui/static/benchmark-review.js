@@ -205,7 +205,7 @@ async function startPlayback(token, media, clock, slot, query, start, end) {
   }
   if (!current()) return;
   playing = {url: expectedUrl, end, token, generation, reachesEnd: clock.durationUs - slot.endUs <= 1000};
-  playState.textContent = `${query.text} · 第${slot.slot}位 · 规范源 ${(slot.startUs / 1000000).toFixed(3)}–${(slot.endUs / 1000000).toFixed(3)}秒`;
+  playState.textContent = `${query.text} · ${slot.label || `第${slot.slot}位`} · 规范源 ${(slot.startUs / 1000000).toFixed(3)}–${(slot.endUs / 1000000).toFixed(3)}秒`;
   try {
     await video.play();
   } catch (error) {
@@ -269,13 +269,31 @@ context.queries.forEach(query => {
   add(section, "p", `${query.kind === "main" ? "主查询" : query.kind === "sparse" ? "少例查询" : "负例查询"} · 已冻结参考 ${query.references.length} 个 · 十个位置`);
   if (query.status === "failed") add(section, "p", "原查询执行失败；这些位置不可判分，不当作成功零命中。").className = "notice";
   const details = add(section, "details"); add(details, "summary", "查看已冻结的人工参考");
-  query.references.forEach(reference => { const p = add(details, "p", `${reference.humanEventId} · ${reference.reason}`); add(p, "span", " · " + reference.usableRanges.map(range => `${(range.startUs / 1000000).toFixed(3)}–${(range.endUs / 1000000).toFixed(3)}秒`).join("、")); });
+  const queryMedia = context.media.find(row => row.runId === query.runId);
+  query.references.forEach(reference => {
+    const p = add(details, "p", `${reference.humanEventId} · ${reference.reason}`);
+    add(p, "span", " · " + reference.usableRanges.map(range => `${seconds(range.startUs)}–${seconds(range.endUs)}秒`).join("、"));
+    // Replays a frozen reference range through the same clock-verified player as candidates.
+    reference.usableRanges.forEach(range => {
+      const replay = add(details, "button", `回看参考 ${reference.humanEventId} ${seconds(range.startUs)}–${seconds(range.endUs)}秒`);
+      replay.type = "button"; replay.disabled = true; replay.className = "reference-replay";
+      const target = {label: `参考 ${reference.humanEventId}`, startUs: range.startUs, endUs: range.endUs};
+      replay.addEventListener("click", () => play(queryMedia, target, query));
+      const note = add(details, "p", ""); note.className = "empty"; note.dataset.clock = "reference-note";
+      replayButtons.push({button: replay, note, media: queryMedia, startUs: range.startUs, endUs: range.endUs});
+    });
+  });
+  const tally = add(section, "p", ""); tally.className = "tally"; tally.dataset.tally = query.queryId;
   query.slots.forEach(slot => {
     const card = add(section, "div"); card.className = "slot"; card.dataset.slot = slot.slot;
     add(card, "h3", `第${slot.slot}位`);
     if (slot.state === "missing") { add(card, "p", "缺位，保留固定位置。没有候选可判分。").className = "empty"; return; }
     add(card, "p", `${(slot.startUs / 1000000).toFixed(3)}–${(slot.endUs / 1000000).toFixed(3)}秒 · 原排名 ${slot.reportedRank}`);
     add(card, "p", "模型描述（需回看）：" + slot.facts.join("；"));
+    const overlaps = query.references.flatMap(reference => reference.usableRanges
+      .filter(range => range.startUs < slot.endUs && slot.startUs < range.endUs)
+      .map(range => `${reference.humanEventId}（${seconds(range.startUs)}–${seconds(range.endUs)}秒）`));
+    if (overlaps.length) add(card, "p", `与冻结参考在时间上重叠：${overlaps.join("、")}。只是时间重叠，请回看后自己判断，不会自动填写。`).className = "overlap";
     const media = context.media.find(row => row.runId === query.runId);
     const button = add(card, "button", "播放此区间"); button.type = "button"; button.disabled = true;
     button.addEventListener("click", () => play(media, slot, query));
@@ -289,11 +307,84 @@ context.queries.forEach(query => {
     add(human, "option", "未指定").value = "";
     query.references.forEach(reference => { add(human, "option", `${reference.humanEventId} · ${reference.reason}`).value = reference.humanEventId; });
     const reasonLabel = add(card, "label", "理由／待核对备注"); const reason = add(reasonLabel, "textarea"); reason.dataset.field = "reason";
-    controls.set(`${query.queryId}:${slot.slot}`, {grade, human, reason});
+    const warning = add(card, "p", ""); warning.className = "slot-warning"; warning.hidden = true;
+    controls.set(`${query.queryId}:${slot.slot}`, {grade, human, reason, warning, card});
   });
 });
+function seconds(microseconds) { return (microseconds / 1000000).toFixed(3); }
+function tallyQuery(query) {
+  const references = new Map(query.references.map(reference => [reference.humanEventId, reference]));
+  const duration = context.media.find(row => row.runId === query.runId)?.durationUs;
+  const seenEvents = new Set(), usableGroups = new Map(), usefulEvents = new Set(), warnings = new Map();
+  let duplicates = 0, unjudged = 0, missing = 0, needsEvent = 0;
+  for (const slot of query.slots) {
+    if (slot.state === "missing") { missing += 1; continue; }
+    const input = controls.get(`${query.queryId}:${slot.slot}`);
+    const grade = input && input.grade.value !== "" ? Number(input.grade.value) : null;
+    const reference = grade === null ? undefined : references.get(input.human.value);
+    const group = reference ? reference.independenceGroup : null;
+    const duplicate = seenEvents.has(slot.eventId) || (group !== null && usableGroups.has(group));
+    seenEvents.add(slot.eventId);
+    if (duplicate) {
+      duplicates += 1;
+      if (group !== null && usableGroups.has(group) && grade >= 2) warnings.set(slot.slot, `这一位与第${usableGroups.get(group)}位选了同一个独立事件（或同一动作归组）。如果确实是同一个动作，保持即可，第8步按重复处理。`);
+    } else if (grade === null) unjudged += 1;
+    if (grade !== null && grade >= 2 && !reference) { needsEvent += 1; warnings.set(slot.slot, "评2或3分时还要选择对应的独立事件，否则不能保存。"); }
+    const useful = grade !== null && grade >= 2 && !duplicate && Number.isSafeInteger(duration) && slot.endUs <= duration;
+    if (useful && group !== null && !usableGroups.has(group)) usableGroups.set(group, slot.slot);
+    if (useful && reference) usefulEvents.add(reference.humanEventId);
+  }
+  return {useful: usefulEvents.size, duplicates, unjudged, missing, needsEvent, warnings};
+}
+function refreshTallies() {
+  context.queries.forEach(query => {
+    const line = document.querySelector(`[data-tally="${CSS.escape(query.queryId)}"]`);
+    if (!line) return;
+    const result = tallyQuery(query);
+    Object.assign(line.dataset, {useful: result.useful, duplicates: result.duplicates, unjudged: result.unjudged, missing: result.missing});
+    // Neutral counts only: no pass threshold or "how many more" while a person is grading,
+    // so the count can never pull a borderline clip toward "usable".
+    line.textContent = query.status === "failed"
+      ? "原查询执行失败，这些位置不计分。"
+      : `当前填写计数：评为可用的不同独立事件 ${result.useful} 个；未判定 ${result.unjudged} 位，重复 ${result.duplicates} 位，缺位 ${result.missing} 位${result.needsEvent ? `，${result.needsEvent} 位评了2/3分但没选独立事件` : ""}。请只按画面判断，计分以第8步报告为准。`;
+    query.slots.forEach(slot => {
+      const input = controls.get(`${query.queryId}:${slot.slot}`);
+      if (!input) return;
+      const message = result.warnings.get(slot.slot);
+      input.warning.hidden = !message; input.warning.textContent = message || "";
+    });
+  });
+}
+// Keyboard: J/K move between scorable positions, P replays the current one. Grade selects
+// keep their own type-ahead (digits 0-3); text fields never trigger shortcuts.
+const scorable = [];
+context.queries.forEach(query => query.slots.forEach(slot => { const input = controls.get(`${query.queryId}:${slot.slot}`); if (input) scorable.push({query, slot, input}); }));
+let currentSlot = -1;
+document.addEventListener("focusin", event => {
+  const index = scorable.findIndex(entry => entry.input.card.contains(event.target));
+  if (index >= 0) currentSlot = index;
+});
+document.addEventListener("keydown", event => {
+  if (event.defaultPrevented || event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
+  const target = event.target;
+  if (target instanceof HTMLElement && (target.isContentEditable || target.tagName === "TEXTAREA" || (target.tagName === "INPUT" && !["checkbox", "file", "button"].includes(target.type)))) return;
+  // The event drop-down keeps its own type-ahead: event names may start with J, K or P.
+  if (target instanceof HTMLElement && target.dataset.field === "humanEventId") return;
+  if (!scorable.length) return;
+  if (event.code === "KeyJ" || event.code === "KeyK") {
+    currentSlot = Math.max(0, Math.min(scorable.length - 1, currentSlot + (event.code === "KeyK" ? 1 : -1)));
+    const entry = scorable[currentSlot];
+    entry.input.grade.focus(); entry.input.card.scrollIntoView({block: "center"});
+  } else if (event.code === "KeyP" && currentSlot >= 0) {
+    const entry = scorable[currentSlot];
+    play(context.media.find(row => row.runId === entry.query.runId), entry.slot, entry.query);
+  } else return;
+  event.preventDefault();
+});
 refreshClockState();
-document.addEventListener("input", () => { editRevision++; });
+refreshTallies();
+document.addEventListener("input", () => { editRevision++; refreshTallies(); });
+document.addEventListener("change", refreshTallies);
 document.getElementById("reviewed").addEventListener("change", () => { editRevision++; });
 function collect() {
   const record = clone(expected);
@@ -333,6 +424,7 @@ document.getElementById("load-record").addEventListener("change", async event =>
       const input = controls.get(`${query.queryId}:${row.slot}`); if (!input) return;
       input.grade.value = row.grade === null ? "" : String(row.grade); input.human.value = row.humanEventId || ""; input.reason.value = row.reason || "";
     }));
+    refreshTallies();
     editRevision++; status.textContent = "记录已载入，可以继续填写；没有新增验收结论。";
   } catch (error) { status.textContent = "无法载入：" + error.message; }
   finally { if (token === loadRevision) event.target.value = ""; }

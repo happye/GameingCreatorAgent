@@ -16,6 +16,8 @@ input[type=text],input[type=date],textarea,select{box-sizing:border-box;width:10
 button{padding:10px 16px;font:inherit;cursor:pointer}button:disabled{cursor:default}input[type=file]{max-width:100%}
 .fields{display:grid;grid-template-columns:1fr 1fr;gap:16px}.player{position:sticky;top:0;z-index:1;background:#fff;border-bottom:1px solid #dce3ee;padding:12px}
 video{display:block;max-width:100%;width:640px;max-height:320px;background:#151b24}#play-state,#status{overflow-wrap:anywhere}a{color:#1758a8}
+.tally{background:#eef4ff;padding:10px 12px;border-radius:8px}.overlap{color:#8a5a00}.slot-warning{color:#a33a1a;font-weight:600}
+.reference-replay{margin:4px 8px 4px 0}
 @media(max-width:700px){main{padding:12px}header,section{padding:14px}.fields{grid-template-columns:1fr}.player{position:static}h1{font-size:23px}}
 """
 
