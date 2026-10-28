@@ -26,6 +26,7 @@ from gamingcreator.cli.main import (
 )
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.benchmark_preparation_files import read_bounded, read_freeze
+from gamingcreator.infrastructure.file_sharing import retry_file_sharing as _status_io
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
 from gamingcreator.ui.benchmark_reference_review import render_reference_review
@@ -77,12 +78,26 @@ def _plain(path: Path) -> Path:
     return path
 
 
+def _read_status(path: Path) -> bytes:
+    return _status_io(lambda: read_bounded(_plain(path)), reading=True)
+
+
 def _write(path: Path, document: dict[str, object]) -> None:
     data = canonical_json(document)
     temporary = path.with_name(path.name + "." + uuid4().hex + ".tmp")
-    with _plain(temporary).open("xb") as stream:
-        stream.write(data)
-    _plain(temporary).replace(_plain(path))
+    created = False
+    try:
+        with _plain(temporary).open("xb") as stream:
+            created = True
+            stream.write(data)
+        _status_io(lambda: _plain(temporary).replace(_plain(path)))
+    finally:
+        if created:
+            try:
+                _plain(temporary).unlink(missing_ok=True)
+            except (OSError, AppError):
+                # Cleanup must not hide the original failure or follow a changed link.
+                pass
 
 
 def _script(name: str, arguments: list[str], repository: Path) -> int:
@@ -150,7 +165,7 @@ class BenchmarkWorkflows:
             # Windows refuses to replace an open file and to open one being replaced, so status
             # reads and the worker's terminal write are serialized by the same in-process lock.
             with self._lock:
-                row = decode_object(read_bounded(_plain(path)))
+                row = decode_object(_read_status(path))
             if (
                 set(row) - {"inventorySource"}
                 != {

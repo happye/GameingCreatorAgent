@@ -1,5 +1,9 @@
 # 当前分工与恢复入口
 
+最新（2026-10-29）：TD012五文件已主树集成，Sol/medium实现、Sol/high分两段唯一边界审查PASS，主树定向全部通过；独立worktree保留恢复备份，无活跃写者。主控即将执行最终整合完整verify（session6d），期间固定源码。
+
+当前唯一任务（2026-10-29）：主树9833199完整verify句柄80163；TD012由Sol/medium在独立worktree workflow-status-retry开发，文件归属ui/benchmark_workflow.py及新test_benchmark_workflow_file_contention.py，增Infrastructure共享file_sharing helper、media_batch_files.py与新media batch占用测试（唯一剩余子项）；主树无源码写者，最终Sol/high评估。
+
 当前（2026-10-29）：三项已集成，Sol/medium实现第6/8步卡片、Sol/high唯一边界评估PASS；旧完整verify环境回执失败已修复并复验。主控准备最终完整verify，期间固定源码。独立worktree保留作恢复备份、无活跃源码写者。
 
 2026-10-28 当前：时间轴筛选含画面文字，Codex主控拥有 app.js/index.html、相关测试和公共文档；Luna/high只读定位，Sol/medium只读评估。无并行源码写者。筛选已交付、Sol/medium PASS；片段上下文已交付、Sol/medium复核PASS，完整verify运行中。主控禁止并行改源码，Luna/high只读准备第6/8步卡片已完成；Sol/medium task_developer在独立.cache/worktrees/benchmark-result-cards、codex/benchmark-result-cards实现，拥有benchmark-workflow.js和新浏览器测试；不写主树，待主树verify结束后集成，Sol/high负责唯一验收边界评估。见 sprint-timeline-text-filter.md。

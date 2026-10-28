@@ -1,4 +1,12 @@
-# 当前交接：工作台可识别画面文字、完整verify恢复通过；仍等待用户确认分组与补素材
+# 当前交接：三项工作台辅助已交付；最终verify运行，TD012状态文件占用独立开发
+
+**2026-10-29 TD012交付：验收status与批次state的Windows跨进程占用已处理；短暂占用有限等待，持续占用原状态与输出不变并报错，不重跑任务。新增21项真实进程/边界测试、55项工作树组及主树FFmpeg相关回归全部通过，Sol/high增量审查PASS。技术债17项中已解决9→10、部分3→2、未解决仍5；功能仍27%，人工8项不变。9833199三项功能完整verify已3685pass/3skip/退出0；TD012整合最终完整verify即将运行session6d。**
+
+**最新执行状态（2026-10-29）**：9833199三项功能最终完整verify已通过：3685 passed/3 skipped、离线双wheel一致、退出0（session6c，80163已结束）。TD012两入口及共享助手已由Sol/high增量评估PASS，现已集成主树，21项新占用测试+相关批次/工作流/架构回归正在运行，句柄68982。未提交TD012、技术债暂未关单。下一步定向结果确认后同步文档/提交，再对四项整合源码运行完整verify。
+
+**TD012范围补充**：status.json子项13项实测与Sol/high评估已PASS，未集成；Luna核对确认唯一剩余state.json在media_batch_files，因此同一独立worker现将受限重试抽到Infrastructure小helper、覆盖两条入口，待新增测试与新增边界审查后一次集成。主树verify80163仍固定源码9833199。
+
+**当前唯一执行状态（2026-10-29）**：已提交452bde9（OCR筛选）、b84d850（当前片段上下文）、9833199（第6/8步卡片）。最终verify句柄80163，日志.cache/verify-20261029-session6c.log，源码9833199固定；旧16797已结束，不再等待。TD012在独立worktree .cache/worktrees/workflow-status-retry、分支codex/workflow-status-retry由原Sol/medium worker实施，合同sprint-workflow-status-retry.md，仅benchmark_workflow.py与新文件占用测试。主树不改源码，待verify结束且Sol/high独立审查后集成。新候选不要求人工或费用。
 
 **2026-10-29第三项交付：验收第6/8步结果通俗卡片已集成，原排名数量/质量状态/可用率只读原报告，null和失败保持未知；新13浏览器及相关workflow/静态检查通过，Sol/high独立边界评估PASS。此前完整verify为3671pass/1环境门禁fail/3skip；134个共享stdlib pyc已恢复原归档字节，3309项回执匹配且失败用例恢复通过。三项最终源码将再跑完整verify，日志.cache/verify-20261029-session6c.log。整体27%（10/8/33），首产品5%，人类待办8项、技术债17项不变，无新增费用。**
 

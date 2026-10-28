@@ -22,6 +22,7 @@ from gamingcreator.application.media_batch import (
     validate_batch_state,
 )
 from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.infrastructure.file_sharing import retry_file_sharing
 from gamingcreator.infrastructure.local_files import LocalInputReader
 from gamingcreator.infrastructure.local_paths import resolve_existing
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
@@ -29,6 +30,12 @@ from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
 # Windows refuses to replace an open file and to open one being replaced, so state.json reads
 # (UI catalog/resume threads) and the job thread's checkpoint replace share one process lock.
 _STATE_IO = threading.Lock()
+
+
+def _plain_state(path: Path) -> Path:
+    if any(item.is_symlink() or item.is_junction() for item in (path, *path.parents)):
+        raise ValueError("批次状态不能通过文件或目录链接替换。")
+    return path
 
 
 def read_batch_bytes(path: Path) -> bytes:
@@ -211,10 +218,14 @@ class MediaBatchFiles:
             self.batch_id, self.project, config, budget, cast(float, timeout), tuple(items)
         )
         digest = _sha(files["plan.json"])
-        state_path = self.directory / "state.json"
+        state_path = _plain_state(self.directory / "state.json")
         with _STATE_IO:
             state = (
-                _decode(read_batch_bytes(state_path))
+                _decode(
+                    retry_file_sharing(
+                        lambda: read_batch_bytes(_plain_state(state_path)), reading=True
+                    )
+                )
                 if state_path.exists()
                 else initial_batch_state(plan, digest)
             )
@@ -226,16 +237,22 @@ class MediaBatchFiles:
             raise AppError("storage.batch_lock", "更新批次状态须持有批次锁。", ExitCode.STORAGE)
         validate_batch_state(state, plan, digest)
         temporary = self.directory / (".state-" + uuid4().hex + ".tmp")
+        created = False
         try:
             data = _json(state)
             if len(data) > MAX_BATCH_INPUT_BYTES:
                 raise ValueError("批次状态超过1MiB。")
-            with temporary.open("xb") as stream:
+            with _plain_state(temporary).open("xb") as stream:
+                created = True
                 stream.write(data)
                 stream.flush()
                 os.fsync(stream.fileno())
             with _STATE_IO:
-                temporary.replace(self.directory / "state.json")
+                retry_file_sharing(
+                    lambda: _plain_state(temporary).replace(
+                        _plain_state(self.directory / "state.json")
+                    )
+                )
         except (OSError, ValueError, UnicodeError):
             raise AppError(
                 "storage.batch_checkpoint",
@@ -243,5 +260,6 @@ class MediaBatchFiles:
                 ExitCode.STORAGE,
             ) from None
         finally:
-            with suppress(OSError):
-                temporary.unlink(missing_ok=True)
+            if created:
+                with suppress(OSError, ValueError):
+                    _plain_state(temporary).unlink(missing_ok=True)
