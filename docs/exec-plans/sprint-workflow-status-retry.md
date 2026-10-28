@@ -1,5 +1,9 @@
 # TD012 验收状态跨进程文件占用（2026-10-29）
 
+**当前状态（2026-10-29）**：源码 d13b0e7 的四项整合检查已全部通过：3706 passed、3 skipped、924.98秒，双次离线wheel一致（SHA256 89cccf1437350a577a964b374b549aa700caa010e5031061aff7bacb7f78190a），退出码0；日志.cache/verify-20261029-session6d.log。句柄1410已正常结束，不再等待或重启。三项工作台功能与TD012两状态入口已交付、独立评估PASS。当前无活跃源码写者或后台验证任务；后续主线仍为Phase 0真实质量验收，F006/F009/F010保持false，不越过人工门禁。
+
+以下为合同和按时间保留的过程记录，旧“实现中／运行中／下一步”以本条当前状态为准。
+
 阶段：Phase 0 验收工作流可靠性。前三项计划工具交付后，处理已记录的生产阻断：步骤已生成输出，但status.json终态替换遇WinError5会丢失完成状态，界面误作中断。不是新检索/新分析。
 
 实施：task_developer/Sol medium独立worktree .cache/worktrees/workflow-status-retry、codex/workflow-status-retry（base 9833199），仅ui/benchmark_workflow.py与新tests/test_benchmark_workflow_file_contention.py；主控公共文档，Sol/high唯一边界审查。并行主树完整verify日志session6c、句柄80163，禁止修改主树源码。
