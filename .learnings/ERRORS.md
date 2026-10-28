@@ -481,3 +481,5 @@ Resolved before any test execution: full git ls-files quoted the Chinese product
 2026-10-23 source-clock验收计划更新曾用错误argv下标（8项数组访问第9项），该rev4未运行。后续用参数前缀替换并先打印全argv，rev5保留pytest三文件、独立basetemp与JUnit路径后才执行。PowerShell任务脚本显式ErrorActionPreference=Stop，避免单步错误后继续绑定；不因计划编辑失败重发模型请求。参考指南路径先用rg --files定位，实际名为benchmark-candidate-review-guide.md。
 
 2026-10-24静态声明首轮203项：3新夹具失败（codec传str未到目标schema分支、观察list误作dict、begin_invocation带非空usage被正确拒绝），仅修测试：统一bytes、正例索引、planned空usage而finish保留原费用；断言收紧，不放宽production。最终202pass／1权限skip。新SQLite写入口检查DB与-journal/-wal/-shm所有伴随路径；同真实part冲突跨来源group查，query part_group仅局部绑定。
+
+2026-10-28：/goal 已由运行时建立活跃目标，create_goal被拒后用get_goal继续。UI实际在src/gamingcreator/ui，先rg --files定位。新增筛选浏览器夹具须同步displayFacts与observableFacts；初轮两失败仅夹具问题，原导航两项通过。本机Python默认GBK，文件I/O必须显式UTF-8；修正脚本首读失败未执行任何修改。

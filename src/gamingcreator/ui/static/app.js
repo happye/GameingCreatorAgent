@@ -14,7 +14,7 @@
         "saved-details-control", "include-saved-details",
         "candidate-count", "search-context", "candidate-list", "selection-count",
         "selection-list", "selection-warning", "clear-selection", "export-json",
-        "export-csv", "timeline-count", "timeline-filter", "tag-filter", "timeline-map",
+        "export-csv", "timeline-count", "timeline-filter", "timeline-include-text", "tag-filter", "timeline-map",
         "timeline-end", "video-scrubber", "timeline-list", "filter-summary",
         "evidence-dialog", "evidence-dialog-title", "close-evidence", "evidence-full",
         "evidence-dialog-detail", "detail-status", "actor-details", "actor-detail-list",
@@ -931,7 +931,7 @@
         if (report && query && !spans.length) {
             ui["frame-text-results"].replaceChildren(element("li", "muted small", "画面文字里没有找到。识别可能有错字，可以试更短的词。"));
         } else ui["frame-text-results"].replaceChildren(...spans.slice(0, 50).map(frameTextItem));
-        drawTimeline();
+        renderTimeline();
     }
 
     async function loadFrameText(scan) {
@@ -2314,10 +2314,41 @@
         ui["candidate-list"].scrollTop = scrollTop;
     }
 
-    function filteredTimeline() {
+    // Actual sampled instants only: merged OCR spans must not fill unsampled gaps.
+    let timelineTextCache = { report: null, needle: null, instants: [] };
+    function timelineTextInstants() {
+        const report = state.frameText?.runId === state.run ? state.frameText : null;
+        const needle = compactText(ui["timeline-filter"].value.trim());
+        if (timelineTextCache.report !== report || timelineTextCache.needle !== needle) {
+            const instants = !report || !needle ? [] : report.frames
+                .filter((frame) => frame.lines.some((line) => compactText(line.text).includes(needle)))
+                .map((frame) => frame.timeUs).sort((a, b) => a - b);
+            timelineTextCache = { report, needle, instants };
+        }
+        return timelineTextCache.instants;
+    }
+
+    function timelineFactMatch(row) {
         const needle = ui["timeline-filter"].value.trim().toLocaleLowerCase();
+        return !needle || facts(row).join(" ").toLocaleLowerCase().includes(needle);
+    }
+
+    function timelineTextMatch(row) {
+        if (!ui["timeline-include-text"].checked || !validInterval(row)) return false;
+        const instants = timelineTextInstants();
+        const start = row.startUs - 1000000;
+        let low = 0, high = instants.length;
+        while (low < high) {
+            const middle = Math.floor((low + high) / 2);
+            if (instants[middle] < start) low = middle + 1;
+            else high = middle;
+        }
+        return low < instants.length && instants[low] <= row.endUs + 1000000;
+    }
+
+    function filteredTimeline() {
         const tag = ui["tag-filter"].value;
-        return (state.view?.timeline || []).filter((row) => (!needle || facts(row).join(" ").toLocaleLowerCase().includes(needle))
+        return (state.view?.timeline || []).filter((row) => (timelineFactMatch(row) || timelineTextMatch(row))
             && (!tag || (Array.isArray(row.mechanicTags) && row.mechanicTags.includes(tag))));
     }
 
@@ -2326,6 +2357,11 @@
         const rows = filteredTimeline();
         ui["timeline-count"].textContent = state.view?.timeline.length || 0;
         ui["filter-summary"].textContent = `${rows.length} / ${state.view?.timeline.length || 0} 个事件 · 按源时间排列`;
+        const textOnly = rows.filter((row) => !timelineFactMatch(row)).length;
+        if (ui["timeline-include-text"].checked) {
+            ui["filter-summary"].textContent += ` · ${textOnly} 个只因画面文字匹配（本机识别，未经人工核对）`;
+            if (!state.frameText) ui["filter-summary"].textContent += " · 尚无画面文字，请先在左侧识别";
+        }
         ui["timeline-list"].replaceChildren();
         if (!rows.length) empty(ui["timeline-list"], state.view ? (state.view.timeline.length ? "没有符合筛选条件的事件。" : "此运行尚未保存视觉事件。") : "请选择一份分析结果。");
         for (const row of rows) {
@@ -2343,6 +2379,7 @@
                 copy.append(tags);
             }
             appendShotBadge(copy, row);
+            if (!timelineFactMatch(row)) copy.append(element("span", "tag", "画面文字匹配 · 未核对"));
             item.append(preview, copy, selectionButton("event", row));
             ui["timeline-list"].append(item);
         }
@@ -3020,6 +3057,12 @@
     });
     ui["detect-shots"].addEventListener("click", () => void loadShots(true));
     ui["scan-frame-text"].addEventListener("click", () => void loadFrameText(true));
+    const TIMELINE_TEXT_STORAGE = "gamingcreator:timeline-include-text";
+    try { ui["timeline-include-text"].checked = localStorage.getItem(TIMELINE_TEXT_STORAGE) === "on"; } catch { /* default off */ }
+    ui["timeline-include-text"].addEventListener("change", () => {
+        try { localStorage.setItem(TIMELINE_TEXT_STORAGE, ui["timeline-include-text"].checked ? "on" : "off"); } catch { /* per-viewer convenience only */ }
+        filterTimeline();
+    });
     const NAVIGATION_KEYS_STORAGE = "gamingcreator:navigation-keys";
     try { byId("navigation-keys").checked = localStorage.getItem(NAVIGATION_KEYS_STORAGE) !== "off"; } catch { /* default on */ }
     byId("navigation-keys").addEventListener("change", () => {

@@ -1,5 +1,7 @@
 # 当前交接：工作台可识别画面文字、完整verify恢复通过；仍等待用户确认分组与补素材
 
+**2026-10-28：时间轴筛选新增默认关闭、本机记住的“含画面文字”，只按实际帧前后1秒匹配并标未核对；真实长钟馗“大蚌”0→64事件。新2＋导航2＋相关10项通过，Ruff通过，Sol/medium独立审查PASS；异步迟到由代码核对，未专门浏览器覆盖。下一步当前片段镜头／文字／语音上下文。**
+
 ## 新对话接手清单（2026-10-25，Claude Code会话交接，最先读这里）
 
 **进度看板**：用户量化监督入口为[docs/exec-plans/progress-board.md](docs/exec-plans/progress-board.md)；每次重大改动必须同提交更新（规则见AGENTS.md“Persistent progress board”）。

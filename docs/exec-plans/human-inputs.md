@@ -1,3 +1,5 @@
+2026-10-28本轮核对：画面文字筛选交付，无新增人工待办或技术债，原事项状态不变。
+
 # 当前需要用户参与的事项
 
 **2026-10-24单帧许可已执行完成，勿重复询问或发送**：用户明确回复“允许仅这一次，预算¥0.50”，对应固定28.5秒登记图＋parts-v2提示词。唯一请求／一图返回HTTP200并发布草案；本地resume零发送，正例1／跨衣物负例0，922旧文件SHA不变。attempt `attempt-205f8efdee85311c7190dfc57bfb4a13`，估算¥0.001492（未核账单）；原¥0.416预留已由估算额替代，本授权一次额度已耗尽。原Sol/high核授权与实际结果PASS，旧费用许可／unknown及标注保持。完成证据见[真实试验报告](report-2026-10-24-static-observation-pilot.md)、[sprint](sprint-static-observation-pilot.md)及本机real-user-approval／typed attempt／ledger；提案hash 95880840d38ea2f6e6bda85427ecfab8806cab9ec02422b1bd3d4a449a5f2b59。画面对错仍未知，不要求重标；TD006自动映射实证切片已交付，无新人工要求；原真实质量待办仅在实际触发时提醒，不重标已有资料。
