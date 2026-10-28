@@ -26,7 +26,7 @@
       "passes": true,
       "test_criteria": "Reproducible package build, pytest/Ruff/mypy and import-direction checks pass using project-local tools/caches, with no Windows Python registration or global links; missing/unreadable video returns the specified input error without output.",
       "dependencies": ["F000"],
-      "evidence": ["docs/exec-plans/sprint-F001.md", "toolchain.json", "uv.lock", "scripts/verify.ps1"]
+      "evidence": ["docs/exec-plans/sprint-F001.md", "toolchain.json", "uv.lock", "scripts/verify.ps1", "scripts/setup-media.ps1", "tests/test_setup_media.py", "docs/exec-plans/sprint-offline-media-setup.md"]
     },
     {
       "id": "F002",

@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "ffmpeg-source-candidate-v1",
+  "status": "approved_for_isolated_validation",
+  "observedDate": "2026-10-29",
+  "currentPin": "N-123317-gc1be2107c9-20260310",
+  "releaseTag": "autobuild-2026-09-30-13-08",
+  "assetName": "ffmpeg-N-127021-ge0c94b2d1c-win64-gpl-shared.zip",
+  "assetBuild": "N-127021-ge0c94b2d1c",
+  "platform": "win64",
+  "variant": "gpl-shared",
+  "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-30-13-08/ffmpeg-N-127021-ge0c94b2d1c-win64-gpl-shared.zip",
+  "sha256": "15cb5093f88593216751ff61c671a48db04677715dda1fd46f0bd4c4ea1af692",
+  "releasePage": "https://github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2026-09-30-13-08",
+  "checksumMetadata": "https://github.com/BtbN/FFmpeg-Builds/releases/expanded_assets/autobuild-2026-09-30-13-08",
+  "retentionPolicy": "https://github.com/BtbN/FFmpeg-Builds#release-retention-policy",
+  "retention": "Publisher states last monthly build kept for two years; availability is not permanent or guaranteed.",
+  "downloadApproved": true,
+  "downloaded": false,
+  "runtimeVerified": false,
+  "licenseReviewed": false,
+  "productionPinChanged": false,
+  "proposedScope": [
+    "download this exact archive to project cache",
+    "verify archive SHA256 before extraction/execution",
+    "extract within an isolated project cache/worktree",
+    "inspect versions/build configuration/licenses and notices",
+    "run isolated media/storage/source-clock compatibility checks"
+  ],
+  "excludedScope": [
+    "replace active project media tools",
+    "change production media-toolchain pin",
+    "publish or redistribute a binary package",
+    "send media to paid inference providers"
+  ],
+  "identityCaution": "Release title has another master version; asset filename and digest identify this candidate, not the release title.",
+  "approval": {
+    "date": "2026-10-29",
+    "userReply": "允许下载并隔离验证",
+    "scope": "exact pinned archive download, extraction and execution for isolated media/storage/source-clock checks; no production replacement/pin change/distribution"
+  }
+}

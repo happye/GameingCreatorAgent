@@ -28,3 +28,17 @@ F001 前后核对的用户/系统环境变量及三处 Python 注册表子树指
 禁止全局安装、自动改系统 PATH、改用户工具配置或自动安装 GPU 驱动。先用项目内 CPU ASR 验证；`pyproject.toml`、`uv.lock`、`.python-version` 和校验清单跟代码维护，密钥只走进程环境或忽略的本地存储。Phase 0 不需要 .NET，依据 [ADR-001](../design-docs/adr-001-phase-0-language.md)。
 
 检查工作台运行只需标准库和既有检索依赖。可选浏览器验证使用 `ui-test` extra 的 [Playwright 1.63.0](https://pypi.org/project/playwright/1.63.0/)（含锁定依赖）；`env.ps1` 将 `PLAYWRIGHT_BROWSERS_PATH` 固定为 `.tools/browsers`。仅执行 `python -B -m playwright install chromium`，禁止 `install-deps`/`--with-deps`、安装系统浏览器或使用用户浏览器profile。验证时临时profile、截图和下载都在项目缓存或ignored artifacts中。该工具不属于用户启动页面的必需依赖。
+
+并行worktree特别约束：`UV_PROJECT_ENVIRONMENT`由env脚本绑定其所在项目；给uv传`--project`不会改变该变量指向的虚拟环境。安装/同步前加载目标工作树自身env并断言其`.venv`和`.tools/python`，共享缓存可显式指定，禁止在仅供只读测试的主树环境内同步工作树依赖。2026-10-29一次误目标已从原锁和缓存恢复，未改变原工具/生产pin；不得重复这种准备方式。
+
+## 从已有固定副本离线准备媒体工具
+
+在目标仓库运行：
+
+```powershell
+./scripts/setup-media.ps1 -SourceBin 'D:\VerifiedFFmpeg\bin'
+```
+
+`SourceBin`指向已有、与本仓库固定清单完全一致的FFmpeg/ffprobe及DLL目录。脚本只复制清单列出的九个文件，先在项目`.tools`暂存并逐文件核SHA，再一次发布到尚不存在的`.tools/ffmpeg`。已有副本匹配则直接返回；不匹配会停止并保留原目录，不自动覆盖、修复或删除。额外文件不会复制，不运行来源程序，不下载或改动PATH/注册表。
+
+这适合同机新worktree或手中已有同一固定副本的新机器；不能把任意新版FFmpeg当成现有pin，也不能解决原副本的上游来源问题。仍按既有流程准备Python和包，`init.ps1`检查完整环境。脚本在PowerShell7/WindowsPowerShell5.1验证；当前固定版本不变，候选新构建仅在缓存隔离验证。
