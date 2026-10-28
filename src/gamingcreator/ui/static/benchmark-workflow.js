@@ -29,6 +29,48 @@
         const labels={"edit.html":"打开登记表单","review.html":row.action==="references"?"打开原片标注页":"打开候选评审页","benchmark-fixed-report.json":"查看原排名评分报告","record-template.json":"下载空记录模板","draft.json":"下载登记草稿","benchmark-plan.json":"下载待冻结计划","freeze.json":"查看冻结资料","source-inventory.json":"查看素材盘点报告","benchmark.json":"查看关联资料","benchmark-report.json":"查看固定检索报告","reference-record.json":"下载核对后的标注","review-record.json":"下载核对后的判断"};
         const links=text("div","","links"); for(const name of names){const link=text("a",labels[name] || name); link.href=fileUrl(row,name); if(name.endsWith(".html")){link.target="_blank";link.rel="noopener";}else{link.download=name;} links.append(link);} parent.append(links);
     }
+    async function showResult(card,row) {
+        const workflow=current.id, attempt=row.attemptId;
+        const fixed=row.action==="score", name=fixed?"benchmark-fixed-report.json":"benchmark-report.json";
+        const sha=row.files?.[name], holder=text("div","正在读取已保存的结果摘要…","result-summary");
+        holder.style.overflowWrap="anywhere";card.append(holder);
+        const active=()=>current?.id===workflow && holder.isConnected
+            && current.attempts.some(item=>item.attemptId===attempt && item.files?.[name]===sha);
+        const rates=value=>value===null?"尚未验证":`${Number((value * 100).toFixed(2))}%`;
+        try {
+            if(!sha) throw new Error("报告未登记");
+            const report=await request(fileUrl(row,name));
+            if(!active()) return;
+            const rate=value=>value===null || (typeof value==="number" && Number.isFinite(value) && value>=0 && value<=1);
+            const count=value=>value===null || (Number.isInteger(value) && value>=0 && value<=10);
+            const statuses={scored:"已评分",unverified_labels:"人工判断未完成",failed:"查询失败"};
+            const kinds={main:"主查询",sparse:"少例查询",negative:"负例查询"};
+            if(report.schemaVersion!==1 || !Array.isArray(report.queries)
+                || report.queries.some(query=>!query || typeof query.text!=="string" || typeof query.queryId!=="string"
+                    || !Object.hasOwn(kinds,query.kind) || !Object.hasOwn(statuses,query.status) || !count(query.returnedTop10)
+                    || (fixed && !rate(query.usefulRateAt10)))) throw new Error("报告结构无法识别");
+            if(fixed && (report.scoring?.schemaVersion!=="benchmark-fixed-scoring-v1"
+                || !rate(report.mainMacroUsefulRateAt10) || !rate(report.mainMinimumUsefulRateAt10)
+                || !((report.qualityGate===true && report.qualityStatus==="passed")
+                    || (report.qualityGate===false && report.qualityStatus==="failed")
+                    || (report.qualityGate===null && report.qualityStatus==="unverified")))) throw new Error("评分结构无法识别");
+            holder.replaceChildren(text("h4",fixed?"原排名评分结果":"原十位排名已保存"),
+                text("p","只读已有报告文件，没有重跑检索。","state"));
+            if(fixed) {
+                const labels={passed:"通过",failed:"未通过",unverified:"未验证"};
+                holder.append(text("p",`本报告质量状态：${labels[report.qualityStatus]}`),
+                    text("p",`主查询平均可用率：${rates(report.mainMacroUsefulRateAt10)}；最低可用率：${rates(report.mainMinimumUsefulRateAt10)}`));
+            } else holder.append(text("p","下一步：打开第7步候选评审页，回看原片并填写人工判断。返回槽位只表示检索结果数量。"));
+            for(const query of report.queries) {
+                const item=document.createElement("details");item.append(text("summary",`${query.queryId} · ${query.text} · ${kinds[query.kind]}`),
+                    text("p",`返回槽位：${query.returnedTop10===null?"返回数量未知":query.returnedTop10+"/10"}；${statuses[query.status]}`));
+                if(fixed) item.append(text("p",`原报告可用率：${rates(query.usefulRateAt10)}`));
+                holder.append(item);
+            }
+        } catch {
+            if(active()) holder.replaceChildren(text("p","结果摘要暂不可读；请使用原文件链接查看已保存资料。","state"));
+        }
+    }
     const inventorySources={auto:"自动盘点（本机生成，未上传）",provided:"上传的盘点报告"};
     const inventoryStates={compared:"已比较",notComparable:"有效画面不足，未比较",failed:"盘点时读取失败",absent:"报告中没有此录像"};
     const preparationBlockers={
@@ -193,6 +235,7 @@
             if(completed[step.id]) appendLinks(card,completed[step.id]);
             if(step.id==="freeze" && completed.freeze) void showInventory(card,completed.freeze);
             byId("steps").append(card);
+            if(["ranking","score"].includes(step.id) && completed[step.id]) void showResult(card,completed[step.id]);
         }
         byId("history").replaceChildren();for(const row of [...value.attempts].reverse()){const card=text("div","","record");card.append(text("p",`${steps.find(step=>step.id===row.action)?.title || row.action} · ${states[row.status]} · ${row.startedAt}`),text("p",`${row.attemptId} · ${row.elapsedMs==null?"耗时尚未保存":(row.elapsedMs/1000).toFixed(2)+"秒"}`)); if(row.error)card.append(text("p",row.error,"failed")); if(row.status==="finished")appendLinks(card,row);byId("history").append(card);}
         if(value.busy) timer=setTimeout(()=>void load(value.id,true),1000);

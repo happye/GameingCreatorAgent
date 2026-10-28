@@ -483,3 +483,5 @@ Resolved before any test execution: full git ls-files quoted the Chinese product
 2026-10-24静态声明首轮203项：3新夹具失败（codec传str未到目标schema分支、观察list误作dict、begin_invocation带非空usage被正确拒绝），仅修测试：统一bytes、正例索引、planned空usage而finish保留原费用；断言收紧，不放宽production。最终202pass／1权限skip。新SQLite写入口检查DB与-journal/-wal/-shm所有伴随路径；同真实part冲突跨来源group查，query part_group仅局部绑定。
 
 2026-10-28：/goal 已由运行时建立活跃目标，create_goal被拒后用get_goal继续。UI实际在src/gamingcreator/ui，先rg --files定位。新增筛选浏览器夹具须同步displayFacts与observableFacts；初轮两失败仅夹具问题，原导航两项通过。本机Python默认GBK，文件I/O必须显式UTF-8；修正脚本首读失败未执行任何修改。
+
+2026-10-29：并行worktree测试共享主树Python；worker未加载env.ps1且未-B，134个stdlib pyc与安装回执不符，使完整verify在媒体脚本门禁失败（3671pass/1fail/3skip，937.39秒）。二进制和源码均无差异；核验缓存安装归档SHA后仅恢复134个pyc原字节，3309项全匹配，不改回执。定向失败测试与init恢复通过。备份与回执.cache/runtime-bytecode-repair-20261029。以后worker运行命令先主树dot-source env.ps1，再覆盖独立worktree PYTHONPATH；始终Python -B，禁止与主树验证并行裸调用共享Python。旧powershell.exe子进程Get-FileHash不可用，当前pwsh7可正常执行。

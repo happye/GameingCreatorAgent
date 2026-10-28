@@ -78,6 +78,8 @@
 
 ## 并行开发
 
+共享主树 `.venv`／`.tools` 的独立 worktree 也必须先 dot-source 主树 `scripts/env.ps1`，然后才在当前进程设置自己的 `PYTHONPATH`；Python 命令保留 `-B`。未加载该保护的进程会改写共享标准库字节码，导致另一会话运行时回执检查失败（2026-10-29已实证，见 `.learnings/ERRORS.md`）。这不要求复制安装或改全局环境。
+
 每个编码 Agent 使用独立分支和 worktree；禁止多个编码会话同时修改一个工作目录。先明确模块依赖和文件归属；有依赖的任务按集成顺序推进。示例：
 
 ```powershell

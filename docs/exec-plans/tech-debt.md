@@ -1,3 +1,5 @@
+2026-10-29：报告卡片交付，无新增人工要求／技术债；运行时缓存被并行测试重写已恢复并记录协作指南，不改变产品验收状态。
+
 2026-10-28本轮核对：画面文字筛选与片段上下文交付，无新增人工待办或技术债，原事项状态不变。
 
 **2026-10-22 TD009 离线进展（match-report↔sidecar 证据 partId／condition 加深，已推送 daecce3）：** 见 sprint-td009-match-report-sidecar-evidence-part-condition.md。复合人评／静态索引仍 open；不宣称 TD009／F010 关单。
