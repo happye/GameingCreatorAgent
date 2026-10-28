@@ -1,6 +1,6 @@
 # 当前分工与恢复入口
 
-更新：2026-10-29。离线固定媒体准备脚本已主树集成，SourceBin只复制当前固定九文件、暂存核验后无覆盖发布；Sol/high PASS、真实旧副本恢复成功、主环境恢复后相关组40passed/2权限skip。候选下载与隔离验证已完成：原组151通过/3失败，按独立实测源时钟校准的3场景另行通过，原断言和原组结果保留；生产FFmpeg/生产pin/原片不变，TD003源码/notices仍待核。离线脚本已提交44e2537，最终整合完整verify session6e已实际运行（exec98084，.cache/verify-20261029-session6e.log），期间固定主树源码；候选无后台进程，许可仅下载和隔离验证，不含生产替换/分发。
+更新：2026-10-29。源码44e2537完整verify已3732 passed/5 skipped、757.37秒、双wheel一致（89cccf1437350a577a964b374b549aa700caa010e5031061aff7bacb7f78190a）、退出0，日志.cache/verify-20261029-session6e.log；exec98084已结束，主环境恢复已获完整回归证明。当前Sol/medium唯一源码worker在.cache/worktrees/media-clock-expectations、codex/media-clock-expectations按Astra/low设计绑定三个合成夹具的固定生成器精确预期，拥有tests helper/单测及两个clock测试文件，主树无活跃写者。新旧文件组必须逐文件匹配、未知明确失败，不改APP、生产pin、编码命令或容差；合同sprint-media-generator-clocks.md。下一步新旧工具定向验证→Sol/high唯一边界评估→集成。
 
 | 本轮工作 | 实施/独立评估 | 当前状态 |
 | --- | --- | --- |
