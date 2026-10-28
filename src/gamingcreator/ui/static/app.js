@@ -8,7 +8,7 @@
         "source-duration", "event-count", "transcript-count", "cost-known", "cost-detail",
         "stage-summary", "stage-list", "source-video", "video-empty", "preview-badge",
         "current-time", "total-time", "play-selection", "play-context", "playback-range", "add-active", "active-title",
-        "active-range", "active-facts", "evidence-tab", "transcript-tab", "evidence-panel",
+        "active-range", "active-facts", "active-local-context", "evidence-tab", "transcript-tab", "evidence-panel",
         "transcript-panel", "evidence-count", "evidence-list", "transcript-tab-count",
         "transcript-list", "search-form", "query", "mode", "top", "search-button",
         "saved-details-control", "include-saved-details",
@@ -820,6 +820,7 @@
         renderShots();
         renderTimeline();
         renderCandidates();
+        renderActiveLocalContext();
     }
 
     async function loadShots(scan) {
@@ -931,6 +932,7 @@
         if (report && query && !spans.length) {
             ui["frame-text-results"].replaceChildren(element("li", "muted small", "画面文字里没有找到。识别可能有错字，可以试更短的词。"));
         } else ui["frame-text-results"].replaceChildren(...spans.slice(0, 50).map(frameTextItem));
+        renderActiveLocalContext();
         renderTimeline();
     }
 
@@ -2538,6 +2540,50 @@
         ui["playback-range"].textContent = row ? `原区间 · ${intervalLabel(row)}` : "";
         updateActiveButton();
         updateDetailQueryButton();
+        renderActiveLocalContext();
+    }
+
+    function renderActiveLocalContext() {
+        const container = ui["active-local-context"];
+        container.replaceChildren();
+        const row = state.active?.row;
+        container.hidden = !validInterval(row);
+        if (container.hidden) return;
+        container.append(element("p", "muted small", "片段上下文 · 用来对照原片，不代表事件判断"));
+        const shots = state.shots?.runId === state.run ? state.shots : null;
+        if (shots) {
+            // Source intervals are half-open: a cut at the end belongs to the next clip.
+            const first = 1 + shots.cuts.filter((cut) => cut.timeUs <= row.startUs).length;
+            const last = 1 + shots.cuts.filter((cut) => cut.timeUs < row.endUs).length;
+            container.append(element("p", "small", `镜头 ${first}${last > first ? `–${last}` : ""} · 区间内 ${last - first} 次切换（本机检测，未经人工核对）`));
+        } else container.append(element("p", "muted small", "镜头：尚无检测报告，可在左侧检测。"));
+        const report = state.frameText?.runId === state.run ? state.frameText : null;
+        if (report) {
+            const texts = new Set();
+            for (const frame of report.frames) {
+                if (frame.timeUs < row.startUs || frame.timeUs >= row.endUs) continue;
+                for (const line of frame.lines) if (line.text.trim()) texts.add(line.text.trim());
+            }
+            container.append(element("p", "small", texts.size
+                ? `画面文字（本机识别，未经人工核对）：${[...texts].slice(0, 8).join("；")}${texts.size > 8 ? `；另有 ${texts.size - 8} 条，请到左侧文字卡片查看` : ""}`
+                : "画面文字：此区间的已识别帧没有文字；抽帧和识别可能遗漏。"));
+        } else container.append(element("p", "muted small", "画面文字：尚无识别报告，可在左侧识别。"));
+        const transcripts = (state.view?.transcripts || []).filter((item) => validInterval(item)
+            && item.startUs < row.endUs && item.endUs > row.startUs);
+        container.append(element("p", "muted small", `重叠语音 ${transcripts.length} 条（转录待核对）`));
+        for (const transcript of transcripts.slice(0, 5)) {
+            const jump = element("button", "text-button", `${intervalLabel(transcript)} · ${transcript.text}`);
+            jump.type = "button";
+            jump.disabled = !state.sourceUrl;
+            jump.addEventListener("click", () => {
+                state.playbackEndUs = transcript.endUs;
+                seek(transcript.startUs);
+                ui["playback-range"].textContent = `转录区间 · ${intervalLabel(transcript)}`;
+                ui["source-video"].play().catch(() => notice("请使用视频播放按钮开始播放。"));
+            });
+            container.append(jump);
+        }
+        if (transcripts.length > 5) container.append(element("p", "muted small", `另有 ${transcripts.length - 5} 条，请到语音页签查看。`));
     }
 
     function renderEvidence() {

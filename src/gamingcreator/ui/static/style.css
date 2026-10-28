@@ -404,3 +404,9 @@ dialog::backdrop { background: #030713d9; }
 .readiness-count strong { display: block; font-size: 18px; }
 .readiness-note { padding: 10px 12px; border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .readiness-blockers, .readiness-runs { margin: 0; padding-left: 1.2em; }
+
+.active-local-context { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.active-local-context button { display: block; max-width: 100%; white-space: normal; text-align: left; overflow-wrap: anywhere; }
+
+.active-clip { min-height: 0; max-height: 55%; overflow-y: auto; }
+@media (max-width: 1000px) { .active-clip { max-height: 100%; } }

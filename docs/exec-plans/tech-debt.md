@@ -1,4 +1,4 @@
-2026-10-28本轮核对：画面文字筛选交付，无新增人工待办或技术债，原事项状态不变。
+2026-10-28本轮核对：画面文字筛选与片段上下文交付，无新增人工待办或技术债，原事项状态不变。
 
 **2026-10-22 TD009 离线进展（match-report↔sidecar 证据 partId／condition 加深，已推送 daecce3）：** 见 sprint-td009-match-report-sidecar-evidence-part-condition.md。复合人评／静态索引仍 open；不宣称 TD009／F010 关单。
 

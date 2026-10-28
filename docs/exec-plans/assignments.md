@@ -1,6 +1,6 @@
 # 当前分工与恢复入口
 
-2026-10-28 当前：时间轴筛选含画面文字，Codex主控拥有 app.js/index.html、相关测试和公共文档；Luna/high只读定位，Sol/medium只读评估。无并行源码写者。筛选已交付、Sol/medium PASS；当前转入片段上下文。见 sprint-timeline-text-filter.md。
+2026-10-28 当前：时间轴筛选含画面文字，Codex主控拥有 app.js/index.html、相关测试和公共文档；Luna/high只读定位，Sol/medium只读评估。无并行源码写者。筛选已交付、Sol/medium PASS；片段上下文已交付、Sol/medium复核PASS，完整verify运行中。主控禁止并行改源码，Luna/high只读准备第6/8步卡片。见 sprint-timeline-text-filter.md。
 
 最新：固定28.5秒单帧已按新¥0.50许可唯一发送并发布，估算¥0.001492，922旧文件不变；本地resume零发送、查询正例1／跨衣物负例0，原Sol/high最终PASS。见[sprint-static-observation-pilot.md](sprint-static-observation-pilot.md)。TD006自动映射已由同一workspace的原DSH会话完成并验收；原Luna/high地图与Sol/high合同审阅完成，Codex合同／公共文档及正式检查，DSH唯一源码写者，无新录像请求。
 

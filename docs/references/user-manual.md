@@ -420,3 +420,9 @@ $env:DEEPSEEK_API_KEY = "<你的密钥>"
 | 人工标签和 U10 怎么算 | [benchmark-manifest-schema.md](./benchmark-manifest-schema.md)、[phase-0-benchmark.md](./phase-0-benchmark.md) |
 | 我该怎样进行F006人工验收 | [human-acceptance-guide.md](./human-acceptance-guide.md) |
 | 命令和数据的工程合同 | [phase-0-engineering-spec.md](../design-docs/phase-0-engineering-spec.md) |
+
+### 当前片段的本地上下文
+
+点击时间轴或检索候选后，当前片段区域会列出已有本机镜头报告中的镜头范围、原片段区间内实际采样到的文字，以及与片段重叠的语音。文字去重最多显示8条，语音最多5条；较长内容可在片段区域内滚动。没有报告会提示先在左侧检测／识别，不自动开始。识别可能遗漏或错字，均待人工核对。
+
+点击重叠语音可以回听其原区间，当前事件及片段篮保持原样。文字筛选用前后各1秒帮助找邻近事件，这里的上下文只显示原区间，所以文字筛选命中的事件也可能显示“此区间的已识别帧没有文字”；点击原片核对即可。
