@@ -17,3 +17,5 @@
 实施节点：Sol/medium独立三文件已完成，PS7/WindowsPS5.1 26passed/2文件符号链接权限skip；真实原副本在缓存恢复9SHA及ffmpeg/ffprobe版本通过，Sol/high独立边界审查中。另用户已许可月末候选下载并隔离验证，另Sol/medium worker另cache/worktree执行，不改变本脚本旧pin复制安装合同。
 
 集成节点：Sol/high关键边界评估PASS（只读，无有证据缺陷），三文件已主树集成。主树首组3失败由候选UV误目标删除主venv部分依赖导致ModuleNotFoundError，不归为媒体安装缺陷；原锁+本地缓存恢复41包、init与应用/测试/浏览器导入恢复后，同组40passed/2文件symlink权限skip、47.77秒，JUnit .cache/offline-media-main-restored.xml。真实当前副本9SHA/版本恢复已通过。生产pin不变，TD003仍open。后续环境写操作必须用目标worktree自身env并断言UV_PROJECT_ENVIRONMENT，--project不够；已同步协作指南及错误记录。下一步提交并对最终整合版本完整verify。
+
+已提交44e2537；完整verify已实际启动：exec98084，.cache/verify-20261029-session6e.log，运行中。期间代码冻结，不再uv同步任何主树依赖，不重复启动全量。候选验证全部结束，原组151/3、校准补测3pass单列，详见报告。下一步等待唯一检查结果后同步最终证据。
