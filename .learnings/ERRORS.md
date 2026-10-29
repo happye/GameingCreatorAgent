@@ -489,3 +489,6 @@ Resolved before any test execution: full git ls-files quoted the Chinese product
 2026-10-29环境事故：候选worker先dot-source主树env后仅用uv --project切换worktree，遗漏UV_PROJECT_ENVIRONMENT仍为主树.venv，uv试图用候选Python重建主venv，拒绝访问前已删部分依赖。主树媒体回归3项ModuleNotFoundError不是产品缺陷。主控按原uv.lock+原缓存离线恢复41锁定包，init/pytest/application/playwright导入恢复；复验日志offline-media-main-restored.xml。误uv日志.cache/ffmpeg-candidate-20260930/sync-offline.log。--project不覆盖UV_PROJECT_ENVIRONMENT；任何依赖/venv/工具写入前必须加载目标worktree自身env并断言目标路径。共享主树env仅用于只读测试，绝不能沿用到uv sync/venv。未改生产FFmpeg/pin/原片，无新费用。
 
 2026-10-29：固定生成器时钟预期worker在留下3测试文件后返回usage limit（工具报告，不是用户暂停）。主控先检查没有存活pytest、保留独立worktree并接管只读测试/格式验证，不重试Sol；向用户明确披露后仅一次以运行时支持Astra/low默认角色执行同一独立quality-guard合同，未默默更换父模型。未评估前不合并主树。主树44e2537完整3732/5skip仍为已验证基线，额度中断仅影响此未合并测试夹具子项。
+
+
+2026-10-29长素材缓存实验：saved_frames返回(evidence_id, source_us)元组，首次预检误取.time_us，尚未启动FFmpeg即失败；读签名修正一次后换新目录完成，失败目录保留，旧文件未变。读取sprint路径前先rg --files，实际候选报告为report-ffmpeg-candidate-20261029.md。首次汇总脚本以newline空串读取CRLF后查找双LF，预检失败且未写文件；修正为统一读取换行、写回保留原换行后再执行。

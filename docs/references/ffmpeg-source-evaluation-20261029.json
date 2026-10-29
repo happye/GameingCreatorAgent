@@ -30,5 +30,50 @@
   },
   "evidenceDirectory": ".cache/ffmpeg-candidate-20260930",
   "productionReplacementAuthorized": false,
-  "distributionAuthorized": false
+  "distributionAuthorized": false,
+  "savedLongReplay": {
+    "runId": "5c7894aa10e94b8aa82533bd77f9871e",
+    "durationUs": 952101688,
+    "sampling": {
+      "intervalNumerator": 1,
+      "intervalDenominator": 2,
+      "maxWidth": 1280,
+      "maxFrames": 5000
+    },
+    "frames": 1903,
+    "frameSourceTimesEqual": true,
+    "audioRawFrameCount": 44629,
+    "audioRawFramesEqual": true,
+    "audioClockEqual": true,
+    "audioPcmEqual": true,
+    "audioWavFileShaEqual": false,
+    "alignedJpegFileShaMatches": 0,
+    "sameReferenceDecoderRgb24ShaMatches": 1903,
+    "dimensions": [
+      1280,
+      534
+    ],
+    "sampleAspectRatio": [
+      801,
+      800
+    ],
+    "referenceDecoderSha256": "fbf93c7f66b9194a236ecacbc2cb011ad91b704c87f7dba673efbf5800f8c67a",
+    "referenceDecoderFullBundleVerified": true,
+    "originalFileCountVerifiedUnchanged": 1907,
+    "sourceUnchanged": true,
+    "modelCalls": 0,
+    "independentAudit": "PASS; clock/original-file audit and incremental fixed-decoder framehash audit",
+    "scope": "This saved source, exact sampling parameters and same fixed reference decoder only; file identity differs; no production replacement, distribution, model-quality or human-acceptance claim",
+    "evidenceDirectory": ".cache/ffmpeg-candidate-20260930/long-clock-b581f1daf12f4c3699f7befe3b1cb6fd",
+    "evidenceSha256": {
+      "report.json": "1e040d526171e647b67102df21c26d3ef1c2bbcd65386fe6cb0db89ca2b90a20",
+      "original-file-hashes.json": "b16496ba84dcfac560e978bb3b1882a9eddcdf1a82306feb2017037193ff3594",
+      "original-manifest.json": "a84549c6118bd360e7ff70d37f0e3033cacea86092111c1ff28d3d5761d3cb99",
+      "candidate-media/media-manifest.json": "7678aecdc7e419cb03697bf38b6d82bd54d1819c9b12cb7d46432d6de2dcd0c7",
+      "pixel-comparison.json": "9cc8938bc55a036888a259eba4f1b6989fac5bd4f9cbfded228e7fd258c4158a",
+      "old-rgb24.framehash": "4456830b220aa96cba6be9c920f61ea23d0e96fcae95850002ba138d48bd5284",
+      "new-rgb24.framehash": "4456830b220aa96cba6be9c920f61ea23d0e96fcae95850002ba138d48bd5284"
+    },
+    "report": "docs/exec-plans/sprint-saved-long-media-comparison.md"
+  }
 }

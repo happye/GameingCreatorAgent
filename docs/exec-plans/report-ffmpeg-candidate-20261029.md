@@ -17,3 +17,6 @@
 补充实验已完成：按两版本ffprobe独立一致证实的新样片源时钟，仅在候选cache复制测试模块，替换对应时刻预期和提示文本、保持所有容差与后续保护断言；3场景通过，完整执行快速切换防旧时钟串用、可见零轴矛盾拒绝。原测试文件前后SHA相同，原151/3结果不变。依据/原文件SHA/改动范围/日志见calibrated-smoke-basis.json、calibrated-smoke-result.json与calibrated-smoke.log。机器可读最终结果见../references/ffmpeg-source-evaluation-20261029.json；candidate.json为许可时点不可变快照，其当时downloaded=false不代表当前下载状态。授权doc SHA与完整归档SHA均由主控再次核对一致。无后台候选任务。
 
 固定生成器预期绑定后验证：Astra/low设计、Sol/medium留下三测试文件后额度中断，主控完成新旧两套7单测+3完整场景各10passed；Astra/low显式替代独立边界评估PASS，主树旧工具10passed。只依据实际EXE及整套已确认工具/DLL SHA选择静态整数预期，未知或混库失败；APP/生产pin/编码命令/容差/保护动作未改，不把运行时app/probe输出当答案。该后续测试夹具维护结果不覆盖原151/3记录，也不构成生产替换或许可证审阅完成。
+
+
+已保存真实长录像补充验证：按旧manifest完整采样参数重取，1903源时刻和44629音频原始映射均相同，音频PCM相同。JPEG文件SHA全部不同、WAV文件SHA不同；同一完整SHA核验的固定参考解码器归一RGB24后1903/1903像素SHA相同，1280×534、SAR801/800。原片及1907旧文件前后不变；Astra/low独立时钟/保护审计与增量像素审计PASS。结论仅限本片/参数/参考解码器；不覆盖旧证据、不更改生产pin、不声明模型质量或许可证完成。完整合同/缓存路径/下一主线门禁见[sprint](sprint-saved-long-media-comparison.md)，机器结果见evaluation新增savedLongReplay。
