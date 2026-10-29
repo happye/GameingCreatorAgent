@@ -103,6 +103,7 @@ from gamingcreator.application.source_inventory import (
 )
 from gamingcreator.application.storage import RunStatus, StoredTimeline
 from gamingcreator.application.tasks import all_tasks_payload, tasks_payload
+from gamingcreator.cli.creation import execute_plan_creation
 from gamingcreator.cli.ocr_frames import execute_ocr_frames
 from gamingcreator.cli.shot_boundaries import execute_detect_shots
 from gamingcreator.cli.static_observation_generation import (
@@ -244,6 +245,14 @@ def _parser() -> CliParser:
     )
     inventory.add_argument("--input", type=Path, nargs="+", required=True)
     inventory.add_argument("--output", type=Path, required=True)
+    creation = commands.add_parser("plan-creation", help="已有Completed素材的离线模板创作方案")
+    creation.add_argument("--project", type=Path, required=True)
+    creation.add_argument("--run", nargs="+", required=True)
+    creation.add_argument("--brief", type=Path, required=True)
+    creation.add_argument("--output", type=Path, required=True)
+    creation.add_argument("--event", nargs="*", default=[])
+    creation.add_argument("--fps", type=int, default=30)
+    creation.add_argument("--select", choices=["chronological", "hook-first", "reverse"])
     shots = commands.add_parser(
         "detect-shots",
         help="本地检测一个任务原片的镜头切换与黑屏，并标出跨镜头事件；只读、不花钱",
@@ -1738,6 +1747,12 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
             )
         )
         return None
+    if args.command == "plan-creation":
+        return asyncio.run(
+            execute_plan_creation(
+                args.project, args.run, args.brief, args.output, args.event, args.fps, args.select
+            )
+        )
     if args.command == "detect-shots":
         asyncio.run(
             execute_detect_shots(

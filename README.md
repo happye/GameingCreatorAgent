@@ -1,5 +1,7 @@
 # Gaming Creator Agent
 
+2026-10-30: full-product implementation follows the [architect-reviewed roadmap](docs/exec-plans/accelerated-product-roadmap.md), with quality/release gates tracked separately. `./scripts/plan-creation.ps1 -Project <project> -Run <completed-run-id> -Brief ./creation-brief.example.json -OutputPath <new-directory> -Select hook-first` creates three offline template drafts and a source-bound edit decision. This slice does not render MP4 or claim general AI planning. Immediate required human tasks: zero; see the [quantified action list](docs/exec-plans/user-actions.md).
+
 Joint searches can explicitly include saved, evidence-supported visual attributes with ‘含已有细节’ or `--detail-profile v2`. Only the exact selected base/refinement version is read; uncertain or conflicting observations do not become positive search text. Rankings carry detail provenance and corpus coverage, while same-actor conditions remain a separate check. No new analysis or paid request is dispatched. See the [saved-detail retrieval guide](docs/references/saved-detail-retrieval-guide.md).
 
 New detail-assisted keyword and semantic searches score the original description, each actor and the environment separately, then use the best component score for the original event without duplicate results or extra ranking votes. Saved rankings identify the groups used by each component; old v1/v2 projections remain reproducible. Component groups may differ, so this does not prove same-actor or same-garment conditions. Formal human retrieval acceptance remains pending.

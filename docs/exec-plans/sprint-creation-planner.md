@@ -11,3 +11,5 @@ owner：task_developer/Sol medium在独立worktree .cache/worktrees/creation-pla
 必要验证：三结构差异/时长预算/源绑定、缺素材/缺主题、越界与错误来源、重复输出拒绝/重读一致、公开CLI真实Completed演示素材走通；Ruff与受影响mypy。不重复全量、禁止共享主venv uv写入；只读共享Python须先主树env、-B，设置隔离worktree PYTHONPATH与独立pytest缓存。实现后由独立关键边界评估者审来源/新文件发布，主控集成后一次定向验证。
 
 下一切片：同一EDL接真实本地FFmpeg渲染MP4、验证片段顺序/时长/音画及原源不变。当前JSON方案不能计为渲染或端到端视频完工。自然语言Brief、可核实素材评分、配音/音乐、UI编辑等按全功能路线接续，不用占位接口或未连通页面计完工。
+
+交付证据（2026-10-30）：8个源/入口/测试文件已主树集成；18项行为测试通过，Ruff和worker受影响mypy通过。Sol/high唯一独立评估PASS；3个P2已直接修复（同源同区间去重、时间序基线、零帧候选先过滤）。主树公开PowerShell脚本对demo-phase0的96b5f01530ce43e2944828fb0520b9b4成功输出，另进程逐文件SHA核对回执及38段hook-first EDL；本机.cache/planner-main-latest.json与planner-integrated.xml。无模型请求/新费用；尚未渲染MP4。仅P019/P021/P027记部分，其余模板库/脚本/缺口等独立功能不因基础草稿就升状态。下一切片合同sprint-creation-render.md。

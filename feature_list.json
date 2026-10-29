@@ -608,10 +608,16 @@
       "group": "C",
       "name": "Creative Brief：一句话需求→结构化需求",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "docs/exec-plans/sprint-creation-planner.md",
+        "tests/test_creation_planner.py",
+        "scripts/plan-creation.ps1"
+      ],
+      "quality_status": "template_draft_not_human_accepted",
+      "release_status": "not_released",
+      "implementation_status": "partial",
+      "remaining": "Natural-language understanding, full creative requirements and render/UI integration remain; this slice is structured-input offline template planning and source-bound EDL only."
     },
     {
       "id": "P020",
@@ -628,10 +634,16 @@
       "group": "C",
       "name": "Creative Planner：多套视频方案",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "docs/exec-plans/sprint-creation-planner.md",
+        "tests/test_creation_planner.py",
+        "scripts/plan-creation.ps1"
+      ],
+      "quality_status": "template_draft_not_human_accepted",
+      "release_status": "not_released",
+      "implementation_status": "partial",
+      "remaining": "Natural-language understanding, full creative requirements and render/UI integration remain; this slice is structured-input offline template planning and source-bound EDL only."
     },
     {
       "id": "P022",
@@ -688,10 +700,16 @@
       "group": "C",
       "name": "Edit Decision（结构化剪辑决策）",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "docs/exec-plans/sprint-creation-planner.md",
+        "tests/test_creation_planner.py",
+        "scripts/plan-creation.ps1"
+      ],
+      "quality_status": "template_draft_not_human_accepted",
+      "release_status": "not_released",
+      "implementation_status": "partial",
+      "remaining": "Natural-language understanding, full creative requirements and render/UI integration remain; this slice is structured-input offline template planning and source-bound EDL only."
     },
     {
       "id": "P028",

@@ -1,0 +1,11 @@
+{
+  "game": "示例游戏",
+  "contentType": "feature_showcase",
+  "platforms": ["bilibili"],
+  "targetDuration": 30,
+  "objective": "整理已有素材中的玩法片段",
+  "audience": "新玩家",
+  "tone": "清楚简洁",
+  "mandatoryTopics": [],
+  "exclude": []
+}

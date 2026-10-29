@@ -6,8 +6,8 @@
 | --- | --- | --- |
 | 架构路线 | task_architect Astra/low | 已完成；主控持久化ADR-003和accelerated-product-roadmap.md |
 | 复用入口及人工任务定位 | 现有task_explorer Luna/high | 已完成；来源见sprint-creation-planner.md与user-actions.md |
-| R1方案/EDL实现 | task_developer Sol/medium | .cache/worktrees/creation-planner-20261030；仅合同指定模块/CLI/脚本/测试，不写公共文档 |
-| 来源/持久化独立评估 | 现有guard_result_cards Sol/high | 已接合同，代码就绪后一次最终评估，不额外普通review |
+| R1方案/EDL实现 | task_developer Sol/medium | .cache/worktrees/creation-planner-20261030；8文件主树集成，18测试及真实脚本/回读通过 |
+| 来源/持久化独立评估 | 现有guard_result_cards Sol/high | 已PASS，三个可触发P2均修复，未重复普通review |
 | 集成与下一切片 | 主控 | 定向验证后集成；紧接真实FFmpeg MP4，不等人评分组 |
 
 当前人工必须操作0项；没有新模型/下载/外部发布费用许可。原分析、费用、时钟身份和旧标注保持。文件所有权与验收见[sprint](sprint-creation-planner.md)。
