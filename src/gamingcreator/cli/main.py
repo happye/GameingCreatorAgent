@@ -104,6 +104,7 @@ from gamingcreator.application.source_inventory import (
 from gamingcreator.application.storage import RunStatus, StoredTimeline
 from gamingcreator.application.tasks import all_tasks_payload, tasks_payload
 from gamingcreator.cli.creation import execute_plan_creation
+from gamingcreator.cli.creation_render import execute_render_creation
 from gamingcreator.cli.ocr_frames import execute_ocr_frames
 from gamingcreator.cli.shot_boundaries import execute_detect_shots
 from gamingcreator.cli.static_observation_generation import (
@@ -136,6 +137,7 @@ from gamingcreator.infrastructure.detail_query_sidecar import (
 )
 from gamingcreator.infrastructure.ffmpeg_fullres import FfmpegFullResolutionFrames
 from gamingcreator.infrastructure.ffmpeg_media import FfmpegMediaProcessor
+from gamingcreator.infrastructure.ffmpeg_render import FfmpegCreationRenderer
 from gamingcreator.infrastructure.ffmpeg_shots import FfmpegShotDetector
 from gamingcreator.infrastructure.ffmpeg_signatures import FfmpegSignatureExtractor
 from gamingcreator.infrastructure.http_transport import HttpxVisionTransport
@@ -245,6 +247,12 @@ def _parser() -> CliParser:
     )
     inventory.add_argument("--input", type=Path, nargs="+", required=True)
     inventory.add_argument("--output", type=Path, required=True)
+    render = commands.add_parser("render-creation", help="核对已有创作方案并用本机FFmpeg生成MP4")
+    render.add_argument("--project", type=Path, required=True)
+    render.add_argument("--creation", type=Path, required=True)
+    render.add_argument("--output", type=Path, required=True)
+    render.add_argument("--width", type=int, default=1280)
+    render.add_argument("--height", type=int, default=720)
     creation = commands.add_parser("plan-creation", help="已有Completed素材的离线模板创作方案")
     creation.add_argument("--project", type=Path, required=True)
     creation.add_argument("--run", nargs="+", required=True)
@@ -1747,6 +1755,17 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
             )
         )
         return None
+    if args.command == "render-creation":
+        return asyncio.run(
+            execute_render_creation(
+                args.project,
+                args.creation,
+                args.output,
+                FfmpegCreationRenderer(Path.cwd()),
+                args.width,
+                args.height,
+            )
+        )
     if args.command == "plan-creation":
         return asyncio.run(
             execute_plan_creation(
