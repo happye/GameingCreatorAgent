@@ -20,3 +20,5 @@
 
 
 验证结果：init -CheckOnly退出0（11 Phase 0 features）；修改文档190个本地链接目标均存在，旧HANDOFF除链接迁址外原内容完整保留；人工8行、技术债17行与同步前逐行一致，状态10/2/5；看板逐项51=10/8/33、首产品22=0/2/20；F006/F009/F010及整个feature_list未改。9份实际材料SHA复核一致，git diff --check通过，产品源码无diff。缓存回执publication-doc-validation.json保留。首次校验脚本按空白分割状态，未识别open后直接接中文括号，已改为匹配状态前缀后通过；该预检未改产品或状态表。
+
+最终提交检查补充：新归档文件在首次staged diff --check被指出末尾多一个空行；PowerShell未检查外部命令退出码而继续提交。已直接去除末尾空行，用显式LASTEXITCODE检查重新验证后补交；不改归档正文或状态表，不改写已推送历史。
