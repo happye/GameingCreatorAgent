@@ -3142,6 +3142,7 @@
     void (async () => {
         try {
             const health = await request("/api/health", {});
+            document.getElementById("open-creation").hidden = !(health.application === "gamingcreator-workspace" && health.capabilities?.includes("creation-workspace-v1"));
             state.projectDetailAvailable=health.application==="gamingcreator-workspace" && health.capabilities?.includes("project-detail-query-v1");updateSearchScope();
             state.searchDetailAvailable=health.application==="gamingcreator-workspace" && health.capabilities?.includes("search-detail-query-v1");updateSearchScope();
             state.savedDetailRetrievalAvailable=health.application==="gamingcreator-workspace" && health.capabilities?.includes("saved-detail-retrieval-v1");updateSearchScope();

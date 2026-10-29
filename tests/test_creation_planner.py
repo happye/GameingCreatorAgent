@@ -202,3 +202,29 @@ def test_subframe_candidate_cannot_collapse_ready_template_orders():
     ]
     assert len(set(orders)) == 3
     assert all("tiny" not in order for order in orders)
+
+
+def test_distinct_original_ranges_cannot_export_duplicate_trimmed_intervals():
+    original = clips()[0]
+    material = tuple(
+        replace(
+            original,
+            event=replace(
+                original.event,
+                event_id=f"event{i}",
+                source_range=SourceRange(0, (i + 1) * 3_000_000, 30_000_000),
+            ),
+        )
+        for i in range(4)
+    )
+    report = plan_creation(replace(brief(), target_duration=1), material, 30)
+    for plan in report["plans"]:
+        intervals = [
+            (row["sourceSha256"], row["startUs"], row["endUs"]) for row in plan["segments"]
+        ]
+        assert len(intervals) == len(set(intervals))
+        if plan["ready"]:
+            select_edit_decision(report, plan["id"])
+        else:
+            assert plan["gaps"]
+        assert sum(row["outputFrames"] for row in plan["segments"]) <= 30

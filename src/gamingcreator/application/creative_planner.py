@@ -82,6 +82,7 @@ def plan_creation(
     for identity, description, ordered in structures:
         remaining = brief.target_duration * fps
         segments: list[dict[str, object]] = []
+        used_intervals: set[tuple[str, int, int]] = set()
         for index, clip in enumerate(ordered):
             event = clip.event
             frames = min(
@@ -90,6 +91,11 @@ def plan_creation(
             )
             if frames <= 0:
                 continue
+            end_us = event.source_range.start_us + (frames * 1_000_000 + fps - 1) // fps
+            interval_key = (clip.asset.sha256, event.source_range.start_us, end_us)
+            if interval_key in used_intervals:
+                continue
+            used_intervals.add(interval_key)
             segments.append(
                 {
                     "runId": event.run_id,
@@ -98,7 +104,7 @@ def plan_creation(
                     "sourceSha256": clip.asset.sha256,
                     "sourcePath": str(clip.asset.source_path),
                     "startUs": event.source_range.start_us,
-                    "endUs": event.source_range.start_us + (frames * 1_000_000 + fps - 1) // fps,
+                    "endUs": end_us,
                     "sourceDurationUs": clip.asset.duration_us,
                     "outputStartFrame": brief.target_duration * fps - remaining,
                     "outputFrames": frames,

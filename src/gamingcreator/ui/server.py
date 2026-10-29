@@ -18,6 +18,7 @@ from gamingcreator.infrastructure.ffmpeg_fullres import FfmpegFullResolutionFram
 from gamingcreator.infrastructure.ffmpeg_shots import FfmpegShotDetector
 from gamingcreator.infrastructure.windows_ocr import WindowsOcrEngine
 from gamingcreator.ui.benchmark_workflow import BenchmarkWorkflows
+from gamingcreator.ui.creation_jobs import CreationJobs
 from gamingcreator.ui.frame_text import (
     DENSITIES,
     cached_frame_text_payload,
@@ -44,6 +45,9 @@ STATIC = Path(__file__).with_name("static")
 # Largest rejected request body still read before replying, so the reply is not lost.
 DISCARD_LIMIT = 1_048_576
 ASSETS = {
+    "/creation": ("creation.html", "text/html; charset=utf-8"),
+    "/assets/creation.js": ("creation.js", "text/javascript; charset=utf-8"),
+    "/assets/creation.css": ("creation.css", "text/css; charset=utf-8"),
     "/": ("index.html", "text/html; charset=utf-8"),
     "/assets/app.js": ("app.js", "text/javascript; charset=utf-8"),
     "/assets/style.css": ("style.css", "text/css; charset=utf-8"),
@@ -92,6 +96,8 @@ def discover_projects(repository: Path) -> list[dict[str, str]]:
 
 
 def error_status(error: AppError) -> int:
+    if error.code == "creation.not_found":
+        return 404
     if error.code in {
         "input.evidence",
         "storage.run_missing",
@@ -111,6 +117,7 @@ def error_status(error: AppError) -> int:
 
 
 class WorkspaceServer(ThreadingHTTPServer):
+    creation_jobs: CreationJobs
     preparation_jobs: MediaPreparationJobs
     benchmark_workflows: BenchmarkWorkflows
 
@@ -121,6 +128,9 @@ class WorkspaceServer(ThreadingHTTPServer):
         workflows = getattr(self, "benchmark_workflows", None)
         if workflows is not None:
             workflows.close()
+        creations = getattr(self, "creation_jobs", None)
+        if creations is not None:
+            creations.close()
         super().server_close()
 
     def server_bind(self) -> None:
@@ -135,6 +145,7 @@ class WorkspaceServer(ThreadingHTTPServer):
 class InspectionHandler(BaseHTTPRequestHandler):
     repository = Path.cwd()
     media_cache = VerifiedMediaCache()
+    creation_jobs: CreationJobs
     preparation_jobs: MediaPreparationJobs
     benchmark_workflows: BenchmarkWorkflows
 
@@ -184,7 +195,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
         resource = asyncio.run(registered_media(project, run_id, evidence_id))
         self._serve_media(resource)
 
-    def _serve_media(self, resource: MediaResource) -> None:
+    def _serve_media(self, resource: MediaResource, download: bool = False) -> None:
         with self.media_cache.open(resource) as source:
             size = os.fstat(source.fileno()).st_size
             try:
@@ -196,6 +207,8 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return
             self._headers(206 if partial else 200, length, resource.content_type)
             self.send_header("Accept-Ranges", "bytes")
+            if download:
+                self.send_header("Content-Disposition", 'attachment; filename="creation.mp4"')
             if partial:
                 self.send_header("Content-Range", f"bytes {offset}-{offset + length - 1}/{size}")
             self.end_headers()
@@ -246,6 +259,8 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return
             path = urlparse(self.path).path
             if path not in {
+                "/api/creation/plans",
+                "/api/creation/renders",
                 "/api/match-details",
                 "/api/draft-detail-query",
                 "/api/search-project",
@@ -270,6 +285,14 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return result
 
             value = json.loads(body, object_pairs_hook=unique)
+            if path in {"/api/creation/plans", "/api/creation/renders"}:
+                self._json(
+                    202,
+                    self.creation_jobs.submit(
+                        "plan" if path.endswith("plans") else "render", value
+                    ),
+                )
+                return
             if path in {"/api/benchmark-workflows", "/api/benchmark-step"}:
                 if type(value) is not dict:
                     raise ValueError("Expected workflow fields.")
@@ -508,6 +531,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                         "application": "gamingcreator-workspace",
                         "apiVersion": 1,
                         "capabilities": [
+                            "creation-workspace-v1",
                             "media-preparation-v1",
                             "benchmark-workflow-v1",
                             "benchmark-bind-options-v1",
@@ -533,6 +557,25 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(200, {"projects": discover_projects(self.repository)})
                 return
             query = _query(self.path)
+            if path == "/api/creation/jobs":
+                if set(query) != {"projectId"}:
+                    raise ValueError("Expected registered project ID")
+                self._json(200, self.creation_jobs.catalog(query["projectId"]))
+                return
+            if path.startswith("/api/creation/jobs/"):
+                tail = path.removeprefix("/api/creation/jobs/")
+                if tail.endswith("/video"):
+                    if query not in ({}, {"download": "1"}):
+                        raise ValueError("Invalid media query")
+                    self._serve_media(
+                        self.creation_jobs.video(tail.removesuffix("/video")),
+                        query.get("download") == "1",
+                    )
+                else:
+                    if query:
+                        raise ValueError("Unexpected job query")
+                    self._json(200, self.creation_jobs.get(tail))
+                return
             if path == "/api/benchmark-workflows":
                 if query:
                     raise ValueError("Unexpected workflow catalog fields.")
@@ -745,6 +788,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
 def create_server(host: str, port: int, repository: Path) -> ThreadingHTTPServer:
     if host != "127.0.0.1":
         raise ValueError("The inspection workspace only binds to 127.0.0.1")
+    creations = CreationJobs(repository)
     jobs = MediaPreparationJobs(repository)
     workflows = BenchmarkWorkflows(repository)
     handler = type(
@@ -753,11 +797,13 @@ def create_server(host: str, port: int, repository: Path) -> ThreadingHTTPServer
         {
             "repository": repository.resolve(),
             "media_cache": VerifiedMediaCache(),
+            "creation_jobs": creations,
             "preparation_jobs": jobs,
             "benchmark_workflows": workflows,
         },
     )
     server = WorkspaceServer((host, port), handler)
+    server.creation_jobs = creations
     server.preparation_jobs = jobs
     server.benchmark_workflows = workflows
     return server

@@ -494,3 +494,5 @@ Resolved before any test execution: full git ls-files quoted the Chinese product
 2026-10-29长素材缓存实验：saved_frames返回(evidence_id, source_us)元组，首次预检误取.time_us，尚未启动FFmpeg即失败；读签名修正一次后换新目录完成，失败目录保留，旧文件未变。读取sprint路径前先rg --files，实际候选报告为report-ffmpeg-candidate-20261029.md。首次汇总脚本以newline空串读取CRLF后查找双LF，预检失败且未写文件；修正为统一读取换行、写回保留原换行后再执行。
 
 2026-10-29文档发布：未跟踪的新归档不在普通git diff --check范围，须纳入staged检查；PowerShell的ErrorActionPreference不会自动终止外部命令非零退出。每个依赖门禁显式检查LASTEXITCODE再提交/推送。此次归档EOF空行已去除并补交，不改写已推送历史。
+
+2026-10-30工作台集成：首组54pass/2fail/1skip。一项因状态读重试漏reading=True，Windows CRT只报errno13而无winerror；补明确读模式与一次拒绝后成功的回归，未重跑任务。另一项旧health精确cap清单未纳入新功能，已同步。最终57pass/1权限skip；真实浏览器/下载/刷新/服务重启0重跑通过。状态操作重试与整个任务重跑必须区分。
