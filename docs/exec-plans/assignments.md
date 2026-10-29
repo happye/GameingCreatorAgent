@@ -1,6 +1,6 @@
 # 当前分工与恢复入口
 
-更新：2026-10-29。源码44e2537完整verify已3732 passed/5 skipped、757.37秒、双wheel一致（89cccf1437350a577a964b374b549aa700caa010e5031061aff7bacb7f78190a）、退出0，日志.cache/verify-20261029-session6e.log；exec98084已结束，主环境恢复已获完整回归证明。当前Sol/medium唯一源码worker在.cache/worktrees/media-clock-expectations、codex/media-clock-expectations按Astra/low设计绑定三个合成夹具的固定生成器精确预期，拥有tests helper/单测及两个clock测试文件，主树无活跃写者。新旧文件组必须逐文件匹配、未知明确失败，不改APP、生产pin、编码命令或容差；合同sprint-media-generator-clocks.md。下一步新旧工具定向验证→Sol/high唯一边界评估→集成。
+更新：2026-10-29。固定生成器时钟预期已集成：三个真实生成用例按实际EXE及对应整套文件SHA取静态预期，未知/混库失败，新旧各10通过、主树10通过、Ruff通过；Sol额度中断由主控完成验证，显式替代的Astra/low独立评估PASS。生产APP/FFmpeg pin/容差未变，未重复无关全量，最后完整生产基线44e2537为3732通过/5跳过/双wheel一致/退出0。候选原151/3与校准补测3pass仍保留，不换生产pin、不分发，TD003仍open。下一步按已有许可对已保存长录像做候选只读重取时钟对比：仅从旧manifest恢复完整参数，所有新输出限cache，原DB/证据/原片不写。
 
 | 本轮工作 | 实施/独立评估 | 当前状态 |
 | --- | --- | --- |

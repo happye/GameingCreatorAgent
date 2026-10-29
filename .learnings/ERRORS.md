@@ -487,3 +487,5 @@ Resolved before any test execution: full git ls-files quoted the Chinese product
 2026-10-29：并行worktree测试共享主树Python；worker未加载env.ps1且未-B，134个stdlib pyc与安装回执不符，使完整verify在媒体脚本门禁失败（3671pass/1fail/3skip，937.39秒）。二进制和源码均无差异；核验缓存安装归档SHA后仅恢复134个pyc原字节，3309项全匹配，不改回执。定向失败测试与init恢复通过。备份与回执.cache/runtime-bytecode-repair-20261029。以后worker运行命令先主树dot-source env.ps1，再覆盖独立worktree PYTHONPATH；始终Python -B，禁止与主树验证并行裸调用共享Python。旧powershell.exe子进程Get-FileHash不可用，当前pwsh7可正常执行。
 
 2026-10-29环境事故：候选worker先dot-source主树env后仅用uv --project切换worktree，遗漏UV_PROJECT_ENVIRONMENT仍为主树.venv，uv试图用候选Python重建主venv，拒绝访问前已删部分依赖。主树媒体回归3项ModuleNotFoundError不是产品缺陷。主控按原uv.lock+原缓存离线恢复41锁定包，init/pytest/application/playwright导入恢复；复验日志offline-media-main-restored.xml。误uv日志.cache/ffmpeg-candidate-20260930/sync-offline.log。--project不覆盖UV_PROJECT_ENVIRONMENT；任何依赖/venv/工具写入前必须加载目标worktree自身env并断言目标路径。共享主树env仅用于只读测试，绝不能沿用到uv sync/venv。未改生产FFmpeg/pin/原片，无新费用。
+
+2026-10-29：固定生成器时钟预期worker在留下3测试文件后返回usage limit（工具报告，不是用户暂停）。主控先检查没有存活pytest、保留独立worktree并接管只读测试/格式验证，不重试Sol；向用户明确披露后仅一次以运行时支持Astra/low默认角色执行同一独立quality-guard合同，未默默更换父模型。未评估前不合并主树。主树44e2537完整3732/5skip仍为已验证基线，额度中断仅影响此未合并测试夹具子项。

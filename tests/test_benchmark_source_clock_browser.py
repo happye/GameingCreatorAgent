@@ -20,6 +20,7 @@ from fractions import Fraction
 from pathlib import Path
 
 import pytest
+from media_generator_clocks import generator_clock
 from test_benchmark import document
 from test_benchmark_preparation import plan_fixture
 from test_material_tasks import CONFIG
@@ -575,11 +576,12 @@ def test_synthetic_probe_and_builders_expose_the_measured_clock(tmp_path, kind):
         assert set(starts.values()) == {0.0}
         assert clock["originUs"] == 0
     elif kind == "nonzero":
-        # Real ffprobe: AAC priming starts 22 ms before the video stream.
-        assert starts["video"] == 2.5 and 2.477 < starts["audio"] < 2.479
-        assert asset.duration_us == 2_022_000
-        assert clock["originUs"] == 2_478_000
-        assert clock["videoStartUs"] == 22_000
+        expected = generator_clock(FFMPEG)
+        assert starts["video"] == expected.absolute_video_start_us / 1_000_000
+        assert 2.477 < starts["audio"] < 2.479
+        assert asset.duration_us == expected.duration_us
+        assert clock["originUs"] == expected.origin_us
+        assert clock["videoStartUs"] == expected.relative_video_start_us
     elif kind == "audio_late":
         assert starts["video"] == 0 and 0.4 < starts["audio"] < 0.6
         assert clock["videoStartUs"] == 0
@@ -1000,7 +1002,7 @@ def test_rapid_interval_and_media_switches_never_apply_stale_clock(tmp_path):
             wait_selected_media(page, reference.asset)
             wait_capture_ready(page)
             playwright.expect(page.locator("#clock-state")).to_contain_text(
-                "原片开头 0.022 秒没有画面"
+                f"原片开头 {generator_clock(FFMPEG).head_hint_seconds} 秒没有画面"
             )
             settled = present_at(page, (START_US + first["originUs"]) / 1_000_000)
             assert abs(settled - (START_US + first["originUs"]) / 1_000_000) <= SEEK_TOLERANCE
@@ -1562,7 +1564,7 @@ def test_reference_nonzero_visible_zero_axis_is_refused(tmp_path):
     playwright = pytest.importorskip("playwright.sync_api")
     case = clock_case(tmp_path, "nonzero")
     clock = reference_clock(case.reference[0])
-    assert clock is not None and clock["originUs"] == 2_478_000
+    assert clock is not None and clock["originUs"] == generator_clock(FFMPEG).origin_us
     init_script = """(() => {
         // Controlled fault: after the axis probe performs its first seek, the visible element
         // reports position 0 although the clock origin is 2.478 s. The old OR check accepted
