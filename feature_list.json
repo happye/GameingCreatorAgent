@@ -25,8 +25,18 @@
       "priority": 1,
       "passes": true,
       "test_criteria": "Reproducible package build, pytest/Ruff/mypy and import-direction checks pass using project-local tools/caches, with no Windows Python registration or global links; missing/unreadable video returns the specified input error without output.",
-      "dependencies": ["F000"],
-      "evidence": ["docs/exec-plans/sprint-F001.md", "toolchain.json", "uv.lock", "scripts/verify.ps1", "scripts/setup-media.ps1", "tests/test_setup_media.py", "docs/exec-plans/sprint-offline-media-setup.md"]
+      "dependencies": [
+        "F000"
+      ],
+      "evidence": [
+        "docs/exec-plans/sprint-F001.md",
+        "toolchain.json",
+        "uv.lock",
+        "scripts/verify.ps1",
+        "scripts/setup-media.ps1",
+        "tests/test_setup_media.py",
+        "docs/exec-plans/sprint-offline-media-setup.md"
+      ]
     },
     {
       "id": "F002",
@@ -35,8 +45,34 @@
       "priority": 2,
       "passes": true,
       "test_criteria": "Representative and synthetic VFR/nonzero-PTS clips produce traceable source timecodes; no-audio, malformed input and cancellation are handled cleanly.",
-      "dependencies": ["F001"],
-      "evidence": ["docs/exec-plans/sprint-F002.md", "docs/references/media-processing.md", "docs/references/media-toolchain.json", "tests/media_generator_clocks.py", "tests/test_media_generator_clocks.py", "docs/exec-plans/sprint-media-generator-clocks.md", "scripts/test-media.ps1", "docs/exec-plans/sprint-long-footage-media.md", "tests/test_streamed_media_logs.py", "tests/test_media_integration.py", "docs/exec-plans/sprint-media-preparation.md", "tests/test_media_preparation.py", "scripts/prepare-media.ps1", "docs/exec-plans/sprint-media-batch-preparation.md", "docs/references/media-batch-preparation-guide.md", "tests/test_media_batch.py", "scripts/prepare-media-batch.ps1", "docs/exec-plans/sprint-media-preparation-workspace.md", "docs/references/media-preparation-workspace-guide.md", "tests/test_media_preparation_jobs.py", "tests/test_media_preparation_browser.py", "docs/exec-plans/sprint-independent-footage-preparation.md", "docs/exec-plans/report-2026-10-11-independent-footage-preparation.md"]
+      "dependencies": [
+        "F001"
+      ],
+      "evidence": [
+        "docs/exec-plans/sprint-F002.md",
+        "docs/references/media-processing.md",
+        "docs/references/media-toolchain.json",
+        "tests/media_generator_clocks.py",
+        "tests/test_media_generator_clocks.py",
+        "docs/exec-plans/sprint-media-generator-clocks.md",
+        "scripts/test-media.ps1",
+        "docs/exec-plans/sprint-long-footage-media.md",
+        "tests/test_streamed_media_logs.py",
+        "tests/test_media_integration.py",
+        "docs/exec-plans/sprint-media-preparation.md",
+        "tests/test_media_preparation.py",
+        "scripts/prepare-media.ps1",
+        "docs/exec-plans/sprint-media-batch-preparation.md",
+        "docs/references/media-batch-preparation-guide.md",
+        "tests/test_media_batch.py",
+        "scripts/prepare-media-batch.ps1",
+        "docs/exec-plans/sprint-media-preparation-workspace.md",
+        "docs/references/media-preparation-workspace-guide.md",
+        "tests/test_media_preparation_jobs.py",
+        "tests/test_media_preparation_browser.py",
+        "docs/exec-plans/sprint-independent-footage-preparation.md",
+        "docs/exec-plans/report-2026-10-11-independent-footage-preparation.md"
+      ]
     },
     {
       "id": "F003",
@@ -45,8 +81,24 @@
       "priority": 3,
       "passes": true,
       "test_criteria": "Provider replacement is verified; ASR distinguishes no_audio/no_speech/failure; schema, usage, budget and retry checks pass with per-attempt model/prompt/cost/time records and unknown costs preserved.",
-      "dependencies": ["F002"],
-      "evidence": ["docs/exec-plans/sprint-demo.md", "docs/exec-plans/sprint-F003.md", "docs/references/deepseek-pricing.json", "tests/test_analyze_v2.py", "scripts/validate-demo.py", "scripts/verify.ps1", "docs/exec-plans/sprint-media-preparation.md", "tests/test_media_preparation.py", "docs/exec-plans/sprint-material-tasks.md", "tests/test_material_tasks.py", "tests/test_material_tasks_http.py", "tests/test_material_tasks_browser.py", "scripts/list-tasks.ps1"]
+      "dependencies": [
+        "F002"
+      ],
+      "evidence": [
+        "docs/exec-plans/sprint-demo.md",
+        "docs/exec-plans/sprint-F003.md",
+        "docs/references/deepseek-pricing.json",
+        "tests/test_analyze_v2.py",
+        "scripts/validate-demo.py",
+        "scripts/verify.ps1",
+        "docs/exec-plans/sprint-media-preparation.md",
+        "tests/test_media_preparation.py",
+        "docs/exec-plans/sprint-material-tasks.md",
+        "tests/test_material_tasks.py",
+        "tests/test_material_tasks_http.py",
+        "tests/test_material_tasks_browser.py",
+        "scripts/list-tasks.ps1"
+      ]
     },
     {
       "id": "F004",
@@ -55,8 +107,34 @@
       "priority": 4,
       "passes": true,
       "test_criteria": "A second process reloads the timeline; migrations/FKs and interrupted-stage/file-integrity recovery pass; unknown request costs survive recovery; full source video bytes are absent from SQLite.",
-      "dependencies": ["F001"],
-      "evidence": ["docs/exec-plans/sprint-F004.md", "docs/references/timeline-storage.md", "scripts/test-storage.ps1", "scripts/verify.ps1", "docs/exec-plans/sprint-long-footage-media.md", "docs/exec-plans/sprint-media-preparation.md", "tests/test_media_preparation.py", "docs/exec-plans/sprint-material-tasks.md", "tests/test_material_tasks.py", "tests/test_material_tasks_http.py", "tests/test_material_tasks_browser.py", "scripts/list-tasks.ps1", "docs/exec-plans/sprint-media-batch-preparation.md", "docs/references/media-batch-preparation-guide.md", "tests/test_media_batch.py", "scripts/prepare-media-batch.ps1", "docs/exec-plans/sprint-media-preparation-workspace.md", "tests/test_media_preparation_jobs.py", "tests/test_media_preparation_browser.py", "docs/exec-plans/sprint-detail-billing-confirmation.md", "tests/test_detail_billing_confirmation.py", "tests/test_detail_billing_delivery.py", "docs/references/detail-billing-confirmation-guide.md"]
+      "dependencies": [
+        "F001"
+      ],
+      "evidence": [
+        "docs/exec-plans/sprint-F004.md",
+        "docs/references/timeline-storage.md",
+        "scripts/test-storage.ps1",
+        "scripts/verify.ps1",
+        "docs/exec-plans/sprint-long-footage-media.md",
+        "docs/exec-plans/sprint-media-preparation.md",
+        "tests/test_media_preparation.py",
+        "docs/exec-plans/sprint-material-tasks.md",
+        "tests/test_material_tasks.py",
+        "tests/test_material_tasks_http.py",
+        "tests/test_material_tasks_browser.py",
+        "scripts/list-tasks.ps1",
+        "docs/exec-plans/sprint-media-batch-preparation.md",
+        "docs/references/media-batch-preparation-guide.md",
+        "tests/test_media_batch.py",
+        "scripts/prepare-media-batch.ps1",
+        "docs/exec-plans/sprint-media-preparation-workspace.md",
+        "tests/test_media_preparation_jobs.py",
+        "tests/test_media_preparation_browser.py",
+        "docs/exec-plans/sprint-detail-billing-confirmation.md",
+        "tests/test_detail_billing_confirmation.py",
+        "tests/test_detail_billing_delivery.py",
+        "docs/references/detail-billing-confirmation-guide.md"
+      ]
     },
     {
       "id": "F005",
@@ -65,8 +143,48 @@
       "priority": 5,
       "passes": true,
       "test_criteria": "A query returns stable, deduplicated source intervals with evidence from a Completed run; empty results are valid; lexical and semantic retrieval are compared on fixed fixtures.",
-      "dependencies": ["F003", "F004"],
-      "evidence": ["docs/exec-plans/sprint-demo.md", "docs/exec-plans/sprint-F005-worker.md", "docs/exec-plans/sprint-F005-persistence-worker.md", "tests/test_retrieval.py", "tests/test_search_cli.py", "scripts/validate-demo.py", "docs/exec-plans/sprint-long-footage-retrieval.md", "tests/test_long_retrieval.py", "docs/exec-plans/sprint-project-retrieval.md", "docs/references/project-retrieval-guide.md", "tests/test_project_retrieval.py", "scripts/search-project.ps1", "docs/exec-plans/sprint-project-retrieval-workspace.md", "docs/exec-plans/report-2026-10-07-project-workspace.md", "tests/test_project_search_workspace.py", "docs/exec-plans/sprint-project-detail-query.md", "docs/references/project-detail-query-guide.md", "tests/test_project_detail_query.py", "docs/exec-plans/sprint-search-detail-evidence.md", "docs/references/search-detail-evidence-guide.md", "tests/test_search_detail_query.py", "docs/exec-plans/sprint-saved-detail-retrieval.md", "docs/references/saved-detail-retrieval-guide.md", "docs/exec-plans/report-2026-10-08-saved-detail-retrieval.md", "tests/test_saved_detail_retrieval.py", "tests/test_saved_detail_retrieval_browser.py", "docs/exec-plans/sprint-saved-detail-real-modes.md", "docs/exec-plans/report-2026-10-08-saved-detail-real-modes.md", "docs/exec-plans/sprint-saved-detail-actor-semantics.md", "tests/test_saved_detail_actor_semantics.py", "tests/test_saved_detail_actor_browser.py", "docs/exec-plans/report-2026-10-08-saved-detail-actor-semantics.md", "docs/exec-plans/sprint-saved-detail-grouped-ranking.md", "docs/exec-plans/report-2026-10-08-saved-detail-grouped-ranking.md", "tests/test_saved_detail_grouped_ranking.py", "tests/test_saved_detail_grouped_browser.py"]
+      "dependencies": [
+        "F003",
+        "F004"
+      ],
+      "evidence": [
+        "docs/exec-plans/sprint-demo.md",
+        "docs/exec-plans/sprint-F005-worker.md",
+        "docs/exec-plans/sprint-F005-persistence-worker.md",
+        "tests/test_retrieval.py",
+        "tests/test_search_cli.py",
+        "scripts/validate-demo.py",
+        "docs/exec-plans/sprint-long-footage-retrieval.md",
+        "tests/test_long_retrieval.py",
+        "docs/exec-plans/sprint-project-retrieval.md",
+        "docs/references/project-retrieval-guide.md",
+        "tests/test_project_retrieval.py",
+        "scripts/search-project.ps1",
+        "docs/exec-plans/sprint-project-retrieval-workspace.md",
+        "docs/exec-plans/report-2026-10-07-project-workspace.md",
+        "tests/test_project_search_workspace.py",
+        "docs/exec-plans/sprint-project-detail-query.md",
+        "docs/references/project-detail-query-guide.md",
+        "tests/test_project_detail_query.py",
+        "docs/exec-plans/sprint-search-detail-evidence.md",
+        "docs/references/search-detail-evidence-guide.md",
+        "tests/test_search_detail_query.py",
+        "docs/exec-plans/sprint-saved-detail-retrieval.md",
+        "docs/references/saved-detail-retrieval-guide.md",
+        "docs/exec-plans/report-2026-10-08-saved-detail-retrieval.md",
+        "tests/test_saved_detail_retrieval.py",
+        "tests/test_saved_detail_retrieval_browser.py",
+        "docs/exec-plans/sprint-saved-detail-real-modes.md",
+        "docs/exec-plans/report-2026-10-08-saved-detail-real-modes.md",
+        "docs/exec-plans/sprint-saved-detail-actor-semantics.md",
+        "tests/test_saved_detail_actor_semantics.py",
+        "tests/test_saved_detail_actor_browser.py",
+        "docs/exec-plans/report-2026-10-08-saved-detail-actor-semantics.md",
+        "docs/exec-plans/sprint-saved-detail-grouped-ranking.md",
+        "docs/exec-plans/report-2026-10-08-saved-detail-grouped-ranking.md",
+        "tests/test_saved_detail_grouped_ranking.py",
+        "tests/test_saved_detail_grouped_browser.py"
+      ]
     },
     {
       "id": "F006",
@@ -75,8 +193,47 @@
       "priority": 6,
       "passes": false,
       "test_criteria": "A frozen independent human-labeled benchmark reports every query, fixed-denominator U10, misses/timecode errors, runtime and cold/hot cost; each main mechanic query reaches U10 >= 0.70; sparse/negative groups are separate and unverified cost gates remain null.",
-      "dependencies": ["F005"],
-      "evidence": ["docs/exec-plans/sprint-F006-worker.md", "docs/references/benchmark-manifest-schema.md", "tests/test_benchmark.py", "docs/exec-plans/sprint-demo.md", "docs/exec-plans/sprint-benchmark-preparation.md", "docs/references/benchmark-preparation-guide.md", "tests/test_benchmark_preparation.py", "scripts/prepare-benchmark.ps1", "docs/exec-plans/sprint-benchmark-candidate-review.md", "docs/references/benchmark-candidate-review-guide.md", "tests/test_benchmark_review.py", "scripts/prepare-benchmark-review.ps1", "docs/exec-plans/sprint-benchmark-fixed-scoring.md", "tests/test_benchmark_fixed_scoring.py", "docs/exec-plans/sprint-benchmark-reference-review.md", "docs/references/benchmark-reference-review-guide.md", "scripts/prepare-benchmark-references.ps1", "tests/test_benchmark_reference_review.py", "tests/test_benchmark_reference_browser.py", "docs/exec-plans/sprint-benchmark-plan-editor.md", "docs/references/benchmark-plan-editor-guide.md", "scripts/prepare-benchmark-plan.ps1", "tests/test_benchmark_plan_draft.py", "tests/test_benchmark_plan_editor_browser.py", "docs/exec-plans/sprint-benchmark-workspace.md", "docs/references/benchmark-workspace-guide.md", "tests/test_benchmark_workflow.py", "tests/test_benchmark_workflow_browser.py", "docs/exec-plans/sprint-benchmark-run-picker.md", "docs/exec-plans/report-2026-10-07-run-picker.md", "tests/test_benchmark_run_selection.py", "tests/test_benchmark_run_selection_browser.py", "docs/exec-plans/sprint-independent-footage-preparation.md", "docs/exec-plans/report-2026-10-11-independent-footage-preparation.md", "docs/exec-plans/sprint-human-reference-pilot.md", "docs/exec-plans/report-2026-10-11-human-reference-pilot.md"]
+      "dependencies": [
+        "F005"
+      ],
+      "evidence": [
+        "docs/exec-plans/sprint-F006-worker.md",
+        "docs/references/benchmark-manifest-schema.md",
+        "tests/test_benchmark.py",
+        "docs/exec-plans/sprint-demo.md",
+        "docs/exec-plans/sprint-benchmark-preparation.md",
+        "docs/references/benchmark-preparation-guide.md",
+        "tests/test_benchmark_preparation.py",
+        "scripts/prepare-benchmark.ps1",
+        "docs/exec-plans/sprint-benchmark-candidate-review.md",
+        "docs/references/benchmark-candidate-review-guide.md",
+        "tests/test_benchmark_review.py",
+        "scripts/prepare-benchmark-review.ps1",
+        "docs/exec-plans/sprint-benchmark-fixed-scoring.md",
+        "tests/test_benchmark_fixed_scoring.py",
+        "docs/exec-plans/sprint-benchmark-reference-review.md",
+        "docs/references/benchmark-reference-review-guide.md",
+        "scripts/prepare-benchmark-references.ps1",
+        "tests/test_benchmark_reference_review.py",
+        "tests/test_benchmark_reference_browser.py",
+        "docs/exec-plans/sprint-benchmark-plan-editor.md",
+        "docs/references/benchmark-plan-editor-guide.md",
+        "scripts/prepare-benchmark-plan.ps1",
+        "tests/test_benchmark_plan_draft.py",
+        "tests/test_benchmark_plan_editor_browser.py",
+        "docs/exec-plans/sprint-benchmark-workspace.md",
+        "docs/references/benchmark-workspace-guide.md",
+        "tests/test_benchmark_workflow.py",
+        "tests/test_benchmark_workflow_browser.py",
+        "docs/exec-plans/sprint-benchmark-run-picker.md",
+        "docs/exec-plans/report-2026-10-07-run-picker.md",
+        "tests/test_benchmark_run_selection.py",
+        "tests/test_benchmark_run_selection_browser.py",
+        "docs/exec-plans/sprint-independent-footage-preparation.md",
+        "docs/exec-plans/report-2026-10-11-independent-footage-preparation.md",
+        "docs/exec-plans/sprint-human-reference-pilot.md",
+        "docs/exec-plans/report-2026-10-11-human-reference-pilot.md"
+      ]
     },
     {
       "id": "F007",
@@ -85,8 +242,51 @@
       "priority": 7,
       "passes": true,
       "test_criteria": "Registered source/evidence HTTP boundaries and Range/HEAD/errors pass; real existing footage supports search, seek/end pause, evidence preview, isolated basket restoration and identity-preserving JSON/CSV export; browser behavior checks cover stale responses and text safety using project-isolated tools.",
-      "dependencies": ["F004", "F005"],
-      "evidence": ["docs/design-docs/adr-002-local-inspection-ui.md", "docs/design-docs/inspection-workspace-api.md", "docs/exec-plans/sprint-inspection-workspace.md", "docs/exec-plans/sprint-inspection-frontend.md", "tests/test_inspection_http.py", "scripts/validate-inspection-ui.py", "docs/exec-plans/sprint-material-tasks.md", "tests/test_material_tasks.py", "tests/test_material_tasks_http.py", "tests/test_material_tasks_browser.py", "scripts/list-tasks.ps1", "docs/exec-plans/sprint-project-retrieval-workspace.md", "docs/exec-plans/report-2026-10-07-project-workspace.md", "tests/test_project_search_workspace.py", "docs/exec-plans/sprint-media-preparation-workspace.md", "docs/exec-plans/report-2026-10-07-media-preparation-workspace.md", "docs/references/media-preparation-workspace-guide.md", "tests/test_media_preparation_jobs.py", "tests/test_media_preparation_browser.py", "docs/exec-plans/sprint-project-detail-query.md", "docs/references/project-detail-query-guide.md", "tests/test_project_detail_query_browser.py", "docs/exec-plans/sprint-search-detail-evidence.md", "docs/references/search-detail-evidence-guide.md", "tests/test_search_detail_query.py", "tests/test_search_detail_browser.py", "docs/exec-plans/sprint-saved-detail-retrieval.md", "docs/references/saved-detail-retrieval-guide.md", "docs/exec-plans/report-2026-10-08-saved-detail-retrieval.md", "tests/test_saved_detail_retrieval.py", "tests/test_saved_detail_retrieval_browser.py", "docs/exec-plans/sprint-saved-detail-actor-semantics.md", "tests/test_saved_detail_actor_semantics.py", "tests/test_saved_detail_actor_browser.py", "docs/exec-plans/report-2026-10-08-saved-detail-actor-semantics.md", "docs/exec-plans/sprint-saved-detail-grouped-ranking.md", "docs/exec-plans/report-2026-10-08-saved-detail-grouped-ranking.md", "tests/test_saved_detail_grouped_ranking.py", "tests/test_saved_detail_grouped_browser.py"]
+      "dependencies": [
+        "F004",
+        "F005"
+      ],
+      "evidence": [
+        "docs/design-docs/adr-002-local-inspection-ui.md",
+        "docs/design-docs/inspection-workspace-api.md",
+        "docs/exec-plans/sprint-inspection-workspace.md",
+        "docs/exec-plans/sprint-inspection-frontend.md",
+        "tests/test_inspection_http.py",
+        "scripts/validate-inspection-ui.py",
+        "docs/exec-plans/sprint-material-tasks.md",
+        "tests/test_material_tasks.py",
+        "tests/test_material_tasks_http.py",
+        "tests/test_material_tasks_browser.py",
+        "scripts/list-tasks.ps1",
+        "docs/exec-plans/sprint-project-retrieval-workspace.md",
+        "docs/exec-plans/report-2026-10-07-project-workspace.md",
+        "tests/test_project_search_workspace.py",
+        "docs/exec-plans/sprint-media-preparation-workspace.md",
+        "docs/exec-plans/report-2026-10-07-media-preparation-workspace.md",
+        "docs/references/media-preparation-workspace-guide.md",
+        "tests/test_media_preparation_jobs.py",
+        "tests/test_media_preparation_browser.py",
+        "docs/exec-plans/sprint-project-detail-query.md",
+        "docs/references/project-detail-query-guide.md",
+        "tests/test_project_detail_query_browser.py",
+        "docs/exec-plans/sprint-search-detail-evidence.md",
+        "docs/references/search-detail-evidence-guide.md",
+        "tests/test_search_detail_query.py",
+        "tests/test_search_detail_browser.py",
+        "docs/exec-plans/sprint-saved-detail-retrieval.md",
+        "docs/references/saved-detail-retrieval-guide.md",
+        "docs/exec-plans/report-2026-10-08-saved-detail-retrieval.md",
+        "tests/test_saved_detail_retrieval.py",
+        "tests/test_saved_detail_retrieval_browser.py",
+        "docs/exec-plans/sprint-saved-detail-actor-semantics.md",
+        "tests/test_saved_detail_actor_semantics.py",
+        "tests/test_saved_detail_actor_browser.py",
+        "docs/exec-plans/report-2026-10-08-saved-detail-actor-semantics.md",
+        "docs/exec-plans/sprint-saved-detail-grouped-ranking.md",
+        "docs/exec-plans/report-2026-10-08-saved-detail-grouped-ranking.md",
+        "tests/test_saved_detail_grouped_ranking.py",
+        "tests/test_saved_detail_grouped_browser.py"
+      ]
     },
     {
       "id": "F008",
@@ -95,8 +295,14 @@
       "priority": 8,
       "passes": true,
       "test_criteria": "Real browser checks show preview, timeline and basket together at 1440x900 and 1366x768 without page scrolling, keep a deep timeline position through selection, preserve all existing playback/evidence behavior, sort basket/storage/JSON/CSV by source start/end/identity and avoid mobile horizontal overflow.",
-      "dependencies": ["F007"],
-      "evidence": ["docs/exec-plans/sprint-workspace-usability.md", "docs/exec-plans/sprint-workspace-layout.md", "scripts/validate-inspection-ui.py"]
+      "dependencies": [
+        "F007"
+      ],
+      "evidence": [
+        "docs/exec-plans/sprint-workspace-usability.md",
+        "docs/exec-plans/sprint-workspace-layout.md",
+        "scripts/validate-inspection-ui.py"
+      ]
     },
     {
       "id": "F009",
@@ -105,8 +311,27 @@
       "priority": 9,
       "passes": false,
       "test_criteria": "A separately fingerprinted temporal prompt preserves legacy runs, rejects unordered or single-frame action claims, supports a denser source-clock-preserving profile and resumable windows, and records bounded real-video comparisons including static controls and all attempt costs. Independent action retrieval quality remains F006.",
-      "dependencies": ["F003", "F004", "F005"],
-      "evidence": ["docs/exec-plans/sprint-temporal-gameplay.md", "docs/exec-plans/sprint-temporal-frame-contract-worker.md", "docs/exec-plans/sprint-workspace-launcher-worker.md", "docs/exec-plans/sprint-retrieval-negation-worker.md", "docs/references/temporal-gameplay-validation.md", "tests/test_temporal_frame_contract.py", "tests/test_temporal_analysis.py", "tests/test_retrieval_negation.py", "scripts/validate-temporal-gameplay.py", "docs/exec-plans/sprint-detail-temporal-execution.md", "docs/exec-plans/report-2026-10-08-temporal-pilot-execution.md", "docs/exec-plans/sprint-detail-temporal-json.md", "docs/exec-plans/report-2026-10-08-detail-json.md", "docs/exec-plans/sprint-detail-json-execution.md"]
+      "dependencies": [
+        "F003",
+        "F004",
+        "F005"
+      ],
+      "evidence": [
+        "docs/exec-plans/sprint-temporal-gameplay.md",
+        "docs/exec-plans/sprint-temporal-frame-contract-worker.md",
+        "docs/exec-plans/sprint-workspace-launcher-worker.md",
+        "docs/exec-plans/sprint-retrieval-negation-worker.md",
+        "docs/references/temporal-gameplay-validation.md",
+        "tests/test_temporal_frame_contract.py",
+        "tests/test_temporal_analysis.py",
+        "tests/test_retrieval_negation.py",
+        "scripts/validate-temporal-gameplay.py",
+        "docs/exec-plans/sprint-detail-temporal-execution.md",
+        "docs/exec-plans/report-2026-10-08-temporal-pilot-execution.md",
+        "docs/exec-plans/sprint-detail-temporal-json.md",
+        "docs/exec-plans/report-2026-10-08-detail-json.md",
+        "docs/exec-plans/sprint-detail-json-execution.md"
+      ]
     },
     {
       "id": "F010",
@@ -115,8 +340,605 @@
       "priority": 10,
       "passes": false,
       "test_criteria": "Versioned V5/V6 detailed analysis and higher-resolution evidence preserve legacy contracts and resumable runs; uncertainty stays outside positive indexing and facts require review. Actor/part-bound observed attributes with shared supporting evidence must satisfy all strict compound constraints; unknown or cross-actor facts cannot be full matches. Original facts/basket validation remain intact; bounded real-video comparisons record every cost/control and independent human judgments confirm useful detail queries. F006 remains separate.",
-      "dependencies": ["F009", "F007"],
-      "evidence": ["docs/exec-plans/sprint-visual-details.md","docs/exec-plans/sprint-detail-vision-worker.md","docs/exec-plans/sprint-detail-presentation-worker.md","docs/exec-plans/sprint-detail-v6-worker.md","docs/design-docs/actor-detail-matching-spec.md","docs/exec-plans/sprint-actor-detail-matching.md","docs/exec-plans/sprint-actor-detail-contract-worker.md","docs/exec-plans/sprint-actor-detail-contract-tests-worker.md","tests/test_actor_details.py","tests/test_actor_detail_matching.py","tests/test_detailed_vision.py","tests/test_detail_action_eligibility.py","tests/test_observation_presentation.py","config.detailed.example.json","config.detailed-v6.example.json","docs/exec-plans/sprint-detail-inspection.md","tests/test_detail_refinement.py","tests/test_detail_budget_sidecar.py","tests/test_detail_inspection.py","docs/exec-plans/sprint-detail-provider.md","docs/exec-plans/sprint-detail-query.md","tests/test_detail_provider.py","tests/test_detail_recovery.py","tests/test_detail_query.py","detail-query.example.json","docs/exec-plans/sprint-detail-workspace.md","docs/exec-plans/sprint-detail-parts-worker.md","docs/exec-plans/sprint-detail-cost-worker.md","tests/test_detail_query_http.py","tests/test_detail_cost_http.py","tests/test_detail_parts.py","tests/test_detail_cost_history.py","docs/exec-plans/detail-human-feedback-2026-10-06.md","docs/exec-plans/sprint-detail-temporal.md","docs/exec-plans/sprint-detail-temporal-entities-worker.md","tests/test_temporal_entities.py","tests/test_temporal_entity_projection.py","tests/test_temporal_scene_codec.py","tests/test_detail_temporal_provider.py","tests/test_detail_temporal_http.py", "docs/exec-plans/sprint-project-detail-query.md", "docs/references/project-detail-query-guide.md", "tests/test_project_detail_query.py", "tests/test_project_detail_query_browser.py", "docs/exec-plans/sprint-search-detail-evidence.md", "docs/references/search-detail-evidence-guide.md", "tests/test_search_detail_query.py", "tests/test_search_detail_browser.py", "docs/exec-plans/sprint-saved-detail-retrieval.md", "docs/references/saved-detail-retrieval-guide.md", "docs/exec-plans/report-2026-10-08-saved-detail-retrieval.md", "tests/test_saved_detail_retrieval.py", "tests/test_saved_detail_retrieval_browser.py", "docs/exec-plans/sprint-saved-detail-real-modes.md", "docs/exec-plans/report-2026-10-08-saved-detail-real-modes.md", "docs/exec-plans/sprint-saved-detail-actor-semantics.md", "tests/test_saved_detail_actor_semantics.py", "tests/test_saved_detail_actor_browser.py", "docs/exec-plans/report-2026-10-08-saved-detail-actor-semantics.md", "docs/exec-plans/sprint-saved-detail-grouped-ranking.md", "docs/exec-plans/report-2026-10-08-saved-detail-grouped-ranking.md", "tests/test_saved_detail_grouped_ranking.py", "tests/test_saved_detail_grouped_browser.py", "docs/exec-plans/sprint-detail-temporal-execution.md", "docs/exec-plans/report-2026-10-08-temporal-pilot-execution.md", "docs/exec-plans/sprint-detail-temporal-json.md", "docs/exec-plans/report-2026-10-08-detail-json.md", "tests/test_detail_temporal_json.py", "tests/test_detail_temporal_json_browser.py", "tests/test_detail_temporal_proposal.py", "docs/exec-plans/sprint-detail-json-execution.md", "docs/exec-plans/report-2026-10-11-detail-json-pilot.md", "docs/exec-plans/report-2026-10-24-static-observation-generation.md", "docs/exec-plans/report-2026-10-24-static-observation-pilot.md"]
+      "dependencies": [
+        "F009",
+        "F007"
+      ],
+      "evidence": [
+        "docs/exec-plans/sprint-visual-details.md",
+        "docs/exec-plans/sprint-detail-vision-worker.md",
+        "docs/exec-plans/sprint-detail-presentation-worker.md",
+        "docs/exec-plans/sprint-detail-v6-worker.md",
+        "docs/design-docs/actor-detail-matching-spec.md",
+        "docs/exec-plans/sprint-actor-detail-matching.md",
+        "docs/exec-plans/sprint-actor-detail-contract-worker.md",
+        "docs/exec-plans/sprint-actor-detail-contract-tests-worker.md",
+        "tests/test_actor_details.py",
+        "tests/test_actor_detail_matching.py",
+        "tests/test_detailed_vision.py",
+        "tests/test_detail_action_eligibility.py",
+        "tests/test_observation_presentation.py",
+        "config.detailed.example.json",
+        "config.detailed-v6.example.json",
+        "docs/exec-plans/sprint-detail-inspection.md",
+        "tests/test_detail_refinement.py",
+        "tests/test_detail_budget_sidecar.py",
+        "tests/test_detail_inspection.py",
+        "docs/exec-plans/sprint-detail-provider.md",
+        "docs/exec-plans/sprint-detail-query.md",
+        "tests/test_detail_provider.py",
+        "tests/test_detail_recovery.py",
+        "tests/test_detail_query.py",
+        "detail-query.example.json",
+        "docs/exec-plans/sprint-detail-workspace.md",
+        "docs/exec-plans/sprint-detail-parts-worker.md",
+        "docs/exec-plans/sprint-detail-cost-worker.md",
+        "tests/test_detail_query_http.py",
+        "tests/test_detail_cost_http.py",
+        "tests/test_detail_parts.py",
+        "tests/test_detail_cost_history.py",
+        "docs/exec-plans/detail-human-feedback-2026-10-06.md",
+        "docs/exec-plans/sprint-detail-temporal.md",
+        "docs/exec-plans/sprint-detail-temporal-entities-worker.md",
+        "tests/test_temporal_entities.py",
+        "tests/test_temporal_entity_projection.py",
+        "tests/test_temporal_scene_codec.py",
+        "tests/test_detail_temporal_provider.py",
+        "tests/test_detail_temporal_http.py",
+        "docs/exec-plans/sprint-project-detail-query.md",
+        "docs/references/project-detail-query-guide.md",
+        "tests/test_project_detail_query.py",
+        "tests/test_project_detail_query_browser.py",
+        "docs/exec-plans/sprint-search-detail-evidence.md",
+        "docs/references/search-detail-evidence-guide.md",
+        "tests/test_search_detail_query.py",
+        "tests/test_search_detail_browser.py",
+        "docs/exec-plans/sprint-saved-detail-retrieval.md",
+        "docs/references/saved-detail-retrieval-guide.md",
+        "docs/exec-plans/report-2026-10-08-saved-detail-retrieval.md",
+        "tests/test_saved_detail_retrieval.py",
+        "tests/test_saved_detail_retrieval_browser.py",
+        "docs/exec-plans/sprint-saved-detail-real-modes.md",
+        "docs/exec-plans/report-2026-10-08-saved-detail-real-modes.md",
+        "docs/exec-plans/sprint-saved-detail-actor-semantics.md",
+        "tests/test_saved_detail_actor_semantics.py",
+        "tests/test_saved_detail_actor_browser.py",
+        "docs/exec-plans/report-2026-10-08-saved-detail-actor-semantics.md",
+        "docs/exec-plans/sprint-saved-detail-grouped-ranking.md",
+        "docs/exec-plans/report-2026-10-08-saved-detail-grouped-ranking.md",
+        "tests/test_saved_detail_grouped_ranking.py",
+        "tests/test_saved_detail_grouped_browser.py",
+        "docs/exec-plans/sprint-detail-temporal-execution.md",
+        "docs/exec-plans/report-2026-10-08-temporal-pilot-execution.md",
+        "docs/exec-plans/sprint-detail-temporal-json.md",
+        "docs/exec-plans/report-2026-10-08-detail-json.md",
+        "tests/test_detail_temporal_json.py",
+        "tests/test_detail_temporal_json_browser.py",
+        "tests/test_detail_temporal_proposal.py",
+        "docs/exec-plans/sprint-detail-json-execution.md",
+        "docs/exec-plans/report-2026-10-11-detail-json-pilot.md",
+        "docs/exec-plans/report-2026-10-24-static-observation-generation.md",
+        "docs/exec-plans/report-2026-10-24-static-observation-pilot.md"
+      ]
     }
-  ]
+  ],
+  "product_features": [
+    {
+      "id": "P001",
+      "group": "A",
+      "name": "本地媒体处理（FFmpeg 抽帧／音频，含 MKV/WebM）",
+      "first_product": false,
+      "delivery_status": "delivered",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P002",
+      "group": "A",
+      "name": "开发用 CLI（analyze／search 等）",
+      "first_product": false,
+      "delivery_status": "delivered",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P003",
+      "group": "A",
+      "name": "可替换模型 Provider",
+      "first_product": false,
+      "delivery_status": "delivered",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P004",
+      "group": "A",
+      "name": "Prompt 版本化",
+      "first_product": false,
+      "delivery_status": "delivered",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P005",
+      "group": "A",
+      "name": "模型成本可观测（未知不写零）",
+      "first_product": false,
+      "delivery_status": "delivered",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P006",
+      "group": "A",
+      "name": "SQLite 持久化与中断恢复",
+      "first_product": false,
+      "delivery_status": "delivered",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P007",
+      "group": "A",
+      "name": "批量任务队列（多素材准备）",
+      "first_product": false,
+      "delivery_status": "delivered",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P008",
+      "group": "A",
+      "name": "缓存",
+      "first_product": false,
+      "delivery_status": "partial",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P009",
+      "group": "A",
+      "name": "OCR",
+      "first_product": false,
+      "delivery_status": "partial",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P010",
+      "group": "A",
+      "name": "场景切分（scene detection）＋黑屏检测",
+      "first_product": false,
+      "delivery_status": "partial",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P011",
+      "group": "A",
+      "name": "代理文件（Proxy）",
+      "first_product": false,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P012",
+      "group": "B",
+      "name": "本地语音识别 ASR",
+      "first_product": false,
+      "delivery_status": "delivered",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P013",
+      "group": "B",
+      "name": "视频语义时间线",
+      "first_product": false,
+      "delivery_status": "delivered",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P014",
+      "group": "B",
+      "name": "自然语言语义检索",
+      "first_product": false,
+      "delivery_status": "delivered",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P015",
+      "group": "B",
+      "name": "检索质量人工验收（Phase 0 门槛）",
+      "first_product": true,
+      "delivery_status": "partial",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P016",
+      "group": "B",
+      "name": "视觉多帧动作理解",
+      "first_product": false,
+      "delivery_status": "partial",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P017",
+      "group": "B",
+      "name": "人物／衣物／持有物细节",
+      "first_product": false,
+      "delivery_status": "partial",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P018",
+      "group": "B",
+      "name": "游戏知识层（Wiki／补丁说明／用户资料）",
+      "first_product": false,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P019",
+      "group": "C",
+      "name": "Creative Brief：一句话需求→结构化需求",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P020",
+      "group": "C",
+      "name": "活动规则解析（文本／网页／截图／PDF）",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P021",
+      "group": "C",
+      "name": "Creative Planner：多套视频方案",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P022",
+      "group": "C",
+      "name": "视频结构模板（攻略／功能展示／广告／实况）",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P023",
+      "group": "C",
+      "name": "素材评分（需求匹配等加权）",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P024",
+      "group": "C",
+      "name": "素材缺口发现",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P025",
+      "group": "C",
+      "name": "解说脚本生成",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P026",
+      "group": "C",
+      "name": "配音／旁白合成",
+      "first_product": false,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P027",
+      "group": "C",
+      "name": "Edit Decision（结构化剪辑决策）",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P028",
+      "group": "D",
+      "name": "本地渲染（裁剪／拼接／缩放／变速／音频／转场／编码→MP4）",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P029",
+      "group": "D",
+      "name": "字幕",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P030",
+      "group": "D",
+      "name": "BGM 选择与节奏匹配",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P031",
+      "group": "D",
+      "name": "封面／标题／简介／Tags",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P032",
+      "group": "D",
+      "name": "轻量编辑器（调入出点、换镜头、改字幕、换 BGM、重渲染）",
+      "first_product": true,
+      "delivery_status": "partial",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P033",
+      "group": "D",
+      "name": "专业剪辑软件导出（FCPXML／OTIO／Premiere XML）",
+      "first_product": false,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P034",
+      "group": "E",
+      "name": "平台规格配置（抖音／快手／B站／小红书，不硬编码）",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P035",
+      "group": "E",
+      "name": "主项目多版本（一稿多平台）",
+      "first_product": false,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P036",
+      "group": "E",
+      "name": "发布包导出",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P037",
+      "group": "E",
+      "name": "投稿前检查（Preflight）",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P038",
+      "group": "E",
+      "name": "自动发布",
+      "first_product": false,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P039",
+      "group": "F",
+      "name": "正式 Windows 桌面 EXE",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P040",
+      "group": "F",
+      "name": "桌面工作区（素材／预览／Agent 对话／时间线）",
+      "first_product": false,
+      "delivery_status": "partial",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P041",
+      "group": "F",
+      "name": "自然语言修改真实时间线（“前 5 秒太慢”）",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P042",
+      "group": "F",
+      "name": "用户修改记录与数据反馈闭环",
+      "first_product": false,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P043",
+      "group": "G",
+      "name": "玩法展示",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P044",
+      "group": "G",
+      "name": "活动投稿",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P045",
+      "group": "G",
+      "name": "攻略",
+      "first_product": true,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P046",
+      "group": "G",
+      "name": "游戏解说",
+      "first_product": false,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P047",
+      "group": "G",
+      "name": "实况精剪",
+      "first_product": false,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P048",
+      "group": "G",
+      "name": "高光",
+      "first_product": false,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P049",
+      "group": "G",
+      "name": "广告／买量",
+      "first_product": false,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P050",
+      "group": "H",
+      "name": "创作者版（Free／Creator／Pro）",
+      "first_product": false,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    },
+    {
+      "id": "P051",
+      "group": "H",
+      "name": "企业版",
+      "first_product": false,
+      "delivery_status": "not_started",
+      "implementation_evidence": [],
+      "quality_status": "not_separately_assessed",
+      "release_status": "not_released"
+    }
+  ],
+  "delivery_policy": {
+    "version": "full-product-20261030",
+    "decision": "docs/design-docs/adr-003-full-product-delivery.md",
+    "roadmap": "docs/exec-plans/accelerated-product-roadmap.md",
+    "human_quality_gate_blocks_development": false,
+    "human_quality_gate_blocks_corresponding_release_claim": true
+  }
 }

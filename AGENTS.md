@@ -80,3 +80,7 @@ All agents share acceptance criteria; start with `HANDOFF.md` and `docs/referenc
 ## Persistent progress board
 
 用户于2026-10-25明确要求：开发迭代时必须让用户能量化看到“做到哪、完成多少、还剩多少”。唯一入口是[进度看板](docs/exec-plans/progress-board.md)，**分母是总方案全部计划功能（当前51项，含★“第一个可用产品”22项）**，另列阶段里程碑、Phase 0验收步骤、人工待办数、技术债计数、正在做／下一步；不能只报当前阶段。所有项目Agent（Claude Code、Codex、Grok及其子Agent）在每次重大改动后，与HANDOFF／sprint／progress／assignments／human-inputs／tech-debt**同一次提交内**更新看板及“最后更新”行；数字只取自`feature_list.json`、`tech-debt.md`状态列和`human-inputs.md`待办表，不估算，不把“工具就绪”写成“验收通过”。任务开始先读看板第6节，结束或交接前更新它；子Agent结果由主控写入。向用户汇报时附带看板上的关键数字变化。此规则跨会话、工具切换和子任务持续生效。
+
+## 2026-10-30 全产品加速交付（最新用户指令）
+
+以docs/exec-plans/accelerated-product-roadmap.md和ADR-003为当前路线，覆盖全部51项。质量验收、实现完成、商用发布分别记录；F006未人评不能全局停止创作/编辑/渲染/发布包/桌面/商业化开发。用户当前必须人工操作0项，任务触发和数量标准见user-actions.md。保留新费用、真实外部操作、素材权利、原证据和数据保护要求；不要把部分实现或假接口标为全功能交付。优先真实端到端切片，不能靠反复检查、微修、元数据加固替代功能进展。

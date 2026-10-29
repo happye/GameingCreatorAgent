@@ -1,5 +1,7 @@
 # Phase 0: semantic retrieval feasibility
 
+2026-10-30 scope extension: full product implementation now proceeds alongside Phase 0 quality validation under [ADR-003](../design-docs/adr-003-full-product-delivery.md). Pending human quality blocks only the corresponding acceptance/release claims, not downstream implementation. Existing Phase 0 quality and cost contracts remain unchanged.
+
 Status: engineering baseline after the 2026-10-03 review; retrieval quality remains unverified. Source: product plan sections 58–59 and 69–71. Python implementation follows `docs/design-docs/adr-001-phase-0-language.md`, superseding the optional C# recommendation. Contracts: `docs/design-docs/phase-0-engineering-spec.md`; evidence: `docs/exec-plans/phase-0-validation-2026-10-03.md`.
 
 ## Goal

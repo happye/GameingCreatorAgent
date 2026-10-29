@@ -1,5 +1,24 @@
 # 当前分工与恢复入口
 
+2026-10-30：全51项按新路线实施，旧全局阶段门已被ADR-003替代。主控负责公共文档/集成，禁止覆盖已有未跟踪角色文件。
+
+| 工作 | 实际负责人 | 文件/状态 |
+| --- | --- | --- |
+| 架构路线 | task_architect Astra/low | 已完成；主控持久化ADR-003和accelerated-product-roadmap.md |
+| 复用入口及人工任务定位 | 现有task_explorer Luna/high | 已完成；来源见sprint-creation-planner.md与user-actions.md |
+| R1方案/EDL实现 | task_developer Sol/medium | .cache/worktrees/creation-planner-20261030；仅合同指定模块/CLI/脚本/测试，不写公共文档 |
+| 来源/持久化独立评估 | 现有guard_result_cards Sol/high | 已接合同，代码就绪后一次最终评估，不额外普通review |
+| 集成与下一切片 | 主控 | 定向验证后集成；紧接真实FFmpeg MP4，不等人评分组 |
+
+当前人工必须操作0项；没有新模型/下载/外部发布费用许可。原分析、费用、时钟身份和旧标注保持。文件所有权与验收见[sprint](sprint-creation-planner.md)。
+
+<details>
+<summary>旧路线与发布分工（历史，不是当前运行状态）</summary>
+
+# 当前分工与恢复入口
+
+**2026-10-30当前**：用户已批准全产品加速实现，ADR-003覆盖旧全局开发门。R1创作方案/EDL由Sol/medium独立工作树开发，Astra/low已完成全51架构路线；主控公共文档与集成。下一步真实MP4。当前必须人工0项，原质量/费用记录不变。此前blocked段落属于旧路线，当前以[加速路线](accelerated-product-roadmap.md)和HANDOFF为准。
+
 更新：2026-10-29。本轮Goal blocked：已完成版本推送与文档对齐至026d0ac；连续三轮核对同一真实验收依赖后，运行时标记受阻，尚未完成。12提交已推送至8744ad8，远端SHA已确认；主控负责本轮文档同步与推送，未改产品源码。真实Phase 0质量仍待人工输入，本轮受阻审计独立重计，未沿用旧Goal的三轮计数。
 
 | 工作 | 实施/核对 | 当前状态 |
@@ -73,3 +92,5 @@
 同workspace f4395711-a8fb-49a3-ad95-7305ce9ea1e8；当前已交付task gamingcreator-static-generation-20261024／session codex-d988fa9d-3d21-4604-b2f2-26c5b46d9d90。旧静态task STOP_PENDING保留，当前无轮次／队列，不重投或再次cancel；其它历史任务不恢复成新写者。工程DSH模型用量关联partial，费用未知，与录像API旧账分开。
 
 真实试验已完成，不重发同proposal，不借¥0.50剩余额度追加请求。TD006实证切片已交付，下一回原真实质量路径；F006/F009/F010保持false，原人工质量待办仅阻断依赖步骤。
+
+</details>

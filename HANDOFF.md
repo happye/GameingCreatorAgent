@@ -1,38 +1,13 @@
-# 当前交接：已验证版本已推送，Phase 0真实质量待验收
+# 当前接手：全产品加速实现，R1创作主链开发中
 
-更新：2026-10-29，main。当前Goal为“按照计划继续开发、迭代、推送版本、对齐文档和项目进度”，状态blocked（受阻，尚未完成）；版本推送与文档同步均已完成至026d0ac，连续三轮核对同一真实验收依赖后由运行时更新。无后台任务；既有人工输入改变后再沿下述顺序恢复。
+2026-10-30用户明确修改优先级：先实现总方案全部51项，架构师参与，质量/实现/商用发布分别记录。**不再因F006人评未完停止后续开发。** 原blocked与旧全局阶段门记录仅属历史。
 
-## 已交付与远端状态
+- 路线：[全功能加速路线](docs/exec-plans/accelerated-product-roadmap.md)；[架构师决策ADR-003](docs/design-docs/adr-003-full-product-delivery.md)。四层Python核心和原分析证据/源时钟/费用保护不变。
+- 当前：R1已有Completed素材→三种模板创作方案/脚本/缺口→选择方案→EDL；Sol/medium在.cache/worktrees/creation-planner-20261030，合同sprint-creation-planner.md。主控公共文档，不与worker抢代码。
+- 下一项：真实本地FFmpeg渲染MP4，接编辑/字幕/BGM/平台包，再扩智能、七模式、EXE、自动发布和商业化；不是做完规划JSON就停。
+- 你现在必须做0项；未来事项和数量/完成标准见[一页清单](docs/exec-plans/user-actions.md)。原8项人工记录不删除、不代填，不催分组。
+- 功能目录：feature_list.json新增P001–P051，保留F000–F010通过语义。当前51项10已交付/8部分/33未开始（27%），首产品0/2/20（5%）；质量0/8仍真实未验，技术债10/2/5不变。
+- 既有已验代码/文档已推送至4079c7b。最后生产完整44e2537为3732/5skip，后续夹具10通过；当前新切片仅做针对性验证和一次独立边界审查，不重复旧全量。
+- 环境：PowerShell加载正确env，Python-B；共享主venv只读，禁止worker uv写入主树。旧worktrees和9个既有未跟踪.codex/agents文件保留。无新付费调用/模型/组件下载；生产pin不改，外部账号/支付/发布操作仍需具体授权。
 
-- 12个本地提交已正常推送：origin/main从ae4162b到8744ad8；远端ls-remote与本地完整SHA一致。本轮随后同步文档，发布结果见[本轮记录](docs/exec-plans/sprint-phase0-publication-sync.md)。
-- 时间轴可按已有本机画面文字筛选；当前片段显示镜头、文字和重叠语音；验收第6/8步可读原排名和计分摘要。画面文字命中仍标未经核对，不改变排名或真人判断。
-- 验收status与媒体批次state短暂文件占用有界等待，TD012已解决；已有固定FFmpeg副本可用setup-media.ps1离线准备，验证失败不覆盖旧工具。
-- 月末候选只在缓存隔离验证。真实长录像1903取帧时刻、44629音频映射及PCM相同；相同固定参考解码器下1903帧像素SHA相同，1907旧文件未变。JPEG/WAV文件字节仍不同，不替换旧证据身份。
-
-## 验证与范围
-
-| 范围 | 已保存证据 |
-| --- | --- |
-| 生产源码44e2537 | 完整verify3732通过/5跳过，离线双wheel一致、退出0；.cache/verify-20261029-session6e.log |
-| 测试夹具2c90e67 | 新旧固定工具各10通过，主树10通过，Ruff通过；只改生成器身份绑定预期，不改APP/pin/容差 |
-| 候选原组 | 151通过/3合成生成时钟差异失败，原结果保留；后续校准与固定夹具结果分列 |
-| 长录像比较 | [合同与独立评估](docs/exec-plans/sprint-saved-long-media-comparison.md)，[机器证据](docs/references/ffmpeg-source-evaluation-20261029.json) |
-
-本轮推送/同步未改变产品源码，不重复已通过全量。没有新付费请求、费用许可、生产工具替换或二进制分发。候选对应完整源码和第三方notices未核齐，TD003仍open；包内GPL文本和版本配置不等于发布条件完成。
-
-## 进度与依赖
-
-- [看板](docs/exec-plans/progress-board.md)：全部51项，10已交付/8部分/33未开始，约27%；首产品22项为0/2/20，约5%。技术债17项为10已解决/2部分/5未解决；人工8项、0紧急。
-- Phase 0真实验收0/8，F006/F009/F010仍false。现有4流程中正式流程无步骤，其余3个使用demo-phase0；演练评分不算真人验收。
-- 原离线接手队列已完成；本轮已完成既有代码推送与当前入口同步。下一主线仍按既有素材/事前参考/固定排名/真人评分依赖推进，通过后才进入Creative Planner。保留用户“不催分组”，不重复已有标注，不把本轮继续开发当新费用或pin授权。
-
-## 恢复顺序与环境
-
-1. 核对git状态、远端和本轮sprint；已推送提交不重发模型、不重跑旧启动器。若有新真实输入，直接接其依赖步骤。
-2. 没有新真实输入时，不用演练补造验收，不以新增微修或重复检查替代主线交付。需要具体新请求时沿原提案/授权规则处理。
-3. 当前无后台检查或源码写者。既有.cache/worktrees作为备份保留；9个既有未跟踪.codex/agents文件不改不加。
-4. PowerShell先加载目标worktree自身scripts/env.ps1；Python用-B。共享主venv只读测试，uv写操作必须断言目标UV_PROJECT_ENVIRONMENT/UV_PYTHON_INSTALL_DIR，--project不能覆盖继承环境。不得重写固定stdlib回执。
-
-## 历史与规则入口
-
-[旧完整交接](docs/exec-plans/handoff-history-20261029.md) · [状态摘要历史](docs/exec-plans/status-history-20261029.md) · [开发历史](progress.md) · [分工](docs/exec-plans/assignments.md) · [人工待办](docs/exec-plans/human-inputs.md) · [技术债](docs/exec-plans/tech-debt.md)。共享规则见AGENTS.md和docs/references/agent-workflow.md。
+历史：[旧交接](docs/exec-plans/handoff-history-20261029.md)、[开发历史](progress.md)。旧条件与当前指令冲突时按本次用户指令和ADR-003执行。

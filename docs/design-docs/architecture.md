@@ -1,5 +1,7 @@
 # Phase 0 架构基线 v2
 
+当前扩展：按[ADR-003](adr-003-full-product-delivery.md)增加Brief→Plan→EDL→Render→发布包主线，四层及旧分析证据保持；待人评不阻断实现。
+
 独立静态声明新增Domain静态类型→Application身份／纯AND与Store port→Infrastructure严格codec／独立SQLite→CLI装配。原TimelineStore只读且保留Completed／完整性门，新库不承担旧费用／动作事件；原导入／检索真实新进程闭环已验证。新增单注册帧自动生成层采用独立Provider、显式局部parts、专属授权账本与attempt持久化，发送前planned、恢复仅补本地发布；当前验证见[生成sprint](../exec-plans/sprint-static-observation-generation.md)。见[静态设计](static-observation-index-spec.md)与[生成设计](static-observation-generation-spec.md)。四层方向、ADR-001／002与原数据资产不变。
 
 长录像新增显式`analyze --resume --window-failure-policy isolate-schema-v1`操作策略，只改变窗口失败后的调度；原run/config/pipeline/模型/提示词/媒体及账本保持。`policy-isolate-schema-v1`检查点将策略版本与run/source/config/pipeline SHA关联，恢复必须显式选择相同策略。Application从持久调用核对图片、请求／模型／提示词和已知费用，仅白名单内容拒绝可跳过，整窗仍失败；成功与已拒绝付费窗口不重发。预算／认证／存储／身份／费用不确定问题继续停止，使用原writer锁。`analysis_coverage.json`记录预期全部窗口的完成、拒绝及未执行源范围；有缺口仍非Completed，不进入正式检索／验收绑定。Provider结构错误新增有界白名单边界投影及响应SHA／大小，不保存原始响应／任意正文。合同及离线证据见[长录像可靠性sprint](../exec-plans/sprint-long-analysis-reliability.md)，真实理解／人工U10仍未验证。
