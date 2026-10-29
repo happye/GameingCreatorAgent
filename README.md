@@ -56,6 +56,8 @@ The current browser workspace and backend run locally; DeepSeek vision uses remo
 
 Registered human feedback appears beside the exact saved actor description and its condition matches. Accepted or rejected descriptions retain the user's words and the original model output; other descriptions remain unreviewed. Feedback cannot carry over to another analysis result or count as attribute, action or retrieval acceptance. See the [description feedback report](./docs/exec-plans/report-2026-10-06-description-feedback.md).
 
+The timeline filter can include saved local on-screen text with “含画面文字”; matches are marked unverified and do not change retrieval ranking. The selected-clip panel shows its shot, on-screen text and overlapping speech for local replay. Acceptance steps 6 and 8 summarize the original saved ranking/scoring reports, preserving unknown values and human-review status. See the [user manual](docs/references/user-manual.md) and [OCR guide](docs/references/ocr-frames-guide.md).
+
 ## Start here
 
 1. Read [`AGENTS.md`](./AGENTS.md), [`HANDOFF.md`](./HANDOFF.md), and the [shared workflow](./docs/references/agent-workflow.md). Open the same repository or your assigned worktree in whichever tool is available.
@@ -101,9 +103,9 @@ The earlier local ASR utility remains available: `. ./scripts/env.ps1`, then `./
 
 The [2026-10-03 validation report](./docs/exec-plans/phase-0-validation-2026-10-03.md) records real local media/DeepSeek experiments and their limits. Run `./scripts/test-media-spike.ps1 -Synthetic` for the local media smoke and `./scripts/test-retrieval-score.ps1` for fixed-denominator metric regression. `test-deepseek-vision.ps1 -SourcePath <video>` needs process-local `DEEPSEEK_API_KEY` and makes one paid request of five extracted frames. It is a limited experiment, not the final CLI or a passed retrieval benchmark.
 
-`./scripts/test-media.ps1 -SourcePath <local-video>` runs the implemented F002 service; `-AllLocal` processes current `GameVideos/**/*.mp4`. Results remain ignored in `artifacts/media-F002/<run>/`, with PTS/timebase, piecewise WAV sample mapping, source/artifact hashes, versions and a completed manifest after validation. No model request is made. Exact stream timing metadata is required; see [media processing](./docs/references/media-processing.md) for support limits.
+`./scripts/test-media.ps1 -SourcePath <local-video>` runs the implemented F002 service; `-AllLocal` scans `.mp4`, `.mkv` and `.webm` under `GameVideos/`. Results remain ignored in `artifacts/media-F002/<run>/`, with PTS/timebase, piecewise WAV sample mapping, source/artifact hashes, versions and a completed manifest after validation. No model request is made. Exact stream timing metadata is required; see [media processing](./docs/references/media-processing.md) for support limits.
 
-For longer footage, set explicit local limits, such as `-MaxFrames 4000 -SamplingIntervalMs 1000 -TimeoutSeconds 600` for one frame per second. Timing logs are consumed incrementally while unknown output and individual lines remain bounded. A synthetic one-hour media/storage check passes; real gameplay performance and understanding still need validation. The prepared PowerShell 7 entry is verified; Windows PowerShell 5 compatibility is deferred in TD011.
+For longer footage, set explicit local limits, such as `-MaxFrames 4000 -SamplingIntervalMs 1000 -TimeoutSeconds 600` for one frame per second. Timing logs are consumed incrementally while unknown output and individual lines remain bounded. A synthetic one-hour media/storage check passes. A 15-minute-52-second real recording prepared locally with 952 sampled frames in 25.1 seconds with a measured 227 MiB process-tree peak; real hour-long performance and independent gameplay understanding remain unverified. Standalone Windows PowerShell 5.1 media and full project checks passed on 2026-10-25 (TD011 resolved); a PowerShell 7 parent can inherit incompatible module paths, so use a standalone shell. See the [debt and measurement record](docs/exec-plans/tech-debt.md).
 
 ## Tool adapters
 

@@ -75,5 +75,30 @@
       "new-rgb24.framehash": "4456830b220aa96cba6be9c920f61ea23d0e96fcae95850002ba138d48bd5284"
     },
     "report": "docs/exec-plans/sprint-saved-long-media-comparison.md"
+  },
+  "sourceMaterialReview": {
+    "date": "2026-10-29",
+    "method": "Read-only local inventory by existing Luna/high explorer; parent binds actual saved output hashes",
+    "gplTextPresent": true,
+    "completeCorrespondingSourceVerified": false,
+    "thirdPartyNoticesCompleteVerified": false,
+    "licenseReviewCompleted": false,
+    "newDownload": false,
+    "binaryExecution": false,
+    "productionPinChanged": false,
+    "debtStatus": "TD003 open",
+    "evidenceDirectory": ".cache/ffmpeg-candidate-20260930",
+    "evidenceSha256": {
+      "ffmpeg-version.txt": "9ab802b8c207959d13f7ccaba1cc969c5bfa1718c9c88532fe1a6d97119fc2e7",
+      "ffmpeg-buildconf.txt": "8ef6109ed338668e081d6b840fed67917cac58d09362e18f1973e272dc200b10",
+      "ffmpeg-L.txt": "535a8272ad0a7e274926ab51bd79a7e4a1c61047fea024bd09587b7a7ebc30cc",
+      "ffprobe-version.txt": "5a6a071090426a8a9b76e46dcb4172a55dd8c945fba5312a77e6999673959fac",
+      "ffprobe-buildconf.txt": "9aa9b7a1546bde4a53b978da05c271127dad4689fe936ec1f145f6758339fd1a",
+      "ffprobe-L.txt": "62687287318a37fe51541bb622e1e3c37b422a9c9923743813f9a8852d671de9",
+      "license-source-notice-inventory.json": "cacf9dfe583d9ef6e86fb13bc9de53cc8f237194d64d59a81684535b222ddf2d",
+      "extracted/ffmpeg-N-127021-ge0c94b2d1c-win64-gpl-shared/LICENSE.txt": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
+      "extracted/ffmpeg-N-127021-ge0c94b2d1c-win64-gpl-shared/include/libavutil/ffversion.h": "27f28e4b974baadc01925acdfaea2f5a33584e71508a6d382253c8f0f7b51dd6"
+    },
+    "scope": "Presence and identity of saved materials only; not a legal/distribution clearance"
   }
 }

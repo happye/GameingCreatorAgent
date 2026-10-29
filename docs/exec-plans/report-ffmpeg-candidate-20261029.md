@@ -20,3 +20,6 @@
 
 
 已保存真实长录像补充验证：按旧manifest完整采样参数重取，1903源时刻和44629音频原始映射均相同，音频PCM相同。JPEG文件SHA全部不同、WAV文件SHA不同；同一完整SHA核验的固定参考解码器归一RGB24后1903/1903像素SHA相同，1280×534、SAR801/800。原片及1907旧文件前后不变；Astra/low独立时钟/保护审计与增量像素审计PASS。结论仅限本片/参数/参考解码器；不覆盖旧证据、不更改生产pin、不声明模型质量或许可证完成。完整合同/缓存路径/下一主线门禁见[sprint](sprint-saved-long-media-comparison.md)，机器结果见evaluation新增savedLongReplay。
+
+
+2026-10-29版本同步时的材料复核：现有Luna/high只读核对根GPL文本、六份version/buildconf/-L输出与ffversion.h身份；未取得完整对应源码和完整第三方notices证据，TD003仍open。旧清单匹配到threadmessage.h不能代表完整notice。主控把上述实际文件SHA绑定evaluation的sourceMaterialReview；不重新运行、下载或分发候选，也不将本地材料存在当作分发审查通过。
