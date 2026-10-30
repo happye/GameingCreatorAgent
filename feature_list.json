@@ -744,8 +744,13 @@
       "group": "D",
       "name": "字幕",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "docs/exec-plans/sprint-creation-subtitles.md",
+        "tests/test_creation_subtitles.py",
+        "tests/test_creation_subtitle_render.py",
+        "tests/test_creation_workspace_http.py"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },

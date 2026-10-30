@@ -1,6 +1,22 @@
 # R2字幕：源语音映射到成片字幕
 
-2026-10-30，按加速路线接下一项制作功能。并行先实现纯时间映射及SRT编解码，UI切片完成后接实际导出/渲染入口；没有公开入口和真实产物前不把字幕整项算完成。
+2026-10-30，Goal已恢复，按加速路线接下一项制作功能。复用已保存的纯映射核心，接公开SRT及实际烧录入口；没有公开入口和真实产物前不把字幕整项算完成。
+
+## 本轮交付与证据
+
+已集成：公开CLI/PS和工作台三种字幕选择、逐准确分析版本的语音映射、SRT下载与真实ASS烧录；下载固定任务路径、字幕SHA进完成收据、旧none任务兼容。联合64测试通过（含原15渲染），Ruff通过，6源码mypy通过；唯一Sol/high关键评估PASS（静态审查，不冒称亲跑测试）。
+
+真实页面使用原demo-phase0的无转录版本：6秒MP4完成、SRT为空且明确0条、下载成功，刷新0新POST、无页面错误；记录.cache/subtitle-workspace-real-browser.json。非空烧录用本地合成素材验证重排/时间窗/像素和源SHA，中文“本地字幕测试”单项实测通过并查看.cache/subtitle-chinese-frame.png；不是原录像语音质量验收。已有ASR旧项目只读加载提示迁移，不改原库、不为演示补写语音。
+
+当前限制：只能用已保存语音；字幕文本/样式编辑尚未接入，烧录百分之一秒精度，ASS特殊反斜杠和花括号用全宽可见字符。P029由未开始变部分，全部51项10/13/28≈32%，首产品0/7/15≈16%。下一步按架构师合同实现镜头裁短/排序/删除、不可变版本及撤销重渲染；不等待人评，不产生模型费用。
+
+## 当前公开切片合同
+
+- Sol/medium `subtitle_render_public`：独立subtitle-render-public工作树，拥有原3个核心文件、cli/creation_render.py、main.py相关参数、infrastructure/ffmpeg_render.py、scripts/render-creation.ps1及新增字幕渲染测试。公开`--subtitles none|sidecar|burn`，缺省none；只读各片段原Completed版本的转录，生成成片时间字幕，不跨分析版本混用。
+- Sol/medium `subtitle_workspace_public`：独立subtitle-workspace-public工作树，拥有ui/creation_jobs.py、server.py、creation静态页及相关测试。工作台可选不加字幕、导出SRT、烧入并导出；新增可选subtitleMode，旧请求兼容。固定字幕下载地址，不接受客户端文件路径；请求、完成收据和下载SHA绑定。
+- 主控：公共合同、集成、真实浏览器/产物验证；唯一Sol/high关键评估者在实现完成后检查来源时钟和持久任务边界。Astra/low只读准备下一编辑修订方案，不阻塞字幕实现。
+
+完成标准：已有语音按剪辑顺序生成SRT；重排/裁切仍时间正确；sidecar/burn产物收据包含SRT哈希，视频真实可解码且烧录区间有文字；无转录明确0条；旧none行为和已完成任务可回查。原素材/分析/费用不改，0新模型/ASR/下载。工作台完成选择、视频预览与SRT下载后，仅计P029部分实现，修改字幕/样式/完整质量仍有后续任务。针对性行为测试和真实产物证明，不重跑旧全量。
 
 ownership：独立creation-subtitles工作树，domain/creation_subtitles.py、application/creation_subtitles.py、tests/test_creation_subtitles.py由一个Sol/medium拥有，不改正在并行实现的CLI/renderer/server/static或公共文档，不递归。不是唯一开发者，保留他人修改。
 

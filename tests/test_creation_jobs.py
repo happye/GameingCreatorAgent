@@ -39,7 +39,7 @@ def service(tmp_path, monkeypatch):
 
     monkeypatch.setattr(implementation, "execute_plan_creation", planner)
 
-    async def renderer(project, selection, output, tool, width, height):
+    async def renderer(project, selection, output, tool, width, height, subtitle_mode="none"):
         output.mkdir()
         (output / "video.mp4").write_bytes(b"fixture-video")
         from gamingcreator.infrastructure.ffmpeg_media import hash_file
@@ -52,6 +52,10 @@ def service(tmp_path, monkeypatch):
             "creationReceiptSha256": hash_file(selection / "receipt.json"),
             "files": {"video.mp4": hash_file(output / "video.mp4")},
         }
+        if subtitle_mode != "none":
+            (output / "subtitles.srt").write_bytes(b"")
+            receipt["files"]["subtitles.srt"] = hash_file(output / "subtitles.srt")
+            receipt["subtitles"] = {"mode": subtitle_mode, "cueCount": 0}
         (output / "receipt.json").write_text(json.dumps(receipt))
 
     monkeypatch.setattr(implementation, "execute_render_creation", renderer)
@@ -339,3 +343,89 @@ def test_state_read_retries_windows_permission_without_native_code(service, monk
     monkeypatch.setattr(Path, "read_text", read)
     assert service.read(target) == {"ok": True}
     assert calls == 2
+
+
+@pytest.mark.parametrize("mode", ["none", "sidecar", "burn"])
+def test_subtitle_selection_restart_and_idempotency(service, mode):
+    parent = service.submit("plan", request())["jobId"]
+    finish(service, parent)
+    payload = {
+        "requestId": "b" * 32,
+        "planJobId": parent,
+        "planId": "chronological",
+        "width": 64,
+        "height": 48,
+        "subtitleMode": mode,
+    }
+    job_id = service.submit("render", payload)["jobId"]
+    job = finish(service, job_id)
+    assert job["status"] == "completed"
+    restored = CreationJobs(service.repository)
+    assert restored.get(job_id)["status"] == "completed"
+    assert not restored.threads
+    assert restored.submit("render", payload)["jobId"] == job_id
+    with pytest.raises(AppError):
+        restored.submit("render", {**payload, "subtitleMode": "burn" if mode != "burn" else "none"})
+    if mode == "none":
+        assert "subtitleUrl" not in job["artifact"]
+        with pytest.raises(AppError):
+            restored.subtitles(job_id)
+    else:
+        assert job["artifact"]["subtitleCueCount"] == 0
+        assert job["artifact"]["subtitleMode"] == mode
+        assert restored.subtitles(job_id).path.read_bytes() == b""
+        (restored.directory(job_id) / "result/subtitles.srt").write_bytes(b"tampered")
+        assert restored.get(job_id)["status"] == "failed"
+        with pytest.raises(AppError):
+            restored.subtitles(job_id)
+        with pytest.raises(AppError):
+            restored.video(job_id)
+
+
+@pytest.mark.parametrize("value", ["invalid", None, [], {}, True])
+def test_invalid_subtitle_choice_rejected_before_dispatch(service, value):
+    with pytest.raises(AppError):
+        service.submit(
+            "render",
+            {
+                "requestId": "b" * 32,
+                "planJobId": "c" * 32,
+                "planId": "chronological",
+                "width": 64,
+                "height": 48,
+                "subtitleMode": value,
+            },
+        )
+    assert not service.threads
+
+
+@pytest.mark.parametrize("change", ["mode", "files", "count"])
+def test_orphan_rejects_inconsistent_subtitle_receipt(service, change):
+    parent = service.submit("plan", request())["jobId"]
+    finish(service, parent)
+    job_id = service.submit(
+        "render",
+        {
+            "requestId": "b" * 32,
+            "planJobId": parent,
+            "planId": "chronological",
+            "width": 64,
+            "height": 48,
+            "subtitleMode": "sidecar",
+        },
+    )["jobId"]
+    assert finish(service, job_id)["status"] == "completed"
+    directory = service.directory(job_id)
+    receipt = service.read(directory / "result/receipt.json")
+    if change == "mode":
+        receipt["subtitles"]["mode"] = "burn"
+    elif change == "files":
+        del receipt["files"]["subtitles.srt"]
+    else:
+        receipt["subtitles"]["cueCount"] = True
+    service.save(directory / "result/receipt.json", receipt)
+    state = service.read(directory / "status.json")
+    state["status"] = "running"
+    state.pop("resultReceiptSha256")
+    service.save(directory / "status.json", state)
+    assert CreationJobs(service.repository).get(job_id)["status"] == "interrupted"

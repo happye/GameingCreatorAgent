@@ -195,7 +195,9 @@ class InspectionHandler(BaseHTTPRequestHandler):
         resource = asyncio.run(registered_media(project, run_id, evidence_id))
         self._serve_media(resource)
 
-    def _serve_media(self, resource: MediaResource, download: bool = False) -> None:
+    def _serve_media(
+        self, resource: MediaResource, download: bool = False, filename: str = "creation.mp4"
+    ) -> None:
         with self.media_cache.open(resource) as source:
             size = os.fstat(source.fileno()).st_size
             try:
@@ -208,7 +210,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
             self._headers(206 if partial else 200, length, resource.content_type)
             self.send_header("Accept-Ranges", "bytes")
             if download:
-                self.send_header("Content-Disposition", 'attachment; filename="creation.mp4"')
+                self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
             if partial:
                 self.send_header("Content-Range", f"bytes {offset}-{offset + length - 1}/{size}")
             self.end_headers()
@@ -564,7 +566,15 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return
             if path.startswith("/api/creation/jobs/"):
                 tail = path.removeprefix("/api/creation/jobs/")
-                if tail.endswith("/video"):
+                if tail.endswith("/subtitles"):
+                    if query:
+                        raise ValueError("Unexpected subtitle query")
+                    self._serve_media(
+                        self.creation_jobs.subtitles(tail.removesuffix("/subtitles")),
+                        True,
+                        "subtitles.srt",
+                    )
+                elif tail.endswith("/video"):
                     if query not in ({}, {"download": "1"}):
                         raise ValueError("Invalid media query")
                     self._serve_media(

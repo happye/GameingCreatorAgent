@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from gamingcreator.application.creation_subtitles import build_subtitles
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.rendering import validate_render_plan
 from gamingcreator.domain.errors import AppError, ExitCode
@@ -56,8 +57,11 @@ async def execute_render_creation(
     renderer: FfmpegCreationRenderer,
     width: int,
     height: int,
+    subtitle_mode: str = "none",
 ) -> dict[str, object]:
     try:
+        if subtitle_mode not in ("none", "sidecar", "burn"):
+            raise ValueError("Unknown subtitle mode.")
         edl, plans, digest = read_creation(creation)
         rows = edl.get("segments")
         if (
@@ -79,6 +83,14 @@ async def execute_render_creation(
         finally:
             await store.close()
         plan = validate_render_plan(edl, plans, timelines)
+        runs = {timeline.run.run_id: timeline for timeline in timelines}
+        cues = (
+            ()
+            if subtitle_mode == "none"
+            else build_subtitles(
+                plan, (), per_clip=(runs[row["runId"]].transcripts for row in rows)
+            )
+        )
         return await renderer.render(
             plan,
             output,
@@ -87,6 +99,8 @@ async def execute_render_creation(
             width,
             height,
             digest,
+            cues,
+            subtitle_mode,
         )
     except (ValueError, OSError, KeyError, TypeError, StopIteration) as error:
         raise AppError("creation.render_invalid", str(error), ExitCode.INPUT) from error

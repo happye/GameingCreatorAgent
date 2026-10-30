@@ -54,6 +54,12 @@
         }
         video.src = artifact.previewUrl; download.href = artifact.downloadUrl; download.download = "video.mp4";
         $("artifact").append(video, download);
+        if (artifact.subtitleUrl) {
+            const url = new URL(artifact.subtitleUrl, location.origin);
+            if (url.origin !== location.origin || url.pathname !== `/api/creation/jobs/${encodeURIComponent(state.job)}/subtitles` || url.search || url.hash) throw new Error("字幕地址无效，请刷新任务。");
+            const link = node("a", "下载 SRT 字幕"); link.id = "download-subtitles"; link.href = artifact.subtitleUrl; link.download = "subtitles.srt";
+            $("artifact").append(node("p", artifact.subtitleCueCount === 0 ? "字幕 0 条：所选片段无可用的已保存语音，SRT 为空。" : `字幕 ${artifact.subtitleCueCount} 条 · ${artifact.subtitleMode === "burn" ? "已烧入视频" : "独立导出"}`), link);
+        }
     }
     async function openJob(id) {
         clearTimeout(state.timer); const epoch = state.epoch, view = ++state.view;
@@ -115,7 +121,7 @@
         brief.targetDuration = Number(brief.targetDuration);
         void submit("plan", {projectId: state.project, runIds: Array.from($("runs").querySelectorAll("input:checked"), (c) => c.value), brief, fps: Number($("fps").value)});
     });
-    $("render-form").addEventListener("submit", (event) => { event.preventDefault(); if (!state.selected) return; const [width, height] = $("size").value.split(",").map(Number); void submit("render", {...state.selected, width, height}); });
+    $("render-form").addEventListener("submit", (event) => { event.preventDefault(); if (!state.selected) return; const [width, height] = $("size").value.split(",").map(Number); void submit("render", {...state.selected, width, height, subtitleMode: $("subtitles").value}); });
     $("project").addEventListener("change", () => { void projectChanged(); }); $("refresh").addEventListener("click", () => { void history(); if (state.job) void openJob(state.job); });
     void (async () => {
         try {

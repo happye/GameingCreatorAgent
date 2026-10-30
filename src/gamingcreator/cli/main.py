@@ -253,6 +253,7 @@ def _parser() -> CliParser:
     render.add_argument("--output", type=Path, required=True)
     render.add_argument("--width", type=int, default=1280)
     render.add_argument("--height", type=int, default=720)
+    render.add_argument("--subtitles", choices=("none", "sidecar", "burn"), default="none")
     creation = commands.add_parser("plan-creation", help="已有Completed素材的离线模板创作方案")
     creation.add_argument("--project", type=Path, required=True)
     creation.add_argument("--run", nargs="+", required=True)
@@ -1764,6 +1765,7 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
                 FfmpegCreationRenderer(Path.cwd()),
                 args.width,
                 args.height,
+                args.subtitles,
             )
         )
     if args.command == "plan-creation":

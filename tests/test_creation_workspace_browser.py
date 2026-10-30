@@ -50,6 +50,9 @@ def test_creation_form_plans_render_and_refresh(width):
         "artifact": {
             "mediaType": "video/mp4",
             "sizeBytes": 123,
+            "subtitleMode": "burn",
+            "subtitleCueCount": 0,
+            "subtitleUrl": f"/api/creation/jobs/{'b' * 32}/subtitles",
             "sha256": "c" * 64,
             "previewUrl": f"/api/creation/jobs/{'b' * 32}/video",
             "downloadUrl": f"/api/creation/jobs/{'b' * 32}/video?download=1",
@@ -116,19 +119,32 @@ def test_creation_form_plans_render_and_refresh(width):
             playwright.expect(page.locator("#render")).to_be_disabled()
             assert page.locator(".plan-card img").count() == 0
             page.locator(".plan-card").first.get_by_role("button").click()
+            page.locator("#subtitles").select_option("burn")
             page.locator("#render").click()
             playwright.expect(page.locator("video")).to_have_attribute(
                 "src", render["artifact"]["previewUrl"]
             )
             assert set(posts[0]) == {"requestId", "projectId", "runIds", "brief", "fps"}
-            assert set(posts[1]) == {"requestId", "planJobId", "planId", "width", "height"}
+            assert set(posts[1]) == {
+                "requestId",
+                "planJobId",
+                "planId",
+                "width",
+                "height",
+                "subtitleMode",
+            }
+            assert posts[1]["subtitleMode"] == "burn"
             assert len(posts[0]["requestId"]) == 32
             assert posts[0]["brief"]["contentType"] == "guide"
             assert posts[0]["brief"]["platforms"] == ["douyin"]
             page.reload()
             playwright.expect(page.locator("video")).to_be_visible()
             assert len(posts) == 2
-            assert page.locator("#artifact a").get_attribute("href").endswith("?download=1")
+            assert page.locator("#artifact a").first.get_attribute("href").endswith("?download=1")
+            playwright.expect(page.locator("#artifact")).to_contain_text("字幕 0 条")
+            playwright.expect(page.locator("#download-subtitles")).to_have_attribute(
+                "href", render["artifact"]["subtitleUrl"]
+            )
             assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
             assert not errors
         finally:

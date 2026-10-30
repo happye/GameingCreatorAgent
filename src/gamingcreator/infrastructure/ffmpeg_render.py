@@ -6,6 +6,7 @@ from pathlib import Path
 
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.rendering import RenderClip, RenderPlan
+from gamingcreator.domain.creation_subtitles import SubtitleCue, parse_srt, serialize_srt
 from gamingcreator.infrastructure.ffmpeg_media import hash_source
 from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
 from gamingcreator.infrastructure.media_process import run_media_process
@@ -40,6 +41,38 @@ def clip_filter(clip: RenderClip, fps: int, width: int, height: int) -> str:
     return vf + ";" + af + f",atrim=duration={float(duration):.12f},asetpts=N/SR/TB[a]"
 
 
+def _burn_ass(cues: tuple[SubtitleCue, ...], width: int, height: int) -> str:
+    # Never interpret transcript text as ASS override commands.
+    header = (
+        f"[Script Info]\nScriptType: v4.00+\nPlayResX: {width}\nPlayResY: {height}\n"
+        "[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, "
+        "OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, "
+        "Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
+        f"Style: Default,Arial,{max(12, height // 18)},&H00FFFFFF,&H00FFFFFF,&H00000000,"
+        "&H00000000,0,0,0,0,100,100,0,0,1,1,0,2,4,4,4,1\n"
+        "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
+    )
+
+    def clock(time: Fraction) -> str:
+        seconds, cs = divmod((time * 100).__floor__(), 100)
+        minutes, sec = divmod(seconds, 60)
+        hours, minute = divmod(minutes, 60)
+        return f"{hours}:{minute:02d}:{sec:02d}.{cs:02d}"
+
+    for cue in cues:
+        if clock(cue.start) == clock(cue.end):
+            continue
+        text = cue.text.translate(str.maketrans("\\{}", "＼｛｝")).replace("\n", r"\N")
+        header += f"Dialogue: 0,{clock(cue.start)},{clock(cue.end)},Default,,0,0,0,,{text}\n"
+    return header
+
+
+def _filter_path(path: Path) -> str:
+    value = path.as_posix()
+    value = value.replace("\\", "\\\\").replace("'", "\\'").replace(":", "\\:")
+    return "".join("\\" + char if char in "\\'[],;" else char for char in value)
+
+
 class FfmpegCreationRenderer:
     def __init__(self, repository: Path) -> None:
         self.bin = repository.resolve() / ".tools/ffmpeg/bin"
@@ -53,7 +86,15 @@ class FfmpegCreationRenderer:
         width: int = 1280,
         height: int = 720,
         creation_digest: str = "",
+        cues: tuple[SubtitleCue, ...] = (),
+        subtitle_mode: str = "none",
     ) -> dict[str, object]:
+        if subtitle_mode not in ("none", "sidecar", "burn"):
+            raise ValueError("Unknown subtitle mode.")
+        subtitle_text = serialize_srt(cues) if subtitle_mode != "none" else ""
+        saved_cues = parse_srt(subtitle_text)
+        if any(cue.end > Fraction(plan.frames, plan.fps) for cue in saved_cues):
+            raise ValueError("Subtitle extends beyond render output.")
         if any(
             type(value) is not int or not 16 <= value <= 3840 or value % 2
             for value in (width, height)
@@ -67,6 +108,15 @@ class FfmpegCreationRenderer:
             raise ValueError("Render output must be outside all input paths.")
         context.check_cancelled()
         target.mkdir(parents=True, exist_ok=False)
+        subtitle_path = target / "subtitles.srt"
+        ass_path = target / "subtitles.ass"
+        video_filter = f"fps={plan.fps}"
+        if subtitle_mode != "none":
+            with subtitle_path.open("x", encoding="utf-8", newline="\n") as handle:
+                handle.write(subtitle_text)
+        if subtitle_mode == "burn" and saved_cues:
+            ass_path.write_text(_burn_ass(saved_cues, width, height), encoding="utf-8")
+            video_filter += f",ass=filename={_filter_path(ass_path)}"
         ffmpeg = str(self.bin / "ffmpeg.exe")
         parts: list[Path] = []
         for index, clip in enumerate(plan.clips):
@@ -123,7 +173,7 @@ class FfmpegCreationRenderer:
                 "-map",
                 "0:a:0",
                 "-vf",
-                f"fps={plan.fps}",
+                video_filter,
                 "-frames:v",
                 str(plan.frames),
                 "-c:v",
@@ -180,11 +230,15 @@ class FfmpegCreationRenderer:
         final = target / "video.mp4"
         pending.rename(final)
         digest = await hash_source(final, context)
+        files = {"video.mp4": digest}
+        if subtitle_mode != "none":
+            files["subtitles.srt"] = await hash_source(subtitle_path, context)
         result: dict[str, object] = {
             "schemaVersion": "creation-render-receipt-v1",
             "status": "completed",
             "creationReceiptSha256": creation_digest,
-            "files": {"video.mp4": digest},
+            "files": files,
+            "subtitles": {"mode": subtitle_mode, "cueCount": len(saved_cues)},
             "frames": plan.frames,
             "fpsNumerator": plan.fps,
             "fpsDenominator": 1,
@@ -196,13 +250,16 @@ class FfmpegCreationRenderer:
             "limitations": [
                 "hard cuts",
                 "letterbox",
-                "no subtitles, overlays, transitions or speed changes",
+                "no overlays, transitions or speed changes",
+                "burn uses centisecond timing and visible fullwidth ASS control characters",
             ],
         }
         # Remove only our deterministic temporary files, after validation, before completion.
         for part in parts:
             part.unlink()
         manifest.unlink()
+        if ass_path.exists():
+            ass_path.unlink()
         context.check_cancelled()
         with (target / "receipt.partial.json").open("x", encoding="utf-8") as handle:
             json.dump(result, handle, ensure_ascii=False, indent=2)

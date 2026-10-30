@@ -102,8 +102,16 @@ class CreationJobs:
             if kind == "plan"
             else {"requestId", "planJobId", "planId", "width", "height"}
         )
-        if not isinstance(request, dict) or set(request) != expected:
+        if not isinstance(request, dict) or (
+            set(request) - ({"subtitleMode"} if kind == "render" else set()) != expected
+        ):
             raise fail("creation.input", "请填写完整创作参数。")
+        if kind == "render" and request.get("subtitleMode", "none") not in (
+            "none",
+            "sidecar",
+            "burn",
+        ):
+            raise fail("creation.input", "无效字幕选项。")
         request_id = identity(request["requestId"])
         canonical = json.dumps(
             {"kind": kind, "request": request}, sort_keys=True, ensure_ascii=False
@@ -280,11 +288,26 @@ class CreationJobs:
             selection = self.safe(directory / "selection/receipt.json")
             if receipt.get("creationReceiptSha256") != hash_file(selection):
                 raise ValueError("Render belongs to another selection")
+            mode = request.get("subtitleMode", "none")
+            if mode not in ("none", "sidecar", "burn"):
+                raise ValueError("Invalid saved subtitle mode")
+            subtitles = receipt.get("subtitles")
+            expected_files = {"video.mp4"}
+            if mode != "none":
+                expected_files.add("subtitles.srt")
+            if subtitles is not None or mode != "none":
+                if (
+                    not isinstance(subtitles, dict)
+                    or subtitles.get("mode") != mode
+                    or type(subtitles.get("cueCount")) is not int
+                    or subtitles["cueCount"] < 0
+                ):
+                    raise ValueError("Invalid subtitle receipt")
             video = self.safe(directory / "result/video.mp4")
             if (
                 receipt.get("schemaVersion") != "creation-render-receipt-v1"
                 or receipt.get("status") != "completed"
-                or set(receipt.get("files", {})) != {"video.mp4"}
+                or set(receipt.get("files", {})) != expected_files
             ):
                 raise ValueError("Invalid render receipt")
             resource = MediaResource(video, receipt["files"]["video.mp4"], "video/mp4")
@@ -298,6 +321,18 @@ class CreationJobs:
                 "previewUrl": base,
                 "downloadUrl": base + "?download=1",
             }
+            if mode != "none":
+                assert isinstance(subtitles, dict)
+                subtitle_path = self.safe(directory / "result/subtitles.srt")
+                subtitle_hash = receipt["files"]["subtitles.srt"]
+                if hash_file(subtitle_path) != subtitle_hash:
+                    raise ValueError("Subtitle file changed")
+                state["artifact"].update(
+                    subtitleMode=mode,
+                    subtitleCueCount=subtitles["cueCount"],
+                    subtitleSha256=subtitle_hash,
+                    subtitleUrl="/api/creation/jobs/" + state["jobId"] + "/subtitles",
+                )
         state["resultReceiptSha256"] = digest
         return state
 
@@ -365,6 +400,7 @@ class CreationJobs:
                         FfmpegCreationRenderer(self.repository),
                         request["width"],
                         request["height"],
+                        subtitle_mode=request.get("subtitleMode", "none"),
                     )
                 )
             receipt_path = directory / "result/receipt.json"
@@ -449,6 +485,20 @@ class CreationJobs:
             self.safe(self.directory(job_id) / "result/video.mp4"),
             state["artifact"]["sha256"],
             "video/mp4",
+        )
+
+    def subtitles(self, job_id: str) -> MediaResource:
+        state = self.get(job_id)
+        if (
+            state["kind"] != "render"
+            or state["status"] != "completed"
+            or "subtitleUrl" not in state.get("artifact", {})
+        ):
+            raise fail("creation.conflict", "任务没有有效字幕。", True)
+        return MediaResource(
+            self.safe(self.directory(job_id) / "result/subtitles.srt"),
+            state["artifact"]["subtitleSha256"],
+            "application/x-subrip; charset=utf-8",
         )
 
     def close(self) -> None:

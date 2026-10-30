@@ -3,12 +3,13 @@ param(
     [Parameter(Mandatory = $true)][string]$Creation,
     [Parameter(Mandatory = $true)][string]$OutputPath,
     [int]$Width = 1280,
-    [int]$Height = 720
+    [int]$Height = 720,
+    [ValidateSet("none", "sidecar", "burn")][string]$Subtitles = "none"
 )
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 . (Join-Path $repositoryRoot 'scripts/env.ps1')
-$renderArguments = @('-B', '-m', 'gamingcreator', 'render-creation', '--project', $Project, '--creation', $Creation, '--output', $OutputPath, '--width', "$Width", '--height', "$Height")
+$renderArguments = @('-B', '-m', 'gamingcreator', 'render-creation', '--project', $Project, '--creation', $Creation, '--output', $OutputPath, '--width', "$Width", '--height', "$Height", '--subtitles', $Subtitles)
 $previousOutputEncoding = $OutputEncoding
 $previousConsoleEncoding = [Console]::OutputEncoding
 $renderExit = 1
