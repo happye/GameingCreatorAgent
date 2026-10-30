@@ -12,7 +12,7 @@ from gamingcreator.application.creation_editing import (
     editable_clips,
     validate_revision,
 )
-from gamingcreator.application.creation_subtitles import build_subtitles
+from gamingcreator.application.creation_subtitles import build_subtitles, validate_override_text
 from gamingcreator.application.edit_decision import select_edit_decision
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.rendering import RenderPlan, validate_render_plan
@@ -35,6 +35,31 @@ class Chain:
     project_id: str
     digest: str
     ancestry: list[dict[str, Any]]
+    subtitle_overrides: list[dict[str, str]]
+
+
+def resolve_overrides(
+    request: dict[str, Any], inherited: list[dict[str, str]], edl: dict[str, Any], root_sha: str
+) -> list[dict[str, str]]:
+    """Resolve a complete override snapshot, filtering deleted inherited clips only."""
+    ids = {row["clipId"] for row in editable_clips(edl, root_sha)}
+    if "subtitleOverrides" not in request:
+        return [dict(item) for item in inherited if item["clipId"] in ids]
+    items = request["subtitleOverrides"]
+    if not isinstance(items, list):
+        raise ValueError("Subtitle overrides must be an array.")
+    result = []
+    seen = set()
+    for item in items:
+        if not isinstance(item, dict) or set(item) != {"clipId", "text"}:
+            raise ValueError("Subtitle overrides accept only clipId and text.")
+        clip_id = item["clipId"]
+        if not isinstance(clip_id, str) or clip_id not in ids or clip_id in seen:
+            raise ValueError("Subtitle override clip identity is unknown or duplicated.")
+        validate_override_text(item["text"])
+        result.append(dict(item))
+        seen.add(clip_id)
+    return result
 
 
 def _record(
@@ -114,6 +139,7 @@ def load_chain(
     plan = validate_render_plan(root_edl, report, timelines)
     edl = root_edl
     parent_sha = root_sha
+    overrides: list[dict[str, str]] = []
     for current_id, state, stored, digest in reversed(records[:-1]):
         request = stored["request"]
         if (
@@ -140,12 +166,15 @@ def load_chain(
             "parentReceiptSha256": parent_sha,
             "edits": request["clips"],
         }
+        if "subtitleOverrides" in request:
+            expected_metadata["subtitleOverrides"] = request["subtitleOverrides"]
         if metadata != expected_metadata:
             raise ValueError("Revision metadata changed")
         revised = jobs.read(directory / "result/edit-decision.json")
         if revised != build_revision(edl, root_sha, request["clips"]):
             raise ValueError("Revision differs from its saved request")
         plan = validate_revision(root_edl, report, edl, revised, timelines, root_sha)
+        overrides = resolve_overrides(request, overrides, revised, root_sha)
         edl, parent_sha = revised, digest
     ancestry = [
         {"jobId": key, "kind": state["kind"], "planId": plan_id} for key, state, _, _ in records[1:]
@@ -162,6 +191,7 @@ def load_chain(
         root_state["projectId"],
         records[0][3],
         ancestry,
+        overrides,
     )
 
 
@@ -177,6 +207,7 @@ def editor(chain: Chain, job_id: str) -> dict[str, Any]:
         "fps": chain.plan.fps,
         "clips": rows,
         "ancestry": chain.ancestry,
+        "subtitleOverrides": [dict(item) for item in chain.subtitle_overrides],
     }
 
 
@@ -190,6 +221,9 @@ def save_revision(jobs: Any, directory: Path, request: dict[str, Any], chain: Ch
         "parentReceiptSha256": chain.digest,
         "edits": request["clips"],
     }
+    resolve_overrides(request, chain.subtitle_overrides, revised, chain.root_sha)
+    if "subtitleOverrides" in request:
+        metadata["subtitleOverrides"] = request["subtitleOverrides"]
     jobs.safe(directory / "result")
     write_creation(
         directory / "result",
@@ -214,6 +248,7 @@ async def render_revision(
     )
     runs = {timeline.run.run_id: timeline for timeline in chain.timelines}
     mode = request.get("subtitleMode", "none")
+    overrides = {item["clipId"]: item["text"] for item in chain.subtitle_overrides}
     cues = (
         ()
         if mode == "none"
@@ -221,6 +256,9 @@ async def render_revision(
             chain.plan,
             (),
             per_clip=(runs[row["runId"]].transcripts for row in chain.edl["segments"]),
+            overrides=(
+                overrides.get(row["clipId"]) for row in editable_clips(chain.edl, chain.root_sha)
+            ),
         )
     )
     await FfmpegCreationRenderer(jobs.repository).render(

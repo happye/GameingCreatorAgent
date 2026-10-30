@@ -1,5 +1,6 @@
 """Editing UI contracts against local mocked APIs; no media or paid calls."""
 
+import copy
 import json
 from pathlib import Path
 
@@ -9,7 +10,7 @@ STATIC = Path(__file__).resolve().parents[1] / "src/gamingcreator/ui/static"
 ROOT, REV = "a" * 32, "b" * 32
 
 
-@pytest.mark.parametrize("scenario", ["edit", "restart", "stale"])
+@pytest.mark.parametrize("scenario", ["edit", "restart", "stale", "captions"])
 def test_editing_version_flows(scenario):
     pw = pytest.importorskip("playwright.sync_api")
     clips = [
@@ -56,6 +57,7 @@ def test_editing_version_flows(scenario):
             editor=revision,
         ),
     }
+    editors = {ROOT: editor, REV: revision}
     posts, held = [], []
     with pw.sync_playwright() as runtime:
         browser = runtime.chromium.launch(headless=True)
@@ -88,8 +90,26 @@ def test_editing_version_flows(scenario):
                         }
                         for c in posts[-1][1]["clips"]
                     ]
+                    identity = REV if len(posts) == 1 else "d" * 32
+                    saved = copy.deepcopy(revision)
+                    saved["parentJobId"] = identity
+                    saved["subtitleOverrides"] = posts[-1][1].get("subtitleOverrides", [])
+                    if identity != REV:
+                        saved["ancestry"].append(
+                            dict(jobId=REV, planId="chronological", kind="revision")
+                        )
+                    editors[identity] = saved
+                    jobs[identity] = dict(
+                        jobId=identity,
+                        kind="revision",
+                        status="completed",
+                        projectId="one",
+                        createdAt="2026-10-30",
+                        editor=saved,
+                    )
                     r.fulfill(
-                        status=202, json={"jobId": REV, "kind": "revision", "status": "pending"}
+                        status=202,
+                        json={"jobId": identity, "kind": "revision", "status": "pending"},
                     )
                 else:
                     r.fulfill(status=400, json={"error": "停止于渲染请求验证"})
@@ -99,7 +119,7 @@ def test_editing_version_flows(scenario):
                 if scenario == "stale":
                     held.append(r)
                 else:
-                    r.fulfill(json=revision if REV in path else editor)
+                    r.fulfill(json=editors[path.split("/jobs/")[1].split("/")[0]])
             else:
                 r.fulfill(json=jobs[path.rsplit("/", 1)[-1]])
 
@@ -120,7 +140,51 @@ def test_editing_version_flows(scenario):
             else:
                 page.locator("#history button").filter(has_text="方案").click()
                 page.get_by_role("button", name="选择此方案", exact=True).click()
-                if scenario == "stale":
+                if scenario == "captions":
+                    pw.expect(page.locator("[data-clip-id]")).to_have_count(3)
+                    row = page.locator('[data-clip-id="0"]')
+                    toggle = row.locator('[data-field="subtitle-override"]')
+                    text = row.locator('[data-field="subtitle-text"]')
+                    pw.expect(toggle).not_to_be_checked()
+                    pw.expect(text).to_have_value("")
+                    pw.expect(text).to_be_disabled()
+                    toggle.check()
+                    text.fill("第一次中文字幕")
+                    pw.expect(page.locator("#render")).to_be_disabled()
+                    page.locator("#save-revision").click()
+                    pw.expect(page.locator("#render")).to_be_enabled()
+                    assert posts[-1][1]["subtitleOverrides"] == [
+                        dict(clipId="0", text="第一次中文字幕")
+                    ]
+                    text.fill("第二次中文字幕")
+                    page.locator("#save-revision").click()
+                    pw.expect(page.locator("#render")).to_be_enabled()
+                    assert posts[-1][1]["parentJobId"] == REV
+                    assert posts[-1][1]["subtitleOverrides"] == [
+                        dict(clipId="0", text="第二次中文字幕")
+                    ]
+                    page.locator(f'[data-job-id="{REV}"]').click()
+                    pw.expect(text).to_have_value("第一次中文字幕")
+                    toggle.uncheck()
+                    page.locator("#save-revision").click()
+                    pw.expect(page.locator("#render")).to_be_enabled()
+                    assert posts[-1][1]["subtitleOverrides"] == []
+                    toggle.check()
+                    text.fill("")
+                    row.locator('[data-action="down"]').click()
+                    page.locator('[data-clip-id="2"] [data-field="subtitle-override"]').check()
+                    page.locator('[data-clip-id="2"] [data-field="subtitle-text"]').fill(
+                        "待删除字幕"
+                    )
+                    page.locator('[data-clip-id="2"] [data-action="delete"]').click()
+                    page.locator("#save-revision").click()
+                    pw.expect(page.locator("#render")).to_be_enabled()
+                    assert posts[-1][1]["subtitleOverrides"] == [dict(clipId="0", text="")]
+                    assert [c["clipId"] for c in posts[-1][1]["clips"]] == ["1", "0"]
+                    page.locator(f'[data-job-id="{ROOT}"]').click()
+                    pw.expect(toggle).not_to_be_checked()
+                    pw.expect(text).to_have_value("")
+                elif scenario == "stale":
                     page.locator("#project").select_option("two")
                     for r in held:
                         r.fulfill(json=editor)

@@ -24,7 +24,13 @@ from gamingcreator.infrastructure.file_sharing import retry_file_sharing
 from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
 from gamingcreator.ui.media import MediaResource, VerifiedMediaCache
-from gamingcreator.ui.revision_jobs import editor, load_chain, render_revision, save_revision
+from gamingcreator.ui.revision_jobs import (
+    editor,
+    load_chain,
+    render_revision,
+    resolve_overrides,
+    save_revision,
+)
 
 
 def fail(code: str, message: str, conflict: bool = False) -> AppError:
@@ -116,7 +122,12 @@ class CreationJobs:
                 if "revisionJobId" in request
                 else {"requestId", "planJobId", "planId", "width", "height"}
             )
-        if set(request) - ({"subtitleMode"} if kind == "render" else set()) != expected:
+        optional = (
+            {"subtitleMode"}
+            if kind == "render"
+            else ({"subtitleOverrides"} if kind == "revision" else set())
+        )
+        if set(request) - optional != expected:
             raise fail("creation.input", "请填写完整创作参数。")
         if kind == "render" and request.get("subtitleMode", "none") not in (
             "none",
@@ -170,7 +181,8 @@ class CreationJobs:
                 if kind == "revision":
                     if request["expectedParentReceiptSha256"] != chain.digest:
                         raise fail("creation.conflict", "父版本已更改，请重新打开编辑器。", True)
-                    build_revision(chain.edl, chain.root_sha, request["clips"])
+                    revised = build_revision(chain.edl, chain.root_sha, request["clips"])
+                    resolve_overrides(request, chain.subtitle_overrides, revised, chain.root_sha)
                 elif self.read(self.directory(parent_id) / "status.json")["kind"] != "revision":
                     raise fail("creation.conflict", "请选择已完成编辑版本。", True)
                 project_id = chain.project_id

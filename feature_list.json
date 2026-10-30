@@ -753,7 +753,9 @@
         "docs/exec-plans/sprint-creation-subtitles.md",
         "tests/test_creation_subtitles.py",
         "tests/test_creation_subtitle_render.py",
-        "tests/test_creation_workspace_http.py"
+        "tests/test_creation_workspace_http.py",
+        "docs/exec-plans/sprint-creation-caption-editing.md",
+        "tests/test_creation_caption_editing.py"
       ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
@@ -788,7 +790,9 @@
         "docs/exec-plans/sprint-creation-editing.md",
         "tests/test_creation_editing.py",
         "tests/test_creation_revision_jobs.py",
-        "tests/test_creation_editing_browser.py"
+        "tests/test_creation_editing_browser.py",
+        "docs/exec-plans/sprint-creation-caption-editing.md",
+        "tests/test_creation_caption_editing.py"
       ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"

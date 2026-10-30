@@ -55,6 +55,7 @@
             if (epoch !== state.epoch || view !== state.view) return;
             if (editor.parentJobId !== id || editor.planId !== planId) throw new Error("剪辑版本不匹配。");
             editor.bounds = Object.fromEntries(editor.clips.map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}]));
+            editor.subtitleOverrides = editor.subtitleOverrides || [];
             state.job = id; save(); state.editor = editor;
             state.selected = revision ? {revisionJobId: id} : {planJobId: id, planId};
             showEditor();
@@ -85,6 +86,25 @@
                 label.append(input); row.append(label);
             }
             row.append(node("p", `按帧吸附后实际出点：${(clip.endUs / 1e6).toFixed(6)} 秒`));
+            const override = editor.subtitleOverrides.find((item) => item.clipId === clip.clipId);
+            const subtitleLabel = node("label", "手写字幕（替换该镜头语音字幕）");
+            const toggle = document.createElement("input"); toggle.type = "checkbox"; toggle.dataset.field = "subtitle-override"; toggle.checked = Boolean(override);
+            toggle.disabled = state.busy; subtitleLabel.prepend(toggle);
+            const subtitle = document.createElement("textarea"); subtitle.dataset.field = "subtitle-text"; subtitle.maxLength = 2000; subtitle.rows = 3;
+            subtitle.setAttribute("aria-label", `镜头 ${index + 1} 手写字幕`); subtitle.value = override?.text || ""; subtitle.disabled = !override || state.busy;
+            const source = node("p", ""); source.className = "subtitle-source";
+            function updateSubtitle() {
+                if (state.busy || state.editing) return;
+                editor.subtitleOverrides = editor.subtitleOverrides.filter((item) => item.clipId !== clip.clipId);
+                if (toggle.checked) editor.subtitleOverrides.push({clipId: clip.clipId, text: subtitle.value});
+                subtitle.disabled = !toggle.checked; state.dirty = true;
+                $("editor-summary").textContent = "有未保存的字幕修改，请保存新版本后生成视频。";
+                describeSource(); controls();
+            }
+            function describeSource() { source.textContent = toggle.checked ? (subtitle.value ? "字幕来源：你的手写文字，覆盖整个镜头。" : "已勾选但文字为空：此镜头不显示字幕。") : "字幕来源：此分析版本已有语音；无语音则无字幕。画面描述不会自动用作字幕。"; }
+            toggle.addEventListener("change", updateSubtitle); subtitle.addEventListener("input", updateSubtitle); describeSource();
+            row.append(subtitleLabel, subtitle, source);
+
             for (const [action, text] of [["up", "上移"], ["down", "下移"], ["delete", "删除镜头"]]) {
                 const button = node("button", text); button.type = "button"; button.dataset.action = action;
                 button.disabled = state.busy || (action === "up" && index === 0) || (action === "down" && index === editor.clips.length - 1) || (action === "delete" && editor.clips.length === 1);
@@ -184,7 +204,7 @@
     $("save-revision").addEventListener("click", () => {
         if (!state.editor || state.editing) return;
         const editor = state.editor;
-        void submit("revision", {parentJobId: editor.parentJobId, planId: editor.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256, clips: editor.clips.map(({clipId, startUs, outputFrames}) => ({clipId, startUs, outputFrames}))});
+        void submit("revision", {parentJobId: editor.parentJobId, planId: editor.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256, clips: editor.clips.map(({clipId, startUs, outputFrames}) => ({clipId, startUs, outputFrames})), subtitleOverrides: editor.subtitleOverrides.filter((item) => editor.clips.some((clip) => clip.clipId === item.clipId))});
     });
     $("project").addEventListener("change", () => { void projectChanged(); }); $("refresh").addEventListener("click", () => { void history(); if (state.job) void openJob(state.job); });
     void (async () => {
