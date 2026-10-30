@@ -5,3 +5,5 @@
 .subtitle-source{font-size:.9rem;color:#b6cbe2}.clip-row [data-field="subtitle-text"]{width:100%;resize:vertical}
 
 #publication-cover{display:block;max-width:100%;max-height:400px}#publication-cover[hidden]{display:none}#publication-downloads a{display:inline-block;margin:8px;overflow-wrap:anywhere}
+
+#package-downloads a{display:inline-block;margin:8px;overflow-wrap:anywhere}#package-preview img{max-width:100%;max-height:420px;object-fit:contain}#package-validation{white-space:pre-wrap;overflow-wrap:anywhere}

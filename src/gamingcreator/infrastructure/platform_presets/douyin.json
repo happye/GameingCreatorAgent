@@ -1,0 +1,32 @@
+{
+  "Platform": "douyin",
+  "RuleVersion": "local-v1",
+  "UpdatedAt": "2026-10-31",
+  "Source": {
+    "kind": "local_preset",
+    "label": "用户可编辑本地导出配置，非官方规则"
+  },
+  "Fields": {
+    "video": {
+      "width": 720,
+      "height": 1280,
+      "fit": "pad",
+      "codec": "h264",
+      "pixelFormat": "yuv420p"
+    },
+    "cover": {
+      "width": 720,
+      "height": 1280,
+      "fit": "pad"
+    },
+    "limits": {
+      "maxBytes": null,
+      "minDurationMs": null,
+      "maxDurationMs": null,
+      "titleMaxChars": null,
+      "descriptionMaxChars": null,
+      "tagMaxCount": null,
+      "requiredTags": []
+    }
+  }
+}

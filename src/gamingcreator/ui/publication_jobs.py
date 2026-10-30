@@ -48,7 +48,12 @@ def snapshot(jobs: Any, job_id: str) -> dict[str, Any]:
     if state["kind"] == "publication":
         if state["status"] != "completed":
             raise ValueError("Publication is not complete")
-        return dict(jobs.verify(directory, state)["publication"])
+        verified = jobs.verify(directory, state)
+        return {
+            **verified["publication"],
+            "publicationJobId": job_id,
+            "publicationReceiptSha256": verified["resultReceiptSha256"],
+        }
     _, receipt, digest = render_parent(jobs, job_id)
     _, report, _ = read_creation(jobs.safe(directory / "selection"))
     brief = report["brief"]
@@ -57,6 +62,8 @@ def snapshot(jobs: Any, job_id: str) -> dict[str, Any]:
         return "".join(c for c in value if unicodedata.category(c) != "Cc")[:limit]
 
     return {
+        "publicationJobId": None,
+        "publicationReceiptSha256": None,
         "renderJobId": job_id,
         "expectedRenderReceiptSha256": digest,
         "coverFrame": 0,
@@ -190,7 +197,7 @@ def verify_publication(
         ("description.txt", request["description"]),
         ("tags.json", json.dumps(request["tags"], ensure_ascii=False)),
     ):
-        if jobs.safe(target / name).read_text(encoding="utf-8") != value:
+        if jobs.safe(target / name).read_bytes().decode("utf-8") != value:
             raise ValueError("Publication text changed")
     validate_png(jobs.safe(target / "cover.png"), parent["width"], parent["height"])
     state["publication"] = expected

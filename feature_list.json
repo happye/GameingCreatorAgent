@@ -823,8 +823,12 @@
       "group": "E",
       "name": "平台规格配置（抖音／快手／B站／小红书，不硬编码）",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "docs/exec-plans/sprint-platform-packages.md",
+        "tests/test_platform_package.py",
+        "tests/test_platform_package_browser.py"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },
@@ -833,8 +837,12 @@
       "group": "E",
       "name": "主项目多版本（一稿多平台）",
       "first_product": false,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "docs/exec-plans/sprint-platform-packages.md",
+        "tests/test_platform_package.py",
+        "tests/test_platform_package_browser.py"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },
@@ -843,8 +851,12 @@
       "group": "E",
       "name": "发布包导出",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "docs/exec-plans/sprint-platform-packages.md",
+        "tests/test_platform_package.py",
+        "tests/test_platform_package_browser.py"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },
@@ -853,8 +865,12 @@
       "group": "E",
       "name": "投稿前检查（Preflight）",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "docs/exec-plans/sprint-platform-packages.md",
+        "tests/test_platform_package.py",
+        "tests/test_platform_package_browser.py"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },

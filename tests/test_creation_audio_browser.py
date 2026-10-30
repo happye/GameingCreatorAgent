@@ -40,6 +40,8 @@ def test_audio_browser_snapshot_and_clear():
                     body=(static / path.rsplit("/", 1)[1]).read_text("utf-8-sig"),
                     content_type="text/css" if path.endswith("css") else "text/javascript",
                 )
+            elif path == "/api/creation/platform-profiles":
+                r.fulfill(json={"profiles": []})
             elif path == "/api/creation/music":
                 r.fulfill(json={"tracks": [track], "issues": []})
             elif path == "/api/projects":

@@ -25,7 +25,7 @@ from gamingcreator.infrastructure.file_sharing import retry_file_sharing
 from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
 from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
-from gamingcreator.ui import publication_jobs
+from gamingcreator.ui import package_jobs, publication_jobs
 from gamingcreator.ui.media import MediaResource, VerifiedMediaCache
 from gamingcreator.ui.revision_jobs import (
     editor,
@@ -109,7 +109,7 @@ class CreationJobs:
         return project
 
     def submit(self, kind: str, request: dict[str, Any]) -> dict[str, object]:
-        if kind not in ("plan", "revision", "render", "publication") or not isinstance(
+        if kind not in ("plan", "revision", "render", "publication", "package") or not isinstance(
             request, dict
         ):
             raise fail("creation.input", "无效任务类型。")
@@ -137,6 +137,13 @@ class CreationJobs:
                 "title",
                 "description",
                 "tags",
+            }
+        if kind == "package":
+            expected = {
+                "requestId",
+                "publicationJobId",
+                "expectedPublicationReceiptSha256",
+                "profile",
             }
         optional = (
             {"subtitleMode"}
@@ -189,6 +196,10 @@ class CreationJobs:
                 if type(request["fps"]) is not int or not 1 <= request["fps"] <= 120:
                     raise fail("creation.input", "无效输出帧率。")
                 project_id = request["projectId"]
+            elif kind == "package":
+                parent_id = identity(request["publicationJobId"])
+                project_id, parent_digest = package_jobs.prepare(self, request)
+                project = self.project(project_id)
             elif kind == "publication":
                 parent_id = identity(request["renderJobId"])
                 project_id, parent_digest = publication_jobs.prepare(self, request)
@@ -321,6 +332,8 @@ class CreationJobs:
             for plan in state["plans"]:
                 for segment in plan["segments"]:
                     segment.pop("sourcePath", None)
+        elif state["kind"] == "package":
+            package_jobs.verify(self, directory, state, stored, result_receipt)
         elif state["kind"] == "publication":
             publication_jobs.verify_publication(self, directory, state, stored, result_receipt)
         elif state["kind"] == "revision":
@@ -456,7 +469,7 @@ class CreationJobs:
                 finally:
                     await store.close()
 
-            if state["kind"] != "publication":
+            if state["kind"] not in ("publication", "package"):
                 asyncio.run(check_sources())
             if state["kind"] == "plan":
                 asyncio.run(
@@ -470,6 +483,8 @@ class CreationJobs:
                         None,
                     )
                 )
+            elif state["kind"] == "package":
+                asyncio.run(package_jobs.save_package(self, directory, request))
             elif state["kind"] == "publication":
                 asyncio.run(publication_jobs.save_publication(self, directory, request))
             elif state["kind"] == "revision":
@@ -563,9 +578,19 @@ class CreationJobs:
                 }
                 state.pop("artifact", None)
                 state.pop("editor", None)
+                state.pop("package", None)
                 state.pop("publication", None)
                 state.pop("publicationArtifacts", None)
         return {key: value for key, value in state.items() if key != "resultReceiptSha256"}
+
+    def package(self, job_id: str) -> dict[str, Any]:
+        state = self.get(job_id)
+        if state["kind"] != "package" or state["status"] != "completed":
+            raise ValueError("Package unavailable")
+        return dict(state["package"])
+
+    def package_file(self, job_id: str, name: str) -> MediaResource:
+        return package_jobs.resource(self, job_id, name)
 
     def publication(self, job_id: str) -> dict[str, Any]:
         return publication_jobs.snapshot(self, job_id)

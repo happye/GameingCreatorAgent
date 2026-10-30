@@ -266,6 +266,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/renders",
                 "/api/creation/revisions",
                 "/api/creation/publications",
+                "/api/creation/packages",
                 "/api/match-details",
                 "/api/draft-detail-query",
                 "/api/search-project",
@@ -295,6 +296,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/renders",
                 "/api/creation/revisions",
                 "/api/creation/publications",
+                "/api/creation/packages",
             }:
                 self._json(
                     202,
@@ -304,6 +306,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             "renders": "render",
                             "revisions": "revision",
                             "publications": "publication",
+                            "packages": "package",
                         }[path.rsplit("/", 1)[1]],
                         value,
                     ),
@@ -578,6 +581,13 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     raise ValueError("Music catalog accepts no parameters")
                 self._json(200, MusicLibrary(self.repository).catalog())
                 return
+            if path == "/api/creation/platform-profiles":
+                from gamingcreator.ui.package_jobs import profiles
+
+                if query:
+                    raise ValueError("Unexpected profile query")
+                self._json(200, profiles())
+                return
             if path == "/api/creation/jobs":
                 if set(query) != {"projectId"}:
                     raise ValueError("Expected registered project ID")
@@ -585,7 +595,20 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return
             if path.startswith("/api/creation/jobs/"):
                 tail = path.removeprefix("/api/creation/jobs/")
-                if "/publication-files/" in tail:
+                if "/package-files/" in tail:
+                    job_id, name = tail.split("/package-files/", 1)
+                    if query not in ({}, {"download": "1"}):
+                        raise ValueError("Invalid package query")
+                    self._serve_media(
+                        self.creation_jobs.package_file(job_id, name),
+                        query.get("download") == "1" or name not in ("video.mp4", "cover.png"),
+                        name,
+                    )
+                elif tail.endswith("/package"):
+                    if query:
+                        raise ValueError("Unexpected package query")
+                    self._json(200, self.creation_jobs.package(tail.removesuffix("/package")))
+                elif "/publication-files/" in tail:
                     job_id, name = tail.split("/publication-files/", 1)
                     if query not in ({}, {"download": "1"}):
                         raise ValueError("Invalid publication query")

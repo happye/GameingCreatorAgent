@@ -3,6 +3,7 @@
     const $ = (id) => document.getElementById(id);
     const state = {project: "", job: "", epoch: 0, view: 0, timer: null, selected: null, busy: false, editor: null, editing: false, dirty: false, intents: {}, publication: null};
     let musicTracks = [];
+    let platformProfiles = [], packageProfile = null;
     let musicNotice = "正在读取本地曲库…";
     const defaultMix = () => ({bgm: null, sourceGainDb: 0, ducking: "off"});
     const labels = {pending: "等待开始", running: "正在处理", completed: "已完成", failed: "失败", interrupted: "已中断"};
@@ -25,13 +26,14 @@
         return state.intents[kind].id;
     }
     function controls() {
+        $("generate-package").disabled = state.busy || !packageProfile || !state.publication?.publicationJobId || !state.publication?.publicationReceiptSha256;
         $("save-publication").disabled = state.busy || !state.publication;
         $("use-cover-frame").disabled = state.busy || !state.publication;
         $("plan").disabled = state.busy || !state.project || !$("runs").querySelector("input:checked");
         $("render").disabled = state.busy || state.editing || state.dirty || !state.selected;
         $("save-revision").disabled = state.busy || state.editing || !state.editor || !state.editor.clips.length;
     }
-    function clearView() { state.publication = null; $("publication-form").hidden = true; $("publication-cover").hidden = true; $("publication-cover").removeAttribute("src"); $("publication-downloads").replaceChildren(); state.selected = null; state.editor = null; $("audio-controls")?.remove(); state.dirty = false; state.editing = false; $("editor-rows").replaceChildren(); $("ancestry").replaceChildren(); $("editor-summary").textContent = "选择方案或剪辑版本后可编辑镜头。"; $("plans").replaceChildren(); $("artifact").replaceChildren(); $("job-status").textContent = "尚未选择任务"; controls(); }
+    function clearView() { $("package-form").hidden = true; $("package-result").hidden = true; $("package-downloads").replaceChildren(); $("package-preview").replaceChildren(); state.publication = null; $("publication-form").hidden = true; $("publication-cover").hidden = true; $("publication-cover").removeAttribute("src"); $("publication-downloads").replaceChildren(); state.selected = null; state.editor = null; $("audio-controls")?.remove(); state.dirty = false; state.editing = false; $("editor-rows").replaceChildren(); $("ancestry").replaceChildren(); $("editor-summary").textContent = "选择方案或剪辑版本后可编辑镜头。"; $("plans").replaceChildren(); $("artifact").replaceChildren(); $("job-status").textContent = "尚未选择任务"; controls(); }
     function showPlans(job) {
         $("plans").replaceChildren(); state.selected = null;
         for (const plan of job.plans || []) {
@@ -49,7 +51,7 @@
         }
         controls();
     }
-    const kindLabel = (kind) => ({plan: "方案", revision: "剪辑版本", render: "视频", publication: "封面与文案"}[kind] || kind);
+    const kindLabel = (kind) => ({plan: "方案", revision: "剪辑版本", render: "视频", publication: "封面与文案", package: "平台预览包"}[kind] || kind);
     async function loadEditor(id, planId, revision = false) {
         const epoch = state.epoch, view = ++state.view;
         state.selected = null; state.editor = null; state.editing = true; state.dirty = false;
@@ -174,6 +176,64 @@
             $("artifact").append(node("p", artifact.subtitleCueCount === 0 ? "字幕 0 条：所选片段无可用的已保存语音，SRT 为空。" : `字幕 ${artifact.subtitleCueCount} 条 · ${artifact.subtitleMode === "burn" ? "已烧入视频" : "独立导出"}`), link);
         }
     }
+    const platformNames = {bilibili: "B站", douyin: "抖音", kuaishou: "快手", xiaohongshu: "小红书"};
+    const packageFields = [
+        ["video-width", "视频宽度", "video", "width"], ["video-height", "视频高度", "video", "height"],
+        ["video-fit", "视频画面适配", "video", "fit"], ["cover-width", "封面宽度", "cover", "width"],
+        ["cover-height", "封面高度", "cover", "height"], ["cover-fit", "封面画面适配", "cover", "fit"],
+        ["max-bytes", "最大文件字节数（留空不配置）", "limits", "maxBytes"],
+        ["min-duration-ms", "最短毫秒数（留空不配置）", "limits", "minDurationMs"],
+        ["max-duration-ms", "最长毫秒数（留空不配置）", "limits", "maxDurationMs"],
+        ["title-max-chars", "标题最多字数（留空不配置）", "limits", "titleMaxChars"],
+        ["description-max-chars", "简介最多字数（留空不配置）", "limits", "descriptionMaxChars"],
+        ["tag-max-count", "最多标签数（留空不配置）", "limits", "tagMaxCount"],
+        ["required-tags", "必需标签（每行一个，留空不配置）", "limits", "requiredTags"]
+    ];
+    function fillProfile(profile) {
+        packageProfile = structuredClone(profile);
+        const select = $("package-platform");
+        if (!Array.from(select.options).some((o) => o.value === profile.Platform)) select.append(new Option(platformNames[profile.Platform] || profile.Platform, profile.Platform));
+        select.value = profile.Platform;
+        $("package-version").textContent = `本地配置版本：${profile.RuleVersion} · ${profile.UpdatedAt}`;
+        $("package-fields").replaceChildren();
+        for (const [id, title, group, key] of packageFields) {
+            const label = node("label", title), input = document.createElement(key === "fit" ? "select" : key === "requiredTags" ? "textarea" : "input");
+            input.id = id;
+            if (key === "fit") { input.append(new Option("完整画面（补边）", "pad"), new Option("填满画面（裁切）", "crop")); }
+            else if (key !== "requiredTags") { input.type = "number"; input.step = "1"; input.min = group === "limits" ? "0" : "2"; input.required = group !== "limits"; }
+            input.value = key === "requiredTags" ? profile.Fields[group][key].join("\n") : profile.Fields[group][key] ?? "";
+            label.append(input); $("package-fields").append(label);
+        }
+        controls();
+    }
+    async function loadProfiles() {
+        try {
+            const data = await api("/api/creation/platform-profiles"); platformProfiles = data.profiles;
+            $("package-platform").replaceChildren();
+            for (const profile of platformProfiles) $("package-platform").append(new Option(platformNames[profile.Platform] || profile.Platform, profile.Platform));
+            if (!packageProfile && platformProfiles.length) fillProfile(platformProfiles[0]);
+            else if (packageProfile) $("package-platform").value = packageProfile.Platform;
+            $("package-profile-notice").textContent = platformProfiles.length ? "本地预设可修改；修改后生成独立版本，原包保留。" : "平台预设暂不可用，已有创作功能仍可使用。";
+        } catch { $("package-profile-notice").textContent = "平台预设暂不可用，已有创作功能仍可使用。"; }
+    }
+    function showPackage(data, id) {
+        fillProfile(data.profile); $("package-result").hidden = false;
+        $("package-status").textContent = `生成：${data.generationStatus === "completed" ? "成功，文件可下载" : "尚未完成"}；本地限值：${({pass: "通过", fail: "未通过", unknown: "未知"})[data.localChecks] || "未知"}；发布资格：${data.publicationEligibility === "blocked" ? "受阻（仅供测试音乐或其他限制）" : "未核实"}。官方规则、素材权利和真人质量尚未核实。`;
+        const validation = data.validation || {}, statuses = {pass: "通过", fail: "未通过", unknown: "未知", not_configured: "未配置"};
+        const checkNames = {width: "视频宽度", height: "视频高度", codec: "编码", pixelFormat: "像素格式", frames: "帧数", fps: "帧率", maxBytes: "文件大小上限", minDurationMs: "最短时长", maxDurationMs: "最长时长", titleMaxChars: "标题字数", descriptionMaxChars: "简介字数", tagMaxCount: "标签数量", requiredTags: "必需标签"};
+        const lines = Object.entries(validation.checks || {}).map(([key, status]) => `${checkNames[key] || key}：${statuses[status] || "未知"}`);
+        lines.push(`官方规则：${statuses[validation.platformRules] || "未知"}；素材权利：${statuses[validation.sourceRights] || "未知"}；真人质量：${statuses[validation.humanQuality] || "未知"}`);
+        $("package-validation").textContent = lines.join("；");
+        $("package-downloads").replaceChildren(); $("package-preview").replaceChildren();
+        const prefix = `/api/creation/jobs/${encodeURIComponent(id)}/package-files/`;
+        for (const file of ["video.mp4", "cover.png", "title.txt", "description.txt", "tags.json", "platform.json", "validation.json", "package.zip"]) {
+            const url = prefix + file;
+            const parsed = new URL(url, location.origin);
+            if (parsed.origin !== location.origin || parsed.pathname !== url || parsed.search || parsed.hash) throw new Error("预览包地址无效。");
+            const link = node("a", `下载 ${file}`); link.href = url; link.download = file; link.dataset.file = file; $("package-downloads").append(link);
+            if (file === "video.mp4" || file === "cover.png") { const media = document.createElement(file === "video.mp4" ? "video" : "img"); media.src = url; if (file === "video.mp4") { media.controls = true; media.preload = "metadata"; } else media.alt = "平台预览包封面"; $("package-preview").append(media); }
+        }
+    }
     async function loadPublication(id, kind, epoch, view) {
         const data = await api(`/api/creation/jobs/${encodeURIComponent(id)}/publication`);
         if (epoch !== state.epoch || view !== state.view) return;
@@ -184,6 +244,7 @@
         if (video.origin !== location.origin || video.pathname !== `/api/creation/jobs/${data.renderJobId}/video` || video.search || video.hash) throw new Error("成片地址无效。");
         if (kind === "publication") showArtifact({previewUrl: data.videoUrl, downloadUrl: data.videoUrl, sizeBytes: 0}, data.renderJobId);
         state.publication = {...data, fps};
+        $("package-form").hidden = !(kind === "publication" && data.publicationJobId && data.publicationReceiptSha256);
         $("cover-frame").max = data.frames - 1; $("cover-frame").value = data.coverFrame;
         $("publication-title").value = data.title; $("publication-description").value = data.description; $("publication-tags").value = data.tags.join(", ");
         $("publication-form").hidden = false;
@@ -206,7 +267,14 @@
                 if (job.projectId !== state.project || job.jobId !== id) throw new Error("任务不属于当前项目。");
                 $("job-status").textContent = `${kindLabel(job.kind)} · ${labels[job.status] || job.status}${job.error ? `：${job.error.message}（${job.error.code}）` : ""}`;
                 if (job.status === "completed") {
-                    if (job.kind === "plan") showPlans(job);
+                    if (job.kind === "package") {
+                        const data = job.package || await api(`/api/creation/jobs/${encodeURIComponent(id)}/package`);
+                        if (epoch !== state.epoch || view !== state.view) return;
+                        if (data.publicationJobId) await loadPublication(data.publicationJobId, "publication", epoch, view);
+                        if (epoch !== state.epoch || view !== state.view) return;
+                        showPackage(data, id);
+                    }
+                    else if (job.kind === "plan") showPlans(job);
                     else if (job.kind === "revision") { const editor = job.editor || await api(`/api/creation/jobs/${encodeURIComponent(id)}/edit?planId=${encodeURIComponent(job.planId || "")}`); if (epoch !== state.epoch || view !== state.view) return; await loadEditor(id, editor.planId, true); }
                     else if (["render", "publication"].includes(job.kind)) {
                         if (job.kind === "render" && job.artifact) showArtifact(job.artifact);
@@ -252,12 +320,23 @@
         if (state.busy) return;
         const epoch = state.epoch, view = state.view; state.busy = true; controls(); notice("正在提交任务…");
         try {
-            const result = await api(`/api/creation/${{plan: "plans", revision: "revisions", render: "renders", publication: "publications"}[kind]}`, {...payload, requestId: requestId(kind, payload)});
+            const result = await api(`/api/creation/${{plan: "plans", revision: "revisions", render: "renders", publication: "publications", package: "packages"}[kind]}`, {...payload, requestId: requestId(kind, payload)});
             if (epoch !== state.epoch || view !== state.view) return;
             delete state.intents[kind]; notice("任务已保存，可刷新页面继续查看。"); await openJob(result.jobId); void history(epoch);
         } catch (error) { if (epoch === state.epoch && view === state.view) notice(`${error.message}。再次提交相同内容会复用请求，不重复创建任务。`); }
         finally { if (epoch === state.epoch) { state.busy = false; if (state.editor) showEditor(); controls(); } }
     }
+    $("package-platform").addEventListener("change", () => { const profile = platformProfiles.find((p) => p.Platform === $("package-platform").value); if (profile) fillProfile(profile); });
+    $("package-form").addEventListener("submit", (event) => {
+        event.preventDefault(); const publication = state.publication; if (!publication?.publicationJobId || !publication.publicationReceiptSha256 || !packageProfile) return;
+        const profile = structuredClone(packageProfile);
+        for (const [id, , group, key] of packageFields) {
+            const value = $(id).value;
+            profile.Fields[group][key] = key === "fit" ? value : key === "requiredTags" ? [...new Set(value.split(/\n/).map((s) => s.trim()).filter(Boolean))] : value === "" ? null : Number(value);
+        }
+        if (JSON.stringify(profile.Fields) !== JSON.stringify(packageProfile.Fields)) { profile.RuleVersion = packageProfile.RuleVersion + "-edited-" + requestId("profile", profile.Fields).slice(0, 8); state.intents.profile.updatedAt ||= new Date().toISOString(); profile.UpdatedAt = state.intents.profile.updatedAt; }
+        void submit("package", {publicationJobId: publication.publicationJobId, expectedPublicationReceiptSha256: publication.publicationReceiptSha256, profile});
+    });
     $("use-cover-frame").addEventListener("click", () => {
         const video = $("artifact").querySelector("video"), data = state.publication;
         if (!data || !video || state.busy) return;
@@ -290,7 +369,7 @@
     void (async () => {
         try {
             let saved = {}; try { saved = JSON.parse(localStorage.getItem("creation-workspace-v1") || "{}"); } catch { /* Ignore an invalid saved selection. */ }
-            void loadMusic();
+            void loadMusic(); void loadProfiles();
             const data = await api("/api/projects");
             for (const project of data.projects) { const option = node("option", project.name || project.path); option.value = project.path; $("project").append(option); }
             $("project").value = data.projects.some((p) => p.path === saved.project) ? saved.project : (data.projects[0]?.path || "");

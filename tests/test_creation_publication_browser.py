@@ -63,6 +63,8 @@ def test_publication_save_reopen_refresh_and_stale(width):
                 )
             elif path == "/api/projects":
                 r.fulfill(json={"projects": [{"path": "one"}, {"path": "two"}]})
+            elif path == "/api/creation/platform-profiles":
+                r.fulfill(json={"profiles": []})
             elif path == "/api/creation/music":
                 r.fulfill(json={"tracks": [], "issues": []})
             elif path.startswith("/api/runs"):

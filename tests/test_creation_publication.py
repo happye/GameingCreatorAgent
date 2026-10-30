@@ -99,14 +99,19 @@ def payload(jobs, render):
     }
 
 
-def test_real_version_files_frame_and_restart(rendered):
+@pytest.mark.parametrize("description", ["发布简介", "玩法\r\n\t步骤\r提示"])
+def test_real_version_files_frame_and_restart(rendered, description):
     jobs, render = rendered
     before = {p: p.read_bytes() for p in jobs.directory(render).rglob("*") if p.is_file()}
     value = payload(jobs, render)
-    value.update(coverFrame=2, title="真实标题", description="发布简介", tags=["游戏", "本地"])
+    value.update(coverFrame=2, title="真实标题", description=description, tags=["游戏", "本地"])
     job_id = jobs.submit("publication", value)["jobId"]
     result = finish(jobs, job_id)
     assert result["status"] == "completed", result
+    assert (
+        jobs.publication_file(job_id, "description.txt").path.read_bytes().decode("utf-8")
+        == description
+    )
     assert jobs.submit("publication", value)["jobId"] == job_id
     assert all(p.read_bytes() == data for p, data in before.items())
     cover = jobs.publication_file(job_id, "cover.png").path
@@ -136,7 +141,7 @@ def test_real_version_files_frame_and_restart(rendered):
         ("title", "a" * 201),
         ("description", "a" * 5001),
         ("title", "x\x00"),
-        ("description", "x\n"),
+        ("description", "x\x01"),
         ("tags", ["a", "a"]),
         ("tags", ["x"] * 21),
         ("tags", ["x" * 51]),
@@ -148,6 +153,18 @@ def test_metadata_boundaries(field, value):
     data[field] = value
     with pytest.raises(ValueError):
         validate_metadata(data, 4)
+
+
+def test_description_accepts_paragraphs_without_allowing_control_characters():
+    validate_metadata(
+        {
+            "coverFrame": 0,
+            "title": "标题",
+            "description": "玩法简介\n\n操作步骤\r\n\t提示",
+            "tags": [],
+        },
+        4,
+    )
 
 
 @pytest.mark.parametrize(

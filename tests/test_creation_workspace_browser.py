@@ -76,6 +76,8 @@ def test_creation_form_plans_render_and_refresh(width):
                     body=(STATIC / name).read_text("utf-8-sig"),
                     content_type="text/css" if name.endswith("css") else "text/javascript",
                 )
+            elif path == "/api/creation/platform-profiles":
+                route.fulfill(json={"profiles": []})
             elif path == "/api/creation/music":
                 route.fulfill(json={"tracks": [], "issues": []})
             elif path == "/api/projects":
@@ -202,6 +204,8 @@ def test_creation_retry_reuses_id_and_late_job_cannot_replace_project():
                     body=(STATIC / name).read_text("utf-8-sig"),
                     content_type="text/css" if name.endswith("css") else "text/javascript",
                 )
+            elif path == "/api/creation/platform-profiles":
+                route.fulfill(json={"profiles": []})
             elif path == "/api/creation/music":
                 route.fulfill(json={"tracks": [], "issues": []})
             elif path == "/api/projects":
