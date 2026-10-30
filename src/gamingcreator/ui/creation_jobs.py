@@ -16,18 +16,21 @@ from gamingcreator.application.edit_decision import select_edit_decision
 from gamingcreator.cli.creation import execute_plan_creation
 from gamingcreator.cli.creation_render import execute_render_creation, read_creation
 from gamingcreator.domain.creation import CreativeBrief
+from gamingcreator.domain.creation_audio import AudioMix
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.creation_files import write_creation
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.infrastructure.ffmpeg_render import FfmpegCreationRenderer
 from gamingcreator.infrastructure.file_sharing import retry_file_sharing
 from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
+from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
 from gamingcreator.ui.media import MediaResource, VerifiedMediaCache
 from gamingcreator.ui.revision_jobs import (
     editor,
     load_chain,
     render_revision,
+    resolve_audio,
     resolve_overrides,
     save_revision,
 )
@@ -125,7 +128,7 @@ class CreationJobs:
         optional = (
             {"subtitleMode"}
             if kind == "render"
-            else ({"subtitleOverrides"} if kind == "revision" else set())
+            else ({"subtitleOverrides", "audioMix"} if kind == "revision" else set())
         )
         if set(request) - optional != expected:
             raise fail("creation.input", "请填写完整创作参数。")
@@ -183,6 +186,7 @@ class CreationJobs:
                         raise fail("creation.conflict", "父版本已更改，请重新打开编辑器。", True)
                     revised = build_revision(chain.edl, chain.root_sha, request["clips"])
                     resolve_overrides(request, chain.subtitle_overrides, revised, chain.root_sha)
+                    resolve_audio(self, request, chain.audio_mix)
                 elif self.read(self.directory(parent_id) / "status.json")["kind"] != "revision":
                     raise fail("creation.conflict", "请选择已完成编辑版本。", True)
                 project_id = chain.project_id
@@ -316,9 +320,11 @@ class CreationJobs:
                 or parent_receipt != stored["parentReceiptSha256"]
             ):
                 raise ValueError("Parent receipt changed")
+            audio_mix = AudioMix()
             if "revisionJobId" in request:
                 chain = load_chain(self, parent_id)
                 parent_report, expected_edl = chain.report, chain.edl
+                audio_mix = chain.audio_mix
                 if state["projectId"] != chain.project_id:
                     raise ValueError("Render project changed")
             else:
@@ -333,6 +339,17 @@ class CreationJobs:
                 or receipt.get("height") != request["height"]
             ):
                 raise ValueError("Render dimensions changed")
+            if receipt.get("audioMix", AudioMix().to_json()) != audio_mix.to_json():
+                raise ValueError("Render audio configuration changed")
+            music = (
+                None
+                if audio_mix.bgm is None
+                else MusicLibrary(self.repository).resolve(
+                    audio_mix.bgm.track_id, audio_mix.bgm.track_receipt_sha256
+                )
+            )
+            if receipt.get("music") != (None if music is None else music.public()):
+                raise ValueError("Render music identity changed")
             selection = self.safe(directory / "selection/receipt.json")
             if receipt.get("creationReceiptSha256") != hash_file(selection):
                 raise ValueError("Render belongs to another selection")

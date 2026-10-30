@@ -6,10 +6,12 @@ from pathlib import Path
 
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.rendering import RenderClip, RenderPlan
+from gamingcreator.domain.creation_audio import AudioMix
 from gamingcreator.domain.creation_subtitles import SubtitleCue, parse_srt, serialize_srt
 from gamingcreator.infrastructure.ffmpeg_media import hash_source
 from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
 from gamingcreator.infrastructure.media_process import run_media_process
+from gamingcreator.infrastructure.music_library import _FORMATS, MusicTrack
 
 
 def clip_filter(clip: RenderClip, fps: int, width: int, height: int) -> str:
@@ -33,8 +35,9 @@ def clip_filter(clip: RenderClip, fps: int, width: int, height: int) -> str:
         af = "anullsrc=r=48000:cl=stereo"
     else:
         af = (
-            f"[0:{audio.index}]atrim=start_pts={(start / audio.time_base).__ceil__()}:"
-            f"end_pts={(end / audio.time_base).__ceil__()},"
+            # Decoder audio filter PTS use the sample clock, not necessarily the
+            # container stream time base (e.g. Matroska PCM uses millisecond packets).
+            f"[0:{audio.index}]atrim=start={float(start):.12f}:end={float(end):.12f},"
             f"asetpts=PTS-({start.numerator}/{start.denominator})/TB,"
             "aresample=48000:async=1:first_pts=0,aformat=channel_layouts=stereo,apad"
         )
@@ -73,6 +76,49 @@ def _filter_path(path: Path) -> str:
     return "".join("\\" + char if char in "\\'[],;" else char for char in value)
 
 
+def _mix_filter(mix: AudioMix, frames: int, fps: int) -> str:
+    duration = f"{frames / fps:.12f}"
+    source = f"[0:a:0]volume={mix.source_gain_db}dB[src]"
+    if mix.bgm is None:
+        return source + ";[src]anull[mixed]"
+    music = (
+        "[1:a:0]aresample=48000,aformat=channel_layouts=stereo,"
+        f"asetpts=N/SR/TB,atrim=duration={duration},volume={mix.bgm.gain_db}dB[bgm]"
+    )
+    if mix.ducking == "source-v1":
+        # Measure unattenuated source: lowering game volume must not disable ducking.
+        source = f"[0:a:0]asplit=2[raw][key];[raw]volume={mix.source_gain_db}dB[src]"
+        music += (
+            ";[bgm][key]sidechaincompress=threshold=0.015:ratio=12:attack=10:"
+            "release=200:makeup=1:knee=1:detection=rms[ducked]"
+        )
+        label = "ducked"
+    else:
+        label = "bgm"
+    return (
+        source + ";" + music + f";[src][{label}]amix=inputs=2:duration=first:"
+        "dropout_transition=0:normalize=0,alimiter=limit=0.95:level=false:"
+        f"latency=true,atrim=duration={duration}[mixed]"
+    )
+
+
+async def _verify_music(music: MusicTrack, context: CancellationContext) -> None:
+    receipt = music.path.parent / "receipt.json"
+    if (
+        str(music.path).startswith("\\\\")
+        or ":" in music.path.name
+        or music.path.name not in {"audio" + suffix for suffix in _FORMATS}
+        or music.path.parent.name != music.track_id
+    ):
+        raise ValueError("Invalid local registered music path.")
+    if any(is_link(path) for path in (music.path, receipt, *music.path.parents)):
+        raise ValueError("Music paths must not contain links.")
+    if await hash_source(music.path, context) != music.sha256:
+        raise ValueError("Music media hash mismatch.")
+    if await hash_source(receipt, context) != music.receipt_sha256:
+        raise ValueError("Music receipt hash mismatch.")
+
+
 class FfmpegCreationRenderer:
     def __init__(self, repository: Path) -> None:
         self.bin = repository.resolve() / ".tools/ffmpeg/bin"
@@ -88,7 +134,22 @@ class FfmpegCreationRenderer:
         creation_digest: str = "",
         cues: tuple[SubtitleCue, ...] = (),
         subtitle_mode: str = "none",
+        audio_mix: AudioMix | None = None,
+        music: MusicTrack | None = None,
     ) -> dict[str, object]:
+        mix = audio_mix if audio_mix is not None else AudioMix()
+        # Re-parse even constructed dataclasses, so bool/non-finite gains fail closed.
+        mix = AudioMix.from_json(mix.to_json())
+        if mix.bgm is not None:
+            if music is None or (
+                music.track_id != mix.bgm.track_id
+                or music.receipt_sha256 != mix.bgm.track_receipt_sha256
+            ):
+                raise ValueError("Music selection identity mismatch.")
+            await _verify_music(music, context)
+            protected = (*protected, music.path.parent)
+        elif music is not None:
+            raise ValueError("Music supplied without a BGM selection.")
         if subtitle_mode not in ("none", "sidecar", "burn"):
             raise ValueError("Unknown subtitle mode.")
         subtitle_text = serialize_srt(cues) if subtitle_mode != "none" else ""
@@ -168,10 +229,29 @@ class FfmpegCreationRenderer:
                 "1",
                 "-i",
                 str(manifest),
+                *(
+                    [
+                        "-protocol_whitelist",
+                        "file",
+                        "-f",
+                        _FORMATS[music.path.suffix],
+                        "-stream_loop",
+                        "-1",
+                        "-i",
+                        str(music.path),
+                    ]
+                    if music is not None
+                    else []
+                ),
+                *(
+                    ["-filter_complex", _mix_filter(mix, plan.frames, plan.fps)]
+                    if mix.bgm is not None or mix.source_gain_db != 0
+                    else []
+                ),
                 "-map",
                 "0:v:0",
                 "-map",
-                "0:a:0",
+                "[mixed]" if mix.bgm is not None or mix.source_gain_db != 0 else "0:a:0",
                 "-vf",
                 video_filter,
                 "-frames:v",
@@ -226,6 +306,8 @@ class FfmpegCreationRenderer:
         }.values():
             if await hash_source(asset.source_path, context) != asset.sha256:
                 raise ValueError("Source changed during rendering.")
+        if music is not None:
+            await _verify_music(music, context)
         context.check_cancelled()
         final = target / "video.mp4"
         pending.rename(final)
@@ -246,6 +328,23 @@ class FfmpegCreationRenderer:
             "height": height,
             "videoDuration": str(actual),
             "audioStartSeconds": audio.get("start_time"),
+            "audioMix": mix.to_json(),
+            "music": None if music is None else music.public(),
+            "mixPolicy": {
+                "version": "creation-audio-mix-v1",
+                "sampleRate": 48000,
+                "channels": 2,
+                "musicClock": "output-from-zero-loop-trim" if music else "none",
+                "ducking": mix.ducking if music else "off",
+                "duckingDetector": "raw-source-rms"
+                if music and mix.ducking == "source-v1"
+                else "none",
+                "compressor": {"threshold": 0.015, "ratio": 12, "attackMs": 10, "releaseMs": 200}
+                if music and mix.ducking == "source-v1"
+                else None,
+                "normalize": False,
+                "limiter": "0.95-level-false-latency-compensated" if music else "none",
+            },
             "audioPolicy": "source-clock-resample-or-silence-48000-stereo",
             "limitations": [
                 "hard cuts",

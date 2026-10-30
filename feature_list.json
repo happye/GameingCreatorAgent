@@ -765,8 +765,14 @@
       "group": "D",
       "name": "BGM 选择与节奏匹配",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "docs/exec-plans/sprint-creation-audio-mix.md",
+        "tests/test_music_library.py",
+        "tests/test_creation_audio_render.py",
+        "tests/test_creation_audio_jobs.py",
+        "tests/test_creation_audio_browser.py"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },

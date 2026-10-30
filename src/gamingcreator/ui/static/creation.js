@@ -2,6 +2,9 @@
 (() => {
     const $ = (id) => document.getElementById(id);
     const state = {project: "", job: "", epoch: 0, view: 0, timer: null, selected: null, busy: false, editor: null, editing: false, dirty: false, intents: {}};
+    let musicTracks = [];
+    let musicNotice = "正在读取本地曲库…";
+    const defaultMix = () => ({bgm: null, sourceGainDb: 0, ducking: "off"});
     const labels = {pending: "等待开始", running: "正在处理", completed: "已完成", failed: "失败", interrupted: "已中断"};
     function node(tag, text) { const el = document.createElement(tag); el.textContent = text; return el; }
     function notice(message) { $("notice").textContent = message; }
@@ -26,7 +29,7 @@
         $("render").disabled = state.busy || state.editing || state.dirty || !state.selected;
         $("save-revision").disabled = state.busy || state.editing || !state.editor || !state.editor.clips.length;
     }
-    function clearView() { state.selected = null; state.editor = null; state.dirty = false; state.editing = false; $("editor-rows").replaceChildren(); $("ancestry").replaceChildren(); $("editor-summary").textContent = "选择方案或剪辑版本后可编辑镜头。"; $("plans").replaceChildren(); $("artifact").replaceChildren(); $("job-status").textContent = "尚未选择任务"; controls(); }
+    function clearView() { state.selected = null; state.editor = null; $("audio-controls")?.remove(); state.dirty = false; state.editing = false; $("editor-rows").replaceChildren(); $("ancestry").replaceChildren(); $("editor-summary").textContent = "选择方案或剪辑版本后可编辑镜头。"; $("plans").replaceChildren(); $("artifact").replaceChildren(); $("job-status").textContent = "尚未选择任务"; controls(); }
     function showPlans(job) {
         $("plans").replaceChildren(); state.selected = null;
         for (const plan of job.plans || []) {
@@ -56,14 +59,43 @@
             if (editor.parentJobId !== id || editor.planId !== planId) throw new Error("剪辑版本不匹配。");
             editor.bounds = Object.fromEntries(editor.clips.map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}]));
             editor.subtitleOverrides = editor.subtitleOverrides || [];
+            editor.audioMix = editor.audioMix || defaultMix();
             state.job = id; save(); state.editor = editor;
             state.selected = revision ? {revisionJobId: id} : {planJobId: id, planId};
             showEditor();
         } catch (error) { if (epoch === state.epoch && view === state.view) notice(`镜头读取失败：${error.message}`); }
         finally { if (epoch === state.epoch && view === state.view) { state.editing = false; controls(); } }
     }
+    function showAudio(editor) {
+        let panel = $("audio-controls");
+        if (!panel) { panel = node("section", ""); panel.id = "audio-controls"; $("editor-rows").before(panel); }
+        panel.replaceChildren(node("h3", "配乐与音量"), node("p", musicNotice));
+        const select = document.createElement("select"); select.id = "bgm-track";
+        select.append(new Option("不用配乐", ""));
+        for (const track of musicTracks) select.append(new Option(`${track.title} · ${{unknown: "权利未核实", user_declared: "用户已声明，权利未核实", test_only: "仅供测试"}[track.licenseStatus] || "权利未核实"}`, track.trackId));
+        const mix = editor.audioMix;
+        if (mix.bgm && !musicTracks.some((t) => t.trackId === mix.bgm.trackId)) select.append(new Option("已保存曲目（当前曲库不可用）", mix.bgm.trackId));
+        select.value = mix.bgm?.trackId || "";
+        const trackLabel = node("label", "本地配乐"); trackLabel.append(select); panel.append(trackLabel);
+        function dirty() { state.dirty = true; $("editor-summary").textContent = "配乐或音量已修改，请保存新版本后生成视频。"; controls(); }
+        for (const [id, title, value] of [["source-gain", "原声音量（dB，0 为原音量）", mix.sourceGainDb], ["bgm-gain", "配乐音量（dB）", mix.bgm?.gainDb ?? -12]]) {
+            const label = node("label", title), input = document.createElement("input"); input.id = id; input.type = "number"; input.min = "-60"; input.max = "0"; input.step = "1"; input.value = value;
+            input.addEventListener("input", () => { if (state.busy || state.editing) return; const gain = Number(input.value); if (!input.value || !Number.isFinite(gain) || gain < -60 || gain > 0) { input.setCustomValidity("请填写 -60 到 0 的音量。"); state.dirty = true; controls(); return; } input.setCustomValidity(""); if (id === "source-gain") mix.sourceGainDb = gain; else if (mix.bgm) mix.bgm.gainDb = gain; dirty(); });
+            label.append(input); panel.append(label);
+        }
+        const duckLabel = node("label", "原声响起时压低配乐（依据原声能量，包含音效）"), duck = document.createElement("input"); duck.type = "checkbox"; duck.id = "bgm-ducking"; duck.checked = mix.ducking === "source-v1"; duckLabel.prepend(duck); panel.append(duckLabel);
+        duck.addEventListener("change", () => { if (state.busy || state.editing) return; mix.ducking = duck.checked ? "source-v1" : "off"; dirty(); });
+        select.addEventListener("change", () => { if (state.busy || state.editing) return; const track = musicTracks.find((t) => t.trackId === select.value); mix.bgm = track ? {trackId: track.trackId, trackReceiptSha256: track.trackReceiptSha256, gainDb: Number($("bgm-gain").value)} : null; dirty(); });
+        const remove = node("button", "移除配乐"); remove.id = "remove-bgm"; remove.type = "button"; remove.addEventListener("click", () => { if (state.busy || state.editing) return; mix.bgm = null; select.value = ""; dirty(); }); panel.append(remove);
+    }
+    async function loadMusic() {
+        try { const data = await api("/api/creation/music"); musicTracks = data.tracks; musicNotice = musicTracks.length ? "许可状态为登记声明，不代表权利已核实。" : "曲库暂无音乐。以后可用 scripts/register-music.ps1 登记本地音乐；现在可继续编辑。"; if (data.issues?.length) musicNotice += " 部分曲目暂不可用。"; }
+        catch { musicNotice = "曲库暂不可用，可继续镜头与字幕编辑。"; }
+        if (state.editor) showAudio(state.editor);
+    }
     function showEditor() {
         const editor = state.editor;
+        showAudio(editor);
         $("editor-rows").replaceChildren(); $("ancestry").replaceChildren();
         $("editor-summary").textContent = `${editor.clips.length} 个镜头 · ${(editor.clips.reduce((n, c) => n + c.outputFrames, 0) / editor.fps).toFixed(3)} 秒${state.dirty ? " · 有未保存修改，请保存新版本后生成视频" : " · 已保存"}`;
         editor.clips.forEach((clip, index) => {
@@ -204,12 +236,14 @@
     $("save-revision").addEventListener("click", () => {
         if (!state.editor || state.editing) return;
         const editor = state.editor;
-        void submit("revision", {parentJobId: editor.parentJobId, planId: editor.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256, clips: editor.clips.map(({clipId, startUs, outputFrames}) => ({clipId, startUs, outputFrames})), subtitleOverrides: editor.subtitleOverrides.filter((item) => editor.clips.some((clip) => clip.clipId === item.clipId))});
+        if (Array.from($("audio-controls")?.querySelectorAll("input") || []).some((input) => !input.reportValidity())) return;
+        void submit("revision", {parentJobId: editor.parentJobId, planId: editor.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256, clips: editor.clips.map(({clipId, startUs, outputFrames}) => ({clipId, startUs, outputFrames})), audioMix: editor.audioMix, subtitleOverrides: editor.subtitleOverrides.filter((item) => editor.clips.some((clip) => clip.clipId === item.clipId))});
     });
     $("project").addEventListener("change", () => { void projectChanged(); }); $("refresh").addEventListener("click", () => { void history(); if (state.job) void openJob(state.job); });
     void (async () => {
         try {
             let saved = {}; try { saved = JSON.parse(localStorage.getItem("creation-workspace-v1") || "{}"); } catch { /* Ignore an invalid saved selection. */ }
+            void loadMusic();
             const data = await api("/api/projects");
             for (const project of data.projects) { const option = node("option", project.name || project.path); option.value = project.path; $("project").append(option); }
             $("project").value = data.projects.some((p) => p.path === saved.project) ? saved.project : (data.projects[0]?.path || "");

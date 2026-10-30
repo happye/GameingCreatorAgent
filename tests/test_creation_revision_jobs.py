@@ -48,7 +48,23 @@ def revisions(service, monkeypatch):  # noqa: F811
 
     calls = []
 
-    async def render(self, plan, output, protected, context, width, height, digest, cues, mode):
+    async def render(
+        self,
+        plan,
+        output,
+        protected,
+        context,
+        width,
+        height,
+        digest,
+        cues,
+        mode,
+        *,
+        audio_mix=None,
+        music=None,
+    ):
+        from gamingcreator.domain.creation_audio import AudioMix
+
         calls.append(plan)
         output.mkdir()
         (output / "video.mp4").write_bytes(b"revised-video")
@@ -67,6 +83,8 @@ def revisions(service, monkeypatch):  # noqa: F811
                     "height": height,
                     "frames": plan.frames,
                     "subtitles": {"mode": mode, "cueCount": len(cues)},
+                    "audioMix": (audio_mix or AudioMix()).to_json(),
+                    "music": None if music is None else music.public(),
                 }
             )
         )

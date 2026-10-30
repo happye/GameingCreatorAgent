@@ -105,6 +105,7 @@ from gamingcreator.application.storage import RunStatus, StoredTimeline
 from gamingcreator.application.tasks import all_tasks_payload, tasks_payload
 from gamingcreator.cli.creation import execute_plan_creation
 from gamingcreator.cli.creation_render import execute_render_creation
+from gamingcreator.cli.music import execute_register_music
 from gamingcreator.cli.ocr_frames import execute_ocr_frames
 from gamingcreator.cli.shot_boundaries import execute_detect_shots
 from gamingcreator.cli.static_observation_generation import (
@@ -247,6 +248,16 @@ def _parser() -> CliParser:
     )
     inventory.add_argument("--input", type=Path, nargs="+", required=True)
     inventory.add_argument("--output", type=Path, required=True)
+    music = commands.add_parser(
+        "register-music", help="登记本地音乐及权利声明，不下载或验证商业许可"
+    )
+    music.add_argument("--input", type=Path, required=True)
+    music.add_argument("--title", required=True)
+    music.add_argument("--source-description", required=True)
+    music.add_argument(
+        "--license-status", choices=("unknown", "user_declared", "test_only"), required=True
+    )
+    music.add_argument("--license-evidence", type=Path)
     render = commands.add_parser("render-creation", help="核对已有创作方案并用本机FFmpeg生成MP4")
     render.add_argument("--project", type=Path, required=True)
     render.add_argument("--creation", type=Path, required=True)
@@ -1756,6 +1767,17 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
             )
         )
         return None
+    if args.command == "register-music":
+        return asyncio.run(
+            execute_register_music(
+                Path.cwd(),
+                args.input,
+                args.title,
+                args.source_description,
+                args.license_status,
+                args.license_evidence,
+            )
+        )
     if args.command == "render-creation":
         return asyncio.run(
             execute_render_creation(

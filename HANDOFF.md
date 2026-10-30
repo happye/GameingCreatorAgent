@@ -1,18 +1,16 @@
-# 当前接手：镜头与字幕文字编辑已交，继续配乐
+# 当前接手：配乐闭环已交，按用户额度提醒暂时暂停
 
-2026-10-30 Goal active，字幕SRT/烧录、镜头版本/撤销/重渲染及手写字幕编辑已交，继续配乐；此前额度提醒收尾记录保留为历史，项目未完成。按用户要求实现全部51项，不以F006待人评全局停止。路线accelerated-product-roadmap.md与ADR-003生效；实现、质量、商用发布分列。当前必须人工0项，未来量化事项见user-actions.md。
+2026-10-30用户提醒额度不足10%，要求暂时收尾以便下次复工。停止开新功能，本批保存后Goal标paused，项目未完成。暂停仅因用户要求，不是人评/开发计划受阻；继续全部51项路线accelerated-product-roadmap.md和ADR-003。
 
-- 已交付：结构化需求→三模板方案/草稿/缺口→EDL→真实MP4；新增工作台/creation中文表单、素材选择、方案选择、异步渲染、预览下载、持久任务历史。模板/基础渲染仍部分，不称通用AI或正式EXE。
-- 验证：主树受影响57pass/1既有symlink权限skip，独立Sol/high PASS；真实浏览器页面生成6秒视频并下载8,250,672字节SHA一致；刷新/服务新实例均回查同结果，0新POST/0新worker，截图已查看。记录.cache/creation-workspace-real-browser.json、creation-workspace-main2.xml。原33渲染与3732全量不重复。
-- 修复：完成SHA固定落盘、恢复job/request/parent/selection绑定、目录链接写前检查；短预算最终区间去重；Windows状态读复用reading=True有限重试。原分析/素材/费用/标注保持。
-- 新交付：工作台及CLI/PS可选none/sidecar/burn，按准确run已保存语音生成SRT并真实烧录；64联合测试、中文烧录单测/截图、真实页面0语音提示/空SRT下载/刷新0重跑通过，Sol/high PASS；Ruff及6源码mypy通过。记录.cache/subtitle-main.xml、subtitle-workspace-real-browser.json、subtitle-chinese-frame.png。文本/样式编辑未做，P029部分。
-- 新交付：R2-A工作台可裁短/换序/删除、保存不可变版本、选祖先撤销、真实重渲染。81定向测试、Ruff/4源码mypy、唯一Sol/high静态评估PASS；实际3镜头→2镜头35帧→祖先53帧，画面对应原片已查看，下载/刷新0POST/新服务0worker/旧文件SHA保持。证据.cache/editing-workspace-real-browser.json、editing-main.xml；合同sprint-creation-editing.md。
-- 新交付：R2-B手写/修改镜头字幕、关闭或恢复原语音、版本继承/删除过滤与烧录。60定向测试、Ruff/3源码mypy及Sol/high关键评估PASS；真实无ASR录像填中文“冲向”→改“奔向”，两个视频/SRT均变化、字形已查看，祖先/原转录保持，刷新0POST/重启0worker。证据.cache/caption-editing-real-browser.json、caption-main.xml；合同sprint-creation-caption-editing.md。
-- 当前下一项：配乐库登记/音量/真实混音，随后封面/平台包；P027/P029/P032仍部分（未做候选替换/字幕逐词时序样式/BGM/音量/正式SQLite登记），不虚增计数。Astra/low只读准备配乐合同；原分析、语音与质量判断不改。
-- UI后端工作树creation-workspace-backend与前端creation-workspace-frontend已完成，源码已集成；主控公共文档与推送，测试临时服务关闭。原9个未跟踪.codex/agents文件未改未加。用户已有服务不停止；旧服务缺能力可另端口启动新服务。
-- 51项10已交付/13部分/28未开始（32%），首产品0/7/15（16%）；质量验收0/8真实未知，技术债10/2/5、未来人工8项不变。
-- 环境：先正确env、Python-B，共享主venv只读；严禁uv写入主树/新下载；旧固定FFmpeg不换pin。新增付费模型、账号/支付/外部发布仍按具体提案授权，但只阻断对应操作。
+- 已能用：工作台填写需求→三模板方案/草稿/缺口→选择→真实MP4预览下载；镜头入出点/换序/删除、不可变版本、祖先撤销与重渲染；已有语音/手写字幕、改词/关闭/恢复及SRT/真实中文烧录；新增本地音乐登记、选择、原声/配乐音量、duck/移除/继承及真实混音。
+- 本批验证：40通过/1既有Windows symlink权限skip（.cache/audio-main.xml）+49界面/版本通过（audio-ui-main2.xml），7源码mypy/Ruff、唯一Sol/high关键评估PASS；临时收据rename发布增量9通过/同1skip。B原渲染/字幕22兼容通过，不重跑旧全量。
+- 真实配乐：0.4秒880Hz本地生成test_only音调已CLI登记；页面保存曲目、原声-6dB/配乐-12dB/duck→真实MP4，改字幕继承mix、移除再MP4，祖先恢复音乐/文字；原5POST仅3保存/2渲染，最终只读刷新0POST/新实例0worker。音调不是商用音乐。证据.cache/audio-workspace-real-browser.json、audio-workspace-output-check.json、audio-workspace-mobile.png。原声本来有880Hz，总谱幅度不一定增加；相位复数差0.000441证明新增，原错误临时脚本保留，未重复渲染。
+- 额外修复：旧MKV/PCM音频容器时钟不等于解码音频滤镜时钟，原atrim可能只取几毫秒；改为origin+源微秒绝对秒裁切。PCM非零起点有/无配乐及原offset/VFR兼容通过，原源/分析/费用保持。
+- 字幕/镜头前批证据：81镜头版本测试、实际3→2镜头35帧→祖先53帧；60字幕文字测试、真实“冲向→奔向”两个MP4/SRT及字形已查看。见sprint-creation-editing.md、sprint-creation-caption-editing.md及各.cache/*real-browser.json。
+- 进度：51项10已交付/14部分/27未开始≈33%；首产品22项0/8/14≈18%。P030刚变部分，其余不靠内部子项虚增。真实质量0/8，F006/F009/F010保持false；人工现在必做0/未来8，技术债17项10/2/5。
+- 下次直接做：封面/标题/简介/Tags、配置驱动平台版本和七文件发布包/Preflight；沿全产品主线。仍需补候选替换、字幕逐词/样式、变速/裁切/转场、AI选曲/节拍、正式SQLite登记、EXE与商业服务；不得因F006人评全局停开发。
+- 使用入口：docs/references/creation-guide.md；音乐登记scripts/register-music.ps1，库.cache/workspace/music，test曲trackId d5fc3e28ba22400e972c0a7292e3483a。无任意路径HTTP导入，许可unknown/user_declared/test_only仅声明，真实权利/分发待核。
+- 协作：Astra/low设计，三个Sol/medium库/混音/UI实施，Sol/high唯一关键评估；全部写者/评估已结束，无需等待旧任务。工作树music-library/audio-mix-render/audio-mix-workspace保留备份。临时测试服务关闭，不停止用户原服务。原9个未跟踪.codex/agents文件不改不加。
+- 环境：Windows PowerShell，先scripts/env.ps1，主Python -B/共享venv只读，独立worktree指定自己PYTHONPATH/cache，不uv写主venv、不默认GBK读文本。固定FFmpeg生产pin不换。新费用/真实外部发布/组件分发仅限制相应操作，旧许可不重用。
 
-完整使用：docs/references/creation-guide.md。继续字幕/编辑/BGM/平台包/智能/七模式/桌面/商业化主线，不回到反复检查旧gate。历史在progress.md及handoff-history-20261029.md。
-
-接手顺序：直接复用已交工作台/字幕文字/镜头版本，继续配乐/平台包。无需补片/分组/重标，不重复旧全量；临时验证服务已关闭，不停止用户原服务。上一轮额度收尾属历史，当前Goal active，不因人评全局停工。最近远端核对连接重置；e0193a2已确认推送，后续本地镜头/字幕文字提交正常推送后再核，不把网络故障当产品阻塞。
+本批合同sprint-creation-audio-mix.md；已确认上批5efef4e推送，本次源码/文档同提交后普通推送并核远端。复工先读本文件/看板第6节，直接继续已授权本地开发，不要求补片/分组/重标或重复旧全量。

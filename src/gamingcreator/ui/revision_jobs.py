@@ -17,9 +17,11 @@ from gamingcreator.application.edit_decision import select_edit_decision
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.rendering import RenderPlan, validate_render_plan
 from gamingcreator.application.storage import StoredTimeline
+from gamingcreator.domain.creation_audio import AudioMix
 from gamingcreator.infrastructure.creation_files import write_creation
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.infrastructure.ffmpeg_render import FfmpegCreationRenderer
+from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 
 
@@ -36,6 +38,14 @@ class Chain:
     digest: str
     ancestry: list[dict[str, Any]]
     subtitle_overrides: list[dict[str, str]]
+    audio_mix: AudioMix
+
+
+def resolve_audio(jobs: Any, request: dict[str, Any], inherited: AudioMix) -> AudioMix:
+    mix = AudioMix.from_json(request["audioMix"]) if "audioMix" in request else inherited
+    if mix.bgm is not None:
+        MusicLibrary(jobs.repository).resolve(mix.bgm.track_id, mix.bgm.track_receipt_sha256)
+    return mix
 
 
 def resolve_overrides(
@@ -140,6 +150,7 @@ def load_chain(
     edl = root_edl
     parent_sha = root_sha
     overrides: list[dict[str, str]] = []
+    audio_mix = AudioMix()
     for current_id, state, stored, digest in reversed(records[:-1]):
         request = stored["request"]
         if (
@@ -168,6 +179,8 @@ def load_chain(
         }
         if "subtitleOverrides" in request:
             expected_metadata["subtitleOverrides"] = request["subtitleOverrides"]
+        if "audioMix" in request:
+            expected_metadata["audioMix"] = request["audioMix"]
         if metadata != expected_metadata:
             raise ValueError("Revision metadata changed")
         revised = jobs.read(directory / "result/edit-decision.json")
@@ -175,6 +188,7 @@ def load_chain(
             raise ValueError("Revision differs from its saved request")
         plan = validate_revision(root_edl, report, edl, revised, timelines, root_sha)
         overrides = resolve_overrides(request, overrides, revised, root_sha)
+        audio_mix = resolve_audio(jobs, request, audio_mix)
         edl, parent_sha = revised, digest
     ancestry = [
         {"jobId": key, "kind": state["kind"], "planId": plan_id} for key, state, _, _ in records[1:]
@@ -192,6 +206,7 @@ def load_chain(
         records[0][3],
         ancestry,
         overrides,
+        audio_mix,
     )
 
 
@@ -208,6 +223,7 @@ def editor(chain: Chain, job_id: str) -> dict[str, Any]:
         "clips": rows,
         "ancestry": chain.ancestry,
         "subtitleOverrides": [dict(item) for item in chain.subtitle_overrides],
+        "audioMix": chain.audio_mix.to_json(),
     }
 
 
@@ -224,6 +240,9 @@ def save_revision(jobs: Any, directory: Path, request: dict[str, Any], chain: Ch
     resolve_overrides(request, chain.subtitle_overrides, revised, chain.root_sha)
     if "subtitleOverrides" in request:
         metadata["subtitleOverrides"] = request["subtitleOverrides"]
+    resolve_audio(jobs, request, chain.audio_mix)
+    if "audioMix" in request:
+        metadata["audioMix"] = request["audioMix"]
     jobs.safe(directory / "result")
     write_creation(
         directory / "result",
@@ -271,4 +290,10 @@ async def render_revision(
         hash_file(directory / "selection/receipt.json"),
         cues,
         mode,
+        audio_mix=chain.audio_mix,
+        music=None
+        if chain.audio_mix.bgm is None
+        else MusicLibrary(jobs.repository).resolve(
+            chain.audio_mix.bgm.track_id, chain.audio_mix.bgm.track_receipt_sha256
+        ),
     )

@@ -75,6 +75,8 @@ def test_editing_version_flows(scenario):
                     body=(STATIC / path.split("/")[-1]).read_text(encoding="utf-8"),
                     content_type="text/css" if path.endswith("css") else "text/javascript",
                 )
+            elif path == "/api/creation/music":
+                r.fulfill(json={"tracks": [], "issues": []})
             elif path == "/api/projects":
                 r.fulfill(json={"projects": [{"path": "one"}, {"path": "two"}]})
             elif path.startswith("/api/runs"):

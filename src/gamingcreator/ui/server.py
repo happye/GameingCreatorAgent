@@ -16,6 +16,7 @@ from gamingcreator.application.retrieval import RetrievalMode
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.ffmpeg_fullres import FfmpegFullResolutionFrames
 from gamingcreator.infrastructure.ffmpeg_shots import FfmpegShotDetector
+from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.windows_ocr import WindowsOcrEngine
 from gamingcreator.ui.benchmark_workflow import BenchmarkWorkflows
 from gamingcreator.ui.creation_jobs import CreationJobs
@@ -563,6 +564,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(200, {"projects": discover_projects(self.repository)})
                 return
             query = _query(self.path)
+            if path == "/api/creation/music":
+                if query:
+                    raise ValueError("Music catalog accepts no parameters")
+                self._json(200, MusicLibrary(self.repository).catalog())
+                return
             if path == "/api/creation/jobs":
                 if set(query) != {"projectId"}:
                     raise ValueError("Expected registered project ID")
