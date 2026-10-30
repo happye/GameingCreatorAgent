@@ -781,8 +781,13 @@
       "group": "D",
       "name": "封面／标题／简介／Tags",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "docs/exec-plans/sprint-publication-assets.md",
+        "tests/test_creation_publication.py",
+        "tests/test_creation_publication_http.py",
+        "tests/test_creation_publication_browser.py"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },

@@ -265,6 +265,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/plans",
                 "/api/creation/renders",
                 "/api/creation/revisions",
+                "/api/creation/publications",
                 "/api/match-details",
                 "/api/draft-detail-query",
                 "/api/search-project",
@@ -289,13 +290,21 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return result
 
             value = json.loads(body, object_pairs_hook=unique)
-            if path in {"/api/creation/plans", "/api/creation/renders", "/api/creation/revisions"}:
+            if path in {
+                "/api/creation/plans",
+                "/api/creation/renders",
+                "/api/creation/revisions",
+                "/api/creation/publications",
+            }:
                 self._json(
                     202,
                     self.creation_jobs.submit(
-                        {"plans": "plan", "renders": "render", "revisions": "revision"}[
-                            path.rsplit("/", 1)[1]
-                        ],
+                        {
+                            "plans": "plan",
+                            "renders": "render",
+                            "revisions": "revision",
+                            "publications": "publication",
+                        }[path.rsplit("/", 1)[1]],
                         value,
                     ),
                 )
@@ -576,7 +585,22 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return
             if path.startswith("/api/creation/jobs/"):
                 tail = path.removeprefix("/api/creation/jobs/")
-                if tail.endswith("/edit"):
+                if "/publication-files/" in tail:
+                    job_id, name = tail.split("/publication-files/", 1)
+                    if query not in ({}, {"download": "1"}):
+                        raise ValueError("Invalid publication query")
+                    self._serve_media(
+                        self.creation_jobs.publication_file(job_id, name),
+                        name != "cover.png" or query.get("download") == "1",
+                        name,
+                    )
+                elif tail.endswith("/publication"):
+                    if query:
+                        raise ValueError("Unexpected publication query")
+                    self._json(
+                        200, self.creation_jobs.publication(tail.removesuffix("/publication"))
+                    )
+                elif tail.endswith("/edit"):
                     if set(query) != {"planId"}:
                         raise ValueError("Expected selected plan ID")
                     self._json(

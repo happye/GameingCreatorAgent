@@ -1,7 +1,7 @@
 "use strict";
 (() => {
     const $ = (id) => document.getElementById(id);
-    const state = {project: "", job: "", epoch: 0, view: 0, timer: null, selected: null, busy: false, editor: null, editing: false, dirty: false, intents: {}};
+    const state = {project: "", job: "", epoch: 0, view: 0, timer: null, selected: null, busy: false, editor: null, editing: false, dirty: false, intents: {}, publication: null};
     let musicTracks = [];
     let musicNotice = "正在读取本地曲库…";
     const defaultMix = () => ({bgm: null, sourceGainDb: 0, ducking: "off"});
@@ -25,11 +25,13 @@
         return state.intents[kind].id;
     }
     function controls() {
+        $("save-publication").disabled = state.busy || !state.publication;
+        $("use-cover-frame").disabled = state.busy || !state.publication;
         $("plan").disabled = state.busy || !state.project || !$("runs").querySelector("input:checked");
         $("render").disabled = state.busy || state.editing || state.dirty || !state.selected;
         $("save-revision").disabled = state.busy || state.editing || !state.editor || !state.editor.clips.length;
     }
-    function clearView() { state.selected = null; state.editor = null; $("audio-controls")?.remove(); state.dirty = false; state.editing = false; $("editor-rows").replaceChildren(); $("ancestry").replaceChildren(); $("editor-summary").textContent = "选择方案或剪辑版本后可编辑镜头。"; $("plans").replaceChildren(); $("artifact").replaceChildren(); $("job-status").textContent = "尚未选择任务"; controls(); }
+    function clearView() { state.publication = null; $("publication-form").hidden = true; $("publication-cover").hidden = true; $("publication-cover").removeAttribute("src"); $("publication-downloads").replaceChildren(); state.selected = null; state.editor = null; $("audio-controls")?.remove(); state.dirty = false; state.editing = false; $("editor-rows").replaceChildren(); $("ancestry").replaceChildren(); $("editor-summary").textContent = "选择方案或剪辑版本后可编辑镜头。"; $("plans").replaceChildren(); $("artifact").replaceChildren(); $("job-status").textContent = "尚未选择任务"; controls(); }
     function showPlans(job) {
         $("plans").replaceChildren(); state.selected = null;
         for (const plan of job.plans || []) {
@@ -47,7 +49,7 @@
         }
         controls();
     }
-    const kindLabel = (kind) => ({plan: "方案", revision: "剪辑版本", render: "视频"}[kind] || kind);
+    const kindLabel = (kind) => ({plan: "方案", revision: "剪辑版本", render: "视频", publication: "封面与文案"}[kind] || kind);
     async function loadEditor(id, planId, revision = false) {
         const epoch = state.epoch, view = ++state.view;
         state.selected = null; state.editor = null; state.editing = true; state.dirty = false;
@@ -154,11 +156,11 @@
             button.addEventListener("click", () => { void loadEditor(ancestor.jobId, ancestor.planId, ancestor.kind === "revision"); }); $("ancestry").append(button);
         }
     }
-    function showArtifact(artifact) {
+    function showArtifact(artifact, renderId = state.job) {
         const video = document.createElement("video"); video.controls = true; video.preload = "metadata";
-        const download = node("a", `下载 MP4（${(artifact.sizeBytes / 1048576).toFixed(2)} MB）`);
+        const download = node("a", artifact.sizeBytes ? `下载 MP4（${(artifact.sizeBytes / 1048576).toFixed(2)} MB）` : "下载 MP4");
         // Only serve artifacts through the workspace's job media endpoint.
-        const prefix = `/api/creation/jobs/${encodeURIComponent(state.job)}/video`;
+        const prefix = `/api/creation/jobs/${encodeURIComponent(renderId)}/video`;
         for (const value of [artifact.previewUrl, artifact.downloadUrl]) {
             const url = new URL(value, location.origin);
             if (url.origin !== location.origin || url.pathname !== prefix) throw new Error("成片地址无效，请刷新任务。");
@@ -167,10 +169,32 @@
         $("artifact").append(video, download);
         if (artifact.subtitleUrl) {
             const url = new URL(artifact.subtitleUrl, location.origin);
-            if (url.origin !== location.origin || url.pathname !== `/api/creation/jobs/${encodeURIComponent(state.job)}/subtitles` || url.search || url.hash) throw new Error("字幕地址无效，请刷新任务。");
+            if (url.origin !== location.origin || url.pathname !== `/api/creation/jobs/${encodeURIComponent(renderId)}/subtitles` || url.search || url.hash) throw new Error("字幕地址无效，请刷新任务。");
             const link = node("a", "下载 SRT 字幕"); link.id = "download-subtitles"; link.href = artifact.subtitleUrl; link.download = "subtitles.srt";
             $("artifact").append(node("p", artifact.subtitleCueCount === 0 ? "字幕 0 条：所选片段无可用的已保存语音，SRT 为空。" : `字幕 ${artifact.subtitleCueCount} 条 · ${artifact.subtitleMode === "burn" ? "已烧入视频" : "独立导出"}`), link);
         }
+    }
+    async function loadPublication(id, kind, epoch, view) {
+        const data = await api(`/api/creation/jobs/${encodeURIComponent(id)}/publication`);
+        if (epoch !== state.epoch || view !== state.view) return;
+        const rate = data.fps;
+        const fps = typeof rate === "number" ? rate : (Number.isSafeInteger(rate?.numerator) && rate.numerator > 0 && Number.isSafeInteger(rate?.denominator) && rate.denominator > 0 ? rate.numerator / rate.denominator : NaN);
+        if (!/^[a-f0-9]{32}$/.test(data.renderJobId) || (kind === "render" && data.renderJobId !== id) || !Number.isSafeInteger(data.frames) || data.frames < 1 || !Number.isFinite(fps) || fps <= 0) throw new Error("成片信息无效。");
+        const video = new URL(data.videoUrl, location.origin);
+        if (video.origin !== location.origin || video.pathname !== `/api/creation/jobs/${data.renderJobId}/video` || video.search || video.hash) throw new Error("成片地址无效。");
+        if (kind === "publication") showArtifact({previewUrl: data.videoUrl, downloadUrl: data.videoUrl, sizeBytes: 0}, data.renderJobId);
+        state.publication = {...data, fps};
+        $("cover-frame").max = data.frames - 1; $("cover-frame").value = data.coverFrame;
+        $("publication-title").value = data.title; $("publication-description").value = data.description; $("publication-tags").value = data.tags.join(", ");
+        $("publication-form").hidden = false;
+        if (kind === "publication") {
+            const prefix = `/api/creation/jobs/${encodeURIComponent(id)}/publication-files/`;
+            $("publication-cover").src = prefix + "cover.png"; $("publication-cover").hidden = false;
+            for (const file of ["cover.png", "title.txt", "description.txt", "tags.json", "publication.json"]) {
+                const link = node("a", `下载 ${file}`); link.href = prefix + file; link.download = file; link.dataset.file = file; $("publication-downloads").append(link);
+            }
+        }
+        controls();
     }
     async function openJob(id) {
         clearTimeout(state.timer); const epoch = state.epoch, view = ++state.view;
@@ -181,7 +205,15 @@
                 if (epoch !== state.epoch || view !== state.view) return;
                 if (job.projectId !== state.project || job.jobId !== id) throw new Error("任务不属于当前项目。");
                 $("job-status").textContent = `${kindLabel(job.kind)} · ${labels[job.status] || job.status}${job.error ? `：${job.error.message}（${job.error.code}）` : ""}`;
-                if (job.status === "completed") { if (job.kind === "plan") showPlans(job); else if (job.kind === "revision") { const editor = job.editor || await api(`/api/creation/jobs/${encodeURIComponent(id)}/edit?planId=${encodeURIComponent(job.planId || "")}`); if (epoch !== state.epoch || view !== state.view) return; await loadEditor(id, editor.planId, true); } else if (job.artifact) showArtifact(job.artifact); void history(epoch); }
+                if (job.status === "completed") {
+                    if (job.kind === "plan") showPlans(job);
+                    else if (job.kind === "revision") { const editor = job.editor || await api(`/api/creation/jobs/${encodeURIComponent(id)}/edit?planId=${encodeURIComponent(job.planId || "")}`); if (epoch !== state.epoch || view !== state.view) return; await loadEditor(id, editor.planId, true); }
+                    else if (["render", "publication"].includes(job.kind)) {
+                        if (job.kind === "render" && job.artifact) showArtifact(job.artifact);
+                        await loadPublication(id, job.kind, epoch, view);
+                    }
+                    void history(epoch);
+                }
                 else if (["pending", "running"].includes(job.status)) state.timer = setTimeout(poll, 1000);
             } catch (error) { if (epoch === state.epoch && view === state.view) notice(`任务回查失败：${error.message}。可从历史重新打开。`); }
         }
@@ -220,12 +252,27 @@
         if (state.busy) return;
         const epoch = state.epoch, view = state.view; state.busy = true; controls(); notice("正在提交任务…");
         try {
-            const result = await api(`/api/creation/${{plan: "plans", revision: "revisions", render: "renders"}[kind]}`, {...payload, requestId: requestId(kind, payload)});
+            const result = await api(`/api/creation/${{plan: "plans", revision: "revisions", render: "renders", publication: "publications"}[kind]}`, {...payload, requestId: requestId(kind, payload)});
             if (epoch !== state.epoch || view !== state.view) return;
             delete state.intents[kind]; notice("任务已保存，可刷新页面继续查看。"); await openJob(result.jobId); void history(epoch);
         } catch (error) { if (epoch === state.epoch && view === state.view) notice(`${error.message}。再次提交相同内容会复用请求，不重复创建任务。`); }
         finally { if (epoch === state.epoch) { state.busy = false; if (state.editor) showEditor(); controls(); } }
     }
+    $("use-cover-frame").addEventListener("click", () => {
+        const video = $("artifact").querySelector("video"), data = state.publication;
+        if (!data || !video || state.busy) return;
+        $("cover-frame").value = Math.min(data.frames - 1, Math.max(0, Math.floor(video.currentTime * data.fps)));
+    });
+    $("publication-tags").addEventListener("input", () => $("publication-tags").setCustomValidity(""));
+    $("publication-form").addEventListener("submit", (event) => {
+        event.preventDefault(); const data = state.publication; if (!data) return;
+        const tagText = $("publication-tags").value;
+        const tags = tagText === data.tags.join(", ") ? [...data.tags] : [...new Set(tagText.split(/[,，\n]/).map((s) => s.trim()).filter(Boolean))];
+        if (tags.length > 20 || tags.some((tag) => tag.length > 50)) { $("publication-tags").setCustomValidity("最多20项，每项最多50字。"); $("publication-tags").reportValidity(); return; }
+        const coverFrame = Number($("cover-frame").value);
+        if (!Number.isSafeInteger(coverFrame) || coverFrame < 0 || coverFrame >= data.frames) return;
+        void submit("publication", {renderJobId: data.renderJobId, expectedRenderReceiptSha256: data.expectedRenderReceiptSha256, coverFrame, title: $("publication-title").value, description: $("publication-description").value, tags});
+    });
     $("brief").addEventListener("submit", (event) => {
         event.preventDefault(); const brief = Object.fromEntries(new FormData(event.target));
         for (const key of ["platforms", "mandatoryTopics", "exclude"]) brief[key] = [...new Set(brief[key].split(/[,，\n]/).map((s) => s.trim()).filter(Boolean))];

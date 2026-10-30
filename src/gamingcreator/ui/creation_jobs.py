@@ -25,6 +25,7 @@ from gamingcreator.infrastructure.file_sharing import retry_file_sharing
 from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
 from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
+from gamingcreator.ui import publication_jobs
 from gamingcreator.ui.media import MediaResource, VerifiedMediaCache
 from gamingcreator.ui.revision_jobs import (
     editor,
@@ -108,7 +109,9 @@ class CreationJobs:
         return project
 
     def submit(self, kind: str, request: dict[str, Any]) -> dict[str, object]:
-        if kind not in ("plan", "revision", "render") or not isinstance(request, dict):
+        if kind not in ("plan", "revision", "render", "publication") or not isinstance(
+            request, dict
+        ):
             raise fail("creation.input", "无效任务类型。")
         expected = {"requestId", "projectId", "runIds", "brief", "fps"}
         if kind == "revision":
@@ -125,6 +128,16 @@ class CreationJobs:
                 if "revisionJobId" in request
                 else {"requestId", "planJobId", "planId", "width", "height"}
             )
+        if kind == "publication":
+            expected = {
+                "requestId",
+                "renderJobId",
+                "expectedRenderReceiptSha256",
+                "coverFrame",
+                "title",
+                "description",
+                "tags",
+            }
         optional = (
             {"subtitleMode"}
             if kind == "render"
@@ -176,6 +189,10 @@ class CreationJobs:
                 if type(request["fps"]) is not int or not 1 <= request["fps"] <= 120:
                     raise fail("creation.input", "无效输出帧率。")
                 project_id = request["projectId"]
+            elif kind == "publication":
+                parent_id = identity(request["renderJobId"])
+                project_id, parent_digest = publication_jobs.prepare(self, request)
+                project = self.project(project_id)
             elif kind == "revision" or "revisionJobId" in request:
                 parent_id = identity(
                     request["parentJobId"] if kind == "revision" else request["revisionJobId"]
@@ -304,6 +321,8 @@ class CreationJobs:
             for plan in state["plans"]:
                 for segment in plan["segments"]:
                     segment.pop("sourcePath", None)
+        elif state["kind"] == "publication":
+            publication_jobs.verify_publication(self, directory, state, stored, result_receipt)
         elif state["kind"] == "revision":
             chain = load_chain(self, directory.name, pending=state["status"] != "completed")
             state["editor"] = editor(chain, directory.name)
@@ -437,7 +456,8 @@ class CreationJobs:
                 finally:
                     await store.close()
 
-            asyncio.run(check_sources())
+            if state["kind"] != "publication":
+                asyncio.run(check_sources())
             if state["kind"] == "plan":
                 asyncio.run(
                     execute_plan_creation(
@@ -450,6 +470,8 @@ class CreationJobs:
                         None,
                     )
                 )
+            elif state["kind"] == "publication":
+                asyncio.run(publication_jobs.save_publication(self, directory, request))
             elif state["kind"] == "revision":
                 assert chain is not None
                 save_revision(self, directory, request, chain)
@@ -541,7 +563,15 @@ class CreationJobs:
                 }
                 state.pop("artifact", None)
                 state.pop("editor", None)
+                state.pop("publication", None)
+                state.pop("publicationArtifacts", None)
         return {key: value for key, value in state.items() if key != "resultReceiptSha256"}
+
+    def publication(self, job_id: str) -> dict[str, Any]:
+        return publication_jobs.snapshot(self, job_id)
+
+    def publication_file(self, job_id: str, name: str) -> MediaResource:
+        return publication_jobs.resource(self, job_id, name)
 
     def edit(self, job_id: str, plan_id: str) -> dict[str, Any]:
         return editor(load_chain(self, job_id, plan_id), job_id)

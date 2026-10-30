@@ -111,6 +111,23 @@ def test_creation_form_plans_render_and_refresh(width):
                         "clips": [{**plan["plans"][0]["segments"][0], "clipId": "clip-one"}],
                     }
                 )
+            elif path.endswith("/publication"):
+                route.fulfill(
+                    json={
+                        "renderJobId": "b" * 32,
+                        "expectedRenderReceiptSha256": "c" * 64,
+                        "coverFrame": 0,
+                        "title": "模板",
+                        "description": "",
+                        "tags": [],
+                        "frames": 30,
+                        "fps": 30,
+                        "width": 1280,
+                        "height": 720,
+                        "videoUrl": f"/api/creation/jobs/{'b' * 32}/video",
+                        "draftStatus": "editable-template-not-ai",
+                    }
+                )
             elif path.endswith("/video"):
                 route.fulfill(status=204)
             else:
