@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from gamingcreator.application.creation_editing import build_revision
 from gamingcreator.application.edit_decision import select_edit_decision
 from gamingcreator.cli.creation import execute_plan_creation
 from gamingcreator.cli.creation_render import execute_render_creation, read_creation
@@ -23,6 +24,7 @@ from gamingcreator.infrastructure.file_sharing import retry_file_sharing
 from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
 from gamingcreator.ui.media import MediaResource, VerifiedMediaCache
+from gamingcreator.ui.revision_jobs import editor, load_chain, render_revision, save_revision
 
 
 def fail(code: str, message: str, conflict: bool = False) -> AppError:
@@ -97,14 +99,24 @@ class CreationJobs:
         return project
 
     def submit(self, kind: str, request: dict[str, Any]) -> dict[str, object]:
-        expected = (
-            {"requestId", "projectId", "runIds", "brief", "fps"}
-            if kind == "plan"
-            else {"requestId", "planJobId", "planId", "width", "height"}
-        )
-        if not isinstance(request, dict) or (
-            set(request) - ({"subtitleMode"} if kind == "render" else set()) != expected
-        ):
+        if kind not in ("plan", "revision", "render") or not isinstance(request, dict):
+            raise fail("creation.input", "无效任务类型。")
+        expected = {"requestId", "projectId", "runIds", "brief", "fps"}
+        if kind == "revision":
+            expected = {
+                "requestId",
+                "parentJobId",
+                "planId",
+                "expectedParentReceiptSha256",
+                "clips",
+            }
+        elif kind == "render":
+            expected = (
+                {"requestId", "revisionJobId", "width", "height"}
+                if "revisionJobId" in request
+                else {"requestId", "planJobId", "planId", "width", "height"}
+            )
+        if set(request) - ({"subtitleMode"} if kind == "render" else set()) != expected:
             raise fail("creation.input", "请填写完整创作参数。")
         if kind == "render" and request.get("subtitleMode", "none") not in (
             "none",
@@ -150,6 +162,20 @@ class CreationJobs:
                 if type(request["fps"]) is not int or not 1 <= request["fps"] <= 120:
                     raise fail("creation.input", "无效输出帧率。")
                 project_id = request["projectId"]
+            elif kind == "revision" or "revisionJobId" in request:
+                parent_id = identity(
+                    request["parentJobId"] if kind == "revision" else request["revisionJobId"]
+                )
+                chain = load_chain(self, parent_id, request.get("planId"))
+                if kind == "revision":
+                    if request["expectedParentReceiptSha256"] != chain.digest:
+                        raise fail("creation.conflict", "父版本已更改，请重新打开编辑器。", True)
+                    build_revision(chain.edl, chain.root_sha, request["clips"])
+                elif self.read(self.directory(parent_id) / "status.json")["kind"] != "revision":
+                    raise fail("creation.conflict", "请选择已完成编辑版本。", True)
+                project_id = chain.project_id
+                project = self.project(project_id)
+                parent_digest = chain.digest
             else:
                 parent_id = identity(request["planJobId"])
                 parent = self.get(parent_id)
@@ -157,6 +183,10 @@ class CreationJobs:
                     raise fail("creation.conflict", "父方案尚未完成。", True)
                 report = self.plan_report(self.directory(parent_id))
                 select_edit_decision(report, request["planId"])
+                project_id = parent["projectId"]
+                project = self.project(project_id)
+                parent_digest = hash_file(self.directory(parent_id) / "result/receipt.json")
+            if kind == "render":
                 for key in ("width", "height"):
                     if (
                         type(request[key]) is not int
@@ -164,9 +194,6 @@ class CreationJobs:
                         or request[key] % 2
                     ):
                         raise fail("creation.input", "输出尺寸需为16至3840的偶数。")
-                project_id = parent["projectId"]
-                project = self.project(project_id)
-                parent_digest = hash_file(self.directory(parent_id) / "result/receipt.json")
             job_id = uuid4().hex
             directory = self.safe(self.jobs / job_id)
             directory.mkdir()
@@ -261,11 +288,15 @@ class CreationJobs:
             for plan in state["plans"]:
                 for segment in plan["segments"]:
                     segment.pop("sourcePath", None)
+        elif state["kind"] == "revision":
+            chain = load_chain(self, directory.name, pending=state["status"] != "completed")
+            state["editor"] = editor(chain, directory.name)
         else:
             request = stored["request"]
-            if state["parentJobId"] != request["planJobId"]:
+            parent_id = request.get("revisionJobId", request.get("planJobId"))
+            if state["parentJobId"] != parent_id:
                 raise ValueError("Invalid parent job identity")
-            parent = self.directory(request["planJobId"])
+            parent = self.directory(parent_id)
             parent_state = self.read(parent / "status.json")
             parent_receipt = hash_file(self.safe(parent / "result/receipt.json"))
             if (
@@ -273,11 +304,16 @@ class CreationJobs:
                 or parent_receipt != stored["parentReceiptSha256"]
             ):
                 raise ValueError("Parent receipt changed")
-            parent_report = self.plan_report(parent)
+            if "revisionJobId" in request:
+                chain = load_chain(self, parent_id)
+                parent_report, expected_edl = chain.report, chain.edl
+                if state["projectId"] != chain.project_id:
+                    raise ValueError("Render project changed")
+            else:
+                parent_report = self.plan_report(parent)
+                expected_edl = select_edit_decision(parent_report, request["planId"])
             selected_edl, selection_report, _ = read_creation(self.safe(directory / "selection"))
-            if selection_report != parent_report or selected_edl != select_edit_decision(
-                parent_report, request["planId"]
-            ):
+            if selection_report != parent_report or selected_edl != expected_edl:
                 raise ValueError("Selection belongs to another request")
             receipt = self.read(receipt_path)
             if (
@@ -349,9 +385,17 @@ class CreationJobs:
             self.save(directory / "status.json", state)
             from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 
+            chain = None
+            if state["kind"] == "revision" or "revisionJobId" in request:
+                chain = load_chain(self, state["parentJobId"], request.get("planId"))
+                if chain.digest != self.read(directory / "request.json")["parentReceiptSha256"]:
+                    raise ValueError("Parent receipt changed")
+
             async def check_sources() -> None:
                 source_request = (
-                    request
+                    self.read(self.directory(chain.root_id) / "request.json")["request"]
+                    if chain is not None
+                    else request
                     if state["kind"] == "plan"
                     else self.read(self.directory(state["parentJobId"]) / "request.json")["request"]
                 )
@@ -377,6 +421,12 @@ class CreationJobs:
                         None,
                     )
                 )
+            elif state["kind"] == "revision":
+                assert chain is not None
+                save_revision(self, directory, request, chain)
+            elif "revisionJobId" in request:
+                assert chain is not None
+                asyncio.run(render_revision(self, directory, request, chain))
             else:
                 parent = self.directory(state["parentJobId"])
                 stored = self.read(directory / "request.json")
@@ -461,7 +511,11 @@ class CreationJobs:
                     "message": "任务产物已更改，不能预览或下载。",
                 }
                 state.pop("artifact", None)
+                state.pop("editor", None)
         return {key: value for key, value in state.items() if key != "resultReceiptSha256"}
+
+    def edit(self, job_id: str, plan_id: str) -> dict[str, Any]:
+        return editor(load_chain(self, job_id, plan_id), job_id)
 
     def catalog(self, project_id: str) -> dict[str, object]:
         self.project(project_id)

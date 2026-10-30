@@ -97,6 +97,18 @@ def test_creation_form_plans_render_and_refresh(width):
                 )
             elif path.startswith("/api/creation/jobs?"):
                 route.fulfill(json={"jobs": list(jobs.values())})
+            elif "/edit?" in path:
+                route.fulfill(
+                    json={
+                        "parentJobId": plan["jobId"],
+                        "planId": "0",
+                        "expectedParentReceiptSha256": "c" * 64,
+                        "rootReceiptSha256": "c" * 64,
+                        "fps": 30,
+                        "ancestry": [],
+                        "clips": [{**plan["plans"][0]["segments"][0], "clipId": "clip-one"}],
+                    }
+                )
             elif path.endswith("/video"):
                 route.fulfill(status=204)
             else:

@@ -263,6 +263,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
             if path not in {
                 "/api/creation/plans",
                 "/api/creation/renders",
+                "/api/creation/revisions",
                 "/api/match-details",
                 "/api/draft-detail-query",
                 "/api/search-project",
@@ -287,11 +288,14 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return result
 
             value = json.loads(body, object_pairs_hook=unique)
-            if path in {"/api/creation/plans", "/api/creation/renders"}:
+            if path in {"/api/creation/plans", "/api/creation/renders", "/api/creation/revisions"}:
                 self._json(
                     202,
                     self.creation_jobs.submit(
-                        "plan" if path.endswith("plans") else "render", value
+                        {"plans": "plan", "renders": "render", "revisions": "revision"}[
+                            path.rsplit("/", 1)[1]
+                        ],
+                        value,
                     ),
                 )
                 return
@@ -566,7 +570,13 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return
             if path.startswith("/api/creation/jobs/"):
                 tail = path.removeprefix("/api/creation/jobs/")
-                if tail.endswith("/subtitles"):
+                if tail.endswith("/edit"):
+                    if set(query) != {"planId"}:
+                        raise ValueError("Expected selected plan ID")
+                    self._json(
+                        200, self.creation_jobs.edit(tail.removesuffix("/edit"), query["planId"])
+                    )
+                elif tail.endswith("/subtitles"):
                     if query:
                         raise ValueError("Unexpected subtitle query")
                     self._serve_media(
