@@ -30,8 +30,8 @@
         $("save-publication").disabled = state.busy || !state.publication;
         $("use-cover-frame").disabled = state.busy || !state.publication;
         $("plan").disabled = state.busy || !state.project || !$("runs").querySelector("input:checked");
-        $("render").disabled = state.busy || state.editing || state.dirty || !state.selected;
-        $("save-revision").disabled = state.busy || state.editing || !state.editor || !state.editor.clips.length;
+        $("render").disabled = state.busy || state.editing || state.dirty || !state.selected || !!transitionError(state.editor);
+        $("save-revision").disabled = state.busy || state.editing || !state.editor || !state.editor.clips.length || !!transitionError(state.editor);
     }
     function clearView() { $("package-form").hidden = true; $("package-result").hidden = true; $("package-downloads").replaceChildren(); $("package-preview").replaceChildren(); state.publication = null; $("publication-form").hidden = true; $("publication-cover").hidden = true; $("publication-cover").removeAttribute("src"); $("publication-downloads").replaceChildren(); state.selected = null; state.editor = null; $("audio-controls")?.remove(); state.dirty = false; state.editing = false; $("editor-rows").replaceChildren(); $("ancestry").replaceChildren(); $("editor-summary").textContent = "选择方案或剪辑版本后可编辑镜头。"; $("plans").replaceChildren(); $("artifact").replaceChildren(); $("job-status").textContent = "尚未选择任务"; controls(); }
     function showPlans(job) {
@@ -62,7 +62,7 @@
             if (epoch !== state.epoch || view !== state.view) return;
             if (editor.parentJobId !== id || editor.planId !== planId) throw new Error("剪辑版本不匹配。");
             editor.bounds = Object.fromEntries(editor.clips.map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}]));
-            editor.clips.forEach((clip) => { clip.speed = clip.speed || {numerator: 1, denominator: 1}; });
+            editor.clips.forEach((clip) => { clip.speed = clip.speed || {numerator: 1, denominator: 1}; clip.transitionIn = clip.transitionIn || {type: "cut", frames: 0}; });
             editor.subtitleOverrides = editor.subtitleOverrides || [];
             editor.audioMix = editor.audioMix || defaultMix();
             state.job = id; save(); state.editor = editor;
@@ -98,16 +98,35 @@
         catch { musicNotice = "曲库暂不可用，可继续镜头与字幕编辑。"; }
         if (state.editor) showAudio(state.editor);
     }
-    const clipFrames = (clip, fps) => Math.floor((clip.endUs - clip.startUs) * fps * clip.speed.denominator / (1e6 * clip.speed.numerator));
+    const clipFrames = (clip, fps) => {
+        if (![clip.startUs, clip.endUs, fps, clip.speed.numerator, clip.speed.denominator].every(Number.isSafeInteger)) return NaN;
+        return Number(BigInt(clip.endUs - clip.startUs) * BigInt(fps) * BigInt(clip.speed.denominator) / (1000000n * BigInt(clip.speed.numerator)));
+    };
+    function transitionError(editor) {
+        if (!editor) return "";
+        for (let i = 0; i < editor.clips.length; i++) {
+            const clip = editor.clips[i], t = clip.transitionIn;
+            if (!t || !Number.isSafeInteger(t.frames) || (t.type === "cut" ? t.frames !== 0 : t.type !== "crossfade" || t.frames <= 0) || (i === 0 && (t.type !== "cut" || t.frames !== 0))) return "转场帧数须为正整数；直接切换和首镜头固定为 0 帧。";
+            if (t.frames + (editor.clips[i + 1]?.transitionIn.frames || 0) >= clipFrames(clip, editor.fps)) return "每个镜头的入场与出场转场帧数之和必须小于镜头输出帧数，至少保留一帧独占，不能三重重叠。";
+        }
+        return "";
+    }
     function showEditor() {
         const editor = state.editor;
         showAudio(editor);
         $("editor-rows").replaceChildren(); $("ancestry").replaceChildren();
-        const totalSeconds = editor.clips.reduce((n, c) => n + c.outputFrames, 0) / editor.fps;
+        const totalFrames = editor.clips.reduce((n, c) => n + clipFrames(c, editor.fps) - c.transitionIn.frames, 0);
+        const totalSeconds = totalFrames / editor.fps;
+        const error = transitionError(editor);
         const target = editor.targetDuration;
         const difference = Number.isFinite(target) ? ` · 原目标 ${target} 秒，实际${totalSeconds > target ? "超出" : "少于"} ${Math.abs(totalSeconds - target).toFixed(3)} 秒（允许手动编辑，原需求不变）` : "";
-        $("editor-summary").textContent = `${editor.clips.length} 个镜头 · ${(editor.clips.reduce((n, c) => n + c.outputFrames, 0) / editor.fps).toFixed(3)} 秒${difference}${state.dirty ? " · 有未保存修改，请保存新版本后生成视频" : " · 已保存"}`;
+        $("editor-summary").textContent = `${editor.clips.length} 个镜头 · ${totalSeconds.toFixed(3)} 秒 · ${totalFrames} 帧（扣除转场重叠）${difference}${state.dirty ? " · 有未保存修改，请保存新版本后生成视频" : " · 已保存"}`;
+        if (error) $("editor-summary").textContent += ` · ${error}`;
+        let startFrame = 0;
         editor.clips.forEach((clip, index) => {
+            if (index) startFrame -= clip.transitionIn.frames;
+            const clipStart = startFrame;
+            startFrame += clipFrames(clip, editor.fps);
             const row = node("article", ""); row.dataset.clipId = clip.clipId; row.className = "clip-row";
             row.append(node("h3", `镜头 ${index + 1}`), node("p", clip.scriptDraft || "无描述"));
             const original = editor.bounds[clip.clipId];
@@ -139,6 +158,24 @@
                 state.dirty = true; showEditor(); controls();
             });
             speedLabel.append(speed); row.append(speedLabel);
+            const transitionLabel = node("label", "与上一镜头连接"), transition = document.createElement("select");
+            transition.dataset.field = "transition"; transition.append(new Option("直接切换", "cut"), new Option("交叉淡化", "crossfade"));
+            transition.value = clip.transitionIn.type; transition.disabled = index === 0 || state.busy;
+            const framesLabel = node("label", "转场帧数"), frames = document.createElement("input");
+            frames.type = "number"; frames.step = "1"; frames.min = "1"; frames.dataset.field = "transition-frames";
+            frames.value = String(clip.transitionIn.frames); frames.disabled = index === 0 || transition.value === "cut" || state.busy;
+            transition.addEventListener("change", () => {
+                if (state.busy || state.editing || index === 0) return;
+                clip.transitionIn = {type: transition.value, frames: transition.value === "cut" ? 0 : 1};
+                state.dirty = true; showEditor(); controls();
+            });
+            frames.addEventListener("change", () => {
+                if (state.busy || state.editing || index === 0) return;
+                clip.transitionIn.frames = frames.value === "" ? NaN : Number(frames.value);
+                state.dirty = true; showEditor(); controls();
+            });
+            transitionLabel.append(transition); framesLabel.append(frames); row.append(transitionLabel, framesLabel);
+            row.append(node("p", `输出起点 ${clipStart} 帧 · ${(clipStart / editor.fps).toFixed(3)} 秒`));
             row.append(node("p", `输出 ${clip.outputFrames} 帧 · ${(clip.outputFrames / editor.fps).toFixed(3)} 秒；源出点 ${(clip.endUs / 1e6).toFixed(6)} 秒保持不变。舍弃尾部不足一输出帧的余量。`));
             const override = editor.subtitleOverrides.find((item) => item.clipId === clip.clipId);
             const subtitleLabel = node("label", "手写字幕（替换该镜头语音字幕）");
@@ -164,8 +201,10 @@
                 button.disabled = state.busy || (action === "up" && index === 0) || (action === "down" && index === editor.clips.length - 1) || (action === "delete" && editor.clips.length === 1);
                 button.addEventListener("click", () => {
                     if (state.busy || state.editing) return;
+                    const predecessors = new Map(editor.clips.map((c, i) => [c.clipId, editor.clips[i - 1]?.clipId]));
                     if (action === "delete") editor.clips.splice(index, 1);
                     else { const next = index + (action === "up" ? -1 : 1); [editor.clips[index], editor.clips[next]] = [editor.clips[next], editor.clips[index]]; }
+                    editor.clips.forEach((c, i) => { if (i === 0 || predecessors.get(c.clipId) !== editor.clips[i - 1]?.clipId) c.transitionIn = {type: "cut", frames: 0}; });
                     state.dirty = true; showEditor(); controls();
                 }); row.append(button);
             }
@@ -331,7 +370,7 @@
                 label.append(check, document.createTextNode(`${run.sourceName} · 版本 ${run.id.slice(0, 8)}`)); $("runs").append(label);
             }
             notice($("runs").childElementCount ? "请选择素材，填写需求后生成方案。" : "此项目没有已完成分析的录像，暂不能生成方案。"); controls();
-            await history(epoch); if (restoreJob && epoch === state.epoch) await openJob(restoreJob);
+            void history(epoch); if (restoreJob && epoch === state.epoch) await openJob(restoreJob);
         } catch (error) { if (epoch === state.epoch) notice(error.message); }
     }
     async function submit(kind, payload) {
@@ -376,12 +415,12 @@
         brief.targetDuration = Number(brief.targetDuration);
         void submit("plan", {projectId: state.project, runIds: Array.from($("runs").querySelectorAll("input:checked"), (c) => c.value), brief, fps: Number($("fps").value)});
     });
-    $("render-form").addEventListener("submit", (event) => { event.preventDefault(); if (!state.selected) return; const [width, height] = $("size").value.split(",").map(Number); void submit("render", {...state.selected, width, height, subtitleMode: $("subtitles").value}); });
+    $("render-form").addEventListener("submit", (event) => { event.preventDefault(); if (!state.selected || state.dirty || transitionError(state.editor)) return; const [width, height] = $("size").value.split(",").map(Number); void submit("render", {...state.selected, width, height, subtitleMode: $("subtitles").value}); });
     $("save-revision").addEventListener("click", () => {
-        if (!state.editor || state.editing) return;
+        if (!state.editor || state.editing || transitionError(state.editor)) return;
         const editor = state.editor;
         if (Array.from($("audio-controls")?.querySelectorAll("input") || []).some((input) => !input.reportValidity())) return;
-        void submit("revision", {parentJobId: editor.parentJobId, planId: editor.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256, clips: editor.clips.map(({clipId, startUs, endUs, speed}) => ({clipId, startUs, endUs, speed})), audioMix: editor.audioMix, subtitleOverrides: editor.subtitleOverrides.filter((item) => editor.clips.some((clip) => clip.clipId === item.clipId))});
+        void submit("revision", {parentJobId: editor.parentJobId, planId: editor.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256, clips: editor.clips.map(({clipId, startUs, endUs, speed, transitionIn}) => ({clipId, startUs, endUs, speed, transitionIn})), audioMix: editor.audioMix, subtitleOverrides: editor.subtitleOverrides.filter((item) => editor.clips.some((clip) => clip.clipId === item.clipId))});
     });
     $("project").addEventListener("change", () => { void projectChanged(); }); $("refresh").addEventListener("click", () => { void history(); if (state.job) void openJob(state.job); });
     void (async () => {

@@ -29,10 +29,45 @@ class RenderClip:
 class RenderPlan:
     clips: tuple[RenderClip, ...]
     fps: int
+    transition_frames: tuple[int, ...] = ()
+
+    def __post_init__(self) -> None:
+        if type(self.transition_frames) is not tuple:
+            raise ValueError("Transition frames must be an immutable tuple.")
+        if self.transition_frames:
+            output_start_frames(tuple(c.output_frames for c in self.clips), self.transition_frames)
+
+    @property
+    def start_frames(self) -> tuple[int, ...]:
+        return output_start_frames(
+            tuple(c.output_frames for c in self.clips), self.transition_frames
+        )
 
     @property
     def frames(self) -> int:
-        return sum(clip.output_frames for clip in self.clips)
+        return self.start_frames[-1] + self.clips[-1].output_frames if self.clips else 0
+
+
+def output_start_frames(
+    lengths: tuple[int, ...], transitions: tuple[int, ...] = ()
+) -> tuple[int, ...]:
+    """One exact output layout shared by revisions, rendering and subtitles."""
+    incoming = transitions or (0,) * len(lengths)
+    if len(incoming) != len(lengths) or any(type(n) is not int or n <= 0 for n in lengths):
+        raise ValueError("Invalid clip lengths or transition count.")
+    if any(type(n) is not int or n < 0 for n in incoming) or (incoming and incoming[0] != 0):
+        raise ValueError("Transitions need nonnegative integer frames and an initial cut.")
+    for index, length in enumerate(lengths):
+        outgoing = incoming[index + 1] if index + 1 < len(lengths) else 0
+        if incoming[index] + outgoing >= length:
+            raise ValueError("Transitions must leave one exclusive frame in each clip.")
+    starts: list[int] = []
+    offset = 0
+    for length, overlap in zip(lengths, incoming, strict=True):
+        offset -= overlap
+        starts.append(offset)
+        offset += length
+    return tuple(starts)
 
 
 def validate_render_plan(

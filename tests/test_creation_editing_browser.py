@@ -217,10 +217,15 @@ def test_editing_version_flows(scenario):
                     pw.expect(page.locator("#render")).to_be_enabled()
                     first = posts[-1][1]
                     assert first["clips"][0] == dict(
-                        clipId="0", startUs=0, endUs=1999999, speed=dict(numerator=1, denominator=2)
+                        clipId="0",
+                        startUs=0,
+                        endUs=1999999,
+                        speed=dict(numerator=1, denominator=2),
+                        transitionIn=dict(type="cut", frames=0),
                     )
                     assert all(
-                        set(c) == {"clipId", "startUs", "endUs", "speed"} for c in first["clips"]
+                        set(c) == {"clipId", "startUs", "endUs", "speed", "transitionIn"}
+                        for c in first["clips"]
                     )
                     assert first["audioMix"] == editor["audioMix"]
                     assert first["subtitleOverrides"] == [dict(clipId="0", text="手写字幕保留")]
@@ -278,12 +283,14 @@ def test_editing_version_flows(scenario):
                             startUs=2000000,
                             endUs=4000000,
                             speed=dict(numerator=1, denominator=1),
+                            transitionIn=dict(type="cut", frames=0),
                         ),
                         dict(
                             clipId="0",
                             startUs=0,
                             endUs=1500000,
                             speed=dict(numerator=1, denominator=1),
+                            transitionIn=dict(type="cut", frames=0),
                         ),
                     ]
                     assert page.locator("#editor img").count() == 0

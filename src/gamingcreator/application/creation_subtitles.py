@@ -29,17 +29,15 @@ def build_subtitles(
     if clip_segments is not None and len(clip_segments) != len(plan.clips):
         raise ValueError("Subtitle transcript groups must match render clips.")
     cues: list[SubtitleCue] = []
-    output_frame = 0
     for index, clip in enumerate(plan.clips):
         if type(clip.output_frames) is not int or clip.output_frames <= 0:
             raise ValueError("Output clips need a positive integer frame count.")
-        offset = Fraction(output_frame, plan.fps)
+        offset = Fraction(plan.start_frames[index], plan.fps)
         duration = Fraction(clip.output_frames, plan.fps)
         text = texts[index]
         if text is not None:
             if text != "":
-                cues.append(SubtitleCue(offset, offset + duration, text, "user-written"))
-            output_frame += clip.output_frames
+                cues.append(SubtitleCue(offset, offset + duration, text, "user-written", index))
             continue
         clip_cues: list[SubtitleCue] = []
         for segment in segments if clip_segments is None else clip_segments[index]:
@@ -55,11 +53,12 @@ def build_subtitles(
             )
             if start < end:
                 clip_cues.append(
-                    SubtitleCue(offset + start, offset + end, segment.text, segment.uncertainty)
+                    SubtitleCue(
+                        offset + start, offset + end, segment.text, segment.uncertainty, index
+                    )
                 )
         cues.extend(sorted(clip_cues, key=lambda cue: (cue.start, cue.end)))
-        output_frame += clip.output_frames
-    return tuple(cues)
+    return tuple(sorted(cues, key=lambda cue: (cue.start, cue.end)))
 
 
 def validate_override_text(text: str) -> None:

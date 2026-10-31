@@ -23,12 +23,17 @@ class SubtitleCue:
     end: Fraction
     text: str
     uncertainty: str | None = None
+    clip_index: int | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.start, Fraction) or not isinstance(self.end, Fraction):
             raise ValueError("Subtitle times must be exact Fraction seconds.")
         if not 0 <= self.start < self.end:
             raise ValueError("Subtitle interval must be nonnegative and nonempty.")
+        if self.clip_index is not None and (
+            type(self.clip_index) is not int or self.clip_index < 0
+        ):
+            raise ValueError("Subtitle clip identity must be a nonnegative integer.")
         object.__setattr__(self, "text", _text(self.text))
 
 
@@ -42,7 +47,7 @@ def _timestamp(milliseconds: int) -> str:
 def serialize_srt(cues: Iterable[SubtitleCue]) -> str:
     """Floor exact times to milliseconds; omit intervals collapsed by quantization."""
     blocks: list[str] = []
-    for cue in cues:
+    for cue in sorted(cues, key=lambda cue: (cue.start, cue.end)):
         start = (cue.start * 1000).__floor__()
         end = (cue.end * 1000).__floor__()
         if start == end:

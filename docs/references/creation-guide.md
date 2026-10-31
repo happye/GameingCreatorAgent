@@ -50,7 +50,7 @@ plans.json保存三种方案、原片段、可编辑描述草稿和缺口；rece
 
 ## 3. 真实渲染（首版已交付）
 
-render-creation / scripts/render-creation.ps1接收项目、已完成创作目录和新输出目录，按选择方案的创作顺序生成video.mp4。实现状态、验证和已知限制见[渲染sprint](../exec-plans/sprint-creation-render.md)及[字幕sprint](../exec-plans/sprint-creation-subtitles.md)；未有完成回执的目录不算成片成功。已支持原片裁剪、拼接、缩放/留边、音轨及已有语音字幕，逐镜头变速已接工作台，转场等仍待补。
+render-creation / scripts/render-creation.ps1接收项目、已完成创作目录和新输出目录，按选择方案的创作顺序生成video.mp4。实现状态、验证和已知限制见[渲染sprint](../exec-plans/sprint-creation-render.md)及[字幕sprint](../exec-plans/sprint-creation-subtitles.md)；未有完成回执的目录不算成片成功。已支持原片裁剪、拼接、缩放/留边、音轨及已有语音字幕，工作台剪辑版本还支持逐镜头变速和交叉淡化。
 
 字幕可传`--subtitles sidecar`（只导出）或`--subtitles burn`（烧录并导出）；PowerShell对应`-Subtitles sidecar|burn`，缺省none。输出新增subtitles.srt，SHA写入receipt.json；中文烧录使用系统可用字体，无新下载。烧录按百分之一秒量化，反斜杠/花括号显示为全宽字符，原SRT文字保留；字幕准确性仍需审片。
 
@@ -73,3 +73,11 @@ render-creation / scripts/render-creation.ps1接收项目、已完成创作目�
 ## 逐镜头变速
 
 镜头行选择0.5x/1x/2x后，入出点继续表示原录像秒数；界面显示新的输出帧数和时长，不会偷偷扩大源区间。保存新版本再渲染，原声音高保持，已有语音/手写字幕同步到输出时间，配乐按成片时间连续播放。慢放可以超过最初目标，界面会显示差异；这不改变原Brief。尾端不足一输出帧的余量舍弃，原入出点保留。祖先版本可恢复原速度；旧v1任务原样可读/下载。开发接口新v2需显式startUs/endUs/speed，不可把旧outputFrames当源长度。
+
+## 交叉淡化转场
+
+第二个镜头起，每行可选择“直接切换”或“交叉淡化”并填写重叠帧数。例如30fps下两个各30帧镜头重叠6帧后是54帧（1.8秒），第二镜头从第24帧开始。页面显示真实总长和各镜头起点；保存新版本后渲染，画面和原声一起淡化，字幕跟随重叠后的时间，配乐从成片零点连续播放。
+
+首镜头固定直接切换。每个镜头入场与出场重叠帧数之和必须小于镜头输出帧数，至少留一帧独占；非法值会阻止保存。换序/删除后，新形成的连接恢复直接切换，原相邻连接设置保留；可以重新选择淡化，祖先版本可以恢复旧设置。
+
+烧录时重叠段的常规短字幕上下分层，其余时间恢复底部。任意长文的多行排版尚未全面验证，仍需审片；SRT保留两段真实时间，播放器自行决定重叠字幕排版。开发接口v3沿v2字段增加transitionIn={type:cut|crossfade,frames:整数}，旧v1/v2文件不改写。刷新时已选任务独立恢复，不再等待整份历史列表核验。

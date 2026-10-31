@@ -5,15 +5,22 @@ from fractions import Fraction
 from hashlib import sha256
 from typing import Any
 
-from gamingcreator.application.rendering import RenderClip, RenderPlan, validate_render_plan
+from gamingcreator.application.rendering import (
+    RenderClip,
+    RenderPlan,
+    output_start_frames,
+    validate_render_plan,
+)
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.time import SourceRange
 
 REVISION_SCHEMA = "edit-decision-revision-v1"
 REVISION_SCHEMA_V2 = "edit-decision-revision-v2"
+REVISION_SCHEMA_V3 = "edit-decision-revision-v3"
 _EDIT_KEYS_V2 = {"clipId", "startUs", "endUs", "speed"}
+_EDIT_KEYS_V3 = _EDIT_KEYS_V2 | {"transitionIn"}
 _EDIT_KEYS = {"clipId", "startUs", "outputFrames"}
-_ROW_VARIABLES = _EDIT_KEYS | {"endUs", "outputStartFrame", "speed"}
+_ROW_VARIABLES = _EDIT_KEYS | {"endUs", "outputStartFrame", "speed", "transitionIn"}
 
 
 def editable_clips(edl: dict[str, Any], root_receipt_sha: str) -> list[dict[str, Any]]:
@@ -25,10 +32,10 @@ def editable_clips(edl: dict[str, Any], root_receipt_sha: str) -> list[dict[str,
     ):
         raise ValueError("Invalid root receipt SHA256.")
     schema = edl.get("schemaVersion")
-    if schema not in ("edit-decision-v1", REVISION_SCHEMA, REVISION_SCHEMA_V2):
+    if schema not in ("edit-decision-v1", REVISION_SCHEMA, REVISION_SCHEMA_V2, REVISION_SCHEMA_V3):
         raise ValueError("Unsupported editing schema.")
     if (
-        schema in (REVISION_SCHEMA, REVISION_SCHEMA_V2)
+        schema in (REVISION_SCHEMA, REVISION_SCHEMA_V2, REVISION_SCHEMA_V3)
         and edl.get("rootReceiptSha256") != root_receipt_sha
     ):
         raise ValueError("Revision belongs to another root receipt.")
@@ -59,8 +66,11 @@ def build_revision(
         raise ValueError("Invalid output clock.")
     if not isinstance(edits, list) or not edits:
         raise ValueError("An edit must retain at least one clip.")
-    v2 = all(isinstance(edit, dict) and set(edit) == _EDIT_KEYS_V2 for edit in edits)
-    keys = _EDIT_KEYS_V2 if v2 else _EDIT_KEYS
+    v3 = all(isinstance(edit, dict) and set(edit) == _EDIT_KEYS_V3 for edit in edits)
+    v2 = v3 or all(isinstance(edit, dict) and set(edit) == _EDIT_KEYS_V2 for edit in edits)
+    keys = _EDIT_KEYS_V3 if v3 else _EDIT_KEYS_V2 if v2 else _EDIT_KEYS
+    if not v3 and parent_edl.get("schemaVersion") == REVISION_SCHEMA_V3:
+        raise ValueError("Editing a v3 parent requires explicit v3 transitions.")
     if not v2 and parent_edl.get("schemaVersion") == REVISION_SCHEMA_V2:
         raise ValueError("Editing a v2 parent requires v2 clips with endUs and speed.")
     available = {row["clipId"]: row for row in rows}
@@ -69,7 +79,7 @@ def build_revision(
     offset = 0
     for edit in edits:
         if not isinstance(edit, dict) or set(edit) != keys:
-            raise ValueError("Clips must uniformly use exact v1 or v2 editing fields.")
+            raise ValueError("Clips must uniformly use exact v1, v2 or v3 editing fields.")
         clip_id = edit["clipId"]
         if not isinstance(clip_id, str) or clip_id not in available or clip_id in seen:
             raise ValueError("Unknown or repeated clip identity.")
@@ -102,12 +112,18 @@ def build_revision(
         row.update(startUs=start, endUs=end, outputFrames=frames, outputStartFrame=offset)
         if v2:
             row["speed"] = deepcopy(edit["speed"])
+        if v3:
+            _transition(edit["transitionIn"])
+            row["transitionIn"] = deepcopy(edit["transitionIn"])
         output.append(row)
         offset += frames
         seen.add(clip_id)
+    starts = _layout(output, v3)
+    for row, start_frame in zip(output, starts, strict=True):
+        row["outputStartFrame"] = start_frame
     revision = deepcopy(parent_edl)
     revision.update(
-        schemaVersion=REVISION_SCHEMA_V2 if v2 else REVISION_SCHEMA,
+        schemaVersion=REVISION_SCHEMA_V3 if v3 else REVISION_SCHEMA_V2 if v2 else REVISION_SCHEMA,
         rootReceiptSha256=root_receipt_sha,
         segments=output,
     )
@@ -138,8 +154,9 @@ def validate_revision(
         raise ValueError("Parent metadata differs from root.")
     if parent_edl.get("schemaVersion") == "edit-decision-v1" and not _same(parent_edl, root_edl):
         raise ValueError("Root parent must be the original decision.")
-    offset = 0
-    for row in parent_rows:
+    parent_v3 = parent_edl.get("schemaVersion") == REVISION_SCHEMA_V3
+    parent_starts = _layout(parent_rows, parent_v3)
+    for index, row in enumerate(parent_rows):
         if row["clipId"] not in root_by_id:
             raise ValueError("Parent clip identity does not belong to root.")
         root_row, _ = root_by_id[row["clipId"]]
@@ -148,13 +165,15 @@ def validate_revision(
             {k: v for k, v in root_row.items() if k not in _ROW_VARIABLES},
         ):
             raise ValueError("Parent source metadata differs from root.")
-        expected = build_revision(root_edl, root_receipt_sha, [_edit(row, parent_edl)])["segments"][
-            0
-        ]
-        expected["outputStartFrame"] = offset
+        source_edit = _edit(row, parent_edl)
+        if parent_v3:
+            source_edit.pop("transitionIn")
+        expected = build_revision(root_edl, root_receipt_sha, [source_edit])["segments"][0]
+        if parent_v3:
+            expected["transitionIn"] = deepcopy(row["transitionIn"])
+        expected["outputStartFrame"] = parent_starts[index]
         if not _same(expected, row):
             raise ValueError("Invalid parent source range or frame mapping.")
-        offset += row["outputFrames"]
     revision_rows = editable_clips(revision_edl, root_receipt_sha)
     rebuilt = build_revision(
         parent_edl, root_receipt_sha, [_edit(r, revision_edl) for r in revision_rows]
@@ -168,18 +187,55 @@ def validate_revision(
                 SourceRange(row["startUs"], row["endUs"], row["sourceDurationUs"]),
                 row["outputFrames"],
                 _speed(row["speed"])
-                if revision_edl.get("schemaVersion") == REVISION_SCHEMA_V2
+                if revision_edl.get("schemaVersion") in (REVISION_SCHEMA_V2, REVISION_SCHEMA_V3)
                 else Fraction(1),
             )
             for row in revision_rows
         ),
         root_plan.fps,
+        tuple(_transition(row["transitionIn"]) for row in revision_rows)
+        if revision_edl.get("schemaVersion") == REVISION_SCHEMA_V3
+        else (),
     )
 
 
 def _edit(row: dict[str, Any], edl: dict[str, Any]) -> dict[str, Any]:
-    keys = _EDIT_KEYS_V2 if edl.get("schemaVersion") == REVISION_SCHEMA_V2 else _EDIT_KEYS
+    schema = edl.get("schemaVersion")
+    keys = (
+        _EDIT_KEYS_V3
+        if schema == REVISION_SCHEMA_V3
+        else _EDIT_KEYS_V2
+        if schema == REVISION_SCHEMA_V2
+        else _EDIT_KEYS
+    )
     return {key: row.get(key) for key in keys}
+
+
+def _transition(value: Any) -> int:
+    if (
+        not isinstance(value, dict)
+        or set(value) != {"type", "frames"}
+        or type(value.get("frames")) is not int
+        or not (
+            (value.get("type") == "cut" and value["frames"] == 0)
+            or (value.get("type") == "crossfade" and value["frames"] > 0)
+        )
+    ):
+        raise ValueError("Transition requires cut/0 or crossfade/positive integer frames.")
+    return int(value["frames"])
+
+
+def _layout(rows: list[dict[str, Any]], v3: bool) -> tuple[int, ...]:
+    lengths: list[int] = []
+    for row in rows:
+        length = row.get("outputFrames")
+        if type(length) is not int:
+            raise ValueError("Output frames must be integers.")
+        lengths.append(length)
+    return output_start_frames(
+        tuple(lengths),
+        tuple(_transition(row.get("transitionIn")) for row in rows) if v3 else (),
+    )
 
 
 def _speed(value: Any) -> Fraction:

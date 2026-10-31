@@ -740,12 +740,16 @@
         "docs/exec-plans/sprint-clip-speed.md",
         "tests/test_clip_speed_core.py",
         "tests/test_clip_speed_render.py",
-        "tests/test_clip_speed_browser.py"
+        "tests/test_clip_speed_browser.py",
+        "docs/exec-plans/sprint-clip-transitions.md",
+        "tests/test_clip_transition_core.py",
+        "tests/test_clip_transition_render.py",
+        "tests/test_clip_transition_browser.py"
       ],
       "quality_status": "technical_render_tests_passed_creative_quality_unreviewed",
       "release_status": "not_released",
       "implementation_status": "partial",
-      "remaining": "Hard cuts, scaling/letterbox and audio implemented; crop, speed, subtitles, overlays and transitions remain."
+      "remaining": "Crop and overlays remain; trim/concat/scale/letterbox/speed/audio/subtitles/crossfade have local render evidence. Creative quality and commercial release remain unverified."
     },
     {
       "id": "P029",
@@ -763,7 +767,11 @@
         "docs/exec-plans/sprint-clip-speed.md",
         "tests/test_clip_speed_core.py",
         "tests/test_clip_speed_render.py",
-        "tests/test_clip_speed_browser.py"
+        "tests/test_clip_speed_browser.py",
+        "docs/exec-plans/sprint-clip-transitions.md",
+        "tests/test_clip_transition_core.py",
+        "tests/test_clip_transition_render.py",
+        "tests/test_clip_transition_browser.py"
       ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
@@ -815,7 +823,11 @@
         "docs/exec-plans/sprint-clip-speed.md",
         "tests/test_clip_speed_core.py",
         "tests/test_clip_speed_render.py",
-        "tests/test_clip_speed_browser.py"
+        "tests/test_clip_speed_browser.py",
+        "docs/exec-plans/sprint-clip-transitions.md",
+        "tests/test_clip_transition_core.py",
+        "tests/test_clip_transition_render.py",
+        "tests/test_clip_transition_browser.py"
       ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
