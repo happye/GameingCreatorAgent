@@ -856,7 +856,7 @@ class CreationJobs:
         return summarize_feedback(records)
 
     def timeline_export(self, job_id: str, plan_id: str, fmt: str) -> tuple[bytes, str, str]:
-        from gamingcreator.application.timeline_export import to_fcpxml, to_otio
+        from gamingcreator.application.timeline_export import to_fcpxml, to_otio, to_xmeml
 
         chain = load_chain(self, job_id, plan_id)
         name = f"gamingcreator-{job_id[:8]}"
@@ -864,7 +864,13 @@ class CreationJobs:
             return to_fcpxml(chain.edl, name).encode("utf-8"), f"{name}.fcpxml", "application/xml"
         if fmt == "otio":
             return to_otio(chain.edl, name).encode("utf-8"), f"{name}.otio", "application/json"
-        raise fail("creation.input", "时间线格式只支持 fcpxml 或 otio。")
+        if fmt == "xmeml":
+            return (
+                to_xmeml(chain.edl, name).encode("utf-8"),
+                f"{name}-premiere.xml",
+                "application/xml",
+            )
+        raise fail("creation.input", "时间线格式只支持 fcpxml、otio 或 xmeml。")
 
     def narration_script(self, job_id: str, plan_id: str) -> dict[str, object]:
         from gamingcreator.application.knowledge import search

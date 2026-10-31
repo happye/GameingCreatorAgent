@@ -380,7 +380,7 @@
         });
         panel.append(label, preview, status, list, apply);
         const exportRow = node("p", "导出已保存版本的时间线（未在剪辑软件中实测导入）："); exportRow.id = "timeline-export";
-        for (const [format, text] of [["fcpxml", "FCPXML"], ["otio", "OTIO"]]) {
+        for (const [format, text] of [["fcpxml", "FCPXML"], ["otio", "OTIO"], ["xmeml", "Premiere XML"]]) {
             const link = node("a", text); link.href = `/api/creation/jobs/${encodeURIComponent(editor.parentJobId)}/timeline?planId=${encodeURIComponent(editor.planId)}&format=${format}`; link.download = ""; link.id = `timeline-${format}`;
             exportRow.append(" ", link);
         }

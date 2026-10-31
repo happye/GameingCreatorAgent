@@ -12,7 +12,7 @@ import json
 from fractions import Fraction
 from pathlib import Path
 from typing import Any
-from xml.sax.saxutils import quoteattr
+from xml.sax.saxutils import escape, quoteattr
 
 
 def _rows(edl: dict[str, Any]) -> list[dict[str, Any]]:
@@ -142,6 +142,60 @@ def to_fcpxml(edl: dict[str, Any], name: str) -> str:
         + "\n".join(spine)
         + "\n          </spine>\n        </sequence>\n      </project>\n    </event>\n"
         "  </library>\n</fcpxml>\n"
+    )
+
+
+def to_xmeml(edl: dict[str, Any], name: str) -> str:
+    """Final Cut Pro 7 XML (xmeml v4), which Premiere Pro imports.
+
+    xmeml has no constant-speed attribute on a clip; a speed-changed clip keeps its exact
+    timeline length and source in point, and its name says to set the speed after import.
+    """
+    placed = layout(edl)
+    fps = int(edl["fpsNumerator"])
+    rate = f"<rate><timebase>{fps}</timebase><ntsc>FALSE</ntsc></rate>"
+    sources = list(dict.fromkeys(item["row"]["sourcePath"] for item in placed))
+    declared: set[str] = set()
+    items = []
+    for index, item in enumerate(placed, 1):
+        row = item["row"]
+        if item["transition"]:
+            start, frames = item["transition"]
+            items.append(
+                f"        <transitionitem>{rate}<start>{start}</start><end>{start + frames}</end>"
+                "<alignment>center</alignment><effect><name>Cross Dissolve</name>"
+                "<effectid>Cross Dissolve</effectid><effectcategory>Dissolve</effectcategory>"
+                "<effecttype>transition</effecttype><mediatype>video</mediatype></effect></transitionitem>"
+            )
+        source = row["sourcePath"]
+        file_id = f"file-{sources.index(source) + 1}"
+        source_in = int(item["sourceStart"] * fps)
+        span = int(item["frames"] * item["speed"])
+        label = row.get("role") or Path(source).name
+        if item["speed"] != 1:
+            label += f"（{item['speed']}倍，导入后请在软件内设置速度）"
+        if file_id in declared:
+            file_xml = f'<file id="{file_id}"/>'
+        else:
+            declared.add(file_id)
+            duration = int(Fraction(row["sourceDurationUs"], 1_000_000) * fps)
+            file_xml = (
+                f'<file id="{file_id}"><name>{escape(Path(source).name)}</name>'
+                f"<pathurl>{escape(_uri(source))}</pathurl>{rate}<duration>{duration}</duration>"
+                "<media><video/><audio/></media></file>"
+            )
+        items.append(
+            f'        <clipitem id="clip-{index}"><name>{escape(label)}</name>{rate}'
+            f"<start>{item['offset']}</start><end>{item['offset'] + item['frames']}</end>"
+            f"<in>{source_in}</in><out>{source_in + span}</out>{file_xml}</clipitem>"
+        )
+    total = sum(item["frames"] for item in placed)
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE xmeml>\n<xmeml version="4">\n'
+        f"  <sequence><name>{escape(name)}</name><duration>{total}</duration>{rate}\n"
+        "    <media><video><track>\n"
+        + "\n".join(items)
+        + "\n    </track></video></media>\n  </sequence>\n</xmeml>\n"
     )
 
 

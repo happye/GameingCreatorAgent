@@ -105,3 +105,32 @@ def test_http_export_from_saved_revision(revisions):
         server.shutdown()
         server.server_close()
         thread.join()
+
+
+def test_premiere_xmeml_keeps_frames_and_flags_speed():
+    from gamingcreator.application.timeline_export import to_xmeml
+
+    root = ElementTree.fromstring(to_xmeml(EDL, "测试"))
+    assert root.get("version") == "4"
+    assert root.find("./sequence/duration").text == "137"
+    track = root.find(".//video/track")
+    assert [child.tag for child in track] == [
+        "clipitem",
+        "transitionitem",
+        "clipitem",
+        "transitionitem",
+        "clipitem",
+    ]
+    clips = track.findall("clipitem")
+    assert [(c.find("start").text, c.find("end").text) for c in clips] == [
+        ("0", "57"),
+        ("57", "110"),
+        ("110", "137"),
+    ]
+    assert (
+        clips[1].find("in").text == "308"
+        and "导入后请在软件内设置速度" in clips[1].find("name").text
+    )
+    assert len(root.findall(".//file/pathurl")) == 2
+    transition = track.find("transitionitem")
+    assert (transition.find("start").text, transition.find("end").text) == ("54", "61")
