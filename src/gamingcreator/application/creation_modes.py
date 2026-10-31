@@ -1,6 +1,6 @@
 """Offline structure templates for the first-product content modes (no model understanding)."""
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from fractions import Fraction
 from typing import TYPE_CHECKING
@@ -31,9 +31,12 @@ def _richness(clip: "CreationClip") -> tuple[int, int]:
     )
 
 
-def _richest(clips: Sequence["CreationClip"]) -> "CreationClip":
-    # max() keeps the earliest clip on ties, so the choice is deterministic.
-    return max(clips, key=_richness)
+Score = Callable[["CreationClip"], float]
+
+
+def _richest(clips: Sequence["CreationClip"], score: Score) -> "CreationClip":
+    # Highest material score, then description detail; max() keeps the earliest on ties.
+    return max(clips, key=lambda clip: (score(clip), _richness(clip)))
 
 
 def _framed(
@@ -58,27 +61,39 @@ def _cap(brief: CreativeBrief) -> int:
     return max(3, int(brief.target_duration / MIN_STEP_SECONDS))
 
 
-def _sample(clips: Sequence["CreationClip"], count: int) -> list["CreationClip"]:
-    """Evenly spaced clips in their existing order, keeping first and last."""
+def _sample(clips: Sequence["CreationClip"], count: int, score: Score) -> list["CreationClip"]:
+    """Evenly spaced slots over the existing order; each slot takes the best-scored clip nearby.
+
+    With equal scores every slot keeps its exact evenly spaced clip.
+    """
     if count <= 0:
         return []
     if len(clips) <= count:
         return list(clips)
     if count == 1:
-        return [clips[0]]
-    return [
-        clips[i] for i in sorted({round(i * (len(clips) - 1) / (count - 1)) for i in range(count)})
-    ]
+        return [max(clips, key=score)]
+    slots = sorted({round(i * (len(clips) - 1) / (count - 1)) for i in range(count)})
+    radius = (len(clips) - 1) // (count - 1) // 2
+    picked: list[int] = []
+    for number, slot in enumerate(slots):
+        # The first and last slots stay at the recording's ends; only inner slots move.
+        reach = 0 if number in (0, len(slots) - 1) else radius
+        low = max(slot - reach, picked[-1] + 1 if picked else 0)
+        # Leave room for the remaining slots so order and count are preserved.
+        high = min(slot + reach, len(clips) - (len(slots) - number))
+        window = range(low, max(low, high) + 1)
+        picked.append(max(window, key=lambda i: (score(clips[i]), -abs(i - slot))))
+    return [clips[i] for i in picked]
 
 
 def mode_structure(
-    brief: CreativeBrief, eligible: Sequence["CreationClip"]
+    brief: CreativeBrief, eligible: Sequence["CreationClip"], score: Score = lambda clip: 0.0
 ) -> ModeStructure | None:
     if not eligible:
         return None
     if brief.content_type == "feature_showcase":
-        opening = _richest(eligible)
-        middle = _sample([clip for clip in eligible if clip is not opening], _cap(brief) - 1)
+        opening = _richest(eligible, score)
+        middle = _sample([clip for clip in eligible if clip is not opening], _cap(brief) - 1, score)
         ordered, roles, weights = _framed(opening, middle, "开场高光", "玩法展示")
         return ModeStructure(
             "showcase",
@@ -88,7 +103,7 @@ def mode_structure(
             weights,
         )
     if brief.content_type == "guide":
-        picked = _sample(eligible, _cap(brief))
+        picked = _sample(eligible, _cap(brief), score)
         seconds = brief.target_duration / len(picked)
         return ModeStructure(
             "guide-steps",
@@ -115,11 +130,11 @@ def mode_structure(
                 used.append(match)
                 topic_roles.append(f"活动主题：{topic}")
         rest = [clip for clip in eligible if clip not in used]
-        opening = _richest(rest) if rest else used.pop(0)
+        opening = _richest(rest, score) if rest else used.pop(0)
         if not rest:
             topic_roles.pop(0)
         remaining = _sample(
-            [clip for clip in rest if clip is not opening], _cap(brief) - 1 - len(used)
+            [clip for clip in rest if clip is not opening], _cap(brief) - 1 - len(used), score
         )
         middle = used + remaining
         middle_roles = topic_roles + ["活动亮点"] * len(remaining)

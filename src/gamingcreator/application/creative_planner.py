@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 
 from gamingcreator.application.creation_modes import MODE_LABELS, mode_structure
+from gamingcreator.application.material_scoring import advisories, score_materials, scoring_legend
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.creation import CreativeBrief
 from gamingcreator.domain.media import MediaAsset
@@ -82,7 +83,13 @@ def plan_creation(
         ("hook-first", "最后一条先作开场，再回溯", eligible[-1:] + eligible[:-1], None, None),
         ("reverse", "倒序逐条回顾", list(reversed(eligible)), None, None),
     ]
-    mode = mode_structure(brief, eligible)
+    scores = score_materials(brief, eligible)
+
+    def total(clip: CreationClip) -> float:
+        value = scores[(clip.event.run_id, clip.event.event_id)]["total"]
+        return float(value) if value is not None else 0.0
+
+    mode = mode_structure(brief, eligible, total)
     structures = generic
     if mode is not None:
         # The content mode's own template is recommended first; generic orders stay available.
@@ -125,6 +132,7 @@ def plan_creation(
                     "evidenceIds": list(event.evidence_ids),
                     "scriptDraft": "；".join(event.observable_facts),
                     "uncertainty": event.uncertainty,
+                    "score": scores[(event.run_id, event.event_id)],
                     **({"role": roles[index]} if roles is not None else {}),
                 }
             )
@@ -148,6 +156,7 @@ def plan_creation(
                 "segments": segments,
                 "gaps": gaps,
                 "ready": not gaps,
+                "advisories": advisories(brief, eligible, segments, fps),
                 "scriptStatus": "saved-descriptions-draft-human-review-required",
                 **(
                     {"mode": brief.content_type, "modeLabel": MODE_LABELS[brief.content_type]}
@@ -160,6 +169,7 @@ def plan_creation(
         "schemaVersion": "creation-plan-v1",
         "planner": "offline-template-v1",
         "understandingVerified": False,
+        "scoring": scoring_legend(),
         "fps": fps,
         "plans": plans,
     }

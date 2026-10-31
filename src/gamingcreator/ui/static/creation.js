@@ -43,9 +43,10 @@
             const segments = plan.segments || [];
             card.append(node("p", `${segments.length} 个片段 · ${(segments.reduce((sum, s) => sum + s.outputFrames, 0) / job.fps).toFixed(2)} 秒`));
             const list = node("ol", "");
-            for (const segment of segments) list.append(node("li", `${segment.role ? `【${segment.role}】` : ""}${(segment.startUs / 1e6).toFixed(2)}–${(segment.endUs / 1e6).toFixed(2)} 秒：${segment.scriptDraft || "无描述"}`));
+            for (const segment of segments) list.append(node("li", `${segment.role ? `【${segment.role}】` : ""}${(segment.startUs / 1e6).toFixed(2)}–${(segment.endUs / 1e6).toFixed(2)} 秒：${segment.scriptDraft || "无描述"}${Number.isFinite(segment.score?.total) ? ` · 评分 ${segment.score.total.toFixed(2)}（已测维度占权重 ${Math.round(segment.score.coverage * 100)}%）` : ""}`));
             card.append(list);
             for (const gap of plan.gaps || []) card.append(node("p", `缺口：${gap}`));
+            for (const note of plan.advisories || []) { const item = node("p", `提醒：${note}`); item.className = "plan-advisory"; card.append(item); }
             const select = node("button", "选择此方案"); select.type = "button"; select.disabled = plan.ready !== true;
             select.addEventListener("click", () => { document.querySelectorAll(".plan-card").forEach((c) => c.classList.remove("selected")); card.classList.add("selected"); void loadEditor(job.jobId, plan.id); });
             card.append(select); $("plans").append(card);

@@ -672,8 +672,10 @@
       "group": "C",
       "name": "素材评分（需求匹配等加权）",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: explicit master-plan 8-dimension material score per candidate; only offline-measurable dimensions scored (topic match, fact/tag detail proxy, description novelty, usable length, uncertainty proxy) with coverage reported, visual/emotional/narrative unknown; modes pick by score; 164 related tests; real demo-phase0 plans scored 0.58-0.94"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },
@@ -682,8 +684,10 @@
       "group": "C",
       "name": "素材缺口发现",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: non-blocking plan advisories (too few clips, insufficient total footage, short output, single source, single-clip topic, unknown dimensions) with suggestions alongside existing blocking gaps; real demo-phase0 single-source advisory correct"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },

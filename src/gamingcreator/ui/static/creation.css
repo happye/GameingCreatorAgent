@@ -11,3 +11,4 @@
 #narration-controls audio{display:block;width:100%;margin:8px 0}#narration-controls a{display:inline-block;margin:6px 0;overflow-wrap:anywhere}#narration-controls textarea{resize:vertical}#narration-fit{white-space:pre-wrap;color:#ffd48a}#narration-status,#narration-notice{overflow-wrap:anywhere}
 #command-controls input{width:100%}#command-status,#command-changes{overflow-wrap:anywhere}#command-changes{margin:6px 0;padding-left:20px}
 .plan-card.recommended{border-color:#5aa7ff}
+.plan-advisory{color:#ffd48a;overflow-wrap:anywhere}
