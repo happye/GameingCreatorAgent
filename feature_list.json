@@ -939,8 +939,10 @@
       "group": "F",
       "name": "正式 Windows 桌面 EXE",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: thin Windows desktop host EXE built with the Windows-bundled C# compiler; single instance, random 127.0.0.1 port, kill-on-close Job Object stops the service tree, Edge app-mode window with a dedicated profile; smoke and real window-close tests leave no service processes; WebView2 embedding awaits SDK download approval; installer/clean-machine/signing not done"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },
