@@ -80,6 +80,8 @@ def test_creation_form_plans_render_and_refresh(width):
                 route.fulfill(json={"profiles": []})
             elif path == "/api/creation/music":
                 route.fulfill(json={"tracks": [], "issues": []})
+            elif path == "/api/creation/voices":
+                route.fulfill(json={"voices": [], "licenseStatus": "unknown"})
             elif path == "/api/projects":
                 route.fulfill(json={"projects": [{"path": "project-one", "name": "游戏项目"}]})
             elif path.startswith("/api/runs?"):
@@ -154,7 +156,7 @@ def test_creation_form_plans_render_and_refresh(width):
             page.locator(".plan-card").first.get_by_role("button").click()
             page.locator("#subtitles").select_option("burn")
             page.locator("#render").click()
-            playwright.expect(page.locator("video")).to_have_attribute(
+            playwright.expect(page.locator("#artifact video")).to_have_attribute(
                 "src", render["artifact"]["previewUrl"]
             )
             assert set(posts[0]) == {"requestId", "projectId", "runIds", "brief", "fps"}
@@ -171,7 +173,7 @@ def test_creation_form_plans_render_and_refresh(width):
             assert posts[0]["brief"]["contentType"] == "guide"
             assert posts[0]["brief"]["platforms"] == ["douyin"]
             page.reload()
-            playwright.expect(page.locator("video")).to_be_visible()
+            playwright.expect(page.locator("#artifact video")).to_be_visible()
             assert len(posts) == 2
             assert page.locator("#artifact a").first.get_attribute("href").endswith("?download=1")
             playwright.expect(page.locator("#artifact")).to_contain_text("字幕 0 条")
@@ -208,6 +210,8 @@ def test_creation_retry_reuses_id_and_late_job_cannot_replace_project():
                 route.fulfill(json={"profiles": []})
             elif path == "/api/creation/music":
                 route.fulfill(json={"tracks": [], "issues": []})
+            elif path == "/api/creation/voices":
+                route.fulfill(json={"voices": [], "licenseStatus": "unknown"})
             elif path == "/api/projects":
                 route.fulfill(json={"projects": [{"path": "one"}, {"path": "two"}]})
             elif path.startswith("/api/runs?"):

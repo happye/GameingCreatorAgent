@@ -67,6 +67,8 @@ def test_publication_save_reopen_refresh_and_stale(width):
                 r.fulfill(json={"profiles": []})
             elif path == "/api/creation/music":
                 r.fulfill(json={"tracks": [], "issues": []})
+            elif path == "/api/creation/voices":
+                r.fulfill(json={"voices": [], "licenseStatus": "unknown"})
             elif path.startswith("/api/runs"):
                 r.fulfill(json={"runs": []})
             elif r.request.method == "POST":
@@ -111,7 +113,7 @@ def test_publication_save_reopen_refresh_and_stale(width):
             page.locator("#history button").click()
             pw.expect(page.locator("#publication-title")).to_have_value("模板标题")
             assert not posts
-            page.locator("video").evaluate("video => { video.currentTime = 0.2; }")
+            page.locator("#artifact video").evaluate("video => { video.currentTime = 0.2; }")
             page.locator("#use-cover-frame").click()
             pw.expect(page.locator("#cover-frame")).to_have_value("6")
             page.locator("#cover-frame").fill("6")

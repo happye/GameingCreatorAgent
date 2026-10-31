@@ -1,6 +1,8 @@
 """Reclaim large generated media after fixtures finish, without creating fixtures."""
 
 import importlib.util
+import os
+import shutil
 from pathlib import Path
 
 import pytest
@@ -40,4 +42,26 @@ def pytest_runtest_teardown(item, nextitem):
         )
     except (OSError, ValueError):
         # Cleanup cannot replace the original test outcome.
+        pass
+
+
+def pytest_sessionfinish(session, exitstatus):
+    # A fully passing run keeps nothing: per-run basetemps otherwise pile up under .cache.
+    if exitstatus != 0 or os.environ.get("GC_KEEP_TEST_MEDIA") == "1":
+        return
+    factory = getattr(session.config, "_tmp_path_factory", None)
+    base = getattr(factory, "_basetemp", None)
+    cache = Path(__file__).resolve().parents[1] / ".cache"
+    try:
+        if (
+            base is None
+            or base.absolute().parent != cache
+            or base.name.casefold() in {name.casefold() for name in _maintenance.PROTECTED}
+        ):
+            return
+        for directory, names, files in os.walk(base):
+            if any(_maintenance.linked(Path(directory, n)) for n in (*names, *files)):
+                return
+        shutil.rmtree(base)
+    except OSError:
         pass

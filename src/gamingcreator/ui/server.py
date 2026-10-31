@@ -268,6 +268,8 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/revisions",
                 "/api/creation/publications",
                 "/api/creation/packages",
+                "/api/creation/narrations",
+                "/api/creation/narration-cancel",
                 "/api/match-details",
                 "/api/draft-detail-query",
                 "/api/search-project",
@@ -292,12 +294,18 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return result
 
             value = json.loads(body, object_pairs_hook=unique)
+            if path == "/api/creation/narration-cancel":
+                if not isinstance(value, dict) or set(value) != {"jobId"}:
+                    raise ValueError("Expected narration job identity")
+                self._json(200, self.creation_jobs.cancel_narration(value["jobId"]))
+                return
             if path in {
                 "/api/creation/plans",
                 "/api/creation/renders",
                 "/api/creation/revisions",
                 "/api/creation/publications",
                 "/api/creation/packages",
+                "/api/creation/narrations",
             }:
                 self._json(
                     202,
@@ -308,6 +316,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             "revisions": "revision",
                             "publications": "publication",
                             "packages": "package",
+                            "narrations": "narration",
                         }[path.rsplit("/", 1)[1]],
                         value,
                     ),
@@ -582,6 +591,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     raise ValueError("Music catalog accepts no parameters")
                 self._json(200, MusicLibrary(self.repository).catalog())
                 return
+            if path == "/api/creation/voices":
+                if query:
+                    raise ValueError("Unexpected local voice query")
+                self._json(200, self.creation_jobs.voices())
+                return
             if path == "/api/creation/platform-profiles":
                 from gamingcreator.ui.package_jobs import profiles
 
@@ -596,6 +610,25 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return
             if path.startswith("/api/creation/jobs/"):
                 tail = path.removeprefix("/api/creation/jobs/")
+                if "/narration-files/" in tail:
+                    job_id, name = tail.split("/narration-files/", 1)
+                    if query not in ({}, {"download": "1"}):
+                        raise ValueError("Invalid narration file query")
+                    self._serve_media(
+                        self.creation_jobs.narration_file(job_id, name),
+                        query.get("download") == "1" or name == "narration.txt",
+                        name,
+                    )
+                    return
+                if tail.endswith("/narration-text"):
+                    if query:
+                        raise ValueError("Unexpected narration text query")
+                    self._serve_media(
+                        self.creation_jobs.narration_text(tail.removesuffix("/narration-text")),
+                        True,
+                        "narration.txt",
+                    )
+                    return
                 if "/package-files/" in tail:
                     job_id, name = tail.split("/package-files/", 1)
                     if query not in ({}, {"download": "1"}):

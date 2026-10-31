@@ -1,6 +1,6 @@
-# 当前接手：缓存事故已止血，继续本地旁白
+# 当前接手：本地旁白已交付，下一解说脚本
 
-2026-10-31缓存事故已止血：精确删除58.29GiB失控测试NUT，实测释放62,589,505,536字节；根因是空音轨变速测试失控写盘、无文件容量门及失败媒体/工作树长期保留。运行期文件/目录/余量限额、原生FFmpeg -fs与退出复核、失败NUT回收、pytest完成回收已落地；58项扩展通过，3个旧mock签名修正后连同新边界12项通过，5源码mypy/Ruff及Astra/low限定静态评估通过。两棵已入库工作副本已释放，其他历史副本待逐项核清；用户明确未手动删除，narration-integration消失仍未归因。51项10/19/22约38%、首产品27%不变，人工现在0/未来8；新增TD018部分，债务18项10已解决/3部分/5未解决。Goal active，随后恢复本地旁白，未提前计P026。
+2026-10-31本地旁白R2-I已交付（P026部分）：工作台选本机声音（默认中文Huihui）→输入文字→生成可试听WAV→按成片秒数挂接、独立音量、可选“旁白时压低原声和配乐”→保存版本/继承/移除/祖先恢复→真实MP4与旁白文本下载→封面文案→B站七文件包。165项定向测试（17真实FFmpeg混音、25任务/版本、6浏览器及编辑/包回归）、Ruff/mypy通过；唯一code-quality-guard关键评估PASS（0 P0/P1；6个P2中收据混音策略、迟到取消回收、无关输入阻挡已修，另3项记TD019）。真实Huihui 5.688秒旁白挂3.000秒：成片360帧/30fps不变，互相关峰值正好3.000秒，旁白期间原声约降4dB后恢复；声音商用许可未知。P026未开始→部分：51项10/20/21≈39%，首产品22项仍0/12/10≈27%；人工现在0/未来8。TD018已解决（60棵旧工作树全部退役，未提交改动以提交保存于各自分支；narration-integration“失踪”系被误建在narration-mix内部）；新增TD019，债务19项11/2/6。下一步P025解说脚本：方案片段描述→可编辑脚本→一键送旁白。
 
 ## 已能使用与证据
 
@@ -16,9 +16,9 @@
 
 R2-H已按[候选替换合同](docs/exec-plans/sprint-clip-replacements.md)完成：真实双run根只用Atom仍能选漫画候选，四成片6/5/6/5帧及末帧封面/包，旧手写字幕清除/祖先恢复通过。证据.cache/clip-replacement-delivery.json（严格JSON整合原流与最终预览）、clip-replacement-main.xml、asset.xml、clock.xml、preview-verified.json、cross-run.png和mobile.png。旧预览unsupported诊断原样保留；10秒有界定位最后严格通过，不能重新跑四成片补证据。根request仍是唯一候选来源范围，v4独立重建，旧根/v1-v3不放宽。
 
-下一[R2-I本地旁白合同](docs/exec-plans/sprint-local-narration.md)已由Astra/low冻结。narration_assets树四文件完成，13契约/取消/timeout+1中文真实SAPI、2源码mypy/Ruff证据存在；worker交付消息后quota报错，不需等待假运行。模块在.cache/worktrees/local-narration-assets，未接任务/UI/混音。主控新增domain/creation_narration.py草稿未集成使用；narration-mix树仅依赖拷贝、renderer还没实现（worker启动即quota失败）。Sol当前usage_limit已披露，主控继续，必要独立复核明确Astra，不连续重试同一失败。
+R2-I本地旁白已按[合同](docs/exec-plans/sprint-local-narration.md)交付（结果见合同末节）；证据.cache/narration-main.xml（165项）、narration-ui.xml、narration-real-render.json（真实3.000秒定位）。剩余P2见TD019。
 
-旁白下一顺序：主树串行恢复并接入已写asset模块/严格选择与长度门→narration job/回读/试听/继承移除→renderer输出帧起点/三路混音与duck→页面生成/挂接/试听→文本和显式新版下游包→真实中文/0与非零起点/超长拒绝/祖先/重启→唯一关键边界评估。源/费用/旧AudioMix语义保持，WAV不得静默截断/循环或变速，未确认商用声音许可。
+下一P025解说脚本（首产品★）：用已选方案的片段描述与时长生成逐镜头中文解说草稿，按约4字/秒控制长度，可编辑保存版本，一键填入旁白生成；离线模板，不调用付费模型，如实标注“模板草稿、待人工核对”。随后自然语言改时间线规则版、三种内容模式端到端与桌面EXE。
 
 ## 状态与边界
 

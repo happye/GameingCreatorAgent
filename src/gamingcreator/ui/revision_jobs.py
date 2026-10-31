@@ -22,15 +22,18 @@ from gamingcreator.application.creation_replacements import (
 )
 from gamingcreator.application.creation_subtitles import build_subtitles, validate_override_text
 from gamingcreator.application.edit_decision import select_edit_decision
+from gamingcreator.application.narration import NarrationArtifact
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.rendering import RenderPlan, validate_render_plan
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.creation_audio import AudioMix
+from gamingcreator.domain.creation_narration import NarrationSelection
 from gamingcreator.infrastructure.creation_files import write_creation
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.infrastructure.ffmpeg_render import FfmpegCreationRenderer
 from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
+from gamingcreator.ui import narration_jobs
 
 
 @dataclass
@@ -48,6 +51,8 @@ class Chain:
     subtitle_overrides: list[dict[str, str]]
     audio_mix: AudioMix
     manifest: dict[str, Any] | None = None
+    narration: NarrationSelection | None = None
+    narration_asset: NarrationArtifact | None = None
 
 
 def resolve_audio(jobs: Any, request: dict[str, Any], inherited: AudioMix) -> AudioMix:
@@ -165,6 +170,7 @@ def load_chain(
     parent_sha = root_sha
     overrides: list[dict[str, str]] = []
     audio_mix = AudioMix()
+    narration: NarrationSelection | None = None
     for current_id, state, stored, digest in reversed(records[:-1]):
         request = stored["request"]
         if (
@@ -203,6 +209,8 @@ def load_chain(
             expected_metadata["subtitleOverrides"] = request["subtitleOverrides"]
         if "audioMix" in request:
             expected_metadata["audioMix"] = request["audioMix"]
+        if "narration" in request:
+            expected_metadata["narration"] = request["narration"]
         if is_v4:
             expected_metadata.update(
                 candidateManifestSha256=request["candidateManifestSha256"],
@@ -239,6 +247,9 @@ def load_chain(
             plan = validate_revision(root_edl, report, edl, revised, timelines, root_sha)
         overrides = resolve_overrides(request, overrides, revised, root_sha)
         audio_mix = resolve_audio(jobs, request, audio_mix)
+        narration = narration_jobs.resolve(
+            jobs, request, narration, root_state["projectId"], plan.frames, plan.fps
+        )
         edl, parent_sha = revised, digest
     ancestry = [
         {"jobId": key, "kind": state["kind"], "planId": plan_id} for key, state, _, _ in records[1:]
@@ -258,6 +269,10 @@ def load_chain(
         overrides,
         audio_mix,
         manifest,
+        narration,
+        narration_jobs.asset(jobs, narration, root_state["projectId"])
+        if narration is not None
+        else None,
     )
 
 
@@ -265,6 +280,16 @@ def editor(chain: Chain, job_id: str) -> dict[str, Any]:
     rows = editable_clips(chain.edl, chain.root_sha)
     for row in rows:
         row.pop("sourcePath", None)
+    narration_context = {}
+    if chain.narration is not None:
+        if chain.narration_asset is None:
+            raise ValueError("Narration selection has no verified asset")
+        narration_context = {
+            "narration": chain.narration.to_json(),
+            "narrationAsset": narration_jobs.public(
+                chain.narration.asset_job_id, chain.narration_asset
+            ),
+        }
     return {
         "parentJobId": job_id,
         "planId": chain.plan_id,
@@ -277,6 +302,7 @@ def editor(chain: Chain, job_id: str) -> dict[str, Any]:
         "ancestry": chain.ancestry,
         "subtitleOverrides": [dict(item) for item in chain.subtitle_overrides],
         "audioMix": chain.audio_mix.to_json(),
+        **narration_context,
         **(
             {"candidateManifestSha256": candidate_manifest_sha(chain.manifest)}
             if chain.manifest is not None
@@ -299,8 +325,12 @@ def save_revision(jobs: Any, directory: Path, request: dict[str, Any], chain: Ch
     if "subtitleOverrides" in request:
         metadata["subtitleOverrides"] = request["subtitleOverrides"]
     resolve_audio(jobs, request, chain.audio_mix)
+    frames = revised["segments"][-1]["outputStartFrame"] + revised["segments"][-1]["outputFrames"]
+    narration_jobs.resolve(jobs, request, chain.narration, chain.project_id, frames, chain.plan.fps)
     if "audioMix" in request:
         metadata["audioMix"] = request["audioMix"]
+    if "narration" in request:
+        metadata["narration"] = request["narration"]
     files: dict[str, object] = {"revision.json": metadata, "edit-decision.json": revised}
     if manifest is not None:
         metadata.update(
@@ -347,6 +377,12 @@ async def render_revision(
             ),
         )
     )
+    narration_kwargs: dict[str, Any] = {}
+    if chain.narration is not None:
+        narration_kwargs = {
+            "narration": chain.narration,
+            "narration_artifact": narration_jobs.asset(jobs, chain.narration, chain.project_id),
+        }
     await FfmpegCreationRenderer(jobs.repository).render(
         chain.plan,
         directory / "result",
@@ -363,6 +399,7 @@ async def render_revision(
         else MusicLibrary(jobs.repository).resolve(
             chain.audio_mix.bgm.track_id, chain.audio_mix.bgm.track_receipt_sha256
         ),
+        **narration_kwargs,
     )
 
 

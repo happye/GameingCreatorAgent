@@ -81,6 +81,8 @@ def test_package_versions_downloads_refresh_retry_and_stale(width):
                 r.fulfill(json={"projects": [{"path": "one"}, {"path": "two"}]})
             elif path == "/api/creation/music":
                 r.fulfill(json={"tracks": []})
+            elif path == "/api/creation/voices":
+                r.fulfill(json={"voices": [], "licenseStatus": "unknown"})
             elif path == "/api/creation/platform-profiles":
                 r.fulfill(json={"profiles": profiles})
             elif path.startswith("/api/runs"):

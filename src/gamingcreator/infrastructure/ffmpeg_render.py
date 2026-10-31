@@ -5,15 +5,22 @@ from dataclasses import replace
 from fractions import Fraction
 from pathlib import Path
 
+from gamingcreator.application.narration import NarrationArtifact
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.rendering import RenderClip, RenderPlan
 from gamingcreator.domain.creation_audio import AudioMix
+from gamingcreator.domain.creation_narration import NarrationSelection, validate_narration_fit
 from gamingcreator.domain.creation_subtitles import SubtitleCue, parse_srt, serialize_srt
 from gamingcreator.infrastructure.crossfade_render import compose_transitions
 from gamingcreator.infrastructure.ffmpeg_media import hash_source
 from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
 from gamingcreator.infrastructure.media_process import run_media_process
 from gamingcreator.infrastructure.music_library import _FORMATS, MusicTrack
+from gamingcreator.infrastructure.narration_mix import (
+    narration_filter,
+    narration_receipt,
+    verify_narration,
+)
 from gamingcreator.infrastructure.render_limits import render_output_limit
 
 
@@ -121,11 +128,11 @@ def _filter_path(path: Path) -> str:
     return "".join("\\" + char if char in "\\'[],;" else char for char in value)
 
 
-def _mix_filter(mix: AudioMix, frames: int, fps: int) -> str:
+def _mix_filter(mix: AudioMix, frames: int, fps: int, output: str = "mixed") -> str:
     duration = f"{frames / fps:.12f}"
     source = f"[0:a:0]volume={mix.source_gain_db}dB[src]"
     if mix.bgm is None:
-        return source + ";[src]anull[mixed]"
+        return source + f";[src]anull[{output}]"
     music = (
         "[1:a:0]aresample=48000,aformat=channel_layouts=stereo,"
         f"asetpts=N/SR/TB,atrim=duration={duration},volume={mix.bgm.gain_db}dB[bgm]"
@@ -143,7 +150,7 @@ def _mix_filter(mix: AudioMix, frames: int, fps: int) -> str:
     return (
         source + ";" + music + f";[src][{label}]amix=inputs=2:duration=first:"
         "dropout_transition=0:normalize=0,alimiter=limit=0.95:level=false:"
-        f"latency=true,atrim=duration={duration}[mixed]"
+        f"latency=true,atrim=duration={duration}[{output}]"
     )
 
 
@@ -181,6 +188,8 @@ class FfmpegCreationRenderer:
         subtitle_mode: str = "none",
         audio_mix: AudioMix | None = None,
         music: MusicTrack | None = None,
+        narration: NarrationSelection | None = None,
+        narration_artifact: NarrationArtifact | None = None,
     ) -> dict[str, object]:
         mix = audio_mix if audio_mix is not None else AudioMix()
         # Re-parse even constructed dataclasses, so bool/non-finite gains fail closed.
@@ -195,6 +204,19 @@ class FfmpegCreationRenderer:
             protected = (*protected, music.path.parent)
         elif music is not None:
             raise ValueError("Music supplied without a BGM selection.")
+        if (narration is None) != (narration_artifact is None):
+            raise ValueError("Narration selection and verified asset must be supplied together.")
+        if narration is not None and narration_artifact is not None:
+            narration = NarrationSelection.from_json(narration.to_json())
+            narration_artifact = verify_narration(narration, narration_artifact)
+            validate_narration_fit(
+                narration,
+                narration_artifact.sample_count,
+                narration_artifact.sample_rate,
+                plan.frames,
+                plan.fps,
+            )
+            protected = (*protected, narration_artifact.directory)
         if subtitle_mode not in ("none", "sidecar", "burn"):
             raise ValueError("Unknown subtitle mode.")
         subtitle_text = serialize_srt(cues) if subtitle_mode != "none" else ""
@@ -292,6 +314,12 @@ class FfmpegCreationRenderer:
                     ffmpeg, plan, parts, context, width, height
                 )
                 input_args = ["-i", str(joined)]
+            has_mix = mix.bgm is not None or mix.source_gain_db != 0 or narration is not None
+            audio_filter = _mix_filter(mix, plan.frames, plan.fps, "bed" if narration else "mixed")
+            if narration is not None:
+                audio_filter += ";" + narration_filter(
+                    narration, plan.frames, plan.fps, 2 if music is not None else 1
+                )
             try:
                 pending = target / "render.partial.mp4"
                 final_limit = render_output_limit(pending, plan.frames, plan.fps, width, height)
@@ -321,14 +349,22 @@ class FfmpegCreationRenderer:
                             else []
                         ),
                         *(
-                            ["-filter_complex", _mix_filter(mix, plan.frames, plan.fps)]
-                            if mix.bgm is not None or mix.source_gain_db != 0
+                            [
+                                "-protocol_whitelist",
+                                "file",
+                                "-f",
+                                "wav",
+                                "-i",
+                                str(narration_artifact.wav_path),
+                            ]
+                            if narration_artifact is not None
                             else []
                         ),
+                        *(["-filter_complex", audio_filter] if has_mix else []),
                         "-map",
                         "0:v:0",
                         "-map",
-                        "[mixed]" if mix.bgm is not None or mix.source_gain_db != 0 else "0:a:0",
+                        "[mixed]" if has_mix else "0:a:0",
                         "-vf",
                         video_filter,
                         "-c:v",
@@ -399,6 +435,8 @@ class FfmpegCreationRenderer:
                         raise ValueError("Source changed during rendering.")
                 if music is not None:
                     await _verify_music(music, context)
+                if narration is not None and narration_artifact is not None:
+                    verify_narration(narration, narration_artifact)
                 context.check_cancelled()
                 final = target / "video.mp4"
                 pending.rename(final)
@@ -406,6 +444,13 @@ class FfmpegCreationRenderer:
                 files = {"video.mp4": digest}
                 if subtitle_mode != "none":
                     files["subtitles.srt"] = await hash_source(subtitle_path, context)
+                if narration_artifact is not None:
+                    text_path = target / "narration.txt"
+                    with text_path.open("xb") as handle:
+                        handle.write(narration_artifact.text_path.read_bytes())
+                    files["narration.txt"] = await hash_source(text_path, context)
+                    if files["narration.txt"] != narration_artifact.text_sha256:
+                        raise ValueError("Narration text changed during rendering.")
                 result: dict[str, object] = {
                     "schemaVersion": "creation-render-receipt-v1",
                     "status": "completed",
@@ -469,6 +514,8 @@ class FfmpegCreationRenderer:
                 if ass_path.exists():
                     ass_path.unlink()
                 context.check_cancelled()
+                if narration is not None and narration_artifact is not None:
+                    result["narration"] = narration_receipt(narration, narration_artifact, plan.fps)
                 with (target / "receipt.partial.json").open("x", encoding="utf-8") as handle:
                     json.dump(result, handle, ensure_ascii=False, indent=2)
                 context.check_cancelled()

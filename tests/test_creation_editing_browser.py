@@ -86,6 +86,8 @@ def test_editing_version_flows(scenario):
                 r.fulfill(json={"profiles": []})
             elif path == "/api/creation/music":
                 r.fulfill(json={"tracks": [], "issues": []})
+            elif path == "/api/creation/voices":
+                r.fulfill(json={"voices": [], "licenseStatus": "unknown"})
             elif path == "/api/projects":
                 r.fulfill(json={"projects": [{"path": "one"}, {"path": "two"}]})
             elif path.startswith("/api/runs"):

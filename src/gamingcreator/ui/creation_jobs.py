@@ -4,14 +4,18 @@ import asyncio
 import hashlib
 import json
 import re
+import shutil
 import threading
 import time
+from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 from gamingcreator.application.edit_decision import select_edit_decision
+from gamingcreator.application.narration import NarrationRequest
+from gamingcreator.application.providers import CancellationContext
 from gamingcreator.cli.creation import execute_plan_creation
 from gamingcreator.cli.creation_render import execute_render_creation, read_creation
 from gamingcreator.domain.creation import CreativeBrief
@@ -24,7 +28,7 @@ from gamingcreator.infrastructure.file_sharing import retry_file_sharing
 from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
 from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
-from gamingcreator.ui import package_jobs, publication_jobs
+from gamingcreator.ui import narration_jobs, package_jobs, publication_jobs
 from gamingcreator.ui.media import MediaResource, VerifiedMediaCache
 from gamingcreator.ui.revision_jobs import (
     editor,
@@ -62,6 +66,11 @@ class CreationJobs:
         self.safe(self.jobs)
         self.jobs.mkdir(exist_ok=True)
         self.threads: list[threading.Thread] = []
+        self.narration_contexts: dict[
+            str, tuple[CancellationContext, asyncio.AbstractEventLoop | None]
+        ] = {}
+        self.narration_cancel_requests: set[str] = set()
+        self.narration_lock = threading.Lock()
         self.cache = VerifiedMediaCache()
 
     def safe(self, path: Path) -> Path:
@@ -109,11 +118,18 @@ class CreationJobs:
         return project
 
     def submit(self, kind: str, request: dict[str, Any]) -> dict[str, object]:
-        if kind not in ("plan", "revision", "render", "publication", "package") or not isinstance(
-            request, dict
-        ):
+        if kind not in (
+            "plan",
+            "revision",
+            "render",
+            "publication",
+            "package",
+            "narration",
+        ) or not isinstance(request, dict):
             raise fail("creation.input", "无效任务类型。")
         expected = {"requestId", "projectId", "runIds", "brief", "fps"}
+        if kind == "narration":
+            expected = {"requestId", "projectId", "text", "voiceId"}
         if kind == "revision":
             expected = {
                 "requestId",
@@ -149,7 +165,13 @@ class CreationJobs:
             {"subtitleMode"}
             if kind == "render"
             else (
-                {"subtitleOverrides", "audioMix", "candidateManifestSha256", "replacements"}
+                {
+                    "subtitleOverrides",
+                    "audioMix",
+                    "candidateManifestSha256",
+                    "replacements",
+                    "narration",
+                }
                 if kind == "revision"
                 else set()
             )
@@ -186,7 +208,13 @@ class CreationJobs:
                 return {key: job[key] for key in ("jobId", "kind", "status")}
             parent_id = None
             parent_digest = None
-            if kind == "plan":
+            if kind == "narration":
+                project = self.project(request["projectId"])
+                NarrationRequest(
+                    request_id, request["projectId"], request["text"], request["voiceId"]
+                )
+                project_id = request["projectId"]
+            elif kind == "plan":
                 project = self.project(request["projectId"])
                 CreativeBrief.from_json(request["brief"])
                 runs = request["runIds"]
@@ -219,6 +247,13 @@ class CreationJobs:
                     revised, _ = prepare_revision(self, request, chain)
                     resolve_overrides(request, chain.subtitle_overrides, revised, chain.root_sha)
                     resolve_audio(self, request, chain.audio_mix)
+                    frames = (
+                        revised["segments"][-1]["outputStartFrame"]
+                        + revised["segments"][-1]["outputFrames"]
+                    )
+                    narration_jobs.resolve(
+                        self, request, chain.narration, chain.project_id, frames, chain.plan.fps
+                    )
                 elif self.read(self.directory(parent_id) / "status.json")["kind"] != "revision":
                     raise fail("creation.conflict", "请选择已完成编辑版本。", True)
                 project_id = chain.project_id
@@ -268,6 +303,9 @@ class CreationJobs:
                     self.save(directory / "input/brief.json", request["brief"])
                 self.save(directory / "status.json", state)
                 self.save(registration, {"digest": digest, "jobId": job_id})
+                if kind == "narration":
+                    with self.narration_lock:
+                        self.narration_contexts[job_id] = (CancellationContext(job_id, 3600), None)
                 worker = threading.Thread(
                     target=self.execute,
                     args=(directory, state, request, project, owner),
@@ -276,6 +314,9 @@ class CreationJobs:
                 self.threads.append(worker)
                 worker.start()
             except BaseException:
+                with self.narration_lock:
+                    self.narration_contexts.pop(job_id, None)
+                    self.narration_cancel_requests.discard(job_id)
                 owner.close()
                 raise
             return {"jobId": job_id, "kind": kind, "status": "pending"}
@@ -317,7 +358,9 @@ class CreationJobs:
             or state["jobId"] != directory.name
         ):
             raise ValueError("Invalid persisted job identity")
-        if state["kind"] == "plan":
+        if state["kind"] == "narration":
+            narration_jobs.verify_asset(self, directory, state, stored)
+        elif state["kind"] == "plan":
             report = self.plan_report(directory)
             request = stored["request"]
             if (
@@ -357,10 +400,12 @@ class CreationJobs:
             ):
                 raise ValueError("Parent receipt changed")
             audio_mix = AudioMix()
+            narration = None
             if "revisionJobId" in request:
                 chain = load_chain(self, parent_id)
                 parent_report, expected_edl = chain.report, chain.edl
                 audio_mix = chain.audio_mix
+                narration = chain.narration
                 if state["projectId"] != chain.project_id:
                     raise ValueError("Render project changed")
             else:
@@ -396,6 +441,23 @@ class CreationJobs:
             expected_files = {"video.mp4"}
             if mode != "none":
                 expected_files.add("subtitles.srt")
+            if narration is not None:
+                from gamingcreator.infrastructure.narration_mix import narration_receipt
+
+                narration_asset = narration_jobs.asset(self, narration, state["projectId"])
+                if receipt.get("narration") != narration_receipt(
+                    narration, narration_asset, receipt["fpsNumerator"]
+                ):
+                    raise ValueError("Render narration identity changed")
+                expected_files.add("narration.txt")
+                text = self.safe(directory / "result/narration.txt")
+                if (
+                    hash_file(text) != narration_asset.text_sha256
+                    or receipt["files"].get("narration.txt") != narration_asset.text_sha256
+                ):
+                    raise ValueError("Render narration text changed")
+            elif "narration" in receipt:
+                raise ValueError("Render contains unselected narration")
             if subtitles is not None or mode != "none":
                 if (
                     not isinstance(subtitles, dict)
@@ -422,6 +484,11 @@ class CreationJobs:
                 "previewUrl": base,
                 "downloadUrl": base + "?download=1",
             }
+            if narration is not None:
+                state["artifact"].update(
+                    narrationTextUrl=f"/api/creation/jobs/{state['jobId']}/narration-text",
+                    narrationTextSha256=receipt["files"]["narration.txt"],
+                )
             if mode != "none":
                 assert isinstance(subtitles, dict)
                 subtitle_path = self.safe(directory / "result/subtitles.srt")
@@ -473,9 +540,11 @@ class CreationJobs:
                 finally:
                     await store.close()
 
-            if state["kind"] not in ("publication", "package"):
+            if state["kind"] not in ("publication", "package", "narration"):
                 asyncio.run(check_sources())
-            if state["kind"] == "plan":
+            if state["kind"] == "narration":
+                asyncio.run(narration_jobs.generate(self, directory, request))
+            elif state["kind"] == "plan":
                 asyncio.run(
                     execute_plan_creation(
                         project,
@@ -531,6 +600,9 @@ class CreationJobs:
             self.save(receipt_path, receipt)
             state = self.verify(directory, state)
             state["status"] = "completed"
+        except asyncio.CancelledError:
+            state["status"] = "interrupted"
+            state["error"] = {"code": "creation.cancelled", "message": "本地旁白生成已取消。"}
         except Exception as error:
             state["status"] = "failed"
             state["error"] = {
@@ -546,7 +618,26 @@ class CreationJobs:
         finally:
             state["updatedAt"] = datetime.now(UTC).isoformat()
             try:
-                self.save(directory / "status.json", state)
+                if state["kind"] == "narration":
+                    with self.narration_lock:
+                        if (
+                            directory.name in self.narration_cancel_requests
+                            and state["status"] == "completed"
+                        ):
+                            state["status"] = "interrupted"
+                            state.pop("narrationAsset", None)
+                            # A cancelled asset is never attachable; drop its owned files.
+                            with suppress(Exception):
+                                shutil.rmtree(self.safe(directory / "result"))
+                            state["error"] = {
+                                "code": "creation.cancelled",
+                                "message": "本地旁白生成已取消。",
+                            }
+                        self.save(directory / "status.json", state)
+                        self.narration_contexts.pop(directory.name, None)
+                        self.narration_cancel_requests.discard(directory.name)
+                else:
+                    self.save(directory / "status.json", state)
             finally:
                 owner.close()
 
@@ -652,3 +743,26 @@ class CreationJobs:
     def close(self) -> None:
         for worker in self.threads:
             worker.join(timeout=1)
+
+    def voices(self) -> dict[str, Any]:
+        return narration_jobs.voices()
+
+    def cancel_narration(self, job_id: str) -> dict[str, Any]:
+        return narration_jobs.cancel(self, identity(job_id))
+
+    def narration_file(self, job_id: str, name: str) -> MediaResource:
+        return narration_jobs.resource(self, identity(job_id), name)
+
+    def narration_text(self, job_id: str) -> MediaResource:
+        state = self.get(job_id)
+        if (
+            state["kind"] != "render"
+            or state["status"] != "completed"
+            or "narrationTextSha256" not in state.get("artifact", {})
+        ):
+            raise ValueError("Completed render has no narration text")
+        return MediaResource(
+            self.safe(self.directory(job_id) / "result/narration.txt"),
+            state["artifact"]["narrationTextSha256"],
+            "text/plain; charset=utf-8",
+        )

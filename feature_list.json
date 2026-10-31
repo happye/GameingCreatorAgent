@@ -700,8 +700,10 @@
       "group": "C",
       "name": "配音／旁白合成",
       "first_product": false,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-10-31 R2-I: local Windows SAPI narration asset jobs, preview, output-frame attachment with gain/ducking, inherit/remove/ancestor restore, three-way mix render; 165 targeted tests (.cache/narration-main.xml), real Huihui 5.688s voice located at 3.000s in a 360-frame MP4 (.cache/narration-real-render.json), Bilibili seven-file package from the narrated render; code-quality-guard PASS; voice license unknown"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },

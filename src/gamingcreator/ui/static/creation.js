@@ -33,7 +33,7 @@
         $("render").disabled = state.busy || state.editing || state.dirty || !state.selected || !!transitionError(state.editor);
         $("save-revision").disabled = state.busy || state.editing || !state.editor || !state.editor.clips.length || !!transitionError(state.editor);
     }
-    function clearView() { closeReplacement(); $("package-form").hidden = true; $("package-result").hidden = true; $("package-downloads").replaceChildren(); $("package-preview").replaceChildren(); state.publication = null; $("publication-form").hidden = true; $("publication-cover").hidden = true; $("publication-cover").removeAttribute("src"); $("publication-downloads").replaceChildren(); state.selected = null; state.editor = null; $("audio-controls")?.remove(); state.dirty = false; state.editing = false; $("editor-rows").replaceChildren(); $("ancestry").replaceChildren(); $("editor-summary").textContent = "选择方案或剪辑版本后可编辑镜头。"; $("plans").replaceChildren(); $("artifact").replaceChildren(); $("job-status").textContent = "尚未选择任务"; controls(); }
+    function clearView() { closeReplacement(); $("package-form").hidden = true; $("package-result").hidden = true; $("package-downloads").replaceChildren(); $("package-preview").replaceChildren(); state.publication = null; $("publication-form").hidden = true; $("publication-cover").hidden = true; $("publication-cover").removeAttribute("src"); $("publication-downloads").replaceChildren(); state.selected = null; state.editor = null; $("audio-controls")?.remove(); $("narration-controls")?.remove(); state.dirty = false; state.editing = false; $("editor-rows").replaceChildren(); $("ancestry").replaceChildren(); $("editor-summary").textContent = "选择方案或剪辑版本后可编辑镜头。"; $("plans").replaceChildren(); $("artifact").replaceChildren(); $("job-status").textContent = "尚未选择任务"; controls(); }
     function showPlans(job) {
         $("plans").replaceChildren(); state.selected = null;
         for (const plan of job.plans || []) {
@@ -51,7 +51,7 @@
         }
         controls();
     }
-    const kindLabel = (kind) => ({plan: "方案", revision: "剪辑版本", render: "视频", publication: "封面与文案", package: "平台预览包"}[kind] || kind);
+    const kindLabel = (kind) => ({plan: "方案", revision: "剪辑版本", render: "视频", publication: "封面与文案", package: "平台预览包", narration: "旁白"}[kind] || kind);
     async function loadEditor(id, planId, revision = false) {
         closeReplacement();
         const epoch = state.epoch, view = ++state.view;
@@ -99,6 +99,153 @@
         try { const data = await api("/api/creation/music"); musicTracks = data.tracks; musicNotice = musicTracks.length ? "许可状态为登记声明，不代表权利已核实。" : "曲库暂无音乐。以后可用 scripts/register-music.ps1 登记本地音乐；现在可继续编辑。"; if (data.issues?.length) musicNotice += " 部分曲目暂不可用。"; }
         catch { musicNotice = "曲库暂不可用，可继续镜头与字幕编辑。"; }
         if (state.editor) showAudio(state.editor);
+    }
+    const narr = {voices: [], voiceId: "", notice: "正在读取本地声音…", license: "", text: "", job: null, asset: null, timer: null, draftFor: null, startFrame: 0, gainDb: 0, ducking: false};
+    const outputFrameCount = (editor) => editor.clips.reduce((n, c) => n + clipFrames(c, editor.fps) - c.transitionIn.frames, 0);
+    function checkedAsset(asset) {
+        if (!asset || !/^[a-f0-9]{32}$/.test(asset.assetJobId) || !/^[a-f0-9]{64}$/.test(asset.receiptSha256) || !Number.isSafeInteger(asset.sampleCount) || !Number.isSafeInteger(asset.sampleRate) || asset.sampleCount < 1 || asset.sampleRate < 1 || !Number.isFinite(asset.durationSeconds)) throw new Error("旁白信息无效。");
+        const prefix = `/api/creation/jobs/${asset.assetJobId}/narration-files/`;
+        for (const [value, name] of [[asset.audioUrl, "narration.wav"], [asset.textUrl, "narration.txt"]]) {
+            const url = new URL(value, location.origin);
+            if (url.origin !== location.origin || url.pathname !== prefix + name || url.search || url.hash) throw new Error("旁白地址无效。");
+        }
+        return asset;
+    }
+    const safeAsset = (asset) => { try { return asset ? checkedAsset(asset) : null; } catch { return null; } };
+    function fitWarning(editor, asset, startFrame) {
+        if (!asset) return "";
+        const total = outputFrameCount(editor);
+        if (startFrame >= total || asset.sampleCount * editor.fps > (total - startFrame) * asset.sampleRate) return `旁白长 ${asset.durationSeconds.toFixed(3)} 秒，起点后成片只剩 ${(Math.max(0, total - startFrame) / editor.fps).toFixed(3)} 秒；保存时服务器会拒绝，不会自动截断。请改短文字、调整起点或移除旁白。`;
+        return "";
+    }
+    const refreshNarration = () => { if (state.editor) showNarration(state.editor); };
+    function showNarration(editor) {
+        if (narr.draftFor !== editor) {
+            narr.draftFor = editor; const n = editor.narration;
+            narr.startFrame = n ? n.startFrame : 0; narr.gainDb = n ? n.gainDb : 0; narr.ducking = n ? n.ducking === "narration-v1" : false;
+        }
+        const active = document.activeElement?.closest?.("#narration-controls") ? document.activeElement : null, focusId = active?.id, caret = active?.selectionStart;
+        let panel = $("narration-controls");
+        if (!panel) { panel = node("section", ""); panel.id = "narration-controls"; const anchor = $("audio-controls"); if (anchor) anchor.after(panel); else $("editor-rows").before(panel); }
+        const fps = editor.fps, locked = () => state.busy || state.editing, job = narr.job;
+        const running = Boolean(job && (job.submitting || ["pending", "running"].includes(job.status)));
+        const candidate = safeAsset(narr.asset) || safeAsset(editor.narrationAsset), current = editor.narration ? safeAsset(editor.narrationAsset) : null;
+        panel.replaceChildren(node("h3", "旁白（本地配音）"));
+        const note = node("p", narr.voices.length ? "声音商用许可未核实：电脑里有这个声音，不代表可以商用。" : narr.notice); note.id = "narration-notice"; panel.append(note);
+        const voice = document.createElement("select"); voice.id = "narration-voice"; voice.disabled = !narr.voices.length;
+        // SAPI reports hex LCIDs; show common ones by name and keep the raw code otherwise.
+        const languages = {"804": "中文（简体）", "404": "中文（繁体）", "409": "英语（美国）", "809": "英语（英国）", "411": "日语", "412": "韩语"};
+        for (const v of narr.voices) voice.append(new Option(`${v.description} · ${String(v.language).split(";").map((code) => languages[code] || `语言 ${code}`).join("/")}`, v.voiceId));
+        voice.value = narr.voiceId; voice.addEventListener("change", () => { narr.voiceId = voice.value; update(); });
+        const voiceLabel = node("label", "本地声音"); voiceLabel.append(voice); panel.append(voiceLabel);
+        const text = document.createElement("textarea"); text.id = "narration-text"; text.rows = 4; text.maxLength = 10000; text.value = narr.text;
+        const count = node("p", ""); count.id = "narration-count";
+        text.addEventListener("input", () => { narr.text = text.value; update(); });
+        const textLabel = node("label", "旁白文字（1–10000 字，纯文本）"); textLabel.append(text); panel.append(textLabel, count);
+        const generate = node("button", "生成试听"); generate.id = "narration-generate"; generate.type = "button"; generate.addEventListener("click", () => { void generateNarration(); });
+        const cancel = node("button", "取消生成"); cancel.id = "narration-cancel"; cancel.type = "button"; cancel.hidden = !running; cancel.addEventListener("click", () => { void cancelNarration(); });
+        const status = node("p", ""); status.id = "narration-status"; status.setAttribute("role", "status");
+        if (job) status.textContent = job.submitting ? "正在提交旁白任务…" : job.status === "completed" ? "旁白已生成，可试听。" : running ? `旁白${job.cancelRequested ? "正在取消" : "正在合成"}…` : `旁白未完成：${job.error || labels[job.status] || job.status}`;
+        panel.append(generate, cancel, status);
+        if (narr.asset && safeAsset(narr.asset)) {
+            const asset = narr.asset, preview = node("div", ""); preview.id = "narration-preview";
+            const audio = document.createElement("audio"); audio.id = "narration-audio"; audio.controls = true; audio.preload = "none"; audio.src = asset.audioUrl;
+            const link = node("a", "下载旁白文本"); link.id = "narration-text-link"; link.href = asset.textUrl; link.download = "narration.txt";
+            preview.append(node("p", `试听：${asset.voice?.description || "本地声音"} · 时长 ${asset.durationSeconds.toFixed(3)} 秒 · ${asset.sampleRate} Hz`), audio, link); panel.append(preview);
+        }
+        const now = node("div", ""); now.id = "narration-current";
+        if (editor.narration && current) {
+            const audio = document.createElement("audio"); audio.id = "narration-current-audio"; audio.controls = true; audio.preload = "none"; audio.src = current.audioUrl;
+            const link = node("a", "下载已挂接旁白文本"); link.id = "narration-current-text"; link.href = current.textUrl; link.download = "narration.txt";
+            now.append(node("p", `当前已挂接旁白：起点第 ${editor.narration.startFrame} 帧（${(editor.narration.startFrame / fps).toFixed(3)} 秒） · 音量 ${editor.narration.gainDb} dB · ${editor.narration.ducking === "narration-v1" ? "旁白时压低原声和配乐" : "不压低"} · 时长 ${current.durationSeconds.toFixed(3)} 秒`), audio, link);
+        } else if (editor.narration) now.append(node("p", "已挂接旁白，但旁白信息无法读取；可移除后重新生成。"));
+        else now.append(node("p", editor.narrationChanged ? "旁白将被移除，保存新版本后生效。" : "当前没有挂接旁白。"));
+        panel.append(now);
+        const startLabel = node("label", "旁白起点（成片秒数）"), start = document.createElement("input"); start.id = "narration-start"; start.type = "number"; start.min = "0"; start.step = "any"; start.required = true; start.value = String(Number((narr.startFrame / fps).toFixed(6))); startLabel.append(start);
+        const frameText = node("p", ""); frameText.id = "narration-start-frame";
+        const gainLabel = node("label", "旁白音量（dB，0 为原音量）"), gain = document.createElement("input"); gain.id = "narration-gain"; gain.type = "number"; gain.min = "-60"; gain.max = "0"; gain.step = "any"; gain.required = true; gain.value = String(narr.gainDb); gainLabel.append(gain);
+        const duckLabel = node("label", "旁白时压低原声和配乐"), duck = document.createElement("input"); duck.id = "narration-ducking"; duck.type = "checkbox"; duck.checked = narr.ducking; duckLabel.prepend(duck);
+        const fit = node("p", ""); fit.id = "narration-fit"; fit.setAttribute("role", "status");
+        const attach = node("button", "挂接到剪辑"); attach.id = "narration-attach"; attach.type = "button";
+        const remove = node("button", "移除旁白"); remove.id = "narration-remove"; remove.type = "button";
+        panel.append(startLabel, frameText, gainLabel, duckLabel, fit, attach, remove);
+        const valid = () => start.checkValidity() && gain.checkValidity();
+        function update() {
+            frameText.textContent = `起点对应成片第 ${narr.startFrame} 帧（${(narr.startFrame / fps).toFixed(3)} 秒，帧率 ${fps}）`;
+            const length = [...text.value].length; count.textContent = `${length} / 10000 字`;
+            generate.disabled = running || !state.project || !narr.voiceId || !text.value.trim() || length > 10000;
+            attach.disabled = !candidate || !valid(); remove.disabled = !editor.narration;
+            const warnings = [];
+            if (editor.narration && current) warnings.push(["已挂接", current]);
+            if (candidate && (!current || candidate.assetJobId !== current.assetJobId || candidate.receiptSha256 !== current.receiptSha256)) warnings.push(["待挂接", candidate]);
+            fit.textContent = warnings.map(([name, asset]) => fitWarning(editor, asset, narr.startFrame) && `${name}：${fitWarning(editor, asset, narr.startFrame)}`).filter(Boolean).join("\n");
+        }
+        function changed(message) { editor.narrationChanged = true; state.dirty = true; $("editor-summary").textContent = message; controls(); }
+        function mirror() {
+            if (!editor.narration) return;
+            editor.narration = {...editor.narration, startFrame: narr.startFrame, gainDb: narr.gainDb, ducking: narr.ducking ? "narration-v1" : "off"};
+            changed("旁白设置已修改，请保存新版本后生成视频。"); update();
+        }
+        start.addEventListener("input", () => {
+            if (locked()) return; start.setCustomValidity("");
+            const frame = Math.round(Number(start.value) * fps);
+            if (start.validity.valid && Number.isSafeInteger(frame) && frame >= 0) { narr.startFrame = frame; mirror(); }
+            else { start.setCustomValidity("请填写不小于 0 的起点秒数。"); if (editor.narration) { state.dirty = true; controls(); } }
+            update();
+        });
+        gain.addEventListener("input", () => {
+            if (locked()) return; gain.setCustomValidity("");
+            if (gain.validity.valid) { narr.gainDb = Number(gain.value); mirror(); }
+            else { gain.setCustomValidity("请填写 -60 到 0 的音量。"); if (editor.narration) { state.dirty = true; controls(); } }
+            update();
+        });
+        duck.addEventListener("change", () => { if (locked()) return; narr.ducking = duck.checked; mirror(); update(); });
+        attach.addEventListener("click", () => {
+            if (locked() || !candidate || !valid()) return;
+            editor.narration = {assetJobId: candidate.assetJobId, receiptSha256: candidate.receiptSha256, startFrame: narr.startFrame, gainDb: narr.gainDb, ducking: narr.ducking ? "narration-v1" : "off"};
+            editor.narrationAsset = candidate; changed("旁白已挂接，请保存新版本后生成视频。"); showNarration(editor);
+        });
+        remove.addEventListener("click", () => { if (locked() || !editor.narration) return; editor.narration = null; changed("旁白将被移除，请保存新版本后生成视频。"); showNarration(editor); });
+        update();
+        if (focusId && $(focusId)) { $(focusId).focus(); if (Number.isInteger(caret)) try { $(focusId).setSelectionRange(caret, caret); } catch { /* Number inputs have no caret. */ } }
+    }
+    async function loadVoices() {
+        try {
+            const data = await api("/api/creation/voices");
+            if (!Array.isArray(data.voices) || data.voices.some((v) => typeof v.voiceId !== "string" || !v.voiceId)) throw new Error("声音列表无效。");
+            narr.voices = data.voices; narr.license = data.licenseStatus; narr.voiceId = (data.voices.find((v) => String(v.language).split(";").includes("804")) || data.voices[0])?.voiceId || ""; narr.notice = data.voices.length ? "" : "此电脑没有可用的本地声音，可继续其他编辑。";
+        } catch { narr.voices = []; narr.voiceId = ""; narr.notice = "本地声音不可用，可继续其他编辑"; }
+        refreshNarration();
+    }
+    async function generateNarration() {
+        const text = narr.text, voiceId = narr.voiceId;
+        if (!state.project || !voiceId || !text.trim() || [...text].length > 10000 || (narr.job && (narr.job.submitting || ["pending", "running"].includes(narr.job.status)))) return;
+        const epoch = state.epoch, payload = {projectId: state.project, text, voiceId}, job = {jobId: "", status: "pending", submitting: true, error: "", cancelRequested: false};
+        clearTimeout(narr.timer); narr.job = job; refreshNarration();
+        try {
+            const result = await api("/api/creation/narrations", {...payload, requestId: requestId("narration", payload)});
+            if (epoch !== state.epoch || narr.job !== job) return;
+            delete state.intents.narration; job.jobId = result.jobId; job.submitting = false; job.status = result.status || "pending"; refreshNarration(); pollNarration(job, epoch);
+        } catch (error) { if (epoch === state.epoch && narr.job === job) { job.submitting = false; job.status = "failed"; job.error = error.message; refreshNarration(); } }
+    }
+    function pollNarration(job, epoch) {
+        const tick = async () => {
+            try {
+                const data = await api(`/api/creation/jobs/${encodeURIComponent(job.jobId)}`);
+                if (epoch !== state.epoch || narr.job !== job) return;
+                if (data.kind !== "narration" || data.jobId !== job.jobId || data.projectId !== state.project) throw new Error("旁白任务不属于当前项目。");
+                job.status = data.status; job.error = data.error ? data.error.message : "";
+                if (data.status === "completed") { const asset = checkedAsset(data.narrationAsset); if (asset.assetJobId !== job.jobId) throw new Error("旁白信息与任务不匹配。"); narr.asset = asset; }
+                else if (["pending", "running"].includes(data.status)) narr.timer = setTimeout(tick, 1000);
+                refreshNarration();
+            } catch (error) { if (epoch === state.epoch && narr.job === job) { job.status = "failed"; job.error = error.message; refreshNarration(); } }
+        };
+        clearTimeout(narr.timer); void tick();
+    }
+    async function cancelNarration() {
+        const job = narr.job; if (!job?.jobId) return;
+        try { await api("/api/creation/narration-cancel", {jobId: job.jobId}); job.cancelRequested = true; } catch (error) { job.error = error.message; notice(`取消失败：${error.message}`); }
+        refreshNarration();
     }
     let replacementToken = 0, replacement = null;
     function closeReplacement() {
@@ -182,7 +329,7 @@
     }
     function showEditor() {
         const editor = state.editor;
-        showAudio(editor);
+        showAudio(editor); showNarration(editor);
         $("editor-rows").replaceChildren(); $("ancestry").replaceChildren();
         const totalFrames = editor.clips.reduce((n, c) => n + clipFrames(c, editor.fps) - c.transitionIn.frames, 0);
         const totalSeconds = totalFrames / editor.fps;
@@ -306,6 +453,12 @@
             const link = node("a", "下载 SRT 字幕"); link.id = "download-subtitles"; link.href = artifact.subtitleUrl; link.download = "subtitles.srt";
             $("artifact").append(node("p", artifact.subtitleCueCount === 0 ? "字幕 0 条：所选片段无可用的已保存语音，SRT 为空。" : `字幕 ${artifact.subtitleCueCount} 条 · ${artifact.subtitleMode === "burn" ? "已烧入视频" : "独立导出"}`), link);
         }
+        if (artifact.narrationTextUrl) {
+            const url = new URL(artifact.narrationTextUrl, location.origin);
+            if (url.origin !== location.origin || url.pathname !== `/api/creation/jobs/${encodeURIComponent(renderId)}/narration-text` || url.search || url.hash) throw new Error("旁白文本地址无效，请刷新任务。");
+            const link = node("a", "下载旁白文本"); link.id = "download-narration-text"; link.href = artifact.narrationTextUrl; link.download = "narration.txt";
+            $("artifact").append(link);
+        }
     }
     const platformNames = {bilibili: "B站", douyin: "抖音", kuaishou: "快手", xiaohongshu: "小红书"};
     const packageFields = [
@@ -405,6 +558,7 @@
                         if (epoch !== state.epoch || view !== state.view) return;
                         showPackage(data, id);
                     }
+                    else if (job.kind === "narration") { narr.asset = checkedAsset(job.narrationAsset); notice("旁白已读取。选择方案或剪辑版本后，可在“旁白”面板挂接。"); }
                     else if (job.kind === "plan") showPlans(job);
                     else if (job.kind === "revision") { const editor = job.editor || await api(`/api/creation/jobs/${encodeURIComponent(id)}/edit?planId=${encodeURIComponent(job.planId || "")}`); if (epoch !== state.epoch || view !== state.view) return; await loadEditor(id, editor.planId, true); }
                     else if (["render", "publication"].includes(job.kind)) {
@@ -433,7 +587,7 @@
     }
     async function projectChanged(restoreJob = "") {
         const epoch = ++state.epoch; ++state.view; clearTimeout(state.timer);
-        state.project = $("project").value; state.job = restoreJob; state.intents = {}; state.busy = false; save(); clearView(); $("runs").replaceChildren(); $("history").replaceChildren();
+        state.project = $("project").value; state.job = restoreJob; state.intents = {}; state.busy = false; clearTimeout(narr.timer); narr.job = null; narr.asset = null; save(); clearView(); $("runs").replaceChildren(); $("history").replaceChildren();
         if (!state.project) return;
         notice("正在读取可用素材…");
         try {
@@ -493,15 +647,15 @@
     $("save-revision").addEventListener("click", () => {
         if (!state.editor || state.editing || transitionError(state.editor)) return;
         const editor = state.editor;
-        if (Array.from($("audio-controls")?.querySelectorAll("input") || []).some((input) => !input.reportValidity())) return;
+        if (Array.from([...($("audio-controls")?.querySelectorAll("input") || []), ...(editor.narrationChanged && editor.narration ? $("narration-controls")?.querySelectorAll("input") || [] : [])]).some((input) => !input.reportValidity())) return;
         const replacementFields = editor.candidateManifestSha256 ? {candidateManifestSha256: editor.candidateManifestSha256, replacements: editor.replacements.filter((r) => editor.clips.some((c) => c.clipId === r.targetClipId))} : {};
-        void submit("revision", {...replacementFields, parentJobId: editor.parentJobId, planId: editor.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256, clips: editor.clips.map(({clipId, startUs, endUs, speed, transitionIn}) => ({clipId, startUs, endUs, speed, transitionIn})), audioMix: editor.audioMix, subtitleOverrides: editor.subtitleOverrides.filter((item) => editor.clips.some((clip) => clip.clipId === item.clipId))});
+        void submit("revision", {...replacementFields, parentJobId: editor.parentJobId, planId: editor.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256, clips: editor.clips.map(({clipId, startUs, endUs, speed, transitionIn}) => ({clipId, startUs, endUs, speed, transitionIn})), audioMix: editor.audioMix, ...(editor.narrationChanged ? {narration: editor.narration ?? null} : {}), subtitleOverrides: editor.subtitleOverrides.filter((item) => editor.clips.some((clip) => clip.clipId === item.clipId))});
     });
     $("project").addEventListener("change", () => { void projectChanged(); }); $("refresh").addEventListener("click", () => { void history(); if (state.job) void openJob(state.job); });
     void (async () => {
         try {
             let saved = {}; try { saved = JSON.parse(localStorage.getItem("creation-workspace-v1") || "{}"); } catch { /* Ignore an invalid saved selection. */ }
-            void loadMusic(); void loadProfiles();
+            void loadMusic(); void loadVoices(); void loadProfiles();
             const data = await api("/api/projects");
             for (const project of data.projects) { const option = node("option", project.name || project.path); option.value = project.path; $("project").append(option); }
             $("project").value = data.projects.some((p) => p.path === saved.project) ? saved.project : (data.projects[0]?.path || "");

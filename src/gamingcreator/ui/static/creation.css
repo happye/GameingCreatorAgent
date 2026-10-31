@@ -7,3 +7,5 @@
 #publication-cover{display:block;max-width:100%;max-height:400px}#publication-cover[hidden]{display:none}#publication-downloads a{display:inline-block;margin:8px;overflow-wrap:anywhere}
 
 #package-downloads a{display:inline-block;margin:8px;overflow-wrap:anywhere}#package-preview img{max-width:100%;max-height:420px;object-fit:contain}#package-validation{white-space:pre-wrap;overflow-wrap:anywhere}
+
+#narration-controls audio{display:block;width:100%;margin:8px 0}#narration-controls a{display:inline-block;margin:6px 0;overflow-wrap:anywhere}#narration-controls textarea{resize:vertical}#narration-fit{white-space:pre-wrap;color:#ffd48a}#narration-status,#narration-notice{overflow-wrap:anywhere}
