@@ -49,8 +49,10 @@ def build_subtitles(
             end_us = min(clip.source_range.end_us, segment.source_range.end_us)
             if start_us >= end_us:
                 continue
-            start = Fraction(start_us - clip.source_range.start_us, 1_000_000)
-            end = min(Fraction(end_us - clip.source_range.start_us, 1_000_000), duration)
+            start = Fraction(start_us - clip.source_range.start_us, 1_000_000) / clip.speed
+            end = min(
+                Fraction(end_us - clip.source_range.start_us, 1_000_000) / clip.speed, duration
+            )
             if start < end:
                 clip_cues.append(
                     SubtitleCue(offset + start, offset + end, segment.text, segment.uncertainty)

@@ -32,6 +32,13 @@ def test_editing_version_flows(scenario):
         clips=clips,
         ancestry=[],
     )
+    if scenario == "speed":
+        editor["targetDuration"] = 6
+        editor["audioMix"] = {
+            "bgm": {"trackId": "music", "trackReceiptSha256": "e" * 64, "gainDb": -12},
+            "sourceGainDb": -6,
+            "ducking": "source-v1",
+        }
     revision = {
         **editor,
         "parentJobId": REV,
@@ -90,13 +97,17 @@ def test_editing_version_flows(scenario):
                         {
                             **clips[int(c["clipId"])],
                             **c,
-                            "endUs": c["startUs"] + (c["outputFrames"] * 1000000 + 29) // 30,
+                            "outputFrames": (c["endUs"] - c["startUs"])
+                            * 30
+                            * c["speed"]["denominator"]
+                            // (1000000 * c["speed"]["numerator"]),
                         }
                         for c in posts[-1][1]["clips"]
                     ]
                     identity = REV if len(posts) == 1 else "d" * 32
                     saved = copy.deepcopy(revision)
                     saved["parentJobId"] = identity
+                    saved["audioMix"] = posts[-1][1].get("audioMix")
                     saved["subtitleOverrides"] = posts[-1][1].get("subtitleOverrides", [])
                     if identity != REV:
                         saved["ancestry"].append(
@@ -188,6 +199,61 @@ def test_editing_version_flows(scenario):
                     page.locator(f'[data-job-id="{ROOT}"]').click()
                     pw.expect(toggle).not_to_be_checked()
                     pw.expect(text).to_have_value("")
+                elif scenario == "speed":
+                    row = page.locator('[data-clip-id="0"]')
+                    speed = row.locator('[data-field="speed"]')
+                    pw.expect(speed).to_have_value("1")
+                    row.locator('[data-field="subtitle-override"]').check()
+                    row.locator('[data-field="subtitle-text"]').fill("手写字幕保留")
+                    # Non-frame-aligned source endpoint must survive every speed change.
+                    row.locator('[data-field="end"]').fill("1.999999")
+                    row.locator('[data-field="end"]').dispatch_event("change")
+                    speed.select_option("0.5")
+                    pw.expect(page.locator("#render")).to_be_disabled()
+                    pw.expect(row).to_contain_text("输出 119 帧")
+                    pw.expect(page.locator("#editor-summary")).to_contain_text("超出 1.967 秒")
+                    pw.expect(row.locator('[data-field="end"]')).to_have_value("1.999999")
+                    page.locator("#save-revision").click()
+                    pw.expect(page.locator("#render")).to_be_enabled()
+                    first = posts[-1][1]
+                    assert first["clips"][0] == dict(
+                        clipId="0", startUs=0, endUs=1999999, speed=dict(numerator=1, denominator=2)
+                    )
+                    assert all(
+                        set(c) == {"clipId", "startUs", "endUs", "speed"} for c in first["clips"]
+                    )
+                    assert first["audioMix"] == editor["audioMix"]
+                    assert first["subtitleOverrides"] == [dict(clipId="0", text="手写字幕保留")]
+                    speed.select_option("2")
+                    pw.expect(row).to_contain_text("输出 29 帧")
+                    row.locator('[data-field="end"]').fill("2")
+                    row.locator('[data-field="end"]').dispatch_event("change")
+                    pw.expect(row.locator('[data-field="end"]')).to_have_value("1.999999")
+                    row.locator('[data-field="start"]').fill("1.99")
+                    row.locator('[data-field="start"]').dispatch_event("change")
+                    pw.expect(row.locator('[data-field="start"]')).to_have_value("0")
+                    pw.expect(page.locator("#notice")).to_contain_text("至少保留一帧")
+                    pw.expect(page.locator("#render")).to_be_disabled()
+                    page.locator("#save-revision").click()
+                    pw.expect(page.locator("#render")).to_be_enabled()
+                    second = posts[-1][1]
+                    assert second["clips"][0] == {
+                        **first["clips"][0],
+                        "speed": dict(numerator=2, denominator=1),
+                    }
+                    assert second["audioMix"] == first["audioMix"]
+                    assert second["subtitleOverrides"] == first["subtitleOverrides"]
+                    page.locator(f'[data-job-id="{REV}"]').click()
+                    pw.expect(speed).to_have_value("0.5")
+                    pw.expect(row.locator('[data-field="subtitle-text"]')).to_have_value(
+                        "手写字幕保留"
+                    )
+                    pw.expect(page.locator("#editor-summary")).to_contain_text("超出")
+                    page.reload()
+                    pw.expect(speed).to_have_value("0.5")
+                    assert len(posts) == 2
+                    page.set_viewport_size({"width": 390, "height": 844})
+                    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
                 elif scenario == "stale":
                     page.locator("#project").select_option("two")
                     for r in held:
@@ -207,8 +273,18 @@ def test_editing_version_flows(scenario):
                     page.locator("#save-revision").click()
                     pw.expect(page.locator("#editor-summary")).to_contain_text("3.500 秒")
                     assert posts[0][1]["clips"] == [
-                        dict(clipId="1", startUs=2000000, outputFrames=60),
-                        dict(clipId="0", startUs=0, outputFrames=45),
+                        dict(
+                            clipId="1",
+                            startUs=2000000,
+                            endUs=4000000,
+                            speed=dict(numerator=1, denominator=1),
+                        ),
+                        dict(
+                            clipId="0",
+                            startUs=0,
+                            endUs=1500000,
+                            speed=dict(numerator=1, denominator=1),
+                        ),
                     ]
                     assert page.locator("#editor img").count() == 0
                     page.locator(f'[data-job-id="{ROOT}"]').click()

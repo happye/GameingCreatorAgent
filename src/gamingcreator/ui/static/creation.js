@@ -62,6 +62,7 @@
             if (epoch !== state.epoch || view !== state.view) return;
             if (editor.parentJobId !== id || editor.planId !== planId) throw new Error("剪辑版本不匹配。");
             editor.bounds = Object.fromEntries(editor.clips.map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}]));
+            editor.clips.forEach((clip) => { clip.speed = clip.speed || {numerator: 1, denominator: 1}; });
             editor.subtitleOverrides = editor.subtitleOverrides || [];
             editor.audioMix = editor.audioMix || defaultMix();
             state.job = id; save(); state.editor = editor;
@@ -97,11 +98,15 @@
         catch { musicNotice = "曲库暂不可用，可继续镜头与字幕编辑。"; }
         if (state.editor) showAudio(state.editor);
     }
+    const clipFrames = (clip, fps) => Math.floor((clip.endUs - clip.startUs) * fps * clip.speed.denominator / (1e6 * clip.speed.numerator));
     function showEditor() {
         const editor = state.editor;
         showAudio(editor);
         $("editor-rows").replaceChildren(); $("ancestry").replaceChildren();
-        $("editor-summary").textContent = `${editor.clips.length} 个镜头 · ${(editor.clips.reduce((n, c) => n + c.outputFrames, 0) / editor.fps).toFixed(3)} 秒${state.dirty ? " · 有未保存修改，请保存新版本后生成视频" : " · 已保存"}`;
+        const totalSeconds = editor.clips.reduce((n, c) => n + c.outputFrames, 0) / editor.fps;
+        const target = editor.targetDuration;
+        const difference = Number.isFinite(target) ? ` · 原目标 ${target} 秒，实际${totalSeconds > target ? "超出" : "少于"} ${Math.abs(totalSeconds - target).toFixed(3)} 秒（允许手动编辑，原需求不变）` : "";
+        $("editor-summary").textContent = `${editor.clips.length} 个镜头 · ${(editor.clips.reduce((n, c) => n + c.outputFrames, 0) / editor.fps).toFixed(3)} 秒${difference}${state.dirty ? " · 有未保存修改，请保存新版本后生成视频" : " · 已保存"}`;
         editor.clips.forEach((clip, index) => {
             const row = node("article", ""); row.dataset.clipId = clip.clipId; row.className = "clip-row";
             row.append(node("h3", `镜头 ${index + 1}`), node("p", clip.scriptDraft || "无描述"));
@@ -114,14 +119,27 @@
                     if (state.busy || state.editing) return;
                     const startUs = Math.round(Number(row.querySelector('[data-field="start"]').value) * 1e6);
                     const endUs = Math.round(Number(row.querySelector('[data-field="end"]').value) * 1e6);
-                    const frames = Math.floor((endUs - startUs) * editor.fps / 1e6);
+                    const frames = clipFrames({...clip, startUs, endUs}, editor.fps);
                     if (!Number.isSafeInteger(startUs) || !Number.isSafeInteger(endUs) || startUs < original.startUs || endUs > original.endUs || frames < 1) { notice("入点和出点需在父版本范围内，并至少保留一帧。"); showEditor(); return; }
-                    clip.startUs = startUs; clip.outputFrames = frames; clip.endUs = startUs + Math.ceil(frames * 1e6 / editor.fps);
+                    clip.startUs = startUs; clip.outputFrames = frames; clip.endUs = endUs;
                     state.dirty = true; showEditor(); controls();
                 });
                 label.append(input); row.append(label);
             }
-            row.append(node("p", `按帧吸附后实际出点：${(clip.endUs / 1e6).toFixed(6)} 秒`));
+            const speedLabel = node("label", "播放速度"), speed = document.createElement("select");
+            speed.dataset.field = "speed"; speed.disabled = state.busy;
+            for (const value of ["0.5", "1", "2"]) speed.append(new Option(`${value}x`, value));
+            speed.value = String(clip.speed.numerator / clip.speed.denominator);
+            speed.addEventListener("change", () => {
+                if (state.busy || state.editing) return;
+                const selected = {"0.5": {numerator: 1, denominator: 2}, "1": {numerator: 1, denominator: 1}, "2": {numerator: 2, denominator: 1}}[speed.value];
+                const frames = clipFrames({...clip, speed: selected}, editor.fps);
+                if (frames < 1) { notice("此速度下不足一输出帧，请保留更长的源片段。"); showEditor(); return; }
+                clip.speed = selected; clip.outputFrames = frames;
+                state.dirty = true; showEditor(); controls();
+            });
+            speedLabel.append(speed); row.append(speedLabel);
+            row.append(node("p", `输出 ${clip.outputFrames} 帧 · ${(clip.outputFrames / editor.fps).toFixed(3)} 秒；源出点 ${(clip.endUs / 1e6).toFixed(6)} 秒保持不变。舍弃尾部不足一输出帧的余量。`));
             const override = editor.subtitleOverrides.find((item) => item.clipId === clip.clipId);
             const subtitleLabel = node("label", "手写字幕（替换该镜头语音字幕）");
             const toggle = document.createElement("input"); toggle.type = "checkbox"; toggle.dataset.field = "subtitle-override"; toggle.checked = Boolean(override);
@@ -363,7 +381,7 @@
         if (!state.editor || state.editing) return;
         const editor = state.editor;
         if (Array.from($("audio-controls")?.querySelectorAll("input") || []).some((input) => !input.reportValidity())) return;
-        void submit("revision", {parentJobId: editor.parentJobId, planId: editor.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256, clips: editor.clips.map(({clipId, startUs, outputFrames}) => ({clipId, startUs, outputFrames})), audioMix: editor.audioMix, subtitleOverrides: editor.subtitleOverrides.filter((item) => editor.clips.some((clip) => clip.clipId === item.clipId))});
+        void submit("revision", {parentJobId: editor.parentJobId, planId: editor.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256, clips: editor.clips.map(({clipId, startUs, endUs, speed}) => ({clipId, startUs, endUs, speed})), audioMix: editor.audioMix, subtitleOverrides: editor.subtitleOverrides.filter((item) => editor.clips.some((clip) => clip.clipId === item.clipId))});
     });
     $("project").addEventListener("change", () => { void projectChanged(); }); $("refresh").addEventListener("click", () => { void history(); if (state.job) void openJob(state.job); });
     void (async () => {

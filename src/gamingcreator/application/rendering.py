@@ -1,6 +1,7 @@
 """Validate source-bound editing decisions before any renderer receives local media."""
 
 from dataclasses import dataclass
+from fractions import Fraction
 from typing import Any
 
 from gamingcreator.application.storage import StoredTimeline
@@ -13,6 +14,15 @@ class RenderClip:
     asset: MediaAsset
     source_range: SourceRange
     output_frames: int
+    speed: Fraction = Fraction(1, 1)
+
+    def __post_init__(self) -> None:
+        if type(self.speed) is not Fraction or self.speed not in (
+            Fraction(1, 2),
+            Fraction(1),
+            Fraction(2),
+        ):
+            raise ValueError("Clip speed must be Fraction 1/2, 1 or 2.")
 
 
 @dataclass(frozen=True, slots=True)

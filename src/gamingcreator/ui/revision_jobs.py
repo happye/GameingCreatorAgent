@@ -220,6 +220,8 @@ def editor(chain: Chain, job_id: str) -> dict[str, Any]:
         "expectedParentReceiptSha256": chain.digest,
         "rootReceiptSha256": chain.root_sha,
         "fps": chain.plan.fps,
+        "targetDuration": chain.report["brief"]["targetDuration"],
+        "actualDuration": chain.plan.frames / chain.plan.fps,
         "clips": rows,
         "ancestry": chain.ancestry,
         "subtitleOverrides": [dict(item) for item in chain.subtitle_overrides],

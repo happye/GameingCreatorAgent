@@ -50,7 +50,7 @@ plans.json保存三种方案、原片段、可编辑描述草稿和缺口；rece
 
 ## 3. 真实渲染（首版已交付）
 
-render-creation / scripts/render-creation.ps1接收项目、已完成创作目录和新输出目录，按选择方案的创作顺序生成video.mp4。实现状态、验证和已知限制见[渲染sprint](../exec-plans/sprint-creation-render.md)及[字幕sprint](../exec-plans/sprint-creation-subtitles.md)；未有完成回执的目录不算成片成功。已支持原片裁剪、拼接、缩放/留边、音轨及已有语音字幕，变速/转场等仍待补。
+render-creation / scripts/render-creation.ps1接收项目、已完成创作目录和新输出目录，按选择方案的创作顺序生成video.mp4。实现状态、验证和已知限制见[渲染sprint](../exec-plans/sprint-creation-render.md)及[字幕sprint](../exec-plans/sprint-creation-subtitles.md)；未有完成回执的目录不算成片成功。已支持原片裁剪、拼接、缩放/留边、音轨及已有语音字幕，逐镜头变速已接工作台，转场等仍待补。
 
 字幕可传`--subtitles sidecar`（只导出）或`--subtitles burn`（烧录并导出）；PowerShell对应`-Subtitles sidecar|burn`，缺省none。输出新增subtitles.srt，SHA写入receipt.json；中文烧录使用系统可用字体，无新下载。烧录按百分之一秒量化，反斜杠/花括号显示为全宽字符，原SRT文字保留；字幕准确性仍需审片。
 
@@ -69,3 +69,7 @@ render-creation / scripts/render-creation.ps1接收项目、已完成创作目�
 保存封面文案后可选择B站/抖音/快手/小红书，修改视频/封面尺寸和补边或裁切方式、文件大小/时长/文字/必需标签等本地限值，每次生成一个平台。完成后下载package.zip（仅含video.mp4、cover.png、title.txt、description.txt、tags.json、platform.json、validation.json），也可分别下载。旧任务始终使用当时保存的配置，刷新/重启不重复编码。
 
 这些是可编辑本地导出配置，非已核官方规则。生成成功只表示文件已生成；本地超限会明确未通过，未设置的限值显示未配置。平台规则、素材权利和人审未知时资格仍未核实；测试用途音乐会阻止发布资格，本地预览包仍可下载检查。此批未自动调整Hook/CTA/时长，不自动发布，也不表示可商用投稿。简介可保留多段换行。
+
+## 逐镜头变速
+
+镜头行选择0.5x/1x/2x后，入出点继续表示原录像秒数；界面显示新的输出帧数和时长，不会偷偷扩大源区间。保存新版本再渲染，原声音高保持，已有语音/手写字幕同步到输出时间，配乐按成片时间连续播放。慢放可以超过最初目标，界面会显示差异；这不改变原Brief。尾端不足一输出帧的余量舍弃，原入出点保留。祖先版本可恢复原速度；旧v1任务原样可读/下载。开发接口新v2需显式startUs/endUs/speed，不可把旧outputFrames当源长度。

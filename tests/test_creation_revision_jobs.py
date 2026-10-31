@@ -301,3 +301,55 @@ def test_revision_worker_failure_is_saved_and_not_reexecuted(revisions, monkeypa
     restarted = CreationJobs(jobs.repository)
     assert restarted.get(revision)["status"] == "failed"
     assert not restarted.threads
+
+
+def test_speed_revisions_reload_render_and_restore_without_rewriting_old_files(revisions):
+    from fractions import Fraction
+
+    jobs, root, calls = revisions
+    old = jobs.submit("revision", payload(jobs, root))["jobId"]
+    assert finish(jobs, old)["status"] == "completed"
+    original = {
+        p: p.read_bytes()
+        for key in (root, old)
+        for p in jobs.directory(key).rglob("*")
+        if p.is_file()
+    }
+
+    def speed_request(parent, token, numerator, denominator):
+        snapshot = jobs.edit(parent, "hook-first")
+        req = payload(jobs, parent, token)
+        req["clips"] = [
+            {
+                "clipId": row["clipId"],
+                "startUs": row["startUs"],
+                "endUs": row["endUs"],
+                "speed": {"numerator": numerator, "denominator": denominator},
+            }
+            for row in snapshot["clips"]
+        ]
+        return req
+
+    slow = jobs.submit("revision", speed_request(old, "c", 1, 2))["jobId"]
+    result = finish(jobs, slow)
+    assert result["status"] == "completed", result
+    assert result["editor"]["targetDuration"] == 6
+    assert result["editor"]["actualDuration"] == load_chain(jobs, slow).plan.frames / 30
+    assert result["editor"]["clips"][0]["speed"] == {"numerator": 1, "denominator": 2}
+    fast = jobs.submit("revision", speed_request(slow, "d", 2, 1))["jobId"]
+    assert finish(jobs, fast)["status"] == "completed"
+    with pytest.raises(ValueError, match="requires v2"):
+        jobs.submit("revision", payload(jobs, fast, "f"))
+    restarted = CreationJobs(jobs.repository)
+    assert restarted.get(fast)["status"] == "completed"
+    assert len(restarted.edit(fast, "hook-first")["ancestry"]) == 3
+    assert not restarted.threads
+    rendered = restarted.submit(
+        "render", {"requestId": "e" * 32, "revisionJobId": fast, "width": 320, "height": 180}
+    )["jobId"]
+    assert finish(restarted, rendered)["status"] == "completed"
+    assert all(clip.speed == Fraction(2) for clip in calls[-1].clips)
+    restored = jobs.submit("revision", speed_request(slow, "9", 1, 2))["jobId"]
+    assert finish(jobs, restored)["status"] == "completed"
+    assert load_chain(jobs, restored).plan.frames == load_chain(jobs, slow).plan.frames
+    assert all(p.read_bytes() == data for p, data in original.items())

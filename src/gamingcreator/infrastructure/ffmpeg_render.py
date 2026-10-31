@@ -21,16 +21,25 @@ def clip_filter(clip: RenderClip, fps: int, width: int, height: int) -> str:
     first = (start / video.time_base).__ceil__()
     last = (end / video.time_base).__ceil__()
     duration = Fraction(clip.output_frames, fps)
+    speed_filter = (
+        "" if clip.speed == 1 else f"setpts=PTS*{clip.speed.denominator}/{clip.speed.numerator},"
+    )
     # copyts keeps the asset's original stream PTS; setpts maps its source origin to output zero.
     vf = (
         f"[0:{video.index}]trim=start_pts={first}:end_pts={last},"
         f"setpts=PTS-({start.numerator}/{start.denominator})/TB,"
-        f"fps={fps}:start_time=0,scale={width}:{height}:force_original_aspect_ratio=decrease,"
+        f"{speed_filter}fps={fps}:start_time=0,scale={width}:{height}:force_original_aspect_ratio=decrease,"
         f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setsar=1,format=yuv420p,"
-        f"tpad=stop_mode=clone:stop_duration=1,trim=end_frame={clip.output_frames},"
+        f"tpad=stop_mode=clone:stop=-1,trim=end_frame={clip.output_frames},"
         "setpts=N/FRAME_RATE/TB[v]"
     )
     audio = next((stream for stream in clip.asset.streams if stream.kind == "audio"), None)
+    if (
+        audio is not None
+        and clip.speed != 1
+        and (audio.start_seconds >= end or audio.end_seconds <= start)
+    ):
+        audio = None
     if audio is None:
         af = "anullsrc=r=48000:cl=stereo"
     else:
@@ -40,6 +49,17 @@ def clip_filter(clip: RenderClip, fps: int, width: int, height: int) -> str:
             f"[0:{audio.index}]atrim=start={float(start):.12f}:end={float(end):.12f},"
             f"asetpts=PTS-({start.numerator}/{start.denominator})/TB,"
             "aresample=48000:async=1:first_pts=0,aformat=channel_layouts=stereo,apad"
+        )
+    if audio is not None and clip.speed != 1:
+        # Fill source-clock gaps and the source tail before tempo conversion.
+        source_duration = Fraction(clip.source_range.end_us - clip.source_range.start_us, 1_000_000)
+        delay = min(max(audio.start_seconds - start, Fraction(0)), source_duration)
+        # Tempo windows can smear a leading silent gap. Preserve the known stream
+        # delay explicitly on the output sample clock instead of stretching silence.
+        af += (
+            f",atrim=start={float(delay):.12f}:end={float(source_duration):.12f},"
+            f"asetpts=N/SR/TB,atempo={float(clip.speed):.12f},"
+            f"adelay={round(delay / clip.speed * 48000)}S:all=1,apad"
         )
     return vf + ";" + af + f",atrim=duration={float(duration):.12f},asetpts=N/SR/TB[a]"
 
@@ -171,7 +191,12 @@ class FfmpegCreationRenderer:
         target.mkdir(parents=True, exist_ok=False)
         subtitle_path = target / "subtitles.srt"
         ass_path = target / "subtitles.ass"
-        video_filter = f"fps={plan.fps}"
+        # The final fps filter needs an EOF frame beyond the last presentation
+        # instant; cap by frames after padding, rather than stopping the muxer early.
+        video_filter = (
+            f"tpad=stop_mode=clone:stop_duration=1,fps={plan.fps},"
+            f"trim=end_frame={plan.frames},setpts=N/FRAME_RATE/TB"
+        )
         if subtitle_mode != "none":
             with subtitle_path.open("x", encoding="utf-8", newline="\n") as handle:
                 handle.write(subtitle_text)
@@ -211,7 +236,13 @@ class FfmpegCreationRenderer:
             )
             parts.append(part)
         manifest = target / "parts.txt"
-        manifest.write_text("".join(f"file '{part.name}'\n" for part in parts), encoding="utf-8")
+        manifest.write_text(
+            "".join(
+                f"file '{part.name}'\nduration {clip.output_frames / plan.fps:.12f}\n"
+                for part, clip in zip(parts, plan.clips, strict=True)
+            ),
+            encoding="utf-8",
+        )
         pending = target / "render.partial.mp4"
         await run_media_process(
             [
@@ -254,8 +285,6 @@ class FfmpegCreationRenderer:
                 "[mixed]" if mix.bgm is not None or mix.source_gain_db != 0 else "0:a:0",
                 "-vf",
                 video_filter,
-                "-frames:v",
-                str(plan.frames),
                 "-c:v",
                 "libx264",
                 "-preset",
@@ -349,10 +378,20 @@ class FfmpegCreationRenderer:
             "limitations": [
                 "hard cuts",
                 "letterbox",
-                "no overlays, transitions or speed changes",
+                "no overlays or transitions",
                 "burn uses centisecond timing and visible fullwidth ASS control characters",
             ],
         }
+        if any(clip.speed != 1 for clip in plan.clips):
+            result["speedPolicy"] = {
+                "version": "clip-speed-v1",
+                "audio": "source-clock-pad-atempo-pitch-preserving-output-trim",
+                "musicClock": "output-unchanged",
+                "clips": [
+                    {"numerator": clip.speed.numerator, "denominator": clip.speed.denominator}
+                    for clip in plan.clips
+                ],
+            }
         # Remove only our deterministic temporary files, after validation, before completion.
         for part in parts:
             part.unlink()
