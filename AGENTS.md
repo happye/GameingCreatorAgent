@@ -49,7 +49,11 @@ Use `benchmark --binding <bound-directory>` for the frozen preparation workflow;
 
 ## Changes, commits, and handoff
 
-All agents share acceptance criteria; start with `HANDOFF.md` and `docs/references/agent-workflow.md`. Assign ownership; parallel writers use separate worktrees. Record verification and resumable work before transfer. Use imperative `chore:`/`docs:` subjects or `feat(F002): add local frame extraction`. PRs describe behavior, link a feature and include evidence. Never commit secrets, footage, generated media or databases.
+All agents share acceptance criteria; start with `HANDOFF.md` and `docs/references/agent-workflow.md`. Assign ownership; simultaneous writers use separate worktrees only when needed, under `.worktrees/`, never `.cache/`. The parent and sequential work reuse the current tree; read-only tasks need no checkout. Keep at most three active writer trees. After verified integration, preserve necessary Git commits or a minimal patch and retire the completed tree; do not retain full trees as backups. Record verification and resumable work before transfer. Use imperative `chore:`/`docs:` subjects or `feat(F002): add local frame extraction`. PRs describe behavior, link a feature and include evidence. Never commit secrets, footage, generated media or databases.
+
+## Cache and media resource limits
+
+`.cache/` holds reproducible data, not unfinished source work. Media render intermediates require byte/directory/free-space budgets as well as timeouts; hitting FFmpeg `-fs` is a failed render, never a successful truncated result. Test fixture media is reclaimed after teardown, retaining small reports and bounded failure metadata; `GC_KEEP_TEST_MEDIA=1` preserves debugging media without disabling runtime limits. Never reclaim models, user creations, original analysis/evidence, billing, labels or active work. See `docs/references/cache-maintenance-guide.md` for limits and exact cleanup scope.
 
 ## Persistent subagent model routing
 

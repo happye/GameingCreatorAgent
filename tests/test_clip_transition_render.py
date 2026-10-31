@@ -154,7 +154,7 @@ def test_join_failure_cleans_partial_files(tmp_path, monkeypatch, cancel):
     clips = tuple(RenderClip(asset(), SourceRange(0, 1_000_000, 10_000_000), 30) for _ in range(2))
     parts = [tmp_path / "first.nut", tmp_path / "second.nut"]
 
-    async def fail(command, context):
+    async def fail(command, context, **kwargs):
         from pathlib import Path
 
         Path(command[-1]).write_bytes(b"partial")

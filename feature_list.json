@@ -499,7 +499,11 @@
       "name": "缓存",
       "first_product": false,
       "delivery_status": "partial",
-      "implementation_evidence": [],
+      "implementation_evidence": [
+        "src/gamingcreator/infrastructure/render_limits.py",
+        "scripts/cache-maintenance.py",
+        "docs/exec-plans/sprint-cache-reclamation.md"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },

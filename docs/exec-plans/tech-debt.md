@@ -1,6 +1,6 @@
 # Technical debt
 
-2026-10-31候选替换已交付，Goal active：已选全部Completed录像的事件→准确原片预览→替换为新镜头身份→v4保存/真实渲染/继续编辑/祖先恢复。主树92联合+资源修复3项+共享时钟65项、5源码mypy/Ruff通过；Sol/high核心/后端/前端PASS，最后静态资源/超时增量因Sol额度限制明确改Astra/low限定PASS。实际Atom→漫画跨run、再裁短/慢放/淡化、同run再换/换序、祖先4片6/5/6/5帧及末帧封面/包通过；最终原片59.263秒/readyState4、预览0POST；刷新0POST/新实例0worker，旧文件/原片SHA保持。51项仍10/19/22≈38%，首产品27%，人工现在0/未来8、技术债10/2/5不变。下一R2-I本地旁白：Astra合同已冻结，真实中文WAV资产模块已备，未接任务/混音/UI，尚不计P026交付；Sol子任务quota受限，主控继续实现，不重试同一限制。
+2026-10-31缓存事故已止血：精确删除58.29GiB失控测试NUT，实测释放62,589,505,536字节；根因是空音轨变速测试失控写盘、无文件容量门及失败媒体/工作树长期保留。运行期文件/目录/余量限额、原生FFmpeg -fs与退出复核、失败NUT回收、pytest完成回收已落地；58项扩展通过，3个旧mock签名修正后连同新边界12项通过，5源码mypy/Ruff及Astra/low限定静态评估通过。两棵已入库工作副本已释放，其他历史副本待逐项核清；用户明确未手动删除，narration-integration消失仍未归因。51项10/19/22约38%、首产品27%不变，人工现在0/未来8；新增TD018部分，债务18项10已解决/3部分/5未解决。Goal active，随后恢复本地旁白，未提前计P026。
 
 以下交付过程为历史，当前状态以上方摘要为准。
 
@@ -174,3 +174,5 @@ TD012补充（2026-10-07冻结来源选择）：相关定向检查中的旧test_
 2026-10-08检索候选依据完整回归补充：2345项，2339passed／4failed／1error／1权限skip，533.585s JUnit，.cache/search-detail-full.xml及full-verify.log保留。四个旧版本选择检查（含一个fixture setup error）在既有步骤返回interrupted而非finished，归入TD014同一完成时序；旧批量准备页面仍返回“本次准备停止”而非部分准备，归入TD012。本轮32新增全部通过，源码没有改这些工作流／批次模块，原因未解决。按用户主线优先，本轮不再次窄复查或重复完整、不自动重试或宣称整体全绿；继续包／实际现用及下一检索覆盖交付。
 
 TD012补充（2026-10-24 TD006扩展组）：275项273通过／2失败。test_registration_saves_exact_inputs_reload_and_no_overwrite的登记输出成功，但ui/benchmark_workflow.py:584写终态status.json的os.replace遇WinError5，步骤随后显示interrupted；test_http_registered_source_range_csp_and_reference_import的生产导入成功，但HTTP返回缺busy，根因未证明，不直接归为前项或TD014旧快照竞态。原源码未改，原JUnit artifacts/dsh-source-clock-mapping-20261024/tests-r2.xml及run-3e6f6592日志保留。单一Sol/high确认独立页面映射不依赖这两失败；工作台整流程不能称通过，继续用该工作台步骤前优先处理。核心定向回执另存；唯一两项窄复查只作probe，即使通过也不称原因解决。
+
+| TD018 | 2026-10-31/P008 | high; disk exhaustion | 变速前置音轨测试在26秒内生成58.29GiB NUT；无落盘限额，失败目录和已集成工作树长期保留。用户未手动删除但活动narration-integration消失，来源未证实 | 已释放58.29GiB，FFmpeg -fs/文件动态预算(8MiB–2GiB)/目录4GiB/余量2GiB、退出复核、失败NUT与测试fixture回收通过相关回归及独立限定PASS；两棵已入库工作树已退役。历史未知改动副本逐项核清后退役，活动目录消失继续只读归因，不影响主树与用户素材；见[sprint](sprint-cache-reclamation.md) | partial: runaway-media protection and reclamation delivered; legacy tree retirement and missing-directory attribution remain |

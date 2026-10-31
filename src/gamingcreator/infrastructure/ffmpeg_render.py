@@ -14,6 +14,7 @@ from gamingcreator.infrastructure.ffmpeg_media import hash_source
 from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
 from gamingcreator.infrastructure.media_process import run_media_process
 from gamingcreator.infrastructure.music_library import _FORMATS, MusicTrack
+from gamingcreator.infrastructure.render_limits import render_output_limit
 
 
 def clip_filter(clip: RenderClip, fps: int, width: int, height: int) -> str:
@@ -241,224 +242,247 @@ class FfmpegCreationRenderer:
             video_filter += f",ass=filename={_filter_path(ass_path)}"
         ffmpeg = str(self.bin / "ffmpeg.exe")
         parts: list[Path] = []
-        for index, clip in enumerate(plan.clips):
-            part = target / f"part-{index:06d}.nut"
-            await run_media_process(
-                [
-                    ffmpeg,
-                    "-hide_banner",
-                    "-v",
-                    "error",
-                    "-nostdin",
-                    "-n",
-                    "-protocol_whitelist",
-                    "file,pipe",
-                    "-copyts",
-                    "-i",
-                    str(clip.asset.source_path),
-                    "-filter_complex",
-                    clip_filter(clip, plan.fps, width, height),
-                    "-map",
-                    "[v]",
-                    "-map",
-                    "[a]",
-                    "-c:v",
-                    "ffv1",
-                    "-c:a",
-                    "pcm_s16le",
-                    str(part),
-                ],
-                context,
-            )
-            parts.append(part)
-        manifest = target / "parts.txt"
-        manifest.write_text(
-            "".join(
-                f"file '{part.name}'\nduration {clip.output_frames / plan.fps:.12f}\n"
-                for part, clip in zip(parts, plan.clips, strict=True)
-            ),
-            encoding="utf-8",
-        )
-        joined_parts: list[Path] = []
-        input_args = ["-f", "concat", "-safe", "1", "-i", str(manifest)]
-        if any(plan.transition_frames):
-            joined, joined_parts = await compose_transitions(ffmpeg, plan, parts, context)
-            input_args = ["-i", str(joined)]
         try:
-            pending = target / "render.partial.mp4"
-            await run_media_process(
-                [
-                    ffmpeg,
-                    "-hide_banner",
-                    "-v",
-                    "error",
-                    "-nostdin",
-                    "-n",
-                    "-protocol_whitelist",
-                    "file,pipe",
-                    *input_args,
-                    *(
-                        [
-                            "-protocol_whitelist",
-                            "file",
-                            "-f",
-                            _FORMATS[music.path.suffix],
-                            "-stream_loop",
-                            "-1",
-                            "-i",
-                            str(music.path),
-                        ]
-                        if music is not None
-                        else []
-                    ),
-                    *(
-                        ["-filter_complex", _mix_filter(mix, plan.frames, plan.fps)]
-                        if mix.bgm is not None or mix.source_gain_db != 0
-                        else []
-                    ),
-                    "-map",
-                    "0:v:0",
-                    "-map",
-                    "[mixed]" if mix.bgm is not None or mix.source_gain_db != 0 else "0:a:0",
-                    "-vf",
-                    video_filter,
-                    "-c:v",
-                    "libx264",
-                    "-preset",
-                    "fast",
-                    "-crf",
-                    "18",
-                    "-pix_fmt",
-                    "yuv420p",
-                    "-c:a",
-                    "aac",
-                    "-ar",
-                    "48000",
-                    "-movflags",
-                    "+faststart",
-                    str(pending),
-                ],
-                context,
-            )
-            probed = await run_media_process(
-                [
-                    str(self.bin / "ffprobe.exe"),
-                    "-v",
-                    "error",
-                    "-count_frames",
-                    "-show_streams",
-                    "-of",
-                    "json",
-                    str(pending),
-                ],
-                context,
-            )
-            streams = json.loads(probed.stdout)["streams"]
-            video = next(stream for stream in streams if stream["codec_type"] == "video")
-            audio = next(stream for stream in streams if stream["codec_type"] == "audio")
-            expected = Fraction(plan.frames, plan.fps)
-            actual = int(video["duration_ts"]) * Fraction(video["time_base"])
-            if int(video["nb_read_frames"]) != plan.frames or abs(actual - expected) > Fraction(
-                1, plan.fps
-            ):
-                raise ValueError(
-                    "Rendered frame count or duration differs from the editing decision."
+            for index, clip in enumerate(plan.clips):
+                part = target / f"part-{index:06d}.nut"
+                part_limit = render_output_limit(part, clip.output_frames, plan.fps, width, height)
+                await run_media_process(
+                    [
+                        ffmpeg,
+                        "-hide_banner",
+                        "-v",
+                        "error",
+                        "-nostdin",
+                        "-n",
+                        "-protocol_whitelist",
+                        "file,pipe",
+                        "-copyts",
+                        "-i",
+                        str(clip.asset.source_path),
+                        "-filter_complex",
+                        clip_filter(clip, plan.fps, width, height),
+                        "-map",
+                        "[v]",
+                        "-map",
+                        "[a]",
+                        "-c:v",
+                        "ffv1",
+                        "-c:a",
+                        "pcm_s16le",
+                        "-fs",
+                        str(part_limit.max_bytes),
+                        str(part),
+                    ],
+                    context,
+                    output_limit=part_limit,
                 )
-            await run_media_process(
-                [
-                    ffmpeg,
-                    "-v",
-                    "error",
-                    "-xerror",
-                    "-nostdin",
-                    "-i",
-                    str(pending),
-                    "-f",
-                    "null",
-                    "-",
-                ],
-                context,
+                parts.append(part)
+            manifest = target / "parts.txt"
+            manifest.write_text(
+                "".join(
+                    f"file '{part.name}'\nduration {clip.output_frames / plan.fps:.12f}\n"
+                    for part, clip in zip(parts, plan.clips, strict=True)
+                ),
+                encoding="utf-8",
             )
-            for asset in {
-                (resolve_existing(clip.asset.source_path), clip.asset.sha256): clip.asset
-                for clip in plan.clips
-            }.values():
-                if await hash_source(asset.source_path, context) != asset.sha256:
-                    raise ValueError("Source changed during rendering.")
-            if music is not None:
-                await _verify_music(music, context)
-            context.check_cancelled()
-            final = target / "video.mp4"
-            pending.rename(final)
-            digest = await hash_source(final, context)
-            files = {"video.mp4": digest}
-            if subtitle_mode != "none":
-                files["subtitles.srt"] = await hash_source(subtitle_path, context)
-            result: dict[str, object] = {
-                "schemaVersion": "creation-render-receipt-v1",
-                "status": "completed",
-                "creationReceiptSha256": creation_digest,
-                "files": files,
-                "subtitles": {"mode": subtitle_mode, "cueCount": len(saved_cues)},
-                "frames": plan.frames,
-                "fpsNumerator": plan.fps,
-                "fpsDenominator": 1,
-                "width": width,
-                "height": height,
-                "videoDuration": str(actual),
-                "audioStartSeconds": audio.get("start_time"),
-                "audioMix": mix.to_json(),
-                "music": None if music is None else music.public(),
-                "mixPolicy": {
-                    "version": "creation-audio-mix-v1",
-                    "sampleRate": 48000,
-                    "channels": 2,
-                    "musicClock": "output-from-zero-loop-trim" if music else "none",
-                    "ducking": mix.ducking if music else "off",
-                    "duckingDetector": "raw-source-rms"
-                    if music and mix.ducking == "source-v1"
-                    else "none",
-                    "compressor": {
-                        "threshold": 0.015,
-                        "ratio": 12,
-                        "attackMs": 10,
-                        "releaseMs": 200,
-                    }
-                    if music and mix.ducking == "source-v1"
-                    else None,
-                    "normalize": False,
-                    "limiter": "0.95-level-false-latency-compensated" if music else "none",
-                },
-                "audioPolicy": "source-clock-resample-or-silence-48000-stereo",
-                "limitations": [
-                    "hard cuts and linear crossfades",
-                    "letterbox",
-                    "no overlays",
-                    "burn uses centisecond timing and visible fullwidth ASS control characters",
-                ],
-            }
-            if any(clip.speed != 1 for clip in plan.clips):
-                result["speedPolicy"] = {
-                    "version": "clip-speed-v1",
-                    "audio": "source-clock-pad-atempo-pitch-preserving-output-trim",
-                    "musicClock": "output-unchanged",
-                    "clips": [
-                        {"numerator": clip.speed.numerator, "denominator": clip.speed.denominator}
-                        for clip in plan.clips
+            joined_parts: list[Path] = []
+            input_args = ["-f", "concat", "-safe", "1", "-i", str(manifest)]
+            if any(plan.transition_frames):
+                joined, joined_parts = await compose_transitions(
+                    ffmpeg, plan, parts, context, width, height
+                )
+                input_args = ["-i", str(joined)]
+            try:
+                pending = target / "render.partial.mp4"
+                final_limit = render_output_limit(pending, plan.frames, plan.fps, width, height)
+                await run_media_process(
+                    [
+                        ffmpeg,
+                        "-hide_banner",
+                        "-v",
+                        "error",
+                        "-nostdin",
+                        "-n",
+                        "-protocol_whitelist",
+                        "file,pipe",
+                        *input_args,
+                        *(
+                            [
+                                "-protocol_whitelist",
+                                "file",
+                                "-f",
+                                _FORMATS[music.path.suffix],
+                                "-stream_loop",
+                                "-1",
+                                "-i",
+                                str(music.path),
+                            ]
+                            if music is not None
+                            else []
+                        ),
+                        *(
+                            ["-filter_complex", _mix_filter(mix, plan.frames, plan.fps)]
+                            if mix.bgm is not None or mix.source_gain_db != 0
+                            else []
+                        ),
+                        "-map",
+                        "0:v:0",
+                        "-map",
+                        "[mixed]" if mix.bgm is not None or mix.source_gain_db != 0 else "0:a:0",
+                        "-vf",
+                        video_filter,
+                        "-c:v",
+                        "libx264",
+                        "-preset",
+                        "fast",
+                        "-crf",
+                        "18",
+                        "-pix_fmt",
+                        "yuv420p",
+                        "-c:a",
+                        "aac",
+                        "-ar",
+                        "48000",
+                        "-movflags",
+                        "+faststart",
+                        "-fs",
+                        str(final_limit.max_bytes),
+                        str(pending),
+                    ],
+                    context,
+                    output_limit=final_limit,
+                )
+                probed = await run_media_process(
+                    [
+                        str(self.bin / "ffprobe.exe"),
+                        "-v",
+                        "error",
+                        "-count_frames",
+                        "-show_streams",
+                        "-of",
+                        "json",
+                        str(pending),
+                    ],
+                    context,
+                )
+                streams = json.loads(probed.stdout)["streams"]
+                video = next(stream for stream in streams if stream["codec_type"] == "video")
+                audio = next(stream for stream in streams if stream["codec_type"] == "audio")
+                expected = Fraction(plan.frames, plan.fps)
+                actual = int(video["duration_ts"]) * Fraction(video["time_base"])
+                if int(video["nb_read_frames"]) != plan.frames or abs(actual - expected) > Fraction(
+                    1, plan.fps
+                ):
+                    raise ValueError(
+                        "Rendered frame count or duration differs from the editing decision."
+                    )
+                await run_media_process(
+                    [
+                        ffmpeg,
+                        "-v",
+                        "error",
+                        "-xerror",
+                        "-nostdin",
+                        "-i",
+                        str(pending),
+                        "-f",
+                        "null",
+                        "-",
+                    ],
+                    context,
+                )
+                for asset in {
+                    (resolve_existing(clip.asset.source_path), clip.asset.sha256): clip.asset
+                    for clip in plan.clips
+                }.values():
+                    if await hash_source(asset.source_path, context) != asset.sha256:
+                        raise ValueError("Source changed during rendering.")
+                if music is not None:
+                    await _verify_music(music, context)
+                context.check_cancelled()
+                final = target / "video.mp4"
+                pending.rename(final)
+                digest = await hash_source(final, context)
+                files = {"video.mp4": digest}
+                if subtitle_mode != "none":
+                    files["subtitles.srt"] = await hash_source(subtitle_path, context)
+                result: dict[str, object] = {
+                    "schemaVersion": "creation-render-receipt-v1",
+                    "status": "completed",
+                    "creationReceiptSha256": creation_digest,
+                    "files": files,
+                    "subtitles": {"mode": subtitle_mode, "cueCount": len(saved_cues)},
+                    "frames": plan.frames,
+                    "fpsNumerator": plan.fps,
+                    "fpsDenominator": 1,
+                    "width": width,
+                    "height": height,
+                    "videoDuration": str(actual),
+                    "audioStartSeconds": audio.get("start_time"),
+                    "audioMix": mix.to_json(),
+                    "music": None if music is None else music.public(),
+                    "mixPolicy": {
+                        "version": "creation-audio-mix-v1",
+                        "sampleRate": 48000,
+                        "channels": 2,
+                        "musicClock": "output-from-zero-loop-trim" if music else "none",
+                        "ducking": mix.ducking if music else "off",
+                        "duckingDetector": "raw-source-rms"
+                        if music and mix.ducking == "source-v1"
+                        else "none",
+                        "compressor": {
+                            "threshold": 0.015,
+                            "ratio": 12,
+                            "attackMs": 10,
+                            "releaseMs": 200,
+                        }
+                        if music and mix.ducking == "source-v1"
+                        else None,
+                        "normalize": False,
+                        "limiter": "0.95-level-false-latency-compensated" if music else "none",
+                    },
+                    "audioPolicy": "source-clock-resample-or-silence-48000-stereo",
+                    "limitations": [
+                        "hard cuts and linear crossfades",
+                        "letterbox",
+                        "no overlays",
+                        "burn uses centisecond timing and visible fullwidth ASS control characters",
                     ],
                 }
-            # Remove only our deterministic temporary files, after validation, before completion.
-            for part in [*parts, *joined_parts]:
-                part.unlink()
-            manifest.unlink()
-            if ass_path.exists():
-                ass_path.unlink()
-            context.check_cancelled()
-            with (target / "receipt.partial.json").open("x", encoding="utf-8") as handle:
-                json.dump(result, handle, ensure_ascii=False, indent=2)
-            context.check_cancelled()
-            (target / "receipt.partial.json").rename(target / "receipt.json")
-            return {"output": str(target), "video": str(final), **result}
+                if any(clip.speed != 1 for clip in plan.clips):
+                    result["speedPolicy"] = {
+                        "version": "clip-speed-v1",
+                        "audio": "source-clock-pad-atempo-pitch-preserving-output-trim",
+                        "musicClock": "output-unchanged",
+                        "clips": [
+                            {
+                                "numerator": clip.speed.numerator,
+                                "denominator": clip.speed.denominator,
+                            }
+                            for clip in plan.clips
+                        ],
+                    }
+                # Remove only our deterministic temporary files, after validation, before completion.
+                for part in [*parts, *joined_parts]:
+                    part.unlink()
+                manifest.unlink()
+                if ass_path.exists():
+                    ass_path.unlink()
+                context.check_cancelled()
+                with (target / "receipt.partial.json").open("x", encoding="utf-8") as handle:
+                    json.dump(result, handle, ensure_ascii=False, indent=2)
+                context.check_cancelled()
+                (target / "receipt.partial.json").rename(target / "receipt.json")
+                return {"output": str(target), "video": str(final), **result}
+            finally:
+                for part in joined_parts:
+                    part.unlink(missing_ok=True)
         finally:
-            for part in joined_parts:
-                part.unlink(missing_ok=True)
+            # Every name is generated in this exclusive output directory, including
+            # a part whose process failed before it could be appended to parts.
+            for index in range(len(plan.clips)):
+                (target / f"part-{index:06d}.nut").unlink(missing_ok=True)
+                if index:
+                    (target / f"join-{index:06d}.nut").unlink(missing_ok=True)
+            (target / "parts.txt").unlink(missing_ok=True)
+            ass_path.unlink(missing_ok=True)

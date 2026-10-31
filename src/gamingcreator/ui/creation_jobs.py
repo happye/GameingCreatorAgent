@@ -531,12 +531,18 @@ class CreationJobs:
             self.save(receipt_path, receipt)
             state = self.verify(directory, state)
             state["status"] = "completed"
-        except Exception:
+        except Exception as error:
             state["status"] = "failed"
             state["error"] = {
                 "code": "creation.execution_failed",
                 "message": "创作任务失败，请检查素材与方案后用新请求重试。",
             }
+            if isinstance(error, AppError) and error.code in (
+                "media.file_limit",
+                "media.scratch_limit",
+                "media.disk_space",
+            ):
+                state["error"] = {"code": error.code, "message": error.message}
         finally:
             state["updatedAt"] = datetime.now(UTC).isoformat()
             try:

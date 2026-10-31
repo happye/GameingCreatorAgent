@@ -6,10 +6,16 @@ from pathlib import Path
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.rendering import RenderPlan
 from gamingcreator.infrastructure.media_process import run_media_process
+from gamingcreator.infrastructure.render_limits import render_output_limit
 
 
 async def compose_transitions(
-    ffmpeg: str, plan: RenderPlan, parts: list[Path], context: CancellationContext
+    ffmpeg: str,
+    plan: RenderPlan,
+    parts: list[Path],
+    context: CancellationContext,
+    width: int = 1280,
+    height: int = 720,
 ) -> tuple[Path, list[Path]]:
     current = parts[0]
     temporary: list[Path] = []
@@ -51,6 +57,7 @@ async def compose_transitions(
                 ]
             )
             output = part.parent / f"join-{index:06d}.nut"
+            output_limit = render_output_limit(output, frames, plan.fps, width, height)
             temporary.append(output)
             await run_media_process(
                 [
@@ -76,9 +83,12 @@ async def compose_transitions(
                     "ffv1",
                     "-c:a",
                     "pcm_s16le",
+                    "-fs",
+                    str(output_limit.max_bytes),
                     str(output),
                 ],
                 context,
+                output_limit=output_limit,
             )
             current = output
     except BaseException:

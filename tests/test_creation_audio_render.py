@@ -211,10 +211,10 @@ def test_changed_music_during_render_and_processing_failure(tmp_path, monkeypatc
     source, track = inputs(tmp_path)
     original = ffmpeg_render.run_media_process
 
-    async def changed(arguments, context):
+    async def changed(arguments, context, **kwargs):
         if fault == "process":
             raise ValueError("Simulated media processing failure")
-        result = await original(arguments, context)
+        result = await original(arguments, context, **kwargs)
         if "-count_frames" in arguments:
             path = track.path if fault == "media" else track.path.parent / "receipt.json"
             path.write_bytes(b"changed during rendering")
