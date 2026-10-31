@@ -230,7 +230,7 @@
             if (epoch !== state.epoch || state.editor !== editor) return;
             if (typeof data.text !== "string" || !data.text) { narr.scriptNote = "已保存镜头没有可用描述，无法生成草稿；可直接手写旁白。"; showNarration(editor); return; }
             narr.text = data.text;
-            narr.scriptNote = `模板草稿，待人工核对：按约 ${data.charactersPerSecond} 字/秒估算朗读约 ${data.estimatedSeconds.toFixed(1)} 秒，成片 ${data.outputSeconds.toFixed(1)} 秒${data.omittedClips ? `；${data.omittedClips} 个镜头因时长或描述缺失未写入` : ""}。请修改后再生成试听。`;
+            narr.scriptNote = `模板草稿，待人工核对：按约 ${data.charactersPerSecond} 字/秒估算朗读约 ${data.estimatedSeconds.toFixed(1)} 秒，成片 ${data.outputSeconds.toFixed(1)} 秒${data.omittedClips ? `；${data.omittedClips} 个镜头因时长或描述缺失未写入` : ""}${data.citations?.length ? `；引用知识：${data.citations.map((c) => `“${c.text}”${c.citation}`).join("；")}` : ""}。请修改后再生成试听。`;
         } catch (error) { if (epoch !== state.epoch) return; narr.scriptNote = `草稿生成失败：${error.message}`; }
         showNarration(editor);
     }
@@ -587,7 +587,7 @@
                     } catch (error) { trace.textContent = `未发布：${error.message}`; }
                     finally { publish.disabled = false; }
                 });
-                $("package-downloads").append(publish, trace);
+                $("package-downloads").append(reviewControls(id), publish, trace);
             }
             if (file === "video.mp4" || file === "cover.png") { const media = document.createElement(file === "video.mp4" ? "video" : "img"); media.src = url; if (file === "video.mp4") { media.controls = true; media.preload = "metadata"; } else media.alt = "平台预览包封面"; $("package-preview").append(media); }
         }
@@ -764,6 +764,47 @@
             } catch (error) { status.textContent = `保存失败：${error.message}`; }
         });
     })();
+    const team = {value: null};
+    (function teamPanel() {
+        const history = $("history"); if (!history) return;
+        const panel = node("section", ""); panel.id = "team-panel";
+        const members = document.createElement("textarea"); members.id = "team-members"; members.rows = 3; members.placeholder = "每行 名字:角色（owner 负责人 / editor 编辑 / reviewer 审核 / viewer 只读）";
+        const required = document.createElement("input"); required.id = "team-required"; required.placeholder = "必须出现的品牌词，逗号分隔";
+        const forbidden = document.createElement("input"); forbidden.id = "team-forbidden"; forbidden.placeholder = "禁用词，逗号分隔";
+        const reviewLabel = node("label", "发布前必须审核通过"), review = document.createElement("input"); review.type = "checkbox"; review.id = "team-review"; reviewLabel.prepend(review);
+        const actor = document.createElement("input"); actor.id = "team-actor"; actor.placeholder = "你的名字（须为负责人）";
+        const save = node("button", "保存团队设置"), status = node("p", ""); save.id = "team-save"; save.type = "button"; status.id = "team-status"; status.setAttribute("role", "status");
+        const details = node("details", ""); details.append(node("summary", "团队与审核（本机团队，无账号登录）"), members, required, forbidden, reviewLabel, actor, save, status);
+        panel.append(details); history.after(panel);
+        const list = (text) => text.split(/[,，\n]/).map((s) => s.trim()).filter(Boolean);
+        const fill = (value) => { team.value = value; if (!value) { status.textContent = "尚未设置团队；不设置则不启用审核。"; return; }
+            members.value = value.members.map((m) => `${m.name}:${m.role}`).join("\n"); required.value = value.brandTerms.required.join("，"); forbidden.value = value.brandTerms.forbidden.join("，"); review.checked = value.reviewRequired;
+            status.textContent = `团队 ${value.members.length} 人；${value.reviewRequired ? "发布前需审核" : "未要求审核"}。`; };
+        api("/api/enterprise/team").then((data) => fill(data.team)).catch(() => { status.textContent = "团队设置暂不可用。"; });
+        save.addEventListener("click", async () => {
+            const parsed = members.value.split("\n").map((line) => line.trim()).filter(Boolean).map((line) => { const [name, role] = line.split(/[:：]/).map((s) => s.trim()); return {name, role}; });
+            try { fill(await api("/api/enterprise/team", {actor: actor.value.trim(), team: {members: parsed, brandTerms: {required: list(required.value), forbidden: list(forbidden.value)}, reviewRequired: review.checked}})); status.textContent += " 已保存。"; }
+            catch (error) { status.textContent = `保存失败：${error.message}`; }
+        });
+    })();
+    function reviewControls(id) {
+        const box = node("div", ""); box.id = "review-box";
+        if (!team.value) return box;
+        const who = document.createElement("select"); who.id = "review-actor"; for (const m of team.value.members) who.append(new Option(`${m.name}（${m.role}）`, m.name));
+        const comment = document.createElement("input"); comment.id = "review-comment"; comment.placeholder = "审核意见（驳回必填）";
+        const trace = node("p", ""); trace.id = "review-trace"; trace.setAttribute("role", "status");
+        const show = (record) => { if (!record) { trace.textContent = "尚未提交审核。"; return; } const names = {pending: "审核中", approved: "已通过", rejected: "已驳回"}; const last = record.events[record.events.length - 1];
+            trace.textContent = `审核状态：${names[record.state]}；${record.events.map((e) => `${e.actor}${({submit: "提交", approve: "通过", reject: "驳回"})[e.action]}${e.comment ? `（${e.comment}）` : ""}`).join(" → ")}${last.brandIssues?.length ? `；品牌词问题：${last.brandIssues.join("；")}` : ""}`; };
+        box.append(node("strong", "发布包审核"), who, comment);
+        for (const [action, text] of [["submit", "提交审核"], ["approve", "通过"], ["reject", "驳回"]]) {
+            const button = node("button", text); button.type = "button"; button.id = `review-${action}`;
+            button.addEventListener("click", async () => { try { show(await api("/api/enterprise/review", {packageJobId: id, actor: who.value, action, comment: comment.value})); } catch (error) { trace.textContent = `未完成：${error.message}`; } });
+            box.append(button);
+        }
+        box.append(trace);
+        api(`/api/enterprise/review?packageJobId=${encodeURIComponent(id)}`).then((data) => show(data.review)).catch(() => {});
+        return box;
+    }
     (function planPanel() {
         const history = $("history"); if (!history) return;
         const panel = node("section", ""); panel.id = "plan-panel";

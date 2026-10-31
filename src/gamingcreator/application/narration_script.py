@@ -39,7 +39,11 @@ def _sentence(description: object) -> str:
 
 
 def build_narration_script(
-    brief: CreativeBrief, clips: list[dict[str, Any]], output_frames: int, fps: int
+    brief: CreativeBrief,
+    clips: list[dict[str, Any]],
+    output_frames: int,
+    fps: int,
+    knowledge: list[dict[str, Any]] | None = None,
 ) -> dict[str, object]:
     if any(type(n) is not int or n <= 0 for n in (output_frames, fps)):
         raise ValueError("Narration script needs a positive output clock.")
@@ -73,7 +77,23 @@ def build_narration_script(
         if used + sum(len(sentence) + 1 for _, sentence in trial) <= budget:
             chosen = trial
             break
-    parts += [sentence for _, sentence in chosen] + ([closing] if closing else [])
+    used += sum(len(sentence) + 1 for _, sentence in chosen)
+    # One matching knowledge sentence if it still fits; its source is shown, not spoken.
+    citations: list[dict[str, str]] = []
+    knowledge_sentence = ""
+    for entry in knowledge or []:
+        candidate = _sentence(entry.get("text"))
+        if candidate and used + len(candidate) + 1 <= budget:
+            knowledge_sentence = candidate
+            citations.append(
+                {"entryId": entry["entryId"], "text": candidate, "citation": entry["citation"]}
+            )
+            break
+    parts += (
+        [sentence for _, sentence in chosen]
+        + ([knowledge_sentence] if knowledge_sentence else [])
+        + ([closing] if closing else [])
+    )
     lines: list[dict[str, object]] = [
         {"clipId": clip["clipId"], "outputStartFrame": clip.get("outputStartFrame"), "text": text}
         for clip, text in chosen
@@ -87,6 +107,7 @@ def build_narration_script(
         "text": text,
         "lines": lines,
         "omittedClips": omitted,
+        "citations": citations,
         "budgetCharacters": budget,
         "estimatedSeconds": float(Fraction(len(text)) / CHARS_PER_SECOND),
         "outputSeconds": output_frames / fps,

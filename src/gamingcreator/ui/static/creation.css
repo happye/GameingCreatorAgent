@@ -14,3 +14,4 @@
 .plan-advisory{color:#ffd48a;overflow-wrap:anywhere}
 #rules-panel textarea,#rules-panel input[type=file]{width:100%}#rules-result li,#rules-status{overflow-wrap:anywhere}.rules-field ul{margin:4px 0 8px;padding-left:20px}
 #knowledge-panel input,#knowledge-panel textarea,#knowledge-panel select{width:100%}.knowledge-entry{border-top:1px solid #2c3a50;padding:6px 0;overflow-wrap:anywhere}#knowledge-status{overflow-wrap:anywhere}
+#team-panel textarea,#team-panel input:not([type=checkbox]){width:100%}#review-box{margin:8px 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center}#review-trace,#team-status{overflow-wrap:anywhere;flex-basis:100%}

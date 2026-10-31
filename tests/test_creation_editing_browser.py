@@ -90,6 +90,8 @@ def test_editing_version_flows(scenario):
                 r.fulfill(json={"voices": [], "licenseStatus": "unknown"})
             elif path == "/api/entitlement":
                 r.fulfill(status=404, json={"message": "未模拟"})
+            elif path == "/api/enterprise/team":
+                r.fulfill(json={"team": None})
             elif path == "/api/projects":
                 r.fulfill(json={"projects": [{"path": "one"}, {"path": "two"}]})
             elif path.startswith("/api/runs"):

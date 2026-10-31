@@ -71,6 +71,8 @@ def test_publication_save_reopen_refresh_and_stale(width):
                 r.fulfill(json={"voices": [], "licenseStatus": "unknown"})
             elif path == "/api/entitlement":
                 r.fulfill(status=404, json={"message": "未模拟"})
+            elif path == "/api/enterprise/team":
+                r.fulfill(json={"team": None})
             elif path.startswith("/api/runs"):
                 r.fulfill(json={"runs": []})
             elif r.request.method == "POST":

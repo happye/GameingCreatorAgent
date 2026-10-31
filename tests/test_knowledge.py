@@ -172,3 +172,22 @@ def test_http_add_from_text_and_file_then_search_and_history(tmp_path):
         server.shutdown()
         server.server_close()
         thread.join()
+
+
+def test_narration_draft_cites_matching_knowledge_without_speaking_the_source():
+    from gamingcreator.application.knowledge import search
+    from gamingcreator.application.narration_script import build_narration_script
+    from gamingcreator.domain.creation import CreativeBrief
+
+    brief = CreativeBrief(
+        "代号Atom", "guide", ("bilibili",), 30, "新英雄玩法", "新玩家", "简洁", ("新英雄",), ()
+    )
+    knowledge = search(
+        [entry("新英雄", "贝多芬可以召唤音符击退敌人")], brief.game, "新英雄 新英雄玩法"
+    )
+    rows = [{"clipId": "a", "scriptDraft": "角色奔跑", "outputStartFrame": 0}]
+    draft = build_narration_script(brief, rows, 900, 30, knowledge)
+    assert "贝多芬可以召唤音符击退敌人" in draft["text"] and "来源" not in draft["text"]
+    assert draft["citations"][0]["citation"].startswith("（来源：官方说明")
+    tight = build_narration_script(brief, rows, 120, 30, knowledge)
+    assert tight["citations"] == [] and "贝多芬" not in tight["text"]

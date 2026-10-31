@@ -867,12 +867,19 @@ class CreationJobs:
         raise fail("creation.input", "时间线格式只支持 fcpxml 或 otio。")
 
     def narration_script(self, job_id: str, plan_id: str) -> dict[str, object]:
+        from gamingcreator.application.knowledge import search
+        from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
+
         chain = load_chain(self, job_id, plan_id)
+        brief = CreativeBrief.from_json(chain.report["brief"])
+        words = " ".join((*brief.mandatory_topics, brief.objective))
+        knowledge = search(KnowledgeStore(self.repository).entries(), brief.game, words)[:3]
         return build_narration_script(
-            CreativeBrief.from_json(chain.report["brief"]),
+            brief,
             editable_clips(chain.edl, chain.root_sha),
             chain.plan.frames,
             chain.plan.fps,
+            knowledge,
         )
 
     def catalog(self, project_id: str) -> dict[str, object]:

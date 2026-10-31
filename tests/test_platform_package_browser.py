@@ -85,6 +85,8 @@ def test_package_versions_downloads_refresh_retry_and_stale(width):
                 r.fulfill(json={"voices": [], "licenseStatus": "unknown"})
             elif path == "/api/entitlement":
                 r.fulfill(status=404, json={"message": "未模拟"})
+            elif path == "/api/enterprise/team":
+                r.fulfill(json={"team": None})
             elif path == "/api/creation/platform-profiles":
                 r.fulfill(json={"profiles": profiles})
             elif path.startswith("/api/runs"):
