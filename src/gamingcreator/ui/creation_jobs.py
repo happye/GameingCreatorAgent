@@ -14,6 +14,7 @@ from typing import Any
 from uuid import uuid4
 
 from gamingcreator.application.creation_editing import editable_clips
+from gamingcreator.application.creation_feedback import summarize_feedback
 from gamingcreator.application.edit_decision import select_edit_decision
 from gamingcreator.application.narration import NarrationRequest
 from gamingcreator.application.narration_script import build_narration_script
@@ -703,6 +704,36 @@ class CreationJobs:
 
     def edit(self, job_id: str, plan_id: str) -> dict[str, Any]:
         return editor(load_chain(self, job_id, plan_id), job_id)
+
+    def feedback(self, project_id: str) -> dict[str, object]:
+        """Read-only usage statistics from saved records; videos are not re-hashed here."""
+        self.project(project_id)
+        records: list[dict[str, Any]] = []
+        for directory in self.jobs.iterdir():
+            if not directory.is_dir() or re.fullmatch("[0-9a-f]{32}", directory.name) is None:
+                continue
+            try:
+                state = self.read(directory / "status.json")
+                if state.get("projectId") != project_id or state.get("status") != "completed":
+                    continue
+                record = {
+                    "jobId": directory.name,
+                    "kind": state.get("kind"),
+                    "status": state.get("status"),
+                    "createdAt": state.get("createdAt", ""),
+                    "request": self.read(directory / "request.json").get("request", {}),
+                }
+                if record["kind"] == "plan":
+                    record["plans"] = self.read(directory / "result/plans.json").get("plans", [])
+                elif record["kind"] == "revision":
+                    record["root"] = self.read(directory / "result/revision.json")
+                    record["segments"] = self.read(directory / "result/edit-decision.json").get(
+                        "segments", []
+                    )
+                records.append(record)
+            except (OSError, ValueError, AppError):
+                continue  # An unreadable record is left out of the statistics, not guessed.
+        return summarize_feedback(records)
 
     def narration_script(self, job_id: str, plan_id: str) -> dict[str, object]:
         chain = load_chain(self, job_id, plan_id)

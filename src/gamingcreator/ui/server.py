@@ -668,6 +668,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     raise ValueError("Unexpected profile query")
                 self._json(200, profiles())
                 return
+            if path == "/api/creation/feedback":
+                if set(query) != {"projectId"}:
+                    raise ValueError("Expected registered project ID")
+                self._json(200, self.creation_jobs.feedback(query["projectId"]))
+                return
             if path == "/api/creation/jobs":
                 if set(query) != {"projectId"}:
                     raise ValueError("Expected registered project ID")

@@ -691,6 +691,27 @@
         if (!Number.isSafeInteger(coverFrame) || coverFrame < 0 || coverFrame >= data.frames) return;
         void submit("publication", {renderJobId: data.renderJobId, expectedRenderReceiptSha256: data.expectedRenderReceiptSha256, coverFrame, title: $("publication-title").value, description: $("publication-description").value, tags});
     });
+    (function feedbackPanel() {
+        const history = $("history"); if (!history) return;
+        const panel = node("section", ""); panel.id = "feedback-panel";
+        const show = node("button", "查看创作反馈"); show.id = "feedback-show"; show.type = "button";
+        const result = node("div", ""); result.id = "feedback-result";
+        panel.append(node("h3", "创作反馈（本机统计）"), node("p", "根据本项目已保存的任务统计：推荐方案是否被采用、常见修改、走到成片和发布包的比例。只读本机记录，不上传。"), show, result);
+        history.after(panel);
+        show.addEventListener("click", async () => {
+            if (!state.project) { result.textContent = "请先选择项目。"; return; }
+            show.disabled = true; result.textContent = "正在统计…";
+            try {
+                const data = await api(`/api/creation/feedback?projectId=${encodeURIComponent(state.project)}`);
+                const f = data.funnel, edits = Object.entries(data.editKinds).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ${n}`).join("、") || "暂无";
+                result.replaceChildren(
+                    node("p", `生成方案 ${data.plansGenerated} 次；选用方案 ${data.chains} 个，其中提供推荐的 ${data.recommendationOffered} 个里采用推荐 ${data.recommendationAdopted} 个。`),
+                    node("p", `平均每个方案保存修改版本 ${data.averageRevisions ?? 0} 次；常见修改：${edits}。`),
+                    node("p", `选用 ${f.chosen} → 出成片 ${f.rendered} → 封面文案 ${f.published} → 发布包 ${f.packaged}。`));
+            } catch (error) { result.textContent = `统计失败：${error.message}`; }
+            finally { show.disabled = false; }
+        });
+    })();
     (function rulesPanel() {
         const form = $("brief"); if (!form) return;
         const panel = node("section", ""); panel.id = "rules-panel";

@@ -977,8 +977,10 @@
       "group": "F",
       "name": "用户修改记录与数据反馈闭环",
       "first_product": false,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: read-only local feedback statistics from saved creation jobs (plans, recommendation offered/adopted, revisions, edit kinds by actual difference including inherited settings, render->publication->package funnel); real demo-phase0 22 plans/18 chains in 0.6s; adoption so far from agent test runs, not human choices; not yet fed back into ranking"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },
