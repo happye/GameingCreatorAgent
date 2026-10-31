@@ -334,6 +334,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/timeline-commands",
                 "/api/creation/activity-rules",
                 "/api/knowledge",
+                "/api/creation/publish",
                 "/api/match-details",
                 "/api/draft-detail-query",
                 "/api/search-project",
@@ -360,6 +361,21 @@ class InspectionHandler(BaseHTTPRequestHandler):
             value = json.loads(body, object_pairs_hook=unique)
             if path == "/api/creation/activity-rules":
                 self._json(200, self._activity_rules(value))
+                return
+            if path == "/api/creation/publish":
+                from gamingcreator.infrastructure.sandbox_publisher import SandboxPublisher
+
+                if not isinstance(value, dict) or set(value) != {"packageJobId", "target"}:
+                    raise ValueError("Expected package job and publish target")
+                # Re-verifies the package files and receipts before anything is recorded.
+                package = self.creation_jobs.package(str(value["packageJobId"]))
+                try:
+                    record = SandboxPublisher(self.repository).submit(
+                        str(value["packageJobId"]), package, str(value["target"])
+                    )
+                except (PermissionError, ValueError) as error:
+                    raise AppError("publish.refused", str(error), ExitCode.INPUT) from error
+                self._json(200, record)
                 return
             if path == "/api/knowledge":
                 from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
@@ -710,6 +726,24 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 if not {"game"} <= set(query) <= {"game", "q"}:
                     raise ValueError("Expected game and optional query")
                 self._json(200, {"entries": search(entries, query["game"], query.get("q", ""))})
+                return
+            if path == "/api/creation/publish" or path.startswith("/api/creation/publish/"):
+                from gamingcreator.infrastructure.sandbox_publisher import SandboxPublisher
+
+                publisher = SandboxPublisher(self.repository)
+                try:
+                    if path == "/api/creation/publish":
+                        if set(query) != {"packageJobId"}:
+                            raise ValueError("Expected package job ID")
+                        self._json(200, {"records": publisher.history(query["packageJobId"])})
+                    else:
+                        if query:
+                            raise ValueError("Unexpected publish status query")
+                        self._json(200, publisher.status(path.rsplit("/", 1)[1]))
+                except (OSError, ValueError) as error:
+                    raise AppError(
+                        "publish.status", "找不到这条发布记录。", ExitCode.INPUT
+                    ) from error
                 return
             if path == "/api/creation/feedback":
                 if set(query) != {"projectId"}:

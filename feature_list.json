@@ -935,8 +935,10 @@
       "group": "E",
       "name": "自动发布",
       "first_product": false,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: publishing adapter boundary with a local sandbox target only: package re-verification, local-check and blocked-eligibility gates, persisted submitted->processing->published simulation with status and history APIs; real platform targets refused pending official API access, account authorization and user approval; real guide package sandbox-published"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },

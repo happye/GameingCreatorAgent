@@ -575,6 +575,20 @@
             const parsed = new URL(url, location.origin);
             if (parsed.origin !== location.origin || parsed.pathname !== url || parsed.search || parsed.hash) throw new Error("预览包地址无效。");
             const link = node("a", `下载 ${file}`); link.href = url; link.download = file; link.dataset.file = file; $("package-downloads").append(link);
+            if (file === "package.zip") {
+                const publish = node("button", "沙箱发布（本机模拟，不上传）"), trace = node("p", ""); publish.type = "button"; publish.id = "sandbox-publish"; trace.id = "sandbox-trace"; trace.setAttribute("role", "status");
+                const names = {submitted: "已提交", processing: "处理中", published: "已发布（模拟）"};
+                const render = (record) => { trace.textContent = `${record.note} 远端编号 ${record.remoteId}：${record.events.map((e) => `${names[e.state]} ${e.at.slice(11, 19)}`).join(" → ")}`; };
+                publish.addEventListener("click", async () => {
+                    publish.disabled = true;
+                    try {
+                        let record = await api("/api/creation/publish", {packageJobId: id, target: "sandbox"}); render(record);
+                        while (record.state !== "published") { await new Promise((r) => setTimeout(r, 400)); record = await api(`/api/creation/publish/${record.publishId}`); render(record); }
+                    } catch (error) { trace.textContent = `未发布：${error.message}`; }
+                    finally { publish.disabled = false; }
+                });
+                $("package-downloads").append(publish, trace);
+            }
             if (file === "video.mp4" || file === "cover.png") { const media = document.createElement(file === "video.mp4" ? "video" : "img"); media.src = url; if (file === "video.mp4") { media.controls = true; media.preload = "metadata"; } else media.alt = "平台预览包封面"; $("package-preview").append(media); }
         }
     }
