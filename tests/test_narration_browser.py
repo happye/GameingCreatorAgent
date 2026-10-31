@@ -340,3 +340,28 @@ def test_render_with_narration_offers_text_download():
         pw.expect(link).to_contain_text("旁白文本")
         pw.expect(link).to_have_attribute("href", f"/api/creation/jobs/{RENDER}/narration-text")
         assert not posts
+
+
+def test_template_script_fills_text_with_honest_note():
+    draft = {
+        "status": "template-draft-human-review-required",
+        "text": "代号Atom玩法速览。角色在平台上移动。",
+        "lines": [],
+        "omittedClips": 2,
+        "budgetCharacters": 37,
+        "estimatedSeconds": 5.1,
+        "outputSeconds": 12.0,
+        "charactersPerSecond": 3.5,
+    }
+    routes = {f"/api/creation/jobs/{ROOT}/narration-script": draft}
+    with workspace(extra_routes=routes) as (pw, page, posts):
+        open_editor(pw, page)
+        pw.expect(page.locator("#narration-script-note")).to_contain_text("未保存的修改不计入")
+        page.locator("#narration-script").click()
+        pw.expect(page.locator("#narration-text")).to_have_value(draft["text"])
+        note = page.locator("#narration-script-note")
+        pw.expect(note).to_contain_text("模板草稿，待人工核对")
+        pw.expect(note).to_contain_text("约 5.1 秒")
+        pw.expect(note).to_contain_text("2 个镜头")
+        pw.expect(page.locator("#narration-generate")).to_be_enabled()
+        assert posts == []

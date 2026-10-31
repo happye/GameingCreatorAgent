@@ -689,6 +689,15 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     self._json(
                         200, self.creation_jobs.edit(tail.removesuffix("/edit"), query["planId"])
                     )
+                elif tail.endswith("/narration-script"):
+                    if set(query) != {"planId"}:
+                        raise ValueError("Expected selected plan ID")
+                    self._json(
+                        200,
+                        self.creation_jobs.narration_script(
+                            tail.removesuffix("/narration-script"), query["planId"]
+                        ),
+                    )
                 elif tail.endswith("/subtitles"):
                     if query:
                         raise ValueError("Unexpected subtitle query")

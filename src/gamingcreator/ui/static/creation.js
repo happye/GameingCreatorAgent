@@ -100,7 +100,7 @@
         catch { musicNotice = "曲库暂不可用，可继续镜头与字幕编辑。"; }
         if (state.editor) showAudio(state.editor);
     }
-    const narr = {voices: [], voiceId: "", notice: "正在读取本地声音…", license: "", text: "", job: null, asset: null, timer: null, draftFor: null, startFrame: 0, gainDb: 0, ducking: false};
+    const narr = {voices: [], voiceId: "", notice: "正在读取本地声音…", license: "", text: "", job: null, asset: null, timer: null, draftFor: null, startFrame: 0, gainDb: 0, ducking: false, scriptNote: ""};
     const outputFrameCount = (editor) => editor.clips.reduce((n, c) => n + clipFrames(c, editor.fps) - c.transitionIn.frames, 0);
     function checkedAsset(asset) {
         if (!asset || !/^[a-f0-9]{32}$/.test(asset.assetJobId) || !/^[a-f0-9]{64}$/.test(asset.receiptSha256) || !Number.isSafeInteger(asset.sampleCount) || !Number.isSafeInteger(asset.sampleRate) || asset.sampleCount < 1 || asset.sampleRate < 1 || !Number.isFinite(asset.durationSeconds)) throw new Error("旁白信息无效。");
@@ -121,7 +121,7 @@
     const refreshNarration = () => { if (state.editor) showNarration(state.editor); };
     function showNarration(editor) {
         if (narr.draftFor !== editor) {
-            narr.draftFor = editor; const n = editor.narration;
+            narr.draftFor = editor; narr.scriptNote = ""; const n = editor.narration;
             narr.startFrame = n ? n.startFrame : 0; narr.gainDb = n ? n.gainDb : 0; narr.ducking = n ? n.ducking === "narration-v1" : false;
         }
         const active = document.activeElement?.closest?.("#narration-controls") ? document.activeElement : null, focusId = active?.id, caret = active?.selectionStart;
@@ -142,6 +142,10 @@
         const count = node("p", ""); count.id = "narration-count";
         text.addEventListener("input", () => { narr.text = text.value; update(); });
         const textLabel = node("label", "旁白文字（1–10000 字，纯文本）"); textLabel.append(text); panel.append(textLabel, count);
+        const draft = node("button", "按已保存镜头生成解说草稿"); draft.id = "narration-script"; draft.type = "button"; draft.disabled = running;
+        const draftNote = node("p", narr.scriptNote || "草稿只用已保存的镜头描述和时长，离线模板生成，不调用模型；未保存的修改不计入。"); draftNote.id = "narration-script-note"; draftNote.setAttribute("role", "status");
+        draft.addEventListener("click", () => { if (!locked()) void draftNarration(editor); });
+        panel.append(draft, draftNote);
         const generate = node("button", "生成试听"); generate.id = "narration-generate"; generate.type = "button"; generate.addEventListener("click", () => { void generateNarration(); });
         const cancel = node("button", "取消生成"); cancel.id = "narration-cancel"; cancel.type = "button"; cancel.hidden = !running; cancel.addEventListener("click", () => { void cancelNarration(); });
         const status = node("p", ""); status.id = "narration-status"; status.setAttribute("role", "status");
@@ -216,6 +220,17 @@
             narr.voices = data.voices; narr.license = data.licenseStatus; narr.voiceId = (data.voices.find((v) => String(v.language).split(";").includes("804")) || data.voices[0])?.voiceId || ""; narr.notice = data.voices.length ? "" : "此电脑没有可用的本地声音，可继续其他编辑。";
         } catch { narr.voices = []; narr.voiceId = ""; narr.notice = "本地声音不可用，可继续其他编辑"; }
         refreshNarration();
+    }
+    async function draftNarration(editor) {
+        const epoch = state.epoch;
+        try {
+            const data = await api(`/api/creation/jobs/${encodeURIComponent(editor.parentJobId)}/narration-script?planId=${encodeURIComponent(editor.planId)}`);
+            if (epoch !== state.epoch || state.editor !== editor) return;
+            if (typeof data.text !== "string" || !data.text) { narr.scriptNote = "已保存镜头没有可用描述，无法生成草稿；可直接手写旁白。"; showNarration(editor); return; }
+            narr.text = data.text;
+            narr.scriptNote = `模板草稿，待人工核对：按约 ${data.charactersPerSecond} 字/秒估算朗读约 ${data.estimatedSeconds.toFixed(1)} 秒，成片 ${data.outputSeconds.toFixed(1)} 秒${data.omittedClips ? `；${data.omittedClips} 个镜头因时长或描述缺失未写入` : ""}。请修改后再生成试听。`;
+        } catch (error) { if (epoch !== state.epoch) return; narr.scriptNote = `草稿生成失败：${error.message}`; }
+        showNarration(editor);
     }
     async function generateNarration() {
         const text = narr.text, voiceId = narr.voiceId;

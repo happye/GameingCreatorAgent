@@ -13,8 +13,10 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from gamingcreator.application.creation_editing import editable_clips
 from gamingcreator.application.edit_decision import select_edit_decision
 from gamingcreator.application.narration import NarrationRequest
+from gamingcreator.application.narration_script import build_narration_script
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.cli.creation import execute_plan_creation
 from gamingcreator.cli.creation_render import execute_render_creation, read_creation
@@ -701,6 +703,15 @@ class CreationJobs:
 
     def edit(self, job_id: str, plan_id: str) -> dict[str, Any]:
         return editor(load_chain(self, job_id, plan_id), job_id)
+
+    def narration_script(self, job_id: str, plan_id: str) -> dict[str, object]:
+        chain = load_chain(self, job_id, plan_id)
+        return build_narration_script(
+            CreativeBrief.from_json(chain.report["brief"]),
+            editable_clips(chain.edl, chain.root_sha),
+            chain.plan.frames,
+            chain.plan.fps,
+        )
 
     def catalog(self, project_id: str) -> dict[str, object]:
         self.project(project_id)

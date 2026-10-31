@@ -690,8 +690,10 @@
       "group": "C",
       "name": "解说脚本生成",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-10-31: offline template narration draft from saved revision clip descriptions sized to the output clock (3.5 chars/s budget, evenly sampled clips, honest omitted count), GET narration-script API and workspace button feeding local narration; 11 new tests plus 113 related (.cache/narration-script.xml); real 12s plan produced a 36-character draft spanning first and last clips; quality not human-reviewed"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },
