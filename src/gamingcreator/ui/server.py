@@ -183,6 +183,14 @@ class InspectionHandler(BaseHTTPRequestHandler):
             "application/json; charset=utf-8",
         )
 
+    def _require(self, feature: str) -> None:
+        from gamingcreator.application.entitlements import EntitlementError, require
+
+        try:
+            require(self.creation_jobs.entitlement_selection(), feature)
+        except EntitlementError as error:
+            raise AppError("entitlement.denied", str(error), ExitCode.INPUT) from error
+
     def _activity_rules(self, value: object) -> dict[str, object]:
         import asyncio
         import base64
@@ -335,6 +343,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/activity-rules",
                 "/api/knowledge",
                 "/api/creation/publish",
+                "/api/entitlement",
                 "/api/match-details",
                 "/api/draft-detail-query",
                 "/api/search-project",
@@ -360,13 +369,20 @@ class InspectionHandler(BaseHTTPRequestHandler):
 
             value = json.loads(body, object_pairs_hook=unique)
             if path == "/api/creation/activity-rules":
+                self._require("activityRules")
                 self._json(200, self._activity_rules(value))
+                return
+            if path == "/api/entitlement":
+                if not isinstance(value, dict) or set(value) != {"plan"}:
+                    raise ValueError("Expected plan")
+                self._json(200, self.creation_jobs.select_plan(value["plan"]))
                 return
             if path == "/api/creation/publish":
                 from gamingcreator.infrastructure.sandbox_publisher import SandboxPublisher
 
                 if not isinstance(value, dict) or set(value) != {"packageJobId", "target"}:
                     raise ValueError("Expected package job and publish target")
+                self._require("sandboxPublish")
                 # Re-verifies the package files and receipts before anything is recorded.
                 package = self.creation_jobs.package(str(value["packageJobId"]))
                 try:
@@ -745,6 +761,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                         "publish.status", "找不到这条发布记录。", ExitCode.INPUT
                     ) from error
                 return
+            if path == "/api/entitlement":
+                if query:
+                    raise ValueError("Unexpected entitlement query")
+                self._json(200, self.creation_jobs.entitlement_summary())
+                return
             if path == "/api/creation/feedback":
                 if set(query) != {"projectId"}:
                     raise ValueError("Expected registered project ID")
@@ -839,6 +860,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 elif tail.endswith("/timeline"):
                     if set(query) != {"planId", "format"}:
                         raise ValueError("Expected plan ID and timeline format")
+                    self._require("timelineExport")
                     body, filename, content_type = self.creation_jobs.timeline_export(
                         tail.removesuffix("/timeline"), query["planId"], query["format"]
                     )

@@ -1081,8 +1081,10 @@
       "group": "H",
       "name": "创作者版（Free／Creator／Pro）",
       "first_product": false,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: local creator-plan entitlement model (founder default unlimited, Free/Creator/Pro) enforced at real entry points: monthly render quota metered from saved jobs, one platform package per publication on Free, activity-rule parsing, timeline export and sandbox publish gates; plan selection marked local evaluation; no payment, subscription, signed license or watermark"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },

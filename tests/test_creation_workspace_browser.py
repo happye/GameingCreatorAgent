@@ -82,6 +82,8 @@ def test_creation_form_plans_render_and_refresh(width):
                 route.fulfill(json={"tracks": [], "issues": []})
             elif path == "/api/creation/voices":
                 route.fulfill(json={"voices": [], "licenseStatus": "unknown"})
+            elif path == "/api/entitlement":
+                route.fulfill(status=404, json={"message": "未模拟"})
             elif path == "/api/projects":
                 route.fulfill(json={"projects": [{"path": "project-one", "name": "游戏项目"}]})
             elif path.startswith("/api/runs?"):
@@ -212,6 +214,8 @@ def test_creation_retry_reuses_id_and_late_job_cannot_replace_project():
                 route.fulfill(json={"tracks": [], "issues": []})
             elif path == "/api/creation/voices":
                 route.fulfill(json={"voices": [], "licenseStatus": "unknown"})
+            elif path == "/api/entitlement":
+                route.fulfill(status=404, json={"message": "未模拟"})
             elif path == "/api/projects":
                 route.fulfill(json={"projects": [{"path": "one"}, {"path": "two"}]})
             elif path.startswith("/api/runs?"):

@@ -209,6 +209,8 @@ class CreationJobs:
                     raise fail("creation.conflict", "同一请求标识已有不同内容。", True)
                 job = self.get(prior["jobId"])
                 return {key: job[key] for key in ("jobId", "kind", "status")}
+            # A repeated request above stays idempotent; only new work counts against a plan.
+            self.check_entitlement(kind, request)
             parent_id = None
             parent_digest = None
             if kind == "narration":
@@ -704,6 +706,67 @@ class CreationJobs:
 
     def edit(self, job_id: str, plan_id: str) -> dict[str, Any]:
         return editor(load_chain(self, job_id, plan_id), job_id)
+
+    def entitlement_selection(self) -> dict[str, Any] | None:
+        path = self.root / "entitlement.json"
+        return self.read(path) if path.is_file() else None
+
+    def select_plan(self, plan: object) -> dict[str, Any]:
+        from gamingcreator.application.entitlements import PLANS
+
+        if plan not in PLANS:
+            raise fail("entitlement.input", "未知套餐。")
+        selection = {
+            "plan": plan,
+            "selectedAt": datetime.now(UTC).isoformat(),
+            "billing": "none-local-evaluation",
+        }
+        self.save(self.root / "entitlement.json", selection)
+        return self.entitlement_summary()
+
+    def _statuses(self) -> list[dict[str, Any]]:
+        states = []
+        for directory in self.jobs.iterdir():
+            if directory.is_dir() and re.fullmatch("[0-9a-f]{32}", directory.name):
+                try:
+                    states.append({**self.read(directory / "status.json"), "directory": directory})
+                except (OSError, ValueError, AppError):
+                    continue
+        return states
+
+    def entitlement_summary(self) -> dict[str, Any]:
+        from gamingcreator.application.entitlements import renders_this_month, summary
+
+        used = renders_this_month(self._statuses(), datetime.now(UTC).isoformat())
+        return summary(self.entitlement_selection(), used)
+
+    def check_entitlement(self, kind: str, request: dict[str, Any]) -> None:
+        from gamingcreator.application.entitlements import (
+            EntitlementError,
+            renders_this_month,
+            require_package_platform,
+            require_render,
+        )
+
+        selection = self.entitlement_selection()
+        try:
+            if kind == "render":
+                used = renders_this_month(self._statuses(), datetime.now(UTC).isoformat())
+                require_render(selection, used)
+            elif kind == "package":
+                platforms = set()
+                for state in self._statuses():
+                    if (
+                        state.get("kind") == "package"
+                        and state.get("parentJobId") == request.get("publicationJobId")
+                        and state.get("status") in ("pending", "running", "completed")
+                    ):
+                        stored = self.read(state["directory"] / "request.json")["request"]
+                        platforms.add(stored["profile"].get("Platform"))
+                platform = request.get("profile", {}).get("Platform")
+                require_package_platform(selection, platforms, str(platform))
+        except EntitlementError as error:
+            raise fail("entitlement.denied", str(error)) from error
 
     def feedback(self, project_id: str) -> dict[str, object]:
         """Read-only usage statistics from saved records; videos are not re-hashed here."""

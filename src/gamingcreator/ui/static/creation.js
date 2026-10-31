@@ -764,6 +764,21 @@
             } catch (error) { status.textContent = `保存失败：${error.message}`; }
         });
     })();
+    (function planPanel() {
+        const history = $("history"); if (!history) return;
+        const panel = node("section", ""); panel.id = "plan-panel";
+        const select = document.createElement("select"); select.id = "plan-select";
+        const info = node("p", "正在读取套餐…"); info.id = "plan-info"; info.setAttribute("role", "status");
+        const label = node("label", "套餐（本地评估，不涉及付费）"); label.append(select);
+        panel.append(node("h3", "套餐与用量"), label, info); history.after(panel);
+        const render = (data) => {
+            select.replaceChildren(...Object.entries(data.plans).map(([value, text]) => new Option(text, value))); select.value = data.plan;
+            const features = Object.entries(data.features).map(([key, on]) => `${data.featureLabels[key]}${on ? "✓" : "✗"}`).join("、");
+            info.textContent = `本月成片 ${data.rendersThisMonth}${data.monthlyRenders === null ? "（不限）" : ` / ${data.monthlyRenders}`}；功能：${features}。未接入任何支付。`;
+        };
+        select.addEventListener("change", async () => { try { render(await api("/api/entitlement", {plan: select.value})); } catch (error) { info.textContent = `切换失败：${error.message}`; } });
+        api("/api/entitlement").then(render).catch(() => { info.textContent = "套餐信息暂不可用。"; });
+    })();
     (function feedbackPanel() {
         const history = $("history"); if (!history) return;
         const panel = node("section", ""); panel.id = "feedback-panel";
