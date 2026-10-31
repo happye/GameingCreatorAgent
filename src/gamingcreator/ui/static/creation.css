@@ -12,3 +12,4 @@
 #command-controls input{width:100%}#command-status,#command-changes{overflow-wrap:anywhere}#command-changes{margin:6px 0;padding-left:20px}
 .plan-card.recommended{border-color:#5aa7ff}
 .plan-advisory{color:#ffd48a;overflow-wrap:anywhere}
+#rules-panel textarea,#rules-panel input[type=file]{width:100%}#rules-result li,#rules-status{overflow-wrap:anywhere}.rules-field ul{margin:4px 0 8px;padding-left:20px}

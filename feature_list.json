@@ -631,8 +631,10 @@
       "group": "C",
       "name": "活动规则解析（文本／网页／截图／PDF）",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: offline activity-rule extraction (name, period, platforms, min/max duration, orientation, required topics, forbidden items) with exact source-line citations from pasted text or local txt/md/html, screenshots via Windows OCR and PDFs via Windows.Data.Pdf page rendering + OCR; one-click brief filling; real Windows screenshot/PDF tests pass; no network fetching or model understanding"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },

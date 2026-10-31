@@ -183,6 +183,48 @@ class InspectionHandler(BaseHTTPRequestHandler):
             "application/json; charset=utf-8",
         )
 
+    def _activity_rules(self, value: object) -> dict[str, object]:
+        import asyncio
+        import base64
+        import binascii
+
+        from gamingcreator.application.activity_rules import extract_activity_rules
+        from gamingcreator.application.providers import CancellationContext
+        from gamingcreator.infrastructure.rule_sources import read_rule_source
+
+        if isinstance(value, dict) and set(value) == {"text"} and isinstance(value["text"], str):
+            source: dict[str, object] = {"text": value["text"], "sourceKind": "pasted"}
+        elif (
+            isinstance(value, dict)
+            and set(value) == {"fileName", "dataBase64"}
+            and isinstance(value["fileName"], str)
+            and isinstance(value["dataBase64"], str)
+        ):
+            try:
+                data = base64.b64decode(value["dataBase64"], validate=True)
+            except (binascii.Error, ValueError) as error:
+                raise AppError("rules.input", "文件内容无效。", ExitCode.INPUT) from error
+            source = asyncio.run(
+                read_rule_source(
+                    value["fileName"],
+                    data,
+                    self.repository / ".cache/workspace/rules",
+                    CancellationContext("activity-rules", 120),
+                )
+            )
+        else:
+            raise AppError("rules.input", "请粘贴规则文字或选择一个文件。", ExitCode.INPUT)
+        text = str(source["text"])
+        try:
+            result = extract_activity_rules(text)
+        except ValueError as error:
+            raise AppError("rules.input", str(error), ExitCode.INPUT) from error
+        return {
+            **result,
+            "source": {k: v for k, v in source.items() if k != "text"} | {"characters": len(text)},
+            "text": text[:20000],
+        }
+
     def _local_request(self) -> bool:
         host = self.headers.get("Host", "")
         hostname = urlparse("http://" + host).hostname
@@ -244,7 +286,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 raise ValueError("Expected a bounded JSON body.")
             length = int(self.headers["Content-Length"])
             path = urlparse(self.path).path
-            body_limit = 8_388_608 if path == "/api/benchmark-step" else 65536
+            body_limit = {
+                "/api/benchmark-step": 8_388_608,
+                # A 10 MB rule file arrives base64-encoded inside JSON.
+                "/api/creation/activity-rules": 14_680_064,
+            }.get(path, 65536)
             # Socket read timeout prevents a partial body from retaining a handler indefinitely.
             self.connection.settimeout(10)
             # Read the bounded body before any rejection: closing a Windows socket with
@@ -271,6 +317,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/narrations",
                 "/api/creation/narration-cancel",
                 "/api/creation/timeline-commands",
+                "/api/creation/activity-rules",
                 "/api/match-details",
                 "/api/draft-detail-query",
                 "/api/search-project",
@@ -295,6 +342,9 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return result
 
             value = json.loads(body, object_pairs_hook=unique)
+            if path == "/api/creation/activity-rules":
+                self._json(200, self._activity_rules(value))
+                return
             if path == "/api/creation/timeline-commands":
                 from gamingcreator.application.timeline_commands import (
                     CommandError,

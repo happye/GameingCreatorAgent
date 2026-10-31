@@ -101,6 +101,13 @@ def workspace(
                     )
                 elif path == "/api/creation/narration-cancel":
                     r.fulfill(json={**body, "kind": "narration", "cancelRequested": True})
+                elif path == "/api/creation/activity-rules":
+                    from gamingcreator.application.activity_rules import extract_activity_rules
+
+                    extracted = extract_activity_rules(body["text"])
+                    r.fulfill(
+                        json={**extracted, "source": {"sourceKind": "pasted"}, "text": body["text"]}
+                    )
                 elif path == "/api/creation/timeline-commands":
                     from gamingcreator.application.timeline_commands import (
                         CommandError,
@@ -415,3 +422,31 @@ def test_one_sentence_command_previews_applies_and_saves_exact_clips():
             {"numerator": 2, "denominator": 1},
             {"numerator": 1, "denominator": 1},
         ]
+
+
+def test_activity_rules_panel_cites_lines_and_fills_brief():
+    rules = "\n".join(
+        [
+            "活动名称：星际奔跑创作季",
+            "参与平台：抖音",
+            "视频时长不少于45秒，不超过60秒",
+            "带上话题 #星际奔跑#",
+            "禁止使用未授权音乐",
+        ]
+    )
+    with workspace() as (pw, page, posts):
+        pw.expect(page.locator("#rules-panel")).to_be_visible()
+        page.locator("#rules-text").fill(rules)
+        page.locator("#rules-parse").click()
+        pw.expect(page.locator("#rules-status")).to_contain_text("识别到 6/8 项")
+        result = page.locator("#rules-result")
+        pw.expect(result).to_contain_text("〔第3行：视频时长不少于45秒，不超过60秒〕")
+        pw.expect(result).to_contain_text("画面方向：未识别")
+        page.locator("#rules-apply").click()
+        form = page.locator("#brief")
+        assert form.locator("[name=contentType]").input_value() == "campaign"
+        assert form.locator("[name=platforms]").input_value() == "douyin"
+        assert form.locator("[name=targetDuration]").input_value() == "45"
+        assert "星际奔跑" in form.locator("[name=mandatoryTopics]").input_value()
+        pw.expect(page.locator("#rules-status")).to_contain_text("禁止事项与画面方向请人工对照")
+        assert [path for path, _ in posts] == ["/api/creation/activity-rules"]

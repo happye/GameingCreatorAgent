@@ -691,6 +691,56 @@
         if (!Number.isSafeInteger(coverFrame) || coverFrame < 0 || coverFrame >= data.frames) return;
         void submit("publication", {renderJobId: data.renderJobId, expectedRenderReceiptSha256: data.expectedRenderReceiptSha256, coverFrame, title: $("publication-title").value, description: $("publication-description").value, tags});
     });
+    (function rulesPanel() {
+        const form = $("brief"); if (!form) return;
+        const panel = node("section", ""); panel.id = "rules-panel";
+        panel.append(node("h3", "活动规则（可选）"), node("p", "粘贴活动规则文字，或选择本地 txt/md/html/截图/PDF（≤10MB）。只在本机提取，不联网、不调用模型；每项结果都标出原文行，请核对后再填入需求。"));
+        const text = document.createElement("textarea"); text.id = "rules-text"; text.rows = 4; text.maxLength = 200000; text.placeholder = "例如：活动时间：2026年11月1日-11月30日；视频时长不少于30秒；带上话题 #代号Atom新版本#";
+        const file = document.createElement("input"); file.id = "rules-file"; file.type = "file"; file.accept = ".txt,.md,.html,.htm,.png,.jpg,.jpeg,.bmp,.pdf";
+        const parse = node("button", "解析规则"), apply = node("button", "填入需求"), status = node("p", ""), result = node("div", "");
+        parse.id = "rules-parse"; parse.type = "button"; apply.id = "rules-apply"; apply.type = "button"; apply.hidden = true; status.id = "rules-status"; status.setAttribute("role", "status"); result.id = "rules-result";
+        const label = node("label", "规则文字"); label.append(text); const fileLabel = node("label", "或选择文件"); fileLabel.append(file);
+        panel.append(label, fileLabel, parse, status, result, apply); form.before(panel);
+        let parsed = null;
+        const names = {name: "活动名称", period: "活动时间（无则用投稿时间）", platforms: "平台", minDurationSeconds: "最短时长", maxDurationSeconds: "最长时长", orientation: "画面方向", requiredTopics: "必带话题", forbidden: "禁止事项"};
+        const show = (field, value) => field === "period" ? `${value.start} 至 ${value.end}` : field === "orientation" ? (value === "vertical" ? "竖屏" : "横屏") : /Seconds$/.test(field) ? `${value} 秒` : String(value);
+        parse.addEventListener("click", async () => {
+            parse.disabled = true; status.textContent = "正在本机提取…"; result.replaceChildren(); apply.hidden = true; parsed = null;
+            try {
+                let body;
+                if (file.files?.length) {
+                    const chosen = file.files[0]; if (chosen.size > 10 * 1024 * 1024) throw new Error("文件超过10MB。");
+                    const bytes = new Uint8Array(await chosen.arrayBuffer()); let binary = ""; for (let i = 0; i < bytes.length; i += 32768) binary += String.fromCharCode(...bytes.subarray(i, i + 32768));
+                    body = {fileName: chosen.name, dataBase64: btoa(binary)};
+                } else if (text.value.trim()) body = {text: text.value};
+                else throw new Error("请粘贴规则文字或选择文件。");
+                parsed = await api("/api/creation/activity-rules", body);
+                status.textContent = `识别到 ${parsed.knownFields}/${parsed.totalFields} 项（来源：${{pasted: "粘贴文字", text: "文本文件", html: "网页文件", image: "截图OCR", pdf: "PDF逐页OCR"}[parsed.source.sourceKind] || parsed.source.sourceKind}${parsed.source.pagesRead ? `，读取 ${parsed.source.pagesRead}/${parsed.source.pages} 页` : ""}）。未识别的项保持空白；行号指提取出的文字（截图/PDF为识别结果），请对照原件核对。`;
+                for (const [field, label] of Object.entries(names)) {
+                    const value = parsed.fields[field], row = node("div", ""); row.className = "rules-field";
+                    if (value === null) { row.append(node("strong", `${label}：`), node("span", "未识别")); result.append(row); continue; }
+                    const items = Array.isArray(value) ? value : [value];
+                    row.append(node("strong", `${label}：`));
+                    const list = node("ul", ""); for (const item of items) list.append(node("li", `${show(field, item.value)}　〔第${item.line}行：${item.text}〕`)); row.append(list); result.append(row);
+                }
+                apply.hidden = false;
+            } catch (error) { status.textContent = `未能解析：${error.message}`; }
+            finally { parse.disabled = false; }
+        });
+        apply.addEventListener("click", () => {
+            if (!parsed) return; const f = parsed.fields, changes = [];
+            form.elements.contentType.value = "campaign"; changes.push("内容类型=活动投稿");
+            const platform = f.platforms?.map((p) => p.value).find((v) => [...form.elements.platforms.options].some((o) => o.value === v));
+            if (platform) { form.elements.platforms.value = platform; changes.push(`平台=${form.elements.platforms.selectedOptions[0].textContent}`); }
+            const duration = form.elements.targetDuration; let seconds = Number(duration.value) || 30;
+            if (f.minDurationSeconds) seconds = Math.max(seconds, Math.ceil(f.minDurationSeconds.value));
+            if (f.maxDurationSeconds) seconds = Math.min(seconds, Math.floor(f.maxDurationSeconds.value));
+            if (f.minDurationSeconds || f.maxDurationSeconds) { duration.value = String(seconds); changes.push(`目标秒数=${seconds}`); }
+            if (f.requiredTopics) { const topics = form.elements.mandatoryTopics, current = topics.value.split(/[,，\n]/).map((s) => s.trim()).filter(Boolean); topics.value = [...new Set([...current, ...f.requiredTopics.map((t) => t.value)])].join("\n"); changes.push(`必须主题+${f.requiredTopics.length}`); }
+            if (f.name && !form.elements.objective.value.trim()) { form.elements.objective.value = `${f.name.value} 活动投稿`; changes.push("创作目标"); }
+            status.textContent = `已填入：${changes.join("、")}。禁止事项与画面方向请人工对照（竖屏可在成片尺寸选择）。`;
+        });
+    })();
     $("brief").addEventListener("submit", (event) => {
         event.preventDefault(); const brief = Object.fromEntries(new FormData(event.target));
         for (const key of ["platforms", "mandatoryTopics", "exclude"]) brief[key] = [...new Set(brief[key].split(/[,，\n]/).map((s) => s.trim()).filter(Boolean))];
