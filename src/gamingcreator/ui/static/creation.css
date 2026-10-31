@@ -13,3 +13,4 @@
 .plan-card.recommended{border-color:#5aa7ff}
 .plan-advisory{color:#ffd48a;overflow-wrap:anywhere}
 #rules-panel textarea,#rules-panel input[type=file]{width:100%}#rules-result li,#rules-status{overflow-wrap:anywhere}.rules-field ul{margin:4px 0 8px;padding-left:20px}
+#knowledge-panel input,#knowledge-panel textarea,#knowledge-panel select{width:100%}.knowledge-entry{border-top:1px solid #2c3a50;padding:6px 0;overflow-wrap:anywhere}#knowledge-status{overflow-wrap:anywhere}

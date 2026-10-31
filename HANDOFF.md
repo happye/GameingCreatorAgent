@@ -1,4 +1,6 @@
-# 当前接手：编辑代理已交付，下一游戏知识层
+# 当前接手：游戏知识层已交付，下一专业时间线导出
+
+2026-11-01游戏知识层P018已交付（部分）：创作页新增“游戏知识（本机）”，按需求里的游戏名查找/新增条目（标题、内容、来源类型官方说明/Wiki攻略站/用户资料、来源说明），内容可手填或从本地txt/md/html/截图/PDF读取（复用活动规则的本机读取，不联网）；条目以内容SHA256命名、一条一个文件、永不覆盖，修改生成新版本并记录replaces，可查完整历史，查找只显示最新版本；查找按关键词在标题(×3)/正文中的出现次数排序，每条带“（来源：类型·说明，日期）”，可一键“插入到旁白”（截取前120字+出处）。存于.cache/workspace/knowledge。4项测试（校验、版本/历史、跨游戏隔离、HTTP文本/文件新增+查找+历史+错误）及相关回归共68项通过、Ruff/mypy通过；单Agent。仍未做：规划/解说自动引用知识、联网抓取Wiki、补丁版本对比。51项10/37/4≈56%，首产品0/22/0≈50%；人工0/未来9、债务20项11/2/7不变。下一专业时间线导出（P033）。
 
 2026-11-01编辑代理文件P011已交付（部分）：新增scripts/make-proxy.ps1（CLI make-proxy），为一个任务的原片生成或复用360p低码率代理（H.264≤600kbps+AAC 64k单声道），放在.cache/workspace/proxies/<原片SHA>/；字节上限按时长计算（码率×1.5+8MB，硬上限1GB），FFmpeg -fs与MediaOutputLimit双重限制，碰到上限即判失败；时长须与原片相差≤0.5秒；先在临时目录生成、校验通过才挪入，任何失败整目录删除，不留半成品。/api/media?proxy=1仅在收据与文件仍匹配时提供代理，缺失或被改动则明确提示而不是偷偷重建；成片始终读原片。真实Atom录像54.7秒：原片25.3MB→代理4.2MB（预算15.2MB），接口HEAD返回代理/原片大小正确。4项测试（大小预算、复用、篡改失效、超预算与时长不符均不留任何文件）通过，测试直接使用固定工具目录、不复制大文件。仍未做：工作台播放器自动改用代理、批量生成与清理入口。51项10/36/5≈55%，首产品0/22/0≈50%；人工0/未来9、债务20项11/2/7不变。下一游戏知识层（P018）。
 
@@ -36,7 +38,7 @@ R2-H已按[候选替换合同](docs/exec-plans/sprint-clip-replacements.md)完�
 
 R2-I本地旁白已按[合同](docs/exec-plans/sprint-local-narration.md)交付（结果见合同末节）；证据.cache/narration-main.xml（165项）、narration-ui.xml、narration-real-render.json（真实3.000秒定位）。剩余P2见TD019。
 
-已交付：P025解说草稿、P041一句话改镜头、P022+P043–P049七种内容模式（[sprint](docs/exec-plans/sprint-content-modes.md)）、P023/P024素材评分与缺口、P020活动规则解析、P039桌面EXE薄宿主、P042反馈闭环（[sprint](docs/exec-plans/sprint-creation-feedback.md)）。P011编辑代理（[sprint](docs/exec-plans/sprint-editing-proxy.md)）已交付。下一步建议：③P018游戏知识层（本地带版本/出处的条目）；④P033专业时间线导出（FCPXML/OTIO，需真实软件导入核验，否则只记部分）；⑤R4安装包/WebView2（待SDK下载许可）。
+已交付：P025解说草稿、P041一句话改镜头、P022+P043–P049七种内容模式（[sprint](docs/exec-plans/sprint-content-modes.md)）、P023/P024素材评分与缺口、P020活动规则解析、P039桌面EXE薄宿主、P042反馈闭环（[sprint](docs/exec-plans/sprint-creation-feedback.md)）。P011编辑代理（[sprint](docs/exec-plans/sprint-editing-proxy.md)）已交付。P018游戏知识层（[sprint](docs/exec-plans/sprint-game-knowledge.md)）已交付。下一步建议：④P033专业时间线导出（FCPXML/OTIO，需真实软件导入核验，否则只记部分）；⑤R4安装包/WebView2（待SDK下载许可）。
 
 ## 状态与边界
 

@@ -304,6 +304,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/benchmark-step": 8_388_608,
                 # A 10 MB rule file arrives base64-encoded inside JSON.
                 "/api/creation/activity-rules": 14_680_064,
+                "/api/knowledge": 14_680_064,
             }.get(path, 65536)
             # Socket read timeout prevents a partial body from retaining a handler indefinitely.
             self.connection.settimeout(10)
@@ -332,6 +333,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/narration-cancel",
                 "/api/creation/timeline-commands",
                 "/api/creation/activity-rules",
+                "/api/knowledge",
                 "/api/match-details",
                 "/api/draft-detail-query",
                 "/api/search-project",
@@ -358,6 +360,21 @@ class InspectionHandler(BaseHTTPRequestHandler):
             value = json.loads(body, object_pairs_hook=unique)
             if path == "/api/creation/activity-rules":
                 self._json(200, self._activity_rules(value))
+                return
+            if path == "/api/knowledge":
+                from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
+
+                if isinstance(value, dict) and "dataBase64" in value:
+                    # A file becomes entry text through the same local readers as activity rules.
+                    rule = self._activity_rules(
+                        {k: value[k] for k in ("fileName", "dataBase64") if k in value}
+                    )
+                    value = {k: v for k, v in value.items() if k not in ("fileName", "dataBase64")}
+                    value["text"] = rule["text"]
+                try:
+                    self._json(200, KnowledgeStore(self.repository).add(value))
+                except ValueError as error:
+                    raise AppError("knowledge.input", str(error), ExitCode.INPUT) from error
                 return
             if path == "/api/creation/timeline-commands":
                 from gamingcreator.application.timeline_commands import (
@@ -681,6 +698,18 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 if query:
                     raise ValueError("Unexpected profile query")
                 self._json(200, profiles())
+                return
+            if path == "/api/knowledge":
+                from gamingcreator.application.knowledge import history, search
+                from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
+
+                entries = KnowledgeStore(self.repository).entries()
+                if set(query) == {"entryId"}:
+                    self._json(200, {"history": history(entries, query["entryId"])})
+                    return
+                if not {"game"} <= set(query) <= {"game", "q"}:
+                    raise ValueError("Expected game and optional query")
+                self._json(200, {"entries": search(entries, query["game"], query.get("q", ""))})
                 return
             if path == "/api/creation/feedback":
                 if set(query) != {"projectId"}:

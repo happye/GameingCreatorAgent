@@ -691,6 +691,59 @@
         if (!Number.isSafeInteger(coverFrame) || coverFrame < 0 || coverFrame >= data.frames) return;
         void submit("publication", {renderJobId: data.renderJobId, expectedRenderReceiptSha256: data.expectedRenderReceiptSha256, coverFrame, title: $("publication-title").value, description: $("publication-description").value, tags});
     });
+    (function knowledgePanel() {
+        const form = $("brief"); if (!form) return;
+        const panel = node("section", ""); panel.id = "knowledge-panel";
+        panel.append(node("h3", "游戏知识（本机）"), node("p", "按“游戏”字段查找本机知识条目；每条带来源，修改会生成新版本、旧版本保留。不联网、不调用模型。"));
+        const query = document.createElement("input"); query.id = "knowledge-query"; query.placeholder = "关键词，如 技能 新英雄";
+        const find = node("button", "查找知识"); find.id = "knowledge-find"; find.type = "button";
+        const list = node("div", ""); list.id = "knowledge-list";
+        const title = document.createElement("input"); title.id = "knowledge-title"; title.placeholder = "条目标题"; title.maxLength = 100;
+        const text = document.createElement("textarea"); text.id = "knowledge-text"; text.rows = 3; text.maxLength = 20000; text.placeholder = "条目内容（或选择文件）";
+        const file = document.createElement("input"); file.id = "knowledge-file"; file.type = "file"; file.accept = ".txt,.md,.html,.htm,.png,.jpg,.jpeg,.bmp,.pdf";
+        const kind = document.createElement("select"); kind.id = "knowledge-kind"; for (const [value, label] of [["official", "官方说明"], ["wiki", "Wiki/攻略站"], ["user", "用户资料"]]) kind.append(new Option(label, value));
+        const label = document.createElement("input"); label.id = "knowledge-source"; label.placeholder = "来源说明，如 官网11月公告"; label.maxLength = 200;
+        const save = node("button", "保存条目"), status = node("p", ""); save.id = "knowledge-save"; save.type = "button"; status.id = "knowledge-status"; status.setAttribute("role", "status");
+        const queryLabel = node("label", "查找"); queryLabel.append(query);
+        const addBox = node("details", ""); addBox.append(node("summary", "新增知识条目"), title, text, file, kind, label, save);
+        panel.append(queryLabel, find, list, addBox, status); form.after(panel);
+        const game = () => form.elements.game.value.trim();
+        async function refresh() {
+            if (!game()) { status.textContent = "请先在需求里填写游戏名。"; return; }
+            try {
+                const data = await api(`/api/knowledge?game=${encodeURIComponent(game())}&q=${encodeURIComponent(query.value)}`);
+                list.replaceChildren();
+                if (!data.entries.length) list.append(node("p", "没有找到条目。"));
+                for (const entry of data.entries) {
+                    const item = node("article", ""); item.className = "knowledge-entry";
+                    const insert = node("button", "插入到旁白"); insert.type = "button";
+                    insert.addEventListener("click", () => {
+                        const sentence = `${entry.text.slice(0, 120)}${entry.citation}`;
+                        narr.text = narr.text ? `${narr.text}\n${sentence}` : sentence;
+                        if (state.editor) showNarration(state.editor);
+                        status.textContent = state.editor ? "已加入旁白文字，请核对后生成试听。" : "已加入旁白草稿；打开剪辑版本后可在旁白面板看到。";
+                    });
+                    item.append(node("strong", entry.title), node("p", entry.text.slice(0, 300)), node("small", entry.citation), insert);
+                    list.append(item);
+                }
+                status.textContent = `找到 ${data.entries.length} 条。`;
+            } catch (error) { status.textContent = `查找失败：${error.message}`; }
+        }
+        find.addEventListener("click", () => { void refresh(); });
+        save.addEventListener("click", async () => {
+            if (!game()) { status.textContent = "请先在需求里填写游戏名。"; return; }
+            const body = {game: game(), title: title.value, sourceKind: kind.value, sourceLabel: label.value};
+            try {
+                if (file.files?.length) {
+                    const bytes = new Uint8Array(await file.files[0].arrayBuffer()); let binary = ""; for (let i = 0; i < bytes.length; i += 32768) binary += String.fromCharCode(...bytes.subarray(i, i + 32768));
+                    Object.assign(body, {fileName: file.files[0].name, dataBase64: btoa(binary)});
+                } else body.text = text.value;
+                const entry = await api("/api/knowledge", body);
+                status.textContent = `已保存“${entry.title}”。`; title.value = ""; text.value = ""; file.value = "";
+                await refresh();
+            } catch (error) { status.textContent = `保存失败：${error.message}`; }
+        });
+    })();
     (function feedbackPanel() {
         const history = $("history"); if (!history) return;
         const panel = node("section", ""); panel.id = "feedback-panel";
