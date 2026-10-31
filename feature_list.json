@@ -1023,8 +1023,10 @@
       "group": "G",
       "name": "游戏解说",
       "first_product": false,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: commentary mode template (ordered ~3s segments, opening/commentary/ending roles, closing line) real demo-phase0 instance -> 315-frame MP4 -> Bilibili package passing configured checks (.cache/content-modes-e2e-r3.json)"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },
@@ -1033,8 +1035,10 @@
       "group": "G",
       "name": "实况精剪",
       "first_product": false,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: live-cut mode template (ordered ~1.5s segments, best-scored clip near each slot) real instance -> 445-frame MP4 -> Bilibili package passing configured checks"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },
@@ -1043,8 +1047,10 @@
       "group": "G",
       "name": "高光",
       "first_product": false,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: highlight mode template (top-scored clips in recording order, best last as climax) real instance -> 445-frame MP4 -> Bilibili package; scores are description proxies, not visual understanding"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },
@@ -1053,8 +1059,10 @@
       "group": "G",
       "name": "广告／买量",
       "first_product": false,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: ad/UA mode template (hook, up to three selling points preferring mandatory topics, call to action) real instance -> 270-frame MP4 -> Bilibili package; ad performance unknown"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },

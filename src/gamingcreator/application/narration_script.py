@@ -14,8 +14,12 @@ _OPENINGS = {
     "feature_showcase": "{game}玩法速览",
     "guide": "{game}攻略要点",
     "campaign": "{game}活动投稿",
+    "commentary": "{game}实况解说",
+    "live_cut": "{game}实况精剪",
+    "highlight": "{game}高光时刻",
+    "ad": "一起来玩{game}",
 }
-_CLOSINGS = {"campaign": "快来一起参与活动"}
+_CLOSINGS = {"campaign": "快来一起参与活动", "commentary": "感谢收看", "ad": "现在就来体验"}
 _FRAME_MARKER = re.compile(r"f\d+(?:至f\d+)?(?:中|显示|切换为|延续|开始)?")
 
 

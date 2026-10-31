@@ -10,8 +10,17 @@ from gamingcreator.domain.creation import CreativeBrief
 if TYPE_CHECKING:
     from gamingcreator.application.creative_planner import CreationClip
 
-MODE_LABELS = {"feature_showcase": "玩法展示", "guide": "攻略", "campaign": "活动投稿"}
+MODE_LABELS = {
+    "feature_showcase": "玩法展示",
+    "guide": "攻略",
+    "campaign": "活动投稿",
+    "commentary": "游戏解说",
+    "live_cut": "实况精剪",
+    "highlight": "高光",
+    "ad": "广告/买量",
+}
 MIN_STEP_SECONDS = Fraction(3, 2)
+COMMENTARY_SECONDS = 3
 
 
 @dataclass(frozen=True, slots=True)
@@ -145,5 +154,74 @@ def mode_structure(
             ordered,
             final_roles,
             weights,
+        )
+    if brief.content_type == "commentary":
+        # Longer shots leave room for spoken commentary over each segment.
+        count = max(3, int(brief.target_duration / COMMENTARY_SECONDS))
+        picked = _sample(eligible, count, score)
+        segment_roles = ["开场", *[f"解说段{i}" for i in range(1, len(picked) - 1)], "结尾"][: len(picked)]
+        if len(picked) == 2:
+            segment_roles = ["开场", "结尾"]
+        return ModeStructure(
+            "commentary-segments",
+            f"游戏解说模板：按录像顺序取{len(picked)}段较长镜头（约{COMMENTARY_SECONDS}秒/段），给解说留出说话时间",
+            tuple(picked),
+            tuple(segment_roles),
+            tuple(Fraction(1) for _ in picked),
+        )
+    if brief.content_type == "live_cut":
+        picked = _sample(eligible, _cap(brief), score)
+        return ModeStructure(
+            "live-cut",
+            f"实况精剪模板：保持录像先后顺序，紧凑取{len(picked)}段（约1.5秒/段），每段取附近评分最高的片段",
+            tuple(picked),
+            tuple(f"实况{i + 1}" for i in range(len(picked))),
+            tuple(Fraction(1) for _ in picked),
+        )
+    if brief.content_type == "highlight":
+        # Best-scored clips, shown in recording order, with the single best saved for last.
+        best = sorted(eligible, key=lambda clip: (-score(clip), eligible.index(clip)))[
+            : _cap(brief)
+        ]
+        climax = best[0]
+        rest = sorted((clip for clip in best[1:]), key=eligible.index)
+        ordered_clips = (*rest, climax)
+        return ModeStructure(
+            "highlight-climax",
+            f"高光模板：取评分最高的{len(ordered_clips)}段，按录像顺序播放，最高分片段放在最后作高潮",
+            ordered_clips,
+            tuple([*[f"高光{i + 1}" for i in range(len(rest))], "高潮"]),
+            tuple([*[Fraction(1)] * len(rest), Fraction(3, 2)]),
+        )
+    if brief.content_type == "ad":
+        hook = _richest(eligible, score)
+        topic_clips = [
+            clip
+            for topic in brief.mandatory_topics
+            for clip in eligible
+            if clip is not hook
+            and topic.casefold()
+            in " ".join(clip.event.observable_facts + clip.event.mechanic_tags).casefold()
+        ]
+        selling: list[CreationClip] = []
+        for clip in topic_clips:
+            if clip not in selling:
+                selling.append(clip)
+        others = sorted(
+            (clip for clip in eligible if clip is not hook and clip not in selling),
+            key=lambda clip: (-score(clip), eligible.index(clip)),
+        )
+        # Short ads: hook, up to three selling points, a call to action.
+        points = (selling + others)[:3]
+        closing = [clip for clip in others if clip not in points][:1]
+        ordered_clips = (hook, *points, *closing)
+        ad_roles = ["开场钩子", *["卖点"] * len(points), *["行动号召"] * len(closing)]
+        hook_weight = max(Fraction(1), Fraction(len(ordered_clips) - 1, 3))
+        return ModeStructure(
+            "ad-hook",
+            "广告/买量模板：最高分片段作开场钩子，接最多3个卖点（优先命中必须主题），最后一段行动号召",
+            ordered_clips,
+            tuple(ad_roles),
+            (hook_weight, *[Fraction(1)] * (len(ordered_clips) - 1)),
         )
     return None

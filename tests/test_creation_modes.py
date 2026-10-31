@@ -168,3 +168,38 @@ def test_spoken_steps_stay_contiguous_after_edits():
     text = build_narration_script(brief("guide", duration=30), edited, 900, 30)["text"]
     assert "第1步，打开第3扇门" in text and "第2步，打开第0扇门" in text
     assert "第3步，打开第2扇门" in text and "第4步" not in text
+
+
+def test_remaining_modes_are_recommended_with_their_own_structures():
+    facts = [[f"片段{i}"] for i in range(20)]
+    facts[3] = ["角色跳跃", "空中旋转", "落地特效"]
+    facts[12] = ["新英雄登场", "技能展示"]
+    clips = material(facts)
+    commentary = plan_creation(brief("commentary", duration=15), clips, 30)["plans"][0]
+    assert commentary["id"] == "commentary-segments" and commentary["modeLabel"] == "游戏解说"
+    roles = [s["role"] for s in commentary["segments"]]
+    assert roles[0] == "开场" and roles[-1] == "结尾" and len(roles) == 5
+    live = plan_creation(brief("live_cut", duration=15), clips, 30)["plans"][0]
+    assert live["id"] == "live-cut" and len(live["segments"]) == 10
+    events = [s["eventId"] for s in live["segments"]]
+    assert events == sorted(events, key=lambda e: int(e[1:]))
+    highlight = plan_creation(brief("highlight", duration=6), clips, 30)["plans"][0]
+    assert highlight["id"] == "highlight-climax"
+    assert (
+        highlight["segments"][-1]["eventId"] == "e3" and highlight["segments"][-1]["role"] == "高潮"
+    )
+    ad = plan_creation(brief("ad", duration=15, topics=("新英雄",)), clips, 30)["plans"][0]
+    assert ad["id"] == "ad-hook" and ad["modeLabel"] == "广告/买量"
+    assert [s["role"] for s in ad["segments"]][:2] == ["开场钩子", "卖点"]
+    # The topic clip scores highest (brief match), so it becomes the hook.
+    assert ad["segments"][0]["eventId"] == "e12" and ad["segments"][1]["eventId"] == "e3"
+    assert ad["segments"][-1]["role"] == "行动号召"
+    assert ad["segments"][0]["outputFrames"] > ad["segments"][1]["outputFrames"]
+
+
+def test_new_mode_scripts_open_and_close_in_their_own_words():
+    rows = [{"clipId": "a", "scriptDraft": "角色奔跑", "outputStartFrame": 0}]
+    ad = build_narration_script(brief("ad", duration=30), rows, 900, 30)["text"]
+    assert ad.startswith("一起来玩代号Atom。") and ad.endswith("现在就来体验。")
+    commentary = build_narration_script(brief("commentary", duration=30), rows, 900, 30)["text"]
+    assert commentary.endswith("感谢收看。")
