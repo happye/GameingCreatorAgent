@@ -15,6 +15,7 @@ _OPENINGS = {
     "guide": "{game}攻略要点",
     "campaign": "{game}活动投稿",
 }
+_CLOSINGS = {"campaign": "快来一起参与活动"}
 _FRAME_MARKER = re.compile(r"f\d+(?:至f\d+)?(?:中|显示|切换为|延续|开始)?")
 
 
@@ -42,20 +43,33 @@ def build_narration_script(
     opening = _OPENINGS.get(brief.content_type, "{game}实机片段").format(game=brief.game.strip())
     parts = [opening] if len(opening) + 1 <= budget else []
     used = sum(len(part) + 1 for part in parts)
+    closing = _CLOSINGS.get(brief.content_type, "")
+    if closing and used + len(closing) + 1 <= budget:
+        used += len(closing) + 1
+    else:
+        closing = ""
     candidates: list[tuple[dict[str, Any], str]] = []
     for clip in clips:
         sentence = _sentence(clip.get("scriptDraft"))
         if sentence and (not candidates or candidates[-1][1] != sentence):
             candidates.append((clip, sentence))
+    # Guide steps are numbered by their position in this draft, so edits never leave gaps.
+    steps = brief.content_type == "guide"
+
+    def spoken(trial: list[tuple[dict[str, Any], str]]) -> list[tuple[dict[str, Any], str]]:
+        return [
+            (clip, f"第{k}步，{text}" if steps else text) for k, (clip, text) in enumerate(trial, 1)
+        ]
+
     # One narration spans the whole video, so sample clips evenly over output time.
     chosen: list[tuple[dict[str, Any], str]] = []
     for count in range(len(candidates), 0, -1):
         picks = sorted({round(i * (len(candidates) - 1) / max(1, count - 1)) for i in range(count)})
-        trial = [candidates[i] for i in picks]
+        trial = spoken([candidates[i] for i in picks])
         if used + sum(len(sentence) + 1 for _, sentence in trial) <= budget:
             chosen = trial
             break
-    parts += [sentence for _, sentence in chosen]
+    parts += [sentence for _, sentence in chosen] + ([closing] if closing else [])
     lines: list[dict[str, object]] = [
         {"clipId": clip["clipId"], "outputStartFrame": clip.get("outputStartFrame"), "text": text}
         for clip, text in chosen

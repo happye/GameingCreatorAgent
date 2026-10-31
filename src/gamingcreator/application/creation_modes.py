@@ -1,0 +1,134 @@
+"""Offline structure templates for the first-product content modes (no model understanding)."""
+
+from collections.abc import Sequence
+from dataclasses import dataclass
+from fractions import Fraction
+from typing import TYPE_CHECKING
+
+from gamingcreator.domain.creation import CreativeBrief
+
+if TYPE_CHECKING:
+    from gamingcreator.application.creative_planner import CreationClip
+
+MODE_LABELS = {"feature_showcase": "玩法展示", "guide": "攻略", "campaign": "活动投稿"}
+MIN_STEP_SECONDS = Fraction(3, 2)
+
+
+@dataclass(frozen=True, slots=True)
+class ModeStructure:
+    identity: str
+    description: str
+    ordered: tuple["CreationClip", ...]
+    roles: tuple[str, ...]
+    weights: tuple[Fraction, ...]
+
+
+def _richness(clip: "CreationClip") -> tuple[int, int]:
+    """Saved-description detail only; it does not prove visual importance."""
+    event = clip.event
+    return len(event.observable_facts) + len(event.mechanic_tags), len(
+        "".join(event.observable_facts)
+    )
+
+
+def _richest(clips: Sequence["CreationClip"]) -> "CreationClip":
+    # max() keeps the earliest clip on ties, so the choice is deterministic.
+    return max(clips, key=_richness)
+
+
+def _framed(
+    opening: "CreationClip",
+    middle: list["CreationClip"],
+    opening_role: str,
+    middle_role: str,
+    middle_roles: list[str] | None = None,
+) -> tuple[tuple["CreationClip", ...], tuple[str, ...], tuple[Fraction, ...]]:
+    ordered = (opening, *middle)
+    roles = [opening_role, *(middle_roles or [middle_role] * len(middle))]
+    # Only a generic closing clip is relabelled; a topic label is never overwritten.
+    if len(ordered) >= 3 and roles[-1] == middle_role:
+        roles[-1] = "收尾"
+    # The opening hook gets about a quarter of the duration when there is enough material.
+    hook = max(Fraction(1), Fraction(len(middle), 3))
+    return ordered, tuple(roles), (hook, *[Fraction(1)] * len(middle))
+
+
+def _cap(brief: CreativeBrief) -> int:
+    """How many segments fit at about 1.5 seconds each (at least three)."""
+    return max(3, int(brief.target_duration / MIN_STEP_SECONDS))
+
+
+def _sample(clips: Sequence["CreationClip"], count: int) -> list["CreationClip"]:
+    """Evenly spaced clips in their existing order, keeping first and last."""
+    if count <= 0:
+        return []
+    if len(clips) <= count:
+        return list(clips)
+    if count == 1:
+        return [clips[0]]
+    return [
+        clips[i] for i in sorted({round(i * (len(clips) - 1) / (count - 1)) for i in range(count)})
+    ]
+
+
+def mode_structure(
+    brief: CreativeBrief, eligible: Sequence["CreationClip"]
+) -> ModeStructure | None:
+    if not eligible:
+        return None
+    if brief.content_type == "feature_showcase":
+        opening = _richest(eligible)
+        middle = _sample([clip for clip in eligible if clip is not opening], _cap(brief) - 1)
+        ordered, roles, weights = _framed(opening, middle, "开场高光", "玩法展示")
+        return ModeStructure(
+            "showcase",
+            "玩法展示模板：描述最丰富的片段作开场高光，其余按录像顺序展示玩法，最后一段收尾",
+            ordered,
+            roles,
+            weights,
+        )
+    if brief.content_type == "guide":
+        picked = _sample(eligible, _cap(brief))
+        seconds = brief.target_duration / len(picked)
+        return ModeStructure(
+            "guide-steps",
+            f"攻略模板：按录像先后均匀取{len(picked)}步，每步目标约{seconds:.1f}秒",
+            tuple(picked),
+            tuple(f"第{i + 1}步" for i in range(len(picked))),
+            tuple(Fraction(1) for _ in picked),
+        )
+    if brief.content_type == "campaign":
+        used: list[CreationClip] = []
+        topic_roles: list[str] = []
+        for topic in brief.mandatory_topics:
+            match = next(
+                (
+                    clip
+                    for clip in eligible
+                    if clip not in used
+                    and topic.casefold()
+                    in " ".join(clip.event.observable_facts + clip.event.mechanic_tags).casefold()
+                ),
+                None,
+            )
+            if match is not None:
+                used.append(match)
+                topic_roles.append(f"活动主题：{topic}")
+        rest = [clip for clip in eligible if clip not in used]
+        opening = _richest(rest) if rest else used.pop(0)
+        if not rest:
+            topic_roles.pop(0)
+        remaining = _sample(
+            [clip for clip in rest if clip is not opening], _cap(brief) - 1 - len(used)
+        )
+        middle = used + remaining
+        middle_roles = topic_roles + ["活动亮点"] * len(remaining)
+        ordered, final_roles, weights = _framed(opening, middle, "开场", "活动亮点", middle_roles)
+        return ModeStructure(
+            "campaign-topics",
+            "活动投稿模板：开场后先放命中必须主题的片段（按主题顺序），再放其他亮点，最后一段收尾",
+            ordered,
+            final_roles,
+            weights,
+        )
+    return None

@@ -2,6 +2,7 @@
 
 # ruff: noqa: F811
 import json
+import re
 import threading
 import urllib.error
 import urllib.request
@@ -54,9 +55,11 @@ def test_longer_output_includes_more_clips_in_order_and_guides_open_differently(
     clips = [clip(i, f"第{i}个镜头角色向城堡入口奔跑") for i in range(5)]
     brief = CreativeBrief.from_json({**BRIEF, "contentType": "guide"})
     result = build_narration_script(brief, clips, 900, 30)
-    assert result["text"].startswith("代号Atom攻略要点。第0个镜头")
-    assert [line["clipId"] for line in result["lines"]] == [f"c{i}" for i in range(5)]
-    assert result["omittedClips"] == 0
+    assert result["text"].startswith("代号Atom攻略要点。第1步，第0个镜头")
+    # Spoken step prefixes count toward the budget, so one evenly placed clip is left out.
+    assert [line["clipId"] for line in result["lines"]] == ["c0", "c1", "c3", "c4"]
+    assert result["text"].count("步，") == 4 and "第4步，第4个镜头" in result["text"]
+    assert result["omittedClips"] == 1
     with pytest.raises(ValueError):
         build_narration_script(brief, clips, 0, 30)
 
@@ -75,7 +78,7 @@ def test_job_and_http_use_saved_revision_descriptions(revisions):
     draft = jobs.narration_script(root, "hook-first")
     assert draft["outputSeconds"] == snapshot["actualDuration"]
     descriptions = " ".join(c.get("scriptDraft") or "" for c in snapshot["clips"])
-    assert all(line["text"] in descriptions for line in draft["lines"])
+    assert all(re.sub(r"^第\d+步，", "", line["text"]) in descriptions for line in draft["lines"])
     child = jobs.submit("revision", payload(jobs, root))["jobId"]
     assert finish(jobs, child)["status"] == "completed"
 

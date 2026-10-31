@@ -272,7 +272,17 @@ def _parser() -> CliParser:
     creation.add_argument("--output", type=Path, required=True)
     creation.add_argument("--event", nargs="*", default=[])
     creation.add_argument("--fps", type=int, default=30)
-    creation.add_argument("--select", choices=["chronological", "hook-first", "reverse"])
+    creation.add_argument(
+        "--select",
+        choices=[
+            "showcase",
+            "guide-steps",
+            "campaign-topics",
+            "chronological",
+            "hook-first",
+            "reverse",
+        ],
+    )
     shots = commands.add_parser(
         "detect-shots",
         help="本地检测一个任务原片的镜头切换与黑屏，并标出跨镜头事件；只读、不花钱",

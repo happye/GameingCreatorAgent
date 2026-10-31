@@ -1,7 +1,9 @@
 """Pure template planner over explicitly loaded, verified saved timelines."""
 
 from dataclasses import dataclass
+from fractions import Fraction
 
+from gamingcreator.application.creation_modes import MODE_LABELS, mode_structure
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.creation import CreativeBrief
 from gamingcreator.domain.media import MediaAsset
@@ -73,20 +75,32 @@ def plan_creation(
         ),
     )
     # Across sources retain the explicit input run order; within each source use source time.
-    structures = (
-        ("chronological", "按来源顺序展开", eligible),
-        ("hook-first", "最后一条先作开场，再回溯", eligible[-1:] + eligible[:-1]),
-        ("reverse", "倒序逐条回顾", list(reversed(eligible))),
-    )
+    generic: list[
+        tuple[str, str, list[CreationClip], tuple[str, ...] | None, tuple[Fraction, ...] | None]
+    ] = [
+        ("chronological", "按来源顺序展开", eligible, None, None),
+        ("hook-first", "最后一条先作开场，再回溯", eligible[-1:] + eligible[:-1], None, None),
+        ("reverse", "倒序逐条回顾", list(reversed(eligible)), None, None),
+    ]
+    mode = mode_structure(brief, eligible)
+    structures = generic
+    if mode is not None:
+        # The content mode's own template is recommended first; generic orders stay available.
+        structures = [
+            (mode.identity, mode.description, list(mode.ordered), mode.roles, mode.weights),
+            *generic,
+        ]
     plans: list[dict[str, object]] = []
-    for identity, description, ordered in structures:
+    for identity, description, ordered, roles, weights in structures:
+        shares = weights or tuple(Fraction(1) for _ in ordered)
         remaining = brief.target_duration * fps
         segments: list[dict[str, object]] = []
         used_intervals: set[tuple[str, int, int]] = set()
         for index, clip in enumerate(ordered):
             event = clip.event
+            # Equal shares reproduce the even split; weights only move time between segments.
             frames = min(
-                remaining // (len(ordered) - index),
+                int(remaining * shares[index] / sum(shares[index:])),
                 (event.source_range.end_us - event.source_range.start_us) * fps // 1_000_000,
             )
             if frames <= 0:
@@ -111,9 +125,14 @@ def plan_creation(
                     "evidenceIds": list(event.evidence_ids),
                     "scriptDraft": "；".join(event.observable_facts),
                     "uncertainty": event.uncertainty,
+                    **({"role": roles[index]} if roles is not None else {}),
                 }
             )
             remaining -= frames
+        if identity == "guide-steps":
+            # Skipped clips must not leave holes in the spoken step numbers.
+            for number, segment in enumerate(segments, 1):
+                segment["role"] = f"第{number}步"
         text = " ".join(str(segment["scriptDraft"]) for segment in segments).casefold()
         gaps = [
             f"主题缺少已保存文字证据：{topic}"
@@ -130,6 +149,11 @@ def plan_creation(
                 "gaps": gaps,
                 "ready": not gaps,
                 "scriptStatus": "saved-descriptions-draft-human-review-required",
+                **(
+                    {"mode": brief.content_type, "modeLabel": MODE_LABELS[brief.content_type]}
+                    if roles is not None
+                    else {}
+                ),
             }
         )
     return {

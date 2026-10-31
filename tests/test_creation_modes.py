@@ -1,0 +1,170 @@
+"""Content-mode templates: recommended first, honest roles, render-valid frame layout."""
+
+from fractions import Fraction
+from pathlib import Path
+from types import SimpleNamespace
+
+from gamingcreator.application.creative_planner import CreationClip, plan_creation
+from gamingcreator.application.edit_decision import select_edit_decision
+from gamingcreator.application.narration_script import build_narration_script
+from gamingcreator.application.rendering import validate_render_plan
+from gamingcreator.domain.creation import CreativeBrief
+from gamingcreator.domain.media import MediaAsset, MediaStream
+from gamingcreator.domain.models import SemanticEvent
+from gamingcreator.domain.time import SourceRange
+
+ASSET = MediaAsset(
+    "media",
+    Path("source.mp4"),
+    "a" * 64,
+    (MediaStream(0, "video", Fraction(1, 1), 0, 120),),
+    Fraction(0),
+    120_000_000,
+    "probe",
+)
+
+
+def brief(kind, duration=12, topics=()):
+    return CreativeBrief(
+        "代号Atom", kind, ("bilibili",), duration, "目标", "新玩家", "简洁", topics, ()
+    )
+
+
+def material(facts):
+    return tuple(
+        CreationClip(
+            ASSET,
+            SemanticEvent(
+                f"e{i}",
+                "media",
+                "run",
+                SourceRange(i * 4_000_000, (i + 1) * 4_000_000, 120_000_000),
+                tuple(fact),
+                (),
+                (f"evidence{i}",),
+                "visual",
+                None,
+            ),
+        )
+        for i, fact in enumerate(facts)
+    )
+
+
+def plan(report, identity):
+    return next(p for p in report["plans"] if p["id"] == identity)
+
+
+def test_showcase_hook_first_with_more_time_and_generic_plans_kept():
+    facts = [
+        ["角色奔跑"],
+        ["角色跳跃", "空中旋转", "落地特效"],
+        ["开门"],
+        ["拾取道具"],
+        ["结算画面"],
+    ]
+    report = plan_creation(brief("feature_showcase"), material(facts), 30)
+    assert [p["id"] for p in report["plans"]] == [
+        "showcase",
+        "chronological",
+        "hook-first",
+        "reverse",
+    ]
+    showcase = report["plans"][0]
+    assert showcase["mode"] == "feature_showcase" and showcase["modeLabel"] == "玩法展示"
+    segments = showcase["segments"]
+    assert [s["eventId"] for s in segments] == ["e1", "e0", "e2", "e3", "e4"]
+    assert [s["role"] for s in segments] == ["开场高光", "玩法展示", "玩法展示", "玩法展示", "收尾"]
+    assert segments[0]["outputFrames"] > segments[1]["outputFrames"]
+    assert sum(s["outputFrames"] for s in segments) <= 12 * 30
+    # Generic plans keep their previous even layout and carry no roles.
+    chronological = plan(report, "chronological")["segments"]
+    assert all("role" not in s for s in chronological)
+    assert [s["outputFrames"] for s in chronological] == [72] * 5
+
+
+def test_guide_steps_sample_the_whole_recording_with_contiguous_numbers():
+    report = plan_creation(
+        brief("guide", duration=6), material([[f"步骤{i}"] for i in range(20)]), 30
+    )
+    steps = report["plans"][0]
+    assert steps["id"] == "guide-steps" and steps["modeLabel"] == "攻略"
+    segments = steps["segments"]
+    assert [s["role"] for s in segments] == ["第1步", "第2步", "第3步", "第4步"]
+    assert [s["eventId"] for s in segments] == ["e0", "e6", "e13", "e19"]
+    assert all(s["outputFrames"] >= 45 for s in segments)
+
+
+def test_campaign_topics_follow_opening_and_missing_topic_is_a_gap():
+    facts = [["角色奔跑"], ["新英雄登场", "技能展示"], ["限时活动入口"], ["结算"]]
+    report = plan_creation(brief("campaign", topics=("限时活动",)), material(facts), 30)
+    campaign = report["plans"][0]
+    assert campaign["id"] == "campaign-topics" and campaign["ready"]
+    assert [(s["eventId"], s["role"]) for s in campaign["segments"]] == [
+        ("e1", "开场"),
+        ("e2", "活动主题：限时活动"),
+        ("e0", "活动亮点"),
+        ("e3", "收尾"),
+    ]
+    missing = plan_creation(brief("campaign", topics=("周年庆",)), material(facts), 30)
+    assert not missing["plans"][0]["ready"]
+    assert any("周年庆" in gap for gap in missing["plans"][0]["gaps"])
+
+
+def test_mode_plan_is_a_valid_render_decision():
+    report = plan_creation(brief("guide"), material([[f"步骤{i}"] for i in range(5)]), 30)
+    report["brief"] = {"targetDuration": 12}
+    edl = select_edit_decision(report, "guide-steps")
+    timeline = SimpleNamespace(
+        run=SimpleNamespace(run_id="run", asset=ASSET),
+        events=tuple(clip.event for clip in material([[f"步骤{i}"] for i in range(5)])),
+    )
+    render = validate_render_plan(edl, report, (timeline,))
+    assert render.frames == sum(s["outputFrames"] for s in edl["segments"])
+
+
+def test_script_wording_follows_mode_roles():
+    report = plan_creation(
+        brief("guide", duration=30), material([[f"打开第{i}扇门"] for i in range(3)]), 30
+    )
+    rows = [{**s, "clipId": s["eventId"]} for s in report["plans"][0]["segments"]]
+    script = build_narration_script(brief("guide", duration=30), rows, 900, 30)
+    assert "第1步，打开第0扇门" in script["text"] and "第3步，打开第2扇门" in script["text"]
+    campaign = build_narration_script(brief("campaign", duration=30), rows, 900, 30)
+    assert campaign["text"].endswith("快来一起参与活动。")
+
+
+def test_showcase_and_campaign_cap_clip_count_for_watchable_shots():
+    facts = [[f"片段{i}"] for i in range(30)]
+    facts[10] = ["角色跳跃", "空中旋转"]
+    report = plan_creation(brief("feature_showcase", duration=15), material(facts), 30)
+    showcase = report["plans"][0]["segments"]
+    # 15 seconds at about 1.5 seconds per shot -> 10 shots, opening first, evenly sampled rest.
+    assert len(showcase) == 10 and showcase[0]["eventId"] == "e10"
+    assert showcase[1]["eventId"] == "e0" and showcase[-1]["eventId"] == "e29"
+    assert all(s["outputFrames"] >= 30 for s in showcase)
+    facts[20] = ["限时活动入口"]
+    campaign = plan_creation(
+        brief("campaign", duration=15, topics=("限时活动",)), material(facts), 30
+    )["plans"][0]["segments"]
+    assert len(campaign) == 10 and campaign[1]["role"] == "活动主题：限时活动"
+
+
+def test_topic_label_is_not_overwritten_by_closing():
+    facts = [["开场奔跑", "特效"], ["事件甲"], ["事件乙"]]
+    report = plan_creation(brief("campaign", topics=("事件甲", "事件乙")), material(facts), 30)
+    assert [s["role"] for s in report["plans"][0]["segments"]] == [
+        "开场",
+        "活动主题：事件甲",
+        "活动主题：事件乙",
+    ]
+
+
+def test_spoken_steps_stay_contiguous_after_edits():
+    report = plan_creation(
+        brief("guide", duration=30), material([[f"打开第{i}扇门"] for i in range(4)]), 30
+    )
+    rows = [{**s, "clipId": s["eventId"]} for s in report["plans"][0]["segments"]]
+    edited = [rows[3], rows[0], rows[2]]  # second step deleted, last moved first
+    text = build_narration_script(brief("guide", duration=30), edited, 900, 30)["text"]
+    assert "第1步，打开第3扇门" in text and "第2步，打开第0扇门" in text
+    assert "第3步，打开第2扇门" in text and "第4步" not in text

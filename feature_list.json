@@ -660,8 +660,10 @@
       "group": "C",
       "name": "视频结构模板（攻略／功能展示／广告／实况）",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: offline structure templates for feature showcase / guide / campaign (roles, duration weights, ~1.5s per shot cap) recommended first; generic plans byte-identical; 200 related tests; gc-reviewer PASS; ad/live templates and model-based structure not done"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },
@@ -977,8 +979,10 @@
       "group": "G",
       "name": "玩法展示",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: feature showcase mode (richest-description opening hook, ordered showcase, closing) real instance demo-phase0 -> 10-shot MP4 373 frames -> cover/text -> Bilibili package, all configured checks pass (.cache/content-modes-e2e.json); hook chosen by description detail, not visual understanding"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },
@@ -987,8 +991,10 @@
       "group": "G",
       "name": "活动投稿",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: campaign mode (opening, mandatory-topic clips in topic order, highlights, closing; missing topic stays a gap) real instance with topic 贝多芬 -> MP4 390 frames -> Bilibili package passing configured checks; activity rule parsing (P020) not done"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },
@@ -997,8 +1003,10 @@
       "group": "G",
       "name": "攻略",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: guide mode (evenly spaced numbered steps, spoken step numbers follow current order) real instance -> MP4 372 frames -> Bilibili package passing configured checks; real guide correctness not human-reviewed"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },

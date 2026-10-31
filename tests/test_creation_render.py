@@ -247,8 +247,8 @@ def test_same_hash_different_path_each_rechecked_before_completion(tmp_path, mon
     other.write_bytes(source.read_bytes())
     original_process = implementation.run_media_process
 
-    async def mutate_after_decoding(arguments, context):
-        result = await original_process(arguments, context)
+    async def mutate_after_decoding(arguments, context, **options):
+        result = await original_process(arguments, context, **options)
         if "-xerror" in arguments:
             source.write_bytes(b"source A changed while B stayed the same")
         return result

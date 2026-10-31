@@ -6,6 +6,7 @@ import unicodedata
 from pathlib import Path
 from typing import Any
 
+from gamingcreator.application.creation_modes import MODE_LABELS
 from gamingcreator.cli.creation_render import read_creation
 from gamingcreator.domain.publication import validate_metadata
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
@@ -72,7 +73,10 @@ def snapshot(jobs: Any, job_id: str) -> dict[str, Any]:
         "tags": list(
             dict.fromkeys(
                 clean(tag, 50)
-                for tag in [brief["game"], brief["contentType"]]
+                for tag in [
+                    brief["game"],
+                    MODE_LABELS.get(brief["contentType"], brief["contentType"]),
+                ]
                 if clean(tag, 50).strip()
             )
         ),

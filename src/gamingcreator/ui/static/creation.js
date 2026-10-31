@@ -38,11 +38,12 @@
         $("plans").replaceChildren(); state.selected = null;
         for (const plan of job.plans || []) {
             const card = node("article", ""); card.className = "plan-card";
+            if (plan.mode) { card.classList.add("recommended"); card.append(node("p", `推荐 · ${plan.modeLabel || "内容模式"}模板`)); }
             card.append(node("h3", plan.structure), node("p", plan.ready ? "方案可用 · 模板草稿" : "方案有缺口 · 不可选择"), node("p", "脚本：已有描述草稿，待核对"));
             const segments = plan.segments || [];
             card.append(node("p", `${segments.length} 个片段 · ${(segments.reduce((sum, s) => sum + s.outputFrames, 0) / job.fps).toFixed(2)} 秒`));
             const list = node("ol", "");
-            for (const segment of segments) list.append(node("li", `${(segment.startUs / 1e6).toFixed(2)}–${(segment.endUs / 1e6).toFixed(2)} 秒：${segment.scriptDraft || "无描述"}`));
+            for (const segment of segments) list.append(node("li", `${segment.role ? `【${segment.role}】` : ""}${(segment.startUs / 1e6).toFixed(2)}–${(segment.endUs / 1e6).toFixed(2)} 秒：${segment.scriptDraft || "无描述"}`));
             card.append(list);
             for (const gap of plan.gaps || []) card.append(node("p", `缺口：${gap}`));
             const select = node("button", "选择此方案"); select.type = "button"; select.disabled = plan.ready !== true;
@@ -395,7 +396,8 @@
             const clipStart = startFrame;
             startFrame += clipFrames(clip, editor.fps);
             const row = node("article", ""); row.dataset.clipId = clip.clipId; row.className = "clip-row";
-            row.append(node("h3", `镜头 ${index + 1}`), node("p", clip.scriptDraft || "无描述"));
+            const step = /^第\d+步$/, role = step.test(clip.role || "") ? `第${editor.clips.slice(0, index + 1).filter((c) => step.test(c.role || "")).length}步` : clip.role;
+            row.append(node("h3", `镜头 ${index + 1}${role ? ` · ${role}` : ""}`), node("p", clip.scriptDraft || "无描述"));
             const original = editor.bounds[clip.clipId];
             for (const field of ["start", "end"]) {
                 const label = node("label", field === "start" ? "入点（原录像秒数）" : "出点（原录像秒数）");
