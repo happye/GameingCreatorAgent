@@ -1,4 +1,6 @@
-# 当前接手：创作者套餐已交付，只剩企业版未开始
+# 当前接手：51项全部至少部分可用，下一步把部分项推进到可验收
+
+2026-11-01企业版基础P051已交付（部分，本机团队模型，无账号登录）：按总方案§41实现团队成员与角色（负责人/编辑/审核/只读）、品牌词库（必须出现/禁用词，检查发布包标题/简介/标签）和发布包审核流程：编辑提交→审核或负责人通过/驳回（驳回须写原因），不能审核自己提交的包，品牌词未通过不能批准，每一步追加进历史；团队开启“需审核”后沙箱发布必须先审核通过。团队设置只有负责人能改（首次创建者须为负责人）。API：GET/POST /api/enterprise/team、GET/POST /api/enterprise/review；页面入口尚未做。5项新测试（团队/品牌校验、角色与职责分离、真实发布包提交→他人批准→沙箱发布且未批准前被拦）及沙箱/套餐回归共11项通过、Ruff/mypy通过；单Agent。仍未做：账号与登录、跨设备协作、企业音乐库/品牌模板、对外API、席位计费。至此51项全部至少部分可用：10/41/0≈60%，首产品0/22/0≈50%；人工0/未来9、债务20项11/2/7不变。
 
 2026-11-01创作者套餐P050已交付（部分，本地授权模型，未接支付）：按总方案§40定义Free/Creator/Creator Pro与默认“创始人验证版”（§42创始人自用，不限）。限制在真实入口生效：Free每月10次成片、同一封面文案只能出1个平台包、不能用活动规则解析/时间线导出；Creator开放活动规则、多平台、100次成片；Pro再开放时间线导出、1000次成片。用量从真实任务记录计（本月提交/完成的成片），重复提交同一请求不重复计；超额或不含的功能返回中文说明。创作页“套餐与用量”可切换（标注本地评估、不涉及付费）。默认创始人版保持现有全部功能不变。3项新测试（规则/计量、真实提交被额度拦截、HTTP功能门禁与非法套餐）+5个浏览器测试补模拟路由，相关27项通过、Ruff/mypy通过；单Agent。仍未做：真实支付/订阅、签名授权文件防篡改、水印、分析分钟计量、具体价格。51项10/40/1≈59%，首产品0/22/0≈50%；人工0/未来9、债务20项11/2/7不变。剩余未开始仅P051企业版。
 
@@ -44,7 +46,7 @@ R2-H已按[候选替换合同](docs/exec-plans/sprint-clip-replacements.md)完�
 
 R2-I本地旁白已按[合同](docs/exec-plans/sprint-local-narration.md)交付（结果见合同末节）；证据.cache/narration-main.xml（165项）、narration-ui.xml、narration-real-render.json（真实3.000秒定位）。剩余P2见TD019。
 
-已交付：P025解说草稿、P041一句话改镜头、P022+P043–P049七种内容模式（[sprint](docs/exec-plans/sprint-content-modes.md)）、P023/P024素材评分与缺口、P020活动规则解析、P039桌面EXE薄宿主、P042反馈闭环（[sprint](docs/exec-plans/sprint-creation-feedback.md)）。P011编辑代理（[sprint](docs/exec-plans/sprint-editing-proxy.md)）已交付。P018游戏知识层（[sprint](docs/exec-plans/sprint-game-knowledge.md)）已交付。P033时间线导出（[sprint](docs/exec-plans/sprint-timeline-export.md)）已交付。P038沙箱发布（[sprint](docs/exec-plans/sprint-sandbox-publish.md)）已交付。P050创作者套餐（[sprint](docs/exec-plans/sprint-creator-plans.md)）已交付。剩余未开始1项：P051企业版——按路线只做本地/沙箱流程，真实账号/支付前另取许可。下一步建议：⑤R4安装包/WebView2（待SDK下载许可）。
+已交付：P025解说草稿、P041一句话改镜头、P022+P043–P049七种内容模式（[sprint](docs/exec-plans/sprint-content-modes.md)）、P023/P024素材评分与缺口、P020活动规则解析、P039桌面EXE薄宿主、P042反馈闭环（[sprint](docs/exec-plans/sprint-creation-feedback.md)）。P011编辑代理（[sprint](docs/exec-plans/sprint-editing-proxy.md)）已交付。P018游戏知识层（[sprint](docs/exec-plans/sprint-game-knowledge.md)）已交付。P033时间线导出（[sprint](docs/exec-plans/sprint-timeline-export.md)）已交付。P038沙箱发布（[sprint](docs/exec-plans/sprint-sandbox-publish.md)）已交付。P050创作者套餐（[sprint](docs/exec-plans/sprint-creator-plans.md)）已交付。P051企业版基础（[sprint](docs/exec-plans/sprint-enterprise-basics.md)）已交付，51项已无未开始项。下一步：按首产品优先把部分项推进到可验收——真人质量评估（F006等，需你参与）、WebView2内嵌与安装包（需SDK下载许可）、真实平台发布/支付（需官方接口、账号与你的同意）、企业版页面入口与账号体系——按路线只做本地/沙箱流程，真实账号/支付前另取许可。下一步建议：⑤R4安装包/WebView2（待SDK下载许可）。
 
 ## 状态与边界
 

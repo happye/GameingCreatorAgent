@@ -707,6 +707,63 @@ class CreationJobs:
     def edit(self, job_id: str, plan_id: str) -> dict[str, Any]:
         return editor(load_chain(self, job_id, plan_id), job_id)
 
+    def team(self) -> dict[str, Any] | None:
+        path = self.root / "enterprise-team.json"
+        return self.read(path) if path.is_file() else None
+
+    def set_team(self, value: object, actor: object) -> dict[str, Any]:
+        from gamingcreator.application.enterprise import PERMISSIONS, role_of, validate_team
+
+        current = self.team()
+        try:
+            team = validate_team(value)
+            if current is not None and role_of(current, str(actor)) not in PERMISSIONS["edit_team"]:
+                raise PermissionError("只有负责人可以修改团队设置。")
+            if current is None and role_of(team, str(actor)) != "owner":
+                raise PermissionError("创建团队的人必须是负责人。")
+        except (PermissionError, ValueError) as error:
+            raise fail("enterprise.input", str(error)) from error
+        self.save(self.root / "enterprise-team.json", team)
+        return team
+
+    def review(
+        self, package_job_id: str, actor: object, action: object, comment: object
+    ) -> dict[str, Any]:
+        from gamingcreator.application.enterprise import apply_review, check_brand
+
+        team = self.team()
+        if team is None:
+            raise fail("enterprise.input", "请先设置团队成员。")
+        self.package(package_job_id)  # re-verifies the package files and receipts
+        result = self.safe(self.directory(package_job_id) / "result")
+        texts = {
+            "标题": (result / "title.txt").read_text(encoding="utf-8"),
+            "简介": (result / "description.txt").read_text(encoding="utf-8"),
+            "标签": " ".join(json.loads((result / "tags.json").read_text(encoding="utf-8"))),
+        }
+        reviews = self.root / "reviews"
+        reviews.mkdir(exist_ok=True)
+        path = reviews / f"{identity(package_job_id)}.json"
+        record = self.read(path) if path.is_file() else None
+        try:
+            updated = apply_review(
+                team,
+                record,
+                str(actor),
+                str(action),
+                comment if isinstance(comment, str) else "",
+                check_brand(team, texts),
+                datetime.now(UTC).isoformat(),
+            )
+        except (PermissionError, ValueError) as error:
+            raise fail("enterprise.review", str(error)) from error
+        self.save(path, updated)
+        return updated
+
+    def review_state(self, package_job_id: str) -> dict[str, Any] | None:
+        path = self.root / "reviews" / f"{identity(package_job_id)}.json"
+        return self.read(path) if path.is_file() else None
+
     def entitlement_selection(self) -> dict[str, Any] | None:
         path = self.root / "entitlement.json"
         return self.read(path) if path.is_file() else None

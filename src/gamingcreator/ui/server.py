@@ -344,6 +344,8 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/knowledge",
                 "/api/creation/publish",
                 "/api/entitlement",
+                "/api/enterprise/team",
+                "/api/enterprise/review",
                 "/api/match-details",
                 "/api/draft-detail-query",
                 "/api/search-project",
@@ -372,6 +374,29 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._require("activityRules")
                 self._json(200, self._activity_rules(value))
                 return
+            if path == "/api/enterprise/team":
+                if not isinstance(value, dict) or set(value) != {"team", "actor"}:
+                    raise ValueError("Expected team and acting member")
+                self._json(200, self.creation_jobs.set_team(value["team"], value["actor"]))
+                return
+            if path == "/api/enterprise/review":
+                if not isinstance(value, dict) or set(value) != {
+                    "packageJobId",
+                    "actor",
+                    "action",
+                    "comment",
+                }:
+                    raise ValueError("Expected package, member, action and comment")
+                self._json(
+                    200,
+                    self.creation_jobs.review(
+                        str(value["packageJobId"]),
+                        value["actor"],
+                        value["action"],
+                        value["comment"],
+                    ),
+                )
+                return
             if path == "/api/entitlement":
                 if not isinstance(value, dict) or set(value) != {"plan"}:
                     raise ValueError("Expected plan")
@@ -383,6 +408,15 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 if not isinstance(value, dict) or set(value) != {"packageJobId", "target"}:
                     raise ValueError("Expected package job and publish target")
                 self._require("sandboxPublish")
+                team = self.creation_jobs.team()
+                if team is not None and team["reviewRequired"]:
+                    review = self.creation_jobs.review_state(str(value["packageJobId"]))
+                    if review is None or review["state"] != "approved":
+                        raise AppError(
+                            "publish.review_required",
+                            "团队要求审核通过后才能发布，这个发布包尚未审核通过。",
+                            ExitCode.INPUT,
+                        )
                 # Re-verifies the package files and receipts before anything is recorded.
                 package = self.creation_jobs.package(str(value["packageJobId"]))
                 try:
@@ -760,6 +794,16 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     raise AppError(
                         "publish.status", "找不到这条发布记录。", ExitCode.INPUT
                     ) from error
+                return
+            if path == "/api/enterprise/team":
+                if query:
+                    raise ValueError("Unexpected team query")
+                self._json(200, {"team": self.creation_jobs.team()})
+                return
+            if path == "/api/enterprise/review":
+                if set(query) != {"packageJobId"}:
+                    raise ValueError("Expected package job ID")
+                self._json(200, {"review": self.creation_jobs.review_state(query["packageJobId"])})
                 return
             if path == "/api/entitlement":
                 if query:

@@ -1093,8 +1093,10 @@
       "group": "H",
       "name": "企业版",
       "first_product": false,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: local team model with owner/editor/reviewer/viewer roles, brand glossary checks on package title/description/tags, package review with separation of duties, mandatory rejection reasons and append-only history, review-gated sandbox publishing; real package submit->approve->publish test; no accounts/login, shared storage, enterprise assets, external API or seat billing; no page entry yet"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     }
