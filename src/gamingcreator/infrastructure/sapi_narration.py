@@ -18,7 +18,11 @@ _HELPER = Path(__file__).resolve().parents[3] / "scripts" / "sapi-narration.ps1"
 
 
 def _sha(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 async def _invoke(mode: str, request_path: Path, context: CancellationContext) -> bytes:
@@ -74,8 +78,15 @@ def _pcm(path: Path) -> tuple[int, int, int, int]:
         )
         if audio.getcomptype() != "NONE" or count <= 0 or rate <= 0 or channels <= 0:
             raise ValueError("Narration must be nonempty PCM WAV.")
-        data = audio.readframes(count)
-        if len(data) != count * channels * width or not any(data):
+        # Chunked: long narrations are checked without loading the whole file.
+        read, audible = 0, False
+        while read < count:
+            data = audio.readframes(min(65536, count - read))
+            if not data:
+                break
+            read += len(data) // (channels * width)
+            audible = audible or any(data)
+        if read != count or not audible:
             raise ValueError("Narration PCM is truncated or silent.")
     return rate, channels, width, count
 

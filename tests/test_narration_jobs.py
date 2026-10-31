@@ -629,3 +629,18 @@ def test_http_voices_generation_files_cancel_and_render_text(narrated):
         server.shutdown()
         server.server_close()
         thread.join()
+
+
+def test_accepted_cancel_survives_a_crash_before_the_final_status(narrated):
+    jobs = narrated.jobs
+    job = done(jobs, "崩溃前已取消")["jobId"]
+    directory = jobs.directory(job)
+    status = jobs.read(directory / "status.json")
+    # Simulate a crash after the cancel was accepted but before the final status was written.
+    status["status"] = "running"
+    jobs.save(directory / "status.json", status)
+    jobs.save(directory / "cancel-requested.json", {"jobId": job})
+    restarted = CreationJobs(jobs.repository)
+    recovered = restarted.get(job)
+    assert recovered["status"] == "interrupted"
+    assert "narrationAsset" not in recovered

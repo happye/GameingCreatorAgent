@@ -627,8 +627,8 @@ class CreationJobs:
                     with self.narration_lock:
                         if (
                             directory.name in self.narration_cancel_requests
-                            and state["status"] == "completed"
-                        ):
+                            or (directory / "cancel-requested.json").exists()
+                        ) and state["status"] == "completed":
                             state["status"] = "interrupted"
                             state.pop("narrationAsset", None)
                             # A cancelled asset is never attachable; drop its owned files.
@@ -661,10 +661,13 @@ class CreationJobs:
                     state = self.read(directory / "status.json")
                     if state["status"] in {"pending", "running"}:
                         try:
+                            if (directory / "cancel-requested.json").exists():
+                                raise ValueError("Cancellation was accepted before the crash")
                             state = self.verify(directory, state)
                             state["status"] = "completed"
                         except Exception:
                             state["status"] = "interrupted"
+                            state.pop("narrationAsset", None)
                             state["error"] = {
                                 "code": "creation.interrupted",
                                 "message": "任务执行已中断，请用新请求重新创建。",

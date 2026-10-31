@@ -124,6 +124,8 @@ def cancel(jobs: Any, job_id: str) -> dict[str, Any]:
         running = jobs.narration_contexts.get(job_id)
         if running is not None:
             context, loop = running
+            # Persist first: a crash after this point must never promote the job to completed.
+            jobs.save(directory / "cancel-requested.json", {"jobId": job_id})
             jobs.narration_cancel_requests.add(job_id)
             if loop is None:
                 context.cancelled.set()
