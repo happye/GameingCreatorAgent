@@ -2197,16 +2197,30 @@
         ui["total-time"].textContent = ` / ${timecode(view.media.durationUs)}`;
         ui["timeline-end"].textContent = timecode(view.media.durationUs).split(".")[0];
         ui["video-scrubber"].max = String(view.media.durationUs / 1000000);
-        const mediaUrl = safeMediaUrl(view.media.videoUrl, "/api/media");
+        const originalUrl = safeMediaUrl(view.media.videoUrl, "/api/media");
+        const proxyUrl = view.media.proxyUrl ? safeMediaUrl(view.media.proxyUrl, "/api/media") : null;
+        // The proxy is an opt-in preview only; frame-exact work keeps using the original.
+        let proxyToggle = document.getElementById("proxy-toggle");
+        if (proxyUrl && !proxyToggle) {
+            proxyToggle = document.createElement("label"); proxyToggle.id = "proxy-toggle";
+            const box = document.createElement("input"); box.type = "checkbox"; box.id = "proxy-toggle-input";
+            proxyToggle.append(box, " 使用编辑代理预览（360p，仅用于流畅浏览）");
+            ui["preview-badge"].after(proxyToggle);
+            box.addEventListener("change", () => { state.useProxy = box.checked; renderView(); });
+        }
+        if (proxyToggle) proxyToggle.hidden = !proxyUrl;
+        const mediaUrl = state.useProxy && proxyUrl ? proxyUrl : originalUrl;
         if (mediaUrl) {
             if (state.sourceUrl !== mediaUrl) {
+                const resume = ui["source-video"].currentTime || 0;
                 state.sourceUrl = mediaUrl;
                 ui["source-video"].src = mediaUrl;
                 ui["source-video"].load();
+                if (resume) ui["source-video"].addEventListener("loadedmetadata", () => { ui["source-video"].currentTime = resume; }, { once: true });
             }
             ui["video-empty"].hidden = true;
             ui["video-scrubber"].disabled = false;
-            ui["preview-badge"].textContent = "原始素材";
+            ui["preview-badge"].textContent = mediaUrl === proxyUrl ? "编辑代理（非原片）" : "原始素材";
         } else {
             ui["video-empty"].hidden = false;
             ui["video-empty"].querySelector("h3").textContent = "视频地址未通过校验";

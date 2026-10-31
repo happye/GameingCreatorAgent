@@ -43,6 +43,7 @@ from gamingcreator.infrastructure.detail_query_sidecar import (
     refinement_settings_for_profile,
 )
 from gamingcreator.infrastructure.detail_refinement_sidecar import reuse_or_refuse
+from gamingcreator.infrastructure.proxy_media import read_proxy
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 from gamingcreator.ui.media import MediaResource
 
@@ -487,6 +488,12 @@ async def inspect_run(
                 "durationUs": asset.duration_us,
                 "sha256": asset.sha256,
                 "videoUrl": "/api/media?" + urlencode(identity),
+                # Offered only while a verified proxy exists; the page keeps the original by default.
+                "proxyUrl": (
+                    "/api/media?" + urlencode({**identity, "proxy": "1"})
+                    if read_proxy(repository, asset.sha256) is not None
+                    else None
+                ),
             },
             "evidence": [
                 {
