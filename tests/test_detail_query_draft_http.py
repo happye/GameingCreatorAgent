@@ -19,6 +19,11 @@ def post_draft(base, text):
     )
 
 
+def written_files(root):
+    """Files anywhere under root; the server's own empty startup folders are not writes."""
+    return [path for path in root.rglob("*") if path.is_file()]
+
+
 def test_draft_api_needs_no_project_and_cannot_read_or_send(tmp_path, monkeypatch):
     from gamingcreator.ui import server
 
@@ -37,7 +42,7 @@ def test_draft_api_needs_no_project_and_cannot_read_or_send(tmp_path, monkeypatc
         conditions = report["constraint"]["actorAll"]
         garment = [item for item in conditions if item["kind"].startswith("clothing_")]
         assert {item["partGroup"] for item in garment} == {"clothing1"}
-    assert list(tmp_path.iterdir()) == []
+    assert written_files(tmp_path) == []
 
 
 @pytest.mark.parametrize(
@@ -71,7 +76,7 @@ def test_bad_draft_requests_cannot_access_a_project(tmp_path, monkeypatch, damag
             headers=headers,
         )
         assert status == (403 if damage in {"origin", "host"} else 400)
-    assert list(tmp_path.iterdir()) == []
+    assert written_files(tmp_path) == []
 
 
 @pytest.mark.parametrize(

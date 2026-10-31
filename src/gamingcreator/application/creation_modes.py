@@ -159,7 +159,9 @@ def mode_structure(
         # Longer shots leave room for spoken commentary over each segment.
         count = max(3, int(brief.target_duration / COMMENTARY_SECONDS))
         picked = _sample(eligible, count, score)
-        segment_roles = ["开场", *[f"解说段{i}" for i in range(1, len(picked) - 1)], "结尾"][: len(picked)]
+        segment_roles = ["开场", *[f"解说段{i}" for i in range(1, len(picked) - 1)], "结尾"][
+            : len(picked)
+        ]
         if len(picked) == 2:
             segment_roles = ["开场", "结尾"]
         return ModeStructure(
