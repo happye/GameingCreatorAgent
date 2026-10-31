@@ -955,8 +955,10 @@
       "group": "F",
       "name": "自然语言修改真实时间线（“前 5 秒太慢”）",
       "first_product": true,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: rule-based Chinese timeline commands (speed/delete/move/swap/trim/transitions) previewed via stateless API, applied in the editor and persisted through normal revision validation with ancestor undo; whole-command refusal for unknown/impossible clauses; 20 parser/HTTP tests + browser preview/apply/save test; real 35-clip revision -> 34 clips saved as d7d7a4d5 with narration inherited; no model understanding"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },

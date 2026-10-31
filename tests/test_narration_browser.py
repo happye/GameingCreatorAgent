@@ -101,6 +101,20 @@ def workspace(
                     )
                 elif path == "/api/creation/narration-cancel":
                     r.fulfill(json={**body, "kind": "narration", "cancelRequested": True})
+                elif path == "/api/creation/timeline-commands":
+                    from gamingcreator.application.timeline_commands import (
+                        CommandError,
+                        apply_timeline_command,
+                    )
+
+                    try:
+                        r.fulfill(
+                            json=apply_timeline_command(body["text"], body["clips"], body["fps"])
+                        )
+                    except CommandError as error:
+                        r.fulfill(
+                            status=400, json={"code": "creation.command", "message": str(error)}
+                        )
                 else:
                     r.fulfill(status=400, json={"error": revision_error})
             elif path == "/api/creation/jobs":
@@ -365,3 +379,39 @@ def test_template_script_fills_text_with_honest_note():
         pw.expect(note).to_contain_text("2 个镜头")
         pw.expect(page.locator("#narration-generate")).to_be_enabled()
         assert posts == []
+
+
+def test_one_sentence_command_previews_applies_and_saves_exact_clips():
+    clips = [
+        {
+            "clipId": f"c{i}",
+            "startUs": i * 10_000_000,
+            "endUs": i * 10_000_000 + 2_000_000,
+            "outputFrames": 60,
+        }
+        for i in range(4)
+    ]
+    with workspace(editor=make_editor(clips=clips)) as (pw, page, posts):
+        open_editor(pw, page)
+        command = page.locator("#timeline-command")
+        command.fill("把画面调亮")
+        page.locator("#command-preview").click()
+        pw.expect(page.locator("#command-status")).to_contain_text("未修改：没听懂")
+        pw.expect(page.locator("#command-apply")).to_be_hidden()
+        command.fill("前3秒太慢，删掉最后一个镜头")
+        command.press("Enter")
+        pw.expect(page.locator("#command-status")).to_contain_text("8.00 → 4.00 秒，尚未应用")
+        pw.expect(page.locator("#command-changes li")).to_have_count(3)
+        assert not revision_posts(posts)
+        page.locator("#command-apply").click()
+        pw.expect(page.locator("#command-status")).to_contain_text("已应用 3 项修改")
+        pw.expect(page.locator("#editor-summary")).to_contain_text("3 个镜头")
+        page.locator("#save-revision").click()
+        pw.expect(page.locator("main")).to_contain_text("已捕获保存请求")
+        saved = revision_posts(posts)[-1]
+        assert [c["clipId"] for c in saved["clips"]] == ["c0", "c1", "c2"]
+        assert [c["speed"] for c in saved["clips"]] == [
+            {"numerator": 2, "denominator": 1},
+            {"numerator": 2, "denominator": 1},
+            {"numerator": 1, "denominator": 1},
+        ]

@@ -9,3 +9,4 @@
 #package-downloads a{display:inline-block;margin:8px;overflow-wrap:anywhere}#package-preview img{max-width:100%;max-height:420px;object-fit:contain}#package-validation{white-space:pre-wrap;overflow-wrap:anywhere}
 
 #narration-controls audio{display:block;width:100%;margin:8px 0}#narration-controls a{display:inline-block;margin:6px 0;overflow-wrap:anywhere}#narration-controls textarea{resize:vertical}#narration-fit{white-space:pre-wrap;color:#ffd48a}#narration-status,#narration-notice{overflow-wrap:anywhere}
+#command-controls input{width:100%}#command-status,#command-changes{overflow-wrap:anywhere}#command-changes{margin:6px 0;padding-left:20px}

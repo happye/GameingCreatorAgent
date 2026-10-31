@@ -33,7 +33,7 @@
         $("render").disabled = state.busy || state.editing || state.dirty || !state.selected || !!transitionError(state.editor);
         $("save-revision").disabled = state.busy || state.editing || !state.editor || !state.editor.clips.length || !!transitionError(state.editor);
     }
-    function clearView() { closeReplacement(); $("package-form").hidden = true; $("package-result").hidden = true; $("package-downloads").replaceChildren(); $("package-preview").replaceChildren(); state.publication = null; $("publication-form").hidden = true; $("publication-cover").hidden = true; $("publication-cover").removeAttribute("src"); $("publication-downloads").replaceChildren(); state.selected = null; state.editor = null; $("audio-controls")?.remove(); $("narration-controls")?.remove(); state.dirty = false; state.editing = false; $("editor-rows").replaceChildren(); $("ancestry").replaceChildren(); $("editor-summary").textContent = "选择方案或剪辑版本后可编辑镜头。"; $("plans").replaceChildren(); $("artifact").replaceChildren(); $("job-status").textContent = "尚未选择任务"; controls(); }
+    function clearView() { closeReplacement(); $("package-form").hidden = true; $("package-result").hidden = true; $("package-downloads").replaceChildren(); $("package-preview").replaceChildren(); state.publication = null; $("publication-form").hidden = true; $("publication-cover").hidden = true; $("publication-cover").removeAttribute("src"); $("publication-downloads").replaceChildren(); state.selected = null; state.editor = null; $("audio-controls")?.remove(); $("narration-controls")?.remove(); $("command-controls")?.remove(); state.command = null; state.dirty = false; state.editing = false; $("editor-rows").replaceChildren(); $("ancestry").replaceChildren(); $("editor-summary").textContent = "选择方案或剪辑版本后可编辑镜头。"; $("plans").replaceChildren(); $("artifact").replaceChildren(); $("job-status").textContent = "尚未选择任务"; controls(); }
     function showPlans(job) {
         $("plans").replaceChildren(); state.selected = null;
         for (const plan of job.plans || []) {
@@ -342,9 +342,45 @@
         }
         return "";
     }
+    const commandRows = (editor) => editor.clips.map(({clipId, startUs, endUs, speed, transitionIn}) => ({clipId, startUs, endUs, speed, transitionIn}));
+    function showCommand(editor) {
+        let panel = $("command-controls");
+        if (!panel) { panel = node("section", ""); panel.id = "command-controls"; $("editor-rows").before(panel); }
+        const command = state.command && state.command.editor === editor ? state.command : (state.command = {editor, text: "", preview: null, snapshot: "", message: ""});
+        panel.replaceChildren(node("h3", "一句话修改镜头"), node("p", "规则解析常见说法，不调用模型：前5秒太慢、删掉第3个镜头、第2个镜头慢放、把最后一个镜头移到最前、交换第1个和第2个、第4个镜头缩短到1.5秒、去掉转场、加交叉淡化。多句依次执行，后一句的镜头编号按前一句改完后的顺序；听不懂或做不到会整句拒绝。先预览，应用后保存新版本；祖先版本可撤销。"));
+        const input = document.createElement("input"); input.id = "timeline-command"; input.type = "text"; input.maxLength = 500; input.value = command.text; input.placeholder = "例如：前5秒太慢，删掉最后一个镜头";
+        const preview = node("button", "预览修改"), apply = node("button", "应用到编辑器"), status = node("p", command.message), list = node("ul", "");
+        preview.id = "command-preview"; preview.type = "button"; apply.id = "command-apply"; apply.type = "button"; status.id = "command-status"; status.setAttribute("role", "status"); list.id = "command-changes";
+        const label = node("label", "修改要求"); label.append(input);
+        const stale = () => command.preview && command.snapshot !== JSON.stringify(commandRows(editor));
+        if (command.preview) for (const change of command.preview.changes) list.append(node("li", change));
+        apply.hidden = !command.preview; preview.disabled = !command.text.trim();
+        input.addEventListener("input", () => { command.text = input.value; preview.disabled = !input.value.trim(); });
+        input.addEventListener("keydown", (event) => { if (event.key === "Enter" && !preview.disabled) { event.preventDefault(); preview.click(); } });
+        preview.addEventListener("click", async () => {
+            if (state.busy || state.editing || !command.text.trim()) return;
+            const epoch = state.epoch;
+            try {
+                const result = await api("/api/creation/timeline-commands", {text: command.text, fps: editor.fps, clips: commandRows(editor)});
+                if (epoch !== state.epoch || state.editor !== editor) return;
+                Object.assign(command, {preview: result, snapshot: JSON.stringify(commandRows(editor)), message: `预览：${result.beforeSeconds.toFixed(2)} → ${result.afterSeconds.toFixed(2)} 秒，尚未应用。`});
+            } catch (error) { if (epoch !== state.epoch) return; Object.assign(command, {preview: null, message: `未修改：${error.message}`}); }
+            showCommand(editor);
+        });
+        apply.addEventListener("click", () => {
+            if (state.busy || state.editing || !command.preview) return;
+            if (stale()) { Object.assign(command, {preview: null, message: "镜头在预览后又被修改，请重新预览。"}); showCommand(editor); return; }
+            const byId = new Map(editor.clips.map((clip) => [clip.clipId, clip]));
+            editor.clips = command.preview.clips.map((row) => { const clip = byId.get(row.clipId); Object.assign(clip, {startUs: row.startUs, endUs: row.endUs, speed: row.speed, transitionIn: row.transitionIn}); clip.outputFrames = clipFrames(clip, editor.fps); return clip; });
+            const changes = command.preview.changes.length;
+            Object.assign(command, {preview: null, text: "", message: `已应用 ${changes} 项修改，请检查后保存新剪辑版本。`});
+            state.dirty = true; showEditor(); controls();
+        });
+        panel.append(label, preview, status, list, apply);
+    }
     function showEditor() {
         const editor = state.editor;
-        showAudio(editor); showNarration(editor);
+        showAudio(editor); showNarration(editor); showCommand(editor);
         $("editor-rows").replaceChildren(); $("ancestry").replaceChildren();
         const totalFrames = editor.clips.reduce((n, c) => n + clipFrames(c, editor.fps) - c.transitionIn.frames, 0);
         const totalSeconds = totalFrames / editor.fps;

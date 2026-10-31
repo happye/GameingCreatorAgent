@@ -270,6 +270,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/packages",
                 "/api/creation/narrations",
                 "/api/creation/narration-cancel",
+                "/api/creation/timeline-commands",
                 "/api/match-details",
                 "/api/draft-detail-query",
                 "/api/search-project",
@@ -294,6 +295,20 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return result
 
             value = json.loads(body, object_pairs_hook=unique)
+            if path == "/api/creation/timeline-commands":
+                from gamingcreator.application.timeline_commands import (
+                    CommandError,
+                    apply_timeline_command,
+                )
+
+                if not isinstance(value, dict) or set(value) != {"text", "fps", "clips"}:
+                    raise ValueError("Expected command text, fps and clips")
+                try:
+                    preview = apply_timeline_command(value["text"], value["clips"], value["fps"])
+                except CommandError as error:
+                    raise AppError("creation.command", str(error), ExitCode.INPUT) from error
+                self._json(200, preview)
+                return
             if path == "/api/creation/narration-cancel":
                 if not isinstance(value, dict) or set(value) != {"jobId"}:
                     raise ValueError("Expected narration job identity")
