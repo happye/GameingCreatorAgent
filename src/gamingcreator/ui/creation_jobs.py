@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from gamingcreator.application.creation_editing import build_revision
 from gamingcreator.application.edit_decision import select_edit_decision
 from gamingcreator.cli.creation import execute_plan_creation
 from gamingcreator.cli.creation_render import execute_render_creation, read_creation
@@ -30,6 +29,7 @@ from gamingcreator.ui.media import MediaResource, VerifiedMediaCache
 from gamingcreator.ui.revision_jobs import (
     editor,
     load_chain,
+    prepare_revision,
     render_revision,
     resolve_audio,
     resolve_overrides,
@@ -148,7 +148,11 @@ class CreationJobs:
         optional = (
             {"subtitleMode"}
             if kind == "render"
-            else ({"subtitleOverrides", "audioMix"} if kind == "revision" else set())
+            else (
+                {"subtitleOverrides", "audioMix", "candidateManifestSha256", "replacements"}
+                if kind == "revision"
+                else set()
+            )
         )
         if set(request) - optional != expected:
             raise fail("creation.input", "请填写完整创作参数。")
@@ -212,7 +216,7 @@ class CreationJobs:
                 if kind == "revision":
                     if request["expectedParentReceiptSha256"] != chain.digest:
                         raise fail("creation.conflict", "父版本已更改，请重新打开编辑器。", True)
-                    revised = build_revision(chain.edl, chain.root_sha, request["clips"])
+                    revised, _ = prepare_revision(self, request, chain)
                     resolve_overrides(request, chain.subtitle_overrides, revised, chain.root_sha)
                     resolve_audio(self, request, chain.audio_mix)
                 elif self.read(self.directory(parent_id) / "status.json")["kind"] != "revision":

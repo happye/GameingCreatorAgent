@@ -1,6 +1,6 @@
-# 当前接手：转场已交，继续候选替换
+# 当前接手：候选替换已交，继续本地旁白
 
-2026-10-31交叉淡化已交付，Goal active：工作台逐连接直接切换/淡化帧数、v3版本与祖先恢复、真实画面/原声淡化和重叠字幕，混合变速/BGM同步。主树49联合+刷新修复后8浏览器、6源码mypy/Ruff通过；唯一Sol/high核心与刷新增量PASS。真实UI29→37→祖先35帧，29帧末帧28封面RGB一致/七文件包通过，刷新0POST/新实例0worker、旧文件/原片SHA不变。51项仍10/19/22≈38%，首产品27%；人工现在0/未来8、技术债10/2/5不变。下一R2-H候选替换，Astra合同已冻结，纯核心已备，正在接持久链/页面；未计替换交付。
+2026-10-31候选替换已交付，Goal active：已选全部Completed录像的事件→准确原片预览→替换为新镜头身份→v4保存/真实渲染/继续编辑/祖先恢复。主树92联合+资源修复3项+共享时钟65项、5源码mypy/Ruff通过；Sol/high核心/后端/前端PASS，最后静态资源/超时增量因Sol额度限制明确改Astra/low限定PASS。实际Atom→漫画跨run、再裁短/慢放/淡化、同run再换/换序、祖先4片6/5/6/5帧及末帧封面/包通过；最终原片59.263秒/readyState4、预览0POST；刷新0POST/新实例0worker，旧文件/原片SHA保持。51项仍10/19/22≈38%，首产品27%，人工现在0/未来8、技术债10/2/5不变。下一R2-I本地旁白：Astra合同已冻结，真实中文WAV资产模块已备，未接任务/混音/UI，尚不计P026交付；Sol子任务quota受限，主控继续实现，不重试同一限制。
 
 ## 已能使用与证据
 
@@ -14,9 +14,11 @@
 
 转场已完成[合同](docs/exec-plans/sprint-clip-transitions.md)及真实UI29/37/35帧与下游末帧封面/包验证；证据.cache/clip-transition-main.xml、clip-transition-refresh.xml、clip-transition-real-browser.json、clip-transition-overlap.png、clip-transition-mobile.png。先前未完成补丁保留为历史，禁止重新应用覆盖当前实现。首次QA只在刷新恢复超30秒处停止，已生成6job完整；修复历史列表阻挡后复用它们续测，未重复渲染。普通短字幕已查看，任意长文排版不保证；SRT播放器自行决定重叠布局。
 
-下一项是[R2-H候选替换合同](docs/exec-plans/sprint-clip-replacements.md)，Astra/low架构和接口补充已冻结。纯核心在.cache/worktrees/replacement-core，27新增/此前93联合PASS，尚未集成或计交付；持久链/HTTP由Sol/medium在replacement-backend实施。新v4和候选清单独立验证，根/旧v1-v3不可放宽；候选来自根选全部Completed run，换后新clipId、旧手写字幕移除、两侧转场cut、AudioMix继承、跨run ASR准确绑定。页面接入与真实跨run出片/重启/祖先/末帧包还需完成，之后唯一关键评估。
+R2-H已按[候选替换合同](docs/exec-plans/sprint-clip-replacements.md)完成：真实双run根只用Atom仍能选漫画候选，四成片6/5/6/5帧及末帧封面/包，旧手写字幕清除/祖先恢复通过。证据.cache/clip-replacement-delivery.json（严格JSON整合原流与最终预览）、clip-replacement-main.xml、asset.xml、clock.xml、preview-verified.json、cross-run.png和mobile.png。旧预览unsupported诊断原样保留；10秒有界定位最后严格通过，不能重新跑四成片补证据。根request仍是唯一候选来源范围，v4独立重建，旧根/v1-v3不放宽。
 
-已交付转场/变速源码在主树，新replacement core/backend尚在独立树；不要复制worker非owned旧依赖覆盖主树。所有已结束转场worker可复用，型号按运行时元数据核验。复工先看看板第6节，直接续已有授权开发，不重开转场架构/旧全量，不要求重讲历史或重标。
+下一[R2-I本地旁白合同](docs/exec-plans/sprint-local-narration.md)已由Astra/low冻结。narration_assets树四文件完成，13契约/取消/timeout+1中文真实SAPI、2源码mypy/Ruff证据存在；worker交付消息后quota报错，不需等待假运行。模块在.cache/worktrees/local-narration-assets，未接任务/UI/混音。主控新增domain/creation_narration.py草稿未集成使用；narration-mix树仅依赖拷贝、renderer还没实现（worker启动即quota失败）。Sol当前usage_limit已披露，主控继续，必要独立复核明确Astra，不连续重试同一失败。
+
+旁白下一顺序：在独立集成树接已写asset模块/严格选择与长度门→narration job/回读/试听/继承移除→renderer输出帧起点/三路混音与duck→页面生成/挂接/试听→文本和显式新版下游包→真实中文/0与非零起点/超长拒绝/祖先/重启→唯一关键边界评估。源/费用/旧AudioMix语义保持，WAV不得静默截断/循环或变速，未确认商用声音许可。
 
 ## 状态与边界
 

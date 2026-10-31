@@ -37,3 +37,17 @@ v4后代即使replacements=[]仍使用v4，禁止降级；祖先恢复仍从被�
 当前人工必做0项，未来8项、技术债17项10/2/5不变；不因原F006人评停止本功能实现。部分模板/已有片段支持不等于全产品质量和商用资格通过。
 
 稳定实现接口：allowed_run_ids为list[str]；validate_revision_v4(parent_edl,revision_edl,root_receipt_sha,parent_receipt_sha,clips,replacements,manifest,timelines)->RenderPlan，调用者先验证根/祖先及根run范围，再逐代验证。公开候选额外含sourceClock（runtime_clock_document原格式）及previewUrl，预览用共享浏览器源时钟模块测量并换算，不能盲用currentTime。候选视频端点固定candidate-video及planId/candidateManifestSha256/candidateId三参数。
+
+## 实际交付与评估（2026-10-31）
+
+R2-H已交。Sol/medium三独立树完成纯核心/持久链HTTP/前端，主控集成；Sol/high对核心/后端及前端分段限定PASS。最后真实发现ASSETS未注册共享clock，主控补入口与HTTP脚本加载回归；候选标签改录像名/源秒数/描述，内部ID仍只作身份value。后续Sol额度受限已向用户披露，最后静态资源/标签/有界超时增量由Astra/low worker只读限定PASS，不冒称Sol或真实媒体评估通过。
+
+主树92联合零失败/错误/skip（.cache/clip-replacement-main.xml），资源修复后3 HTTP/前端（clip-replacement-asset.xml），共享clock65项（clip-replacement-clock.xml，包括延迟3.3s事件默认拒绝/10s成功/20ms拒绝与非法参数、既有未完成定位仍拒绝）。分组存在重复，不能简单相加成独立覆盖数。5源码mypy/Ruff、9文件格式通过；clock suite仅cacheprovider WinError5警告，测试全过，未重跑旧全量。
+
+真实双run根0bb52d27ede743528bdee06cb8217ee4的request选漫画f76...和Atom96...，其chronological EDL实际仅含Atom三镜头；基线v3 73531d5cf59c4c1898cbab3e9b491b81仅用Atom、手写文字和test_only BGM。GET有151候选，其中可选漫画事件证明不只当前入片来源。跨run保存fd110a75f7c74952a8f7ce3413b50881→7fd72648a439403491a0499440152295，6帧；在同新ID裁短/0.5x/淡化后eb09dc8f632d437abe2544b73d5fc9da→99ab7f9e8b6d49fabb9eb58a25116a71，5帧；同run再换96c1fc97867c4529b65f1779db82a01d，再换序08aa12e7e57c424fa823cae72825cf35→3bc1cd44baa7460bbac4487437e3971e，6帧；祖先分支4f3185c3f9e4436c9a28883723f437c2→9de5956ea2c34edc81ebebfcd2bc56ff，5帧。均3fps、有音轨、BGM继承；新画面旧手写0残留，未换字幕保留，祖先原文字恢复。跨run帧截图已查看确为漫画画面；两源实际无ASR，跨run ASR绑定由行为测试覆盖，未伪造真实语音。
+
+跨run成片末帧5封面6c6f87edb31d4304b0f3ee66f3a4c685与原输出RGB逐像素一致；发布包b15c176cd10f46e981d2ddbdfdc623de仍6帧/3fps，七文件ZIP/逐项SHA通过，test_only资格blocked。实际浏览器11 POST=5保存/4渲染/封面/包，刷新0POST、新实例0worker、pageErrors空；原根/旧修订/原片SHA保持，390宽无横溢出。证据.cache/clip-replacement-real-browser.json、clip-replacement-cross-run.png、clip-replacement-mobile.png。
+
+第一次预览缺资源入口（尚无替换/渲染任务）已修；其后HTTP全部206且header时长正确，但旧3秒定位超时导致seek_incomplete，保护合理，未当成功。主控继续完成保存/渲染时如实保留unsupported；追加seekTimeoutMs有界参数仅creation显式10秒，旧验收页面仍缺省3秒、seeked/解码就绪/原时钟判定不变。最后仅只读重测同漫画候选：59.262929秒、duration95.175873、readyState4、0POST/pageErrors空，clip-replacement-preview-verified.json。未重渲染四份成片。原未通过预览记录保留（诊断含NaN），最终严格JSON clip-replacement-delivery.json用null呈现旧缺值并另附最终验证，不覆盖历史或假改旧结果。
+
+P027/P032保持部分，51项10/19/22≈38%、首产品27%；人工0必做/未来8、债务10/2/5不变，0新Provider/下载/外部发布。下一R2-I本地旁白，资产纯模块已备但未接完整流程，尚不计新功能通过。

@@ -717,7 +717,12 @@
         "docs/exec-plans/sprint-creation-editing.md",
         "tests/test_creation_editing.py",
         "tests/test_creation_revision_jobs.py",
-        "tests/test_creation_editing_browser.py"
+        "tests/test_creation_editing_browser.py",
+        "docs/exec-plans/sprint-clip-replacements.md",
+        "tests/test_clip_replacement_core.py",
+        "tests/test_clip_replacement_jobs.py",
+        "tests/test_clip_replacement_http.py",
+        "tests/test_clip_replacement_browser.py"
       ],
       "quality_status": "template_draft_not_human_accepted",
       "release_status": "not_released",
@@ -827,7 +832,12 @@
         "docs/exec-plans/sprint-clip-transitions.md",
         "tests/test_clip_transition_core.py",
         "tests/test_clip_transition_render.py",
-        "tests/test_clip_transition_browser.py"
+        "tests/test_clip_transition_browser.py",
+        "docs/exec-plans/sprint-clip-replacements.md",
+        "tests/test_clip_replacement_core.py",
+        "tests/test_clip_replacement_jobs.py",
+        "tests/test_clip_replacement_http.py",
+        "tests/test_clip_replacement_browser.py"
       ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"

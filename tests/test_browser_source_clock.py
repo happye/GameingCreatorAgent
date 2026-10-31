@@ -30,6 +30,48 @@ from gamingcreator.domain.media import MediaAsset, MediaStream
 ROOT = Path(__file__).resolve().parents[1]
 SHARED_SCRIPT = ROOT / "src/gamingcreator/ui/static/source-clock.js"
 
+
+def test_seek_timeout_can_be_extended_without_accepting_unfinished_seek():
+    pw = pytest.importorskip("playwright.sync_api")
+    with pw.sync_playwright() as runtime:
+        browser = runtime.chromium.launch(headless=True)
+        try:
+            page = browser.new_page()
+            page.add_script_tag(path=str(SHARED_SCRIPT))
+            result = page.evaluate(
+                """async () => {
+                    function player(delay) {
+                        const v = new EventTarget();
+                        v.seeking = false; v.readyState = 2; let time = 0;
+                        Object.defineProperty(v, 'currentTime', {
+                            get: () => time,
+                            set(value) {
+                                v.seeking = true;
+                                setTimeout(() => {
+                                    time = value; v.seeking = false;
+                                    v.dispatchEvent(new Event('seeked'));
+                                }, delay);
+                            }
+                        });
+                        return v;
+                    }
+                    const values = await Promise.all([
+                        SourceClock.settle(player(3300), 1),
+                        SourceClock.settle(player(3300), 1, 10000),
+                        SourceClock.settle(player(3300), 1, 20)
+                    ]);
+                    const invalid = [true, 0, -1, 1.5, 15001].map(timeout => {
+                        try { SourceClock.settle(player(0), 1, timeout); return false; }
+                        catch (error) { return error instanceof RangeError; }
+                    });
+                    return {values, invalid};
+                }"""
+            )
+        finally:
+            browser.close()
+    assert result == {"values": [None, 1, None], "invalid": [True] * 5}
+
+
 CLOCK = BrowserSourceClock(
     origin_us=2_478_000,
     duration_us=2_022_000,

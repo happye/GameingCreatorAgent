@@ -33,7 +33,7 @@
         $("render").disabled = state.busy || state.editing || state.dirty || !state.selected || !!transitionError(state.editor);
         $("save-revision").disabled = state.busy || state.editing || !state.editor || !state.editor.clips.length || !!transitionError(state.editor);
     }
-    function clearView() { $("package-form").hidden = true; $("package-result").hidden = true; $("package-downloads").replaceChildren(); $("package-preview").replaceChildren(); state.publication = null; $("publication-form").hidden = true; $("publication-cover").hidden = true; $("publication-cover").removeAttribute("src"); $("publication-downloads").replaceChildren(); state.selected = null; state.editor = null; $("audio-controls")?.remove(); state.dirty = false; state.editing = false; $("editor-rows").replaceChildren(); $("ancestry").replaceChildren(); $("editor-summary").textContent = "选择方案或剪辑版本后可编辑镜头。"; $("plans").replaceChildren(); $("artifact").replaceChildren(); $("job-status").textContent = "尚未选择任务"; controls(); }
+    function clearView() { closeReplacement(); $("package-form").hidden = true; $("package-result").hidden = true; $("package-downloads").replaceChildren(); $("package-preview").replaceChildren(); state.publication = null; $("publication-form").hidden = true; $("publication-cover").hidden = true; $("publication-cover").removeAttribute("src"); $("publication-downloads").replaceChildren(); state.selected = null; state.editor = null; $("audio-controls")?.remove(); state.dirty = false; state.editing = false; $("editor-rows").replaceChildren(); $("ancestry").replaceChildren(); $("editor-summary").textContent = "选择方案或剪辑版本后可编辑镜头。"; $("plans").replaceChildren(); $("artifact").replaceChildren(); $("job-status").textContent = "尚未选择任务"; controls(); }
     function showPlans(job) {
         $("plans").replaceChildren(); state.selected = null;
         for (const plan of job.plans || []) {
@@ -53,6 +53,7 @@
     }
     const kindLabel = (kind) => ({plan: "方案", revision: "剪辑版本", render: "视频", publication: "封面与文案", package: "平台预览包"}[kind] || kind);
     async function loadEditor(id, planId, revision = false) {
+        closeReplacement();
         const epoch = state.epoch, view = ++state.view;
         state.selected = null; state.editor = null; state.editing = true; state.dirty = false;
         $("editor-rows").replaceChildren(); $("ancestry").replaceChildren();
@@ -61,6 +62,7 @@
             const editor = await api(`/api/creation/jobs/${encodeURIComponent(id)}/edit?planId=${encodeURIComponent(planId)}`);
             if (epoch !== state.epoch || view !== state.view) return;
             if (editor.parentJobId !== id || editor.planId !== planId) throw new Error("剪辑版本不匹配。");
+            editor.replacements = [];
             editor.bounds = Object.fromEntries(editor.clips.map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}]));
             editor.clips.forEach((clip) => { clip.speed = clip.speed || {numerator: 1, denominator: 1}; clip.transitionIn = clip.transitionIn || {type: "cut", frames: 0}; });
             editor.subtitleOverrides = editor.subtitleOverrides || [];
@@ -98,6 +100,73 @@
         catch { musicNotice = "曲库暂不可用，可继续镜头与字幕编辑。"; }
         if (state.editor) showAudio(state.editor);
     }
+    let replacementToken = 0, replacement = null;
+    function closeReplacement() {
+        replacementToken++; replacement = null;
+        $("replacement-panel").hidden = true; $("confirm-replacement").disabled = true;
+        const video = $("replacement-preview"); video.pause(); video.removeAttribute("src"); video.load(); video.ontimeupdate = null;
+    }
+    async function openReplacement(targetClipId) {
+        if (state.busy || state.editing) return;
+        closeReplacement(); const token = replacementToken, epoch = state.epoch, view = state.view, editor = state.editor;
+        const current = () => token === replacementToken && epoch === state.epoch && view === state.view && editor === state.editor;
+        $("replacement-panel").hidden = false; $("replacement-status").textContent = "正在读取根请求已选录像的事件…";
+        $("replacement-candidates").replaceChildren();
+        try {
+            const data = await api(`/api/creation/jobs/${encodeURIComponent(editor.parentJobId)}/candidates?planId=${encodeURIComponent(editor.planId)}`);
+            if (!current()) return;
+            if (!/^[a-f0-9]{64}$/.test(data.candidateManifestSha256) || (editor.candidateManifestSha256 && editor.candidateManifestSha256 !== data.candidateManifestSha256)) throw new Error("候选清单身份不匹配，请重新读取版本。");
+            replacement = {editor, targetClipId, data, candidate: null};
+            for (const c of data.candidates) $("replacement-candidates").append(new Option(`${c.sourceName || "已选录像"} · ${(c.startUs / 1e6).toFixed(3)}–${(c.endUs / 1e6).toFixed(3)} 秒 · ${c.scriptDraft || "无描述"}${c.uncertainty ? ` · ${c.uncertainty}` : ""}`, c.candidateId));
+            if (data.candidates.length) void previewReplacement();
+            else $("replacement-status").textContent = "此根请求没有可替换事件。";
+        } catch (error) { if (current()) $("replacement-status").textContent = error.message; }
+    }
+    async function previewReplacement() {
+        const session = replacement; if (!session) return;
+        const token = ++replacementToken, epoch = state.epoch, view = state.view;
+        const current = () => token === replacementToken && epoch === state.epoch && view === state.view && session === replacement && session.editor === state.editor;
+        const video = $("replacement-preview"); video.pause(); video.removeAttribute("src"); video.load(); video.ontimeupdate = null;
+        $("confirm-replacement").disabled = true; session.candidate = null;
+        const c = session.data.candidates.find((item) => item.candidateId === $("replacement-candidates").value);
+        try {
+            const url = new URL(c.previewUrl, location.origin), expected = `/api/creation/jobs/${encodeURIComponent(session.editor.parentJobId)}/candidate-video`;
+            if (url.origin !== location.origin || url.pathname !== expected || url.hash || url.username || url.password || url.searchParams.size !== 3 || url.searchParams.get("planId") !== session.editor.planId || url.searchParams.get("candidateManifestSha256") !== session.data.candidateManifestSha256 || url.searchParams.get("candidateId") !== c.candidateId) throw new Error("候选预览地址身份不匹配。");
+            const old = session.editor.clips.find((clip) => clip.clipId === session.targetClipId), fps = session.editor.fps;
+            const frames = Math.min(clipFrames(old, fps), Math.floor((c.endUs - c.startUs) * fps / 1e6));
+            if (frames < 1) throw new Error("候选不足一个输出帧。");
+            const endUs = c.startUs + Math.ceil(frames * 1e6 / fps);
+            session.candidate = {...c, endUs};
+            const description = `${frames} 帧，比原镜头${frames >= clipFrames(old, fps) ? "增加" : "减少"} ${Math.abs(frames - clipFrames(old, fps))} 帧。旧手写字幕不移到新画面；两侧转场归直接切换；替换后速度为1x。`;
+            $("replacement-status").textContent = description + "正在校验原片时钟…";
+            $("confirm-replacement").disabled = state.busy;
+            const result = await SourceClock.establish(SourceClock.clockCandidates(c), url.href, 10000);
+            if (!current()) return;
+            if (!result.established || !SourceClock.intervalReplayable(result.clock, c.startUs, endUs)) { $("replacement-status").textContent = description + "原片预览不可用；仍可明确选择并在成片中复核。"; return; }
+            await SourceClock.prepare(video, url.href); if (!current()) return;
+            const position = await SourceClock.settle(video, SourceClock.sourceUsToPlayerSeconds(result.clock, c.startUs), 10000);
+            if (!current()) return;
+            if (position === null) throw new Error("原片预览定位失败；可选择后复核成片。");
+            const end = SourceClock.sourceUsToPlayerSeconds(result.clock, endUs);
+            video.ontimeupdate = () => { if (!current() || video.currentTime >= end) video.pause(); };
+            $("replacement-status").textContent = description + "原片时钟已核对。";
+            await video.play(); if (!current()) video.pause();
+        } catch (error) { if (current()) $("replacement-status").textContent = error.message; }
+    }
+    $("replacement-candidates").addEventListener("change", () => { void previewReplacement(); });
+    $("confirm-replacement").addEventListener("click", () => {
+        const session = replacement; if (!session?.candidate || session.editor !== state.editor || state.busy || state.editing) return;
+        const editor = session.editor, index = editor.clips.findIndex((c) => c.clipId === session.targetClipId), c = session.candidate;
+        if (index < 0) return;
+        const clip = editor.clips[index];
+        Object.assign(clip, {startUs: c.startUs, endUs: c.endUs, speed: {numerator: 1, denominator: 1}, transitionIn: {type: "cut", frames: 0}, scriptDraft: c.scriptDraft});
+        clip.outputFrames = clipFrames(clip, editor.fps); editor.bounds[clip.clipId] = {startUs: c.startUs, endUs: c.endUs};
+        if (editor.clips[index + 1]) editor.clips[index + 1].transitionIn = {type: "cut", frames: 0};
+        editor.subtitleOverrides = editor.subtitleOverrides.filter((item) => item.clipId !== clip.clipId);
+        editor.candidateManifestSha256 = session.data.candidateManifestSha256;
+        editor.replacements.push({targetClipId: clip.clipId, candidateId: c.candidateId});
+        closeReplacement(); state.dirty = true; showEditor(); controls(); notice("镜头已替换，请保存新版本后再编辑新镜头字幕、速度和两侧转场。");
+    });
     const clipFrames = (clip, fps) => {
         if (![clip.startUs, clip.endUs, fps, clip.speed.numerator, clip.speed.denominator].every(Number.isSafeInteger)) return NaN;
         return Number(BigInt(clip.endUs - clip.startUs) * BigInt(fps) * BigInt(clip.speed.denominator) / (1000000n * BigInt(clip.speed.numerator)));
@@ -146,7 +215,7 @@
                 label.append(input); row.append(label);
             }
             const speedLabel = node("label", "播放速度"), speed = document.createElement("select");
-            speed.dataset.field = "speed"; speed.disabled = state.busy;
+            speed.dataset.field = "speed"; speed.disabled = state.busy || editor.replacements.some((r) => r.targetClipId === clip.clipId);
             for (const value of ["0.5", "1", "2"]) speed.append(new Option(`${value}x`, value));
             speed.value = String(clip.speed.numerator / clip.speed.denominator);
             speed.addEventListener("change", () => {
@@ -160,10 +229,11 @@
             speedLabel.append(speed); row.append(speedLabel);
             const transitionLabel = node("label", "与上一镜头连接"), transition = document.createElement("select");
             transition.dataset.field = "transition"; transition.append(new Option("直接切换", "cut"), new Option("交叉淡化", "crossfade"));
-            transition.value = clip.transitionIn.type; transition.disabled = index === 0 || state.busy;
+            const replacementConnection = editor.replacements.some((r) => r.targetClipId === clip.clipId || r.targetClipId === editor.clips[index - 1]?.clipId);
+            transition.value = clip.transitionIn.type; transition.disabled = index === 0 || state.busy || replacementConnection;
             const framesLabel = node("label", "转场帧数"), frames = document.createElement("input");
             frames.type = "number"; frames.step = "1"; frames.min = "1"; frames.dataset.field = "transition-frames";
-            frames.value = String(clip.transitionIn.frames); frames.disabled = index === 0 || transition.value === "cut" || state.busy;
+            frames.value = String(clip.transitionIn.frames); frames.disabled = index === 0 || transition.value === "cut" || state.busy || replacementConnection;
             transition.addEventListener("change", () => {
                 if (state.busy || state.editing || index === 0) return;
                 clip.transitionIn = {type: transition.value, frames: transition.value === "cut" ? 0 : 1};
@@ -180,7 +250,7 @@
             const override = editor.subtitleOverrides.find((item) => item.clipId === clip.clipId);
             const subtitleLabel = node("label", "手写字幕（替换该镜头语音字幕）");
             const toggle = document.createElement("input"); toggle.type = "checkbox"; toggle.dataset.field = "subtitle-override"; toggle.checked = Boolean(override);
-            toggle.disabled = state.busy; subtitleLabel.prepend(toggle);
+            toggle.disabled = state.busy || editor.replacements.some((r) => r.targetClipId === clip.clipId); subtitleLabel.prepend(toggle);
             const subtitle = document.createElement("textarea"); subtitle.dataset.field = "subtitle-text"; subtitle.maxLength = 2000; subtitle.rows = 3;
             subtitle.setAttribute("aria-label", `镜头 ${index + 1} 手写字幕`); subtitle.value = override?.text || ""; subtitle.disabled = !override || state.busy;
             const source = node("p", ""); source.className = "subtitle-source";
@@ -196,11 +266,15 @@
             toggle.addEventListener("change", updateSubtitle); subtitle.addEventListener("input", updateSubtitle); describeSource();
             row.append(subtitleLabel, subtitle, source);
 
+            const replace = node("button", "选择其他事件替换"); replace.type = "button"; replace.dataset.action = "replace";
+            replace.disabled = state.busy || editor.replacements.some((r) => r.targetClipId === clip.clipId);
+            replace.addEventListener("click", () => { void openReplacement(clip.clipId); }); row.append(replace);
             for (const [action, text] of [["up", "上移"], ["down", "下移"], ["delete", "删除镜头"]]) {
                 const button = node("button", text); button.type = "button"; button.dataset.action = action;
                 button.disabled = state.busy || (action === "up" && index === 0) || (action === "down" && index === editor.clips.length - 1) || (action === "delete" && editor.clips.length === 1);
                 button.addEventListener("click", () => {
                     if (state.busy || state.editing) return;
+                    closeReplacement();
                     const predecessors = new Map(editor.clips.map((c, i) => [c.clipId, editor.clips[i - 1]?.clipId]));
                     if (action === "delete") editor.clips.splice(index, 1);
                     else { const next = index + (action === "up" ? -1 : 1); [editor.clips[index], editor.clips[next]] = [editor.clips[next], editor.clips[index]]; }
@@ -420,7 +494,8 @@
         if (!state.editor || state.editing || transitionError(state.editor)) return;
         const editor = state.editor;
         if (Array.from($("audio-controls")?.querySelectorAll("input") || []).some((input) => !input.reportValidity())) return;
-        void submit("revision", {parentJobId: editor.parentJobId, planId: editor.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256, clips: editor.clips.map(({clipId, startUs, endUs, speed, transitionIn}) => ({clipId, startUs, endUs, speed, transitionIn})), audioMix: editor.audioMix, subtitleOverrides: editor.subtitleOverrides.filter((item) => editor.clips.some((clip) => clip.clipId === item.clipId))});
+        const replacementFields = editor.candidateManifestSha256 ? {candidateManifestSha256: editor.candidateManifestSha256, replacements: editor.replacements.filter((r) => editor.clips.some((c) => c.clipId === r.targetClipId))} : {};
+        void submit("revision", {...replacementFields, parentJobId: editor.parentJobId, planId: editor.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256, clips: editor.clips.map(({clipId, startUs, endUs, speed, transitionIn}) => ({clipId, startUs, endUs, speed, transitionIn})), audioMix: editor.audioMix, subtitleOverrides: editor.subtitleOverrides.filter((item) => editor.clips.some((clip) => clip.clipId === item.clipId))});
     });
     $("project").addEventListener("change", () => { void projectChanged(); }); $("refresh").addEventListener("click", () => { void history(); if (state.job) void openJob(state.job); });
     void (async () => {

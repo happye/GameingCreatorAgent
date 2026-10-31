@@ -48,6 +48,7 @@ DISCARD_LIMIT = 1_048_576
 ASSETS = {
     "/creation": ("creation.html", "text/html; charset=utf-8"),
     "/assets/creation.js": ("creation.js", "text/javascript; charset=utf-8"),
+    "/assets/source-clock.js": ("source-clock.js", "text/javascript; charset=utf-8"),
     "/assets/creation.css": ("creation.css", "text/css; charset=utf-8"),
     "/": ("index.html", "text/html; charset=utf-8"),
     "/assets/app.js": ("app.js", "text/javascript; charset=utf-8"),
@@ -622,6 +623,32 @@ class InspectionHandler(BaseHTTPRequestHandler):
                         raise ValueError("Unexpected publication query")
                     self._json(
                         200, self.creation_jobs.publication(tail.removesuffix("/publication"))
+                    )
+                elif tail.endswith("/candidates"):
+                    from gamingcreator.ui.replacement_jobs import candidates
+
+                    if set(query) != {"planId"}:
+                        raise ValueError("Expected selected plan ID")
+                    self._json(
+                        200,
+                        candidates(
+                            self.creation_jobs, tail.removesuffix("/candidates"), query["planId"]
+                        ),
+                    )
+                elif tail.endswith("/candidate-video"):
+                    from gamingcreator.ui.replacement_jobs import candidate_video
+
+                    if set(query) != {"planId", "candidateManifestSha256", "candidateId"}:
+                        raise ValueError("Expected exact candidate identity")
+                    self._serve_media(
+                        candidate_video(
+                            self.creation_jobs,
+                            tail.removesuffix("/candidate-video"),
+                            query["planId"],
+                            query["candidateManifestSha256"],
+                            query["candidateId"],
+                        ),
+                        False,
                     )
                 elif tail.endswith("/edit"):
                     if set(query) != {"planId"}:

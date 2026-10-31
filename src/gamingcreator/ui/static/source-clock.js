@@ -136,7 +136,12 @@
         return {established: true, reason: null};
     }
 
-    function settle(video, seconds) {
+    function validateSeekTimeout(seekTimeoutMs) {
+        if (!Number.isInteger(seekTimeoutMs) || seekTimeoutMs <= 0 || seekTimeoutMs > 15000) throw new RangeError("Invalid seek timeout.");
+    }
+
+    function settle(video, seconds, seekTimeoutMs = 3000) {
+        validateSeekTimeout(seekTimeoutMs);
         // Fail closed: a value is only accepted after the browser reported `seeked` for this
         // request (or no seek was needed) and the element has decoded data. A timeout, a
         // missing `seeked` event or a value that was merely assigned resolves null instead of
@@ -171,7 +176,7 @@
             video.addEventListener("loadeddata", onData);
             video.addEventListener("canplay", onData);
             video.addEventListener("error", onError);
-            timer = setTimeout(() => finish(null), 3000);
+            timer = setTimeout(() => finish(null), seekTimeoutMs);
             // Only a genuinely idle element already at the target may skip the seek; even then
             // the frame data has to be ready.
             if (!video.seeking && Math.abs(video.currentTime - seconds) < 1e-9) {
@@ -218,19 +223,20 @@
         });
     }
 
-    async function observe(video) {
+    async function observe(video, seekTimeoutMs = 3000) {
+        validateSeekTimeout(seekTimeoutMs);
         // Read the header duration before any seek: a non-zero-PTS MP4 reported its header
         // duration (2.022 s) first and then grew seekable/duration estimates with each seek
         // (2.867 s, 3.133 s, 3.267 s), so only the pre-seek metadata is comparable with the
         // probed asset span. The offset itself comes from the settled axis, never from those
         // ranges.
         const duration = video.duration;
-        const first = await settle(video, 0.000001);
+        const first = await settle(video, 0.000001, seekTimeoutMs);
         let middle = null;
         if (first !== null && Number.isFinite(duration) && duration > 0) {
-            middle = await settle(video, first + duration / 2);
+            middle = await settle(video, first + duration / 2, seekTimeoutMs);
         }
-        const second = await settle(video, 0.000001);
+        const second = await settle(video, 0.000001, seekTimeoutMs);
         return Object.freeze({
             seekable: video.seekable.length > 0,
             durationSeconds: Number.isFinite(duration) && duration > 0 ? duration : null,
@@ -241,7 +247,8 @@
         });
     }
 
-    async function establish(candidates, url) {
+    async function establish(candidates, url, seekTimeoutMs = 3000) {
+        validateSeekTimeout(seekTimeoutMs);
         if (!Array.isArray(candidates) || !candidates.length) return {established: false, clock: null, reason: "clock_unavailable"};
         // A detached element is enough for Chromium to parse metadata and resolve seeks and
         // keeps the review page's DOM untouched (no second <video> element, no layout, no
@@ -255,7 +262,7 @@
             element.playsInline = true;
             try {
                 await prepare(element, url);
-                const observation = await observe(element);
+                const observation = await observe(element, seekTimeoutMs);
                 for (const clock of candidates) {
                     const verdict = validate(clock, observation);
                     if (verdict.established) return {established: true, clock, reason: null};

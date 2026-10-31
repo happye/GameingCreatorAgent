@@ -9,8 +9,16 @@ from typing import Any
 
 from gamingcreator.application.creation_editing import (
     build_revision,
-    editable_clips,
     validate_revision,
+)
+from gamingcreator.application.creation_editing import (
+    editable_clips as legacy_editable_clips,
+)
+from gamingcreator.application.creation_replacements import (
+    build_candidate_manifest,
+    build_revision_v4,
+    candidate_manifest_sha,
+    validate_revision_v4,
 )
 from gamingcreator.application.creation_subtitles import build_subtitles, validate_override_text
 from gamingcreator.application.edit_decision import select_edit_decision
@@ -39,6 +47,7 @@ class Chain:
     ancestry: list[dict[str, Any]]
     subtitle_overrides: list[dict[str, str]]
     audio_mix: AudioMix
+    manifest: dict[str, Any] | None = None
 
 
 def resolve_audio(jobs: Any, request: dict[str, Any], inherited: AudioMix) -> AudioMix:
@@ -146,6 +155,11 @@ def load_chain(
             await store.close()
 
     timelines = asyncio.run(sources())
+    manifest = None
+    if any("candidateManifestSha256" in item[2]["request"] for item in records[:-1]):
+        from gamingcreator.ui.replacement_jobs import root_sources
+
+        timelines = root_sources(jobs, root_id)
     plan = validate_render_plan(root_edl, report, timelines)
     edl = root_edl
     parent_sha = root_sha
@@ -161,9 +175,17 @@ def load_chain(
             raise ValueError("Revision parent receipt or project changed")
         directory = jobs.directory(current_id)
         receipt = jobs.read(directory / "result/receipt.json")
-        if receipt.get("schemaVersion") != "creation-revision-receipt-v1" or set(
-            receipt.get("files", {})
-        ) != {"revision.json", "edit-decision.json"}:
+        is_v4 = "candidateManifestSha256" in request
+        expected_schema = (
+            "creation-revision-receipt-v2" if is_v4 else "creation-revision-receipt-v1"
+        )
+        expected_files = {"revision.json", "edit-decision.json"}
+        if is_v4:
+            expected_files.add("candidates.json")
+        if (
+            receipt.get("schemaVersion") != expected_schema
+            or set(receipt.get("files", {})) != expected_files
+        ):
             raise ValueError("Invalid revision receipt")
         for name, expected in receipt["files"].items():
             if hash_file(jobs.safe(directory / "result" / name)) != expected:
@@ -181,12 +203,40 @@ def load_chain(
             expected_metadata["subtitleOverrides"] = request["subtitleOverrides"]
         if "audioMix" in request:
             expected_metadata["audioMix"] = request["audioMix"]
+        if is_v4:
+            expected_metadata.update(
+                candidateManifestSha256=request["candidateManifestSha256"],
+                replacements=request["replacements"],
+            )
         if metadata != expected_metadata:
             raise ValueError("Revision metadata changed")
         revised = jobs.read(directory / "result/edit-decision.json")
-        if revised != build_revision(edl, root_sha, request["clips"]):
-            raise ValueError("Revision differs from its saved request")
-        plan = validate_revision(root_edl, report, edl, revised, timelines, root_sha)
+        if is_v4:
+            expected_manifest = build_candidate_manifest(
+                root_sha, root_state["projectId"], root_stored["request"]["runIds"], timelines
+            )
+            saved_manifest = jobs.read(directory / "result/candidates.json")
+            if saved_manifest != expected_manifest or request[
+                "candidateManifestSha256"
+            ] != candidate_manifest_sha(expected_manifest):
+                raise ValueError("Candidate manifest changed")
+            manifest = expected_manifest
+            plan = validate_revision_v4(
+                edl,
+                revised,
+                root_sha,
+                parent_sha,
+                request["clips"],
+                request["replacements"],
+                manifest,
+                timelines,
+            )
+        else:
+            if manifest is not None:
+                raise ValueError("Replacement descendants require v4")
+            if revised != build_revision(edl, root_sha, request["clips"]):
+                raise ValueError("Revision differs from its saved request")
+            plan = validate_revision(root_edl, report, edl, revised, timelines, root_sha)
         overrides = resolve_overrides(request, overrides, revised, root_sha)
         audio_mix = resolve_audio(jobs, request, audio_mix)
         edl, parent_sha = revised, digest
@@ -207,6 +257,7 @@ def load_chain(
         ancestry,
         overrides,
         audio_mix,
+        manifest,
     )
 
 
@@ -226,11 +277,16 @@ def editor(chain: Chain, job_id: str) -> dict[str, Any]:
         "ancestry": chain.ancestry,
         "subtitleOverrides": [dict(item) for item in chain.subtitle_overrides],
         "audioMix": chain.audio_mix.to_json(),
+        **(
+            {"candidateManifestSha256": candidate_manifest_sha(chain.manifest)}
+            if chain.manifest is not None
+            else {}
+        ),
     }
 
 
 def save_revision(jobs: Any, directory: Path, request: dict[str, Any], chain: Chain) -> None:
-    revised = build_revision(chain.edl, chain.root_sha, request["clips"])
+    revised, manifest = prepare_revision(jobs, request, chain)
     metadata = {
         "rootJobId": chain.root_id,
         "rootPlanId": chain.plan_id,
@@ -245,15 +301,24 @@ def save_revision(jobs: Any, directory: Path, request: dict[str, Any], chain: Ch
     resolve_audio(jobs, request, chain.audio_mix)
     if "audioMix" in request:
         metadata["audioMix"] = request["audioMix"]
+    files: dict[str, object] = {"revision.json": metadata, "edit-decision.json": revised}
+    if manifest is not None:
+        metadata.update(
+            candidateManifestSha256=request["candidateManifestSha256"],
+            replacements=request["replacements"],
+        )
+        files["candidates.json"] = manifest
     jobs.safe(directory / "result")
     write_creation(
         directory / "result",
-        {"revision.json": metadata, "edit-decision.json": revised},
+        files,
         (jobs.project(chain.project_id),),
     )
     path = directory / "result/receipt.json"
     receipt = jobs.read(path)
-    receipt["schemaVersion"] = "creation-revision-receipt-v1"
+    receipt["schemaVersion"] = (
+        "creation-revision-receipt-v2" if manifest is not None else "creation-revision-receipt-v1"
+    )
     jobs.save(path, receipt)
 
 
@@ -299,3 +364,39 @@ async def render_revision(
             chain.audio_mix.bgm.track_id, chain.audio_mix.bgm.track_receipt_sha256
         ),
     )
+
+
+def prepare_revision(
+    jobs: Any, request: dict[str, Any], chain: Chain
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    if "candidateManifestSha256" not in request:
+        if chain.manifest is not None or "replacements" in request:
+            raise ValueError("Replacement descendants require v4")
+        return build_revision(chain.edl, chain.root_sha, request["clips"]), None
+    from gamingcreator.ui.replacement_jobs import manifest_for_chain
+
+    if "replacements" not in request:
+        raise ValueError("Replacement operations are required for v4")
+    manifest, timelines = manifest_for_chain(jobs, chain)
+    if request["candidateManifestSha256"] != candidate_manifest_sha(manifest):
+        raise ValueError("Candidate manifest changed")
+    revised = build_revision_v4(
+        chain.edl, chain.root_sha, chain.digest, request["clips"], request["replacements"], manifest
+    )
+    validate_revision_v4(
+        chain.edl,
+        revised,
+        chain.root_sha,
+        chain.digest,
+        request["clips"],
+        request["replacements"],
+        manifest,
+        timelines,
+    )
+    return revised, manifest
+
+
+def editable_clips(edl: dict[str, Any], root_sha: str) -> list[dict[str, Any]]:
+    if edl.get("schemaVersion") == "edit-decision-revision-v4":
+        edl = {**edl, "schemaVersion": "edit-decision-revision-v3"}
+    return legacy_editable_clips(edl, root_sha)
