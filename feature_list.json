@@ -532,8 +532,10 @@
       "group": "A",
       "name": "代理文件（Proxy）",
       "first_product": false,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: make-proxy builds/reuses a 360p low-bitrate editing proxy per source SHA with a duration-scaled byte budget (<=1 GiB) enforced by -fs and MediaOutputLimit, duration check, temp-dir build and full cleanup on failure; /api/media?proxy=1 serves it only while its receipt matches; real 54.7s recording 25.3MB -> 4.2MB proxy; player auto-switch not done"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },

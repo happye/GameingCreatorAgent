@@ -235,8 +235,22 @@ class InspectionHandler(BaseHTTPRequestHandler):
             and (origin is None or origin == "http://" + host)
         )
 
-    def _media(self, project: Path, run_id: str, evidence_id: str | None = None) -> None:
+    def _media(
+        self, project: Path, run_id: str, evidence_id: str | None = None, proxy: bool = False
+    ) -> None:
         resource = asyncio.run(registered_media(project, run_id, evidence_id))
+        if proxy:
+            from gamingcreator.infrastructure.proxy_media import read_proxy
+
+            # Preview only: a missing or stale proxy is reported, never silently replaced.
+            receipt = read_proxy(self.repository, resource.sha256)
+            if receipt is None:
+                raise AppError(
+                    "media.proxy_missing",
+                    "这个录像还没有可用的编辑代理，请先运行 scripts/make-proxy.ps1。",
+                    ExitCode.INPUT,
+                )
+            resource = MediaResource(Path(receipt["path"]), receipt["proxySha256"], "video/mp4")
         self._serve_media(resource)
 
     def _serve_media(
@@ -949,7 +963,12 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(200, asyncio.run(detail_costs(project, query.get("run", ""))))
             elif path in {"/api/media", "/api/evidence"}:
                 evidence_id = query.get("id", "") if path == "/api/evidence" else None
-                self._media(project, query.get("run", ""), evidence_id)
+                self._media(
+                    project,
+                    query.get("run", ""),
+                    evidence_id,
+                    proxy=path == "/api/media" and query.get("proxy") == "1",
+                )
             else:
                 modes: dict[str, RetrievalMode] = {
                     "lexical": "lexical",

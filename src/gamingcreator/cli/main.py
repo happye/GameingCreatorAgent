@@ -287,6 +287,12 @@ def _parser() -> CliParser:
             "reverse",
         ],
     )
+    proxy = commands.add_parser(
+        "make-proxy",
+        help="为一个任务的原片生成或复用低分辨率编辑代理（仅预览用，成片仍用原片）；有严格大小上限",
+    )
+    proxy.add_argument("--project", type=Path, required=True)
+    proxy.add_argument("--run", required=True)
     shots = commands.add_parser(
         "detect-shots",
         help="本地检测一个任务原片的镜头切换与黑屏，并标出跨镜头事件；只读、不花钱",
@@ -1810,6 +1816,11 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
                 args.project, args.run, args.brief, args.output, args.event, args.fps, args.select
             )
         )
+    if args.command == "make-proxy":
+        from gamingcreator.cli.proxy import execute_make_proxy
+
+        asyncio.run(execute_make_proxy(args.project.resolve(), args.run, Path.cwd()))
+        return None
     if args.command == "detect-shots":
         asyncio.run(
             execute_detect_shots(
