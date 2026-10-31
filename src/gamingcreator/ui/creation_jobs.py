@@ -735,6 +735,17 @@ class CreationJobs:
                 continue  # An unreadable record is left out of the statistics, not guessed.
         return summarize_feedback(records)
 
+    def timeline_export(self, job_id: str, plan_id: str, fmt: str) -> tuple[bytes, str, str]:
+        from gamingcreator.application.timeline_export import to_fcpxml, to_otio
+
+        chain = load_chain(self, job_id, plan_id)
+        name = f"gamingcreator-{job_id[:8]}"
+        if fmt == "fcpxml":
+            return to_fcpxml(chain.edl, name).encode("utf-8"), f"{name}.fcpxml", "application/xml"
+        if fmt == "otio":
+            return to_otio(chain.edl, name).encode("utf-8"), f"{name}.otio", "application/json"
+        raise fail("creation.input", "时间线格式只支持 fcpxml 或 otio。")
+
     def narration_script(self, job_id: str, plan_id: str) -> dict[str, object]:
         chain = load_chain(self, job_id, plan_id)
         return build_narration_script(

@@ -802,6 +802,16 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     self._json(
                         200, self.creation_jobs.edit(tail.removesuffix("/edit"), query["planId"])
                     )
+                elif tail.endswith("/timeline"):
+                    if set(query) != {"planId", "format"}:
+                        raise ValueError("Expected plan ID and timeline format")
+                    body, filename, content_type = self.creation_jobs.timeline_export(
+                        tail.removesuffix("/timeline"), query["planId"], query["format"]
+                    )
+                    self._headers(200, len(body), content_type + "; charset=utf-8")
+                    self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+                    self.end_headers()
+                    self.wfile.write(body)
                 elif tail.endswith("/narration-script"):
                     if set(query) != {"planId"}:
                         raise ValueError("Expected selected plan ID")

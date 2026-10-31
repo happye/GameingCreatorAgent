@@ -1,4 +1,6 @@
-# 当前接手：游戏知识层已交付，下一专业时间线导出
+# 当前接手：时间线导出已交付，剩余3项未开始均为发布/商业化
+
+2026-11-01专业时间线导出P033已交付（部分）：编辑器“导出已保存版本的时间线”提供FCPXML 1.9与OTIO JSON下载（GET /api/creation/jobs/<id>/timeline?planId=&format=fcpxml|otio）。按原片文件URI与源时间写入，时间为输出帧对齐的有理数；变速写timeMap/LinearTimeWarp；我们渲染时交叉淡化是两段重叠N帧，而两种格式要求片段首尾相接、转场居中借用余量，因此在剪切点按整帧修剪（左N//2、右其余），导出总长与真实成片完全一致。真实34镜头版本导出FCPXML 34段、时长299/30秒=成片9.97秒，OTIO 34段。4项测试（整帧布局与总长、FCPXML结构/转场/timeMap/文件URI、OTIO总长与转场、HTTP下载）通过、Ruff/mypy通过；单Agent。仍未做：在Final Cut/DaVinci/Premiere里实测导入（本机无这些软件，故只记部分），Premiere XML（xmeml）、字幕/配乐/旁白轨道导出。51项10/38/3≈57%，首产品0/22/0≈50%；人工0/未来9、债务20项11/2/7不变。
 
 2026-11-01游戏知识层P018已交付（部分）：创作页新增“游戏知识（本机）”，按需求里的游戏名查找/新增条目（标题、内容、来源类型官方说明/Wiki攻略站/用户资料、来源说明），内容可手填或从本地txt/md/html/截图/PDF读取（复用活动规则的本机读取，不联网）；条目以内容SHA256命名、一条一个文件、永不覆盖，修改生成新版本并记录replaces，可查完整历史，查找只显示最新版本；查找按关键词在标题(×3)/正文中的出现次数排序，每条带“（来源：类型·说明，日期）”，可一键“插入到旁白”（截取前120字+出处）。存于.cache/workspace/knowledge。4项测试（校验、版本/历史、跨游戏隔离、HTTP文本/文件新增+查找+历史+错误）及相关回归共68项通过、Ruff/mypy通过；单Agent。仍未做：规划/解说自动引用知识、联网抓取Wiki、补丁版本对比。51项10/37/4≈56%，首产品0/22/0≈50%；人工0/未来9、债务20项11/2/7不变。下一专业时间线导出（P033）。
 
@@ -38,7 +40,7 @@ R2-H已按[候选替换合同](docs/exec-plans/sprint-clip-replacements.md)完�
 
 R2-I本地旁白已按[合同](docs/exec-plans/sprint-local-narration.md)交付（结果见合同末节）；证据.cache/narration-main.xml（165项）、narration-ui.xml、narration-real-render.json（真实3.000秒定位）。剩余P2见TD019。
 
-已交付：P025解说草稿、P041一句话改镜头、P022+P043–P049七种内容模式（[sprint](docs/exec-plans/sprint-content-modes.md)）、P023/P024素材评分与缺口、P020活动规则解析、P039桌面EXE薄宿主、P042反馈闭环（[sprint](docs/exec-plans/sprint-creation-feedback.md)）。P011编辑代理（[sprint](docs/exec-plans/sprint-editing-proxy.md)）已交付。P018游戏知识层（[sprint](docs/exec-plans/sprint-game-knowledge.md)）已交付。下一步建议：④P033专业时间线导出（FCPXML/OTIO，需真实软件导入核验，否则只记部分）；⑤R4安装包/WebView2（待SDK下载许可）。
+已交付：P025解说草稿、P041一句话改镜头、P022+P043–P049七种内容模式（[sprint](docs/exec-plans/sprint-content-modes.md)）、P023/P024素材评分与缺口、P020活动规则解析、P039桌面EXE薄宿主、P042反馈闭环（[sprint](docs/exec-plans/sprint-creation-feedback.md)）。P011编辑代理（[sprint](docs/exec-plans/sprint-editing-proxy.md)）已交付。P018游戏知识层（[sprint](docs/exec-plans/sprint-game-knowledge.md)）已交付。P033时间线导出（[sprint](docs/exec-plans/sprint-timeline-export.md)）已交付。剩余未开始3项：P038自动发布、P050创作者套餐、P051企业版——按路线只做本地/沙箱流程，真实账号/支付前另取许可。下一步建议：⑤R4安装包/WebView2（待SDK下载许可）。
 
 ## 状态与边界
 

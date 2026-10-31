@@ -867,8 +867,10 @@
       "group": "D",
       "name": "专业剪辑软件导出（FCPXML／OTIO／Premiere XML）",
       "first_product": false,
-      "delivery_status": "not_started",
-      "implementation_evidence": [],
+      "delivery_status": "partial",
+      "implementation_evidence": [
+        "2026-11-01: FCPXML 1.9 and OTIO JSON export of saved revisions with source file URIs, frame-aligned rational times, speed time maps and crossfades as centred transitions with whole-frame trims so exported length equals the render; real 34-clip revision exported (299/30s); not import-verified in Final Cut/DaVinci/Premiere; no Premiere XML or audio/subtitle tracks"
+      ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
     },
