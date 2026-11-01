@@ -10,4 +10,4 @@
 
 原参考context的媒体字段与automaticTimeCapture旧语义保留。新顶层runtimeClocks为由实际源派生的运行投影，不参与contextSha256；验证时剔除此字段核原身份，并对存在的投影严格重建比较。旧包无此字段仍可验证和使用原行为。原plan、记录schema、参考事件、Top10身份及评分不改。
 
-实证和当前限制见[交付报告](../exec-plans/report-2026-10-24-source-clock-mapping.md)。支持范围只对应已测本地Chromium／合成MP4，不泛化为全部编码或浏览器通过；视频晚起的无画面头部、矛盾媒体和不支持情况继续手工核对。合成条码画面与ffprobe帧PTS独立oracle是验证的一部分，不以赋值currentTime自证映射。
+实证和当前限制见[交付报告](../archive/reports-2026-10/report-2026-10-24-source-clock-mapping.md)。支持范围只对应已测本地Chromium／合成MP4，不泛化为全部编码或浏览器通过；视频晚起的无画面头部、矛盾媒体和不支持情况继续手工核对。合成条码画面与ffprobe帧PTS独立oracle是验证的一部分，不以赋值currentTime自证映射。

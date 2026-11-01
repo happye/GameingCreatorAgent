@@ -1,7 +1,8 @@
 # Step2 local branch bundle inventory (2026-11-01)
 
-Bundle (ignored cache, restore with `git clone` / `git fetch` from bundle):
-`G:\Tools\ChatGPTRepo\GameingCreatorAgent\.cache\scratch\step2-local-branches-20261101-171840.bundle`
+Bundle (outside the repo since 2026-11-01 21:10 — `.cache/scratch` is deletable; restore with `git fetch <bundle> <branch>:<branch>`):
+`G:\Tools\ChatGPTRepo\GameingCreatorAgent-archive\2026-11-01-branch-backup\step2-local-branches-20261101-171840.bundle`
+The eight orphan worktree copies (`orphan-wt-*`) moved to the same folder. 40 of the bundled snapshot branches differ from `main`; this bundle is their only copy.
 Size bytes: 3855281
 
 Deleted local branches after successful `git bundle verify` (main kept). Remote-tracking branches on origin were not deleted.

@@ -44,7 +44,7 @@
 **2026-11-01 T12 用户手册：** creation-guide 安装→发布包四段结构；含水印／准备分钟／StartMenu／licenses；下一步 T13。计数不变：51项10/41/0≈60%；债务21项14/2/5。**
 
 
-**2026-11-01 T11 全量 verify 门禁：** erify.ps1 EXIT=0；墙钟 1451.7s；4487 passed / 5 skipped；wheel SHA256 C73DB44F…1D7A84 双构建一致；修 setup_media UTF-8 replace、HTTP 测试 HTTPError.close、server 审计局部名、ruff。下一步 T12。计数不变：51项10/41/0≈60%；债务21项14/2/5。**
+**2026-11-01 T11 全量 verify 门禁：** `verify.ps1 EXIT=0；墙钟 1451.7s；4487 passed / 5 skipped；wheel SHA256 C73DB44F…1D7A84 双构建一致；修 setup_media UTF-8 replace、HTTP 测试 HTTPError.close、server 审计局部名、ruff。下一步 T12。计数不变：51项10/41/0≈60%；债务21项14/2/5。**
 
 
 **2026-11-01 T10 企业版增强（P051）：** 按项目团队 + 可展开审核历史 + 审计 JSON/CSV（自报姓名）；下一步 T11。计数不变：51项10/41/0≈60%；债务21项14/2/5。**
@@ -181,7 +181,7 @@
 
 2026-10-29长录像候选验证完成：1903取帧时刻及44629音频原始映射相同；同一固定参考解码器下1903/1903 RGB24像素SHA相同，WAV PCM相同，但JPEG/WAV文件字节不同。原片与1907旧文件未变、0模型请求，Astra/low独立评估PASS。生产pin/证据身份不变，TD003仍open。Luna/high只读实际流程确认无新增真人验收，F006/F009/F010仍false、0/8；已批准离线接手队列完成，后续依赖已有人工输入，不催分组。功能10/8/33（27%）、首产品5%、人工8项、技术债10/2/5不变。
 
-详见[长录像对比合同及结果](docs/exec-plans/sprint-saved-long-media-comparison.md)。本次无新增人工要求，不改变现有待办或债务状态。
+详见[长录像对比合同及结果](docs/archive/sprints/sprint-saved-long-media-comparison.md)。本次无新增人工要求，不改变现有待办或债务状态。
 
 # Progress Log
 
@@ -251,37 +251,37 @@
 
 **2026-10-24 TD006发布成功**：c8b9667普通push到origin/main，原远端e9361e2及先前积压试验文档9e8e525／0790976一起同步；12个已验源码／测试Git blob与提交相同。256核心回归、静态与旧10参考生产CLI复用通过；工作台扩展275项2失败和唯一2passed窄probe保留，下一先修此可靠性边界再回真实质量门槛。原标注／费用／三缺口保持，当前无DSH watcher／源码写者。以下旧网络失败／RUNNING均为历史。
 
-**2026-10-24 TD006特殊源时钟自动映射已交付**：新两验收页对实证Chromium／MP4非零PTS及异步A/V自动换算、取时和区间末停，异常／无画面仍手动。正式256passed／0skip、静态检查、原Sol/high R1–R8 PASS；实际旧编辑包＋10参考生产CLI复用，37保护／922原项目SHA不变。四原生工程请求全COMPLETED且完整结果已取回，无watcher；主控监督遗漏、ignored只读基线入册及测试目录误选均纠正，原失败保留。F006/F009/F010false，旧费用／12标注纠正／六素材不变、无新录像API。下一回工作台状态可靠性，再回原真实质量路径。见[报告](docs/exec-plans/report-2026-10-24-source-clock-mapping.md)与[当前交接](HANDOFF.md)。下方旧RUNNING／下一TD006等均为历史。
+**2026-10-24 TD006特殊源时钟自动映射已交付**：新两验收页对实证Chromium／MP4非零PTS及异步A/V自动换算、取时和区间末停，异常／无画面仍手动。正式256passed／0skip、静态检查、原Sol/high R1–R8 PASS；实际旧编辑包＋10参考生产CLI复用，37保护／922原项目SHA不变。四原生工程请求全COMPLETED且完整结果已取回，无watcher；主控监督遗漏、ignored只读基线入册及测试目录误选均纠正，原失败保留。F006/F009/F010false，旧费用／12标注纠正／六素材不变、无新录像API。下一回工作台状态可靠性，再回原真实质量路径。见[报告](docs/archive/reports-2026-10/report-2026-10-24-source-clock-mapping.md)与[当前交接](HANDOFF.md)。下方旧RUNNING／下一TD006等均为历史。
 
-**2026-10-24额度恢复后接续原DSH并集中追修**：原时钟请求29a141ad…c232实际COMPLETED，已按resultHash读取保存报告，无重投。原Sol/high发现旧reference身份、seek超时假成功及可见播放器动态有效态三P1；同task新请求87da2a18…11ed RUNNING集中修R2/R3/R4/R6，不重做条码oracle、不要求重标或重新生成原包，正式计划／测试尚未跑。原Luna/high实际只读来源对齐：10有效参考只对应钟馗failed/coverage_gap，无同源Completed；32排名均异源，不能拿来替代真人质量证据。数据／费用保持，F006/F009/F010false；见[sprint](docs/exec-plans/sprint-source-clock-mapping.md)与ignored两个review／alignment记录。
+**2026-10-24额度恢复后接续原DSH并集中追修**：原时钟请求29a141ad…c232实际COMPLETED，已按resultHash读取保存报告，无重投。原Sol/high发现旧reference身份、seek超时假成功及可见播放器动态有效态三P1；同task新请求87da2a18…11ed RUNNING集中修R2/R3/R4/R6，不重做条码oracle、不要求重标或重新生成原包，正式计划／测试尚未跑。原Luna/high实际只读来源对齐：10有效参考只对应钟馗failed/coverage_gap，无同源Completed；32排名均异源，不能拿来替代真人质量证据。数据／费用保持，F006/F009/F010false；见[sprint](docs/archive/sprints/sprint-source-clock-mapping.md)与ignored两个review／alignment记录。
 
-**2026-10-24进入TD006自动映射离线切片**：原Luna/high地图及同Sol/high合同审阅PASS；新DSH task gamingcreator-source-clock-mapping-20261024／session codex-94269cc4-7c00-4bbe-917e-bdd6205a1a9f、合同ce3fcecf…6fe19f、唯一请求29a141ad…c232已RUNNING，由单60秒cursor增量watcher监督。基线0790976、完整init通过；目标是真实合成非零PTS／异步A/V的浏览器映射，未知继续手动，保护原源时钟／标注／费用。Codex合同及验收、DSH唯一写者、原Sol/high独评，不新增录像API。见[sprint](docs/exec-plans/sprint-source-clock-mapping.md)。
+**2026-10-24进入TD006自动映射离线切片**：原Luna/high地图及同Sol/high合同审阅PASS；新DSH task gamingcreator-source-clock-mapping-20261024／session codex-94269cc4-7c00-4bbe-917e-bdd6205a1a9f、合同ce3fcecf…6fe19f、唯一请求29a141ad…c232已RUNNING，由单60秒cursor增量watcher监督。基线0790976、完整init通过；目标是真实合成非零PTS／异步A/V的浏览器映射，未知继续手动，保护原源时钟／标注／费用。Codex合同及验收、DSH唯一写者、原Sol/high独评，不新增录像API。见[sprint](docs/archive/sprints/sprint-source-clock-mapping.md)。
 
 **2026-10-24试验文档发布受网络阻断**：本地提交9e8e525已保存；一次普通push连接GitHub:443失败，远端仍e9361e2。不强推或循环重试，后续实质交付再补推；单帧试验结果、授权与费用账目均不受影响。
 
-**2026-10-24固定单帧真实试验完成**：已按新¥0.50具体许可唯一发送原28.5秒登记图／parts-v2，HTTP200、deepseek-flash生成1主体／7属性并发布。三新进程本地resume零发送／unchanged、正例1／跨衣物负例0；922旧文件SHA不变，原Sol/high最终PASS。1016输入／119输出tokens估算¥0.001492，未核账单，原¥0.416预留已由估算额替代；本授权一次已用尽，剩余额度不允许再发。原费用／unknown／12标注纠正／六素材保持，F006/F009/F010false。下一原Luna/high定位TD006特殊源时钟自动映射，DSH后续唯一实施，不新增录像API或重标。见[报告](docs/exec-plans/report-2026-10-24-static-observation-pilot.md)及[sprint](docs/exec-plans/sprint-static-observation-pilot.md)。下方为此前节点。
+**2026-10-24固定单帧真实试验完成**：已按新¥0.50具体许可唯一发送原28.5秒登记图／parts-v2，HTTP200、deepseek-flash生成1主体／7属性并发布。三新进程本地resume零发送／unchanged、正例1／跨衣物负例0；922旧文件SHA不变，原Sol/high最终PASS。1016输入／119输出tokens估算¥0.001492，未核账单，原¥0.416预留已由估算额替代；本授权一次已用尽，剩余额度不允许再发。原费用／unknown／12标注纠正／六素材保持，F006/F009/F010false。下一原Luna/high定位TD006特殊源时钟自动映射，DSH后续唯一实施，不新增录像API或重标。见[报告](docs/archive/reports-2026-10/report-2026-10-24-static-observation-pilot.md)及[sprint](docs/archive/sprints/sprint-static-observation-pilot.md)。下方为此前节点。
 
-**2026-10-24固定单帧真实试验获授权**：用户明确同意仅原28.5秒登记图1次／1图／无重试、新增预算¥0.50。已保存专属授权，生产loader核源与提案／9源码SHA，原Sol/high预核PASS；Codex将仅执行一次新生产dispatch，不重跑旧任务。不要求重标，旧费用保持；结果及续作见[真实试验sprint](docs/exec-plans/sprint-static-observation-pilot.md)。
+**2026-10-24固定单帧真实试验获授权**：用户明确同意仅原28.5秒登记图1次／1图／无重试、新增预算¥0.50。已保存专属授权，生产loader核源与提案／9源码SHA，原Sol/high预核PASS；Codex将仅执行一次新生产dispatch，不重跑旧任务。不要求重标，旧费用保持；结果及续作见[真实试验sprint](docs/archive/sprints/sprint-static-observation-pilot.md)。
 
 **2026-10-24普通推送恢复成功**：源码／主报告fdd83d6已从原远端958f70c正常快进到origin/main，先前未推的源时钟／静态导入及交接成果同步保留。此次未force；后续仅补发布状态文档，不改变已验源码、不重复整套检查。本轮新真实单帧仍未授权。
 
-**2026-10-24单注册帧自动静态生成离线交付**：已有Completed注册帧可prepare冻结、专属具体授权下一次生成、typed保存／发布并由新进程同actor／part查询；resume只做本地工作。唯一Sol/high首评五项反例已一次集中追修：独立授权额度、损坏账本失败关闭、既有授权身份、os._exit四断点、显式parts-v2防跨衣物／持有物拼条件。最终159passed／1权限skip、九文件Ruff／格式／六源码mypy、相同双wheel及隔离导入、独评PASS；37保护SHA不变，原数据／费用／12标注及纠正保持。真实28.5秒单帧提案仅本地prepare，922旧项目文件不变，零发送／未授权；拟¥0.50上限的1次试验等具体许可，不重跑旧任务、不重标。F006/F009/F010false，旧STOP_PENDING保留。见[交付报告](docs/exec-plans/report-2026-10-24-static-observation-generation.md)、[sprint](docs/exec-plans/sprint-static-observation-generation.md)。下方为本次恢复和此前历史节点。
+**2026-10-24单注册帧自动静态生成离线交付**：已有Completed注册帧可prepare冻结、专属具体授权下一次生成、typed保存／发布并由新进程同actor／part查询；resume只做本地工作。唯一Sol/high首评五项反例已一次集中追修：独立授权额度、损坏账本失败关闭、既有授权身份、os._exit四断点、显式parts-v2防跨衣物／持有物拼条件。最终159passed／1权限skip、九文件Ruff／格式／六源码mypy、相同双wheel及隔离导入、独评PASS；37保护SHA不变，原数据／费用／12标注及纠正保持。真实28.5秒单帧提案仅本地prepare，922旧项目文件不变，零发送／未授权；拟¥0.50上限的1次试验等具体许可，不重跑旧任务、不重标。F006/F009/F010false，旧STOP_PENDING保留。见[交付报告](docs/archive/reports-2026-10/report-2026-10-24-static-observation-generation.md)、[sprint](docs/archive/sprints/sprint-static-observation-generation.md)。下方为本次恢复和此前历史节点。
 
-**2026-10-24恢复下一主交付**：用户/goal明确持续DSH协作；读取最新版Skill、HANDOFF和接手清单，旧三个请求均COMPLETED，实时running=false／queue=0，STOP_PENDING及旧阻断保留。工具fc47d97的优化仅Skill／手册／benchmark；本次CLI已加载当前模块，无Host重启需求。环境85份pyc从已验SHA原安装包恢复并备份原字节，未改回执／系统配置。Luna/high接口地图完成，唯一Sol/high正评单帧静态生成R1–R9合同；DSH尚未派发，本轮合成素材/fake transport，旧API任务与标注保持。见[sprint](docs/exec-plans/sprint-static-observation-generation.md)。
+**2026-10-24恢复下一主交付**：用户/goal明确持续DSH协作；读取最新版Skill、HANDOFF和接手清单，旧三个请求均COMPLETED，实时running=false／queue=0，STOP_PENDING及旧阻断保留。工具fc47d97的优化仅Skill／手册／benchmark；本次CLI已加载当前模块，无Host重启需求。环境85份pyc从已验SHA原安装包恢复并备份原字节，未改回执／系统配置。Luna/high接口地图完成，唯一Sol/high正评单帧静态生成R1–R9合同；DSH尚未派发，本轮合成素材/fake transport，旧API任务与标注保持。见[sprint](docs/archive/sprints/sprint-static-observation-generation.md)。
 
-**2026-10-24补正DSH交接入口**：工程交付此前有记录，但首页／分工下方恢复身份仍指向10月22日旧任务，暂停后审计及用户外部优化也缺入口。已统一四项交付的报告、task／session、验证、最新STOP_PENDING及下一自动生成草案；已读新版Skill，外部工具代码加载尚未验证。见[接续清单](docs/exec-plans/report-2026-10-24-dsh-resumption.md)。仅文档补正，无新DSH派发、测试或录像费用，保留暂停状态。
+**2026-10-24补正DSH交接入口**：工程交付此前有记录，但首页／分工下方恢复身份仍指向10月22日旧任务，暂停后审计及用户外部优化也缺入口。已统一四项交付的报告、task／session、验证、最新STOP_PENDING及下一自动生成草案；已读新版Skill，外部工具代码加载尚未验证。见[接续清单](docs/archive/reports-2026-10/report-2026-10-24-dsh-resumption.md)。仅文档补正，无新DSH派发、测试或录像费用，保留暂停状态。
 
 **2026-10-24按用户要求暂停**：剩约12%额度，手头静态声明入口已交付本地81216a5；当前产品与资料已保存，普通push仍GitHub:443失败。自动生成只完成Astra/low设计，尚未开新实施。DSH三个请求COMPLETED，stop接受且原生无运行轮次／队列，控制器因后台工具静止未证保留STOP_PENDING；不再派新send/run／审批，不杀共享Host，下次先只读核状态。六新增素材已记，原片／费用／标注保持。
 
-**2026-10-24 DSH交付独立静态声明闭环**：无动作事件的Completed注册帧可导入独立SQLite，另一进程按同actor／part条件搜索并回到证据／源时间；自动生成与真实外观质量未验收。202passed／1权限skip，Ruff／格式／mypy、唯一Sol/high R1–R9 PASS，12保护文件SHA不变。3源码边界问题与3夹具错误已在同task追修，失败证据保留；无录像API／重标。用户补3游戏6 MP4，已目录登记、分组／参考未核，不再泛催素材。见[报告](docs/exec-plans/report-2026-10-24-static-observation-index.md)与[清单](docs/exec-plans/material-availability-2026-10-24.md)。下一设计静态自动生成的Provider／费用／恢复有限合同，F006/F009/F010false。
+**2026-10-24 DSH交付独立静态声明闭环**：无动作事件的Completed注册帧可导入独立SQLite，另一进程按同actor／part条件搜索并回到证据／源时间；自动生成与真实外观质量未验收。202passed／1权限skip，Ruff／格式／mypy、唯一Sol/high R1–R9 PASS，12保护文件SHA不变。3源码边界问题与3夹具错误已在同task追修，失败证据保留；无录像API／重标。用户补3游戏6 MP4，已目录登记、分组／参考未核，不再泛催素材。见[报告](docs/archive/reports-2026-10/report-2026-10-24-static-observation-index.md)与[清单](docs/archive/history/material-availability-2026-10-24.md)。下一设计静态自动生成的Provider／费用／恢复有限合同，F006/F009/F010false。
 
-**2026-10-23 DSH协作交付TD006本轮**：候选评审与原片参考对齐特殊源时钟保守资格；真实合成零起点／非零PTS／异步A/V经probe与两个真实构造器、Chromium验证手动保存及正常seek／区间末尾暂停。最终64passed／0skip、Ruff／格式／mypy与唯一Sol/high R1–R5 PASS。初轮测试证据缺口由DSH在原对话补强，不放宽生产保护；未证明旧实现必然错播，未实现非零自动映射。无录像API／标注／费用变更，F006/F009/F010false。下一TD009独立静态观察离线切片已完成Astra/low设计，待合同与实施。[报告](docs/exec-plans/report-2026-10-23-source-clock-acceptance.md)。
+**2026-10-23 DSH协作交付TD006本轮**：候选评审与原片参考对齐特殊源时钟保守资格；真实合成零起点／非零PTS／异步A/V经probe与两个真实构造器、Chromium验证手动保存及正常seek／区间末尾暂停。最终64passed／0skip、Ruff／格式／mypy与唯一Sol/high R1–R5 PASS。初轮测试证据缺口由DSH在原对话补强，不放宽生产保护；未证明旧实现必然错播，未实现非零自动映射。无录像API／标注／费用变更，F006/F009/F010false。下一TD009独立静态观察离线切片已完成Astra/low设计，待合同与实施。[报告](docs/archive/reports-2026-10/report-2026-10-23-source-clock-acceptance.md)。
 
-**2026-10-23 DSH协作已交付TD014**：验收步骤完成状态可靠读取，29项相关回归／Ruff／格式／mypy通过，唯一Sol/high评估R1–R6 PASS；86旧验收文件摘要不变。一个原生实施请求已结束，恢复未重投；无录像调用、重标或新质量结论，三缺口及F006/F009/F010false保持。[报告](docs/exec-plans/report-2026-10-23-acceptance-state.md)。下一先核TD006原片回看源时间边界，以实际证据确定新交付。下方为历史。
+**2026-10-23 DSH协作已交付TD014**：验收步骤完成状态可靠读取，29项相关回归／Ruff／格式／mypy通过，唯一Sol/high评估R1–R6 PASS；86旧验收文件摘要不变。一个原生实施请求已结束，恢复未重投；无录像调用、重标或新质量结论，三缺口及F006/F009/F010false保持。[报告](docs/archive/reports-2026-10/report-2026-10-23-acceptance-state.md)。下一先核TD006原片回看源时间边界，以实际证据确定新交付。下方为历史。
 
-**2026-10-22状态与文档对齐**：当前里程碑、技术已交付／质量未通过及素材需求统一见[总览](docs/exec-plans/current-status.md)。README的未修P1、设计／指南的无v5结果、续跑耗时误作片尾时间已纠正；交接／计划／分工／人工待办旧节点归档保留，不改标注、费用或feature_list。正式F006仍需更多确认独立的真实玩法素材，先复用既有10个样例、不重标；先冻结事前参考计划再分析，Completed后绑定原计划。当前无录像分析／产品源码worker，后续沿独立质量路径。文档11bbf80及后补记本地保存，两次普通push连接GitHub:443失败，网络恢复后补推`git push origin main`；产品代码caa29d0此前已推送。下方为历史节点，不据其中“当前／下一步”启动任务。
+**2026-10-22状态与文档对齐**：当前里程碑、技术已交付／质量未通过及素材需求统一见[总览](docs/archive/history/current-status-20261031.md)。README的未修P1、设计／指南的无v5结果、续跑耗时误作片尾时间已纠正；交接／计划／分工／人工待办旧节点归档保留，不改标注、费用或feature_list。正式F006仍需更多确认独立的真实玩法素材，先复用既有10个样例、不重标；先冻结事前参考计划再分析，Completed后绑定原计划。当前无录像分析／产品源码worker，后续沿独立质量路径。文档11bbf80及后补记本地保存，两次普通push连接GitHub:443失败，网络恢复后补推`git push origin main`；产品代码caa29d0此前已推送。下方为历史节点，不据其中“当前／下一步”启动任务。
 
-**已交付（2026-10-22，DSH协作）**：同目录独立原生workspace／新对话实际完成已有细节联合检索记录兼容与来源绑定，保留原153行未提交成果；正常v1/v2/v3及无细节结果可保存重读，损坏元数据明确拒绝。98项回归／Ruff／mypy通过，唯一Sol/high评估PASS，32份旧记录可读且原字节保持。首轮17项夹具失败及静态错误保留，追修后通过，未放宽正式守卫。见[验收报告](docs/exec-plans/report-2026-10-22-dsh-project-detail-manifest.md)。无录像调用／新增录像费用／标注要求；DSH开发模型调用用量另存。长钟馗既有P1接续终态与三缺口保持，F006/F009/F010false。下一回到独立质量路径，保留原人工参考与授权边界，不重跑旧任务。下方均为此前节点。
+**已交付（2026-10-22，DSH协作）**：同目录独立原生workspace／新对话实际完成已有细节联合检索记录兼容与来源绑定，保留原153行未提交成果；正常v1/v2/v3及无细节结果可保存重读，损坏元数据明确拒绝。98项回归／Ruff／mypy通过，唯一Sol/high评估PASS，32份旧记录可读且原字节保持。首轮17项夹具失败及静态错误保留，追修后通过，未放宽正式守卫。见[验收报告](docs/archive/reports-2026-10/report-2026-10-22-dsh-project-detail-manifest.md)。无录像调用／新增录像费用／标注要求；DSH开发模型调用用量另存。长钟馗既有P1接续终态与三缺口保持，F006/F009/F010false。下一回到独立质量路径，保留原人工参考与授权边界，不重跑旧任务。下方均为此前节点。
 
 **2026-10-22 TD009 匹配报告 inert／禁静态索引 v1.1（已推送 d428825）：** humanLabels/qualityGate 恒 null；independentStaticClothingIndex=false；constraintHash；pytest 绿。0 DeepSeek／launcher；F006/F009/F010 仍 false；A／B／D 仍待用户；不宣称 TD009 关单。sprint-detail-match-report-inert-v1_1.md。
 
@@ -354,7 +354,7 @@
 
 **2026-10-21 覆盖缺口只读诊断包交付**：按 sprint-coverage-gap-plan 推荐项，从 outcome／coverage／SQLite 检查点与 invocation 白名单投影只读汇总三拒窗。结论：均 event_frame_boundaries；248／253 末事件 f8→f8；021 有 schemaDetail、248／253 无（1e3f420 替换写入）。工件 artifacts/coverage-gap-diagnosis-20261021/；正式报告 docs/exec-plans/report-2026-10-21-coverage-gap-diagnosis.md。0 新模型／不重跑 launcher／F006/F009/F010 仍 false；**A/B/C/D 仍待决**；未改产品源码。进度备注：诊断已开始并完成打包，供人选 C（及 B）使用。
 
-**2026-10-21 覆盖缺口规划开档**：接续成果已推送 codex/visual-details＠ea8b029。新建 docs/exec-plans/sprint-coverage-gap-plan.md，盘点三拒绝窗（000021／000248／000253）证据、费用与独立选项（保留／定向补窗新授权／先离线改进／暂缓）；同步 HANDOFF／assignments／human-inputs。0 新模型、不重跑 launcher、F006/F009/F010 仍 false。下一等人择项。
+**2026-10-21 覆盖缺口规划开档**：接续成果已推送 codex/visual-details＠ea8b029。新建 docs/archive/sprints/sprint-coverage-gap-plan.md，盘点三拒绝窗（000021／000248／000253）证据、费用与独立选项（保留／定向补窗新授权／先离线改进／暂缓）；同步 HANDOFF／assignments／human-inputs。0 新模型、不重跑 launcher、F006/F009/F010 仍 false。下一等人择项。
 
 **2026-10-12最终实际核对PASS**：P1修复后同原片250未执行接续已完成、单次运行到尾，唯一guard确认授权上下文／费用／身份／窗口集合／资格，evaluation-execution-v1留档。269成功／3拒绝／0未执行、469观察，新估算¥1.38173400／总¥1.49022124／0unknown／0reserved，3160旧文件／3322旧不可变行及标注保持，旧窗与另两录像0重发。进程、调用及checkpoint已结束。缺口令完整资格false是正确保护，非半途中断；无需重标，F006/F009/F010false，最终记录仅本地提交。
 
@@ -374,17 +374,17 @@
 
 **2026-10-11最新执行节点已结束**：用户批准v2最高新增¥5及图片发送后，只启动一次长钟馗run。76.05772秒exit4/provider.schema，在第22窗口单事件起止同源帧被拒；保存21／272窗口、19观察、0转录。实际22请求／198帧次／全attempt1，估算¥0.10848724含失败¥0.00612692，0新unknown／0未结预留，其他两任务pending／0调用。原答案保留；同一guard独立执行边界PASS，分析未完成。四定点边界检查通过，首次父缓存目录缺失保留；未改产品代码、未重试／续跑／绑定／检索／评分。
 
-**下一主线／人工待办**：本问题登记既有TD007，[长录像稳定性合同草案](docs/exec-plans/sprint-long-analysis-reliability.md)planned、未实现。先确定拒绝窗口的覆盖／资格与版本化失败处理再离线实现，不循环付费试错，不能放松多帧规则来换Completed。当前不用补标或评分；F006/F009/F010false、全片Recall未验证。原授权不覆盖手工重跑，新付费策略另提案；所有进度与人工记录同步，只本地提交。
+**下一主线／人工待办**：本问题登记既有TD007，[长录像稳定性合同草案](docs/archive/sprints/sprint-long-analysis-reliability.md)planned、未实现。先确定拒绝窗口的覆盖／资格与版本化失败处理再离线实现，不循环付费试错，不能放松多帧规则来换Completed。当前不用补标或评分；F006/F009/F010false、全片Recall未验证。原授权不覆盖手工重跑，新付费策略另提案；所有进度与人工记录同步，只本地提交。
 
 ## 启动前交付摘要（历史；新方案现已授权启动）
 
-**2026-10-11当前里程碑：首份真人参考核对与小规模冻结已完成。** 根目录记录12个事件，按明确答复排除两武器特写、纠正老者理由，原字节保留；三类现有样例boss1／连招5／剧情4共10个。公开工具成功导入完整12查询，另派生三查询小对照并冻结，原参考包不改。单个只读关键边界审查PASS，v2最终读回匹配，0模型／费用预留／网络动作。详见[sprint](docs/exec-plans/sprint-human-reference-pilot.md)及[汇报](docs/exec-plans/report-2026-10-11-human-reference-pilot.md)。
+**2026-10-11当前里程碑：首份真人参考核对与小规模冻结已完成。** 根目录记录12个事件，按明确答复排除两武器特写、纠正老者理由，原字节保留；三类现有样例boss1／连招5／剧情4共10个。公开工具成功导入完整12查询，另派生三查询小对照并冻结，原参考包不改。单个只读关键边界审查PASS，v2最终读回匹配，0模型／费用预留／网络动作。详见[sprint](docs/archive/sprints/sprint-human-reference-pilot.md)及[汇报](docs/archive/reports-2026-10/report-2026-10-11-human-reference-pilot.md)。
 
 **开发中／人工待办／下一步**：已标样例够有限对照，覆盖并未声称穷尽全片；不能把sparse分组、未知全片Recall或未填项当正式通过／负例。已准备长钟馗具体新分析提案v2，SHA f608c4dedac6，新增最高¥5／1903注册图／272正常请求／2445帧次，包含重试最多500实际尝试／5000帧次、单窗口3次。预算不足停止保留进度，旧unknown保持；新的费用与发送授权待用户，之前许可不覆盖。获准后分析，Completed再绑定并提醒固定候选人评；当前不要求补标，F006/F009/F010false。所有里程碑／人工记录同步，root持写任务、唯一guard已完成；只本地提交，不尝试Git网络。
 
 ## 三段原片准备摘要（历史；首份参考现已收到）
 
-**2026-10-11当前里程碑：三段新录像本地准备／事前原片页已交付。** 用户给素材、四类查询并确认未看对应AI结果后，原“等待素材位置”条件已解除。root复用既有批次／登记／参考入口，48.449秒准备26分12.58秒三原片的3145图和三音轨，保存三pending任务，0模型请求／费用预留。12查询菜单补录像名；独立媒体完整加载、1366／390三原片播放与空草稿下载通过，既有22项通过，三原文件／demo923文件不变。详见[sprint](docs/exec-plans/sprint-independent-footage-preparation.md)和[通俗报告](docs/exec-plans/report-2026-10-11-independent-footage-preparation.md)。
+**2026-10-11当前里程碑：三段新录像本地准备／事前原片页已交付。** 用户给素材、四类查询并确认未看对应AI结果后，原“等待素材位置”条件已解除。root复用既有批次／登记／参考入口，48.449秒准备26分12.58秒三原片的3145图和三音轨，保存三pending任务，0模型请求／费用预留。12查询菜单补录像名；独立媒体完整加载、1366／390三原片播放与空草稿下载通过，既有22项通过，三原文件／demo923文件不变。详见[sprint](docs/archive/sprints/sprint-independent-footage-preparation.md)和[通俗报告](docs/archive/reports-2026-10/report-2026-10-11-independent-footage-preparation.md)。
 
 **开发中／人工待办／下一步**：已提供references-v2原片标注页、提醒分批保存并询问记录路径。真实区间仍空；两钟馗保守同组、实际关系未确认；12项暂main，须根据真人原片记录确认少例／负例或补素材后再冻结，不能用三个文件当完整代表集。随后另行冻结具体费用提案、取得新授权，再分析／绑定Completed／固定前十人评。F006/F009/F010false，原v5稍后核对保持；用户断网，本节点0网络动作，只提交本地，授权分支待补推。root单Agent，公共记录已同步。
 
@@ -398,13 +398,13 @@
 
 ## 上一收尾摘要（历史；2026-10-11收尾，开发／验证节点2026-10-08）
 
-**2026-10-11用户追加任务已交付**：[通用模型分工skill及三角色补齐](docs/exec-plans/sprint-harness-routing-skill.md)已增量合入my-skills/main的e3ae40a，并同步本机Codex／Claude／Grok技能副本；原记忆／门禁保留，新增项目三个harness_*原生角色，当前型号分工立即可用，未声称新角色热刷新／全工具执行。13隔离项12passed／1权限skip，Codex原生配置接受、Grok九角色发现、独立审查通过；当前无新人工需求／DeepSeek请求。详见[通俗报告](docs/exec-plans/report-2026-10-11-harness-routing-skill.md)。录像主线仍暂停，恢复后按原开发路径和关键交付独立评估；其分支待普通push与技能仓库已发布分开记录。
+**2026-10-11用户追加任务已交付**：[通用模型分工skill及三角色补齐](docs/archive/sprints/sprint-harness-routing-skill.md)已增量合入my-skills/main的e3ae40a，并同步本机Codex／Claude／Grok技能副本；原记忆／门禁保留，新增项目三个harness_*原生角色，当前型号分工立即可用，未声称新角色热刷新／全工具执行。13隔离项12passed／1权限skip，Codex原生配置接受、Grok九角色发现、独立审查通过；当前无新人工需求／DeepSeek请求。详见[通俗报告](docs/archive/reports-2026-10/report-2026-10-11-harness-routing-skill.md)。录像主线仍暂停，恢复后按原开发路径和关键交付独立评估；其分支待普通push与技能仓库已发布分开记录。
 
-2026-10-11收尾追加配置：[子Agent按能力选模型](docs/exec-plans/sprint-codex-agent-routing.md)已安装个人／项目六角色、默认Luna/medium、最多3子Agent；Luna／Sol／Astra三次当前真实执行记录核对，主模型保持。共享记忆和工具入口已同步；独立CLI同一进程断流后完成新命名只读子任务／exit0，重复安装／拒绝冲突及备份核对通过；未称原聊天角色清单热刷新。仅完成用户追加任务，视频项目仍按原要求收尾暂停。
+2026-10-11收尾追加配置：[子Agent按能力选模型](docs/archive/sprints/sprint-codex-agent-routing.md)已安装个人／项目六角色、默认Luna/medium、最多3子Agent；Luna／Sol／Astra三次当前真实执行记录核对，主模型保持。共享记忆和工具入口已同步；独立CLI同一进程断流后完成新命名只读子任务／exit0，重复安装／拒绝冲突及备份核对通过；未称原聊天角色清单热刷新。仅完成用户追加任务，视频项目仍按原要求收尾暂停。
 
 发布状态：de4f15a源码与63534d1分工已本地提交；一次普通push连接github.com:443在21.121秒失败／exit128，原日志保存，不重试／远端读取。最后确认远端b232013，本轮待补推；本机配置使用不依赖远端。
 
-已交付／10-08部署验证：[明确JSON的新精分析v5](docs/exec-plans/sprint-detail-temporal-json.md)接精确读取、条件核对、CLI／页面及冻结工具；原人物独立排名保持。17新增全通过，相关145passed／1权限skip＋旧后台回退1passed；一次完整2419passed／4旧failed／2旧error／1权限skip，TD012／TD014未解决且不循环。97类型／CLI／双包99源码／独立九旧排名和两新请求／现用1366与390回看下载通过，911旧文件／39外部保护保持。
+已交付／10-08部署验证：[明确JSON的新精分析v5](docs/archive/sprints/sprint-detail-temporal-json.md)接精确读取、条件核对、CLI／页面及冻结工具；原人物独立排名保持。17新增全通过，相关145passed／1权限skip＋旧后台回退1passed；一次完整2419passed／4旧failed／2旧error／1权限skip，TD012／TD014未解决且不循环。97类型／CLI／双包99源码／独立九旧排名和两新请求／现用1366与390回看下载通过，911旧文件／39外部保护保持。
 
 边界：本轮0真实调用／新搜索／预留／人评；新v5无真实结果，既有细节1/227、严格复合仍partial，F006/F009/F010false。上一v4两个请求HTTP400且用户核实未扣费；人工确认另存，API未知／保守ledger及更早另一任务unknown保持。详见[通俗收尾报告](docs/archive/reports-2026-10/report-2026-10-08-detail-json.md)。
 
@@ -414,21 +414,21 @@
 
 ### 上一节点：真实v4试验执行（历史）
 
-已交付／现用：[人物独立关键词／语义排名](docs/exec-plans/sprint-saved-detail-grouped-ranking.md)，abbba14已普通push并独立确认远端一致。18新增全部通过，旧完整2402passed／3failed／3error／1权限skip、TD012／TD014保持；双包／现用两尺寸通过。真实严格复合仍partial、已有细节1/227，F006/F009/F010false。
+已交付／现用：[人物独立关键词／语义排名](docs/archive/sprints/sprint-saved-detail-grouped-ranking.md)，abbba14已普通push并独立确认远端一致。18新增全部通过，旧完整2402passed／3failed／3error／1权限skip、TD012／TD014保持；双包／现用两尺寸通过。真实严格复合仍partial、已有细节1/227，F006/F009/F010false。
 
-本次已执行：[两冻结候选真实试验](docs/exec-plans/sprint-detail-temporal-execution.md)／[通俗报告](docs/archive/reports-2026-10/report-2026-10-08-temporal-pilot-execution.md)。两个请求／六帧各一次，两次HTTP400，无新结果、不重试；用户已核实未扣费、确认另存，API用量未知及原ledger保守占用¥4.065536不改写，旧另一任务unknown¥4.065536保持。独立读回新失败／原v2不变／v4缺失，902旧文件与28外部保护字节不变，只新增九个尝试／费用文件；0本次新搜索／人评／生产源码变更，不重复完整。
+本次已执行：[两冻结候选真实试验](docs/archive/sprints/sprint-detail-temporal-execution.md)／[通俗报告](docs/archive/reports-2026-10/report-2026-10-08-temporal-pilot-execution.md)。两个请求／六帧各一次，两次HTTP400，无新结果、不重试；用户已核实未扣费、确认另存，API用量未知及原ledger保守占用¥4.065536不改写，旧另一任务unknown¥4.065536保持。独立读回新失败／原v2不变／v4缺失，902旧文件与28外部保护字节不变，只新增九个尝试／费用文件；0本次新搜索／人评／生产源码变更，不重复完整。
 
 开发中／下一步：root离线核对JSON输出格式及错误证据缺口，准备有版本的新修正方案，不改本次冻结请求、不自动扩授权。人工：本次授权／账单核实完成，暂无新结果需标注；正式独立素材／事前原片参考／固定候选评分待真人，日常无需填验收流程。需要人工帮助即提醒登记、关键节点持续同步，goal active；发布以Git及.cache/detail-temporal-execution-publication.json为准。
 
-当前[人物独立细节语义检索](docs/exec-plans/sprint-saved-detail-actor-semantics.md)已交付／现用，[通俗汇报](docs/archive/reports-2026-10/report-2026-10-08-saved-detail-actor-semantics.md)，root接03e92f1。人物／环境observed分组、原事件最大语义分数／RRF一次，v2保存采用组且旧v1保持。英文纯语义空→第1、中文混合4→1，仍partial、细节1/227。一次完整2389passed／1旧TD014失败／1权限skip／449.131s，20新增全通过、不循环；192格式／lint、96类型／CLI、双wheel98源码及独立八新旧快照通过。现用50808／41844两尺寸保存排名／下载／组身份／出画面／版本隔离及用户空验收流程保持，0后端新搜索。888旧文件／217普通排名／三源／费用提案保持，只五新本地搜索十文件，0付费／人评。下一先登记多人物复合需求同人物支持／跨人物拼接固定对照及改进；旧workers冻结，goal active。保存／普通分支发布身份以Git及.cache/detail-actor-publication.json为准。
+当前[人物独立细节语义检索](docs/archive/sprints/sprint-saved-detail-actor-semantics.md)已交付／现用，[通俗汇报](docs/archive/reports-2026-10/report-2026-10-08-saved-detail-actor-semantics.md)，root接03e92f1。人物／环境observed分组、原事件最大语义分数／RRF一次，v2保存采用组且旧v1保持。英文纯语义空→第1、中文混合4→1，仍partial、细节1/227。一次完整2389passed／1旧TD014失败／1权限skip／449.131s，20新增全通过、不循环；192格式／lint、96类型／CLI、双wheel98源码及独立八新旧快照通过。现用50808／41844两尺寸保存排名／下载／组身份／出画面／版本隔离及用户空验收流程保持，0后端新搜索。888旧文件／217普通排名／三源／费用提案保持，只五新本地搜索十文件，0付费／人评。下一先登记多人物复合需求同人物支持／跨人物拼接固定对照及改进；旧workers冻结，goal active。保存／普通分支发布身份以Git及.cache/detail-actor-publication.json为准。
 
 用户本次再次要求人工协助即时提醒、持续同步里程碑。持久规则已在AGENTS、共享协议及各工具入口，本轮修正“尚未实现”等旧当前摘要，人工待办明确日常不需填验收、正式F006依赖独立来源／事前原片参考／固定评分；当前开发不需新手动操作。只读子任务回答用途，root继续开发。以下旧结果与下一步均为历史。
 
-[真实模式对照](docs/exec-plans/sprint-saved-detail-real-modes.md)已完成，root接424d4fa：16单元含复用两旧／14新查询28文件，目标中文词法遗漏→5／纯语义6→6／默认混合遗漏→4；英文词法与混合空→1、纯语义仍空。冻结0.80／0.02、1/227细节覆盖及typed partial保持，860旧文件／217普通排名／三源／费用提案不变，0新视觉／费用／标签。独立原98源码包读回16结果通过，不重跑无变化完整／重部署。一次五文本主体实验英0.82366跨原0.80，未接生产；下一登记并实现按人物独立语义投影、事件最大分数一次RRF及旧快照兼容，继续主线。通俗汇报见[report](docs/archive/reports-2026-10/report-2026-10-08-saved-detail-real-modes.md)，保存／同步以Git及.cache/detail-modes-publication.json为准，goal active。
+[真实模式对照](docs/archive/sprints/sprint-saved-detail-real-modes.md)已完成，root接424d4fa：16单元含复用两旧／14新查询28文件，目标中文词法遗漏→5／纯语义6→6／默认混合遗漏→4；英文词法与混合空→1、纯语义仍空。冻结0.80／0.02、1/227细节覆盖及typed partial保持，860旧文件／217普通排名／三源／费用提案不变，0新视觉／费用／标签。独立原98源码包读回16结果通过，不重跑无变化完整／重部署。一次五文本主体实验英0.82366跨原0.80，未接生产；下一登记并实现按人物独立语义投影、事件最大分数一次RRF及旧快照兼容，继续主线。通俗汇报见[report](docs/archive/reports-2026-10/report-2026-10-08-saved-detail-real-modes.md)，保存／同步以Git及.cache/detail-modes-publication.json为准，goal active。
 
 发布事实：已有细节检索代码及交付文档1b9da43已普通push且独立ls-remote确认同SHA，仅codex/visual-details；main未更新／无强推。此段补事实，最终文档head与同步以Git和.cache/detail-index-publication.json为准，源码／现用／goal active保持。
 
-2026-10-08，Phase 0／F005／F010，[准确已有细节检索](docs/exec-plans/sprint-saved-detail-retrieval.md)已交付，[使用指南](docs/references/saved-detail-retrieval-guide.md)与[通俗汇报](docs/archive/reports-2026-10/report-2026-10-08-saved-detail-retrieval.md)。多录像明确勾选‘含已有细节’及准确精版本后，用有帧支持的observed属性帮助排序，逐候选保留主体／部件／镜头出处。uncertain／冲突不作正向文字，排名不证明同主体AND；候选条件核对仍单独判断。旧默认搜索、原事实／源时间／证据及历史排名保持，不自动分析／费用。
+2026-10-08，Phase 0／F005／F010，[准确已有细节检索](docs/archive/sprints/sprint-saved-detail-retrieval.md)已交付，[使用指南](docs/references/saved-detail-retrieval-guide.md)与[通俗汇报](docs/archive/reports-2026-10/report-2026-10-08-saved-detail-retrieval.md)。多录像明确勾选‘含已有细节’及准确精版本后，用有帧支持的observed属性帮助排序，逐候选保留主体／部件／镜头出处。uncertain／冲突不作正向文字，排名不证明同主体AND；候选条件核对仍单独判断。旧默认搜索、原事实／源时间／证据及历史排名保持，不自动分析／费用。
 
 本轮23新后台＋3新页面通过，一次完整2367passed／3旧失败TD014／1权限skip、原因未解决且不循环；98源码包及独立包进程通过。真实‘白色头发’漏掉的35–36s事件进入第5位，仍partial，细节覆盖1/227；一次新词法约0.77秒、两新排名文件、858旧文件／217普通排名／费用提案保持，0新模型费用／真人标签。现用6772／50720两尺寸下载／原片出画面／版本隔离通过。
 

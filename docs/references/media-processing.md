@@ -28,4 +28,4 @@
 
 普通工具调用仍保持stdout≤4MiB、stderr≤16MiB；媒体抽帧／音频调用显式启用逐行consumer，已识别的时间记录即时建立映射，不缓存完整日志，未识别诊断总量≤16MiB、每行≤64KiB。超限、映射错误、取消或超时停止并回收进程树，不发布完成manifest。只统计裁前音频样本，不保留第二份裁前帧列表；输出映射和原transform身份保持。
 
-2026-10-07真实FFmpeg处理32×32／1FPS、非零起点及音画异步的一小时合成素材，3600图／168752音频分段／63.2MB时间记录；预处理13.715s、media保存11.725s，另一进程完整重建通过。旧无consumer读法在同一素材触media.output_limit。验证进程峰值working set约224.5MiB，仅该进程，不包括FFmpeg；真实游戏编码／分辨率的小时性能、ASR／视觉理解与人评仍未测。详见[sprint-long-footage-media](../exec-plans/sprint-long-footage-media.md)。开发工具顺序执行；分析任务并发/单写调度在Application/F004。正式分发前解决复制的FFmpeg来源及GPL义务。
+2026-10-07真实FFmpeg处理32×32／1FPS、非零起点及音画异步的一小时合成素材，3600图／168752音频分段／63.2MB时间记录；预处理13.715s、media保存11.725s，另一进程完整重建通过。旧无consumer读法在同一素材触media.output_limit。验证进程峰值working set约224.5MiB，仅该进程，不包括FFmpeg；真实游戏编码／分辨率的小时性能、ASR／视觉理解与人评仍未测。详见[sprint-long-footage-media](../archive/sprints/sprint-long-footage-media.md)。开发工具顺序执行；分析任务并发/单写调度在Application/F004。正式分发前解决复制的FFmpeg来源及GPL义务。

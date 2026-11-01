@@ -1,66 +1,59 @@
 # Repository Guidelines
 
-## Project and source of truth
+## Project and state
 
-Gaming Creator Agent turns local game footage and a brief into content. Phase 0 CLI analyzes footage and searches a semantic timeline; human retrieval acceptance remains pending. Read `游戏内容创作与商业化产品总方案 V1.0.txt`, `docs/product-specs/phase-0.md`, and `feature_list.json` before changing scope.
+Gaming Creator Agent turns local game footage and a brief into content. Scope: `游戏内容创作与商业化产品总方案 V1.0.txt`, `docs/product-specs/phase-0.md`, `feature_list.json`; route: `docs/exec-plans/accelerated-product-roadmap.md` and ADR-003 (all 51 items may be built; implementation, quality and release statuses stay separate; never mark stubs as delivered).
 
-**Current state:** root [`STATUS.md`](STATUS.md) (update once at milestone/session end). Short [`HANDOFF.md`](HANDOFF.md) is an overwrite snapshot (≤5KB). Do **not** sync seven docs on every change or open a docs commit just to record tip SHA / push.
+Read root `STATUS.md`, then `HANDOFF.md` (≤5KB overwrite snapshot). Update STATUS once at milestone or session end. `progress.md`, `assignments.md` and `docs/archive/` are history: do not append or read by default.
 
-## Repository map
+## Map
 
-- `src/gamingcreator/{cli,application,domain,infrastructure}/` · `ui/` · `tests/test_*.py`
-- `docs/design-docs/` · `docs/product-specs/` · `docs/exec-plans/` · `docs/references/` · `docs/archive/` (dated history)
-- `prompts/`, `templates/`, `music/`: future assets. Never commit footage or credentials.
-- Tool adapters: `CODEX.md`, `CLAUDE.md`, `.grok/rules/project.md` → shared rules here and in `docs/`.
-- `.claude/agents/` / committed `.codex/agents/`: nine roles each; routing guides under `docs/references/`.
-- Quantified board: `docs/exec-plans/progress-board.md` — update **only when counts change**.
+- `src/gamingcreator/{cli,application,domain,infrastructure,ui}/`, `tests/test_*.py`
+- `docs/design-docs/`, `docs/product-specs/`, `docs/exec-plans/` (live plans), `docs/references/` (guides), `docs/archive/` (history)
+- Tool adapters `CLAUDE.md`, `CODEX.md`, `.grok/rules/project.md` hold only tool-specific notes; roles in `.claude/agents/`, `.codex/agents/`.
 
-## Environment and commands
+## Environment
 
-Windows PowerShell. Runtimes in `.tools/`, packages in `.venv/`, caches in `.cache/`; never install globally. Pin via `toolchain.json`. See `docs/references/isolated-environment.md`.
+Windows PowerShell. Runtimes `.tools/`, packages `.venv/`, caches `.cache/`; never install globally (`docs/references/isolated-environment.md`). Load `. ./scripts/env.ps1` before Python. Script usage lives in each script header and `docs/references/`. Paid vision only through an explicitly authorized path (e.g. `run-demo.ps1 -Video`).
 
-Core scripts (details in `docs/references/` and each script's comment header):
+Write files with the editor tool, a single-quoted here-string, or Python; never PowerShell double-quoted strings (they turn `` `a `` `` `f `` `` `t `` into control characters). Throwaway scripts go in `.cache/scratch/`.
 
-- `./scripts/setup-demo.ps1` · `run-demo.ps1` · `run-ui.ps1` · `Start-Workspace.cmd`
-- `./scripts/init.ps1` · `verify.ps1` · `search-project.ps1` · `confirm-detail-billing.ps1`
-- Benchmark / inventory / shots / OCR / proxy / desktop / portable app: `prepare-benchmark*.ps1`, `inventory-sources.ps1`, `detect-shots.ps1`, `ocr-frames.ps1`, `make-proxy.ps1`, `build-desktop.ps1`, `build-app.ps1`, `install-app.ps1`
-- Offline status dump: `python -B scripts/status.py`
+## Code
 
-Paid vision starts only from an explicit authorized path (e.g. `run-demo.ps1 -Video`). Workbench acceptance: `/acceptance` — see `benchmark-workspace-guide.md`.
+Follow `docs/design-docs/architecture.md`, `phase-0-engineering-spec.md`, ADRs. Ruff + mypy; snake_case / PascalCase; domain has no I/O. Preserve video bytes, source clocks, provider/prompt/embedding identities and unknown costs; ordering and evidence rules: `docs/references/golden-principles.md`.
 
-## Architecture and coding
+Design budget:
+- Locally produced JSON: check schema version plus one whole-file hash. Field-level defenses only at paid-call, ledger and evidence boundaries.
+- Keep new functions ≤80 lines. Five or more hardening commits to one file in a day means stop and record tech debt.
+- A pilot ends with a one-page ADR naming the winner; delete losing paths in the same change (already-paid results stay readable).
+- Reuse `infrastructure/local_files.py` helpers before writing another strict reader.
 
-Follow `docs/design-docs/architecture.md`, `phase-0-engineering-spec.md`, ADR-001/002/003. Four-space indent; snake_case / PascalCase; Ruff + mypy. Domain excludes I/O. Preserve local video bytes, source clocks, provider/prompt/embedding identities, and unknown costs. Basket/export order follows source time; retrieval keeps rank.
+## Testing
 
-## Testing and acceptance
+1. Iterate with `./scripts/test-affected.ps1` (affected tests only; browser/local_data excluded unless UI changed).
+2. Run `./scripts/verify.ps1` (full suite) at milestone end or before merge.
+3. Run `./scripts/verify.ps1 -Release` before distribution.
 
-pytest `tests/test_*.py`; `docs/references/testing-guide.md` and `phase-0-benchmark.md`. Top-10 Useful Rate: ten fixed slots; missing/duplicate count zero; usable events ≥70% after human judgment. Multi-frame / index hits do not prove action understanding. Mark `passes: true` only with feature evidence. Preparation readiness ≠ F006 acceptance.
+Known failures: `xfail(strict=False, reason="TDxxx")` plus a tech-debt row. Top-10 Useful Rate: ten fixed slots, missing/duplicate count zero, ≥70% after human judgment. Mark `passes: true` only with evidence; tooling readiness is not acceptance.
 
-## Changes, commits, worktrees
+## Commits
 
-Start from `STATUS.md` then short `HANDOFF.md`. Use `agent-workflow.md` only for handoff/parallel/fee boundaries. Simultaneous writers: separate worktrees under `.worktrees/` (not `.cache/`), ≤3 active; retire after integration. Imperative `chore:`/`docs:`/`feat(F002): …`. Never commit secrets, footage, generated media, or databases.
+One commit = one user-visible capability or one fix, message says behavior + verification. Batch micro-edits before committing. Push at milestone end, session end or before long tasks; never force-push `main`. No docs commit just to record a SHA or push. Parallel writers: `.worktrees/`, ≤3, one writer per tree. Never commit secrets, footage, generated media or databases.
 
-## Cache and media limits
+## Cache
 
-`.cache/` is rebuildable data. One-shot scripts: `.cache/scratch/` (safe to delete). Media intermediates need byte/dir/free-space budgets; FFmpeg `-fs` hit = failed render. Reclaim test fixture media after teardown. Never reclaim models, user creations, original analysis/evidence, billing, labels, or active work. See `cache-maintenance-guide.md`.
+`.cache/` is rebuildable. Media intermediates need byte/dir/free-space budgets; FFmpeg `-fs` hit = failed render. Never reclaim models, user creations, original analysis/evidence, billing, labels or active work (`cache-maintenance-guide.md`).
 
-## Delivery, reporting, human help (persistent)
+## Delivery and reporting
 
-- Prefer milestone delivery over polishing one small bug; record hard-to-fix issues in `docs/exec-plans/tech-debt.md` and return to the main line.
-- **Primary e2e metrics** (see `STATUS.md` table + `python -B scripts/status.py`): planned51 · first★22 · Phase0 F passes · quality 0/8 real steps · tech-debt · human must/future · freeze set. Tier ✅/🟡/⬜; quality/release separate.
-- **Report to the user only when those primary metrics change.** Format: ≤150 Chinese characters + **one** openable artifact path. Do not report tip SHA / push as a progress update.
-- `docs/references/agent-workflow.md` covers handoff, parallel worktrees, and fee/boundary mechanics only. **On conflict, STATUS.md / this file win** (not workflow old long-report wording).
-- Need user annotation/manual help → notify promptly and record in `docs/exec-plans/human-inputs.md`; pending human items block only dependent work.
-- Subagent routing: `docs/references/codex-agent-routing-guide.md` / `claude-agent-routing-guide.md`. Planner→Generator→Evaluator: `development-agent-pipeline.md`.
+- Primary metric: end-to-end journeys in `docs/exec-plans/journeys.json`. Counts come from `python -B scripts/status.py`; never invent them.
+- Report to the user only when a primary metric changes: ≤150 Chinese characters plus one openable artifact.
+- Prefer milestone delivery over polishing loops; hard issues go to `docs/exec-plans/tech-debt.md`.
+- Need user annotation or manual help: tell the user at once and add a row to `docs/exec-plans/human-inputs.md`. Pending items block only dependent work.
+- Delegation: `development-agent-pipeline.md`, routing guides in `docs/references/`. `agent-workflow.md` covers handoff, parallel and fee mechanics.
 
-## STATUS / fees / freeze
+## Fees, freeze, protections
 
-See [`STATUS.md`](STATUS.md). Numbers from `feature_list.json` / `progress-board.md` / `tech-debt.md` / `human-inputs.md` — never invent counts; never flip `passes` or product delivery statuses from harness docs work.
-
-- Monthly preauth **¥50**: user-designated footage analysis only; each overage call needs a fresh ask; hard send gate stays. Zero-charge confirmations: `docs/references/detail-billing-confirmation-guide.md` (do not grant new sends).
-- **Frozen until first mode human-evaluated:** P046–P051 and P038 (auto-publish) — no new scope.
-- Protections: no secret/media/DB commits; paid calls gated; evidence/ledger immutable; no auto re-pay/re-label; toolchain check may narrow but not remove.
-
-## Accelerated product path
-
-Follow `docs/exec-plans/accelerated-product-roadmap.md` and ADR-003 across all 51 planned items. Quality / implementation / commercial ship statuses stay separate. Do not mark partial or stub APIs as full delivery. Prefer real end-to-end slices.
+- ¥50 monthly preauthorization for user-designated footage analysis only; every overage asks again; the hard send gate stays (`detail-billing-confirmation-guide.md`).
+- P038 and P046–P051 stay frozen until journey J1 (玩法展示) is human-evaluated.
+- Paid calls gated; evidence and ledgers immutable; no automatic re-pay or re-label; the toolchain check may narrow but not be removed; harness work never flips `passes` or delivery statuses.

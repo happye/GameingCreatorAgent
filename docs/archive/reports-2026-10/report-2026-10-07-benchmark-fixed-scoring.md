@@ -14,4 +14,4 @@
 
 真实记录仍为空，F006、F009、F010未通过，正式检索质量需要独立录像与人实际回看判定。下一主线是多段原录像的批量离线准备：一次处理素材清单，逐个保存准备结果和恢复状态，降低收集代表录像后逐段操作的成本；准备过程不做付费模型分析。
 
-操作见[候选评审指南](../references/benchmark-candidate-review-guide.md)，恢复见[sprint](./sprint-benchmark-fixed-scoring.md)。本机证据在ignored artifacts/benchmark-fixed-scoring-validation及.cache/benchmark-fixed-score-*。本轮离线交付，源视频、数据库、生成资料和凭据不提交。
+操作见[候选评审指南](../../references/benchmark-candidate-review-guide.md)，恢复见[sprint](../sprints/sprint-benchmark-fixed-scoring.md)。本机证据在ignored artifacts/benchmark-fixed-scoring-validation及.cache/benchmark-fixed-score-*。本轮离线交付，源视频、数据库、生成资料和凭据不提交。

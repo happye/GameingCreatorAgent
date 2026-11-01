@@ -28,4 +28,4 @@ Boss长句同样保留问题。新版的两个词法命中分别来自boss标签
 
 下一步将相同的原因审计扩大到其他已经分析的录像，分别检查射击、Boss和跳跃：描述中没有记录、明确否认被当成肯定、已有描述未被词法找出、纯语义误返要分清。先复用已有数据，找到可复现缺口后再修，不新增模型请求。正式验收仍需要独立代表录像与事前冻结的人工参考事件，本轮同一录像的开发对照不能替代。
 
-源实现b7723aa，最终版本校验／规格检查点20c227c。证据在本机artifacts/retrieval-query-audit的before-fix.json、after-fix.json、comparison.json、browser-report.json、production-report.json及截图；完整日志.cache/retrieval-query-audit-verify-final.log，JUnit为.cache/retrieval-query-audit-tests.xml，包校验receipt同目录。恢复见[sprint](./sprint-retrieval-query-audit.md)和[HANDOFF](../../HANDOFF.md)，使用见[手册](../references/user-manual.md)。
+源实现b7723aa，最终版本校验／规格检查点20c227c。证据在本机artifacts/retrieval-query-audit的before-fix.json、after-fix.json、comparison.json、browser-report.json、production-report.json及截图；完整日志.cache/retrieval-query-audit-verify-final.log，JUnit为.cache/retrieval-query-audit-tests.xml，包校验receipt同目录。恢复见[sprint](../sprints/sprint-retrieval-query-audit.md)和[HANDOFF](../../../HANDOFF.md)，使用见[手册](../../references/user-manual.md)。

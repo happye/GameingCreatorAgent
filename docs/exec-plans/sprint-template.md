@@ -1,47 +1,26 @@
 # Sprint [feature ID]: [name]
 
-## Assignment
+Use a sprint file only for milestone-sized or blocked/multi-session work; simple work is recorded in the commit message.
 
-- Tool/session owner:
-- Branch and worktree:
-- Owned files/modules:
-- Shared files requiring integration:
-- Dependencies and integration order:
+## Goal
 
-## Proposal
+- Feature ID and user-visible result:
+- Owned files (and worktree if parallel writers are active):
+- Dependencies, fee/freeze gates:
 
-- User-visible or developer-visible result:
-- Files/modules expected to change:
-- Dependencies or assumptions to verify:
-- Acceptance checks from `feature_list.json`:
+## Acceptance
 
-## Review before implementation
+- Checks from `feature_list.json` `test_criteria`:
+- Stop conditions:
 
-- Does this address the current phase and the correct problem?
-- What failure cases and costs need measurement?
-- Decision: proceed / revise / defer, with reason.
+## Verification
 
-## Evaluation after implementation
+- Iterate: `./scripts/test-affected.ps1`; milestone end: `./scripts/verify.ps1`.
+- Commands run and outcomes:
 
-- Commands and evidence:
-- Functional result: pass / fail / not applicable.
-- Code and architecture result: pass / fail / not applicable.
-- Retrieval quality, runtime, and cost when relevant:
-- Failures and concrete next fixes:
+## Result
 
-## Report to the user after each key change
+- Pass / fail / unverified per acceptance check, with evidence:
+- Remaining work or blocker (with reproduction) and next action:
 
-- Result explained in plain language and the concrete user benefit:
-- Actual verification, unresolved problems, and limits explained:
-- Next concrete action explained:
-
-## Transfer to another tool
-
-- Last commit and uncommitted files:
-- Completed work and remaining work:
-- Exact next action:
-- Commands already run and outcomes:
-- Blockers and reproduction steps:
-- Owner transfer and date:
-
-Only mark the feature passed after its acceptance checks have evidence. UI quality checks apply only when a UI exists; do not substitute a visual score for retrieval quality.
+Mark `passes: true` only when the acceptance checks have evidence; tests do not replace human acceptance.

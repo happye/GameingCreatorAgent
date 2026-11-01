@@ -1,16 +1,9 @@
 # Grok Build — Gaming Creator Agent
 
-For a new chat, follow root [`STATUS.md`](../../STATUS.md) and the short [`HANDOFF.md`](../../HANDOFF.md). Explain rejection triggers and whole-task stopping; prioritize defects that block the deliverable. Continue authorized local development without repeating completed annotation or paid attempts.
+Root `AGENTS.md` is the shared guide (same rules for every tool). New chat: read `STATUS.md`, then `HANDOFF.md`, and continue authorized local work without repeating completed annotation or paid attempts.
 
-Use root `AGENTS.md` as the shared repository guide. Use `docs/references/agent-workflow.md` only for handoff, parallel worktrees, and fee/boundary mechanics.
-
-**STATUS-first:** update `STATUS.md` at milestone or session end; touch the progress board only when counts change. Do not sync seven docs on every change or add a docs commit solely to record tip SHA / push status.
-
-**Priority:** root `STATUS.md` and `AGENTS.md` override `docs/references/agent-workflow.md` on conflict (report length / doc-sync). User progress reports: STATUS primary metrics only (≤150 Chinese chars + one artifact).
-
-
-Keep shared preferences from `AGENTS.md`: plain-language reporting; milestone delivery over polishing loops; human-inputs recording; ¥50 monthly preauth and freeze of P046–P051 / P038 until first mode human-evaluated.
-
-Run `grok inspect` from the repository root to check discovered instruction paths. Grok may also discover `CLAUDE.md` for compatibility; all entries point to the same shared rules. Keep session history and credentials local; record project decisions in repository artifacts.
-
-Capability-based routing: Codex mapping names do not apply here — use this tool's supported models with bounded context and explicit ownership. Planner → Generator → Evaluator: `docs/references/development-agent-pipeline.md`; simple work stays single-agent. Verify discovery/model before claiming routing succeeded.
+Grok-specific:
+- Run `grok inspect` from the repository root to check discovered instruction paths; Grok may also read `CLAUDE.md`, whose Claude-only sections do not apply.
+- Codex model names in the routing guides do not apply; use this tool's models with bounded context and explicit file ownership, and verify the model actually used before claiming routing.
+- Edit files with the editor tool. Never write through PowerShell double-quoted strings (backticks become control characters).
+- Keep session history and credentials local.

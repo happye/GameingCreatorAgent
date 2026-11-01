@@ -1,20 +1,12 @@
 # Codex Project Guide
 
-For a new chat, follow the current HANDOFF and its resumption checklist. Explain the rejection trigger and whole-task stopping mechanism; prioritize defects blocking the deliverable. Continue authorized local development without repeating completed annotation or paid attempts.
+Codex loads `AGENTS.md` natively; it is the shared guide. This file adds only Codex steps.
 
-Read [AGENTS.md](./AGENTS.md) first; it is the repository-wide source of truth. This file records only Codex-specific working steps.
+1. Read root `STATUS.md`, then short `HANDOFF.md`; check `git status` and do not overwrite unrelated work.
+2. Pick one item. Write a sprint only for milestone-sized or blocked/multi-session work (`docs/references/development-agent-pipeline.md`); simple work stays single-agent.
+3. Record commands and outcomes in the commit message or the named sprint; update `STATUS.md` once at milestone or session end. Do not append `progress.md`; `assignments.md` only for parallel writers.
+4. Report to the user only when STATUS primary metrics change (≤150 Chinese chars + one artifact).
+5. Tests: `./scripts/test-affected.ps1` while iterating; `./scripts/verify.ps1` at milestone end.
+6. Routing: `docs/references/codex-agent-routing-guide.md` and `.codex/agents/*.toml`; verify execution metadata before claiming a model ran.
 
-1. Confirm the working directory, inspect `git status`, then read `HANDOFF.md` and `feature_list.json`. Follow `docs/references/agent-workflow.md` for assignment and cross-tool handoff. Do not overwrite unrelated work.
-2. Choose one assigned unfinished feature. Read the F000 review, Phase 0 engineering baseline and ADR-001 language decision; use the handoff to determine which feature is next. The original C# recommendation is superseded for Phase 0.
-3. Write a short sprint proposal in `docs/exec-plans/` with acceptance checks. Implement only the accepted feature and run relevant checks. Use the review template in `docs/exec-plans/sprint-template.md`; for meaningful milestones follow the Planner -> Generator -> independent Evaluator contract in `docs/references/development-agent-pipeline.md`. Simple changes may use separate passes in the parent, explicitly recorded as single-agent work.
-4. Record actual commands, outcomes, limitations, and the next action in the assigned sprint record. For sequential work, update `HANDOFF.md` and `progress.md`; for parallel work, let the integrator reconcile these shared files. Set `passes: true` only when the feature's `test_criteria` is met.
-5. Keep decisions and evidence in repository files so a new Codex session can resume from them. Review stale links and technical debt when touching related areas.
-6. Load the persistent reporting mode in `AGENTS.md` on every resumption. After each key change, give the user a detailed plain-language account of the resulting behavior, its usefulness, verified limits, and the next concrete action; follow the shared reporting protocol in `docs/references/agent-workflow.md`.
-7. Load the persistent delivery priority in `AGENTS.md`: advance the master plan's current milestone, fix minor issues only when straightforward, and record issues requiring repeated investigation in technical debt before continuing the main deliverable. Do not spend successive turns polishing one bug, adding diagnostics or repeating unchanged verification.
-8. Load the persistent human-assistance and progress-alignment rules in `AGENTS.md`. Promptly notify and record required human actions in `docs/exec-plans/human-inputs.md`; keep milestone, handoff, assignment and current progress summaries aligned at key nodes. Continue independent work while dependent human tasks remain pending.
-
-Codex discovers `AGENTS.md` natively; this file is linked guidance, not an assumed native configuration filename. Current status and environment findings belong in `HANDOFF.md`.
-
-Use the persistent subagent model routing in `AGENTS.md` and [the routing guide](docs/references/codex-agent-routing-guide.md). Choose the task's model and effort explicitly when this session cannot resolve a new custom role; use minimal fresh context and verify actual execution metadata. Do not send every task to the parent model or duplicate specialist checks.
-
-9. Load the persistent progress-board rule in `AGENTS.md`: update `docs/exec-plans/progress-board.md` with every major change, in the same commit as the other alignment documents, using counts from `feature_list.json`, `tech-debt.md` and `human-inputs.md`.
+A role's `sandbox_mode` can be overridden by the parent session's live permissions; state read-only limits in the task.

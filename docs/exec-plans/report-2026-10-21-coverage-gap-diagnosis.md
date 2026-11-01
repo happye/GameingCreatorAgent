@@ -3,7 +3,7 @@
 **状态**：只读诊断已交付；用户已选 **C** 进入离线实现（见 sprint-coverage-gap-offline-c.md）；**0 付费**；B 保留为未来定向补窗。  
 **分支**：`codex/visual-details`  
 **正式工件**：[`artifacts/coverage-gap-diagnosis-20261021/`](../../artifacts/coverage-gap-diagnosis-20261021/)（`diagnosis-v1.json`、`report.md`、`whitelist-snippets-v1.json`）  
-**规划依据**：[sprint-coverage-gap-plan.md](sprint-coverage-gap-plan.md)
+**规划依据**：[sprint-coverage-gap-plan.md](../archive/sprints/sprint-coverage-gap-plan.md)
 
 ## 结论摘要
 

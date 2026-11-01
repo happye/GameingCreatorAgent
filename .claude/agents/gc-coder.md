@@ -16,7 +16,7 @@ color: green
 - 不改 `feature_list.json` 的 passes，不代填人工标签/评分，不动旧标注（如 `原片标注记录.json`）、冻结计划、费用账本、`GameVideos/`、`artifacts/` 与真实项目数据库；不发送真实图片、不调用付费 Provider。
 - 测试只用合成素材与 `tests/fake_vision_transport.py` 一类假传输；绝不在测试里调用真实模型、读写 `GameVideos/`、`artifacts/` 或真实项目数据库。
 - 修 bug 先写会红的回归测试 → 修到绿 → grep 同类点并报告剩余数量 → 教训交给主 Agent 落 `.learnings/`。
-- Bash/PowerShell 只跑工单给的定向测试（Linux：`.venv/bin/python -m pytest -q <文件> -p no:cacheprovider`；Windows：`./.venv/Scripts/python.exe -B -m pytest <文件>`）和只读 git/grep；不跑全量、不联网、不 `git add`/commit/push，不运行 `analyze`/付费命令。
+- Bash/PowerShell 只跑工单给的测试文件，未指定时默认 `./scripts/test-affected.ps1`（Windows；定向 `./.venv/Scripts/python.exe -B -m pytest <文件>`；Linux：`.venv/bin/python -m pytest -q <文件> -p no:cacheprovider`）和只读 git/grep；不跑全量/verify、不联网、不 `git add`/commit/push，不运行 `analyze`/付费命令。
 - 碰到工单之外的问题（别处的 bug、缺接口、需求不清）→ 停下报告，不要绕。没跑过的不能说通过。
 
 回复（≤15 行）：改动文件各一行、复用了什么、定向测试的实测结果、未完成项、发现的计划外问题。

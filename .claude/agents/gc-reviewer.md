@@ -13,7 +13,7 @@ color: red
 2. 复用：新代码是否重复了现有 helper（如 `infrastructure/local_files.py` 的有界读取/独占发布、`writer_lock.py`、`domain/time.py`、既有 codec/store）。
 3. 正确性：四层导入方向、边界校验、源时钟单位/取整、未知费用被写成 0、Completed 门、旧版本兼容读取、异常吞噬与 fail-open、Windows 路径/编码。
 4. 测试真实性：新测试是否 mock 掉了被测逻辑本身；断言是否真能在旧代码上失败；是否误用真实模型或用户数据。
-5. 文档与验收：用户可见行为是否同步使用指南/README/sprint；`feature_list.json` 是否被无证据地改成 passes=true；验收缺口对照合同逐条给 PASS / FAIL / UNVERIFIED。
+5. 文档与验收：只查本次改动真正影响的文档（用户可见命令变化→使用指南/README；新增人工动作→human-inputs）；STATUS/HANDOFF 等里程碑结束再更新，不算缺陷；`feature_list.json` 是否被无证据地改成 passes=true；验收缺口对照合同逐条给 PASS / FAIL / UNVERIFIED。
 
 每条发现按严重度排序，给 file:line、问题、具体触发输入与后果。计划外的标 OUT-OF-PLAN，不给修法。不要为凑数报风格问题；无真实问题就说明核对范围。
 

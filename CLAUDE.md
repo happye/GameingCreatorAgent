@@ -1,26 +1,13 @@
 # Claude Code — Gaming Creator Agent
 
-For a new chat, read root [`STATUS.md`](STATUS.md) then the short [`HANDOFF.md`](HANDOFF.md). Explain rejection triggers and whole-task stopping; prioritize defects that block the deliverable. Continue authorized local development without repeating completed annotation or paid attempts.
-
 @AGENTS.md
 
-The import loads the shared repository guide. Use `docs/references/agent-workflow.md` only for handoff, parallel worktrees, and fee/boundary mechanics. Acceptance criteria remain in `feature_list.json` regardless of which tool started the task.
+New chat: read `STATUS.md`, then `HANDOFF.md`, and continue authorized local work without repeating completed annotation or paid attempts. When a task stops, say what triggered it, how far it affects the whole task, and what was saved; fix defects that block the deliverable first. Use `/memory` to confirm this file and `AGENTS.md` are loaded; keep personal settings in ignored local files.
 
-**STATUS-first:** update `STATUS.md` once at milestone or session end; update `docs/exec-plans/progress-board.md` only when counts change. Do not sync seven docs on every change, and do not open a docs commit solely to record tip SHA or push status.
+## Subagents
 
-**Priority:** root `STATUS.md` and `AGENTS.md` override `docs/references/agent-workflow.md` if they conflict (especially report length / doc-sync). User-facing progress reports follow STATUS primary metrics only (≤150 Chinese chars + one artifact).
+Roles in `.claude/agents/`: `gc-explorer`, `task-progress-monitor`, `gc-runner` (haiku); `gc-commander`, `gc-coder`, `gc-doc-writer`, `gc-reviewer` (sonnet); `code-quality-guard`, `gc-architect` (opus). Mapping and limits: `docs/references/claude-agent-routing-guide.md` (Codex model names are not Claude aliases). Keep the main model as the user chose. Simple work stays single-agent; use Planner → Generator → Evaluator only for milestones (`development-agent-pipeline.md`). Pick `gc-reviewer` or `code-quality-guard`, not both. Roles load at session start; if missing, use general-purpose with the role file's instructions and an explicit model, state read-only limits, and check `git status` afterwards.
 
+## Cloud sessions
 
-Persist shared preferences from `AGENTS.md`: plain-language reporting after key changes; milestone delivery over bug-polishing loops; prompt human-input notices into `docs/exec-plans/human-inputs.md`; fees (¥50 monthly preauth) and freeze of P046–P051 / P038 until first mode is human-evaluated.
-
-In Claude Code, use `/memory` to confirm this file and imported `AGENTS.md` are loaded. Keep personal settings in ignored local files. Record decisions and verification in the repository so Codex and Grok can resume them.
-
-Capability-based routing: see [Claude routing guide](docs/references/claude-agent-routing-guide.md). Do not pass Codex model names as Claude aliases. For substantive milestones use Planner → Generator → independent Evaluator (`docs/references/development-agent-pipeline.md`); simple work stays single-agent. Verify discovery/model before claiming routing succeeded.
-
-## Claude-native subagents
-
-Roles in `.claude/agents/`: `gc-explorer`, `task-progress-monitor`, `gc-runner` (haiku); `gc-commander`, `gc-coder`, `gc-doc-writer`, `gc-reviewer` (sonnet); `code-quality-guard`, `gc-architect` (opus). Mapping and limits: Claude routing guide. Keep the main model as the user chose. Roles load at session start only; if missing, use general-purpose with the role file's instructions and explicit model — state read-only limits in the prompt and check `git status` afterwards. Choose `gc-reviewer` or `code-quality-guard`, not both.
-
-## Working from a cloud session
-
-A Claude session may run in a Linux cloud container linked to the user's Windows machine. Develop in a separate clone/worktree, run Python checks there, sync through GitHub; record which checks ran on Linux and which Windows-only checks (`verify.ps1`, project-local FFmpeg, real footage) remain. Never edit the user's working tree while another tool's writer is active, never upload footage or project databases to the cloud, and send no images to paid providers without explicit authorization of a concrete proposal.
+In a Linux cloud container, work in a separate clone or worktree, sync through GitHub, and record which Windows-only checks (`verify.ps1`, project FFmpeg, real footage) remain. Never edit the user's tree while another tool's writer is active, never upload footage or project databases, and send no images to paid providers without explicit authorization of a concrete proposal.

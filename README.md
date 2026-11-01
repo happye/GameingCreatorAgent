@@ -1,132 +1,49 @@
 # Gaming Creator Agent
 
-The workspace now exposes “创作视频” (`/creation`): choose completed footage, fill the Chinese form, compare template drafts, explicitly render, preview and download a real MP4. Job history survives service restarts; completed results are not automatically rerun. See the [creation guide](docs/references/creation-guide.md).
+本地优先的游戏内容创作工具：把本机游戏录像分析成语义时间线，用一句话找片段，再按模板生成成片、字幕、封面文案和各平台发布包。视频不离开本机；只有经你授权的视觉分析才会调用云端模型。
 
-2026-10-30: full-product implementation follows the [architect-reviewed roadmap](docs/exec-plans/accelerated-product-roadmap.md), with quality/release gates tracked separately. `./scripts/plan-creation.ps1 -Project <project> -Run <completed-run-id> -Brief ./creation-brief.example.json -OutputPath <new-directory> -Select hook-first` creates three offline template drafts and a source-bound edit decision. Use `./scripts/render-creation.ps1 -Project <project> -Creation <creation-directory> -OutputPath <new-render-directory>` for real local MP4 (hard cuts, letterbox scaling, source audio or silence). General AI planning, subtitles, speed changes and transitions remain incomplete. See the [creation guide](docs/references/creation-guide.md). Immediate required human tasks: zero; see the [quantified action list](docs/exec-plans/user-actions.md).
+**当前进度看 [`STATUS.md`](STATUS.md)。**一句话概括：工程上主流程已能跑通，但你亲自试过、判定可用的端到端流程目前是 0 条，Phase 0 检索质量验收（F006）仍待人评。
 
-Joint searches can explicitly include saved, evidence-supported visual attributes with ‘含已有细节’ or `--detail-profile v2`. Only the exact selected base/refinement version is read; uncertain or conflicting observations do not become positive search text. Rankings carry detail provenance and corpus coverage, while same-actor conditions remain a separate check. No new analysis or paid request is dispatched. See the [saved-detail retrieval guide](docs/references/saved-detail-retrieval-guide.md).
+## 快速开始
 
-New detail-assisted keyword and semantic searches score the original description, each actor and the environment separately, then use the best component score for the original event without duplicate results or extra ranking votes. Saved rankings identify the groups used by each component; old v1/v2 projections remain reproducible. Component groups may differ, so this does not prove same-actor or same-garment conditions. Formal human retrieval acceptance remains pending.
-
-The local workspace's “验收流程” entry connects source/query registration, raw-footage references, freezing, explicit selection of existing Completed analysis versions, local ranking and fixed-candidate review/scoring. Submitted steps preserve their inputs and new output directories; refresh or restart recovers progress and saved analysis choices. Forms require downloading edits and submitting the saved file. Ranking runs on an explicit click; scoring performs no search. See the [acceptance workspace guide](docs/references/benchmark-workspace-guide.md). Independent human retrieval acceptance remains pending.
-
-Version repository: [happye/GameingCreatorAgent](https://github.com/happye/GameingCreatorAgent). Use the current working branch named in [`HANDOFF.md`](./HANDOFF.md); current delivery is on `main`; check the handoff before resuming any historical task. Keep media, keys, environments, and caches outside tracked files.
-
-This repository is the starting point for a local-first game-content creation tool. The source plan is [`游戏内容创作与商业化产品总方案 V1.0.txt`](./游戏内容创作与商业化产品总方案%20V1.0.txt). The first milestone validates whether a semantic timeline can find useful moments in local game footage before a desktop UI or commercial system is built.
-
-## Current state
-
-Single registered-frame static generation now has dedicated prepare, dispatch and local-only resume commands. Its independent authorization ledger reserves before sending, keeps unknown attempts, and uses explicit per-actor parts for same-garment/item conditions. Current offline validation is tracked in the [generation sprint](docs/exec-plans/sprint-static-observation-generation.md); see the [usage guide](docs/references/static-observation-generation-guide.md). No real game-image request has been authorized or executed for this delivery; visual accuracy remains unverified.
-
-Independent static declarations on registered frames can be imported and queried with explicit run/collection identity, even when no action event exists. A separate local SQLite store preserves the original timeline and fees; typed queries bind one actor and actual part. See the [static observation guide](docs/references/static-observation-guide.md). That import/search slice passed 202 tests with one OS symlink-permission skip, Ruff/mypy and independent review; its evidence remains separate from the new generation slice and real visual quality.
-
-Current milestones, remaining quality gates and footage needs are summarized in the [project status](docs/exec-plans/current-status.md). Phase 0 engineering and the local inspection workflow are delivered; F006/F009/F010 remain unaccepted. The long-footage P1 stop-on-rejection issue has been fixed and the same Zhongkui run processed through the final planned window: 269 succeeded, 3 rejected, none unexecuted, 469 saved observations, estimated cumulative API cost ¥1.49022124. Coverage gaps correctly keep the run ineligible as Completed; do not rerun its launchers. Existing annotations and paid attempts are preserved. The latest saved-detail record compatibility delivery passed 98 targeted tests, Ruff, mypy and independent review; 32 existing rankings remain unchanged.
-
-Explicit compound conditions can scan all saved events in selected Completed recordings through the workspace's “核对复合条件” entry or `match-project-details`. Results distinguish full, partial, contrary evidence and unverified, with filtering, stable-snapshot pages, original-source preview and current-page download. Exact base/refinement versions are required; no model, paid request, search persistence or automatic human judgment occurs. See the [condition guide](docs/references/project-detail-query-guide.md). Daily use does not require filling the acceptance workflow; required human tasks and timing are tracked in the [human-input list](docs/exec-plans/human-inputs.md).
-
-After a joint search, “核对候选条件” or `match-search-details` attaches explicit condition evidence to every original returned candidate, preserving rank, scores and unknown candidates. The saved ranking digest and actual Completed sources are verified before matching; transcript-only candidates remain unverified. Switching recordings for preview keeps the annotation, while editing the search, conditions or profile clears it. A separate download includes the original ranking and evidence. See the [candidate evidence guide](docs/references/search-detail-evidence-guide.md).
-
-One query can jointly search explicitly selected completed recordings in the local workspace's “选择多段录像” dialog or with `./scripts/search-project.ps1`. Results retain original source/run identities, timecodes, evidence and uncertainty; click a candidate to preview its own recording. BM25/E5/RRF rank a shared corpus, while baskets stay separate by run. Download the complete joint ranking without another search. See the [joint retrieval guide](./docs/references/project-retrieval-guide.md); no paid analysis is dispatched.
-
-Multiple recordings can be prepared locally through the workspace's “准备多段录像” page or one bounded CLI list, with fixed task IDs, saved per-task configuration/limits and explicit continuation of the same batch. The page shows progress, reconnects after refresh and offers explicit stop/resume and saved batches. Bad recordings do not block later input items; ready tasks are checked and reused without extraction, and tasks already in model analysis are only reported. No model, upload or budget reservation occurs. See the [preparation page guide](./docs/references/media-preparation-workspace-guide.md) or [CLI batch guide](./docs/references/media-batch-preparation-guide.md).
-
-Phase 0 now has a local [candidate review workflow](./docs/references/benchmark-candidate-review-guide.md): open an actual saved benchmark ranking, replay source intervals, fill human grades/reasons, download and reload records, then import verified judgments into the existing benchmark format. Ten positions remain fixed, including missing and duplicate events. Generation/import are read-only and make no model or search calls; independent human acceptance remains pending.
-
-Before inference, the separate local [raw-footage reference page](./docs/references/benchmark-reference-review-guide.md) opens a predeclared plan, plays original recordings and lets a person register action intervals, save and reload reference drafts. Import rechecks the actual sources and fixed declarations before exporting a plan for the existing freeze workflow. It does not display model results, confirm human labels automatically or establish independent acceptance.
-
-Start that plan with the local [source/query registration form](./docs/references/benchmark-plan-editor-guide.md): save incomplete drafts with unknown declarations, explicitly select source usage and whether results were viewed, then export an unconfirmed plan for raw-footage review. Registration does not read footage or infer recording independence, and refuses existing human references rather than clearing them.
-
-Add `-Score` when importing a review record to score the original saved ranking with the existing quality rules. Source verification stays read-only, original search timings and unknown analysis costs are preserved, and scoring time is reported separately. Failed/unverified gates exit 6 while keeping the report; this makes no new searches or paid requests.
-
-Completed searches now expose an unscored ten-slot diagnostic in the local workspace, with original ranks, missing positions, known duplicates, source preview and a bound JSON snapshot. See the [diagnostic guide](./docs/references/retrieval-diagnostics-guide.md). It does not establish human retrieval acceptance.
-
-The command-line demo analyzes local footage, stores a semantic timeline, and finds candidate clips using local ASR, sampled-frame DeepSeek vision, SQLite, lexical search and local multilingual E5 embeddings. The local inspection workspace adds video preview, evidence, timeline filtering and selected-interval JSON/CSV exports. F000–F005 meet their technical criteria; F006's independent human quality gate remains unverified. The workspace has passed real-video browser validation and integrated checks; see the [verification record](./docs/exec-plans/sprint-workspace-usability.md). The local [creation workspace](docs/references/creation-guide.md) now supports template plans, real MP4 rendering/downloads, immutable clip revisions and ancestor restore, editable captions/SRT/burn-in, plus registered local music, source/music gains and ducking. These are partial product capabilities; full modes and commercial release remain pending. Phase 0 uses Python, SQLite and FFmpeg; see [ADR-001](./docs/design-docs/adr-001-phase-0-language.md) and the [workspace decision](./docs/design-docs/adr-002-local-inspection-ui.md).
-
-On the prepared workstation, open the existing completed demo without API calls or network access:
+在仓库根目录打开 Windows PowerShell：
 
 ```powershell
-./scripts/setup-demo.ps1 -Offline
-./scripts/run-demo.ps1 -Run f601fb9b3e734d5ea188fc15c790acbb -Query "黑色高礼帽白色面具角色挥动指挥棒"
-./Start-Workspace.cmd
+./scripts/setup-demo.ps1 -Offline   # 准备项目内的运行时、依赖和模型（要求缓存已在本机）
+./Start-Workspace.cmd               # 打开本地工作台；启动不触发任何付费分析
 ```
 
-Double-click [Start-Workspace.cmd](./Start-Workspace.cmd) to start the local workspace and open the browser. Repeated launches reuse a matching repository service; conflicts report an error. Logs and PID state stay in `.cache/workspace`. No analysis or paid request occurs at startup. For another port use `./scripts/start-workspace.ps1 -Port 8766`; `run-ui.ps1` remains the foreground option. See the [user manual](./docs/references/user-manual.md) and [demo quickstart](./docs/references/demo-quickstart.md). Local videos, models and the demo database do not arrive with a Git clone.
+工作台里可以：
+- 预览录像和证据；
+- 多录像检索（一句话找片段）；
+- 在“创作视频”里选模板生成方案，渲染 MP4，编辑字幕、旁白和配乐；
+- 生成封面文案和 B 站等平台的本地发布包。
 
-Open `http://127.0.0.1:8765/`, choose a project and completed run, search, preview candidates, and add intervals to the clip basket. JSON/CSV preserve source identity, microsecond ranges and evidence; they are interval manifests. Desktop preview, timeline and basket remain visible while their lists scroll independently. Basket/storage/export use source time order; retrieval preserves relevance rank. To analyze new footage, use the CLI first.
-
-The evidence panel reads saved actor details for the selected refinement version. The page defaults to v2, with explicit v1/v2/v3/v4/v5 selection; the inspection API retains its v1 default. Select a clip and click “核对同主体条件” to build positive AND conditions, group attributes of the same garment or held object, and inspect full/partial/no_match/unverified with supporting frames. Missing results remain unverified. Experimental v5 adds an explicit JSON instruction while preserving v4 inputs and strict temporal evidence rules; its two authorized real attempts ended with one published result and one schema rejection; human review remains pending. The page enables v5 only when the backend advertises `detail-temporal-json-v1`. “精分析费用与调用” reads known estimates, unknown reservations and shared project commitment separately from base analysis. Opening, refreshing, matching and viewing cost history make no refinement calls. The condition dialog can draft editable positive conditions from supported Chinese/English descriptions. Unknown text remains visible and subset matching requires explicit confirmation; this does not turn ordinary retrieval into a full-sentence guarantee. Independent human acceptance remains pending.
-
-The current browser workspace and backend run locally; DeepSeek vision uses remote inference on sampled frames. It is not yet packaged as an EXE. The source plan retains a future Windows desktop application with local media processing; see the [deployment roadmap](./docs/references/deployment-roadmap.md). Human content acceptance follows the [F006 guide](./docs/references/human-acceptance-guide.md), separately from UI usability.
-
-Registered human feedback appears beside the exact saved actor description and its condition matches. Accepted or rejected descriptions retain the user's words and the original model output; other descriptions remain unreviewed. Feedback cannot carry over to another analysis result or count as attribute, action or retrieval acceptance. See the [description feedback report](./docs/archive/reports-2026-10/report-2026-10-06-description-feedback.md).
-
-The timeline filter can include saved local on-screen text with “含画面文字”; matches are marked unverified and do not change retrieval ranking. The selected-clip panel shows its shot, on-screen text and overlapping speech for local replay. Acceptance steps 6 and 8 summarize the original saved ranking/scoring reports, preserving unknown values and human-review status. See the [user manual](docs/references/user-manual.md) and [OCR guide](docs/references/ocr-frames-guide.md).
-
-## Start here
-
-1. Read [`AGENTS.md`](./AGENTS.md), [`HANDOFF.md`](./HANDOFF.md), and the [shared workflow](./docs/references/agent-workflow.md). Open the same repository or your assigned worktree in whichever tool is available.
-2. In PowerShell, run `./scripts/init.ps1 -CheckOnly` to verify scaffold files and `feature_list.json`.
-3. Run `./scripts/setup-env.ps1` to download hash-pinned portable uv/CPython and synchronize `uv.lock` into `.venv`. Use `-Offline` only when archives and packages are cached. Run `./scripts/init.ps1` to check exact tools and the separately prepared local FFmpeg. Follow the [isolated environment rules](./docs/references/isolated-environment.md); everything stays inside `.tools/`, `.venv/`, and `.cache/`.
-4. Resume your assigned task; review the [reverse review](./docs/exec-plans/reverse-review-2026-10-03.md), [engineering specification](./docs/design-docs/phase-0-engineering-spec.md), and [task dependencies](./docs/exec-plans/phase-0-plan.md). Record ownership and preserve a concrete handoff.
-
-Run `./scripts/verify.ps1` for Ruff, strict mypy, pytest (warnings are errors), import boundaries, CLI smoke and two identical offline wheel builds. Media integration tests need the pinned local FFmpeg and otherwise skip; inspect skip counts. Details: [F001](./docs/exec-plans/sprint-F001.md), [F002](./docs/exec-plans/sprint-F002.md).
-
-F004 evidence is in [sprint-F004](./docs/exec-plans/sprint-F004.md). `./scripts/test-storage.ps1 -AllLocal` round-trips real media bundles through SQLite and a separate reader process. It makes no model calls; runs explicitly require only the media stage. See [storage contracts](./docs/references/timeline-storage.md) for writer locks, recovery, and future integration.
-
-Inspect commands with `./.venv/Scripts/gamingcreator.exe --help`. `config.example.json` uses schema v2: a dated CNY price snapshot, vision prompt version/content hash, output limit, sampling and ASR language. Five-frame windows overlap by one frame and cover every extracted frame. New analysis requires `--max-cost-cny` and process-local `DEEPSEEK_API_KEY`; it sends selected images to DeepSeek. API attempts reserve a conservative amount, record usage and preserve unknown charges. Resume keeps the original configuration and budget; uncertain uncommitted calls require explicit `--retry-uncertain`. Within one project, a new analysis (or the first resume of a freely prepared run) stops before any provider or budget ledger exists when a run of byte-identical footage with the same output settings already exists, and names the right next step; `--allow-reanalysis` overrides it and `check-analysis-reuse <video> --project <dir> --config <file>` answers read-only.
-
-To prepare footage locally first, use `./scripts/prepare-media.ps1 -Video "GameVideos/your-video.mp4" -Project artifacts/demo-phase0 -Config config.example.json -MaxCostCny 5`. This extracts and saves images/audio plus the original configuration, then leaves the run pending explicit analysis. Preparation needs neither an API key nor installed ASR weights, constructs no model/transport/budget ports, and makes no paid request or reservation. The saved amount applies to later analysis. Its JSON reports the run ID, window/upload-frame coverage and a separate next command; insufficient coverage remains pending with no next command. `-Resume <id>` reuses completed media or resumes a failed media-only task without overriding configuration. See the [user manual](./docs/references/user-manual.md).
-
-`search` defaults to local `hybrid` retrieval; `--mode lexical` needs no embedding model, and `--mode semantic` uses local E5. Searches read a Completed run and save rankings, evidence and embedding-space identity. `benchmark` generates a report from a frozen label manifest; exit 6 means its gate is false or unverified, not that no report was written. Search scores are ranking signals, not probabilities or proof of usefulness.
-
-`match-details` reads a Completed run and an explicit manifest such as `detail-query.example.json`. Conditions must share one actor and, within a `partGroup`, one actual part and common frames. Unknown or uncertain attributes cannot satisfy a condition. It reads the exact published refinement profile and performs no inference:
+打包和安装（只装到当前用户目录，不写注册表）：
 
 ```powershell
-./.venv/Scripts/python.exe -B -m gamingcreator match-details --project artifacts/demo-phase0 --run <completed-run-id> --event <stored-event-id> --input detail-query.example.json --profile v2
+./scripts/build-app.ps1             # 组装便携版到 dist/GamingCreator
+./scripts/install-app.ps1           # 安装或升级到 %LOCALAPPDATA%\Programs\GamingCreator；-Uninstall 卸载
 ```
 
-The JSON report contains `full`, `partial`, `no_match` or `unverified`, individual condition support, source ranges and identities. Add `--save-match` to save an immutable report beside an existing refinement; missing details remain unverified without creating sidecars. `humanLabels` and `qualityGate` stay null. The independent v2 Provider and durable attempt recovery are implemented with no automatic retries; a paid CLI/page action is not exposed yet. See the [Provider](./docs/exec-plans/sprint-detail-provider.md) and [query](./docs/exec-plans/sprint-detail-query.md) records.
+## 文档地图
 
-## Phase 0 validation utilities
+| 你想… | 看这里 |
+| --- | --- |
+| 用工具做视频 | [创作全流程手册](docs/references/creation-guide.md) |
+| 分析、检索、验收的命令行用法 | [使用手册](docs/references/user-manual.md)、[Demo 快速开始](docs/references/demo-quickstart.md) |
+| 了解你需要做什么 | [人工待办](docs/exec-plans/human-inputs.md) |
+| 看量化进度 | [`STATUS.md`](STATUS.md)、`python -B scripts/status.py`、[进度看板](docs/exec-plans/progress-board.md) |
+| 产品方向 | [总方案](游戏内容创作与商业化产品总方案%20V1.0.txt)、[加速路线](docs/exec-plans/accelerated-product-roadmap.md) |
+| 架构和设计决定 | [`docs/design-docs/`](docs/design-docs/) |
+| 开发规则（Agent 和人通用） | [`AGENTS.md`](AGENTS.md)、[测试指南](docs/references/testing-guide.md) |
+| 历史记录 | [`docs/archive/`](docs/archive/)、`progress.md`、git 记录 |
 
-The offline [same-footage pilot comparison](./docs/references/detail-pilot-comparison-guide.md) generates a standalone HTML page, source data and a human-review template from the exact frozen two-candidate proposal. It preserves the original six frames and description feedback; missing exact-version results remain explicitly absent, with new judgments empty. The page works directly from a local file, including JSON downloads. It makes no provider calls or budget changes and does not pass the independent retrieval gate.
+## 边界
 
-Add `--review-editor` to generate a standalone local [review form](./docs/references/detail-pilot-review-guide.md) with file download/load. `--review-file <absolute-path>` validates a record against regenerated current sources; use `--dry-run` to check or `--output-dir <new-absolute-directory>` to archive the original input, normalized record, comparison snapshot, summary and provenance. Missing v4 results disable judgments, metadata does not imply acceptance, and each dimension stays separate.
+- 录像、密钥、数据库、生成的媒体都不进 Git。
+- 付费视觉分析每月有 ¥50 预授权，只能用于你指定的素材；超出部分每次单独询问。
+- 已有的标注和付费结果都会保留，不会自动重跑。长钟馗的分析已经结束，不要重跑它的 launcher。
+- “沙箱发布”只在本机模拟，不会上传；“套餐与用量”只是本地开关，不涉及支付。
 
-User acceptance on 2026-10-04 rejected gameplay retrieval: Boss, jumping and shooting queries have no usable results, and descriptions lack action continuity. F006 remains failed/pending formal U10. The temporal correction is an unaccepted F009 experiment; see [validation and resumption](./docs/references/temporal-gameplay-validation.md) and HANDOFF before reusing earlier smoke results as quality evidence.
-
-The prepared workstation's current default is completed Atom detail trial `f601fb9b3e734d5ea188fc15c790acbb`: 54.743220 seconds, 16 windows, 33 events and estimated API cost ¥0.10270124 (not an invoice). Explicit `config.detailed-v6.example.json` uses V6, 2 FPS, nine ordered images, two-frame overlap and a 1280-pixel width limit. Descriptions include clothing, held items, scenery and effects; uncertain observations appear separately. Existing facts, run configurations and basket identities remain unchanged. Internal frame aliases are cleaned for display, indexing and exports. See the [detail evidence](./docs/exec-plans/sprint-visual-details.md).
-
-Real browser checks verified the new default, playback, evidence, chronological baskets and JSON/CSV exports. Offline retrieval v5 returns two jump candidates at 0–2 and 11.5–12.5 seconds, and detail candidates for heart-shaped glasses, scenery and a character with a conductor's baton. These remain unjudged. Long free-text queries can combine different actors' attributes; the demon-lord/armor/staff/shockwave example still returns unsupported partial candidates. The [actor-detail contract](./docs/design-docs/actor-detail-matching-spec.md), independent Provider, durable sidecars and explicit offline CLI matching are implemented. Two authorized real refinements completed at an estimated ¥0.01850612, both partial under their compound constraints. Model part binding and appearance errors still require independent human review. An offline v3 nested-parts contract addresses attribute binding without changing frozen v2 outputs; it has no real model validation yet. Page condition controls and a bounded editable description draft are implemented; full free-text understanding remains unverified. Earlier V4 and manga runs remain available.
-
-The completed 95.175874-second manga PV demo produced 24 visual windows, 111 events and no transcript segments, with estimated API cost ¥0.06246088 for that run; this is not a confirmed invoice. An attack query returned intervals around 28–29, 31–32 and 30–31 seconds; its first hybrid search took 2574 ms. These are smoke results, not a measured human Top-10 pass or an hour-scale performance claim.
-
-Offline validation repeated three queries in three modes with stable results and a second process's SQLite reads. On 2026-10-04 the default hybrid search returned evidence-bearing 28–32 second intervals for both the Chinese attack query and `Find clips of fighters attacking each other in the arena`; the car-repair query returned none in hybrid. Pure semantic still returns false car-repair candidates. Chinese attack results remain unjudged. See the local ignored report `artifacts/demo-phase0/demo-validation.json`; independent human labels and real bilingual threshold calibration are the next validation steps.
-
-The earlier local ASR utility remains available: `. ./scripts/env.ps1`, then `./.venv/Scripts/python.exe -B ./scripts/validate-asr.py --input "GameVideos/代号：Atom/录音/2025-08-17 15-26-27.mp4"`. It makes no API calls and saves each result immediately; transcripts remain ungraded. The [Grok handoff review](./docs/exec-plans/review-F003-grok-2026-10-04.md) documents the earlier integration state, not today's feature availability.
-
-The [2026-10-03 validation report](./docs/exec-plans/phase-0-validation-2026-10-03.md) records real local media/DeepSeek experiments and their limits. Run `./scripts/test-media-spike.ps1 -Synthetic` for the local media smoke and `./scripts/test-retrieval-score.ps1` for fixed-denominator metric regression. `test-deepseek-vision.ps1 -SourcePath <video>` needs process-local `DEEPSEEK_API_KEY` and makes one paid request of five extracted frames. It is a limited experiment, not the final CLI or a passed retrieval benchmark.
-
-`./scripts/test-media.ps1 -SourcePath <local-video>` runs the implemented F002 service; `-AllLocal` scans `.mp4`, `.mkv` and `.webm` under `GameVideos/`. Results remain ignored in `artifacts/media-F002/<run>/`, with PTS/timebase, piecewise WAV sample mapping, source/artifact hashes, versions and a completed manifest after validation. No model request is made. Exact stream timing metadata is required; see [media processing](./docs/references/media-processing.md) for support limits.
-
-For longer footage, set explicit local limits, such as `-MaxFrames 4000 -SamplingIntervalMs 1000 -TimeoutSeconds 600` for one frame per second. Timing logs are consumed incrementally while unknown output and individual lines remain bounded. A synthetic one-hour media/storage check passes. A 15-minute-52-second real recording prepared locally with 952 sampled frames in 25.1 seconds with a measured 227 MiB process-tree peak; real hour-long performance and independent gameplay understanding remain unverified. Standalone Windows PowerShell 5.1 media and full project checks passed on 2026-10-25 (TD011 resolved); a PowerShell 7 parent can inherit incompatible module paths, so use a standalone shell. See the [debt and measurement record](docs/exec-plans/tech-debt.md).
-
-## Tool adapters
-
-| Tool | Repository entry | Loading check |
-| --- | --- | --- |
-| Codex | Native `AGENTS.md`; linked supplement `CODEX.md` | Verify active project instructions in a new session |
-| Claude Code | `CLAUDE.md` imports `AGENTS.md` | `/memory` in Claude Code |
-| Grok Build | `AGENTS.md` and `.grok/rules/project.md` | `grok inspect` from the repository root |
-
-Entry files share rules through `AGENTS.md`; live work state is in `HANDOFF.md`, per-task sprint records, and `feature_list.json`. Follow the shared workflow for separate worktrees and file ownership during parallel development.
-
-Common resumption prompt for any of the three tools:
-
-```text
-读取 AGENTS.md、HANDOFF.md 和 feature_list.json，检查当前分支及未提交修改，按共享工作流接续已分配任务；把验证结果和下一步写入仓库交接记录。
-```
-
-An earlier Grok inspection reported `projectTrusted: false` and no loaded instructions; later live loading has not been rechecked by Codex. Run `grok inspect` in the current workspace to confirm it. Claude's import is configured, but its live session loading has not been tested here.
-
-Loading behavior was checked against official documentation on 2026-10-03: [Codex project instructions](https://learn.chatgpt.com/docs/agent-configuration/agents-md), [Claude Code imports](https://code.claude.com/docs/en/memory#import-additional-files), and [Grok project rules](https://docs.x.ai/build/features/project-rules). Local account permissions and model execution are separate from repository adapter validation.
+仓库：[happye/GameingCreatorAgent](https://github.com/happye/GameingCreatorAgent)

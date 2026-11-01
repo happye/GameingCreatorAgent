@@ -30,4 +30,4 @@
 
 下一步先追踪射击零命中：查看已保存的画面描述是否记录了对应动作，再核对这些描述能否被检索命中；同时逐条件检查Boss候选，避免只因人物或特效相关就认为整句话成立。先使用已有数据做离线排查，不新增模型调用。正式F006仍需独立的代表录像、事前冻结查询及人工参考事件；已用于调参的开发PV不能作为最终独立测试集。
 
-操作步骤见[检索诊断指南](../references/retrieval-diagnostics-guide.md)，执行及恢复见[sprint](./sprint-retrieval-diagnostics.md)和[HANDOFF](../../HANDOFF.md)。
+操作步骤见[检索诊断指南](../../references/retrieval-diagnostics-guide.md)，执行及恢复见[sprint](../sprints/sprint-retrieval-diagnostics.md)和[HANDOFF](../../../HANDOFF.md)。

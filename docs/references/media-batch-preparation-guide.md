@@ -57,4 +57,4 @@
 
 当前存储以内容SHA识别素材，同一字节内容位于不同路径时可能报告素材身份冲突并停止；本入口不会自行合并来源。任务清单可通过`list-tasks.ps1 -Project <项目>`或工作台“查看素材任务”查看。每个可覆盖任务的`result.nextCommand`只是后续`analyze --resume`参数，准备程序不会执行；实际分析须另行具备环境、凭据和相应费用／上传授权。
 
-真实三段开发录像的准备／坏文件修复续跑证据见[本轮交付](../exec-plans/sprint-media-batch-preparation.md)。这些录像是已有开发PV，没有进行新的模型分析或独立人工验收，F006门槛仍未通过。
+真实三段开发录像的准备／坏文件修复续跑证据见[本轮交付](../archive/sprints/sprint-media-batch-preparation.md)。这些录像是已有开发PV，没有进行新的模型分析或独立人工验收，F006门槛仍未通过。

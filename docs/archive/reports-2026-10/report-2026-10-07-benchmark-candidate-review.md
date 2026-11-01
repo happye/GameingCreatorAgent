@@ -14,4 +14,4 @@
 
 下一主要功能是直接对已经固定的原排名计算人工评分，避免评审结束后重新检索改变结果。当前评审导出保持旧评测兼容，原benchmark仍明确再次检索，文档已说明。之后使用事前冻结的独立资料进行真正人工验收；现有开发PV和自动检查不能证明内容理解准确。F006、F009、F010保持未通过，不越过质量门槛进入正式桌面或商业阶段。
 
-入口见[使用指南](../references/benchmark-candidate-review-guide.md)；范围和恢复动作见[sprint](./sprint-benchmark-candidate-review.md)。真实页面和本机回执位于ignored artifacts/benchmark-candidate-review-validation，程序检查在.cache/benchmark-review-*，不提交视频、数据库或生成资料。
+入口见[使用指南](../../references/benchmark-candidate-review-guide.md)；范围和恢复动作见[sprint](../sprints/sprint-benchmark-candidate-review.md)。真实页面和本机回执位于ignored artifacts/benchmark-candidate-review-validation，程序检查在.cache/benchmark-review-*，不提交视频、数据库或生成资料。

@@ -4,7 +4,7 @@
 
 准确detailProfile／profile=v5使用actor-detail-refinement-v5的独立promptHash／requestHash，沿用v4的schema-v2、4096输出token、temporal-scene-v1、actor-details-v2及matcher-v2。只新增明确JSON输出指示，不改旧v4提示词、canonical或wire输入；旧／新版本不能相互读取或重新标记。单候选inspect／match、项目match、已保存排名match和可选已有细节search-project均支持准确v5。缺精确结果仍unverified，无模型调用／上传／预留费用。
 
-health新增detail-temporal-json-v1，现用共九项能力；页面“连续实体 v5（试验）”初始disabled，仅能力存在时启用，默认v2／inspect默认v1保持。当前v5无真实模型输出；v4两个真实请求HTTP400、用户核实零扣费，不称请求拒绝原因已定位。执行与提案边界见[本轮sprint](../exec-plans/sprint-detail-temporal-json.md)。
+health新增detail-temporal-json-v1，现用共九项能力；页面“连续实体 v5（试验）”初始disabled，仅能力存在时启用，默认v2／inspect默认v1保持。当前v5无真实模型输出；v4两个真实请求HTTP400、用户核实零扣费，不称请求拒绝原因已定位。执行与提案边界见[本轮sprint](../archive/sprints/sprint-detail-temporal-json.md)。
 
 ## 可选已有细节检索（saved-detail-retrieval-v1）
 

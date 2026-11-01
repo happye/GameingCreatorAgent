@@ -1,7 +1,7 @@
 # 开发 Agent 的规划、生成与评估
 
 2026-10-11补齐初始化缺口；此为开发协作，区别于产品后续的 Creative Planner。
-本文件开篇记录当时的模型分工配置补齐；“录像项目暂停”属于该历史节点。当前开发状态以HANDOFF及其接手清单为准，不据历史暂停停止已授权工作。
+本文件开篇记录当时的模型分工配置补齐；“录像项目暂停”属于该历史节点。当前开发状态以根 `STATUS.md` 为准，不据历史暂停停止已授权工作。
 
 ## 为什么原来没有固定三 Agent
 
@@ -24,11 +24,11 @@ Codex 工作流明确允许单会话分开规划与检查、无需多 Agent。�
 1. 主控或 Planner 形成已有 sprint 合同：范围、owner、可验证效果和依赖。
 2. 一个独立 Evaluator 对齐验收；同一角色可随后评估，不追加重复 reviewer。
 3. Generator 在分配文件实现，按项目规则验证；并行写者使用独立 worktree。
-4. Evaluator 对照合同给出通过／失败／未验证，主控持久化并同步进度／交接。
+4. Evaluator 对照合同给出通过／失败／未验证，主控把评估写进具名 sprint 或 commit message；`STATUS.md` 在里程碑结束时更新一次。
 
 Planner／Evaluator 是只读角色，返回的合同／报告由主控保存。数据／费用／持久化／并发／
 身份边界由 `task_quality_guard` **作为本轮评估角色**，不再叠加另一个普通评估者。
-简单改动由主控直接完成规划、实现、检查，明确记为单 Agent 工作，避免每轮强启三人。
+sprint 文件只用于里程碑级或受阻／跨会话工作；简单改动由主控直接完成规划、实现、检查，记在 commit message，避免每轮强启三人。迭代用 `./scripts/test-affected.ps1`，完整 `./scripts/verify.ps1` 在里程碑结束跑。
 可复用 task_developer／task_reviewer 承载生成／评估，但记录实际 owner 与型号。
 
 这些文件可供新会话发现，不是常驻服务或自动调度器。当前会话不识别新角色名称时，
@@ -55,5 +55,4 @@ Claude2.1.177仅兼容字段检查，未启动Claude或Grok模型任务。新配
 
 本机证据在 `.cache/harness-routing-upgrade/`：`publication.json`、`installation.json`、
 `client-report.json`、`source-change-manifest.json`及原技能备份；可移植zip同目录。
-当前无新素材标注或人工操作需求。后续项目调用“使用 harness-project-init，只配置按
-任务能力选择子Agent模型，保留现有规则并验证加载”；持续录像开发仍等用户恢复。
+（2026-10-11 历史记录）后续项目调用“使用 harness-project-init，只配置按任务能力选择子Agent模型，保留现有规则并验证加载”。

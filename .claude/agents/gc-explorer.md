@@ -10,8 +10,8 @@ color: cyan
 
 规则
 - 只读：不创建/修改/删除文件；Bash 只用于只读命令（git log/show/status/diff、grep、ls、wc、sha256sum）。不联网、不跑测试、不运行任何 `analyze`/Provider/付费命令。
-- 文档多为中文且很长（`progress.md` 约100KB、`docs/exec-plans/tech-debt.md` 约40KB、`retrieval.py` 约110KB）：先 grep 定位再读局部，不整文件倾倒。
-- 恢复入口顺序：`AGENTS.md` → `HANDOFF.md` → `docs/exec-plans/current-status.md` → `docs/exec-plans/assignments.md` → 当前 sprint；验收真值在 `feature_list.json`；范围以 `游戏内容创作与商业化产品总方案 V1.0.txt` 与 `docs/product-specs/phase-0.md` 为准。
+- `progress.md`（约170KB）和 `docs/exec-plans/tech-debt.md`（约60KB）是历史：先 grep 再读局部；`retrieval.py` 也很大，同样处理，不整文件倾倒。
+- 恢复入口顺序：`STATUS.md` → `HANDOFF.md` → `AGENTS.md` → 具名 sprint；`assignments.md` 仅在并行写者时读；验收真值在 `feature_list.json`；范围以 `游戏内容创作与商业化产品总方案 V1.0.txt` 与 `docs/exec-plans/accelerated-product-roadmap.md` 为准。
 - 代码在 `src/gamingcreator/{cli,application,domain,infrastructure,ui}/`，测试在 `tests/test_*.py`。
 - 每条结论附 file:line。区分「文档写的」与「代码实际是」，两者矛盾时都报出。历史报告里的“当前”只代表当时，不当现状。
 - 不臆测；找不到就说找不到，并说明搜过哪里。超出定位范围（要设计/要修）就停下交还主 Agent，不递归派 Agent。

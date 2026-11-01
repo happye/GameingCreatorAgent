@@ -1,6 +1,6 @@
 # 单注册帧自动静态观察
 
-2026-10-24，Phase 0／F010。[当前sprint](../exec-plans/sprint-static-observation-generation.md)记录实施与验收状态；下列R1–R9合同约束已通过159项行为检查、静态／包与唯一独立评估；真实视觉准确率仍未验证。原[独立静态声明](static-observation-index-spec.md)的类型、发布与查询合同保持。
+2026-10-24，Phase 0／F010。[当前sprint](../archive/sprints/sprint-static-observation-generation.md)记录实施与验收状态；下列R1–R9合同约束已通过159项行为检查、静态／包与唯一独立评估；真实视觉准确率仍未验证。原[独立静态声明](static-observation-index-spec.md)的类型、发布与查询合同保持。
 
 ## 使用目标
 

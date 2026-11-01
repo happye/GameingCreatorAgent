@@ -2,7 +2,7 @@
 
 2026-10-24执行补记：本轮工具已接受task_architect具名角色，独立静态切片的一次实际设计从turn_context核实为gpt-6-astra／low；既有Luna/high定位及Sol/high评估继续复用，未追加重复reviewer。证据在artifacts/dsh-static-observations-20261023/architect-runtime.json及reused-role-runtime.json。下方2026-10-11的unknown-role／fallback为历史节点，不当作当前角色不可用证明，也不据一个角色成功声称全部角色已热加载。
 
-2026-10-11新增[可移植harness技能与开发三角色](development-agent-pipeline.md)：技能仓库已合并e3ae40a、本机三工具副本同步；项目补harness_planner／harness_generator／harness_evaluator（Sol/medium），原六专家及个人安装保持。关键交付按合同独立评估，简单工作直接做；新三角色名称本轮未执行，当前聊天按显式模型路由立即可用。
+2026-10-11新增[可移植harness技能与开发三角色](development-agent-pipeline.md)：技能仓库已合并e3ae40a、本机三工具副本同步；项目补harness_planner／harness_generator／harness_evaluator（Sol/medium），原六专家及个人安装保持。关键交付按合同独立评估（评估写进具名sprint或commit message，STATUS里程碑结束时更新），简单工作直接做；新三角色名称本轮未执行，当前聊天按显式模型路由立即可用。
 
 用户于2026-10-11要求参考个人及投资项目的Claude Agent，把子任务分给合适模型以节省额度。这里使用Codex原生配置，并保留当前聊天可立即执行的明确模型分配方式。
 
@@ -35,4 +35,4 @@
 
 debug prompt-input输出未包含自定义角色目录，不能据此证明角色注册或不支持；原失败回执保留。独立CLI派发只启动一次，原transport自行断流重试后成功结束，本任务没有重新启动该验证；CLI使用ephemeral，其子任务没有持久化型号记录，具体三种型号的执行验证来自当前聊天的三份独立记录。需要新名字无法解析时按上方明确模型方式处理，不能静默用错型号；实际新名字派发成功后再更新此项证据。
 
-模型可用性以当前工具及实际运行结果为准，不保证未来账号一直可用；配置选择不代表内容质量验收。本次没有DeepSeek调用／新录像分析／费用预留，F006/F009/F010false。本段是配置验证时点的记录，不代表项目持续暂停；实时交付、已有恢复授权与任务状态以[HANDOFF](../../HANDOFF.md)为准。
+模型可用性以当前工具及实际运行结果为准，不保证未来账号一直可用；配置选择不代表内容质量验收。本次没有DeepSeek调用／新录像分析／费用预留，F006/F009/F010false。本段是配置验证时点的记录，不代表项目持续暂停；当前状态以根[STATUS](../../STATUS.md)为准。

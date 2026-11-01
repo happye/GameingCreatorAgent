@@ -2,7 +2,7 @@
 
 现在可以在模型分析前打开原录像，按事前查询登记真实动作和可用时间段，下载保存，下次载入继续。一个动作可有多个可用区间；导入会核对原录像、原查询和来源声明，再生成给已有冻结入口使用的计划。这样人工验收不必手写大量参考区间，也能避免把不同资料的标注混在一起。
 
-使用的是独立本机页面，当前工作台菜单没有这个入口。生成／导入步骤见[原片标注指南](../references/benchmark-reference-review-guide.md)。本机演示在artifacts/benchmark-reference-review-validation/原片 标注页面/review.html，打开时是未确认的空草稿；验证脚本另存的程序示例记录不是真实人工判断。
+使用的是独立本机页面，当前工作台菜单没有这个入口。生成／导入步骤见[原片标注指南](../../references/benchmark-reference-review-guide.md)。本机演示在artifacts/benchmark-reference-review-validation/原片 标注页面/review.html，打开时是未确认的空草稿；验证脚本另存的程序示例记录不是真实人工判断。
 
 用两段Atom和一段漫画开发录像，跑通了公开PowerShell7生成页面、桌面和窄屏共六次原片播放／暂停、手填起止、下载和重新载入，再将空记录和程序示例分别导出。空记录成功接到已有冻结入口；另一进程严格读回的来源、标注包、两份计划和冻结资料一致。
 

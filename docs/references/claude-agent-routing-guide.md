@@ -21,7 +21,7 @@
 ## 使用规则
 
 - 简单步骤由主控直接做并记为单Agent；只有能减少主上下文或需要独立验证时才委派。最多同时3个子Agent，不递归派单，不重复审查（gc-reviewer与code-quality-guard二选一）。
-- 关键里程碑仍按[Planner→Generator→Evaluator](development-agent-pipeline.md)：gc-commander（或主控）写合同 → 主控派gc-coder在归属文件实现 → 主控派gc-reviewer或code-quality-guard独立评估 → 主控持久化报告、同步HANDOFF／progress／assignments并提交。子Agent不再派子Agent，与暮云原版commander可派单不同，这里与Codex harness_planner保持只读一致。
+- 关键里程碑仍按[Planner→Generator→Evaluator](development-agent-pipeline.md)：gc-commander（或主控）写合同 → 主控派gc-coder在归属文件实现 → 主控派gc-reviewer或code-quality-guard独立评估 → 主控把评估持久化到具名sprint或commit message并提交；STATUS在里程碑结束时更新。子Agent不再派子Agent，与暮云原版commander可派单不同，这里与Codex harness_planner保持只读一致。
 - 写任务必须给出文件归属并声明“你不是唯一开发者”；其他工具（如Codex原生DSH）有活跃写者时，不派重叠文件，不在同一工作目录并行写。
 - 任何子Agent都不得发送真实录像／图片、调用付费Provider、预留预算或代填人工判断，除非工单附带用户对具体提案的明确授权。
 
@@ -37,7 +37,7 @@ Claude Code只在会话启动时发现`.claude/agents/`；文件写入后不会�
 
 - 配置：九个frontmatter由主控用临时Python脚本解析（不入库）：name等于文件名且为小写连字符，model∈{haiku,sonnet,opus}，只读角色无Edit／Write。
 - 实际执行（2026-10-24云端会话，general-purpose回退＋显式型号）：一次gc-explorer只读定位任务，转录记录26条回复均为`claude-haiku-5-5`；一次gc-reviewer只读评估，23条回复均为`claude-sonnet-5-5`。两者结束后`git status`显示无子Agent写入。型号取自运行转录的model字段，不是子Agent自报。
-- 评估发现的8项（CLAUDE.md删句、commander可派子Agent、回退不执行白名单、角色缺先读AGENTS.md、monitor默认长轮询等）已在同一轮修正，详见[接入sprint](../exec-plans/sprint-claude-harness-adapter.md)。
+- 评估发现的8项（CLAUDE.md删句、commander可派子Agent、回退不执行白名单、角色缺先读AGENTS.md、monitor默认长轮询等）已在同一轮修正，详见[接入sprint](../archive/sprints/sprint-claude-harness-adapter.md)。
 - 未验证：opus角色尚未实际派发；Windows本机Claude Code按角色名的原生发现尚未实测，首次使用时用`/agents`确认列表后补记。配置选择不代表节省比例或内容质量通过。
 - 2026-10-24本机Windows Code会话：角色提交合入main（cherry-pick为e8a0b07之后），本会话启动时工作树尚无`.claude/agents/`，可用类型列表未出现gc-*角色，符合“只在启动时发现”；下次从仓库根新开会话后用`/agents`确认九个角色并补记结果。
 - 2026-10-24／25本机Windows Code会话实际派发（general-purpose回退＋显式型号＋角色正文；型号取自子Agent转录`model`字段计数）：opus——code-quality-guard两次（32、111条回复）、gc-architect一次（56条）；sonnet——gc-coder四次（70／175／86／129条，其中一次`isolation: worktree`）、gc-reviewer四次（81／42／50／74条，含工作流内只读扫描）。每次结束后`git status`核对只读角色无写入。opus角色“尚未实际派发”的旧记录由此更新；按角色名的原生`/agents`发现仍待新会话确认。

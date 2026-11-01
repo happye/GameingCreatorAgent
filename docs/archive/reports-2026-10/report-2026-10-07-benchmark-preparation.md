@@ -10,4 +10,4 @@
 
 这是验收工具流程的交付，真实独立录像、人工参考和候选可用性仍需要人判断。工具不能鉴定填写人所说的录制独立性；资料ready也不表示70%检索门槛通过。当前不需要你立即补齐资料。下一项主线是候选人工判分入口：固定前十位置、直接回看原区间、填写0–3与独立事件，再生成同冻结依据绑定的评测文件，减少正式验收时的手工整理。
 
-实现和说明已保存在本地分支，上次网络超时后本轮没有重复同步。使用步骤见[验收准备指南](../references/benchmark-preparation-guide.md)，验证和接续见[本轮任务](sprint-benchmark-preparation.md)。
+实现和说明已保存在本地分支，上次网络超时后本轮没有重复同步。使用步骤见[验收准备指南](../../references/benchmark-preparation-guide.md)，验证和接续见[本轮任务](../sprints/sprint-benchmark-preparation.md)。

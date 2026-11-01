@@ -10,8 +10,8 @@ color: orange
 
 常用命令（以工单为准）
 - Linux 云端克隆：`.venv/bin/python -m pytest -q <文件或节点> -p no:cacheprovider --basetemp <scratch>`；`.venv/bin/python -m ruff check src tests`；`.venv/bin/python -m ruff format --check src tests`；`.venv/bin/python -m mypy`。
-- Windows 本机：`./scripts/init.ps1 -CheckOnly`；`./scripts/verify.ps1`（格式、lint、类型、pytest、两次离线 wheel）；定向 `./.venv/Scripts/python.exe -B -m pytest <文件>`。
-- 全量 pytest 较慢：后台运行，输出先写到工单给的 scratch 路径再 grep。
+- Windows 本机：默认 `./scripts/test-affected.ps1`（只跑受影响测试；UI 改动加 `-Browser`）或定向 `./.venv/Scripts/python.exe -B -m pytest <文件>`；`./scripts/init.ps1 -CheckOnly`。
+- `./scripts/verify.ps1`（格式、lint、类型、全量 pytest；`-Release` 加两次可复现 wheel）或全量 pytest 只在工单明确要求时跑（里程碑结束或合并前）；较慢，后台运行，输出先写到工单给的 scratch 路径再 grep。
 
 规则
 - 按顺序精确执行工单命令。失败时不要临场修，直接报告。

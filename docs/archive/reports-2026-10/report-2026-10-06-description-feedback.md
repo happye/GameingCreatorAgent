@@ -16,4 +16,4 @@
 
 下一步优先验证“物品靠近镜头并遮挡人物”这个实际失败案例。新的v4对照已经冻结为原来的两个候选、六张画面；发送和新增预算仍等待对应的新授权答复。在获得明确答复前，继续完善本地核对和验收准备。原来两次模型请求已经执行完，本次反馈展示不再发送画面；原未知费用预留继续保留。
 
-技术证据及恢复信息见 [本次执行记录](./sprint-detail-feedback-surface.md)。真实页面与来源不变的检查记录保存在本地ignored `artifacts/detail-temporal-validation/description-feedback-browser-report.json`；原人工结论见 [人工反馈记录](./detail-human-feedback-2026-10-06.md)。本报告属于所有Agent持续执行的关键改动汇报，恢复时从 [HANDOFF](../../HANDOFF.md) 继续。
+技术证据及恢复信息见 [本次执行记录](../sprints/sprint-detail-feedback-surface.md)。真实页面与来源不变的检查记录保存在本地ignored `artifacts/detail-temporal-validation/description-feedback-browser-report.json`；原人工结论见 [人工反馈记录](../history/detail-human-feedback-2026-10-06.md)。本报告属于所有Agent持续执行的关键改动汇报，恢复时从 [HANDOFF](../../../HANDOFF.md) 继续。

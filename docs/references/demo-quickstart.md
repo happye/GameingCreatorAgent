@@ -43,7 +43,7 @@
 
 新版连续动作试验需显式`-Config config.temporal.example.json`，v4/500ms/9帧/重叠2，用帧别名生成源时间区间；保持旧run不变。当前仍有模型判断与跨镜头问题，Boss/射击效果未建立，详见[时序验证](./temporal-gameplay-validation.md)。
 
-当前新分析显式用 `-Config config.detailed-v6.example.json`：V6保持多帧动作，输入宽上限1280，要求衣着/持有物/人物外观/环境/效果与主体关联，并先核对动作资格。历史V5配置保留，不用于续跑时升级prompt。不确定信息显示为“待核对”，该字段不作正面索引；但模型仍会在肯定事实里误认物品类别，不能保证武器或Boss身份。旧f0/f1是内部图片编号，显示/导出已清理，原事实保留。新的33事件已通过真实播放/证据/篮子/导出检查，细节正确性未独立验收；复合同主体匹配状态见HANDOFF与[sprint-visual-details](../exec-plans/sprint-visual-details.md)。
+当前新分析显式用 `-Config config.detailed-v6.example.json`：V6保持多帧动作，输入宽上限1280，要求衣着/持有物/人物外观/环境/效果与主体关联，并先核对动作资格。历史V5配置保留，不用于续跑时升级prompt。不确定信息显示为“待核对”，该字段不作正面索引；但模型仍会在肯定事实里误认物品类别，不能保证武器或Boss身份。旧f0/f1是内部图片编号，显示/导出已清理，原事实保留。新的33事件已通过真实播放/证据/篮子/导出检查，细节正确性未独立验收；复合同主体匹配状态见HANDOFF与[sprint-visual-details](../archive/sprints/sprint-visual-details.md)。
 
 ## 续跑与结果文件
 

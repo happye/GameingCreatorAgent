@@ -72,4 +72,4 @@ matches包含`kind=static_appearance`、独立observationId、actorId、注册�
 
 provenance和sourcePayloadSha256只是来源声明，不认证Provider或真实画面。`visualVerified/humanLabels/qualityGate`恒null，来源费用unknown；`paidRequestsSent=0`仅表示本地操作零新增请求。旧候选报告的`independentStaticClothingIndex=false`继续描述其旧候选路径，不代表此新CLI自动接入其中。
 
-2026-10-24工程验证为202通过／1符号链接权限skip、静态检查与独立评估通过；真实视觉准确性和F006/F009/F010均未通过。见[报告](../exec-plans/report-2026-10-24-static-observation-index.md)。
+2026-10-24工程验证为202通过／1符号链接权限skip、静态检查与独立评估通过；真实视觉准确性和F006/F009/F010均未通过。见[报告](../archive/reports-2026-10/report-2026-10-24-static-observation-index.md)。

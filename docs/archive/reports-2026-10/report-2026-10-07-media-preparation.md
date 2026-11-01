@@ -8,4 +8,4 @@
 
 下一项主线是素材任务清单与阶段、原配置和费用状态查看，让已准备或中断的任务容易找回，并能判断下一步该续准备还是明确启动分析。动作标签与旧终端小问题继续延期，按总方案推进阶段交付。上一次工作分支同步因网络超时失败，成果保存在本地，不循环联网。
 
-使用步骤见[手册](../references/user-manual.md)，过程与证据见[本轮交付](sprint-media-preparation.md)。
+使用步骤见[手册](../../references/user-manual.md)，过程与证据见[本轮交付](../sprints/sprint-media-preparation.md)。

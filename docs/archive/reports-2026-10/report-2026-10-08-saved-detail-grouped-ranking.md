@@ -27,6 +27,6 @@
 
 里程碑、当前任务、进度、交接和人工待办随节点更新，旧当前摘要收进历史，避免下次接手继续按过期计划开发。正式检索质量和真实人物细节验收仍未通过，日常使用仍不用填验收表。
 
-下一步恢复已冻结的两个真实v4候选实验的就绪检查，验证同人物／同衣物部件与近镜头物品归属。费用及发送范围已向用户提问：最高¥4.07、两候选六帧、最多两次请求、不自动重试。旧¥4.04两次授权已用完，新的提案明确executionAuthorized=false；没有收到新答复前不执行。正式原片标注及评分另按[人工待办](human-inputs.md)提醒，未完成的人工工作只影响依赖它的评测。
+下一步恢复已冻结的两个真实v4候选实验的就绪检查，验证同人物／同衣物部件与近镜头物品归属。费用及发送范围已向用户提问：最高¥4.07、两候选六帧、最多两次请求、不自动重试。旧¥4.04两次授权已用完，新的提案明确executionAuthorized=false；没有收到新答复前不执行。正式原片标注及评分另按[人工待办](../../exec-plans/human-inputs.md)提醒，未完成的人工工作只影响依赖它的评测。
 
-完整身份、回执与开发约束见[本轮任务](sprint-saved-detail-grouped-ranking.md)；使用步骤见[已有细节指南](../references/saved-detail-retrieval-guide.md)。
+完整身份、回执与开发约束见[本轮任务](../sprints/sprint-saved-detail-grouped-ranking.md)；使用步骤见[已有细节指南](../../references/saved-detail-retrieval-guide.md)。

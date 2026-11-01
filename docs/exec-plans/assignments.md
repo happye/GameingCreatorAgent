@@ -163,7 +163,7 @@
 | 当前文档与恢复入口 | 主控单Agent，neat-freak技能 | 本轮合同sprint-phase0-publication-sync.md；旧摘要归档，人工/技术债状态表保持 |
 | 产品功能与真实验收 | 无源码写者、无后台检查 | 五项整合完整3732/5skip，时钟夹具主树10通过；F006/F009/F010 false |
 
-本轮未派Sol写者或新增付费任务；已有工作树保留备份。旧发布/执行节点见[历史摘要](status-history-20261029.md)，更早分工如下。
+本轮未派Sol写者或新增付费任务；已有工作树保留备份。旧发布/执行节点见[历史摘要](../archive/history/status-history-20261029.md)，更早分工如下。
 
 <details>
 <summary>旧分工与发布节点（历史）</summary>
@@ -178,9 +178,9 @@
 
 2026-10-28 当前：时间轴筛选含画面文字，Codex主控拥有 app.js/index.html、相关测试和公共文档；Luna/high只读定位，Sol/medium只读评估。无并行源码写者。筛选已交付、Sol/medium PASS；片段上下文已交付、Sol/medium复核PASS，完整verify运行中。主控禁止并行改源码，Luna/high只读准备第6/8步卡片已完成；Sol/medium task_developer在独立.cache/worktrees/benchmark-result-cards、codex/benchmark-result-cards实现，拥有benchmark-workflow.js和新浏览器测试；不写主树，待主树verify结束后集成，Sol/high负责唯一验收边界评估。见 sprint-timeline-text-filter.md。
 
-最新：固定28.5秒单帧已按新¥0.50许可唯一发送并发布，估算¥0.001492，922旧文件不变；本地resume零发送、查询正例1／跨衣物负例0，原Sol/high最终PASS。见[sprint-static-observation-pilot.md](sprint-static-observation-pilot.md)。TD006自动映射已由同一workspace的原DSH会话完成并验收；原Luna/high地图与Sol/high合同审阅完成，Codex合同／公共文档及正式检查，DSH唯一源码写者，无新录像请求。
+最新：固定28.5秒单帧已按新¥0.50许可唯一发送并发布，估算¥0.001492，922旧文件不变；本地resume零发送、查询正例1／跨衣物负例0，原Sol/high最终PASS。见[sprint-static-observation-pilot.md](../archive/sprints/sprint-static-observation-pilot.md)。TD006自动映射已由同一workspace的原DSH会话完成并验收；原Luna/high地图与Sol/high合同审阅完成，Codex合同／公共文档及正式检查，DSH唯一源码写者，无新录像请求。
 
-更新：2026-10-24，main。[本轮生成sprint](sprint-static-observation-generation.md)已离线交付；[HANDOFF](../../HANDOFF.md)是最新恢复入口。旧阶段见[接续清单](report-2026-10-24-dsh-resumption.md)及[历史分工](assignments-history-2026-10-22.md)。
+更新：2026-10-24，main。[本轮生成sprint](../archive/sprints/sprint-static-observation-generation.md)已离线交付；[HANDOFF](../../HANDOFF.md)是最新恢复入口。旧阶段见[接续清单](../archive/reports-2026-10/report-2026-10-24-dsh-resumption.md)及[历史分工](../archive/history/assignments-history-2026-10-22.md)。
 
 发布节点：TD006源码／报告c8b9667已普通push成功，远端e9361e2→c8b9667；真实试验报告9e8e525和发布记录0790976亦已同步，旧网络失败不再阻塞。12个已验源码／测试blob与提交一致；当前无DSH watcher或产品源码写者。下一优先工作台已复现可靠性边界，再回真实质量路径。
 
