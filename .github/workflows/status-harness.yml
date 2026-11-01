@@ -1,28 +1,22 @@
-name: status-harness
+name: harness
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
 jobs:
-  status-md:
+  status-and-lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: STATUS.md exists and <=5KB
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Status numbers, board drift, doc size budgets, control characters
+        run: python scripts/status.py --check
+      - name: Ruff (pinned to uv.lock)
         run: |
           set -euo pipefail
-          test -f STATUS.md
-          bytes=$(wc -c < STATUS.md)
-          echo "STATUS_BYTES=$bytes"
-          test "$bytes" -le 5120
-      - name: AGENTS.md <=6KB
-        run: |
-          set -euo pipefail
-          bytes=$(wc -c < AGENTS.md)
-          echo "AGENTS_BYTES=$bytes"
-          test "$bytes" -le 6144
-      - name: status.py smoke (stdlib only)
-        run: |
-          set -euo pipefail
-          python3 scripts/status.py | head -n 40
+          pip install ruff==0.16.10
+          ruff format --check src tests scripts/affected_tests.py scripts/status.py
+          ruff check src tests scripts/affected_tests.py scripts/status.py

@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "note": "Primary progress metric. A journey is a whole user task, not a feature. agent_run = an agent ran it end to end offline; human_check = the user tried it and judged the result. Update a row only after a real run; never infer.",
+  "journeys": [
+    {
+      "id": "J1",
+      "name": "玩法展示：本地录像 → 约1分钟可发布成片",
+      "steps": "导入录像 → 已有分析/检索 → 选玩法展示模板 → 渲染MP4 → 封面文案与B站发布包",
+      "agent_run": {
+        "date": "2026-11-01",
+        "result": "pass",
+        "evidence": "commit a164740 (P043-P045)；feature_list.json P043 implementation_evidence：demo-phase0 方案→MP4→封面→B站包"
+      },
+      "human_check": {
+        "date": null,
+        "verdict": "not_done",
+        "minutes": null,
+        "interventions": null,
+        "evidence": null
+      },
+      "unlocks": "冻结项 P038、P046–P051"
+    },
+    {
+      "id": "J2",
+      "name": "一句话找片段：Top-10 中可用 ≥70%",
+      "steps": "选已完成录像 → 输入一句话查询 → 看前10名并逐个打分",
+      "agent_run": {
+        "date": "2026-10-07",
+        "result": "pass",
+        "evidence": "feature_list.json F005/F007 passes=true（commit 24ded10 起）"
+      },
+      "human_check": {
+        "date": null,
+        "verdict": "not_done",
+        "minutes": null,
+        "interventions": null,
+        "evidence": "F006 仍为 false；progress-board §3 真实步骤 0/8"
+      },
+      "unlocks": "F006 / Phase 0 质量结论"
+    },
+    {
+      "id": "J3",
+      "name": "安装：便携包安装后启动工作台",
+      "steps": "build-app → install-app → 启动 GamingCreator.exe → 工作台可用 → 卸载",
+      "agent_run": {
+        "date": "2026-11-01",
+        "result": "pass",
+        "evidence": "feature_list.json P039 implementation_evidence（install-app -Smoke 安装/升级/卸载）"
+      },
+      "human_check": {
+        "date": null,
+        "verdict": "not_done",
+        "minutes": null,
+        "interventions": null,
+        "evidence": null
+      },
+      "unlocks": "对外分发（另需许可证缺口处理）"
+    }
+  ]
+}

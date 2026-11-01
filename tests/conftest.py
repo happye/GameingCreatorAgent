@@ -2,6 +2,7 @@
 
 import importlib.util
 import os
+import re
 import shutil
 from pathlib import Path
 
@@ -13,6 +14,34 @@ _spec = importlib.util.spec_from_file_location(
 assert _spec and _spec.loader
 _maintenance = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_maintenance)
+
+
+# Marker -> pattern over the test module's source.
+_AUTO_MARKS = (
+    ("browser", re.compile(r"^\s*(?:from|import) playwright|importorskip\(\s*.playwright", re.M)),
+    # Real local data lives in dated artifacts/ folders or GameVideos/; "artifacts/project" is a tmp id.
+    ("local_data", re.compile(r"artifacts/[\w-]*20\d{6}|GameVideos")),
+    ("ffmpeg", re.compile(r"ffmpeg|ffprobe", re.I)),
+)
+_module_marks: dict[Path, tuple[str, ...]] = {}
+
+
+def _marks_for(path: Path) -> tuple[str, ...]:
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ()
+    return tuple(name for name, pattern in _AUTO_MARKS if pattern.search(text))
+
+
+def pytest_collection_modifyitems(config, items):
+    # Tier filters (testing-guide.md) come from what a test module touches, so nobody tags by hand.
+    for item in items:
+        path = Path(str(item.fspath))
+        if path not in _module_marks:
+            _module_marks[path] = _marks_for(path)
+        for name in _module_marks[path]:
+            item.add_marker(name)
 
 
 @pytest.hookimpl(hookwrapper=True)
@@ -53,19 +82,12 @@ def _reclaimable_basetemp(base: Path, cache: Path) -> bool:
         resolved.relative_to(cache_resolved)
     except (OSError, ValueError):
         return False
-    if resolved == cache_resolved:
-        return False
-    protected = {name.casefold() for name in _maintenance.PROTECTED}
-    # Direct child of .cache with a protected name (models, etc.)
-    if resolved.parent == cache_resolved and resolved.name.casefold() in protected:
-        return False
-    # Top-level protected path anywhere in the chain
-    for parent in resolved.parents:
-        if parent == cache_resolved:
-            break
-        if parent.parent == cache_resolved and parent.name.casefold() in protected:
-            return False
-    return True
+    # Allow-list only: the pyproject default and verify.ps1's per-run tmp.
+    name = resolved.name.casefold()
+    if resolved.parent == cache_resolved:
+        return name == "pytest-tmp-run" or name.startswith("pt-")
+    runs_root = cache_resolved / "pytest-runs"
+    return name == "tmp" and resolved.parent.parent == runs_root
 
 
 def pytest_sessionfinish(session, exitstatus):

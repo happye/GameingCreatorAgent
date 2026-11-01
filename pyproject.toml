@@ -30,7 +30,12 @@ include = ["src/gamingcreator", "pyproject.toml", "tests"]
 testpaths = ["tests"]
 addopts = "-q --basetemp=.cache/pytest-tmp-run"
 cache_dir = ".cache/pytest-cache"
-markers = ["media: integration tests using project-local FFmpeg/ffprobe"]
+markers = [
+  "media: integration tests using project-local FFmpeg/ffprobe",
+  "browser: auto-applied when the module uses Playwright (Chromium)",
+  "local_data: auto-applied when the module reads ignored artifacts/ or GameVideos/ data",
+  "ffmpeg: auto-applied when the module mentions ffmpeg/ffprobe",
+]
 
 [tool.ruff]
 target-version = "py313"
@@ -38,7 +43,57 @@ line-length = 100
 src = ["src"]
 
 [tool.ruff.lint]
-select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B", "C901", "PLR0915"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[tool.ruff.lint.pylint]
+max-statements = 60
+
+# Existing complexity debt (2026-11-01 ratchet): new code must stay under the limits;
+# remove a file from this list once it is split.
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["C901", "PLR0915"]
+"scripts/*" = ["C901", "PLR0915"]
+"src/gamingcreator/application/acceptance_readiness.py" = ["C901"]
+"src/gamingcreator/application/activity_rules.py" = ["C901"]
+"src/gamingcreator/application/analysis.py" = ["C901", "PLR0915"]
+"src/gamingcreator/application/benchmark_inventory_binding.py" = ["C901", "PLR0915"]
+"src/gamingcreator/application/benchmark_preparation.py" = ["C901"]
+"src/gamingcreator/application/benchmark_review.py" = ["C901", "PLR0915"]
+"src/gamingcreator/application/coverage_gap_report.py" = ["C901"]
+"src/gamingcreator/application/creation_editing.py" = ["C901"]
+"src/gamingcreator/application/creation_feedback.py" = ["C901"]
+"src/gamingcreator/application/detail_pilot_review.py" = ["C901"]
+"src/gamingcreator/application/detail_query.py" = ["C901", "PLR0915"]
+"src/gamingcreator/application/detail_query_draft.py" = ["C901", "PLR0915"]
+"src/gamingcreator/application/detail_refinement_budget.py" = ["C901", "PLR0915"]
+"src/gamingcreator/application/media_batch.py" = ["C901", "PLR0915"]
+"src/gamingcreator/application/retrieval.py" = ["C901", "PLR0915"]
+"src/gamingcreator/application/static_observation_budget.py" = ["C901"]
+"src/gamingcreator/application/tasks.py" = ["C901", "PLR0915"]
+"src/gamingcreator/cli/main.py" = ["C901", "PLR0915"]
+"src/gamingcreator/domain/actor_details.py" = ["C901"]
+"src/gamingcreator/domain/platform_profile.py" = ["C901"]
+"src/gamingcreator/domain/temporal_entities.py" = ["C901", "PLR0915"]
+"src/gamingcreator/infrastructure/benchmark_preparation_files.py" = ["C901"]
+"src/gamingcreator/infrastructure/deepseek_detail_refinement.py" = ["C901", "PLR0915"]
+"src/gamingcreator/infrastructure/deepseek_static_observations.py" = ["C901", "PLR0915"]
+"src/gamingcreator/infrastructure/deepseek_vision.py" = ["C901", "PLR0915"]
+"src/gamingcreator/infrastructure/detail_cost_history.py" = ["C901", "PLR0915"]
+"src/gamingcreator/infrastructure/detail_refinement_sidecar.py" = ["C901"]
+"src/gamingcreator/infrastructure/embedding_worker.py" = ["PLR0915"]
+"src/gamingcreator/infrastructure/ffmpeg_render.py" = ["C901", "PLR0915"]
+"src/gamingcreator/infrastructure/local_embeddings.py" = ["C901"]
+"src/gamingcreator/infrastructure/media_process.py" = ["C901", "PLR0915"]
+"src/gamingcreator/infrastructure/sqlite_store.py" = ["C901"]
+"src/gamingcreator/infrastructure/windows_ocr.py" = ["C901"]
+"src/gamingcreator/ui/benchmark_workflow.py" = ["C901", "PLR0915"]
+"src/gamingcreator/ui/creation_jobs.py" = ["C901", "PLR0915"]
+"src/gamingcreator/ui/media_preparation.py" = ["C901", "PLR0915"]
+"src/gamingcreator/ui/revision_jobs.py" = ["C901", "PLR0915"]
+"src/gamingcreator/ui/server.py" = ["C901", "PLR0915"]
 
 [tool.mypy]
 python_version = "3.13"
