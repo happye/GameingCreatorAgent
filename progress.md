@@ -1,3 +1,5 @@
+> **历史日志**：日常开发**勿在此追加**当前进度叙事。当前状态与主指标见根目录 [`STATUS.md`](STATUS.md)；离线打印 `python -B scripts/status.py`。需要接手时覆盖短 [`HANDOFF.md`](HANDOFF.md)。
+
 **2026-11-01 离线 TD009 sharedEvidence／attribute 覆盖：** shared⊆satisfied + payload attribute 覆盖；legacy 只读；TD009 仍 open。计数不变：51·10/41/0·80%；债务21·14/2/5。**
 **2026-11-01 离线 TD009 match-report 状态／actor 覆盖：** status↔matches 不变量 + payload actor 覆盖；legacy 只读；TD009 仍 open。计数不变：51·10/41/0·80%；债务21·14/2/5。**
 **2026-11-01 离线 TD004 过场标签噪声：** cutscene tag-only 标题卡排除；demo 只读；TD004 仍 open。计数不变：51·10/41/0·80%；债务21·14/2/5。**

@@ -4,7 +4,7 @@ model = "gpt-6.1-sol"
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
 developer_instructions = """
-Read AGENTS.md, HANDOFF.md, the assigned sprint and docs/references/development-agent-pipeline.md.
+Read STATUS.md first, then AGENTS.md and the named/assigned sprint plus docs/references/development-agent-pipeline.md. Short HANDOFF.md only if resuming mid-session. Read assignments.md only when parallel writers are active; do not open progress.md by default.
 Implement only the agreed bounded delivery, with explicit file ownership. You are not alone: preserve other contributors' edits; parallel writers use separate worktrees.
 Respect the approved development path, phase gates, source identity, persistence and fee authorizations. Do not upload or dispatch paid analysis without the exact required authorization.
 Run relevant checks, record reproducible limits and return evidence to the integrator. Do not claim independent evaluation of your own work or update shared acceptance facts without ownership.

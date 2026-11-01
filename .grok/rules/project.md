@@ -2,9 +2,12 @@
 
 For a new chat, follow root [`STATUS.md`](../../STATUS.md) and the short [`HANDOFF.md`](../../HANDOFF.md). Explain rejection triggers and whole-task stopping; prioritize defects that block the deliverable. Continue authorized local development without repeating completed annotation or paid attempts.
 
-Use root `AGENTS.md` as the shared repository guide. Follow `docs/references/agent-workflow.md` for assignments and transfers.
+Use root `AGENTS.md` as the shared repository guide. Use `docs/references/agent-workflow.md` only for handoff, parallel worktrees, and fee/boundary mechanics.
 
 **STATUS-first:** update `STATUS.md` at milestone or session end; touch the progress board only when counts change. Do not sync seven docs on every change or add a docs commit solely to record tip SHA / push status.
+
+**Priority:** root `STATUS.md` and `AGENTS.md` override `docs/references/agent-workflow.md` on conflict (report length / doc-sync). User progress reports: STATUS primary metrics only (≤150 Chinese chars + one artifact).
+
 
 Keep shared preferences from `AGENTS.md`: plain-language reporting; milestone delivery over polishing loops; human-inputs recording; ¥50 monthly preauth and freeze of P046–P051 / P038 until first mode human-evaluated.
 

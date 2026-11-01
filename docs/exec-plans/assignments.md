@@ -1,3 +1,5 @@
+> **历史／并行分工台账**：日常**勿追加**当进度叙事；当前态见根目录 [`STATUS.md`](../../STATUS.md)。仅并行写者需要时更新归属；串行开发不必维护本文件。
+
 **2026-11-01 离线 TD009（sharedEvidence／payload attribute 覆盖，见功能提交）：** sprint-td009-match-report-shared-attr-coverage.md；TD009 仍 open。
 **2026-11-01 离线 TD009（match-report 状态不变量／sidecar actor 覆盖，见功能提交）：** sprint-td009-match-report-status-actor-coverage.md；TD009 仍 open。
 **2026-11-01 离线 TD004（过场／cutscene 裸标签标题卡，见功能提交）：** sprint-td004-cutscene-tag-only-noise.md；TD004 仍 open。

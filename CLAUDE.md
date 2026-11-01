@@ -4,9 +4,12 @@ For a new chat, read root [`STATUS.md`](STATUS.md) then the short [`HANDOFF.md`]
 
 @AGENTS.md
 
-The import loads the shared repository guide. Follow `docs/references/agent-workflow.md` for assignments and transfers. Acceptance criteria remain in `feature_list.json` regardless of which tool started the task.
+The import loads the shared repository guide. Use `docs/references/agent-workflow.md` only for handoff, parallel worktrees, and fee/boundary mechanics. Acceptance criteria remain in `feature_list.json` regardless of which tool started the task.
 
 **STATUS-first:** update `STATUS.md` once at milestone or session end; update `docs/exec-plans/progress-board.md` only when counts change. Do not sync seven docs on every change, and do not open a docs commit solely to record tip SHA or push status.
+
+**Priority:** root `STATUS.md` and `AGENTS.md` override `docs/references/agent-workflow.md` if they conflict (especially report length / doc-sync). User-facing progress reports follow STATUS primary metrics only (≤150 Chinese chars + one artifact).
+
 
 Persist shared preferences from `AGENTS.md`: plain-language reporting after key changes; milestone delivery over bug-polishing loops; prompt human-input notices into `docs/exec-plans/human-inputs.md`; fees (¥50 monthly preauth) and freeze of P046–P051 / P038 until first mode is human-evaluated.
 

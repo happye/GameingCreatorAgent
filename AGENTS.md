@@ -38,7 +38,7 @@ pytest `tests/test_*.py`; `docs/references/testing-guide.md` and `phase-0-benchm
 
 ## Changes, commits, worktrees
 
-Start from `STATUS.md` then short `HANDOFF.md` and `docs/references/agent-workflow.md`. Simultaneous writers: separate worktrees under `.worktrees/` (not `.cache/`), ≤3 active; retire after integration. Imperative `chore:`/`docs:`/`feat(F002): …`. Never commit secrets, footage, generated media, or databases.
+Start from `STATUS.md` then short `HANDOFF.md`. Use `agent-workflow.md` only for handoff/parallel/fee boundaries. Simultaneous writers: separate worktrees under `.worktrees/` (not `.cache/`), ≤3 active; retire after integration. Imperative `chore:`/`docs:`/`feat(F002): …`. Never commit secrets, footage, generated media, or databases.
 
 ## Cache and media limits
 
@@ -48,7 +48,8 @@ Start from `STATUS.md` then short `HANDOFF.md` and `docs/references/agent-workfl
 
 - Prefer milestone delivery over polishing one small bug; record hard-to-fix issues in `docs/exec-plans/tech-debt.md` and return to the main line.
 - **Primary e2e metrics** (see `STATUS.md` table + `python -B scripts/status.py`): planned51 · first★22 · Phase0 F passes · quality 0/8 real steps · tech-debt · human must/future · freeze set. Tier ✅/🟡/⬜; quality/release separate.
-- **Report to the user only when those primary metrics change.** Format: ≤150 Chinese characters + **one** openable artifact path. Protocol details: `agent-workflow.md`. Do not report tip SHA / push as a progress update.
+- **Report to the user only when those primary metrics change.** Format: ≤150 Chinese characters + **one** openable artifact path. Do not report tip SHA / push as a progress update.
+- `docs/references/agent-workflow.md` covers handoff, parallel worktrees, and fee/boundary mechanics only. **On conflict, STATUS.md / this file win** (not workflow old long-report wording).
 - Need user annotation/manual help → notify promptly and record in `docs/exec-plans/human-inputs.md`; pending human items block only dependent work.
 - Subagent routing: `docs/references/codex-agent-routing-guide.md` / `claude-agent-routing-guide.md`. Planner→Generator→Evaluator: `development-agent-pipeline.md`.
 
