@@ -402,12 +402,26 @@ def _neutralize_ui_scene_labels(text: str) -> str:
     return _UI_SCENE_ACTION_NOISE.sub("uiscene", text)
 
 
+# Place labels that share 死亡 with Boss-armor queries (TD004 demo-phase0 false friend).
+_BOSS_PLACE_NAME_NOISE = re.compile(
+    r"死亡森林|死亡沙漠|死亡峡谷|死亡谷|death\s*forest|dead\s*forest",
+    re.IGNORECASE,
+)
+
+
+def _neutralize_boss_place_labels(text: str) -> str:
+    """Replace place-name chrome so 死亡森林 does not satisfy 死亡铠甲 queries."""
+    return _BOSS_PLACE_NAME_NOISE.sub("placename", text)
+
+
 def _neutralize_title_brands(text: str) -> str:
-    """Replace frozen title brands and UI scene-label chrome.
+    """Replace frozen title brands, UI scene labels, and Boss place-name chrome.
 
     Leaves real jump/跳跃 and free-standing 战斗／交战／对战 observations untouched.
     """
-    return _neutralize_ui_scene_labels(_TITLE_BRAND_ACTION_NOISE.sub("titlebrand", text))
+    text = _TITLE_BRAND_ACTION_NOISE.sub("titlebrand", text)
+    text = _neutralize_ui_scene_labels(text)
+    return _neutralize_boss_place_labels(text)
 
 
 _NEGATIVE_QUERY_INTENT = re.compile(
@@ -709,6 +723,45 @@ def _automotive_repair_mismatch_documents(
     for document in documents:
         text = document.text
         if _REPAIR_DOC.search(text) and not _AUTOMOTIVE_DOC.search(text):
+            noisy.add(document.identifier)
+    return frozenset(noisy)
+
+
+# Multi-condition Boss queries: require ≥2 facet hits (TD004).
+_BOSS_FACET_PATTERNS = (
+    re.compile(r"\bboss\b|首领", re.IGNORECASE),
+    re.compile(r"领主|\blord\b", re.IGNORECASE),
+    re.compile(r"铠甲|\barmou?r\b", re.IGNORECASE),
+    re.compile(r"权杖|\bstaff\b|\bsceptre\b|\bscepter\b", re.IGNORECASE),
+    re.compile(r"冲击波|\bshockwaves?\b", re.IGNORECASE),
+    re.compile(r"恶魔|\bdemons?\b", re.IGNORECASE),
+)
+
+
+def _boss_query_facet_indexes(query: str) -> tuple[int, ...]:
+    folded = unicodedata.normalize("NFKC", query)
+    return tuple(
+        index for index, pattern in enumerate(_BOSS_FACET_PATTERNS) if pattern.search(folded)
+    )
+
+
+def _boss_partial_match_noise_documents(
+    documents: tuple[_Document, ...], query: str
+) -> frozenset[str]:
+    """Exclude clips that only satisfy one facet of a multi-condition Boss query.
+
+    Requires an identity facet (Boss／领主／首领) plus another Boss facet so flavor
+    words in ordinary action queries (armored demon + staff + jumping) are untouched.
+    """
+    facets = _boss_query_facet_indexes(query)
+    # Indexes 0/1 are Boss／首领 and 领主／lord identity facets.
+    if len(facets) < 2 or not any(index in facets for index in (0, 1)):
+        return frozenset()
+    noisy: set[str] = set()
+    for document in documents:
+        surface = _neutralize_title_brands(document.text)
+        matched = sum(1 for index in facets if _BOSS_FACET_PATTERNS[index].search(surface))
+        if matched < 2:
             noisy.add(document.identifier)
     return frozenset(noisy)
 
@@ -2328,6 +2381,7 @@ async def _search_documents(
         | _negative_query_weak_overlap_documents(documents, query)
         | _shoot_proxy_noise_documents(documents, query)
         | _automotive_repair_mismatch_documents(documents, query)
+        | _boss_partial_match_noise_documents(documents, query)
     )
     lexical_winners: dict[str, str] = {}
     lexical_documents = documents

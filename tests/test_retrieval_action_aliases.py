@@ -1891,3 +1891,35 @@ def test_automotive_repair_mismatch_only_corpus_empty():
     data = timeline("工程师在维修飞船引擎。", "装置进入修理流程。")
     result = search(data, "汽车修理工拆卸发动机维修车辆", "lexical")
     assert result.candidates == ()
+
+
+def test_boss_death_forest_place_name_not_armor_evidence():
+    """TD004: 死亡森林 place label must not satisfy 死亡铠甲 Boss queries."""
+    data = timeline(
+        "画面显示俯视视角的绿色草地场景，中央有“卷轴争夺战(3V3)”字样，下方有“死亡森林”地名标签。",
+        "画面仍显示“卷轴争夺战(3V3)”字样和“死亡森林”标签，角色位置略有变化。",
+        "身披死亡铠甲的恶魔领主举起权杖释放冲击波。",
+    )
+    result = search(data, "穿着死亡铠甲的恶魔领主Boss", "lexical")
+    assert [c.event_id for c in result.candidates] == ["event-2"]
+    assert "死亡铠甲" in result.candidates[0].observable_facts[0]
+
+
+def test_boss_multi_facet_partial_match_excluded():
+    """TD004: one-facet leftovers (Boss tag / shockwave-only) drop for compound Boss queries."""
+    data = timeline(
+        "画面中央出现冲击波特效与伤害数字。",
+        "UI 显示 Boss 标志与倒计时。",
+        "身披死亡铠甲的恶魔领主举起权杖释放冲击波。",
+    )
+    result = search(
+        data, "穿着死亡铠甲的恶魔领主Boss拿着权杖释放冲击波", "lexical"
+    )
+    assert [c.event_id for c in result.candidates] == ["event-2"]
+
+
+def test_single_facet_boss_query_still_finds_boss_label():
+    """A lone Boss query is not multi-condition; place/UI Boss chrome may still rank."""
+    data = timeline("UI 显示 Boss 标志与倒计时。", "角色在草地上奔跑。")
+    result = search(data, "Boss", "lexical")
+    assert [c.event_id for c in result.candidates] == ["event-0"]
