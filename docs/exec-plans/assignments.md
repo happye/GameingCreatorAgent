@@ -1,5 +1,8 @@
 # 当前分工与恢复入口
 
+**2026-11-01 T7（发布包水印核验，见功能提交）：** sprint-t7-package-watermark-verify.md；下一步 T8。
+
+
 **2026-11-01 T6（TD021 收尾，见功能提交）：** sprint-t6-td021-remainder.md；下一步 T7。
 
 

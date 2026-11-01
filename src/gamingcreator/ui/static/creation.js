@@ -566,7 +566,8 @@
     }
     function showPackage(data, id) {
         fillProfile(data.profile); $("package-result").hidden = false;
-        $("package-status").textContent = `生成：${data.generationStatus === "completed" ? "成功，文件可下载" : "尚未完成"}；本地限值：${({pass: "通过", fail: "未通过", unknown: "未知"})[data.localChecks] || "未知"}；发布资格：${data.publicationEligibility === "blocked" ? "受阻（仅供测试音乐或其他限制）" : "未核实"}。官方规则、素材权利和真人质量尚未核实。`;
+        const watermarkNote = data.watermark ? "含 Free 水印；" : "";
+        $("package-status").textContent = `生成：${data.generationStatus === "completed" ? "成功，文件可下载" : "尚未完成"}；${watermarkNote}本地限值：${({pass: "通过", fail: "未通过", unknown: "未知"})[data.localChecks] || "未知"}；发布资格：${data.publicationEligibility === "blocked" ? "受阻（仅供测试音乐或其他限制）" : "未核实"}。官方规则、素材权利和真人质量尚未核实。`;
         const validation = data.validation || {}, statuses = {pass: "通过", fail: "未通过", unknown: "未知", not_configured: "未配置"};
         const checkNames = {width: "视频宽度", height: "视频高度", codec: "编码", pixelFormat: "像素格式", frames: "帧数", fps: "帧率", maxBytes: "文件大小上限", minDurationMs: "最短时长", maxDurationMs: "最长时长", titleMaxChars: "标题字数", descriptionMaxChars: "简介字数", tagMaxCount: "标签数量", requiredTags: "必需标签"};
         const lines = Object.entries(validation.checks || {}).map(([key, status]) => `${checkNames[key] || key}：${statuses[status] || "未知"}`);

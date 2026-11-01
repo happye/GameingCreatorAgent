@@ -1,6 +1,8 @@
 # 当前接手：51项全部至少部分可用，下一步把部分项推进到可验收
 
-**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T6 已完成；下一步 T7）。**
+**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T7 已完成；下一步 T8）。**
+
+2026-11-01 T7 发布包水印核验：`package_jobs.verify` 比对包与成片收据 watermark（旧包缺字段=None）；结果页显示「含 Free 水印」；篡改失败。计数不变：51项10/41/0≈60%；技术债21项14/2/5；人工0／未来8。
 
 2026-11-01 T6 TD021 收尾：知识库改用 local_files 有界读/独占写，mtime 排序容忍消失文件；xmeml 变速写入 timeremap（结构已测，Premiere 真机导入仍非宣称）；TD021 已解决。计数：51项10/41/0≈60%；技术债21项14/2/5；人工0／未来8。
 

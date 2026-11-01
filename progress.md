@@ -1,3 +1,6 @@
+**2026-11-01 T7 发布包水印核验：** 包收据与父成片 watermark 一致；缺字段=None；页面「含 Free 水印」；篡改核验失败。下一步 T8。计数不变：51项10/41/0≈60%；债务21项14/2/5。**
+
+
 **2026-11-01 T6 TD021 收尾：** knowledge_store→local_files；entries 消失文件容错；xmeml timeremap XML+结构测试（真机导入未做）；TD021 resolved。下一步 T7。技术债21项：已解决14 · 部分2 · 未解决5。**
 
 

@@ -125,6 +125,8 @@ def verify(
         or receipt.get("parentRenderReceiptSha256") != publication["expectedRenderReceiptSha256"]
         or receipt.get("renderVideoSha256") != render["files"]["video.mp4"]
         or set(receipt.get("files", {})) != set(DOWNLOADS)
+        # Missing watermark on old packages/renders is None; a mismatch is tampering.
+        or receipt.get("watermark") != render.get("watermark")
     ):
         raise ValueError("Package identity changed")
     target = directory / "result"
@@ -147,6 +149,7 @@ def verify(
         "localChecks": validation["localChecks"],
         "publicationEligibility": validation["publicationEligibility"],
         "validation": validation,
+        "watermark": receipt.get("watermark"),
         "artifacts": {
             name: {
                 "url": f"/api/creation/jobs/{directory.name}/package-files/{name}",

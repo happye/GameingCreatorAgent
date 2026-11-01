@@ -1,9 +1,12 @@
+import json
 import zipfile
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
 from test_creation_publication import ROOT, finish, payload, rendered, service  # noqa: F401
 
+from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.ui import package_jobs
 from gamingcreator.ui.creation_jobs import CreationJobs
 
@@ -239,3 +242,160 @@ def test_a_free_watermark_survives_a_vertical_crop(tmp_path):
     top_right = max(frame[y * 180 + x] for y in range(30) for x in range(60, 180))
     bottom_left = max(frame[y * 180 + x] for y in range(200, 320) for x in range(90))
     assert top_right > 60 and bottom_left < 30
+
+
+def test_free_package_watermark_matches_and_tamper_fails(service, monkeypatch):  # noqa: F811
+    """Free render watermark is copied into the package receipt; tampering fails verify."""
+    import subprocess
+
+    from test_creation_jobs import request
+    from test_creation_publication import FFMPEG
+
+    from gamingcreator.infrastructure.publication_assets import extract_cover
+    from gamingcreator.ui import creation_jobs as implementation
+    from gamingcreator.ui import publication_jobs as publication
+
+    if not FFMPEG.is_file():
+        pytest.skip("Pinned FFmpeg is unavailable")
+
+    old = implementation.execute_render_creation
+
+    async def renderer(
+        project, selection, output, tool, width, height, subtitle_mode="none", watermark=None
+    ):
+        await old(project, selection, output, tool, width, height, subtitle_mode, watermark)
+        subprocess.run(
+            [
+                str(FFMPEG),
+                "-v",
+                "error",
+                "-y",
+                "-f",
+                "lavfi",
+                "-i",
+                "color=red:s=64x48:r=2:d=1",
+                "-f",
+                "lavfi",
+                "-i",
+                "color=blue:s=64x48:r=2:d=1",
+                "-filter_complex",
+                "[0:v][1:v]concat=n=2:v=1:a=0[v]",
+                "-map",
+                "[v]",
+                "-c:v",
+                "libx264",
+                str(output / "video.mp4"),
+            ],
+            check=True,
+        )
+        receipt = json.loads((output / "receipt.json").read_text(encoding="utf-8"))
+        receipt.update(frames=4, fpsNumerator=2, fpsDenominator=1)
+        receipt["files"]["video.mp4"] = hash_file(output / "video.mp4")
+        (output / "receipt.json").write_text(json.dumps(receipt), encoding="utf-8")
+
+    async def extract(repository, *args):
+        await extract_cover(ROOT, *args)
+
+    monkeypatch.setattr(implementation, "execute_render_creation", renderer)
+    monkeypatch.setattr(publication, "extract_cover", extract)
+    original_encode = package_jobs.encode
+
+    async def encode(repository, *args):
+        return await original_encode(ROOT, *args)
+
+    monkeypatch.setattr(package_jobs, "encode", encode)
+
+    service.select_plan("free")
+    plan = finish(service, service.submit("plan", request())["jobId"])
+    assert plan["status"] == "completed"
+    render_id = service.submit(
+        "render",
+        {
+            "requestId": "c" * 32,
+            "planJobId": plan["jobId"],
+            "planId": "chronological",
+            "width": 64,
+            "height": 48,
+        },
+    )["jobId"]
+    render = finish(service, render_id)
+    assert render["status"] == "completed"
+    assert render["artifact"]["watermark"] == "GamingCreator Free"
+
+    pub_id = service.submit("publication", payload(service, render_id))["jobId"]
+    assert finish(service, pub_id)["status"] == "completed"
+    snap = service.publication(pub_id)
+    profile = package_jobs.profiles()["profiles"][0]
+    for kind in ("video", "cover"):
+        profile["Fields"][kind]["width"] //= 10
+        profile["Fields"][kind]["height"] //= 10
+        for key in ("width", "height"):
+            profile["Fields"][kind][key] += profile["Fields"][kind][key] % 2
+    req = dict(
+        requestId=uuid4().hex,
+        publicationJobId=pub_id,
+        expectedPublicationReceiptSha256=snap["publicationReceiptSha256"],
+        profile=profile,
+    )
+    job = service.submit("package", req)["jobId"]
+    done = finish(service, job)
+    assert done["status"] == "completed", done
+    package = done["package"]
+    assert package["watermark"] == "GamingCreator Free"
+
+    directory = service.directory(job)
+    receipt_path = directory / "result/receipt.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    assert receipt.get("watermark") == "GamingCreator Free"
+    receipt["watermark"] = "TAMPERED"
+    receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+    # Keep status digest in sync so verify reaches the watermark comparison.
+    state = json.loads((directory / "status.json").read_text(encoding="utf-8"))
+    state["resultReceiptSha256"] = hash_file(receipt_path)
+    (directory / "status.json").write_text(json.dumps(state), encoding="utf-8")
+    assert service.get(job)["status"] == "failed"
+
+    # Page copy for Free packages.
+    page = Path("src/gamingcreator/ui/static/creation.js").read_text(encoding="utf-8")
+    assert "含 Free 水印" in page
+
+
+def test_legacy_package_without_watermark_field_still_verifies(rendered, monkeypatch):  # noqa: F811
+    """Old packages and founder renders both omit watermark (None == None)."""
+    jobs, render = rendered
+    pub_id = jobs.submit("publication", payload(jobs, render))["jobId"]
+    assert finish(jobs, pub_id)["status"] == "completed"
+    snap = jobs.publication(pub_id)
+    profile = package_jobs.profiles()["profiles"][0]
+    for kind in ("video", "cover"):
+        profile["Fields"][kind]["width"] //= 10
+        profile["Fields"][kind]["height"] //= 10
+        for key in ("width", "height"):
+            profile["Fields"][kind][key] += profile["Fields"][kind][key] % 2
+    original = package_jobs.encode
+
+    async def encode(repository, *args):
+        return await original(ROOT, *args)
+
+    monkeypatch.setattr(package_jobs, "encode", encode)
+    req = dict(
+        requestId=uuid4().hex,
+        publicationJobId=pub_id,
+        expectedPublicationReceiptSha256=snap["publicationReceiptSha256"],
+        profile=profile,
+    )
+    job = jobs.submit("package", req)["jobId"]
+    done = finish(jobs, job)
+    assert done["status"] == "completed"
+    directory = jobs.directory(job)
+    receipt_path = directory / "result/receipt.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    assert "watermark" in receipt and receipt["watermark"] is None
+    del receipt["watermark"]
+    receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+    state = json.loads((directory / "status.json").read_text(encoding="utf-8"))
+    state["resultReceiptSha256"] = hash_file(receipt_path)
+    (directory / "status.json").write_text(json.dumps(state), encoding="utf-8")
+    # Render receipt also has no watermark → missing package field still matches None.
+    assert jobs.get(job)["status"] == "completed"
+    assert jobs.package(job).get("watermark") is None
