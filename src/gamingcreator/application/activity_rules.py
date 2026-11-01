@@ -87,9 +87,14 @@ def _negated(line: str, position: int, marks: str = _CLAUSE_MARKS) -> bool:
     return bool(re.search(_NEGATION, _clause(line, position, marks)))
 
 
+def _merge_compound(match: re.Match[str]) -> str:
+    minutes, seconds = re.findall(r"\d+(?:\.\d+)?", match.group(0))
+    return f"{float(minutes) * 60 + float(seconds):g}秒"
+
+
 def _durations(line: str) -> tuple[float | None, float | None]:
-    if re.search(_COMPOUND, line):
-        return None, None
+    # "1分钟30秒" is unambiguous minutes+seconds: read it as 90秒 (a bare "4分" stays ignored).
+    line = re.sub(_COMPOUND, _merge_compound, line)
     span = re.search(
         rf"{_DURATION_TOPIC}{_GAP}{{0,8}}?{_NUM}\s*{_UNIT}?{_RANGE}{_NUM}\s*{_UNIT}", line
     )

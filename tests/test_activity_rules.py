@@ -277,10 +277,12 @@ def test_second_review_contexts():
 @pytest.mark.parametrize(
     ("text", "field", "expected"),
     [
-        ("视频时长不超过1分钟30秒", "maxDurationSeconds", None),
-        ("视频时长不少于2分钟30秒", "minDurationSeconds", None),
-        ("视频时长3分钟30秒以内", "maxDurationSeconds", None),
-        ("视频时长：1分30秒-3分钟", "minDurationSeconds", None),
+        ("视频时长不超过1分钟30秒", "maxDurationSeconds", 90),
+        ("视频时长不少于2分钟30秒", "minDurationSeconds", 150),
+        ("视频时长3分钟30秒以内", "maxDurationSeconds", 210),
+        ("视频时长：1分30秒-3分钟", "minDurationSeconds", 90),
+        ("视频时长：1分30秒-3分钟", "maxDurationSeconds", 180),
+        ("视频评分不低于4分", "minDurationSeconds", None),
         ("活动名称：星际奔跑创作季 参与对象：全体玩家", "name", "星际奔跑创作季"),
         ("活动名称：代号Atom：觉醒", "name", "代号Atom：觉醒"),
         ("示例视频时长不超过30秒", "maxDurationSeconds", None),
