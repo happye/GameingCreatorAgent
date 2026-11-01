@@ -1,3 +1,4 @@
+**2026-11-01 离线 TD004 射击代理／汽修域／语义门闩：** shoot proxy + automotive mismatch + semantic action evidence；demo 只读；TD004 仍 open。计数不变：51·10/41/0≈60%；债务21·14/2/5。**
 **2026-11-01 离线 TD004 UI 场景 chrome：** 对战场景／战斗界面；交锋别名；test_retrieval_local_td004_ui_scene；TD004 仍 open。计数不变：51·10/41/0≈60%；债务21·14/2/5。**
 **2026-11-01 离线 TD004 噪声加深：** title-brand／jump·shoot tag-only／不存在↔存在；test_retrieval_action_aliases 全过；TD004 仍 open。计数不变：51·10/41/0≈60%；债务21·14/2/5。**
 **2026-11-01 T28 内容模式诚实文案（P043–P049）：** MODE_HONESTY；方案卡／帮助／creation-guide 交叉链接；tests/test_mode_honesty.py + copy browser；F006 不动。grok-task-list T1–T28 已尽。计数不变：51·10/41/0≈60%；债务21·14/2/5。**

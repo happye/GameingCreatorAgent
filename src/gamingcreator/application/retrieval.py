@@ -272,7 +272,7 @@ _CROSS_LINGUAL_TERMS = (
 # positive action queries; passage identities follow the observation projection.
 _ACTION_TERMS = {
     "jump": ("跳跃", "跳起", "起跳", "jump", "jumps", "jumping", "jumped"),
-    "shoot": ("射击", "开枪", "shoot", "shoots", "shooting"),
+    "shoot": ("射击", "开枪", "开火", "shoot", "shoots", "shooting", "fired", "fires"),
     "attack": (
         "攻击",
         "attack",
@@ -646,6 +646,69 @@ def _negative_query_weak_overlap_documents(
         doc_terms = frozenset(_tokens(_neutralize_title_brands(document.text)))
         overlap = query_terms & doc_terms
         if overlap and overlap <= _EXISTENCE_FALSE_FRIEND_TOKENS:
+            noisy.add(document.identifier)
+    return frozenset(noisy)
+
+
+_SHOOT_PROXY_CHROME = re.compile(
+    r"拿着枪|持枪|手里.*枪|手持.*枪|枪口|holding\s+a\s+gun|holds?\s+a\s+gun|"
+    r"爆炸特效|爆炸效果|explosion\s*(?:vfx|fx|effect)?|特效",
+    re.IGNORECASE,
+)
+_AUTOMOTIVE_QUERY = re.compile(
+    r"汽车|车辆|轿车|卡车|货车|摩托|发动机|修理工|汽修|auto(?:motive)?|vehicle|engine\b|mechanic",
+    re.IGNORECASE,
+)
+_REPAIR_QUERY = re.compile(r"维修|修理|拆卸|保养|repair|fix|overhaul", re.IGNORECASE)
+_AUTOMOTIVE_DOC = re.compile(
+    r"汽车|车辆|轿车|卡车|货车|摩托|发动机|汽修|轮胎|底盘|auto(?:motive)?|vehicle|engine\b|mechanic",
+    re.IGNORECASE,
+)
+_REPAIR_DOC = re.compile(r"维修|修理|拆卸|保养|repair|fix|overhaul", re.IGNORECASE)
+
+
+def _query_actions(query: str) -> set[str]:
+    folded = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
+    return {_ACTION_BY_TERM[match.group()] for match in _ACTION_MENTION.finditer(folded)}
+
+
+def _positive_actions(text: str) -> set[str]:
+    cleaned = unicodedata.normalize("NFKC", _neutralize_title_brands(text)).casefold().replace(
+        "’", "'"
+    )
+    return {_ACTION_BY_TERM[match.group()] for match in _ACTION_MENTION.finditer(cleaned)}
+
+
+def _shoot_proxy_noise_documents(
+    documents: tuple[_Document, ...], query: str
+) -> frozenset[str]:
+    """Exclude hold-gun / explosion chrome that is not shoot action evidence (TD004)."""
+    folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
+    if _NEGATIVE_QUERY_INTENT.search(folded_query):
+        return frozenset()
+    if "shoot" not in _query_actions(query):
+        return frozenset()
+    noisy: set[str] = set()
+    for document in documents:
+        positive = document.positive_text
+        if "shoot" in _positive_actions(positive):
+            continue
+        if _SHOOT_PROXY_CHROME.search(positive):
+            noisy.add(document.identifier)
+    return frozenset(noisy)
+
+
+def _automotive_repair_mismatch_documents(
+    documents: tuple[_Document, ...], query: str
+) -> frozenset[str]:
+    """Exclude repair clips that lack automotive domain when the query is car-repair (TD004)."""
+    folded = unicodedata.normalize("NFKC", query)
+    if not (_AUTOMOTIVE_QUERY.search(folded) and _REPAIR_QUERY.search(folded)):
+        return frozenset()
+    noisy: set[str] = set()
+    for document in documents:
+        text = document.text
+        if _REPAIR_DOC.search(text) and not _AUTOMOTIVE_DOC.search(text):
             noisy.add(document.identifier)
     return frozenset(noisy)
 
@@ -2263,6 +2326,8 @@ async def _search_documents(
         | _title_brand_action_noise_documents(documents, query)
         | _tag_only_action_noise_documents(documents, query)
         | _negative_query_weak_overlap_documents(documents, query)
+        | _shoot_proxy_noise_documents(documents, query)
+        | _automotive_repair_mismatch_documents(documents, query)
     )
     lexical_winners: dict[str, str] = {}
     lexical_documents = documents
@@ -2362,6 +2427,22 @@ async def _search_documents(
             similarity = similarities[document.identifier]
             if similarity >= min_similarity and document.identifier not in denied_actions:
                 semantic[document.identifier] = similarity
+        # TD004: semantic channel for action queries needs positive-text action evidence.
+        # Stops EqualSimilarity / high-cosine tails from reviving held-gun or unrelated clips.
+        action_names = _query_actions(query)
+        if action_names and not _NEGATIVE_QUERY_INTENT.search(
+            unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
+        ):
+            allowed = {
+                document.identifier
+                for document in documents
+                if action_names & _positive_actions(document.positive_text)
+            }
+            semantic = {
+                identifier: score
+                for identifier, score in semantic.items()
+                if identifier in allowed
+            }
         if mode == "hybrid" and semantic:
             # An uncalibrated candidate truncation window limits E5's high-cosine tail.
             # Repeated independent occurrences with equal scores remain eligible.

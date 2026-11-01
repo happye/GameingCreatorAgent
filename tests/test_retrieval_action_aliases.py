@@ -1846,3 +1846,48 @@ def test_fight_ui_scene_only_corpus_abstains(query):
     result = search(data, query, "lexical")
     assert result.candidates == ()
     assert result.abstention_reason == "no_positive_action_evidence"
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid", "semantic"])
+@pytest.mark.parametrize("query", ["shooting", "射击", "开枪"])
+def test_shoot_proxy_chrome_excluded_keeps_real_shoot(mode, query):
+    """TD004: held-gun / explosion chrome is not shoot evidence; real 射击 stays."""
+    data = timeline(
+        "角色手里拿着枪。",
+        "背景出现爆炸特效。",
+        "角色向目标射击。",
+        "角色挥动指挥棒。",
+    )
+    result = search(data, query, mode)
+    assert [c.event_id for c in result.candidates] == ["event-2"]
+    assert "射击" in result.candidates[0].observable_facts[0]
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid", "semantic"])
+def test_shoot_proxy_only_corpus_abstains_or_empty(mode):
+    data = timeline("角色手里拿着枪。", "背景出现爆炸特效。")
+    result = search(data, "shooting", mode)
+    assert result.candidates == ()
+    if mode == "lexical":
+        assert result.abstention_reason == "no_positive_action_evidence"
+
+
+@pytest.mark.parametrize(
+    "query",
+    ["汽车维修", "汽车修理工拆卸发动机维修车辆", "车辆保养"],
+)
+def test_automotive_repair_does_not_match_spaceship_repair(query):
+    """TD004: car-repair queries must not hit non-automotive 维修 passages."""
+    data = timeline(
+        "工程师在维修飞船引擎。",
+        "角色在草地上奔跑。",
+        "技师拆卸汽车发动机并维修车辆。",
+    )
+    result = search(data, query, "lexical")
+    assert [c.event_id for c in result.candidates] == ["event-2"]
+
+
+def test_automotive_repair_mismatch_only_corpus_empty():
+    data = timeline("工程师在维修飞船引擎。", "装置进入修理流程。")
+    result = search(data, "汽车修理工拆卸发动机维修车辆", "lexical")
+    assert result.candidates == ()

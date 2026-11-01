@@ -1,3 +1,4 @@
+**2026-11-01 离线 TD004（射击代理／汽修域／语义动作门闩，见功能提交）：** sprint-td004-shoot-auto-semantic-noise.md；TD004 仍 open。
 **2026-11-01 离线 TD004（UI 对战场景／战斗界面 chrome，见功能提交）：** sprint-td004-ui-scene-fight-chrome.md；TD004 仍 open。
 **2026-11-01 离线 TD004（title-brand／tag-only／negative weak-overlap，见功能提交）：** sprint-td004-title-tag-negative-noise.md；TD004 仍 open。
 **2026-11-01 T28（内容模式诚实文案 P043–P049，见功能提交）：** sprint-t28-content-mode-honesty.md；grok-task-list T1–T28 已尽。
