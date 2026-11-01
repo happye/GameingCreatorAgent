@@ -1,0 +1,16 @@
+{
+  "package": "Microsoft.Web.WebView2",
+  "version": "1.0.4314.35",
+  "source": "https://api.nuget.org/v3-flatcontainer/microsoft.web.webview2/1.0.4314.35/microsoft.web.webview2.1.0.4314.35.nupkg",
+  "approved": "2026-11-01 user chat: 可以下载WebView2 SDK来继续进行工作",
+  "nugetSha512Base64": "cOaiVqP3BmQHMnxGpZzANM22tUXgycrisyJHjIGNzIaMsm8iXj7Kx+ceYg+RbYwJtzT009qfcFTocvVLY+ekMw==",
+  "nupkgSha256": "90778deb1b77e36292828b4b5833c9255c27533f40e0ddd55891ae718944edc4",
+  "localDirectory": ".tools/webview2/1.0.4314.35/files",
+  "files": {
+    "Microsoft.Web.WebView2.Core.dll": "acdd517b951829f763d1255f32df1e6a936cb8623a7ebff6b8b24172dede6bd6",
+    "Microsoft.Web.WebView2.WinForms.dll": "c66437f80886aecf074804b61af4cc10ad90a95310c8e0a717f31ea377c26b03",
+    "WebView2Loader.dll": "d3fce90bdeecb08596e377dea6a316354dd8949e32ff09b89d51be00c14e21b6",
+    "LICENSE.txt": "0af8f1b807512aae39c2ac1aa4d0cae65cabecb6fd554b8439a5162a0d6eca55"
+  },
+  "license": "Microsoft WebView2 SDK license (LICENSE.txt in the package); redistribution terms must be reviewed before shipping an installer."
+}

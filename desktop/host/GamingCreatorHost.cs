@@ -68,6 +68,7 @@ internal static class GamingCreatorHost
     private const int ExtendedLimitInformation = 9;
     private const uint KillOnJobClose = 0x2000;
 
+    [STAThread]
     private static int Main(string[] args)
     {
         bool smoke = Array.IndexOf(args, "--smoke") >= 0;
@@ -125,15 +126,19 @@ internal static class GamingCreatorHost
                     Stop(server);
                     return 0;
                 }
-                Process window = OpenWindow(url, Path.Combine(logDirectory, "window-profile"));
-                if (window == null)
+                if (!EmbeddedWindow.Run(url, Path.Combine(logDirectory, "webview2-profile"), server, writer))
                 {
-                    Stop(server);
-                    return Fail("找不到 Microsoft Edge，无法打开工作台窗口。");
-                }
-                using (window)
-                {
-                    WaitHandle.WaitAny(new WaitHandle[] { new ProcessWait(window), new ProcessWait(server) });
+                    // Without a usable WebView2 runtime, fall back to an Edge application window.
+                    Process window = OpenWindow(url, Path.Combine(logDirectory, "window-profile"));
+                    if (window == null)
+                    {
+                        Stop(server);
+                        return Fail("无法打开工作台窗口（WebView2 与 Microsoft Edge 都不可用）。");
+                    }
+                    using (window)
+                    {
+                        WaitHandle.WaitAny(new WaitHandle[] { new ProcessWait(window), new ProcessWait(server) });
+                    }
                 }
                 Stop(server);
             }
@@ -277,5 +282,63 @@ internal static class GamingCreatorHost
         {
         }
         return 1;
+    }
+}
+
+// Embedded WebView2 window (SDK pinned in docs/references/webview2-sdk.json).
+internal static class EmbeddedWindow
+{
+    public static bool Run(string url, string profile, Process server, StreamWriter log)
+    {
+        System.Windows.Forms.Application.EnableVisualStyles();
+        var form = new System.Windows.Forms.Form
+        {
+            Text = "游戏创作工作台",
+            Width = 1400,
+            Height = 900,
+            StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen,
+        };
+        var view = new Microsoft.Web.WebView2.WinForms.WebView2 { Dock = System.Windows.Forms.DockStyle.Fill };
+        form.Controls.Add(view);
+        bool started = false;
+        Exception failure = null;
+        form.Load += async (sender, args) =>
+        {
+            try
+            {
+                var environment = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(null, profile);
+                await view.EnsureCoreWebView2Async(environment);
+                // Links that leave the local workspace open in the system browser, not inside the app.
+                view.CoreWebView2.NewWindowRequested += (s, e) =>
+                {
+                    e.Handled = true;
+                    Process.Start(new ProcessStartInfo(e.Uri) { UseShellExecute = true });
+                };
+                view.CoreWebView2.Navigate(url);
+                started = true;
+            }
+            catch (Exception error)
+            {
+                failure = error;
+                form.Close();
+            }
+        };
+        server.EnableRaisingEvents = true;
+        server.Exited += (sender, args) =>
+        {
+            if (form.IsHandleCreated)
+            {
+                form.BeginInvoke(new Action(form.Close));
+            }
+        };
+        System.Windows.Forms.Application.Run(form);
+        if (failure != null)
+        {
+            lock (log)
+            {
+                log.WriteLine("WebView2 unavailable: " + failure.Message);
+            }
+        }
+        return started;
     }
 }

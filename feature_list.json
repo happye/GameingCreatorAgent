@@ -949,7 +949,8 @@
       "first_product": true,
       "delivery_status": "partial",
       "implementation_evidence": [
-        "2026-11-01: thin Windows desktop host EXE built with the Windows-bundled C# compiler; single instance, random 127.0.0.1 port, kill-on-close Job Object stops the service tree, Edge app-mode window with a dedicated profile; smoke and real window-close tests leave no service processes; WebView2 embedding awaits SDK download approval; installer/clean-machine/signing not done"
+        "2026-11-01: thin Windows desktop host EXE built with the Windows-bundled C# compiler; single instance, random 127.0.0.1 port, kill-on-close Job Object stops the service tree, Edge app-mode window with a dedicated profile; smoke and real window-close tests leave no service processes; WebView2 embedding awaits SDK download approval; installer/clean-machine/signing not done",
+        "2026-11-01: embedded WebView2 window using the user-approved pinned SDK 1.0.4314.35 (NuGet SHA512 verified, per-file SHA256 checked each build), dedicated profile, external links to the system browser, Edge app-mode fallback; real run: 6 WebView2 processes, page 200, no leftovers after close"
       ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
