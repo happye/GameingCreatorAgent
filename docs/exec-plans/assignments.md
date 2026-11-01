@@ -1,3 +1,6 @@
+**2026-11-01 T10（企业版增强 P051，见功能提交）：** sprint-t10-enterprise-enhancements.md；下一步 T11。
+
+
 **2026-11-01 T9（反馈学习进一步 P042，见功能提交）：** sprint-t9-feedback-edit-habits.md；下一步 T10。
 
 
