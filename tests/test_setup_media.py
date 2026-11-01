@@ -55,6 +55,8 @@ def invoke(repo, source, shell):
         capture_output=True,
         env=shell_env(),
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=30,
     )
 

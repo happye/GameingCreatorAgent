@@ -103,8 +103,9 @@ def test_http_export_from_saved_revision(revisions):
             ElementTree.fromstring(response.read())
         with urllib.request.urlopen(base + "&format=fcpxml&size=720x1280") as response:
             assert 'width="720" height="1280"' in response.read().decode("utf-8")
-        with pytest.raises(urllib.error.HTTPError):
+        with pytest.raises(urllib.error.HTTPError) as error:
             urllib.request.urlopen(base + "&format=fcpxml&size=721x1280")
+        error.value.close()
         with urllib.request.urlopen(base + "&format=otio") as response:
             assert json.loads(response.read())["OTIO_SCHEMA"] == "Timeline.1"
     finally:

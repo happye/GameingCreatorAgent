@@ -18,7 +18,9 @@ def service(tmp_path, monkeypatch):
     (tmp_path / "artifacts/project").mkdir(parents=True)
     (tmp_path / "artifacts/project/timeline.sqlite3").touch()
 
-    async def planner(project, runs, brief, output, events, fps, selection, preferences=None, edit_kinds=None):
+    async def planner(
+        project, runs, brief, output, events, fps, selection, preferences=None, edit_kinds=None
+    ):
         report = {
             "schemaVersion": "creation-plan-v1",
             "fps": fps,
@@ -434,15 +436,17 @@ def test_orphan_rejects_inconsistent_subtitle_receipt(service, change):
     assert CreationJobs(service.repository).get(job_id)["status"] == "interrupted"
 
 
-
 def test_plan_registration_freezes_edit_habits(service, monkeypatch):
     import gamingcreator.ui.creation_jobs as implementation
 
     captured = {}
 
-    async def planner(project, runs, brief, output, events, fps, selection, preferences=None, edit_kinds=None):
-        from gamingcreator.infrastructure.creation_files import write_creation
+    async def planner(
+        project, runs, brief, output, events, fps, selection, preferences=None, edit_kinds=None
+    ):
         import json
+
+        from gamingcreator.infrastructure.creation_files import write_creation
 
         captured["preferences"] = preferences
         captured["edit_kinds"] = edit_kinds

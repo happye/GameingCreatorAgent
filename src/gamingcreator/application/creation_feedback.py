@@ -50,8 +50,6 @@ def trim_suggestion(edit_kinds: dict[str, int] | object) -> dict[str, object]:
     }
 
 
-
-
 def _rows(segments: object) -> list[dict[str, Any]]:
     return [row for row in segments if isinstance(row, dict)] if isinstance(segments, list) else []
 

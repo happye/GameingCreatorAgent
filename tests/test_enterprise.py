@@ -179,13 +179,26 @@ def test_real_package_review_gates_sandbox_publish(rendered, monkeypatch):
         thread.join()
 
 
-
 def test_audit_helpers_mark_self_reported_names():
     record = {
         "state": "approved",
         "events": [
-            {"actor": "小编", "role": "editor", "action": "submit", "comment": "", "brandIssues": [], "at": "t1"},
-            {"actor": "审核员", "role": "reviewer", "action": "approve", "comment": "ok", "brandIssues": [], "at": "t2"},
+            {
+                "actor": "小编",
+                "role": "editor",
+                "action": "submit",
+                "comment": "",
+                "brandIssues": [],
+                "at": "t1",
+            },
+            {
+                "actor": "审核员",
+                "role": "reviewer",
+                "action": "approve",
+                "comment": "ok",
+                "brandIssues": [],
+                "at": "t2",
+            },
         ],
     }
     rows = review_events_as_audit("proj", "p" * 32, record)

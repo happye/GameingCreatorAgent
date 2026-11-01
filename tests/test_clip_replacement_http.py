@@ -44,8 +44,9 @@ def test_candidate_range_head_and_no_worker(replacements):  # noqa: F811
             candidate["previewUrl"] + "&path=x",
             candidate["previewUrl"].replace(candidate["candidateId"], "0" * 64),
         ):
-            with pytest.raises(HTTPError):
+            with pytest.raises(HTTPError) as error:
                 urlopen(base + url)
+            error.value.close()
         assert before == sorted(jobs.jobs.iterdir())
     finally:
         server.shutdown()

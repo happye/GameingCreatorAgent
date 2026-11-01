@@ -92,8 +92,9 @@ def test_job_and_http_use_saved_revision_descriptions(revisions):
         with urllib.request.urlopen(base + "?planId=hook-first") as response:
             body = json.loads(response.read())
         assert body == jobs.narration_script(child, "hook-first")
-        with pytest.raises(urllib.error.HTTPError):
+        with pytest.raises(urllib.error.HTTPError) as error:
             urllib.request.urlopen(base)
+        error.value.close()
     finally:
         server.shutdown()
         server.server_close()

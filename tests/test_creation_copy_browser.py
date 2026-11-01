@@ -228,14 +228,16 @@ def test_artifact_watermark_note_under_creation():
     ) as (pw, page, _):
         page.locator("#history button").filter(has_text="视频").click()
         note = page.locator("#artifact p").filter(has_text="水印")
-        pw.expect(note).to_contain_text('成片右上角带“GamingCreator Free”水印（Free 套餐，生成时确定）。')
+        pw.expect(note).to_contain_text(
+            "成片右上角带“GamingCreator Free”水印（Free 套餐，生成时确定）。"
+        )
 
 
 def test_plan_panel_watermark_tip():
     with workspace(entitlement=FREE_ENTITLEMENT) as (pw, page, _):
         pw.expect(page.locator("#plan-panel h3")).to_have_text("套餐与用量")
         info = page.locator("#plan-info")
-        pw.expect(info).to_contain_text('新成片右上角带“GamingCreator Free”水印')
+        pw.expect(info).to_contain_text("新成片右上角带“GamingCreator Free”水印")
         pw.expect(info).to_contain_text("未接入任何支付")
 
 
@@ -267,9 +269,7 @@ def test_plan_card_ranked_by_history_true_and_false():
         pw.expect(ranked).to_contain_text(
             "你常用的结构 · 本项目已有 2 个方案用它做成成片，所以排到了通用方案前面"
         )
-        pw.expect(unranked).to_contain_text(
-            "你常用的结构 · 本项目已有 3 个方案用它做成成片"
-        )
+        pw.expect(unranked).to_contain_text("你常用的结构 · 本项目已有 3 个方案用它做成成片")
         assert "所以排到了通用方案前面" not in unranked.inner_text()
         assert "你常用的结构" not in plain.inner_text()
 

@@ -62,8 +62,9 @@ def test_http_edit_revision_render_roundtrip(revisions):  # noqa: F811
         assert finish(server.creation_jobs, rendered)["status"] == "completed"
         assert calls[-1].frames == 5 * len(payload["clips"])
         for suffix in ("", "?planId=hook-first&path=outside"):
-            with pytest.raises(HTTPError):
+            with pytest.raises(HTTPError) as error:
                 get(f"/api/creation/jobs/{root}/edit" + suffix)
+            error.value.close()
     finally:
         server.shutdown()
         server.server_close()

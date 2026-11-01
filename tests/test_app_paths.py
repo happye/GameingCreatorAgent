@@ -18,9 +18,7 @@ def test_model_directory_prefers_cache_models(tmp_path: Path) -> None:
 def test_model_directory_falls_back_to_packaged_models(tmp_path: Path) -> None:
     packaged = tmp_path / "models/multilingual-e5-small/rev"
     packaged.mkdir(parents=True)
-    assert (
-        model_directory(tmp_path, "multilingual-e5-small", "rev") == packaged.resolve()
-    )
+    assert model_directory(tmp_path, "multilingual-e5-small", "rev") == packaged.resolve()
 
 
 def test_model_directory_returns_packaged_path_when_neither_exists(tmp_path: Path) -> None:

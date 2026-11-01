@@ -242,7 +242,6 @@ def test_local_render_history_reorders_generic_structures_only():
     ] == {"basis": "template", "renderedByPlan": {}}
 
 
-
 def test_edit_habit_trim_suggestion_shortens_records_and_skips_when_rare():
     from gamingcreator.application.creation_feedback import TRIM_TIP, trim_suggestion
 

@@ -573,8 +573,9 @@ def test_http_voices_generation_files_cancel_and_render_text(narrated):
             "voices": [{"voiceId": "v1", "description": "Fixture 中文", "language": "804"}],
             "licenseStatus": "unknown",
         }
-        with pytest.raises(HTTPError):
+        with pytest.raises(HTTPError) as error:
             get("/api/creation/voices?voice=v1")
+        error.value.close()
         request = {
             "requestId": "a1" * 16,
             "projectId": "artifacts/project",
@@ -597,17 +598,21 @@ def test_http_voices_generation_files_cancel_and_render_text(narrated):
         text, headers = get(remote["narrationAsset"]["textUrl"])
         assert text == "网络旁白".encode() and headers["Content-Type"].startswith("text/plain")
         for bad in ("receipt.json", "..%2Freceipt.json"):
-            with pytest.raises(HTTPError):
+            with pytest.raises(HTTPError) as error:
                 get(f"/api/creation/jobs/{accepted['jobId']}/narration-files/{bad}")
-        with pytest.raises(HTTPError):
+            error.value.close()
+        with pytest.raises(HTTPError) as error:
             get(remote["narrationAsset"]["audioUrl"] + "?path=outside")
+        error.value.close()
         with post("/api/creation/narration-cancel", {"jobId": accepted["jobId"]}) as response:
             assert json.load(response)["cancelRequested"] is False
         for bad_body in ({}, {"jobId": accepted["jobId"], "x": 1}, {"jobId": "../x"}):
-            with pytest.raises(HTTPError):
+            with pytest.raises(HTTPError) as error:
                 post("/api/creation/narration-cancel", bad_body)
-        with pytest.raises(HTTPError):
+            error.value.close()
+        with pytest.raises(HTTPError) as error:
             post("/api/creation/narrations", {**request, "requestId": "b2" * 16, "path": "x"})
+        error.value.close()
         selection = choice(state, start=1, gain=0, duck="off")
         revision = {**payload(jobs, narrated.root), "narration": selection}
         with post("/api/creation/revisions", revision) as response:
@@ -623,10 +628,12 @@ def test_http_voices_generation_files_cancel_and_render_text(narrated):
         link = done_render["artifact"]["narrationTextUrl"]
         text, headers = get(link)
         assert text == "网络旁白".encode() and "attachment" in headers["Content-Disposition"]
-        with pytest.raises(HTTPError):
+        with pytest.raises(HTTPError) as error:
             get(link + "?x=1")
-        with pytest.raises(HTTPError):
+        error.value.close()
+        with pytest.raises(HTTPError) as error:
             get(f"/api/creation/jobs/{narrated.root}/narration-text")
+        error.value.close()
     finally:
         server.shutdown()
         server.server_close()

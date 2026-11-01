@@ -258,9 +258,11 @@ def test_start_menu_shortcut_created_when_requested_and_removed_on_uninstall(tmp
     info = receipt(destination)
     assert Path(info["startMenuShortcut"]) == link.resolve()
     # Shortcut target should be the installed launcher.
-    assert "GamingCreator.exe" in (destination / "desktop/bin/GamingCreator.exe").read_text(
-        encoding="utf-8"
-    ) or (destination / "desktop/bin/GamingCreator.exe").exists()
+    assert (
+        "GamingCreator.exe"
+        in (destination / "desktop/bin/GamingCreator.exe").read_text(encoding="utf-8")
+        or (destination / "desktop/bin/GamingCreator.exe").exists()
+    )
 
     result = run("-Destination", str(destination), "-Uninstall")
     assert result.returncode == 0, result.stderr

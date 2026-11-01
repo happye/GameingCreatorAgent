@@ -52,7 +52,10 @@ def test_publication_http_files_head_queries_and_version(rendered):  # noqa: F81
         ):
             with pytest.raises(HTTPError) as error:
                 urlopen(base + f"/api/creation/jobs/{job_id}/publication-files/" + suffix)
-            assert error.value.code in (400, 404)
+            try:
+                assert error.value.code in (400, 404)
+            finally:
+                error.value.close()
         with urlopen(base + f"/api/creation/jobs/{job_id}/publication") as response:
             assert json.load(response)["draft"] is False
     finally:

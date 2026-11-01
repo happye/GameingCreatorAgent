@@ -26,8 +26,8 @@ from gamingcreator.application.providers import (
 )
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.models import Embedding, EmbeddingSpace
-from gamingcreator.infrastructure.asr_runtime import verify_native
 from gamingcreator.infrastructure.app_paths import model_directory as resolve_model_directory
+from gamingcreator.infrastructure.asr_runtime import verify_native
 from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
 from gamingcreator.infrastructure.media_process import run_media_process
 

@@ -35,10 +35,13 @@ def test_http_registered_jobs_and_conflict(service):  # noqa: F811
         changed = request()
         changed["fps"] = 25
         try:
-            post(changed)
-            raise AssertionError("Expected conflict")
+            with post(changed):
+                raise AssertionError("Expected conflict")
         except HTTPError as error:
-            assert error.code == 409
+            try:
+                assert error.code == 409
+            finally:
+                error.close()
         with urlopen(base + "/api/creation/jobs/" + result["jobId"]) as response:
             assert json.load(response)["status"] == "completed"
     finally:
@@ -82,11 +85,17 @@ def test_subtitle_http_get_head_and_fixed_path(service):  # noqa: F811
         for suffix in ("?path=outside.srt", "/../request.json"):
             with pytest.raises(HTTPError) as error:
                 urlopen(base + path + suffix)
-            assert error.value.code in (400, 404)
+            try:
+                assert error.value.code in (400, 404)
+            finally:
+                error.value.close()
         (service.directory(job_id) / "result/subtitles.srt").write_bytes(b"changed")
         with pytest.raises(HTTPError) as error:
             urlopen(base + path)
-        assert error.value.code == 409
+        try:
+            assert error.value.code == 409
+        finally:
+            error.value.close()
     finally:
         server.shutdown()
         server.server_close()

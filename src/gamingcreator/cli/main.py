@@ -118,6 +118,7 @@ from gamingcreator.cli.static_observations import (
     execute_search_static_observations,
 )
 from gamingcreator.domain.errors import AppError, ExitCode, invalid_config
+from gamingcreator.infrastructure.app_paths import model_directory
 from gamingcreator.infrastructure.benchmark_preparation_files import (
     read_bounded,
     read_freeze,
@@ -142,7 +143,6 @@ from gamingcreator.infrastructure.ffmpeg_render import FfmpegCreationRenderer
 from gamingcreator.infrastructure.ffmpeg_shots import FfmpegShotDetector
 from gamingcreator.infrastructure.ffmpeg_signatures import FfmpegSignatureExtractor
 from gamingcreator.infrastructure.http_transport import HttpxVisionTransport
-from gamingcreator.infrastructure.app_paths import model_directory
 from gamingcreator.infrastructure.local_asr import LocalAsrProvider
 from gamingcreator.infrastructure.local_embeddings import LocalEmbeddingProvider
 from gamingcreator.infrastructure.local_files import LocalInputReader

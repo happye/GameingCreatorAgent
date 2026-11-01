@@ -838,15 +838,15 @@ class InspectionHandler(BaseHTTPRequestHandler):
             if path == "/api/enterprise/audit":
                 if set(query) != {"projectId", "format"}:
                     raise ValueError("Expected project ID and format")
-                body, name, mime = self.creation_jobs.export_audit(
+                audit_text, audit_name, audit_mime = self.creation_jobs.export_audit(
                     query["projectId"], query["format"]
                 )
-                payload = body.encode("utf-8")
-                self._headers(200, len(payload), mime)
-                self.send_header("Content-Disposition", f'attachment; filename="{name}"')
+                audit_bytes = audit_text.encode("utf-8")
+                self._headers(200, len(audit_bytes), audit_mime)
+                self.send_header("Content-Disposition", f'attachment; filename="{audit_name}"')
                 self.end_headers()
                 if self.command != "HEAD":
-                    self.wfile.write(payload)
+                    self.wfile.write(audit_bytes)
                 return
             if path == "/api/entitlement":
                 if query:
