@@ -681,3 +681,75 @@ def test_local_demo_phase0_match_evidence_entries_carry_part_id_and_condition() 
                     for field in ("kind", "partGroup", "value"):
                         assert isinstance(condition.get(field), str) and condition[field]
         assert seen >= 1, path.name
+
+def test_assert_match_report_contract_rejects_status_match_invariants() -> None:
+    """TD009: full/partial/no_match must mirror DetailMatch support rules on JSON."""
+    from test_actor_detail_matching import EVENT, RUN, condition
+    from test_detail_match_report_contract import _weapon_coexist_detail
+
+    from gamingcreator.application.detail_query import match_report
+    from gamingcreator.domain.actor_details import AttributeKind, QueryConstraint
+
+    query = QueryConstraint((condition(AttributeKind.HELD_CLASS, "weapon", "item"),))
+    document = match_report(
+        None,
+        _weapon_coexist_detail(),
+        query,
+        run_id=RUN,
+        event_id=EVENT,
+        request_digest=None,
+    )
+    assert_match_report_contract(document)
+
+    forged_full = json.loads(json.dumps(document, default=str))
+    forged_full["result"]["status"] = "full"
+    # Keep uncertain/opposed noise so FULL support is incomplete.
+    with pytest.raises(ValueError, match="full status"):
+        assert_match_report_contract(forged_full)
+    assert "full_status_without_complete_support" in match_report_contract_gaps(forged_full)
+
+    forged_partial = json.loads(json.dumps(document, default=str))
+    forged_partial["result"]["status"] = "partial"
+    for row in forged_partial["result"]["matches"]:
+        row["satisfied"] = []
+    with pytest.raises(ValueError, match="partial status"):
+        assert_match_report_contract(forged_partial)
+    assert "partial_status_without_satisfied" in match_report_contract_gaps(forged_partial)
+
+    forged_no = json.loads(json.dumps(document, default=str))
+    forged_no["result"]["status"] = "no_match"
+    for row in forged_no["result"]["matches"]:
+        row["counterEvidence"] = []
+    with pytest.raises(ValueError, match="no_match status"):
+        assert_match_report_contract(forged_no)
+    assert "no_match_without_counter_evidence" in match_report_contract_gaps(forged_no)
+
+    dup = json.loads(json.dumps(document, default=str))
+    first = json.loads(json.dumps(dup["result"]["matches"][0]))
+    dup["result"]["matches"].append(first)
+    with pytest.raises(ValueError, match="shotId/actorId pair"):
+        assert_match_report_contract(dup)
+    assert "match_shot_actor_duplicated" in match_report_contract_gaps(dup)
+
+
+def test_assert_match_report_sidecar_binding_rejects_unknown_shot_actor_pair() -> None:
+    """TD009: match rows must name actors that exist under the same payload shot."""
+    document, request_doc, result_doc = _load_first_legacy_binding()
+    assert_match_report_sidecar_binding_contract(document, request_doc, result_doc)
+
+    forged_report = json.loads(json.dumps(document))
+    forged_report["result"]["matches"][0]["actorId"] = "actor-not-in-payload"
+    with pytest.raises(ValueError, match="shot/actor pair"):
+        assert_match_report_sidecar_binding_contract(forged_report, request_doc, result_doc)
+    gaps = match_report_sidecar_binding_gaps(forged_report, request_doc, result_doc)
+    assert "match_shot_actor_not_in_payload" in gaps
+
+    forged_result = json.loads(json.dumps(result_doc))
+    payload = json.loads(forged_result["payloadJson"])
+    payload["shots"][0]["actors"][0]["shotId"] = "wrong-shot"
+    forged_result["payloadJson"] = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    with pytest.raises(ValueError, match="actor shotId disagrees"):
+        assert_match_report_sidecar_binding_contract(document, request_doc, forged_result)
+    gaps2 = match_report_sidecar_binding_gaps(document, request_doc, forged_result)
+    assert "payload_actor_shot_id_mismatch" in gaps2
+

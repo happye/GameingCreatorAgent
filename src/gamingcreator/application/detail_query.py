@@ -132,6 +132,25 @@ def _source_range_contains(outer: object, inner: object) -> bool:
     ) and int(inner["durationUs"]) == int(outer["durationUs"])
 
 
+def _list_or_empty(value: object) -> list[object]:
+    if value is None:
+        return []
+    if type(value) is not list:
+        raise ValueError("Match report list field is invalid.")
+    return value
+
+
+def _match_row_has_complete_full_support(row: dict[str, object]) -> bool:
+    """Mirror DetailMatch FULL support: satisfied + shared evidence, no holes."""
+    satisfied = _list_or_empty(row.get("satisfied"))
+    shared = _list_or_empty(row.get("sharedEvidenceIds"))
+    missing = _list_or_empty(row.get("missing"))
+    uncertain = _list_or_empty(row.get("uncertain"))
+    opposed = _list_or_empty(row.get("opposed"))
+    conflicts = _list_or_empty(row.get("conflicts"))
+    return bool(satisfied and shared and not missing and not uncertain and not opposed and not conflicts)
+
+
 def assert_match_report_contract(document: dict[str, object]) -> None:
     """Refuse match reports that claim human pass or open a static clothing index."""
     missing = REQUIRED_MATCH_REPORT_KEYS - set(document)
@@ -259,6 +278,40 @@ def assert_match_report_contract(document: dict[str, object]) -> None:
                     )
         if not _source_range_contains(document.get("sourceRange"), row.get("sourceRange")):
             raise ValueError("Match report match sourceRange escapes report range.")
+    # TD009: status ↔ matches invariants (JSON surface of DetailMatch rules).
+    seen_pairs: set[tuple[str, str]] = set()
+    has_satisfied = False
+    has_complete_full = False
+    all_have_counter = bool(matches)
+    for row in matches:
+        assert type(row) is dict
+        actor_id = row.get("actorId")
+        shot_id = row.get("shotId")
+        assert type(actor_id) is str and type(shot_id) is str
+        pair = (shot_id, actor_id)
+        if pair in seen_pairs:
+            raise ValueError("Match report match shotId/actorId pair is duplicated.")
+        seen_pairs.add(pair)
+        try:
+            satisfied = _list_or_empty(row.get("satisfied"))
+            counter = _list_or_empty(row.get("counterEvidence"))
+        except ValueError as exc:
+            raise ValueError("Match report match list fields are invalid.") from exc
+        if satisfied:
+            has_satisfied = True
+        if not counter:
+            all_have_counter = False
+        try:
+            if _match_row_has_complete_full_support(row):
+                has_complete_full = True
+        except ValueError as exc:
+            raise ValueError("Match report match list fields are invalid.") from exc
+    if status == "full" and not has_complete_full:
+        raise ValueError("Match report full status requires complete shared observed support.")
+    if status == "no_match" and (not matches or not all_have_counter):
+        raise ValueError("Match report no_match status requires counterEvidence on every match.")
+    if status == "partial" and not has_satisfied:
+        raise ValueError("Match report partial status requires at least one satisfied match.")
 
 
 def assert_match_report_sidecar_binding_contract(
@@ -550,6 +603,7 @@ def assert_match_report_sidecar_binding_contract(
         if type(shots) is not list or not shots:
             raise ValueError("Sidecar result payload shots is invalid.")
         detail_shot_ids: set[str] = set()
+        detail_actor_pairs: set[tuple[str, str]] = set()
         for shot in shots:
             if type(shot) is not dict:
                 raise ValueError("Sidecar result payload shot row is invalid.")
@@ -561,6 +615,27 @@ def assert_match_report_sidecar_binding_contract(
             detail_shot_ids.add(shot_id)
             if not _source_range_contains(report.get("sourceRange"), shot.get("sourceRange")):
                 raise ValueError("Sidecar result payload shot sourceRange escapes report range.")
+            actors = shot.get("actors")
+            if actors is None:
+                actors = []
+            if type(actors) is not list:
+                raise ValueError("Sidecar result payload shot actors is invalid.")
+            for actor in actors:
+                if type(actor) is not dict:
+                    raise ValueError("Sidecar result payload actor row is invalid.")
+                actor_id = actor.get("actorId")
+                if type(actor_id) is not str or not actor_id:
+                    raise ValueError("Sidecar result payload actorId is invalid.")
+                actor_shot = actor.get("shotId")
+                if actor_shot is not None and actor_shot != shot_id:
+                    raise ValueError("Sidecar result payload actor shotId disagrees with parent shot.")
+                pair = (shot_id, actor_id)
+                if pair in detail_actor_pairs:
+                    raise ValueError("Sidecar result payload shot/actor pair is duplicated.")
+                detail_actor_pairs.add(pair)
+                attributes = actor.get("attributes")
+                if attributes is not None and type(attributes) is not list:
+                    raise ValueError("Sidecar result payload actor attributes is invalid.")
         match_shot_ids = {
             row.get("shotId")
             for row in matches
@@ -568,6 +643,17 @@ def assert_match_report_sidecar_binding_contract(
         }
         if not match_shot_ids <= detail_shot_ids:
             raise ValueError("Match report shotIds are not covered by sidecar payload shots.")
+        for row in matches:
+            if type(row) is not dict:
+                continue
+            shot_id = row.get("shotId")
+            actor_id = row.get("actorId")
+            if type(shot_id) is not str or type(actor_id) is not str:
+                continue
+            if (shot_id, actor_id) not in detail_actor_pairs:
+                raise ValueError(
+                    "Match report shot/actor pair is not covered by sidecar payload actors."
+                )
 
 
 def match_report_sidecar_binding_gaps(
@@ -694,6 +780,16 @@ def match_report_sidecar_binding_gaps(
                 "match_evidence_condition_value_invalid",
             ),
             ("condition invalid for sidecar binding", "match_evidence_condition_invalid"),
+            ("payload shot actors is invalid", "payload_shot_actors_invalid"),
+            ("payload actor row is invalid", "payload_actor_row_invalid"),
+            ("payload actorId is invalid", "payload_actor_id_invalid"),
+            ("payload actor shotId disagrees", "payload_actor_shot_id_mismatch"),
+            ("payload shot/actor pair is duplicated", "payload_shot_actor_duplicated"),
+            ("payload actor attributes is invalid", "payload_actor_attributes_invalid"),
+            (
+                "shot/actor pair is not covered by sidecar payload actors",
+                "match_shot_actor_not_in_payload",
+            ),
             ("binding requires objects", "binding_not_object"),
         )
         coded = False
@@ -867,6 +963,48 @@ def match_report_contract_gaps(document: dict[str, object]) -> tuple[str, ...]:
                             entry.get("sourceRange")
                         ):
                             gaps.append(f"match_{bucket}_range_invalid")
+            # TD009 soft gaps: status ↔ matches / unique shot-actor pairs.
+            if type(matches) is list and result.get("status") in _MATCH_REPORT_STATUSES:
+                seen_pairs: set[tuple[str, str]] = set()
+                has_satisfied = False
+                has_complete_full = False
+                all_have_counter = bool(matches)
+                pair_dup = False
+                list_invalid = False
+                for row in matches:
+                    if type(row) is not dict:
+                        continue
+                    actor_id = row.get("actorId")
+                    shot_id = row.get("shotId")
+                    if type(actor_id) is str and type(shot_id) is str and actor_id and shot_id:
+                        pair = (shot_id, actor_id)
+                        if pair in seen_pairs:
+                            pair_dup = True
+                        seen_pairs.add(pair)
+                    try:
+                        satisfied = _list_or_empty(row.get("satisfied"))
+                        counter = _list_or_empty(row.get("counterEvidence"))
+                        complete = _match_row_has_complete_full_support(row)
+                    except ValueError:
+                        list_invalid = True
+                        continue
+                    if satisfied:
+                        has_satisfied = True
+                    if not counter:
+                        all_have_counter = False
+                    if complete:
+                        has_complete_full = True
+                if pair_dup:
+                    gaps.append("match_shot_actor_duplicated")
+                if list_invalid:
+                    gaps.append("match_list_fields_invalid")
+                status_value = result.get("status")
+                if status_value == "full" and not has_complete_full:
+                    gaps.append("full_status_without_complete_support")
+                if status_value == "no_match" and (not matches or not all_have_counter):
+                    gaps.append("no_match_without_counter_evidence")
+                if status_value == "partial" and not has_satisfied:
+                    gaps.append("partial_status_without_satisfied")
     return tuple(gaps)
 
 

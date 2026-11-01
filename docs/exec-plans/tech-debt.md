@@ -12,6 +12,8 @@
 
 更新：2026-10-30。按用户新指令继续全51项产品开发，架构师路线已落盘；旧Goal受阻不再作为全局开发限制。技术债17项10已解决/2部分/5未解决不变。TD003影响相应二进制分发，不阻断用现有固定工具的本地渲染开发；新费用/原证据保护保持。
 
+**2026-11-01 TD009 离线进展（match-report 状态不变量／sidecar actor 覆盖，见提交）：** full／partial／no_match ↔ matches；payload shot/actor 对覆盖；见 sprint-td009-match-report-status-actor-coverage.md。复合人评／静态索引仍 open；**不宣称 TD009／F010 关单**。
+
 **2026-11-01 TD004 离线进展（过场／cutscene 裸标签标题卡，见提交）：** 过场画面／过场动画 tags ≠ 正文过场；见 sprint-td004-cutscene-tag-only-noise.md。人评仍 open；**不宣称 TD004／F006 关单**。
 
 **2026-11-01 TD004 离线进展（铠甲色特效／冲击波释放／大乱斗模式标题，见提交）：** 红色铠甲≠红色特效；释放冲击波≠裸释放技能；大乱斗(单人/双人) 模式选单中性化；见 sprint-td004-armor-shockwave-brawl-noise.md。人评仍 open；**不宣称 TD004／F006 关单**。

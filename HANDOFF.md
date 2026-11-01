@@ -4,6 +4,7 @@
 
 **T28 后说明（2026-11-01）：** grok-task-list 上 T1–T28 本地可推进项已交完。未获用户许可前仍不可做：付费视觉／新下载／真发布／支付／云端上传／F006 真人质量评审，也不代选 A／B／D。清单外仍可离线打磨的，主要是技术债与各 partial 功能的小修补（不改交付计数口径）；人工侧见 `docs/exec-plans/human-inputs.md`（当前必做 0，未来项仍在）。
 
+2026-11-01 离线 TD009 match-report 状态／actor 覆盖：full／partial／no_match 不变量；payload shot/actor 对覆盖；sprint-td009-match-report-status-actor-coverage.md。TD009／F010 仍未关单。计数不变：51·10/41/0·80%；技术债21·14/2/5。
 2026-11-01 离线 TD004 过场标签噪声：过场／cutscene 不因「过场画面」裸标签命中标题卡；sprint-td004-cutscene-tag-only-noise.md。TD004／F006 仍未关单。计数不变：51·10/41/0·80%；技术债21·14/2/5。
 2026-11-01 离线 TD004 铠甲／冲击波／大乱斗模式：色特效≠铠甲；裸释放技能≠冲击波；大乱斗(单人/双人) 模式选单中性化；sprint-td004-armor-shockwave-brawl-noise.md。TD004／F006 仍未关单。计数不变：51·10/41/0·80%；技术债21·14/2/5。
 2026-11-01 离线 TD004 Boss 地名／偏匹配：死亡森林假友元；复合 Boss 须≥2 facet；sprint-td004-boss-partial-place-noise.md。TD004／F006 仍未关单。计数不变：51项10/41/0≈60%；技术债21项14/2/5。
