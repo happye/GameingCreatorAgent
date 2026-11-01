@@ -1,6 +1,6 @@
 # Sprint T3：安装器可选开始菜单快捷方式
 
-**状态（2026-11-01）：feature 待推送（docs 另记）。** `install-app.ps1 -StartMenuShortcut`（默认关闭）在开始菜单 Programs 下创建 `GamingCreator.lnk`（WScript.Shell，指向 `desktop/bin/GamingCreator.exe`）。路径写入安装记录 `startMenuShortcut`；卸载只删记录中的那个。测试用 `-ShortcutDirectory` 指向临时目录，不碰真实开始菜单。
+**状态（2026-11-01）：已推送 origin/main 781060c（docs 另记）。** `install-app.ps1 -StartMenuShortcut`（默认关闭）在开始菜单 Programs 下创建 `GamingCreator.lnk`（WScript.Shell，指向 `desktop/bin/GamingCreator.exe`）。路径写入安装记录 `startMenuShortcut`；卸载只删记录中的那个。测试用 `-ShortcutDirectory` 指向临时目录，不碰真实开始菜单。
 
 ## Acceptance
 

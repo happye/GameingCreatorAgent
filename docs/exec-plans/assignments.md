@@ -1,5 +1,8 @@
 # 当前分工与恢复入口
 
+**2026-11-01 T3（开始菜单快捷方式，781060c）：** sprint-t3-start-menu-shortcut.md；下一步 T4。
+
+
 **2026-11-01 T2（第三方许可证随包，d1672f4）：** sprint-t2-third-party-notices.md；下一步 T3。
 
 

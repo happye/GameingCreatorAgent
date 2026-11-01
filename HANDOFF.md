@@ -1,6 +1,8 @@
 # 当前接手：51项全部至少部分可用，下一步把部分项推进到可验收
 
-**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1／T2 已完成；下一步 T3 安装器可选快捷方式）。**
+**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T3 已完成；下一步 T4 Free 分析分钟计量）。**
+
+2026-11-01 T3 安装器可选开始菜单快捷方式（781060c）：`-StartMenuShortcut` 默认关；WScript 建 `GamingCreator.lnk`；receipt 记录路径；卸载只删自己建的；测试 `-ShortcutDirectory`。计数不变：51项10/41/0≈60%；技术债21项12/4/5；人工0／未来8。
 
 2026-11-01 T2 第三方许可证随包材料（d1672f4）：`collect-third-party-notices.py` 只读本机 LICENSE／METADATA，写出 `licenses/THIRD-PARTY-NOTICES.md`；build／install 带上 `licenses`；缺 FFmpeg／模型／MSVC／部分 wheel 正文已记 human-inputs；pytest 与 build 后包内 notices 已验。计数不变：51项10/41/0≈60%；技术债21项12/4/5；人工现在0／未来8。
 

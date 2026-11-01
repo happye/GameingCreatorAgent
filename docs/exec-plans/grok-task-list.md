@@ -28,7 +28,7 @@
 - 写一个汇总 `licenses/THIRD-PARTY-NOTICES.md`（包名、版本、许可证类型、来源文件）。缺许可证文件的包列出来记入 human-inputs（需用户确认分发），不要自己猜。
 - 加测试：build 后 notices 覆盖 site-packages 中每个 dist-info。
 
-### T3 安装器可选快捷方式
+### T3 安装器可选快捷方式 ✅ 已完成（781060c）
 - `install-app.ps1 -StartMenuShortcut`（默认不建）：在 `%APPDATA%\Microsoft\Windows\Start Menu\Programs\` 建 `GamingCreator.lnk`（WScript.Shell），卸载时只删自己建的那个（记在安装记录里）。测试用临时 `-ShortcutDirectory` 参数，不碰真实开始菜单。
 
 ### T4 Free 套餐“分析分钟数”计量（总方案 §40）
