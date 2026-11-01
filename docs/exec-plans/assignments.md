@@ -1,3 +1,5 @@
+**2026-11-01 T21（本机知识库目录导入 P018，见功能提交）：** sprint-t21-knowledge-directory-import.md；下一＝T22。
+
 **2026-11-01 T20（detect-shots 夹具回归 P010，见功能提交）：** sprint-t20-detect-shots-fixtures.md；下一＝T21。
 
 **2026-11-01 T19（OCR 离线难例夹具 P009，见功能提交）：** sprint-t19-ocr-hard-case-fixtures.md；下一＝T20。

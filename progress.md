@@ -1,3 +1,5 @@
+**2026-11-01 T21 本机知识库目录导入（P018）：** knowledge_import + CLI／API／创作页；tests/test_knowledge_import.py。下一＝T22。计数不变：51·10/41/0≈60%；债务21·14/2/5。**
+
 **2026-11-01 T20 detect-shots 夹具回归（P010）：** catalog + test_shot_hard_cases；文案「抽检未人评」。下一＝T21。计数不变：51·10/41/0≈60%；债务21·14/2/5。**
 
 **2026-11-01 T19 OCR 离线难例夹具（P009）：** catalog + 合成夹具 + test_ocr_hard_cases；准确率未人评。下一＝T20。计数不变：51·10/41/0≈60%；债务21·14/2/5。**

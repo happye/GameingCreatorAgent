@@ -1,6 +1,8 @@
 # 当前接手：51项全部至少部分可用，下一步把部分项推进到可验收
 
-**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T20 已完成；下一步 T21）。**
+**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T21 已完成；下一步 T22）。**
+
+2026-11-01 T21 本机知识库目录导入（P018）：文件夹批量导入 txt／md（可选截图／PDF），带来源说明；CLI／API／创作页；不联网。计数不变：51·10/41/0≈60%；技术债21·14/2/5；人工0／未来8。
 
 2026-11-01 T20 detect-shots 夹具回归（P010）：扩大合成黑场／硬切夹具与字节上限回归；报告／工作台标明「抽检未人评」，不宣称 F006。计数不变：51·10/41/0≈60%；技术债21·14/2/5；人工0／未来8。
 
