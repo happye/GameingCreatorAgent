@@ -13,6 +13,9 @@ ROOT = Path(__file__).resolve().parents[1]
 # Content modes / commercial items frozen until first mode is human-evaluated.
 # Documented only — this script never flips feature_list states.
 FREEZE_IDS = ("P038", "P046", "P047", "P048", "P049", "P050", "P051")
+# Official unlock mode (named only; freeze remains until human eval completes).
+FREEZE_UNLOCK_MODE = "玩法展示"
+# Official future human-inputs denominator: rows in human-inputs.md table.
 
 
 def _read(path: Path) -> str:
@@ -232,16 +235,22 @@ def print_primary(board: dict, phase0: dict, product: dict, human: dict) -> None
         f"5. tech_debt: {td.get('resolved')}/{td.get('partial')}/{td.get('open')} "
         f"of {td.get('total')} (resolved/partial/open)"
     )
+    # Official future denominator = human-inputs table row count (hoho 拍板).
+    future_official = human["pending_table_rows"]
+    must_official = (
+        human["must_do_declared"]
+        if human["must_do_declared"] is not None
+        else board["human_must"]
+    )
     print(
-        f"6. human_inputs: must={board['human_must']} "
-        f"future={board['human_pending']} "
-        f"(human-inputs table rows={human['pending_table_rows']}, "
-        f"declared_must={human['must_do_declared']})"
+        f"6. human_inputs: must={must_official} future={future_official} "
+        f"(official=human-inputs table; board_summary_future={board['human_pending']})"
     )
     freeze_ids = ", ".join(x["id"] for x in product["freeze"])
     print(
         f"7. freeze_until_first_mode_human_eval: {freeze_ids} "
-        f"(no new scope; statuses unchanged by this script)"
+        f"unlock_mode={FREEZE_UNLOCK_MODE} "
+        f"(still frozen; do not unfreeze here)"
     )
     print(
         "milestone report rule: ≤150 Chinese chars + one openable artifact path; "
