@@ -383,7 +383,8 @@ _UNCERTAIN_DENIAL_PREFIX = re.compile(
 # a gameplay jump. Neutralize only these frozen phrases before lexical scoring
 # and action-denial scans so title cards do not rank as jump evidence (TD004).
 _TITLE_BRAND_ACTION_NOISE = re.compile(
-    r"jump\s*assemble|jump\s*明星大乱斗|少年\s*jump\s*正版授权",
+    r"jump\s*assemble|jump\s*force|jump\s*parade|jump\s*明星大乱斗|"
+    r"少年\s*jump\s*正版授权|周刊\s*少年\s*jump|weekly\s*(?:shonen\s*)?jump",
     re.IGNORECASE,
 )
 
@@ -514,7 +515,7 @@ class _Document:
 # Tag-only hits for these actions are noise. Attack tag-only recall stays
 # intentional (TD010); do not add "attack" here. Cast/skill bare
 # 技能* tags without body 释放／技能 language are chrome.
-_TAG_ONLY_NOISE_ACTIONS = frozenset({"fight", "move", "interact", "cast"})
+_TAG_ONLY_NOISE_ACTIONS = frozenset({"fight", "move", "interact", "cast", "jump", "shoot"})
 
 
 def _tag_only_action_noise_documents(
@@ -522,9 +523,10 @@ def _tag_only_action_noise_documents(
 ) -> frozenset[str]:
     """Exclude clips whose only query-action evidence is a liberally painted mechanicTag.
 
-    Lexical BM25 indexes `text` (facts + tags). For fight/move/interact queries,
-    bare theme tags (战斗／对战／团战／交战／角色移动／行走／奔跑／迈步／交互／技能释放／技能特效) without matching language in positive_text
-    are UI/theme chrome — not gameplay evidence. Attack tag-only recall remains (TD010).
+    Lexical BM25 indexes `text` (facts + tags). For fight/move/interact/cast/jump/shoot
+    queries, bare theme tags (战斗／跳跃／射击／交互／技能…) without matching language in
+    positive_text are UI/theme chrome — not gameplay evidence. Attack tag-only recall
+    remains (TD010).
     """
     folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
     if _NEGATIVE_QUERY_INTENT.search(folded_query):
@@ -598,6 +600,38 @@ def _action_lexical_evidence(document: _Document, query: str) -> str | None:
     if in_tags:
         return "mechanic_tags"
     return None
+
+
+# 「不存在…」 queries historically false-hit clips that only share 「存在」(TD004).
+_EXISTENCE_ABSENCE_QUERY = re.compile(
+    r"不存在|并不存在|\bnon[- ]?exist(?:ent|ence)?\b|\bdoes\s+not\s+exist\b|\bno\s+such\b",
+    re.IGNORECASE,
+)
+_EXISTENCE_FALSE_FRIEND_TOKENS = frozenset({"存在"})
+
+
+def _negative_query_weak_overlap_documents(
+    documents: tuple[_Document, ...], query: str
+) -> frozenset[str]:
+    """Exclude clips whose only overlap with an absence query is the 存在 false friend.
+
+    Narrow on purpose: does not invent general negative-query semantics (e.g.
+    「没有shooting」 must not wipe Chinese 「没有…」 denial lines). Content
+    overlap such as 星际／飞船 still keeps a clip.
+    """
+    folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
+    if not _EXISTENCE_ABSENCE_QUERY.search(folded_query):
+        return frozenset()
+    query_terms = frozenset(_tokens(folded_query))
+    if not query_terms:
+        return frozenset()
+    noisy: set[str] = set()
+    for document in documents:
+        doc_terms = frozenset(_tokens(_neutralize_title_brands(document.text)))
+        overlap = query_terms & doc_terms
+        if overlap and overlap <= _EXISTENCE_FALSE_FRIEND_TOKENS:
+            noisy.add(document.identifier)
+    return frozenset(noisy)
 
 
 def _title_brand_action_noise_documents(
@@ -2212,6 +2246,7 @@ async def _search_documents(
         _denied_action_documents(documents, query)
         | _title_brand_action_noise_documents(documents, query)
         | _tag_only_action_noise_documents(documents, query)
+        | _negative_query_weak_overlap_documents(documents, query)
     )
     lexical_winners: dict[str, str] = {}
     lexical_documents = documents

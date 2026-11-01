@@ -1743,3 +1743,80 @@ def test_scene_title_transition_logo_non_words_do_not_cross_lingual_match(query)
         "画面中央显示 NARUTO 标志，场景变为绿色区域。",
     )
     assert search(data, query, "lexical").candidates == ()
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize("query", ["jump", "JUMP", "跳跃", "起跳"])
+def test_jump_tag_only_mechanic_noise_excluded(mode, query):
+    """TD004: bare jump mechanicTags are theme chrome, not gameplay jump evidence."""
+    from test_retrieval_negation import timeline_db_shaped
+
+    data = timeline_db_shaped(
+        [
+            {"facts": [], "tags": ["跳跃"]},
+            {"facts": ["角色跳跃并落地。"], "tags": []},
+            {"facts": ["角色站立观察。"], "tags": ["跳跃"]},
+        ]
+    )
+    result = search(data, query, mode)
+    assert [c.event_id for c in result.candidates] == ["event-1"]
+    assert result.candidates[0].observable_facts == ("角色跳跃并落地。",)
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize("query", ["shoot", "shooting", "射击", "开枪"])
+def test_shoot_tag_only_mechanic_noise_excluded(mode, query):
+    """TD004: bare shoot mechanicTags are theme chrome, not gameplay shoot evidence."""
+    from test_retrieval_negation import timeline_db_shaped
+
+    data = timeline_db_shaped(
+        [
+            {"facts": [], "tags": ["射击"]},
+            {"facts": ["角色射击目标。"], "tags": []},
+            {"facts": ["角色站立观察。"], "tags": ["开枪"]},
+        ]
+    )
+    result = search(data, query, mode)
+    assert [c.event_id for c in result.candidates] == ["event-1"]
+    assert result.candidates[0].observable_facts == ("角色射击目标。",)
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+def test_attack_tag_only_still_kept_after_jump_shoot_noise(mode):
+    """TD010 guard: attack tag-only recall must survive jump/shoot noise expansion."""
+    from test_retrieval_negation import timeline_db_shaped
+
+    data = timeline_db_shaped([{"facts": [], "tags": ["攻击"]}])
+    result = search(data, "attack", mode)
+    assert [c.event_id for c in result.candidates] == ["event-0"]
+
+
+@pytest.mark.parametrize(
+    "query",
+    ["jump", "JUMP", "jumping", "跳跃"],
+)
+def test_expanded_jump_title_brands_excluded(query):
+    """TD004: additional JUMP FORCE / Weekly JUMP title cards stay non-evidence."""
+    data = timeline(
+        "画面显示“JUMP FORCE”标题。",
+        "角标写着 Weekly Shonen JUMP。",
+        "周刊少年JUMP标志出现在角落。",
+        "画面显示“JUMP PARADE”宣传。",
+        "角色跳跃并落地。",
+    )
+    result = search(data, query, "lexical")
+    assert [c.event_id for c in result.candidates] == ["event-4"]
+
+
+def test_negative_query_weak_overlap_excludes_existence_false_friend():
+    """TD004: 「不存在…」 must not keep a clip that only shares 「存在」."""
+    data = timeline("画面中仍存在一座塔。", "角色在草地上奔跑。")
+    result = search(data, "不存在的星际交易飞船维修机制", "lexical")
+    assert result.candidates == ()
+
+
+def test_negative_query_keeps_true_content_overlap():
+    """Negative intent still allows clips that share real content tokens."""
+    data = timeline("画面出现星际飞船维修舱。", "角色在草地上奔跑。")
+    result = search(data, "不存在的星际交易飞船维修机制", "lexical")
+    assert [c.event_id for c in result.candidates] == ["event-0"]

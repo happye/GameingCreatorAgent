@@ -12,6 +12,8 @@
 
 更新：2026-10-30。按用户新指令继续全51项产品开发，架构师路线已落盘；旧Goal受阻不再作为全局开发限制。技术债17项10已解决/2部分/5未解决不变。TD003影响相应二进制分发，不阻断用现有固定工具的本地渲染开发；新费用/原证据保护保持。
 
+**2026-11-01 TD004 离线进展（title-brand／jump·shoot tag-only／不存在↔存在弱重叠，见提交）：** 扩展 JUMP FORCE／Weekly 等标题品牌；jump／shoot 裸标签噪声排除；「不存在…」查询仅共享「存在」时排除；见 sprint-td004-title-tag-negative-noise.md。Boss／射击假语料与人评仍 open；**不宣称 TD004／TD010／F006 关单**。
+
 **2026-10-22 检索离线进展（场景／HUD 跨语言，已推送 73e75d1）：** demo-phase0 真实血条／场地／草地／建筑／掩体；见 sprint-retrieval-scene-healthbar-arena-grass.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。
 
 **2026-10-22 检索离线进展（UI 肖像／图标／特效跨语言，已推送 da231a0）：** demo-phase0 真实头像／图标／特效／光效；avatar 出停用词；见 sprint-retrieval-ui-avatar-icon-vfx-glow.md。Boss／射击假语料与人评仍 open；不宣称 TD004／TD010 关单。

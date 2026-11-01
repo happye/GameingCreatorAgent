@@ -1,3 +1,4 @@
+**2026-11-01 离线 TD004（title-brand／tag-only／negative weak-overlap，见功能提交）：** sprint-td004-title-tag-negative-noise.md；TD004 仍 open。
 **2026-11-01 T28（内容模式诚实文案 P043–P049，见功能提交）：** sprint-t28-content-mode-honesty.md；grok-task-list T1–T28 已尽。
 **2026-11-01 T27（安装包 licenses／gaps 可见性 P039／T2，见功能提交）：** sprint-t27-license-gaps-visibility.md；下一＝T28。
 
