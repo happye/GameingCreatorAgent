@@ -80,6 +80,28 @@ def check_brand(team: dict[str, Any], texts: dict[str, str]) -> list[str]:
     return issues
 
 
+def publish_blockers(
+    team: dict[str, Any] | None, record: dict[str, Any] | None, brand_issues: list[str]
+) -> list[str]:
+    """Why an approved package may still not be published under the team's current settings.
+
+    An approval is checked again at publishing time: a later glossary change or a reviewer who
+    lost the role makes the old approval insufficient.
+    """
+    if team is None or not team["reviewRequired"]:
+        return []
+    if record is None or record.get("state") != "approved":
+        return ["团队要求审核通过后才能发布，这个发布包尚未审核通过。"]
+    approver = record["events"][-1]["actor"] if record.get("events") else ""
+    blockers = []
+    members = {m["name"]: m["role"] for m in team["members"]}
+    if members.get(str(approver)) not in PERMISSIONS["approve"]:
+        blockers.append("批准人已不再是审核员，请重新提交审核。")
+    if brand_issues:
+        blockers.append("团队品牌词已更新，请重新提交审核：" + "；".join(brand_issues))
+    return blockers
+
+
 def apply_review(
     team: dict[str, Any],
     record: dict[str, Any] | None,

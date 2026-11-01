@@ -84,7 +84,7 @@ def _uri(path: str) -> str:
     return Path(path).resolve().as_uri()
 
 
-def to_fcpxml(edl: dict[str, Any], name: str) -> str:
+def to_fcpxml(edl: dict[str, Any], name: str, width: int = 1920, height: int = 1080) -> str:
     placed = layout(edl)
     fps = int(edl["fpsNumerator"])
     frame = Fraction(1, fps)
@@ -133,7 +133,7 @@ def to_fcpxml(edl: dict[str, Any], name: str) -> str:
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE fcpxml>\n<fcpxml version="1.9">\n'
         "  <resources>\n"
-        f'    <format id="r1" frameDuration="{_seconds(frame)}" width="1920" height="1080"/>\n'
+        f'    <format id="r1" frameDuration="{_seconds(frame)}" width="{width}" height="{height}"/>\n'
         + "\n".join(assets)
         + '\n  </resources>\n  <library>\n    <event name="GamingCreator">\n'
         f"      <project name={quoteattr(name)}>\n"

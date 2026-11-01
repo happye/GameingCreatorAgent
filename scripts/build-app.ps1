@@ -11,9 +11,18 @@ $ErrorActionPreference = 'Stop'
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 if (-not $Output) { $Output = Join-Path $repositoryRoot 'dist/GamingCreator' }
 $marker = Join-Path $Output '.gamingcreator-app.json'
-if (Test-Path -LiteralPath $Output) {
+# Rebuilding replaces only the program parts; data a smoke run or a user left (.cache) stays.
+$programParts = @('toolchain.json', 'scripts', '.tools', '.venv', 'desktop', '.gamingcreator-app.json')
+function Remove-ProgramParts {
+  foreach ($part in $programParts) {
+    $path = Join-Path $Output $part
+    if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Recurse -Force -ErrorAction SilentlyContinue }
+  }
+}
+$created = -not (Test-Path -LiteralPath $Output)
+if (-not $created) {
   if (-not (Test-Path -LiteralPath $marker)) { throw "$Output exists and was not created by this script; nothing was changed." }
-  Remove-Item -LiteralPath $Output -Recurse -Force
+  Remove-ProgramParts
 }
 New-Item -ItemType Directory -Force -Path $Output | Out-Null
 function Copy-Tree([string]$From, [string]$To, [string[]]$ExcludeDirectories = @()) {
@@ -50,13 +59,16 @@ try {
   }
   # No byte-order mark: the venv launcher parses this file itself.
   [IO.File]::WriteAllLines($config, [string[]]@($lines | Where-Object { $null -ne $_ }), (New-Object System.Text.UTF8Encoding $false))
-  $bytes = (Get-ChildItem -LiteralPath $Output -Recurse -File -Force | Measure-Object Length -Sum).Sum
+  $bytes = ($programParts | Where-Object { Test-Path -LiteralPath (Join-Path $Output $_) } |
+    ForEach-Object { Get-ChildItem -LiteralPath (Join-Path $Output $_) -Recurse -File -Force } | Measure-Object Length -Sum).Sum
   if ($bytes -gt $MaxBytes) { throw "App folder is $bytes bytes, above the $MaxBytes limit." }
-  @{ schemaVersion = 'gamingcreator-app-v1'; builtAt = (Get-Date).ToUniversalTime().ToString('o'); bytes = $bytes } |
+  $version = (Select-String -LiteralPath (Join-Path $repositoryRoot 'pyproject.toml') -Pattern '^version\s*=\s*"([^"]+)"' | Select-Object -First 1).Matches[0].Groups[1].Value
+  $commit = (& git -C $repositoryRoot rev-parse HEAD 2>$null)
+  @{ schemaVersion = 'gamingcreator-app-v1'; builtAt = (Get-Date).ToUniversalTime().ToString('o'); bytes = $bytes; version = $version; commit = "$commit".Trim() } |
     ConvertTo-Json | Set-Content -Encoding UTF8 -Path $marker
   Write-Host ("Built {0} ({1:N0} MB)" -f $Output, ($bytes / 1MB))
 } catch {
-  if (Test-Path -LiteralPath $Output) { Remove-Item -LiteralPath $Output -Recurse -Force -ErrorAction SilentlyContinue }
+  if ($created) { Remove-Item -LiteralPath $Output -Recurse -Force -ErrorAction SilentlyContinue } else { Remove-ProgramParts }
   throw
 }
 if ($Smoke) {

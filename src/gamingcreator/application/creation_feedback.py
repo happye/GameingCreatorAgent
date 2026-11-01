@@ -68,10 +68,27 @@ def edit_kinds(
     if request.get("replacements"):
         kinds.append("替换镜头")
     before_settings = effective_settings(parent_settings or {}, {})
+    # Deleting a shot also drops its subtitle override; that alone is not a subtitle edit.
+    kept_ids = {row.get("clipId") for row in kept}
+    overrides = before_settings["subtitleOverrides"]
+    before_settings["subtitleOverrides"] = (
+        [o for o in overrides if not isinstance(o, dict) or o.get("clipId") in kept_ids]
+        if isinstance(overrides, list)
+        else overrides
+    )
     for key, kind in (("subtitleOverrides", "字幕"), ("audioMix", "配乐"), ("narration", "旁白")):
         if key in request and request[key] != before_settings[key]:
             kinds.append(kind)
     return kinds
+
+
+def plan_preferences(summary: dict[str, Any]) -> dict[str, int]:
+    """How many chosen plans of each structure this user carried through to a finished video."""
+    counts: Counter[str] = Counter()
+    for row in summary.get("rows") or []:
+        if isinstance(row, dict) and row.get("render") and isinstance(row.get("planId"), str):
+            counts[row["planId"]] += 1
+    return dict(sorted(counts.items()))
 
 
 def summarize_feedback(jobs: list[dict[str, Any]]) -> dict[str, object]:

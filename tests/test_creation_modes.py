@@ -203,3 +203,31 @@ def test_new_mode_scripts_open_and_close_in_their_own_words():
     assert ad.startswith("一起来玩代号Atom。") and ad.endswith("现在就来体验。")
     commentary = build_narration_script(brief("commentary", duration=30), rows, 900, 30)["text"]
     assert commentary.endswith("感谢收看。")
+
+
+def test_local_render_history_reorders_generic_structures_only():
+    from gamingcreator.application.creation_feedback import plan_preferences
+
+    facts = [f"画面{i}出现敌人" for i in range(6)]
+    template = plan_creation(brief("feature_showcase"), material(facts), 30)
+    assert template["ordering"] == {"basis": "template", "renderedByPlan": {}}
+    summary = {
+        "rows": [
+            {"planId": "reverse", "render": True},
+            {"planId": "reverse", "render": True},
+            {"planId": "chronological", "render": False},
+            {"planId": "hook-first", "render": True},
+        ]
+    }
+    habits = plan_preferences(summary)
+    assert habits == {"hook-first": 1, "reverse": 2}
+    report = plan_creation(brief("feature_showcase"), material(facts), 30, habits)
+    ids = [p["id"] for p in report["plans"]]
+    # The content-mode template stays first (recommended); habits move the generic orders.
+    assert ids[0] == template["plans"][0]["id"] and report["plans"][0]["mode"]
+    assert ids[1:] == ["reverse", "hook-first", "chronological"]
+    assert report["plans"][1]["localRenders"] == 2 and "localRenders" not in report["plans"][3]
+    assert report["ordering"]["basis"] == "local-render-history"
+    assert plan_creation(brief("feature_showcase"), material(facts), 30, {"x": 0, "y": True})[
+        "ordering"
+    ] == {"basis": "template", "renderedByPlan": {}}

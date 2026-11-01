@@ -7,14 +7,15 @@ import re
 import shutil
 import threading
 import time
-from contextlib import suppress
+from collections.abc import Iterator
+from contextlib import contextmanager, suppress
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 from gamingcreator.application.creation_editing import editable_clips
-from gamingcreator.application.creation_feedback import summarize_feedback
+from gamingcreator.application.creation_feedback import plan_preferences, summarize_feedback
 from gamingcreator.application.edit_decision import select_edit_decision
 from gamingcreator.application.narration import NarrationRequest
 from gamingcreator.application.narration_script import build_narration_script
@@ -299,6 +300,11 @@ class CreationJobs:
                     "parentJobId": parent_id,
                     "error": None,
                 }
+                if kind == "render":
+                    from gamingcreator.application.entitlements import watermark_for
+
+                    # Decided once at registration, so a later plan change never alters a job.
+                    state["watermark"] = watermark_for(self.entitlement_selection())
                 self.save(
                     directory / "request.json",
                     {"request": request, "digest": digest, "parentReceiptSha256": parent_digest},
@@ -306,6 +312,12 @@ class CreationJobs:
                 if kind == "plan":
                     (directory / "input").mkdir()
                     self.save(directory / "input/brief.json", request["brief"])
+                    # Captured once, so re-running the job never depends on later history.
+                    try:
+                        preferences = plan_preferences(self.feedback(request["projectId"]))
+                    except (OSError, ValueError, AppError):
+                        preferences = {}  # Statistics never block planning.
+                    self.save(directory / "input/preferences.json", preferences)
                 self.save(directory / "status.json", state)
                 self.save(registration, {"digest": digest, "jobId": job_id})
                 if kind == "narration":
@@ -489,6 +501,10 @@ class CreationJobs:
                 "previewUrl": base,
                 "downloadUrl": base + "?download=1",
             }
+            if receipt.get("watermark") != state.get("watermark"):
+                raise ValueError("Watermark record mismatch")
+            if state.get("watermark") is not None:
+                state["artifact"]["watermark"] = state["watermark"]
             if narration is not None:
                 state["artifact"].update(
                     narrationTextUrl=f"/api/creation/jobs/{state['jobId']}/narration-text",
@@ -559,6 +575,7 @@ class CreationJobs:
                         [],
                         request["fps"],
                         None,
+                        preferences=self._preferences(directory),
                     )
                 )
             elif state["kind"] == "package":
@@ -570,7 +587,9 @@ class CreationJobs:
                 save_revision(self, directory, request, chain)
             elif "revisionJobId" in request:
                 assert chain is not None
-                asyncio.run(render_revision(self, directory, request, chain))
+                asyncio.run(
+                    render_revision(self, directory, request, chain, state.get("watermark"))
+                )
             else:
                 parent = self.directory(state["parentJobId"])
                 stored = self.read(directory / "request.json")
@@ -595,6 +614,7 @@ class CreationJobs:
                         request["width"],
                         request["height"],
                         subtitle_mode=request.get("subtitleMode", "none"),
+                        watermark=state.get("watermark"),
                     )
                 )
             receipt_path = directory / "result/receipt.json"
@@ -714,54 +734,89 @@ class CreationJobs:
         path = self.root / "enterprise-team.json"
         return self.read(path) if path.is_file() else None
 
+    @contextmanager
+    def root_writer(self) -> Iterator[None]:
+        """The creations-root writer lock, waited for briefly like job registration does."""
+        lock = ProjectWriterLock(self.root)
+        for attempt in range(100):
+            try:
+                lock.acquire()
+                break
+            except AppError as error:
+                if error.code != "storage.writer_busy" or attempt == 99:
+                    raise
+                time.sleep(0.01)
+        try:
+            yield
+        finally:
+            lock.close()
+
     def set_team(self, value: object, actor: object) -> dict[str, Any]:
         from gamingcreator.application.enterprise import PERMISSIONS, role_of, validate_team
 
-        current = self.team()
-        try:
-            team = validate_team(value)
-            if current is not None and role_of(current, str(actor)) not in PERMISSIONS["edit_team"]:
-                raise PermissionError("只有负责人可以修改团队设置。")
-            if current is None and role_of(team, str(actor)) != "owner":
-                raise PermissionError("创建团队的人必须是负责人。")
-        except (PermissionError, ValueError) as error:
-            raise fail("enterprise.input", str(error)) from error
-        self.save(self.root / "enterprise-team.json", team)
-        return team
+        with self.root_writer():
+            current = self.team()
+            try:
+                team = validate_team(value)
+                if (
+                    current is not None
+                    and role_of(current, str(actor)) not in PERMISSIONS["edit_team"]
+                ):
+                    raise PermissionError("只有负责人可以修改团队设置。")
+                if current is None and role_of(team, str(actor)) != "owner":
+                    raise PermissionError("创建团队的人必须是负责人。")
+            except (PermissionError, ValueError) as error:
+                raise fail("enterprise.input", str(error)) from error
+            self.save(self.root / "enterprise-team.json", team)
+            return team
 
     def review(
         self, package_job_id: str, actor: object, action: object, comment: object
     ) -> dict[str, Any]:
         from gamingcreator.application.enterprise import apply_review, check_brand
 
-        team = self.team()
-        if team is None:
-            raise fail("enterprise.input", "请先设置团队成员。")
+        with self.root_writer():
+            team = self.team()
+            if team is None:
+                raise fail("enterprise.input", "请先设置团队成员。")
+            texts = self._package_texts(package_job_id)
+            reviews = self.root / "reviews"
+            reviews.mkdir(exist_ok=True)
+            path = reviews / f"{identity(package_job_id)}.json"
+            record = self.read(path) if path.is_file() else None
+            try:
+                updated = apply_review(
+                    team,
+                    record,
+                    str(actor),
+                    str(action),
+                    comment if isinstance(comment, str) else "",
+                    check_brand(team, texts),
+                    datetime.now(UTC).isoformat(),
+                )
+            except (PermissionError, ValueError) as error:
+                raise fail("enterprise.review", str(error)) from error
+            self.save(path, updated)
+            return updated
+
+    def _package_texts(self, package_job_id: str) -> dict[str, str]:
         self.package(package_job_id)  # re-verifies the package files and receipts
         result = self.safe(self.directory(package_job_id) / "result")
-        texts = {
+        return {
             "标题": (result / "title.txt").read_text(encoding="utf-8"),
             "简介": (result / "description.txt").read_text(encoding="utf-8"),
             "标签": " ".join(json.loads((result / "tags.json").read_text(encoding="utf-8"))),
         }
-        reviews = self.root / "reviews"
-        reviews.mkdir(exist_ok=True)
-        path = reviews / f"{identity(package_job_id)}.json"
-        record = self.read(path) if path.is_file() else None
-        try:
-            updated = apply_review(
-                team,
-                record,
-                str(actor),
-                str(action),
-                comment if isinstance(comment, str) else "",
-                check_brand(team, texts),
-                datetime.now(UTC).isoformat(),
-            )
-        except (PermissionError, ValueError) as error:
-            raise fail("enterprise.review", str(error)) from error
-        self.save(path, updated)
-        return updated
+
+    def publish_blockers(self, package_job_id: str) -> list[str]:
+        from gamingcreator.application.enterprise import check_brand, publish_blockers
+
+        team = self.team()
+        if team is None or not team["reviewRequired"]:
+            return []
+        record = self.review_state(package_job_id)
+        issues = check_brand(team, self._package_texts(package_job_id))
+        return publish_blockers(team, record, issues)
 
     def review_state(self, package_job_id: str) -> dict[str, Any] | None:
         path = self.root / "reviews" / f"{identity(package_job_id)}.json"
@@ -774,7 +829,7 @@ class CreationJobs:
     def select_plan(self, plan: object) -> dict[str, Any]:
         from gamingcreator.application.entitlements import PLANS
 
-        if plan not in PLANS:
+        if not isinstance(plan, str) or plan not in PLANS:
             raise fail("entitlement.input", "未知套餐。")
         selection = {
             "plan": plan,
@@ -814,17 +869,28 @@ class CreationJobs:
                 used = renders_this_month(self._statuses(), datetime.now(UTC).isoformat())
                 require_render(selection, used)
             elif kind == "package":
+                profile = request.get("profile")
+                if not isinstance(profile, dict):
+                    raise fail("creation.input", "平台设置无效。")
+                # One finished video, many copy versions: platforms count per render.
+                states = self._statuses()
+                render_of = {
+                    s["directory"].name: s.get("parentJobId")
+                    for s in states
+                    if s.get("kind") == "publication"
+                }
+                target = render_of.get(str(request.get("publicationJobId")))
                 platforms = set()
-                for state in self._statuses():
+                for state in states:
                     if (
                         state.get("kind") == "package"
-                        and state.get("parentJobId") == request.get("publicationJobId")
+                        and target is not None
+                        and render_of.get(str(state.get("parentJobId"))) == target
                         and state.get("status") in ("pending", "running", "completed")
                     ):
                         stored = self.read(state["directory"] / "request.json")["request"]
                         platforms.add(stored["profile"].get("Platform"))
-                platform = request.get("profile", {}).get("Platform")
-                require_package_platform(selection, platforms, str(platform))
+                require_package_platform(selection, platforms, str(profile.get("Platform")))
         except EntitlementError as error:
             raise fail("entitlement.denied", str(error)) from error
 
@@ -858,13 +924,28 @@ class CreationJobs:
                 continue  # An unreadable record is left out of the statistics, not guessed.
         return summarize_feedback(records)
 
-    def timeline_export(self, job_id: str, plan_id: str, fmt: str) -> tuple[bytes, str, str]:
+    def _preferences(self, directory: Path) -> dict[str, int] | None:
+        path = directory / "input/preferences.json"
+        if not path.is_file():
+            return None  # Jobs registered before feedback ordering keep template order.
+        value = self.read(path)
+        return {k: v for k, v in value.items() if isinstance(k, str) and type(v) is int}
+
+    def timeline_export(
+        self, job_id: str, plan_id: str, fmt: str, size: str = "1920x1080"
+    ) -> tuple[bytes, str, str]:
         from gamingcreator.application.timeline_export import to_fcpxml, to_otio, to_xmeml
 
+        width, _, height = size.partition("x")
+        if not (width.isdecimal() and height.isdecimal()) or not all(
+            16 <= int(v) <= 3840 and int(v) % 2 == 0 for v in (width, height)
+        ):
+            raise fail("creation.input", "时间线尺寸须为 16–3840 之间的偶数，如 1280x720。")
         chain = load_chain(self, job_id, plan_id)
         name = f"gamingcreator-{job_id[:8]}"
         if fmt == "fcpxml":
-            return to_fcpxml(chain.edl, name).encode("utf-8"), f"{name}.fcpxml", "application/xml"
+            body = to_fcpxml(chain.edl, name, int(width), int(height))
+            return body.encode("utf-8"), f"{name}.fcpxml", "application/xml"
         if fmt == "otio":
             return to_otio(chain.edl, name).encode("utf-8"), f"{name}.otio", "application/json"
         if fmt == "xmeml":
@@ -877,12 +958,14 @@ class CreationJobs:
 
     def narration_script(self, job_id: str, plan_id: str) -> dict[str, object]:
         from gamingcreator.application.knowledge import search
+        from gamingcreator.application.narration_script import knowledge_query
         from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
 
         chain = load_chain(self, job_id, plan_id)
         brief = CreativeBrief.from_json(chain.report["brief"])
-        words = " ".join((*brief.mandatory_topics, brief.objective))
-        knowledge = search(KnowledgeStore(self.repository).entries(), brief.game, words)[:3]
+        knowledge = search(
+            KnowledgeStore(self.repository).entries(), brief.game, knowledge_query(brief)
+        )[:3]
         return build_narration_script(
             brief,
             editable_clips(chain.edl, chain.root_sha),

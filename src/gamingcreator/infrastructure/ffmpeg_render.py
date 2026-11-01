@@ -74,6 +74,29 @@ def clip_filter(clip: RenderClip, fps: int, width: int, height: int) -> str:
     return vf + ";" + af + f",atrim=duration={float(duration):.12f},asetpts=N/SR/TB[a]"
 
 
+WATERMARK_MAX_CHARS = 40
+
+
+def _watermark_ass(text: str, width: int, height: int, duration: Fraction) -> str:
+    """One semi-transparent top-right mark for the whole output; text is never ASS markup."""
+    if not text or len(text) > WATERMARK_MAX_CHARS or any(c in text for c in "{}\\\n\r"):
+        raise ValueError("Watermark text must be 1..40 plain characters.")
+    seconds, cs = divmod((duration * 100).__ceil__(), 100)
+    minutes, sec = divmod(seconds, 60)
+    hours, minute = divmod(minutes, 60)
+    margin = max(4, height // 40)
+    return (
+        f"[Script Info]\nScriptType: v4.00+\nPlayResX: {width}\nPlayResY: {height}\n"
+        "[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, "
+        "OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, "
+        "Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
+        f"Style: Mark,Arial,{max(10, height // 30)},&H60FFFFFF,&H60FFFFFF,&H90000000,"
+        f"&H00000000,1,0,0,0,100,100,0,0,1,1,0,9,{margin},{margin},{margin},1\n"
+        "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
+        f"Dialogue: 1,0:00:00.00,{hours}:{minute:02d}:{sec:02d}.{cs:02d},Mark,,0,0,0,,{text}\n"
+    )
+
+
 def _burn_ass(cues: tuple[SubtitleCue, ...], width: int, height: int) -> str:
     # Never interpret transcript text as ASS override commands.
     header = (
@@ -190,6 +213,7 @@ class FfmpegCreationRenderer:
         music: MusicTrack | None = None,
         narration: NarrationSelection | None = None,
         narration_artifact: NarrationArtifact | None = None,
+        watermark: str | None = None,
     ) -> dict[str, object]:
         mix = audio_mix if audio_mix is not None else AudioMix()
         # Re-parse even constructed dataclasses, so bool/non-finite gains fail closed.
@@ -262,6 +286,13 @@ class FfmpegCreationRenderer:
         if subtitle_mode == "burn" and saved_cues:
             ass_path.write_text(_burn_ass(saved_cues, width, height), encoding="utf-8")
             video_filter += f",ass=filename={_filter_path(ass_path)}"
+        if watermark is not None:
+            watermark_path = target / "watermark.ass"
+            watermark_path.write_text(
+                _watermark_ass(watermark, width, height, Fraction(plan.frames, plan.fps)),
+                encoding="utf-8",
+            )
+            video_filter += f",ass=filename={_filter_path(watermark_path)}"
         ffmpeg = str(self.bin / "ffmpeg.exe")
         parts: list[Path] = []
         try:
@@ -457,6 +488,7 @@ class FfmpegCreationRenderer:
                     "creationReceiptSha256": creation_digest,
                     "files": files,
                     "subtitles": {"mode": subtitle_mode, "cueCount": len(saved_cues)},
+                    "watermark": watermark,
                     "frames": plan.frames,
                     "fpsNumerator": plan.fps,
                     "fpsDenominator": 1,

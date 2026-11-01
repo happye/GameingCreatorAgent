@@ -66,6 +66,78 @@ def test_render_quota_is_enforced_on_real_submission(service, monkeypatch):
     assert service.entitlement_summary()["plan"] == "founder"
 
 
+def test_free_render_records_its_watermark_and_paid_plans_do_not(service):
+    service.select_plan("free")
+    assert service.entitlement_summary()["watermark"] == "GamingCreator Free"
+    plan = service.submit("plan", request())["jobId"]
+    assert finish(service, plan)["status"] == "completed"
+    render = {"planJobId": plan, "planId": "chronological", "width": 1280, "height": 720}
+    free = finish(service, service.submit("render", {"requestId": "f" * 32, **render})["jobId"])
+    assert free["status"] == "completed" and free["artifact"]["watermark"] == "GamingCreator Free"
+    service.select_plan("creator")
+    paid = finish(service, service.submit("render", {"requestId": "c" * 32, **render})["jobId"])
+    assert paid["status"] == "completed" and "watermark" not in paid["artifact"]
+    # Decided at registration: the finished free job keeps its mark after the plan changed.
+    assert service.get(free["jobId"])["artifact"]["watermark"] == "GamingCreator Free"
+    service.select_plan("founder")
+
+
+def test_watermark_is_drawn_top_right_and_never_markup(tmp_path):
+    import subprocess
+    from fractions import Fraction
+    from pathlib import Path
+
+    from gamingcreator.infrastructure.ffmpeg_render import _filter_path, _watermark_ass
+
+    for bad in ("", "x" * 41, "{\\b1}hi", "a\nb"):
+        with pytest.raises(ValueError):
+            _watermark_ass(bad, 320, 180, Fraction(1))
+    ffmpeg = Path(__file__).resolve().parents[1] / ".tools/ffmpeg/bin/ffmpeg.exe"
+    if not ffmpeg.is_file():
+        pytest.skip("Pinned FFmpeg is unavailable")
+    ass = tmp_path / "watermark.ass"
+    ass.write_text(_watermark_ass("GamingCreator Free", 320, 180, Fraction(1)), encoding="utf-8")
+    frame = subprocess.run(
+        [
+            str(ffmpeg),
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=black:s=320x180:d=1",
+            "-vf",
+            f"ass=filename={_filter_path(ass)}",
+            "-frames:v",
+            "1",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "gray",
+            "-",
+        ],
+        capture_output=True,
+        check=True,
+    ).stdout
+    assert len(frame) == 320 * 180
+
+    def brightest(x0, x1, y0, y1):
+        return max(frame[y * 320 + x] for y in range(y0, y1) for x in range(x0, x1))
+
+    assert brightest(160, 320, 0, 30) > 60
+    assert brightest(0, 160, 90, 180) == 0
+
+
+def test_malformed_plan_and_profile_are_refused_cleanly(service):
+    for plan in ([], None, {"plan": "free"}):
+        with pytest.raises(Exception) as refused:
+            service.select_plan(plan)
+        assert getattr(refused.value, "code", "") == "entitlement.input"
+    with pytest.raises(Exception) as refused:
+        service.check_entitlement("package", {"publicationJobId": "a" * 32, "profile": []})
+    assert getattr(refused.value, "code", "") == "creation.input"
+
+
 def test_http_feature_gates(service):
     from gamingcreator.ui.server import create_server
 

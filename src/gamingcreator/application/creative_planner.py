@@ -44,8 +44,13 @@ def candidates(
 
 
 def plan_creation(
-    brief: CreativeBrief, clips: tuple[CreationClip, ...], fps: int
+    brief: CreativeBrief,
+    clips: tuple[CreationClip, ...],
+    fps: int,
+    preferences: dict[str, int] | None = None,
 ) -> dict[str, object]:
+    """Template plans; ``preferences`` (finished videos per plan structure on this machine)
+    only reorders the generic structures. The content-mode template stays recommended first."""
     if type(fps) is not int or not 1 <= fps <= 120:
         raise ValueError("Output fps must be an integer in 1..120.")
     eligible = [
@@ -83,6 +88,13 @@ def plan_creation(
         ("hook-first", "最后一条先作开场，再回溯", eligible[-1:] + eligible[:-1], None, None),
         ("reverse", "倒序逐条回顾", list(reversed(eligible)), None, None),
     ]
+    habits = {
+        key: value
+        for key, value in (preferences or {}).items()
+        if isinstance(key, str) and type(value) is int and value > 0
+    }
+    # Stable: structures the user finished more often come first, ties keep template order.
+    generic.sort(key=lambda structure: -habits.get(structure[0], 0))
     scores = score_materials(brief, eligible)
 
     def total(clip: CreationClip) -> float:
@@ -158,6 +170,7 @@ def plan_creation(
                 "ready": not gaps,
                 "advisories": advisories(brief, eligible, segments, fps),
                 "scriptStatus": "saved-descriptions-draft-human-review-required",
+                **({"localRenders": habits[identity]} if identity in habits else {}),
                 **(
                     {"mode": brief.content_type, "modeLabel": MODE_LABELS[brief.content_type]}
                     if roles is not None
@@ -170,6 +183,10 @@ def plan_creation(
         "planner": "offline-template-v1",
         "understandingVerified": False,
         "scoring": scoring_legend(),
+        "ordering": {
+            "basis": "local-render-history" if habits else "template",
+            "renderedByPlan": habits,
+        },
         "fps": fps,
         "plans": plans,
     }

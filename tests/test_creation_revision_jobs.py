@@ -28,7 +28,7 @@ def revisions(service, monkeypatch):  # noqa: F811
         for row in plan["segments"]:
             row["sourcePath"] = str(asset.source_path)
 
-    async def planner(project, runs, brief, output, events, fps, selection):
+    async def planner(project, runs, brief, output, events, fps, selection, preferences=None):
         report["brief"] = json.loads(brief.read_text())
         write_creation(output, {"plans.json": report}, ())
 
@@ -62,6 +62,7 @@ def revisions(service, monkeypatch):  # noqa: F811
         *,
         audio_mix=None,
         music=None,
+        watermark=None,
     ):
         from gamingcreator.domain.creation_audio import AudioMix
 
@@ -85,6 +86,7 @@ def revisions(service, monkeypatch):  # noqa: F811
                     "subtitles": {"mode": mode, "cueCount": len(cues)},
                     "audioMix": (audio_mix or AudioMix()).to_json(),
                     "music": None if music is None else music.public(),
+                    "watermark": watermark,
                 }
             )
         )

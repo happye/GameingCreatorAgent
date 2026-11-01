@@ -353,7 +353,7 @@ def save_revision(jobs: Any, directory: Path, request: dict[str, Any], chain: Ch
 
 
 async def render_revision(
-    jobs: Any, directory: Path, request: dict[str, Any], chain: Chain
+    jobs: Any, directory: Path, request: dict[str, Any], chain: Chain, watermark: str | None = None
 ) -> None:
     project = jobs.project(chain.project_id)
     jobs.safe(directory / "selection")
@@ -400,6 +400,7 @@ async def render_revision(
             chain.audio_mix.bgm.track_id, chain.audio_mix.bgm.track_receipt_sha256
         ),
         **narration_kwargs,
+        watermark=watermark,
     )
 
 

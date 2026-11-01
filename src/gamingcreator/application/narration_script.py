@@ -4,12 +4,14 @@ import re
 from fractions import Fraction
 from typing import Any
 
+from gamingcreator.application.knowledge import query_words
 from gamingcreator.domain.creation import CreativeBrief
 
 # Measured on local Huihui: 21 characters took 5.688 seconds. Budget below that and keep a margin.
 CHARS_PER_SECOND = Fraction(7, 2)
 FILL_RATIO = Fraction(9, 10)
 MAX_CLIP_CHARS = 24
+MAX_KNOWLEDGE_CHARS = 32
 _OPENINGS = {
     "feature_showcase": "{game}玩法速览",
     "guide": "{game}攻略要点",
@@ -21,6 +23,28 @@ _OPENINGS = {
 }
 _CLOSINGS = {"campaign": "快来一起参与活动", "commentary": "感谢收看", "ad": "现在就来体验"}
 _FRAME_MARKER = re.compile(r"f\d+(?:至f\d+)?(?:中|显示|切换为|延续|开始)?")
+
+
+def knowledge_query(brief: CreativeBrief) -> str:
+    """The words a draft looks up in the game's knowledge entries."""
+    return " ".join((*brief.mandatory_topics, brief.objective))
+
+
+def _knowledge_clause(text: object, words: list[str]) -> str:
+    """A whole clause of an entry, preferring one that holds a looked-up word; never cut short.
+
+    Cutting a rule at a comma can reverse it ("可以无限使用，除非…"), so a clause too long to
+    quote whole is not quoted at all.
+    """
+    if not isinstance(text, str):
+        return ""
+    clauses = [c.strip(" ，,、：:'\"“”") for c in re.split(r"[；;。！？!?\n]", text)]
+    fitting = [c for c in clauses if c and len(c) <= MAX_KNOWLEDGE_CHARS]
+    matched = [c for c in fitting if any(w in c.casefold() for w in words)]
+    if matched:
+        return matched[0]
+    first = next((c for c in clauses if c), "")
+    return first if first in fitting else ""
 
 
 def _sentence(description: object) -> str:
@@ -81,8 +105,9 @@ def build_narration_script(
     # One matching knowledge sentence if it still fits; its source is shown, not spoken.
     citations: list[dict[str, str]] = []
     knowledge_sentence = ""
+    words = query_words(knowledge_query(brief))
     for entry in knowledge or []:
-        candidate = _sentence(entry.get("text"))
+        candidate = _knowledge_clause(entry.get("text"), words)
         if candidate and used + len(candidate) + 1 <= budget:
             knowledge_sentence = candidate
             citations.append(

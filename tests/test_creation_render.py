@@ -360,3 +360,31 @@ def test_audio_relative_delay_preserves_sample_alignment(tmp_path):
         assert abs(onset - 12000) <= 48  # threshold onset within 1 ms of 250 ms
 
     asyncio.run(scenario())
+
+
+def test_real_render_burns_the_plan_watermark_and_records_it(tmp_path):
+    source = tmp_path / "black.mp4"
+    run_tool(
+        ["-f", "lavfi", "-i", "color=black:s=320x180:r=10:d=1", "-c:v", "libx264"]
+        + ["-pix_fmt", "yuv420p", str(source)]
+    )
+
+    async def scenario():
+        context = CancellationContext("watermark-render", 60)
+        asset = await FfmpegMediaProcessor(ROOT).probe(source, context)
+        plan = RenderPlan((RenderClip(asset, SourceRange(0, 500_000, asset.duration_us), 5),), 10)
+        result = await FfmpegCreationRenderer(ROOT).render(
+            plan, tmp_path / "out", (source,), context, 320, 180, watermark="GamingCreator Free"
+        )
+        assert result["watermark"] == "GamingCreator Free"
+
+    asyncio.run(scenario())
+    frame = subprocess.run(
+        [str(FFMPEG), "-v", "error", "-i", str(tmp_path / "out/video.mp4"), "-frames:v", "1"]
+        + ["-f", "rawvideo", "-pix_fmt", "gray", "-"],
+        capture_output=True,
+        check=True,
+    ).stdout
+    top_right = max(frame[y * 320 + x] for y in range(30) for x in range(160, 320))
+    bottom_left = max(frame[y * 320 + x] for y in range(100, 180) for x in range(160))
+    assert top_right > 60 and bottom_left < 30

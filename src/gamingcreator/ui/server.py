@@ -233,6 +233,44 @@ class InspectionHandler(BaseHTTPRequestHandler):
             "text": text[:20000],
         }
 
+    def _knowledge_file(self, value: dict[str, object]) -> dict[str, object]:
+        """An uploaded file as entry text, read locally; never cut short, OCR always labelled."""
+        import asyncio
+        import base64
+        import binascii
+
+        from gamingcreator.application.knowledge import LIMITS
+        from gamingcreator.application.providers import CancellationContext
+        from gamingcreator.infrastructure.rule_sources import read_rule_source
+
+        name, data = value.get("fileName"), value.get("dataBase64")
+        if not isinstance(name, str) or not isinstance(data, str):
+            raise ValueError("请选择一个文件。")
+        try:
+            raw = base64.b64decode(data, validate=True)
+        except (binascii.Error, ValueError) as error:
+            raise ValueError("文件内容无效。") from error
+        source = asyncio.run(
+            read_rule_source(
+                name,
+                raw,
+                self.repository / ".cache/workspace/rules",
+                CancellationContext("knowledge-file", 120),
+            )
+        )
+        text = str(source["text"]).replace("\r\n", "\n").replace("\r", "\n")
+        if len(text) > LIMITS["text"]:
+            raise ValueError(
+                f"文件读出 {len(text)} 字，超过单条 {LIMITS['text']} 字上限，请拆成几条导入。"
+            )
+        label = str(value.get("sourceLabel", ""))
+        if source["sourceKind"] in ("image", "pdf"):
+            label += "（文字由本机OCR识别，可能有错字）"
+        if source.get("pagesRead") != source.get("pages"):
+            label += f"（只读了前 {source['pagesRead']}/{source['pages']} 页）"
+        rest = {k: v for k, v in value.items() if k not in ("fileName", "dataBase64")}
+        return {**rest, "text": text, "sourceLabel": label}
+
     def _local_request(self) -> bool:
         host = self.headers.get("Host", "")
         hostname = urlparse("http://" + host).hostname
@@ -408,15 +446,9 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 if not isinstance(value, dict) or set(value) != {"packageJobId", "target"}:
                     raise ValueError("Expected package job and publish target")
                 self._require("sandboxPublish")
-                team = self.creation_jobs.team()
-                if team is not None and team["reviewRequired"]:
-                    review = self.creation_jobs.review_state(str(value["packageJobId"]))
-                    if review is None or review["state"] != "approved":
-                        raise AppError(
-                            "publish.review_required",
-                            "团队要求审核通过后才能发布，这个发布包尚未审核通过。",
-                            ExitCode.INPUT,
-                        )
+                blockers = self.creation_jobs.publish_blockers(str(value["packageJobId"]))
+                if blockers:
+                    raise AppError("publish.review_required", " ".join(blockers), ExitCode.INPUT)
                 # Re-verifies the package files and receipts before anything is recorded.
                 package = self.creation_jobs.package(str(value["packageJobId"]))
                 try:
@@ -430,14 +462,9 @@ class InspectionHandler(BaseHTTPRequestHandler):
             if path == "/api/knowledge":
                 from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
 
-                if isinstance(value, dict) and "dataBase64" in value:
-                    # A file becomes entry text through the same local readers as activity rules.
-                    rule = self._activity_rules(
-                        {k: value[k] for k in ("fileName", "dataBase64") if k in value}
-                    )
-                    value = {k: v for k, v in value.items() if k not in ("fileName", "dataBase64")}
-                    value["text"] = rule["text"]
                 try:
+                    if isinstance(value, dict) and "dataBase64" in value:
+                        value = self._knowledge_file(value)
                     self._json(200, KnowledgeStore(self.repository).add(value))
                 except ValueError as error:
                     raise AppError("knowledge.input", str(error), ExitCode.INPUT) from error
@@ -902,11 +929,14 @@ class InspectionHandler(BaseHTTPRequestHandler):
                         200, self.creation_jobs.edit(tail.removesuffix("/edit"), query["planId"])
                     )
                 elif tail.endswith("/timeline"):
-                    if set(query) != {"planId", "format"}:
+                    if not {"planId", "format"} <= set(query) <= {"planId", "format", "size"}:
                         raise ValueError("Expected plan ID and timeline format")
                     self._require("timelineExport")
                     body, filename, content_type = self.creation_jobs.timeline_export(
-                        tail.removesuffix("/timeline"), query["planId"], query["format"]
+                        tail.removesuffix("/timeline"),
+                        query["planId"],
+                        query["format"],
+                        query.get("size", "1920x1080"),
                     )
                     self._headers(200, len(body), content_type + "; charset=utf-8")
                     self.send_header("Content-Disposition", f'attachment; filename="{filename}"')

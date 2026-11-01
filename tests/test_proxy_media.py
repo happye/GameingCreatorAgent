@@ -2,6 +2,7 @@
 
 import asyncio
 import hashlib
+import json
 import subprocess
 from pathlib import Path
 
@@ -92,9 +93,39 @@ def test_budget_breach_keeps_nothing(repository, monkeypatch):
     assert leftovers(repo) == []
 
 
+def test_replaced_source_or_malformed_receipt_is_refused(repository):
+    repo, source, sha = repository
+    other = source.with_name("other.mp4")
+    other.write_bytes(source.read_bytes() + b"x")
+    with pytest.raises(ValueError, match="registered recording"):
+        build(repo, other, sha)
+    assert leftovers(repo) == []
+    build(repo, source, sha)
+    receipt = proxy_directory(repo, sha) / "receipt.json"
+    for broken in ("[]", json.dumps({"sourceSha256": sha})):
+        receipt.write_text(broken, encoding="utf-8")
+        assert read_proxy(repo, sha) is None
+
+
 def test_duration_mismatch_keeps_nothing(repository):
     repo, source, sha = repository
     with pytest.raises(ValueError):
         build(repo, source, sha, duration=9_000_000)
     assert leftovers(repo) == []
     assert read_proxy(repo, sha) is None
+
+
+def test_stale_build_folders_are_reclaimed_but_recent_ones_kept(repository):
+    import os
+    import time
+
+    repo, source, sha = repository
+    root = repo / ".cache/workspace/proxies"
+    stale, recent = root / ".building-stale", root / ".building-recent"
+    for folder in (stale, recent):
+        folder.mkdir(parents=True)
+        (folder / "proxy.mp4").write_bytes(b"partial")
+    old = time.time() - proxy_media.STALE_BUILD_SECONDS - 60
+    os.utime(stale, (old, old))
+    build(repo, source, sha)
+    assert not stale.exists() and recent.exists()

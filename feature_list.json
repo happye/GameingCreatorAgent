@@ -951,7 +951,8 @@
       "implementation_evidence": [
         "2026-11-01: thin Windows desktop host EXE built with the Windows-bundled C# compiler; single instance, random 127.0.0.1 port, kill-on-close Job Object stops the service tree, Edge app-mode window with a dedicated profile; smoke and real window-close tests leave no service processes; WebView2 embedding awaits SDK download approval; installer/clean-machine/signing not done",
         "2026-11-01: embedded WebView2 window using the user-approved pinned SDK 1.0.4314.35 (NuGet SHA512 verified, per-file SHA256 checked each build), dedicated profile, external links to the system browser, Edge app-mode fallback; real run: 6 WebView2 processes, page 200, no leftovers after close",
-        "2026-11-01: build-app assembles a self-contained, movable portable app folder (bundled CPython, runtime packages without dev tools, package install instead of editable link, FFmpeg, EXE+WebView2; 660 MB under a 1.5 GB cap); packaged interpreter imports its own code; smoke passes and still passes after moving the folder; no installer, clean-machine test or signing yet"
+        "2026-11-01: build-app assembles a self-contained, movable portable app folder (bundled CPython, runtime packages without dev tools, package install instead of editable link, FFmpeg, EXE+WebView2; 660 MB under a 1.5 GB cap); packaged interpreter imports its own code; smoke passes and still passes after moving the folder; no installer, clean-machine test or signing yet",
+        "2026-11-01: install-app installs/upgrades/uninstalls the built app per user without registry or shortcuts; upgrades swap only program parts (user data kept) with rollback on failure; uninstall keeps data; real 660 MB install+smoke ~10 s, upgrade and uninstall verified then removed; 5 installer tests including locked-file rollback; no clean-machine test or signing yet"
       ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
@@ -989,7 +990,8 @@
       "first_product": false,
       "delivery_status": "partial",
       "implementation_evidence": [
-        "2026-11-01: read-only local feedback statistics from saved creation jobs (plans, recommendation offered/adopted, revisions, edit kinds by actual difference including inherited settings, render->publication->package funnel); real demo-phase0 22 plans/18 chains in 0.6s; adoption so far from agent test runs, not human choices; not yet fed back into ranking"
+        "2026-11-01: read-only local feedback statistics from saved creation jobs (plans, recommendation offered/adopted, revisions, edit kinds by actual difference including inherited settings, render->publication->package funnel); real demo-phase0 22 plans/18 chains in 0.6s; adoption so far from agent test runs, not human choices; not yet fed back into ranking",
+        "2026-11-01: plan jobs capture per-structure finished-video counts from this project's saved records at registration; the planner moves frequently finished generic structures forward (mode template stays first/recommended), marks localRenders on cards and records ordering basis in the plan report; statistics failures fall back to template order"
       ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"
@@ -1085,7 +1087,8 @@
       "first_product": false,
       "delivery_status": "partial",
       "implementation_evidence": [
-        "2026-11-01: local creator-plan entitlement model (founder default unlimited, Free/Creator/Pro) enforced at real entry points: monthly render quota metered from saved jobs, one platform package per publication on Free, activity-rule parsing, timeline export and sandbox publish gates; plan selection marked local evaluation; no payment, subscription, signed license or watermark"
+        "2026-11-01: local creator-plan entitlement model (founder default unlimited, Free/Creator/Pro) enforced at real entry points: monthly render quota metered from saved jobs, one platform package per publication on Free, activity-rule parsing, timeline export and sandbox publish gates; plan selection marked local evaluation; no payment, subscription, signed license or watermark",
+        "2026-11-01: Free renders burn a top-right semi-transparent 'GamingCreator Free' mark via ASS; decided at registration and stored on the job, recorded in the render receipt and checked on verify; founder/creator/pro unmarked; real FFmpeg pixel test and job-level test; analysis-minute metering and payments still absent"
       ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"

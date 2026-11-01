@@ -18,7 +18,7 @@ def service(tmp_path, monkeypatch):
     (tmp_path / "artifacts/project").mkdir(parents=True)
     (tmp_path / "artifacts/project/timeline.sqlite3").touch()
 
-    async def planner(project, runs, brief, output, events, fps, selection):
+    async def planner(project, runs, brief, output, events, fps, selection, preferences=None):
         report = {
             "schemaVersion": "creation-plan-v1",
             "fps": fps,
@@ -39,7 +39,9 @@ def service(tmp_path, monkeypatch):
 
     monkeypatch.setattr(implementation, "execute_plan_creation", planner)
 
-    async def renderer(project, selection, output, tool, width, height, subtitle_mode="none"):
+    async def renderer(
+        project, selection, output, tool, width, height, subtitle_mode="none", watermark=None
+    ):
         output.mkdir()
         (output / "video.mp4").write_bytes(b"fixture-video")
         from gamingcreator.infrastructure.ffmpeg_media import hash_file
@@ -51,6 +53,7 @@ def service(tmp_path, monkeypatch):
             "height": height,
             "creationReceiptSha256": hash_file(selection / "receipt.json"),
             "files": {"video.mp4": hash_file(output / "video.mp4")},
+            "watermark": watermark,
         }
         if subtitle_mode != "none":
             (output / "subtitles.srt").write_bytes(b"")

@@ -39,6 +39,7 @@
         for (const plan of job.plans || []) {
             const card = node("article", ""); card.className = "plan-card";
             if (plan.mode) { card.classList.add("recommended"); card.append(node("p", `推荐 · ${plan.modeLabel || "内容模式"}模板`)); }
+            if (plan.localRenders) card.append(node("p", `你常用的结构 · 本项目已用它生成成片 ${plan.localRenders} 次，所以排在前面`));
             card.append(node("h3", plan.structure), node("p", plan.ready ? "方案可用 · 模板草稿" : "方案有缺口 · 不可选择"), node("p", "脚本：已有描述草稿，待核对"));
             const segments = plan.segments || [];
             card.append(node("p", `${segments.length} 个片段 · ${(segments.reduce((sum, s) => sum + s.outputFrames, 0) / job.fps).toFixed(2)} 秒`));
@@ -382,6 +383,8 @@
         const exportRow = node("p", "导出已保存版本的时间线（未在剪辑软件中实测导入）："); exportRow.id = "timeline-export";
         for (const [format, text] of [["fcpxml", "FCPXML"], ["otio", "OTIO"], ["xmeml", "Premiere XML"]]) {
             const link = node("a", text); link.href = `/api/creation/jobs/${encodeURIComponent(editor.parentJobId)}/timeline?planId=${encodeURIComponent(editor.planId)}&format=${format}`; link.download = ""; link.id = `timeline-${format}`;
+            // The FCPXML sequence takes the frame size chosen for rendering at the moment of export.
+            link.addEventListener("click", () => { const url = new URL(link.href, location.href); url.searchParams.set("size", $("size").value.replace(",", "x")); link.href = url.pathname + url.search; });
             exportRow.append(" ", link);
         }
         panel.append(exportRow);
@@ -507,6 +510,7 @@
         }
         video.src = artifact.previewUrl; download.href = artifact.downloadUrl; download.download = "video.mp4";
         $("artifact").append(video, download);
+        if (artifact.watermark) $("artifact").append(node("p", `成片右上角带“${artifact.watermark}”水印（Free 套餐，生成时确定）。`));
         if (artifact.subtitleUrl) {
             const url = new URL(artifact.subtitleUrl, location.origin);
             if (url.origin !== location.origin || url.pathname !== `/api/creation/jobs/${encodeURIComponent(renderId)}/subtitles` || url.search || url.hash) throw new Error("字幕地址无效，请刷新任务。");
@@ -815,7 +819,7 @@
         const render = (data) => {
             select.replaceChildren(...Object.entries(data.plans).map(([value, text]) => new Option(text, value))); select.value = data.plan;
             const features = Object.entries(data.features).map(([key, on]) => `${data.featureLabels[key]}${on ? "✓" : "✗"}`).join("、");
-            info.textContent = `本月成片 ${data.rendersThisMonth}${data.monthlyRenders === null ? "（不限）" : ` / ${data.monthlyRenders}`}；功能：${features}。未接入任何支付。`;
+            info.textContent = `本月成片 ${data.rendersThisMonth}${data.monthlyRenders === null ? "（不限）" : ` / ${data.monthlyRenders}`}；功能：${features}${data.watermark ? `；新成片右上角带“${data.watermark}”水印` : ""}。未接入任何支付。`;
         };
         select.addEventListener("change", async () => { try { render(await api("/api/entitlement", {plan: select.value})); } catch (error) { info.textContent = `切换失败：${error.message}`; } });
         api("/api/entitlement").then(render).catch(() => { info.textContent = "套餐信息暂不可用。"; });

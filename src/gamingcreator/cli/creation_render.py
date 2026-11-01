@@ -58,6 +58,7 @@ async def execute_render_creation(
     width: int,
     height: int,
     subtitle_mode: str = "none",
+    watermark: str | None = None,
 ) -> dict[str, object]:
     try:
         if subtitle_mode not in ("none", "sidecar", "burn"):
@@ -101,6 +102,7 @@ async def execute_render_creation(
             digest,
             cues,
             subtitle_mode,
+            watermark=watermark,
         )
     except (ValueError, OSError, KeyError, TypeError, StopIteration) as error:
         raise AppError("creation.render_invalid", str(error), ExitCode.INPUT) from error

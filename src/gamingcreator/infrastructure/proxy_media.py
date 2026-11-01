@@ -8,6 +8,8 @@ place. Any failure removes the temporary directory: no partial proxy is ever kep
 
 import json
 import shutil
+import time
+from contextlib import suppress
 from fractions import Fraction
 from pathlib import Path
 from typing import Any
@@ -40,8 +42,17 @@ def proxy_budget(duration_us: int) -> int:
     return min(HARD_CAP_BYTES, int(Fraction(duration_us, 1_000_000) * rate * 3 / 2) + 8 * 1024**2)
 
 
+STALE_BUILD_SECONDS = 12 * 3600
+
+
+def _is_sha(value: object) -> bool:
+    return (
+        isinstance(value, str) and len(value) == 64 and all(c in "0123456789abcdef" for c in value)
+    )
+
+
 def proxy_directory(repository: Path, source_sha256: str) -> Path:
-    if len(source_sha256) != 64 or any(c not in "0123456789abcdef" for c in source_sha256):
+    if not _is_sha(source_sha256):
         raise ValueError("Invalid source SHA256.")
     return repository.resolve() / ".cache/workspace/proxies" / source_sha256
 
@@ -55,6 +66,8 @@ def read_proxy(repository: Path, source_sha256: str) -> dict[str, Any] | None:
     try:
         receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
+        return None
+    if not isinstance(receipt, dict) or not _is_sha(receipt.get("proxySha256")):
         return None
     if (
         receipt.get("sourceSha256") != source_sha256
@@ -85,11 +98,20 @@ async def make_proxy(
     if existing is not None:
         return {**existing, "reused": True}
     final = proxy_directory(repository, source_sha256)
+    # A file replaced at the registered path must never be served as that recording's preview.
+    if await hash_source(source, context) != source_sha256:
+        raise ValueError("Source bytes do not match the registered recording.")
     root = final.parent
     root.mkdir(parents=True, exist_ok=True)
     if any(is_link(p) for p in (root, *root.parents)):
         raise ValueError("Proxy directory cannot use links.")
     budget = proxy_budget(source_duration_us)
+    # A build killed outright leaves its folder; any older than the 6 h build limit is stale.
+    cutoff = time.time() - STALE_BUILD_SECONDS
+    for stale in root.glob(".building-*"):
+        with suppress(OSError):
+            if stale.is_dir() and not is_link(stale) and stale.stat().st_mtime < cutoff:
+                shutil.rmtree(stale, ignore_errors=True)
     temporary = root / f".building-{uuid4().hex}"
     temporary.mkdir()
     try:

@@ -40,7 +40,7 @@ def test_public_uses_exact_run_per_reordered_clip(monkeypatch, tmp_path):
         return Store()
 
     class Renderer:
-        async def render(self, *args):
+        async def render(self, *args, **kwargs):
             cues = args[-2]
             assert [(c.start, c.end, c.text) for c in cues] == [
                 (Fraction(0), Fraction(1), "second"),

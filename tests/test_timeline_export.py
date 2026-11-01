@@ -3,6 +3,7 @@
 # ruff: noqa: F811
 import json
 import threading
+import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ElementTree
 from fractions import Fraction
@@ -56,6 +57,7 @@ def test_layout_trims_whole_frames_and_keeps_rendered_length():
 
 
 def test_fcpxml_is_well_formed_with_assets_transitions_and_time_maps():
+    assert 'width="1280" height="720"' in to_fcpxml(EDL, "测试", 1280, 720)
     root = ElementTree.fromstring(to_fcpxml(EDL, "测试"))
     assert root.get("version") == "1.9"
     assert len(root.findall("./resources/asset")) == 2
@@ -99,6 +101,10 @@ def test_http_export_from_saved_revision(revisions):
         with urllib.request.urlopen(base + "&format=fcpxml") as response:
             assert "attachment" in response.headers["Content-Disposition"]
             ElementTree.fromstring(response.read())
+        with urllib.request.urlopen(base + "&format=fcpxml&size=720x1280") as response:
+            assert 'width="720" height="1280"' in response.read().decode("utf-8")
+        with pytest.raises(urllib.error.HTTPError):
+            urllib.request.urlopen(base + "&format=fcpxml&size=721x1280")
         with urllib.request.urlopen(base + "&format=otio") as response:
             assert json.loads(response.read())["OTIO_SCHEMA"] == "Timeline.1"
     finally:

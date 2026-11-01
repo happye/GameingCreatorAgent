@@ -46,6 +46,13 @@ def test_edit_kinds_compare_clips_and_inherited_settings():
     )
 
 
+def test_deleting_a_shot_with_a_subtitle_override_is_only_a_deletion():
+    parent = [row("a"), row("b", 1_000_000, 2_000_000)]
+    inherited = {"subtitleOverrides": [{"clipId": "b", "text": "旧字幕"}]}
+    request = {"clips": [row("a")], "subtitleOverrides": []}
+    assert edit_kinds(parent, request, inherited) == ["删镜头"]
+
+
 def test_summary_adoption_and_funnel_from_records():
     receipt = "r" * 64
     clip0 = hashlib.sha256(f"{receipt}:0".encode()).hexdigest()

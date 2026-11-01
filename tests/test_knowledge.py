@@ -8,7 +8,7 @@ import urllib.request
 
 import pytest
 
-from gamingcreator.application.knowledge import current, history, new_entry, search
+from gamingcreator.application.knowledge import current, history, is_valid, new_entry, search
 from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
 
 
@@ -172,6 +172,44 @@ def test_http_add_from_text_and_file_then_search_and_history(tmp_path):
         server.shutdown()
         server.server_close()
         thread.join()
+
+
+def test_stale_replace_damaged_files_and_windows_line_breaks(tmp_path):
+    store = KnowledgeStore(tmp_path)
+    base = {"game": "代号Atom", "title": "冷却", "sourceKind": "user", "sourceLabel": "笔记"}
+    first = store.add({**base, "text": "冷却10秒"})
+    store.add({**base, "text": "冷却8秒", "replaces": first["entryId"]})
+    with pytest.raises(ValueError, match="更新的版本"):
+        store.add({**base, "text": "冷却6秒", "replaces": first["entryId"]})
+    assert [e["text"] for e in current(store.entries())] == ["冷却8秒"]
+    damaged = store.root / f"{'a' * 64}.json"
+    damaged.write_text(json.dumps({"entryId": "a" * 64}), encoding="utf-8")
+    forged = {**first, "text": "改过的内容"}
+    (store.root / f"{first['entryId']}.json").write_text(json.dumps(forged), encoding="utf-8")
+    assert not is_valid(forged)
+    assert all(e["entryId"] != "a" * 64 for e in store.entries())
+    assert search(store.entries(), "代号Atom", "冷却")
+    crlf = store.add({**base, "title": "规则", "text": "第一行\r\n第二行"})
+    assert crlf["text"] == "第一行\n第二行"
+
+
+def test_draft_quotes_the_matching_clause_whole_or_not_at_all():
+    from gamingcreator.application.narration_script import build_narration_script
+    from gamingcreator.domain.creation import CreativeBrief
+
+    brief = CreativeBrief(
+        "代号Atom", "guide", ("bilibili",), 30, "冷却", "新玩家", "简洁", ("冷却",), ()
+    )
+    rows = [{"clipId": "a", "scriptDraft": "角色奔跑", "outputStartFrame": 0}]
+    later = search([entry("技能", "背景故事很长。冷却时间是10秒。")], brief.game, "冷却")
+    draft = build_narration_script(brief, rows, 900, 30, later)
+    assert "冷却时间是10秒" in draft["text"] and "背景故事" not in draft["text"]
+    long_rule = "冷却技能A可以无限使用，除非角色处于沉默状态或者被敌方控制时无法施放"
+    risky = search([entry("技能", long_rule)], brief.game, "冷却")
+    quoted = build_narration_script(brief, rows, 900, 30, risky)
+    assert quoted["citations"] == [] and "无限使用" not in quoted["text"]
+    marker = search([entry("操作", "冷却时按f12打开面板")], brief.game, "冷却")
+    assert "按f12打开面板" in build_narration_script(brief, rows, 900, 30, marker)["text"]
 
 
 def test_narration_draft_cites_matching_knowledge_without_speaking_the_source():

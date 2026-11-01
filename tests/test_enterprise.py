@@ -10,7 +10,12 @@ from uuid import uuid4
 import pytest
 from test_creation_publication import ROOT, finish, payload, rendered, service  # noqa: F401
 
-from gamingcreator.application.enterprise import apply_review, check_brand, validate_team
+from gamingcreator.application.enterprise import (
+    apply_review,
+    check_brand,
+    publish_blockers,
+    validate_team,
+)
 from gamingcreator.ui import package_jobs
 
 TEAM = {
@@ -63,13 +68,27 @@ def test_review_roles_and_separation_of_duties():
     assert [e["action"] for e in approved["events"]] == ["submit", "reject", "submit", "approve"]
 
 
-def make_package(jobs, render, monkeypatch, title):
+def test_approval_is_rechecked_against_the_current_team():
+    team = validate_team(TEAM)
+    record = {"state": "pending", "submittedBy": "小编", "events": []}
+    approved = apply_review(team, record, "审核员", "approve", "", [], "t")
+    assert publish_blockers(team, approved, []) == []
+    assert publish_blockers(team, record, []) and publish_blockers(team, None, [])
+    demoted = validate_team(
+        {**TEAM, "members": [m for m in TEAM["members"] if m["name"] != "审核员"]}
+    )
+    assert "不再是审核员" in publish_blockers(demoted, approved, [])[0]
+    assert "品牌词" in publish_blockers(team, approved, ["标题含禁用词“新版本”"])[0]
+    assert publish_blockers(None, None, []) == []
+
+
+def make_package(jobs, render, monkeypatch, title, index=0):
     pub_req = payload(jobs, render)
     pub_req["title"] = title
     pub_id = jobs.submit("publication", pub_req)["jobId"]
     assert finish(jobs, pub_id)["status"] == "completed"
     snap = jobs.publication(pub_id)
-    profile = package_jobs.profiles()["profiles"][0]
+    profile = package_jobs.profiles()["profiles"][index]
     for kind in ("video", "cover"):
         profile["Fields"][kind]["width"] //= 10
         profile["Fields"][kind]["height"] //= 10
@@ -135,6 +154,12 @@ def test_real_package_review_gates_sandbox_publish(rendered, monkeypatch):
             f"{base}/api/enterprise/review?packageJobId={good}"
         ) as response:
             assert json.loads(response.read())["review"]["state"] == "approved"
+        # A glossary change after approval makes the old approval insufficient.
+        stricter = {**TEAM, "brandTerms": {"required": ["代号Atom"], "forbidden": ["新版本"]}}
+        post("/api/enterprise/team", {"team": stricter, "actor": "老板"})
+        with pytest.raises(urllib.error.HTTPError) as stale:
+            post("/api/creation/publish", {"packageJobId": good, "target": "sandbox"})
+        assert "品牌词" in json.loads(stale.value.read())["message"]
     finally:
         server.shutdown()
         server.server_close()

@@ -97,6 +97,7 @@ def narrated(revisions, engine, monkeypatch):
         music=None,
         narration=None,
         narration_artifact=None,
+        watermark=None,
     ):
         from gamingcreator.infrastructure.narration_mix import narration_receipt, verify_narration
 
@@ -117,6 +118,7 @@ def narrated(revisions, engine, monkeypatch):
             "subtitles": {"mode": mode, "cueCount": len(cues)},
             "audioMix": (audio_mix or AudioMix()).to_json(),
             "music": None if music is None else music.public(),
+            "watermark": watermark,
         }
         if mode != "none":
             (output / "subtitles.srt").write_bytes(b"")

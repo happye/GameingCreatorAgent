@@ -18,6 +18,7 @@ PLANS: dict[str, dict[str, Any]] = {
         "label": "Free",
         "features": set(),
         "monthlyRenders": 10,
+        "watermark": "GamingCreator Free",
     },
     "creator": {
         "label": "Creator",
@@ -36,6 +37,12 @@ FEATURE_LABELS = {
     "timelineExport": "专业时间线导出",
     "sandboxPublish": "发布流程（沙箱）",
 }
+
+
+def watermark_for(selection: dict[str, Any] | None) -> str | None:
+    """The visible mark a plan burns into rendered videos, or None (paid and founder plans)."""
+    value = PLANS[plan_of(selection)].get("watermark")
+    return value if isinstance(value, str) else None
 
 
 class EntitlementError(PermissionError):
@@ -100,5 +107,6 @@ def summary(selection: dict[str, Any] | None, used_renders: int) -> dict[str, An
         "featureLabels": FEATURE_LABELS,
         "monthlyRenders": definition["monthlyRenders"],
         "rendersThisMonth": used_renders,
+        "watermark": watermark_for(selection),
         "plans": {name: value["label"] for name, value in PLANS.items()},
     }
