@@ -502,7 +502,11 @@
       "implementation_evidence": [
         "src/gamingcreator/infrastructure/render_limits.py",
         "scripts/cache-maintenance.py",
-        "docs/exec-plans/sprint-cache-reclamation.md"
+        "docs/exec-plans/sprint-cache-reclamation.md",
+        "src/gamingcreator/infrastructure/window_segment_cache.py",
+        "src/gamingcreator/application/analysis.py",
+        "docs/exec-plans/sprint-t17-window-segment-cache.md",
+        "tests/test_window_segment_cache.py"
       ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"

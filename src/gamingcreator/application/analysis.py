@@ -36,6 +36,7 @@ from gamingcreator.application.providers import (
     AsrRequest,
     CancellationContext,
     InvocationMetadata,
+    ProviderResult,
     ProviderStatus,
     ProviderUsage,
     VisionProvider,
@@ -53,6 +54,14 @@ from gamingcreator.application.storage import (
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.media import MediaAsset, MediaPreprocessingResult, VisualEvidence
 from gamingcreator.domain.models import EvidenceReference
+from gamingcreator.infrastructure.window_segment_cache import (
+    WindowSegmentCache,
+    cache_key,
+    fingerprint,
+    remint_events,
+    settings_digest,
+    window_digest,
+)
 
 PIPELINE_VERSION = "phase0-analyze-v1"
 WINDOW_PIPELINE_VERSION = "phase0-analyze-v2"
@@ -695,20 +704,59 @@ async def _run_pipeline(
                     await ports.store.begin_stage(
                         run_id, stage_id, _digest([item.evidence_id for item in window])
                     )
-                    visual = await ports.vision.analyze(
-                        VisionRequest(
-                            run_id,
-                            window,
-                            config.vision_prompt_version,
-                            "temporal-actions-v1"
-                            if config.vision_prompt_version
-                            in ("phase0-vision-v4", "phase0-vision-v5", "phase0-vision-v6")
-                            else VISION_SCHEMA_VERSION,
-                            config.max_output_tokens,
-                            stage_id=stage_id,
+                    segment_key = cache_key(
+                        project=_digest(project.resolve().as_posix()),
+                        recording=asset.sha256,
+                        settings=settings_digest(
+                            config,
+                            hashlib.sha256(_pipeline_version(config).encode()).hexdigest(),
+                            REQUIRED_STAGES,
                         ),
-                        remaining(),
+                        window=window_digest(window),
                     )
+                    cached_rows = None
+                    try:
+                        cached_rows = WindowSegmentCache(project).load(segment_key)
+                    except ValueError:
+                        cached_rows = None
+                    if cached_rows is not None:
+                        reminted = remint_events(
+                            cached_rows, run_id=run_id, media_id=asset.media_id
+                        )
+                        visual = ProviderResult(
+                            ProviderStatus.COMPLETED,
+                            reminted,
+                            InvocationMetadata(
+                                provider="window-segment-cache",
+                                requested_model="local-cache",
+                                actual_model="local-cache",
+                                model_revision=None,
+                                prompt_version=config.vision_prompt_version,
+                                schema_version=VISION_SCHEMA_VERSION,
+                                attempt=1,
+                                usage=ProviderUsage(),
+                                elapsed_ms=0,
+                                execution_details=json.dumps(
+                                    {"cacheHit": True, "fingerprint": fingerprint(segment_key)},
+                                    ensure_ascii=False,
+                                ),
+                            ),
+                        )
+                    else:
+                        visual = await ports.vision.analyze(
+                            VisionRequest(
+                                run_id,
+                                window,
+                                config.vision_prompt_version,
+                                "temporal-actions-v1"
+                                if config.vision_prompt_version
+                                in ("phase0-vision-v4", "phase0-vision-v5", "phase0-vision-v6")
+                                else VISION_SCHEMA_VERSION,
+                                config.max_output_tokens,
+                                stage_id=stage_id,
+                            ),
+                            remaining(),
+                        )
                     if visual.status != ProviderStatus.COMPLETED or visual.output is None:
                         code = visual.error.code if visual.error else "provider.failed"
                         await ports.store.finish_stage(
@@ -744,6 +792,11 @@ async def _run_pipeline(
                         (),
                         _digest([event.event_id for event in visual.output]),
                     )
+                    if cached_rows is None and visual.output is not None:
+                        try:
+                            WindowSegmentCache(project).store(segment_key, tuple(visual.output))
+                        except (OSError, ValueError):
+                            pass  # Cache write failure must not fail a paid window.
                     completed_count += 1
                     print(
                         json.dumps(
