@@ -155,3 +155,43 @@ def test_trim_suggestion_thresholds_and_normalize():
     assert trim_suggestion({"裁剪": 3, "删镜头": 4})["applied"] is False  # share < 0.5
     hit = trim_suggestion({"裁剪": 3, "删镜头": 2, "变速": 1})
     assert hit["applied"] is True and hit["share"] == 0.5 and hit["minTrimEdits"] == 3
+
+
+def test_feedback_cache_hit_miss_and_content_invalidation(revisions):
+    jobs, root, _ = revisions
+    req = payload(jobs, root)
+    req["clips"] = req["clips"][:-1]
+    child = jobs.submit("revision", req)["jobId"]
+    assert finish(jobs, child)["status"] == "completed"
+    project = jobs.read(jobs.directory(root) / "status.json")["projectId"]
+    cache = jobs.root / "feedback-cache"
+    # Plan ordering may have already written a cache entry; start from a known miss.
+    if cache.is_dir():
+        for path in cache.glob("*.json"):
+            path.unlink()
+
+    first = jobs.feedback(project)
+    assert first["chains"] >= 1 and first["editKinds"].get("删镜头") == 1
+    files = list(cache.glob("*.json"))
+    assert len(files) == 1
+    cached = json.loads(files[0].read_text(encoding="utf-8"))
+    assert cached["schemaVersion"] == "creation-feedback-cache-v1"
+    assert cached["projectId"] == project
+    fingerprint = cached["fingerprint"]
+    assert len(fingerprint) == 64 and cached["summary"] == first
+
+    second = jobs.feedback(project)
+    assert second == first
+    assert json.loads(files[0].read_text(encoding="utf-8"))["fingerprint"] == fingerprint
+
+    # Content change (not mtime alone) must miss: alter a contributing completed request body.
+    request_path = jobs.directory(root) / "request.json"
+    request = json.loads(request_path.read_text(encoding="utf-8"))
+    request["request"] = dict(request.get("request") or {})
+    request["request"]["_feedbackCacheProbe"] = "changed"
+    request_path.write_text(json.dumps(request, ensure_ascii=False), encoding="utf-8")
+
+    third = jobs.feedback(project)
+    refreshed = json.loads(files[0].read_text(encoding="utf-8"))
+    assert refreshed["fingerprint"] != fingerprint
+    assert refreshed["summary"] == third

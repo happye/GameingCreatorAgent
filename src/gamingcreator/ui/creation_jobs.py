@@ -1023,34 +1023,114 @@ class CreationJobs:
             raise fail("entitlement.denied", str(error)) from error
 
     def feedback(self, project_id: str) -> dict[str, object]:
-        """Read-only usage statistics from saved records; videos are not re-hashed here."""
+        """Read-only usage statistics from saved records; videos are not re-hashed here.
+
+        A project-level cache under ``feedback-cache/`` is keyed by the SHA-256 of all
+        contributing file contents (not mtime/TTL). Cache hits still re-read those bytes to
+        verify the fingerprint, but skip JSON parse and summarization.
+        """
         self.project(project_id)
+        fingerprint, records = self._feedback_scan(project_id)
+        cache_dir = self.root / "feedback-cache"
+        cache_dir.mkdir(exist_ok=True)
+        cache_path = cache_dir / (hashlib.sha256(project_id.encode("utf-8")).hexdigest() + ".json")
+        try:
+            if cache_path.is_file():
+                cached = self.read(cache_path)
+                if (
+                    cached.get("schemaVersion") == "creation-feedback-cache-v1"
+                    and cached.get("projectId") == project_id
+                    and cached.get("fingerprint") == fingerprint
+                    and isinstance(cached.get("summary"), dict)
+                ):
+                    return cached["summary"]
+        except (OSError, ValueError, AppError):
+            pass  # Corrupt cache must not block statistics.
+        summary = summarize_feedback(records)
+        try:
+            self.save(
+                cache_path,
+                {
+                    "schemaVersion": "creation-feedback-cache-v1",
+                    "projectId": project_id,
+                    "fingerprint": fingerprint,
+                    "summary": summary,
+                },
+            )
+        except (OSError, ValueError, AppError):
+            pass  # Statistics remain available even when the cache cannot be written.
+        return summary
+
+    def _feedback_scan(self, project_id: str) -> tuple[str, list[dict[str, Any]]]:
+        """Return content fingerprint and parsed records for one project."""
+        digest = hashlib.sha256()
+        digest.update(project_id.encode("utf-8"))
         records: list[dict[str, Any]] = []
-        for directory in self.jobs.iterdir():
+        for directory in sorted(self.jobs.iterdir(), key=lambda item: item.name):
             if not directory.is_dir() or re.fullmatch("[0-9a-f]{32}", directory.name) is None:
                 continue
             try:
-                state = self.read(directory / "status.json")
-                if state.get("projectId") != project_id or state.get("status") != "completed":
-                    continue
-                record = {
-                    "jobId": directory.name,
-                    "kind": state.get("kind"),
-                    "status": state.get("status"),
-                    "createdAt": state.get("createdAt", ""),
-                    "request": self.read(directory / "request.json").get("request", {}),
-                }
-                if record["kind"] == "plan":
-                    record["plans"] = self.read(directory / "result/plans.json").get("plans", [])
-                elif record["kind"] == "revision":
-                    record["root"] = self.read(directory / "result/revision.json")
-                    record["segments"] = self.read(directory / "result/edit-decision.json").get(
-                        "segments", []
-                    )
-                records.append(record)
+                payload = self._feedback_job_payload(directory, project_id)
             except (OSError, ValueError, AppError):
                 continue  # An unreadable record is left out of the statistics, not guessed.
-        return summarize_feedback(records)
+            if payload is None:
+                continue
+            job_digest, record = payload
+            digest.update(directory.name.encode("ascii"))
+            digest.update(bytes.fromhex(job_digest))
+            records.append(record)
+        return digest.hexdigest(), records
+
+    def _feedback_job_payload(
+        self, directory: Path, project_id: str
+    ) -> tuple[str, dict[str, Any]] | None:
+        """Hash and parse one completed job; ``None`` if it is out of scope for this project."""
+        status_path = directory / "status.json"
+        request_path = directory / "request.json"
+        status_bytes = retry_file_sharing(lambda: status_path.read_bytes(), reading=True)
+        state = json.loads(status_bytes.decode("utf-8"))
+        if not isinstance(state, dict):
+            raise ValueError("Invalid job document")
+        if state.get("projectId") != project_id or state.get("status") != "completed":
+            return None
+        request_bytes = retry_file_sharing(lambda: request_path.read_bytes(), reading=True)
+        request_document = json.loads(request_bytes.decode("utf-8"))
+        if not isinstance(request_document, dict):
+            raise ValueError("Invalid job document")
+        parts = [b"status.json", status_bytes, b"request.json", request_bytes]
+        record: dict[str, Any] = {
+            "jobId": directory.name,
+            "kind": state.get("kind"),
+            "status": state.get("status"),
+            "createdAt": state.get("createdAt", ""),
+            "request": request_document.get("request", {}),
+        }
+        if record["kind"] == "plan":
+            plans_path = directory / "result/plans.json"
+            plans_bytes = retry_file_sharing(lambda: plans_path.read_bytes(), reading=True)
+            plans_document = json.loads(plans_bytes.decode("utf-8"))
+            if not isinstance(plans_document, dict):
+                raise ValueError("Invalid job document")
+            parts.extend([b"result/plans.json", plans_bytes])
+            record["plans"] = plans_document.get("plans", [])
+        elif record["kind"] == "revision":
+            root_path = directory / "result/revision.json"
+            edl_path = directory / "result/edit-decision.json"
+            root_bytes = retry_file_sharing(lambda: root_path.read_bytes(), reading=True)
+            edl_bytes = retry_file_sharing(lambda: edl_path.read_bytes(), reading=True)
+            root_document = json.loads(root_bytes.decode("utf-8"))
+            edl_document = json.loads(edl_bytes.decode("utf-8"))
+            if not isinstance(root_document, dict) or not isinstance(edl_document, dict):
+                raise ValueError("Invalid job document")
+            parts.extend(
+                [b"result/revision.json", root_bytes, b"result/edit-decision.json", edl_bytes]
+            )
+            record["root"] = root_document
+            record["segments"] = edl_document.get("segments", [])
+        job_digest = hashlib.sha256()
+        for part in parts:
+            job_digest.update(part)
+        return job_digest.hexdigest(), record
 
     def _preferences(self, directory: Path) -> dict[str, int] | None:
         path = directory / "input/preferences.json"
