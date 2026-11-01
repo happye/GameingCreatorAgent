@@ -1,6 +1,8 @@
 # 当前接手：51项全部至少部分可用，下一步把部分项推进到可验收
 
-**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T3 已完成；下一步 T4 Free 分析分钟计量）。**
+**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T4 已完成；下一步 T5 TD020 活动规则句式）。**
+
+2026-11-01 T4 Free 分析分钟计量：准备录像 submit 用 ffprobe 按月累计（`.cache/workspace/creations/entitlement-usage.json`）；Free 60 分钟上限；接受时计数、失败仍占额度、续跑不重复；套餐页展示；不碰付费视觉账本。计数不变：51项10/41/0≈60%；技术债21项12/4/5；人工0／未来8。
 
 2026-11-01 T3 安装器可选开始菜单快捷方式（781060c）：`-StartMenuShortcut` 默认关；WScript 建 `GamingCreator.lnk`；receipt 记录路径；卸载只删自己建的；测试 `-ShortcutDirectory`。计数不变：51项10/41/0≈60%；技术债21项12/4/5；人工0／未来8。
 

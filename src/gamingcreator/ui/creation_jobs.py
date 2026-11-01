@@ -851,9 +851,17 @@ class CreationJobs:
 
     def entitlement_summary(self) -> dict[str, Any]:
         from gamingcreator.application.entitlements import renders_this_month, summary
+        from gamingcreator.infrastructure.entitlement_usage import (
+            preparation_minutes_this_month,
+        )
 
         used = renders_this_month(self._statuses(), datetime.now(UTC).isoformat())
-        return summary(self.entitlement_selection(), used)
+        preparation = preparation_minutes_this_month(self.root)
+        return summary(
+            self.entitlement_selection(),
+            used,
+            preparation_minutes_used=preparation,
+        )
 
     def check_entitlement(self, kind: str, request: dict[str, Any]) -> None:
         from gamingcreator.application.entitlements import (

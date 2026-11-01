@@ -31,7 +31,7 @@
 ### T3 安装器可选快捷方式 ✅ 已完成（781060c）
 - `install-app.ps1 -StartMenuShortcut`（默认不建）：在 `%APPDATA%\Microsoft\Windows\Start Menu\Programs\` 建 `GamingCreator.lnk`（WScript.Shell），卸载时只删自己建的那个（记在安装记录里）。测试用临时 `-ShortcutDirectory` 参数，不碰真实开始菜单。
 
-### T4 Free 套餐“分析分钟数”计量（总方案 §40）
+### T4 Free 套餐“分析分钟数”计量（总方案 §40） ✅ 已完成
 - 只计**本地媒体准备**（工作台“准备录像”，`ui/media_preparation.py::submit`）的录像时长：提交时用 ffprobe 读时长，按月累计（记录在 `.cache/workspace/creations/entitlement-usage.json` 之类，独占写/加锁），Free 每月上限（如 60 分钟，写在 `application/entitlements.py` 的 PLANS），超出时拒绝并说明；Creator/Pro/创始人版另设或不限。
 - 不碰付费视觉分析的授权与账本逻辑；续跑（resume）不重复计数；失败的批次是否计数要写清楚并测试。
 - `summary()` 返回本月已用分钟，页面“套餐与用量”显示。

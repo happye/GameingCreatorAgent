@@ -1,5 +1,8 @@
 # 当前分工与恢复入口
 
+**2026-11-01 T4（Free 分析分钟计量）：** sprint-t4-preparation-minutes.md；下一步 T5。
+
+
 **2026-11-01 T3（开始菜单快捷方式，781060c）：** sprint-t3-start-menu-shortcut.md；下一步 T4。
 
 

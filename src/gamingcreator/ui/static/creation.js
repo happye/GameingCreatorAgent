@@ -819,7 +819,12 @@
         const render = (data) => {
             select.replaceChildren(...Object.entries(data.plans).map(([value, text]) => new Option(text, value))); select.value = data.plan;
             const features = Object.entries(data.features).map(([key, on]) => `${data.featureLabels[key]}${on ? "✓" : "✗"}`).join("、");
-            info.textContent = `本月成片 ${data.rendersThisMonth}${data.monthlyRenders === null ? "（不限）" : ` / ${data.monthlyRenders}`}；功能：${features}${data.watermark ? `；新成片右上角带“${data.watermark}”水印` : ""}。未接入任何支付。`;
+            const prepLimit = data.monthlyPreparationMinutes;
+            const prepUsed = data.preparationMinutesThisMonth ?? 0;
+            const prepText = prepLimit === null || prepLimit === undefined
+                ? `准备录像 ${prepUsed} 分钟（不限）`
+                : `准备录像 ${prepUsed} / ${prepLimit} 分钟`;
+            info.textContent = `本月成片 ${data.rendersThisMonth}${data.monthlyRenders === null ? "（不限）" : ` / ${data.monthlyRenders}`}；${prepText}；功能：${features}${data.watermark ? `；新成片右上角带“${data.watermark}”水印` : ""}。未接入任何支付。`;
         };
         select.addEventListener("change", async () => { try { render(await api("/api/entitlement", {plan: select.value})); } catch (error) { info.textContent = `切换失败：${error.message}`; } });
         api("/api/entitlement").then(render).catch(() => { info.textContent = "套餐信息暂不可用。"; });

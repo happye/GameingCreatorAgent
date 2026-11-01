@@ -13,22 +13,26 @@ PLANS: dict[str, dict[str, Any]] = {
         "label": "创始人验证版（默认，不限）",
         "features": {"activityRules", "multiPlatform", "timelineExport", "sandboxPublish"},
         "monthlyRenders": None,
+        "monthlyPreparationMinutes": None,
     },
     "free": {
         "label": "Free",
         "features": set(),
         "monthlyRenders": 10,
+        "monthlyPreparationMinutes": 60,
         "watermark": "GamingCreator Free",
     },
     "creator": {
         "label": "Creator",
         "features": {"activityRules", "multiPlatform", "sandboxPublish"},
         "monthlyRenders": 100,
+        "monthlyPreparationMinutes": None,
     },
     "pro": {
         "label": "Creator Pro",
         "features": {"activityRules", "multiPlatform", "timelineExport", "sandboxPublish"},
         "monthlyRenders": 1000,
+        "monthlyPreparationMinutes": None,
     },
 }
 FEATURE_LABELS = {
@@ -88,6 +92,30 @@ def require_render(selection: dict[str, Any] | None, used: int) -> None:
         )
 
 
+def require_preparation_minutes(
+    selection: dict[str, Any] | None, used_minutes: float, additional_minutes: float
+) -> None:
+    """Refuse a new media-preparation submit that would exceed this month's Free cap.
+
+    Creator / Pro / founder have monthlyPreparationMinutes=None (unlimited). Usage is
+    counted when a new prepare submit is accepted; failed batches still count; resume
+    must not call this with a duplicate key that adds again.
+    """
+    if additional_minutes < 0:
+        raise ValueError("additional_minutes must be non-negative")
+    plan = plan_of(selection)
+    limit = PLANS[plan].get("monthlyPreparationMinutes")
+    if limit is None:
+        return
+    projected = used_minutes + additional_minutes
+    if projected > float(limit) + 1e-9:
+        raise EntitlementError(
+            f"当前套餐“{PLANS[plan]['label']}”本月准备录像额度不足"
+            f"（已用约 {used_minutes:.1f} 分钟，本次约 {additional_minutes:.1f} 分钟，"
+            f"上限 {limit} 分钟）。可在“套餐与用量”切换套餐（本地评估，不涉及付费）。"
+        )
+
+
 def require_package_platform(
     selection: dict[str, Any] | None, platforms_already_packaged: set[str], platform: str
 ) -> None:
@@ -96,7 +124,12 @@ def require_package_platform(
     require(selection, "multiPlatform")
 
 
-def summary(selection: dict[str, Any] | None, used_renders: int) -> dict[str, Any]:
+def summary(
+    selection: dict[str, Any] | None,
+    used_renders: int,
+    *,
+    preparation_minutes_used: float = 0.0,
+) -> dict[str, Any]:
     plan = plan_of(selection)
     definition = PLANS[plan]
     return {
@@ -107,6 +140,8 @@ def summary(selection: dict[str, Any] | None, used_renders: int) -> dict[str, An
         "featureLabels": FEATURE_LABELS,
         "monthlyRenders": definition["monthlyRenders"],
         "rendersThisMonth": used_renders,
+        "monthlyPreparationMinutes": definition.get("monthlyPreparationMinutes"),
+        "preparationMinutesThisMonth": round(float(preparation_minutes_used), 2),
         "watermark": watermark_for(selection),
         "plans": {name: value["label"] for name, value in PLANS.items()},
     }

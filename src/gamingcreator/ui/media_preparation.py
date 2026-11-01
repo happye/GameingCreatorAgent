@@ -14,6 +14,10 @@ from pathlib import Path
 from typing import cast
 from uuid import uuid4
 
+from gamingcreator.application.entitlements import (
+    EntitlementError,
+    require_preparation_minutes,
+)
 from gamingcreator.application.media_batch import MediaBatchPlan
 from gamingcreator.cli.main import (
     _media_preparation_config,
@@ -21,6 +25,13 @@ from gamingcreator.cli.main import (
     require_resumable_project,
 )
 from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.infrastructure.entitlement_usage import (
+    has_preparation_entry,
+    preparation_key,
+    preparation_minutes_this_month,
+    probe_duration_seconds,
+    record_preparation_if_new,
+)
 from gamingcreator.infrastructure.local_files import LocalInputReader
 from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
 from gamingcreator.infrastructure.media_batch_files import MediaBatchFiles
@@ -31,6 +42,47 @@ PROFILES = {
     "detailed": "config.detailed-v6.example.json",
 }
 TERMINAL = {"finished", "partial", "failed", "cancelled"}
+
+
+def _creations_root(repository: Path) -> Path:
+    return repository.resolve() / ".cache" / "workspace" / "creations"
+
+
+def _entitlement_selection(repository: Path) -> dict[str, object] | None:
+    path = _creations_root(repository) / "entitlement.json"
+    if not path.is_file():
+        return None
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return None
+    return raw if type(raw) is dict else None
+
+
+def _preparation_quota_or_none(
+    repository: Path, project: Path, video_paths: list[Path]
+) -> tuple[str, float] | None:
+    """Probe durations and refuse Free over-cap; return (key, seconds) to record on accept.
+
+    Policy: minutes are reserved when a new prepare submit is accepted (before the batch
+    runs). Failed batches still count. Resume must not call this. Same project+paths
+    already recorded this month returns None (no extra charge).
+    """
+    creations = _creations_root(repository)
+    key = preparation_key(project, video_paths)
+    if has_preparation_entry(creations, key):
+        return None
+    seconds = 0.0
+    for media in video_paths:
+        seconds += probe_duration_seconds(repository, media)
+    minutes = seconds / 60.0
+    used = preparation_minutes_this_month(creations)
+    selection = _entitlement_selection(repository)
+    try:
+        require_preparation_minutes(selection, used, minutes)
+    except EntitlementError as error:
+        raise AppError("entitlement.denied", str(error), ExitCode.INPUT) from error
+    return key, seconds
 
 
 def _invalid(message: str = "请填写有效的项目、录像路径和准备参数。") -> AppError:
@@ -145,6 +197,7 @@ class MediaPreparationJobs:
         input_bytes: bytes | None = None
         config_bytes: bytes | None = None
         names: dict[str, str]
+        pending_meter = None
         if resume:
             batch_id = document["resume"]
             if type(batch_id) is not str or not re.fullmatch(r"[a-f0-9]{32}", batch_id):
@@ -207,6 +260,11 @@ class MediaPreparationJobs:
                 {"schemaVersion": "media-batch-input-v1", "items": items}, ensure_ascii=False
             ).encode()
             arguments["max_cost_cny"] = budget
+            pending_meter = _preparation_quota_or_none(
+                self.repository,
+                project,
+                [Path(row["path"]) for row in items],
+            )
         with self._lock:
             if self._closed or any(
                 job.thread is not None and job.thread.is_alive() for job in self._jobs.values()
@@ -215,6 +273,11 @@ class MediaPreparationJobs:
                     "storage.preparation_busy",
                     "已有批次正在准备，请完成或停止后再提交。",
                     ExitCode.STORAGE,
+                )
+            if pending_meter is not None:
+                key, seconds = pending_meter
+                record_preparation_if_new(
+                    _creations_root(self.repository), key=key, seconds=seconds
                 )
             if len(self._jobs) >= 100:
                 oldest = next(iter(self._jobs))

@@ -20,10 +20,15 @@ from gamingcreator.ui.media_preparation import MediaPreparationJobs, preparation
 
 
 @pytest.fixture
-def preparation(request):
+def preparation(request, monkeypatch):
     _, _, config, media, _ = request.getfixturevalue("batch")
     root = config.parent
     (root / "config.example.json").write_bytes(config.read_bytes())
+    # Fake batch media is not a real container; metering still runs on submit.
+    monkeypatch.setattr(
+        "gamingcreator.ui.media_preparation.probe_duration_seconds",
+        lambda repository, media_path: 1.0,
+    )
     jobs = MediaPreparationJobs(root)
     document = {
         "project": "artifacts/准备项目",
