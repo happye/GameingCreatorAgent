@@ -1,6 +1,8 @@
 # 当前接手：51项全部至少部分可用，下一步把部分项推进到可验收
 
-**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T10 已完成；下一步 T11）。**
+**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T11 已完成；下一步 T12）。**
+
+2026-11-01 T11 全量 verify 门禁：scripts/verify.ps1 全绿（ruff/mypy/pytest -W error/离线双 wheel/CLI）；墙钟 **1451.7s**（pytest 4487 passed / 5 skipped · 1438.75s）；修 PowerShell UTF-8 解码、HTTPError 响应未关闭导致的 ResourceWarning、审计分支 mypy 阴影与 ruff。计数不变：51项10/41/0≈60%；技术债21项14/2/5；人工0／未来8。
 
 2026-11-01 T10 企业版增强（P051）：按项目团队；审核历史可展开；团队/审核审计 JSON·CSV 导出（姓名自报标记）；旧全局团队只读回退。计数不变：51项10/41/0≈60%；技术债21项14/2/5；人工0／未来8。
 

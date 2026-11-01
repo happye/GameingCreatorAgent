@@ -1,3 +1,6 @@
+**2026-11-01 T11 全量 verify 门禁：** erify.ps1 EXIT=0；墙钟 1451.7s；4487 passed / 5 skipped；wheel SHA256 C73DB44F…1D7A84 双构建一致；修 setup_media UTF-8 replace、HTTP 测试 HTTPError.close、server 审计局部名、ruff。下一步 T12。计数不变：51项10/41/0≈60%；债务21项14/2/5。**
+
+
 **2026-11-01 T10 企业版增强（P051）：** 按项目团队 + 可展开审核历史 + 审计 JSON/CSV（自报姓名）；下一步 T11。计数不变：51项10/41/0≈60%；债务21项14/2/5。**
 
 

@@ -59,7 +59,8 @@
 
 ## 3. 低优先 / 冗杂但有价值
 
-- T11 `scripts/verify.ps1` 全套（format/lint/mypy/pytest/离线 wheel 构建）完整跑一遍并修复任何问题；记录耗时。
+### T11 全量 verify 门禁 ✅ 已完成（2215cb3）
+- scripts/verify.ps1 全套（format/lint/mypy/pytest/离线 wheel）已绿；墙钟 1451.7s；见 sprint-t11-verify-gate.md。
 - T12 用户手册：把 `docs/references/creation-guide.md` 扩成从安装到出发布包的通俗中文全流程说明（每步：入口、会发生什么、不会发生什么、常见问题）。
 - T13 清理 `src/gamingcreator/**/__pycache__`（有人未加 -B 运行留下的 pyc；先确认 git 忽略状态，只删 pyc，不动其他）。
 - T14 进度看板逐行核对：对每个 🟡 行，在 sprint 或看板里列出“还缺什么、哪些需用户/外部、哪些可本地做”，把可本地做的拆成新的小任务追加到本清单末尾。

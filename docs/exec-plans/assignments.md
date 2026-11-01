@@ -1,3 +1,6 @@
+**2026-11-01 T11（全量 verify 门禁，见功能提交）：** sprint-t11-verify-gate.md；下一步 T12。
+
+
 **2026-11-01 T10（企业版增强 P051，见功能提交）：** sprint-t10-enterprise-enhancements.md；下一步 T11。
 
 
