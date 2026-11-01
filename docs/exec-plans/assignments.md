@@ -1,3 +1,6 @@
+**2026-11-01 T9（反馈学习进一步 P042，见功能提交）：** sprint-t9-feedback-edit-habits.md；下一步 T10。
+
+
 **2026-11-01 T8（新界面文案浏览器测试，见功能提交）：** sprint-t8-creation-copy-browser.md；下一步 T9。
 
 

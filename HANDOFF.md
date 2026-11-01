@@ -1,6 +1,8 @@
 # 当前接手：51项全部至少部分可用，下一步把部分项推进到可验收
 
-**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T8 已完成；下一步 T9）。**
+**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T9 已完成；下一步 T10）。**
+
+2026-11-01 T9 反馈学习进一步（P042）：裁剪占比高时新方案镜头上限 1 秒并提示「你常裁短，已建议更短片段」；规则与观测写入 `ordering.editHabits`，注册冻结 `input/edit-habits.json`；不静默改时长。计数不变：51项10/41/0≈60%；技术债21项14/2/5；人工0／未来8。
 
 2026-11-01 T8 新界面文案浏览器测试：strict-route 覆盖成片水印说明、「套餐与用量」水印提示、方案卡「你常用的结构」（rankedByHistory 真/假）、时间线导出点击带 size；见 `tests/test_creation_copy_browser.py`。计数不变：51项10/41/0≈60%；技术债21项14/2/5；人工0／未来8。
 
