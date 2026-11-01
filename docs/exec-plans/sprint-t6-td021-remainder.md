@@ -1,6 +1,6 @@
 # Sprint T6：TD021 剩余项
 
-**状态（2026-11-01）：已推送 origin/main（见功能提交 SHA）。**
+**状态（2026-11-01）：已推送 origin/main 4d6afec。**
 
 ## 1. 知识库改用 local_files helper
 
