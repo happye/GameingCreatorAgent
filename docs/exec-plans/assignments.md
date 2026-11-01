@@ -1,3 +1,6 @@
+**2026-11-01 T13（pycache 清理，见文档提交）：** sprint-t13-pycache-cleanup.md；下一步 T14。
+
+
 **2026-11-01 T12（用户手册，见文档提交）：** sprint-t12-creation-user-guide.md；下一步 T13。
 
 

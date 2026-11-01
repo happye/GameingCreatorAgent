@@ -63,7 +63,8 @@
 - scripts/verify.ps1 全套（format/lint/mypy/pytest/离线 wheel）已绿；墙钟 1451.7s；见 sprint-t11-verify-gate.md。
 ### T12 用户手册 ✅ 已完成（23c49b4）
 - docs/references/creation-guide.md 已扩为安装→发布包通俗全流程（每步入口／会发生／不会发生／常见问题）；见 sprint-t12-creation-user-guide.md。
-- T13 清理 `src/gamingcreator/**/__pycache__`（有人未加 -B 运行留下的 pyc；先确认 git 忽略状态，只删 pyc，不动其他）。
+### T13 pycache 清理 ✅ 已完成（待 SHA）
+- 确认 gitignore；删除 src/gamingcreator 下 6×__pycache__／106×.pyc（未跟踪）；见 sprint-t13-pycache-cleanup.md。
 - T14 进度看板逐行核对：对每个 🟡 行，在 sprint 或看板里列出“还缺什么、哪些需用户/外部、哪些可本地做”，把可本地做的拆成新的小任务追加到本清单末尾。
 - T15 CLI `render-creation` 是否应读取套餐水印：当前设计为开发者路径不加水印（复审结论），若改变需先写决策记录（ADR）再实现。
 - T16 性能：`CreationJobs.feedback()` 每次生成方案都全量扫描任务目录；任务多时可加简单索引或缓存（必须以文件内容哈希失效，不能用过期统计）。
