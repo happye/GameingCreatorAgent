@@ -240,3 +240,41 @@ def test_local_render_history_reorders_generic_structures_only():
     assert plan_creation(brief("feature_showcase"), material(facts), 30, {"x": 0, "y": True})[
         "ordering"
     ] == {"basis": "template", "renderedByPlan": {}}
+
+
+
+def test_edit_habit_trim_suggestion_shortens_records_and_skips_when_rare():
+    from gamingcreator.application.creation_feedback import TRIM_TIP, trim_suggestion
+
+    facts = [f"画面{i}出现敌人" for i in range(6)]
+    clips = material(facts)
+    baseline = plan_creation(brief("feature_showcase"), clips, 30)
+    # High trim share (>=3 and >=50%) applies 1s cap and records the rule.
+    heavy = {"裁剪": 5, "删镜头": 1, "变速": 1}
+    assert trim_suggestion(heavy)["applied"] is True
+    shortened = plan_creation(brief("feature_showcase"), clips, 30, edit_kinds=heavy)
+    tip = shortened["ordering"]["editHabits"]["trimSuggestion"]
+    assert tip["applied"] is True and tip["rule"] == "max-output-seconds-per-segment=1"
+    assert tip["trimEdits"] == 5 and tip["totalEditEvents"] == 7
+    assert shortened["ordering"]["editHabits"]["editKinds"] == heavy
+    for plan in shortened["plans"]:
+        assert plan["advisories"][0] == TRIM_TIP
+        assert all(segment["outputFrames"] <= 30 for segment in plan["segments"])
+    # At least one plan had a longer baseline segment that the cap actually cuts.
+    assert any(
+        before["outputFrames"] > after["outputFrames"]
+        for before, after in zip(
+            baseline["plans"][0]["segments"], shortened["plans"][0]["segments"], strict=False
+        )
+    )
+    # Rare trims: record observations, do not change durations or tip.
+    light = {"裁剪": 1, "删镜头": 4}
+    assert trim_suggestion(light)["applied"] is False
+    rare = plan_creation(brief("feature_showcase"), clips, 30, edit_kinds=light)
+    assert rare["ordering"]["editHabits"]["trimSuggestion"]["applied"] is False
+    assert TRIM_TIP not in rare["plans"][0]["advisories"]
+    assert [s["outputFrames"] for s in rare["plans"][0]["segments"]] == [
+        s["outputFrames"] for s in baseline["plans"][0]["segments"]
+    ]
+    # edit_kinds=None keeps the pre-T9 ordering shape (no editHabits key).
+    assert "editHabits" not in baseline["ordering"]

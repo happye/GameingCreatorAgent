@@ -991,7 +991,8 @@
       "delivery_status": "partial",
       "implementation_evidence": [
         "2026-11-01: read-only local feedback statistics from saved creation jobs (plans, recommendation offered/adopted, revisions, edit kinds by actual difference including inherited settings, render->publication->package funnel); real demo-phase0 22 plans/18 chains in 0.6s; adoption so far from agent test runs, not human choices; not yet fed back into ranking",
-        "2026-11-01: plan jobs capture per-structure finished-video counts from this project's saved records at registration; the planner moves frequently finished generic structures forward (mode template stays first/recommended), marks localRenders on cards and records ordering basis in the plan report; statistics failures fall back to template order"
+        "2026-11-01: plan jobs capture per-structure finished-video counts from this project's saved records at registration; the planner moves frequently finished generic structures forward (mode template stays first/recommended), marks localRenders on cards and records ordering basis in the plan report; statistics failures fall back to template order",
+        "2026-11-01 T9: when local editKinds show 裁剪 ≥3 and ≥50% of edit events, new plans cap each segment to 1.0s output, prepend advisory 「你常裁短，已建议更短片段」, and record thresholds/rule/observed counts under ordering.editHabits (frozen at registration in input/edit-habits.json); no silent duration change without that record; other edit kinds unchanged"
       ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"

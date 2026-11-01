@@ -11,6 +11,47 @@ from typing import Any
 EDIT_KINDS = ("删镜头", "换顺序", "裁剪", "变速", "转场", "替换镜头", "字幕", "配乐", "旁白")
 
 
+TRIM_TIP = "你常裁短，已建议更短片段"
+TRIM_RULE = "max-output-seconds-per-segment=1"
+MIN_TRIM_EDITS = 3
+MIN_TRIM_SHARE = 0.5
+
+
+def normalize_edit_kinds(raw: object) -> dict[str, int]:
+    """Keep only known positive edit-kind counts (frozen input may be messy)."""
+    if not isinstance(raw, dict):
+        return {}
+    return {
+        key: value
+        for key, value in raw.items()
+        if isinstance(key, str) and key in EDIT_KINDS and type(value) is int and value > 0
+    }
+
+
+def trim_suggestion(edit_kinds: dict[str, int] | object) -> dict[str, object]:
+    """Whether new plans should cap segment length because the user often trims.
+
+    The rule and thresholds are part of the return value so a saved plan can replay the same
+    decision without re-reading later history.
+    """
+    kinds = normalize_edit_kinds(edit_kinds)
+    trim = kinds.get("裁剪", 0)
+    total = sum(kinds.values())
+    share = round(trim / total, 4) if total else 0.0
+    applied = bool(total and trim >= MIN_TRIM_EDITS and (trim / total) >= MIN_TRIM_SHARE)
+    return {
+        "applied": applied,
+        "rule": TRIM_RULE,
+        "minTrimEdits": MIN_TRIM_EDITS,
+        "minShare": MIN_TRIM_SHARE,
+        "trimEdits": trim,
+        "totalEditEvents": total,
+        "share": share,
+    }
+
+
+
+
 def _rows(segments: object) -> list[dict[str, Any]]:
     return [row for row in segments if isinstance(row, dict)] if isinstance(segments, list) else []
 

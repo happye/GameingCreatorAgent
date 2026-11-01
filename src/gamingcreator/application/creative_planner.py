@@ -3,6 +3,11 @@
 from dataclasses import dataclass
 from fractions import Fraction
 
+from gamingcreator.application.creation_feedback import (
+    TRIM_TIP,
+    normalize_edit_kinds,
+    trim_suggestion,
+)
 from gamingcreator.application.creation_modes import MODE_LABELS, mode_structure
 from gamingcreator.application.material_scoring import advisories, score_materials, scoring_legend
 from gamingcreator.application.storage import StoredTimeline
@@ -48,9 +53,14 @@ def plan_creation(
     clips: tuple[CreationClip, ...],
     fps: int,
     preferences: dict[str, int] | None = None,
+    edit_kinds: dict[str, int] | None = None,
 ) -> dict[str, object]:
     """Template plans; ``preferences`` (finished videos per plan structure on this machine)
-    only reorders the generic structures. The content-mode template stays recommended first."""
+    only reorders the generic structures. The content-mode template stays recommended first.
+
+    ``edit_kinds`` (frozen at plan registration) may cap segment length when trimming is common;
+    the decision is always written into ``ordering.editHabits`` when provided.
+    """
     if type(fps) is not int or not 1 <= fps <= 120:
         raise ValueError("Output fps must be an integer in 1..120.")
     eligible = [
@@ -101,6 +111,8 @@ def plan_creation(
         for index, structure in enumerate(generic)
         if index < template_order.index(structure[0])
     }
+    suggestion = trim_suggestion(edit_kinds) if edit_kinds is not None else None
+    trim_applied = bool(suggestion and suggestion["applied"])
     scores = score_materials(brief, eligible)
 
     def total(clip: CreationClip) -> float:
@@ -128,6 +140,9 @@ def plan_creation(
                 int(remaining * shares[index] / sum(shares[index:])),
                 (event.source_range.end_us - event.source_range.start_us) * fps // 1_000_000,
             )
+            if trim_applied:
+                # One second of output: recorded in ordering.editHabits.trimSuggestion.rule.
+                frames = min(frames, fps)
             if frames <= 0:
                 continue
             end_us = event.source_range.start_us + (frames * 1_000_000 + fps - 1) // fps
@@ -174,7 +189,11 @@ def plan_creation(
                 "segments": segments,
                 "gaps": gaps,
                 "ready": not gaps,
-                "advisories": advisories(brief, eligible, segments, fps),
+                "advisories": (
+                    [TRIM_TIP, *advisories(brief, eligible, segments, fps)]
+                    if trim_applied
+                    else advisories(brief, eligible, segments, fps)
+                ),
                 "scriptStatus": "saved-descriptions-draft-human-review-required",
                 **(
                     {"localRenders": habits[identity], "rankedByHistory": identity in moved}
@@ -196,6 +215,16 @@ def plan_creation(
         "ordering": {
             "basis": "local-render-history" if moved else "template",
             "renderedByPlan": habits,
+            **(
+                {
+                    "editHabits": {
+                        "editKinds": normalize_edit_kinds(edit_kinds),
+                        "trimSuggestion": suggestion,
+                    }
+                }
+                if suggestion is not None
+                else {}
+            ),
         },
         "fps": fps,
         "plans": plans,

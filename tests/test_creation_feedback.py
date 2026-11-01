@@ -9,7 +9,12 @@ import urllib.request
 from test_creation_jobs import finish, service  # noqa: F401
 from test_creation_revision_jobs import payload, revisions  # noqa: F401
 
-from gamingcreator.application.creation_feedback import edit_kinds, summarize_feedback
+from gamingcreator.application.creation_feedback import (
+    edit_kinds,
+    normalize_edit_kinds,
+    summarize_feedback,
+    trim_suggestion,
+)
 
 ONE = {"numerator": 1, "denominator": 1}
 CUT = {"type": "cut", "frames": 0}
@@ -142,3 +147,12 @@ def test_real_saved_jobs_and_http(revisions):
         server.shutdown()
         server.server_close()
         thread.join()
+
+
+
+def test_trim_suggestion_thresholds_and_normalize():
+    assert normalize_edit_kinds({"裁剪": 2, "未知": 9, "删镜头": 0, "x": "1"}) == {"裁剪": 2}
+    assert trim_suggestion({"裁剪": 2, "删镜头": 2})["applied"] is False  # below min count
+    assert trim_suggestion({"裁剪": 3, "删镜头": 4})["applied"] is False  # share < 0.5
+    hit = trim_suggestion({"裁剪": 3, "删镜头": 2, "变速": 1})
+    assert hit["applied"] is True and hit["share"] == 0.5 and hit["minTrimEdits"] == 3

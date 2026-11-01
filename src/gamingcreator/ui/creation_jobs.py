@@ -15,7 +15,11 @@ from typing import Any
 from uuid import uuid4
 
 from gamingcreator.application.creation_editing import editable_clips
-from gamingcreator.application.creation_feedback import plan_preferences, summarize_feedback
+from gamingcreator.application.creation_feedback import (
+    normalize_edit_kinds,
+    plan_preferences,
+    summarize_feedback,
+)
 from gamingcreator.application.edit_decision import select_edit_decision
 from gamingcreator.application.narration import NarrationRequest
 from gamingcreator.application.narration_script import build_narration_script
@@ -314,10 +318,16 @@ class CreationJobs:
                     self.save(directory / "input/brief.json", request["brief"])
                     # Captured once, so re-running the job never depends on later history.
                     try:
-                        preferences = plan_preferences(self.feedback(request["projectId"]))
+                        summary = self.feedback(request["projectId"])
+                        preferences = plan_preferences(summary)
+                        edit_kinds = normalize_edit_kinds(summary.get("editKinds"))
                     except Exception:
-                        preferences = {}  # Statistics never block planning, whatever broke.
+                        preferences, edit_kinds = {}, {}  # Statistics never block planning.
                     self.save(directory / "input/preferences.json", preferences)
+                    self.save(
+                        directory / "input/edit-habits.json",
+                        {"schemaVersion": "creation-edit-habits-v1", "editKinds": edit_kinds},
+                    )
                 self.save(directory / "status.json", state)
                 self.save(registration, {"digest": digest, "jobId": job_id})
                 if kind == "narration":
@@ -576,6 +586,7 @@ class CreationJobs:
                         request["fps"],
                         None,
                         preferences=self._preferences(directory),
+                        edit_kinds=self._edit_habits(directory),
                     )
                 )
             elif state["kind"] == "package":
@@ -938,6 +949,14 @@ class CreationJobs:
             return None  # Jobs registered before feedback ordering keep template order.
         value = self.read(path)
         return {k: v for k, v in value.items() if isinstance(k, str) and type(v) is int}
+
+    def _edit_habits(self, directory: Path) -> dict[str, int] | None:
+        path = directory / "input/edit-habits.json"
+        if not path.is_file():
+            return None  # Pre-T9 plan jobs never applied trim suggestions.
+        value = self.read(path)
+        kinds = value.get("editKinds") if isinstance(value, dict) else value
+        return normalize_edit_kinds(kinds)
 
     def timeline_export(
         self, job_id: str, plan_id: str, fmt: str, size: str = "1920x1080"

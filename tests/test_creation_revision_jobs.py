@@ -28,7 +28,7 @@ def revisions(service, monkeypatch):  # noqa: F811
         for row in plan["segments"]:
             row["sourcePath"] = str(asset.source_path)
 
-    async def planner(project, runs, brief, output, events, fps, selection, preferences=None):
+    async def planner(project, runs, brief, output, events, fps, selection, preferences=None, edit_kinds=None):
         report["brief"] = json.loads(brief.read_text())
         write_creation(output, {"plans.json": report}, ())
 

@@ -18,7 +18,7 @@ def service(tmp_path, monkeypatch):
     (tmp_path / "artifacts/project").mkdir(parents=True)
     (tmp_path / "artifacts/project/timeline.sqlite3").touch()
 
-    async def planner(project, runs, brief, output, events, fps, selection, preferences=None):
+    async def planner(project, runs, brief, output, events, fps, selection, preferences=None, edit_kinds=None):
         report = {
             "schemaVersion": "creation-plan-v1",
             "fps": fps,
@@ -432,3 +432,57 @@ def test_orphan_rejects_inconsistent_subtitle_receipt(service, change):
     state.pop("resultReceiptSha256")
     service.save(directory / "status.json", state)
     assert CreationJobs(service.repository).get(job_id)["status"] == "interrupted"
+
+
+
+def test_plan_registration_freezes_edit_habits(service, monkeypatch):
+    import gamingcreator.ui.creation_jobs as implementation
+
+    captured = {}
+
+    async def planner(project, runs, brief, output, events, fps, selection, preferences=None, edit_kinds=None):
+        from gamingcreator.infrastructure.creation_files import write_creation
+        import json
+
+        captured["preferences"] = preferences
+        captured["edit_kinds"] = edit_kinds
+        report = {
+            "schemaVersion": "creation-plan-v1",
+            "fps": fps,
+            "brief": json.loads(brief.read_text()),
+            "ordering": {"basis": "template", "renderedByPlan": preferences or {}},
+            "plans": [
+                {
+                    "id": "chronological",
+                    "structure": "chronological",
+                    "ready": True,
+                    "gaps": [],
+                    "scriptStatus": "draft",
+                    "segments": [{"sourcePath": "private", "startUs": 0, "runId": "run"}],
+                }
+            ],
+        }
+        return write_creation(output, {"plans.json": report}, ())
+
+    monkeypatch.setattr(implementation, "execute_plan_creation", planner)
+
+    def fake_feedback(project_id):
+        return {
+            "schemaVersion": "creation-feedback-v1",
+            "rows": [{"planId": "reverse", "render": True}],
+            "editKinds": {"裁剪": 4, "删镜头": 1},
+        }
+
+    monkeypatch.setattr(service, "feedback", fake_feedback)
+    job_id = service.submit("plan", request())["jobId"]
+    directory = service.directory(job_id)
+    frozen = json.loads((directory / "input/edit-habits.json").read_text(encoding="utf-8"))
+    assert frozen == {
+        "schemaVersion": "creation-edit-habits-v1",
+        "editKinds": {"裁剪": 4, "删镜头": 1},
+    }
+    prefs = json.loads((directory / "input/preferences.json").read_text(encoding="utf-8"))
+    assert prefs == {"reverse": 1}
+    finish(service, job_id)
+    assert captured["edit_kinds"] == {"裁剪": 4, "删镜头": 1}
+    assert captured["preferences"] == {"reverse": 1}
