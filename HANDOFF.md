@@ -1,6 +1,8 @@
 # 当前接手：51项全部至少部分可用，下一步把部分项推进到可验收
 
-**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T11 已完成；下一步 T12）。**
+**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T12 已完成；下一步 T13）。**
+
+2026-11-01 T12 用户手册：docs/references/creation-guide.md 扩为安装→发布包通俗中文全流程；每步含入口／会发生什么／不会发生什么／常见问题；写明 Free 水印、准备分钟约60、可选 StartMenuShortcut、licenses／gaps、沙箱不上传。计数不变：51项10/41/0≈60%；技术债21项14/2/5；人工0／未来8。
 
 2026-11-01 T11 全量 verify 门禁：scripts/verify.ps1 全绿（ruff/mypy/pytest -W error/离线双 wheel/CLI）；墙钟 **1451.7s**（pytest 4487 passed / 5 skipped · 1438.75s）；修 PowerShell UTF-8 解码、HTTPError 响应未关闭导致的 ResourceWarning、审计分支 mypy 阴影与 ruff。计数不变：51项10/41/0≈60%；技术债21项14/2/5；人工0／未来8。
 

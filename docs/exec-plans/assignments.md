@@ -1,3 +1,6 @@
+**2026-11-01 T12（用户手册，见文档提交）：** sprint-t12-creation-user-guide.md；下一步 T13。
+
+
 **2026-11-01 T11（全量 verify 门禁，见功能提交）：** sprint-t11-verify-gate.md；下一步 T12。
 
 
