@@ -38,7 +38,17 @@
         $("plans").replaceChildren(); state.selected = null;
         for (const plan of job.plans || []) {
             const card = node("article", ""); card.className = "plan-card";
-            if (plan.mode) { card.classList.add("recommended"); card.append(node("p", `推荐 · ${plan.modeLabel || "内容模式"}模板`)); }
+            if (plan.mode) {
+                card.classList.add("recommended");
+                card.append(node("p", `推荐 · ${plan.modeLabel || "内容模式"}模板`));
+                const honesty = node(
+                    "p",
+                    plan.honesty || "描述代理评分、非画面理解／未做人评／投放未验证"
+                );
+                honesty.className = "mode-honesty";
+                honesty.dataset.role = "mode-honesty";
+                card.append(honesty);
+            }
             if (plan.localRenders) card.append(node("p", `你常用的结构 · 本项目已有 ${plan.localRenders} 个方案用它做成成片${plan.rankedByHistory ? "，所以排到了通用方案前面" : ""}`));
             card.append(node("h3", plan.structure), node("p", plan.ready ? "方案可用 · 模板草稿" : "方案有缺口 · 不可选择"), node("p", "脚本：已有描述草稿，待核对"));
             const segments = plan.segments || [];
@@ -771,7 +781,7 @@
                 const entry = await api("/api/knowledge", body);
                 status.textContent = `已保存“${entry.title}”。`; title.value = ""; text.value = ""; file.value = "";
                 await refresh();
-            }             } catch (error) { status.textContent = `保存失败：${error.message}`; }
+            } catch (error) { status.textContent = `保存失败：${error.message}`; }
         });
         importDir.addEventListener("click", async () => {
             if (!game()) { status.textContent = "请先在需求里填写游戏名。"; return; }

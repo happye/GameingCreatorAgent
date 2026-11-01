@@ -1,3 +1,4 @@
+**2026-11-01 T28 内容模式诚实文案（P043–P049）：** MODE_HONESTY；方案卡／帮助／creation-guide 交叉链接；tests/test_mode_honesty.py + copy browser；F006 不动。grok-task-list T1–T28 已尽。计数不变：51·10/41/0≈60%；债务21·14/2/5。**
 **2026-11-01 T27 安装包 licenses／gaps 可见性（P039／T2）：** license_visibility；build-app／install-app（Smoke）提示；tests/test_license_visibility.py。下一＝T28。计数不变：51·10/41/0≈60%；债务21·14/2/5。**
 
 **2026-11-01 T26 时间线中文指令语料（P041）：** timeline_commands rule-v4-corpus；tests/test_timeline_commands.py 语料扩充；无云端模型。下一＝T27。计数不变：51·10/41/0≈60%；债务21·14/2/5。**

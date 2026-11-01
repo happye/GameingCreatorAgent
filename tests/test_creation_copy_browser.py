@@ -82,6 +82,9 @@ def plan_card(plan_id, structure, *, local_renders=None, ranked=None, ready=True
     return card
 
 
+HONESTY = "描述代理评分、非画面理解／未做人评／投放未验证"
+
+
 @contextmanager
 def workspace(*, entitlement=None, jobs=None, editors=None, job_payloads=None):
     """Strict-route creation workspace: unregistered paths return 未模拟 (no KeyError fallthrough)."""
@@ -303,3 +306,47 @@ def test_timeline_export_click_includes_size_param():
         assert "size=720x1280" in href, href
         assert "format=fcpxml" in href
         assert f"/api/creation/jobs/{REV}/timeline" in href
+
+
+def test_mode_honesty_help_and_header_copy():
+    with workspace() as (pw, page, _):
+        pw.expect(page.locator("#mode-honesty-help")).to_contain_text(HONESTY)
+        pw.expect(page.locator("#mode-honesty-help")).to_contain_text(
+            "docs/references/creation-guide.md"
+        )
+        pw.expect(page.locator("#plans-honesty")).to_contain_text(HONESTY)
+        pw.expect(page.locator("header p")).to_contain_text(HONESTY)
+
+
+def test_recommended_plan_card_shows_mode_honesty():
+    plan_job = {
+        "jobId": PLAN,
+        "kind": "plan",
+        "status": "completed",
+        "projectId": "one",
+        "createdAt": "2026-11-01T03:00:00",
+        "fps": 30,
+        "modeHonesty": HONESTY,
+        "plans": [
+            {
+                **plan_card("showcase", "玩法展示模板：描述最丰富的片段作开场高光"),
+                "mode": "feature_showcase",
+                "modeLabel": "玩法展示",
+                "honesty": HONESTY,
+            },
+            plan_card("chronological", "按时间顺序"),
+        ],
+    }
+    with workspace(
+        jobs=[plan_job],
+        job_payloads={PLAN: plan_job},
+        editors={PLAN: make_editor(parentJobId=PLAN, planId="showcase")},
+    ) as (pw, page, _):
+        page.locator("#history button").filter(has_text="方案").click()
+        cards = page.locator(".plan-card")
+        pw.expect(cards).to_have_count(2)
+        recommended = cards.nth(0)
+        plain = cards.nth(1)
+        pw.expect(recommended).to_contain_text("推荐 · 玩法展示模板")
+        pw.expect(recommended.locator(".mode-honesty")).to_have_text(HONESTY)
+        assert HONESTY not in plain.inner_text()

@@ -8,7 +8,11 @@ from gamingcreator.application.creation_feedback import (
     normalize_edit_kinds,
     trim_suggestion,
 )
-from gamingcreator.application.creation_modes import MODE_LABELS, mode_structure
+from gamingcreator.application.creation_modes import (
+    MODE_HONESTY_SHORT,
+    MODE_LABELS,
+    mode_structure,
+)
 from gamingcreator.application.material_scoring import advisories, score_materials, scoring_legend
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.creation import CreativeBrief
@@ -201,7 +205,11 @@ def plan_creation(
                     else {}
                 ),
                 **(
-                    {"mode": brief.content_type, "modeLabel": MODE_LABELS[brief.content_type]}
+                    {
+                        "mode": brief.content_type,
+                        "modeLabel": MODE_LABELS[brief.content_type],
+                        "honesty": MODE_HONESTY_SHORT,
+                    }
                     if roles is not None
                     else {}
                 ),
@@ -211,6 +219,7 @@ def plan_creation(
         "schemaVersion": "creation-plan-v1",
         "planner": "offline-template-v1",
         "understandingVerified": False,
+        **({"modeHonesty": MODE_HONESTY_SHORT} if mode is not None else {}),
         "scoring": scoring_legend(),
         "ordering": {
             "basis": "local-render-history" if moved else "template",

@@ -160,8 +160,8 @@
 | 状态 | 事项 |
 | --- | --- |
 | 刚完成 | T7 发布包水印与成片收据一致核验+页面「含 Free 水印」；T6 TD021；T5–T1 |
-| 正在做 | T27 安装包 licenses／gaps 可见性已交；下一本地项 T28 内容模式诚实文案 |
-| 下一步 | [grok-task-list](grok-task-list.md) 自 T28 起 |
+| 正在做 | T28 内容模式诚实文案已交；grok-task-list T1–T28 已尽 |
+| 下一步 | grok-task-list T1–T28 已尽；未批事前仅离线债／partial 小修；人评／下载／发布见 human-inputs |
 | 人工 | 当前必做0项；未来8项（WebView2下载许可已获批并完成），不催、不全局停开发 |
 
 ## 7. 维护规则（所有 Agent 必须遵守）

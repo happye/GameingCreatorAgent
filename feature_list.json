@@ -1039,7 +1039,8 @@
             "first_product": true,
             "delivery_status": "partial",
             "implementation_evidence": [
-                "2026-11-01: feature showcase mode (richest-description opening hook, ordered showcase, closing) real instance demo-phase0 -> 10-shot MP4 373 frames -> cover/text -> Bilibili package, all configured checks pass (.cache/content-modes-e2e.json); hook chosen by description detail, not visual understanding"
+                "2026-11-01: feature showcase mode (richest-description opening hook, ordered showcase, closing) real instance demo-phase0 -> 10-shot MP4 373 frames -> cover/text -> Bilibili package, all configured checks pass (.cache/content-modes-e2e.json); hook chosen by description detail, not visual understanding",
+                "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/exec-plans/sprint-t28-content-mode-honesty.md"
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"
@@ -1051,7 +1052,8 @@
             "first_product": true,
             "delivery_status": "partial",
             "implementation_evidence": [
-                "2026-11-01: campaign mode (opening, mandatory-topic clips in topic order, highlights, closing; missing topic stays a gap) real instance with topic 贝多芬 -> MP4 390 frames -> Bilibili package passing configured checks; activity rule parsing (P020) not done"
+                "2026-11-01: campaign mode (opening, mandatory-topic clips in topic order, highlights, closing; missing topic stays a gap) real instance with topic 贝多芬 -> MP4 390 frames -> Bilibili package passing configured checks; activity rule parsing (P020) not done",
+                "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/exec-plans/sprint-t28-content-mode-honesty.md"
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"
@@ -1063,7 +1065,8 @@
             "first_product": true,
             "delivery_status": "partial",
             "implementation_evidence": [
-                "2026-11-01: guide mode (evenly spaced numbered steps, spoken step numbers follow current order) real instance -> MP4 372 frames -> Bilibili package passing configured checks; real guide correctness not human-reviewed"
+                "2026-11-01: guide mode (evenly spaced numbered steps, spoken step numbers follow current order) real instance -> MP4 372 frames -> Bilibili package passing configured checks; real guide correctness not human-reviewed",
+                "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/exec-plans/sprint-t28-content-mode-honesty.md"
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"
@@ -1075,7 +1078,8 @@
             "first_product": false,
             "delivery_status": "partial",
             "implementation_evidence": [
-                "2026-11-01: commentary mode template (ordered ~3s segments, opening/commentary/ending roles, closing line) real demo-phase0 instance -> 315-frame MP4 -> Bilibili package passing configured checks (.cache/content-modes-e2e-r3.json)"
+                "2026-11-01: commentary mode template (ordered ~3s segments, opening/commentary/ending roles, closing line) real demo-phase0 instance -> 315-frame MP4 -> Bilibili package passing configured checks (.cache/content-modes-e2e-r3.json)",
+                "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/exec-plans/sprint-t28-content-mode-honesty.md"
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"
@@ -1087,7 +1091,8 @@
             "first_product": false,
             "delivery_status": "partial",
             "implementation_evidence": [
-                "2026-11-01: live-cut mode template (ordered ~1.5s segments, best-scored clip near each slot) real instance -> 445-frame MP4 -> Bilibili package passing configured checks"
+                "2026-11-01: live-cut mode template (ordered ~1.5s segments, best-scored clip near each slot) real instance -> 445-frame MP4 -> Bilibili package passing configured checks",
+                "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/exec-plans/sprint-t28-content-mode-honesty.md"
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"
@@ -1099,7 +1104,8 @@
             "first_product": false,
             "delivery_status": "partial",
             "implementation_evidence": [
-                "2026-11-01: highlight mode template (top-scored clips in recording order, best last as climax) real instance -> 445-frame MP4 -> Bilibili package; scores are description proxies, not visual understanding"
+                "2026-11-01: highlight mode template (top-scored clips in recording order, best last as climax) real instance -> 445-frame MP4 -> Bilibili package; scores are description proxies, not visual understanding",
+                "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/exec-plans/sprint-t28-content-mode-honesty.md"
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"
@@ -1111,7 +1117,8 @@
             "first_product": false,
             "delivery_status": "partial",
             "implementation_evidence": [
-                "2026-11-01: ad/UA mode template (hook, up to three selling points preferring mandatory topics, call to action) real instance -> 270-frame MP4 -> Bilibili package; ad performance unknown"
+                "2026-11-01: ad/UA mode template (hook, up to three selling points preferring mandatory topics, call to action) real instance -> 270-frame MP4 -> Bilibili package; ad performance unknown",
+                "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/exec-plans/sprint-t28-content-mode-honesty.md"
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

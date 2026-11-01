@@ -19,6 +19,14 @@ MODE_LABELS = {
     "highlight": "高光",
     "ad": "广告/买量",
 }
+# Unified honesty copy for plan cards / help (P043–P049 / T28).
+MODE_HONESTY_SHORT = "描述代理评分、非画面理解／未做人评／投放未验证"
+MODE_HONESTY_HELP = (
+    "内容模式：描述代理评分、非画面理解／未做人评／投放未验证。"
+    "详见 docs/references/creation-guide.md。"
+)
+CREATION_GUIDE_REL = "docs/references/creation-guide.md"
+
 MIN_STEP_SECONDS = Fraction(3, 2)
 COMMENTARY_SECONDS = 3
 
