@@ -1,6 +1,8 @@
 # 当前接手：51项全部至少部分可用，下一步把部分项推进到可验收
 
-**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T17 已完成；下一步 T18）。**
+**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T18 已完成；下一步 T19）。**
+
+2026-11-01 T18 批量 make-proxy（P011）：CLI --run 可重复／--all-eligible、脚本、POST /api/make-proxy-batch、工作台「批量生成编辑代理」；逐条沿用单条限额与失败整目录删除；同 SHA 批内 shared。计数不变：51·10/41/0≈60%；技术债21·14/2/5；人工0／未来8。
 
 2026-11-01 T17 窗口级片段缓存（P008）：键=项目／录像／设置／窗口内容哈希；`<project>/.cache/window-segments` 信封校验；分析命中跳过视觉 Provider 并重铸 event_id。计数不变：51项10/41/0≈60%；技术债21项14/2/5；人工0／未来8。
 

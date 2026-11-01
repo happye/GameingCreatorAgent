@@ -1,3 +1,5 @@
+**2026-11-01 T18 批量 make-proxy（P011）：** CLI／API／工作台排队；tests/test_proxy_batch.py；下一＝T19。计数不变：51·10/41/0≈60%；债务21·14/2/5。**
+
 **2026-11-01 T17 窗口级片段缓存（P008）：** content-hash 键与信封；分析接线；tests/test_window_segment_cache.py。下一步 T18。计数不变：51项10/41/0≈60%；债务21项14/2/5。**
 
 

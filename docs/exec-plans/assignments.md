@@ -1,3 +1,5 @@
+**2026-11-01 T18（批量 make-proxy P011，见功能提交）：** sprint-t18-batch-make-proxy.md；下一＝T19。
+
 **2026-11-01 T17（窗口级片段缓存 P008，见功能提交）：** sprint-t17-window-segment-cache.md；下一步 T18。
 
 
