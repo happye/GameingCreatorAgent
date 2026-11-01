@@ -1,3 +1,5 @@
+**2026-11-01 T23 渲染裁切画面／简单叠加（P028）：** creation_presentation＋FFmpeg 安全区裁切／角标；tests/test_creation_presentation.py。下一＝T24。计数不变：51·10/41/0≈60%；债务21·14/2/5。**
+
 **2026-11-01 T22 平台规格 JSON 化（P034）：** manifest＋platform_preset_loader；tests/test_platform_preset_loader.py。下一＝T23。计数不变：51·10/41/0≈60%；债务21·14/2/5。**
 
 **2026-11-01 T21 本机知识库目录导入（P018）：** knowledge_import + CLI／API／创作页；tests/test_knowledge_import.py。下一＝T22。计数不变：51·10/41/0≈60%；债务21·14/2/5。**

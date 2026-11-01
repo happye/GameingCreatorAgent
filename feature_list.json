@@ -779,12 +779,15 @@
                 "docs/exec-plans/sprint-clip-transitions.md",
                 "tests/test_clip_transition_core.py",
                 "tests/test_clip_transition_render.py",
-                "tests/test_clip_transition_browser.py"
+                "tests/test_clip_transition_browser.py",
+                "docs/exec-plans/sprint-t23-render-safe-area-badge.md",
+                "tests/test_creation_presentation.py",
+                "src/gamingcreator/domain/creation_presentation.py"
             ],
             "quality_status": "technical_render_tests_passed_creative_quality_unreviewed",
             "release_status": "not_released",
             "implementation_status": "partial",
-            "remaining": "Crop and overlays remain; trim/concat/scale/letterbox/speed/audio/subtitles/crossfade have local render evidence. Creative quality and commercial release remain unverified."
+            "remaining": "Safe-area crop and static corner badge have local FFmpeg render+receipt evidence; dynamic overlays/timeline stickers remain. Creative quality and commercial release remain unverified."
         },
         {
             "id": "P029",

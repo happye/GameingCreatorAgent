@@ -28,6 +28,7 @@ from gamingcreator.application.rendering import RenderPlan, validate_render_plan
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.creation_audio import AudioMix
 from gamingcreator.domain.creation_narration import NarrationSelection
+from gamingcreator.domain.creation_presentation import PresentationOptions
 from gamingcreator.infrastructure.creation_files import write_creation
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.infrastructure.ffmpeg_render import FfmpegCreationRenderer
@@ -401,6 +402,7 @@ async def render_revision(
         ),
         **narration_kwargs,
         watermark=watermark,
+        presentation=PresentationOptions.from_request(request),
     )
 
 

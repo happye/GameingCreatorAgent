@@ -117,6 +117,7 @@ from gamingcreator.cli.static_observations import (
     execute_import_static_observations,
     execute_search_static_observations,
 )
+from gamingcreator.domain.creation_presentation import PresentationOptions
 from gamingcreator.domain.errors import AppError, ExitCode, invalid_config
 from gamingcreator.infrastructure.app_paths import model_directory
 from gamingcreator.infrastructure.benchmark_preparation_files import (
@@ -266,6 +267,13 @@ def _parser() -> CliParser:
     render.add_argument("--width", type=int, default=1280)
     render.add_argument("--height", type=int, default=720)
     render.add_argument("--subtitles", choices=("none", "sidecar", "burn"), default="none")
+    render.add_argument("--safe-area-margin", type=int, default=0)
+    render.add_argument("--badge-text", default=None)
+    render.add_argument(
+        "--badge-corner",
+        choices=("top-left", "top-right", "bottom-left", "bottom-right"),
+        default="bottom-left",
+    )
     creation = commands.add_parser("plan-creation", help="已有Completed素材的离线模板创作方案")
     creation.add_argument("--project", type=Path, required=True)
     creation.add_argument("--run", nargs="+", required=True)
@@ -1851,6 +1859,11 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
                 args.width,
                 args.height,
                 args.subtitles,
+                presentation=PresentationOptions(
+                    args.safe_area_margin,
+                    args.badge_text,
+                    args.badge_corner,
+                ),
             )
         )
     if args.command == "plan-creation":

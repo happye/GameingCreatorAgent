@@ -170,7 +170,7 @@ class CreationJobs:
                 "profile",
             }
         optional = (
-            {"subtitleMode"}
+            {"subtitleMode", "safeAreaMarginPercent", "badgeText", "badgeCorner"}
             if kind == "render"
             else (
                 {
@@ -192,6 +192,13 @@ class CreationJobs:
             "burn",
         ):
             raise fail("creation.input", "无效字幕选项。")
+        if kind == "render":
+            try:
+                from gamingcreator.domain.creation_presentation import PresentationOptions
+
+                PresentationOptions.from_request(request)
+            except ValueError as error:
+                raise fail("creation.input", str(error)) from error
         request_id = identity(request["requestId"])
         canonical = json.dumps(
             {"kind": kind, "request": request}, sort_keys=True, ensure_ascii=False
@@ -616,6 +623,8 @@ class CreationJobs:
                     {"plans.json": report, "edit-decision.json": edl},
                     (project,),
                 )
+                from gamingcreator.domain.creation_presentation import PresentationOptions
+
                 asyncio.run(
                     execute_render_creation(
                         project,
@@ -626,6 +635,7 @@ class CreationJobs:
                         request["height"],
                         subtitle_mode=request.get("subtitleMode", "none"),
                         watermark=state.get("watermark"),
+                        presentation=PresentationOptions.from_request(request),
                     )
                 )
             receipt_path = directory / "result/receipt.json"

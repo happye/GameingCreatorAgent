@@ -10,6 +10,10 @@ from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.rendering import RenderClip, RenderPlan
 from gamingcreator.domain.creation_audio import AudioMix
 from gamingcreator.domain.creation_narration import NarrationSelection, validate_narration_fit
+from gamingcreator.domain.creation_presentation import (
+    PresentationOptions,
+    safe_area_crop_filter,
+)
 from gamingcreator.domain.creation_subtitles import SubtitleCue, parse_srt, serialize_srt
 from gamingcreator.infrastructure.crossfade_render import compose_transitions
 from gamingcreator.infrastructure.ffmpeg_media import hash_source
@@ -94,6 +98,38 @@ def _watermark_ass(text: str, width: int, height: int, duration: Fraction) -> st
         f"&H00000000,1,0,0,0,100,100,0,0,1,1,0,9,{margin},{margin},{margin},1\n"
         "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
         f"Dialogue: 1,0:00:00.00,{hours}:{minute:02d}:{sec:02d}.{cs:02d},Mark,,0,0,0,,{text}\n"
+    )
+
+
+
+_BADGE_ALIGN = {
+    "top-left": 7,
+    "top-right": 9,
+    "bottom-left": 1,
+    "bottom-right": 3,
+}
+
+
+def _badge_ass(text: str, corner: str, width: int, height: int, duration: Fraction) -> str:
+    """One opaque corner badge for the whole output; text is never ASS markup."""
+    if corner not in _BADGE_ALIGN:
+        raise ValueError("Unsupported badge corner.")
+    if not text or len(text) > 24 or any(c in text for c in "{}\\\n\r"):
+        raise ValueError("Badge text must be 1..24 plain characters.")
+    seconds, cs = divmod((duration * 100).__ceil__(), 100)
+    minutes, sec = divmod(seconds, 60)
+    hours, minute = divmod(minutes, 60)
+    margin = max(4, height // 40)
+    align = _BADGE_ALIGN[corner]
+    return (
+        f"[Script Info]\nScriptType: v4.00+\nPlayResX: {width}\nPlayResY: {height}\n"
+        "[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, "
+        "OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, "
+        "Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
+        f"Style: Badge,Arial,{max(12, height // 24)},&H00FFFFFF,&H00FFFFFF,&H80000000,"
+        f"&H00000000,1,0,0,0,100,100,0,0,1,2,0,{align},{margin},{margin},{margin},1\n"
+        "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
+        f"Dialogue: 1,0:00:00.00,{hours}:{minute:02d}:{sec:02d}.{cs:02d},Badge,,0,0,0,,{text}\n"
     )
 
 
@@ -194,6 +230,27 @@ async def _verify_music(music: MusicTrack, context: CancellationContext) -> None
         raise ValueError("Music receipt hash mismatch.")
 
 
+
+def _presentation_limitations(
+    watermark: str | None, presentation: PresentationOptions
+) -> list[str]:
+    overlays: list[str] = []
+    if presentation.badge_text is not None:
+        overlays.append("static corner badge overlay")
+    if watermark is not None:
+        overlays.append("plan watermark overlay")
+    overlay_line = "no overlays" if not overlays else " and ".join(overlays)
+    lines = [
+        "hard cuts and linear crossfades",
+        "letterbox",
+        overlay_line,
+        "burn uses centisecond timing and visible fullwidth ASS control characters",
+    ]
+    if presentation.safe_area_margin_percent > 0:
+        lines.insert(2, "safe-area center crop then scale")
+    return lines
+
+
 class FfmpegCreationRenderer:
     def __init__(self, repository: Path) -> None:
         self.bin = repository.resolve() / ".tools/ffmpeg/bin"
@@ -214,6 +271,7 @@ class FfmpegCreationRenderer:
         narration: NarrationSelection | None = None,
         narration_artifact: NarrationArtifact | None = None,
         watermark: str | None = None,
+        presentation: PresentationOptions | None = None,
     ) -> dict[str, object]:
         mix = audio_mix if audio_mix is not None else AudioMix()
         # Re-parse even constructed dataclasses, so bool/non-finite gains fail closed.
@@ -264,6 +322,10 @@ class FfmpegCreationRenderer:
             for value in (width, height)
         ):
             raise ValueError("Render dimensions must be even integers in 16..3840.")
+        if presentation is None:
+            presentation = PresentationOptions()
+        else:
+            presentation = PresentationOptions.from_json(presentation.to_json())
         target = resolve_existing(output)
         if is_link(output) or any(
             target == resolve_existing(path) or target.is_relative_to(resolve_existing(path))
@@ -275,18 +337,34 @@ class FfmpegCreationRenderer:
         subtitle_path = target / "subtitles.srt"
         ass_path = target / "subtitles.ass"
         watermark_path = target / "watermark.ass"
+        badge_path = target / "badge.ass"
         # The final fps filter needs an EOF frame beyond the last presentation
         # instant; cap by frames after padding, rather than stopping the muxer early.
         video_filter = (
             f"tpad=stop_mode=clone:stop_duration=1,fps={plan.fps},"
             f"trim=end_frame={plan.frames},setpts=N/FRAME_RATE/TB"
         )
+        crop = safe_area_crop_filter(width, height, presentation.safe_area_margin_percent)
+        if crop:
+            video_filter += f",{crop}"
         if subtitle_mode != "none":
             with subtitle_path.open("x", encoding="utf-8", newline="\n") as handle:
                 handle.write(subtitle_text)
         if subtitle_mode == "burn" and saved_cues:
             ass_path.write_text(_burn_ass(saved_cues, width, height), encoding="utf-8")
             video_filter += f",ass=filename={_filter_path(ass_path)}"
+        if presentation.badge_text is not None:
+            badge_path.write_text(
+                _badge_ass(
+                    presentation.badge_text,
+                    presentation.badge_corner,
+                    width,
+                    height,
+                    Fraction(plan.frames, plan.fps),
+                ),
+                encoding="utf-8",
+            )
+            video_filter += f",ass=filename={_filter_path(badge_path)}"
         if watermark is not None:
             watermark_path.write_text(
                 _watermark_ass(watermark, width, height, Fraction(plan.frames, plan.fps)),
@@ -519,13 +597,11 @@ class FfmpegCreationRenderer:
                         "limiter": "0.95-level-false-latency-compensated" if music else "none",
                     },
                     "audioPolicy": "source-clock-resample-or-silence-48000-stereo",
-                    "limitations": [
-                        "hard cuts and linear crossfades",
-                        "letterbox",
-                        "no overlays" if watermark is None else "only the plan watermark overlay",
-                        "burn uses centisecond timing and visible fullwidth ASS control characters",
-                    ],
+                    "limitations": _presentation_limitations(watermark, presentation),
                 }
+                presentation_receipt = presentation.receipt()
+                if presentation_receipt is not None:
+                    result["presentation"] = presentation_receipt
                 if any(clip.speed != 1 for clip in plan.clips):
                     result["speedPolicy"] = {
                         "version": "clip-speed-v1",
@@ -546,6 +622,7 @@ class FfmpegCreationRenderer:
                 if ass_path.exists():
                     ass_path.unlink()
                 watermark_path.unlink(missing_ok=True)
+                badge_path.unlink(missing_ok=True)
                 context.check_cancelled()
                 if narration is not None and narration_artifact is not None:
                     result["narration"] = narration_receipt(narration, narration_artifact, plan.fps)
@@ -567,3 +644,4 @@ class FfmpegCreationRenderer:
             (target / "parts.txt").unlink(missing_ok=True)
             ass_path.unlink(missing_ok=True)
             watermark_path.unlink(missing_ok=True)
+            badge_path.unlink(missing_ok=True)

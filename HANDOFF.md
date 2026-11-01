@@ -1,6 +1,8 @@
 # 当前接手：51项全部至少部分可用，下一步把部分项推进到可验收
 
-**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T22 已完成；下一步 T23）。**
+**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T23 已完成；下一步 T24）。**
+
+2026-11-01 T23 渲染裁切／简单叠加（P028）：成片安全区裁切＋静态角标 ASS；收据 presentation；tests/test_creation_presentation.py。计数不变：51·10/41/0≈60%；技术债21·14/2/5；人工0／未来8。
 
 2026-11-01 T22 平台规格 JSON 化（P034）：platform-presets-v1 manifest＋loader 加载四平台本地 JSON；页面可编辑覆盖；不宣称官方已核。计数不变：51·10/41/0≈60%；技术债21·14/2/5；人工0／未来8。
 

@@ -8,6 +8,7 @@ from typing import Any
 from gamingcreator.application.creation_subtitles import build_subtitles
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.rendering import validate_render_plan
+from gamingcreator.domain.creation_presentation import PresentationOptions
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.ffmpeg_render import FfmpegCreationRenderer
 from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
@@ -59,6 +60,7 @@ async def execute_render_creation(
     height: int,
     subtitle_mode: str = "none",
     watermark: str | None = None,
+    presentation: PresentationOptions | None = None,
 ) -> dict[str, object]:
     try:
         if subtitle_mode not in ("none", "sidecar", "burn"):
@@ -103,6 +105,7 @@ async def execute_render_creation(
             cues,
             subtitle_mode,
             watermark=watermark,
+            presentation=presentation,
         )
     except (ValueError, OSError, KeyError, TypeError, StopIteration) as error:
         raise AppError("creation.render_invalid", str(error), ExitCode.INPUT) from error
