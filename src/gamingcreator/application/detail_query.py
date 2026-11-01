@@ -151,6 +151,29 @@ def _match_row_has_complete_full_support(row: dict[str, object]) -> bool:
     return bool(satisfied and shared and not missing and not uncertain and not opposed and not conflicts)
 
 
+def _match_row_shared_evidence_supports_satisfied(row: dict[str, object]) -> None:
+    """Mirror DetailMatch: sharedEvidenceIds ⊆ every satisfied evidenceIds, and need range."""
+    shared = _list_or_empty(row.get("sharedEvidenceIds"))
+    if not shared:
+        return
+    satisfied = _list_or_empty(row.get("satisfied"))
+    if not satisfied:
+        raise ValueError("Match report sharedEvidenceIds require satisfied support.")
+    if row.get("sourceRange") is None or not _valid_optional_source_range(row.get("sourceRange")):
+        raise ValueError("Match report sharedEvidenceIds require a valid match sourceRange.")
+    shared_set = set(shared)
+    for entry in satisfied:
+        if type(entry) is not dict:
+            raise ValueError("Match report satisfied entry must be an object.")
+        evidence_ids = entry.get("evidenceIds")
+        if evidence_ids is None:
+            evidence_ids = []
+        if type(evidence_ids) is not list or not shared_set.issubset(set(evidence_ids)):
+            raise ValueError(
+                "Match report sharedEvidenceIds must support every satisfied condition."
+            )
+
+
 def assert_match_report_contract(document: dict[str, object]) -> None:
     """Refuse match reports that claim human pass or open a static clothing index."""
     missing = REQUIRED_MATCH_REPORT_KEYS - set(document)
@@ -278,6 +301,7 @@ def assert_match_report_contract(document: dict[str, object]) -> None:
                     )
         if not _source_range_contains(document.get("sourceRange"), row.get("sourceRange")):
             raise ValueError("Match report match sourceRange escapes report range.")
+        _match_row_shared_evidence_supports_satisfied(row)
     # TD009: status ↔ matches invariants (JSON surface of DetailMatch rules).
     seen_pairs: set[tuple[str, str]] = set()
     has_satisfied = False
@@ -604,6 +628,7 @@ def assert_match_report_sidecar_binding_contract(
             raise ValueError("Sidecar result payload shots is invalid.")
         detail_shot_ids: set[str] = set()
         detail_actor_pairs: set[tuple[str, str]] = set()
+        detail_actor_attr_keys: dict[tuple[str, str], set[tuple[str, str, str]]] = {}
         for shot in shots:
             if type(shot) is not dict:
                 raise ValueError("Sidecar result payload shot row is invalid.")
@@ -634,8 +659,45 @@ def assert_match_report_sidecar_binding_contract(
                     raise ValueError("Sidecar result payload shot/actor pair is duplicated.")
                 detail_actor_pairs.add(pair)
                 attributes = actor.get("attributes")
-                if attributes is not None and type(attributes) is not list:
+                if attributes is None:
+                    attributes = []
+                if type(attributes) is not list:
                     raise ValueError("Sidecar result payload actor attributes is invalid.")
+                attr_keys: set[tuple[str, str, str]] = set()
+                for attribute in attributes:
+                    if type(attribute) is not dict:
+                        raise ValueError("Sidecar result payload attribute row is invalid.")
+                    part_id = attribute.get("partId")
+                    kind = attribute.get("kind")
+                    value = attribute.get("value")
+                    status = attribute.get("status")
+                    if type(part_id) is not str or not part_id:
+                        raise ValueError("Sidecar result payload attribute partId is invalid.")
+                    if type(kind) is not str or not kind:
+                        raise ValueError("Sidecar result payload attribute kind is invalid.")
+                    if type(value) is not str or not value:
+                        raise ValueError("Sidecar result payload attribute value is invalid.")
+                    if type(status) is not str or not status:
+                        raise ValueError("Sidecar result payload attribute status is invalid.")
+                    evidence_ids = attribute.get("evidenceIds")
+                    if evidence_ids is None:
+                        evidence_ids = []
+                    if not _match_evidence_ids_owned(run_id, evidence_ids):
+                        raise ValueError(
+                            "Sidecar result payload attribute evidenceIds are invalid."
+                        )
+                    if "sourceRange" in attribute and not _valid_optional_source_range(
+                        attribute.get("sourceRange")
+                    ):
+                        raise ValueError(
+                            "Sidecar result payload attribute sourceRange is invalid."
+                        )
+                    if not _source_range_contains(report.get("sourceRange"), attribute.get("sourceRange")):
+                        raise ValueError(
+                            "Sidecar result payload attribute sourceRange escapes report range."
+                        )
+                    attr_keys.add((part_id, kind, value))
+                detail_actor_attr_keys[pair] = attr_keys
         match_shot_ids = {
             row.get("shotId")
             for row in matches
@@ -654,6 +716,36 @@ def assert_match_report_sidecar_binding_contract(
                 raise ValueError(
                     "Match report shot/actor pair is not covered by sidecar payload actors."
                 )
+            _match_row_shared_evidence_supports_satisfied(row)
+            attr_keys = detail_actor_attr_keys.get((shot_id, actor_id), set())
+            satisfied = row.get("satisfied") or []
+            if type(satisfied) is not list:
+                raise ValueError("Match report match.satisfied is invalid for sidecar binding.")
+            for entry in satisfied:
+                if type(entry) is not dict:
+                    raise ValueError(
+                        "Match report match.satisfied entry invalid for sidecar binding."
+                    )
+                part_id = entry.get("partId")
+                condition = entry.get("condition")
+                if type(part_id) is not str or not part_id:
+                    raise ValueError(
+                        "Match report match.satisfied partId invalid for sidecar binding."
+                    )
+                if type(condition) is not dict:
+                    raise ValueError(
+                        "Match report match.satisfied condition invalid for sidecar binding."
+                    )
+                kind = condition.get("kind")
+                value = condition.get("value")
+                if type(kind) is not str or not kind or type(value) is not str or not value:
+                    raise ValueError(
+                        "Match report match.satisfied condition kind/value invalid for sidecar binding."
+                    )
+                if (part_id, kind, value) not in attr_keys:
+                    raise ValueError(
+                        "Match report satisfied evidence is not covered by sidecar payload attributes."
+                    )
 
 
 def match_report_sidecar_binding_gaps(
@@ -789,6 +881,33 @@ def match_report_sidecar_binding_gaps(
             (
                 "shot/actor pair is not covered by sidecar payload actors",
                 "match_shot_actor_not_in_payload",
+            ),
+            ("payload attribute row is invalid", "payload_attribute_row_invalid"),
+            ("payload attribute partId is invalid", "payload_attribute_part_id_invalid"),
+            ("payload attribute kind is invalid", "payload_attribute_kind_invalid"),
+            ("payload attribute value is invalid", "payload_attribute_value_invalid"),
+            ("payload attribute status is invalid", "payload_attribute_status_invalid"),
+            ("payload attribute evidenceIds are invalid", "payload_attribute_evidence_invalid"),
+            ("payload attribute sourceRange is invalid", "payload_attribute_source_range_invalid"),
+            (
+                "payload attribute sourceRange escapes report range",
+                "payload_attribute_source_range_escape",
+            ),
+            (
+                "sharedEvidenceIds require satisfied support",
+                "match_shared_without_satisfied",
+            ),
+            (
+                "sharedEvidenceIds require a valid match sourceRange",
+                "match_shared_without_source_range",
+            ),
+            (
+                "sharedEvidenceIds must support every satisfied condition",
+                "match_shared_not_subset_of_satisfied",
+            ),
+            (
+                "satisfied evidence is not covered by sidecar payload attributes",
+                "match_satisfied_not_in_payload_attributes",
             ),
             ("binding requires objects", "binding_not_object"),
         )
@@ -943,6 +1062,18 @@ def match_report_contract_gaps(document: dict[str, object]) -> tuple[str, ...]:
                 shared = row.get("sharedEvidenceIds")
                 if shared is not None and not _match_evidence_ids_owned(run_id, shared):
                     gaps.append("match_shared_evidence_invalid")
+                try:
+                    _match_row_shared_evidence_supports_satisfied(row)
+                except ValueError as exc:
+                    message = str(exc)
+                    if "require satisfied support" in message:
+                        gaps.append("match_shared_without_satisfied")
+                    elif "require a valid match sourceRange" in message:
+                        gaps.append("match_shared_without_source_range")
+                    elif "must support every satisfied condition" in message:
+                        gaps.append("match_shared_not_subset_of_satisfied")
+                    else:
+                        gaps.append("match_shared_support_invalid")
                 for bucket in _MATCH_EVIDENCE_BUCKETS:
                     entries = row.get(bucket)
                     if entries is None:

@@ -1,3 +1,4 @@
+**2026-11-01 离线 TD009 sharedEvidence／attribute 覆盖：** shared⊆satisfied + payload attribute 覆盖；legacy 只读；TD009 仍 open。计数不变：51·10/41/0·80%；债务21·14/2/5。**
 **2026-11-01 离线 TD009 match-report 状态／actor 覆盖：** status↔matches 不变量 + payload actor 覆盖；legacy 只读；TD009 仍 open。计数不变：51·10/41/0·80%；债务21·14/2/5。**
 **2026-11-01 离线 TD004 过场标签噪声：** cutscene tag-only 标题卡排除；demo 只读；TD004 仍 open。计数不变：51·10/41/0·80%；债务21·14/2/5。**
 **2026-11-01 离线 TD004 铠甲／冲击波／大乱斗模式：** 色特效假友元 + 冲击波证据门 + 大乱斗模式选单；demo 只读；TD004 仍 open。计数不变：51·10/41/0·80%；债务21·14/2/5。**

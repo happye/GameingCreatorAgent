@@ -753,3 +753,102 @@ def test_assert_match_report_sidecar_binding_rejects_unknown_shot_actor_pair() -
     gaps2 = match_report_sidecar_binding_gaps(document, request_doc, forged_result)
     assert "payload_actor_shot_id_mismatch" in gaps2
 
+def test_assert_match_report_contract_rejects_shared_not_subset_of_satisfied() -> None:
+    """TD009: sharedEvidenceIds must sit inside every satisfied evidenceIds list."""
+    from test_actor_detail_matching import EVENT, RUN, condition
+    from test_detail_match_report_contract import _weapon_coexist_detail
+
+    from gamingcreator.application.detail_query import match_report
+    from gamingcreator.domain.actor_details import AttributeKind, QueryConstraint
+
+    query = QueryConstraint((condition(AttributeKind.HELD_CLASS, "weapon", "item"),))
+    document = match_report(
+        None,
+        _weapon_coexist_detail(),
+        query,
+        run_id=RUN,
+        event_id=EVENT,
+        request_digest=None,
+    )
+    assert_match_report_contract(document)
+
+    range_doc = {"startUs": 0, "endUs": 1_000_000, "durationUs": 10_000_000}
+    owned = f"{RUN}:media:image:000001"
+    shared_only = f"{RUN}:media:image:shared-only"
+
+    forged = json.loads(json.dumps(document, default=str))
+    forged["sourceRange"] = range_doc
+    row = {
+        "shotId": "shot-shared",
+        "actorId": "actor-shared",
+        "satisfied": [
+            {
+                "partId": "p-test",
+                "condition": {"kind": "held_class", "partGroup": "item", "value": "weapon"},
+                "evidenceIds": [owned],
+                "sourceRange": range_doc,
+            }
+        ],
+        "missing": [],
+        "uncertain": [],
+        "opposed": [],
+        "conflicts": [],
+        "counterEvidence": [],
+        "sharedEvidenceIds": [shared_only],
+        "sourceRange": range_doc,
+    }
+    forged["result"]["matches"] = [row]
+    forged["result"]["status"] = "partial"
+    with pytest.raises(ValueError, match="sharedEvidenceIds must support"):
+        assert_match_report_contract(forged)
+    assert "match_shared_not_subset_of_satisfied" in match_report_contract_gaps(forged)
+
+    bare = json.loads(json.dumps(document, default=str))
+    bare["sourceRange"] = range_doc
+    bare["result"]["matches"] = [
+        {
+            "shotId": "shot-bare",
+            "actorId": "actor-bare",
+            "satisfied": [],
+            "missing": [],
+            "uncertain": [],
+            "opposed": [],
+            "conflicts": [],
+            "counterEvidence": [],
+            "sharedEvidenceIds": [owned],
+            "sourceRange": range_doc,
+        }
+    ]
+    bare["result"]["status"] = "unverified"
+    with pytest.raises(ValueError, match="require satisfied support"):
+        assert_match_report_contract(bare)
+    assert "match_shared_without_satisfied" in match_report_contract_gaps(bare)
+
+
+
+def test_assert_match_report_sidecar_binding_rejects_satisfied_missing_payload_attribute() -> None:
+    """TD009: satisfied (partId,kind,value) must exist on the payload actor attributes."""
+    document, request_doc, result_doc = _load_first_legacy_binding()
+    assert_match_report_sidecar_binding_contract(document, request_doc, result_doc)
+
+    forged_result = json.loads(json.dumps(result_doc))
+    payload = json.loads(forged_result["payloadJson"])
+    # Drop attributes so satisfied evidence has nothing to bind to.
+    for shot in payload["shots"]:
+        for actor in shot.get("actors") or []:
+            actor["attributes"] = []
+    forged_result["payloadJson"] = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    with pytest.raises(ValueError, match="not covered by sidecar payload attributes"):
+        assert_match_report_sidecar_binding_contract(document, request_doc, forged_result)
+    gaps = match_report_sidecar_binding_gaps(document, request_doc, forged_result)
+    assert "match_satisfied_not_in_payload_attributes" in gaps
+
+    forged_attr = json.loads(json.dumps(result_doc))
+    payload2 = json.loads(forged_attr["payloadJson"])
+    payload2["shots"][0]["actors"][0]["attributes"][0]["kind"] = ""
+    forged_attr["payloadJson"] = json.dumps(payload2, ensure_ascii=False, separators=(",", ":"))
+    with pytest.raises(ValueError, match="attribute kind"):
+        assert_match_report_sidecar_binding_contract(document, request_doc, forged_attr)
+    gaps2 = match_report_sidecar_binding_gaps(document, request_doc, forged_attr)
+    assert "payload_attribute_kind_invalid" in gaps2
+
