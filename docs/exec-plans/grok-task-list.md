@@ -96,8 +96,8 @@
 ### T24 字幕词级时序（若 ASR 已有）（P029） ✅ 已完成
 - 探测结论：本机 ASR 无词级时间戳（缺口已文档化）；映射器仅接受真实 words 载荷，不造假；见 sprint-t24-subtitle-word-timing.md。
 
-### T25 时间线导出音字轨实验（P033）
-- 在 FCPXML／OTIO／xmeml 上做字幕或立体声轨的最佳努力导出＋夹具；真机导入仍非宣称。
+### T25 时间线导出音字轨实验（P033） ✅ 已完成
+- FCPXML／OTIO／xmeml 最佳努力字幕＋立体声结构＋夹具；真机 NLE 导入仍非宣称；见 sprint-t25-timeline-export-av-tracks.md。
 
 ### T26 时间线中文指令语料（P041）
 - 扩充规则解析语料与拒绝用例测试；不引入未批准云端模型。

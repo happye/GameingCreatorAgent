@@ -1160,7 +1160,14 @@ class CreationJobs:
     def timeline_export(
         self, job_id: str, plan_id: str, fmt: str, size: str = "1920x1080"
     ) -> tuple[bytes, str, str]:
-        from gamingcreator.application.timeline_export import to_fcpxml, to_otio, to_xmeml
+        from gamingcreator.application.creation_editing import editable_clips
+        from gamingcreator.application.creation_subtitles import build_subtitles
+        from gamingcreator.application.timeline_export import (
+            captions_from_cues,
+            to_fcpxml,
+            to_otio,
+            to_xmeml,
+        )
 
         width, _, height = size.partition("x")
         if not (width.isdecimal() and height.isdecimal()) or not all(
@@ -1169,14 +1176,46 @@ class CreationJobs:
             raise fail("creation.input", "时间线尺寸须为 16–3840 之间的偶数，如 1280x720。")
         chain = load_chain(self, job_id, plan_id)
         name = f"gamingcreator-{job_id[:8]}"
+        # Best-effort AV extras; Final Cut / Resolve / Premiere import remains unverified.
+        captions = ()
+        try:
+            runs = {timeline.run.run_id: timeline for timeline in chain.timelines}
+            overrides = {item["clipId"]: item["text"] for item in chain.subtitle_overrides}
+            cues = build_subtitles(
+                chain.plan,
+                (),
+                per_clip=(runs[row["runId"]].transcripts for row in chain.edl["segments"]),
+                overrides=(
+                    overrides.get(row["clipId"])
+                    for row in editable_clips(chain.edl, chain.root_sha)
+                ),
+            )
+            captions = captions_from_cues(cues, int(chain.edl["fpsNumerator"]))
+        except Exception:
+            captions = ()
         if fmt == "fcpxml":
-            body = to_fcpxml(chain.edl, name, int(width), int(height))
+            body = to_fcpxml(
+                chain.edl,
+                name,
+                int(width),
+                int(height),
+                captions=captions,
+                include_audio_track=True,
+            )
             return body.encode("utf-8"), f"{name}.fcpxml", "application/xml"
         if fmt == "otio":
-            return to_otio(chain.edl, name).encode("utf-8"), f"{name}.otio", "application/json"
+            return (
+                to_otio(
+                    chain.edl, name, captions=captions, include_audio_track=True
+                ).encode("utf-8"),
+                f"{name}.otio",
+                "application/json",
+            )
         if fmt == "xmeml":
             return (
-                to_xmeml(chain.edl, name).encode("utf-8"),
+                to_xmeml(
+                    chain.edl, name, captions=captions, include_audio_track=True
+                ).encode("utf-8"),
                 f"{name}-premiere.xml",
                 "application/xml",
             )

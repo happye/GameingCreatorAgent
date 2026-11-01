@@ -1,3 +1,5 @@
+**2026-11-01 T25 时间线导出音字轨实验（P033）：** timeline_export 字幕／立体声 best-effort；tests/test_timeline_export_av_tracks.py；NLE 导入非宣称。下一＝T26。计数不变：51·10/41/0≈60%；债务21·14/2/5。**
+
 **2026-11-01 T24 字幕词级时序（P029）：** asr_word_timing probe＝缺口；真实 words 才映射；tests/test_asr_word_timing.py。下一＝T25。计数不变：51·10/41/0≈60%；债务21·14/2/5。**
 
 **2026-11-01 T23 渲染裁切画面／简单叠加（P028）：** creation_presentation＋FFmpeg 安全区裁切／角标；tests/test_creation_presentation.py。下一＝T24。计数不变：51·10/41/0≈60%；债务21·14/2/5。**
