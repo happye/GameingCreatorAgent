@@ -1,3 +1,5 @@
+**2026-11-01 T26（时间线中文指令语料 P041，见功能提交）：** sprint-t26-timeline-command-corpus.md；下一＝T27。
+
 **2026-11-01 T25（时间线导出音字轨实验 P033，见功能提交）：** sprint-t25-timeline-export-av-tracks.md；下一＝T26。
 
 **2026-11-01 T24（字幕词级时序 P029，见功能提交）：** sprint-t24-subtitle-word-timing.md；下一＝T25。

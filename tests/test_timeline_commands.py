@@ -36,7 +36,7 @@ def test_first_seconds_too_slow_speeds_up_only_overlapping_clips():
     # Clips start at 0, 2, 4 seconds; the third begins before 5 s.
     assert speeds(result) == [(2, 1), (2, 1), (2, 1), (1, 1), (1, 1)]
     assert result["beforeSeconds"] == 10 and result["afterSeconds"] == 7
-    assert result["parser"] == "rule-v3-fullmatch" and len(result["changes"]) == 3
+    assert result["parser"] == "rule-v4-corpus" and len(result["changes"]) == 3
 
 
 @pytest.mark.parametrize(
@@ -307,3 +307,84 @@ def test_third_review_minor_fixes():
         apply_timeline_command("快放\n第2个镜头", clips(), FPS)
     lines = apply_timeline_command("删掉第5个镜头\n第1个镜头慢放", clips(), FPS)
     assert ids(lines) == ["c0", "c1", "c2", "c3"] and speeds(lines)[0] == (1, 2)
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("第三个镜头删掉", ["c0", "c1", "c3", "c4"]),
+        ("把第三个镜头删除", ["c0", "c1", "c3", "c4"]),
+        ("请帮我删掉第2个镜头", ["c0", "c2", "c3", "c4"]),
+        ("把第2个镜头挪到片尾", ["c0", "c2", "c3", "c4", "c1"]),
+        ("把第5个镜头移到片头", ["c4", "c0", "c1", "c2", "c3"]),
+        ("对调第一个和第五个", ["c4", "c1", "c2", "c3", "c0"]),
+        ("对调第2个和第4个镜头", ["c0", "c3", "c2", "c1", "c4"]),
+    ],
+)
+def test_t26_accept_order_corpus(text, expected):
+    assert ids(apply_timeline_command(text, clips(), FPS)) == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "speed_at"),
+    [
+        ("第2个镜头改成半速", (1, (1, 2))),
+        ("第2个镜头改成两倍速", (1, (2, 1))),
+        ("第三个镜头慢放", (2, (1, 2))),
+        ("加快第3个镜头", (2, (2, 1))),
+        ("整体快一点", (0, (2, 1))),
+        ("每个镜头都慢放", (4, (1, 2))),
+    ],
+)
+def test_t26_accept_speed_corpus(text, speed_at):
+    index, expected = speed_at
+    result = apply_timeline_command(text, clips(), FPS)
+    assert speeds(result)[index] == expected
+    assert result["parser"] == "rule-v4-corpus"
+
+
+def test_t26_accept_trim_transition_and_restore():
+    row = apply_timeline_command("第1个镜头剪掉结尾半秒", clips(), FPS)["clips"][0]
+    assert (row["startUs"], row["endUs"]) == (0, 1_500_000)
+    edge = apply_timeline_command("去掉第2个镜头片头1秒", clips(), FPS)["clips"][1]
+    assert edge["startUs"] == 11_000_000
+    fast = apply_timeline_command("整体快放", clips(), FPS)["clips"]
+    restored = apply_timeline_command("全部镜头改回原速", fast, FPS)
+    assert speeds(restored) == [(1, 1)] * 5
+    normal = apply_timeline_command("第1个镜头恢复正常", fast, FPS)
+    assert speeds(normal)[0] == (1, 1)
+    multi = apply_timeline_command("删掉第5个镜头同时加交叉淡化", clips(), FPS)
+    assert ids(multi) == ["c0", "c1", "c2", "c3"]
+    assert multi["clips"][1]["transitionIn"]["type"] == "crossfade"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "用GPT优化时间线",
+        "调用大模型帮我改",
+        "让AI自动剪辑",
+        "画面好看一点",
+        "合并第1个和第2个镜头",
+        "复制第3个镜头",
+        "倒放第2个镜头",
+        "静音第1个镜头",
+        "第2个镜头调成3倍速",
+        "整体1.5倍速",
+        "delete the third clip",
+        "把第2个镜头换成BGM",
+        "第3个镜头加滤镜",
+        "除了第1个镜头都删掉",
+        "不要删掉第2个镜头",
+        "云端渲染时间线",
+        "第零个镜头慢放",
+        "镜头2慢放",
+        "大概调快一点",
+        "随便剪短一些",
+    ],
+)
+def test_t26_reject_corpus_no_guessing(text):
+    original = clips()
+    with pytest.raises(CommandError):
+        apply_timeline_command(text, original, FPS)
+    assert original == clips()
+

@@ -99,8 +99,8 @@
 ### T25 时间线导出音字轨实验（P033） ✅ 已完成
 - FCPXML／OTIO／xmeml 最佳努力字幕＋立体声结构＋夹具；真机 NLE 导入仍非宣称；见 sprint-t25-timeline-export-av-tracks.md。
 
-### T26 时间线中文指令语料（P041）
-- 扩充规则解析语料与拒绝用例测试；不引入未批准云端模型。
+### T26 时间线中文指令语料（P041） ✅ 已完成
+- 规则语料／拒绝用例扩充（rule-v4-corpus）；无云端模型；见 sprint-t26-timeline-command-corpus.md。
 
 ### T27 安装包 licenses／gaps 可见性（P039／T2）
 - 安装或 Smoke 后明确提示阅读 `licenses/THIRD-PARTY-NOTICES.md` 与 `gaps.json`；不下载补许可。

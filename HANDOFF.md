@@ -1,6 +1,8 @@
 # 当前接手：51项全部至少部分可用，下一步把部分项推进到可验收
 
-**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T25 已完成；下一步 T26）。**
+**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T26 已完成；下一步 T27）。**
+
+2026-11-01 T26 时间线中文指令语料（P041）：rule-v4-corpus 接受／拒绝语料扩充；无云端模型。计数不变：51·10/41/0≈60%；技术债21·14/2/5；人工0／未来8。
 
 2026-11-01 T25 时间线导出音字轨实验（P033）：FCPXML／OTIO／xmeml 最佳努力字幕＋立体声轨＋夹具；NLE 导入非宣称。计数不变：51·10/41/0≈60%；技术债21·14/2/5；人工0／未来8。
 

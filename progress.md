@@ -1,3 +1,5 @@
+**2026-11-01 T26 时间线中文指令语料（P041）：** timeline_commands rule-v4-corpus；tests/test_timeline_commands.py 语料扩充；无云端模型。下一＝T27。计数不变：51·10/41/0≈60%；债务21·14/2/5。**
+
 **2026-11-01 T25 时间线导出音字轨实验（P033）：** timeline_export 字幕／立体声 best-effort；tests/test_timeline_export_av_tracks.py；NLE 导入非宣称。下一＝T26。计数不变：51·10/41/0≈60%；债务21·14/2/5。**
 
 **2026-11-01 T24 字幕词级时序（P029）：** asr_word_timing probe＝缺口；真实 words 才映射；tests/test_asr_word_timing.py。下一＝T25。计数不变：51·10/41/0≈60%；债务21·14/2/5。**

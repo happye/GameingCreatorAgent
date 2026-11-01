@@ -15,9 +15,10 @@ from gamingcreator.application.rendering import output_start_frames
 
 SPEEDS = {Fraction(1, 2): "0.5倍", Fraction(1): "原速", Fraction(2): "2倍"}
 EXAMPLES = (
-    "前5秒太慢、删掉第3个镜头、第2个和第3个镜头慢放、整体快放、把最后一个镜头移到最前、"
-    "把第4个镜头放到第1个镜头后面、交换第1个和第2个、第4个镜头缩短到1.5秒、去掉开头半秒、"
-    "删掉最后1秒、去掉转场、加交叉淡化"
+    "前5秒太慢、删掉第3个镜头、第三个镜头删掉、第2个和第3个镜头慢放、整体快放、整体快一点、"
+    "把最后一个镜头移到最前、把第4个镜头放到第1个镜头后面、把第2个镜头挪到片尾、"
+    "交换第1个和第2个、对调第一个和第五个、第4个镜头缩短到1.5秒、去掉开头半秒、"
+    "删掉最后1秒、第1个镜头剪掉结尾半秒、去掉转场、加交叉淡化、改回原速"
 )
 _DIGITS = {
     "零": 0,
@@ -45,8 +46,8 @@ _SINGLE = rf"(?:第{_NUM}{_UNIT}|{_LAST})"
 _FAST = (
     r"快放|加速|加快|快一点|太慢了?|拖沓|太拖沓了?|改成?2倍速?|改为2倍速?|2倍速|两倍速|改成?两倍速?"
 )
-_SLOW = r"慢放|放慢|减速|慢一点|太快了?|改成?0\.5倍速?|改为0\.5倍速?|0\.5倍速?|半速"
-_RESTORE = r"恢复原速|恢复正常速度|改成?原速|改为原速|原速|1倍速|一倍速"
+_SLOW = r"慢放|放慢|减速|慢一点|太快了?|改成?0\.5倍速?|改为0\.5倍速?|0\.5倍速?|改成?半速|改为半速|半速"
+_RESTORE = r"恢复原速|恢复正常速度|恢复正常|改回原速|改成?原速|改为原速|原速|1倍速|一倍速"
 _TR = r"交叉淡化|淡入淡出|转场|淡化"
 
 
@@ -279,10 +280,10 @@ def _move(m: re.Match[str], rows: list[dict[str, Any]], fps: int) -> list[str]:
     source = _single(m.group("t"), rows, fps)
     place = m.group("p")
     row = rows[source]
-    if re.fullmatch(r"最前面?|开头|第一位", place):
+    if re.fullmatch(r"最前面?|开头|片头|第一位", place):
         rows.insert(0, rows.pop(source))
         where = "最前"
-    elif re.fullmatch(r"最后面?|末尾|结尾|最后一位", place):
+    elif re.fullmatch(r"最后面?|末尾|结尾|片尾|最后一位", place):
         rows.append(rows.pop(source))
         where = "最后"
     elif position := re.fullmatch(rf"第({_NUM})位", place):
@@ -338,7 +339,7 @@ def _trim_by(m: re.Match[str], rows: list[dict[str, Any]], fps: int) -> list[str
 
 
 def _cut_edge(m: re.Match[str], rows: list[dict[str, Any]], fps: int) -> list[str]:
-    head = m.group("e") in ("开头", "前面", "前")
+    head = m.group("e") in ("开头", "前面", "前", "片头")
     target = m.group("t")
     # Without a clip, “去掉开头/最后N秒” trims the video's first or last clip.
     i = _single(target, rows, fps) if target else (0 if head else len(rows) - 1)
@@ -346,7 +347,7 @@ def _cut_edge(m: re.Match[str], rows: list[dict[str, Any]], fps: int) -> list[st
     return [_trim(rows, i, fps, None, amount if head else None, None if head else amount)]
 
 
-_EDGE = r"开头|前面|前|结尾|末尾|最后"
+_EDGE = r"开头|前面|前|片头|结尾|末尾|最后|片尾"
 rule(rf"(?:{_CUT})(?:(?P<t>{_SINGLE})的?)?(?P<e>{_EDGE})的?(?P<n>{_NUM})秒")(_cut_edge)
 rule(rf"(?P<t>{_SINGLE})的?(?:{_CUT})(?P<e>{_EDGE})的?(?P<n>{_NUM})秒")(_cut_edge)
 
@@ -425,7 +426,7 @@ def apply_timeline_command(text: object, clips: object, fps: object) -> dict[str
     after = max(s + _frames(r, fps) for s, r in zip(starts, rows, strict=True))
     return {
         "schemaVersion": "timeline-command-v1",
-        "parser": "rule-v3-fullmatch",
+        "parser": "rule-v4-corpus",
         "clips": rows,
         "changes": changes,
         "beforeSeconds": before / fps,

@@ -1002,10 +1002,15 @@
             "first_product": true,
             "delivery_status": "partial",
             "implementation_evidence": [
-                "2026-11-01: rule-based Chinese timeline commands (speed/delete/move/swap/trim/transitions) previewed via stateless API, applied in the editor and persisted through normal revision validation with ancestor undo; whole-command refusal for unknown/impossible clauses; 20 parser/HTTP tests + browser preview/apply/save test; real 35-clip revision -> 34 clips saved as d7d7a4d5 with narration inherited; no model understanding"
+                "2026-11-01: rule-based Chinese timeline commands (speed/delete/move/swap/trim/transitions) previewed via stateless API, applied in the editor and persisted through normal revision validation with ancestor undo; whole-command refusal for unknown/impossible clauses; 20 parser/HTTP tests + browser preview/apply/save test; real 35-clip revision -> 34 clips saved as d7d7a4d5 with narration inherited; no model understanding",
+                "docs/exec-plans/sprint-t26-timeline-command-corpus.md",
+                "tests/test_timeline_commands.py",
+                "2026-11-01 T26: expanded accept/reject Chinese corpus (rule-v4-corpus); refuses cloud-model / merge / reverse / illegal speed talk; no unapproved cloud models"
             ],
             "quality_status": "not_separately_assessed",
-            "release_status": "not_released"
+            "release_status": "not_released",
+            "implementation_status": "partial",
+            "remaining": "Rule corpus expanded; open-ended semantics and model understanding remain out of scope. Creative quality of edits unverified."
         },
         {
             "id": "P042",
