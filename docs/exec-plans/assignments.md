@@ -1,3 +1,6 @@
+**2026-11-01 T8（新界面文案浏览器测试，见功能提交）：** sprint-t8-creation-copy-browser.md；下一步 T9。
+
+
 # 当前分工与恢复入口
 
 **2026-11-01 T7（发布包水印核验，见功能提交）：** sprint-t7-package-watermark-verify.md；下一步 T8。

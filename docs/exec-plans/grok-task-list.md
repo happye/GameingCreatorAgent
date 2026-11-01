@@ -48,7 +48,7 @@
 ### T7 发布包水印核验 ✅ 已完成（e7c5a2a）
 - `ui/package_jobs.py::verify` 检查包收据 `watermark` 与父成片收据 `watermark` 一致（旧包缺字段视为 None）；页面在发布包结果里显示“含 Free 水印”。加测试（Free 成片 → 包 → 篡改收据 → 核验失败）。
 
-### T8 新界面文案的浏览器测试
+### T8 新界面文案的浏览器测试 ✅ 已完成（2eb9f6c）
 - 用现有 strict-route 浏览器测试风格（参考 `tests/test_narration_browser.py`），覆盖：成片下的水印说明、“套餐与用量”的水印提示、方案卡“你常用的结构”文案（`rankedByHistory` 真/假两种）、时间线导出链接点击后带 `size` 参数。注意新端点要在 mock 里登记，否则 KeyError。
 
 ### T9 反馈学习进一步（P042）
