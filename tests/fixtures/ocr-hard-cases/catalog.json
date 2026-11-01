@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "ocr-hard-case-catalog-v1",
+  "disclaimer": "Synthetic offline fixtures only. OCR accuracy is not human-reviewed; results must not be cited as F006 or quality acceptance.",
+  "maxImageBytes": 262144,
+  "fontFile": "C:/Windows/Fonts/msyh.ttc",
+  "cases": [
+    {
+      "id": "plain-cjk-en",
+      "difficulty": "plain_control",
+      "expectedSubstrings": ["钟馗斩妖", "GAME SCIENCE"],
+      "width": 640,
+      "height": 360,
+      "background": "white",
+      "draw": [
+        {"text": "GAME SCIENCE", "fontsize": 42, "x": 40, "y": 48, "fontcolor": "black"},
+        {"text": "钟馗斩妖", "fontsize": 56, "x": 40, "y": 180, "fontcolor": "black"}
+      ]
+    },
+    {
+      "id": "low-contrast-gray",
+      "difficulty": "low_contrast",
+      "expectedSubstrings": ["入魔的天才"],
+      "width": 640,
+      "height": 360,
+      "background": "0x101010",
+      "draw": [
+        {"text": "入魔的天才", "fontsize": 48, "x": 80, "y": 140, "fontcolor": "0x2a2a2a"}
+      ]
+    },
+    {
+      "id": "stylized-outline-title",
+      "difficulty": "stylized_title",
+      "expectedSubstrings": ["贝多帽"],
+      "width": 720,
+      "height": 400,
+      "background": "0x0a0a12",
+      "draw": [
+        {
+          "text": "贝多帽",
+          "fontsize": 72,
+          "x": 160,
+          "y": 140,
+          "fontcolor": "0xffe08a",
+          "borderw": 8,
+          "bordercolor": "0x6b1d8a",
+          "shadowcolor": "0x000000@0.8",
+          "shadowx": 4,
+          "shadowy": 4
+        }
+      ]
+    },
+    {
+      "id": "low-contrast-light",
+      "difficulty": "low_contrast",
+      "expectedSubstrings": ["限时活动"],
+      "width": 640,
+      "height": 360,
+      "background": "0xf2f2f2",
+      "draw": [
+        {"text": "限时活动", "fontsize": 44, "x": 120, "y": 150, "fontcolor": "0xd8d8d8"}
+      ]
+    }
+  ]
+}

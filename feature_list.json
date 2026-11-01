@@ -517,7 +517,9 @@
             "name": "OCR",
             "first_product": false,
             "delivery_status": "partial",
-            "implementation_evidence": [],
+            "implementation_evidence": [
+                "2026-11-01: offline hard-case fixture catalog (tests/fixtures/ocr-hard-cases) synthesizes byte-capped PNGs for plain_control / low_contrast / stylized_title; regression smokes Windows OCR without claiming accuracy, human review, or F006; retrieval integration still open"
+            ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"
         },
