@@ -1,1122 +1,1123 @@
 {
-  "project": "Gaming Creator Agent",
-  "phase": "Phase 0",
-  "version": "0.1.0",
-  "features": [
-    {
-      "id": "F000",
-      "name": "Technical reverse review",
-      "description": "Review the source plan for feasibility, architecture, model capability, video processing, cost, and one-person maintenance; refine the smallest Phase 0 loop.",
-      "priority": 0,
-      "passes": true,
-      "test_criteria": "A dated review in docs/exec-plans identifies key risks, evidence, decisions, and any changes to the Phase 0 scope.",
-      "evidence": [
-        "docs/exec-plans/reverse-review-2026-10-03.md",
-        "docs/exec-plans/phase-0-validation-2026-10-03.md",
-        "docs/design-docs/phase-0-engineering-spec.md",
-        "docs/design-docs/adr-001-phase-0-language.md",
-        "docs/exec-plans/sprint-F000.md"
-      ]
-    },
-    {
-      "id": "F001",
-      "name": "CLI input and project skeleton",
-      "description": "Prepare isolated, pinned CPython 3.13/uv/venv tools and a four-layer Python CLI package with typed domain/provider contracts and local input validation.",
-      "priority": 1,
-      "passes": true,
-      "test_criteria": "Reproducible package build, pytest/Ruff/mypy and import-direction checks pass using project-local tools/caches, with no Windows Python registration or global links; missing/unreadable video returns the specified input error without output.",
-      "dependencies": [
-        "F000"
-      ],
-      "evidence": [
-        "docs/exec-plans/sprint-F001.md",
-        "toolchain.json",
-        "uv.lock",
-        "scripts/verify.ps1",
-        "scripts/setup-media.ps1",
-        "tests/test_setup_media.py",
-        "docs/exec-plans/sprint-offline-media-setup.md"
-      ]
-    },
-    {
-      "id": "F002",
-      "name": "Local media preprocessing",
-      "description": "Use FFmpeg locally to probe media and extract timestamped audio and visual evidence.",
-      "priority": 2,
-      "passes": true,
-      "test_criteria": "Representative and synthetic VFR/nonzero-PTS clips produce traceable source timecodes; no-audio, malformed input and cancellation are handled cleanly.",
-      "dependencies": [
-        "F001"
-      ],
-      "evidence": [
-        "docs/exec-plans/sprint-F002.md",
-        "docs/references/media-processing.md",
-        "docs/references/media-toolchain.json",
-        "tests/media_generator_clocks.py",
-        "tests/test_media_generator_clocks.py",
-        "docs/exec-plans/sprint-media-generator-clocks.md",
-        "scripts/test-media.ps1",
-        "docs/exec-plans/sprint-long-footage-media.md",
-        "tests/test_streamed_media_logs.py",
-        "tests/test_media_integration.py",
-        "docs/exec-plans/sprint-media-preparation.md",
-        "tests/test_media_preparation.py",
-        "scripts/prepare-media.ps1",
-        "docs/exec-plans/sprint-media-batch-preparation.md",
-        "docs/references/media-batch-preparation-guide.md",
-        "tests/test_media_batch.py",
-        "scripts/prepare-media-batch.ps1",
-        "docs/exec-plans/sprint-media-preparation-workspace.md",
-        "docs/references/media-preparation-workspace-guide.md",
-        "tests/test_media_preparation_jobs.py",
-        "tests/test_media_preparation_browser.py",
-        "docs/exec-plans/sprint-independent-footage-preparation.md",
-        "docs/exec-plans/report-2026-10-11-independent-footage-preparation.md"
-      ]
-    },
-    {
-      "id": "F003",
-      "name": "Replaceable model analysis",
-      "description": "Implement local ASR and replaceable vision analysis, produce validated semantic events, and record per-attempt model, usage and cost metadata.",
-      "priority": 3,
-      "passes": true,
-      "test_criteria": "Provider replacement is verified; ASR distinguishes no_audio/no_speech/failure; schema, usage, budget and retry checks pass with per-attempt model/prompt/cost/time records and unknown costs preserved.",
-      "dependencies": [
-        "F002"
-      ],
-      "evidence": [
-        "docs/exec-plans/sprint-demo.md",
-        "docs/exec-plans/sprint-F003.md",
-        "docs/references/deepseek-pricing.json",
-        "tests/test_analyze_v2.py",
-        "scripts/validate-demo.py",
-        "scripts/verify.ps1",
-        "docs/exec-plans/sprint-media-preparation.md",
-        "tests/test_media_preparation.py",
-        "docs/exec-plans/sprint-material-tasks.md",
-        "tests/test_material_tasks.py",
-        "tests/test_material_tasks_http.py",
-        "tests/test_material_tasks_browser.py",
-        "scripts/list-tasks.ps1"
-      ]
-    },
-    {
-      "id": "F004",
-      "name": "Persistent semantic timeline",
-      "description": "Store media references, timestamped semantic events, and analysis metadata in SQLite.",
-      "priority": 4,
-      "passes": true,
-      "test_criteria": "A second process reloads the timeline; migrations/FKs and interrupted-stage/file-integrity recovery pass; unknown request costs survive recovery; full source video bytes are absent from SQLite.",
-      "dependencies": [
-        "F001"
-      ],
-      "evidence": [
-        "docs/exec-plans/sprint-F004.md",
-        "docs/references/timeline-storage.md",
-        "scripts/test-storage.ps1",
-        "scripts/verify.ps1",
-        "docs/exec-plans/sprint-long-footage-media.md",
-        "docs/exec-plans/sprint-media-preparation.md",
-        "tests/test_media_preparation.py",
-        "docs/exec-plans/sprint-material-tasks.md",
-        "tests/test_material_tasks.py",
-        "tests/test_material_tasks_http.py",
-        "tests/test_material_tasks_browser.py",
-        "scripts/list-tasks.ps1",
-        "docs/exec-plans/sprint-media-batch-preparation.md",
-        "docs/references/media-batch-preparation-guide.md",
-        "tests/test_media_batch.py",
-        "scripts/prepare-media-batch.ps1",
-        "docs/exec-plans/sprint-media-preparation-workspace.md",
-        "tests/test_media_preparation_jobs.py",
-        "tests/test_media_preparation_browser.py",
-        "docs/exec-plans/sprint-detail-billing-confirmation.md",
-        "tests/test_detail_billing_confirmation.py",
-        "tests/test_detail_billing_delivery.py",
-        "docs/references/detail-billing-confirmation-guide.md"
-      ]
-    },
-    {
-      "id": "F005",
-      "name": "Natural-language clip retrieval",
-      "description": "Rank timeline segments against a text query and return useful clip ranges with evidence.",
-      "priority": 5,
-      "passes": true,
-      "test_criteria": "A query returns stable, deduplicated source intervals with evidence from a Completed run; empty results are valid; lexical and semantic retrieval are compared on fixed fixtures.",
-      "dependencies": [
-        "F003",
-        "F004"
-      ],
-      "evidence": [
-        "docs/exec-plans/sprint-demo.md",
-        "docs/exec-plans/sprint-F005-worker.md",
-        "docs/exec-plans/sprint-F005-persistence-worker.md",
-        "tests/test_retrieval.py",
-        "tests/test_search_cli.py",
-        "scripts/validate-demo.py",
-        "docs/exec-plans/sprint-long-footage-retrieval.md",
-        "tests/test_long_retrieval.py",
-        "docs/exec-plans/sprint-project-retrieval.md",
-        "docs/references/project-retrieval-guide.md",
-        "tests/test_project_retrieval.py",
-        "scripts/search-project.ps1",
-        "docs/exec-plans/sprint-project-retrieval-workspace.md",
-        "docs/exec-plans/report-2026-10-07-project-workspace.md",
-        "tests/test_project_search_workspace.py",
-        "docs/exec-plans/sprint-project-detail-query.md",
-        "docs/references/project-detail-query-guide.md",
-        "tests/test_project_detail_query.py",
-        "docs/exec-plans/sprint-search-detail-evidence.md",
-        "docs/references/search-detail-evidence-guide.md",
-        "tests/test_search_detail_query.py",
-        "docs/exec-plans/sprint-saved-detail-retrieval.md",
-        "docs/references/saved-detail-retrieval-guide.md",
-        "docs/exec-plans/report-2026-10-08-saved-detail-retrieval.md",
-        "tests/test_saved_detail_retrieval.py",
-        "tests/test_saved_detail_retrieval_browser.py",
-        "docs/exec-plans/sprint-saved-detail-real-modes.md",
-        "docs/exec-plans/report-2026-10-08-saved-detail-real-modes.md",
-        "docs/exec-plans/sprint-saved-detail-actor-semantics.md",
-        "tests/test_saved_detail_actor_semantics.py",
-        "tests/test_saved_detail_actor_browser.py",
-        "docs/exec-plans/report-2026-10-08-saved-detail-actor-semantics.md",
-        "docs/exec-plans/sprint-saved-detail-grouped-ranking.md",
-        "docs/exec-plans/report-2026-10-08-saved-detail-grouped-ranking.md",
-        "tests/test_saved_detail_grouped_ranking.py",
-        "tests/test_saved_detail_grouped_browser.py"
-      ]
-    },
-    {
-      "id": "F006",
-      "name": "Retrieval benchmark and gate",
-      "description": "Evaluate ranked results against human judgments and report quality, runtime, and model cost.",
-      "priority": 6,
-      "passes": false,
-      "test_criteria": "A frozen independent human-labeled benchmark reports every query, fixed-denominator U10, misses/timecode errors, runtime and cold/hot cost; each main mechanic query reaches U10 >= 0.70; sparse/negative groups are separate and unverified cost gates remain null.",
-      "dependencies": [
-        "F005"
-      ],
-      "evidence": [
-        "docs/exec-plans/sprint-F006-worker.md",
-        "docs/references/benchmark-manifest-schema.md",
-        "tests/test_benchmark.py",
-        "docs/exec-plans/sprint-demo.md",
-        "docs/exec-plans/sprint-benchmark-preparation.md",
-        "docs/references/benchmark-preparation-guide.md",
-        "tests/test_benchmark_preparation.py",
-        "scripts/prepare-benchmark.ps1",
-        "docs/exec-plans/sprint-benchmark-candidate-review.md",
-        "docs/references/benchmark-candidate-review-guide.md",
-        "tests/test_benchmark_review.py",
-        "scripts/prepare-benchmark-review.ps1",
-        "docs/exec-plans/sprint-benchmark-fixed-scoring.md",
-        "tests/test_benchmark_fixed_scoring.py",
-        "docs/exec-plans/sprint-benchmark-reference-review.md",
-        "docs/references/benchmark-reference-review-guide.md",
-        "scripts/prepare-benchmark-references.ps1",
-        "tests/test_benchmark_reference_review.py",
-        "tests/test_benchmark_reference_browser.py",
-        "docs/exec-plans/sprint-benchmark-plan-editor.md",
-        "docs/references/benchmark-plan-editor-guide.md",
-        "scripts/prepare-benchmark-plan.ps1",
-        "tests/test_benchmark_plan_draft.py",
-        "tests/test_benchmark_plan_editor_browser.py",
-        "docs/exec-plans/sprint-benchmark-workspace.md",
-        "docs/references/benchmark-workspace-guide.md",
-        "tests/test_benchmark_workflow.py",
-        "tests/test_benchmark_workflow_browser.py",
-        "docs/exec-plans/sprint-benchmark-run-picker.md",
-        "docs/exec-plans/report-2026-10-07-run-picker.md",
-        "tests/test_benchmark_run_selection.py",
-        "tests/test_benchmark_run_selection_browser.py",
-        "docs/exec-plans/sprint-independent-footage-preparation.md",
-        "docs/exec-plans/report-2026-10-11-independent-footage-preparation.md",
-        "docs/exec-plans/sprint-human-reference-pilot.md",
-        "docs/exec-plans/report-2026-10-11-human-reference-pilot.md"
-      ]
-    },
-    {
-      "id": "F007",
-      "name": "Local inspection workspace",
-      "description": "User-authorized local project/run inspection, source playback, evidence, filtered timeline and selected-interval manifests; does not replace the F006 human gate or implement video rendering.",
-      "priority": 7,
-      "passes": true,
-      "test_criteria": "Registered source/evidence HTTP boundaries and Range/HEAD/errors pass; real existing footage supports search, seek/end pause, evidence preview, isolated basket restoration and identity-preserving JSON/CSV export; browser behavior checks cover stale responses and text safety using project-isolated tools.",
-      "dependencies": [
-        "F004",
-        "F005"
-      ],
-      "evidence": [
-        "docs/design-docs/adr-002-local-inspection-ui.md",
-        "docs/design-docs/inspection-workspace-api.md",
-        "docs/exec-plans/sprint-inspection-workspace.md",
-        "docs/exec-plans/sprint-inspection-frontend.md",
-        "tests/test_inspection_http.py",
-        "scripts/validate-inspection-ui.py",
-        "docs/exec-plans/sprint-material-tasks.md",
-        "tests/test_material_tasks.py",
-        "tests/test_material_tasks_http.py",
-        "tests/test_material_tasks_browser.py",
-        "scripts/list-tasks.ps1",
-        "docs/exec-plans/sprint-project-retrieval-workspace.md",
-        "docs/exec-plans/report-2026-10-07-project-workspace.md",
-        "tests/test_project_search_workspace.py",
-        "docs/exec-plans/sprint-media-preparation-workspace.md",
-        "docs/exec-plans/report-2026-10-07-media-preparation-workspace.md",
-        "docs/references/media-preparation-workspace-guide.md",
-        "tests/test_media_preparation_jobs.py",
-        "tests/test_media_preparation_browser.py",
-        "docs/exec-plans/sprint-project-detail-query.md",
-        "docs/references/project-detail-query-guide.md",
-        "tests/test_project_detail_query_browser.py",
-        "docs/exec-plans/sprint-search-detail-evidence.md",
-        "docs/references/search-detail-evidence-guide.md",
-        "tests/test_search_detail_query.py",
-        "tests/test_search_detail_browser.py",
-        "docs/exec-plans/sprint-saved-detail-retrieval.md",
-        "docs/references/saved-detail-retrieval-guide.md",
-        "docs/exec-plans/report-2026-10-08-saved-detail-retrieval.md",
-        "tests/test_saved_detail_retrieval.py",
-        "tests/test_saved_detail_retrieval_browser.py",
-        "docs/exec-plans/sprint-saved-detail-actor-semantics.md",
-        "tests/test_saved_detail_actor_semantics.py",
-        "tests/test_saved_detail_actor_browser.py",
-        "docs/exec-plans/report-2026-10-08-saved-detail-actor-semantics.md",
-        "docs/exec-plans/sprint-saved-detail-grouped-ranking.md",
-        "docs/exec-plans/report-2026-10-08-saved-detail-grouped-ranking.md",
-        "tests/test_saved_detail_grouped_ranking.py",
-        "tests/test_saved_detail_grouped_browser.py"
-      ]
-    },
-    {
-      "id": "F008",
-      "name": "Workspace layout and chronological clip basket",
-      "description": "Apply user UI acceptance feedback: professional workstation layout with visible preview/timeline/basket, independent list scrolling and chronological selections without changing retrieval ranks.",
-      "priority": 8,
-      "passes": true,
-      "test_criteria": "Real browser checks show preview, timeline and basket together at 1440x900 and 1366x768 without page scrolling, keep a deep timeline position through selection, preserve all existing playback/evidence behavior, sort basket/storage/JSON/CSV by source start/end/identity and avoid mobile horizontal overflow.",
-      "dependencies": [
-        "F007"
-      ],
-      "evidence": [
-        "docs/exec-plans/sprint-workspace-usability.md",
-        "docs/exec-plans/sprint-workspace-layout.md",
-        "scripts/validate-inspection-ui.py"
-      ]
-    },
-    {
-      "id": "F009",
-      "name": "Temporal gameplay analysis correction",
-      "description": "Address rejected gameplay retrieval with ordered multi-frame action analysis, conservative action evidence and bounded real-video comparisons; this technical change does not pass F006.",
-      "priority": 9,
-      "passes": false,
-      "test_criteria": "A separately fingerprinted temporal prompt preserves legacy runs, rejects unordered or single-frame action claims, supports a denser source-clock-preserving profile and resumable windows, and records bounded real-video comparisons including static controls and all attempt costs. Independent action retrieval quality remains F006.",
-      "dependencies": [
-        "F003",
-        "F004",
-        "F005"
-      ],
-      "evidence": [
-        "docs/exec-plans/sprint-temporal-gameplay.md",
-        "docs/exec-plans/sprint-temporal-frame-contract-worker.md",
-        "docs/exec-plans/sprint-workspace-launcher-worker.md",
-        "docs/exec-plans/sprint-retrieval-negation-worker.md",
-        "docs/references/temporal-gameplay-validation.md",
-        "tests/test_temporal_frame_contract.py",
-        "tests/test_temporal_analysis.py",
-        "tests/test_retrieval_negation.py",
-        "scripts/validate-temporal-gameplay.py",
-        "docs/exec-plans/sprint-detail-temporal-execution.md",
-        "docs/exec-plans/report-2026-10-08-temporal-pilot-execution.md",
-        "docs/exec-plans/sprint-detail-temporal-json.md",
-        "docs/exec-plans/report-2026-10-08-detail-json.md",
-        "docs/exec-plans/sprint-detail-json-execution.md"
-      ]
-    },
-    {
-      "id": "F010",
-      "name": "Actor-bound visual detail retrieval and clean descriptions",
-      "description": "Address user feedback with visible appearance, clothing, held items, environment and action effects bound to their actors; remove internal frame aliases from human-facing descriptions while preserving frozen source facts.",
-      "priority": 10,
-      "passes": false,
-      "test_criteria": "Versioned V5/V6 detailed analysis and higher-resolution evidence preserve legacy contracts and resumable runs; uncertainty stays outside positive indexing and facts require review. Actor/part-bound observed attributes with shared supporting evidence must satisfy all strict compound constraints; unknown or cross-actor facts cannot be full matches. Original facts/basket validation remain intact; bounded real-video comparisons record every cost/control and independent human judgments confirm useful detail queries. F006 remains separate.",
-      "dependencies": [
-        "F009",
-        "F007"
-      ],
-      "evidence": [
-        "docs/exec-plans/sprint-visual-details.md",
-        "docs/exec-plans/sprint-detail-vision-worker.md",
-        "docs/exec-plans/sprint-detail-presentation-worker.md",
-        "docs/exec-plans/sprint-detail-v6-worker.md",
-        "docs/design-docs/actor-detail-matching-spec.md",
-        "docs/exec-plans/sprint-actor-detail-matching.md",
-        "docs/exec-plans/sprint-actor-detail-contract-worker.md",
-        "docs/exec-plans/sprint-actor-detail-contract-tests-worker.md",
-        "tests/test_actor_details.py",
-        "tests/test_actor_detail_matching.py",
-        "tests/test_detailed_vision.py",
-        "tests/test_detail_action_eligibility.py",
-        "tests/test_observation_presentation.py",
-        "config.detailed.example.json",
-        "config.detailed-v6.example.json",
-        "docs/exec-plans/sprint-detail-inspection.md",
-        "tests/test_detail_refinement.py",
-        "tests/test_detail_budget_sidecar.py",
-        "tests/test_detail_inspection.py",
-        "docs/exec-plans/sprint-detail-provider.md",
-        "docs/exec-plans/sprint-detail-query.md",
-        "tests/test_detail_provider.py",
-        "tests/test_detail_recovery.py",
-        "tests/test_detail_query.py",
-        "detail-query.example.json",
-        "docs/exec-plans/sprint-detail-workspace.md",
-        "docs/exec-plans/sprint-detail-parts-worker.md",
-        "docs/exec-plans/sprint-detail-cost-worker.md",
-        "tests/test_detail_query_http.py",
-        "tests/test_detail_cost_http.py",
-        "tests/test_detail_parts.py",
-        "tests/test_detail_cost_history.py",
-        "docs/exec-plans/detail-human-feedback-2026-10-06.md",
-        "docs/exec-plans/sprint-detail-temporal.md",
-        "docs/exec-plans/sprint-detail-temporal-entities-worker.md",
-        "tests/test_temporal_entities.py",
-        "tests/test_temporal_entity_projection.py",
-        "tests/test_temporal_scene_codec.py",
-        "tests/test_detail_temporal_provider.py",
-        "tests/test_detail_temporal_http.py",
-        "docs/exec-plans/sprint-project-detail-query.md",
-        "docs/references/project-detail-query-guide.md",
-        "tests/test_project_detail_query.py",
-        "tests/test_project_detail_query_browser.py",
-        "docs/exec-plans/sprint-search-detail-evidence.md",
-        "docs/references/search-detail-evidence-guide.md",
-        "tests/test_search_detail_query.py",
-        "tests/test_search_detail_browser.py",
-        "docs/exec-plans/sprint-saved-detail-retrieval.md",
-        "docs/references/saved-detail-retrieval-guide.md",
-        "docs/exec-plans/report-2026-10-08-saved-detail-retrieval.md",
-        "tests/test_saved_detail_retrieval.py",
-        "tests/test_saved_detail_retrieval_browser.py",
-        "docs/exec-plans/sprint-saved-detail-real-modes.md",
-        "docs/exec-plans/report-2026-10-08-saved-detail-real-modes.md",
-        "docs/exec-plans/sprint-saved-detail-actor-semantics.md",
-        "tests/test_saved_detail_actor_semantics.py",
-        "tests/test_saved_detail_actor_browser.py",
-        "docs/exec-plans/report-2026-10-08-saved-detail-actor-semantics.md",
-        "docs/exec-plans/sprint-saved-detail-grouped-ranking.md",
-        "docs/exec-plans/report-2026-10-08-saved-detail-grouped-ranking.md",
-        "tests/test_saved_detail_grouped_ranking.py",
-        "tests/test_saved_detail_grouped_browser.py",
-        "docs/exec-plans/sprint-detail-temporal-execution.md",
-        "docs/exec-plans/report-2026-10-08-temporal-pilot-execution.md",
-        "docs/exec-plans/sprint-detail-temporal-json.md",
-        "docs/exec-plans/report-2026-10-08-detail-json.md",
-        "tests/test_detail_temporal_json.py",
-        "tests/test_detail_temporal_json_browser.py",
-        "tests/test_detail_temporal_proposal.py",
-        "docs/exec-plans/sprint-detail-json-execution.md",
-        "docs/exec-plans/report-2026-10-11-detail-json-pilot.md",
-        "docs/exec-plans/report-2026-10-24-static-observation-generation.md",
-        "docs/exec-plans/report-2026-10-24-static-observation-pilot.md"
-      ]
+    "project": "Gaming Creator Agent",
+    "phase": "Phase 0",
+    "version": "0.1.0",
+    "features": [
+        {
+            "id": "F000",
+            "name": "Technical reverse review",
+            "description": "Review the source plan for feasibility, architecture, model capability, video processing, cost, and one-person maintenance; refine the smallest Phase 0 loop.",
+            "priority": 0,
+            "passes": true,
+            "test_criteria": "A dated review in docs/exec-plans identifies key risks, evidence, decisions, and any changes to the Phase 0 scope.",
+            "evidence": [
+                "docs/exec-plans/reverse-review-2026-10-03.md",
+                "docs/exec-plans/phase-0-validation-2026-10-03.md",
+                "docs/design-docs/phase-0-engineering-spec.md",
+                "docs/design-docs/adr-001-phase-0-language.md",
+                "docs/exec-plans/sprint-F000.md"
+            ]
+        },
+        {
+            "id": "F001",
+            "name": "CLI input and project skeleton",
+            "description": "Prepare isolated, pinned CPython 3.13/uv/venv tools and a four-layer Python CLI package with typed domain/provider contracts and local input validation.",
+            "priority": 1,
+            "passes": true,
+            "test_criteria": "Reproducible package build, pytest/Ruff/mypy and import-direction checks pass using project-local tools/caches, with no Windows Python registration or global links; missing/unreadable video returns the specified input error without output.",
+            "dependencies": [
+                "F000"
+            ],
+            "evidence": [
+                "docs/exec-plans/sprint-F001.md",
+                "toolchain.json",
+                "uv.lock",
+                "scripts/verify.ps1",
+                "scripts/setup-media.ps1",
+                "tests/test_setup_media.py",
+                "docs/exec-plans/sprint-offline-media-setup.md"
+            ]
+        },
+        {
+            "id": "F002",
+            "name": "Local media preprocessing",
+            "description": "Use FFmpeg locally to probe media and extract timestamped audio and visual evidence.",
+            "priority": 2,
+            "passes": true,
+            "test_criteria": "Representative and synthetic VFR/nonzero-PTS clips produce traceable source timecodes; no-audio, malformed input and cancellation are handled cleanly.",
+            "dependencies": [
+                "F001"
+            ],
+            "evidence": [
+                "docs/exec-plans/sprint-F002.md",
+                "docs/references/media-processing.md",
+                "docs/references/media-toolchain.json",
+                "tests/media_generator_clocks.py",
+                "tests/test_media_generator_clocks.py",
+                "docs/exec-plans/sprint-media-generator-clocks.md",
+                "scripts/test-media.ps1",
+                "docs/exec-plans/sprint-long-footage-media.md",
+                "tests/test_streamed_media_logs.py",
+                "tests/test_media_integration.py",
+                "docs/exec-plans/sprint-media-preparation.md",
+                "tests/test_media_preparation.py",
+                "scripts/prepare-media.ps1",
+                "docs/exec-plans/sprint-media-batch-preparation.md",
+                "docs/references/media-batch-preparation-guide.md",
+                "tests/test_media_batch.py",
+                "scripts/prepare-media-batch.ps1",
+                "docs/exec-plans/sprint-media-preparation-workspace.md",
+                "docs/references/media-preparation-workspace-guide.md",
+                "tests/test_media_preparation_jobs.py",
+                "tests/test_media_preparation_browser.py",
+                "docs/exec-plans/sprint-independent-footage-preparation.md",
+                "docs/exec-plans/report-2026-10-11-independent-footage-preparation.md"
+            ]
+        },
+        {
+            "id": "F003",
+            "name": "Replaceable model analysis",
+            "description": "Implement local ASR and replaceable vision analysis, produce validated semantic events, and record per-attempt model, usage and cost metadata.",
+            "priority": 3,
+            "passes": true,
+            "test_criteria": "Provider replacement is verified; ASR distinguishes no_audio/no_speech/failure; schema, usage, budget and retry checks pass with per-attempt model/prompt/cost/time records and unknown costs preserved.",
+            "dependencies": [
+                "F002"
+            ],
+            "evidence": [
+                "docs/exec-plans/sprint-demo.md",
+                "docs/exec-plans/sprint-F003.md",
+                "docs/references/deepseek-pricing.json",
+                "tests/test_analyze_v2.py",
+                "scripts/validate-demo.py",
+                "scripts/verify.ps1",
+                "docs/exec-plans/sprint-media-preparation.md",
+                "tests/test_media_preparation.py",
+                "docs/exec-plans/sprint-material-tasks.md",
+                "tests/test_material_tasks.py",
+                "tests/test_material_tasks_http.py",
+                "tests/test_material_tasks_browser.py",
+                "scripts/list-tasks.ps1"
+            ]
+        },
+        {
+            "id": "F004",
+            "name": "Persistent semantic timeline",
+            "description": "Store media references, timestamped semantic events, and analysis metadata in SQLite.",
+            "priority": 4,
+            "passes": true,
+            "test_criteria": "A second process reloads the timeline; migrations/FKs and interrupted-stage/file-integrity recovery pass; unknown request costs survive recovery; full source video bytes are absent from SQLite.",
+            "dependencies": [
+                "F001"
+            ],
+            "evidence": [
+                "docs/exec-plans/sprint-F004.md",
+                "docs/references/timeline-storage.md",
+                "scripts/test-storage.ps1",
+                "scripts/verify.ps1",
+                "docs/exec-plans/sprint-long-footage-media.md",
+                "docs/exec-plans/sprint-media-preparation.md",
+                "tests/test_media_preparation.py",
+                "docs/exec-plans/sprint-material-tasks.md",
+                "tests/test_material_tasks.py",
+                "tests/test_material_tasks_http.py",
+                "tests/test_material_tasks_browser.py",
+                "scripts/list-tasks.ps1",
+                "docs/exec-plans/sprint-media-batch-preparation.md",
+                "docs/references/media-batch-preparation-guide.md",
+                "tests/test_media_batch.py",
+                "scripts/prepare-media-batch.ps1",
+                "docs/exec-plans/sprint-media-preparation-workspace.md",
+                "tests/test_media_preparation_jobs.py",
+                "tests/test_media_preparation_browser.py",
+                "docs/exec-plans/sprint-detail-billing-confirmation.md",
+                "tests/test_detail_billing_confirmation.py",
+                "tests/test_detail_billing_delivery.py",
+                "docs/references/detail-billing-confirmation-guide.md"
+            ]
+        },
+        {
+            "id": "F005",
+            "name": "Natural-language clip retrieval",
+            "description": "Rank timeline segments against a text query and return useful clip ranges with evidence.",
+            "priority": 5,
+            "passes": true,
+            "test_criteria": "A query returns stable, deduplicated source intervals with evidence from a Completed run; empty results are valid; lexical and semantic retrieval are compared on fixed fixtures.",
+            "dependencies": [
+                "F003",
+                "F004"
+            ],
+            "evidence": [
+                "docs/exec-plans/sprint-demo.md",
+                "docs/exec-plans/sprint-F005-worker.md",
+                "docs/exec-plans/sprint-F005-persistence-worker.md",
+                "tests/test_retrieval.py",
+                "tests/test_search_cli.py",
+                "scripts/validate-demo.py",
+                "docs/exec-plans/sprint-long-footage-retrieval.md",
+                "tests/test_long_retrieval.py",
+                "docs/exec-plans/sprint-project-retrieval.md",
+                "docs/references/project-retrieval-guide.md",
+                "tests/test_project_retrieval.py",
+                "scripts/search-project.ps1",
+                "docs/exec-plans/sprint-project-retrieval-workspace.md",
+                "docs/exec-plans/report-2026-10-07-project-workspace.md",
+                "tests/test_project_search_workspace.py",
+                "docs/exec-plans/sprint-project-detail-query.md",
+                "docs/references/project-detail-query-guide.md",
+                "tests/test_project_detail_query.py",
+                "docs/exec-plans/sprint-search-detail-evidence.md",
+                "docs/references/search-detail-evidence-guide.md",
+                "tests/test_search_detail_query.py",
+                "docs/exec-plans/sprint-saved-detail-retrieval.md",
+                "docs/references/saved-detail-retrieval-guide.md",
+                "docs/exec-plans/report-2026-10-08-saved-detail-retrieval.md",
+                "tests/test_saved_detail_retrieval.py",
+                "tests/test_saved_detail_retrieval_browser.py",
+                "docs/exec-plans/sprint-saved-detail-real-modes.md",
+                "docs/exec-plans/report-2026-10-08-saved-detail-real-modes.md",
+                "docs/exec-plans/sprint-saved-detail-actor-semantics.md",
+                "tests/test_saved_detail_actor_semantics.py",
+                "tests/test_saved_detail_actor_browser.py",
+                "docs/exec-plans/report-2026-10-08-saved-detail-actor-semantics.md",
+                "docs/exec-plans/sprint-saved-detail-grouped-ranking.md",
+                "docs/exec-plans/report-2026-10-08-saved-detail-grouped-ranking.md",
+                "tests/test_saved_detail_grouped_ranking.py",
+                "tests/test_saved_detail_grouped_browser.py"
+            ]
+        },
+        {
+            "id": "F006",
+            "name": "Retrieval benchmark and gate",
+            "description": "Evaluate ranked results against human judgments and report quality, runtime, and model cost.",
+            "priority": 6,
+            "passes": false,
+            "test_criteria": "A frozen independent human-labeled benchmark reports every query, fixed-denominator U10, misses/timecode errors, runtime and cold/hot cost; each main mechanic query reaches U10 >= 0.70; sparse/negative groups are separate and unverified cost gates remain null.",
+            "dependencies": [
+                "F005"
+            ],
+            "evidence": [
+                "docs/exec-plans/sprint-F006-worker.md",
+                "docs/references/benchmark-manifest-schema.md",
+                "tests/test_benchmark.py",
+                "docs/exec-plans/sprint-demo.md",
+                "docs/exec-plans/sprint-benchmark-preparation.md",
+                "docs/references/benchmark-preparation-guide.md",
+                "tests/test_benchmark_preparation.py",
+                "scripts/prepare-benchmark.ps1",
+                "docs/exec-plans/sprint-benchmark-candidate-review.md",
+                "docs/references/benchmark-candidate-review-guide.md",
+                "tests/test_benchmark_review.py",
+                "scripts/prepare-benchmark-review.ps1",
+                "docs/exec-plans/sprint-benchmark-fixed-scoring.md",
+                "tests/test_benchmark_fixed_scoring.py",
+                "docs/exec-plans/sprint-benchmark-reference-review.md",
+                "docs/references/benchmark-reference-review-guide.md",
+                "scripts/prepare-benchmark-references.ps1",
+                "tests/test_benchmark_reference_review.py",
+                "tests/test_benchmark_reference_browser.py",
+                "docs/exec-plans/sprint-benchmark-plan-editor.md",
+                "docs/references/benchmark-plan-editor-guide.md",
+                "scripts/prepare-benchmark-plan.ps1",
+                "tests/test_benchmark_plan_draft.py",
+                "tests/test_benchmark_plan_editor_browser.py",
+                "docs/exec-plans/sprint-benchmark-workspace.md",
+                "docs/references/benchmark-workspace-guide.md",
+                "tests/test_benchmark_workflow.py",
+                "tests/test_benchmark_workflow_browser.py",
+                "docs/exec-plans/sprint-benchmark-run-picker.md",
+                "docs/exec-plans/report-2026-10-07-run-picker.md",
+                "tests/test_benchmark_run_selection.py",
+                "tests/test_benchmark_run_selection_browser.py",
+                "docs/exec-plans/sprint-independent-footage-preparation.md",
+                "docs/exec-plans/report-2026-10-11-independent-footage-preparation.md",
+                "docs/exec-plans/sprint-human-reference-pilot.md",
+                "docs/exec-plans/report-2026-10-11-human-reference-pilot.md"
+            ]
+        },
+        {
+            "id": "F007",
+            "name": "Local inspection workspace",
+            "description": "User-authorized local project/run inspection, source playback, evidence, filtered timeline and selected-interval manifests; does not replace the F006 human gate or implement video rendering.",
+            "priority": 7,
+            "passes": true,
+            "test_criteria": "Registered source/evidence HTTP boundaries and Range/HEAD/errors pass; real existing footage supports search, seek/end pause, evidence preview, isolated basket restoration and identity-preserving JSON/CSV export; browser behavior checks cover stale responses and text safety using project-isolated tools.",
+            "dependencies": [
+                "F004",
+                "F005"
+            ],
+            "evidence": [
+                "docs/design-docs/adr-002-local-inspection-ui.md",
+                "docs/design-docs/inspection-workspace-api.md",
+                "docs/exec-plans/sprint-inspection-workspace.md",
+                "docs/exec-plans/sprint-inspection-frontend.md",
+                "tests/test_inspection_http.py",
+                "scripts/validate-inspection-ui.py",
+                "docs/exec-plans/sprint-material-tasks.md",
+                "tests/test_material_tasks.py",
+                "tests/test_material_tasks_http.py",
+                "tests/test_material_tasks_browser.py",
+                "scripts/list-tasks.ps1",
+                "docs/exec-plans/sprint-project-retrieval-workspace.md",
+                "docs/exec-plans/report-2026-10-07-project-workspace.md",
+                "tests/test_project_search_workspace.py",
+                "docs/exec-plans/sprint-media-preparation-workspace.md",
+                "docs/exec-plans/report-2026-10-07-media-preparation-workspace.md",
+                "docs/references/media-preparation-workspace-guide.md",
+                "tests/test_media_preparation_jobs.py",
+                "tests/test_media_preparation_browser.py",
+                "docs/exec-plans/sprint-project-detail-query.md",
+                "docs/references/project-detail-query-guide.md",
+                "tests/test_project_detail_query_browser.py",
+                "docs/exec-plans/sprint-search-detail-evidence.md",
+                "docs/references/search-detail-evidence-guide.md",
+                "tests/test_search_detail_query.py",
+                "tests/test_search_detail_browser.py",
+                "docs/exec-plans/sprint-saved-detail-retrieval.md",
+                "docs/references/saved-detail-retrieval-guide.md",
+                "docs/exec-plans/report-2026-10-08-saved-detail-retrieval.md",
+                "tests/test_saved_detail_retrieval.py",
+                "tests/test_saved_detail_retrieval_browser.py",
+                "docs/exec-plans/sprint-saved-detail-actor-semantics.md",
+                "tests/test_saved_detail_actor_semantics.py",
+                "tests/test_saved_detail_actor_browser.py",
+                "docs/exec-plans/report-2026-10-08-saved-detail-actor-semantics.md",
+                "docs/exec-plans/sprint-saved-detail-grouped-ranking.md",
+                "docs/exec-plans/report-2026-10-08-saved-detail-grouped-ranking.md",
+                "tests/test_saved_detail_grouped_ranking.py",
+                "tests/test_saved_detail_grouped_browser.py"
+            ]
+        },
+        {
+            "id": "F008",
+            "name": "Workspace layout and chronological clip basket",
+            "description": "Apply user UI acceptance feedback: professional workstation layout with visible preview/timeline/basket, independent list scrolling and chronological selections without changing retrieval ranks.",
+            "priority": 8,
+            "passes": true,
+            "test_criteria": "Real browser checks show preview, timeline and basket together at 1440x900 and 1366x768 without page scrolling, keep a deep timeline position through selection, preserve all existing playback/evidence behavior, sort basket/storage/JSON/CSV by source start/end/identity and avoid mobile horizontal overflow.",
+            "dependencies": [
+                "F007"
+            ],
+            "evidence": [
+                "docs/exec-plans/sprint-workspace-usability.md",
+                "docs/exec-plans/sprint-workspace-layout.md",
+                "scripts/validate-inspection-ui.py"
+            ]
+        },
+        {
+            "id": "F009",
+            "name": "Temporal gameplay analysis correction",
+            "description": "Address rejected gameplay retrieval with ordered multi-frame action analysis, conservative action evidence and bounded real-video comparisons; this technical change does not pass F006.",
+            "priority": 9,
+            "passes": false,
+            "test_criteria": "A separately fingerprinted temporal prompt preserves legacy runs, rejects unordered or single-frame action claims, supports a denser source-clock-preserving profile and resumable windows, and records bounded real-video comparisons including static controls and all attempt costs. Independent action retrieval quality remains F006.",
+            "dependencies": [
+                "F003",
+                "F004",
+                "F005"
+            ],
+            "evidence": [
+                "docs/exec-plans/sprint-temporal-gameplay.md",
+                "docs/exec-plans/sprint-temporal-frame-contract-worker.md",
+                "docs/exec-plans/sprint-workspace-launcher-worker.md",
+                "docs/exec-plans/sprint-retrieval-negation-worker.md",
+                "docs/references/temporal-gameplay-validation.md",
+                "tests/test_temporal_frame_contract.py",
+                "tests/test_temporal_analysis.py",
+                "tests/test_retrieval_negation.py",
+                "scripts/validate-temporal-gameplay.py",
+                "docs/exec-plans/sprint-detail-temporal-execution.md",
+                "docs/exec-plans/report-2026-10-08-temporal-pilot-execution.md",
+                "docs/exec-plans/sprint-detail-temporal-json.md",
+                "docs/exec-plans/report-2026-10-08-detail-json.md",
+                "docs/exec-plans/sprint-detail-json-execution.md"
+            ]
+        },
+        {
+            "id": "F010",
+            "name": "Actor-bound visual detail retrieval and clean descriptions",
+            "description": "Address user feedback with visible appearance, clothing, held items, environment and action effects bound to their actors; remove internal frame aliases from human-facing descriptions while preserving frozen source facts.",
+            "priority": 10,
+            "passes": false,
+            "test_criteria": "Versioned V5/V6 detailed analysis and higher-resolution evidence preserve legacy contracts and resumable runs; uncertainty stays outside positive indexing and facts require review. Actor/part-bound observed attributes with shared supporting evidence must satisfy all strict compound constraints; unknown or cross-actor facts cannot be full matches. Original facts/basket validation remain intact; bounded real-video comparisons record every cost/control and independent human judgments confirm useful detail queries. F006 remains separate.",
+            "dependencies": [
+                "F009",
+                "F007"
+            ],
+            "evidence": [
+                "docs/exec-plans/sprint-visual-details.md",
+                "docs/exec-plans/sprint-detail-vision-worker.md",
+                "docs/exec-plans/sprint-detail-presentation-worker.md",
+                "docs/exec-plans/sprint-detail-v6-worker.md",
+                "docs/design-docs/actor-detail-matching-spec.md",
+                "docs/exec-plans/sprint-actor-detail-matching.md",
+                "docs/exec-plans/sprint-actor-detail-contract-worker.md",
+                "docs/exec-plans/sprint-actor-detail-contract-tests-worker.md",
+                "tests/test_actor_details.py",
+                "tests/test_actor_detail_matching.py",
+                "tests/test_detailed_vision.py",
+                "tests/test_detail_action_eligibility.py",
+                "tests/test_observation_presentation.py",
+                "config.detailed.example.json",
+                "config.detailed-v6.example.json",
+                "docs/exec-plans/sprint-detail-inspection.md",
+                "tests/test_detail_refinement.py",
+                "tests/test_detail_budget_sidecar.py",
+                "tests/test_detail_inspection.py",
+                "docs/exec-plans/sprint-detail-provider.md",
+                "docs/exec-plans/sprint-detail-query.md",
+                "tests/test_detail_provider.py",
+                "tests/test_detail_recovery.py",
+                "tests/test_detail_query.py",
+                "detail-query.example.json",
+                "docs/exec-plans/sprint-detail-workspace.md",
+                "docs/exec-plans/sprint-detail-parts-worker.md",
+                "docs/exec-plans/sprint-detail-cost-worker.md",
+                "tests/test_detail_query_http.py",
+                "tests/test_detail_cost_http.py",
+                "tests/test_detail_parts.py",
+                "tests/test_detail_cost_history.py",
+                "docs/exec-plans/detail-human-feedback-2026-10-06.md",
+                "docs/exec-plans/sprint-detail-temporal.md",
+                "docs/exec-plans/sprint-detail-temporal-entities-worker.md",
+                "tests/test_temporal_entities.py",
+                "tests/test_temporal_entity_projection.py",
+                "tests/test_temporal_scene_codec.py",
+                "tests/test_detail_temporal_provider.py",
+                "tests/test_detail_temporal_http.py",
+                "docs/exec-plans/sprint-project-detail-query.md",
+                "docs/references/project-detail-query-guide.md",
+                "tests/test_project_detail_query.py",
+                "tests/test_project_detail_query_browser.py",
+                "docs/exec-plans/sprint-search-detail-evidence.md",
+                "docs/references/search-detail-evidence-guide.md",
+                "tests/test_search_detail_query.py",
+                "tests/test_search_detail_browser.py",
+                "docs/exec-plans/sprint-saved-detail-retrieval.md",
+                "docs/references/saved-detail-retrieval-guide.md",
+                "docs/exec-plans/report-2026-10-08-saved-detail-retrieval.md",
+                "tests/test_saved_detail_retrieval.py",
+                "tests/test_saved_detail_retrieval_browser.py",
+                "docs/exec-plans/sprint-saved-detail-real-modes.md",
+                "docs/exec-plans/report-2026-10-08-saved-detail-real-modes.md",
+                "docs/exec-plans/sprint-saved-detail-actor-semantics.md",
+                "tests/test_saved_detail_actor_semantics.py",
+                "tests/test_saved_detail_actor_browser.py",
+                "docs/exec-plans/report-2026-10-08-saved-detail-actor-semantics.md",
+                "docs/exec-plans/sprint-saved-detail-grouped-ranking.md",
+                "docs/exec-plans/report-2026-10-08-saved-detail-grouped-ranking.md",
+                "tests/test_saved_detail_grouped_ranking.py",
+                "tests/test_saved_detail_grouped_browser.py",
+                "docs/exec-plans/sprint-detail-temporal-execution.md",
+                "docs/exec-plans/report-2026-10-08-temporal-pilot-execution.md",
+                "docs/exec-plans/sprint-detail-temporal-json.md",
+                "docs/exec-plans/report-2026-10-08-detail-json.md",
+                "tests/test_detail_temporal_json.py",
+                "tests/test_detail_temporal_json_browser.py",
+                "tests/test_detail_temporal_proposal.py",
+                "docs/exec-plans/sprint-detail-json-execution.md",
+                "docs/exec-plans/report-2026-10-11-detail-json-pilot.md",
+                "docs/exec-plans/report-2026-10-24-static-observation-generation.md",
+                "docs/exec-plans/report-2026-10-24-static-observation-pilot.md"
+            ]
+        }
+    ],
+    "product_features": [
+        {
+            "id": "P001",
+            "group": "A",
+            "name": "本地媒体处理（FFmpeg 抽帧／音频，含 MKV/WebM）",
+            "first_product": false,
+            "delivery_status": "delivered",
+            "implementation_evidence": [],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P002",
+            "group": "A",
+            "name": "开发用 CLI（analyze／search 等）",
+            "first_product": false,
+            "delivery_status": "delivered",
+            "implementation_evidence": [],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P003",
+            "group": "A",
+            "name": "可替换模型 Provider",
+            "first_product": false,
+            "delivery_status": "delivered",
+            "implementation_evidence": [],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P004",
+            "group": "A",
+            "name": "Prompt 版本化",
+            "first_product": false,
+            "delivery_status": "delivered",
+            "implementation_evidence": [],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P005",
+            "group": "A",
+            "name": "模型成本可观测（未知不写零）",
+            "first_product": false,
+            "delivery_status": "delivered",
+            "implementation_evidence": [],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P006",
+            "group": "A",
+            "name": "SQLite 持久化与中断恢复",
+            "first_product": false,
+            "delivery_status": "delivered",
+            "implementation_evidence": [],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P007",
+            "group": "A",
+            "name": "批量任务队列（多素材准备）",
+            "first_product": false,
+            "delivery_status": "delivered",
+            "implementation_evidence": [],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P008",
+            "group": "A",
+            "name": "缓存",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "src/gamingcreator/infrastructure/render_limits.py",
+                "scripts/cache-maintenance.py",
+                "docs/exec-plans/sprint-cache-reclamation.md",
+                "src/gamingcreator/infrastructure/window_segment_cache.py",
+                "src/gamingcreator/application/analysis.py",
+                "docs/exec-plans/sprint-t17-window-segment-cache.md",
+                "tests/test_window_segment_cache.py"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P009",
+            "group": "A",
+            "name": "OCR",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P010",
+            "group": "A",
+            "name": "场景切分（scene detection）＋黑屏检测",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P011",
+            "group": "A",
+            "name": "代理文件（Proxy）",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: make-proxy builds/reuses a 360p low-bitrate editing proxy per source SHA with a duration-scaled byte budget (<=1 GiB) enforced by -fs and MediaOutputLimit, duration check, temp-dir build and full cleanup on failure; /api/media?proxy=1 serves it only while its receipt matches; real 54.7s recording 25.3MB -> 4.2MB proxy; player auto-switch not done",
+                "2026-11-01: batch make-proxy queues many prepared/analyzed runs via CLI (--run repeat / --all-eligible), scripts/make-proxy.ps1 -AllEligible, POST /api/make-proxy-batch, and workbench tasks dialog; each item still uses single make_proxy byte budget/duration/temp-dir cleanup; same-SHA shared in batch; cleanup entry still open"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P012",
+            "group": "B",
+            "name": "本地语音识别 ASR",
+            "first_product": false,
+            "delivery_status": "delivered",
+            "implementation_evidence": [],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P013",
+            "group": "B",
+            "name": "视频语义时间线",
+            "first_product": false,
+            "delivery_status": "delivered",
+            "implementation_evidence": [],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P014",
+            "group": "B",
+            "name": "自然语言语义检索",
+            "first_product": false,
+            "delivery_status": "delivered",
+            "implementation_evidence": [],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P015",
+            "group": "B",
+            "name": "检索质量人工验收（Phase 0 门槛）",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P016",
+            "group": "B",
+            "name": "视觉多帧动作理解",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P017",
+            "group": "B",
+            "name": "人物／衣物／持有物细节",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P018",
+            "group": "B",
+            "name": "游戏知识层（Wiki／补丁说明／用户资料）",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: local game knowledge entries with source kind/label, content-addressed immutable files and replaces-based version history; text or local file input via the activity-rule readers; game-scoped keyword search with citations and insert-into-narration; HTTP and unit tests; no automatic planner citation or web crawling"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P019",
+            "group": "C",
+            "name": "Creative Brief：一句话需求→结构化需求",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "docs/exec-plans/sprint-creation-planner.md",
+                "tests/test_creation_planner.py",
+                "scripts/plan-creation.ps1",
+                "docs/exec-plans/sprint-creation-workspace.md",
+                "tests/test_creation_jobs.py",
+                "tests/test_creation_workspace_browser.py"
+            ],
+            "quality_status": "template_draft_not_human_accepted",
+            "release_status": "not_released",
+            "implementation_status": "partial",
+            "remaining": "Natural-language understanding, full creative requirements and render/UI integration remain; this slice is structured-input offline template planning and source-bound EDL only."
+        },
+        {
+            "id": "P020",
+            "group": "C",
+            "name": "活动规则解析（文本／网页／截图／PDF）",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: offline activity-rule extraction (name, period, platforms, min/max duration, orientation, required topics, forbidden items) with exact source-line citations from pasted text or local txt/md/html, screenshots via Windows OCR and PDFs via Windows.Data.Pdf page rendering + OCR; one-click brief filling; real Windows screenshot/PDF tests pass; no network fetching or model understanding"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P021",
+            "group": "C",
+            "name": "Creative Planner：多套视频方案",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "docs/exec-plans/sprint-creation-planner.md",
+                "tests/test_creation_planner.py",
+                "scripts/plan-creation.ps1",
+                "docs/exec-plans/sprint-creation-workspace.md",
+                "tests/test_creation_jobs.py",
+                "tests/test_creation_workspace_browser.py"
+            ],
+            "quality_status": "template_draft_not_human_accepted",
+            "release_status": "not_released",
+            "implementation_status": "partial",
+            "remaining": "Natural-language understanding, full creative requirements and render/UI integration remain; this slice is structured-input offline template planning and source-bound EDL only."
+        },
+        {
+            "id": "P022",
+            "group": "C",
+            "name": "视频结构模板（攻略／功能展示／广告／实况）",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: offline structure templates for feature showcase / guide / campaign (roles, duration weights, ~1.5s per shot cap) recommended first; generic plans byte-identical; 200 related tests; gc-reviewer PASS; ad/live templates and model-based structure not done"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P023",
+            "group": "C",
+            "name": "素材评分（需求匹配等加权）",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: explicit master-plan 8-dimension material score per candidate; only offline-measurable dimensions scored (topic match, fact/tag detail proxy, description novelty, usable length, uncertainty proxy) with coverage reported, visual/emotional/narrative unknown; modes pick by score; 164 related tests; real demo-phase0 plans scored 0.58-0.94"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P024",
+            "group": "C",
+            "name": "素材缺口发现",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: non-blocking plan advisories (too few clips, insufficient total footage, short output, single source, single-clip topic, unknown dimensions) with suggestions alongside existing blocking gaps; real demo-phase0 single-source advisory correct"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P025",
+            "group": "C",
+            "name": "解说脚本生成",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-10-31: offline template narration draft from saved revision clip descriptions sized to the output clock (3.5 chars/s budget, evenly sampled clips, honest omitted count), GET narration-script API and workspace button feeding local narration; 11 new tests plus 113 related (.cache/narration-script.xml); real 12s plan produced a 36-character draft spanning first and last clips; quality not human-reviewed"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P026",
+            "group": "C",
+            "name": "配音／旁白合成",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-10-31 R2-I: local Windows SAPI narration asset jobs, preview, output-frame attachment with gain/ducking, inherit/remove/ancestor restore, three-way mix render; 165 targeted tests (.cache/narration-main.xml), real Huihui 5.688s voice located at 3.000s in a 360-frame MP4 (.cache/narration-real-render.json), Bilibili seven-file package from the narrated render; code-quality-guard PASS; voice license unknown"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P027",
+            "group": "C",
+            "name": "Edit Decision（结构化剪辑决策）",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "docs/exec-plans/sprint-creation-planner.md",
+                "tests/test_creation_planner.py",
+                "scripts/plan-creation.ps1",
+                "docs/exec-plans/sprint-creation-workspace.md",
+                "tests/test_creation_jobs.py",
+                "tests/test_creation_workspace_browser.py",
+                "docs/exec-plans/sprint-creation-editing.md",
+                "tests/test_creation_editing.py",
+                "tests/test_creation_revision_jobs.py",
+                "tests/test_creation_editing_browser.py",
+                "docs/exec-plans/sprint-clip-replacements.md",
+                "tests/test_clip_replacement_core.py",
+                "tests/test_clip_replacement_jobs.py",
+                "tests/test_clip_replacement_http.py",
+                "tests/test_clip_replacement_browser.py"
+            ],
+            "quality_status": "template_draft_not_human_accepted",
+            "release_status": "not_released",
+            "implementation_status": "partial",
+            "remaining": "Natural-language understanding, full creative requirements and render/UI integration remain; this slice is structured-input offline template planning and source-bound EDL only."
+        },
+        {
+            "id": "P028",
+            "group": "D",
+            "name": "本地渲染（裁剪／拼接／缩放／变速／音频／转场／编码→MP4）",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "docs/exec-plans/sprint-creation-render.md",
+                "tests/test_creation_render.py",
+                "scripts/render-creation.ps1",
+                "docs/exec-plans/sprint-creation-workspace.md",
+                "tests/test_creation_jobs.py",
+                "tests/test_creation_workspace_browser.py",
+                "docs/exec-plans/sprint-clip-speed.md",
+                "tests/test_clip_speed_core.py",
+                "tests/test_clip_speed_render.py",
+                "tests/test_clip_speed_browser.py",
+                "docs/exec-plans/sprint-clip-transitions.md",
+                "tests/test_clip_transition_core.py",
+                "tests/test_clip_transition_render.py",
+                "tests/test_clip_transition_browser.py"
+            ],
+            "quality_status": "technical_render_tests_passed_creative_quality_unreviewed",
+            "release_status": "not_released",
+            "implementation_status": "partial",
+            "remaining": "Crop and overlays remain; trim/concat/scale/letterbox/speed/audio/subtitles/crossfade have local render evidence. Creative quality and commercial release remain unverified."
+        },
+        {
+            "id": "P029",
+            "group": "D",
+            "name": "字幕",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "docs/exec-plans/sprint-creation-subtitles.md",
+                "tests/test_creation_subtitles.py",
+                "tests/test_creation_subtitle_render.py",
+                "tests/test_creation_workspace_http.py",
+                "docs/exec-plans/sprint-creation-caption-editing.md",
+                "tests/test_creation_caption_editing.py",
+                "docs/exec-plans/sprint-clip-speed.md",
+                "tests/test_clip_speed_core.py",
+                "tests/test_clip_speed_render.py",
+                "tests/test_clip_speed_browser.py",
+                "docs/exec-plans/sprint-clip-transitions.md",
+                "tests/test_clip_transition_core.py",
+                "tests/test_clip_transition_render.py",
+                "tests/test_clip_transition_browser.py"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P030",
+            "group": "D",
+            "name": "BGM 选择与节奏匹配",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "docs/exec-plans/sprint-creation-audio-mix.md",
+                "tests/test_music_library.py",
+                "tests/test_creation_audio_render.py",
+                "tests/test_creation_audio_jobs.py",
+                "tests/test_creation_audio_browser.py"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P031",
+            "group": "D",
+            "name": "封面／标题／简介／Tags",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "docs/exec-plans/sprint-publication-assets.md",
+                "tests/test_creation_publication.py",
+                "tests/test_creation_publication_http.py",
+                "tests/test_creation_publication_browser.py"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P032",
+            "group": "D",
+            "name": "轻量编辑器（调入出点、换镜头、改字幕、换 BGM、重渲染）",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "docs/exec-plans/sprint-creation-editing.md",
+                "tests/test_creation_editing.py",
+                "tests/test_creation_revision_jobs.py",
+                "tests/test_creation_editing_browser.py",
+                "docs/exec-plans/sprint-creation-caption-editing.md",
+                "tests/test_creation_caption_editing.py",
+                "docs/exec-plans/sprint-clip-speed.md",
+                "tests/test_clip_speed_core.py",
+                "tests/test_clip_speed_render.py",
+                "tests/test_clip_speed_browser.py",
+                "docs/exec-plans/sprint-clip-transitions.md",
+                "tests/test_clip_transition_core.py",
+                "tests/test_clip_transition_render.py",
+                "tests/test_clip_transition_browser.py",
+                "docs/exec-plans/sprint-clip-replacements.md",
+                "tests/test_clip_replacement_core.py",
+                "tests/test_clip_replacement_jobs.py",
+                "tests/test_clip_replacement_http.py",
+                "tests/test_clip_replacement_browser.py"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P033",
+            "group": "D",
+            "name": "专业剪辑软件导出（FCPXML／OTIO／Premiere XML）",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: FCPXML 1.9 and OTIO JSON export of saved revisions with source file URIs, frame-aligned rational times, speed time maps and crossfades as centred transitions with whole-frame trims so exported length equals the render; real 34-clip revision exported (299/30s); not import-verified in Final Cut/DaVinci/Premiere; no Premiere XML or audio/subtitle tracks"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P034",
+            "group": "E",
+            "name": "平台规格配置（抖音／快手／B站／小红书，不硬编码）",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "docs/exec-plans/sprint-platform-packages.md",
+                "tests/test_platform_package.py",
+                "tests/test_platform_package_browser.py"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P035",
+            "group": "E",
+            "name": "主项目多版本（一稿多平台）",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "docs/exec-plans/sprint-platform-packages.md",
+                "tests/test_platform_package.py",
+                "tests/test_platform_package_browser.py"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P036",
+            "group": "E",
+            "name": "发布包导出",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "docs/exec-plans/sprint-platform-packages.md",
+                "tests/test_platform_package.py",
+                "tests/test_platform_package_browser.py"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P037",
+            "group": "E",
+            "name": "投稿前检查（Preflight）",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "docs/exec-plans/sprint-platform-packages.md",
+                "tests/test_platform_package.py",
+                "tests/test_platform_package_browser.py"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P038",
+            "group": "E",
+            "name": "自动发布",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: publishing adapter boundary with a local sandbox target only: package re-verification, local-check and blocked-eligibility gates, persisted submitted->processing->published simulation with status and history APIs; real platform targets refused pending official API access, account authorization and user approval; real guide package sandbox-published"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P039",
+            "group": "F",
+            "name": "正式 Windows 桌面 EXE",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: thin Windows desktop host EXE built with the Windows-bundled C# compiler; single instance, random 127.0.0.1 port, kill-on-close Job Object stops the service tree, Edge app-mode window with a dedicated profile; smoke and real window-close tests leave no service processes; WebView2 embedding awaits SDK download approval; installer/clean-machine/signing not done",
+                "2026-11-01: embedded WebView2 window using the user-approved pinned SDK 1.0.4314.35 (NuGet SHA512 verified, per-file SHA256 checked each build), dedicated profile, external links to the system browser, Edge app-mode fallback; real run: 6 WebView2 processes, page 200, no leftovers after close",
+                "2026-11-01: build-app assembles a self-contained, movable portable app folder (bundled CPython, runtime packages without dev tools, package install instead of editable link, FFmpeg, EXE+WebView2; 660 MB under a 1.5 GB cap); packaged interpreter imports its own code; smoke passes and still passes after moving the folder; no installer, clean-machine test or signing yet",
+                "2026-11-01: install-app installs/upgrades/uninstalls the built app per user without registry or shortcuts; upgrades swap only program parts (user data kept) with rollback on failure; uninstall keeps data; real 660 MB install+smoke ~10 s, upgrade and uninstall verified then removed; 5 installer tests including locked-file rollback; no clean-machine test or signing yet"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P040",
+            "group": "F",
+            "name": "桌面工作区（素材／预览／Agent 对话／时间线）",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "docs/exec-plans/sprint-creation-workspace.md",
+                "tests/test_creation_jobs.py",
+                "tests/test_creation_workspace_browser.py"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P041",
+            "group": "F",
+            "name": "自然语言修改真实时间线（“前 5 秒太慢”）",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: rule-based Chinese timeline commands (speed/delete/move/swap/trim/transitions) previewed via stateless API, applied in the editor and persisted through normal revision validation with ancestor undo; whole-command refusal for unknown/impossible clauses; 20 parser/HTTP tests + browser preview/apply/save test; real 35-clip revision -> 34 clips saved as d7d7a4d5 with narration inherited; no model understanding"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P042",
+            "group": "F",
+            "name": "用户修改记录与数据反馈闭环",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: read-only local feedback statistics from saved creation jobs (plans, recommendation offered/adopted, revisions, edit kinds by actual difference including inherited settings, render->publication->package funnel); real demo-phase0 22 plans/18 chains in 0.6s; adoption so far from agent test runs, not human choices; not yet fed back into ranking",
+                "2026-11-01: plan jobs capture per-structure finished-video counts from this project's saved records at registration; the planner moves frequently finished generic structures forward (mode template stays first/recommended), marks localRenders on cards and records ordering basis in the plan report; statistics failures fall back to template order",
+                "2026-11-01 T9: when local editKinds show 裁剪 ≥3 and ≥50% of edit events, new plans cap each segment to 1.0s output, prepend advisory 「你常裁短，已建议更短片段」, and record thresholds/rule/observed counts under ordering.editHabits (frozen at registration in input/edit-habits.json); no silent duration change without that record; other edit kinds unchanged"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P043",
+            "group": "G",
+            "name": "玩法展示",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: feature showcase mode (richest-description opening hook, ordered showcase, closing) real instance demo-phase0 -> 10-shot MP4 373 frames -> cover/text -> Bilibili package, all configured checks pass (.cache/content-modes-e2e.json); hook chosen by description detail, not visual understanding"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P044",
+            "group": "G",
+            "name": "活动投稿",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: campaign mode (opening, mandatory-topic clips in topic order, highlights, closing; missing topic stays a gap) real instance with topic 贝多芬 -> MP4 390 frames -> Bilibili package passing configured checks; activity rule parsing (P020) not done"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P045",
+            "group": "G",
+            "name": "攻略",
+            "first_product": true,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: guide mode (evenly spaced numbered steps, spoken step numbers follow current order) real instance -> MP4 372 frames -> Bilibili package passing configured checks; real guide correctness not human-reviewed"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P046",
+            "group": "G",
+            "name": "游戏解说",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: commentary mode template (ordered ~3s segments, opening/commentary/ending roles, closing line) real demo-phase0 instance -> 315-frame MP4 -> Bilibili package passing configured checks (.cache/content-modes-e2e-r3.json)"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P047",
+            "group": "G",
+            "name": "实况精剪",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: live-cut mode template (ordered ~1.5s segments, best-scored clip near each slot) real instance -> 445-frame MP4 -> Bilibili package passing configured checks"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P048",
+            "group": "G",
+            "name": "高光",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: highlight mode template (top-scored clips in recording order, best last as climax) real instance -> 445-frame MP4 -> Bilibili package; scores are description proxies, not visual understanding"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P049",
+            "group": "G",
+            "name": "广告／买量",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: ad/UA mode template (hook, up to three selling points preferring mandatory topics, call to action) real instance -> 270-frame MP4 -> Bilibili package; ad performance unknown"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P050",
+            "group": "H",
+            "name": "创作者版（Free／Creator／Pro）",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: local creator-plan entitlement model (founder default unlimited, Free/Creator/Pro) enforced at real entry points: monthly render quota metered from saved jobs, one platform package per publication on Free, activity-rule parsing, timeline export and sandbox publish gates; plan selection marked local evaluation; no payment, subscription, signed license or watermark",
+                "2026-11-01: Free renders burn a top-right semi-transparent 'GamingCreator Free' mark via ASS; decided at registration and stored on the job, recorded in the render receipt and checked on verify; founder/creator/pro unmarked; real FFmpeg pixel test and job-level test; analysis-minute metering and payments still absent"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        },
+        {
+            "id": "P051",
+            "group": "H",
+            "name": "企业版",
+            "first_product": false,
+            "delivery_status": "partial",
+            "implementation_evidence": [
+                "2026-11-01: local team model with owner/editor/reviewer/viewer roles, brand glossary checks on package title/description/tags, package review with separation of duties, mandatory rejection reasons and append-only history, review-gated sandbox publishing; real package submit->approve->publish test; no accounts/login, shared storage, enterprise assets, external API or seat billing; no page entry yet",
+                "2026-11-01 T10: per-project teams (sha256 path under enterprise/teams) with read-only fallback to legacy global enterprise-team.json; append-only audit jsonl plus GET /api/enterprise/audit JSON/CSV marked actorSelfReported; creation page expandable review history, audit export links, and honest self-reported operator copy; review/publish use the package project's team"
+            ],
+            "quality_status": "not_separately_assessed",
+            "release_status": "not_released"
+        }
+    ],
+    "delivery_policy": {
+        "version": "full-product-20261030",
+        "decision": "docs/design-docs/adr-003-full-product-delivery.md",
+        "roadmap": "docs/exec-plans/accelerated-product-roadmap.md",
+        "human_quality_gate_blocks_development": false,
+        "human_quality_gate_blocks_corresponding_release_claim": true
     }
-  ],
-  "product_features": [
-    {
-      "id": "P001",
-      "group": "A",
-      "name": "本地媒体处理（FFmpeg 抽帧／音频，含 MKV/WebM）",
-      "first_product": false,
-      "delivery_status": "delivered",
-      "implementation_evidence": [],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P002",
-      "group": "A",
-      "name": "开发用 CLI（analyze／search 等）",
-      "first_product": false,
-      "delivery_status": "delivered",
-      "implementation_evidence": [],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P003",
-      "group": "A",
-      "name": "可替换模型 Provider",
-      "first_product": false,
-      "delivery_status": "delivered",
-      "implementation_evidence": [],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P004",
-      "group": "A",
-      "name": "Prompt 版本化",
-      "first_product": false,
-      "delivery_status": "delivered",
-      "implementation_evidence": [],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P005",
-      "group": "A",
-      "name": "模型成本可观测（未知不写零）",
-      "first_product": false,
-      "delivery_status": "delivered",
-      "implementation_evidence": [],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P006",
-      "group": "A",
-      "name": "SQLite 持久化与中断恢复",
-      "first_product": false,
-      "delivery_status": "delivered",
-      "implementation_evidence": [],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P007",
-      "group": "A",
-      "name": "批量任务队列（多素材准备）",
-      "first_product": false,
-      "delivery_status": "delivered",
-      "implementation_evidence": [],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P008",
-      "group": "A",
-      "name": "缓存",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "src/gamingcreator/infrastructure/render_limits.py",
-        "scripts/cache-maintenance.py",
-        "docs/exec-plans/sprint-cache-reclamation.md",
-        "src/gamingcreator/infrastructure/window_segment_cache.py",
-        "src/gamingcreator/application/analysis.py",
-        "docs/exec-plans/sprint-t17-window-segment-cache.md",
-        "tests/test_window_segment_cache.py"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P009",
-      "group": "A",
-      "name": "OCR",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P010",
-      "group": "A",
-      "name": "场景切分（scene detection）＋黑屏检测",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P011",
-      "group": "A",
-      "name": "代理文件（Proxy）",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: make-proxy builds/reuses a 360p low-bitrate editing proxy per source SHA with a duration-scaled byte budget (<=1 GiB) enforced by -fs and MediaOutputLimit, duration check, temp-dir build and full cleanup on failure; /api/media?proxy=1 serves it only while its receipt matches; real 54.7s recording 25.3MB -> 4.2MB proxy; player auto-switch not done"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P012",
-      "group": "B",
-      "name": "本地语音识别 ASR",
-      "first_product": false,
-      "delivery_status": "delivered",
-      "implementation_evidence": [],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P013",
-      "group": "B",
-      "name": "视频语义时间线",
-      "first_product": false,
-      "delivery_status": "delivered",
-      "implementation_evidence": [],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P014",
-      "group": "B",
-      "name": "自然语言语义检索",
-      "first_product": false,
-      "delivery_status": "delivered",
-      "implementation_evidence": [],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P015",
-      "group": "B",
-      "name": "检索质量人工验收（Phase 0 门槛）",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P016",
-      "group": "B",
-      "name": "视觉多帧动作理解",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P017",
-      "group": "B",
-      "name": "人物／衣物／持有物细节",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P018",
-      "group": "B",
-      "name": "游戏知识层（Wiki／补丁说明／用户资料）",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: local game knowledge entries with source kind/label, content-addressed immutable files and replaces-based version history; text or local file input via the activity-rule readers; game-scoped keyword search with citations and insert-into-narration; HTTP and unit tests; no automatic planner citation or web crawling"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P019",
-      "group": "C",
-      "name": "Creative Brief：一句话需求→结构化需求",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "docs/exec-plans/sprint-creation-planner.md",
-        "tests/test_creation_planner.py",
-        "scripts/plan-creation.ps1",
-        "docs/exec-plans/sprint-creation-workspace.md",
-        "tests/test_creation_jobs.py",
-        "tests/test_creation_workspace_browser.py"
-      ],
-      "quality_status": "template_draft_not_human_accepted",
-      "release_status": "not_released",
-      "implementation_status": "partial",
-      "remaining": "Natural-language understanding, full creative requirements and render/UI integration remain; this slice is structured-input offline template planning and source-bound EDL only."
-    },
-    {
-      "id": "P020",
-      "group": "C",
-      "name": "活动规则解析（文本／网页／截图／PDF）",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: offline activity-rule extraction (name, period, platforms, min/max duration, orientation, required topics, forbidden items) with exact source-line citations from pasted text or local txt/md/html, screenshots via Windows OCR and PDFs via Windows.Data.Pdf page rendering + OCR; one-click brief filling; real Windows screenshot/PDF tests pass; no network fetching or model understanding"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P021",
-      "group": "C",
-      "name": "Creative Planner：多套视频方案",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "docs/exec-plans/sprint-creation-planner.md",
-        "tests/test_creation_planner.py",
-        "scripts/plan-creation.ps1",
-        "docs/exec-plans/sprint-creation-workspace.md",
-        "tests/test_creation_jobs.py",
-        "tests/test_creation_workspace_browser.py"
-      ],
-      "quality_status": "template_draft_not_human_accepted",
-      "release_status": "not_released",
-      "implementation_status": "partial",
-      "remaining": "Natural-language understanding, full creative requirements and render/UI integration remain; this slice is structured-input offline template planning and source-bound EDL only."
-    },
-    {
-      "id": "P022",
-      "group": "C",
-      "name": "视频结构模板（攻略／功能展示／广告／实况）",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: offline structure templates for feature showcase / guide / campaign (roles, duration weights, ~1.5s per shot cap) recommended first; generic plans byte-identical; 200 related tests; gc-reviewer PASS; ad/live templates and model-based structure not done"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P023",
-      "group": "C",
-      "name": "素材评分（需求匹配等加权）",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: explicit master-plan 8-dimension material score per candidate; only offline-measurable dimensions scored (topic match, fact/tag detail proxy, description novelty, usable length, uncertainty proxy) with coverage reported, visual/emotional/narrative unknown; modes pick by score; 164 related tests; real demo-phase0 plans scored 0.58-0.94"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P024",
-      "group": "C",
-      "name": "素材缺口发现",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: non-blocking plan advisories (too few clips, insufficient total footage, short output, single source, single-clip topic, unknown dimensions) with suggestions alongside existing blocking gaps; real demo-phase0 single-source advisory correct"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P025",
-      "group": "C",
-      "name": "解说脚本生成",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-10-31: offline template narration draft from saved revision clip descriptions sized to the output clock (3.5 chars/s budget, evenly sampled clips, honest omitted count), GET narration-script API and workspace button feeding local narration; 11 new tests plus 113 related (.cache/narration-script.xml); real 12s plan produced a 36-character draft spanning first and last clips; quality not human-reviewed"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P026",
-      "group": "C",
-      "name": "配音／旁白合成",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-10-31 R2-I: local Windows SAPI narration asset jobs, preview, output-frame attachment with gain/ducking, inherit/remove/ancestor restore, three-way mix render; 165 targeted tests (.cache/narration-main.xml), real Huihui 5.688s voice located at 3.000s in a 360-frame MP4 (.cache/narration-real-render.json), Bilibili seven-file package from the narrated render; code-quality-guard PASS; voice license unknown"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P027",
-      "group": "C",
-      "name": "Edit Decision（结构化剪辑决策）",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "docs/exec-plans/sprint-creation-planner.md",
-        "tests/test_creation_planner.py",
-        "scripts/plan-creation.ps1",
-        "docs/exec-plans/sprint-creation-workspace.md",
-        "tests/test_creation_jobs.py",
-        "tests/test_creation_workspace_browser.py",
-        "docs/exec-plans/sprint-creation-editing.md",
-        "tests/test_creation_editing.py",
-        "tests/test_creation_revision_jobs.py",
-        "tests/test_creation_editing_browser.py",
-        "docs/exec-plans/sprint-clip-replacements.md",
-        "tests/test_clip_replacement_core.py",
-        "tests/test_clip_replacement_jobs.py",
-        "tests/test_clip_replacement_http.py",
-        "tests/test_clip_replacement_browser.py"
-      ],
-      "quality_status": "template_draft_not_human_accepted",
-      "release_status": "not_released",
-      "implementation_status": "partial",
-      "remaining": "Natural-language understanding, full creative requirements and render/UI integration remain; this slice is structured-input offline template planning and source-bound EDL only."
-    },
-    {
-      "id": "P028",
-      "group": "D",
-      "name": "本地渲染（裁剪／拼接／缩放／变速／音频／转场／编码→MP4）",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "docs/exec-plans/sprint-creation-render.md",
-        "tests/test_creation_render.py",
-        "scripts/render-creation.ps1",
-        "docs/exec-plans/sprint-creation-workspace.md",
-        "tests/test_creation_jobs.py",
-        "tests/test_creation_workspace_browser.py",
-        "docs/exec-plans/sprint-clip-speed.md",
-        "tests/test_clip_speed_core.py",
-        "tests/test_clip_speed_render.py",
-        "tests/test_clip_speed_browser.py",
-        "docs/exec-plans/sprint-clip-transitions.md",
-        "tests/test_clip_transition_core.py",
-        "tests/test_clip_transition_render.py",
-        "tests/test_clip_transition_browser.py"
-      ],
-      "quality_status": "technical_render_tests_passed_creative_quality_unreviewed",
-      "release_status": "not_released",
-      "implementation_status": "partial",
-      "remaining": "Crop and overlays remain; trim/concat/scale/letterbox/speed/audio/subtitles/crossfade have local render evidence. Creative quality and commercial release remain unverified."
-    },
-    {
-      "id": "P029",
-      "group": "D",
-      "name": "字幕",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "docs/exec-plans/sprint-creation-subtitles.md",
-        "tests/test_creation_subtitles.py",
-        "tests/test_creation_subtitle_render.py",
-        "tests/test_creation_workspace_http.py",
-        "docs/exec-plans/sprint-creation-caption-editing.md",
-        "tests/test_creation_caption_editing.py",
-        "docs/exec-plans/sprint-clip-speed.md",
-        "tests/test_clip_speed_core.py",
-        "tests/test_clip_speed_render.py",
-        "tests/test_clip_speed_browser.py",
-        "docs/exec-plans/sprint-clip-transitions.md",
-        "tests/test_clip_transition_core.py",
-        "tests/test_clip_transition_render.py",
-        "tests/test_clip_transition_browser.py"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P030",
-      "group": "D",
-      "name": "BGM 选择与节奏匹配",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "docs/exec-plans/sprint-creation-audio-mix.md",
-        "tests/test_music_library.py",
-        "tests/test_creation_audio_render.py",
-        "tests/test_creation_audio_jobs.py",
-        "tests/test_creation_audio_browser.py"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P031",
-      "group": "D",
-      "name": "封面／标题／简介／Tags",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "docs/exec-plans/sprint-publication-assets.md",
-        "tests/test_creation_publication.py",
-        "tests/test_creation_publication_http.py",
-        "tests/test_creation_publication_browser.py"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P032",
-      "group": "D",
-      "name": "轻量编辑器（调入出点、换镜头、改字幕、换 BGM、重渲染）",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "docs/exec-plans/sprint-creation-editing.md",
-        "tests/test_creation_editing.py",
-        "tests/test_creation_revision_jobs.py",
-        "tests/test_creation_editing_browser.py",
-        "docs/exec-plans/sprint-creation-caption-editing.md",
-        "tests/test_creation_caption_editing.py",
-        "docs/exec-plans/sprint-clip-speed.md",
-        "tests/test_clip_speed_core.py",
-        "tests/test_clip_speed_render.py",
-        "tests/test_clip_speed_browser.py",
-        "docs/exec-plans/sprint-clip-transitions.md",
-        "tests/test_clip_transition_core.py",
-        "tests/test_clip_transition_render.py",
-        "tests/test_clip_transition_browser.py",
-        "docs/exec-plans/sprint-clip-replacements.md",
-        "tests/test_clip_replacement_core.py",
-        "tests/test_clip_replacement_jobs.py",
-        "tests/test_clip_replacement_http.py",
-        "tests/test_clip_replacement_browser.py"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P033",
-      "group": "D",
-      "name": "专业剪辑软件导出（FCPXML／OTIO／Premiere XML）",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: FCPXML 1.9 and OTIO JSON export of saved revisions with source file URIs, frame-aligned rational times, speed time maps and crossfades as centred transitions with whole-frame trims so exported length equals the render; real 34-clip revision exported (299/30s); not import-verified in Final Cut/DaVinci/Premiere; no Premiere XML or audio/subtitle tracks"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P034",
-      "group": "E",
-      "name": "平台规格配置（抖音／快手／B站／小红书，不硬编码）",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "docs/exec-plans/sprint-platform-packages.md",
-        "tests/test_platform_package.py",
-        "tests/test_platform_package_browser.py"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P035",
-      "group": "E",
-      "name": "主项目多版本（一稿多平台）",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "docs/exec-plans/sprint-platform-packages.md",
-        "tests/test_platform_package.py",
-        "tests/test_platform_package_browser.py"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P036",
-      "group": "E",
-      "name": "发布包导出",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "docs/exec-plans/sprint-platform-packages.md",
-        "tests/test_platform_package.py",
-        "tests/test_platform_package_browser.py"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P037",
-      "group": "E",
-      "name": "投稿前检查（Preflight）",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "docs/exec-plans/sprint-platform-packages.md",
-        "tests/test_platform_package.py",
-        "tests/test_platform_package_browser.py"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P038",
-      "group": "E",
-      "name": "自动发布",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: publishing adapter boundary with a local sandbox target only: package re-verification, local-check and blocked-eligibility gates, persisted submitted->processing->published simulation with status and history APIs; real platform targets refused pending official API access, account authorization and user approval; real guide package sandbox-published"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P039",
-      "group": "F",
-      "name": "正式 Windows 桌面 EXE",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: thin Windows desktop host EXE built with the Windows-bundled C# compiler; single instance, random 127.0.0.1 port, kill-on-close Job Object stops the service tree, Edge app-mode window with a dedicated profile; smoke and real window-close tests leave no service processes; WebView2 embedding awaits SDK download approval; installer/clean-machine/signing not done",
-        "2026-11-01: embedded WebView2 window using the user-approved pinned SDK 1.0.4314.35 (NuGet SHA512 verified, per-file SHA256 checked each build), dedicated profile, external links to the system browser, Edge app-mode fallback; real run: 6 WebView2 processes, page 200, no leftovers after close",
-        "2026-11-01: build-app assembles a self-contained, movable portable app folder (bundled CPython, runtime packages without dev tools, package install instead of editable link, FFmpeg, EXE+WebView2; 660 MB under a 1.5 GB cap); packaged interpreter imports its own code; smoke passes and still passes after moving the folder; no installer, clean-machine test or signing yet",
-        "2026-11-01: install-app installs/upgrades/uninstalls the built app per user without registry or shortcuts; upgrades swap only program parts (user data kept) with rollback on failure; uninstall keeps data; real 660 MB install+smoke ~10 s, upgrade and uninstall verified then removed; 5 installer tests including locked-file rollback; no clean-machine test or signing yet"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P040",
-      "group": "F",
-      "name": "桌面工作区（素材／预览／Agent 对话／时间线）",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "docs/exec-plans/sprint-creation-workspace.md",
-        "tests/test_creation_jobs.py",
-        "tests/test_creation_workspace_browser.py"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P041",
-      "group": "F",
-      "name": "自然语言修改真实时间线（“前 5 秒太慢”）",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: rule-based Chinese timeline commands (speed/delete/move/swap/trim/transitions) previewed via stateless API, applied in the editor and persisted through normal revision validation with ancestor undo; whole-command refusal for unknown/impossible clauses; 20 parser/HTTP tests + browser preview/apply/save test; real 35-clip revision -> 34 clips saved as d7d7a4d5 with narration inherited; no model understanding"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P042",
-      "group": "F",
-      "name": "用户修改记录与数据反馈闭环",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: read-only local feedback statistics from saved creation jobs (plans, recommendation offered/adopted, revisions, edit kinds by actual difference including inherited settings, render->publication->package funnel); real demo-phase0 22 plans/18 chains in 0.6s; adoption so far from agent test runs, not human choices; not yet fed back into ranking",
-        "2026-11-01: plan jobs capture per-structure finished-video counts from this project's saved records at registration; the planner moves frequently finished generic structures forward (mode template stays first/recommended), marks localRenders on cards and records ordering basis in the plan report; statistics failures fall back to template order",
-        "2026-11-01 T9: when local editKinds show 裁剪 ≥3 and ≥50% of edit events, new plans cap each segment to 1.0s output, prepend advisory 「你常裁短，已建议更短片段」, and record thresholds/rule/observed counts under ordering.editHabits (frozen at registration in input/edit-habits.json); no silent duration change without that record; other edit kinds unchanged"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P043",
-      "group": "G",
-      "name": "玩法展示",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: feature showcase mode (richest-description opening hook, ordered showcase, closing) real instance demo-phase0 -> 10-shot MP4 373 frames -> cover/text -> Bilibili package, all configured checks pass (.cache/content-modes-e2e.json); hook chosen by description detail, not visual understanding"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P044",
-      "group": "G",
-      "name": "活动投稿",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: campaign mode (opening, mandatory-topic clips in topic order, highlights, closing; missing topic stays a gap) real instance with topic 贝多芬 -> MP4 390 frames -> Bilibili package passing configured checks; activity rule parsing (P020) not done"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P045",
-      "group": "G",
-      "name": "攻略",
-      "first_product": true,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: guide mode (evenly spaced numbered steps, spoken step numbers follow current order) real instance -> MP4 372 frames -> Bilibili package passing configured checks; real guide correctness not human-reviewed"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P046",
-      "group": "G",
-      "name": "游戏解说",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: commentary mode template (ordered ~3s segments, opening/commentary/ending roles, closing line) real demo-phase0 instance -> 315-frame MP4 -> Bilibili package passing configured checks (.cache/content-modes-e2e-r3.json)"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P047",
-      "group": "G",
-      "name": "实况精剪",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: live-cut mode template (ordered ~1.5s segments, best-scored clip near each slot) real instance -> 445-frame MP4 -> Bilibili package passing configured checks"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P048",
-      "group": "G",
-      "name": "高光",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: highlight mode template (top-scored clips in recording order, best last as climax) real instance -> 445-frame MP4 -> Bilibili package; scores are description proxies, not visual understanding"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P049",
-      "group": "G",
-      "name": "广告／买量",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: ad/UA mode template (hook, up to three selling points preferring mandatory topics, call to action) real instance -> 270-frame MP4 -> Bilibili package; ad performance unknown"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P050",
-      "group": "H",
-      "name": "创作者版（Free／Creator／Pro）",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: local creator-plan entitlement model (founder default unlimited, Free/Creator/Pro) enforced at real entry points: monthly render quota metered from saved jobs, one platform package per publication on Free, activity-rule parsing, timeline export and sandbox publish gates; plan selection marked local evaluation; no payment, subscription, signed license or watermark",
-        "2026-11-01: Free renders burn a top-right semi-transparent 'GamingCreator Free' mark via ASS; decided at registration and stored on the job, recorded in the render receipt and checked on verify; founder/creator/pro unmarked; real FFmpeg pixel test and job-level test; analysis-minute metering and payments still absent"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    },
-    {
-      "id": "P051",
-      "group": "H",
-      "name": "企业版",
-      "first_product": false,
-      "delivery_status": "partial",
-      "implementation_evidence": [
-        "2026-11-01: local team model with owner/editor/reviewer/viewer roles, brand glossary checks on package title/description/tags, package review with separation of duties, mandatory rejection reasons and append-only history, review-gated sandbox publishing; real package submit->approve->publish test; no accounts/login, shared storage, enterprise assets, external API or seat billing; no page entry yet",
-        "2026-11-01 T10: per-project teams (sha256 path under enterprise/teams) with read-only fallback to legacy global enterprise-team.json; append-only audit jsonl plus GET /api/enterprise/audit JSON/CSV marked actorSelfReported; creation page expandable review history, audit export links, and honest self-reported operator copy; review/publish use the package project's team"
-      ],
-      "quality_status": "not_separately_assessed",
-      "release_status": "not_released"
-    }
-  ],
-  "delivery_policy": {
-    "version": "full-product-20261030",
-    "decision": "docs/design-docs/adr-003-full-product-delivery.md",
-    "roadmap": "docs/exec-plans/accelerated-product-roadmap.md",
-    "human_quality_gate_blocks_development": false,
-    "human_quality_gate_blocks_corresponding_release_claim": true
-  }
 }

@@ -29,7 +29,7 @@
         "open-retrieval-diagnostics", "retrieval-diagnostics-dialog", "close-retrieval-diagnostics",
         "retrieval-diagnostics-summary", "retrieval-diagnostics-slots", "download-retrieval-diagnostics",
         "open-tasks", "tasks-dialog", "close-tasks", "tasks-list", "tasks-page-summary",
-        "tasks-previous", "tasks-next", "refresh-tasks",
+        "tasks-previous", "tasks-next", "refresh-tasks", "batch-make-proxy",
         "open-readiness", "readiness-dialog", "close-readiness", "readiness-status", "readiness-body", "refresh-readiness",
         "open-coverage-gaps", "coverage-gaps-dialog", "close-coverage-gaps", "coverage-gaps-status", "coverage-gaps-body", "refresh-coverage-gaps",
         "open-search-sources", "single-search-source", "search-scope-label", "search-sources-dialog",
@@ -698,6 +698,32 @@
             });
             card.append(open);
             ui["tasks-list"].append(card);
+        }
+    }
+
+
+    async function batchMakeProxy() {
+        const project = state.project;
+        if (!project) return notice("请先选择项目。");
+        const button = ui["batch-make-proxy"];
+        button.disabled = true;
+        try {
+            const report = await request("/api/make-proxy-batch", {}, undefined, {
+                project,
+                allEligible: true,
+            });
+            if (!report || report.schemaVersion !== "make-proxy-batch-v1" || !report.summary) {
+                throw new Error("批量代理结果格式不正确。");
+            }
+            const s = report.summary;
+            notice(
+                `编辑代理排队完成：新建 ${s.built} · 复用 ${s.reused} · 同片共享 ${s.shared} · 失败 ${s.failed}`
+            );
+            if (ui["tasks-dialog"].open) void loadTasks(state.tasksOffset);
+        } catch (error) {
+            notice(error instanceof Error ? error.message : "批量生成编辑代理失败。");
+        } finally {
+            button.disabled = false;
         }
     }
 
@@ -3007,6 +3033,7 @@
     ui["tasks-previous"].addEventListener("click", () => { void loadTasks(Math.max(0, state.tasksOffset - TASK_PAGE_SIZE)); });
     ui["tasks-next"].addEventListener("click", () => { void loadTasks(state.tasksOffset + TASK_PAGE_SIZE); });
     ui["refresh-tasks"].addEventListener("click", () => { void loadTasks(state.tasksOffset); });
+    ui["batch-make-proxy"].addEventListener("click", () => { void batchMakeProxy(); });
     ui["tasks-dialog"].addEventListener("close", () => { state.tasksController?.abort(); state.tasksController = null; state.tasksRevision += 1; });
     ui["close-detail-costs"].addEventListener("click", () => ui["detail-cost-dialog"].close());
     ui["open-retrieval-diagnostics"].addEventListener("click", openRetrievalDiagnostics);

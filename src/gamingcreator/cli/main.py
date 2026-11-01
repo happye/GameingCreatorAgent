@@ -290,10 +290,21 @@ def _parser() -> CliParser:
     )
     proxy = commands.add_parser(
         "make-proxy",
-        help="为一个任务的原片生成或复用低分辨率编辑代理（仅预览用，成片仍用原片）；有严格大小上限",
+        help="为一条或多条已准备／已分析任务生成或复用低分辨率编辑代理（仅预览用，成片仍用原片）；有严格大小上限",
     )
     proxy.add_argument("--project", type=Path, required=True)
-    proxy.add_argument("--run", required=True)
+    proxy.add_argument(
+        "--run",
+        action="append",
+        dest="runs",
+        default=None,
+        help="任务 run id，可重复以排队多条；与 --all-eligible 互斥",
+    )
+    proxy.add_argument(
+        "--all-eligible",
+        action="store_true",
+        help="对本项目全部合格的已准备／已分析任务排队生成代理",
+    )
     shots = commands.add_parser(
         "detect-shots",
         help="本地检测一个任务原片的镜头切换与黑屏，并标出跨镜头事件；只读、不花钱",
@@ -1818,9 +1829,26 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
             )
         )
     if args.command == "make-proxy":
-        from gamingcreator.cli.proxy import execute_make_proxy
+        from gamingcreator.cli.proxy import execute_make_proxy, execute_make_proxy_batch
 
-        asyncio.run(execute_make_proxy(args.project.resolve(), args.run, Path.cwd()))
+        project = args.project.resolve()
+        runs = list(args.runs) if args.runs else None
+        if args.all_eligible or (runs is not None and len(runs) != 1):
+            asyncio.run(
+                execute_make_proxy_batch(
+                    project, Path.cwd(), runs, all_eligible=bool(args.all_eligible)
+                )
+            )
+        else:
+            if runs is None or len(runs) != 1:
+                from gamingcreator.domain.errors import AppError, ExitCode
+
+                raise AppError(
+                    "input.proxy_batch",
+                    "请提供至少一个 --run，或使用 --all-eligible。",
+                    ExitCode.INPUT,
+                )
+            asyncio.run(execute_make_proxy(project, runs[0], Path.cwd()))
         return None
     if args.command == "detect-shots":
         asyncio.run(

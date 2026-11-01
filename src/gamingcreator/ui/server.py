@@ -293,7 +293,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
             if receipt is None:
                 raise AppError(
                     "media.proxy_missing",
-                    "这个录像还没有可用的编辑代理，请先运行 scripts/make-proxy.ps1。",
+                    "这个录像还没有可用的编辑代理，请先运行 make-proxy（可批量）或工作台「批量生成编辑代理」。",
                     ExitCode.INPUT,
                 )
             resource = MediaResource(Path(receipt["path"]), receipt["proxySha256"], "video/mp4")
@@ -395,6 +395,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/benchmark-step",
                 "/api/detect-shots",
                 "/api/ocr-frames",
+                "/api/make-proxy-batch",
             }:
                 self._json(404, {"code": "input.route", "message": "没有这个操作。"})
                 return
@@ -623,6 +624,45 @@ class InspectionHandler(BaseHTTPRequestHandler):
                         )
                     ),
                 )
+                return
+            if path == "/api/make-proxy-batch":
+                if type(value) is not dict:
+                    raise ValueError("Expected proxy batch fields.")
+                keys = set(value)
+                if keys == {"project", "runs"}:
+                    if type(value["project"]) is not str or not value["project"]:
+                        raise ValueError("Invalid proxy batch project.")
+                    if (
+                        type(value["runs"]) is not list
+                        or not value["runs"]
+                        or len(value["runs"]) > 100
+                        or any(type(item) is not str or not item for item in value["runs"])
+                    ):
+                        raise ValueError("Invalid proxy batch runs.")
+                    runs = list(value["runs"])
+                    all_eligible = False
+                elif keys == {"project", "allEligible"}:
+                    if (
+                        type(value["project"]) is not str
+                        or not value["project"]
+                        or value["allEligible"] is not True
+                    ):
+                        raise ValueError("Invalid proxy batch allEligible request.")
+                    runs = None
+                    all_eligible = True
+                else:
+                    raise ValueError("Expected project with runs or allEligible.")
+                project = resolve_project(self.repository, value["project"])
+                from gamingcreator.infrastructure.proxy_batch import make_proxies_for_runs
+
+                report = asyncio.run(
+                    make_proxies_for_runs(
+                        project,
+                        self.repository,
+                        None if all_eligible else runs,
+                    )
+                )
+                self._json(200, {**report, "project": value["project"]})
                 return
             if path == "/api/match-search-details":
                 if (
