@@ -82,7 +82,7 @@
 
 | 功能 | 状态 |
 | --- | --- |
-| ★ 平台规格配置（抖音／快手／B站／小红书，不硬编码） | 🟡 platform-presets-v1 manifest＋loader；本地可编辑；非官方已核 |
+| ★ 平台规格配置（抖音／快手／B站／小红书，不硬编码） | 🟡 platform-presets-v1 manifest＋loader；本地可编辑；不宣称官方已核 |
 | 主项目多版本（一稿多平台） | 🟡 |
 | ★ 发布包导出 | 🟡 |
 | ★ 投稿前检查（Preflight） | 🟡 |
