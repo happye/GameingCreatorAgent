@@ -47,16 +47,17 @@ Start from `STATUS.md` then short `HANDOFF.md` and `docs/references/agent-workfl
 ## Delivery, reporting, human help (persistent)
 
 - Prefer milestone delivery over polishing one small bug; record hard-to-fix issues in `docs/exec-plans/tech-debt.md` and return to the main line.
-- After key changes: plain-language report (what works, benefit, verified vs open, next). Protocol: `agent-workflow.md`. Milestone reports ≤150 Chinese characters + one openable artifact.
+- **Primary e2e metrics** (see `STATUS.md` table + `python -B scripts/status.py`): planned51 · first★22 · Phase0 F passes · quality 0/8 real steps · tech-debt · human must/future · freeze set. Tier ✅/🟡/⬜; quality/release separate.
+- **Report to the user only when those primary metrics change.** Format: ≤150 Chinese characters + **one** openable artifact path. Protocol details: `agent-workflow.md`. Do not report tip SHA / push as a progress update.
 - Need user annotation/manual help → notify promptly and record in `docs/exec-plans/human-inputs.md`; pending human items block only dependent work.
-- Subagent model routing: `docs/references/codex-agent-routing-guide.md` / `claude-agent-routing-guide.md`. Planner→Generator→Evaluator: `development-agent-pipeline.md`.
+- Subagent routing: `docs/references/codex-agent-routing-guide.md` / `claude-agent-routing-guide.md`. Planner→Generator→Evaluator: `development-agent-pipeline.md`.
 
 ## STATUS / fees / freeze
 
-See [`STATUS.md`](STATUS.md). Numbers from `feature_list.json`, `progress-board.md`, `tech-debt.md`, `human-inputs.md` — never invent counts. Report board/STATUS numbers only when they change.
+See [`STATUS.md`](STATUS.md). Numbers from `feature_list.json` / `progress-board.md` / `tech-debt.md` / `human-inputs.md` — never invent counts; never flip `passes` or product delivery statuses from harness docs work.
 
-- Monthly preauth **¥50**: user-designated footage analysis only; overage needs per-call ask; hard send gate stays.
-- **Frozen until first mode human-evaluated:** P046–P051 and P038 (no new scope).
+- Monthly preauth **¥50**: user-designated footage analysis only; each overage call needs a fresh ask; hard send gate stays. Zero-charge confirmations: `docs/references/detail-billing-confirmation-guide.md` (do not grant new sends).
+- **Frozen until first mode human-evaluated:** P046–P051 and P038 (auto-publish) — no new scope.
 - Protections: no secret/media/DB commits; paid calls gated; evidence/ledger immutable; no auto re-pay/re-label; toolchain check may narrow but not remove.
 
 ## Accelerated product path

@@ -1,47 +1,90 @@
-"""Offline STATUS / progress numbers from repo docs. No network."""
+"""Offline primary e2e metrics + STATUS/progress numbers. No network."""
 
 from __future__ import annotations
 
 import json
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+
+# Content modes / commercial items frozen until first mode is human-evaluated.
+# Documented only — this script never flips feature_list states.
+FREEZE_IDS = ("P038", "P046", "P047", "P048", "P049", "P050", "P051")
 
 
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def feature_list_counts(path: Path) -> dict[str, int | list[str]]:
+def feature_list_phase0(path: Path) -> dict:
     data = json.loads(_read(path))
     features = data.get("features") or []
     passed = [f["id"] for f in features if f.get("passes") is True]
     failed = [f["id"] for f in features if f.get("passes") is False]
-    other = [f["id"] for f in features if f.get("passes") not in (True, False)]
     return {
         "total": len(features),
         "passes_true": len(passed),
         "passes_false": len(failed),
-        "passes_other": len(other),
         "true_ids": passed,
         "false_ids": failed,
     }
 
 
-def progress_board_summary(path: Path) -> dict[str, str | int | None]:
+def product_features_metrics(path: Path) -> dict:
+    data = json.loads(_read(path))
+    items = data.get("product_features") or []
+    delivery = Counter(x.get("delivery_status") or "unknown" for x in items)
+    quality = Counter(x.get("quality_status") or "unknown" for x in items)
+    release = Counter(x.get("release_status") or "unknown" for x in items)
+    first = [x for x in items if x.get("first_product")]
+    first_delivery = Counter(x.get("delivery_status") or "unknown" for x in first)
+    freeze = []
+    for x in items:
+        if x.get("id") in FREEZE_IDS:
+            freeze.append(
+                {
+                    "id": x["id"],
+                    "name": x.get("name"),
+                    "delivery_status": x.get("delivery_status"),
+                    "quality_status": x.get("quality_status"),
+                    "release_status": x.get("release_status"),
+                }
+            )
+    return {
+        "total": len(items),
+        "delivery": dict(delivery),
+        "quality": dict(quality),
+        "release": dict(release),
+        "first_product_n": len(first),
+        "first_delivery": dict(first_delivery),
+        "freeze": freeze,
+    }
+
+
+def progress_board_metrics(path: Path) -> dict:
     text = _read(path)
-    out: dict[str, str | int | None] = {
-        "header_line": None,
+    out: dict = {
+        "planned_total": None,
         "delivered": None,
         "partial": None,
         "not_started": None,
-        "planned_total": None,
         "overall_pct_note": None,
+        "first_total": None,
+        "first_delivered": None,
+        "first_partial": None,
+        "first_not_started": None,
+        "first_pct_note": None,
+        "quality_real_done": None,
+        "quality_real_total": None,
         "tech_debt_line": None,
+        "tech_debt": None,
+        "human_must": None,
+        "human_pending": None,
+        "header_line": None,
     }
-    # e.g. 全部计划功能 **51 项：已交付 10 · 部分 41 · 未开始 0**
     m = re.search(
         r"全部计划功能\s*\*?\*?(\d+)\s*项[：:]\s*已交付\s*(\d+)\s*[·•]\s*部分\s*(\d+)\s*[·•]\s*未开始\s*(\d+)",
         text,
@@ -55,67 +98,86 @@ def progress_board_summary(path: Path) -> dict[str, str | int | None]:
     pct = re.search(r"整体约\s*(\d+%)", text)
     if pct:
         out["overall_pct_note"] = pct.group(1)
-    td = re.search(r"技术债[^\n]{0,80}", text)
+    # ★ first-product line variants
+    fp = re.search(
+        r"22\s*项中已交付\s*(\d+)\s*[·•]\s*部分\s*(\d+)\s*[·•]\s*未开始\s*(\d+).*?约\s*(\d+%)",
+        text,
+    )
+    if not fp:
+        fp = re.search(
+            r"★\s*范围\s*(\d+)\s*项[：:]\s*.*?(\d+)\s*[·•].*?(\d+).*?(\d+)",
+            text,
+        )
+        if fp:
+            out["first_total"] = int(fp.group(1))
+    else:
+        out["first_total"] = 22
+        out["first_delivered"] = int(fp.group(1))
+        out["first_partial"] = int(fp.group(2))
+        out["first_not_started"] = int(fp.group(3))
+        out["first_pct_note"] = fp.group(4)
+    # Board summary line often: 首产品0/22/0≈50%
+    fp2 = re.search(r"首产品\s*(\d+)\s*/\s*(\d+)\s*/\s*(\d+)\s*≈?\s*(\d+%)?", text)
+    if fp2:
+        out["first_delivered"] = int(fp2.group(1))
+        out["first_total"] = int(fp2.group(2))
+        out["first_partial"] = out.get("first_partial")
+        if out["first_partial"] is None and out["first_total"] is not None:
+            # if form is delivered/total/not_started
+            out["first_not_started"] = int(fp2.group(3))
+            if out["first_delivered"] is not None and out["first_total"] is not None:
+                out["first_partial"] = (
+                    out["first_total"] - out["first_delivered"] - out["first_not_started"]
+                )
+        if fp2.group(4):
+            out["first_pct_note"] = fp2.group(4)
+    # Quality gate: 质量验收 0/8 步
+    q = re.search(r"质量验收\s*(\d+)\s*/\s*(\d+)\s*步", text)
+    if q:
+        out["quality_real_done"] = int(q.group(1))
+        out["quality_real_total"] = int(q.group(2))
+    td = re.search(
+        r"技术债[^\n]*?(\d+)\s*项[，,]\s*已解决\s*(\d+)\s*[·•]\s*部分\s*(\d+)\s*[·•]\s*未解决\s*(\d+)",
+        text,
+    )
     if td:
-        out["tech_debt_line"] = td.group(0).strip()
+        out["tech_debt"] = {
+            "total": int(td.group(1)),
+            "resolved": int(td.group(2)),
+            "partial": int(td.group(3)),
+            "open": int(td.group(4)),
+        }
+        out["tech_debt_line"] = td.group(0)
+    # human: 现在必须人工操作0项，未来9项 / 人工0／未来8
+    hm = re.search(r"现在必须人工操作\s*(\d+)\s*项，未来\s*(\d+)\s*项", text)
+    if not hm:
+        hm = re.search(r"人工\s*(\d+)\s*／未来\s*(\d+)", text)
+    if not hm:
+        hm = re.search(r"当前必做\s*(\d+)\s*项；未来\s*(\d+)\s*项", text)
+    if hm:
+        out["human_must"] = int(hm.group(1))
+        out["human_pending"] = int(hm.group(2))
     return out
 
 
-def tech_debt_counts(path: Path) -> dict[str, int | list[str]]:
+def human_inputs_open(path: Path) -> dict:
     text = _read(path)
-    rows = re.findall(r"^\|\s*(TD\d+)\s*\|([^|\n]*)\|([^|\n]*)\|([^|\n]*)\|", text, re.M)
-    resolved: list[str] = []
-    partial: list[str] = []
-    open_ids: list[str] = []
-    for tid, _a, _b, status in rows:
-        blob = status.lower()
-        # Chinese / English cues in the status/notes cell
-        cell = status
-        if re.search(r"已解决|resolved|fixed|已修复|已关闭", cell, re.I):
-            resolved.append(tid)
-        elif re.search(r"部分|partial", cell, re.I) and not re.search(
-            r"未解决|open|仍开", cell, re.I
-        ):
-            partial.append(tid)
-        else:
-            # default: treat as still open unless clearly done earlier in cell
-            if re.search(r"已交付|已完成|关闭", cell) and not re.search(
-                r"未|仍|待", cell
-            ):
-                resolved.append(tid)
-            else:
-                open_ids.append(tid)
-    # Prefer board headline if present in same file intro
-    return {
-        "table_rows": len(rows),
-        "classified_resolved": len(resolved),
-        "classified_partial": len(partial),
-        "classified_open": len(open_ids),
-        "open_ids": open_ids,
-        "partial_ids": partial,
-        "resolved_ids": resolved,
-    }
-
-
-def human_inputs_open(path: Path) -> dict[str, int | list[str]]:
-    text = _read(path)
-    # Count rows in the "仍待真实输入" markdown table (skip header/separator)
-    section = re.search(
-        r"##\s*仍待真实输入[\s\S]*?(?=\n##\s|\Z)", text
-    )
+    section = re.search(r"##\s*仍待真实输入[\s\S]*?(?=\n##\s|\Z)", text)
     pending: list[str] = []
     if section:
         for line in section.group(0).splitlines():
             if not line.startswith("|"):
                 continue
-            if re.match(r"^\|\s*---", line) or "事项" in line and "怎么做" in line:
+            if re.match(r"^\|\s*---", line) or ("事项" in line and "怎么做" in line):
                 continue
             cols = [c.strip() for c in line.strip("|").split("|")]
             if cols and cols[0] and cols[0] != "事项":
                 pending.append(cols[0][:60])
-    # "当前必做人工仍为 0" style
     must = None
-    m = re.search(r"当前必做人工仍为\s*(\d+)|当前必须做\s*(\d+)\s*项|当前必做\s*(\d+)\s*项", text)
+    m = re.search(
+        r"当前必做人工仍为\s*(\d+)|当前必须做\s*(\d+)\s*项|当前必做\s*(\d+)\s*项",
+        text,
+    )
     if m:
         must = int(next(g for g in m.groups() if g is not None))
     return {
@@ -127,81 +189,112 @@ def human_inputs_open(path: Path) -> dict[str, int | list[str]]:
 
 def status_md_excerpt(path: Path) -> str:
     text = _read(path)
-    # Keep it short for terminal
     lines = []
     for line in text.splitlines():
         if line.startswith("#") or line.startswith("-") or line.startswith(">"):
             lines.append(line)
-        if len(lines) >= 40:
+        if len(lines) >= 45:
             break
     return "\n".join(lines)
+
+
+def print_primary(board: dict, phase0: dict, product: dict, human: dict) -> None:
+    """Primary e2e metrics — report to user only when these change."""
+    print("=== PRIMARY e2e metrics (report only when these change) ===")
+    print(
+        "tier: delivered=✅ / partial=🟡 / not_started=⬜ ; "
+        "quality/release stay separate (feature_list.product_features)"
+    )
+    print(
+        f"1. planned51: {board['delivered']}/{board['partial']}/{board['not_started']} "
+        f"of {board['planned_total']} (~{board['overall_pct_note']}) "
+        f"[board]; json delivery={product['delivery']}"
+    )
+    print(
+        f"2. first_product★: delivered={board['first_delivered']} "
+        f"partial≈{board['first_partial']} not_started={board['first_not_started']} "
+        f"of {board['first_total']} (~{board['first_pct_note']}); "
+        f"json first_n={product['first_product_n']} first_delivery={product['first_delivery']}"
+    )
+    print(
+        f"3. phase0_F: passes_true={phase0['passes_true']} "
+        f"passes_false={phase0['passes_false']} "
+        f"false_ids={', '.join(phase0['false_ids'])} "
+        f"(F006/F009/F010 must stay false until human evidence)"
+    )
+    print(
+        f"4. quality_gate_steps_real: "
+        f"{board['quality_real_done']}/{board['quality_real_total']} "
+        f"(board §3; tools may be ready — real human steps still count)"
+    )
+    td = board.get("tech_debt") or {}
+    print(
+        f"5. tech_debt: {td.get('resolved')}/{td.get('partial')}/{td.get('open')} "
+        f"of {td.get('total')} (resolved/partial/open)"
+    )
+    print(
+        f"6. human_inputs: must={board['human_must']} "
+        f"future={board['human_pending']} "
+        f"(human-inputs table rows={human['pending_table_rows']}, "
+        f"declared_must={human['must_do_declared']})"
+    )
+    freeze_ids = ", ".join(x["id"] for x in product["freeze"])
+    print(
+        f"7. freeze_until_first_mode_human_eval: {freeze_ids} "
+        f"(no new scope; statuses unchanged by this script)"
+    )
+    print(
+        "milestone report rule: ≤150 Chinese chars + one openable artifact path; "
+        "only when a primary metric above changes."
+    )
 
 
 def main() -> int:
     status_path = ROOT / "STATUS.md"
     fl_path = ROOT / "feature_list.json"
     board_path = ROOT / "docs" / "exec-plans" / "progress-board.md"
-    td_path = ROOT / "docs" / "exec-plans" / "tech-debt.md"
     hi_path = ROOT / "docs" / "exec-plans" / "human-inputs.md"
 
-    print("=== STATUS.md (excerpt) ===")
-    if status_path.is_file():
-        print(status_md_excerpt(status_path))
-        print(f"(bytes={status_path.stat().st_size})")
-    else:
+    if not status_path.is_file():
         print("MISSING STATUS.md", file=sys.stderr)
         return 2
 
-    print("\n=== feature_list.json (Phase 0 F-ids) ===")
-    fl = feature_list_counts(fl_path)
-    print(
-        f"total={fl['total']} passes_true={fl['passes_true']} "
-        f"passes_false={fl['passes_false']} other={fl['passes_other']}"
-    )
-    print(f"true: {', '.join(fl['true_ids'])}")  # type: ignore[arg-type]
-    print(f"false: {', '.join(fl['false_ids'])}")  # type: ignore[arg-type]
+    phase0 = feature_list_phase0(fl_path)
+    product = product_features_metrics(fl_path)
+    board = progress_board_metrics(board_path)
+    human = human_inputs_open(hi_path)
 
-    print("\n=== progress-board.md (planned 51-item口径) ===")
-    board = progress_board_summary(board_path)
-    print(
-        f"planned={board['planned_total']} delivered={board['delivered']} "
-        f"partial={board['partial']} not_started={board['not_started']} "
-        f"pct_note={board['overall_pct_note']}"
-    )
-    if board["header_line"]:
-        print(board["header_line"])
-    if board["tech_debt_line"]:
-        print(board["tech_debt_line"])
+    print_primary(board, phase0, product, human)
 
-    print("\n=== tech-debt (board口径 preferred; table lists ids) ===")
-    td = tech_debt_counts(td_path)
-    # Prefer explicit board summary numbers when present
-    mtd = re.search(
-        r"技术债[^\n]*?(\d+)\s*项[，,]\s*已解决\s*(\d+)\s*[·•]\s*部分\s*(\d+)\s*[·•]\s*未解决\s*(\d+)",
-        _read(board_path),
-    )
-    if mtd:
+    print("\n=== STATUS.md (excerpt) ===")
+    print(status_md_excerpt(status_path))
+    print(f"(bytes={status_path.stat().st_size})")
+
+    print("\n=== freeze detail (read-only) ===")
+    for row in product["freeze"]:
         print(
-            f"board: total={mtd.group(1)} resolved={mtd.group(2)} "
-            f"partial={mtd.group(3)} open={mtd.group(4)}"
+            f"  {row['id']} {row['name']}: delivery={row['delivery_status']} "
+            f"quality={row['quality_status']} release={row['release_status']}"
         )
-    ids = re.findall(r"^\|\s*(TD\d+)\s*\|", _read(td_path), re.M)
-    print(f"table_ids({len(ids)}): {', '.join(ids)}")
-    print(
-        f"(heuristic open~={td['classified_open']} — descriptions are free text; use board counts)"
-    )
 
-    print("\n=== human-inputs.md ===")
-    hi = human_inputs_open(hi_path)
+    print("\n=== offline primary-path commands (no paid calls) ===")
+    print("  python -B scripts/status.py")
     print(
-        f"must_do_declared={hi['must_do_declared']} "
-        f"pending_table_rows={hi['pending_table_rows']}"
+        "  python -B scripts/validate-demo.py "
+        "--project artifacts/demo-phase0 "
+        "--run f76f5d6495314c04ae04083614d4afd6"
     )
-    for title in hi["pending_titles"]:  # type: ignore[union-attr]
-        print(f"  - {title}")
+    print(
+        "  python -B scripts/validate-inspection-ui.py "
+        "--project artifacts/demo-phase0 "
+        "--run f76f5d6495314c04ae04083614d4afd6"
+    )
+    print(
+        "  # full offline gate (long): ./scripts/verify.ps1 "
+        "# format/lint/types/pytest/wheels — not required every session"
+    )
 
     print("\n=== tip ===")
-    # local only — do not shell out if git missing; best-effort
     git_head = ROOT / ".git" / "HEAD"
     if git_head.is_file():
         head = _read(git_head).strip()
