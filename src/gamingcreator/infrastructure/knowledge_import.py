@@ -43,9 +43,7 @@ def _source_label(base: str, relative: str, extra: str = "") -> str:
     return label[: LIMITS["sourceLabel"]]
 
 
-def list_import_candidates(
-    directory: Path, *, include_media: bool = False
-) -> list[Path]:
+def list_import_candidates(directory: Path, *, include_media: bool = False) -> list[Path]:
     """Sorted direct child files matching allowed suffixes; refuses links."""
     root = directory.expanduser()
     if not root.exists():
@@ -94,9 +92,7 @@ async def import_knowledge_directory(
     candidates = list_import_candidates(directory, include_media=include_media)
     work = (scratch or (store.root.parent / "knowledge-import")).resolve()
     items: list[dict[str, Any]] = []
-    known_texts = {
-        (entry["game"], entry["text"]) for entry in current(store.entries())
-    }
+    known_texts = {(entry["game"], entry["text"]) for entry in current(store.entries())}
     for path in candidates:
         relative = path.name
         try:
@@ -105,9 +101,7 @@ async def import_knowledge_directory(
             if not text.strip():
                 raise ValueError("读出的正文为空。")
             if len(text) > LIMITS["text"]:
-                raise ValueError(
-                    f"读出 {len(text)} 字，超过单条 {LIMITS['text']} 字上限。"
-                )
+                raise ValueError(f"读出 {len(text)} 字，超过单条 {LIMITS['text']} 字上限。")
             extra = ""
             if source.get("sourceKind") in ("image", "pdf"):
                 extra = "文字由本机OCR识别，可能有错字"

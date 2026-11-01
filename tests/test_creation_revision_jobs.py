@@ -65,6 +65,7 @@ def revisions(service, monkeypatch):  # noqa: F811
         audio_mix=None,
         music=None,
         watermark=None,
+        presentation=None,
     ):
         from gamingcreator.domain.creation_audio import AudioMix
 

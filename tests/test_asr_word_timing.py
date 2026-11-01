@@ -99,9 +99,7 @@ def test_maps_real_provider_words_onto_edit_timeline() -> None:
 
 
 def test_word_intersection_and_us_payload() -> None:
-    words = (
-        AsrWord("a", SourceRange(500_000, 1_500_000, 10_000_000), "半截"),
-    )
+    words = (AsrWord("a", SourceRange(500_000, 1_500_000, 10_000_000), "半截"),)
     plan = RenderPlan((clip(0, 1_000_000, 30),), 30)
     cues = map_words_to_edit_timeline(plan, words)
     assert len(cues) == 1

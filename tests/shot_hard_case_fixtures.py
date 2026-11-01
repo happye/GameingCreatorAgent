@@ -67,9 +67,7 @@ def render_case(
         labels.append(f"[{label}]")
         color = segment["color"]
         seconds = float(segment["seconds"])
-        parts.append(
-            f"color=c={color}:s={width}x{height}:r={fps}:d={seconds}[{label}]"
-        )
+        parts.append(f"color=c={color}:s={width}x{height}:r={fps}:d={seconds}[{label}]")
     graph = ";".join(parts) + f";{''.join(labels)}concat=n={len(labels)}:v=1:a=0[v]"
     subprocess.run(
         [

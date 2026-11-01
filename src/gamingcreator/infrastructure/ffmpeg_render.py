@@ -101,7 +101,6 @@ def _watermark_ass(text: str, width: int, height: int, duration: Fraction) -> st
     )
 
 
-
 _BADGE_ALIGN = {
     "top-left": 7,
     "top-right": 9,
@@ -228,7 +227,6 @@ async def _verify_music(music: MusicTrack, context: CancellationContext) -> None
         raise ValueError("Music media hash mismatch.")
     if await hash_source(receipt, context) != music.receipt_sha256:
         raise ValueError("Music receipt hash mismatch.")
-
 
 
 def _presentation_limitations(

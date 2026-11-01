@@ -261,9 +261,27 @@ def test_free_package_watermark_matches_and_tamper_fails(service, monkeypatch): 
     old = implementation.execute_render_creation
 
     async def renderer(
-        project, selection, output, tool, width, height, subtitle_mode="none", watermark=None
+        project,
+        selection,
+        output,
+        tool,
+        width,
+        height,
+        subtitle_mode="none",
+        watermark=None,
+        presentation=None,
     ):
-        await old(project, selection, output, tool, width, height, subtitle_mode, watermark)
+        await old(
+            project,
+            selection,
+            output,
+            tool,
+            width,
+            height,
+            subtitle_mode,
+            watermark,
+            presentation=presentation,
+        )
         subprocess.run(
             [
                 str(FFMPEG),

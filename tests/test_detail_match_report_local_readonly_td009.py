@@ -682,6 +682,7 @@ def test_local_demo_phase0_match_evidence_entries_carry_part_id_and_condition() 
                         assert isinstance(condition.get(field), str) and condition[field]
         assert seen >= 1, path.name
 
+
 def test_assert_match_report_contract_rejects_status_match_invariants() -> None:
     """TD009: full/partial/no_match must mirror DetailMatch support rules on JSON."""
     from test_actor_detail_matching import EVENT, RUN, condition
@@ -752,6 +753,7 @@ def test_assert_match_report_sidecar_binding_rejects_unknown_shot_actor_pair() -
         assert_match_report_sidecar_binding_contract(document, request_doc, forged_result)
     gaps2 = match_report_sidecar_binding_gaps(document, request_doc, forged_result)
     assert "payload_actor_shot_id_mismatch" in gaps2
+
 
 def test_assert_match_report_contract_rejects_shared_not_subset_of_satisfied() -> None:
     """TD009: sharedEvidenceIds must sit inside every satisfied evidenceIds list."""
@@ -825,7 +827,6 @@ def test_assert_match_report_contract_rejects_shared_not_subset_of_satisfied() -
     assert "match_shared_without_satisfied" in match_report_contract_gaps(bare)
 
 
-
 def test_assert_match_report_sidecar_binding_rejects_satisfied_missing_payload_attribute() -> None:
     """TD009: satisfied (partId,kind,value) must exist on the payload actor attributes."""
     document, request_doc, result_doc = _load_first_legacy_binding()
@@ -851,4 +852,3 @@ def test_assert_match_report_sidecar_binding_rejects_satisfied_missing_payload_a
         assert_match_report_sidecar_binding_contract(document, request_doc, forged_attr)
     gaps2 = match_report_sidecar_binding_gaps(document, request_doc, forged_attr)
     assert "payload_attribute_kind_invalid" in gaps2
-

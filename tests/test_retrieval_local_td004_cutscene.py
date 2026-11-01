@@ -47,7 +47,11 @@ def test_demo_phase0_cutscene_queries_do_not_hit_title_tag_only(query):
         result = await search_timeline(tl, query, mode="lexical")
         for candidate in result.candidates:
             joined = " ".join(candidate.observable_facts)
-            assert "过场" in joined or "cutscene" in joined.casefold() or "cinematic" in joined.casefold(), joined
+            assert (
+                "过场" in joined
+                or "cutscene" in joined.casefold()
+                or "cinematic" in joined.casefold()
+            ), joined
         # This completed run has no positive-text 过场 facts.
         assert result.candidates == ()
 

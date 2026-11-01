@@ -6,8 +6,8 @@ import json
 import sys
 from pathlib import Path
 
-from gamingcreator.application.knowledge_import import import_knowledge_directory
 from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.infrastructure.knowledge_import import import_knowledge_directory
 from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
 
 

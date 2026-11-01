@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from gamingcreator.application.knowledge_import import (
+from gamingcreator.infrastructure.knowledge_import import (
     import_knowledge_directory_sync,
     list_import_candidates,
 )
@@ -138,3 +138,4 @@ def test_http_directory_import(tmp_path: Path) -> None:
         assert KnowledgeStore(repo).entries()
     finally:
         server.shutdown()
+        server.server_close()

@@ -42,7 +42,15 @@ def service(tmp_path, monkeypatch):
     monkeypatch.setattr(implementation, "execute_plan_creation", planner)
 
     async def renderer(
-        project, selection, output, tool, width, height, subtitle_mode="none", watermark=None
+        project,
+        selection,
+        output,
+        tool,
+        width,
+        height,
+        subtitle_mode="none",
+        watermark=None,
+        presentation=None,
     ):
         output.mkdir()
         (output / "video.mp4").write_bytes(b"fixture-video")

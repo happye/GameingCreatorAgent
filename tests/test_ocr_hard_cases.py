@@ -94,9 +94,9 @@ def test_windows_ocr_smokes_hard_cases_without_quality_claims(tmp_path: Path) ->
         for index, (case, _path) in enumerate(rendered):
             joined = " ".join(sorted(texts_by_index.get(index, ())))
             if case["difficulty"] == "plain_control" and "zh-Hans-CN" in batch.available_languages:
-                assert any(
-                    needle in joined for needle in case["expectedSubstrings"]
-                ), f"plain control smoke missed substrings for {case['id']}: {joined!r}"
+                assert any(needle in joined for needle in case["expectedSubstrings"]), (
+                    f"plain control smoke missed substrings for {case['id']}: {joined!r}"
+                )
             # Hard cases: structural only — presence or absence of text is not graded.
             assert case["id"] in by_id
     finally:

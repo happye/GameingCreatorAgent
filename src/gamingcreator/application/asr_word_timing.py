@@ -106,6 +106,7 @@ def _word_bounds_us(item: Mapping[str, Any]) -> tuple[int, int]:
     end = item.get("end")
     if type(start) not in (int, float) or type(end) not in (int, float):
         raise ValueError("Word start/end seconds are required when startUs/endUs are absent.")
+    assert isinstance(start, (int, float)) and isinstance(end, (int, float))
     start_us = int(round(float(start) * 1_000_000))
     end_us = int(round(float(end) * 1_000_000))
     return start_us, end_us

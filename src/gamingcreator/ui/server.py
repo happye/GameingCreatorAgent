@@ -475,7 +475,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     raise AppError("knowledge.input", str(error), ExitCode.INPUT) from error
                 return
             if path == "/api/knowledge-import":
-                from gamingcreator.application.knowledge_import import (
+                from gamingcreator.infrastructure.knowledge_import import (
                     import_knowledge_directory,
                 )
                 from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
@@ -485,7 +485,10 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 required = {"game", "directory", "sourceKind", "sourceLabel"}
                 if not required <= set(value) <= required | {"includeMedia"}:
                     raise ValueError("Expected game, directory, sourceKind, sourceLabel.")
-                if any(type(value[key]) is not str for key in ("game", "directory", "sourceKind", "sourceLabel")):
+                if any(
+                    type(value[key]) is not str
+                    for key in ("game", "directory", "sourceKind", "sourceLabel")
+                ):
                     raise ValueError("Knowledge import fields must be text.")
                 include_media = value.get("includeMedia", False)
                 if type(include_media) is not bool:

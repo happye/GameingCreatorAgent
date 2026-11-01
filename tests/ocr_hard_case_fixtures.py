@@ -61,7 +61,9 @@ def _drawtext_filter(font: Path, item: dict[str, Any]) -> str:
     return "drawtext=" + ":".join(parts)
 
 
-def render_case(case: dict[str, Any], destination: Path, *, font: Path, ffmpeg: Path = FFMPEG) -> Path:
+def render_case(
+    case: dict[str, Any], destination: Path, *, font: Path, ffmpeg: Path = FFMPEG
+) -> Path:
     """Render one catalog case to a PNG at destination; caller must enforce size and delete."""
     if destination.exists():
         raise FileExistsError(destination)

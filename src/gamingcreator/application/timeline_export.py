@@ -197,7 +197,7 @@ def to_fcpxml(
             f'            <title name={quoteattr("Basic Title")} lane="1" '
             f'offset="{_seconds(start)}" ref="r1" duration="{_seconds(duration)}" '
             f'start="0s">\n'
-            f'              <text>{escape(caption.text)}</text>\n'
+            f"              <text>{escape(caption.text)}</text>\n"
             "            </title>"
         )
     total = sum(item["frames"] for item in placed) * frame
@@ -477,7 +477,7 @@ def to_otio(
             }
         )
     if caption_rows:
-        caption_children = [
+        caption_children: list[dict[str, Any]] = [
             {
                 "OTIO_SCHEMA": "Clip.2",
                 "name": caption.text,

@@ -1912,9 +1912,7 @@ def test_boss_multi_facet_partial_match_excluded():
         "UI 显示 Boss 标志与倒计时。",
         "身披死亡铠甲的恶魔领主举起权杖释放冲击波。",
     )
-    result = search(
-        data, "穿着死亡铠甲的恶魔领主Boss拿着权杖释放冲击波", "lexical"
-    )
+    result = search(data, "穿着死亡铠甲的恶魔领主Boss拿着权杖释放冲击波", "lexical")
     assert [c.event_id for c in result.candidates] == ["event-2"]
 
 
@@ -1923,6 +1921,7 @@ def test_single_facet_boss_query_still_finds_boss_label():
     data = timeline("UI 显示 Boss 标志与倒计时。", "角色在草地上奔跑。")
     result = search(data, "Boss", "lexical")
     assert [c.event_id for c in result.candidates] == ["event-0"]
+
 
 def test_armor_query_excludes_color_only_vfx():
     """TD004: 红色铠甲 must not rank red VFX-only clips as armor evidence."""
@@ -1979,12 +1978,11 @@ def test_jump_query_excludes_brawl_mode_title_chrome():
 
 
 def test_jump_query_brawl_mode_only_corpus_abstains():
-    data = timeline(
-        "画面中央显示文字“大乱斗(单人/双人)”，背景为俯视视角的草地与建筑场景。"
-    )
+    data = timeline("画面中央显示文字“大乱斗(单人/双人)”，背景为俯视视角的草地与建筑场景。")
     result = search(data, "JUMP明星大乱斗跳跃", "lexical")
     assert result.candidates == ()
     assert result.abstention_reason == "no_positive_action_evidence"
+
 
 @pytest.mark.parametrize("query", ["过场", "cutscene", "cutscenes", "cinematic"])
 def test_cutscene_query_excludes_tag_only_title_cards(query):
@@ -2016,4 +2014,3 @@ def test_cutscene_tag_only_corpus_empty():
     data = replace(data, events=events)
     result = search(data, "cutscene", "lexical")
     assert result.candidates == ()
-

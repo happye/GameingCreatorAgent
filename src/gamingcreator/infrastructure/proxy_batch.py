@@ -36,9 +36,7 @@ def _summary(items: list[dict[str, Any]]) -> dict[str, int]:
     return counts
 
 
-async def resolve_proxy_batch_runs(
-    project: Path, run_ids: Sequence[str] | None
-) -> list[str]:
+async def resolve_proxy_batch_runs(project: Path, run_ids: Sequence[str] | None) -> list[str]:
     """Explicit run ids, or every eligible run in the project (stable order)."""
     store = await SqliteTimelineStore.open(project, read_only=True)
     try:

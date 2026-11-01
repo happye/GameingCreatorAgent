@@ -148,7 +148,9 @@ def _match_row_has_complete_full_support(row: dict[str, object]) -> bool:
     uncertain = _list_or_empty(row.get("uncertain"))
     opposed = _list_or_empty(row.get("opposed"))
     conflicts = _list_or_empty(row.get("conflicts"))
-    return bool(satisfied and shared and not missing and not uncertain and not opposed and not conflicts)
+    return bool(
+        satisfied and shared and not missing and not uncertain and not opposed and not conflicts
+    )
 
 
 def _match_row_shared_evidence_supports_satisfied(row: dict[str, object]) -> None:
@@ -653,7 +655,9 @@ def assert_match_report_sidecar_binding_contract(
                     raise ValueError("Sidecar result payload actorId is invalid.")
                 actor_shot = actor.get("shotId")
                 if actor_shot is not None and actor_shot != shot_id:
-                    raise ValueError("Sidecar result payload actor shotId disagrees with parent shot.")
+                    raise ValueError(
+                        "Sidecar result payload actor shotId disagrees with parent shot."
+                    )
                 pair = (shot_id, actor_id)
                 if pair in detail_actor_pairs:
                     raise ValueError("Sidecar result payload shot/actor pair is duplicated.")
@@ -689,10 +693,10 @@ def assert_match_report_sidecar_binding_contract(
                     if "sourceRange" in attribute and not _valid_optional_source_range(
                         attribute.get("sourceRange")
                     ):
-                        raise ValueError(
-                            "Sidecar result payload attribute sourceRange is invalid."
-                        )
-                    if not _source_range_contains(report.get("sourceRange"), attribute.get("sourceRange")):
+                        raise ValueError("Sidecar result payload attribute sourceRange is invalid.")
+                    if not _source_range_contains(
+                        report.get("sourceRange"), attribute.get("sourceRange")
+                    ):
                         raise ValueError(
                             "Sidecar result payload attribute sourceRange escapes report range."
                         )

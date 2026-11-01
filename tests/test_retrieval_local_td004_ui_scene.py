@@ -7,7 +7,6 @@ Does not claim TD004/F006 closed.
 from __future__ import annotations
 
 import asyncio
-import sqlite3
 from pathlib import Path
 
 import pytest
@@ -67,8 +66,10 @@ def test_demo_phase0_fight_query_drops_skill_button_scene_chrome():
             joined = " ".join(candidate.observable_facts)
             if "技能按钮" in joined or "方向摇杆" in joined:
                 # Must still have free-standing fight evidence beyond UI collocation.
-                assert ("交战" in joined) or ("战斗" in joined and "战斗界面" not in joined) or (
-                    "对战" in joined and "对战场景" not in joined
+                assert (
+                    ("交战" in joined)
+                    or ("战斗" in joined and "战斗界面" not in joined)
+                    or ("对战" in joined and "对战场景" not in joined)
                 ), joined
 
     asyncio.run(run())

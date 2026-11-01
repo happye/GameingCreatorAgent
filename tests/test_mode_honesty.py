@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from tests.test_creation_modes import brief, material
+
 from gamingcreator.application.creation_modes import (
     CREATION_GUIDE_REL,
     MODE_HONESTY_HELP,
@@ -11,7 +13,6 @@ from gamingcreator.application.creation_modes import (
     MODE_LABELS,
 )
 from gamingcreator.application.creative_planner import plan_creation
-from tests.test_creation_modes import brief, material
 
 
 def test_honesty_constants_stable() -> None:

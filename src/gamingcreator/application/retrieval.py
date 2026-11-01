@@ -619,7 +619,7 @@ def _cutscene_tag_only_noise_documents(
         positive = unicodedata.normalize("NFKC", document.positive_text)
         if _CUTSCENE_QUERY.search(positive):
             continue
-        tag_blob = unicodedata.normalize("NFKC", '\n'.join(document.tags))
+        tag_blob = unicodedata.normalize("NFKC", "\n".join(document.tags))
         if _CUTSCENE_QUERY.search(tag_blob):
             noisy.add(document.identifier)
     return frozenset(noisy)
@@ -719,15 +719,13 @@ def _query_actions(query: str) -> set[str]:
 
 
 def _positive_actions(text: str) -> set[str]:
-    cleaned = unicodedata.normalize("NFKC", _neutralize_title_brands(text)).casefold().replace(
-        "’", "'"
+    cleaned = (
+        unicodedata.normalize("NFKC", _neutralize_title_brands(text)).casefold().replace("’", "'")
     )
     return {_ACTION_BY_TERM[match.group()] for match in _ACTION_MENTION.finditer(cleaned)}
 
 
-def _shoot_proxy_noise_documents(
-    documents: tuple[_Document, ...], query: str
-) -> frozenset[str]:
+def _shoot_proxy_noise_documents(documents: tuple[_Document, ...], query: str) -> frozenset[str]:
     """Exclude hold-gun / explosion chrome that is not shoot action evidence (TD004)."""
     folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
     if _NEGATIVE_QUERY_INTENT.search(folded_query):
@@ -2589,9 +2587,7 @@ async def _search_documents(
                 if action_names & _positive_actions(document.positive_text)
             }
             semantic = {
-                identifier: score
-                for identifier, score in semantic.items()
-                if identifier in allowed
+                identifier: score for identifier, score in semantic.items() if identifier in allowed
             }
         if mode == "hybrid" and semantic:
             # An uncalibrated candidate truncation window limits E5's high-cosine tail.

@@ -1053,7 +1053,8 @@ class CreationJobs:
                     and cached.get("fingerprint") == fingerprint
                     and isinstance(cached.get("summary"), dict)
                 ):
-                    return cached["summary"]
+                    summary: dict[str, object] = cached["summary"]
+                    return summary
         except (OSError, ValueError, AppError):
             pass  # Corrupt cache must not block statistics.
         summary = summarize_feedback(records)
@@ -1163,6 +1164,7 @@ class CreationJobs:
         from gamingcreator.application.creation_editing import editable_clips
         from gamingcreator.application.creation_subtitles import build_subtitles
         from gamingcreator.application.timeline_export import (
+            ExportCaption,
             captions_from_cues,
             to_fcpxml,
             to_otio,
@@ -1177,7 +1179,7 @@ class CreationJobs:
         chain = load_chain(self, job_id, plan_id)
         name = f"gamingcreator-{job_id[:8]}"
         # Best-effort AV extras; Final Cut / Resolve / Premiere import remains unverified.
-        captions = ()
+        captions: tuple[ExportCaption, ...] = ()
         try:
             runs = {timeline.run.run_id: timeline for timeline in chain.timelines}
             overrides = {item["clipId"]: item["text"] for item in chain.subtitle_overrides}
@@ -1205,17 +1207,17 @@ class CreationJobs:
             return body.encode("utf-8"), f"{name}.fcpxml", "application/xml"
         if fmt == "otio":
             return (
-                to_otio(
-                    chain.edl, name, captions=captions, include_audio_track=True
-                ).encode("utf-8"),
+                to_otio(chain.edl, name, captions=captions, include_audio_track=True).encode(
+                    "utf-8"
+                ),
                 f"{name}.otio",
                 "application/json",
             )
         if fmt == "xmeml":
             return (
-                to_xmeml(
-                    chain.edl, name, captions=captions, include_audio_track=True
-                ).encode("utf-8"),
+                to_xmeml(chain.edl, name, captions=captions, include_audio_track=True).encode(
+                    "utf-8"
+                ),
                 f"{name}-premiere.xml",
                 "application/xml",
             )

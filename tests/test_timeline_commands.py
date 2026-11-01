@@ -308,6 +308,7 @@ def test_third_review_minor_fixes():
     lines = apply_timeline_command("删掉第5个镜头\n第1个镜头慢放", clips(), FPS)
     assert ids(lines) == ["c0", "c1", "c2", "c3"] and speeds(lines)[0] == (1, 2)
 
+
 @pytest.mark.parametrize(
     ("text", "expected"),
     [
@@ -387,4 +388,3 @@ def test_t26_reject_corpus_no_guessing(text):
     with pytest.raises(CommandError):
         apply_timeline_command(text, original, FPS)
     assert original == clips()
-

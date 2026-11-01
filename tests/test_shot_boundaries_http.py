@@ -109,6 +109,6 @@ def test_workbench_static_requests_scan_only_on_click():
     html = (STATIC / "index.html").read_text(encoding="utf-8")
     assert "shot-boundaries-v1" in js and "/api/detect-shots" in js
     assert 'id="detect-shots"' in html and 'id="shot-summary"' in html
-    assert '抽检未人评' in js and '抽检未人评' in html
+    assert "抽检未人评" in js and "抽检未人评" in html
     # Loading a run only reads the cached report; scanning needs the button.
     assert js.count('"/api/detect-shots"') == 1

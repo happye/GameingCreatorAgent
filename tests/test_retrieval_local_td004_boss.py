@@ -43,9 +43,7 @@ def test_demo_phase0_compound_boss_query_does_not_hit_death_forest_only():
     async def run() -> None:
         store = await _open()
         tl = await load_searchable_timeline(store, COMPLETED)
-        result = await search_timeline(
-            tl, "穿着死亡铠甲的恶魔领主Boss", mode="lexical"
-        )
+        result = await search_timeline(tl, "穿着死亡铠甲的恶魔领主Boss", mode="lexical")
         for candidate in result.candidates:
             joined = " ".join(candidate.observable_facts)
             assert "死亡森林" not in joined or (
