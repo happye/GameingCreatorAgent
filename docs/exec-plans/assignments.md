@@ -1,3 +1,6 @@
+**2026-11-01 T17（窗口级片段缓存 P008，见功能提交）：** sprint-t17-window-segment-cache.md；下一步 T18。
+
+
 **2026-11-01 T15–T16（CLI 水印 ADR + feedback 缓存，见提交）：** sprint-t15／sprint-t16；下一步 T17。
 
 

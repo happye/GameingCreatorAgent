@@ -1,6 +1,8 @@
 # 当前接手：51项全部至少部分可用，下一步把部分项推进到可验收
 
-**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T16 已完成；下一步 T17）。**
+**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T17 已完成；下一步 T18）。**
+
+2026-11-01 T17 窗口级片段缓存（P008）：键=项目／录像／设置／窗口内容哈希；`<project>/.cache/window-segments` 信封校验；分析命中跳过视觉 Provider 并重铸 event_id。计数不变：51项10/41/0≈60%；技术债21项14/2/5；人工0／未来8。
 
 2026-11-01 T15–T16：ADR-004 确认 CLI `render-creation` 默认无套餐水印（行为不变）；`CreationJobs.feedback` 按文件内容哈希缓存汇总（命中跳过解析）。计数不变：51项10/41/0≈60%；技术债21项14/2/5；人工0／未来8。
 
