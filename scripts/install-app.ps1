@@ -13,6 +13,15 @@ param(
 # is never touched. An upgrade stages the new copy next to the old one and swaps it in,
 # restoring the previous program parts if any step fails.
 $ErrorActionPreference = 'Stop'
+
+function Show-LicenseVisibility([string]$AppRoot) {
+  $py = Join-Path $AppRoot '.venv/Scripts/python.exe'
+  $script = Join-Path $AppRoot 'scripts/license_visibility.py'
+  if (-not (Test-Path -LiteralPath $py)) { $py = Join-Path $repositoryRoot '.venv/Scripts/python.exe' }
+  if (-not (Test-Path -LiteralPath $script)) { $script = Join-Path $PSScriptRoot 'license_visibility.py' }
+  & $py -B $script --root $AppRoot
+  if ($LASTEXITCODE -ne 0) { throw "license_visibility.py failed with $LASTEXITCODE" }
+}
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 if (-not $Source) { $Source = Join-Path $repositoryRoot 'dist/GamingCreator' }
 if (-not $Destination) { $Destination = Join-Path $env:LOCALAPPDATA 'Programs/GamingCreator' }
@@ -243,6 +252,7 @@ try {
 }
 $verb = if ($installed) { 'Upgraded' } else { 'Installed' }
 Write-Host ("{0} Gaming Creator in {1}. Start it with {2}" -f $verb, $Destination, (Join-Path $Destination 'desktop\bin\GamingCreator.exe'))
+Show-LicenseVisibility $Destination
 if ($StartMenuShortcut) {
   Write-Host ("Start Menu shortcut: {0}" -f (Join-Path (Get-ShortcutDirectory) $shortcutFileName))
 }
@@ -263,4 +273,5 @@ if ($Smoke) {
     throw "Installed app smoke test failed (exit $($process.ExitCode)): $stdout $stderr"
   }
   Write-Host ("Smoke " + $stdout.Trim())
+  Show-LicenseVisibility $Destination
 }

@@ -1,3 +1,5 @@
+**2026-11-01 T27（安装包 licenses／gaps 可见性 P039／T2，见功能提交）：** sprint-t27-license-gaps-visibility.md；下一＝T28。
+
 **2026-11-01 T26（时间线中文指令语料 P041，见功能提交）：** sprint-t26-timeline-command-corpus.md；下一＝T27。
 
 **2026-11-01 T25（时间线导出音字轨实验 P033，见功能提交）：** sprint-t25-timeline-export-av-tracks.md；下一＝T26。

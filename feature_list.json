@@ -976,10 +976,16 @@
                 "2026-11-01: thin Windows desktop host EXE built with the Windows-bundled C# compiler; single instance, random 127.0.0.1 port, kill-on-close Job Object stops the service tree, Edge app-mode window with a dedicated profile; smoke and real window-close tests leave no service processes; WebView2 embedding awaits SDK download approval; installer/clean-machine/signing not done",
                 "2026-11-01: embedded WebView2 window using the user-approved pinned SDK 1.0.4314.35 (NuGet SHA512 verified, per-file SHA256 checked each build), dedicated profile, external links to the system browser, Edge app-mode fallback; real run: 6 WebView2 processes, page 200, no leftovers after close",
                 "2026-11-01: build-app assembles a self-contained, movable portable app folder (bundled CPython, runtime packages without dev tools, package install instead of editable link, FFmpeg, EXE+WebView2; 660 MB under a 1.5 GB cap); packaged interpreter imports its own code; smoke passes and still passes after moving the folder; no installer, clean-machine test or signing yet",
-                "2026-11-01: install-app installs/upgrades/uninstalls the built app per user without registry or shortcuts; upgrades swap only program parts (user data kept) with rollback on failure; uninstall keeps data; real 660 MB install+smoke ~10 s, upgrade and uninstall verified then removed; 5 installer tests including locked-file rollback; no clean-machine test or signing yet"
+                "2026-11-01: install-app installs/upgrades/uninstalls the built app per user without registry or shortcuts; upgrades swap only program parts (user data kept) with rollback on failure; uninstall keeps data; real 660 MB install+smoke ~10 s, upgrade and uninstall verified then removed; 5 installer tests including locked-file rollback; no clean-machine test or signing yet",
+                "docs/exec-plans/sprint-t27-license-gaps-visibility.md",
+                "scripts/license_visibility.py",
+                "tests/test_license_visibility.py",
+                "2026-11-01 T27: build-app/install-app (+Smoke) print reminder to read licenses/THIRD-PARTY-NOTICES.md and licenses/gaps.json; no download to fill gaps"
             ],
             "quality_status": "not_separately_assessed",
-            "release_status": "not_released"
+            "release_status": "not_released",
+            "implementation_status": "partial",
+            "remaining": "License/gap visibility after build/install/smoke is present; clean-machine test, code signing, and resolving gaps.json redistribution questions remain."
         },
         {
             "id": "P040",

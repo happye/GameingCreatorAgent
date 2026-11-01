@@ -30,6 +30,7 @@ def build(folder: Path, label: str) -> Path:
         "models/faster-whisper/.keep": label,
         "models/multilingual-e5-small/.keep": label,
         "licenses/THIRD-PARTY-NOTICES.md": f"# notices {label}\n",
+        "licenses/gaps.json": "[]",
     }
     for name, text in files.items():
         (folder / name).parent.mkdir(parents=True, exist_ok=True)
@@ -84,6 +85,9 @@ def test_install_upgrade_keeps_user_data_and_uninstall_keeps_it_too(tmp_path):
 
     result = run("-Source", str(first), "-Destination", str(destination))
     assert result.returncode == 0, result.stderr
+    assert "THIRD-PARTY-NOTICES.md" in result.stdout
+    assert "gaps.json" in result.stdout
+    assert "不会联网下载补许可" in result.stdout
     assert (destination / "scripts/helper.ps1").read_text(encoding="utf-8") == "one"
     assert receipt(destination)["upgradedFrom"] is None
 

@@ -8,6 +8,15 @@ param(
 # package (no link back to this checkout), FFmpeg and the desktop EXE. Nothing is downloaded.
 # The folder is refused if it would exceed -MaxBytes; -Smoke starts the service from the copy.
 $ErrorActionPreference = 'Stop'
+
+function Show-LicenseVisibility([string]$AppRoot) {
+  $py = Join-Path $AppRoot '.venv/Scripts/python.exe'
+  $script = Join-Path $AppRoot 'scripts/license_visibility.py'
+  if (-not (Test-Path -LiteralPath $py)) { $py = Join-Path $repositoryRoot '.venv/Scripts/python.exe' }
+  if (-not (Test-Path -LiteralPath $script)) { $script = Join-Path $PSScriptRoot 'license_visibility.py' }
+  & $py -B $script --root $AppRoot
+  if ($LASTEXITCODE -ne 0) { throw "license_visibility.py failed with $LASTEXITCODE" }
+}
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 if (-not $Output) { $Output = Join-Path $repositoryRoot 'dist/GamingCreator' }
 $Output = [IO.Path]::GetFullPath($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Output))
@@ -91,6 +100,7 @@ try {
   $commit = (& git -C $repositoryRoot rev-parse HEAD 2>$null)
   Write-Marker @{ schemaVersion = 'gamingcreator-app-v1'; builtAt = (Get-Date).ToUniversalTime().ToString('o'); bytes = $bytes; version = $version; commit = "$commit".Trim() }
   Write-Host ("Built {0} ({1:N0} MB)" -f $Output, ($bytes / 1MB))
+  Show-LicenseVisibility $Output
 } catch {
   if ($created) { Remove-Item -LiteralPath $Output -Recurse -Force -ErrorAction SilentlyContinue } else { Remove-ProgramParts }
   throw
@@ -113,4 +123,5 @@ if ($Smoke) {
     throw "Packaged app smoke test failed (exit $($process.ExitCode)): $stdout $stderr"
   }
   Write-Host ("Smoke " + $stdout.Trim())
+  Show-LicenseVisibility $Output
 }

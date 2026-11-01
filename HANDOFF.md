@@ -1,6 +1,8 @@
 # 当前接手：51项全部至少部分可用，下一步把部分项推进到可验收
 
-**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T26 已完成；下一步 T27）。**
+**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T27 已完成；下一步 T28）。**
+
+2026-11-01 T27 安装包 licenses／gaps 可见性（P039／T2）：build/install/Smoke 提示阅读 THIRD-PARTY-NOTICES.md 与 gaps.json；不下载补许可。计数不变：51·10/41/0≈60%；技术债21·14/2/5；人工0／未来8。
 
 2026-11-01 T26 时间线中文指令语料（P041）：rule-v4-corpus 接受／拒绝语料扩充；无云端模型。计数不变：51·10/41/0≈60%；技术债21·14/2/5；人工0／未来8。
 
