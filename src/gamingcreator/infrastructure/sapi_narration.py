@@ -11,10 +11,11 @@ from pathlib import Path
 
 from gamingcreator.application.narration import LocalVoice, NarrationArtifact, NarrationRequest
 from gamingcreator.application.providers import CancellationContext
+from gamingcreator.infrastructure.app_paths import scripts_directory
 from gamingcreator.infrastructure.local_paths import is_link
 from gamingcreator.infrastructure.media_process import run_media_process
 
-_HELPER = Path(__file__).resolve().parents[3] / "scripts" / "sapi-narration.ps1"
+_HELPER = scripts_directory() / "sapi-narration.ps1"
 
 
 def _sha(path: Path) -> str:

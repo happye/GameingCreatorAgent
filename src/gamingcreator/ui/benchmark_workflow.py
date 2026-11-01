@@ -25,6 +25,7 @@ from gamingcreator.cli.main import (
     execute_freeze_benchmark,
 )
 from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.infrastructure.app_paths import scripts_directory
 from gamingcreator.infrastructure.benchmark_preparation_files import read_bounded, read_freeze
 from gamingcreator.infrastructure.file_sharing import retry_file_sharing as _status_io
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
@@ -54,7 +55,7 @@ FIELDS = {
     "review": set(),
     "score": {"inputText"},
 }
-SCRIPT_ROOT = Path(__file__).resolve().parents[3] / "scripts"
+SCRIPT_ROOT = scripts_directory()
 MAX_FILE = 16_777_216
 
 

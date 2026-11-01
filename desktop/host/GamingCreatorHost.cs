@@ -88,6 +88,7 @@ internal static class GamingCreatorHost
             {
                 return Fail("工作台已经在运行，请切换到已打开的窗口。");
             }
+            RelocateRuntime(root);
             string python = Path.Combine(root, ".venv", "Scripts", "python.exe");
             if (!File.Exists(python))
             {
@@ -107,6 +108,8 @@ internal static class GamingCreatorHost
                 WorkingDirectory = root,
             };
             service.EnvironmentVariables["PYTHONDONTWRITEBYTECODE"] = "1";
+            // A developer shell PYTHONPATH must never redirect the app to another code copy.
+            service.EnvironmentVariables.Remove("PYTHONPATH");
             using (var writer = new StreamWriter(log, false, new UTF8Encoding(false)) { AutoFlush = true })
             using (Process server = Process.Start(service))
             {
@@ -151,6 +154,40 @@ internal static class GamingCreatorHost
         public ProcessWait(Process process)
         {
             SafeWaitHandle = new Microsoft.Win32.SafeHandles.SafeWaitHandle(process.Handle, false);
+        }
+    }
+
+    // A copied or moved app folder keeps an absolute interpreter path in pyvenv.cfg; repair it
+    // to the bundled runtime inside this folder when the recorded one no longer exists.
+    private static void RelocateRuntime(string root)
+    {
+        string config = Path.Combine(root, ".venv", "pyvenv.cfg");
+        string runtimes = Path.Combine(root, ".tools", "python");
+        if (!File.Exists(config) || !Directory.Exists(runtimes))
+        {
+            return;
+        }
+        string[] lines = File.ReadAllLines(config);
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (!lines[i].StartsWith("home", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+            string current = lines[i].Substring(lines[i].IndexOf('=') + 1).Trim();
+            if (File.Exists(Path.Combine(current, "python.exe")))
+            {
+                return;
+            }
+            foreach (string candidate in Directory.GetDirectories(runtimes))
+            {
+                if (File.Exists(Path.Combine(candidate, "python.exe")))
+                {
+                    lines[i] = "home = " + candidate;
+                    File.WriteAllLines(config, lines, new UTF8Encoding(false));
+                    return;
+                }
+            }
         }
     }
 
