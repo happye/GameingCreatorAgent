@@ -67,8 +67,10 @@
 - 确认 gitignore；删除 src/gamingcreator 下 6×__pycache__／106×.pyc（未跟踪）；见 sprint-t13-pycache-cleanup.md。
 ### T14 进度看板逐行核对 ✅ 已完成（aed73e8）
 - 每个 🟡／partial 已在 sprint-t14-progress-board-audit.md 标明缺口、用户／外部、可本地；可本地项拆为 T17–T28 追加于下。
-- T15 CLI `render-creation` 是否应读取套餐水印：当前设计为开发者路径不加水印（复审结论），若改变需先写决策记录（ADR）再实现。
-- T16 性能：`CreationJobs.feedback()` 每次生成方案都全量扫描任务目录；任务多时可加简单索引或缓存（必须以文件内容哈希失效，不能用过期统计）。
+### T15 CLI render-creation 水印 ADR ✅ 已完成（3f73b48）
+- ADR-004：保持 CLI 默认无套餐水印；见 sprint-t15-cli-render-watermark-adr.md。
+### T16 feedback 内容哈希缓存 ✅ 已完成（2d8f9f2）
+- `feedback-cache` 按贡献文件内容 SHA-256 指纹；命中跳过汇总；见 sprint-t16-feedback-content-hash-cache.md。
 
 ### T17 窗口级片段缓存（P008）
 - 设计本地缓存键（项目／录像／设置／窗口），读写与内容哈希失效；禁止无失效的过期命中。先写 sprint 再实现。

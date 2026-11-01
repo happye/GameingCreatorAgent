@@ -1,3 +1,6 @@
+**2026-11-01 T15–T16（CLI 水印 ADR + feedback 缓存，见提交）：** sprint-t15／sprint-t16；下一步 T17。
+
+
 **2026-11-01 T14（进度看板核对，见文档提交）：** sprint-t14-progress-board-audit.md；追加 T17–T28；下一步 T15。
 
 

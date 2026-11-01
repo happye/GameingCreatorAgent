@@ -1,6 +1,8 @@
 # 当前接手：51项全部至少部分可用，下一步把部分项推进到可验收
 
-**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T14 已完成；下一步 T15）。**
+**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T16 已完成；下一步 T17）。**
+
+2026-11-01 T15–T16：ADR-004 确认 CLI `render-creation` 默认无套餐水印（行为不变）；`CreationJobs.feedback` 按文件内容哈希缓存汇总（命中跳过解析）。计数不变：51项10/41/0≈60%；技术债21项14/2/5；人工0／未来8。
 
 2026-11-01 T14 进度看板逐行核对：41 个 partial／阶段 🟡 在 sprint-t14 标明缺口、用户／外部、可本地；追加本地小任务 T17–T28（不代选 A／B／D、不启真发布／未批视觉）。计数不变：51项10/41/0≈60%；技术债21项14/2/5；人工0／未来8。
 

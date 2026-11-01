@@ -1,6 +1,6 @@
 # Sprint T16：CreationJobs.feedback 内容哈希缓存
 
-**状态（2026-11-01）：已完成（待 SHA）**
+**状态（2026-11-01）：已完成（2d8f9f2）**
 
 ## 目标
 
@@ -22,4 +22,4 @@ pytest tests/test_creation_feedback.py -W error --basetemp .cache/pt-t16 -o cach
 ## Acceptance
 
 - [x] 命中／未命中／改文件内容后指纹变化有测试
-- [ ] 文档同步；T16 ✅
+- [x] 文档同步；T16 ✅
