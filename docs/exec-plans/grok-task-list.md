@@ -14,7 +14,7 @@
 
 ## 1. 高优先（直接影响“装好就能用”）
 
-### T1 便携应用内置本地模型（让安装版能分析新录像的语音和检索）
+### T1 便携应用内置本地模型（让安装版能分析新录像的语音和检索）✅ 已完成（32a8ab0）
 - 现状：安装版缺 ASR 模型（`.cache/models/faster-whisper`，75MB）、嵌入模型（`.cache/models/multilingual-e5-small`，129MB）、原生运行库（`.tools/native`，1.6MB）和三个固定清单（`docs/references/asr-models.json`、`asr-native-toolchain.json`、`embedding-model.json`）。
 - 做法：
   1. `src/gamingcreator/infrastructure/app_paths.py` 新增 `model_directory(repository, *parts)`：优先 `repository/.cache/models/...`（开发环境），不存在时用 `repository/models/...`（安装版）。
