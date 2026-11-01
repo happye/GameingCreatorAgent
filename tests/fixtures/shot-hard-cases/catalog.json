@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "shot-hard-case-catalog-v1",
+  "disclaimer": "Synthetic offline fixtures only. Shot/black detection accuracy is not human-reviewed (抽检未人评); must not be cited as F006 or quality acceptance.",
+  "maxVideoBytes": 1572864,
+  "width": 320,
+  "height": 180,
+  "fps": 25,
+  "toleranceUs": 80000,
+  "cases": [
+    {
+      "id": "hard-cut-plus-black",
+      "segments": [
+        {"color": "red", "seconds": 1.2},
+        {"color": "blue", "seconds": 1.2},
+        {"color": "black", "seconds": 1.0},
+        {"color": "green", "seconds": 1.2}
+      ],
+      "expect": {"cuts": 1, "black": 1, "shots": 3}
+    },
+    {
+      "id": "triple-hard-cuts",
+      "segments": [
+        {"color": "red", "seconds": 0.8},
+        {"color": "blue", "seconds": 0.8},
+        {"color": "green", "seconds": 0.8},
+        {"color": "yellow", "seconds": 0.8}
+      ],
+      "expect": {"cuts": 3, "black": 0, "shots": 4}
+    },
+    {
+      "id": "long-black-gap",
+      "segments": [
+        {"color": "white", "seconds": 0.8},
+        {"color": "black", "seconds": 2.0},
+        {"color": "white", "seconds": 0.8}
+      ],
+      "expect": {"cuts": 0, "black": 1, "shotsMin": 1}
+    },
+    {
+      "id": "two-black-gaps",
+      "segments": [
+        {"color": "red", "seconds": 0.7},
+        {"color": "black", "seconds": 0.8},
+        {"color": "blue", "seconds": 0.7},
+        {"color": "black", "seconds": 0.9},
+        {"color": "green", "seconds": 0.7}
+      ],
+      "expect": {"cutsMin": 0, "black": 2, "shotsMin": 3}
+    }
+  ]
+}

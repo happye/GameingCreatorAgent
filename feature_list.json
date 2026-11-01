@@ -529,7 +529,9 @@
             "name": "场景切分（scene detection）＋黑屏检测",
             "first_product": false,
             "delivery_status": "partial",
-            "implementation_evidence": [],
+            "implementation_evidence": [
+                "2026-11-01: expanded synthetic black-frame/hard-cut fixture catalog (tests/fixtures/shot-hard-cases) with byte-capped MP4 regression; workbench/report copy notes 抽检未人评; humanReviewed remains false; accuracy still not human-reviewed; no F006 claim"
+            ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"
         },

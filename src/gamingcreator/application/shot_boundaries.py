@@ -208,7 +208,7 @@ def build_shot_report(
         "paidRequests": 0,
         "humanReviewed": False,
         "notes": (
-            "本地画面变化启发式（FFmpeg镜头切换分数与黑屏检测），未经人工核对；"
+            "本地画面变化启发式（FFmpeg镜头切换分数与黑屏检测），抽检未人评；"
             "只读原片与已保存事件，不改变分析结果、检索排名或验收结论。"
         ),
     }

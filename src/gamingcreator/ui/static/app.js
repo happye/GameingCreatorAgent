@@ -832,11 +832,11 @@
         ui["detect-shots"].textContent = state.shotsBusy ? "正在本机检测…" : shots ? "重新检测" : "检测镜头切换";
         if (!state.shotsAvailable) ui["shot-summary"].textContent = "当前工作台未提供镜头切分。";
         else if (state.shotsBusy) ui["shot-summary"].textContent = "正在本机扫描原片（15分钟录像约20秒），不发送任何请求。";
-        else if (!shots) ui["shot-summary"].textContent = state.view ? "尚未检测。点击后本机扫描原片，标出跨镜头的事件和候选。" : "选择分析结果后可检测原片镜头切换与黑屏";
+        else if (!shots) ui["shot-summary"].textContent = state.view ? "尚未检测。点击后本机扫描原片，标出跨镜头的事件和候选。" : "选择分析结果后可检测原片镜头切换与黑屏（抽检未人评）";
         else {
             const summary = shots.summary;
             const windows = Number.isSafeInteger(summary.windows) ? ` · 多帧窗口 ${summary.windowsSpanningCut}/${summary.windows} 跨镜头` : "";
-            ui["shot-summary"].textContent = `镜头切换 ${shots.cuts.length} 处 · 黑屏 ${shots.blackIntervals.length} 段 · 事件 ${summary.eventsCrossingCut}/${summary.events} 跨镜头${windows}。本机启发式，未经人工核对，不影响分析与排名。`;
+            ui["shot-summary"].textContent = `镜头切换 ${shots.cuts.length} 处 · 黑屏 ${shots.blackIntervals.length} 段 · 事件 ${summary.eventsCrossingCut}/${summary.events} 跨镜头${windows}。本机启发式，抽检未人评，不影响分析与排名。`;
         }
     }
 
@@ -2514,7 +2514,7 @@
         if (target === undefined) return notice(forward ? "后面没有更多位置。" : "前面没有更多位置。");
         ui["source-video"].pause();
         state.playbackEndUs = null;
-        ui["playback-range"].textContent = kind === "cut" ? "镜头切换处（本机检测，未经人工核对）" : "画面文字处（本机识别，未经人工核对）";
+        ui["playback-range"].textContent = kind === "cut" ? "镜头切换处（本机检测，抽检未人评）" : "画面文字处（本机识别，未经人工核对）";
         seek(target);
         drawTimeline();
     }
@@ -2595,7 +2595,7 @@
             // Source intervals are half-open: a cut at the end belongs to the next clip.
             const first = 1 + shots.cuts.filter((cut) => cut.timeUs <= row.startUs).length;
             const last = 1 + shots.cuts.filter((cut) => cut.timeUs < row.endUs).length;
-            container.append(element("p", "small", `镜头 ${first}${last > first ? `–${last}` : ""} · 区间内 ${last - first} 次切换（本机检测，未经人工核对）`));
+            container.append(element("p", "small", `镜头 ${first}${last > first ? `–${last}` : ""} · 区间内 ${last - first} 次切换（本机检测，抽检未人评）`));
         } else container.append(element("p", "muted small", "镜头：尚无检测报告，可在左侧检测。"));
         const report = state.frameText?.runId === state.run ? state.frameText : null;
         if (report) {
