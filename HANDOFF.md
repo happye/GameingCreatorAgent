@@ -1,6 +1,8 @@
 # 当前接手：51项全部至少部分可用，下一步把部分项推进到可验收
 
-**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T23 已完成；下一步 T24）。**
+**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T24 已完成；下一步 T25）。**
+
+2026-11-01 T24 字幕词级时序（P029）：probe 确认本机 ASR 无词级时间戳；条件映射不造假；tests/test_asr_word_timing.py。计数不变：51·10/41/0≈60%；技术债21·14/2/5；人工0／未来8。
 
 2026-11-01 T23 渲染裁切／简单叠加（P028）：成片安全区裁切＋静态角标 ASS；收据 presentation；tests/test_creation_presentation.py。计数不变：51·10/41/0≈60%；技术债21·14/2/5；人工0／未来8。
 

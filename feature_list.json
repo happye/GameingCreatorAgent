@@ -809,10 +809,15 @@
                 "docs/exec-plans/sprint-clip-transitions.md",
                 "tests/test_clip_transition_core.py",
                 "tests/test_clip_transition_render.py",
-                "tests/test_clip_transition_browser.py"
+                "tests/test_clip_transition_browser.py",
+                "docs/exec-plans/sprint-t24-subtitle-word-timing.md",
+                "tests/test_asr_word_timing.py",
+                "src/gamingcreator/application/asr_word_timing.py"
             ],
             "quality_status": "not_separately_assessed",
-            "release_status": "not_released"
+            "release_status": "not_released",
+            "implementation_status": "partial",
+            "remaining": "Local ASR probe finds no word-level timestamps (worker/store/segment-only); mapper ready only for real provider words — timings are not invented. Word styling and creative quality remain unverified."
         },
         {
             "id": "P030",
