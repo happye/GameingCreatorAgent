@@ -1,6 +1,6 @@
 # Sprint T5：TD020 活动规则句式覆盖
 
-**状态（2026-11-01）：已推送 origin/main（见功能提交 SHA）。** 在 `tests/activity_rules_corpus.py` 建立 ≥60 条真实风格语料（多阶段时间、截止到、自…起、全角数字、不少于/至少/≥/≧、禁止/不得/请勿、OCR「秒→杪」），逐条期望写入 `tests/test_activity_rules_corpus.py`。扩展 `application/activity_rules.py`：自…起…至/到、OCR 杪→秒、≧/≦、截止时间标签；仅有截止日、多阶段或延期等无法唯一确定的写法保持字段为空（未识别），不猜测。
+**状态（2026-11-01）：已推送 origin/main ba7827d。** 在 `tests/activity_rules_corpus.py` 建立 ≥60 条真实风格语料（多阶段时间、截止到、自…起、全角数字、不少于/至少/≥/≧、禁止/不得/请勿、OCR「秒→杪」），逐条期望写入 `tests/test_activity_rules_corpus.py`。扩展 `application/activity_rules.py`：自…起…至/到、OCR 杪→秒、≧/≦、截止时间标签；仅有截止日、多阶段或延期等无法唯一确定的写法保持字段为空（未识别），不猜测。
 
 ## Acceptance
 
