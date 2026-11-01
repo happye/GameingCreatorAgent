@@ -1923,3 +1923,66 @@ def test_single_facet_boss_query_still_finds_boss_label():
     data = timeline("UI 显示 Boss 标志与倒计时。", "角色在草地上奔跑。")
     result = search(data, "Boss", "lexical")
     assert [c.event_id for c in result.candidates] == ["event-0"]
+
+def test_armor_query_excludes_color_only_vfx():
+    """TD004: 红色铠甲 must not rank red VFX-only clips as armor evidence."""
+    data = timeline(
+        "红色特效消失，数字820仍显示。",
+        "红色爆炸特效持续，出现数字820。",
+        "身披红色铠甲的骑士抬起盾牌。",
+    )
+    result = search(data, "红色铠甲", "lexical")
+    assert [c.event_id for c in result.candidates] == ["event-2"]
+    assert "铠甲" in result.candidates[0].observable_facts[0]
+
+
+def test_armor_query_color_only_corpus_empty():
+    data = timeline("红色特效消失，数字820仍显示。", "红色爆炸特效持续。")
+    result = search(data, "红色铠甲", "lexical")
+    assert result.candidates == ()
+
+
+def test_shockwave_query_excludes_bare_cast_skill():
+    """TD004: 释放冲击波 must not treat bare 释放技能 as shockwave evidence."""
+    data = timeline(
+        "俯视视角的绿色场地，中央有角色释放蓝色光效技能，顶部显示比分与计时。",
+        "角色举起权杖释放冲击波。",
+        "画面中央出现紫色圆形技能特效。",
+    )
+    result = search(data, "释放冲击波", "lexical")
+    assert [c.event_id for c in result.candidates] == ["event-1"]
+    assert "冲击波" in result.candidates[0].observable_facts[0]
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid", "semantic"])
+def test_shockwave_query_cast_only_corpus_empty(mode):
+    data = timeline(
+        "俯视视角的绿色场地，中央有角色释放蓝色光效技能。",
+        "角色释放技能并出现伤害数字。",
+    )
+    result = search(data, "释放冲击波", mode)
+    assert result.candidates == ()
+    if mode == "lexical":
+        assert result.abstention_reason == "no_positive_action_evidence"
+
+
+def test_jump_query_excludes_brawl_mode_title_chrome():
+    """TD004: JUMP+跳跃 must not hit 大乱斗(单人/双人) mode-select chrome."""
+    data = timeline(
+        "画面中央显示文字“大乱斗(单人/双人)”，背景为俯视视角的草地与建筑场景。",
+        "角色跳跃并落地。",
+        "画面显示“JUMP明星大乱斗”标题。",
+    )
+    result = search(data, "JUMP明星大乱斗跳跃", "lexical")
+    assert [c.event_id for c in result.candidates] == ["event-1"]
+    assert "跳跃" in result.candidates[0].observable_facts[0]
+
+
+def test_jump_query_brawl_mode_only_corpus_abstains():
+    data = timeline(
+        "画面中央显示文字“大乱斗(单人/双人)”，背景为俯视视角的草地与建筑场景。"
+    )
+    result = search(data, "JUMP明星大乱斗跳跃", "lexical")
+    assert result.candidates == ()
+    assert result.abstention_reason == "no_positive_action_evidence"
+

@@ -392,6 +392,7 @@ _TITLE_BRAND_ACTION_NOISE = re.compile(
 
 _UI_SCENE_ACTION_NOISE = re.compile(
     r"对战场景|战斗界面|多人对战|战斗模式|对战模式|"
+    r"大乱斗\s*[（(]\s*单人\s*[/／]\s*双人\s*[）)]|"
     r"battle\s*(?:ui|interface|screen|mode)|versus\s*mode|fight\s*scene",
     re.IGNORECASE,
 )
@@ -763,6 +764,66 @@ def _boss_partial_match_noise_documents(
         matched = sum(1 for index in facets if _BOSS_FACET_PATTERNS[index].search(surface))
         if matched < 2:
             noisy.add(document.identifier)
+    return frozenset(noisy)
+
+
+# Query trigger uses noun 铠甲／armor(s); adjective "armored" alone stays flavor for action queries.
+_ARMOR_QUERY = re.compile(r"铠甲|\barmou?rs?\b", re.IGNORECASE)
+_ARMOR_EVIDENCE = re.compile(r"铠甲|\barmou?red\b|\barmou?rs?\b", re.IGNORECASE)
+_SHOCKWAVE_EVIDENCE = re.compile(r"冲击波|\bshockwaves?\b", re.IGNORECASE)
+_BRAWL_MODE_TITLE = re.compile(
+    r"大乱斗\s*[（(]\s*单人\s*[/／]\s*双人\s*[）)]",
+    re.IGNORECASE,
+)
+
+
+def _armor_evidence_mismatch_documents(
+    documents: tuple[_Document, ...], query: str
+) -> frozenset[str]:
+    """Exclude color/VFX-only clips when the query asks for armor (TD004)."""
+    folded = unicodedata.normalize("NFKC", query)
+    if not _ARMOR_QUERY.search(folded):
+        return frozenset()
+    noisy: set[str] = set()
+    for document in documents:
+        surface = _neutralize_title_brands(document.text)
+        if not _ARMOR_EVIDENCE.search(surface):
+            noisy.add(document.identifier)
+    return frozenset(noisy)
+
+
+def _shockwave_evidence_mismatch_documents(
+    documents: tuple[_Document, ...], query: str
+) -> frozenset[str]:
+    """Exclude bare cast/skill releases when the query asks for a shockwave (TD004)."""
+    folded = unicodedata.normalize("NFKC", query)
+    if not _SHOCKWAVE_EVIDENCE.search(folded):
+        return frozenset()
+    noisy: set[str] = set()
+    for document in documents:
+        surface = _neutralize_title_brands(document.text)
+        if not _SHOCKWAVE_EVIDENCE.search(surface):
+            noisy.add(document.identifier)
+    return frozenset(noisy)
+
+
+def _brawl_mode_title_noise_documents(
+    documents: tuple[_Document, ...], query: str
+) -> frozenset[str]:
+    """Exclude 大乱斗(单人/双人) mode-select chrome for jump queries (TD004)."""
+    folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
+    if _NEGATIVE_QUERY_INTENT.search(folded_query):
+        return frozenset()
+    if "jump" not in _query_actions(query):
+        return frozenset()
+    noisy: set[str] = set()
+    for document in documents:
+        positive = document.positive_text
+        if not _BRAWL_MODE_TITLE.search(positive):
+            continue
+        if "jump" in _positive_actions(positive):
+            continue
+        noisy.add(document.identifier)
     return frozenset(noisy)
 
 
@@ -2382,6 +2443,9 @@ async def _search_documents(
         | _shoot_proxy_noise_documents(documents, query)
         | _automotive_repair_mismatch_documents(documents, query)
         | _boss_partial_match_noise_documents(documents, query)
+        | _armor_evidence_mismatch_documents(documents, query)
+        | _shockwave_evidence_mismatch_documents(documents, query)
+        | _brawl_mode_title_noise_documents(documents, query)
     )
     lexical_winners: dict[str, str] = {}
     lexical_documents = documents
