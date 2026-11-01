@@ -1,4 +1,4 @@
-"""Where bundled helper scripts live, in a source checkout or a packaged app folder."""
+"""Where bundled helper scripts and local model weights live."""
 
 import sys
 from pathlib import Path
@@ -15,3 +15,20 @@ def scripts_directory() -> Path:
         Path(sys.prefix).resolve().parent / "scripts",
     )
     return next((path for path in candidates if path.is_dir()), candidates[0])
+
+
+def model_directory(repository: Path, *parts: str) -> Path:
+    """Prefer checkout .cache/models/...; fall back to packaged models/....
+
+    Development keeps ASR and embedding weights under .cache/models (git-ignored).
+    Packaged installs place the same tree under models/ next to the app root. Callers
+    still verify file hashes against the pinned manifests.
+    """
+    if not parts:
+        raise ValueError("model_directory requires at least one path part")
+    root = repository.resolve()
+    relative = Path(*parts)
+    cached = root / ".cache" / "models" / relative
+    if cached.is_dir():
+        return cached
+    return root / "models" / relative

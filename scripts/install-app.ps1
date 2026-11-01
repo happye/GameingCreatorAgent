@@ -19,7 +19,7 @@ function Resolve-UserPath([string]$Path) {
 }
 $Source = Resolve-UserPath $Source
 $Destination = Resolve-UserPath $Destination
-$programParts = @('toolchain.json', 'scripts', '.tools', '.venv', 'desktop', '.gamingcreator-app.json')
+$programParts = @('toolchain.json', 'scripts', '.tools', '.venv', 'desktop', 'docs', 'models', '.gamingcreator-app.json')
 $marker = '.gamingcreator-app.json'
 $receiptName = '.gamingcreator-install.json'
 # Left by an uninstall that kept user data, so the same folder can be installed into again.
@@ -154,6 +154,19 @@ try {
   }
   [IO.File]::WriteAllText((Join-Path $Destination $receiptName), ($receipt | ConvertTo-Json -Depth 4), (New-Object System.Text.UTF8Encoding $false))
   Remove-Item -LiteralPath (Join-Path $Destination $dataMarker) -Force -ErrorAction SilentlyContinue
+  
+  # After the swap, point the venv at this destination's bundled interpreter (not the build folder).
+  $manifest = Get-Content -Raw -Encoding UTF8 (Join-Path $Destination 'toolchain.json') | ConvertFrom-Json
+  $runtime = Join-Path $Destination ('.tools/python/' + $manifest.python.request)
+  if (-not (Test-Path -LiteralPath $runtime)) { throw "Installed runtime missing at $runtime" }
+  $config = Join-Path $Destination '.venv/pyvenv.cfg'
+  $lines = Get-Content -Encoding UTF8 $config | ForEach-Object {
+    if ($_ -match '^home\s*=') { "home = $runtime" }
+    elseif ($_ -match '^(executable|command)\s*=') { $null }
+    else { $_ }
+  }
+  [IO.File]::WriteAllLines($config, [string[]]@($lines | Where-Object { $null -ne $_ }), (New-Object System.Text.UTF8Encoding $false))
+
   $succeeded = $true
 } catch {
   # Put the previous program back exactly as it was; the user's data was never moved.

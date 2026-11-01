@@ -14,12 +14,20 @@ pytestmark = pytest.mark.skipif(sys.platform != "win32", reason="Windows install
 
 
 def build(folder: Path, label: str) -> Path:
+    runtime = "cpython-fixture"
     files = {
-        "toolchain.json": f'{{"label": "{label}"}}',
+        "toolchain.json": json.dumps(
+            {"label": label, "python": {"request": runtime}}, ensure_ascii=False
+        ),
         "scripts/helper.ps1": label,
-        ".tools/python/runtime.txt": label,
-        ".venv/pyvenv.cfg": f"home = {label}",
+        f".tools/python/{runtime}/runtime.txt": label,
+        ".venv/pyvenv.cfg": f"home = C:/old-build/{label}/.tools/python/{runtime}",
         "desktop/bin/GamingCreator.txt": label,
+        "docs/references/asr-models.json": "{}",
+        "docs/references/asr-native-toolchain.json": "{}",
+        "docs/references/embedding-model.json": "{}",
+        "models/faster-whisper/.keep": label,
+        "models/multilingual-e5-small/.keep": label,
     }
     for name, text in files.items():
         (folder / name).parent.mkdir(parents=True, exist_ok=True)
@@ -45,7 +53,14 @@ def run(*arguments: str) -> subprocess.CompletedProcess[str]:
         str(SCRIPT),
         *arguments,
     ]
-    return subprocess.run(command, capture_output=True, text=True, timeout=120)
+    return subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=120,
+    )
 
 
 def receipt(destination: Path) -> dict:
@@ -142,10 +157,11 @@ def test_failed_swap_restores_the_previous_program(tmp_path):
     for name in (
         "toolchain.json",
         "scripts/helper.ps1",
-        ".venv/pyvenv.cfg",
         "desktop/bin/GamingCreator.txt",
     ):
         assert "one" in (destination / name).read_text(encoding="utf-8"), name
+    cfg = (destination / ".venv/pyvenv.cfg").read_text(encoding="utf-8")
+    assert f"home = {destination.resolve() / '.tools/python/cpython-fixture'}" in cfg
     assert receipt(destination)["builtAt"] == "one"
     assert siblings(destination) == []
 
@@ -191,6 +207,8 @@ def test_relative_destination_uses_the_powershell_location(tmp_path):
         ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=120,
     )
     assert result.returncode == 0, result.stderr
@@ -206,3 +224,14 @@ def test_an_unfinished_build_is_never_installed(tmp_path):
     result = run("-Source", str(source), "-Destination", str(destination))
     assert result.returncode != 0 and "unfinished build" in result.stderr
     assert not destination.exists()
+
+
+def test_install_retargets_pyvenv_home_to_destination_runtime(tmp_path):
+    source = build(tmp_path / "src", "one")
+    destination = tmp_path / "GamingCreator"
+    result = run("-Source", str(source), "-Destination", str(destination))
+    assert result.returncode == 0, result.stderr
+    cfg = (destination / ".venv/pyvenv.cfg").read_text(encoding="utf-8")
+    expected = str((destination / ".tools/python/cpython-fixture").resolve())
+    assert f"home = {expected}" in cfg
+    assert "C:/old-build/" not in cfg

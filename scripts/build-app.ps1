@@ -13,7 +13,7 @@ if (-not $Output) { $Output = Join-Path $repositoryRoot 'dist/GamingCreator' }
 $Output = [IO.Path]::GetFullPath($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Output))
 $marker = Join-Path $Output '.gamingcreator-app.json'
 # Rebuilding replaces only the program parts; data a smoke run or a user left (.cache) stays.
-$programParts = @('toolchain.json', 'scripts', '.tools', '.venv', 'desktop')
+$programParts = @('toolchain.json', 'scripts', '.tools', '.venv', 'desktop', 'docs', 'models')
 # The marker stays through a rebuild: marked incomplete until every step has finished, so a
 # failed or killed build can be rebuilt but is never installed.
 function Write-Marker([hashtable]$Value) {
@@ -45,6 +45,21 @@ try {
   Copy-Tree (Join-Path $repositoryRoot '.tools/python') (Join-Path $Output '.tools/python') @('__pycache__')
   Copy-Tree (Join-Path $repositoryRoot '.tools/ffmpeg/bin') (Join-Path $Output '.tools/ffmpeg/bin')
   Copy-Tree (Join-Path $repositoryRoot 'desktop/bin') (Join-Path $Output 'desktop/bin')
+  # Packaged apps need ASR + embedding weights and their pin manifests (dev keeps weights under .cache/models).
+  $asrModels = Join-Path $repositoryRoot '.cache/models/faster-whisper'
+  $embeddingModels = Join-Path $repositoryRoot '.cache/models/multilingual-e5-small'
+  $nativeTools = Join-Path $repositoryRoot '.tools/native'
+  if (-not (Test-Path -LiteralPath $asrModels)) { throw "ASR model missing at $asrModels; prepare .cache/models before building (no download in this script)." }
+  if (-not (Test-Path -LiteralPath $embeddingModels)) { throw "Embedding model missing at $embeddingModels; prepare .cache/models before building (no download in this script)." }
+  if (-not (Test-Path -LiteralPath $nativeTools)) { throw "Native runtime libraries missing at $nativeTools." }
+  Copy-Tree $asrModels (Join-Path $Output 'models/faster-whisper')
+  Copy-Tree $embeddingModels (Join-Path $Output 'models/multilingual-e5-small')
+  Copy-Tree $nativeTools (Join-Path $Output '.tools/native')
+  $references = Join-Path $Output 'docs/references'
+  New-Item -ItemType Directory -Force -Path $references | Out-Null
+  foreach ($name in @('asr-models.json', 'asr-native-toolchain.json', 'embedding-model.json')) {
+    Copy-Item -LiteralPath (Join-Path $repositoryRoot "docs/references/$name") -Destination (Join-Path $references $name)
+  }
   $developerOnly = @('__pycache__', 'mypy', 'mypyc', '_pytest', 'pytest', 'ruff', 'hatchling', 'iniconfig', 'pluggy', 'pathspec', 'trove_classifiers')
   $venv = Join-Path $Output '.venv'
   Copy-Tree (Join-Path $repositoryRoot '.venv') $venv $developerOnly

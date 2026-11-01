@@ -142,6 +142,7 @@ from gamingcreator.infrastructure.ffmpeg_render import FfmpegCreationRenderer
 from gamingcreator.infrastructure.ffmpeg_shots import FfmpegShotDetector
 from gamingcreator.infrastructure.ffmpeg_signatures import FfmpegSignatureExtractor
 from gamingcreator.infrastructure.http_transport import HttpxVisionTransport
+from gamingcreator.infrastructure.app_paths import model_directory
 from gamingcreator.infrastructure.local_asr import LocalAsrProvider
 from gamingcreator.infrastructure.local_embeddings import LocalEmbeddingProvider
 from gamingcreator.infrastructure.local_files import LocalInputReader
@@ -1081,7 +1082,7 @@ def _pinned_asr_settings(repository: Path) -> LocalAsrSettings:
                 raise ValueError
             libraries.append(ModelFile(name, (native_directory / name).stat().st_size, digest))
         return LocalAsrSettings(
-            repository / ".cache" / "models" / "faster-whisper" / "tiny" / revision,
+            model_directory(repository, "faster-whisper", "tiny", revision),
             model,
             revision,
             tuple(model_files),
