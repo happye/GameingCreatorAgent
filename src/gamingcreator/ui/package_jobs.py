@@ -3,6 +3,7 @@
 import asyncio
 import json
 import zipfile
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
@@ -63,7 +64,17 @@ async def save_package(jobs: Any, directory: Path, request: dict[str, Any]) -> N
     profile = validate_profile(request["profile"])
     source = jobs.directory(request["publicationJobId"]) / "result"
     video = jobs.safe(jobs.directory(publication["renderJobId"]) / "result/video.mp4")
-    facts = await encode(jobs.repository, video, jobs.safe(source / "cover.png"), target, profile)
+    watermark = render.get("watermark")
+    duration = Fraction(int(render["frames"]), int(render.get("fpsNumerator", 1)))
+    facts = await encode(
+        jobs.repository,
+        video,
+        jobs.safe(source / "cover.png"),
+        target,
+        profile,
+        watermark,
+        duration,
+    )
     for name in ("title.txt", "description.txt", "tags.json"):
         jobs.safe(target / name).write_bytes(jobs.safe(source / name).read_bytes())
     jobs.save(
@@ -86,6 +97,7 @@ async def save_package(jobs: Any, directory: Path, request: dict[str, Any]) -> N
             "parentPublicationReceiptSha256": state["resultReceiptSha256"],
             "parentRenderReceiptSha256": publication["expectedRenderReceiptSha256"],
             "renderVideoSha256": render["files"]["video.mp4"],
+            "watermark": watermark,
             "facts": facts,
             "files": {name: hash_file(jobs.safe(target / name)) for name in DOWNLOADS},
         },

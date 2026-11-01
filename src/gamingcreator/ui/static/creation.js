@@ -39,7 +39,7 @@
         for (const plan of job.plans || []) {
             const card = node("article", ""); card.className = "plan-card";
             if (plan.mode) { card.classList.add("recommended"); card.append(node("p", `推荐 · ${plan.modeLabel || "内容模式"}模板`)); }
-            if (plan.localRenders) card.append(node("p", `你常用的结构 · 本项目已用它生成成片 ${plan.localRenders} 次，所以排在前面`));
+            if (plan.localRenders) card.append(node("p", `你常用的结构 · 本项目已有 ${plan.localRenders} 个方案用它做成成片${plan.rankedByHistory ? "，所以排到了通用方案前面" : ""}`));
             card.append(node("h3", plan.structure), node("p", plan.ready ? "方案可用 · 模板草稿" : "方案有缺口 · 不可选择"), node("p", "脚本：已有描述草稿，待核对"));
             const segments = plan.segments || [];
             card.append(node("p", `${segments.length} 个片段 · ${(segments.reduce((sum, s) => sum + s.outputFrames, 0) / job.fps).toFixed(2)} 秒`));

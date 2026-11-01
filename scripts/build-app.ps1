@@ -10,9 +10,15 @@ param(
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 if (-not $Output) { $Output = Join-Path $repositoryRoot 'dist/GamingCreator' }
+$Output = [IO.Path]::GetFullPath($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Output))
 $marker = Join-Path $Output '.gamingcreator-app.json'
 # Rebuilding replaces only the program parts; data a smoke run or a user left (.cache) stays.
-$programParts = @('toolchain.json', 'scripts', '.tools', '.venv', 'desktop', '.gamingcreator-app.json')
+$programParts = @('toolchain.json', 'scripts', '.tools', '.venv', 'desktop')
+# The marker stays through a rebuild: marked incomplete until every step has finished, so a
+# failed or killed build can be rebuilt but is never installed.
+function Write-Marker([hashtable]$Value) {
+  [IO.File]::WriteAllText($marker, ($Value | ConvertTo-Json), (New-Object System.Text.UTF8Encoding $false))
+}
 function Remove-ProgramParts {
   foreach ($part in $programParts) {
     $path = Join-Path $Output $part
@@ -22,9 +28,10 @@ function Remove-ProgramParts {
 $created = -not (Test-Path -LiteralPath $Output)
 if (-not $created) {
   if (-not (Test-Path -LiteralPath $marker)) { throw "$Output exists and was not created by this script; nothing was changed." }
-  Remove-ProgramParts
 }
 New-Item -ItemType Directory -Force -Path $Output | Out-Null
+Write-Marker @{ schemaVersion = 'gamingcreator-app-v1'; incomplete = $true }
+if (-not $created) { Remove-ProgramParts }
 function Copy-Tree([string]$From, [string]$To, [string[]]$ExcludeDirectories = @()) {
   $arguments = @($From, $To, '/E', '/NFL', '/NDL', '/NJH', '/NJS', '/NP', '/R:1', '/W:1')
   if ($ExcludeDirectories.Count) { $arguments += '/XD'; $arguments += $ExcludeDirectories }
@@ -64,8 +71,7 @@ try {
   if ($bytes -gt $MaxBytes) { throw "App folder is $bytes bytes, above the $MaxBytes limit." }
   $version = (Select-String -LiteralPath (Join-Path $repositoryRoot 'pyproject.toml') -Pattern '^version\s*=\s*"([^"]+)"' | Select-Object -First 1).Matches[0].Groups[1].Value
   $commit = (& git -C $repositoryRoot rev-parse HEAD 2>$null)
-  @{ schemaVersion = 'gamingcreator-app-v1'; builtAt = (Get-Date).ToUniversalTime().ToString('o'); bytes = $bytes; version = $version; commit = "$commit".Trim() } |
-    ConvertTo-Json | Set-Content -Encoding UTF8 -Path $marker
+  Write-Marker @{ schemaVersion = 'gamingcreator-app-v1'; builtAt = (Get-Date).ToUniversalTime().ToString('o'); bytes = $bytes; version = $version; commit = "$commit".Trim() }
   Write-Host ("Built {0} ({1:N0} MB)" -f $Output, ($bytes / 1MB))
 } catch {
   if ($created) { Remove-Item -LiteralPath $Output -Recurse -Force -ErrorAction SilentlyContinue } else { Remove-ProgramParts }
@@ -79,9 +85,12 @@ if ($Smoke) {
   $info.RedirectStandardError = $true
   $info.EnvironmentVariables.Remove('PYTHONPATH')
   $process = [System.Diagnostics.Process]::Start($info)
-  $stdout = $process.StandardOutput.ReadToEnd()
-  $stderr = $process.StandardError.ReadToEnd()
+  # Read both pipes concurrently so a full stderr pipe or a hung app cannot block the timeout.
+  $outTask = $process.StandardOutput.ReadToEndAsync()
+  $errTask = $process.StandardError.ReadToEndAsync()
   if (-not $process.WaitForExit(120000)) { $process.Kill(); throw 'Packaged app smoke test timed out.' }
+  $stdout = $outTask.Result
+  $stderr = $errTask.Result
   if ($process.ExitCode -ne 0 -or $stdout -notmatch 'READY http://127\.0\.0\.1:\d+/creation') {
     throw "Packaged app smoke test failed (exit $($process.ExitCode)): $stdout $stderr"
   }

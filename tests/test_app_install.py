@@ -86,7 +86,11 @@ def test_install_upgrade_keeps_user_data_and_uninstall_keeps_it_too(tmp_path):
 
     result = run("-Destination", str(destination), "-Uninstall")
     assert result.returncode == 0, result.stderr
-    assert sorted(path.name for path in destination.iterdir()) == [".cache", "my-project"]
+    assert sorted(path.name for path in destination.iterdir()) == [
+        ".cache",
+        ".gamingcreator-data.json",
+        "my-project",
+    ]
     assert creation.read_text(encoding="utf-8") == "mine"
 
 
@@ -160,3 +164,45 @@ def test_uninstall_with_a_file_in_use_removes_nothing(tmp_path):
     assert (destination / "scripts/helper.ps1").read_text(encoding="utf-8") == "one"
     assert (destination / ".gamingcreator-app.json").exists()
     assert siblings(destination) == []
+
+
+def test_reinstall_after_a_data_keeping_uninstall_reuses_the_data(tmp_path):
+    destination = tmp_path / "GamingCreator"
+    source = build(tmp_path / "src", "one")
+    assert run("-Source", str(source), "-Destination", str(destination)).returncode == 0
+    (destination / ".cache").mkdir()
+    (destination / ".cache/mine.json").write_text("keep", encoding="utf-8")
+    assert run("-Destination", str(destination), "-Uninstall").returncode == 0
+    result = run("-Source", str(source), "-Destination", str(destination))
+    assert result.returncode == 0, result.stderr
+    assert (destination / ".cache/mine.json").read_text(encoding="utf-8") == "keep"
+    assert not (destination / ".gamingcreator-data.json").exists()
+    assert (destination / "scripts/helper.ps1").exists()
+
+
+def test_relative_destination_uses_the_powershell_location(tmp_path):
+    source = build(tmp_path / "src", "one")
+    work = tmp_path / "work"
+    work.mkdir()
+    command = (
+        f"Set-Location -LiteralPath '{work}'; & '{SCRIPT}' -Source '{source}' -Destination .\\app"
+    )
+    result = subprocess.run(
+        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert result.returncode == 0, result.stderr
+    assert (work / "app/scripts/helper.ps1").exists()
+
+
+def test_an_unfinished_build_is_never_installed(tmp_path):
+    source = build(tmp_path / "src", "one")
+    (source / ".gamingcreator-app.json").write_text(
+        json.dumps({"schemaVersion": "gamingcreator-app-v1", "incomplete": True}), encoding="utf-8"
+    )
+    destination = tmp_path / "GamingCreator"
+    result = run("-Source", str(source), "-Destination", str(destination))
+    assert result.returncode != 0 and "unfinished build" in result.stderr
+    assert not destination.exists()

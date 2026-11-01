@@ -1,10 +1,12 @@
 """Pinned local media transforms and measured package facts."""
 
 import json
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
 from gamingcreator.application.providers import CancellationContext
+from gamingcreator.infrastructure.ffmpeg_render import _filter_path, _watermark_ass
 from gamingcreator.infrastructure.media_process import run_media_process
 from gamingcreator.infrastructure.publication_assets import validate_png
 
@@ -17,9 +19,41 @@ def transform(value: dict[str, Any]) -> str:
 
 
 async def encode(
-    repository: Path, video: Path, cover: Path, target: Path, profile: dict[str, Any]
+    repository: Path,
+    video: Path,
+    cover: Path,
+    target: Path,
+    profile: dict[str, Any],
+    watermark: str | None = None,
+    duration: Fraction | None = None,
 ) -> dict[str, Any]:
+    """``watermark`` is redrawn after cropping/padding, so a package never loses the mark."""
     tools = repository / ".tools/ffmpeg/bin"
+    video_filter = transform(profile["Fields"]["video"])
+    mark = target / "watermark.ass"
+    if watermark is not None:
+        field = profile["Fields"]["video"]
+        mark.write_text(
+            _watermark_ass(
+                watermark, field["width"], field["height"], duration or Fraction(359999)
+            ),
+            encoding="utf-8",
+        )
+        video_filter += f",ass=filename={_filter_path(mark)}"
+    try:
+        return await _encode(tools, video, cover, target, profile, video_filter)
+    finally:
+        mark.unlink(missing_ok=True)
+
+
+async def _encode(
+    tools: Path,
+    video: Path,
+    cover: Path,
+    target: Path,
+    profile: dict[str, Any],
+    video_filter: str,
+) -> dict[str, Any]:
     context = CancellationContext("platform-package", 1800)
     base = [
         str(tools / "ffmpeg.exe"),
@@ -40,7 +74,7 @@ async def encode(
             "-map",
             "0:a?",
             "-vf",
-            transform(profile["Fields"]["video"]),
+            video_filter,
             "-c:v",
             "libx264",
             "-pix_fmt",

@@ -13,10 +13,17 @@ $ErrorActionPreference = 'Stop'
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 if (-not $Source) { $Source = Join-Path $repositoryRoot 'dist/GamingCreator' }
 if (-not $Destination) { $Destination = Join-Path $env:LOCALAPPDATA 'Programs/GamingCreator' }
-$Destination = [IO.Path]::GetFullPath($Destination)
+# Relative paths mean the PowerShell location, not the process directory.
+function Resolve-UserPath([string]$Path) {
+  [IO.Path]::GetFullPath($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path))
+}
+$Source = Resolve-UserPath $Source
+$Destination = Resolve-UserPath $Destination
 $programParts = @('toolchain.json', 'scripts', '.tools', '.venv', 'desktop', '.gamingcreator-app.json')
 $marker = '.gamingcreator-app.json'
 $receiptName = '.gamingcreator-install.json'
+# Left by an uninstall that kept user data, so the same folder can be installed into again.
+$dataMarker = '.gamingcreator-data.json'
 
 function Read-Marker([string]$Folder) {
   $path = Join-Path $Folder $marker
@@ -45,14 +52,15 @@ function Move-Entry([string]$From, [string]$To) {
 }
 
 function User-Entries([string]$Folder) {
-  @(Get-ChildItem -LiteralPath $Folder -Force | Where-Object { $programParts -notcontains $_.Name -and $_.Name -ne $receiptName } |
+  @(Get-ChildItem -LiteralPath $Folder -Force | Where-Object { $programParts -notcontains $_.Name -and $_.Name -notin @($receiptName, $dataMarker) } |
     ForEach-Object Name)
 }
 
 $installed = $null
 if (Test-Path -LiteralPath $Destination) {
   $installed = Read-Marker $Destination
-  if (-not $installed -and @(Get-ChildItem -LiteralPath $Destination -Force).Count) {
+  $keptData = Test-Path -LiteralPath (Join-Path $Destination $dataMarker)
+  if (-not $installed -and -not $keptData -and @(Get-ChildItem -LiteralPath $Destination -Force).Count) {
     throw "$Destination is not empty and holds no Gaming Creator app; nothing was changed."
   }
 }
@@ -77,8 +85,11 @@ if ($Uninstall) {
   Remove-Item -LiteralPath $trash -Recurse -Force
   $kept = User-Entries $Destination
   if ($kept.Count) {
-    Write-Host ("Uninstalled the program from {0}; your data was kept: {1}. Delete the folder yourself when you no longer need it." -f $Destination, ($kept -join ', '))
+    $note = [ordered]@{ schemaVersion = 'gamingcreator-data-v1'; uninstalledAt = (Get-Date).ToUniversalTime().ToString('o'); kept = $kept }
+    [IO.File]::WriteAllText((Join-Path $Destination $dataMarker), ($note | ConvertTo-Json), (New-Object System.Text.UTF8Encoding $false))
+    Write-Host ("Uninstalled the program from {0}; your data was kept: {1}. Installing here again reuses it; delete the folder yourself when you no longer need it." -f $Destination, ($kept -join ', '))
   } else {
+    Remove-Item -LiteralPath (Join-Path $Destination $dataMarker) -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $Destination -Force
     Write-Host "Uninstalled the program; $Destination held no data and was removed."
   }
@@ -87,10 +98,11 @@ if ($Uninstall) {
 
 $built = Read-Marker $Source
 if (-not $built) { throw "$Source is not an app folder built by build-app.ps1 (no marker)." }
+if ($built.incomplete) { throw "$Source is an unfinished build; run build-app.ps1 again first." }
 foreach ($part in $programParts) {
   if (-not (Test-Path -LiteralPath (Join-Path $Source $part))) { throw "$Source is incomplete: $part is missing." }
 }
-if ([IO.Path]::GetFullPath($Source).TrimEnd('\') -eq $Destination.TrimEnd('\')) { throw 'Source and destination are the same folder.' }
+if ($Source.TrimEnd('\') -eq $Destination.TrimEnd('\')) { throw 'Source and destination are the same folder.' }
 if ($installed) { Assert-NotRunning $Destination }
 $parent = Split-Path -Parent $Destination
 New-Item -ItemType Directory -Force -Path $parent | Out-Null
@@ -134,13 +146,14 @@ try {
   $receipt = [ordered]@{
     schemaVersion = 'gamingcreator-install-v1'
     installedAt = (Get-Date).ToUniversalTime().ToString('o')
-    source = [IO.Path]::GetFullPath($Source)
+    source = $Source
     builtAt = $built.builtAt
     version = $built.version
     commit = $built.commit
     upgradedFrom = if ($installed) { [ordered]@{ builtAt = $installed.builtAt; version = $installed.version; commit = $installed.commit } } else { $null }
   }
   [IO.File]::WriteAllText((Join-Path $Destination $receiptName), ($receipt | ConvertTo-Json -Depth 4), (New-Object System.Text.UTF8Encoding $false))
+  Remove-Item -LiteralPath (Join-Path $Destination $dataMarker) -Force -ErrorAction SilentlyContinue
   $succeeded = $true
 } catch {
   # Put the previous program back exactly as it was; the user's data was never moved.
@@ -165,9 +178,12 @@ if ($Smoke) {
   $info.RedirectStandardError = $true
   $info.EnvironmentVariables.Remove('PYTHONPATH')
   $process = [System.Diagnostics.Process]::Start($info)
-  $stdout = $process.StandardOutput.ReadToEnd()
-  $stderr = $process.StandardError.ReadToEnd()
+  # Read both pipes concurrently so a full stderr pipe or a hung app cannot block the timeout.
+  $outTask = $process.StandardOutput.ReadToEndAsync()
+  $errTask = $process.StandardError.ReadToEndAsync()
   if (-not $process.WaitForExit(120000)) { $process.Kill(); throw 'Installed app smoke test timed out.' }
+  $stdout = $outTask.Result
+  $stderr = $errTask.Result
   if ($process.ExitCode -ne 0 -or $stdout -notmatch 'READY http://127\.0\.0\.1:\d+/creation') {
     throw "Installed app smoke test failed (exit $($process.ExitCode)): $stdout $stderr"
   }

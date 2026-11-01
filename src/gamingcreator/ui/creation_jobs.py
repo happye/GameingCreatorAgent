@@ -315,8 +315,8 @@ class CreationJobs:
                     # Captured once, so re-running the job never depends on later history.
                     try:
                         preferences = plan_preferences(self.feedback(request["projectId"]))
-                    except (OSError, ValueError, AppError):
-                        preferences = {}  # Statistics never block planning.
+                    except Exception:
+                        preferences = {}  # Statistics never block planning, whatever broke.
                     self.save(directory / "input/preferences.json", preferences)
                 self.save(directory / "status.json", state)
                 self.save(registration, {"digest": digest, "jobId": job_id})

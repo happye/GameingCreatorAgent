@@ -274,6 +274,7 @@ class FfmpegCreationRenderer:
         target.mkdir(parents=True, exist_ok=False)
         subtitle_path = target / "subtitles.srt"
         ass_path = target / "subtitles.ass"
+        watermark_path = target / "watermark.ass"
         # The final fps filter needs an EOF frame beyond the last presentation
         # instant; cap by frames after padding, rather than stopping the muxer early.
         video_filter = (
@@ -287,7 +288,6 @@ class FfmpegCreationRenderer:
             ass_path.write_text(_burn_ass(saved_cues, width, height), encoding="utf-8")
             video_filter += f",ass=filename={_filter_path(ass_path)}"
         if watermark is not None:
-            watermark_path = target / "watermark.ass"
             watermark_path.write_text(
                 _watermark_ass(watermark, width, height, Fraction(plan.frames, plan.fps)),
                 encoding="utf-8",
@@ -522,7 +522,7 @@ class FfmpegCreationRenderer:
                     "limitations": [
                         "hard cuts and linear crossfades",
                         "letterbox",
-                        "no overlays",
+                        "no overlays" if watermark is None else "only the plan watermark overlay",
                         "burn uses centisecond timing and visible fullwidth ASS control characters",
                     ],
                 }
@@ -545,6 +545,7 @@ class FfmpegCreationRenderer:
                 manifest.unlink()
                 if ass_path.exists():
                     ass_path.unlink()
+                watermark_path.unlink(missing_ok=True)
                 context.check_cancelled()
                 if narration is not None and narration_artifact is not None:
                     result["narration"] = narration_receipt(narration, narration_artifact, plan.fps)
@@ -565,3 +566,4 @@ class FfmpegCreationRenderer:
                     (target / f"join-{index:06d}.nut").unlink(missing_ok=True)
             (target / "parts.txt").unlink(missing_ok=True)
             ass_path.unlink(missing_ok=True)
+            watermark_path.unlink(missing_ok=True)

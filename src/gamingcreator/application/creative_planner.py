@@ -93,8 +93,14 @@ def plan_creation(
         for key, value in (preferences or {}).items()
         if isinstance(key, str) and type(value) is int and value > 0
     }
+    template_order = [structure[0] for structure in generic]
     # Stable: structures the user finished more often come first, ties keep template order.
     generic.sort(key=lambda structure: -habits.get(structure[0], 0))
+    moved = {
+        structure[0]
+        for index, structure in enumerate(generic)
+        if index < template_order.index(structure[0])
+    }
     scores = score_materials(brief, eligible)
 
     def total(clip: CreationClip) -> float:
@@ -170,7 +176,11 @@ def plan_creation(
                 "ready": not gaps,
                 "advisories": advisories(brief, eligible, segments, fps),
                 "scriptStatus": "saved-descriptions-draft-human-review-required",
-                **({"localRenders": habits[identity]} if identity in habits else {}),
+                **(
+                    {"localRenders": habits[identity], "rankedByHistory": identity in moved}
+                    if identity in habits and roles is None
+                    else {}
+                ),
                 **(
                     {"mode": brief.content_type, "modeLabel": MODE_LABELS[brief.content_type]}
                     if roles is not None
@@ -184,7 +194,7 @@ def plan_creation(
         "understandingVerified": False,
         "scoring": scoring_legend(),
         "ordering": {
-            "basis": "local-render-history" if habits else "template",
+            "basis": "local-render-history" if moved else "template",
             "renderedByPlan": habits,
         },
         "fps": fps,

@@ -122,4 +122,4 @@ render-creation / scripts/render-creation.ps1接收项目、已完成创作目�
 
 便携版：运行 `scripts/build-app.ps1` 会在 `dist\GamingCreator` 生成约660MB的独立文件夹（含运行环境、FFmpeg和桌面程序），双击其中 `desktop\bin\GamingCreator.exe` 即可，不依赖本仓库的开发环境，文件夹可整体移动。数据保存在该文件夹的 .cache 里；不需要时可直接删除整个文件夹。新录像的语音/检索分析模型尚未打包。
 
-安装：运行 `scripts/install-app.ps1` 会把 `dist\GamingCreator` 装到 `%LOCALAPPDATA%\Programs\GamingCreator`（`-Destination` 可改位置，`-Smoke` 装完自检）。再次运行就是升级：只换程序，创作、账本和项目文件不动；中途失败会自动恢复旧版本。卸载用 `-Uninstall`，同样保留数据，确认不需要后再自己删除文件夹。运行中的程序需先关闭。
+安装：运行 `scripts/install-app.ps1` 会把 `dist\GamingCreator` 装到 `%LOCALAPPDATA%\Programs\GamingCreator`（`-Destination` 可改位置，`-Smoke` 装完自检）。再次运行就是升级：只换程序，创作、账本和项目文件不动；中途失败会自动恢复旧版本。卸载用 `-Uninstall`，同样保留数据；之后在同一位置重新安装会接着使用这些数据，确认不需要后再自己删除文件夹。运行中的程序需先关闭。

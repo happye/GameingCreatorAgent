@@ -193,3 +193,49 @@ def test_package_async_parent_boundary_and_failure(rendered, monkeypatch):  # no
     assert finish(jobs, job)["status"] == "failed"
     assert calls
     assert not (jobs.directory(job) / "result/receipt.json").exists()
+
+
+def test_a_free_watermark_survives_a_vertical_crop(tmp_path):
+    import asyncio
+    import subprocess
+    from fractions import Fraction
+
+    from gamingcreator.infrastructure.publication_package import encode
+
+    ffmpeg = ROOT / ".tools/ffmpeg/bin/ffmpeg.exe"
+    if not ffmpeg.is_file():
+        pytest.skip("Pinned FFmpeg is unavailable")
+    video, cover = tmp_path / "in.mp4", tmp_path / "cover.png"
+    for args, out in (
+        (
+            [
+                "-f",
+                "lavfi",
+                "-i",
+                "color=black:s=320x180:r=10:d=1",
+                "-c:v",
+                "libx264",
+                "-pix_fmt",
+                "yuv420p",
+            ],
+            video,
+        ),
+        (["-f", "lavfi", "-i", "color=black:s=320x180", "-frames:v", "1"], cover),
+    ):
+        subprocess.run([str(ffmpeg), "-v", "error", "-y", *args, str(out)], check=True)
+    profile = package_jobs.profiles()["profiles"][1]
+    profile["Fields"]["video"].update(width=180, height=320, fit="crop")
+    profile["Fields"]["cover"].update(width=180, height=320, fit="crop")
+    target = tmp_path / "pkg"
+    target.mkdir()
+    asyncio.run(encode(ROOT, video, cover, target, profile, "GamingCreator Free", Fraction(1)))
+    assert not (target / "watermark.ass").exists()
+    frame = subprocess.run(
+        [str(ffmpeg), "-v", "error", "-i", str(target / "video.mp4"), "-frames:v", "1"]
+        + ["-f", "rawvideo", "-pix_fmt", "gray", "-"],
+        capture_output=True,
+        check=True,
+    ).stdout
+    top_right = max(frame[y * 180 + x] for y in range(30) for x in range(60, 180))
+    bottom_left = max(frame[y * 180 + x] for y in range(200, 320) for x in range(90))
+    assert top_right > 60 and bottom_left < 30

@@ -226,8 +226,17 @@ def test_local_render_history_reorders_generic_structures_only():
     # The content-mode template stays first (recommended); habits move the generic orders.
     assert ids[0] == template["plans"][0]["id"] and report["plans"][0]["mode"]
     assert ids[1:] == ["reverse", "hook-first", "chronological"]
-    assert report["plans"][1]["localRenders"] == 2 and "localRenders" not in report["plans"][3]
+    assert report["plans"][1]["localRenders"] == 2 and report["plans"][1]["rankedByHistory"]
+    assert "localRenders" not in report["plans"][3]
     assert report["ordering"]["basis"] == "local-render-history"
+    # History never decorates the mode template, and an unmoved structure is not "ranked".
+    mode_id = template["plans"][0]["id"]
+    same = plan_creation(
+        brief("feature_showcase"), material(facts), 30, {mode_id: 5, "chronological": 1}
+    )
+    assert "localRenders" not in same["plans"][0]
+    assert same["plans"][1]["id"] == "chronological" and not same["plans"][1]["rankedByHistory"]
+    assert same["ordering"]["basis"] == "template"
     assert plan_creation(brief("feature_showcase"), material(facts), 30, {"x": 0, "y": True})[
         "ordering"
     ] == {"basis": "template", "renderedByPlan": {}}

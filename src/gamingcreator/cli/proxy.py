@@ -27,4 +27,8 @@ async def execute_make_proxy(project: Path, run_id: str, repository: Path) -> No
     except ValueError as error:
         # e.g. byte budget reached or source bytes changed: say which, not a generic failure.
         raise AppError("proxy.failed", f"代理预览未生成：{error}", ExitCode.INPUT) from error
+    except OSError as error:
+        raise AppError(
+            "proxy.failed", f"代理预览未生成：读不到登记的原录像（{error}）。", ExitCode.INPUT
+        ) from error
     sys.stdout.write(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n")
