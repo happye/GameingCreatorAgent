@@ -289,6 +289,7 @@ _ACTION_TERMS = {
         "对战",
         "团战",
         "交战",
+        "交锋",
         "fight",
         "fights",
         "fighting",
@@ -389,9 +390,24 @@ _TITLE_BRAND_ACTION_NOISE = re.compile(
 )
 
 
+_UI_SCENE_ACTION_NOISE = re.compile(
+    r"对战场景|战斗界面|多人对战|战斗模式|对战模式|"
+    r"battle\s*(?:ui|interface|screen|mode)|versus\s*mode|fight\s*scene",
+    re.IGNORECASE,
+)
+
+
+def _neutralize_ui_scene_labels(text: str) -> str:
+    """Replace frozen UI/layout collocations that embed fight vocabulary."""
+    return _UI_SCENE_ACTION_NOISE.sub("uiscene", text)
+
+
 def _neutralize_title_brands(text: str) -> str:
-    """Replace frozen title brands; leave real jump/跳跃 observations untouched."""
-    return _TITLE_BRAND_ACTION_NOISE.sub("titlebrand", text)
+    """Replace frozen title brands and UI scene-label chrome.
+
+    Leaves real jump/跳跃 and free-standing 战斗／交战／对战 observations untouched.
+    """
+    return _neutralize_ui_scene_labels(_TITLE_BRAND_ACTION_NOISE.sub("titlebrand", text))
 
 
 _NEGATIVE_QUERY_INTENT = re.compile(
@@ -637,12 +653,12 @@ def _negative_query_weak_overlap_documents(
 def _title_brand_action_noise_documents(
     documents: tuple[_Document, ...], query: str
 ) -> frozenset[str]:
-    """Exclude clips whose only query-action mention is a frozen title brand (TD004).
+    """Exclude clips whose only query-action mention is title-brand or UI chrome (TD004).
 
-    Lexical scoring already neutralizes brands. Semantic/hybrid can still rank a
-    title card highly for "jump" because the raw passage keeps JUMP ASSEMBLE.
-    When neutralizing removes every matched query action from positive_text, the
-    clip is title-brand noise for that action query — not gameplay evidence.
+    Lexical scoring already neutralizes brands/UI labels. Semantic/hybrid can still
+    rank a title card or 「对战场景」layout line highly. When neutralizing removes
+    every matched query action from positive_text, the clip is surface noise — not
+    gameplay evidence. Free-standing 交战／战斗 observations survive.
     """
     folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
     if _NEGATIVE_QUERY_INTENT.search(folded_query):

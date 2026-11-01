@@ -1820,3 +1820,29 @@ def test_negative_query_keeps_true_content_overlap():
     data = timeline("画面出现星际飞船维修舱。", "角色在草地上奔跑。")
     result = search(data, "不存在的星际交易飞船维修机制", "lexical")
     assert [c.event_id for c in result.candidates] == ["event-0"]
+
+
+@pytest.mark.parametrize("mode", ["lexical", "hybrid"])
+@pytest.mark.parametrize("query", ["fight", "对战", "团战", "战斗"])
+def test_fight_ui_scene_label_chrome_excluded_keeps_jiaozhan(mode, query):
+    """TD004: 「对战场景／战斗界面」layout lines are chrome; 交战 observations stay."""
+    data = timeline(
+        "俯视视角对战场景，中央有紫色特效，右侧有技能按钮和方向摇杆。",
+        "画面切换为战斗界面，顶部显示倒计时。",
+        "俯视角对战场景，出现两个502伤害数字，左侧有角色头像和血条。",
+        "画面中央出现爆炸特效，多名角色在场景中交战。",
+    )
+    result = search(data, query, mode)
+    assert [c.event_id for c in result.candidates] == ["event-3"]
+    assert "交战" in result.candidates[0].observable_facts[0]
+
+
+@pytest.mark.parametrize("query", ["fight", "对战", "战斗"])
+def test_fight_ui_scene_only_corpus_abstains(query):
+    data = timeline(
+        "俯视视角对战场景，右侧有技能按钮和方向摇杆。",
+        "画面切换为战斗界面，顶部显示倒计时。",
+    )
+    result = search(data, query, "lexical")
+    assert result.candidates == ()
+    assert result.abstention_reason == "no_positive_action_evidence"
