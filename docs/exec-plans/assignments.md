@@ -1,3 +1,6 @@
+**2026-11-01 T14（进度看板核对，见文档提交）：** sprint-t14-progress-board-audit.md；追加 T17–T28；下一步 T15。
+
+
 **2026-11-01 T13（pycache 清理，见文档提交）：** sprint-t13-pycache-cleanup.md；下一步 T14。
 
 

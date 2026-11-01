@@ -1,6 +1,8 @@
 # 当前接手：51项全部至少部分可用，下一步把部分项推进到可验收
 
-**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T13 已完成；下一步 T14）。**
+**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1–T14 已完成；下一步 T15）。**
+
+2026-11-01 T14 进度看板逐行核对：41 个 partial／阶段 🟡 在 sprint-t14 标明缺口、用户／外部、可本地；追加本地小任务 T17–T28（不代选 A／B／D、不启真发布／未批视觉）。计数不变：51项10/41/0≈60%；技术债21项14/2/5；人工0／未来8。
 
 2026-11-01 T13 pycache 清理：确认 .gitignore 已忽略 __pycache__/ 与 *.py[cod]；src/gamingcreator 下 6 个 __pycache__／106 个 .pyc 均未跟踪，已删除；未动 .cache。计数不变：51项10/41/0≈60%；技术债21项14/2/5；人工0／未来8。
 
