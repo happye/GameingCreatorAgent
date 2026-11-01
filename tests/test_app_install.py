@@ -28,6 +28,7 @@ def build(folder: Path, label: str) -> Path:
         "docs/references/embedding-model.json": "{}",
         "models/faster-whisper/.keep": label,
         "models/multilingual-e5-small/.keep": label,
+        "licenses/THIRD-PARTY-NOTICES.md": f"# notices {label}\n",
     }
     for name, text in files.items():
         (folder / name).parent.mkdir(parents=True, exist_ok=True)

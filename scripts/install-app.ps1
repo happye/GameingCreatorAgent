@@ -19,7 +19,7 @@ function Resolve-UserPath([string]$Path) {
 }
 $Source = Resolve-UserPath $Source
 $Destination = Resolve-UserPath $Destination
-$programParts = @('toolchain.json', 'scripts', '.tools', '.venv', 'desktop', 'docs', 'models', '.gamingcreator-app.json')
+$programParts = @('toolchain.json', 'scripts', '.tools', '.venv', 'desktop', 'docs', 'models', 'licenses', '.gamingcreator-app.json')
 $marker = '.gamingcreator-app.json'
 $receiptName = '.gamingcreator-install.json'
 # Left by an uninstall that kept user data, so the same folder can be installed into again.

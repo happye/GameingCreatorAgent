@@ -13,7 +13,7 @@ if (-not $Output) { $Output = Join-Path $repositoryRoot 'dist/GamingCreator' }
 $Output = [IO.Path]::GetFullPath($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Output))
 $marker = Join-Path $Output '.gamingcreator-app.json'
 # Rebuilding replaces only the program parts; data a smoke run or a user left (.cache) stays.
-$programParts = @('toolchain.json', 'scripts', '.tools', '.venv', 'desktop', 'docs', 'models')
+$programParts = @('toolchain.json', 'scripts', '.tools', '.venv', 'desktop', 'docs', 'models', 'licenses')
 # The marker stays through a rebuild: marked incomplete until every step has finished, so a
 # failed or killed build can be rebuilt but is never installed.
 function Write-Marker([hashtable]$Value) {
@@ -60,6 +60,9 @@ try {
   foreach ($name in @('asr-models.json', 'asr-native-toolchain.json', 'embedding-model.json')) {
     Copy-Item -LiteralPath (Join-Path $repositoryRoot "docs/references/$name") -Destination (Join-Path $references $name)
   }
+  # Third-party notices from on-disk LICENSE/METADATA only (no downloads).
+  & (Join-Path $repositoryRoot '.venv/Scripts/python.exe') -B (Join-Path $PSScriptRoot 'collect-third-party-notices.py') --repository $repositoryRoot --output (Join-Path $Output 'licenses')
+  if ($LASTEXITCODE -ne 0) { throw "collect-third-party-notices.py failed with $LASTEXITCODE" }
   $developerOnly = @('__pycache__', 'mypy', 'mypyc', '_pytest', 'pytest', 'ruff', 'hatchling', 'iniconfig', 'pluggy', 'pathspec', 'trove_classifiers')
   $venv = Join-Path $Output '.venv'
   Copy-Tree (Join-Path $repositoryRoot '.venv') $venv $developerOnly

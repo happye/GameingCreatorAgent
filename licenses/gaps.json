@@ -1,0 +1,38 @@
+[
+  {
+    "component": "FFmpeg",
+    "reason": "Production .tools/ffmpeg/bin has no LICENSE/COPYING; media-toolchain.json says GPL obligations must be resolved before packaging. Do not treat a different candidate build's LICENSE.txt as this pin without user review."
+  },
+  {
+    "component": "Microsoft.Web.WebView2",
+    "reason": "LICENSE.txt is bundled from the NuGet package; redistribution terms must still be reviewed before shipping an installer (see docs/references/webview2-sdk.json)."
+  },
+  {
+    "component": "MSVC native (.tools/native)",
+    "reason": "DLL pin present but no Microsoft license text file alongside it."
+  },
+  {
+    "component": "multilingual-e5-small model weights",
+    "reason": "No LICENSE/model card file under .cache/models/multilingual-e5-small; embedding-model.json notes MIT (base model) and exported artifact needs release review."
+  },
+  {
+    "component": "faster-whisper-tiny model weights",
+    "reason": "No LICENSE/model card under .cache/models/faster-whisper; only weight files + receipt. Need user confirmation of redistribution terms before shipping."
+  },
+  {
+    "component": "ctranslate2 4.8.2",
+    "reason": "No LICENSE/COPYING/NOTICE under ctranslate2-4.8.2.dist-info; METADATA license field is MIT."
+  },
+  {
+    "component": "flatbuffers 25.12.19",
+    "reason": "No LICENSE/COPYING/NOTICE under flatbuffers-25.12.19.dist-info; METADATA license field is Apache 2.0."
+  },
+  {
+    "component": "onnxruntime 1.30.0",
+    "reason": "No LICENSE/COPYING/NOTICE under onnxruntime-1.30.0.dist-info; METADATA license field is MIT License."
+  },
+  {
+    "component": "tokenizers 0.23.2",
+    "reason": "No LICENSE/COPYING/NOTICE under tokenizers-0.23.2.dist-info; METADATA license field is OSI Approved :: Apache Software License."
+  }
+]

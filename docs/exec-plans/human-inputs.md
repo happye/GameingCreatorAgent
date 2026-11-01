@@ -1,5 +1,19 @@
 # 当前需要用户参与的事项
 
+## 2026-11-01 T2 第三方许可证缺口（需用户确认能否分发）
+
+收集脚本只复制本机已有 LICENSE/NOTICE/METADATA，**未下载**任何内容。下列项缺许可正文或需额外确认，已写入 `licenses/gaps.json` 与 `licenses/THIRD-PARTY-NOTICES.md`：
+
+1. **FFmpeg（生产 pin N-123317-…）**：`.tools/ffmpeg/bin` 旁无 LICENSE/COPYING；`media-toolchain.json` 写明分发前须处理 GPL 义务。候选构建的 LICENSE.txt 是另一版本，未当作本 pin 的许可文件。
+2. **faster-whisper-tiny 模型权重**：`.cache/models/faster-whisper` 无 LICENSE/model card，仅有权重与 receipt。
+3. **multilingual-e5-small 模型**：无 LICENSE 文件；`embedding-model.json` 写 “MIT (base model); exported artifact licensing requires release review”。
+4. **MSVC 原生 DLL（`.tools/native`）**：有 pin/receipt，无 Microsoft 许可正文。
+5. **WebView2 SDK**：已附带 NuGet 内 `LICENSE.txt`，但 `webview2-sdk.json` 仍要求分发安装包前再审再分条款。
+6. **Python 包缺 LICENSE 文件（仅有 METADATA 声明）**：`ctranslate2`（MIT）、`flatbuffers`（Apache 2.0）、`onnxruntime`（MIT License）、`tokenizers`（Apache Classifier）。需你确认可否按 METADATA 声明随包装分发，或补齐官方 LICENSE 文件后再收。
+
+当前必做人工仍为 0；以上属**未来/分发前**确认项。
+
+
 2026-10-31缓存事故已止血：精确删除58.29GiB失控测试NUT，实测释放62,589,505,536字节；根因是空音轨变速测试失控写盘、无文件容量门及失败媒体/工作树长期保留。运行期文件/目录/余量限额、原生FFmpeg -fs与退出复核、失败NUT回收、pytest完成回收已落地；58项扩展通过，3个旧mock签名修正后连同新边界12项通过，5源码mypy/Ruff及Astra/low限定静态评估通过。两棵已入库工作副本已释放，其他历史副本待逐项核清；用户明确未手动删除，narration-integration消失仍未归因。51项10/19/22约38%、首产品27%不变，人工现在0/未来8；新增TD018部分，债务18项10已解决/3部分/5未解决。Goal active，随后恢复本地旁白，未提前计P026。
 
 以下交付过程为历史，当前状态以上方摘要为准。

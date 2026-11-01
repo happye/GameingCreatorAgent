@@ -1,0 +1,306 @@
+[
+  {
+    "name": "CPython",
+    "version": "cpython-3.13.16-windows-x86_64-none",
+    "license_type": "PSF / historical (see LICENSE.txt)",
+    "source_file": ".tools/python/cpython-3.13.16-windows-x86_64-none/LICENSE.txt",
+    "copied_to": "sources/cpython/LICENSE.txt",
+    "status": "ok"
+  },
+  {
+    "name": "FFmpeg",
+    "version": "N-123317-gc1be2107c9-20260310",
+    "license_type": "GPL (enabled in build flags); production LICENSE.txt missing on disk",
+    "source_file": "docs/references/media-toolchain.json",
+    "copied_to": "sources/ffmpeg/BUILD-AND-PROVENANCE.txt",
+    "status": "noted_without_file"
+  },
+  {
+    "name": "Microsoft.Web.WebView2",
+    "version": "1.0.4314.35",
+    "license_type": "Microsoft WebView2 SDK license (LICENSE.txt in the package); redistribution terms must be reviewed before shipping an installer.",
+    "source_file": ".tools/webview2/1.0.4314.35/files/LICENSE.txt",
+    "copied_to": "sources/webview2/LICENSE.txt",
+    "status": "ok"
+  },
+  {
+    "name": "Microsoft Visual C++ Redistributable (local pin)",
+    "version": "14.51.36247",
+    "license_type": "Microsoft redistributable terms (file missing locally)",
+    "source_file": ".tools/native/msvc/14.51.36247/receipt.json",
+    "copied_to": "sources/msvc-native/README.txt",
+    "status": "noted_without_file"
+  },
+  {
+    "name": "Xenova/multilingual-e5-small",
+    "version": "761b726dd34fb83930e26aab4e9ac3899aa1fa78",
+    "license_type": "MIT (base model); exported artifact licensing requires release review",
+    "source_file": "docs/references/embedding-model.json",
+    "copied_to": "sources/models/multilingual-e5-small/embedding-model.json",
+    "status": "noted_without_file"
+  },
+  {
+    "name": "Systran/faster-whisper-tiny",
+    "version": "d90ca5fe260221311c53c58e660288d3deb8d356",
+    "license_type": "UNKNOWN (no LICENSE file next to model weights)",
+    "source_file": "docs/references/asr-models.json",
+    "copied_to": "sources/models/faster-whisper-tiny/asr-models.json",
+    "status": "missing_license_file"
+  },
+  {
+    "name": "anyio",
+    "version": "4.15.1",
+    "license_type": "MIT",
+    "source_file": ".venv/Lib/site-packages/anyio-4.15.1.dist-info/licenses/LICENSE",
+    "copied_to": "sources/python/anyio-4.15.1/licenses/LICENSE",
+    "status": "ok"
+  },
+  {
+    "name": "ast_serialize",
+    "version": "0.12.1",
+    "license_type": "MIT",
+    "source_file": ".venv/Lib/site-packages/ast_serialize-0.12.1.dist-info/licenses/crates/LICENSE",
+    "copied_to": "sources/python/ast_serialize-0.12.1/licenses/crates/LICENSE",
+    "status": "ok"
+  },
+  {
+    "name": "av",
+    "version": "16.1.0",
+    "license_type": "BSD-3-Clause",
+    "source_file": ".venv/Lib/site-packages/av-16.1.0.dist-info/licenses/LICENSE.txt",
+    "copied_to": "sources/python/av-16.1.0/licenses/LICENSE.txt",
+    "status": "ok"
+  },
+  {
+    "name": "certifi",
+    "version": "2026.7.22",
+    "license_type": "MPL-2.0",
+    "source_file": ".venv/Lib/site-packages/certifi-2026.7.22.dist-info/licenses/LICENSE",
+    "copied_to": "sources/python/certifi-2026.7.22/licenses/LICENSE",
+    "status": "ok"
+  },
+  {
+    "name": "click",
+    "version": "8.5.0",
+    "license_type": "BSD-3-Clause",
+    "source_file": ".venv/Lib/site-packages/click-8.5.0.dist-info/licenses/LICENSE.txt",
+    "copied_to": "sources/python/click-8.5.0/licenses/LICENSE.txt",
+    "status": "ok"
+  },
+  {
+    "name": "colorama",
+    "version": "0.4.6",
+    "license_type": "OSI Approved :: BSD License",
+    "source_file": ".venv/Lib/site-packages/colorama-0.4.6.dist-info/licenses/LICENSE.txt",
+    "copied_to": "sources/python/colorama-0.4.6/licenses/LICENSE.txt",
+    "status": "ok"
+  },
+  {
+    "name": "ctranslate2",
+    "version": "4.8.2",
+    "license_type": "MIT",
+    "source_file": ".venv/Lib/site-packages/ctranslate2-4.8.2.dist-info/METADATA",
+    "copied_to": "sources/python/ctranslate2-4.8.2/METADATA",
+    "status": "missing_license_file"
+  },
+  {
+    "name": "faster-whisper",
+    "version": "1.2.1",
+    "license_type": "MIT",
+    "source_file": ".venv/Lib/site-packages/faster_whisper-1.2.1.dist-info/LICENSE",
+    "copied_to": "sources/python/faster-whisper-1.2.1/LICENSE",
+    "status": "ok"
+  },
+  {
+    "name": "filelock",
+    "version": "4.0.9",
+    "license_type": "MIT",
+    "source_file": ".venv/Lib/site-packages/filelock-4.0.9.dist-info/licenses/LICENSE",
+    "copied_to": "sources/python/filelock-4.0.9/licenses/LICENSE",
+    "status": "ok"
+  },
+  {
+    "name": "flatbuffers",
+    "version": "25.12.19",
+    "license_type": "Apache 2.0",
+    "source_file": ".venv/Lib/site-packages/flatbuffers-25.12.19.dist-info/METADATA",
+    "copied_to": "sources/python/flatbuffers-25.12.19/METADATA",
+    "status": "missing_license_file"
+  },
+  {
+    "name": "fsspec",
+    "version": "2026.9.0",
+    "license_type": "BSD-3-Clause",
+    "source_file": ".venv/Lib/site-packages/fsspec-2026.9.0.dist-info/licenses/LICENSE",
+    "copied_to": "sources/python/fsspec-2026.9.0/licenses/LICENSE",
+    "status": "ok"
+  },
+  {
+    "name": "greenlet",
+    "version": "3.5.6",
+    "license_type": "MIT AND PSF-2.0",
+    "source_file": ".venv/Lib/site-packages/greenlet-3.5.6.dist-info/licenses/LICENSE",
+    "copied_to": "sources/python/greenlet-3.5.6/licenses/LICENSE",
+    "status": "ok"
+  },
+  {
+    "name": "h11",
+    "version": "0.16.0",
+    "license_type": "MIT",
+    "source_file": ".venv/Lib/site-packages/h11-0.16.0.dist-info/licenses/LICENSE.txt",
+    "copied_to": "sources/python/h11-0.16.0/licenses/LICENSE.txt",
+    "status": "ok"
+  },
+  {
+    "name": "hf-xet",
+    "version": "1.6.0",
+    "license_type": "Apache-2.0",
+    "source_file": ".venv/Lib/site-packages/hf_xet-1.6.0.dist-info/licenses/LICENSE",
+    "copied_to": "sources/python/hf-xet-1.6.0/licenses/LICENSE",
+    "status": "ok"
+  },
+  {
+    "name": "httpcore",
+    "version": "1.0.9",
+    "license_type": "BSD-3-Clause",
+    "source_file": ".venv/Lib/site-packages/httpcore-1.0.9.dist-info/licenses/LICENSE.md",
+    "copied_to": "sources/python/httpcore-1.0.9/licenses/LICENSE.md",
+    "status": "ok"
+  },
+  {
+    "name": "httpx",
+    "version": "0.28.1",
+    "license_type": "BSD-3-Clause",
+    "source_file": ".venv/Lib/site-packages/httpx-0.28.1.dist-info/licenses/LICENSE.md",
+    "copied_to": "sources/python/httpx-0.28.1/licenses/LICENSE.md",
+    "status": "ok"
+  },
+  {
+    "name": "huggingface_hub",
+    "version": "1.33.0",
+    "license_type": "Apache-2.0",
+    "source_file": ".venv/Lib/site-packages/huggingface_hub-1.33.0.dist-info/licenses/LICENSE",
+    "copied_to": "sources/python/huggingface_hub-1.33.0/licenses/LICENSE",
+    "status": "ok"
+  },
+  {
+    "name": "idna",
+    "version": "3.20",
+    "license_type": "BSD-3-Clause",
+    "source_file": ".venv/Lib/site-packages/idna-3.20.dist-info/licenses/LICENSE.md",
+    "copied_to": "sources/python/idna-3.20/licenses/LICENSE.md",
+    "status": "ok"
+  },
+  {
+    "name": "librt",
+    "version": "0.16.0",
+    "license_type": "MIT",
+    "source_file": ".venv/Lib/site-packages/librt-0.16.0.dist-info/licenses/LICENSE",
+    "copied_to": "sources/python/librt-0.16.0/licenses/LICENSE",
+    "status": "ok"
+  },
+  {
+    "name": "mypy_extensions",
+    "version": "1.1.0",
+    "license_type": "MIT",
+    "source_file": ".venv/Lib/site-packages/mypy_extensions-1.1.0.dist-info/licenses/LICENSE",
+    "copied_to": "sources/python/mypy_extensions-1.1.0/licenses/LICENSE",
+    "status": "ok"
+  },
+  {
+    "name": "numpy",
+    "version": "2.5.3",
+    "license_type": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0",
+    "source_file": ".venv/Lib/site-packages/numpy-2.5.3.dist-info/licenses/LICENSE.txt",
+    "copied_to": "sources/python/numpy-2.5.3/licenses/LICENSE.txt",
+    "status": "ok"
+  },
+  {
+    "name": "onnxruntime",
+    "version": "1.30.0",
+    "license_type": "MIT License",
+    "source_file": ".venv/Lib/site-packages/onnxruntime-1.30.0.dist-info/METADATA",
+    "copied_to": "sources/python/onnxruntime-1.30.0/METADATA",
+    "status": "missing_license_file"
+  },
+  {
+    "name": "packaging",
+    "version": "26.3",
+    "license_type": "Apache-2.0 OR BSD-2-Clause",
+    "source_file": ".venv/Lib/site-packages/packaging-26.3.dist-info/licenses/LICENSE",
+    "copied_to": "sources/python/packaging-26.3/licenses/LICENSE",
+    "status": "ok"
+  },
+  {
+    "name": "playwright",
+    "version": "1.63.0",
+    "license_type": "Apache-2.0",
+    "source_file": ".venv/Lib/site-packages/playwright-1.63.0.dist-info/licenses/LICENSE",
+    "copied_to": "sources/python/playwright-1.63.0/licenses/LICENSE",
+    "status": "ok"
+  },
+  {
+    "name": "protobuf",
+    "version": "7.36.2",
+    "license_type": "3-Clause BSD License",
+    "source_file": ".venv/Lib/site-packages/protobuf-7.36.2.dist-info/LICENSE",
+    "copied_to": "sources/python/protobuf-7.36.2/LICENSE",
+    "status": "ok"
+  },
+  {
+    "name": "pyee",
+    "version": "13.0.1",
+    "license_type": "MIT",
+    "source_file": ".venv/Lib/site-packages/pyee-13.0.1.dist-info/licenses/LICENSE",
+    "copied_to": "sources/python/pyee-13.0.1/licenses/LICENSE",
+    "status": "ok"
+  },
+  {
+    "name": "Pygments",
+    "version": "2.21.0",
+    "license_type": "BSD-2-Clause",
+    "source_file": ".venv/Lib/site-packages/pygments-2.21.0.dist-info/licenses/LICENSE",
+    "copied_to": "sources/python/Pygments-2.21.0/licenses/LICENSE",
+    "status": "ok"
+  },
+  {
+    "name": "PyYAML",
+    "version": "6.0.3",
+    "license_type": "MIT",
+    "source_file": ".venv/Lib/site-packages/pyyaml-6.0.3.dist-info/licenses/LICENSE",
+    "copied_to": "sources/python/PyYAML-6.0.3/licenses/LICENSE",
+    "status": "ok"
+  },
+  {
+    "name": "tokenizers",
+    "version": "0.23.2",
+    "license_type": "OSI Approved :: Apache Software License",
+    "source_file": ".venv/Lib/site-packages/tokenizers-0.23.2.dist-info/METADATA",
+    "copied_to": "sources/python/tokenizers-0.23.2/METADATA",
+    "status": "missing_license_file"
+  },
+  {
+    "name": "tomlkit",
+    "version": "0.15.1",
+    "license_type": "MIT",
+    "source_file": ".venv/Lib/site-packages/tomlkit-0.15.1.dist-info/licenses/LICENSE",
+    "copied_to": "sources/python/tomlkit-0.15.1/licenses/LICENSE",
+    "status": "ok"
+  },
+  {
+    "name": "tqdm",
+    "version": "4.70.1",
+    "license_type": "MPL-2.0 AND MIT",
+    "source_file": ".venv/Lib/site-packages/tqdm-4.70.1.dist-info/licenses/LICENCE",
+    "copied_to": "sources/python/tqdm-4.70.1/licenses/LICENCE",
+    "status": "ok"
+  },
+  {
+    "name": "typing_extensions",
+    "version": "4.16.0",
+    "license_type": "PSF-2.0",
+    "source_file": ".venv/Lib/site-packages/typing_extensions-4.16.0.dist-info/licenses/LICENSE",
+    "copied_to": "sources/python/typing_extensions-4.16.0/licenses/LICENSE",
+    "status": "ok"
+  }
+]
