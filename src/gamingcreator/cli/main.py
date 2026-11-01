@@ -312,6 +312,23 @@ def _parser() -> CliParser:
     shots.add_argument("--project", type=Path, required=True)
     shots.add_argument("--run", required=True)
     shots.add_argument("--output", type=Path, required=True, help="新报告JSON路径")
+    knowledge_import = commands.add_parser(
+        "import-knowledge",
+        help="从本机文件夹批量导入 txt／md（可选截图／PDF）到游戏知识库；不联网",
+    )
+    knowledge_import.add_argument("--game", required=True)
+    knowledge_import.add_argument("--directory", type=Path, required=True)
+    knowledge_import.add_argument(
+        "--source-kind",
+        required=True,
+        choices=["official", "wiki", "user"],
+    )
+    knowledge_import.add_argument("--source-label", default="", help="来源说明，写入每条 citation")
+    knowledge_import.add_argument(
+        "--include-media",
+        action="store_true",
+        help="同时导入目录内截图／PDF（本机 OCR）",
+    )
     ocr = commands.add_parser(
         "ocr-frames",
         help="用Windows自带文字识别读取一个任务取帧时刻的原片画面文字；只读、不下载、不花钱",
@@ -1784,6 +1801,20 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
         )
     if args.command == "inventory-sources":
         asyncio.run(execute_inventory_sources(args.input, args.output.resolve(), Path.cwd()))
+        return None
+    if args.command == "import-knowledge":
+        from gamingcreator.cli.knowledge_import import execute_import_knowledge
+
+        asyncio.run(
+            execute_import_knowledge(
+                Path.cwd(),
+                game=args.game,
+                directory=args.directory,
+                source_kind=args.source_kind,
+                source_label=args.source_label,
+                include_media=bool(args.include_media),
+            )
+        )
         return None
     if args.command == "ocr-frames":
         asyncio.run(

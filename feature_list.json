@@ -615,7 +615,8 @@
             "first_product": false,
             "delivery_status": "partial",
             "implementation_evidence": [
-                "2026-11-01: local game knowledge entries with source kind/label, content-addressed immutable files and replaces-based version history; text or local file input via the activity-rule readers; game-scoped keyword search with citations and insert-into-narration; HTTP and unit tests; no automatic planner citation or web crawling"
+                "2026-11-01: local game knowledge entries with source kind/label, content-addressed immutable files and replaces-based version history; text or local file input via the activity-rule readers; game-scoped keyword search with citations and insert-into-narration; HTTP and unit tests; no automatic planner citation or web crawling",
+                "2026-11-01: local directory batch import for txt/md (optional screenshots/PDF via existing read_rule_source OCR); CLI import-knowledge, POST /api/knowledge-import, creation-page folder path; source labels include 目录导入 + filename; no network scraping; duplicate game+text skipped; auto planner citation and web crawl still open"
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

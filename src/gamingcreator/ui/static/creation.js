@@ -731,7 +731,11 @@
         const label = document.createElement("input"); label.id = "knowledge-source"; label.placeholder = "来源说明，如 官网11月公告"; label.maxLength = 200;
         const save = node("button", "保存条目"), status = node("p", ""); save.id = "knowledge-save"; save.type = "button"; status.id = "knowledge-status"; status.setAttribute("role", "status");
         const queryLabel = node("label", "查找"); queryLabel.append(query);
-        const addBox = node("details", ""); addBox.append(node("summary", "新增知识条目"), title, text, file, kind, label, save);
+        const dir = document.createElement("input"); dir.id = "knowledge-directory"; dir.placeholder = "本机文件夹路径，批量导入 txt／md";
+        const includeMedia = document.createElement("input"); includeMedia.id = "knowledge-include-media"; includeMedia.type = "checkbox";
+        const includeLabel = node("label", "同时导入截图／PDF（本机 OCR，可能有错字）"); includeLabel.prepend(includeMedia);
+        const importDir = node("button", "从目录导入"); importDir.id = "knowledge-import-dir"; importDir.type = "button";
+        const addBox = node("details", ""); addBox.append(node("summary", "新增知识条目"), title, text, file, kind, label, save, node("p", "或从本机目录批量导入（不联网）："), dir, includeLabel, importDir);
         panel.append(queryLabel, find, list, addBox, status); form.after(panel);
         const game = () => form.elements.game.value.trim();
         async function refresh() {
@@ -767,7 +771,28 @@
                 const entry = await api("/api/knowledge", body);
                 status.textContent = `已保存“${entry.title}”。`; title.value = ""; text.value = ""; file.value = "";
                 await refresh();
-            } catch (error) { status.textContent = `保存失败：${error.message}`; }
+            }             } catch (error) { status.textContent = `保存失败：${error.message}`; }
+        });
+        importDir.addEventListener("click", async () => {
+            if (!game()) { status.textContent = "请先在需求里填写游戏名。"; return; }
+            if (!dir.value.trim()) { status.textContent = "请填写本机文件夹路径。"; return; }
+            importDir.disabled = true;
+            try {
+                const report = await api("/api/knowledge-import", {
+                    game: game(),
+                    directory: dir.value.trim(),
+                    sourceKind: kind.value,
+                    sourceLabel: label.value,
+                    includeMedia: includeMedia.checked,
+                });
+                if (!report || report.schemaVersion !== "knowledge-directory-import-v1" || !report.summary) {
+                    throw new Error("目录导入结果格式不正确。");
+                }
+                const s = report.summary;
+                status.textContent = `目录导入完成：成功 ${s.imported} · 跳过 ${s.skipped} · 失败 ${s.failed}（共扫描 ${s.considered} 个文件，不联网）。`;
+                await refresh();
+            } catch (error) { status.textContent = `目录导入失败：${error.message}`; }
+            finally { importDir.disabled = false; }
         });
     })();
     const team = {value: null};

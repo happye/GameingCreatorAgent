@@ -396,6 +396,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/detect-shots",
                 "/api/ocr-frames",
                 "/api/make-proxy-batch",
+                "/api/knowledge-import",
             }:
                 self._json(404, {"code": "input.route", "message": "没有这个操作。"})
                 return
@@ -472,6 +473,38 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     self._json(200, KnowledgeStore(self.repository).add(value))
                 except ValueError as error:
                     raise AppError("knowledge.input", str(error), ExitCode.INPUT) from error
+                return
+            if path == "/api/knowledge-import":
+                from gamingcreator.application.knowledge_import import (
+                    import_knowledge_directory,
+                )
+                from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
+
+                if type(value) is not dict:
+                    raise ValueError("Expected knowledge import fields.")
+                required = {"game", "directory", "sourceKind", "sourceLabel"}
+                if not required <= set(value) <= required | {"includeMedia"}:
+                    raise ValueError("Expected game, directory, sourceKind, sourceLabel.")
+                if any(type(value[key]) is not str for key in ("game", "directory", "sourceKind", "sourceLabel")):
+                    raise ValueError("Knowledge import fields must be text.")
+                include_media = value.get("includeMedia", False)
+                if type(include_media) is not bool:
+                    raise ValueError("includeMedia must be a boolean.")
+                try:
+                    report = asyncio.run(
+                        import_knowledge_directory(
+                            KnowledgeStore(self.repository),
+                            game=value["game"],
+                            directory=Path(value["directory"]),
+                            source_kind=value["sourceKind"],
+                            source_label=value["sourceLabel"],
+                            include_media=include_media,
+                            scratch=self.repository / ".cache/workspace/knowledge-import",
+                        )
+                    )
+                except ValueError as error:
+                    raise AppError("knowledge.import", str(error), ExitCode.INPUT) from error
+                self._json(200, report)
                 return
             if path == "/api/creation/timeline-commands":
                 from gamingcreator.application.timeline_commands import (
