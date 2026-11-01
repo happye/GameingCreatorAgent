@@ -29,3 +29,6 @@ profile exact `{Platform,RuleVersion,UpdatedAt,Source,Fields}`，Source=`{kind:'
 2026-10-31四平台预览包已交，Goal active：可编辑配置→真实横竖视频/封面→七文件ZIP→本地限值报告；47主树联合测试、补充3换行/版本回归、8源码mypy/Ruff与Sol/high关键评估PASS。实际四平台ZIP/35帧30fps/音轨/旧配置/刷新0POST/新实例0worker通过；故意1字节上限fail、另实测test_only音乐blocked。P034–P037未开始→部分，51项10/19/22≈38%、首产品0/12/10≈27%；人工必做0项/未来8项、技术债10/2/5不变，规则/权利/质量仍未知，无新模型/外部发布。下一逐镜头变速及音频字幕跟随。
 
 Astra/low设计，两Sol/medium后端/前端，唯一Sol/high审查PASS。主树47测试通过（.cache/platform-main.xml），Ruff/8源码mypy通过；新增简介CRLF/裸CR/TAB保留支持，read_text归一化曾导致校验失败，已改raw bytes UTF8并3项真实版本/重启回归通过。真实工作台四独立平台任务，横1280x720/竖720x1280/720x960；帧35/fps30音轨正确、ZIP exact7内容SHA与文件一致，无内部路径/原素材/附件。1字节限值报告fail且可下载；旧profile回填/重启不重encode；另真实test_only音乐预览包completed但eligibility blocked，非商业通过。实际证据.cache/platform-package-real-browser.json、platform-package-test-music.json、platform-package-mobile.png，截图已看，临时服务关闭。下一变速，不重做原验证。
+## 追加（T22）
+
+2026-11-01：platform-presets-v1 manifest＋platform_preset_loader 版本化加载四平台 JSON；package_jobs.profiles() 走 loader；页面编辑覆盖不变；限值仍可为 null（not_configured）；**不宣称官方已核**。
