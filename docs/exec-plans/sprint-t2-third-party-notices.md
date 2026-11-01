@@ -1,6 +1,6 @@
 # Sprint T2：第三方许可证随包材料
 
-**状态（2026-11-01）：feature 待推送（docs 另记）。** 便携应用打包时生成 `licenses/`：从本机已有 LICENSE/LICENCE/COPYING/NOTICE 与 dist-info `licenses/` 树、CPython `LICENSE.txt`、WebView2 `LICENSE.txt` 复制；汇总 `licenses/THIRD-PARTY-NOTICES.md`。缺正文的组件记入 `licenses/gaps.json` 与 `docs/exec-plans/human-inputs.md`，**不下载、不猜测**。
+**状态（2026-11-01）：已推送 origin/main d1672f4（docs 另记）。** 便携应用打包时生成 `licenses/`：从本机已有 LICENSE/LICENCE/COPYING/NOTICE 与 dist-info `licenses/` 树、CPython `LICENSE.txt`、WebView2 `LICENSE.txt` 复制；汇总 `licenses/THIRD-PARTY-NOTICES.md`。缺正文的组件记入 `licenses/gaps.json` 与 `docs/exec-plans/human-inputs.md`，**不下载、不猜测**。
 
 ## 做法
 

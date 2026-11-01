@@ -1,6 +1,8 @@
 # 当前接手：51项全部至少部分可用，下一步把部分项推进到可验收
 
-**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1 已完成；下一步 T2 第三方许可证随包材料）。**
+**交接给 Grok：长任务清单见 [docs/exec-plans/grok-task-list.md](docs/exec-plans/grok-task-list.md)（T1／T2 已完成；下一步 T3 安装器可选快捷方式）。**
+
+2026-11-01 T2 第三方许可证随包材料（d1672f4）：`collect-third-party-notices.py` 只读本机 LICENSE／METADATA，写出 `licenses/THIRD-PARTY-NOTICES.md`；build／install 带上 `licenses`；缺 FFmpeg／模型／MSVC／部分 wheel 正文已记 human-inputs；pytest 与 build 后包内 notices 已验。计数不变：51项10/41/0≈60%；技术债21项12/4/5；人工现在0／未来8。
 
 2026-11-01 T1 便携应用内置本地模型（32a8ab0）：`model_directory` 优先 `.cache/models`、安装版走 `models/`；ASR／嵌入接线；`build-app`/`install-app` 打包 models＋docs＋native，安装后改写 pyvenv.cfg 到目标运行时；`build-app -Smoke` 就绪；打包与临时安装目录嵌入 `query: 测试` 384 维、ASR 清单文件校验通过；体积 866MB＜1.5GB。计数不变：51项10/41/0≈60%；技术债21项12/4/5。
 

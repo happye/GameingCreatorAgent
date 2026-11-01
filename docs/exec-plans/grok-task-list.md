@@ -23,7 +23,7 @@
   4. `scripts/install-app.ps1`：`$programParts` 同步加 `docs`、`models`（升级/卸载才会替换和删除它们）。
   5. 验收：`build-app.ps1 -Smoke` 通过；用打包目录里的 `.venv\Scripts\python.exe -B -c` 调 `LocalEmbeddings.from_manifest(<app>)` 真实嵌入一句 `query: 测试`，并调用 `_pinned_asr_settings(<app>)` 做文件校验；用 `install-app.ps1` 装到临时目录再测一次后卸载删除。总大小仍须小于 1.5GB（预计约 870MB）。
 
-### T2 第三方许可证随包材料
+### T2 第三方许可证随包材料 ✅ 已完成（d1672f4）
 - 生成 `Output/licenses/`：CPython、FFmpeg（固定构建的 LICENSE/编译参数说明）、WebView2 SDK（`.tools/webview2` 里已解出许可证）、每个运行依赖包（从 `.venv/Lib/site-packages/*.dist-info/LICENSE*` 与 METADATA 的 License 字段汇总），模型许可（faster-whisper tiny、multilingual-e5-small 的 model card 许可）。
 - 写一个汇总 `licenses/THIRD-PARTY-NOTICES.md`（包名、版本、许可证类型、来源文件）。缺许可证文件的包列出来记入 human-inputs（需用户确认分发），不要自己猜。
 - 加测试：build 后 notices 覆盖 site-packages 中每个 dist-info。

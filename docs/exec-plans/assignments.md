@@ -1,5 +1,8 @@
 # 当前分工与恢复入口
 
+**2026-11-01 T2（第三方许可证随包，d1672f4）：** sprint-t2-third-party-notices.md；下一步 T3。
+
+
 **2026-11-01 T1（便携应用内置模型，32a8ab0）：** sprint-t1-portable-app-bundled-models.md；下一步 T2。
 
 
