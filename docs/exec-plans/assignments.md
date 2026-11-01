@@ -1,5 +1,8 @@
 # 当前分工与恢复入口
 
+**2026-11-01 T6（TD021 收尾，见功能提交）：** sprint-t6-td021-remainder.md；下一步 T7。
+
+
 **2026-11-01 T5（TD020 活动规则语料，见功能提交）：** sprint-t5-activity-rules-corpus.md；下一步 T6。
 
 

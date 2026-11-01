@@ -133,10 +133,19 @@ def test_premiere_xmeml_keeps_frames_and_flags_speed():
         ("57", "110"),
         ("110", "137"),
     ]
-    assert (
-        clips[1].find("in").text == "308"
-        and "导入后请在软件内设置速度" in clips[1].find("name").text
-    )
+    assert clips[1].find("in").text == "308" and "（2倍）" in clips[1].find("name").text
+    effect = clips[1].find("./filter/effect")
+    assert effect is not None and effect.findtext("effectid") == "timeremap"
+    params = {p.findtext("parameterid"): p for p in effect.findall("parameter")}
+    assert params["variablespeed"].findtext("value") == "0"
+    assert params["speed"].findtext("value") == "200"
+    keys = params["graphdict"].findall("./graphdict/keyframe")
+    duration = int(clips[1].findtext("duration"))
+    assert [(k.findtext("when"), k.findtext("value")) for k in keys] == [
+        ("0", "0"),
+        (str(duration), f"{duration * 2:g}"),
+    ]
+    assert clips[0].find("filter") is None
     assert len(root.findall(".//file/pathurl")) == 2
     transition = track.find("transitionitem")
     assert (transition.find("start").text, transition.find("end").text) == ("54", "61")

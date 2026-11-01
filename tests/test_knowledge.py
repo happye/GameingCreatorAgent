@@ -5,6 +5,7 @@ import json
 import threading
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 import pytest
 
@@ -229,3 +230,61 @@ def test_narration_draft_cites_matching_knowledge_without_speaking_the_source():
     assert draft["citations"][0]["citation"].startswith("（来源：官方说明")
     tight = build_narration_script(brief, rows, 120, 30, knowledge)
     assert tight["citations"] == [] and "贝多芬" not in tight["text"]
+
+
+def test_entries_tolerate_disappeared_files(tmp_path, monkeypatch):
+    store = KnowledgeStore(tmp_path)
+    first = store.add(
+        {
+            "game": "代号Atom",
+            "title": "A",
+            "text": "保留",
+            "sourceKind": "user",
+            "sourceLabel": "笔记",
+        }
+    )
+    gone = store.root / ("b" * 64 + ".json")
+    gone.write_text(json.dumps({**first, "entryId": "b" * 64, "title": "将消失"}), encoding="utf-8")
+    real_stat = Path.stat
+
+    def flaky_stat(self, *args, **kwargs):
+        if self == gone:
+            raise FileNotFoundError(str(self))
+        return real_stat(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "stat", flaky_stat)
+    assert [e["entryId"] for e in store.entries()] == [first["entryId"]]
+
+
+def test_store_uses_bounded_read_and_exclusive_create(tmp_path, monkeypatch):
+    import gamingcreator.infrastructure.knowledge_store as module
+
+    store = KnowledgeStore(tmp_path)
+    calls = {"read": 0, "write": 0}
+    real_read = module.read_bounded
+    real_write = module.write_exclusive_text
+
+    def counting_read(path, limit=module.MAX_ENTRY_BYTES):
+        calls["read"] += 1
+        return real_read(path, limit)
+
+    def counting_write(path, text, *, encoding="utf-8"):
+        calls["write"] += 1
+        return real_write(path, text, encoding=encoding)
+
+    monkeypatch.setattr(module, "read_bounded", counting_read)
+    monkeypatch.setattr(module, "write_exclusive_text", counting_write)
+    store.add(
+        {
+            "game": "代号Atom",
+            "title": "B",
+            "text": "内容",
+            "sourceKind": "user",
+            "sourceLabel": "笔记",
+        }
+    )
+    assert calls["write"] == 1
+    assert store.entries() and calls["read"] >= 1
+    target = next(store.root.glob("*.json"))
+    with pytest.raises(FileExistsError):
+        module.write_exclusive_text(target, "{}" + chr(10))

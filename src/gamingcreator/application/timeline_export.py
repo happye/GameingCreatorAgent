@@ -145,11 +145,40 @@ def to_fcpxml(edl: dict[str, Any], name: str, width: int = 1920, height: int = 1
     )
 
 
+def _xmeml_timeremap(timeline_frames: int, speed: Fraction) -> str:
+    """FCP7 / Premiere Time Remap filter for a constant speed (Apple xmeml effectid=timeremap).
+
+    Constant speed uses parameter speed as a percent (100 = 1x), with variablespeed=0, as in
+    the Final Cut Pro XML Interchange Format Time Remap effect that Premiere imports.
+    Live import into Premiere is still unverified on this machine.
+    """
+    if speed == 1:
+        return ""
+    percent = float(speed * 100)
+    return (
+        "<filter><effect><name>Time Remap</name><effectid>timeremap</effectid>"
+        "<effectcategory>motion</effectcategory><effecttype>filter</effecttype>"
+        "<mediatype>video</mediatype>"
+        "<parameter><parameterid>variablespeed</parameterid><name>variablespeed</name>"
+        "<value>0</value></parameter>"
+        f"<parameter><parameterid>speed</parameterid><name>speed</name>"
+        f"<value>{percent:g}</value></parameter>"
+        "<parameter><parameterid>reverse</parameterid><name>reverse</name>"
+        "<value>FALSE</value></parameter>"
+        "<parameter><parameterid>frameblending</parameterid><name>frameblending</name>"
+        "<value>FALSE</value></parameter>"
+        f"<parameter><parameterid>graphdict</parameterid><name>graphdict</name><graphdict>"
+        f"<keyframe><when>0</when><value>0</value></keyframe>"
+        f"<keyframe><when>{timeline_frames}</when><value>{float(timeline_frames * speed):g}</value>"
+        "</keyframe></graphdict></parameter></effect></filter>"
+    )
+
+
 def to_xmeml(edl: dict[str, Any], name: str) -> str:
     """Final Cut Pro 7 XML (xmeml v4), which Premiere Pro imports.
 
-    xmeml has no constant-speed attribute on a clip; a speed-changed clip keeps its exact
-    timeline length and source in point, and its name says to set the speed after import.
+    Speed-changed clips keep exact timeline length and source in/out, and carry an FCP7
+    Time Remap filter (effectid=timeremap, constant speed percent + linear graphdict).
     """
     placed = layout(edl)
     fps = int(edl["fpsNumerator"])
@@ -173,7 +202,7 @@ def to_xmeml(edl: dict[str, Any], name: str) -> str:
         span = int(item["frames"] * item["speed"])
         label = row.get("role") or Path(source).name
         if item["speed"] != 1:
-            label += f"（{item['speed']}倍，导入后请在软件内设置速度）"
+            label += f"（{item['speed']}倍）"
         if file_id in declared:
             file_xml = f'<file id="{file_id}"/>'
         else:
@@ -184,10 +213,12 @@ def to_xmeml(edl: dict[str, Any], name: str) -> str:
                 f"<pathurl>{escape(_uri(source))}</pathurl>{rate}<duration>{duration}</duration>"
                 "<media><video/><audio/></media></file>"
             )
+        remap = _xmeml_timeremap(item["frames"], item["speed"])
         items.append(
             f'        <clipitem id="clip-{index}"><name>{escape(label)}</name>{rate}'
             f"<start>{item['offset']}</start><end>{item['offset'] + item['frames']}</end>"
-            f"<in>{source_in}</in><out>{source_in + span}</out>{file_xml}</clipitem>"
+            f"<in>{source_in}</in><out>{source_in + span}</out>"
+            f"<duration>{item['frames']}</duration>{file_xml}{remap}</clipitem>"
         )
     total = sum(item["frames"] for item in placed)
     return (

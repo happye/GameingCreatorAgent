@@ -41,7 +41,7 @@
 ### T5 TD020 活动规则句式覆盖 ✅ 已完成（ba7827d）
 - 在 `tests/` 建一个活动规则样例语料（至少 60 条真实风格写法：多阶段时间“第一阶段…第二阶段…”、“截止到”“自…起”、全角数字、“不少于/至少/≥”、“禁止/不得/请勿”、OCR 常见错字如“秒→杪”）。逐条期望值写进测试，扩展 `application/activity_rules.py` 规则；识别不了的必须返回“未识别”而不是猜。更新 TD020 状态。
 
-### T6 TD021 剩余项
+### T6 TD021 剩余项 ✅ 已完成
 - `infrastructure/knowledge_store.py` 改用 `infrastructure/local_files.py` 的有界读取与独占创建 helper；`entries()` 的 mtime 排序对消失文件容错。
 - Premiere xmeml 变速片段：查 FCP7 XML 规范中 `<rate>`/`timeremap` 写法，若能确定就补上并加 XML 结构测试；无法验证则保持现状并写明。
 

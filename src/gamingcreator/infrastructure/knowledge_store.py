@@ -6,9 +6,11 @@ from pathlib import Path
 from typing import Any
 
 from gamingcreator.application.knowledge import is_valid, new_entry
+from gamingcreator.infrastructure.local_files import read_bounded, write_exclusive_text
 from gamingcreator.infrastructure.local_paths import is_link
 
 MAX_ENTRIES = 5000
+MAX_ENTRY_BYTES = 256_000
 
 
 class KnowledgeStore:
@@ -25,14 +27,20 @@ class KnowledgeStore:
     def entries(self) -> list[dict[str, Any]]:
         directory = self._directory()
         # Newest files first, so a cap never drops the latest versions of an entry.
-        files = sorted(directory.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
-        files = files[:MAX_ENTRIES]
-        loaded = []
-        for path in files:
+        ranked: list[tuple[float, Path]] = []
+        for path in directory.glob("*.json"):
             try:
-                entry = json.loads(path.read_text(encoding="utf-8"))
-            except (OSError, ValueError):
-                continue  # A damaged file is skipped rather than guessed.
+                ranked.append((path.stat().st_mtime, path))
+            except OSError:
+                # A file may disappear between glob and stat; skip it instead of failing.
+                continue
+        ranked.sort(key=lambda item: item[0], reverse=True)
+        loaded = []
+        for _, path in ranked[:MAX_ENTRIES]:
+            try:
+                entry = json.loads(read_bounded(path, MAX_ENTRY_BYTES).decode("utf-8"))
+            except (OSError, ValueError, UnicodeError):
+                continue  # A damaged or oversized file is skipped rather than guessed.
             if is_valid(entry) and entry["entryId"] == path.stem:
                 loaded.append(entry)
         return loaded
@@ -48,6 +56,5 @@ class KnowledgeStore:
                 # Replacing an old version again would leave two "latest" entries side by side.
                 raise ValueError("这个条目已经有更新的版本，请在最新版本上修改。")
         target = self._directory() / f"{entry['entryId']}.json"
-        with target.open("x", encoding="utf-8", newline="\n") as stream:
-            stream.write(json.dumps(entry, ensure_ascii=False, indent=2) + "\n")
+        write_exclusive_text(target, json.dumps(entry, ensure_ascii=False, indent=2) + "\n")
         return entry

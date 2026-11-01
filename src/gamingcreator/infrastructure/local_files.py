@@ -7,6 +7,33 @@ from gamingcreator.application.inputs import AnalysisConfig
 from gamingcreator.domain.errors import invalid_config, invalid_video
 
 MAX_CONFIG_BYTES = 1024 * 1024
+MAX_JSON_BYTES = 1_048_576
+
+
+def read_bounded(path: Path, limit: int = MAX_JSON_BYTES) -> bytes:
+    """Read at most limit bytes; refuse oversized files instead of loading them whole."""
+    if type(limit) is not int or limit <= 0:
+        raise ValueError("读取上限无效。")
+    try:
+        with path.open("rb") as stream:
+            data = stream.read(limit + 1)
+    except OSError as error:
+        raise ValueError("无法读取文件。") from error
+    if len(data) > limit:
+        raise ValueError("文件超过读取上限。")
+    return data
+
+
+def write_exclusive_text(path: Path, text: str, *, encoding: str = "utf-8") -> None:
+    """Create a new text file exclusively (fail if it already exists); never overwrite."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with path.open("x", encoding=encoding, newline="\n") as stream:
+            stream.write(text)
+    except FileExistsError:
+        raise
+    except OSError as error:
+        raise ValueError("无法写入文件。") from error
 
 
 def _object(value: object, fields: set[str]) -> dict[str, object]:
