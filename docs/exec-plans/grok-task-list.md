@@ -65,7 +65,7 @@
 - docs/references/creation-guide.md 已扩为安装→发布包通俗全流程（每步入口／会发生／不会发生／常见问题）；见 sprint-t12-creation-user-guide.md。
 ### T13 pycache 清理 ✅ 已完成（4e28c31）
 - 确认 gitignore；删除 src/gamingcreator 下 6×__pycache__／106×.pyc（未跟踪）；见 sprint-t13-pycache-cleanup.md。
-### T14 进度看板逐行核对 ✅ 已完成（待 SHA）
+### T14 进度看板逐行核对 ✅ 已完成（aed73e8）
 - 每个 🟡／partial 已在 sprint-t14-progress-board-audit.md 标明缺口、用户／外部、可本地；可本地项拆为 T17–T28 追加于下。
 - T15 CLI `render-creation` 是否应读取套餐水印：当前设计为开发者路径不加水印（复审结论），若改变需先写决策记录（ADR）再实现。
 - T16 性能：`CreationJobs.feedback()` 每次生成方案都全量扫描任务目录；任务多时可加简单索引或缓存（必须以文件内容哈希失效，不能用过期统计）。
