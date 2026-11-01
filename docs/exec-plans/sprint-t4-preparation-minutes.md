@@ -1,6 +1,6 @@
 # Sprint T4：Free 套餐“分析分钟数”计量（总方案 §40）
 
-**状态（2026-11-01）：已实现并推送 origin/main（见本提交）。** 工作台“准备录像”在新提交时用本机 ffprobe 读录像时长，按自然月累计到 `.cache/workspace/creations/entitlement-usage.json`（独占锁 + 原子替换）。Free 每月 60 分钟；Creator / Pro / 创始人版不限。超出返回 `entitlement.denied` 中文说明。“套餐与用量”显示本月已用准备分钟。
+**状态（2026-11-01）：已推送 origin/main f6433f4。** 工作台“准备录像”在新提交时用本机 ffprobe 读录像时长，按自然月累计到 `.cache/workspace/creations/entitlement-usage.json`（独占锁 + 原子替换）。Free 每月 60 分钟；Creator / Pro / 创始人版不限。超出返回 `entitlement.denied` 中文说明。“套餐与用量”显示本月已用准备分钟。
 
 ## 政策（失败批次）
 
