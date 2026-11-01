@@ -23,6 +23,7 @@ def build(folder: Path, label: str) -> Path:
         f".tools/python/{runtime}/runtime.txt": label,
         ".venv/pyvenv.cfg": f"home = C:/old-build/{label}/.tools/python/{runtime}",
         "desktop/bin/GamingCreator.txt": label,
+        "desktop/bin/GamingCreator.exe": label,
         "docs/references/asr-models.json": "{}",
         "docs/references/asr-native-toolchain.json": "{}",
         "docs/references/embedding-model.json": "{}",
@@ -236,3 +237,83 @@ def test_install_retargets_pyvenv_home_to_destination_runtime(tmp_path):
     expected = str((destination / ".tools/python/cpython-fixture").resolve())
     assert f"home = {expected}" in cfg
     assert "C:/old-build/" not in cfg
+
+
+def test_start_menu_shortcut_created_when_requested_and_removed_on_uninstall(tmp_path):
+    source = build(tmp_path / "src", "one")
+    destination = tmp_path / "GamingCreator"
+    shortcuts = tmp_path / "StartMenu"
+    result = run(
+        "-Source",
+        str(source),
+        "-Destination",
+        str(destination),
+        "-StartMenuShortcut",
+        "-ShortcutDirectory",
+        str(shortcuts),
+    )
+    assert result.returncode == 0, result.stderr
+    link = shortcuts / "GamingCreator.lnk"
+    assert link.is_file()
+    info = receipt(destination)
+    assert Path(info["startMenuShortcut"]) == link.resolve()
+    # Shortcut target should be the installed launcher.
+    assert "GamingCreator.exe" in (destination / "desktop/bin/GamingCreator.exe").read_text(
+        encoding="utf-8"
+    ) or (destination / "desktop/bin/GamingCreator.exe").exists()
+
+    result = run("-Destination", str(destination), "-Uninstall")
+    assert result.returncode == 0, result.stderr
+    assert not link.exists()
+
+
+def test_start_menu_shortcut_skipped_by_default(tmp_path):
+    source = build(tmp_path / "src", "one")
+    destination = tmp_path / "GamingCreator"
+    shortcuts = tmp_path / "StartMenu"
+    shortcuts.mkdir()
+    result = run(
+        "-Source",
+        str(source),
+        "-Destination",
+        str(destination),
+        "-ShortcutDirectory",
+        str(shortcuts),
+    )
+    assert result.returncode == 0, result.stderr
+    assert list(shortcuts.iterdir()) == []
+    info = receipt(destination)
+    assert info.get("startMenuShortcut") in (None, "")
+
+
+def test_upgrade_without_flag_keeps_recorded_shortcut(tmp_path):
+    first = build(tmp_path / "first", "one")
+    second = build(tmp_path / "second", "two")
+    destination = tmp_path / "GamingCreator"
+    shortcuts = tmp_path / "StartMenu"
+    assert (
+        run(
+            "-Source",
+            str(first),
+            "-Destination",
+            str(destination),
+            "-StartMenuShortcut",
+            "-ShortcutDirectory",
+            str(shortcuts),
+        ).returncode
+        == 0
+    )
+    link = shortcuts / "GamingCreator.lnk"
+    assert link.is_file()
+    recorded = receipt(destination)["startMenuShortcut"]
+    result = run(
+        "-Source",
+        str(second),
+        "-Destination",
+        str(destination),
+        "-ShortcutDirectory",
+        str(shortcuts),
+    )
+    assert result.returncode == 0, result.stderr
+    assert link.is_file()
+    assert receipt(destination)["startMenuShortcut"] == recorded

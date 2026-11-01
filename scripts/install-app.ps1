@@ -2,10 +2,13 @@ param(
   [string]$Source = '',
   [string]$Destination = '',
   [switch]$Uninstall,
-  [switch]$Smoke
+  [switch]$Smoke,
+  [switch]$StartMenuShortcut,
+  [string]$ShortcutDirectory = ''
 )
 # Installs, upgrades or uninstalls the portable app built by build-app.ps1, per user, with no
-# registry, shortcut or system change. Only the program parts are replaced or removed; the
+# registry or system change. A Start Menu shortcut is created only when -StartMenuShortcut is
+# passed. Only the program parts are replaced or removed; the
 # user's data in the same folder (.cache with creations, ledgers and logs, projects, outputs)
 # is never touched. An upgrade stages the new copy next to the old one and swaps it in,
 # restoring the previous program parts if any step fails.
@@ -24,6 +27,42 @@ $marker = '.gamingcreator-app.json'
 $receiptName = '.gamingcreator-install.json'
 # Left by an uninstall that kept user data, so the same folder can be installed into again.
 $dataMarker = '.gamingcreator-data.json'
+$shortcutFileName = 'GamingCreator.lnk'
+
+function Get-ShortcutDirectory {
+  if ($ShortcutDirectory) { return Resolve-UserPath $ShortcutDirectory }
+  return [IO.Path]::GetFullPath((Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'))
+}
+
+function Read-InstallReceipt([string]$Folder) {
+  $path = Join-Path $Folder $receiptName
+  if (-not (Test-Path -LiteralPath $path)) { return $null }
+  return (Get-Content -Raw -Encoding UTF8 -LiteralPath $path | ConvertFrom-Json)
+}
+
+function New-StartMenuShortcut([string]$AppRoot, [string]$LinkPath) {
+  $target = Join-Path $AppRoot 'desktop\bin\GamingCreator.exe'
+  if (-not (Test-Path -LiteralPath $target)) { throw "Launcher missing at $target; shortcut not created." }
+  $dir = Split-Path -Parent $LinkPath
+  New-Item -ItemType Directory -Force -Path $dir | Out-Null
+  $shell = New-Object -ComObject WScript.Shell
+  $shortcut = $shell.CreateShortcut($LinkPath)
+  $shortcut.TargetPath = $target
+  $shortcut.WorkingDirectory = (Split-Path -Parent $target)
+  $shortcut.Description = 'Gaming Creator'
+  $shortcut.Save()
+  return [IO.Path]::GetFullPath($LinkPath)
+}
+
+function Remove-RecordedShortcut([string]$LinkPath) {
+  if (-not $LinkPath) { return }
+  $full = [IO.Path]::GetFullPath($LinkPath)
+  if (-not (Test-Path -LiteralPath $full)) { return }
+  # Only remove the exact recorded GamingCreator.lnk we created.
+  if ([IO.Path]::GetFileName($full) -ne $shortcutFileName) { return }
+  Remove-Item -LiteralPath $full -Force
+}
+
 
 function Read-Marker([string]$Folder) {
   $path = Join-Path $Folder $marker
@@ -68,6 +107,11 @@ if (Test-Path -LiteralPath $Destination) {
 if ($Uninstall) {
   if (-not $installed) { throw "No Gaming Creator app is installed in $Destination." }
   Assert-NotRunning $Destination
+  $priorReceipt = Read-InstallReceipt $Destination
+  $recordedShortcut = $null
+  if ($priorReceipt -and $priorReceipt.PSObject.Properties.Name -contains 'startMenuShortcut' -and $priorReceipt.startMenuShortcut) {
+    $recordedShortcut = [string]$priorReceipt.startMenuShortcut
+  }
   # Rename every program part aside first, so a file in use stops the uninstall cleanly.
   $trash = Join-Path (Split-Path -Parent $Destination) ((Split-Path -Leaf $Destination) + '.uninstall-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
   New-Item -ItemType Directory -Path $trash | Out-Null
@@ -93,6 +137,7 @@ if ($Uninstall) {
     Remove-Item -LiteralPath $Destination -Force
     Write-Host "Uninstalled the program; $Destination held no data and was removed."
   }
+  Remove-RecordedShortcut $recordedShortcut
   return
 }
 
@@ -132,6 +177,13 @@ try {
       Copy-Item -LiteralPath $from -Destination (Join-Path $staging $part)
     }
   }
+  $preservedShortcut = $null
+  if ($installed) {
+    $existingReceipt = Read-InstallReceipt $Destination
+    if ($existingReceipt -and $existingReceipt.PSObject.Properties.Name -contains 'startMenuShortcut' -and $existingReceipt.startMenuShortcut) {
+      $preservedShortcut = [string]$existingReceipt.startMenuShortcut
+    }
+  }
   New-Item -ItemType Directory -Force -Path $Destination | Out-Null
   New-Item -ItemType Directory -Path $previous | Out-Null
   foreach ($part in $programParts) {
@@ -143,6 +195,12 @@ try {
     Move-Entry (Join-Path $staging $part) $current
     $placed.Add($part)
   }
+  $shortcutPath = $null
+  if ($StartMenuShortcut) {
+    $shortcutPath = New-StartMenuShortcut $Destination (Join-Path (Get-ShortcutDirectory) $shortcutFileName)
+  } elseif ($preservedShortcut) {
+    $shortcutPath = $preservedShortcut
+  }
   $receipt = [ordered]@{
     schemaVersion = 'gamingcreator-install-v1'
     installedAt = (Get-Date).ToUniversalTime().ToString('o')
@@ -151,6 +209,7 @@ try {
     version = $built.version
     commit = $built.commit
     upgradedFrom = if ($installed) { [ordered]@{ builtAt = $installed.builtAt; version = $installed.version; commit = $installed.commit } } else { $null }
+    startMenuShortcut = $shortcutPath
   }
   [IO.File]::WriteAllText((Join-Path $Destination $receiptName), ($receipt | ConvertTo-Json -Depth 4), (New-Object System.Text.UTF8Encoding $false))
   Remove-Item -LiteralPath (Join-Path $Destination $dataMarker) -Force -ErrorAction SilentlyContinue
@@ -184,6 +243,9 @@ try {
 }
 $verb = if ($installed) { 'Upgraded' } else { 'Installed' }
 Write-Host ("{0} Gaming Creator in {1}. Start it with {2}" -f $verb, $Destination, (Join-Path $Destination 'desktop\bin\GamingCreator.exe'))
+if ($StartMenuShortcut) {
+  Write-Host ("Start Menu shortcut: {0}" -f (Join-Path (Get-ShortcutDirectory) $shortcutFileName))
+}
 if ($Smoke) {
   $info = New-Object System.Diagnostics.ProcessStartInfo (Join-Path $Destination 'desktop/bin/GamingCreator.exe'), '--smoke'
   $info.UseShellExecute = $false
