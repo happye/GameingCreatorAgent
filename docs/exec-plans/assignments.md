@@ -1,5 +1,8 @@
 # 当前分工与恢复入口
 
+**2026-11-01 T5（TD020 活动规则语料，见功能提交）：** sprint-t5-activity-rules-corpus.md；下一步 T6。
+
+
 **2026-11-01 T4（Free 分析分钟计量）：** sprint-t4-preparation-minutes.md；下一步 T5。
 
 

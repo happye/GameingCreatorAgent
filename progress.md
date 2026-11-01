@@ -1,3 +1,6 @@
+**2026-11-01 T5 TD020 活动规则句式覆盖：** ≥60 条语料回归；自…起/OCR杪/全角/不少于·至少·≥/禁止类扩展；未识别不猜；TD020 resolved。下一步 T6。技术债21项：已解决13 · 部分3 · 未解决5。**
+
+
 **2026-11-01 T4 Free 分析分钟计量：** 仅工作台准备录像时长按月计量；Free 60 分钟；接受时记账、续跑不重复、失败仍计；summary/套餐页显示；pytest test_preparation_minutes + entitlements + media_preparation_jobs。下一步 T5。计数不变：51项10/41/0≈60%。**
 
 

@@ -27,8 +27,8 @@ _RANGE = r"\s*(?:至|到|-|~|～|—|–)\s*"
 _LABEL = (
     r"(?:活动名称|活动主题|赛事名称|活动时间|投稿时间|征集时间|参与平台|发布平台|投稿平台)\s*[:：]"
 )
-_MIN_VERBS = r"不少于|不低于|不得少于|不能少于|至少|最短|≥|>=|大于等于"
-_MAX_VERBS = r"不超过|不得超过|不能超过|不多于|最长|≤|<=|小于等于"
+_MIN_VERBS = r"不少于|不低于|不得少于|不能少于|至少|最短|≥|≧|>=|大于等于"
+_MAX_VERBS = r"不超过|不得超过|不能超过|不多于|最长|≤|≦|<=|小于等于"
 # Only the submitted video itself: 直播/观看/游戏时长 and 示例/素材/原视频 are other things.
 _DURATION_TOPIC = r"(?<!示例)(?<!素材)(?<!参考)(?<!原)(?:视频|作品|成片|投稿)的?(?:时长|长度)"
 _GAP = r"[^。；;\n（(]"
@@ -56,16 +56,24 @@ def _stamp(year: int, month: int, day: int, hour: str | None, minute: str | None
     return f"{year:04d}-{month:02d}-{day:02d}" + (f" {int(hour):02d}:{minute}" if hour else "")
 
 
-def _period(line: str) -> dict[str, str] | None:
-    match = re.search(_FULL + _RANGE + _SHORT, line)
-    # Several ranges (phases) or a pending change are not one stated activity period.
-    if (
-        not match
-        or len(re.findall(_SHORT + _RANGE + _SHORT, line)) != 1
-        or re.search(r"延期|顺延|另行通知|待定|调整为", line)
-    ):
-        return None
-    y1, m1, d1, h1, n1, y2, m2, d2, h2, n2 = match.groups()
+def _normalize_ocr(line: str) -> str:
+    """Fix common OCR confusions before matching; never invent missing facts."""
+    # 杪 (tip of a branch) is a frequent misread of 秒 in screenshots/PDFs.
+    return line.replace("杪", "秒").replace("≧", "≥").replace("≦", "≤")
+
+
+def _period_bounds(
+    y1: str,
+    m1: str,
+    d1: str,
+    h1: str | None,
+    n1: str | None,
+    y2: str | None,
+    m2: str,
+    d2: str,
+    h2: str | None,
+    n2: str | None,
+) -> dict[str, str] | None:
     # A missing end year continues the start year; a wrapped month would be a guess.
     if not y2 and int(m2) < int(m1):
         return None
@@ -74,6 +82,34 @@ def _period(line: str) -> dict[str, str] | None:
     if start is None or end is None or end < start:
         return None
     return {"start": start, "end": end}
+
+
+def _period(line: str) -> dict[str, str] | None:
+    # Several ranges (phases) or a pending change are not one stated activity period.
+    if re.search(r"延期|顺延|另行通知|待定|调整为|第一阶段|第二阶段|第三阶段", line):
+        return None
+    match = re.search(_FULL + _RANGE + _SHORT, line)
+    if match and len(re.findall(_SHORT + _RANGE + _SHORT, line)) == 1:
+        return _period_bounds(*match.groups())
+    # 自 START 起 … 至/到 END（止/结束/截止）— both ends stated, no invented start.
+    since = re.search(
+        r"自\s*"
+        + _FULL
+        + r"\s*起\s*(?:，|,)?\s*(?:至|到|截止到)\s*"
+        + _SHORT
+        + r"\s*(?:止|结束|截止|前)?",
+        line,
+    )
+    if since:
+        return _period_bounds(*since.groups())
+    # START 起至/到 END without a leading 自, still both ends explicit.
+    rising = re.search(
+        _FULL + r"\s*起\s*(?:至|到|截止到)\s*" + _SHORT + r"\s*(?:止|结束|截止|前)?",
+        line,
+    )
+    if rising and len(re.findall(_SHORT + r"\s*起", line)) == 1:
+        return _period_bounds(*rising.groups())
+    return None
 
 
 def _clause(line: str, position: int, marks: str = _CLAUSE_MARKS) -> str:
@@ -192,7 +228,7 @@ def extract_activity_rules(text: object) -> dict[str, object]:
     topics: list[dict[str, Any]] = []
     forbidden: list[dict[str, Any]] = []
     for index, line in enumerate(lines):
-        stripped = line.strip()
+        stripped = _normalize_ocr(line.strip())
         evidence = _evidence(lines, index)
         # Ends at a full-width space, sentence mark, a known label, or any space-led "XX：".
         name = re.search(
@@ -207,11 +243,15 @@ def extract_activity_rules(text: object) -> dict[str, object]:
         if period and first_date:
             # The label closest before the dates decides what kind of period it is.
             labels = re.findall(
-                r"活动时间|活动周期|活动日期|投稿时间|征集时间", stripped[: first_date.start()]
+                r"活动时间|活动周期|活动日期|投稿时间|征集时间|报名时间|截止时间|截止日期",
+                stripped[: first_date.start()],
             )
             if labels and labels[-1] in ("活动时间", "活动周期", "活动日期"):
                 activity.append((period, evidence))
             elif labels:
+                submission.append((period, evidence))
+            elif re.search(r"自.+起|(?:截止到|截止日期|截止时间)", stripped):
+                # Explicit 自…起 or 截止 window with both ends already verified by _period.
                 submission.append((period, evidence))
         low, high = _durations(stripped)
         if low is not None:
