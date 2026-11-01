@@ -30,3 +30,7 @@
 活跃源码放`.worktrees/`，不放`.cache/`。主控/串行任务不需要额外工作树，只读代理不创建副本；并行写者最多三个活跃槽。完成集成后保留必要Git提交或最小补丁，再释放已完成工作树，不把整棵项目目录长期当备份。历史目录必须先确认来源、未提交内容及活跃状态，不能仅按名字删除。
 
 事故证据与已释放58.29GiB的精确记录见[缓存事故](../exec-plans/sprint-cache-reclamation.md)。
+
+## One-shot scratch scripts
+
+Put throwaway helper scripts under `.cache/scratch/` (not the repo root or `.cache/` top level). They are session-end deletable. Do not store models, paid evidence, or user creations there.

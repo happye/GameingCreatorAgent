@@ -60,7 +60,7 @@
 
 ### 人工协助与里程碑同步（持久规则）
 
-关键节点同步时必须同时更新[进度看板](../exec-plans/progress-board.md)：功能完成数、F006步骤、人工待办数、技术债计数、正在做／下一步及“最后更新”行（规则见`AGENTS.md`“Persistent progress board”）。
+关键节点以根目录[`STATUS.md`](../../STATUS.md)为当前状态；进度看板[progress-board.md](../exec-plans/progress-board.md)仅在数字变化时更新（规则见`AGENTS.md`“Persistent status”）。勿为记录 tip SHA／推送结果另开文档提交。
 
 用户于2026-10-11正在填写原片表时要求逐框通俗解释。交付人工表单时先说明用途、每个字段填什么／为什么、一个明确标为假设的完整示例，以及登记与下载保存的区别；解释哪些项管整份记录、哪些项管单条片段、哪些可留空。真人已在填写时不覆盖页面包或假定已保存；说明后再询问最新记录路径、完成范围与真实缺例，避免把界面术语当成操作指导。原片表的具体口径见[字段说明](benchmark-reference-fields-guide.md)。
 

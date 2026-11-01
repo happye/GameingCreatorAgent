@@ -5,6 +5,7 @@ $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 . (Join-Path $PSScriptRoot 'env.ps1')
 . (Join-Path $PSScriptRoot 'toolchain.ps1')
 Push-Location $repositoryRoot
+$testRunRoot = $null
 try {
   Assert-ProjectToolchain -RepositoryRoot $repositoryRoot -RequireVenv
   $pythonPath = Join-Path $repositoryRoot '.venv/Scripts/python.exe'
@@ -38,4 +39,9 @@ try {
   & (Join-Path $repositoryRoot '.venv/Scripts/gamingcreator.exe') --version
   if ($LASTEXITCODE -ne 0) { throw 'Installed console entry point failed.' }
   Write-Host 'All project checks passed. Media integration requires project-local FFmpeg; check pytest skip counts.'
-} finally { Pop-Location }
+} finally {
+  if ($testRunRoot -and (Test-Path -LiteralPath $testRunRoot)) {
+    Remove-Item -LiteralPath $testRunRoot -Recurse -Force -ErrorAction SilentlyContinue
+  }
+  Pop-Location
+}

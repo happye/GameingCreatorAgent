@@ -1,8 +1,8 @@
 # Grok Build — Gaming Creator Agent
 
-For a new chat, follow the current HANDOFF and its resumption checklist. Explain the rejection trigger and whole-task stopping mechanism; prioritize defects blocking the deliverable. Continue authorized local development without repeating completed annotation or paid attempts.
+For a new chat, follow `STATUS.md` and the short `HANDOFF.md` snapshot. Explain the rejection trigger and whole-task stopping mechanism; prioritize defects blocking the deliverable. Continue authorized local development without repeating completed annotation or paid attempts.
 
-Use the root `AGENTS.md` as the shared repository guide. Read `HANDOFF.md` when resuming work and follow `docs/references/agent-workflow.md` for assignments and transfers.
+Use the root `AGENTS.md` as the shared repository guide. Read `STATUS.md` (then short `HANDOFF.md`) when resuming work and follow `docs/references/agent-workflow.md` for assignments and transfers.
 
 Keep the shared persistent reporting mode on resumption and tool switches: after each key change, give a detailed plain-language report of what the user can now do, the benefit, verified results and remaining limits, and the next concrete action. Workers supply the same information to the integrator; follow the shared reporting protocol.
 
@@ -16,4 +16,4 @@ Load the shared capability-based subagent routing preference. The [Codex mapping
 
 For substantive milestones follow the shared Planner -> Generator -> independent Evaluator contract in `docs/references/development-agent-pipeline.md`; simple work stays in the parent and is recorded as single-agent work. The portable harness-project-init skill now supplies this tool's native routing adapter; verify actual discovery/model before use rather than treating Codex TOML as this tool's configuration. The integrator persists read-only role outputs.
 
-Load the persistent progress-board rule in `AGENTS.md`: update `docs/exec-plans/progress-board.md` with every major change in the same commit as HANDOFF/sprint/progress/assignments, using verifiable counts only.
+Load the STATUS rule in `AGENTS.md`: update root `STATUS.md` at milestone or session end; touch the progress board only when counts change. Do not add a docs commit solely to record tip SHA or push status.
