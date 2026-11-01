@@ -45,7 +45,7 @@
 - `infrastructure/knowledge_store.py` 改用 `infrastructure/local_files.py` 的有界读取与独占创建 helper；`entries()` 的 mtime 排序对消失文件容错。
 - Premiere xmeml 变速片段：查 FCP7 XML 规范中 `<rate>`/`timeremap` 写法，若能确定就补上并加 XML 结构测试；无法验证则保持现状并写明。
 
-### T7 发布包水印核验 ✅ 已完成
+### T7 发布包水印核验 ✅ 已完成（e7c5a2a）
 - `ui/package_jobs.py::verify` 检查包收据 `watermark` 与父成片收据 `watermark` 一致（旧包缺字段视为 None）；页面在发布包结果里显示“含 Free 水印”。加测试（Free 成片 → 包 → 篡改收据 → 核验失败）。
 
 ### T8 新界面文案的浏览器测试
