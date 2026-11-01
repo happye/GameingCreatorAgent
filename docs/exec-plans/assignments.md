@@ -1,3 +1,4 @@
+**2026-11-01 离线 TD004（过场／cutscene 裸标签标题卡，见功能提交）：** sprint-td004-cutscene-tag-only-noise.md；TD004 仍 open。
 **2026-11-01 离线 TD004（铠甲色特效／冲击波释放／大乱斗模式标题，见功能提交）：** sprint-td004-armor-shockwave-brawl-noise.md；TD004 仍 open。
 **2026-11-01 离线 TD004（Boss 地名假友元／多条件偏匹配，见功能提交）：** sprint-td004-boss-partial-place-noise.md；TD004 仍 open。
 **2026-11-01 离线 TD004（射击代理／汽修域／语义动作门闩，见功能提交）：** sprint-td004-shoot-auto-semantic-noise.md；TD004 仍 open。

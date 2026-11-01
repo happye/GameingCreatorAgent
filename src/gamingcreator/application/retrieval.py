@@ -594,6 +594,37 @@ def _tag_only_action_noise_documents(
     return frozenset(noisy)
 
 
+_CUTSCENE_QUERY = re.compile(
+    r"过场|\bcutscenes?\b|\bcinematics?\b",
+    re.IGNORECASE,
+)
+
+
+def _cutscene_tag_only_noise_documents(
+    documents: tuple[_Document, ...], query: str
+) -> frozenset[str]:
+    """Exclude title/logo cards whose only 过场／cutscene hit is a mechanicTag (TD004).
+
+    Lexical BM25 indexes facts+tags. Demo title cards are liberally tagged 过场画面／
+    过场动画 without saying 过场 in observable facts. Cross-lingual cutscene queries
+    must still keep real fact evidence such as 「过场画面中出现…」.
+    """
+    folded_query = unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
+    if _NEGATIVE_QUERY_INTENT.search(folded_query):
+        return frozenset()
+    if not _CUTSCENE_QUERY.search(folded_query):
+        return frozenset()
+    noisy: set[str] = set()
+    for document in documents:
+        positive = unicodedata.normalize("NFKC", document.positive_text)
+        if _CUTSCENE_QUERY.search(positive):
+            continue
+        tag_blob = unicodedata.normalize("NFKC", '\n'.join(document.tags))
+        if _CUTSCENE_QUERY.search(tag_blob):
+            noisy.add(document.identifier)
+    return frozenset(noisy)
+
+
 def _action_lexical_evidence(document: _Document, query: str) -> str | None:
     """Classify where recognized query-action tokens appear (ranking transparency).
 
@@ -2446,6 +2477,7 @@ async def _search_documents(
         | _armor_evidence_mismatch_documents(documents, query)
         | _shockwave_evidence_mismatch_documents(documents, query)
         | _brawl_mode_title_noise_documents(documents, query)
+        | _cutscene_tag_only_noise_documents(documents, query)
     )
     lexical_winners: dict[str, str] = {}
     lexical_documents = documents

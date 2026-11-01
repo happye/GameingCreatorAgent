@@ -1986,3 +1986,34 @@ def test_jump_query_brawl_mode_only_corpus_abstains():
     assert result.candidates == ()
     assert result.abstention_reason == "no_positive_action_evidence"
 
+@pytest.mark.parametrize("query", ["过场", "cutscene", "cutscenes", "cinematic"])
+def test_cutscene_query_excludes_tag_only_title_cards(query):
+    """TD004: 过场／cutscene must not rank title cards only tagged 过场画面."""
+    from dataclasses import replace
+
+    data = timeline(
+        "画面切换为白色背景，中央显示紫色渐变文字“JUMP明星大乱斗”。",
+        "过场画面中出现标题文字与角色展示。",
+    )
+    tagged = replace(data.events[0], mechanic_tags=("过场画面", "标题文字"))
+    data = replace(data, events=(tagged, data.events[1]))
+    result = search(data, query, "lexical")
+    assert [c.event_id for c in result.candidates] == ["event-1"]
+    assert "过场" in result.candidates[0].observable_facts[0]
+
+
+def test_cutscene_tag_only_corpus_empty():
+    from dataclasses import replace
+
+    data = timeline(
+        "画面切换为白色背景，中央显示紫色渐变文字“JUMP明星大乱斗”。",
+        "画面被蓝色特效覆盖，中央显示NARUTO标志。",
+    )
+    events = (
+        replace(data.events[0], mechanic_tags=("过场画面", "标题文字")),
+        replace(data.events[1], mechanic_tags=("过场动画", "标志展示")),
+    )
+    data = replace(data, events=events)
+    result = search(data, "cutscene", "lexical")
+    assert result.candidates == ()
+
