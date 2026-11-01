@@ -39,3 +39,6 @@
 ## 六、下一步
 
 提交、完整verify；离线候选（工作流排名）：跨镜头窗口与描述质量的离线归因（TD007）、按素材盘点预填登记表（减轻验收第1步工作量）。
+## 追加（T19）
+
+2026-11-01：离线难例夹具 catalog（plain_control／low_contrast／stylized_title）+ 合成 PNG 字节上限回归；Windows OCR 冒烟不做人评／F006 结论。检索接入仍未做。
