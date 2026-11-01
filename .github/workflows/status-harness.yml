@@ -1,0 +1,28 @@
+name: status-harness
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  status-md:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: STATUS.md exists and <=5KB
+        run: |
+          set -euo pipefail
+          test -f STATUS.md
+          bytes=$(wc -c < STATUS.md)
+          echo "STATUS_BYTES=$bytes"
+          test "$bytes" -le 5120
+      - name: AGENTS.md <=6KB
+        run: |
+          set -euo pipefail
+          bytes=$(wc -c < AGENTS.md)
+          echo "AGENTS_BYTES=$bytes"
+          test "$bytes" -le 6144
+      - name: status.py smoke (stdlib only)
+        run: |
+          set -euo pipefail
+          python3 scripts/status.py | head -n 40

@@ -54,4 +54,4 @@
 
 执行句柄91845已结束，PID35160仅历史；没有后台分析要等，不据旧PID操作进程。准备批次已完成。references-v2、imported-v1、frozen-v1不改，冻结SHA8cc6fffcc8693d93ca850a9d35a188b01ef5d7f38d6822cc5f73eeea5a8556b4保持。
 
-Git尚待普通补推：最后确认远端f5a3a69898747917d6477d6985efc2593bb14421；用户断网后仅本地保存，旧许可只限codex/visual-details，不动main／强推。实际HEAD以git及.cache/independent-footage-publication.json为准。旧交接归档handoff-history-2026-10-11-long-analysis.md，不从历史“暂停／未授权／待标注”重启工作。
+Git尚待普通补推：最后确认远端f5a3a69898747917d6477d6985efc2593bb14421；用户断网后仅本地保存，旧许可只限codex/visual-details，不动main／强推。实际HEAD以git及.cache/independent-footage-publication.json为准。旧交接归档../archive/handoff-history/handoff-history-2026-10-11-long-analysis.md，不从历史“暂停／未授权／待标注”重启工作。

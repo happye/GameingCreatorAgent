@@ -2,96 +2,63 @@
 
 ## Project and source of truth
 
-Gaming Creator Agent turns local game footage and a brief into content. Phase 0's CLI analyzes footage and searches a semantic timeline; human retrieval acceptance remains pending. Read `游戏内容创作与商业化产品总方案 V1.0.txt`, `docs/product-specs/phase-0.md`, and `feature_list.json` before changing scope.
+Gaming Creator Agent turns local game footage and a brief into content. Phase 0 CLI analyzes footage and searches a semantic timeline; human retrieval acceptance remains pending. Read `游戏内容创作与商业化产品总方案 V1.0.txt`, `docs/product-specs/phase-0.md`, and `feature_list.json` before changing scope.
+
+**Current state:** root [`STATUS.md`](STATUS.md) (update once at milestone/session end). Short [`HANDOFF.md`](HANDOFF.md) is an overwrite snapshot (≤5KB). Do **not** sync seven docs on every change or open a docs commit just to record tip SHA / push.
 
 ## Repository map
 
-- `src/gamingcreator/{cli,application,domain,infrastructure}/`: four-layer Python core; `ui/`: local inspection workspace; `tests/test_*.py`: pytest behavior and architecture tests.
-- `docs/design-docs/`: architecture and decisions; `docs/product-specs/`: accepted scope.
-- `docs/exec-plans/`: reverse review, validation evidence, task plan, feedback, and debt; `docs/references/`: benchmark and environment rules.
-- `prompts/`, `templates/`, `music/`: future versioned assets. Do not commit user footage or credentials.
-- `CODEX.md`, `CLAUDE.md`, `.grok/rules/project.md`: tool adapters; shared rules live here and in `docs/`.
-- `.claude/agents/`: nine Claude Code subagent roles; routing and Codex mapping in `docs/references/claude-agent-routing-guide.md`.
-- `STATUS.md`: single current-state source (update at milestone or session end).
-- `HANDOFF.md`: short overwrite snapshot (≤5KB); `progress.md`: historical work log.
-- `docs/exec-plans/progress-board.md`: quantified board; update only when the numbers change.
+- `src/gamingcreator/{cli,application,domain,infrastructure}/` · `ui/` · `tests/test_*.py`
+- `docs/design-docs/` · `docs/product-specs/` · `docs/exec-plans/` · `docs/references/` · `docs/archive/` (dated history)
+- `prompts/`, `templates/`, `music/`: future assets. Never commit footage or credentials.
+- Tool adapters: `CODEX.md`, `CLAUDE.md`, `.grok/rules/project.md` → shared rules here and in `docs/`.
+- `.claude/agents/` / committed `.codex/agents/`: nine roles each; routing guides under `docs/references/`.
+- Quantified board: `docs/exec-plans/progress-board.md` — update **only when counts change**.
 
 ## Environment and commands
 
-Use Windows PowerShell. Keep runtimes in `.tools/`, packages in `.venv/`, and caches in `.cache/`; never install globally or change user/system configuration. `toolchain.json` pins portable uv and CPython. See `docs/references/isolated-environment.md`.
+Windows PowerShell. Runtimes in `.tools/`, packages in `.venv/`, caches in `.cache/`; never install globally. Pin via `toolchain.json`. See `docs/references/isolated-environment.md`.
 
-- `./scripts/setup-demo.ps1`: prepare isolated tools, dependencies, ASR and embedding models; `-Offline` requires cached assets.
-- `./scripts/run-demo.ps1 -Run <id>`: search an existing demo; `-Video <path>` starts paid vision analysis.
-- `./scripts/run-ui.ps1`: open local preview, evidence, search and interval exports.
-- `./scripts/search-project.ps1 -Run <ids> -Query <text>`: search explicitly selected different Completed recordings; optional `-DetailProfile v1|v2|v3|v4|v5` uses exact saved, supported observations. The workbench exposes “含已有细节”; see `docs/references/saved-detail-retrieval-guide.md`. Text ranking does not prove same-actor conditions; no new analysis is dispatched.
-- `./scripts/confirm-detail-billing.ps1`: append a human zero-charge confirmation for one explicitly identified ended attempt; see `docs/references/detail-billing-confirmation-guide.md`. Original API unknown costs, ledgers and send limits remain; reconciled display occupancy does not authorize new calls.
-- `./Start-Workspace.cmd`: start the workspace and open a browser; reuse matching service. Logs stay in `.cache/workspace`; startup makes no paid requests.
-- Workbench “验收流程” / `/acceptance`: persist registration, raw references, explicit Completed-version selection, freeze/bind, ranking, fixed review and scoring; see `docs/references/benchmark-workspace-guide.md`. Metadata choices do not verify media; binding retains the original source/evidence checks.
-- `./scripts/init.ps1`: check scaffold, exact toolchain and media prerequisites; `-CheckOnly` checks scaffold.
-- `./scripts/verify.ps1`: format, lint, types, pytest, and reproducible offline wheel builds.
-- `./scripts/test-media.ps1 -AllLocal`: validate footage in ignored `GameVideos/`.
-- `./scripts/test-storage.ps1 -AllLocal`: verify media persistence and a second process's reads.
-- `./scripts/prepare-benchmark.ps1`: freeze source/query plans, then bind Completed runs without inference; see `docs/references/benchmark-preparation-guide.md`.
-- `./scripts/prepare-benchmark-references.ps1`: prepare a local raw-footage reference page, or verify its saved record and export a plan for freezing; see `docs/references/benchmark-reference-review-guide.md`.
-- `./scripts/prepare-benchmark-plan.ps1`: prepare a local source/query form, save incomplete registration drafts and export unconfirmed plans; see `docs/references/benchmark-plan-editor-guide.md`.
-- `./scripts/inventory-sources.ps1 -InputPath <files|dirs> -OutputPath <json>`: read-only source inventory (stream-clock duration, SHA256, codec) and shared-footage evidence between different files; never assigns recording groups; see `docs/references/source-inventory-guide.md`.
-- `./scripts/detect-shots.ps1 -Project <dir> -Run <id> -OutputPath <new json>`: read-only local shot cuts/black intervals for one run, marking saved events and vision windows that span shots; no paid calls, never changes analysis or ranking; see `docs/references/shot-boundaries-guide.md`.
-- `./scripts/build-desktop.ps1 [-Smoke]`: build `desktop\bin\GamingCreator.exe` with Windows' bundled csc against the pinned WebView2 SDK (`docs/references/webview2-sdk.json`, files in `.tools/webview2`, hashes checked every build); `-Smoke` starts and stops the service without a window.
-- `./scripts/build-app.ps1 [-Smoke]`: assemble a self-contained, movable portable app in ignored `dist/GamingCreator` (bundled runtime, runtime packages without dev tools, FFmpeg, desktop EXE; ~660 MB, refused above 1.5 GB; never overwrites a folder it did not create).
-- `./scripts/install-app.ps1 [-Destination <dir>] [-Uninstall] [-Smoke]`: per-user install/upgrade/uninstall of the built app (default `%LOCALAPPDATA%\Programs\GamingCreator`); replaces or removes only program parts, never user data, rolls back a failed upgrade; no registry or shortcuts.
-- `./scripts/make-proxy.ps1 -Project <dir> -Run <id>`: build or reuse one run's 360p editing proxy under `.cache/workspace/proxies` with a duration-scaled byte cap (≤1 GiB); preview only, renders keep the original; a failed proxy leaves no files.
-- `./scripts/ocr-frames.ps1 -Project <dir> -Run <id> -OutputPath <new json> [-Every N]`: read-only on-screen text of one run's sampled moments with Windows' built-in OCR (native-resolution re-extraction, exact instant match); no downloads, no paid calls, never feeds analysis or ranking; see `docs/references/ocr-frames-guide.md`.
+Core scripts (details in `docs/references/` and each script's comment header):
 
-## Architecture and coding rules
+- `./scripts/setup-demo.ps1` · `run-demo.ps1` · `run-ui.ps1` · `Start-Workspace.cmd`
+- `./scripts/init.ps1` · `verify.ps1` · `search-project.ps1` · `confirm-detail-billing.ps1`
+- Benchmark / inventory / shots / OCR / proxy / desktop / portable app: `prepare-benchmark*.ps1`, `inventory-sources.ps1`, `detect-shots.ps1`, `ocr-frames.ps1`, `make-proxy.ps1`, `build-desktop.ps1`, `build-app.ps1`, `install-app.ps1`
+- Offline status dump: `python -B scripts/status.py`
 
-Follow `docs/design-docs/architecture.md`, `phase-0-engineering-spec.md`, ADR-001 and ADR-002. Use four-space indentation, snake_case functions/modules and PascalCase types; Ruff formats/lints and mypy checks contracts. Domain excludes I/O. Preserve local video bytes, source clocks, provider/prompt/embedding identities and unknown costs. Basket/export order follows source time; retrieval keeps rank.
+Paid vision starts only from an explicit authorized path (e.g. `run-demo.ps1 -Video`). Workbench acceptance: `/acceptance` — see `benchmark-workspace-guide.md`.
+
+## Architecture and coding
+
+Follow `docs/design-docs/architecture.md`, `phase-0-engineering-spec.md`, ADR-001/002/003. Four-space indent; snake_case / PascalCase; Ruff + mypy. Domain excludes I/O. Preserve local video bytes, source clocks, provider/prompt/embedding identities, and unknown costs. Basket/export order follows source time; retrieval keeps rank.
 
 ## Testing and acceptance
 
-Use pytest `tests/test_*.py`; follow `docs/references/testing-guide.md` and `phase-0-benchmark.md`. Top-10 Useful Rate has ten fixed slots: missing and duplicate events count zero; independent human-judged usable events must reach ≥70%. Multi-frame inputs and index hits do not prove action understanding. Mark `passes: true` only after feature evidence. Benchmark exit 6 preserves its report when the gate fails or remains unverified.
+pytest `tests/test_*.py`; `docs/references/testing-guide.md` and `phase-0-benchmark.md`. Top-10 Useful Rate: ten fixed slots; missing/duplicate count zero; usable events ≥70% after human judgment. Multi-frame / index hits do not prove action understanding. Mark `passes: true` only with feature evidence. Preparation readiness ≠ F006 acceptance.
 
-Use `benchmark --binding <bound-directory>` for the frozen preparation workflow; only candidate judgments and human review status may change. Preparation readiness and recorded human declarations do not prove F006 acceptance.
+## Changes, commits, worktrees
 
-## Changes, commits, and handoff
+Start from `STATUS.md` then short `HANDOFF.md` and `docs/references/agent-workflow.md`. Simultaneous writers: separate worktrees under `.worktrees/` (not `.cache/`), ≤3 active; retire after integration. Imperative `chore:`/`docs:`/`feat(F002): …`. Never commit secrets, footage, generated media, or databases.
 
-All agents share acceptance criteria; start with `STATUS.md` (then short `HANDOFF.md`) and `docs/references/agent-workflow.md`. Assign ownership; simultaneous writers use separate worktrees only when needed, under `.worktrees/`, never `.cache/`. The parent and sequential work reuse the current tree; read-only tasks need no checkout. Keep at most three active writer trees. After verified integration, preserve necessary Git commits or a minimal patch and retire the completed tree; do not retain full trees as backups. Record verification and resumable work before transfer. Use imperative `chore:`/`docs:` subjects or `feat(F002): add local frame extraction`. PRs describe behavior, link a feature and include evidence. Never commit secrets, footage, generated media or databases.
+## Cache and media limits
 
-## Cache and media resource limits
+`.cache/` is rebuildable data. One-shot scripts: `.cache/scratch/` (safe to delete). Media intermediates need byte/dir/free-space budgets; FFmpeg `-fs` hit = failed render. Reclaim test fixture media after teardown. Never reclaim models, user creations, original analysis/evidence, billing, labels, or active work. See `cache-maintenance-guide.md`.
 
-`.cache/` holds reproducible data, not unfinished source work. Media render intermediates require byte/directory/free-space budgets as well as timeouts; hitting FFmpeg `-fs` is a failed render, never a successful truncated result. Test fixture media is reclaimed after teardown, retaining small reports and bounded failure metadata; `GC_KEEP_TEST_MEDIA=1` preserves debugging media without disabling runtime limits. Never reclaim models, user creations, original analysis/evidence, billing, labels or active work. See `docs/references/cache-maintenance-guide.md` for limits and exact cleanup scope.
+## Delivery, reporting, human help (persistent)
 
-## Persistent subagent model routing
+- Prefer milestone delivery over polishing one small bug; record hard-to-fix issues in `docs/exec-plans/tech-debt.md` and return to the main line.
+- After key changes: plain-language report (what works, benefit, verified vs open, next). Protocol: `agent-workflow.md`. Milestone reports ≤150 Chinese characters + one openable artifact.
+- Need user annotation/manual help → notify promptly and record in `docs/exec-plans/human-inputs.md`; pending human items block only dependent work.
+- Subagent model routing: `docs/references/codex-agent-routing-guide.md` / `claude-agent-routing-guide.md`. Planner→Generator→Evaluator: `development-agent-pipeline.md`.
 
-关键里程碑按[开发三角色流程](docs/references/development-agent-pipeline.md)执行合同规划、实现和独立评估；本项目新增harness_planner／harness_generator／harness_evaluator三个Sol/medium原生角色，既有六专家分工保持。简单改动记为单Agent，不强制三人并发；只读角色的报告由主控持久化。通用harness-project-init技能已增量同步；配置／发现／实际执行分别验证。
+## STATUS / fees / freeze
 
-用户于2026-10-11明确要求按任务能力选择子Agent模型以节省token／额度。需要独立委派时按[模型分工指南](docs/references/codex-agent-routing-guide.md)：定位Luna/high、进度Luna/low、开发与普通审查Sol/medium、关键边界审查Sol/high、复杂设计Astra/low；默认Luna/medium。简单任务直接完成，不重复审查／播报；不让全部子任务继承主模型和高推理。当前角色清单不刷新时，用已有default／worker类型明确传model／reasoning_effort和最小任务上下文（本工具fork_turns=none），不假称热加载成功。写任务明确归属及他人改动保护，派发前读指南与角色指令，只有实际执行记录能证明使用型号。此要求适用于恢复与工具切换，模型可用性以当前工具为准。
+See [`STATUS.md`](STATUS.md). Numbers from `feature_list.json`, `progress-board.md`, `tech-debt.md`, `human-inputs.md` — never invent counts. Report board/STATUS numbers only when they change.
 
-## Persistent delivery priority
+- Monthly preauth **¥50**: user-designated footage analysis only; overage needs per-call ask; hard send gate stays.
+- **Frozen until first mode human-evaluated:** P046–P051 and P038 (no new scope).
+- Protections: no secret/media/DB commits; paid calls gated; evidence/ledger immutable; no auto re-pay/re-label; toolchain check may narrow but not remove.
 
-用户要求按总方案和设计好的开发路径推进大方向，优先阶段性交付，不在同一个小bug上反复消耗时间和tokens。每轮先明确所属阶段与主要交付；小问题能直接修就修，需要持续定位／试错就记录到docs/exec-plans/tech-debt.md，保存复现与影响后继续主线。只有阻断当前主要交付或影响数据／费用等关键边界的问题才优先处理。不得把连续微修、诊断增强、报告数量或重复完整测试代替计划中的实际开发进展。此规则适用于所有项目Agent、子任务、会话恢复和工具切换，与下方通俗汇报规则共同持续生效。
+## Accelerated product path
 
-## Persistent reporting mode
-
-用户要求所有项目 Agent 在每次关键改动后给出不那么技术味的详细汇报，并说明接下来要做什么。此偏好跨会话、工具切换和子任务持续生效，恢复工作时必须加载。
-
-先解释现在能做什么、对用户的使用有什么帮助，再说明实际验证结果、仍存在的问题和下一步具体动作。用用户熟悉的例子；提交号、测试数量和内部实现仅作必要证据，不能代替使用效果说明。关键改动包括功能或使用流程变化、模型理解或费用行为变化，以及影响验收的发现。
-
-任务停止时说明直接触发、局部错误如何影响整项任务、严重程度、已保存进度／费用及续作顺序。区分正确质量保护与待修中断机制；阻断主交付的可靠性问题优先修复，不能按普通小bug延期。新对话先读STATUS.md与短HANDOFF，直接推进已有授权的本地开发，不要求用户重复讲历史或重做已有标注。
-
-按 `docs/references/agent-workflow.md` 的汇报协议执行；将本次已汇报的结论及下一步写入任务 sprint；里程碑／会话结束更新 `STATUS.md`（短 `HANDOFF.md` 可覆盖）。Worker 向集成负责人提供同样内容，由负责人汇总给用户；已有授权内的工作继续推进。
-
-## Persistent human assistance and progress alignment
-
-用户于2026-10-07要求：发现需要用户标注、确认素材、手动操作或提供其他帮助时，第一时间用通俗语言提醒，并记录到 `docs/exec-plans/human-inputs.md`。记录具体事项、操作入口、触发时点、影响范围、状态及完成证据；不要等用户追问，也不要替用户填写真实判断。待人工事项仅阻断依赖它的工作，继续推进可以独立完成的开发。需要新费用授权时保留原问题与提案，不把开发继续当作授权。
-
-持续对齐里程碑和进度：关键实现／验证／发布节点以 `STATUS.md` 为当前摘要；sprint／assignments／progress 按需留下证据，不必每次七份齐刷。阶段或验收状态变化核对规格与 `feature_list.json`。顶部明确已交付、开发中、人工待办和下一步；旧失败／旧发布保留为历史。所有项目 Agent、子任务及工具切换共同遵守。
-
-## Persistent status (STATUS.md)
-
-当前状态以根目录 [`STATUS.md`](STATUS.md) 为准：目标、完成标准、下一步、月度费用预授权（¥50）、功能冻结（P046–P051／P038）、保护项。**里程碑或会话结束时更新一次**；向用户汇报时仅在数字变化时引用看板／STATUS 数字。
-
-不要再要求「每次重大改动同提交同步 HANDOFF／progress／assignments／sprint／human-inputs／tech-debt／看板」或「再开 docs 提交记录 tip SHA／推送结果」。看板 [`docs/exec-plans/progress-board.md`](docs/exec-plans/progress-board.md) 仅在完成计数等数字确有变化时更新；分母仍是总方案全部计划功能，数字取自 `feature_list.json`／`tech-debt.md`／`human-inputs.md`，不估算。
-
-## 2026-10-30 全产品加速交付（最新用户指令）
-
-以docs/exec-plans/accelerated-product-roadmap.md和ADR-003为当前路线，覆盖全部51项。质量验收、实现完成、商用发布分别记录；F006未人评不能全局停止创作/编辑/渲染/发布包/桌面/商业化开发。用户当前必须人工操作0项，任务触发和数量标准见user-actions.md。保留新费用、真实外部操作、素材权利、原证据和数据保护要求；不要把部分实现或假接口标为全功能交付。优先真实端到端切片，不能靠反复检查、微修、元数据加固替代功能进展。
+Follow `docs/exec-plans/accelerated-product-roadmap.md` and ADR-003 across all 51 planned items. Quality / implementation / commercial ship statuses stay separate. Do not mark partial or stub APIs as full delivery. Prefer real end-to-end slices.

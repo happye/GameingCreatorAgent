@@ -404,7 +404,7 @@
 
 已交付／10-08部署验证：[明确JSON的新精分析v5](docs/exec-plans/sprint-detail-temporal-json.md)接精确读取、条件核对、CLI／页面及冻结工具；原人物独立排名保持。17新增全通过，相关145passed／1权限skip＋旧后台回退1passed；一次完整2419passed／4旧failed／2旧error／1权限skip，TD012／TD014未解决且不循环。97类型／CLI／双包99源码／独立九旧排名和两新请求／现用1366与390回看下载通过，911旧文件／39外部保护保持。
 
-边界：本轮0真实调用／新搜索／预留／人评；新v5无真实结果，既有细节1/227、严格复合仍partial，F006/F009/F010false。上一v4两个请求HTTP400且用户核实未扣费；人工确认另存，API未知／保守ledger及更早另一任务unknown保持。详见[通俗收尾报告](docs/exec-plans/report-2026-10-08-detail-json.md)。
+边界：本轮0真实调用／新搜索／预留／人评；新v5无真实结果，既有细节1/227、严格复合仍partial，F006/F009/F010false。上一v4两个请求HTTP400且用户核实未扣费；人工确认另存，API未知／保守ledger及更早另一任务unknown保持。详见[通俗收尾报告](docs/archive/reports-2026-10/report-2026-10-08-detail-json.md)。
 
 人工／下一步：当前没有新画面需标注，日常不用填验收表。新v5两候选／六帧／最高¥4.07提案已冻结未授权，本轮收尾不发新问题；恢复后核对提案并处理新明确授权，有真实结果立即提醒核对人物／衣物／持有物。正式独立素材／事前参考／固定评分另见[human-inputs](docs/exec-plans/human-inputs.md)。用户额度14%明确结束本会话，收尾后暂停持续开发，不自动开下一任务；10-11收尾本地health不可达，未重启，恢复用原启动器；普通分支发布以Git及.cache/detail-json-publication.json为准。
 
@@ -414,19 +414,19 @@
 
 已交付／现用：[人物独立关键词／语义排名](docs/exec-plans/sprint-saved-detail-grouped-ranking.md)，abbba14已普通push并独立确认远端一致。18新增全部通过，旧完整2402passed／3failed／3error／1权限skip、TD012／TD014保持；双包／现用两尺寸通过。真实严格复合仍partial、已有细节1/227，F006/F009/F010false。
 
-本次已执行：[两冻结候选真实试验](docs/exec-plans/sprint-detail-temporal-execution.md)／[通俗报告](docs/exec-plans/report-2026-10-08-temporal-pilot-execution.md)。两个请求／六帧各一次，两次HTTP400，无新结果、不重试；用户已核实未扣费、确认另存，API用量未知及原ledger保守占用¥4.065536不改写，旧另一任务unknown¥4.065536保持。独立读回新失败／原v2不变／v4缺失，902旧文件与28外部保护字节不变，只新增九个尝试／费用文件；0本次新搜索／人评／生产源码变更，不重复完整。
+本次已执行：[两冻结候选真实试验](docs/exec-plans/sprint-detail-temporal-execution.md)／[通俗报告](docs/archive/reports-2026-10/report-2026-10-08-temporal-pilot-execution.md)。两个请求／六帧各一次，两次HTTP400，无新结果、不重试；用户已核实未扣费、确认另存，API用量未知及原ledger保守占用¥4.065536不改写，旧另一任务unknown¥4.065536保持。独立读回新失败／原v2不变／v4缺失，902旧文件与28外部保护字节不变，只新增九个尝试／费用文件；0本次新搜索／人评／生产源码变更，不重复完整。
 
 开发中／下一步：root离线核对JSON输出格式及错误证据缺口，准备有版本的新修正方案，不改本次冻结请求、不自动扩授权。人工：本次授权／账单核实完成，暂无新结果需标注；正式独立素材／事前原片参考／固定候选评分待真人，日常无需填验收流程。需要人工帮助即提醒登记、关键节点持续同步，goal active；发布以Git及.cache/detail-temporal-execution-publication.json为准。
 
-当前[人物独立细节语义检索](docs/exec-plans/sprint-saved-detail-actor-semantics.md)已交付／现用，[通俗汇报](docs/exec-plans/report-2026-10-08-saved-detail-actor-semantics.md)，root接03e92f1。人物／环境observed分组、原事件最大语义分数／RRF一次，v2保存采用组且旧v1保持。英文纯语义空→第1、中文混合4→1，仍partial、细节1/227。一次完整2389passed／1旧TD014失败／1权限skip／449.131s，20新增全通过、不循环；192格式／lint、96类型／CLI、双wheel98源码及独立八新旧快照通过。现用50808／41844两尺寸保存排名／下载／组身份／出画面／版本隔离及用户空验收流程保持，0后端新搜索。888旧文件／217普通排名／三源／费用提案保持，只五新本地搜索十文件，0付费／人评。下一先登记多人物复合需求同人物支持／跨人物拼接固定对照及改进；旧workers冻结，goal active。保存／普通分支发布身份以Git及.cache/detail-actor-publication.json为准。
+当前[人物独立细节语义检索](docs/exec-plans/sprint-saved-detail-actor-semantics.md)已交付／现用，[通俗汇报](docs/archive/reports-2026-10/report-2026-10-08-saved-detail-actor-semantics.md)，root接03e92f1。人物／环境observed分组、原事件最大语义分数／RRF一次，v2保存采用组且旧v1保持。英文纯语义空→第1、中文混合4→1，仍partial、细节1/227。一次完整2389passed／1旧TD014失败／1权限skip／449.131s，20新增全通过、不循环；192格式／lint、96类型／CLI、双wheel98源码及独立八新旧快照通过。现用50808／41844两尺寸保存排名／下载／组身份／出画面／版本隔离及用户空验收流程保持，0后端新搜索。888旧文件／217普通排名／三源／费用提案保持，只五新本地搜索十文件，0付费／人评。下一先登记多人物复合需求同人物支持／跨人物拼接固定对照及改进；旧workers冻结，goal active。保存／普通分支发布身份以Git及.cache/detail-actor-publication.json为准。
 
 用户本次再次要求人工协助即时提醒、持续同步里程碑。持久规则已在AGENTS、共享协议及各工具入口，本轮修正“尚未实现”等旧当前摘要，人工待办明确日常不需填验收、正式F006依赖独立来源／事前原片参考／固定评分；当前开发不需新手动操作。只读子任务回答用途，root继续开发。以下旧结果与下一步均为历史。
 
-[真实模式对照](docs/exec-plans/sprint-saved-detail-real-modes.md)已完成，root接424d4fa：16单元含复用两旧／14新查询28文件，目标中文词法遗漏→5／纯语义6→6／默认混合遗漏→4；英文词法与混合空→1、纯语义仍空。冻结0.80／0.02、1/227细节覆盖及typed partial保持，860旧文件／217普通排名／三源／费用提案不变，0新视觉／费用／标签。独立原98源码包读回16结果通过，不重跑无变化完整／重部署。一次五文本主体实验英0.82366跨原0.80，未接生产；下一登记并实现按人物独立语义投影、事件最大分数一次RRF及旧快照兼容，继续主线。通俗汇报见[report](docs/exec-plans/report-2026-10-08-saved-detail-real-modes.md)，保存／同步以Git及.cache/detail-modes-publication.json为准，goal active。
+[真实模式对照](docs/exec-plans/sprint-saved-detail-real-modes.md)已完成，root接424d4fa：16单元含复用两旧／14新查询28文件，目标中文词法遗漏→5／纯语义6→6／默认混合遗漏→4；英文词法与混合空→1、纯语义仍空。冻结0.80／0.02、1/227细节覆盖及typed partial保持，860旧文件／217普通排名／三源／费用提案不变，0新视觉／费用／标签。独立原98源码包读回16结果通过，不重跑无变化完整／重部署。一次五文本主体实验英0.82366跨原0.80，未接生产；下一登记并实现按人物独立语义投影、事件最大分数一次RRF及旧快照兼容，继续主线。通俗汇报见[report](docs/archive/reports-2026-10/report-2026-10-08-saved-detail-real-modes.md)，保存／同步以Git及.cache/detail-modes-publication.json为准，goal active。
 
 发布事实：已有细节检索代码及交付文档1b9da43已普通push且独立ls-remote确认同SHA，仅codex/visual-details；main未更新／无强推。此段补事实，最终文档head与同步以Git和.cache/detail-index-publication.json为准，源码／现用／goal active保持。
 
-2026-10-08，Phase 0／F005／F010，[准确已有细节检索](docs/exec-plans/sprint-saved-detail-retrieval.md)已交付，[使用指南](docs/references/saved-detail-retrieval-guide.md)与[通俗汇报](docs/exec-plans/report-2026-10-08-saved-detail-retrieval.md)。多录像明确勾选‘含已有细节’及准确精版本后，用有帧支持的observed属性帮助排序，逐候选保留主体／部件／镜头出处。uncertain／冲突不作正向文字，排名不证明同主体AND；候选条件核对仍单独判断。旧默认搜索、原事实／源时间／证据及历史排名保持，不自动分析／费用。
+2026-10-08，Phase 0／F005／F010，[准确已有细节检索](docs/exec-plans/sprint-saved-detail-retrieval.md)已交付，[使用指南](docs/references/saved-detail-retrieval-guide.md)与[通俗汇报](docs/archive/reports-2026-10/report-2026-10-08-saved-detail-retrieval.md)。多录像明确勾选‘含已有细节’及准确精版本后，用有帧支持的observed属性帮助排序，逐候选保留主体／部件／镜头出处。uncertain／冲突不作正向文字，排名不证明同主体AND；候选条件核对仍单独判断。旧默认搜索、原事实／源时间／证据及历史排名保持，不自动分析／费用。
 
 本轮23新后台＋3新页面通过，一次完整2367passed／3旧失败TD014／1权限skip、原因未解决且不循环；98源码包及独立包进程通过。真实‘白色头发’漏掉的35–36s事件进入第5位，仍partial，细节覆盖1/227；一次新词法约0.77秒、两新排名文件、858旧文件／217普通排名／费用提案保持，0新模型费用／真人标签。现用6772／50720两尺寸下载／原片出画面／版本隔离通过。
 
@@ -663,9 +663,9 @@ v4只读清单34135cc锁定原两候选六帧，新保守预留4.065536；旧已
 
 已向用户保存并链接report-2026-10-06-query-draft.md，解释使用收益、实际验证和仍未证明的视觉理解。F006/F009/F010仍false。下一步同步工作分支，明确新授权后再真实对照；未授权继续离线准备人工检索验收资料。最终Git状态见sprint，不改main/强推。
 
-2026-10-07 root交付统一验收入口：八步持久流程与原排名回看评分／实际OS执行所有权／同源媒体。实际三开发源完整流程、双尺寸现用8765和新18通过；完整2272／3失败／1skip，旧health同步、两旧准备问题一次三项复查通过但原因延期，94包文件与独立包运行通过。普通检索214→217三SQL记录，计分／现用0search，0新付费或人评；F006/F009/F010false。下一冻结来源与Completed任务页面选择，见sprint-benchmark-workspace／report-2026-10-07-benchmark-workspace，旧worker冻结，goal active。
+2026-10-07 root交付统一验收入口：八步持久流程与原排名回看评分／实际OS执行所有权／同源媒体。实际三开发源完整流程、双尺寸现用8765和新18通过；完整2272／3失败／1skip，旧health同步、两旧准备问题一次三项复查通过但原因延期，94包文件与独立包运行通过。普通检索214→217三SQL记录，计分／现用0search，0新付费或人评；F006/F009/F010false。下一冻结来源与Completed任务页面选择，见sprint-benchmark-workspace／docs/archive/reports-2026-10/report-2026-10-07-benchmark-workspace，旧worker冻结，goal active。
 
 
 ## 2026-10-07: Explicit frozen-source analysis choices
 
-Delivered the acceptance fifth-step version picker, saved-choice restoration, frozen identity guard and legacy mapping compatibility. New 11 checks and actual three-development-recording desktop/mobile binding pass; 856 prior project files, nine core tables and 217 retrieval records stay unchanged, no search/inference/paid calls. One full run: 2285 passed, one old workflow status failure, one Windows symlink privilege skip; the sole recheck still fails and TD014 retains the issue. Ruff/mypy/CLI and identical offline wheels (95 package files; isolated wheel readback) pass. Production 8765 updated after fresh identity/no-active-job checks; three assets and saved choices verified. See sprint-benchmark-run-picker and report-2026-10-07-run-picker. F006/F009/F010 remain false; next scope is cross-recording compound-condition checks against existing saved detail, without automatic inference. Goal active; local commit/push facts in Git/publication.
+Delivered the acceptance fifth-step version picker, saved-choice restoration, frozen identity guard and legacy mapping compatibility. New 11 checks and actual three-development-recording desktop/mobile binding pass; 856 prior project files, nine core tables and 217 retrieval records stay unchanged, no search/inference/paid calls. One full run: 2285 passed, one old workflow status failure, one Windows symlink privilege skip; the sole recheck still fails and TD014 retains the issue. Ruff/mypy/CLI and identical offline wheels (95 package files; isolated wheel readback) pass. Production 8765 updated after fresh identity/no-active-job checks; three assets and saved choices verified. See sprint-benchmark-run-picker and docs/archive/reports-2026-10/report-2026-10-07-run-picker. F006/F009/F010 remain false; next scope is cross-recording compound-condition checks against existing saved detail, without automatic inference. Goal active; local commit/push facts in Git/publication.

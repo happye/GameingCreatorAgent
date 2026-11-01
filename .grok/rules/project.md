@@ -1,19 +1,13 @@
 # Grok Build — Gaming Creator Agent
 
-For a new chat, follow `STATUS.md` and the short `HANDOFF.md` snapshot. Explain the rejection trigger and whole-task stopping mechanism; prioritize defects blocking the deliverable. Continue authorized local development without repeating completed annotation or paid attempts.
+For a new chat, follow root [`STATUS.md`](../../STATUS.md) and the short [`HANDOFF.md`](../../HANDOFF.md). Explain rejection triggers and whole-task stopping; prioritize defects that block the deliverable. Continue authorized local development without repeating completed annotation or paid attempts.
 
-Use the root `AGENTS.md` as the shared repository guide. Read `STATUS.md` (then short `HANDOFF.md`) when resuming work and follow `docs/references/agent-workflow.md` for assignments and transfers.
+Use root `AGENTS.md` as the shared repository guide. Follow `docs/references/agent-workflow.md` for assignments and transfers.
 
-Keep the shared persistent reporting mode on resumption and tool switches: after each key change, give a detailed plain-language report of what the user can now do, the benefit, verified results and remaining limits, and the next concrete action. Workers supply the same information to the integrator; follow the shared reporting protocol.
+**STATUS-first:** update `STATUS.md` at milestone or session end; touch the progress board only when counts change. Do not sync seven docs on every change or add a docs commit solely to record tip SHA / push status.
 
-Keep the shared delivery priority: follow the master plan's current milestone; fix minor issues when straightforward, otherwise record reproduction and impact in technical debt and continue the main deliverable. Do not repeatedly spend time or tokens on one small bug, diagnostic polish or unchanged verification. Apply this to workers and future resumptions.
+Keep shared preferences from `AGENTS.md`: plain-language reporting; milestone delivery over polishing loops; human-inputs recording; ¥50 monthly preauth and freeze of P046–P051 / P038 until first mode human-evaluated.
 
-Keep the shared human-assistance and progress-alignment rules: notify the user promptly when annotation or manual actions are needed, record them in docs/exec-plans/human-inputs.md, and align current milestone, sprint, handoff, assignments and progress at key nodes. Pending human actions block only dependent work. Apply this to workers and future resumptions.
+Run `grok inspect` from the repository root to check discovered instruction paths. Grok may also discover `CLAUDE.md` for compatibility; all entries point to the same shared rules. Keep session history and credentials local; record project decisions in repository artifacts.
 
-Run `grok inspect` from the repository root to check discovered instruction paths, including `AGENTS.md` and this rules file. Grok may also discover `CLAUDE.md` for compatibility; all entries point to the same shared rules. Keep Grok session history and credentials local; record project decisions and verification in repository artifacts.
-
-Load the shared capability-based subagent routing preference. The [Codex mapping](../../docs/references/codex-agent-routing-guide.md) is specific to Codex models and configuration; do not claim those names work in Grok. Use this tool's actual supported models, bounded context and explicit ownership, and verify execution before claiming routing succeeded.
-
-For substantive milestones follow the shared Planner -> Generator -> independent Evaluator contract in `docs/references/development-agent-pipeline.md`; simple work stays in the parent and is recorded as single-agent work. The portable harness-project-init skill now supplies this tool's native routing adapter; verify actual discovery/model before use rather than treating Codex TOML as this tool's configuration. The integrator persists read-only role outputs.
-
-Load the STATUS rule in `AGENTS.md`: update root `STATUS.md` at milestone or session end; touch the progress board only when counts change. Do not add a docs commit solely to record tip SHA or push status.
+Capability-based routing: Codex mapping names do not apply here — use this tool's supported models with bounded context and explicit ownership. Planner → Generator → Evaluator: `docs/references/development-agent-pipeline.md`; simple work stays single-agent. Verify discovery/model before claiming routing succeeded.

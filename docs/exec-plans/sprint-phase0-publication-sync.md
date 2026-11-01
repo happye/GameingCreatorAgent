@@ -8,7 +8,7 @@
 
 用户可用效果：这批远端代码包含时间轴画面文字筛选、当前片段镜头/文字/语音上下文、第6/8步原报告卡片、TD012占用恢复及固定工具离线准备。源码完整验证基线44e2537为3732通过/5跳过、双wheel一致、退出0；后续2c90e67生成器夹具主树10通过。查阅了实际日志/JUnit，没有对未变源码重复全量。
 
-文档实际修改：HANDOFF顶部只保留当前状态、证据和恢复顺序，旧完整内容迁至handoff-history-20261029.md，按新位置调整相对链接；人工/债务/分工顶部堆叠摘要迁至status-history-20261029.md，状态表和原真实声明保留。README按代码和TD011记录修正独立Windows PowerShell 5.1已验与MP4/MKV/WebM扫描范围，并补充已交付工作台入口说明；current-status/progress/assignments/board同步新Goal和推送事实。AGENTS与工具适配规则未发生变化，无API/配置/表结构变更，不新建ADR。
+文档实际修改：HANDOFF顶部只保留当前状态、证据和恢复顺序，旧完整内容迁至../archive/handoff-history/handoff-history-20261029.md，按新位置调整相对链接；人工/债务/分工顶部堆叠摘要迁至status-history-20261029.md，状态表和原真实声明保留。README按代码和TD011记录修正独立Windows PowerShell 5.1已验与MP4/MKV/WebM扫描范围，并补充已交付工作台入口说明；current-status/progress/assignments/board同步新Goal和推送事实。AGENTS与工具适配规则未发生变化，无API/配置/表结构变更，不新建ADR。
 
 材料核对：Luna/high只读确认候选包中GPL文本、六份version/buildconf/-L输出及头文件身份存在；完整对应源码和第三方notices材料未核齐。已存在缓存清单只有两条匹配，不能把其中threadmessage.h误当完整notice。TD003保持open，来源材料摘要的SHA记录在ffmpeg-source-evaluation-20261029.json。没有再下载或运行候选。
 
