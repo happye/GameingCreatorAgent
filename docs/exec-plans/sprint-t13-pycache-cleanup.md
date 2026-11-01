@@ -1,6 +1,6 @@
 # Sprint T13：清理 src/gamingcreator 下 __pycache__
 
-**状态（2026-11-01）：已完成（待 docs SHA）**
+**状态（2026-11-01）：已推送 docs 4e28c31**
 
 ## 目标
 
@@ -37,7 +37,7 @@ glob('*.pyc')／__pycache__ 均为 0。工作区无相关 diff（忽略项，未
 - [x] gitignore 已确认覆盖
 - [x] 仅删除 src/gamingcreator 下 pycache／pyc；无跟踪项需 untrack
 - [x] 文档记录发现与删除数量
-- [ ] T13 ✅ 推送
+- [x] T13 ✅ 推送
 
 ## Verification
 
