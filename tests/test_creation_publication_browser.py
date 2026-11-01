@@ -51,7 +51,8 @@ def test_publication_save_reopen_refresh_and_stale(width):
 
         def route(r):
             nonlocal fail
-            path = r.request.url.split("http://workspace.test")[1]
+            full = r.request.url.split("http://workspace.test")[1]
+            path, _, query = full.partition("?")
             if path == "/creation":
                 r.fulfill(
                     body=(STATIC / "creation.html").read_text("utf-8"), content_type="text/html"
@@ -73,6 +74,8 @@ def test_publication_save_reopen_refresh_and_stale(width):
                 r.fulfill(status=404, json={"message": "未模拟"})
             elif path == "/api/enterprise/team":
                 r.fulfill(json={"team": None})
+            elif path == "/api/enterprise/audit":
+                r.fulfill(body="{}", content_type="application/json")
             elif path.startswith("/api/runs"):
                 r.fulfill(json={"runs": []})
             elif r.request.method == "POST":
@@ -99,8 +102,8 @@ def test_publication_save_reopen_refresh_and_stale(width):
                         status=202,
                         json={"jobId": identity, "kind": "publication", "status": "pending"},
                     )
-            elif path.startswith("/api/creation/jobs?"):
-                r.fulfill(json={"jobs": list(jobs.values()) if "one" in path else []})
+            elif path == "/api/creation/jobs" or path.startswith("/api/creation/jobs?"):
+                r.fulfill(json={"jobs": list(jobs.values()) if "one" in query else []})
             elif path.endswith("/publication"):
                 if hold:
                     held.append(r)

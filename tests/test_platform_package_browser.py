@@ -67,7 +67,8 @@ def test_package_versions_downloads_refresh_retry_and_stale(width):
 
         def route(r):
             nonlocal fail
-            path = r.request.url.split("http://workspace.test")[1]
+            full = r.request.url.split("http://workspace.test")[1]
+            path, _, query = full.partition("?")
             if path == "/creation":
                 r.fulfill(
                     body=(STATIC / "creation.html").read_text("utf-8"), content_type="text/html"
@@ -87,6 +88,8 @@ def test_package_versions_downloads_refresh_retry_and_stale(width):
                 r.fulfill(status=404, json={"message": "未模拟"})
             elif path == "/api/enterprise/team":
                 r.fulfill(json={"team": None})
+            elif path == "/api/enterprise/audit":
+                r.fulfill(body="{}", content_type="application/json")
             elif path == "/api/creation/platform-profiles":
                 r.fulfill(json={"profiles": profiles})
             elif path.startswith("/api/runs"):
@@ -122,8 +125,8 @@ def test_package_versions_downloads_refresh_retry_and_stale(width):
                     package=data,
                 )
                 r.fulfill(status=202, json={"jobId": identity})
-            elif path.startswith("/api/creation/jobs?"):
-                r.fulfill(json={"jobs": list(jobs.values()) if "one" in path else []})
+            elif path == "/api/creation/jobs" or path.startswith("/api/creation/jobs?"):
+                r.fulfill(json={"jobs": list(jobs.values()) if "one" in query else []})
             elif path.endswith("/publication"):
                 r.fulfill(json=snapshot)
             elif (

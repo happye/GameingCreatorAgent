@@ -1101,7 +1101,8 @@
       "first_product": false,
       "delivery_status": "partial",
       "implementation_evidence": [
-        "2026-11-01: local team model with owner/editor/reviewer/viewer roles, brand glossary checks on package title/description/tags, package review with separation of duties, mandatory rejection reasons and append-only history, review-gated sandbox publishing; real package submit->approve->publish test; no accounts/login, shared storage, enterprise assets, external API or seat billing; no page entry yet"
+        "2026-11-01: local team model with owner/editor/reviewer/viewer roles, brand glossary checks on package title/description/tags, package review with separation of duties, mandatory rejection reasons and append-only history, review-gated sandbox publishing; real package submit->approve->publish test; no accounts/login, shared storage, enterprise assets, external API or seat billing; no page entry yet",
+        "2026-11-01 T10: per-project teams (sha256 path under enterprise/teams) with read-only fallback to legacy global enterprise-team.json; append-only audit jsonl plus GET /api/enterprise/audit JSON/CSV marked actorSelfReported; creation page expandable review history, audit export links, and honest self-reported operator copy; review/publish use the package project's team"
       ],
       "quality_status": "not_separately_assessed",
       "release_status": "not_released"

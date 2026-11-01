@@ -71,7 +71,8 @@ def test_editing_version_flows(scenario):
         page = browser.new_page()
 
         def route(r):
-            path = r.request.url.split("http://workspace.test")[1]
+            full = r.request.url.split("http://workspace.test")[1]
+            path, _, query = full.partition("?")
             if path == "/creation":
                 r.fulfill(
                     body=(STATIC / "creation.html").read_text(encoding="utf-8"),
@@ -92,6 +93,8 @@ def test_editing_version_flows(scenario):
                 r.fulfill(status=404, json={"message": "未模拟"})
             elif path == "/api/enterprise/team":
                 r.fulfill(json={"team": None})
+            elif path == "/api/enterprise/audit":
+                r.fulfill(body="{}", content_type="application/json")
             elif path == "/api/projects":
                 r.fulfill(json={"projects": [{"path": "one"}, {"path": "two"}]})
             elif path.startswith("/api/runs"):
@@ -134,9 +137,9 @@ def test_editing_version_flows(scenario):
                     )
                 else:
                     r.fulfill(status=400, json={"error": "停止于渲染请求验证"})
-            elif path.startswith("/api/creation/jobs?"):
-                r.fulfill(json={"jobs": [] if "two" in path else list(jobs.values())})
-            elif "/edit?" in path:
+            elif path == "/api/creation/jobs" or path.startswith("/api/creation/jobs?"):
+                r.fulfill(json={"jobs": [] if "two" in query else list(jobs.values())})
+            elif path.endswith("/edit") or "/edit?" in path:
                 if scenario == "stale":
                     held.append(r)
                 else:

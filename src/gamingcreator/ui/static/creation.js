@@ -667,6 +667,7 @@
     async function projectChanged(restoreJob = "") {
         const epoch = ++state.epoch; ++state.view; clearTimeout(state.timer);
         state.project = $("project").value; state.job = restoreJob; state.intents = {}; state.busy = false; clearTimeout(narr.timer); narr.job = null; narr.asset = null; save(); clearView(); $("runs").replaceChildren(); $("history").replaceChildren();
+        if (team.reload) void team.reload();
         if (!state.project) return;
         notice("正在读取可用素材…");
         try {
@@ -773,43 +774,77 @@
     (function teamPanel() {
         const history = $("history"); if (!history) return;
         const panel = node("section", ""); panel.id = "team-panel";
+        const note = node("p", "操作人姓名由本人填写，不是登录账号；团队按当前项目分别保存。"); note.id = "team-honesty";
         const members = document.createElement("textarea"); members.id = "team-members"; members.rows = 3; members.placeholder = "每行 名字:角色（owner 负责人 / editor 编辑 / reviewer 审核 / viewer 只读）";
         const required = document.createElement("input"); required.id = "team-required"; required.placeholder = "必须出现的品牌词，逗号分隔";
         const forbidden = document.createElement("input"); forbidden.id = "team-forbidden"; forbidden.placeholder = "禁用词，逗号分隔";
         const reviewLabel = node("label", "发布前必须审核通过"), review = document.createElement("input"); review.type = "checkbox"; review.id = "team-review"; reviewLabel.prepend(review);
-        const actor = document.createElement("input"); actor.id = "team-actor"; actor.placeholder = "你的名字（须为负责人）";
-        const save = node("button", "保存团队设置"), status = node("p", ""); save.id = "team-save"; save.type = "button"; status.id = "team-status"; status.setAttribute("role", "status");
-        const details = node("details", ""); details.append(node("summary", "团队与审核（本机团队，无账号登录）"), members, required, forbidden, reviewLabel, actor, save, status);
+        const actor = document.createElement("input"); actor.id = "team-actor"; actor.placeholder = "你的名字（自报，须为负责人）";
+        const save = node("button", "保存本项目团队"), status = node("p", ""); save.id = "team-save"; save.type = "button"; status.id = "team-status"; status.setAttribute("role", "status");
+        const exports = node("p", "审计导出："); exports.id = "team-audit-exports";
+        const jsonLink = node("a", "JSON"); jsonLink.id = "team-audit-json"; jsonLink.download = "";
+        const csvLink = node("a", "CSV"); csvLink.id = "team-audit-csv"; csvLink.download = "";
+        exports.append(" ", jsonLink, " · ", csvLink);
+        const details = node("details", ""); details.append(node("summary", "团队与审核（本机按项目；无账号登录）"), note, members, required, forbidden, reviewLabel, actor, save, status, exports);
         panel.append(details); history.after(panel);
         const list = (text) => text.split(/[,，\n]/).map((s) => s.trim()).filter(Boolean);
-        const fill = (value) => { team.value = value; if (!value) { status.textContent = "尚未设置团队；不设置则不启用审核。"; return; }
+        const fill = (value) => { team.value = value; if (!value) { status.textContent = "本项目尚未设置团队；不设置则不启用审核。"; return; }
             members.value = value.members.map((m) => `${m.name}:${m.role}`).join("\n"); required.value = value.brandTerms.required.join("，"); forbidden.value = value.brandTerms.forbidden.join("，"); review.checked = value.reviewRequired;
-            status.textContent = `团队 ${value.members.length} 人；${value.reviewRequired ? "发布前需审核" : "未要求审核"}。`; };
-        api("/api/enterprise/team").then((data) => fill(data.team)).catch(() => { status.textContent = "团队设置暂不可用。"; });
+            status.textContent = `本项目团队 ${value.members.length} 人；${value.reviewRequired ? "发布前需审核" : "未要求审核"}。`; };
+        const refreshExports = () => {
+            if (!state.project) { jsonLink.removeAttribute("href"); csvLink.removeAttribute("href"); return; }
+            const base = `/api/enterprise/audit?projectId=${encodeURIComponent(state.project)}`;
+            jsonLink.href = `${base}&format=json`; csvLink.href = `${base}&format=csv`;
+        };
+        const load = async () => {
+            refreshExports();
+            if (!state.project) { fill(null); status.textContent = "请先选择项目再设置团队。"; return; }
+            try { fill((await api(`/api/enterprise/team?projectId=${encodeURIComponent(state.project)}`)).team); }
+            catch (error) { status.textContent = `团队设置暂不可用：${error.message}`; }
+        };
+        team.reload = load;
+        void load();
         save.addEventListener("click", async () => {
+            if (!state.project) { status.textContent = "请先选择项目。"; return; }
             const parsed = members.value.split("\n").map((line) => line.trim()).filter(Boolean).map((line) => { const [name, role] = line.split(/[:：]/).map((s) => s.trim()); return {name, role}; });
-            try { fill(await api("/api/enterprise/team", {actor: actor.value.trim(), team: {members: parsed, brandTerms: {required: list(required.value), forbidden: list(forbidden.value)}, reviewRequired: review.checked}})); status.textContent += " 已保存。"; }
-            catch (error) { status.textContent = `保存失败：${error.message}`; }
+            try {
+                fill(await api("/api/enterprise/team", {projectId: state.project, actor: actor.value.trim(), team: {members: parsed, brandTerms: {required: list(required.value), forbidden: list(forbidden.value)}, reviewRequired: review.checked}}));
+                status.textContent += " 已保存。";
+                refreshExports();
+            } catch (error) { status.textContent = `保存失败：${error.message}`; }
         });
     })();
     function reviewControls(id) {
         const box = node("div", ""); box.id = "review-box";
         if (!team.value) return box;
         const who = document.createElement("select"); who.id = "review-actor"; for (const m of team.value.members) who.append(new Option(`${m.name}（${m.role}）`, m.name));
-        const comment = document.createElement("input"); comment.id = "review-comment"; comment.placeholder = "审核意见（驳回必填）";
+        const comment = document.createElement("input"); comment.id = "review-comment"; comment.placeholder = "审核意见（驳回必填；姓名自报）";
         const trace = node("p", ""); trace.id = "review-trace"; trace.setAttribute("role", "status");
-        const show = (record) => { if (!record) { trace.textContent = "尚未提交审核。"; return; } const names = {pending: "审核中", approved: "已通过", rejected: "已驳回"}; const last = record.events[record.events.length - 1];
-            trace.textContent = `审核状态：${names[record.state]}；${record.events.map((e) => `${e.actor}${({submit: "提交", approve: "通过", reject: "驳回"})[e.action]}${e.comment ? `（${e.comment}）` : ""}`).join(" → ")}${last.brandIssues?.length ? `；品牌词问题：${last.brandIssues.join("；")}` : ""}`; };
-        box.append(node("strong", "发布包审核"), who, comment);
+        const history = node("details", ""); history.id = "review-history"; const summary = node("summary", "展开审核历史"); const list = node("ol", ""); list.id = "review-history-list"; history.append(summary, list);
+        const honesty = node("p", "审核操作人姓名自报，不是登录账号。"); honesty.id = "review-honesty";
+        const show = (record) => {
+            if (!record) { trace.textContent = "尚未提交审核。"; list.replaceChildren(); summary.textContent = "展开审核历史（暂无）"; return; }
+            const names = {pending: "审核中", approved: "已通过", rejected: "已驳回"};
+            const last = record.events[record.events.length - 1];
+            trace.textContent = `审核状态：${names[record.state]}；最近：${last.actor}${({submit: "提交", approve: "通过", reject: "驳回"})[last.action]}${last.comment ? `（${last.comment}）` : ""}`;
+            list.replaceChildren();
+            for (const event of record.events) {
+                const item = node("li", `${event.at || ""} · ${event.actor}（${event.role}）· ${({submit: "提交", approve: "通过", reject: "驳回"})[event.action] || event.action}${event.comment ? ` · ${event.comment}` : ""}${(event.brandIssues || []).length ? ` · 品牌词：${event.brandIssues.join("；")}` : ""}`);
+                list.append(item);
+            }
+            summary.textContent = `展开审核历史（${record.events.length} 步）`;
+        };
+        box.append(node("strong", "发布包审核"), honesty, who, comment);
         for (const [action, text] of [["submit", "提交审核"], ["approve", "通过"], ["reject", "驳回"]]) {
             const button = node("button", text); button.type = "button"; button.id = `review-${action}`;
             button.addEventListener("click", async () => { try { show(await api("/api/enterprise/review", {packageJobId: id, actor: who.value, action, comment: comment.value})); } catch (error) { trace.textContent = `未完成：${error.message}`; } });
             box.append(button);
         }
-        box.append(trace);
+        box.append(trace, history);
         api(`/api/enterprise/review?packageJobId=${encodeURIComponent(id)}`).then((data) => show(data.review)).catch(() => {});
         return box;
     }
+
     (function planPanel() {
         const history = $("history"); if (!history) return;
         const panel = node("section", ""); panel.id = "plan-panel";

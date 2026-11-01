@@ -65,7 +65,7 @@ def test_creation_form_plans_render_and_refresh(width):
         page.on("pageerror", lambda error: errors.append(str(error)))
 
         def route_request(route):
-            path = route.request.url.split("http://workspace.test", 1)[1]
+            path = route.request.url.split("http://workspace.test", 1)[1].split("?", 1)[0]
             if path == "/creation":
                 route.fulfill(
                     body=(STATIC / "creation.html").read_text("utf-8-sig"), content_type="text/html"
@@ -86,9 +86,11 @@ def test_creation_form_plans_render_and_refresh(width):
                 route.fulfill(status=404, json={"message": "未模拟"})
             elif path == "/api/enterprise/team":
                 route.fulfill(json={"team": None})
+            elif path == "/api/enterprise/audit":
+                route.fulfill(body="{}", content_type="application/json")
             elif path == "/api/projects":
                 route.fulfill(json={"projects": [{"path": "project-one", "name": "游戏项目"}]})
-            elif path.startswith("/api/runs?"):
+            elif path == "/api/runs" or path.startswith("/api/runs?"):
                 route.fulfill(
                     json={
                         "runs": [
@@ -105,9 +107,9 @@ def test_creation_form_plans_render_and_refresh(width):
                 route.fulfill(
                     status=202, json={key: job[key] for key in ("jobId", "kind", "status")}
                 )
-            elif path.startswith("/api/creation/jobs?"):
+            elif path == "/api/creation/jobs" or path.startswith("/api/creation/jobs?"):
                 route.fulfill(json={"jobs": list(jobs.values())})
-            elif "/edit?" in path:
+            elif path.endswith("/edit") or "/edit?" in path:
                 route.fulfill(
                     json={
                         "parentJobId": plan["jobId"],
@@ -199,7 +201,7 @@ def test_creation_retry_reuses_id_and_late_job_cannot_replace_project():
         page = browser.new_page()
 
         def route_request(route):
-            path = route.request.url.split("http://workspace.test", 1)[1]
+            path = route.request.url.split("http://workspace.test", 1)[1].split("?", 1)[0]
             if path == "/creation":
                 route.fulfill(
                     body=(STATIC / "creation.html").read_text("utf-8-sig"), content_type="text/html"
@@ -220,9 +222,11 @@ def test_creation_retry_reuses_id_and_late_job_cannot_replace_project():
                 route.fulfill(status=404, json={"message": "未模拟"})
             elif path == "/api/enterprise/team":
                 route.fulfill(json={"team": None})
+            elif path == "/api/enterprise/audit":
+                route.fulfill(body="{}", content_type="application/json")
             elif path == "/api/projects":
                 route.fulfill(json={"projects": [{"path": "one"}, {"path": "two"}]})
-            elif path.startswith("/api/runs?"):
+            elif path == "/api/runs" or path.startswith("/api/runs?"):
                 route.fulfill(
                     json={"runs": [{"id": "r", "sourceName": "录像", "completedEligible": True}]}
                 )
@@ -234,7 +238,7 @@ def test_creation_retry_reuses_id_and_late_job_cannot_replace_project():
                     route.fulfill(
                         status=202, json={"jobId": "d" * 32, "kind": "plan", "status": "running"}
                     )
-            elif path.startswith("/api/creation/jobs?"):
+            elif path == "/api/creation/jobs" or path.startswith("/api/creation/jobs?"):
                 route.fulfill(json={"jobs": []})
             else:
                 held.append(route)

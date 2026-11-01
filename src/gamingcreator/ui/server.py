@@ -413,9 +413,12 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(200, self._activity_rules(value))
                 return
             if path == "/api/enterprise/team":
-                if not isinstance(value, dict) or set(value) != {"team", "actor"}:
-                    raise ValueError("Expected team and acting member")
-                self._json(200, self.creation_jobs.set_team(value["team"], value["actor"]))
+                if not isinstance(value, dict) or set(value) != {"projectId", "team", "actor"}:
+                    raise ValueError("Expected project, team and acting member")
+                self._json(
+                    200,
+                    self.creation_jobs.set_team(value["projectId"], value["team"], value["actor"]),
+                )
                 return
             if path == "/api/enterprise/review":
                 if not isinstance(value, dict) or set(value) != {
@@ -823,14 +826,27 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     ) from error
                 return
             if path == "/api/enterprise/team":
-                if query:
-                    raise ValueError("Unexpected team query")
-                self._json(200, {"team": self.creation_jobs.team()})
+                if set(query) != {"projectId"}:
+                    raise ValueError("Expected registered project ID")
+                self._json(200, {"team": self.creation_jobs.team(query["projectId"])})
                 return
             if path == "/api/enterprise/review":
                 if set(query) != {"packageJobId"}:
                     raise ValueError("Expected package job ID")
                 self._json(200, {"review": self.creation_jobs.review_state(query["packageJobId"])})
+                return
+            if path == "/api/enterprise/audit":
+                if set(query) != {"projectId", "format"}:
+                    raise ValueError("Expected project ID and format")
+                body, name, mime = self.creation_jobs.export_audit(
+                    query["projectId"], query["format"]
+                )
+                payload = body.encode("utf-8")
+                self._headers(200, len(payload), mime)
+                self.send_header("Content-Disposition", f'attachment; filename="{name}"')
+                self.end_headers()
+                if self.command != "HEAD":
+                    self.wfile.write(payload)
                 return
             if path == "/api/entitlement":
                 if query:

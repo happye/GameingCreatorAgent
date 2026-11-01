@@ -150,6 +150,8 @@ def workspace(*, entitlement=None, jobs=None, editors=None, job_payloads=None):
                     r.fulfill(json=entitlement)
             elif path == "/api/enterprise/team":
                 r.fulfill(json={"team": None})
+            elif path == "/api/enterprise/audit":
+                r.fulfill(body="{}", content_type="application/json")
             elif path == "/api/projects":
                 r.fulfill(json={"projects": [{"path": "one", "name": "测试项目"}]})
             elif path.startswith("/api/runs"):

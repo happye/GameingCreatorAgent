@@ -6,6 +6,10 @@ reviewers/owners approve, nobody approves their own submission, forbidden brand 
 approval, and every review step is kept in an append-only history.
 """
 
+import csv
+import hashlib
+import io
+import json
 from typing import Any
 
 ROLES = {"owner": "负责人", "editor": "编辑", "reviewer": "审核", "viewer": "只读"}
@@ -152,3 +156,102 @@ def apply_review(
         }
     )
     return record
+
+
+def project_team_key(project_id: str) -> str:
+    """Stable filename stem for one project's team/audit files."""
+    return hashlib.sha256(project_id.encode("utf-8")).hexdigest()
+
+
+def audit_event_key(row: dict[str, Any]) -> tuple[object, ...]:
+    return (
+        row.get("at"),
+        row.get("kind"),
+        row.get("packageJobId"),
+        row.get("actor"),
+        row.get("action"),
+    )
+
+
+def review_events_as_audit(
+    project_id: str, package_job_id: str, record: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """Flatten a saved review record into exportable audit rows."""
+    events = [event for event in (record.get("events") or []) if isinstance(event, dict)]
+    rows: list[dict[str, Any]] = []
+    for index, event in enumerate(events):
+        rows.append(
+            {
+                "kind": "review",
+                "at": event.get("at"),
+                "projectId": project_id,
+                "packageJobId": package_job_id,
+                "actor": event.get("actor"),
+                "actorSelfReported": True,
+                "action": event.get("action"),
+                "state": record.get("state") if index == len(events) - 1 else None,
+                "comment": event.get("comment") or "",
+                "brandIssues": list(event.get("brandIssues") or []),
+                "note": "操作人姓名自报，不是登录账号",
+            }
+        )
+    return rows
+
+
+def merge_audit_rows(
+    appended: list[dict[str, Any]], from_reviews: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Prefer explicit audit-log lines; fill gaps from review records; sort by time."""
+    seen: set[tuple[object, ...]] = set()
+    merged: list[dict[str, Any]] = []
+    for row in [*appended, *from_reviews]:
+        if not isinstance(row, dict):
+            continue
+        key = audit_event_key(row)
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(row)
+    merged.sort(key=lambda row: (str(row.get("at") or ""), str(row.get("kind") or "")))
+    return merged
+
+
+def audit_as_json(rows: list[dict[str, Any]]) -> str:
+    return json.dumps(
+        {
+            "schemaVersion": "enterprise-audit-v1",
+            "basis": "本机团队与审核记录；操作人姓名自报，不是登录账号",
+            "rows": rows,
+        },
+        ensure_ascii=False,
+        indent=2,
+    )
+
+
+def audit_as_csv(rows: list[dict[str, Any]]) -> str:
+    fields = [
+        "at",
+        "kind",
+        "projectId",
+        "packageJobId",
+        "actor",
+        "actorSelfReported",
+        "action",
+        "state",
+        "comment",
+        "brandIssues",
+        "note",
+    ]
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=fields, extrasaction="ignore")
+    writer.writeheader()
+    for row in rows:
+        item = {key: row.get(key, "") for key in fields}
+        issues = item.get("brandIssues") or []
+        item["brandIssues"] = "；".join(issues) if isinstance(issues, list) else issues
+        if item.get("actorSelfReported") is True:
+            item["actorSelfReported"] = "true"
+        elif item.get("actorSelfReported") is False:
+            item["actorSelfReported"] = "false"
+        writer.writerow(item)
+    return buffer.getvalue()

@@ -12,11 +12,17 @@ from test_creation_publication import ROOT, finish, payload, rendered, service  
 
 from gamingcreator.application.enterprise import (
     apply_review,
+    audit_as_csv,
+    audit_as_json,
     check_brand,
+    merge_audit_rows,
     publish_blockers,
+    review_events_as_audit,
     validate_team,
 )
 from gamingcreator.ui import package_jobs
+
+PROJECT = "artifacts/project"
 
 TEAM = {
     "members": [
@@ -132,8 +138,8 @@ def test_real_package_review_gates_sandbox_publish(rendered, monkeypatch):
 
     try:
         with pytest.raises(urllib.error.HTTPError):
-            post("/api/enterprise/team", {"team": TEAM, "actor": "小编"})
-        post("/api/enterprise/team", {"team": TEAM, "actor": "老板"})
+            post("/api/enterprise/team", {"projectId": PROJECT, "team": TEAM, "actor": "小编"})
+        post("/api/enterprise/team", {"projectId": PROJECT, "team": TEAM, "actor": "老板"})
         with pytest.raises(urllib.error.HTTPError) as gated:
             post("/api/creation/publish", {"packageJobId": good, "target": "sandbox"})
         assert "审核" in json.loads(gated.value.read())["message"]
@@ -154,9 +160,16 @@ def test_real_package_review_gates_sandbox_publish(rendered, monkeypatch):
             f"{base}/api/enterprise/review?packageJobId={good}"
         ) as response:
             assert json.loads(response.read())["review"]["state"] == "approved"
+        with urllib.request.urlopen(
+            f"{base}/api/enterprise/audit?projectId={PROJECT}&format=json"
+        ) as response:
+            audit = json.loads(response.read())
+            assert audit["schemaVersion"] == "enterprise-audit-v1"
+            assert any(row.get("kind") == "review" for row in audit["rows"])
+            assert all(row.get("actorSelfReported") for row in audit["rows"] if row.get("actor"))
         # A glossary change after approval makes the old approval insufficient.
         stricter = {**TEAM, "brandTerms": {"required": ["代号Atom"], "forbidden": ["新版本"]}}
-        post("/api/enterprise/team", {"team": stricter, "actor": "老板"})
+        post("/api/enterprise/team", {"projectId": PROJECT, "team": stricter, "actor": "老板"})
         with pytest.raises(urllib.error.HTTPError) as stale:
             post("/api/creation/publish", {"packageJobId": good, "target": "sandbox"})
         assert "品牌词" in json.loads(stale.value.read())["message"]
@@ -164,3 +177,55 @@ def test_real_package_review_gates_sandbox_publish(rendered, monkeypatch):
         server.shutdown()
         server.server_close()
         thread.join()
+
+
+
+def test_audit_helpers_mark_self_reported_names():
+    record = {
+        "state": "approved",
+        "events": [
+            {"actor": "小编", "role": "editor", "action": "submit", "comment": "", "brandIssues": [], "at": "t1"},
+            {"actor": "审核员", "role": "reviewer", "action": "approve", "comment": "ok", "brandIssues": [], "at": "t2"},
+        ],
+    }
+    rows = review_events_as_audit("proj", "p" * 32, record)
+    assert rows[-1]["state"] == "approved" and rows[0]["state"] is None
+    assert all(row["actorSelfReported"] is True for row in rows)
+    assert "不是登录账号" in audit_as_json(rows)
+    csv_text = audit_as_csv(rows)
+    assert "actorSelfReported" in csv_text.splitlines()[0]
+    assert "true" in csv_text
+    merged = merge_audit_rows(rows, rows)
+    assert len(merged) == len(rows)
+
+
+def test_per_project_teams_and_audit_export(service):
+    other = "artifacts/other"
+    (service.repository / other).mkdir(parents=True)
+    (service.repository / other / "timeline.sqlite3").touch()
+    a = service.set_team(PROJECT, TEAM, "老板")
+    b_team = {
+        **TEAM,
+        "members": [
+            {"name": "甲", "role": "owner"},
+            {"name": "乙", "role": "editor"},
+        ],
+        "brandTerms": {"required": ["别的游戏"], "forbidden": []},
+        "reviewRequired": False,
+    }
+    b = service.set_team(other, b_team, "甲")
+    assert service.team(PROJECT)["brandTerms"]["required"] == ["代号Atom"]
+    assert service.team(other)["brandTerms"]["required"] == ["别的游戏"]
+    assert a["reviewRequired"] and not b["reviewRequired"]
+    # Legacy global file is still readable when the project file is absent.
+    legacy_project = "artifacts/legacy"
+    (service.repository / legacy_project).mkdir(parents=True)
+    (service.repository / legacy_project / "timeline.sqlite3").touch()
+    service.save(service.root / "enterprise-team.json", validate_team(TEAM))
+    assert service.team(legacy_project)["members"][0]["name"] == "老板"
+    rows = service.audit_rows(PROJECT)
+    assert any(row["kind"] == "team_change" and row["actorSelfReported"] for row in rows)
+    body, name, mime = service.export_audit(PROJECT, "json")
+    assert name.endswith(".json") and "enterprise-audit-v1" in body and "不是登录账号" in body
+    csv_body, csv_name, csv_mime = service.export_audit(PROJECT, "csv")
+    assert csv_name.endswith(".csv") and "actorSelfReported" in csv_body

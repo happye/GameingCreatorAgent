@@ -741,9 +741,31 @@ class CreationJobs:
     def edit(self, job_id: str, plan_id: str) -> dict[str, Any]:
         return editor(load_chain(self, job_id, plan_id), job_id)
 
-    def team(self) -> dict[str, Any] | None:
-        path = self.root / "enterprise-team.json"
-        return self.read(path) if path.is_file() else None
+    def _enterprise_dir(self) -> Path:
+        path = self.root / "enterprise"
+        path.mkdir(exist_ok=True)
+        (path / "teams").mkdir(exist_ok=True)
+        (path / "audit").mkdir(exist_ok=True)
+        return path
+
+    def _team_path(self, project_id: str) -> Path:
+        from gamingcreator.application.enterprise import project_team_key
+
+        return self._enterprise_dir() / "teams" / f"{project_team_key(project_id)}.json"
+
+    def _audit_path(self, project_id: str) -> Path:
+        from gamingcreator.application.enterprise import project_team_key
+
+        return self._enterprise_dir() / "audit" / f"{project_team_key(project_id)}.jsonl"
+
+    def team(self, project_id: object) -> dict[str, Any] | None:
+        """Team for one project; falls back read-only to the pre-T10 global file if needed."""
+        self.project(project_id)
+        path = self._team_path(str(project_id))
+        if path.is_file():
+            return self.read(path)
+        legacy = self.root / "enterprise-team.json"
+        return self.read(legacy) if legacy.is_file() else None
 
     @contextmanager
     def root_writer(self) -> Iterator[None]:
@@ -762,11 +784,13 @@ class CreationJobs:
         finally:
             lock.close()
 
-    def set_team(self, value: object, actor: object) -> dict[str, Any]:
+    def set_team(self, project_id: object, value: object, actor: object) -> dict[str, Any]:
         from gamingcreator.application.enterprise import PERMISSIONS, role_of, validate_team
 
+        self.project(project_id)
+        project = str(project_id)
         with self.root_writer():
-            current = self.team()
+            current = self.team(project)
             try:
                 team = validate_team(value)
                 if (
@@ -778,7 +802,21 @@ class CreationJobs:
                     raise PermissionError("创建团队的人必须是负责人。")
             except (PermissionError, ValueError) as error:
                 raise fail("enterprise.input", str(error)) from error
-            self.save(self.root / "enterprise-team.json", team)
+            self.save(self._team_path(project), team)
+            self._append_audit(
+                project,
+                {
+                    "kind": "team_change",
+                    "at": datetime.now(UTC).isoformat(),
+                    "projectId": project,
+                    "actor": str(actor),
+                    "actorSelfReported": True,
+                    "action": "set_team",
+                    "before": current,
+                    "after": team,
+                    "note": "操作人姓名自报，不是登录账号",
+                },
+            )
             return team
 
     def review(
@@ -786,15 +824,18 @@ class CreationJobs:
     ) -> dict[str, Any]:
         from gamingcreator.application.enterprise import apply_review, check_brand
 
+        package_job_id = identity(package_job_id)
+        project = str(self.read(self.directory(package_job_id) / "status.json")["projectId"])
         with self.root_writer():
-            team = self.team()
+            team = self.team(project)
             if team is None:
-                raise fail("enterprise.input", "请先设置团队成员。")
+                raise fail("enterprise.input", "请先设置该项目的团队成员。")
             texts = self._package_texts(package_job_id)
             reviews = self.root / "reviews"
             reviews.mkdir(exist_ok=True)
-            path = reviews / f"{identity(package_job_id)}.json"
+            path = reviews / f"{package_job_id}.json"
             record = self.read(path) if path.is_file() else None
+            when = datetime.now(UTC).isoformat()
             try:
                 updated = apply_review(
                     team,
@@ -803,11 +844,28 @@ class CreationJobs:
                     str(action),
                     comment if isinstance(comment, str) else "",
                     check_brand(team, texts),
-                    datetime.now(UTC).isoformat(),
+                    when,
                 )
             except (PermissionError, ValueError) as error:
                 raise fail("enterprise.review", str(error)) from error
             self.save(path, updated)
+            last = updated["events"][-1]
+            self._append_audit(
+                project,
+                {
+                    "kind": "review",
+                    "at": when,
+                    "projectId": project,
+                    "packageJobId": package_job_id,
+                    "actor": str(actor),
+                    "actorSelfReported": True,
+                    "action": str(action),
+                    "state": updated["state"],
+                    "comment": last.get("comment") or "",
+                    "brandIssues": list(last.get("brandIssues") or []),
+                    "note": "操作人姓名自报，不是登录账号",
+                },
+            )
             return updated
 
     def _package_texts(self, package_job_id: str) -> dict[str, str]:
@@ -822,7 +880,9 @@ class CreationJobs:
     def publish_blockers(self, package_job_id: str) -> list[str]:
         from gamingcreator.application.enterprise import check_brand, publish_blockers
 
-        team = self.team()
+        package_job_id = identity(package_job_id)
+        project = str(self.read(self.directory(package_job_id) / "status.json")["projectId"])
+        team = self.team(project)
         if team is None or not team["reviewRequired"]:
             return []
         record = self.review_state(package_job_id)
@@ -832,6 +892,55 @@ class CreationJobs:
     def review_state(self, package_job_id: str) -> dict[str, Any] | None:
         path = self.root / "reviews" / f"{identity(package_job_id)}.json"
         return self.read(path) if path.is_file() else None
+
+    def _append_audit(self, project_id: str, row: dict[str, Any]) -> None:
+        path = self._audit_path(project_id)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+    def audit_rows(self, project_id: object) -> list[dict[str, Any]]:
+        from gamingcreator.application.enterprise import merge_audit_rows, review_events_as_audit
+
+        self.project(project_id)
+        project = str(project_id)
+        appended: list[dict[str, Any]] = []
+        path = self._audit_path(project)
+        if path.is_file():
+            for line in path.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(row, dict):
+                    appended.append(row)
+        from_reviews: list[dict[str, Any]] = []
+        for directory in self.jobs.iterdir():
+            if not directory.is_dir() or re.fullmatch("[0-9a-f]{32}", directory.name) is None:
+                continue
+            try:
+                state = self.read(directory / "status.json")
+            except (OSError, ValueError, AppError):
+                continue
+            if state.get("kind") != "package" or state.get("projectId") != project:
+                continue
+            record = self.review_state(directory.name)
+            if record:
+                from_reviews.extend(review_events_as_audit(project, directory.name, record))
+        return merge_audit_rows(appended, from_reviews)
+
+    def export_audit(self, project_id: object, fmt: object) -> tuple[str, str, str]:
+        from gamingcreator.application.enterprise import audit_as_csv, audit_as_json
+
+        rows = self.audit_rows(project_id)
+        if fmt == "csv":
+            return audit_as_csv(rows), "enterprise-audit.csv", "text/csv; charset=utf-8"
+        if fmt == "json":
+            return audit_as_json(rows), "enterprise-audit.json", "application/json; charset=utf-8"
+        raise fail("enterprise.input", "审计导出格式只能是 json 或 csv。")
 
     def entitlement_selection(self) -> dict[str, Any] | None:
         path = self.root / "entitlement.json"
