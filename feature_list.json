@@ -893,7 +893,8 @@
             "implementation_evidence": [
                 "docs/exec-plans/sprint-platform-packages.md",
                 "tests/test_platform_package.py",
-                "tests/test_platform_package_browser.py"
+                "tests/test_platform_package_browser.py",
+                "2026-11-01: versioned platform-presets-v1 manifest + platform_preset_loader loads bilibili/douyin/kuaishou/xiaohongshu JSON locally; Source remains local_preset (非官方规则); page edits still create RuleVersion-edited overrides; limits stay null/not_configured — not claimed as official verification"
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

@@ -1,0 +1,6 @@
+{
+  "schemaVersion": "platform-presets-v1",
+  "disclaimer": "Local export presets only. Not official Douyin/Kuaishou/Bilibili/Xiaohongshu rules; values are not verified against current platform documentation and must not be cited as official compliance.",
+  "ruleVersion": "local-v1",
+  "platforms": ["bilibili", "douyin", "kuaishou", "xiaohongshu"]
+}

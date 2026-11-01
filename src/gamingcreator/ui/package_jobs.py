@@ -1,7 +1,6 @@
 """Immutable single-platform packages of seven public files and a ZIP."""
 
 import asyncio
-import json
 import zipfile
 from fractions import Fraction
 from pathlib import Path
@@ -27,13 +26,9 @@ DOWNLOADS = {**FILES, "package.zip": "application/zip"}
 
 
 def profiles() -> dict[str, Any]:
-    root = Path(__file__).resolve().parents[1] / "infrastructure/platform_presets"
-    return {
-        "profiles": [
-            validate_profile(json.loads((root / (name + ".json")).read_text(encoding="utf-8")))
-            for name in ("bilibili", "douyin", "kuaishou", "xiaohongshu")
-        ]
-    }
+    from gamingcreator.infrastructure.platform_preset_loader import load_platform_profiles
+
+    return {"profiles": load_platform_profiles()}
 
 
 def parent(
