@@ -70,8 +70,15 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout}) {
             if (job.status !== "completed") return setMessage(job.status === "failed" ? `任务失败：${job.error?.message || ""}` : "处理中…");
             setMessage("");
             if (job.kind === "plan") showPlan(job);
-            if (job.kind === "render") { setRenderJob(job); setMode("result"); lastJob(project, {id: job.jobId, kind: "render"}); }
-        }).then((job) => { if (!job) lastJob(project, null); });
+            if (job.kind === "render") {
+                setRenderJob(job); setMode("result"); lastJob(project, {id: job.jobId, kind: "render"});
+                // Bring back the plans this video came from, so preview and re-export stay one click away.
+                if (job.parentJobId) void client.job(job.parentJobId).then((parent) => {
+                    if (parent.kind !== "plan" || parent.status !== "completed") return;
+                    setPlanJob(parent); setPlanId((parent.plans || []).find((p) => p.ready)?.id || "");
+                }).catch(() => {});
+            }
+        });
     }, [open, project]);
 
     const generate = async () => {
@@ -147,10 +154,12 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout}) {
                     ${mode === "plan"
                         ? html`<button class="icon-btn" disabled=${!items.length} onClick=${player.toggle}>${player.playing ? "暂停" : "预览方案"}</button>
                             <span class="tc">${timecode(player.outUs)} / ${timecode(player.totalUs)}</span>
-                            <span class="badge">方案预览 · 直接播放原片，未渲染</span>`
+                            <span class="badge" title="直接播放原片，未渲染">即时预览·未渲染</span>`
                         : html`<span class="badge">成片</span>`}
                     <span class="spacer"></span>
                     ${result ? html`<div class="tabs"><button aria-selected=${mode === "plan"} onClick=${() => setMode("plan")}>方案预览</button><button aria-selected=${mode === "result"} onClick=${() => { player.stop(); setMode("result"); }}>成片</button></div>` : null}
+                    ${result && resultDownload ? html`<a class="btn ghost" href=${resultDownload} download>下载 MP4（${(result.sizeBytes / 1048576).toFixed(1)} MB）</a>` : null}
+                    <button class="btn" disabled=${!plan?.ready || !!busy} title=${!plan ? "先在左侧选择一个方案" : !plan.ready ? "这个方案有缺口，不能导出" : "按当前方案渲染 MP4"} onClick=${exportVideo}>${busy === "render" ? "正在生成…" : "导出成片"}</button>
                 </div>
             </section>
             <${ProgramTrack} groups=${groups} totalUs=${player.totalUs} outUs=${player.outUs} thumb=${thumb} selected=${selectedShot}
@@ -160,15 +169,14 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout}) {
             <div class="panel-head">检查器</div>
             <div class="panel-body">
                 ${message && html`<p class="note" role="status">${message}</p>`}
-                ${plan ? html`<${PlanInspector} plan=${plan} groups=${groups} totalUs=${player.totalUs} shot=${selectedShot} />` : html`<p class="note">选中方案后，这里显示它的时长、镜头和缺口。</p>`}
                 <div class="field">
-                    <div class="k">导出成片</div>
-                    <label class="form-row">尺寸<select class="select" value=${size} onChange=${(e) => setSize(e.currentTarget.value)}><option value="1280,720">横屏 1280×720</option><option value="720,1280">竖屏 720×1280</option></select></label>
-                    <label class="form-row">字幕<select class="select" value=${subtitles} onChange=${(e) => setSubtitles(e.currentTarget.value)}><option value="none">不加字幕</option><option value="sidecar">导出 SRT</option><option value="burn">烧入视频并导出 SRT</option></select></label>
-                    <button class="btn" disabled=${!plan?.ready || !!busy} onClick=${exportVideo}>${busy === "render" ? "正在生成…" : "导出成片"}</button>
-                    <p class="hint">${!plan ? "先选择一个方案。" : !plan.ready ? "这个方案有缺口，不能导出。" : busy === "plan" ? "方案生成中…" : ""}</p>
-                    ${result && html`<p><a class="btn ghost" href=${resultDownload} download>下载 MP4（${(result.sizeBytes / 1048576).toFixed(1)} MB）</a></p>`}
+                    <div class="k">导出设置（导出按钮在预览窗下方）</div>
+                    <div class="pair even">
+                        <label class="form-row">尺寸<select class="select" value=${size} onChange=${(e) => setSize(e.currentTarget.value)}><option value="1280,720">横屏 1280×720</option><option value="720,1280">竖屏 720×1280</option></select></label>
+                        <label class="form-row">字幕<select class="select" value=${subtitles} onChange=${(e) => setSubtitles(e.currentTarget.value)}><option value="none">不加字幕</option><option value="sidecar">导出 SRT</option><option value="burn">烧入并导出 SRT</option></select></label>
+                    </div>
                 </div>
+                ${plan ? html`<${PlanInspector} plan=${plan} groups=${groups} totalUs=${player.totalUs} shot=${selectedShot} />` : html`<p class="note">选中方案后，这里显示它的时长、镜头和缺口。</p>`}
             </div>
         </aside>
     </div>`;

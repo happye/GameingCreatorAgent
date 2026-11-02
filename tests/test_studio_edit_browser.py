@@ -110,6 +110,11 @@ def test_brief_to_exported_video(service, monkeypatch):  # noqa: F811
             page.reload()
             playwright.expect(page.locator(".brief input.input").first).to_have_value("测试游戏")
             playwright.expect(page.locator("a[download]")).to_be_visible()
+            # Reopening a video brings back its plans, and export stays on screen.
+            playwright.expect(page.locator(".plan")).to_have_count(2)
+            export = page.get_by_role("button", name="导出成片")
+            playwright.expect(export).to_be_enabled()
+            assert export.evaluate("e => e.getBoundingClientRect().bottom <= innerHeight")
             assert not errors
             browser.close()
     finally:

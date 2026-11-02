@@ -142,3 +142,8 @@ details.group[open] > summary::before { content: "▾ "; }
 .track.program { height: 96px; }
 .field .btn { margin-top: var(--s-2); }
 .field .form-row { margin-top: var(--s-2); }
+.transport { min-height: 40px; flex-wrap: nowrap; }
+.transport .btn { padding: 4px 14px; white-space: nowrap; }
+.transport .btn.ghost { padding: 4px 10px; }
+.pair.even { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.viewer { grid-template-rows: minmax(0, 1fr) 40px; }
