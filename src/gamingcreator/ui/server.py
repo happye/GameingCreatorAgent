@@ -56,6 +56,14 @@ ASSETS = {
     "/acceptance": ("benchmark-workflow.html", "text/html; charset=utf-8"),
     "/assets/benchmark-workflow.js": ("benchmark-workflow.js", "text/javascript; charset=utf-8"),
     "/assets/benchmark-workflow.css": ("benchmark-workflow.css", "text/css; charset=utf-8"),
+    # Studio workbench (preview): ES modules, vendored Preact + htm, no build step.
+    "/studio": ("studio.html", "text/html; charset=utf-8"),
+    "/assets/studio.css": ("studio.css", "text/css; charset=utf-8"),
+    "/assets/studio/main.js": ("studio/main.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/api.js": ("studio/api.js", "text/javascript; charset=utf-8"),
+    "/assets/vendor/preact.module.js": ("vendor/preact.module.js", "text/javascript; charset=utf-8"),
+    "/assets/vendor/hooks.module.js": ("vendor/hooks.module.js", "text/javascript; charset=utf-8"),
+    "/assets/vendor/htm.module.js": ("vendor/htm.module.js", "text/javascript; charset=utf-8"),
 }
 
 

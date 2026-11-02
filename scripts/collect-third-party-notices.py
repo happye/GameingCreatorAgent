@@ -1,4 +1,4 @@
-﻿"""Collect third-party license texts that already exist on disk into licenses/.
+"""Collect third-party license texts that already exist on disk into licenses/.
 
 Does not download anything. Missing license files are listed for human-inputs.
 """
@@ -118,7 +118,11 @@ def collect(repository: Path, output: Path) -> tuple[list[NoticeRow], list[dict[
     gaps: list[dict[str, str]] = []
 
     # CPython
-    python_roots = sorted((repository / ".tools/python").glob("cpython-*")) if (repository / ".tools/python").is_dir() else []
+    python_roots = (
+        sorted((repository / ".tools/python").glob("cpython-*"))
+        if (repository / ".tools/python").is_dir()
+        else []
+    )
     if python_roots:
         py = python_roots[0]
         license_txt = py / "LICENSE.txt"
@@ -136,7 +140,9 @@ def collect(repository: Path, output: Path) -> tuple[list[NoticeRow], list[dict[
                 )
             )
         else:
-            gaps.append({"component": "CPython", "reason": "LICENSE.txt missing under .tools/python"})
+            gaps.append(
+                {"component": "CPython", "reason": "LICENSE.txt missing under .tools/python"}
+            )
             rows.append(NoticeRow("CPython", py.name, "UNKNOWN", "", "", "missing_license_file"))
     else:
         gaps.append({"component": "CPython", "reason": ".tools/python runtime directory missing"})
@@ -178,9 +184,15 @@ def collect(repository: Path, output: Path) -> tuple[list[NoticeRow], list[dict[
     rows.append(
         NoticeRow(
             "FFmpeg",
-            (json.loads(media_pin.read_text(encoding="utf-8")).get("version") if media_pin.is_file() else ""),
+            (
+                json.loads(media_pin.read_text(encoding="utf-8")).get("version")
+                if media_pin.is_file()
+                else ""
+            ),
             "GPL (enabled in build flags); production LICENSE.txt missing on disk",
-            str(media_pin.relative_to(repository)).replace("\\", "/") if media_pin.is_file() else "",
+            str(media_pin.relative_to(repository)).replace("\\", "/")
+            if media_pin.is_file()
+            else "",
             str(ffmpeg_note.relative_to(output)).replace("\\", "/"),
             "noted_without_file",
         )
@@ -229,8 +241,43 @@ def collect(repository: Path, output: Path) -> tuple[list[NoticeRow], list[dict[
             }
         )
     else:
-        gaps.append({"component": "WebView2", "reason": "LICENSE.txt missing under .tools/webview2"})
-        rows.append(NoticeRow("Microsoft.Web.WebView2", "", "UNKNOWN", "", "", "missing_license_file"))
+        gaps.append(
+            {"component": "WebView2", "reason": "LICENSE.txt missing under .tools/webview2"}
+        )
+        rows.append(
+            NoticeRow("Microsoft.Web.WebView2", "", "UNKNOWN", "", "", "missing_license_file")
+        )
+
+    # Vendored studio front-end modules (src/gamingcreator/ui/static/vendor/vendor.json)
+    vendor_dir = repository / "src/gamingcreator/ui/static/vendor"
+    manifest = vendor_dir / "vendor.json"
+    if manifest.is_file():
+        for package in json.loads(manifest.read_text(encoding="utf-8"))["packages"]:
+            source = vendor_dir / f"LICENSE-{package['name']}.txt"
+            if source.is_file():
+                dest = sources / "studio-vendor" / source.name
+                _copy_file(source, dest)
+                rows.append(
+                    NoticeRow(
+                        package["name"],
+                        package["version"],
+                        package["license"],
+                        str(source.relative_to(repository)).replace("\\", "/"),
+                        str(dest.relative_to(output)).replace("\\", "/"),
+                        "ok",
+                    )
+                )
+            else:
+                rows.append(
+                    NoticeRow(
+                        package["name"],
+                        package["version"],
+                        package["license"],
+                        "",
+                        "",
+                        "missing_license_file",
+                    )
+                )
 
     # MSVC native redistributables (shipped; typically no LICENSE file in tree)
     native = repository / ".tools/native"
@@ -265,10 +312,14 @@ def collect(repository: Path, output: Path) -> tuple[list[NoticeRow], list[dict[
         )
 
     # Models
-    embed_receipt = next(
-        (repository / ".cache/models/multilingual-e5-small").rglob("receipt.json"),
-        None,
-    ) if (repository / ".cache/models/multilingual-e5-small").is_dir() else None
+    embed_receipt = (
+        next(
+            (repository / ".cache/models/multilingual-e5-small").rglob("receipt.json"),
+            None,
+        )
+        if (repository / ".cache/models/multilingual-e5-small").is_dir()
+        else None
+    )
     embed_pin = repository / "docs/references/embedding-model.json"
     if embed_pin.is_file():
         dest = sources / "models/multilingual-e5-small" / "embedding-model.json"
@@ -330,7 +381,9 @@ def collect(repository: Path, output: Path) -> tuple[list[NoticeRow], list[dict[
             for path in license_paths:
                 if path.parent == dist_info:
                     target = folder / path.name
-                elif (dist_info / "licenses") in path.parents or path.parent == (dist_info / "licenses"):
+                elif (dist_info / "licenses") in path.parents or path.parent == (
+                    dist_info / "licenses"
+                ):
                     target = folder / "licenses" / path.relative_to(dist_info / "licenses")
                 else:
                     target = folder / "licenses" / path.name
