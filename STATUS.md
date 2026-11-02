@@ -21,7 +21,7 @@
 ## 下一步
 
 1. **你**：按 `docs/references/quickstart-10min.md` 第二次试看 J1（创作页已改版，见 `sprint-j1-creation-usability.md` 结果节）。
-2. 开发：等 J1 反馈期间只修阻断问题；“清除测试记录”待你决定是否允许删除旧任务。
+2. 开发：新工作台 `/studio`（`docs/exec-plans/sprint-studio-workbench.md`）。第 1 步外壳与只读素材区已完成，下一步做剪辑区：方案胶片条和即时预览。
 3. TD024 检索回归排在 J1 之后。
 4. 分发前：处理许可证缺口（human-inputs）和 TD003 FFmpeg 来源。
 

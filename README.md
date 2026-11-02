@@ -30,6 +30,7 @@
 
 | 你想… | 看这里 |
 | --- | --- |
+| 新工作台（预览） | 打开 http://127.0.0.1:8765/studio ：深色剪辑软件式界面，逐步替换旧页面，见 [studio sprint](docs/exec-plans/sprint-studio-workbench.md) |
 | 用工具做视频 | [10 分钟上手](docs/references/quickstart-10min.md)，更多功能见[创作全流程手册](docs/references/creation-guide.md) |
 | 分析、检索、验收的命令行用法 | [使用手册](docs/references/user-manual.md)、[Demo 快速开始](docs/references/demo-quickstart.md) |
 | 了解你需要做什么 | [人工待办](docs/exec-plans/human-inputs.md) |
