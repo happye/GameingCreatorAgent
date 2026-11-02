@@ -28,6 +28,40 @@ export function sameOrigin(value, pathname) {
     } catch { return null; }
 }
 
+// One request id per intent: resubmitting the same payload reuses it, so the server never
+// creates a duplicate job for a double click or a retry.
+const intents = new Map();
+export function requestId(kind, payload) {
+    const key = JSON.stringify(payload), known = intents.get(kind);
+    if (known?.key === key) return known.id;
+    const id = Array.from(crypto.getRandomValues(new Uint8Array(16)), (v) => v.toString(16).padStart(2, "0")).join("");
+    intents.set(kind, {key, id});
+    return id;
+}
+export const forgetIntent = (kind) => intents.delete(kind);
+
+export async function submit(kind, payload) {
+    const path = {plan: "/api/creation/plans", render: "/api/creation/renders"}[kind];
+    return api(path, {}, {body: {...payload, requestId: requestId(kind, payload)}});
+}
+export const job = (id, signal) => api(`/api/creation/jobs/${encodeURIComponent(id)}`, {}, {signal});
+
+// Poll a creation job until it settles; the server recovers crashed jobs as "interrupted".
+export async function settle(id, signal, onUpdate = () => {}) {
+    for (;;) {
+        const state = await job(id, signal);
+        onUpdate(state);
+        if (!["pending", "running"].includes(state.status)) return state;
+        await new Promise((resolve, reject) => {
+            const timer = setTimeout(resolve, 1000);
+            signal?.addEventListener("abort", () => { clearTimeout(timer); reject(new DOMException("aborted", "AbortError")); }, {once: true});
+        });
+    }
+}
+
+export const mediaUrl = (project, run) => `/api/media?${new URLSearchParams({project, run})}`;
+export const evidenceUrl = (project, run, id) => `/api/evidence?${new URLSearchParams({project, run, id})}`;
+
 export const projects = (signal) => api("/api/projects", {}, {signal});
 export const runs = (project, signal) => api("/api/runs", {project}, {signal});
 export const inspect = (project, run, signal) => api("/api/inspect", {project, run, query: "", mode: "hybrid", top: 10, detailProfile: "v1"}, {signal});

@@ -113,3 +113,32 @@ details.group[open] > summary::before { content: "▾ "; }
 
 @media (max-width: 1100px) { :root { --bin-w: 220px; --insp-w: 260px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+
+/* Edit workspace */
+.work.edit { --bin-w: 300px; }
+.viewer .stage { position: relative; display: grid; min-height: 0; background: #000; }
+.viewer .stage > * { grid-area: 1 / 1; min-height: 0; }
+.brief { padding: var(--s-2) var(--s-3) var(--s-3); display: grid; gap: var(--s-2); }
+.form-row { display: grid; gap: 2px; color: var(--ink-3); font-size: var(--t-xs); }
+.form-row .select, .input { width: 100%; max-width: none; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-1); padding: 5px 8px; color: var(--ink-1); font-size: var(--t-md); }
+.pair { display: grid; grid-template-columns: minmax(0, 1fr) 84px; gap: var(--s-2); }
+.runs { border: 1px solid var(--line); border-radius: var(--r-2); padding: var(--s-1) var(--s-2) var(--s-2); margin: 0; min-width: 0; }
+.runs legend { color: var(--ink-3); font-size: var(--t-xs); padding: 0 4px; }
+.check { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px; align-items: start; padding: 3px 0; }
+.check span { overflow-wrap: anywhere; }
+.btn.wide { width: 100%; padding: 8px; }
+.btn:disabled { opacity: .5; cursor: default; }
+.hint { color: var(--ink-3); font-size: var(--t-sm); margin: 6px 0 0; }
+.plan { display: grid; gap: 4px; width: calc(100% - 2 * var(--s-3)); margin: 0 var(--s-3) var(--s-2); text-align: left; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-2); padding: var(--s-2); color: var(--ink-1); }
+.plan:hover:not(:disabled) { border-color: #3c4757; }
+.plan[aria-current="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.plan:disabled { opacity: .55; cursor: default; }
+.plan-title { font-weight: 600; }
+.plan-meta { color: var(--ink-2); font: var(--t-xs) var(--font-num); }
+.plan-gap { color: var(--warn); font-size: var(--t-xs); }
+.strip { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 2px; }
+.strip span { aspect-ratio: 16 / 9; border-radius: 2px; background: var(--bg-0) center / cover no-repeat; }
+.badge.rec { background: var(--accent); color: var(--accent-ink); margin-right: 6px; }
+.track.program { height: 96px; }
+.field .btn { margin-top: var(--s-2); }
+.field .form-row { margin-top: var(--s-2); }

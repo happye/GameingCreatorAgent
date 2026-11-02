@@ -45,7 +45,9 @@ def server(tmp_path):
 
 def test_studio_routes_are_served_with_module_types(server):
     studio_paths = [p for p in ASSETS if p == "/studio" or "/studio" in p or "/vendor/" in p]
-    assert len(studio_paths) == 7
+    # Every studio module on disk must be routed, or the page fails to load it.
+    modules = {f"/assets/studio/{p.name}" for p in STATIC.glob("studio/*.js")}
+    assert modules <= set(studio_paths)
     for path in studio_paths:
         with urlopen(server + path, timeout=10) as response:
             assert response.status == 200

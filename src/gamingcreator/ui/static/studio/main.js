@@ -1,9 +1,10 @@
-// Studio shell, step 1: design system, workspaces, and a read-only Assets workspace
-// (recordings → viewer + event timeline + inspector). Edit and Deliver arrive in later steps.
+// Studio shell: design system, workspaces, the read-only Assets workspace
+// (recordings → viewer + event timeline + inspector) and the Edit workspace (edit.js).
 import {h, render} from "../vendor/preact.module.js";
 import {useCallback, useEffect, useMemo, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
+import {EditWorkspace} from "./edit.js";
 
 const html = htm.bind(h);
 const STORE = "studio-v1";
@@ -41,6 +42,7 @@ function App() {
     const [selected, setSelected] = useState(null);
     const [status, setStatus] = useState("正在读取项目…");
     const [time, setTime] = useState(0);
+    const [open, setOpen] = useState(null);
     const video = useRef(null);
     const latestRuns = useLatest(), latestView = useLatest(), latestWorks = useLatest();
 
@@ -69,7 +71,7 @@ function App() {
             setRunId(keep ? keep.id : "");
             setStatus(usable.length ? "" : "这个项目还没有分析完成的录像。");
         });
-        latestWorks((signal) => client.creationJobs(project, signal)).then((result) => { if (result.ok) setWorks(result.value.jobs); });
+        reloadWorks();
     }, [project]);
 
     useEffect(() => {
@@ -83,6 +85,14 @@ function App() {
             setView(result.value); setStatus("");
         });
     }, [project, runId]);
+
+    const reloadWorks = useCallback(() => {
+        if (project) latestWorks((signal) => client.creationJobs(project, signal)).then((result) => { if (result.ok) setWorks(result.value.jobs); });
+    }, [project]);
+    const openWork = useCallback((job) => {
+        if (!["plan", "render"].includes(job.kind) || job.status !== "completed") return;
+        setOpen({id: job.jobId, kind: job.kind, at: Date.now()}); setWorkspace("edit");
+    }, []);
 
     const seek = useCallback((us, play = false) => {
         const el = video.current; if (!el) return;
@@ -113,15 +123,17 @@ function App() {
         <${TopBar} ...${{workspace, setWorkspace, projects, project, setProject, layout, setLayout, status}} />
         ${workspace === "assets"
             ? html`<div class=${work}>
-                <${Bin} runs=${runs} runId=${runId} setRunId=${setRunId} works=${works} hidden=${!layout.bin} />
+                <${Bin} runs=${runs} runId=${runId} setRunId=${setRunId} works=${works} onOpen=${openWork} hidden=${!layout.bin} />
                 <div class="center">
                     <${Viewer} media=${view?.media} videoRef=${video} time=${time} setTime=${setTime} />
                     <${Timeline} view=${view} time=${time} selected=${selected} onSelect=${selectEvent} />
                 </div>
                 <${Inspector} view=${view} selected=${selected} run=${runs.find((r) => r.id === runId)} hidden=${!layout.insp} />
             </div>`
-            : html`<${Upcoming} workspace=${workspace} />`}
-        <div class="dock"><strong>创作助手</strong><span>下一步接入：用一句话描述想要的视频，方案会以胶片条出现在剪辑区。</span></div>
+            : workspace === "edit"
+                ? html`<${EditWorkspace} project=${project} runs=${runs} open=${open} onWorksChanged=${reloadWorks} layout=${layout} />`
+                : html`<${Upcoming} workspace=${workspace} />`}
+        <div class="dock"><strong>创作助手</strong><span>即将接入：用一句话描述想要的视频或修改，结果直接出现在剪辑区的方案和时间轴上。</span></div>
     </div>`;
 }
 
@@ -143,7 +155,7 @@ function TopBar({workspace, setWorkspace, projects, project, setProject, layout,
     </header>`;
 }
 
-function Bin({runs, runId, setRunId, works, hidden}) {
+function Bin({runs, runId, setRunId, works, onOpen, hidden}) {
     const groups = Object.keys(KIND).map((kind) => [kind, works.filter((job) => job.kind === kind)]).filter(([, list]) => list.length);
     return html`<aside class="panel" hidden=${hidden} aria-label="素材箱">
         <div class="panel-head">素材箱</div>
@@ -159,8 +171,11 @@ function Bin({runs, runId, setRunId, works, hidden}) {
             <div class="section-label">我的作品</div>
             ${groups.map(([kind, list]) => html`<details class="group" open=${kind === "render"}>
                 <summary>${KIND[kind]}（${list.length}）</summary>
-                ${list.slice(0, 20).map((job) => html`<div class="row" style="cursor:default"><span class=${`dot ${job.status === "completed" ? "ok" : job.status === "failed" ? "bad" : "warn"}`}></span>
-                    <span class="name">${new Date(job.createdAt).toLocaleString("zh-CN", {hour12: false})}</span><span class="meta">${job.status === "completed" ? "" : job.status}</span></div>`)}
+                ${list.slice(0, 20).map((job) => {
+                    const openable = ["plan", "render"].includes(job.kind) && job.status === "completed";
+                    return html`<button class="row" disabled=${!openable} title=${openable ? "在剪辑区打开" : ""} onClick=${() => onOpen(job)}><span class=${`dot ${job.status === "completed" ? "ok" : job.status === "failed" ? "bad" : "warn"}`}></span>
+                    <span class="name">${new Date(job.createdAt).toLocaleString("zh-CN", {hour12: false})}</span><span class="meta">${job.status === "completed" ? (openable ? "打开" : "") : job.status}</span></button>`;
+                })}
             </details>`)}
             ${!groups.length && html`<p class="note">生成的成片、方案会出现在这里。</p>`}
         </div>
@@ -250,9 +265,7 @@ function Inspector({view, selected, run, hidden}) {
 }
 
 function Upcoming({workspace}) {
-    const text = workspace === "edit"
-        ? ["剪辑区（第 2 步）", "方案将以缩略图胶片条展示，点“预览”即可在原片上即时播放，不用先渲染。在这之前，请用旧版创作页生成视频。", "/creation", "打开旧版创作页"]
-        : ["发布区（第 6 步）", "封面、文案和各平台预览包会集中在这里。在这之前，请在旧版创作页的“4. 成片”里操作。", "/creation", "打开旧版创作页"];
+    const text = ["发布区（第 6 步）", "封面、文案和各平台预览包会集中在这里。在这之前，请在旧版创作页的“4. 成片”里操作。", "/creation", "打开旧版创作页"];
     return html`<div class="placeholder"><div><h2>${text[0]}</h2><p>${text[1]}</p><a class="btn" href=${text[2]}>${text[3]}</a></div></div>`;
 }
 
