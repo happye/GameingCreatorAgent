@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PLANS = ROOT / "docs" / "exec-plans"
 FREEZE_IDS = ("P038", "P046", "P047", "P048", "P049", "P050", "P051")
 SIZE_BUDGETS = {"STATUS.md": 5120, "AGENTS.md": 6144, "HANDOFF.md": 5120}
-TIER = {"usable": "✅", "not_usable": "❌", "not_done": "⬜"}
+TIER = {"usable": "✅", "usable_draft": "🟡", "not_usable": "❌", "not_done": "⬜"}
 
 
 def _read(path: Path) -> str:

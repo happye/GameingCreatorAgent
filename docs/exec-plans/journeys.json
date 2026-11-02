@@ -12,11 +12,11 @@
         "evidence": "commit a164740 (P043-P045)；feature_list.json P043 implementation_evidence：demo-phase0 方案→MP4→封面→B站包"
       },
       "human_check": {
-        "date": "2026-11-02",
-        "verdict": "not_usable",
-        "minutes": null,
-        "interventions": null,
-        "evidence": "用户 2026-11-02 试看：10 分钟内无法完成配置；入口名与说明不符；页面约 69,000 像素长，方案卡每张约 7,700 像素、选择按钮在卡底；最近任务 100 条混排且点击会替换整个视图；表单不持久化。见 docs/exec-plans/sprint-j1-creation-usability.md"
+        "date": "2026-11-03",
+        "verdict": "usable_draft",
+        "minutes": 3,
+        "interventions": 0,
+        "evidence": "第三次试看（新工作台 /studio 剪辑区）：用户原话“现在生成的视频作为一个初版还是过得去的”“这4个方案跟他的描述确实对得上”；用时两三分钟，未做修改。导出按钮因位于检查器底部而没找到，已移到预览窗下方常驻（2026-11-03）。前两次：11-02 不能用；第二次只有意见、没有评分。"
       },
       "unlocks": "冻结项 P038、P046–P051"
     },
