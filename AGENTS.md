@@ -55,5 +55,5 @@ One commit = one user-visible capability or one fix, message says behavior + ver
 ## Fees, freeze, protections
 
 - ¥50 monthly preauthorization for user-designated footage analysis only; every overage asks again; the hard send gate stays (`detail-billing-confirmation-guide.md`).
-- P038 and P046–P051 stay frozen until journey J1 (玩法展示) is human-evaluated.
+- P038 and P046–P051 were unfrozen on 2026-11-03 by the user after the third J1 trial; real platform publishing, payments and paid calls still need their own explicit approval.
 - Paid calls gated; evidence and ledgers immutable; no automatic re-pay or re-label; the toolchain check may narrow but not be removed; harness work never flips `passes` or delivery statuses.

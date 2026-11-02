@@ -19,7 +19,8 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 PLANS = ROOT / "docs" / "exec-plans"
-FREEZE_IDS = ("P038", "P046", "P047", "P048", "P049", "P050", "P051")
+# Unfrozen 2026-11-03 by the user; list items here if a feature is frozen again.
+FREEZE_IDS: tuple[str, ...] = ()
 SIZE_BUDGETS = {"STATUS.md": 5120, "AGENTS.md": 6144, "HANDOFF.md": 5120}
 TIER = {"usable": "✅", "usable_draft": "🟡", "not_usable": "❌", "not_done": "⬜"}
 
@@ -160,7 +161,8 @@ def main(argv: list[str] | None = None) -> int:
         f" · 未解决 {td['open']}"
     )
     print(f"  人工待办（human-inputs 表）{len(pending)} 项")
-    print(f"  冻结中: {', '.join(f['frozen'])}（解冻条件见 STATUS.md）")
+    if f["frozen"]:
+        print(f"  冻结中: {', '.join(f['frozen'])}（解冻条件见 STATUS.md）")
 
     problems = board_drift(f) + size_problems() + control_char_problems()
     for problem in problems:
