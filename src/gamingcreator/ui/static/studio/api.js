@@ -41,7 +41,7 @@ export function requestId(kind, payload) {
 export const forgetIntent = (kind) => intents.delete(kind);
 
 export async function submit(kind, payload) {
-    const path = {plan: "/api/creation/plans", render: "/api/creation/renders"}[kind];
+    const path = {plan: "/api/creation/plans", revision: "/api/creation/revisions", render: "/api/creation/renders"}[kind];
     return api(path, {}, {body: {...payload, requestId: requestId(kind, payload)}});
 }
 export const job = (id, signal) => api(`/api/creation/jobs/${encodeURIComponent(id)}`, {}, {signal});

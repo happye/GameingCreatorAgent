@@ -147,3 +147,17 @@ details.group[open] > summary::before { content: "▾ "; }
 .transport .btn.ghost { padding: 4px 10px; }
 .pair.even { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .viewer { grid-template-rows: minmax(0, 1fr) 40px; }
+
+/* Step 3: clip editing */
+.clip { color: #fff; text-align: left; }
+.clip-no { position: absolute; left: 2px; top: 1px; font: 600 10px var(--font-num); background: #000a; padding: 0 3px; border-radius: 2px; }
+.clip-speed { position: absolute; right: 2px; bottom: 1px; font: 600 10px var(--font-num); background: var(--accent); color: var(--accent-ink); padding: 0 3px; border-radius: 2px; }
+.clip.changed { outline: 2px solid var(--warn); outline-offset: -1px; z-index: 1; }
+.actions-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.actions-row .btn { padding: 4px 10px; margin: 0; }
+.btn.danger { color: var(--bad); }
+.hint.warn { color: var(--warn); }
+.dock.assistant { gap: var(--s-2); height: 44px; }
+.dock.assistant .input { flex: 1; max-width: 560px; }
+.dock.assistant .btn { padding: 4px 12px; }
+.dock-msg { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); }

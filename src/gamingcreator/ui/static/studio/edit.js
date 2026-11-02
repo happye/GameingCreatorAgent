@@ -3,7 +3,8 @@ import {h} from "../vendor/preact.module.js";
 import {useCallback, useEffect, useMemo, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
-import {shots, timeline, usePlanPlayer} from "./preview.js";
+import {editTimeline, shots, timeline, usePlanPlayer} from "./preview.js";
+import {ClipInspector, CommandDock, transitionProblem, useClipEditor} from "./clipedit.js";
 
 const html = htm.bind(h);
 const DRAFT = "studio-brief-v1";
@@ -44,7 +45,9 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout}) {
     const [selectedShot, setSelectedShot] = useState(null);
     const [size, setSize] = useState("1280,720");
     const [subtitles, setSubtitles] = useState("none");
-    const planVideo = useRef(null), resultVideo = useRef(null), work = useRef(null);
+    const planVideo = useRef(null), resultVideo = useRef(null), work = useRef(null), restoring = useRef(null);
+    const editing = useClipEditor(project);
+    const [commandRows, setCommandRows] = useState(null);
 
     useEffect(() => { setDraft(readDraft(project)); setPlanJob(null); setRenderJob(null); setPlanId(""); setMode("plan"); }, [project]);
     const update = (patch) => { const next = {...draft, ...patch}; setDraft(next); setSaved(writeDraft(project, next) ? "草稿已保存" : "浏览器不允许保存草稿"); };
@@ -70,16 +73,29 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout}) {
             if (job.status !== "completed") return setMessage(job.status === "failed" ? `任务失败：${job.error?.message || ""}` : "处理中…");
             setMessage("");
             if (job.kind === "plan") showPlan(job);
+            if (job.kind === "revision") void reopenVersion(job);
             if (job.kind === "render") {
                 setRenderJob(job); setMode("result"); lastJob(project, {id: job.jobId, kind: "render"});
                 // Bring back the plans this video came from, so preview and re-export stay one click away.
                 if (job.parentJobId) void client.job(job.parentJobId).then((parent) => {
-                    if (parent.kind !== "plan" || parent.status !== "completed") return;
+                    if (parent.status !== "completed") return;
+                    if (parent.kind === "revision") return reopenVersion(parent, false);
+                    if (parent.kind !== "plan") return;
                     setPlanJob(parent); setPlanId((parent.plans || []).find((p) => p.ready)?.id || "");
                 }).catch(() => {});
             }
         });
     }, [open, project]);
+
+    // A saved version reopens with its edits, and with the plan job it started from.
+    const reopenVersion = async (job, remember = true) => {
+        const editor = await editing.load(job.jobId, job.editor?.planId || job.planId || "", "revision").catch(() => null);
+        if (!editor) return;
+        let parent = job;
+        for (let hop = 0; hop < 20 && parent?.kind !== "plan" && parent?.parentJobId; hop++) parent = await client.job(parent.parentJobId).catch(() => null);
+        if (parent?.kind === "plan") { restoring.current = editor.planId; setPlanJob(parent); setPlanId(editor.planId); }
+        if (remember) lastJob(project, {id: job.jobId, kind: "revision"});
+    };
 
     const generate = async () => {
         const runIds = draft.runIds.filter((id) => runs.some((r) => r.id === id && r.completedEligible));
@@ -99,18 +115,52 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout}) {
 
     const plan = planJob?.plans?.find((p) => p.id === planId) || null;
     const fps = planJob?.fps || 30;
-    const items = useMemo(() => (plan ? timeline(plan.segments || [], fps) : []), [plan, fps]);
+    // Choosing a plan loads its editable clips (unless a saved version of it was just reopened).
+    useEffect(() => {
+        if (!planJob || !planId) return;
+        if (restoring.current === planId) { restoring.current = null; return; }
+        void editing.load(planJob.jobId, planId, "plan");
+    }, [planJob, planId]);
+    const editable = editing.status === "ready";
+    const shownClips = useMemo(() => {
+        if (!commandRows || !editable) return editable ? editing.clips : null;
+        const byId = new Map(editing.clips.map((c) => [c.clipId, c]));
+        return commandRows.map((row) => ({...byId.get(row.clipId), ...row}));
+    }, [commandRows, editable, editing.clips]);
+    const items = useMemo(() => (shownClips ? editTimeline(shownClips, fps) : plan ? timeline(plan.segments || [], fps) : []), [shownClips, plan, fps]);
+    const changed = useMemo(() => {
+        if (!commandRows) return new Set();
+        // Highlight clips whose content changed or that moved relative to the others; a deletion
+        // shifts later clips but does not mark them.
+        const key = (c) => JSON.stringify([c.startUs, c.endUs, c.speed, c.transitionIn]);
+        const before = new Map(editing.clips.map((c) => [c.clipId, key(c)]));
+        const kept = new Set(commandRows.map((r) => r.clipId));
+        const expected = editing.clips.map((c) => c.clipId).filter((id) => kept.has(id));
+        return new Set(commandRows.filter((r, i) => !before.has(r.clipId) || before.get(r.clipId) !== key(r) || expected[i] !== r.clipId).map((r) => r.clipId));
+    }, [commandRows, editing.clips]);
+    const problem = editable ? transitionProblem(editing.clips, fps) : "";
     const groups = useMemo(() => shots(items), [items]);
     const urlFor = useCallback((runId) => client.mediaUrl(project, runId), [project]);
     const player = usePlanPlayer(planVideo, items, urlFor);
     const thumb = useCallback((item) => (item?.evidenceIds?.[0] ? client.evidenceUrl(project, item.runId, item.evidenceIds[0]) : null), [project]);
 
+    const saveVersion = async () => {
+        setBusy("save"); setMessage("正在保存版本…"); player.stop();
+        try { const id = await editing.save((jobId) => follow(jobId, () => {})); setMessage("已保存为新版本。"); onWorksChanged(); lastJob(project, {id, kind: "revision"}); return id; }
+        catch (error) { setMessage(error.message); return null; }
+        finally { setBusy(""); }
+    };
+
     const exportVideo = async () => {
-        if (!plan?.ready || !planJob) return;
+        if (!plan?.ready || !planJob || problem) return;
         const [width, height] = size.split(",").map(Number);
+        // Unsaved edits become a version first; the video is always rendered from a saved state.
+        let source = {planJobId: planJob.jobId, planId: plan.id};
+        if (editable && editing.dirty) { const id = await saveVersion(); if (!id) return; source = {revisionJobId: id}; }
+        else if (editable && editing.base?.kind === "revision") source = {revisionJobId: editing.base.jobId};
         setBusy("render"); setMessage("正在生成成片，60 秒的视频大约需要一分钟…"); player.stop();
         try {
-            const accepted = await client.submit("render", {planJobId: planJob.jobId, planId: plan.id, width, height, subtitleMode: subtitles});
+            const accepted = await client.submit("render", {...source, width, height, subtitleMode: subtitles});
             const done = await follow(accepted.jobId, (job) => setRenderJob(job));
             if (done?.status === "completed") { client.forgetIntent("render"); setMode("result"); setMessage(""); onWorksChanged(); lastJob(project, {id: done.jobId, kind: "render"}); }
             else if (done) setMessage(`成片生成失败：${done.error?.message || done.status}`);
@@ -126,12 +176,15 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout}) {
         const onKey = (event) => {
             if (event.target.closest("input, textarea, select") || mode !== "plan" || !items.length) return;
             if (event.key === " ") { event.preventDefault(); player.toggle(); }
+            if ((event.key === "Delete" || event.key === "Backspace") && editing.selectedId && editable && !commandRows) { event.preventDefault(); editing.ops.remove(editing.selectedId); }
             if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); void player.seek(player.outUs + (event.key === "ArrowLeft" ? -1 : 1) * (event.shiftKey ? 5e6 : 1e6), player.playing); }
         };
         addEventListener("keydown", onKey); return () => removeEventListener("keydown", onKey);
-    }, [player, mode, items]);
+    }, [player, mode, items, editing, editable, commandRows]);
 
     const cls = `work edit${layout.bin ? "" : " no-bin"}${layout.insp ? "" : " no-insp"}`;
+    const selectedIndex = editable ? editing.clips.findIndex((c) => c.clipId === editing.selectedId) : -1;
+    const seekClip = (clipId) => { const item = items.find((i) => i.clipId === clipId); if (item) { setMode("plan"); void player.seek(item.outStartUs, true); } };
     return html`<div class=${cls}>
         <aside class="panel" hidden=${!layout.bin} aria-label="需求与方案">
             <div class="panel-head">需求<span class="spacer"></span><span class="track-label">${saved}</span></div>
@@ -139,7 +192,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout}) {
                 <${Brief} runs=${runs} draft=${draft} update=${update} busy=${busy} onGenerate=${generate} />
                 <div class="section-label">方案${planJob ? `（${planJob.plans.length}）` : ""}</div>
                 ${planJob ? planJob.plans.map((p) => html`<${PlanCard} plan=${p} fps=${fps} active=${p.id === planId} thumb=${thumb}
-                    onPick=${() => { setPlanId(p.id); setMode("plan"); setSelectedShot(null); }} />`)
+                    onPick=${() => { if (editing.dirty && !confirmLeave()) return; setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommandRows(null); }} />`)
                     : html`<p class="note">填好需求后点“生成方案”。方案只是剪辑清单，生成很快；选中后可以直接预览，不用先渲染。</p>`}
             </div>
         </aside>
@@ -159,11 +212,11 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout}) {
                     <span class="spacer"></span>
                     ${result ? html`<div class="tabs"><button aria-selected=${mode === "plan"} onClick=${() => setMode("plan")}>方案预览</button><button aria-selected=${mode === "result"} onClick=${() => { player.stop(); setMode("result"); }}>成片</button></div>` : null}
                     ${result && resultDownload ? html`<a class="btn ghost" href=${resultDownload} download>下载 MP4（${(result.sizeBytes / 1048576).toFixed(1)} MB）</a>` : null}
-                    <button class="btn" disabled=${!plan?.ready || !!busy} title=${!plan ? "先在左侧选择一个方案" : !plan.ready ? "这个方案有缺口，不能导出" : "按当前方案渲染 MP4"} onClick=${exportVideo}>${busy === "render" ? "正在生成…" : "导出成片"}</button>
+                    <button class="btn" disabled=${!plan?.ready || !!busy || !!problem || !!commandRows} title=${!plan ? "先在左侧选择一个方案" : !plan.ready ? "这个方案有缺口，不能导出" : problem || (commandRows ? "先应用或取消一句话修改" : editing.dirty ? "先保存为新版本，再渲染 MP4" : "按当前内容渲染 MP4")} onClick=${exportVideo}>${busy === "render" ? "正在生成…" : busy === "save" ? "正在保存…" : "导出成片"}</button>
                 </div>
             </section>
-            <${ProgramTrack} groups=${groups} totalUs=${player.totalUs} outUs=${player.outUs} thumb=${thumb} selected=${selectedShot}
-                onPick=${(group) => { setSelectedShot(group); setMode("plan"); void player.seek(group.outStartUs, true); }} />
+            <${ProgramTrack} items=${items} totalUs=${player.totalUs} outUs=${player.outUs} thumb=${thumb} selectedId=${editing.selectedId} changed=${changed} preview=${!!commandRows}
+                onPick=${(item) => { editing.setSelectedId(item.clipId || ""); setMode("plan"); void player.seek(item.outStartUs, false); }} />
         </div>
         <aside class="panel" hidden=${!layout.insp} aria-label="检查器">
             <div class="panel-head">检查器</div>
@@ -176,10 +229,22 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout}) {
                         <label class="form-row">字幕<select class="select" value=${subtitles} onChange=${(e) => setSubtitles(e.currentTarget.value)}><option value="none">不加字幕</option><option value="sidecar">导出 SRT</option><option value="burn">烧入并导出 SRT</option></select></label>
                     </div>
                 </div>
-                ${plan ? html`<${PlanInspector} plan=${plan} groups=${groups} totalUs=${player.totalUs} shot=${selectedShot} />` : html`<p class="note">选中方案后，这里显示它的时长、镜头和缺口。</p>`}
+                ${plan && html`<div class="field"><div class="k">编辑状态</div>
+                    <div class="v">${editing.status === "loading" ? "正在读取镜头…" : !editable ? `只能预览和导出${editing.reason ? `（${editing.reason}）` : ""}` : editing.dirty ? "有未保存的修改" : editing.base?.kind === "revision" ? "已保存的版本" : "方案原样"}</div>
+                    ${problem && html`<p class="hint warn">${problem}</p>`}
+                    ${editable && html`<div class="actions-row"><button class="btn ghost" disabled=${!editing.dirty || !!busy || !!problem || !!commandRows} onClick=${saveVersion}>保存版本</button>
+                        <button class="btn ghost" disabled=${!editing.dirty || !!busy} onClick=${() => editing.ops.reset()}>撤销修改</button></div>`}</div>`}
+                ${selectedIndex >= 0 && !commandRows ? html`<${ClipInspector} editing=${editing} index=${selectedIndex} onSeek=${seekClip} />`
+                    : plan ? html`<${PlanInspector} plan=${plan} groups=${groups} totalUs=${player.totalUs} shot=${null} />` : html`<p class="note">选中方案后，这里显示它的时长、镜头和缺口。</p>`}
             </div>
         </aside>
-    </div>`;
+    </div>
+    <${CommandDock} editing=${editing} onPreview=${setCommandRows} />`;
+}
+
+function confirmLeave() {
+    // window.confirm may be unavailable in some hosts; then keep the edits.
+    try { return window.confirm("当前方案有未保存的修改，切换会丢弃这些修改。继续吗？"); } catch { return false; }
 }
 
 function Brief({runs, draft, update, busy, onGenerate}) {
@@ -217,7 +282,7 @@ function PlanCard({plan, fps, active, thumb, onPick}) {
     </button>`;
 }
 
-function ProgramTrack({groups, totalUs, outUs, thumb, selected, onPick}) {
+function ProgramTrack({items, totalUs, outUs, thumb, selectedId, changed, preview, onPick}) {
     const area = useRef(null);
     const [width, setWidth] = useState(800);
     useEffect(() => {
@@ -225,15 +290,20 @@ function ProgramTrack({groups, totalUs, outUs, thumb, selected, onPick}) {
         if (area.current) observer.observe(area.current); return () => observer.disconnect();
     }, []);
     const scale = totalUs ? width / totalUs : 0;
+    const hint = preview ? `一句话修改预览：高亮的是会变化的段（共 ${items.length} 段）` : `${items.length} 段 · 点选一段可以裁短、调速、换顺序；Delete 删除`;
     return html`<section class="timeline" aria-label="方案时间轴">
-        <div class="panel-head">方案时间轴<span class="track-label">${groups.length ? `${groups.length} 个镜头 · 点镜头从这里播放` : ""}</span></div>
+        <div class="panel-head">时间轴<span class="track-label">${items.length ? hint : ""}</span></div>
         <div class="track-area" ref=${area}>
-            ${groups.length ? html`<div class="track program">
-                ${groups.map((g) => { const src = thumb(g.items[0]); return html`<button class="clip" aria-current=${selected === g}
-                    style=${{left: `${g.outStartUs * scale}px`, width: `${Math.max(3, g.outDurUs * scale - 2)}px`, backgroundImage: src ? `url("${src}")` : "none"}}
-                    title=${`${timecode(g.outStartUs)} · ${(g.outDurUs / 1e6).toFixed(1)} 秒 · ${g.items[0].scriptDraft || ""}`} onClick=${() => onPick(g)}></button>`; })}
+            ${items.length ? html`<div class="track program">
+                ${items.map((item, index) => {
+                    const src = thumb(item), speed = item.rate && item.rate !== 1 ? item.rate : null;
+                    return html`<button class=${`clip${changed.has(item.clipId) ? " changed" : ""}`} aria-current=${!!item.clipId && item.clipId === selectedId}
+                        style=${{left: `${item.outStartUs * scale}px`, width: `${Math.max(3, item.outDurUs * scale - 1)}px`, backgroundImage: src ? `url("${src}")` : "none"}}
+                        title=${`第 ${index + 1} 段 · ${timecode(item.outStartUs)} · ${(item.outDurUs / 1e6).toFixed(1)} 秒${speed ? ` · ${speed}×` : ""} · ${item.scriptDraft || ""}`} onClick=${() => onPick(item)}>
+                        <span class="clip-no">${index + 1}</span>${speed ? html`<span class="clip-speed">${speed}×</span>` : null}</button>`;
+                })}
                 <div class="playhead" style=${{left: `${outUs * scale}px`}}></div>
-            </div>` : html`<p class="note">选中方案后，镜头按成片顺序排在这里。</p>`}
+            </div>` : html`<p class="note">选中方案后，片段按成片顺序排在这里。</p>`}
         </div>
     </section>`;
 }

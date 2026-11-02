@@ -62,6 +62,7 @@ ASSETS = {
     "/assets/studio/main.js": ("studio/main.js", "text/javascript; charset=utf-8"),
     "/assets/studio/api.js": ("studio/api.js", "text/javascript; charset=utf-8"),
     "/assets/studio/edit.js": ("studio/edit.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/clipedit.js": ("studio/clipedit.js", "text/javascript; charset=utf-8"),
     "/assets/studio/preview.js": ("studio/preview.js", "text/javascript; charset=utf-8"),
     "/assets/vendor/preact.module.js": (
         "vendor/preact.module.js",

@@ -133,7 +133,7 @@ function App() {
             : workspace === "edit"
                 ? html`<${EditWorkspace} project=${project} runs=${runs} open=${open} onWorksChanged=${reloadWorks} layout=${layout} />`
                 : html`<${Upcoming} workspace=${workspace} />`}
-        <div class="dock"><strong>创作助手</strong><span>即将接入：用一句话描述想要的视频或修改，结果直接出现在剪辑区的方案和时间轴上。</span></div>
+        ${workspace !== "edit" && html`<div class="dock"><strong>创作助手</strong><span>即将接入：用一句话描述想要的视频或修改，结果直接出现在剪辑区的方案和时间轴上。</span></div>`}
     </div>`;
 }
 

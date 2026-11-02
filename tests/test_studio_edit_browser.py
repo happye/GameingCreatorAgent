@@ -10,6 +10,7 @@ import threading
 
 import pytest
 from test_creation_jobs import service  # noqa: F401
+from test_creation_revision_jobs import revisions  # noqa: F401
 
 from gamingcreator.ui.server import create_server
 
@@ -115,6 +116,65 @@ def test_brief_to_exported_video(service, monkeypatch):  # noqa: F811
             export = page.get_by_role("button", name="导出成片")
             playwright.expect(export).to_be_enabled()
             assert export.evaluate("e => e.getBoundingClientRect().bottom <= innerHeight")
+            assert not errors
+            browser.close()
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_edit_clip_save_version_and_command(revisions, monkeypatch):  # noqa: F811
+    """Clip edits save as a version that reopens after a reload; commands preview first."""
+    playwright = pytest.importorskip("playwright.sync_api")
+    import gamingcreator.ui.server as server_module
+
+    jobs, root, _ = revisions
+
+    async def runs(project):
+        return {
+            "runs": [
+                {
+                    "id": "run",
+                    "status": "completed",
+                    "sourceName": "录像",
+                    "completedEligible": True,
+                }
+            ]
+        }
+
+    monkeypatch.setattr(server_module, "project_runs_payload", runs)
+    server = create_server("127.0.0.1", 0, jobs.repository)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{server.server_port}"
+    prefs = json.dumps({"project": "artifacts/project", "workspace": "edit"})
+    last = json.dumps({"artifacts/project": {"id": root, "kind": "plan"}})
+    try:
+        with playwright.sync_playwright() as runtime:
+            browser = runtime.chromium.launch(headless=True)
+            page = browser.new_page(viewport={"width": 1366, "height": 860})
+            errors = []
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            page.add_init_script(
+                f"if (!sessionStorage.seeded) {{ sessionStorage.seeded = 1;"
+                f" localStorage.setItem('studio-v1', {prefs!r}); localStorage.setItem('studio-last-job-v1', {last!r}); }}"
+            )
+            page.goto(base + "/studio")
+            clips = page.locator(".timeline .clip")
+            playwright.expect(page.get_by_text("方案原样")).to_be_visible()
+            clips.nth(1).click()
+            page.get_by_label("速度").select_option("2/1")
+            playwright.expect(page.locator(".clip-speed")).to_have_text("2×")
+            page.get_by_role("button", name="保存版本").click()
+            playwright.expect(page.get_by_text("已保存的版本")).to_be_visible()
+            page.reload()
+            playwright.expect(page.get_by_text("已保存的版本")).to_be_visible()
+            playwright.expect(page.locator(".clip-speed")).to_have_text("2×")
+            # A one-line command previews first; only the clip it changes is highlighted.
+            page.get_by_label("一句话修改镜头").fill("第1个镜头慢放")
+            page.get_by_role("button", name="预览改动").click()
+            playwright.expect(page.locator(".timeline .clip.changed")).to_have_count(1)
+            page.get_by_role("button", name="应用").click()
+            playwright.expect(page.get_by_text("有未保存的修改")).to_be_visible()
             assert not errors
             browser.close()
     finally:

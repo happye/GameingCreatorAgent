@@ -2,12 +2,30 @@
 // jumping between segments, so a plan can be watched before anything is rendered.
 import {useCallback, useEffect, useRef, useState} from "../vendor/hooks.module.js";
 
-// Plan segments → playback items on an output clock (microseconds).
+// Plan segments → playback items on an output clock (microseconds). Each item plays
+// source [startUs, endUs) at `rate` (speed), taking outDurUs of output time.
 export function timeline(segments, fps) {
     let out = 0;
     return segments.map((segment) => {
         const duration = Math.round((segment.outputFrames * 1e6) / fps);
-        const item = {...segment, outStartUs: out, outDurUs: duration};
+        const item = {...segment, rate: 1, endUs: segment.startUs + duration, outStartUs: out, outDurUs: duration};
+        out += duration;
+        return item;
+    });
+}
+
+// Output frames of an edited clip, the same integer rule the server uses.
+export function clipFrames(clip, fps) {
+    const {numerator, denominator} = clip.speed;
+    return Number((BigInt(clip.endUs - clip.startUs) * BigInt(fps) * BigInt(denominator)) / (1000000n * BigInt(numerator)));
+}
+
+// Editor clips → playback items. Transitions preview as cuts.
+export function editTimeline(clips, fps) {
+    let out = 0;
+    return clips.map((clip) => {
+        const duration = Math.round((clipFrames(clip, fps) * 1e6) / fps);
+        const item = {...clip, rate: clip.speed.numerator / clip.speed.denominator, outStartUs: out, outDurUs: duration};
         out += duration;
         return item;
     });
@@ -47,7 +65,8 @@ export function usePlanPlayer(videoRef, items, urlFor) {
         const video = videoRef.current, item = items[index], src = urlFor(item.runId);
         if (current.current.src !== src) { video.src = src; current.current.src = src; }
         await ready(video);
-        video.currentTime = (item.startUs + offsetUs) / 1e6;
+        video.playbackRate = item.rate || 1;
+        video.currentTime = (item.startUs + offsetUs * (item.rate || 1)) / 1e6;
         current.current.index = index;
     }, [items, urlFor]);
 
@@ -57,17 +76,17 @@ export function usePlanPlayer(videoRef, items, urlFor) {
         if (run !== token.current || !live.current || busy.current) return;
         const video = videoRef.current, index = current.current.index, item = items[index];
         if (!video || !item) return;
-        if (video.currentTime * 1e6 - item.startUs >= item.outDurUs - 15000) {
+        if (video.currentTime * 1e6 >= item.endUs - 15000) {
             if (index + 1 >= items.length) { stop(); setOutUs(total); return; }
             const next = items[index + 1];
-            if (urlFor(next.runId) === current.current.src && Math.abs(next.startUs - video.currentTime * 1e6) < 60000) current.current.index = index + 1;
+            if (urlFor(next.runId) === current.current.src && (next.rate || 1) === (item.rate || 1) && Math.abs(next.startUs - video.currentTime * 1e6) < 60000) current.current.index = index + 1;
             else {
                 busy.current = true;
                 try { await load(index + 1, 0); if (run === token.current && live.current) await video.play(); } finally { busy.current = false; }
             }
         }
         const now = items[current.current.index];
-        setOutUs(now.outStartUs + Math.min(now.outDurUs, Math.max(0, video.currentTime * 1e6 - now.startUs)));
+        setOutUs(now.outStartUs + Math.min(now.outDurUs, Math.max(0, (video.currentTime * 1e6 - now.startUs) / (now.rate || 1))));
     }, [items, urlFor, load, stop, total]);
 
     const loop = useCallback((run) => {
@@ -85,14 +104,17 @@ export function usePlanPlayer(videoRef, items, urlFor) {
         const run = ++token.current; cancelAnimationFrame(frame.current); live.current = false;
         const clamped = Math.max(0, Math.min(target, total - 1));
         const index = Math.max(0, items.findIndex((item) => clamped < item.outStartUs + item.outDurUs));
-        await load(index, clamped - items[index].outStartUs);
         setOutUs(clamped);
-        if (play && run === token.current) { live.current = true; await videoRef.current.play(); setPlaying(true); loop(run); }
-    }, [items, load, loop, total]);
+        // Media that cannot load or play leaves the player stopped; the timeline stays usable.
+        try {
+            await load(index, clamped - items[index].outStartUs);
+            if (play && run === token.current) { live.current = true; await videoRef.current.play(); setPlaying(true); loop(run); }
+        } catch { if (run === token.current) stop(); }
+    }, [items, load, loop, total, stop]);
 
     const toggle = useCallback(() => {
         if (playing) return stop();
-        void seek(outUs >= total - 50000 ? 0 : outUs, true).catch(() => setPlaying(false));
+        void seek(outUs >= total - 50000 ? 0 : outUs, true);
     }, [playing, outUs, total, seek, stop]);
 
     // A different plan resets the player.
