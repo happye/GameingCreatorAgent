@@ -1242,18 +1242,27 @@ class CreationJobs:
         )
 
     def catalog(self, project_id: str) -> dict[str, object]:
+        """List jobs from their status files only.
+
+        Opening a job still runs the full artifact check in ``get``; hashing every saved video
+        here made the list take 30-50 seconds once a project had a few dozen renders.
+        """
         self.project(project_id)
-        states = [
-            self.get(path.name)
-            for path in self.jobs.iterdir()
-            if path.is_dir() and re.fullmatch("[0-9a-f]{32}", path.name)
-        ]
-        states = sorted(
-            (state for state in states if state["projectId"] == project_id),
-            key=lambda state: state["createdAt"],
-            reverse=True,
-        )
-        return {"jobs": states[:100], "truncated": len(states) > 100}
+        states = []
+        for path in self.jobs.iterdir():
+            if not (path.is_dir() and re.fullmatch("[0-9a-f]{32}", path.name)):
+                continue
+            state = self.read(path / "status.json")
+            if state.get("projectId") != project_id:
+                continue
+            if state["status"] in {"pending", "running"}:
+                # Unfinished jobs may need crash recovery, which get() performs.
+                state = self.get(path.name)
+            states.append(state)
+        states.sort(key=lambda state: state["createdAt"], reverse=True)
+        summary = ("jobId", "kind", "status", "createdAt", "updatedAt", "projectId", "error")
+        jobs = [{key: state[key] for key in summary if key in state} for state in states[:100]]
+        return {"jobs": jobs, "truncated": len(states) > 100}
 
     def video(self, job_id: str) -> MediaResource:
         state = self.get(job_id)

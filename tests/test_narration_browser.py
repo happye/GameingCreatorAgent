@@ -435,6 +435,8 @@ def test_activity_rules_panel_cites_lines_and_fills_brief():
         ]
     )
     with workspace() as (pw, page, posts):
+        # The rules panel lives in a folded "按活动规则自动填写" section.
+        page.locator("#rules-details > summary").click()
         pw.expect(page.locator("#rules-panel")).to_be_visible()
         page.locator("#rules-text").fill(rules)
         page.locator("#rules-parse").click()
@@ -442,6 +444,8 @@ def test_activity_rules_panel_cites_lines_and_fills_brief():
         result = page.locator("#rules-result")
         pw.expect(result).to_contain_text("〔第3行：视频时长不少于45秒，不超过60秒〕")
         pw.expect(result).to_contain_text("画面方向：未识别")
+        # A target below the rule minimum is raised to it.
+        page.locator("#brief [name=targetDuration]").fill("30")
         page.locator("#rules-apply").click()
         form = page.locator("#brief")
         assert form.locator("[name=contentType]").input_value() == "campaign"

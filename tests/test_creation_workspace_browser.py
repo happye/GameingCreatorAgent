@@ -158,6 +158,9 @@ def test_creation_form_plans_render_and_refresh(width):
                 page.locator(".plan-card").nth(2).get_by_role("button")
             ).to_be_disabled()
             playwright.expect(page.locator("#render")).to_be_disabled()
+            # A grey button says why; cards stay short however many segments a plan has.
+            playwright.expect(page.locator("#render-hint")).to_contain_text("选择此方案")
+            assert page.locator(".plan-card").first.evaluate("e => e.offsetHeight") < 900
             assert page.locator(".plan-card img").count() == 0
             page.locator(".plan-card").first.get_by_role("button").click()
             page.locator("#subtitles").select_option("burn")
@@ -180,6 +183,14 @@ def test_creation_form_plans_render_and_refresh(width):
             assert posts[0]["brief"]["platforms"] == ["douyin"]
             page.reload()
             playwright.expect(page.locator("#artifact video")).to_be_visible()
+            # The draft survives a reload; saved work is grouped by kind, videos first.
+            assert page.locator("[name=game]").input_value() == "游戏"
+            assert page.locator("[name=contentType]").input_value() == "guide"
+            playwright.expect(page.locator("#runs input")).to_be_checked()
+            playwright.expect(page.locator("#history h3").first).to_have_text("视频（1）")
+            page.locator("#clear-draft").click()
+            assert page.locator("[name=game]").input_value() == ""
+            playwright.expect(page.locator("#runs input")).not_to_be_checked()
             assert len(posts) == 2
             assert page.locator("#artifact a").first.get_attribute("href").endswith("?download=1")
             playwright.expect(page.locator("#artifact")).to_contain_text("字幕 0 条")

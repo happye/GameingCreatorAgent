@@ -32,6 +32,14 @@
         $("plan").disabled = state.busy || !state.project || !$("runs").querySelector("input:checked");
         $("render").disabled = state.busy || state.editing || state.dirty || !state.selected || !!transitionError(state.editor);
         $("save-revision").disabled = state.busy || state.editing || !state.editor || !state.editor.clips.length || !!transitionError(state.editor);
+        // Say why a button is grey instead of leaving the user guessing.
+        const problem = transitionError(state.editor);
+        $("render-hint").textContent = !$("render").disabled ? "" : state.busy || state.editing ? "正在处理，请稍候…" : !state.selected ? "先在上面点“选择此方案”。" : state.dirty ? "镜头有未保存的修改：先点“保存新剪辑版本”，或撤销修改。" : problem ? `转场设置有问题：${problem}` : "";
+        $("save-hint").textContent = !$("save-revision").disabled ? "" : !state.editor ? "选择方案后才能调整镜头。" : "";
+        const checked = !!$("runs").querySelector("input:checked"), planned = !!$("plans").childElementCount;
+        $("plans-empty").hidden = planned;
+        const step = state.job && $("artifact").childElementCount ? 4 : state.selected ? 4 : planned ? 3 : checked ? 2 : 1;
+        for (const link of document.querySelectorAll("#stepper a")) { const n = Number(link.dataset.step); link.classList.toggle("current", n === step); link.classList.toggle("done", n < step); }
     }
     function clearView() { closeReplacement(); $("package-form").hidden = true; $("package-result").hidden = true; $("package-downloads").replaceChildren(); $("package-preview").replaceChildren(); state.publication = null; $("publication-form").hidden = true; $("publication-cover").hidden = true; $("publication-cover").removeAttribute("src"); $("publication-downloads").replaceChildren(); state.selected = null; state.editor = null; $("audio-controls")?.remove(); $("narration-controls")?.remove(); $("command-controls")?.remove(); state.command = null; state.dirty = false; state.editing = false; $("editor-rows").replaceChildren(); $("ancestry").replaceChildren(); $("editor-summary").textContent = "选择方案或剪辑版本后可编辑镜头。"; $("plans").replaceChildren(); $("artifact").replaceChildren(); $("job-status").textContent = "尚未选择任务"; controls(); }
     function showPlans(job) {
@@ -50,25 +58,42 @@
                 card.append(honesty);
             }
             if (plan.localRenders) card.append(node("p", `你常用的结构 · 本项目已有 ${plan.localRenders} 个方案用它做成成片${plan.rankedByHistory ? "，所以排到了通用方案前面" : ""}`));
-            card.append(node("h3", plan.structure), node("p", plan.ready ? "方案可用 · 模板草稿" : "方案有缺口 · 不可选择"), node("p", "脚本：已有描述草稿，待核对"));
             const segments = plan.segments || [];
-            card.append(node("p", `${segments.length} 个片段 · ${(segments.reduce((sum, s) => sum + s.outputFrames, 0) / job.fps).toFixed(2)} 秒`));
-            const list = node("ol", "");
-            for (const segment of segments) list.append(node("li", `${segment.role ? `【${segment.role}】` : ""}${(segment.startUs / 1e6).toFixed(2)}–${(segment.endUs / 1e6).toFixed(2)} 秒：${segment.scriptDraft || "无描述"}${Number.isFinite(segment.score?.total) ? ` · 评分 ${segment.score.total.toFixed(2)}（已测维度占权重 ${Math.round(segment.score.coverage * 100)}%）` : ""}`));
-            card.append(list);
+            const shots = shotCount(segments);
+            const seconds = segments.reduce((sum, s) => sum + s.outputFrames, 0) / job.fps;
+            // Choose first, details later: a card stays one screen tall however many segments it has.
+            const select = node("button", "选择此方案"); select.type = "button"; select.className = "choose"; select.disabled = plan.ready !== true;
+            select.addEventListener("click", () => {
+                document.querySelectorAll(".plan-card").forEach((c) => c.classList.remove("selected")); card.classList.add("selected");
+                void loadEditor(job.jobId, plan.id).then(() => $("editor").scrollIntoView({block: "start"}));
+            });
+            const meta = node("p", `${seconds.toFixed(1)} 秒 · 约 ${shots} 个镜头（平均 ${(seconds / Math.max(1, shots)).toFixed(1)} 秒）`); meta.className = "plan-meta";
+            card.append(node("h3", plan.structure), meta, select, node("p", plan.ready ? "可直接生成视频，文字说明是草稿。" : "方案有缺口 · 不可选择"));
+            const describe = (segment) => `${segment.role ? `【${segment.role}】` : ""}${(segment.startUs / 1e6).toFixed(1)} 秒起：${segment.scriptDraft || "无描述"}`;
+            const preview = node("ul", ""); preview.className = "plan-preview";
+            for (const segment of segments.slice(0, 3)) { const text = describe(segment); preview.append(node("li", text.length > 60 ? `${text.slice(0, 60)}…` : text)); }
+            card.append(preview);
+            const all = node("details", ""), list = node("ol", "");
+            all.append(node("summary", `查看全部 ${segments.length} 段`));
+            for (const segment of segments) list.append(node("li", `${describe(segment)}${Number.isFinite(segment.score?.total) ? ` · 评分 ${segment.score.total.toFixed(2)}（已测维度占权重 ${Math.round(segment.score.coverage * 100)}%）` : ""}`));
+            all.append(list); card.append(all);
             for (const gap of plan.gaps || []) card.append(node("p", `缺口：${gap}`));
             for (const note of plan.advisories || []) { const item = node("p", `提醒：${note}`); item.className = "plan-advisory"; card.append(item); }
-            const select = node("button", "选择此方案"); select.type = "button"; select.disabled = plan.ready !== true;
-            select.addEventListener("click", () => { document.querySelectorAll(".plan-card").forEach((c) => c.classList.remove("selected")); card.classList.add("selected"); void loadEditor(job.jobId, plan.id); });
-            card.append(select); $("plans").append(card);
+            $("plans").append(card);
         }
         controls();
+    }
+    // Back-to-back segments of one source play as a single continuous shot.
+    function shotCount(segments) {
+        let shots = 0, previous = null;
+        for (const s of segments) { if (!previous || s.sourceSha256 !== previous.sourceSha256 || s.startUs < previous.endUs || s.startUs - previous.endUs > 250000) shots += 1; previous = s; }
+        return shots;
     }
     const kindLabel = (kind) => ({plan: "方案", revision: "剪辑版本", render: "视频", publication: "封面与文案", package: "平台预览包", narration: "旁白"}[kind] || kind);
     async function loadEditor(id, planId, revision = false) {
         closeReplacement();
         const epoch = state.epoch, view = ++state.view;
-        state.selected = null; state.editor = null; state.editing = true; state.dirty = false;
+        state.selected = null; state.editor = null; state.editing = true; state.dirty = false; state.rowsOpen = false;
         $("editor-rows").replaceChildren(); $("ancestry").replaceChildren();
         $("editor-summary").textContent = "正在读取镜头…"; controls();
         try {
@@ -410,6 +435,17 @@
         const difference = Number.isFinite(target) ? ` · 原目标 ${target} 秒，实际${totalSeconds > target ? "超出" : "少于"} ${Math.abs(totalSeconds - target).toFixed(3)} 秒（允许手动编辑，原需求不变）` : "";
         $("editor-summary").textContent = `${editor.clips.length} 个镜头 · ${totalSeconds.toFixed(3)} 秒 · ${totalFrames} 帧（扣除转场重叠）${difference}${state.dirty ? " · 有未保存修改，请保存新版本后生成视频" : " · 已保存"}`;
         if (error) $("editor-summary").textContent += ` · ${error}`;
+        // A long clip list is folded by default: most people render without per-clip edits.
+        let toggle = $("rows-toggle");
+        if (!toggle) {
+            toggle = node("button", ""); toggle.id = "rows-toggle"; toggle.type = "button"; toggle.className = "secondary";
+            toggle.addEventListener("click", () => { state.rowsOpen = !state.rowsOpen; showEditor(); });
+            $("editor-rows").before(toggle);
+        }
+        const folded = editor.clips.length > 12 && !state.rowsOpen;
+        toggle.hidden = editor.clips.length <= 12;
+        toggle.textContent = folded ? `逐个调整 ${editor.clips.length} 个镜头（可选）` : "收起镜头列表";
+        $("editor-rows").hidden = folded;
         let startFrame = 0;
         editor.clips.forEach((clip, index) => {
             if (index) startFrame -= clip.transitionIn.frames;
@@ -661,15 +697,34 @@
         }
         await poll();
     }
+    // Show what was just opened where it appears, not somewhere far above the click.
+    function reveal(kind) {
+        const target = kind === "plan" ? $("step-plans") : kind === "revision" ? $("editor") : $("step-result");
+        target.scrollIntoView({block: "start"});
+    }
     async function history(epoch = state.epoch) {
         const project = state.project; if (!project) return;
         try {
             const data = await api(`/api/creation/jobs?projectId=${encodeURIComponent(project)}`);
             if (epoch !== state.epoch) return;
             $("history").replaceChildren();
-            for (const job of data.jobs.slice(0, 100)) {
-                const button = node("button", `${kindLabel(job.kind)} · ${labels[job.status] || job.status} · ${humanTime(job.createdAt)}${job.error ? ` · ${job.error.message}` : ""}`);
-                button.type = "button"; button.addEventListener("click", () => { void openJob(job.jobId); }); $("history").append(button);
+            // Grouped by kind, finished videos first; each group shows its newest few until expanded.
+            const filter = $("history-kind").value, jobs = data.jobs.slice(0, 100);
+            for (const kind of ["render", "plan", "revision", "publication", "package", "narration"]) {
+                if (filter !== "all" && filter !== kind) continue;
+                const group = jobs.filter((job) => job.kind === kind); if (!group.length) continue;
+                $("history").append(node("h3", `${kindLabel(kind)}（${group.length}）`));
+                const limit = filter === "all" ? 8 : group.length, buttons = [];
+                group.forEach((job, index) => {
+                    const button = node("button", `${kindLabel(job.kind)} · ${labels[job.status] || job.status} · ${humanTime(job.createdAt)}${job.error ? ` · ${job.error.message}` : ""}`);
+                    button.type = "button"; button.hidden = index >= limit;
+                    button.addEventListener("click", () => { void openJob(job.jobId).then(() => reveal(job.kind)); });
+                    buttons.push(button); $("history").append(button);
+                });
+                if (group.length > limit) {
+                    const more = node("button", `显示更早的 ${group.length - limit} 项`); more.type = "button"; more.className = "more";
+                    more.addEventListener("click", () => { buttons.forEach((b) => { b.hidden = false; }); more.remove(); }); $("history").append(more);
+                }
             }
             if (!data.jobs.length) $("history").append(node("p", "此项目暂无创作任务。"));
         } catch (error) { if (epoch === state.epoch) notice(error.message); }
@@ -687,6 +742,7 @@
                 const label = node("label", ""), check = document.createElement("input"); check.type = "checkbox"; check.value = run.id; check.addEventListener("change", controls);
                 label.append(check, document.createTextNode(`${run.sourceName} · 版本 ${run.id.slice(0, 8)}`)); $("runs").append(label);
             }
+            restoreRuns();
             notice($("runs").childElementCount ? "请选择素材，填写需求后生成方案。" : "此项目没有已完成分析的录像，暂不能生成方案。"); controls();
             void history(epoch); if (restoreJob && epoch === state.epoch) await openJob(restoreJob);
         } catch (error) { if (epoch === state.epoch) notice(error.message); }
@@ -746,7 +802,7 @@
         const includeLabel = node("label", "同时导入截图／PDF（本机 OCR，可能有错字）"); includeLabel.prepend(includeMedia);
         const importDir = node("button", "从目录导入"); importDir.id = "knowledge-import-dir"; importDir.type = "button";
         const addBox = node("details", ""); addBox.append(node("summary", "新增知识条目"), title, text, file, kind, label, save, node("p", "或从本机目录批量导入（不联网）："), dir, includeLabel, importDir);
-        panel.append(queryLabel, find, list, addBox, status); form.after(panel);
+        panel.append(queryLabel, find, list, addBox, status); $("more-tools").append(panel);
         const game = () => form.elements.game.value.trim();
         async function refresh() {
             if (!game()) { status.textContent = "请先在需求里填写游戏名。"; return; }
@@ -821,7 +877,7 @@
         const csvLink = node("a", "CSV"); csvLink.id = "team-audit-csv"; csvLink.download = "";
         exports.append(" ", jsonLink, " · ", csvLink);
         const details = node("details", ""); details.append(node("summary", "团队与审核（本机按项目；无账号登录）"), note, members, required, forbidden, reviewLabel, actor, save, status, exports);
-        panel.append(details); history.after(panel);
+        panel.append(details); $("more-tools").append(panel);
         const list = (text) => text.split(/[,，\n]/).map((s) => s.trim()).filter(Boolean);
         const fill = (value) => { team.value = value; if (!value) { status.textContent = "本项目尚未设置团队；不设置则不启用审核。"; return; }
             members.value = value.members.map((m) => `${m.name}:${m.role}`).join("\n"); required.value = value.brandTerms.required.join("，"); forbidden.value = value.brandTerms.forbidden.join("，"); review.checked = value.reviewRequired;
@@ -886,7 +942,7 @@
         const select = document.createElement("select"); select.id = "plan-select";
         const info = node("p", "正在读取套餐…"); info.id = "plan-info"; info.setAttribute("role", "status");
         const label = node("label", "套餐（本地评估，不涉及付费）"); label.append(select);
-        panel.append(node("h3", "套餐与用量"), label, info); history.after(panel);
+        panel.append(node("h3", "套餐与用量"), label, info); $("more-tools").append(panel);
         const render = (data) => {
             select.replaceChildren(...Object.entries(data.plans).map(([value, text]) => new Option(text, value))); select.value = data.plan;
             const features = Object.entries(data.features).map(([key, on]) => `${data.featureLabels[key]}${on ? "✓" : "✗"}`).join("、");
@@ -906,7 +962,7 @@
         const show = node("button", "查看创作反馈"); show.id = "feedback-show"; show.type = "button";
         const result = node("div", ""); result.id = "feedback-result";
         panel.append(node("h3", "创作反馈（本机统计）"), node("p", "根据本项目已保存的任务统计：推荐方案是否被采用、常见修改、走到成片和发布包的比例。只读本机记录，不上传。"), show, result);
-        history.after(panel);
+        $("more-tools").append(panel);
         show.addEventListener("click", async () => {
             if (!state.project) { result.textContent = "请先选择项目。"; return; }
             show.disabled = true; result.textContent = "正在统计…";
@@ -930,7 +986,7 @@
         const parse = node("button", "解析规则"), apply = node("button", "填入需求"), status = node("p", ""), result = node("div", "");
         parse.id = "rules-parse"; parse.type = "button"; apply.id = "rules-apply"; apply.type = "button"; apply.hidden = true; status.id = "rules-status"; status.setAttribute("role", "status"); result.id = "rules-result";
         const label = node("label", "规则文字"); label.append(text); const fileLabel = node("label", "或选择文件"); fileLabel.append(file);
-        panel.append(label, fileLabel, parse, status, result, apply); form.before(panel);
+        panel.append(label, fileLabel, parse, status, result, apply); $("rules-details").append(panel);
         let parsed = null;
         const names = {name: "活动名称", period: "活动时间（无则用投稿时间）", platforms: "平台", minDurationSeconds: "最短时长", maxDurationSeconds: "最长时长", orientation: "画面方向", requiredTopics: "必带话题", forbidden: "禁止事项"};
         const show = (field, value) => field === "period" ? `${value.start} 至 ${value.end}` : field === "orientation" ? (value === "vertical" ? "竖屏" : "横屏") : /Seconds$/.test(field) ? `${value} 秒` : String(value);
@@ -986,6 +1042,34 @@
         void submit("revision", {...replacementFields, parentJobId: editor.parentJobId, planId: editor.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256, clips: editor.clips.map(({clipId, startUs, endUs, speed, transitionIn}) => ({clipId, startUs, endUs, speed, transitionIn})), audioMix: editor.audioMix, ...(editor.narrationChanged ? {narration: editor.narration ?? null} : {}), subtitleOverrides: editor.subtitleOverrides.filter((item) => editor.clips.some((clip) => clip.clipId === item.clipId))});
     });
     $("project").addEventListener("change", () => { void projectChanged(); }); $("refresh").addEventListener("click", () => { void history(); if (state.job) void openJob(state.job); });
+    $("history-kind").addEventListener("change", () => { void history(); });
+    // Drafts: what was typed survives a refresh, a crash or a shutdown until "清空草稿".
+    const DRAFT = "creation-draft-v1";
+    const draftFields = () => [...$("brief").elements].filter((el) => el.name || el.id === "fps");
+    function readDraft() { try { return JSON.parse(localStorage.getItem(DRAFT) || "null"); } catch { return null; } }
+    function saveDraft() {
+        const fields = {}; for (const el of draftFields()) fields[el.name || el.id] = el.value;
+        const draft = {project: state.project, runs: Array.from($("runs").querySelectorAll("input:checked"), (c) => c.value), fields, size: $("size").value, subtitles: $("subtitles").value};
+        try { localStorage.setItem(DRAFT, JSON.stringify(draft)); $("draft-status").textContent = "草稿已自动保存"; } catch { $("draft-status").textContent = "浏览器不允许保存草稿，刷新会丢失"; }
+    }
+    function restoreFields(draft) {
+        if (!draft) return;
+        for (const el of draftFields()) { const value = draft.fields?.[el.name || el.id]; if (typeof value === "string") el.value = value; }
+        for (const [id, value] of [["size", draft.size], ["subtitles", draft.subtitles]]) if (typeof value === "string" && [...$(id).options].some((o) => o.value === value)) $(id).value = value;
+        $("draft-status").textContent = "已恢复上次的草稿";
+    }
+    function restoreRuns() {
+        const draft = readDraft(); if (!draft || draft.project !== state.project) return;
+        for (const check of $("runs").querySelectorAll("input")) if (draft.runs?.includes(check.value)) check.checked = true;
+    }
+    for (const id of ["brief", "runs"]) { $(id).addEventListener("input", saveDraft); $(id).addEventListener("change", saveDraft); }
+    for (const id of ["size", "subtitles"]) $(id).addEventListener("change", saveDraft);
+    $("clear-draft").addEventListener("click", () => {
+        try { localStorage.removeItem(DRAFT); } catch { /* Storage may be disabled. */ }
+        $("brief").reset(); for (const check of $("runs").querySelectorAll("input:checked")) check.checked = false;
+        $("draft-status").textContent = "草稿已清空"; controls();
+    });
+    restoreFields(readDraft());
     void (async () => {
         try {
             let saved = {}; try { saved = JSON.parse(localStorage.getItem("creation-workspace-v1") || "{}"); } catch { /* Ignore an invalid saved selection. */ }
