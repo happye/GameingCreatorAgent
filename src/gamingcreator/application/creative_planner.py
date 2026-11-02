@@ -12,12 +12,16 @@ from gamingcreator.application.creation_modes import (
     MODE_HONESTY_SHORT,
     MODE_LABELS,
     mode_structure,
+    sample_clips,
 )
 from gamingcreator.application.material_scoring import advisories, score_materials, scoring_legend
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.creation import CreativeBrief
 from gamingcreator.domain.media import MediaAsset
 from gamingcreator.domain.models import SemanticEvent
+
+# Generic structures keep shots at two seconds or longer instead of slicing every event.
+GENERIC_SHOT_SECONDS = 2
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,6 +54,69 @@ def candidates(
     if set(event_ids) - found.keys():
         raise ValueError("Unknown selected event.")
     return tuple(clip for key, clip in found.items() if not event_ids or key in event_ids)
+
+
+# Neighbouring analysed events closer than this count as one continuous stretch of footage.
+CONTIGUOUS_GAP_US = 250_000
+# Longest single shot; a weighted opening hook may run a little longer.
+MAX_SHOT_SECONDS = 4
+MAX_OPENING_SECONDS = 6
+
+
+def _event_frames(clip: CreationClip, fps: int) -> int:
+    source = clip.event.source_range
+    return (source.end_us - source.start_us) * fps // 1_000_000
+
+
+def _shots(
+    ordered: list[CreationClip], eligible: list[CreationClip], shot_us: int
+) -> list[list[CreationClip]]:
+    """Each picked clip plus the analysed events directly after it, up to ``shot_us``.
+
+    Played back to back these are continuous footage, while every segment stays inside its
+    own event. ``eligible`` is sorted by source then start time.
+    """
+    position = {id(clip): index for index, clip in enumerate(eligible)}
+    used = {id(clip) for clip in ordered}
+    shots = []
+    for clip in ordered:
+        group = [clip]
+        length = clip.event.source_range.end_us - clip.event.source_range.start_us
+        cursor = position[id(clip)] + 1
+        while length < shot_us and cursor < len(eligible):
+            following, last = eligible[cursor], group[-1].event.source_range
+            start = following.event.source_range.start_us
+            if (
+                id(following) in used
+                or following.asset.sha256 != clip.asset.sha256
+                or not last.end_us <= start <= last.end_us + CONTIGUOUS_GAP_US
+            ):
+                break
+            group.append(following)
+            used.add(id(following))
+            length += following.event.source_range.end_us - start
+            cursor += 1
+        shots.append(group)
+    return shots
+
+
+def _budgets(capacities: list[int], weights: list[Fraction], target: int) -> list[int]:
+    """Share ``target`` frames by weight; a shot never exceeds its capacity and what it
+    cannot take goes to the others."""
+    budgets = [0] * len(capacities)
+    active = [i for i, capacity in enumerate(capacities) if capacity > 0]
+    left = target
+    while left > 0 and active:
+        total = sum(weights[i] for i in active)
+        shares = {i: int(left * weights[i] / total) for i in active}
+        if not any(shares.values()):
+            shares = dict.fromkeys(active[:left], 1)
+        for i, share in shares.items():
+            add = min(share, capacities[i] - budgets[i])
+            budgets[i] += add
+            left -= add
+        active = [i for i in active if budgets[i] < capacities[i]]
+    return budgets
 
 
 def plan_creation(
@@ -94,13 +161,20 @@ def plan_creation(
             clip.event.source_range.end_us,
         ),
     )
+    scores = score_materials(brief, eligible)
+
+    def total(clip: CreationClip) -> float:
+        value = scores[(clip.event.run_id, clip.event.event_id)]["total"]
+        return float(value) if value is not None else 0.0
+
     # Across sources retain the explicit input run order; within each source use source time.
+    picked = sample_clips(eligible, max(3, brief.target_duration // GENERIC_SHOT_SECONDS), total)
     generic: list[
         tuple[str, str, list[CreationClip], tuple[str, ...] | None, tuple[Fraction, ...] | None]
     ] = [
-        ("chronological", "按来源顺序展开", eligible, None, None),
-        ("hook-first", "最后一条先作开场，再回溯", eligible[-1:] + eligible[:-1], None, None),
-        ("reverse", "倒序逐条回顾", list(reversed(eligible)), None, None),
+        ("chronological", "按来源顺序展开", picked, None, None),
+        ("hook-first", "最后一条先作开场，再回溯", picked[-1:] + picked[:-1], None, None),
+        ("reverse", "倒序逐条回顾", list(reversed(picked)), None, None),
     ]
     habits = {
         key: value
@@ -117,12 +191,6 @@ def plan_creation(
     }
     suggestion = trim_suggestion(edit_kinds) if edit_kinds is not None else None
     trim_applied = bool(suggestion and suggestion["applied"])
-    scores = score_materials(brief, eligible)
-
-    def total(clip: CreationClip) -> float:
-        value = scores[(clip.event.run_id, clip.event.event_id)]["total"]
-        return float(value) if value is not None else 0.0
-
     mode = mode_structure(brief, eligible, total)
     structures = generic
     if mode is not None:
@@ -132,52 +200,67 @@ def plan_creation(
             *generic,
         ]
     plans: list[dict[str, object]] = []
+    target_frames = brief.target_duration * fps
     for identity, description, ordered, roles, weights in structures:
-        shares = weights or tuple(Fraction(1) for _ in ordered)
-        remaining = brief.target_duration * fps
+        if trim_applied or not ordered:
+            # Trimming habits keep one-second segments, one event each.
+            shots = [[clip] for clip in ordered]
+        else:
+            # Chains reach the longest allowed shot; budgets below decide how much plays.
+            shots = _shots(ordered, eligible, MAX_SHOT_SECONDS * 1_000_000)
+        # One second of output when trimming is common: see ordering.editHabits.
+        cap = fps if trim_applied else MAX_SHOT_SECONDS * fps
+        capacities = [
+            min(
+                sum(_event_frames(clip, fps) for clip in shot),
+                MAX_OPENING_SECONDS * fps if index == 0 and weights and not trim_applied else cap,
+            )
+            for index, shot in enumerate(shots)
+        ]
+        budgets = _budgets(capacities, list(weights or [Fraction(1)] * len(shots)), target_frames)
         segments: list[dict[str, object]] = []
+        segment_shots: list[int] = []
         used_intervals: set[tuple[str, int, int]] = set()
-        for index, clip in enumerate(ordered):
-            event = clip.event
-            # Equal shares reproduce the even split; weights only move time between segments.
-            frames = min(
-                int(remaining * shares[index] / sum(shares[index:])),
-                (event.source_range.end_us - event.source_range.start_us) * fps // 1_000_000,
-            )
-            if trim_applied:
-                # One second of output: recorded in ordering.editHabits.trimSuggestion.rule.
-                frames = min(frames, fps)
-            if frames <= 0:
-                continue
-            end_us = event.source_range.start_us + (frames * 1_000_000 + fps - 1) // fps
-            interval_key = (clip.asset.sha256, event.source_range.start_us, end_us)
-            if interval_key in used_intervals:
-                continue
-            used_intervals.add(interval_key)
-            segments.append(
-                {
-                    "runId": event.run_id,
-                    "eventId": event.event_id,
-                    "mediaId": clip.asset.media_id,
-                    "sourceSha256": clip.asset.sha256,
-                    "sourcePath": str(clip.asset.source_path),
-                    "startUs": event.source_range.start_us,
-                    "endUs": end_us,
-                    "sourceDurationUs": clip.asset.duration_us,
-                    "outputStartFrame": brief.target_duration * fps - remaining,
-                    "outputFrames": frames,
-                    "evidenceIds": list(event.evidence_ids),
-                    "scriptDraft": "；".join(event.observable_facts),
-                    "uncertainty": event.uncertainty,
-                    "score": scores[(event.run_id, event.event_id)],
-                    **({"role": roles[index]} if roles is not None else {}),
-                }
-            )
-            remaining -= frames
+        position = 0
+        for index, (shot, budget) in enumerate(zip(shots, budgets, strict=True)):
+            for clip in shot:
+                # Earlier events of a shot play whole so the footage stays continuous.
+                frames = min(budget, _event_frames(clip, fps))
+                if frames <= 0:
+                    break
+                event = clip.event
+                end_us = event.source_range.start_us + (frames * 1_000_000 + fps - 1) // fps
+                interval_key = (clip.asset.sha256, event.source_range.start_us, end_us)
+                if interval_key in used_intervals:
+                    continue
+                used_intervals.add(interval_key)
+                segments.append(
+                    {
+                        "runId": event.run_id,
+                        "eventId": event.event_id,
+                        "mediaId": clip.asset.media_id,
+                        "sourceSha256": clip.asset.sha256,
+                        "sourcePath": str(clip.asset.source_path),
+                        "startUs": event.source_range.start_us,
+                        "endUs": end_us,
+                        "sourceDurationUs": clip.asset.duration_us,
+                        "outputStartFrame": position,
+                        "outputFrames": frames,
+                        "evidenceIds": list(event.evidence_ids),
+                        "scriptDraft": "；".join(event.observable_facts),
+                        "uncertainty": event.uncertainty,
+                        "score": scores[(event.run_id, event.event_id)],
+                        **({"role": roles[index]} if roles is not None else {}),
+                    }
+                )
+                segment_shots.append(index)
+                position += frames
+                budget -= frames
         if identity == "guide-steps":
-            # Skipped clips must not leave holes in the spoken step numbers.
-            for number, segment in enumerate(segments, 1):
-                segment["role"] = f"第{number}步"
+            # One step per shot; skipped shots must not leave holes in the step numbers.
+            numbers = {shot_no: n for n, shot_no in enumerate(dict.fromkeys(segment_shots), 1)}
+            for segment, shot_no in zip(segments, segment_shots, strict=True):
+                segment["role"] = f"第{numbers[shot_no]}步"
         text = " ".join(str(segment["scriptDraft"]) for segment in segments).casefold()
         gaps = [
             f"主题缺少已保存文字证据：{topic}"

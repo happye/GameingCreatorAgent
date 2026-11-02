@@ -179,8 +179,11 @@ def test_chronological_sorts_source_time_despite_reverse_event_selection():
     selected = tuple(clip.event.event_id for clip in reversed(first + second))
     report = plan_creation(brief(), candidates(timelines, selected), 30)
     segments = select_edit_decision(report, "chronological")["segments"]
-    assert [segment["sourceSha256"] for segment in segments] == ["b" * 64] * 3 + ["a" * 64] * 3
-    assert [segment["startUs"] for segment in segments] == [0, 3_000_000, 6_000_000] * 2
+    order = [(segment["sourceSha256"], segment["startUs"]) for segment in segments]
+    # Input run order across sources (B first), source time within a source.
+    rank = {"b" * 64: 0, "a" * 64: 1}
+    assert order == sorted(order, key=lambda item: (rank[item[0]], item[1]))
+    assert {sha for sha, _ in order} == {"a" * 64, "b" * 64}
 
 
 def test_subframe_candidate_cannot_collapse_ready_template_orders():
@@ -228,3 +231,38 @@ def test_distinct_original_ranges_cannot_export_duplicate_trimmed_intervals():
         else:
             assert plan["gaps"]
         assert sum(row["outputFrames"] for row in plan["segments"]) <= 30
+
+
+def test_short_contiguous_events_form_longer_shots_that_reach_the_target():
+    asset = clips()[0].asset
+    material = tuple(
+        CreationClip(
+            asset,
+            SemanticEvent(
+                f"e{i}",
+                "media",
+                "run",
+                SourceRange(i * 1_000_000, (i + 1) * 1_000_000, 30_000_000),
+                (f"fact {i}",),
+                (),
+                (f"evidence{i}",),
+                "visual",
+                None,
+            ),
+        )
+        for i in range(30)
+    )
+    report = plan_creation(replace(brief(), target_duration=20), material, 30)
+    for name in ("chronological", "hook-first", "reverse"):
+        segments = select_edit_decision(report, name)["segments"]
+        assert sum(s["outputFrames"] for s in segments) == 600
+        # Every segment stays inside its own one-second event.
+        assert all(s["endUs"] - s["startUs"] <= 1_000_000 for s in segments)
+        shots, previous = [], None
+        for s in segments:
+            if previous is not None and s["startUs"] == previous["endUs"]:
+                shots[-1] += s["outputFrames"]
+            else:
+                shots.append(s["outputFrames"])
+            previous = s
+        assert sum(shots) / len(shots) >= 45  # 1.5 seconds at 30 fps

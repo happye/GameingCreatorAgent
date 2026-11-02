@@ -78,7 +78,7 @@ def _cap(brief: CreativeBrief) -> int:
     return max(3, int(brief.target_duration / MIN_STEP_SECONDS))
 
 
-def _sample(clips: Sequence["CreationClip"], count: int, score: Score) -> list["CreationClip"]:
+def sample_clips(clips: Sequence["CreationClip"], count: int, score: Score) -> list["CreationClip"]:
     """Evenly spaced slots over the existing order; each slot takes the best-scored clip nearby.
 
     With equal scores every slot keeps its exact evenly spaced clip.
@@ -110,7 +110,9 @@ def mode_structure(
         return None
     if brief.content_type == "feature_showcase":
         opening = _richest(eligible, score)
-        middle = _sample([clip for clip in eligible if clip is not opening], _cap(brief) - 1, score)
+        middle = sample_clips(
+            [clip for clip in eligible if clip is not opening], _cap(brief) - 1, score
+        )
         ordered, roles, weights = _framed(opening, middle, "开场高光", "玩法展示")
         return ModeStructure(
             "showcase",
@@ -120,7 +122,7 @@ def mode_structure(
             weights,
         )
     if brief.content_type == "guide":
-        picked = _sample(eligible, _cap(brief), score)
+        picked = sample_clips(eligible, _cap(brief), score)
         seconds = brief.target_duration / len(picked)
         return ModeStructure(
             "guide-steps",
@@ -150,7 +152,7 @@ def mode_structure(
         opening = _richest(rest, score) if rest else used.pop(0)
         if not rest:
             topic_roles.pop(0)
-        remaining = _sample(
+        remaining = sample_clips(
             [clip for clip in rest if clip is not opening], _cap(brief) - 1 - len(used), score
         )
         middle = used + remaining
@@ -166,7 +168,7 @@ def mode_structure(
     if brief.content_type == "commentary":
         # Longer shots leave room for spoken commentary over each segment.
         count = max(3, int(brief.target_duration / COMMENTARY_SECONDS))
-        picked = _sample(eligible, count, score)
+        picked = sample_clips(eligible, count, score)
         segment_roles = ["开场", *[f"解说段{i}" for i in range(1, len(picked) - 1)], "结尾"][
             : len(picked)
         ]
@@ -180,7 +182,7 @@ def mode_structure(
             tuple(Fraction(1) for _ in picked),
         )
     if brief.content_type == "live_cut":
-        picked = _sample(eligible, _cap(brief), score)
+        picked = sample_clips(eligible, _cap(brief), score)
         return ModeStructure(
             "live-cut",
             f"实况精剪模板：保持录像先后顺序，紧凑取{len(picked)}段（约1.5秒/段），每段取附近评分最高的片段",
