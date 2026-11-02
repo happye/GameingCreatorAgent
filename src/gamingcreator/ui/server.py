@@ -63,7 +63,10 @@ ASSETS = {
     "/assets/studio/api.js": ("studio/api.js", "text/javascript; charset=utf-8"),
     "/assets/studio/edit.js": ("studio/edit.js", "text/javascript; charset=utf-8"),
     "/assets/studio/preview.js": ("studio/preview.js", "text/javascript; charset=utf-8"),
-    "/assets/vendor/preact.module.js": ("vendor/preact.module.js", "text/javascript; charset=utf-8"),
+    "/assets/vendor/preact.module.js": (
+        "vendor/preact.module.js",
+        "text/javascript; charset=utf-8",
+    ),
     "/assets/vendor/hooks.module.js": ("vendor/hooks.module.js", "text/javascript; charset=utf-8"),
     "/assets/vendor/htm.module.js": ("vendor/htm.module.js", "text/javascript; charset=utf-8"),
 }
