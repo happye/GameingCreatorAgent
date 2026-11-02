@@ -24,7 +24,7 @@
     }
   ],
   "sha256": {
-    "hooks.module.js": "60a28e129bc75251e20e50c2e0192ef96d62218dae045687dcc4ffb1f5288d98",
+    "hooks.module.js": "66d649cc2f76c6f038737b495dd2102f7f3c4a9aee1b8b01eb1ee87e293e13b4",
     "htm.module.js": "ab33dd3f38059b9be4d5f5350128eefb2356639c4e0bbe9d9e8b3ba75847e9e4",
     "preact.module.js": "9ba8bb591b0c9a72132ff65a76e69c5a4e49cf71721b47b659f3243658bde05b"
   },

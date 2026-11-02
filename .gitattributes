@@ -1,1 +1,4 @@
 * text=auto eol=lf
+
+# Vendored studio modules stay byte-identical to their recorded hashes.
+src/gamingcreator/ui/static/vendor/** -text
