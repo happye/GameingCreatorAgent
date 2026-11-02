@@ -102,7 +102,7 @@
 - 安装／便携目录：双击 `desktop\bin\GamingCreator.exe`
 - 开发仓库：双击根目录 `Start-Workspace.cmd`，或 `./scripts/start-workspace.ps1`（可 `-Port 8766` 另开端口）
 
-浏览器或内嵌窗口打开后，创作入口为导航里的 **「创作视频」**，地址形如 `/creation`。
+浏览器或内嵌窗口打开后，点右上角的 **「创作视频」** 按钮（地址 `/creation`）。只想快速做一条视频，看 [10 分钟上手](quickstart-10min.md) 就够了。
 
 ### 会发生什么
 

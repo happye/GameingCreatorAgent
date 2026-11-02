@@ -15,7 +15,7 @@ Old per-run records and module-by-module notes are archived in [testing-guide-20
 - tests that import a changed module (`-Deep` adds tests of the modules that import it);
 - tests that name a changed script or static UI file. A UI file nobody names selects every browser test.
 
-Changes to `tests/conftest.py`, `pyproject.toml` or `uv.lock` select the full suite. `-ListOnly` prints the selection without running it, and arguments after `--` go to pytest.
+Changes to `tests/conftest.py`, `pyproject.toml` or `uv.lock` select the full suite. `-ListOnly` prints the selection without running it; pass simple extra pytest options as one string, e.g. `-PytestArgs '-x -rfE'` (quoted expressions such as `-k "a and b"`: call `python -B scripts/affected_tests.py --run -- -k "a and b"`).
 
 ## Markers
 

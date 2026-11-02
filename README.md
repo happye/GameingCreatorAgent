@@ -30,7 +30,7 @@
 
 | 你想… | 看这里 |
 | --- | --- |
-| 用工具做视频 | [创作全流程手册](docs/references/creation-guide.md) |
+| 用工具做视频 | [10 分钟上手](docs/references/quickstart-10min.md)，更多功能见[创作全流程手册](docs/references/creation-guide.md) |
 | 分析、检索、验收的命令行用法 | [使用手册](docs/references/user-manual.md)、[Demo 快速开始](docs/references/demo-quickstart.md) |
 | 了解你需要做什么 | [人工待办](docs/exec-plans/human-inputs.md) |
 | 看量化进度 | [`STATUS.md`](STATUS.md)、`python -B scripts/status.py`、[进度看板](docs/exec-plans/progress-board.md) |

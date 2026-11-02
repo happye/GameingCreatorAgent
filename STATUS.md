@@ -20,9 +20,10 @@
 
 ## 下一步
 
-1. 开发：按 `docs/exec-plans/sprint-j1-creation-usability.md` 重做创作页（向导式、方案摘要、方案质量、草稿自动保存），完成后请你再试 J1。
-2. TD024 检索回归排在 J1 之后。
-3. 分发前：处理许可证缺口（human-inputs）和 TD003 FFmpeg 来源。
+1. **你**：按 `docs/references/quickstart-10min.md` 第二次试看 J1（创作页已改版，见 `sprint-j1-creation-usability.md` 结果节）。
+2. 开发：等 J1 反馈期间只修阻断问题；“清除测试记录”待你决定是否允许删除旧任务。
+3. TD024 检索回归排在 J1 之后。
+4. 分发前：处理许可证缺口（human-inputs）和 TD003 FFmpeg 来源。
 
 ## 费用与冻结
 

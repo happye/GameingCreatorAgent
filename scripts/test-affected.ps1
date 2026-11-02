@@ -1,7 +1,8 @@
 # Tier 1 tests: run only the pytest files affected by the current change (see testing-guide.md).
-# Usage: ./scripts/test-affected.ps1 [-Base <git ref>] [-ListOnly] [-Browser] [-Deep] [-- extra pytest args]
+# Usage: ./scripts/test-affected.ps1 [-Base <git ref>] [-ListOnly] [-Browser] [-Deep] [-PytestArgs '-x -rfE']
+# -PytestArgs is split on spaces/commas (works the same from powershell -File); use affected_tests.py for quoted options.
 [CmdletBinding(PositionalBinding = $false)]
-param([string]$Base = 'HEAD', [switch]$ListOnly, [switch]$Browser, [switch]$Deep, [Parameter(ValueFromRemainingArguments = $true)][string[]]$PytestArgs)
+param([string]$Base = 'HEAD', [switch]$ListOnly, [switch]$Browser, [switch]$Deep, [string[]]$PytestArgs)
 
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -11,7 +12,8 @@ $arguments = @('-B', (Join-Path $PSScriptRoot 'affected_tests.py'), '--base', $B
 if (-not $ListOnly) { $arguments += '--run' }
 if ($Browser) { $arguments += '--browser' }
 if ($Deep) { $arguments += '--deep' }
-if ($PytestArgs) { $arguments += '--'; $arguments += $PytestArgs }
+$extra = @($PytestArgs | ForEach-Object { $_ -split '[\s,]+' } | Where-Object { $_ })
+if ($extra) { $arguments += '--'; $arguments += $extra }
 Push-Location $repositoryRoot
 try {
   & $pythonPath @arguments
