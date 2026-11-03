@@ -609,20 +609,25 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/packages",
                 "/api/creation/narrations",
             }:
-                self._json(
-                    202,
-                    self.creation_jobs.submit(
-                        {
-                            "plans": "plan",
-                            "renders": "render",
-                            "revisions": "revision",
-                            "publications": "publication",
-                            "packages": "package",
-                            "narrations": "narration",
-                        }[path.rsplit("/", 1)[1]],
-                        value,
-                    ),
-                )
+                kind = {
+                    "plans": "plan",
+                    "renders": "render",
+                    "revisions": "revision",
+                    "publications": "publication",
+                    "packages": "package",
+                    "narrations": "narration",
+                }[path.rsplit("/", 1)[1]]
+                try:
+                    accepted = self.creation_jobs.submit(kind, value)
+                except ValueError as error:
+                    # Creation checks explain themselves (e.g. a duplicate interval or narration
+                    # longer than the output); say why instead of the generic request error.
+                    self._json(
+                        400,
+                        {"code": "creation.input", "message": f"无法提交：{error}", "exitCode": 2},
+                    )
+                    return
+                self._json(202, accepted)
                 return
             if path in {"/api/benchmark-workflows", "/api/benchmark-step"}:
                 if type(value) is not dict:

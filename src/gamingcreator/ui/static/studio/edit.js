@@ -252,7 +252,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                     ${editable && html`<div class="actions-row"><button class="btn ghost" disabled=${!editing.dirty || !!busy || !!problem || !!commandRows || audioBusy} onClick=${saveVersion}>保存版本</button>
                         <button class="btn ghost" disabled=${!editing.dirty || !!busy} onClick=${() => editing.ops.reset()}>撤销修改</button></div>`}</div>`}
                 <div hidden=${inspTab !== "shot"}>
-                ${selectedIndex >= 0 && !commandRows ? html`<${ClipInspector} editing=${editing} index=${selectedIndex} onSeek=${seekClip} />`
+                ${selectedIndex >= 0 && !commandRows ? html`<${ClipInspector} editing=${editing} index=${selectedIndex} onSeek=${seekClip} basket=${basket} />`
                     : plan ? html`<p class="hint">点时间轴上的一段，可以裁短、调速、换顺序。</p><${PlanInspector} plan=${plan} groups=${groups} totalUs=${player.totalUs} shot=${null} />` : html`<p class="note">选中方案后，这里显示它的时长、镜头和缺口。</p>`}
                 </div>
                 <div hidden=${inspTab !== "sound"}>

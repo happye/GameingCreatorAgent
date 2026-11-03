@@ -9,6 +9,7 @@ import re
 import threading
 
 import pytest
+from test_clip_replacement_jobs import replacements  # noqa: F401
 from test_creation_jobs import service  # noqa: F401
 from test_creation_revision_jobs import revisions  # noqa: F401
 from test_narration_jobs import engine, narrated  # noqa: F401
@@ -431,6 +432,60 @@ def test_clip_basket_search_add_and_plan_uses_only_basket(service, monkeypatch):
             page.reload()
             page.get_by_role("tab", name="素材").click()
             playwright.expect(page.locator(".basket .hit")).to_have_count(2)
+            assert not errors
+            browser.close()
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_replace_clip_saves_and_follow_up_edit_keeps_manifest(replacements, monkeypatch):  # noqa: F811
+    """Replace a clip's footage, save; then edit that version again and save once more."""
+    playwright = pytest.importorskip("playwright.sync_api")
+    import gamingcreator.ui.server as server_module
+
+    jobs, root, _ = replacements
+
+    async def runs(project):
+        listed = [
+            {"id": i, "status": "completed", "sourceName": i, "completedEligible": True}
+            for i in ("run", "B")
+        ]
+        return {"runs": listed}
+
+    monkeypatch.setattr(server_module, "project_runs_payload", runs)
+    server = create_server("127.0.0.1", 0, jobs.repository)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{server.server_port}"
+    prefs = json.dumps({"project": "artifacts/project", "workspace": "edit"})
+    last = json.dumps({"artifacts/project": {"id": root, "kind": "plan"}})
+    try:
+        with playwright.sync_playwright() as runtime:
+            browser = runtime.chromium.launch(headless=True)
+            page = browser.new_page(viewport={"width": 1366, "height": 860})
+            errors = []
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            page.add_init_script(
+                "if (!sessionStorage.seeded) { sessionStorage.seeded = 1;"
+                f" localStorage.setItem('studio-v1', {prefs!r});"
+                f" localStorage.setItem('studio-last-job-v1', {last!r}); }}"
+            )
+            page.goto(base + "/studio")
+            playwright.expect(page.get_by_text("方案原样")).to_be_visible()
+            # The plan uses one recording; the other's clips are free to swap in.
+            page.locator(".timeline .clip").first.click()
+            page.get_by_role("button", name="替换这段画面").click()
+            choices = page.get_by_role("button", name="换成这段")
+            playwright.expect(choices.first).to_be_visible()
+            choices.first.click()
+            page.get_by_role("button", name="保存版本").click()
+            playwright.expect(page.get_by_text("已保存的版本")).to_be_visible()
+            page.reload()
+            playwright.expect(page.get_by_text("已保存的版本")).to_be_visible()
+            page.locator(".timeline .clip").last.click()
+            page.get_by_label("速度").select_option("2/1")
+            page.get_by_role("button", name="保存版本").click()
+            playwright.expect(page.get_by_text("已保存为新版本。")).to_be_visible()
             assert not errors
             browser.close()
     finally:
