@@ -31,6 +31,11 @@
 - **重启 8765**：先结束占用端口的进程，再在终端运行 `scripts/start-workspace.ps1 -NoBrowser`。从 agent 的后台 shell 启动的进程会随 shell 退出。
 - **云端语音**：只有在启动工作台的那个进程环境里有 `DASHSCOPE_API_KEY` 时才可用。Key 由用户自己设置，任何文件里都不要写。
 
+## Codex 接手
+
+- 只用 `.codex/agents/` 里那一套 9 个角色（`task_*`、`harness_*`）。之前由 Claude 角色转出来、未提交的 `gc-*.toml` 是重复的一套，已移到仓库外 `GameingCreatorAgent-archive/2026-11-03-codex-gc-roles/`，不要再加回来。
+- 分工表：`docs/references/codex-agent-routing-guide.md`（精简版；10 月的记录已移到 `docs/archive/references/`）。
+
 ## 不要做
 
 - 不要重跑长钟馗 launcher；已有标注和付费尝试保留，不重做。
