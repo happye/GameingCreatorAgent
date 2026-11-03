@@ -20,7 +20,7 @@
 
 ## 下一步
 
-1. 开发：新工作台 `/studio`（`docs/exec-plans/sprint-studio-workbench.md`）。第 1–3 步已完成（外壳、素材区、剪辑区：方案、即时预览、导出；镜头裁剪/速度/转场/排序/删除、保存版本、一句话修改先预览）。下一步：第 4 步口播与语音提供方，先给试听方案和费用。
+1. 开发：新工作台 `/studio`（`docs/exec-plans/sprint-studio-workbench.md`）。第 1–3 步已完成（外壳、素材区、剪辑区：方案、即时预览、导出；镜头裁剪/速度/转场/排序/删除、保存版本、一句话修改先预览）。第 4 步已接入本机语音旁白与配乐（上传、音量、同步预览、随版本保存）；更自然的语音提供方待你批准（`docs/design-docs/tts-provider-proposal.md`，人工待办已登记）。
 2. TD024 检索回归排在 J1 之后。
 3. 分发前：处理许可证缺口（human-inputs）和 TD003 FFmpeg 来源。
 

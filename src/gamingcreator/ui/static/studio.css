@@ -161,3 +161,13 @@ details.group[open] > summary::before { content: "▾ "; }
 .dock.assistant .input { flex: 1; max-width: 560px; }
 .dock.assistant .btn { padding: 4px 12px; }
 .dock-msg { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); }
+
+/* Sound: narration and music in the inspector, and their lanes under the program track. */
+.audio-panel textarea.input { width: 100%; resize: vertical; min-height: 96px; line-height: 1.5; }
+.audio-panel .check { grid-template-columns: auto 1fr; font-size: var(--t-sm); }
+.hint.clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.file-btn { display: inline-flex; align-items: center; cursor: pointer; margin-top: 6px; }
+.lane { position: relative; height: 14px; margin-top: 3px; border-radius: var(--r-1); background: var(--bg-0); }
+.lane .bar { position: absolute; top: 0; bottom: 0; border-radius: var(--r-1); font-size: 10px; line-height: 14px; padding: 0 6px; overflow: hidden; white-space: nowrap; color: var(--ink-1); }
+.lane.voice .bar { background: color-mix(in srgb, var(--ok) 45%, transparent); }
+.lane.music .bar { background: color-mix(in srgb, var(--accent, #6aa0ff) 40%, transparent); }

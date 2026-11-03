@@ -11,6 +11,7 @@ import threading
 import pytest
 from test_creation_jobs import service  # noqa: F401
 from test_creation_revision_jobs import revisions  # noqa: F401
+from test_narration_jobs import engine, narrated  # noqa: F401
 
 from gamingcreator.ui.server import create_server
 
@@ -175,6 +176,59 @@ def test_edit_clip_save_version_and_command(revisions, monkeypatch):  # noqa: F8
             playwright.expect(page.locator(".timeline .clip.changed")).to_have_count(1)
             page.get_by_role("button", name="应用").click()
             playwright.expect(page.get_by_text("有未保存的修改")).to_be_visible()
+            assert not errors
+            browser.close()
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_narration_draft_synthesize_and_save(narrated, monkeypatch):  # noqa: F811
+    """Narration: draft → edit → local voice → placed in the version and back after a reload."""
+    playwright = pytest.importorskip("playwright.sync_api")
+    import gamingcreator.ui.server as server_module
+
+    async def runs(project):
+        return {
+            "runs": [
+                {
+                    "id": "run",
+                    "status": "completed",
+                    "sourceName": "录像",
+                    "completedEligible": True,
+                }
+            ]
+        }
+
+    monkeypatch.setattr(server_module, "project_runs_payload", runs)
+    server = create_server("127.0.0.1", 0, narrated.jobs.repository)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{server.server_port}"
+    prefs = json.dumps({"project": "artifacts/project", "workspace": "edit"})
+    last = json.dumps({"artifacts/project": {"id": narrated.root, "kind": "plan"}})
+    try:
+        with playwright.sync_playwright() as runtime:
+            browser = runtime.chromium.launch(headless=True)
+            page = browser.new_page(viewport={"width": 1366, "height": 860})
+            errors = []
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            page.add_init_script(
+                "if (!sessionStorage.seeded) { sessionStorage.seeded = 1;"
+                f" localStorage.setItem('studio-v1', {prefs!r});"
+                f" localStorage.setItem('studio-last-job-v1', {last!r}); }}"
+            )
+            page.goto(base + "/studio")
+            page.get_by_role("button", name="起草旁白稿").click()
+            page.get_by_label("旁白稿").fill("测试旁白")
+            page.get_by_role("button", name="合成旁白").click()
+            playwright.expect(page.locator(".lane.voice")).to_have_count(1)
+            playwright.expect(page.get_by_text("有未保存的修改")).to_be_visible()
+            page.get_by_role("button", name="保存版本").click()
+            playwright.expect(page.get_by_text("已保存的版本")).to_be_visible()
+            page.reload()
+            playwright.expect(page.locator(".lane.voice")).to_have_count(1)
+            playwright.expect(page.get_by_role("button", name="移除旁白")).to_be_visible()
+            assert narrated.engine.synthesized == 1
             assert not errors
             browser.close()
     finally:

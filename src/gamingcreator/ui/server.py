@@ -3,6 +3,7 @@
 import asyncio
 import html
 import json
+import mimetypes
 import os
 import socket
 import sys
@@ -63,6 +64,7 @@ ASSETS = {
     "/assets/studio/api.js": ("studio/api.js", "text/javascript; charset=utf-8"),
     "/assets/studio/edit.js": ("studio/edit.js", "text/javascript; charset=utf-8"),
     "/assets/studio/clipedit.js": ("studio/clipedit.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/audio.js": ("studio/audio.js", "text/javascript; charset=utf-8"),
     "/assets/studio/preview.js": ("studio/preview.js", "text/javascript; charset=utf-8"),
     "/assets/vendor/preact.module.js": (
         "vendor/preact.module.js",
@@ -285,6 +287,55 @@ class InspectionHandler(BaseHTTPRequestHandler):
         rest = {k: v for k, v in value.items() if k not in ("fileName", "dataBase64")}
         return {**rest, "text": text, "sourceLabel": label}
 
+    def _register_music(self, value: object) -> dict[str, object]:
+        """Register an uploaded music file; the license is the user's declaration, never verified."""
+        import base64
+        import binascii
+        from uuid import uuid4
+
+        from gamingcreator.application.providers import CancellationContext
+
+        if type(value) is not dict or set(value) != {
+            "fileName",
+            "dataBase64",
+            "title",
+            "licenseStatus",
+        }:
+            raise ValueError("Expected file name, data, title and license declaration.")
+        name, data, title, license_status = (
+            value[k] for k in ("fileName", "dataBase64", "title", "licenseStatus")
+        )
+        if not all(isinstance(v, str) for v in (name, data, title, license_status)):
+            raise ValueError("Music upload fields must be text.")
+        if license_status not in ("user_declared", "unknown"):
+            raise ValueError("License must be declared by the user or left unknown.")
+        suffix = Path(name).suffix.lower()
+        if suffix not in (".wav", ".mp3", ".flac", ".ogg", ".m4a", ".aac"):
+            raise ValueError("请上传 wav、mp3、flac、ogg、m4a 或 aac 音频。")
+        try:
+            raw = base64.b64decode(data, validate=True)
+        except (binascii.Error, ValueError) as error:
+            raise ValueError("文件内容无效。") from error
+        scratch = self.repository / ".cache/workspace/music-upload"
+        scratch.mkdir(parents=True, exist_ok=True)
+        source = scratch / (uuid4().hex + suffix)
+        try:
+            with source.open("xb") as writer:
+                writer.write(raw)
+            track = asyncio.run(
+                MusicLibrary(self.repository).register(
+                    source,
+                    title.strip() or Path(name).stem,
+                    f"工作台上传：{Path(name).name}",
+                    license_status,
+                    None,
+                    CancellationContext("upload-music", 600),
+                )
+            )
+        finally:
+            source.unlink(missing_ok=True)
+        return track.public()
+
     def _local_request(self) -> bool:
         host = self.headers.get("Host", "")
         hostname = urlparse("http://" + host).hostname
@@ -365,6 +416,8 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 # A 10 MB rule file arrives base64-encoded inside JSON.
                 "/api/creation/activity-rules": 14_680_064,
                 "/api/knowledge": 14_680_064,
+                # A music file of up to 30 MB arrives base64-encoded inside JSON.
+                "/api/creation/music": 41_943_040,
             }.get(path, 65536)
             # Socket read timeout prevents a partial body from retaining a handler indefinitely.
             self.connection.settimeout(10)
@@ -392,6 +445,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/narrations",
                 "/api/creation/narration-cancel",
                 "/api/creation/timeline-commands",
+                "/api/creation/music",
                 "/api/creation/activity-rules",
                 "/api/knowledge",
                 "/api/creation/publish",
@@ -487,6 +541,9 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     self._json(200, KnowledgeStore(self.repository).add(value))
                 except ValueError as error:
                     raise AppError("knowledge.input", str(error), ExitCode.INPUT) from error
+                return
+            if path == "/api/creation/music":
+                self._json(200, self._register_music(value))
                 return
             if path == "/api/knowledge-import":
                 from gamingcreator.infrastructure.knowledge_import import (
@@ -868,6 +925,16 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(200, {"projects": discover_projects(self.repository)})
                 return
             query = _query(self.path)
+            if path.startswith("/api/creation/music/") and path.endswith("/audio"):
+                if set(query) != {"receipt"}:
+                    raise ValueError("Expected music receipt")
+                track = MusicLibrary(self.repository).resolve(
+                    path.removeprefix("/api/creation/music/").removesuffix("/audio"),
+                    query["receipt"],
+                )
+                kind = mimetypes.guess_type(track.path.name)[0] or "application/octet-stream"
+                self._serve_media(MediaResource(track.path, track.sha256, kind))
+                return
             if path == "/api/creation/music":
                 if query:
                     raise ValueError("Music catalog accepts no parameters")

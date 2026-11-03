@@ -25,10 +25,13 @@ export function transitionProblem(clips, fps) {
     return "";
 }
 
+// The sound of a version: source and music levels, and an optional narration asset placed in the output.
+const audioOf = (editor) => ({mix: editor.audioMix || {bgm: null, sourceGainDb: 0, ducking: "off"}, narration: editor.narration || null, asset: editor.narrationAsset || null});
+
 const rows = (clips) => clips.map(({clipId, startUs, endUs, speed, transitionIn}) => ({clipId, startUs, endUs, speed, transitionIn}));
 
 export function useClipEditor(project) {
-    const [state, setState] = useState({status: "idle", base: null, editor: null, clips: [], bounds: {}, dirty: false});
+    const [state, setState] = useState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), bounds: {}, dirty: false});
     const [selectedId, setSelectedId] = useState("");
 
     const load = useCallback(async (jobId, planId, kind) => {
@@ -37,11 +40,11 @@ export function useClipEditor(project) {
             const editor = await client.api(`/api/creation/jobs/${encodeURIComponent(jobId)}/edit`, {planId});
             if (editor.parentJobId !== jobId || editor.planId !== planId) throw new Error("剪辑数据与所选方案不一致");
             const clips = normalize(editor);
-            setState({status: "ready", base: {jobId, planId, kind}, editor, clips, bounds: Object.fromEntries(clips.map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), dirty: false});
+            setState({status: "ready", base: {jobId, planId, kind}, editor, clips, audio: audioOf(editor), bounds: Object.fromEntries(clips.map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), dirty: false});
             return editor;
         } catch (error) {
             // Plans that cannot be edited still preview and export as they are.
-            setState({status: "unavailable", base: {jobId, planId, kind}, editor: null, clips: [], bounds: {}, dirty: false, reason: error.message});
+            setState({status: "unavailable", base: {jobId, planId, kind}, editor: null, clips: [], audio: audioOf({}), bounds: {}, dirty: false, reason: error.message});
             return null;
         }
     }, []);
@@ -75,16 +78,18 @@ export function useClipEditor(project) {
             const byId = new Map(clips.map((c) => [c.clipId, c]));
             return newRows.map((row) => ({...byId.get(row.clipId), ...row}));
         }),
-        reset: () => setState((s) => (s.editor ? {...s, clips: normalize(s.editor), dirty: false} : s)),
+        mix: (patch) => setState((s) => (s.status === "ready" ? {...s, audio: {...s.audio, mix: {...s.audio.mix, ...patch}}, dirty: true} : s)),
+        narration: (selection, asset) => setState((s) => (s.status === "ready" ? {...s, audio: {...s.audio, narration: selection, asset: selection ? asset ?? s.audio.asset : null}, dirty: true} : s)),
+        reset: () => setState((s) => (s.editor ? {...s, clips: normalize(s.editor), audio: audioOf(s.editor), dirty: false} : s)),
     };
 
     // Save the local edit as a new version; returns the version's job id.
     const save = useCallback(async (follow) => {
-        const {editor, base, clips} = state;
+        const {editor, base, clips, audio} = state;
         const kept = new Set(clips.map((c) => c.clipId));
         const accepted = await client.submit("revision", {
             parentJobId: base.jobId, planId: base.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256,
-            clips: rows(clips), audioMix: editor.audioMix, subtitleOverrides: (editor.subtitleOverrides || []).filter((o) => kept.has(o.clipId)),
+            clips: rows(clips), audioMix: audio.mix, narration: audio.narration, subtitleOverrides: (editor.subtitleOverrides || []).filter((o) => kept.has(o.clipId)),
         });
         const done = await follow(accepted.jobId);
         if (done?.status !== "completed") throw new Error(done ? `保存失败：${done.error?.message || done.status}` : "保存已取消");
