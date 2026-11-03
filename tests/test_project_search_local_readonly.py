@@ -164,7 +164,9 @@ def test_assert_project_search_document_contract_rejects_embedding_and_topk_over
         if document.get("schemaVersion") != "project-search-v1":
             continue
         mode = document.get("mode")
-        if mode == "hybrid" and hybrid is None:
+        # The overflow check needs a search that returned something; abstained searches
+        # (0 candidates) are valid records too and must not be picked here.
+        if mode == "hybrid" and hybrid is None and document.get("candidates"):
             hybrid = document
         if mode == "lexical" and lexical is None:
             lexical = document
