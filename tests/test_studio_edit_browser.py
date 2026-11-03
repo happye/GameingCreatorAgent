@@ -165,6 +165,10 @@ def test_edit_clip_save_version_and_command(revisions, monkeypatch):  # noqa: F8
             clips.nth(1).click()
             page.get_by_label("速度").select_option("2/1")
             playwright.expect(page.locator(".clip-speed")).to_have_text("2×")
+            # With a clip selected, sound and export stay one tab away.
+            page.get_by_role("tab", name="声音").click()
+            playwright.expect(page.get_by_role("button", name="起草旁白稿")).to_be_visible()
+            page.get_by_role("tab", name="镜头").click()
             page.get_by_role("button", name="保存版本").click()
             playwright.expect(page.get_by_text("已保存的版本")).to_be_visible()
             page.reload()
@@ -218,15 +222,21 @@ def test_narration_draft_synthesize_and_save(narrated, monkeypatch):  # noqa: F8
                 f" localStorage.setItem('studio-last-job-v1', {last!r}); }}"
             )
             page.goto(base + "/studio")
+            # Sound is reached from the empty narration lane under the timeline.
+            page.get_by_role("button", name=re.compile("旁白轨：未添加")).click()
+            playwright.expect(page.get_by_role("tab", name="声音")).to_have_attribute(
+                "aria-selected", "true"
+            )
             page.get_by_role("button", name="起草旁白稿").click()
             page.get_by_label("旁白稿").fill("测试旁白")
             page.get_by_role("button", name="合成旁白").click()
-            playwright.expect(page.locator(".lane.voice")).to_have_count(1)
+            playwright.expect(page.locator(".lane.voice")).to_contain_text("秒")
             playwright.expect(page.get_by_text("有未保存的修改")).to_be_visible()
             page.get_by_role("button", name="保存版本").click()
             playwright.expect(page.get_by_text("已保存的版本")).to_be_visible()
             page.reload()
-            playwright.expect(page.locator(".lane.voice")).to_have_count(1)
+            playwright.expect(page.locator(".lane.voice")).to_contain_text("秒")
+            page.locator(".lane.voice").click()
             playwright.expect(page.get_by_role("button", name="移除旁白")).to_be_visible()
             assert narrated.engine.synthesized == 1
             assert not errors
@@ -286,6 +296,11 @@ def test_cloud_voice_confirms_cost_before_paying(narrated, monkeypatch):  # noqa
                 f" localStorage.setItem('studio-last-job-v1', {last!r});"
             )
             page.goto(base + "/studio")
+            # Sound is reached from the empty narration lane under the timeline.
+            page.get_by_role("button", name=re.compile("旁白轨：未添加")).click()
+            playwright.expect(page.get_by_role("tab", name="声音")).to_have_attribute(
+                "aria-selected", "true"
+            )
             page.get_by_role("button", name="起草旁白稿").click()
             page.get_by_label("旁白稿").fill("测试旁白")
             playwright.expect(page.get_by_label("声音", exact=False).first).to_have_value(
@@ -293,7 +308,7 @@ def test_cloud_voice_confirms_cost_before_paying(narrated, monkeypatch):  # noqa
             )
             pay = page.get_by_role("button", name=re.compile(r"确认付费合成（约 ¥0\.0008）"))
             pay.click()
-            playwright.expect(page.locator(".lane.voice")).to_have_count(1)
+            playwright.expect(page.locator(".lane.voice")).to_contain_text("秒")
             assert calls == ["longanyang"]
             assert not errors
             browser.close()

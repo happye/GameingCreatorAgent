@@ -145,6 +145,8 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout}) {
     const player = usePlanPlayer(planVideo, items, urlFor);
     const music = useMusicCatalog();
     const [audioBusy, setAudioBusy] = useState(false);
+    // The inspector has three pages so sound and export stay reachable while a clip is selected.
+    const [inspTab, setInspTab] = useState("shot");
     const sound = useAudioPreview(player, editing.audio, fps, planVideo, music.tracks);
     const thumb = useCallback((item) => (item?.evidenceIds?.[0] ? client.evidenceUrl(project, item.runId, item.evidenceIds[0]) : null), [project]);
 
@@ -219,13 +221,18 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout}) {
                     <button class="btn" disabled=${!plan?.ready || !!busy || !!problem || !!commandRows} title=${!plan ? "先在左侧选择一个方案" : !plan.ready ? "这个方案有缺口，不能导出" : problem || (commandRows ? "先应用或取消一句话修改" : editing.dirty ? "先保存为新版本，再渲染 MP4" : "按当前内容渲染 MP4")} onClick=${exportVideo}>${busy === "render" ? "正在生成…" : busy === "save" ? "正在保存…" : "导出成片"}</button>
                 </div>
             </section>
-            <${ProgramTrack} items=${items} totalUs=${player.totalUs} outUs=${player.outUs} thumb=${thumb} selectedId=${editing.selectedId} changed=${changed} preview=${!!commandRows} lanes=${audioLanes(editing.audio, music.tracks, fps, player.totalUs)}
-                onPick=${(item) => { editing.setSelectedId(item.clipId || ""); setMode("plan"); void player.seek(item.outStartUs, false); }} />
+            <${ProgramTrack} items=${items} totalUs=${player.totalUs} outUs=${player.outUs} thumb=${thumb} selectedId=${editing.selectedId} changed=${changed} preview=${!!commandRows} lanes=${editable ? audioLanes(editing.audio, music.tracks, fps, player.totalUs) : []}
+                onLane=${() => setInspTab("sound")}
+                onPick=${(item) => { editing.setSelectedId(item.clipId || ""); setInspTab("shot"); setMode("plan"); void player.seek(item.outStartUs, false); }} />
         </div>
         <aside class="panel" hidden=${!layout.insp} aria-label="检查器">
             <div class="panel-head">检查器</div>
+            <div class="tabs insp-tabs" role="tablist" aria-label="检查器页面">
+                ${[["shot", "镜头"], ["sound", "声音"], ["export", "导出"]].map(([key, label]) => html`<button role="tab" aria-selected=${inspTab === key} onClick=${() => setInspTab(key)}>${label}</button>`)}
+            </div>
             <div class="panel-body">
                 ${message && html`<p class="note" role="status">${message}</p>`}
+                <div hidden=${inspTab !== "export"}>
                 <div class="field">
                     <div class="k">导出设置（导出按钮在预览窗下方）</div>
                     <div class="pair even">
@@ -233,13 +240,20 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout}) {
                         <label class="form-row">字幕<select class="select" value=${subtitles} onChange=${(e) => setSubtitles(e.currentTarget.value)}><option value="none">不加字幕</option><option value="sidecar">导出 SRT</option><option value="burn">烧入并导出 SRT</option></select></label>
                     </div>
                 </div>
+                </div>
                 ${plan && html`<div class="field"><div class="k">编辑状态</div>
                     <div class="v">${editing.status === "loading" ? "正在读取镜头…" : !editable ? `只能预览和导出${editing.reason ? `（${editing.reason}）` : ""}` : editing.dirty ? "有未保存的修改" : editing.base?.kind === "revision" ? "已保存的版本" : "方案原样"}</div>
                     ${problem && html`<p class="hint warn">${problem}</p>`}
                     ${editable && html`<div class="actions-row"><button class="btn ghost" disabled=${!editing.dirty || !!busy || !!problem || !!commandRows || audioBusy} onClick=${saveVersion}>保存版本</button>
                         <button class="btn ghost" disabled=${!editing.dirty || !!busy} onClick=${() => editing.ops.reset()}>撤销修改</button></div>`}</div>`}
+                <div hidden=${inspTab !== "shot"}>
                 ${selectedIndex >= 0 && !commandRows ? html`<${ClipInspector} editing=${editing} index=${selectedIndex} onSeek=${seekClip} />`
-                    : plan ? html`${editable && html`<${AudioPanel} editing=${editing} project=${project} fps=${fps} totalUs=${player.totalUs} music=${music} onBusy=${setAudioBusy} />`}<${PlanInspector} plan=${plan} groups=${groups} totalUs=${player.totalUs} shot=${null} />` : html`<p class="note">选中方案后，这里显示它的时长、镜头和缺口。</p>`}
+                    : plan ? html`<p class="hint">点时间轴上的一段，可以裁短、调速、换顺序。</p><${PlanInspector} plan=${plan} groups=${groups} totalUs=${player.totalUs} shot=${null} />` : html`<p class="note">选中方案后，这里显示它的时长、镜头和缺口。</p>`}
+                </div>
+                <div hidden=${inspTab !== "sound"}>
+                ${editable ? html`<${AudioPanel} editing=${editing} project=${project} fps=${fps} totalUs=${player.totalUs} music=${music} onBusy=${setAudioBusy} />`
+                    : html`<p class="note">${plan ? "这个方案还不能编辑声音（正在读取或只能导出）。" : "先在左侧选一个方案，再在这里加旁白和配乐。"}</p>`}
+                </div>
             </div>
         </aside>
     </div>
@@ -248,8 +262,12 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout}) {
 
 function audioLanes(audio, tracks, fps, totalUs) {
     const lanes = [], track = tracks.find((t) => t.trackId === audio.mix.bgm?.trackId);
-    if (audio.narration && audio.asset) lanes.push({kind: "voice", label: `旁白 ${audio.asset.durationSeconds.toFixed(1)} 秒`, startUs: (audio.narration.startFrame / fps) * 1e6, durUs: audio.asset.durationSeconds * 1e6});
-    if (audio.mix.bgm) lanes.push({kind: "music", label: `配乐 ${track?.title || ""}`, startUs: 0, durUs: totalUs});
+    lanes.push(audio.narration && audio.asset
+        ? {kind: "voice", label: `旁白 ${audio.asset.durationSeconds.toFixed(1)} 秒`, startUs: (audio.narration.startFrame / fps) * 1e6, durUs: audio.asset.durationSeconds * 1e6}
+        : {kind: "voice", label: "旁白轨：未添加，点此添加", startUs: 0, durUs: 0});
+    lanes.push(audio.mix.bgm
+        ? {kind: "music", label: `配乐 ${track?.title || ""}`, startUs: 0, durUs: totalUs}
+        : {kind: "music", label: "配乐轨：未添加，点此添加", startUs: 0, durUs: 0});
     return lanes;
 }
 
@@ -293,7 +311,7 @@ function PlanCard({plan, fps, active, thumb, onPick}) {
     </button>`;
 }
 
-function ProgramTrack({items, totalUs, outUs, thumb, selectedId, changed, preview, lanes = [], onPick}) {
+function ProgramTrack({items, totalUs, outUs, thumb, selectedId, changed, preview, lanes = [], onLane, onPick}) {
     const area = useRef(null);
     const [width, setWidth] = useState(800);
     useEffect(() => {
@@ -315,8 +333,9 @@ function ProgramTrack({items, totalUs, outUs, thumb, selectedId, changed, previe
                 })}
                 <div class="playhead" style=${{left: `${outUs * scale}px`}}></div>
             </div>` : html`<p class="note">选中方案后，片段按成片顺序排在这里。</p>`}
-            ${items.length ? lanes.map((lane) => html`<div class=${`lane ${lane.kind}`} title=${lane.label}>
-                <div class="bar" style=${{left: `${lane.startUs * scale}px`, width: `${Math.max(3, Math.min(lane.durUs, totalUs - lane.startUs) * scale)}px`}}>${lane.label}</div></div>`) : null}
+            ${items.length ? lanes.map((lane) => html`<button class=${`lane ${lane.kind}`} title=${`${lane.label} · 点击打开“声音”`} onClick=${onLane}>
+                ${lane.durUs ? html`<span class="bar" style=${{left: `${lane.startUs * scale}px`, width: `${Math.max(3, Math.min(lane.durUs, totalUs - lane.startUs) * scale)}px`}}>${lane.label}</span>`
+                    : html`<span class="lane-empty">${lane.label}</span>`}</button>`) : null}
         </div>
     </section>`;
 }
