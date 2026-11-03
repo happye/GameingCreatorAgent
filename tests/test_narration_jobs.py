@@ -209,9 +209,17 @@ def test_generate_persist_restart_without_resynthesis(narrated):
 
 def test_voice_listing_and_missing_voice_never_completes(narrated):
     jobs, engine = narrated.jobs, narrated.engine
-    assert jobs.voices() == {
-        "voices": [{"voiceId": "v1", "description": "Fixture 中文", "language": "804"}],
+    listing = jobs.voices()
+    assert listing["voices"][0] == {
+        "voiceId": "v1",
+        "description": "Fixture 中文",
+        "language": "804",
+        "paid": False,
+    }
+    assert all(v["paid"] for v in listing["voices"][1:])
+    assert {k: listing[k] for k in ("licenseStatus", "monthlyCapYuan")} == {
         "licenseStatus": "unknown",
+        "monthlyCapYuan": 5.0,
     }
     failed = finish(jobs, narrate(jobs, voice="ghost"))
     assert failed["status"] == "failed" and "narrationAsset" not in failed
@@ -222,7 +230,7 @@ def test_voice_listing_and_missing_voice_never_completes(narrated):
     # An already generated WAV does not need the voice any more.
     state = done(jobs)
     engine.voices = []
-    assert jobs.voices()["voices"] == []
+    assert [v for v in jobs.voices()["voices"] if not v["paid"]] == []
     assert jobs.get(state["jobId"])["status"] == "completed"
     assert (
         finish(
@@ -570,8 +578,9 @@ def test_http_voices_generation_files_cancel_and_render_text(narrated):
 
     try:
         body, _ = get("/api/creation/voices")
-        assert json.loads(body) == {
-            "voices": [{"voiceId": "v1", "description": "Fixture 中文", "language": "804"}],
+        listed = json.loads(body)
+        assert listed["voices"][0]["voiceId"] == "v1" and not listed["voices"][0]["paid"]
+        assert {k: listed[k] for k in ("licenseStatus",)} == {
             "licenseStatus": "unknown",
         }
         with pytest.raises(HTTPError) as error:
@@ -654,3 +663,67 @@ def test_accepted_cancel_survives_a_crash_before_the_final_status(narrated):
     recovered = restarted.get(job)
     assert recovered["status"] == "interrupted"
     assert "narrationAsset" not in recovered
+
+
+def test_cloud_narration_is_confirmed_capped_recorded_and_never_repaid(narrated, monkeypatch):
+    """Paid voice: cost confirmation required, ledger before/after, reuse, monthly cap."""
+    import gamingcreator.infrastructure.cosyvoice_tts as tts
+    from gamingcreator.ui import narration_jobs
+
+    jobs = narrated.jobs
+    voice = "cosyvoice:longanyang"
+    request = {
+        "requestId": "c" * 32,
+        "projectId": "artifacts/project",
+        "text": "旁白",
+        "voiceId": voice,
+    }
+    monkeypatch.delenv("DASHSCOPE_API_KEY", raising=False)
+    with pytest.raises(Exception, match="DASHSCOPE_API_KEY"):
+        jobs.submit("narration", request)
+    monkeypatch.setenv("DASHSCOPE_API_KEY", "k")
+    with pytest.raises(Exception, match="确认费用"):
+        jobs.submit("narration", request)
+    calls = []
+
+    def fake(text, name, timeout=60.0, transport=None):
+        import io
+        import wave
+
+        calls.append((text, name))
+        buffer = io.BytesIO()
+        with wave.open(buffer, "wb") as wav:
+            wav.setparams((1, 2, 24000, 0, "NONE", "not compressed"))
+            wav.writeframes(b"\x10\x00" * 2400)
+        return tts.CloudSpeech(buffer.getvalue(), 4, "provider-1")
+
+    monkeypatch.setattr(tts, "synthesize", fake)
+    confirmed = {**request, "costConfirmationYuan": narration_jobs.estimate_yuan("旁白")}
+    first = jobs.submit("narration", confirmed)
+    state = finish(jobs, first["jobId"])
+    assert state["status"] == "completed", state.get("error")
+    assert state["narrationAsset"]["durationSeconds"] == 0.1
+    rows = [
+        json.loads(line)
+        for line in (jobs.repository / "artifacts/billing/narration-tts.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    assert [r["event"] for r in rows] == ["planned", "completed"]
+    assert rows[1]["billedCharacters"] == 4 and rows[1]["providerRequestId"] == "provider-1"
+    # Same text and voice under a new request id: the finished asset is reused, nothing is paid.
+    again = jobs.submit("narration", {**confirmed, "requestId": "d" * 32})
+    assert again["jobId"] == first["jobId"] and len(calls) == 1
+    # Over the monthly cap: refused before any call.
+    monkeypatch.setattr(narration_jobs, "MONTHLY_CAP_YUAN", 0.0001)
+    with pytest.raises(Exception, match="上限"):
+        jobs.submit(
+            "narration",
+            {
+                **confirmed,
+                "requestId": "e" * 32,
+                "text": "别的旁白",
+                "costConfirmationYuan": narration_jobs.estimate_yuan("别的旁白"),
+            },
+        )
+    assert len(calls) == 1

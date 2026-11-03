@@ -1,4 +1,4 @@
-// Sound for the Edit workspace: narration (draft script → local voice → placed in the output),
+// Sound for the Edit workspace: narration (draft script → local or paid cloud voice → placed in the output),
 // background music (pick or upload, level), source level, and a preview that plays both in
 // step with the plan player. Everything here becomes part of the next saved version.
 import {h} from "../vendor/preact.module.js";
@@ -56,9 +56,14 @@ export function useMusicCatalog() {
     return {tracks, reload};
 }
 
+// Same upper bound as the server's fee gate: CJK characters count twice.
+const billedCharacters = (text) => [...text].reduce((n, c) => n + ((c >= "\u2e80" && c <= "\u9fff") || (c >= "\uf900" && c <= "\uffef") ? 2 : 1), 0);
+const costOf = (text, voice) => (voice?.paid ? Math.round(billedCharacters(text) * voice.yuanPer10kCharacters) / 10000 : 0);
+
 export function AudioPanel({editing, project, fps, totalUs, music, onBusy}) {
     const {audio} = editing;
     const [voices, setVoices] = useState([]);
+    const [billing, setBilling] = useState({spent: 0, cap: 0});
     const [voiceId, setVoiceId] = useState("");
     const [script, setScript] = useState(null);
     const [text, setText] = useState("");
@@ -68,8 +73,9 @@ export function AudioPanel({editing, project, fps, totalUs, music, onBusy}) {
     useEffect(() => {
         client.api("/api/creation/voices").then((data) => {
             setVoices(data.voices || []);
-            const chinese = (data.voices || []).find((v) => v.language === "804" || /chinese|中文/i.test(v.description));
-            setVoiceId((chinese || data.voices?.[0])?.voiceId || "");
+            setBilling({spent: data.spentThisMonthYuan || 0, cap: data.monthlyCapYuan || 0});
+            const chinese = (data.voices || []).find((v) => !v.paid && (v.language === "804" || /chinese|中文/i.test(v.description)));
+            setVoiceId(data.defaultVoiceId || (chinese || data.voices?.[0])?.voiceId || "");
         }).catch(() => setVoices([]));
     }, []);
     useEffect(() => { setScript(null); setText(""); setNote(""); }, [editing.base?.jobId, editing.base?.planId]);
@@ -83,15 +89,18 @@ export function AudioPanel({editing, project, fps, totalUs, music, onBusy}) {
         } catch (error) { setNote(error.message); } finally { busy(""); }
     };
     const synthesize = async () => {
-        busy("voice"); setNote("正在用本机语音合成…");
+        const chosen = voices.find((v) => v.voiceId === voiceId), body = text.trim();
+        busy("voice"); setNote(chosen?.paid ? "正在用云端语音合成…" : "正在用本机语音合成…");
         try {
-            const accepted = await client.submit("narration", {projectId: project, text: text.trim(), voiceId});
+            // A paid voice carries the cost the user just confirmed by clicking; the server re-checks it.
+            const accepted = await client.submit("narration", {projectId: project, text: body, voiceId, ...(chosen?.paid ? {costConfirmationYuan: costOf(body, chosen)} : {})});
             const done = await client.settle(accepted.jobId);
             if (done.status !== "completed" || !done.narrationAsset) throw new Error(`合成失败：${done.error?.message || done.status}`);
             client.forgetIntent("narration");
             const asset = done.narrationAsset;
             editing.ops.narration({assetJobId: asset.assetJobId, receiptSha256: asset.receiptSha256, startFrame: 0, gainDb: 0, ducking: "narration-v1"}, asset);
             setNote(`已合成 ${asset.durationSeconds.toFixed(1)} 秒旁白，播放预览可以试听；满意后保存版本。`);
+            if (chosen?.paid) void client.api("/api/creation/voices").then((data) => setBilling({spent: data.spentThisMonthYuan || 0, cap: data.monthlyCapYuan || 0})).catch(() => {});
         } catch (error) { setNote(error.message); } finally { busy(""); }
     };
     const upload = async (file) => {
@@ -113,6 +122,7 @@ export function AudioPanel({editing, project, fps, totalUs, music, onBusy}) {
     };
 
     const n = audio.narration, asset = audio.asset, bgm = audio.mix.bgm;
+    const selected = voices.find((v) => v.voiceId === voiceId), paid = !!selected?.paid, cost = costOf(text.trim(), selected);
     const estimate = text.trim() ? text.trim().length / (script?.charactersPerSecond || 3.5) : 0;
     const gainSelect = (value, onChange, label) => html`<label class="form-row">${label}<select class="select" value=${String(value ?? 0)} onChange=${(e) => onChange(Number(e.currentTarget.value))}>
         ${GAINS.map((g) => html`<option value=${String(g)}>${g === 0 ? "原音量" : `${g} dB`}</option>`)}</select></label>`;
@@ -131,9 +141,10 @@ export function AudioPanel({editing, project, fps, totalUs, music, onBusy}) {
             ${script ? html`<p class="hint">离线模板稿，请先改一遍再合成。约 ${estimate.toFixed(0)} 秒 / 成片 ${(totalUs / 1e6).toFixed(0)} 秒${estimate > totalUs / 1e6 ? "：太长了，请删减" : ""}</p>
                 <textarea class="input" rows="6" value=${text} onInput=${(e) => setText(e.currentTarget.value)} aria-label="旁白稿"></textarea>
                 <label class="form-row">声音<select class="select" value=${voiceId} onChange=${(e) => setVoiceId(e.currentTarget.value)}>
-                    ${voices.map((v) => html`<option value=${v.voiceId}>${v.description}</option>`)}</select></label>
-                <p class="hint">本机 Windows 语音，免费离线，听感偏机械；更自然的音色待你批准提供方后接入。</p>
-                <div class="actions-row"><button class="btn" disabled=${!!working || !text.trim() || !voiceId} onClick=${synthesize}>${working === "voice" ? "正在合成…" : "合成旁白"}</button></div>`
+                    ${voices.map((v) => html`<option value=${v.voiceId} disabled=${v.paid && !v.available}>${v.description}${v.paid && !v.available ? "（未配置）" : ""}</option>`)}</select></label>
+                ${paid ? html`<p class="hint">云端付费，约 ¥${cost.toFixed(4)}（${billedCharacters(text.trim())} 计费字符上限）。本月已用约 ¥${billing.spent.toFixed(2)} / 上限 ¥${billing.cap.toFixed(0)}；同样的文字和音色不会重复付费。</p>`
+                    : html`<p class="hint">本机 Windows 语音，免费离线，听感偏机械。${voices.some((v) => v.paid && !v.available) ? "云端音色需在启动工作台的终端里设置 DASHSCOPE_API_KEY 后重启。" : ""}</p>`}
+                <div class="actions-row"><button class="btn" disabled=${!!working || !text.trim() || !voiceId} onClick=${synthesize}>${working === "voice" ? "正在合成…" : paid ? `确认付费合成（约 ¥${cost.toFixed(4)}）` : "合成旁白"}</button></div>`
             : html`<div class="actions-row"><button class="btn ghost" disabled=${!!working} onClick=${draft}>${working === "script" ? "正在起草…" : "起草旁白稿"}</button></div>`}`}
         </div>
         <div class="field audio-panel"><div class="k">配乐与原声</div>

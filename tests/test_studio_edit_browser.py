@@ -234,3 +234,69 @@ def test_narration_draft_synthesize_and_save(narrated, monkeypatch):  # noqa: F8
     finally:
         server.shutdown()
         server.server_close()
+
+
+def test_cloud_voice_confirms_cost_before_paying(narrated, monkeypatch):  # noqa: F811
+    """The default cloud voice shows its cost on the button; one click pays once."""
+    playwright = pytest.importorskip("playwright.sync_api")
+    import io
+    import wave
+
+    import gamingcreator.infrastructure.cosyvoice_tts as tts
+    import gamingcreator.ui.server as server_module
+
+    calls = []
+
+    def fake(text, name, timeout=60.0, transport=None):
+        calls.append(name)
+        buffer = io.BytesIO()
+        with wave.open(buffer, "wb") as wav:
+            wav.setparams((1, 2, 24000, 0, "NONE", "not compressed"))
+            wav.writeframes(bytes([16, 0]) * 2400)
+        return tts.CloudSpeech(buffer.getvalue(), 8, "provider")
+
+    async def runs(project):
+        return {
+            "runs": [
+                {
+                    "id": "run",
+                    "status": "completed",
+                    "sourceName": "录像",
+                    "completedEligible": True,
+                }
+            ]
+        }
+
+    monkeypatch.setenv("DASHSCOPE_API_KEY", "test-only")
+    monkeypatch.setattr(tts, "synthesize", fake)
+    monkeypatch.setattr(server_module, "project_runs_payload", runs)
+    server = create_server("127.0.0.1", 0, narrated.jobs.repository)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{server.server_port}"
+    prefs = json.dumps({"project": "artifacts/project", "workspace": "edit"})
+    last = json.dumps({"artifacts/project": {"id": narrated.root, "kind": "plan"}})
+    try:
+        with playwright.sync_playwright() as runtime:
+            browser = runtime.chromium.launch(headless=True)
+            page = browser.new_page(viewport={"width": 1366, "height": 860})
+            errors = []
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            page.add_init_script(
+                f"localStorage.setItem('studio-v1', {prefs!r});"
+                f" localStorage.setItem('studio-last-job-v1', {last!r});"
+            )
+            page.goto(base + "/studio")
+            page.get_by_role("button", name="起草旁白稿").click()
+            page.get_by_label("旁白稿").fill("测试旁白")
+            playwright.expect(page.get_by_label("声音", exact=False).first).to_have_value(
+                "cosyvoice:longanyang"
+            )
+            pay = page.get_by_role("button", name=re.compile(r"确认付费合成（约 ¥0\.0008）"))
+            pay.click()
+            playwright.expect(page.locator(".lane.voice")).to_have_count(1)
+            assert calls == ["longanyang"]
+            assert not errors
+            browser.close()
+    finally:
+        server.shutdown()
+        server.server_close()

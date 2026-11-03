@@ -1,5 +1,6 @@
 """Offline Windows SAPI synthesis in a cancellable, job-isolated subprocess."""
 
+import asyncio
 import hashlib
 import json
 import os
@@ -16,6 +17,8 @@ from gamingcreator.infrastructure.local_paths import is_link
 from gamingcreator.infrastructure.media_process import run_media_process
 
 _HELPER = scripts_directory() / "sapi-narration.ps1"
+# Local Windows voices, and the paid cloud voices whose ids start with "cosyvoice:".
+ENGINES = ("windows-sapi", "cosyvoice-v3-flash")
 
 
 def _sha(path: Path) -> str:
@@ -109,11 +112,14 @@ def read_narration_artifact(
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     if receipt["schemaVersion"] != "creation-narration-receipt-v1":
         raise ValueError("Unsupported narration receipt.")
-    if receipt["engine"] != "windows-sapi" or receipt["licenseStatus"] != "unknown":
+    if receipt["engine"] not in ENGINES or receipt["licenseStatus"] != "unknown":
         raise ValueError("Invalid narration engine or license declaration.")
     voice_record = receipt["voice"]
     voice = LocalVoice(
-        voice_record["voiceId"], voice_record["description"], voice_record["language"]
+        voice_record["voiceId"],
+        voice_record["description"],
+        voice_record["language"],
+        receipt["engine"],
     )
     request = NarrationRequest(
         receipt["requestId"],
@@ -166,11 +172,7 @@ async def synthesize_local_narration(
     # Exclusive directory ownership: never merge into or erase another job's assets.
     directory.mkdir(parents=False, exist_ok=False)
     request_path = directory / "request.json"
-    wav_path, text_path, receipt_path = (
-        directory / "narration.wav",
-        directory / "narration.txt",
-        directory / "receipt.json",
-    )
+    wav_path = directory / "narration.wav"
     try:
         request_path.write_text(
             json.dumps(
@@ -180,41 +182,87 @@ async def synthesize_local_narration(
             encoding="utf-8",
         )
         await _invoke("synthesize", request_path, context)
-        context.check_cancelled()
-        rate, channels, width, count = _pcm(wav_path)
-        with text_path.open("xb") as stream:
-            stream.write(request.text.encode("utf-8"))
-        receipt = {
-            "schemaVersion": "creation-narration-receipt-v1",
-            "jobId": context.run_id,
-            "requestId": request.request_id,
-            "projectId": request.project_id,
-            "engine": "windows-sapi",
-            "licenseStatus": "unknown",
-            "voice": {
-                "voiceId": voice.voice_id,
-                "description": voice.description,
-                "language": voice.language,
-            },
-            "audio": {
-                "sampleRate": rate,
-                "channels": channels,
-                "sampleWidth": width,
-                "sampleCount": count,
-                "durationSeconds": count / rate,
-            },
-            "wavSha256": _sha(wav_path),
-            "textSha256": _sha(text_path),
-        }
         request_path.unlink()
-        context.check_cancelled()
-        with receipt_path.open("x", encoding="utf-8", newline="\n") as stream:
-            stream.write(json.dumps(receipt, ensure_ascii=False, sort_keys=True, indent=2) + "\n")
-        return read_narration_artifact(directory)
+        return _seal(directory, request, voice, "windows-sapi", context)
     except BaseException:
-        for path in (receipt_path, text_path, wav_path, request_path):
-            with suppress(OSError):
-                path.unlink(missing_ok=True)
-        with suppress(OSError):
-            directory.rmdir()
+        _discard(directory)
         raise
+
+
+async def synthesize_cloud_narration(
+    request: NarrationRequest, output_directory: Path, context: CancellationContext
+) -> tuple[NarrationArtifact, int | None, str]:
+    """One paid CosyVoice call; returns the asset, billed characters and provider request id."""
+    from gamingcreator.infrastructure import cosyvoice_tts
+
+    name = request.voice_id.removeprefix("cosyvoice:")
+    if name not in cosyvoice_tts.VOICES or not request.voice_id.startswith("cosyvoice:"):
+        raise ValueError("Requested cloud voice is not offered.")
+    voice = LocalVoice(request.voice_id, cosyvoice_tts.VOICES[name], "zh-CN", "cosyvoice-v3-flash")
+    directory = Path(output_directory).absolute()
+    if any(is_link(p) for p in (directory, *directory.parents)):
+        raise ValueError("Narration output cannot use links.")
+    context.check_cancelled()
+    directory.mkdir(parents=False, exist_ok=False)
+    try:
+        speech = await asyncio.to_thread(cosyvoice_tts.synthesize, request.text, name)
+        with (directory / "narration.wav").open("xb") as stream:
+            stream.write(speech.audio)
+        artifact = _seal(directory, request, voice, "cosyvoice-v3-flash", context)
+        return artifact, speech.billed_characters, speech.request_id
+    except BaseException:
+        _discard(directory)
+        raise
+
+
+def _discard(directory: Path) -> None:
+    for name in ("receipt.json", "narration.txt", "narration.wav", "request.json"):
+        with suppress(OSError):
+            (directory / name).unlink(missing_ok=True)
+    with suppress(OSError):
+        directory.rmdir()
+
+
+def _seal(
+    directory: Path,
+    request: NarrationRequest,
+    voice: LocalVoice,
+    engine: str,
+    context: CancellationContext,
+) -> NarrationArtifact:
+    """Write the text and receipt next to a finished WAV, then read the asset back strictly."""
+    wav_path, text_path, receipt_path = (
+        directory / "narration.wav",
+        directory / "narration.txt",
+        directory / "receipt.json",
+    )
+    context.check_cancelled()
+    rate, channels, width, count = _pcm(wav_path)
+    with text_path.open("xb") as stream:
+        stream.write(request.text.encode("utf-8"))
+    receipt = {
+        "schemaVersion": "creation-narration-receipt-v1",
+        "jobId": context.run_id,
+        "requestId": request.request_id,
+        "projectId": request.project_id,
+        "engine": engine,
+        "licenseStatus": "unknown",
+        "voice": {
+            "voiceId": voice.voice_id,
+            "description": voice.description,
+            "language": voice.language,
+        },
+        "audio": {
+            "sampleRate": rate,
+            "channels": channels,
+            "sampleWidth": width,
+            "sampleCount": count,
+            "durationSeconds": count / rate,
+        },
+        "wavSha256": _sha(wav_path),
+        "textSha256": _sha(text_path),
+    }
+    context.check_cancelled()
+    with receipt_path.open("x", encoding="utf-8", newline="\n") as stream:
+        stream.write(json.dumps(receipt, ensure_ascii=False, sort_keys=True, indent=2) + "\n")
+    return read_narration_artifact(directory)

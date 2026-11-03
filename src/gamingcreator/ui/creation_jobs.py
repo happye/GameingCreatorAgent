@@ -181,6 +181,8 @@ class CreationJobs:
                     "narration",
                 }
                 if kind == "revision"
+                else {"costConfirmationYuan"}
+                if kind == "narration"
                 else set()
             )
         )
@@ -230,6 +232,12 @@ class CreationJobs:
                 NarrationRequest(
                     request_id, request["projectId"], request["text"], request["voiceId"]
                 )
+                try:
+                    reused = narration_jobs.paid_gate(self, request)
+                except ValueError as error:
+                    raise fail("creation.input", str(error)) from error
+                if reused is not None:
+                    return {"jobId": reused, "kind": "narration", "status": "completed"}
                 project_id = request["projectId"]
             elif kind == "plan":
                 project = self.project(request["projectId"])
@@ -1293,7 +1301,7 @@ class CreationJobs:
             worker.join(timeout=1)
 
     def voices(self) -> dict[str, Any]:
-        return narration_jobs.voices()
+        return narration_jobs.voices(self.repository)
 
     def cancel_narration(self, job_id: str) -> dict[str, Any]:
         return narration_jobs.cancel(self, identity(job_id))
