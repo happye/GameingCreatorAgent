@@ -35,7 +35,7 @@ def test_imports_follow_layer_direction_and_domain_has_no_io_dependencies() -> N
     }
     forbidden_domain = {"sqlite3", "subprocess", "httpx", "requests", "faster_whisper"}
     # Known violations, each tied to a tech-debt row; the list may only shrink.
-    known = {("application", "gamingcreator.infrastructure.window_segment_cache")}  # TD023
+    known: set[tuple[str, str]] = set()  # TD023 resolved 2026-11-03
     violations = []
     for path in source_root.rglob("*.py"):
         relative = path.relative_to(source_root)

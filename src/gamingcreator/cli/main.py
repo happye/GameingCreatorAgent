@@ -154,6 +154,7 @@ from gamingcreator.infrastructure.project_search_files import (
     write_project_search,
 )
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
+from gamingcreator.infrastructure.window_segment_cache import WindowSegmentCache
 from gamingcreator.infrastructure.windows_ocr import WindowsOcrEngine
 
 
@@ -1214,6 +1215,7 @@ async def execute_analyze(
                     vision_for_run(store, ledger, stored_config.price_version),
                     store,
                     asr_provider.describe_request,
+                    _segment_cache(project),
                 )
             return await resume_analysis(prepared, store, project, ports)
         finally:
@@ -1241,10 +1243,19 @@ async def execute_analyze(
             vision_for_run(store, ledger, config.price_version),
             store,
             asr_provider.describe_request,
+            _segment_cache(project),
         )
         return await run_new_analysis(prepared, ports, asset, project, run_id=uuid4().hex)
     finally:
         await store.close()
+
+
+def _segment_cache(project: Path) -> WindowSegmentCache | None:
+    """Window reuse is an optimisation: an unusable cache root only disables it."""
+    try:
+        return WindowSegmentCache(project)
+    except (OSError, ValueError):
+        return None
 
 
 async def execute_check_analysis_reuse(

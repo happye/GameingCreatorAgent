@@ -51,17 +51,17 @@ from gamingcreator.application.storage import (
     StoredTimeline,
     TimelineStore,
 )
-from gamingcreator.domain.errors import AppError, ExitCode
-from gamingcreator.domain.media import MediaAsset, MediaPreprocessingResult, VisualEvidence
-from gamingcreator.domain.models import EvidenceReference
-from gamingcreator.infrastructure.window_segment_cache import (
-    WindowSegmentCache,
+from gamingcreator.application.window_segments import (
+    SegmentCache,
     cache_key,
     fingerprint,
     remint_events,
     settings_digest,
     window_digest,
 )
+from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.domain.media import MediaAsset, MediaPreprocessingResult, VisualEvidence
+from gamingcreator.domain.models import EvidenceReference
 
 PIPELINE_VERSION = "phase0-analyze-v1"
 WINDOW_PIPELINE_VERSION = "phase0-analyze-v2"
@@ -82,6 +82,8 @@ class AnalysisPorts:
     vision: VisionProvider
     store: TimelineStore
     asr_metadata: Callable[[AsrRequest], InvocationMetadata] | None = None
+    # Reuse of identical vision windows (T17); None disables it.
+    segment_cache: SegmentCache | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -716,7 +718,8 @@ async def _run_pipeline(
                     )
                     cached_rows = None
                     try:
-                        cached_rows = WindowSegmentCache(project).load(segment_key)
+                        if ports.segment_cache is not None:
+                            cached_rows = ports.segment_cache.load(segment_key)
                     except ValueError:
                         cached_rows = None
                     if cached_rows is not None:
@@ -792,9 +795,13 @@ async def _run_pipeline(
                         (),
                         _digest([event.event_id for event in visual.output]),
                     )
-                    if cached_rows is None and visual.output is not None:
+                    if (
+                        cached_rows is None
+                        and visual.output is not None
+                        and ports.segment_cache is not None
+                    ):
                         try:
-                            WindowSegmentCache(project).store(segment_key, tuple(visual.output))
+                            ports.segment_cache.store(segment_key, tuple(visual.output))
                         except (OSError, ValueError):
                             pass  # Cache write failure must not fail a paid window.
                     completed_count += 1

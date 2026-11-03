@@ -319,3 +319,53 @@ def test_asr_is_recorded_before_inference_and_revised_model_cannot_resume(tmp_pa
             await store.close()
 
     asyncio.run(scenario())
+
+
+class WindowCacheDouble:
+    """SegmentCache port double keyed by window content only, shared across projects."""
+
+    def __init__(self):
+        self.rows, self.loads, self.stores = {}, 0, 0
+
+    def load(self, key):
+        self.loads += 1
+        return self.rows.get(key["window"])
+
+    def store(self, key, events):
+        from gamingcreator.application.window_segments import event_payload
+
+        self.stores += 1
+        self.rows[key["window"]] = [event_payload(event) for event in events]
+
+
+def test_window_cache_port_reuses_identical_windows_without_vision_calls(tmp_path):
+    """TD023: analysis reaches the cache only through AnalysisPorts.segment_cache;
+    identical windows are served from it and the vision provider is not called."""
+    cache = WindowCacheDouble()
+
+    async def analyse(root):
+        root.mkdir()
+        bundle, project, source = window_bundle(root)
+        store = await SqliteTimelineStore.open(project)
+        vision = WindowVision()
+        asr = ScriptedAsr(asr_result(ProviderStatus.NO_AUDIO))
+        ports = AnalysisPorts(
+            WindowMedia(bundle), asr, vision, store, lambda request: asr_metadata(), cache
+        )
+        try:
+            result = await run_new_analysis(
+                PreparedAnalyze(source, project, CONFIG, Decimal(5), None),
+                ports,
+                bundle.asset,
+                project,
+                run_id=RUN_ID,
+            )
+            return vision.stages, result.event_count
+        finally:
+            await store.close()
+
+    first_calls, first_events = asyncio.run(analyse(tmp_path / "a"))
+    assert first_calls == ["vision-000000", "vision-000001", "vision-000002"]
+    assert cache.stores == 3
+    second_calls, second_events = asyncio.run(analyse(tmp_path / "b"))
+    assert second_calls == [] and second_events == first_events == 3
