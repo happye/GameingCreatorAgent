@@ -218,10 +218,11 @@ def test_semantic_passage_identity_keeps_denied_facts_and_all_event_exports() ->
     assert result.min_semantic_margin == 0.02
 
 
-@pytest.mark.xfail(strict=False, reason="TD024: TD004 alias gates regressed negation")
-def test_unknown_generic_description_is_not_blanket_filtered_for_action_query() -> None:
+def test_action_query_semantic_tail_needs_action_evidence() -> None:
+    """TD024 decision: since TD004 an action query keeps only clips that show the action;
+    a generic clip is no longer revived by cosine alone (precision for J2 top-10)."""
     result = search(timeline("角色跳跃到平台。", "角色打开背包。"), "跳跃", "hybrid")
-    assert {item.event_id for item in result.candidates} == {"event-0", "event-1"}
+    assert {item.event_id for item in result.candidates} == {"event-0"}
 
 
 @pytest.mark.parametrize("mode", ["lexical", "hybrid", "semantic"])
@@ -340,22 +341,26 @@ def timeline_db_shaped(
     return StoredTimeline(run, (), evidence, tuple(transcripts), tuple(events), ())
 
 
-@pytest.mark.xfail(strict=False, reason="TD024: TD004 alias gates regressed negation")
 def test_tags_only_event_remains_searchable_without_fact_fallback():
-    """TD010: empty facts + mechanicTags must not reintroduce tags into positive_text."""
-    data = timeline_db_shaped([{"facts": [], "tags": ["jump"]}])
+    """TD010: empty facts + mechanicTags must not reintroduce tags into positive_text.
+
+    TD024 decision: attack tags still make a clip searchable; jump/move/shoot/... tags were
+    painted too liberally on real footage, so tag-only evidence for them is excluded (TD004).
+    """
+    jump_only = timeline_db_shaped([{"facts": [], "tags": ["jump"]}])
+    assert search(jump_only, "jump", "hybrid").candidates == ()
+    data = timeline_db_shaped([{"facts": [], "tags": ["attack"]}])
     # positive_text must stay empty so denial never scans tags; lexical still uses text.
     from gamingcreator.application.retrieval import _documents
 
     docs = _documents(data)
     assert len(docs) == 1
     assert docs[0].positive_text == ""
-    assert "jump" in docs[0].text.casefold()
-    result = search(data, "jump", "hybrid")
+    assert "attack" in docs[0].text.casefold()
+    result = search(data, "attack", "hybrid")
     assert [item.event_id for item in result.candidates] == ["event-0"]
 
 
-@pytest.mark.xfail(strict=False, reason="TD024: TD004 alias gates regressed negation")
 def test_denied_action_does_not_block_other_action_tag_hit():
     """Denial of jump must not exclude the same clip from an attack query."""
     data = timeline_with_tags(
@@ -400,7 +405,6 @@ def test_fact_and_transcript_both_deny_keeps_exclusion_despite_tag():
     assert "event-1" in ids
 
 
-@pytest.mark.xfail(strict=False, reason="TD024: TD004 alias gates regressed negation")
 def test_td010_mixed_semantics_golden_shapes():
     """Offline DB-shaped对照: golden JSON drives include/exclude expectations."""
     import json

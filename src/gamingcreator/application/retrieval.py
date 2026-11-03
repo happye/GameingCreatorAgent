@@ -2577,6 +2577,7 @@ async def _search_documents(
                 semantic[document.identifier] = similarity
         # TD004: semantic channel for action queries needs positive-text action evidence.
         # Stops EqualSimilarity / high-cosine tails from reviving held-gun or unrelated clips.
+        # Tags count only for actions whose tags are not liberally painted (attack, TD010/TD024).
         action_names = _query_actions(query)
         if action_names and not _NEGATIVE_QUERY_INTENT.search(
             unicodedata.normalize("NFKC", query).casefold().replace("’", "'")
@@ -2584,7 +2585,11 @@ async def _search_documents(
             allowed = {
                 document.identifier
                 for document in documents
-                if action_names & _positive_actions(document.positive_text)
+                if action_names
+                & (
+                    _positive_actions(document.positive_text)
+                    | (_positive_actions("\n".join(document.tags)) - _TAG_ONLY_NOISE_ACTIONS)
+                )
             }
             semantic = {
                 identifier: score for identifier, score in semantic.items() if identifier in allowed
