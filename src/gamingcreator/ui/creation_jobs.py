@@ -183,6 +183,8 @@ class CreationJobs:
                 if kind == "revision"
                 else {"costConfirmationYuan"}
                 if kind == "narration"
+                else {"eventIds"}
+                if kind == "plan"
                 else set()
             )
         )
@@ -252,6 +254,17 @@ class CreationJobs:
                     raise fail("creation.input", "请选择不同的已完成素材。")
                 if type(request["fps"]) is not int or not 1 <= request["fps"] <= 120:
                     raise fail("creation.input", "无效输出帧率。")
+                # A clip basket: plans may use only these analysed events (ids carry their run).
+                events = request.get("eventIds", [])
+                if (
+                    not isinstance(events, list)
+                    or ("eventIds" in request and not events)
+                    or len(events) > 500
+                    or any(not isinstance(e, str) or not e for e in events)
+                    or len(events) != len(set(events))
+                    or any(e.split(":", 1)[0] not in runs for e in events)
+                ):
+                    raise fail("creation.input", "片段篮里的片段无效，或不属于所选录像。")
                 project_id = request["projectId"]
             elif kind == "package":
                 parent_id = identity(request["publicationJobId"])
@@ -597,7 +610,7 @@ class CreationJobs:
                         request["runIds"],
                         directory / "input/brief.json",
                         directory / "result",
-                        [],
+                        list(request.get("eventIds", [])),
                         request["fps"],
                         None,
                         preferences=self._preferences(directory),

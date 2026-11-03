@@ -315,3 +315,124 @@ def test_cloud_voice_confirms_cost_before_paying(narrated, monkeypatch):  # noqa
     finally:
         server.shutdown()
         server.server_close()
+
+
+def test_clip_basket_search_add_and_plan_uses_only_basket(service, monkeypatch):  # noqa: F811
+    """Search → add to basket (button and B key) → 用片段篮生成方案 → planner gets those events."""
+    playwright = pytest.importorskip("playwright.sync_api")
+    import gamingcreator.ui.creation_jobs as implementation
+    import gamingcreator.ui.server as server_module
+    from gamingcreator.infrastructure.creation_files import write_creation
+
+    seen = []
+
+    async def runs(project):
+        return {
+            "runs": [
+                {
+                    "id": "run",
+                    "status": "completed",
+                    "sourceName": "录像",
+                    "completedEligible": True,
+                    "durationUs": 9_000_000,
+                }
+            ]
+        }
+
+    async def planner(
+        project, runs_, brief, output, events, fps, selection, preferences=None, edit_kinds=None
+    ):
+        seen.append(list(events))
+        segment = {
+            "runId": "run",
+            "eventId": events[0],
+            "outputFrames": 60,
+            "evidenceIds": [],
+            "scriptDraft": "x",
+            "sourcePath": "p",
+            "startUs": 0,
+            "endUs": 2_000_000,
+        }
+        plans = [
+            {
+                "id": "a",
+                "structure": "推荐模板",
+                "mode": "feature_showcase",
+                "ready": True,
+                "gaps": [],
+                "scriptStatus": "draft",
+                "segments": [segment],
+            }
+        ]
+        write_creation(
+            output,
+            {
+                "plans.json": {
+                    "schemaVersion": "creation-plan-v1",
+                    "fps": fps,
+                    "brief": json.loads(brief.read_text()),
+                    "plans": plans,
+                }
+            },
+            (),
+        )
+
+    facts = ["角色跳跃躲开陷阱", "角色跳跃收集金币", "菜单界面"]
+    timeline = [
+        {
+            "eventId": f"run:m:event:{i}",
+            "startUs": i * 2_000_000,
+            "endUs": (i + 1) * 2_000_000,
+            "startTimecode": f"00:00:0{2 * i}.000",
+            "endTimecode": f"00:00:0{2 * i + 2}.000",
+            "displayFacts": [fact],
+            "evidenceIds": [],
+            "mechanicTags": [],
+        }
+        for i, fact in enumerate(facts)
+    ]
+    inspect = {
+        "runId": "run",
+        "timeline": timeline,
+        "evidence": [],
+        "media": {"videoUrl": "/api/media?project=x&run=run", "durationUs": 6_000_000},
+    }
+    monkeypatch.setattr(server_module, "project_runs_payload", runs)
+    monkeypatch.setattr(implementation, "execute_plan_creation", planner)
+    server = create_server("127.0.0.1", 0, service.repository)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{server.server_port}"
+    try:
+        with playwright.sync_playwright() as runtime:
+            browser = runtime.chromium.launch(headless=True)
+            page = browser.new_page(viewport={"width": 1366, "height": 860})
+            errors = []
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            page.route(
+                lambda url: "/api/inspect?" in url, lambda route: route.fulfill(json=inspect)
+            )
+            page.goto(base + "/studio")
+            page.get_by_label("搜索片段").fill("跳跃")
+            playwright.expect(page.locator(".clip-search .hit")).to_have_count(2)
+            page.locator(".clip-search .hit").first.get_by_role("button", name="加入片段篮").click()
+            # The second hit: open it on the timeline, then add it with the B key.
+            page.locator(".clip-search .hit-main").nth(1).click()
+            playwright.expect(page.get_by_role("button", name="加入片段篮").last).to_be_visible()
+            page.locator(".viewer").click()
+            page.keyboard.press("b")
+            playwright.expect(page.locator(".basket .hit")).to_have_count(2)
+            page.get_by_role("button", name="用片段篮生成方案").click()
+            playwright.expect(page.locator(".basket-option input")).to_be_checked()
+            page.locator(".brief input.input").first.fill("测试游戏")
+            page.get_by_role("button", name="生成方案").click()
+            playwright.expect(page.locator(".plan")).to_have_count(1)
+            assert seen == [["run:m:event:0", "run:m:event:1"]]
+            # The basket survives a reload.
+            page.reload()
+            page.get_by_role("tab", name="素材").click()
+            playwright.expect(page.locator(".basket .hit")).to_have_count(2)
+            assert not errors
+            browser.close()
+    finally:
+        server.shutdown()
+        server.server_close()

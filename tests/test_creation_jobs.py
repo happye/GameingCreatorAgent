@@ -498,3 +498,23 @@ def test_plan_registration_freezes_edit_habits(service, monkeypatch):
     finish(service, job_id)
     assert captured["edit_kinds"] == {"裁剪": 4, "删镜头": 1}
     assert captured["preferences"] == {"reverse": 1}
+
+
+def test_plan_from_clip_basket_passes_only_those_events(service, monkeypatch):
+    import gamingcreator.ui.creation_jobs as implementation
+
+    seen = []
+    original = implementation.execute_plan_creation
+
+    async def planner(project, runs, brief, output, events, *args, **kwargs):
+        seen.append(list(events))
+        return await original(project, runs, brief, output, events, *args, **kwargs)
+
+    monkeypatch.setattr(implementation, "execute_plan_creation", planner)
+    basket = ["run:media:event:a", "run:media:event:b"]
+    job = service.submit("plan", {**request(), "eventIds": basket})
+    assert finish(service, job["jobId"])["status"] == "completed"
+    assert seen == [basket]
+    for bad in ([], ["run:x", "run:x"], ["other:media:event:a"], [""], "run:a"):
+        with pytest.raises(AppError):
+            service.submit("plan", {**request(), "requestId": "f" * 32, "eventIds": bad})

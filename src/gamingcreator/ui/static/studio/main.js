@@ -4,6 +4,8 @@ import {h, render} from "../vendor/preact.module.js";
 import {useCallback, useEffect, useMemo, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
+import {BasketList, ClipSearch, useBasket} from "./basket.js";
+import {PublishWorkspace} from "./publish.js";
 import {EditWorkspace} from "./edit.js";
 
 const html = htm.bind(h);
@@ -43,6 +45,9 @@ function App() {
     const [status, setStatus] = useState("正在读取项目…");
     const [time, setTime] = useState(0);
     const [open, setOpen] = useState(null);
+    const [pendingEvent, setPendingEvent] = useState("");
+    const [basketAt, setBasketAt] = useState(0);
+    const basket = useBasket(project);
     const video = useRef(null);
     const latestRuns = useLatest(), latestView = useLatest(), latestWorks = useLatest();
 
@@ -86,12 +91,26 @@ function App() {
         });
     }, [project, runId]);
 
+    // A search hit or basket item opens its recording, then selects the clip once loaded.
+    const showEvent = useCallback((runIdToShow, eventId) => { setWorkspace("assets"); setRunId(runIdToShow); setPendingEvent(eventId); }, []);
+    useEffect(() => {
+        if (!pendingEvent || !view) return;
+        const event = view.timeline.find((e) => e.eventId === pendingEvent);
+        if (event) { setPendingEvent(""); selectEvent(event); }
+    }, [view, pendingEvent]);
+    const thumbOf = (event) => {
+        const image = (view?.evidence || []).find((e) => e.id === event?.evidenceIds?.[0] && e.kind === "image");
+        return image ? client.sameOrigin(image.url, "/api/evidence") : null;
+    };
+    const currentRun = runs.find((r) => r.id === runId);
+    const toggleBasket = (event) => { if (event && currentRun) basket.toggle(event, currentRun, thumbOf(event)); };
+
     const reloadWorks = useCallback(() => {
         if (project) latestWorks((signal) => client.creationJobs(project, signal)).then((result) => { if (result.ok) setWorks(result.value.jobs); });
     }, [project]);
     const openWork = useCallback((job) => {
-        if (!["plan", "render"].includes(job.kind) || job.status !== "completed") return;
-        setOpen({id: job.jobId, kind: job.kind, at: Date.now()}); setWorkspace("edit");
+        if (!["plan", "render", "publication", "package"].includes(job.kind) || job.status !== "completed") return;
+        setOpen({id: job.jobId, kind: job.kind, at: Date.now()}); setWorkspace(["publication", "package"].includes(job.kind) ? "deliver" : "edit");
     }, []);
 
     const seek = useCallback((us, play = false) => {
@@ -109,6 +128,8 @@ function App() {
             else if ((event.key === "ArrowLeft" || event.key === "ArrowRight") && el) {
                 event.preventDefault(); const step = (event.shiftKey ? 5 : 1) * (event.key === "ArrowLeft" ? -1 : 1);
                 el.currentTime = Math.max(0, el.currentTime + step);
+            } else if ((event.key === "b" || event.key === "B") && selected) {
+                toggleBasket(selected);
             } else if ((event.key === "j" || event.key === "l") && events.length) {
                 const index = events.findIndex((e) => e === selected);
                 const next = events[Math.min(events.length - 1, Math.max(0, index + (event.key === "l" ? 1 : -1)))];
@@ -116,24 +137,26 @@ function App() {
             }
         };
         addEventListener("keydown", onKey); return () => removeEventListener("keydown", onKey);
-    }, [view, selected, workspace, selectEvent]);
+    }, [view, selected, workspace, selectEvent, basket, currentRun]);
 
     const work = `work${layout.bin ? "" : " no-bin"}${layout.insp ? "" : " no-insp"}`;
     return html`<div class="shell">
         <${TopBar} ...${{workspace, setWorkspace, projects, project, setProject, layout, setLayout, status}} />
         ${workspace === "assets"
             ? html`<div class=${work}>
-                <${Bin} runs=${runs} runId=${runId} setRunId=${setRunId} works=${works} onOpen=${openWork} hidden=${!layout.bin} />
+                <${Bin} runs=${runs} runId=${runId} setRunId=${setRunId} works=${works} onOpen=${openWork} hidden=${!layout.bin}
+                    top=${html`<${ClipSearch} project=${project} runs=${runs} basket=${basket} onShow=${(run, event) => showEvent(run.id, event.eventId)} />
+                        <${BasketList} basket=${basket} onShow=${(item) => showEvent(item.runId, item.eventId)} onUse=${() => { setBasketAt(Date.now()); setWorkspace("edit"); }} />`} />
                 <div class="center">
                     <${Viewer} media=${view?.media} videoRef=${video} time=${time} setTime=${setTime} />
-                    <${Timeline} view=${view} time=${time} selected=${selected} onSelect=${selectEvent} />
+                    <${Timeline} view=${view} time=${time} selected=${selected} onSelect=${selectEvent} inBasket=${basket.ids} />
                 </div>
-                <${Inspector} view=${view} selected=${selected} run=${runs.find((r) => r.id === runId)} hidden=${!layout.insp} />
+                <${Inspector} view=${view} selected=${selected} run=${currentRun} hidden=${!layout.insp} inBasket=${!!selected && basket.ids.has(selected.eventId)} onBasket=${() => toggleBasket(selected)} />
             </div>`
             : workspace === "edit"
-                ? html`<${EditWorkspace} project=${project} runs=${runs} open=${open} onWorksChanged=${reloadWorks} layout=${layout} />`
-                : html`<${Upcoming} workspace=${workspace} />`}
-        ${workspace !== "edit" && html`<div class="dock"><strong>创作助手</strong><span>即将接入：用一句话描述想要的视频或修改，结果直接出现在剪辑区的方案和时间轴上。</span></div>`}
+                ? html`<${EditWorkspace} project=${project} runs=${runs} open=${open} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} />`
+                : html`<${PublishWorkspace} project=${project} works=${works} open=${open} onWorksChanged=${reloadWorks} layout=${layout} />`}
+        ${workspace === "assets" && html`<div class="dock"><strong>创作助手</strong><span>即将接入：用一句话描述想要的视频或修改，结果直接出现在剪辑区的方案和时间轴上。</span></div>`}
     </div>`;
 }
 
@@ -155,11 +178,12 @@ function TopBar({workspace, setWorkspace, projects, project, setProject, layout,
     </header>`;
 }
 
-function Bin({runs, runId, setRunId, works, onOpen, hidden}) {
+function Bin({runs, runId, setRunId, works, onOpen, hidden, top}) {
     const groups = Object.keys(KIND).map((kind) => [kind, works.filter((job) => job.kind === kind)]).filter(([, list]) => list.length);
     return html`<aside class="panel" hidden=${hidden} aria-label="素材箱">
         <div class="panel-head">素材箱</div>
         <div class="panel-body">
+            ${top}
             <div class="section-label">录像</div>
             ${runs.map((run) => {
                 const tone = run.completedEligible ? "ok" : run.status === "failed" ? "bad" : "warn";
@@ -172,8 +196,8 @@ function Bin({runs, runId, setRunId, works, onOpen, hidden}) {
             ${groups.map(([kind, list]) => html`<details class="group" open=${kind === "render"}>
                 <summary>${KIND[kind]}（${list.length}）</summary>
                 ${list.slice(0, 20).map((job) => {
-                    const openable = ["plan", "render"].includes(job.kind) && job.status === "completed";
-                    return html`<button class="row" disabled=${!openable} title=${openable ? "在剪辑区打开" : ""} onClick=${() => onOpen(job)}><span class=${`dot ${job.status === "completed" ? "ok" : job.status === "failed" ? "bad" : "warn"}`}></span>
+                    const openable = ["plan", "render", "publication", "package"].includes(job.kind) && job.status === "completed";
+                    return html`<button class="row" disabled=${!openable} title=${openable ? (["publication", "package"].includes(job.kind) ? "在发布区打开" : "在剪辑区打开") : ""} onClick=${() => onOpen(job)}><span class=${`dot ${job.status === "completed" ? "ok" : job.status === "failed" ? "bad" : "warn"}`}></span>
                     <span class="name">${new Date(job.createdAt).toLocaleString("zh-CN", {hour12: false})}</span><span class="meta">${job.status === "completed" ? (openable ? "打开" : "") : job.status}</span></button>`;
                 })}
             </details>`)}
@@ -189,7 +213,7 @@ function Viewer({media, videoRef, time, setTime}) {
         ${src
             ? html`<video ref=${videoRef} src=${src} preload="metadata" playsinline
                 onTimeUpdate=${(e) => setTime(Math.round(e.currentTarget.currentTime * 1e6))}
-                onPlay=${() => setPlaying(true)} onPause=${() => setPlaying(false)} onClick=${(e) => (e.currentTarget.paused ? e.currentTarget.play() : e.currentTarget.pause())}></video>`
+                onPlay=${() => setPlaying(true)} onPause=${() => setPlaying(false)} onClick=${(e) => (e.currentTarget.paused ? void e.currentTarget.play().catch(() => {}) : e.currentTarget.pause())}></video>`
             : html`<div class="empty">从左侧素材箱选择一段已分析的录像</div>`}
         <div class="transport">
             <button class="icon-btn" disabled=${!src} onClick=${() => { const el = videoRef.current; if (el) el.paused ? void el.play().catch(() => {}) : el.pause(); }}>${playing ? "暂停" : "播放"}</button>
@@ -200,7 +224,7 @@ function Viewer({media, videoRef, time, setTime}) {
     </section>`;
 }
 
-function Timeline({view, time, selected, onSelect}) {
+function Timeline({view, time, selected, onSelect, inBasket}) {
     const area = useRef(null);
     const [width, setWidth] = useState(800);
     const [zoom, setZoom] = useState(1);
@@ -228,7 +252,7 @@ function Timeline({view, time, selected, onSelect}) {
                 <div class="track">
                     ${view.timeline.map((event) => {
                         const thumb = thumbs[event.evidenceIds?.[0]];
-                        return html`<button class="clip" aria-current=${selected === event} title=${`${event.startTimecode} ${event.displayFacts?.[0] || ""}`}
+                        return html`<button class=${`clip${inBasket.has(event.eventId) ? " in-basket" : ""}`} aria-current=${selected === event} title=${`${event.startTimecode} ${event.displayFacts?.[0] || ""}`}
                             style=${{left: `${event.startUs * scale}px`, width: `${Math.max(3, (event.endUs - event.startUs) * scale - 1)}px`, backgroundImage: thumb ? `url("${thumb}")` : "none"}}
                             onClick=${() => onSelect(event)} aria-label=${`片段 ${event.startTimecode}`}></button>`;
                     })}
@@ -240,7 +264,7 @@ function Timeline({view, time, selected, onSelect}) {
     </section>`;
 }
 
-function Inspector({view, selected, run, hidden}) {
+function Inspector({view, selected, run, hidden, inBasket, onBasket}) {
     const images = useMemo(() => {
         if (!selected || !view) return [];
         const byId = Object.fromEntries(view.evidence.filter((e) => e.kind === "image").map((e) => [e.id, e]));
@@ -250,7 +274,8 @@ function Inspector({view, selected, run, hidden}) {
         <div class="panel-head">检查器</div>
         <div class="panel-body">
             ${selected ? html`
-                <div class="field"><div class="k">片段</div><div class="v num">${selected.startTimecode} – ${selected.endTimecode}（${(seconds(selected.endUs - selected.startUs)).toFixed(1)} 秒）</div></div>
+                <div class="field"><div class="k">片段</div><div class="v num">${selected.startTimecode} – ${selected.endTimecode}（${(seconds(selected.endUs - selected.startUs)).toFixed(1)} 秒）</div>
+                    <div class="actions-row"><button class=${inBasket ? "btn ghost" : "btn"} onClick=${onBasket}>${inBasket ? "移出片段篮" : "加入片段篮"}</button><span class="hint">快捷键 B</span></div></div>
                 <div class="field"><div class="k">分析描述（模型观察，未经人工核对）</div><ul class="facts">${(selected.displayFacts || selected.observableFacts || []).map((fact) => html`<li>${fact}</li>`)}</ul></div>
                 ${selected.uncertainty && html`<div class="field"><div class="k">不确定</div><div class="v">${selected.uncertainty}</div></div>`}
                 <div class="field"><div class="k">采样帧</div><div class="thumbs">${images.map((src) => html`<img src=${src} alt="分析采样帧" loading="lazy" />`)}</div></div>`
@@ -262,11 +287,6 @@ function Inspector({view, selected, run, hidden}) {
             : html`<p class="note">选中录像或片段后，这里显示它的详细信息。</p>`}
         </div>
     </aside>`;
-}
-
-function Upcoming({workspace}) {
-    const text = ["发布区（第 6 步）", "封面、文案和各平台预览包会集中在这里。在这之前，请在旧版创作页的“4. 成片”里操作。", "/creation", "打开旧版创作页"];
-    return html`<div class="placeholder"><div><h2>${text[0]}</h2><p>${text[1]}</p><a class="btn" href=${text[2]}>${text[3]}</a></div></div>`;
 }
 
 const root = document.getElementById("studio");

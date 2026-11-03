@@ -34,7 +34,7 @@ function writeDraft(project, draft) {
     try { const all = JSON.parse(localStorage.getItem(DRAFT) || "{}"); all[project] = draft; localStorage.setItem(DRAFT, JSON.stringify(all)); return true; } catch { return false; }
 }
 
-export function EditWorkspace({project, runs, open, onWorksChanged, layout}) {
+export function EditWorkspace({project, runs, open, onWorksChanged, layout, basket, basketAt, onBasketSeen}) {
     const [draft, setDraft] = useState(() => readDraft(project));
     const [saved, setSaved] = useState("");
     const [planJob, setPlanJob] = useState(null);
@@ -52,6 +52,9 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout}) {
 
     useEffect(() => { setDraft(readDraft(project)); setPlanJob(null); setRenderJob(null); setPlanId(""); setMode("plan"); }, [project]);
     const update = (patch) => { const next = {...draft, ...patch}; setDraft(next); setSaved(writeDraft(project, next) ? "草稿已保存" : "浏览器不允许保存草稿"); };
+    // "用片段篮生成方案" in Assets turns the basket option on.
+    useEffect(() => { if (basketAt) { update({useBasket: true}); onBasketSeen(); } }, [basketAt]);
+    const fromBasket = !!draft.useBasket && basket.items.length > 0;
 
     // Abort polling of a previous job when another one is opened.
     const follow = useCallback(async (id, apply) => {
@@ -99,14 +102,16 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout}) {
     };
 
     const generate = async () => {
-        const runIds = draft.runIds.filter((id) => runs.some((r) => r.id === id && r.completedEligible));
+        const eventIds = fromBasket ? basket.items.map((i) => i.eventId) : null;
+        const runIds = fromBasket ? [...new Set(basket.items.map((i) => i.runId))]
+            : draft.runIds.filter((id) => runs.some((r) => r.id === id && r.completedEligible));
         if (!runIds.length) return setMessage("先在上面勾选至少一段录像。");
         if (!draft.game.trim()) return setMessage("请填写游戏名。");
         const brief = {game: draft.game.trim(), contentType: draft.contentType, platforms: [draft.platform], targetDuration: Number(draft.targetDuration),
             objective: draft.objective, audience: draft.audience, tone: draft.tone, mandatoryTopics: list(draft.mandatoryTopics), exclude: list(draft.exclude)};
         setBusy("plan"); setMessage("正在生成方案…");
         try {
-            const accepted = await client.submit("plan", {projectId: project, runIds, brief, fps: Number(draft.fps)});
+            const accepted = await client.submit("plan", {projectId: project, runIds, brief, fps: Number(draft.fps), ...(eventIds ? {eventIds} : {})});
             const done = await follow(accepted.jobId, () => {});
             if (done?.status === "completed") { client.forgetIntent("plan"); showPlan(done); setMessage(""); onWorksChanged(); }
             else if (done) setMessage(`方案生成失败：${done.error?.message || done.status}`);
@@ -195,7 +200,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout}) {
         <aside class="panel" hidden=${!layout.bin} aria-label="需求与方案">
             <div class="panel-head">需求<span class="spacer"></span><span class="track-label">${saved}</span></div>
             <div class="panel-body">
-                <${Brief} runs=${runs} draft=${draft} update=${update} busy=${busy} onGenerate=${generate} />
+                <${Brief} runs=${runs} draft=${draft} update=${update} busy=${busy} onGenerate=${generate} basket=${basket} />
                 <div class="section-label">方案${planJob ? `（${planJob.plans.length}）` : ""}</div>
                 ${planJob ? planJob.plans.map((p) => html`<${PlanCard} plan=${p} fps=${fps} active=${p.id === planId} thumb=${thumb}
                     onPick=${() => { if (editing.dirty && !confirmLeave()) return; setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommandRows(null); }} />`)
@@ -276,11 +281,13 @@ function confirmLeave() {
     try { return window.confirm("当前方案有未保存的修改，切换会丢弃这些修改。继续吗？"); } catch { return false; }
 }
 
-function Brief({runs, draft, update, busy, onGenerate}) {
+function Brief({runs, draft, update, busy, onGenerate, basket}) {
     const usable = runs.filter((r) => r.completedEligible);
     const field = (name, label, props = {}) => html`<label class="form-row">${label}<input class="input" value=${draft[name]} onInput=${(e) => update({[name]: e.currentTarget.value})} ...${props} /></label>`;
     return html`<form class="brief" onSubmit=${(e) => { e.preventDefault(); void onGenerate(); }}>
-        <fieldset class="runs"><legend>录像</legend>
+        ${basket.items.length ? html`<label class="check basket-option"><input type="checkbox" checked=${!!draft.useBasket} onChange=${(e) => update({useBasket: e.currentTarget.checked})} />
+            <span>只用片段篮里的 ${basket.items.length} 段（共 ${(basket.totalUs / 1e6).toFixed(0)} 秒）${draft.useBasket && basket.totalUs / 1e6 < Number(draft.targetDuration) ? "：比目标秒数短，方案会偏短" : ""}</span></label>` : null}
+        <fieldset class="runs" disabled=${!!draft.useBasket && basket.items.length > 0}><legend>录像${draft.useBasket && basket.items.length ? "（按片段篮自动选择）" : ""}</legend>
             ${usable.map((run) => html`<label class="check"><input type="checkbox" checked=${draft.runIds.includes(run.id)}
                 onChange=${(e) => update({runIds: e.currentTarget.checked ? [...draft.runIds, run.id] : draft.runIds.filter((id) => id !== run.id)})} /><span>${run.sourceName}</span></label>`)}
             ${!usable.length && html`<p class="note">这个项目还没有分析完成的录像。</p>`}

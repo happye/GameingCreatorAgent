@@ -175,3 +175,21 @@ details.group[open] > summary::before { content: "▾ "; }
 .lane-empty { font-size: 10px; line-height: 16px; padding: 0 6px; color: var(--ink-3); }
 .insp-tabs { display: flex; gap: 2px; padding: 4px 8px 0; border-bottom: 1px solid var(--line, #2a2f3a); }
 .insp-tabs button { flex: 1; }
+
+/* Clip search and basket in the Assets bin. */
+.clip-search { margin-bottom: 8px; }
+.clip-search .hits { max-height: 40vh; overflow: auto; margin-top: 6px; }
+.hit { display: flex; align-items: center; gap: 4px; margin: 2px 0; }
+.hit-main { flex: 1; min-width: 0; display: flex; gap: 6px; align-items: center; border: 0; background: none; color: inherit; text-align: left; padding: 3px; border-radius: var(--r-1); cursor: pointer; }
+.hit-main:hover { background: var(--bg-2, rgba(255,255,255,.05)); }
+.hit-thumb { flex: none; width: 48px; height: 27px; border-radius: 3px; background: var(--bg-0) center / cover no-repeat; }
+.hit-text { min-width: 0; font-size: var(--t-sm); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.hit-text .meta { display: block; color: var(--ink-3); font-size: 11px; }
+.icon-btn[aria-pressed="true"] { color: var(--ok); }
+.track .clip.in-basket { box-shadow: inset 0 0 0 2px var(--ok); }
+.basket-option { margin-bottom: 6px; }
+
+/* Publish workspace. */
+.publish-pkg .track-area { padding: 8px 12px; overflow: auto; }
+.pkg-result { margin-top: 8px; }
+.panel-body img.cover { width: 100%; border-radius: var(--r-1); border: 1px solid var(--line); }
