@@ -23,6 +23,16 @@ _OPENINGS = {
 }
 _CLOSINGS = {"campaign": "快来一起参与活动", "commentary": "感谢收看", "ad": "现在就来体验"}
 _FRAME_MARKER = re.compile(r"f\d+(?:至f\d+)?(?:中|显示|切换为|延续|开始)?")
+# Camera-speak that reads badly aloud ("画面中央出现…" → "出现…"); the observation itself stays.
+_CAMERA_PREFIX = re.compile(
+    r"^(?:对应)?画面(?:中央|中部|中|上方|下方|左侧|右侧|偏左|偏右|内|里)?(?:偏左|偏右)?(?:仍|继续)?(?:显示|为)?"
+)
+# Descriptions of blur, loading or menus say nothing worth narrating.
+_UNSPOKEN = re.compile(
+    r"无清晰|不清晰|模糊|色块|黑屏|加载|读取中|菜单|设置界面|无游戏内容|无法辨认|失真|撕裂|花屏"
+)
+# Spoken order words for drafts that are not numbered guide steps.
+_FIRST, _MIDDLE, _LAST = "先看", ("接着", "随后"), "最后"
 
 
 def knowledge_query(brief: CreativeBrief) -> str:
@@ -51,14 +61,22 @@ def _sentence(description: object) -> str:
     """First observable clause of a saved description, without per-frame markers."""
     if not isinstance(description, str):
         return ""
+    if _UNSPOKEN.search(description):
+        return ""
     for clause in re.split(r"[；;。！？!?\n]", _FRAME_MARKER.sub("", description)):
         clause = clause.strip(" ，,、：:'\"“”")
+        stripped = _CAMERA_PREFIX.sub("", clause).lstrip(" ，,、：:")
+        clause = stripped if len(stripped) >= 4 else clause
         if clause:
             if len(clause) > MAX_CLIP_CHARS:
                 # Prefer a whole phrase; never invent words or ellipses.
                 cut = max(clause.rfind(mark, 0, MAX_CLIP_CHARS + 1) for mark in "，,、")
                 clause = clause[:cut] if cut >= 6 else clause[:MAX_CLIP_CHARS]
-            return clause.rstrip(" ，,、")
+            clause = clause.rstrip(" ，,、")
+            # A cut must not leave a quotation open ("英文“JUMP").
+            if clause.count("“") > clause.count("”"):
+                clause = clause[: clause.rfind("“")].rstrip(" ，,、：:包含")
+            return clause if len(clause) >= 4 else ""
     return ""
 
 
@@ -93,15 +111,22 @@ def build_narration_script(
             (clip, f"第{k}步，{text}" if steps else text) for k, (clip, text) in enumerate(trial, 1)
         ]
 
+    def said(index: int, count: int, text: str) -> str:
+        """What is read aloud: with two or more clips, order words carry the viewer along."""
+        if steps or count < 2:
+            return text
+        word = _FIRST if index == 0 else _LAST if index == count - 1 else _MIDDLE[index % 2]
+        return word + text
+
     # One narration spans the whole video, so sample clips evenly over output time.
     chosen: list[tuple[dict[str, Any], str]] = []
     for count in range(len(candidates), 0, -1):
         picks = sorted({round(i * (len(candidates) - 1) / max(1, count - 1)) for i in range(count)})
         trial = spoken([candidates[i] for i in picks])
-        if used + sum(len(sentence) + 1 for _, sentence in trial) <= budget:
+        if used + sum(len(said(i, len(trial), s)) + 1 for i, (_, s) in enumerate(trial)) <= budget:
             chosen = trial
             break
-    used += sum(len(sentence) + 1 for _, sentence in chosen)
+    used += sum(len(said(i, len(chosen), s)) + 1 for i, (_, s) in enumerate(chosen))
     # One matching knowledge sentence if it still fits; its source is shown, not spoken.
     citations: list[dict[str, str]] = []
     knowledge_sentence = ""
@@ -115,7 +140,7 @@ def build_narration_script(
             )
             break
     parts += (
-        [sentence for _, sentence in chosen]
+        [said(i, len(chosen), sentence) for i, (_, sentence) in enumerate(chosen)]
         + ([knowledge_sentence] if knowledge_sentence else [])
         + ([closing] if closing else [])
     )
@@ -127,7 +152,7 @@ def build_narration_script(
     text = "。".join(parts) + "。" if parts else ""
     return {
         "schemaVersion": "creation-narration-script-v1",
-        "generator": "offline-template-v1",
+        "generator": "offline-template-v2",
         "status": "template-draft-human-review-required",
         "text": text,
         "lines": lines,

@@ -66,10 +66,28 @@ def test_longer_output_includes_more_clips_in_order_and_guides_open_differently(
 
 def test_short_budget_samples_clips_across_the_whole_video():
     clips = [clip(i, f"场景{i}角色奔跑", i * 30) for i in range(10)]
-    # 12 seconds -> 37 characters: the opening plus three 7-character sentences.
-    result = build_narration_script(CreativeBrief.from_json(BRIEF), clips, 360, 30)
+    # 15 seconds -> 47 characters: the opening plus three 7-character sentences with
+    # their 2-character order words (先看/接着/最后).
+    result = build_narration_script(CreativeBrief.from_json(BRIEF), clips, 450, 30)
     assert [line["clipId"] for line in result["lines"]] == ["c0", "c4", "c9"]
     assert result["omittedClips"] == 7
+    assert "先看场景0角色奔跑。随后场景4角色奔跑。最后场景9角色奔跑。" in result["text"]
+
+
+def test_camera_speak_is_trimmed_and_unwatchable_clips_are_not_narrated():
+    clips = [
+        clip(0, "画面中央出现多个伤害数字，包括200", 0),
+        clip(1, "画面为模糊的灰色与蓝色色块，无清晰游戏内容", 30),
+        clip(2, "对应画面显示角色跳上高台", 60),
+        clip(3, "出现严重横向撕裂和色彩失真，无法辨认具体游戏内容", 90),
+    ]
+    result = build_narration_script(CreativeBrief.from_json(BRIEF), clips, 900, 30)
+    assert [line["text"] for line in result["lines"]] == [
+        "出现多个伤害数字，包括200",
+        "角色跳上高台",
+    ]
+    assert "模糊" not in result["text"] and "画面" not in result["text"]
+    assert result["generator"] == "offline-template-v2"
 
 
 def test_job_and_http_use_saved_revision_descriptions(revisions):
@@ -99,3 +117,10 @@ def test_job_and_http_use_saved_revision_descriptions(revisions):
         server.shutdown()
         server.server_close()
         thread.join()
+
+
+def test_a_cut_never_leaves_a_quotation_open():
+    clips = [clip(0, "画面显示游戏标志，包含中文“漫画群星”和英文“JUMP ASSEMBLE”字样", 0)]
+    result = build_narration_script(CreativeBrief.from_json(BRIEF), clips, 900, 30)
+    spoken = result["lines"][0]["text"]
+    assert spoken.count("“") == spoken.count("”")

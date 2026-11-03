@@ -253,7 +253,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                         <button class="btn ghost" disabled=${!editing.dirty || !!busy} onClick=${() => editing.ops.reset()}>撤销修改</button></div>`}</div>`}
                 <div hidden=${inspTab !== "shot"}>
                 ${selectedIndex >= 0 && !commandRows ? html`<${ClipInspector} editing=${editing} index=${selectedIndex} onSeek=${seekClip} basket=${basket} />`
-                    : plan ? html`<p class="hint">点时间轴上的一段，可以裁短、调速、换顺序。</p><${PlanInspector} plan=${plan} groups=${groups} totalUs=${player.totalUs} shot=${null} />` : html`<p class="note">选中方案后，这里显示它的时长、镜头和缺口。</p>`}
+                    : plan ? html`<p class="hint">点时间轴上的一个镜头，可以裁短、调速、换顺序或替换画面。</p><${PlanInspector} plan=${plan} groups=${groups} count=${items.length} totalUs=${player.totalUs} shot=${null} />` : html`<p class="note">选中方案后，这里显示它的时长、镜头和缺口。</p>`}
                 </div>
                 <div hidden=${inspTab !== "sound"}>
                 ${editable ? html`<${AudioPanel} editing=${editing} project=${project} fps=${fps} totalUs=${player.totalUs} music=${music} onBusy=${setAudioBusy} />`
@@ -312,7 +312,7 @@ function PlanCard({plan, fps, active, thumb, onPick}) {
     const total = items.length ? items.at(-1).outStartUs + items.at(-1).outDurUs : 0;
     return html`<button class="plan" aria-current=${active} disabled=${!plan.ready} onClick=${onPick} title=${plan.ready ? "选中后在预览窗播放" : "方案有缺口，不能选择"}>
         <span class="plan-title">${plan.mode ? html`<span class="badge rec">推荐</span>` : null}${plan.structure}</span>
-        <span class="plan-meta">${secondsText(total)} · ${groups.length} 个镜头 · 平均 ${(total / 1e6 / Math.max(1, groups.length)).toFixed(1)} 秒</span>
+        <span class="plan-meta">${secondsText(total)} · ${items.length} 个镜头 · 平均 ${(total / 1e6 / Math.max(1, items.length)).toFixed(1)} 秒</span>
         <span class="strip">${groups.slice(0, 8).map((g) => { const src = thumb(g.items[0]); return html`<span style=${{backgroundImage: src ? `url("${src}")` : "none"}}></span>`; })}</span>
         ${!plan.ready && html`<span class="plan-gap">缺口：${(plan.gaps || []).join("；")}</span>`}
     </button>`;
@@ -326,7 +326,7 @@ function ProgramTrack({items, totalUs, outUs, thumb, selectedId, changed, previe
         if (area.current) observer.observe(area.current); return () => observer.disconnect();
     }, []);
     const scale = totalUs ? width / totalUs : 0;
-    const hint = preview ? `一句话修改预览：高亮的是会变化的段（共 ${items.length} 段）` : `${items.length} 段 · 点选一段可以裁短、调速、换顺序；Delete 删除`;
+    const hint = preview ? `一句话修改预览：高亮的是会变化的镜头（共 ${items.length} 个）` : `${items.length} 个镜头 · 点选一个可以裁短、调速、换顺序；Delete 删除`;
     return html`<section class="timeline" aria-label="方案时间轴">
         <div class="panel-head">时间轴<span class="track-label">${items.length ? hint : ""}</span></div>
         <div class="track-area" ref=${area}>
@@ -335,11 +335,11 @@ function ProgramTrack({items, totalUs, outUs, thumb, selectedId, changed, previe
                     const src = thumb(item), speed = item.rate && item.rate !== 1 ? item.rate : null;
                     return html`<button class=${`clip${changed.has(item.clipId) ? " changed" : ""}`} aria-current=${!!item.clipId && item.clipId === selectedId}
                         style=${{left: `${item.outStartUs * scale}px`, width: `${Math.max(3, item.outDurUs * scale - 1)}px`, backgroundImage: src ? `url("${src}")` : "none"}}
-                        title=${`第 ${index + 1} 段 · ${timecode(item.outStartUs)} · ${(item.outDurUs / 1e6).toFixed(1)} 秒${speed ? ` · ${speed}×` : ""} · ${item.scriptDraft || ""}`} onClick=${() => onPick(item)}>
+                        title=${`第 ${index + 1} 个镜头 · ${timecode(item.outStartUs)} · ${(item.outDurUs / 1e6).toFixed(1)} 秒${speed ? ` · ${speed}×` : ""} · ${item.scriptDraft || ""}`} onClick=${() => onPick(item)}>
                         <span class="clip-no">${index + 1}</span>${speed ? html`<span class="clip-speed">${speed}×</span>` : null}</button>`;
                 })}
                 <div class="playhead" style=${{left: `${outUs * scale}px`}}></div>
-            </div>` : html`<p class="note">选中方案后，片段按成片顺序排在这里。</p>`}
+            </div>` : html`<p class="note">选中方案后，镜头按成片顺序排在这里。</p>`}
             ${items.length ? lanes.map((lane) => html`<button class=${`lane ${lane.kind}`} title=${`${lane.label} · 点击打开“声音”`} onClick=${onLane}>
                 ${lane.durUs ? html`<span class="bar" style=${{left: `${lane.startUs * scale}px`, width: `${Math.max(3, Math.min(lane.durUs, totalUs - lane.startUs) * scale)}px`}}>${lane.label}</span>`
                     : html`<span class="lane-empty">${lane.label}</span>`}</button>`) : null}
@@ -347,10 +347,10 @@ function ProgramTrack({items, totalUs, outUs, thumb, selectedId, changed, previe
     </section>`;
 }
 
-function PlanInspector({plan, groups, totalUs, shot}) {
+function PlanInspector({plan, groups, count, totalUs, shot}) {
     return html`
         <div class="field"><div class="k">方案</div><div class="v">${plan.structure}</div></div>
-        <div class="field"><div class="k">时长与镜头</div><div class="v num">${secondsText(totalUs)} · ${groups.length} 个镜头</div></div>
+        <div class="field"><div class="k">时长与镜头</div><div class="v num">${secondsText(totalUs)} · ${count ?? groups.length} 个镜头</div></div>
         ${(plan.advisories || []).length ? html`<div class="field"><div class="k">提醒</div><ul class="facts">${plan.advisories.map((a) => html`<li>${a}</li>`)}</ul></div>` : null}
         ${shot ? html`<div class="field"><div class="k">选中镜头 · 成片 ${timecode(shot.outStartUs)} 起 ${(shot.outDurUs / 1e6).toFixed(1)} 秒</div>
             <ul class="facts">${shot.items.map((i) => html`<li>${i.role ? `【${i.role}】` : ""}原片 ${(i.startUs / 1e6).toFixed(1)} 秒：${i.scriptDraft || "无描述"}</li>`)}</ul></div>`

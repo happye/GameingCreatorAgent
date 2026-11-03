@@ -19,8 +19,8 @@ function normalize(editor) {
 export function transitionProblem(clips, fps) {
     for (let i = 0; i < clips.length; i++) {
         const t = clips[i].transitionIn, next = clips[i + 1]?.transitionIn.frames || 0;
-        if (i === 0 && (t.type !== "cut" || t.frames !== 0)) return "第一段不能有入场转场";
-        if (t.frames + next >= clipFrames(clips[i], fps)) return `第 ${i + 1} 段太短，放不下两侧的转场`;
+        if (i === 0 && (t.type !== "cut" || t.frames !== 0)) return "第一个镜头不能有入场转场";
+        if (t.frames + next >= clipFrames(clips[i], fps)) return `第 ${i + 1} 个镜头太短，放不下两侧的转场`;
     }
     return "";
 }
@@ -133,7 +133,7 @@ export function ClipInspector({editing, index, onSeek, basket}) {
     const fps = editing.editor.fps, bound = editing.bounds[clip.clipId];
     const frames = clipFrames(clip, fps), seconds = (us) => (us / 1e6).toFixed(2);
     const fade = (s) => Math.round(s * fps);
-    return html`<div class="field"><div class="k">第 ${index + 1} 段 · 成片 ${(frames / fps).toFixed(2)} 秒</div>
+    return html`<div class="field"><div class="k">第 ${index + 1} 个镜头 · 成片 ${(frames / fps).toFixed(2)} 秒</div>
             <div class="v">${clip.role ? `【${clip.role}】` : ""}${clip.scriptDraft || "无描述"}</div></div>
         <div class="field"><div class="k">取材范围（原片秒，可在 ${seconds(bound.startUs)}–${seconds(bound.endUs)} 内裁短）</div>
             <div class="pair even">

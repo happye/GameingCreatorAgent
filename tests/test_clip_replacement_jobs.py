@@ -198,3 +198,15 @@ def test_saved_revision_tamper_rejected(replacements, name):
     with pytest.raises(ValueError):
         CreationJobs(jobs.repository).edit(revision, "hook-first")
     assert jobs.edit(root, "hook-first")["parentJobId"] == root
+
+
+def test_narration_draft_and_timeline_export_work_on_a_replaced_version(replacements):
+    """A version with replaced footage (v4) still drafts narration and exports a timeline."""
+    jobs, root, _ = replacements
+    revision = jobs.submit("revision", replacement_request(jobs, root))["jobId"]
+    assert finish(jobs, revision)["status"] == "completed"
+    draft = jobs.narration_script(revision, "hook-first")
+    # The fixture output is a few seconds, so only the opening fits the speaking budget.
+    assert draft["text"] and draft["generator"] == "offline-template-v2"
+    body, _, _ = jobs.timeline_export(revision, "hook-first", "fcpxml")
+    assert body

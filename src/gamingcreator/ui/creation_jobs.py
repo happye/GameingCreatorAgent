@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from gamingcreator.application.creation_editing import editable_clips
 from gamingcreator.application.creation_feedback import (
     normalize_edit_kinds,
     plan_preferences,
@@ -38,6 +37,9 @@ from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
 from gamingcreator.ui import narration_jobs, package_jobs, publication_jobs
 from gamingcreator.ui.media import MediaResource, VerifiedMediaCache
+from gamingcreator.ui.revision_jobs import (
+    editable_clips as version_clips,
+)
 from gamingcreator.ui.revision_jobs import (
     editor,
     load_chain,
@@ -1182,7 +1184,6 @@ class CreationJobs:
     def timeline_export(
         self, job_id: str, plan_id: str, fmt: str, size: str = "1920x1080"
     ) -> tuple[bytes, str, str]:
-        from gamingcreator.application.creation_editing import editable_clips
         from gamingcreator.application.creation_subtitles import build_subtitles
         from gamingcreator.application.timeline_export import (
             ExportCaption,
@@ -1209,8 +1210,7 @@ class CreationJobs:
                 (),
                 per_clip=(runs[row["runId"]].transcripts for row in chain.edl["segments"]),
                 overrides=(
-                    overrides.get(row["clipId"])
-                    for row in editable_clips(chain.edl, chain.root_sha)
+                    overrides.get(row["clipId"]) for row in version_clips(chain.edl, chain.root_sha)
                 ),
             )
             captions = captions_from_cues(cues, int(chain.edl["fpsNumerator"]))
@@ -1256,7 +1256,7 @@ class CreationJobs:
         )[:3]
         return build_narration_script(
             brief,
-            editable_clips(chain.edl, chain.root_sha),
+            version_clips(chain.edl, chain.root_sha),
             chain.plan.frames,
             chain.plan.fps,
             knowledge,

@@ -156,7 +156,7 @@ function App() {
             : workspace === "edit"
                 ? html`<${EditWorkspace} project=${project} runs=${runs} open=${open} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} />`
                 : html`<${PublishWorkspace} project=${project} works=${works} open=${open} onWorksChanged=${reloadWorks} layout=${layout} />`}
-        ${workspace === "assets" && html`<div class="dock"><strong>创作助手</strong><span>即将接入：用一句话描述想要的视频或修改，结果直接出现在剪辑区的方案和时间轴上。</span></div>`}
+        ${workspace === "assets" && html`<div class="dock"><strong>提示</strong><span>左上角“搜索片段”按描述找画面，“+”或 B 键加入片段篮，再点“用片段篮生成方案”。一句话修改镜头在剪辑区底部。</span></div>`}
     </div>`;
 }
 
