@@ -25,3 +25,5 @@ Rules for this file:
 11. When real-footage retrieval misses, check what the database actually contains before tuning ranking.
 12. Strict rejection of identical start/end clocks is correct. Do not relax the parser or pay again for the same frozen prompt.
 13. The long Zhongkui run is finished (269 succeeded, 3 rejected). Do not rerun its launchers.
+
+14. **角色重复先核客户端导入记录。** 2026-11-04确认gc-*来自Codex external_agent_config_imports的Claude SUBAGENTS迁移，不凭文件出现就归因模型/提示词；不转换角色，gitignore不能阻止再次导入。

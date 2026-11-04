@@ -12,11 +12,11 @@
         "evidence": "commit a164740 (P043-P045)；feature_list.json P043 implementation_evidence：demo-phase0 方案→MP4→封面→B站包"
       },
       "human_check": {
-        "date": "2026-11-03",
-        "verdict": "usable_draft",
-        "minutes": 3,
-        "interventions": 0,
-        "evidence": "第三次试看（新工作台 /studio 剪辑区）：用户原话“现在生成的视频作为一个初版还是过得去的”“这4个方案跟他的描述确实对得上”；用时两三分钟，未做修改。导出按钮因位于检查器底部而没找到，已移到预览窗下方常驻（2026-11-03）。前两次：11-02 不能用；第二次只有意见、没有评分。"
+        "date": "2026-11-04",
+        "verdict": "not_usable",
+        "minutes": null,
+        "interventions": null,
+        "evidence": "第四次试用（新工作台全流程）用户提交七组反馈：跨游戏短事件混搜、素材来源不明、模板方案与规则助手能力不足、切镜卡顿/BGM重复、保存灰、平台包下载true.txt。本轮全流程未通过；不是重新否定第三次初稿观感。代码及运行数据核查见 docs/exec-plans/j1-fourth-trial-audit.md；当前Chromium复用既有包下载成功，未复现用户下载故障。用时及干预次数未提供。此前第三次（2026-11-03）两三分钟、未修改，用户评价“初版过得去”；原反馈仍保留在STATUS/HANDOFF和本报告。"
       },
       "unlocks": "冻结项 P038、P046–P051（2026-11-03 已由用户确认解冻）"
     },

@@ -1,46 +1,30 @@
 # HANDOFF（覆盖快照）
 
-当前状态只看 `STATUS.md`；本页是接手提示。每次会话结束时整页覆盖，不要追加。
+## 最近一次会话（2026-11-04，Codex）
 
-## 最近一次会话（2026-11-04，Claude Code）
+先读 STATUS.md，再读 [J1 第四次试用核查](docs/exec-plans/j1-fourth-trial-audit.md)。本轮仅诊断和状态更新，未修产品代码，未运行全量测试，未新分析/合成/转码/付费，未删除旧页面。
 
-11-04：Codex 只保留 task_*／harness_* 一套角色（AGENTS.md 已写明，gc-* 已加入 gitignore）；`status.py --check` 新增交接新鲜度检查：HANDOFF 的会话日期早于 STATUS 中最新的日期就失败；J1 的 8 步试用说明在 `docs/exec-plans/human-inputs.md` 顶部。以下是 11-03 的工作：
+用户已做新工作台 J1，报告七组问题，全流程未通过；journeys.json 已按本次反馈更新。第三次“初版过得去”只评价初稿，不覆盖新增编辑/声音/发布验收。用时与干预次数未知，不代填。human-inputs 已改为等开发修复，不重复要求用户立即测试。
 
-在新工作台 `/studio` 上做完了 sprint 第 3–6 步，逐步结果见 `docs/exec-plans/sprint-studio-workbench.md`：
+## 核实结果
 
-- **剪辑**：镜头裁剪、速度、转场、排序、删除；保存版本；一句话修改先预览后应用；替换镜头（片段篮优先）。
-- **声音**：
-  - 旁白可用本机 Windows 语音，或云端 CosyVoice（默认 龙安洋）。
-  - 云端每次合成都要用户在界面上确认费用；月上限 ¥5；同样的文字和音色不重复付费。
-  - 账单记录：`artifacts/billing/narration-tts.jsonl`。
-  - 配乐支持上传和音量调节。
-- **素材**：片段搜索和片段篮；方案可以只用篮里的片段（方案请求的 `eventIds`）。
-- **发布**：标题、简介、标签，封面帧，平台包 zip 下载。不会自动发布。
-- **技术债**：TD024 已处理（修了 attack 标签被语义闸门挡掉的问题，另外两条测试按 TD004 的精度设计改写）；TD023 已处理（窗口缓存改由端口注入，架构测试的放行名单已清空）。全量 verify：4678 通过；两条失败已查明，一条是本地数据测试选错记录（已修），一条是 Windows 文件锁导致的偶发失败。
+- 当前最新任务来自 artifacts/demo-phase0。素材箱六条是分析运行，实际三个源文件（漫画群星 PV、Atom PV、Atom 实机），有重复分析及失败记录；搜索只取四条 completedEligible 运行，跨游戏本地文字包含匹配，没有游戏过滤。漫画群星111事件中37零时长、71一秒、2两秒、1四秒；篮子直接累加事件时长。未取得用户当时十个篮项，不宣称逐项复算八秒。
+- 最新漫画群星源 SHA 与 GameVideos 下 TapTap PV 一致，没有找到本工具成片回灌证据。原片本来是剪辑好的宣传片。
+- 点素材片段只 seek 起点，没有区间终点暂停。四个方案是固定结构模板，随输入换镜头；eventIds 传递及过滤真实存在。开放式 AI 策划未实现。
+- 创作助手是 timeline_commands.py 的本地正则白名单，不调用云模型；支持删除第三个等句式，不理解 logo/剪辑意图。即时预览的转场仍是直接切换。
+- BGM 偏差>0.3秒回拨，视频缓冲时会造成音乐重复；单video逐段seek，未预加载。
+- 保存按钮无dirty或忙/校验错误/助手待应用/音频忙时禁用；用户“始终灰”未复现，需补状态解释及真实路径覆盖。
+- 既有平台包 d09f1173645a49768594fed4d57ed559，27,821,175字节，GET和真实Playwright点击均正常：package.zip，failure=None。DOM download="true" 是裸属性的结果，不能据此把用户true.txt故障判定已解决。报告内有直接下载链接。
+- 云端语音 cosyvoice-v3-flash / longanyang，需北京地域 Key + 同地域空间；只在启动服务进程里设 DASHSCOPE_API_KEY / DASHSCOPE_WORKSPACE_ID。旧服务必须先关闭再从配置终端启动。配置步骤和官方链接在报告第五节，未付费验证。
 
-## 下一位接手先做什么
+## Codex 角色重复的直接原因
 
-1. 读 `STATUS.md` 的“下一步”，再看 sprint 文档末尾的待办。主指标是 `docs/exec-plans/journeys.json` 里的端到端流程，不是功能数。
-2. 等用户在新工作台走完一次 J1（剪辑 → 声音 → 导出 → 发布区打包），把结果记进 journeys.json，再按 sprint 第 6 步删除旧页面（`/`、`/creation`）和它们的模拟测试。没有用户确认之前，不要删。
-3. 剩下的开放技术债（TD002–TD009）都需要用户人评或真实素材，不要在没有人评的情况下调阈值或继续加别名闸门。
+已只读核实本机 state_5.sqlite.external_agent_config_imports：11-02 18:21:56、11-04 18:37:58，provider=claude-code，successes有本仓库九个SUBAGENTS；归档角色时间吻合。重复来自客户端导入机制，不是证明模型收到转换提示词。global-state保存导入同步类别选择，但不证明自动同步开关当前启用。不要再泛称“某个工具重新生成”或承认未证实的模型手写行为。
 
-## 工作方式（这次会话吃过的亏）
+不转换Claude角色，不改用户全局设置；Codex只用现有task_* / harness_*。.gitignore不阻止客户端再次写入，后续导入/同步应排除SUBAGENTS。原角色归档保留仓库外。
 
-- **界面功能**：汇报前，用浏览器在 `http://127.0.0.1:8765/studio` 按用户的点法走一遍（例如先选中镜头，再去找功能）。重启工作台后，已打开的页面要刷新。
-  - 2026-11-03 声音面板只在没选镜头时显示，用户找不到，被认为是瞎编汇报。
-- **测试**：迭代时跑 `./scripts/test-affected.ps1 -Browser`（改了界面就带 `-Browser`）。跑测试期间不要改文件，否则会出现假失败。
-- **在 bash heredoc 里用 Python 改文件时**，`\\x00` 一类的转义会变成真 NUL 字节。改动较大时，把脚本写到 `.cache/scratch/*.py` 里再运行。
-- **重启 8765**：先结束占用端口的进程，再在终端运行 `scripts/start-workspace.ps1 -NoBrowser`。从 agent 的后台 shell 启动的进程会随 shell 退出。
-- **云端语音**：只有在启动工作台的那个进程环境里有 `DASHSCOPE_API_KEY` 时才可用。Key 由用户自己设置，任何文件里都不要写。
+## 下一步
 
-## Codex 接手
+按核查报告末尾顺序修复后验证，再邀请J1复测；不要继续加同义词假装实现通用创作助手。开发迭代test-affected -Browser；里程碑verify；分发前-Release。界面汇报前真实浏览器走用户路径。
 
-- 只用 `.codex/agents/` 里那一套 9 个角色（`task_*`、`harness_*`）。之前由 Claude 角色转出来、未提交的 `gc-*.toml` 是重复的一套，已移到仓库外 `GameingCreatorAgent-archive/`；2026-11-04 又被某个工具重新生成过一次，已再次移出并加入 `.gitignore`。不要再生成或提交这套文件（用户已确认只保留 task_*／harness_*）。
-- 分工表：`docs/references/codex-agent-routing-guide.md`（精简版；10 月的记录已移到 `docs/archive/references/`）。
-
-## 不要做
-
-- 不要重跑长钟馗 launcher；已有标注和付费尝试保留，不重做。
-- 不要为了“补文档”单独提交；STATUS 只在里程碑或会话结束时更新一次。
-- 已删除分支的备份在仓库外：`G:\Tools\ChatGPTRepo\GameingCreatorAgent-archive\2026-11-01-branch-backup\`，不要删。
-- 推送走 Clash 代理 `127.0.0.1:7890`，不要 force。
+用户已有四个未跟踪的设计文档，未改动或暂存。保留费用门、不可变证据/账本；不要重跑长钟馗，不重付重标。P038/P046–P051解冻不撤回，真实发布/支付/付费仍需各自授权。推送代理127.0.0.1:7890，不force。
