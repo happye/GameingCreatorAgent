@@ -3,7 +3,8 @@
 Primary metric: end-to-end journeys (docs/exec-plans/journeys.json).
 Secondary counts: feature_list.json, tech-debt.md status column, human-inputs.md pending table.
 `--check` also fails when progress-board.md's hand-written headline drifts from these
-counts or when STATUS.md / AGENTS.md / HANDOFF.md exceed their size budgets (used by CI).
+counts, when STATUS.md / AGENTS.md / HANDOFF.md exceed their size budgets, or when HANDOFF.md
+is older than STATUS.md (used by CI).
 """
 
 from __future__ import annotations
@@ -122,6 +123,24 @@ def control_char_problems() -> list[str]:
     return out
 
 
+DATE = re.compile(r"20\d\d-\d\d-\d\d")
+
+
+def handoff_problems(status: str, handoff: str) -> list[str]:
+    """HANDOFF.md must be overwritten when the state moves on: its session date may not be
+    older than the newest date STATUS.md mentions (content only, so it also works in CI)."""
+    session = re.search(r"最近一次会话[^\n]*?(20\d\d-\d\d-\d\d)", handoff)
+    if session is None:
+        return ["HANDOFF.md has no '最近一次会话（YYYY-MM-DD…' line"]
+    newest = max(DATE.findall(status), default="")
+    if newest > session.group(1):
+        return [
+            f"HANDOFF.md is stale (session {session.group(1)}, STATUS.md mentions {newest});"
+            " overwrite it at session end"
+        ]
+    return []
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true", help="exit 1 on drift or size budget")
@@ -164,7 +183,12 @@ def main(argv: list[str] | None = None) -> int:
     if f["frozen"]:
         print(f"  冻结中: {', '.join(f['frozen'])}（解冻条件见 STATUS.md）")
 
-    problems = board_drift(f) + size_problems() + control_char_problems()
+    problems = (
+        board_drift(f)
+        + size_problems()
+        + control_char_problems()
+        + handoff_problems(_read(ROOT / "STATUS.md"), _read(ROOT / "HANDOFF.md"))
+    )
     for problem in problems:
         print(f"WARN {problem}")
     return 1 if args.check and problems else 0

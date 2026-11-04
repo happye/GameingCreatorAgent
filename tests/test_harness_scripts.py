@@ -72,3 +72,15 @@ def test_status_counts_match_sources():
 def test_reclaim_allow_list(tmp_path, relative, allowed):
     cache = tmp_path / ".cache"
     assert harness_conftest._reclaimable_basetemp(cache / relative, cache) is allowed
+
+
+def test_status_check_flags_a_handoff_older_than_status():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("status_script", ROOT / "scripts/status.py")
+    status = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(status)
+    fresh = "## 最近一次会话（2026-11-04，Codex）"
+    assert status.handoff_problems("完成（2026-11-03）", fresh) == []
+    assert status.handoff_problems("完成（2026-11-05）", fresh)
+    assert status.handoff_problems("完成（2026-11-03）", "# HANDOFF")

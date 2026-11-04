@@ -2,7 +2,9 @@
 
 当前状态只看 `STATUS.md`；本页是接手提示。每次会话结束时整页覆盖，不要追加。
 
-## 最近一次会话（2026-11-03，Claude Code）
+## 最近一次会话（2026-11-04，Claude Code）
+
+11-04：Codex 只保留 task_*／harness_* 一套角色（AGENTS.md 已写明，gc-* 已加入 gitignore）；`status.py --check` 新增交接新鲜度检查：HANDOFF 的会话日期早于 STATUS 中最新的日期就失败；J1 的 8 步试用说明在 `docs/exec-plans/human-inputs.md` 顶部。以下是 11-03 的工作：
 
 在新工作台 `/studio` 上做完了 sprint 第 3–6 步，逐步结果见 `docs/exec-plans/sprint-studio-workbench.md`：
 
