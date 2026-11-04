@@ -53,3 +53,8 @@ dist/
 .claude/worktrees/
 .claude/launch.json
 desktop/bin/
+
+# Codex uses task_*/harness_* roles only; copies converted from .claude/agents stay out.
+.codex/agents/gc-*.toml
+.codex/agents/code-quality-guard.toml
+.codex/agents/task-progress-monitor.toml

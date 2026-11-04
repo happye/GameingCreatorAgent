@@ -10,7 +10,8 @@ Read root `STATUS.md`, then `HANDOFF.md` (≤5KB overwrite snapshot). Update STA
 
 - `src/gamingcreator/{cli,application,domain,infrastructure,ui}/`, `tests/test_*.py`
 - `docs/design-docs/`, `docs/product-specs/`, `docs/exec-plans/` (live plans), `docs/references/` (guides), `docs/archive/` (history)
-- Tool adapters `CLAUDE.md`, `CODEX.md`, `.grok/rules/project.md` hold only tool-specific notes; roles in `.claude/agents/`, `.codex/agents/`.
+- Tool adapters `CLAUDE.md`, `CODEX.md`, `.grok/rules/project.md` hold only tool-specific notes.
+- Roles: one set per tool — `.claude/agents/*.md` (Claude), `.codex/agents/task_*.toml` + `harness_*.toml` (Codex). Never generate one tool's roles from another's; project rules live here, not copied into role files.
 
 ## Environment
 

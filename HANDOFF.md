@@ -33,7 +33,7 @@
 
 ## Codex 接手
 
-- 只用 `.codex/agents/` 里那一套 9 个角色（`task_*`、`harness_*`）。之前由 Claude 角色转出来、未提交的 `gc-*.toml` 是重复的一套，已移到仓库外 `GameingCreatorAgent-archive/2026-11-03-codex-gc-roles/`，不要再加回来。
+- 只用 `.codex/agents/` 里那一套 9 个角色（`task_*`、`harness_*`）。之前由 Claude 角色转出来、未提交的 `gc-*.toml` 是重复的一套，已移到仓库外 `GameingCreatorAgent-archive/`；2026-11-04 又被某个工具重新生成过一次，已再次移出并加入 `.gitignore`。不要再生成或提交这套文件（用户已确认只保留 task_*／harness_*）。
 - 分工表：`docs/references/codex-agent-routing-guide.md`（精简版；10 月的记录已移到 `docs/archive/references/`）。
 
 ## 不要做
