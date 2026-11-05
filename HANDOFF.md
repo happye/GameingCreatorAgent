@@ -1,6 +1,6 @@
 # HANDOFF（覆盖快照）
 
-## 暂停状态（2026-11-05，用户要求）
+## 最近一次会话（2026-11-05，用户要求暂停）
 
 goal paused：用户额度不足5%，要求暂时停止并收尾。不要自行继续开发；用户恢复后从本快照接续。先读STATUS和docs/exec-plans/sprint-j1-feedback-iteration.md。
 
