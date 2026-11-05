@@ -1,30 +1,31 @@
 # HANDOFF（覆盖快照）
 
-## 当前目标（2026-11-05，Codex）
+## 暂停状态（2026-11-05，用户要求）
 
-goal active：按计划持续开发；语音暂用免费本机。不要因一次里程碑结束而标整个goal完成。先读STATUS，再读docs/exec-plans/sprint-j1-feedback-iteration.md。J1第四次人评仍not_usable，没有新真实AI/付费调用。
+goal paused：用户额度不足5%，要求暂时停止并收尾。不要自行继续开发；用户恢复后从本快照接续。先读STATUS和docs/exec-plans/sprint-j1-feedback-iteration.md。
 
-## 已集成
+## main：已交付工程检查点
 
-第一轮J1：原文件SHA归组/分析版本、当前录像默认搜索、独立clipRanges取景与原观察证据分离、3秒建议上下文、片段终点暂停/重播、缓冲时暂停音轨、保存禁用原因、明确下载文件名、本机免费声音默认。原true.txt故障未复现，不能冒称已确证根因。
+R3界面74a9a72已推送。默认免费本地规则，可显式切AI，准备展示可信已保存EDL文字/报价，逐次确认才发送；提案先预览再后端核父身份应用，用户保存。模式/项目/版本/dirty/text变化作废旧UI，已发送请求可恢复结果，不重新调用。核心a604d09保单次发送、OS锁、不可覆盖attempt、未知费用占用和v4兼容。
 
-R3核心a604d09：可信EDL快照、文本提案/澄清、应用前父身份核对、v4链兼容、准备报价/单次明确确认、OS锁和不可覆盖attempt；失败/未知/中断不重发，未知费用保留占用。真实load_chain在async中使用to_thread。
+完整verify 4813 passed/7 skipped，1237.56秒，格式/lint/mypy198源文件与CLI通过；.cache/reasoning-ui-verify.log。7浏览器+8HTTP+22service+3shell定向40项过。全为fake transport，没有真实AI质量验收或付费调用；J1第四次人评仍not_usable，不能上调passes/交付质量。
 
-本轮R3界面：server/HTTP端点、Studio默认local可切AI，准备展示实际文字与费用上限；确认后才发送，预览再后端校验应用，用户保存。请求身份随项目/父版本/dirty/行/text变更作废，防ABA。localStorage存最小恢复身份，切模式/刷新可读结果，不再调用；恢复另一条失败时清旧预览。刷新记住具体planId。
+第一轮素材SHA归组/分析版本、当前录像搜索、clipRanges独立取景与原观察保护、短事件建议上下文、片段终点暂停/重播、音轨缓冲、保存原因、下载名及免费本机默认都在main。原true.txt根因未复现，不冒称已确证。
 
-全量verify成功：4813 passed、7 skipped，1237.56秒，格式/lint/mypy198源文件、CLI通过；.cache/reasoning-ui-verify.log。7浏览器+8HTTP+22service+3shell定向40项也过。全部fake transport；截图.cache/scratch/reasoning-ui-quote.png、reasoning-ui-proposal.png。未跑Release，不把测试当真人质量验收。
+## 后续工作完整保存，尚未合并
 
-## 正在独立树继续
+远端分支codex/paused-j1-dynamic-preview-20261105，8650a23（WIP），含20个源码/测试文件；main已切回稳定版本。恢复可在该分支继续，合并前先同步本轮收尾文档，不能直接当已验收成果合main。
 
-1. .worktrees/j1-preview-corrections，task_developer preview_dual_player已停止，未集成。修改preview/audio/edit.js、ui/service.py与播放/inspection测试。预加载cuts的fake4项过，真实生成媒体跨源槽位重用后currentTime=2写入却从0播放/output卡2s；复现-k real -q -x -s。preview_parity_design（Astra/low）正在一次升级只读定位。转场仍未实现，树内页面明确需导出观看，TD025未完成。此树含主树R3未提交基线，集成时只取预览增量，不回退R3。
-2. .worktrees/creation-reasoning-core，dynamic_plan_core（Sol/medium）已完成新application/plan_proposals.py、tests/test_plan_proposals.py，creative_planner仅提取共用资格函数。快照绑定brief/源/候选/范围，封闭1–3案+澄清，编译真实渲染兼容方案与准确帧差。94相关项、14核心项通过（fake模型）。dynamic_plan_guard（Sol/high）正只读审查身份/重复源段风险，尚未集成，未接provider/service/UI。下一步复用既有单次确认服务，不能复制费用账本或用edit快照冒充新策划。
+1. 双槽cuts预加载来自.worktrees/j1-preview-corrections：真实206视频0.5/1/2速正确交接、结束；目标seekable等待+实际时间验证+8秒可取消超时。先前跨源从0播失败已修。Sol/high闭环旧slot暂停恢复永久缓冲、seek旧帧覆盖和resultVideo重复增益；13播放通过、helper修正后9确定性过、独立3回归过。证据子树.cache/preview-slot-regressions.xml、preview-slot-deterministic.xml。即时dissolve/双路三角混音未实现；转场禁即时播放但保真实总时长，TD025仍partial。API给run/media派生sourceClock，不改冻结身份。
+2. 动态策划来自.worktrees/creation-reasoning-core：PlanSnapshot绑定完整原始brief+候选/来源/范围，1–3案或澄清，后端编译合法区间及准确帧差。独立prompt/schema，复用原有prepare/execute/锁/账本，prepare_plan(jobId)从已完成普通plan读取原始request，adopt_plan(preparedHash)幂等生成普通plan job；采用不再发模型。公开result.planPreview无路径，正式plans receipt留实际provider/prompt provenance。77后端+82旧流程通过，最后13规划再过；核心重复源区间P2已修/独立2回归过，阶段二独立静态审查无可复现新增风险。
+3. 父控新planning.js+edit接入+CSS也在WIP分支：按已保存需求准备/确认/预览/采用，最小恢复身份存localStorage。**尚无动态策划Studio浏览器测试/视觉QA；组合后尚未跑受影响/全量。** 集成中格式/lint/mypy201通过发生在最后UI接入口改动之前，不替代这些待办。下一步先写新UI真实HTTP+fake模型纵切片（确认、恢复、dirty、ABA、采用幂等），再定向/整仓，必要修复再合并。
 
-共享.venv指向主树editable：每次env后显式设PYTHONPATH=本树src；test-affected也会重设，所以按相同清单直接pytest并说明。两树.venv/.tools junction已恢复，.cache独立。第三j1-selected-ranges保留，最多三树；退休先核对成果和junction。
+## 运行与保护
 
-## 保护与运行
+8767当前main R3后端，http://127.0.0.1:8767/studio，PID10892（用前核健康/身份）。8766旧后端，8765更旧；此前自动审批拒绝停8765，未绕过。不重试用其他方式杀旧进程。
 
-用户4个未跟踪设计文档不改不暂存。Codex只用task_*/harness_*，不转换Claude角色；重复gc-*证据为客户端external_agent_config_imports，不能断言谁触发。旧稿/账本/证据不删、不重付重标，不重跑钟馗。
+用户4个未跟踪设计文档未动未暂存。三个旧worktree均保留，.venv/.tools为junction，不盲删。共享venv的editable指主树，树内测试须env后显式设PYTHONPATH=本树src；test-affected会重设，按同一清单直接pytest并记录差异。
 
-8766是旧后端（R3路由未加载），8765更旧。此前自动审批拒绝停止8765（blocked by policy），没绕过；需要新版服务用安全空闲新端口，不借其他方式重试终止。
+Codex只用task_*/harness_*，不复制Claude角色；重复gc-*证据来自客户端external_agent_config_imports，不能推断谁触发。证据/账本/原视频不改不删、不重付重标，不重跑钟馗。
 
-所有真实文本AI仍需独立确认，旧¥50分析授权不覆盖。主指标只由python -B scripts/status.py计算。推送用127.0.0.1:7890代理，不force；只暂存自有文件。保持goal active继续动态策划与真实预览。
+语音免费本机；文本AI仍须每次单独确认，旧¥50分析许可不覆盖。无真实云调用、无Release。推送127.0.0.1:7890代理，不force。指标由python -B scripts/status.py计算，主指标未变化。

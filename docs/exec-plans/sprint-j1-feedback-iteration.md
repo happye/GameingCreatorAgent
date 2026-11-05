@@ -51,4 +51,12 @@ HTTP与Studio已接入：默认免费本地规则，显式切换AI后准备可�
 
 完整 `scripts/verify.ps1`：4813 passed、7 skipped，1237.56秒；格式/lint/mypy198源文件和CLI烟测通过，日志 `.cache/reasoning-ui-verify.log`。没有真实模型或付费语音调用，未运行Release，J1人评仍未通过。
 
-后续并行核心：`.worktrees/j1-preview-corrections`预加载在真实媒体槽位跨源复用失败，尚不可集成，TD025未完成；架构角色一次升级定位。`.worktrees/creation-reasoning-core`动态方案协议/本地编译已定向验证，等待独立身份审查，尚未接provider/service/UI。动态策划与剪辑提案分别绑定各自输入，不用旧EDL冒充新候选篮子。
+## 暂停检查点（2026-11-05，用户要求收尾）
+
+后续工作已保存在并推送 `codex/paused-j1-dynamic-preview-20261105`（8650a23），未合入main；main保持已全量验证的R3版本。目标为paused，不自行恢复开发。
+
+- 双槽cuts预加载：真实206媒体在0.5/1/2速均正确交接；寻址前等待seekable、寻址后核实际时间，不可达明确停播。Sol/high复现并闭环暂停恢复旧slot、seek旧画面覆盖及成片重复音量衰减；子树全部播放13通过，helper修正后9确定性通过，独立3回归通过。先前跨源失败已修。即时dissolve及双路三角混音仍未实现，转场明确禁播但保真实总时长，TD025仍partial。
+- 动态策划：可信新候选快照、1–3动态方案/澄清、本地编译、独立prompt及同一单次确认/账本服务、普通plan采用已实现。prepare零发送、确认一次、采用不再发送；子树77后端+82旧流程回归，最后13规划任务再过。核心重复编译区间P2已修且独立两回归过；阶段二静态独立审查未发现可复现新风险。模型均fake，未作真实质量验收。
+- 主树组合期间格式/lint与mypy201源通过；其后补了planning.js、edit.js接入口及CSS，**还没写动态策划Studio浏览器回归/视觉QA，没跑组合后受影响或全量**。不能借此前4813通过宣称本检查点通过。恢复先完成新界面prepare/confirm/preview/adopt/recovery/dirty/ABA回归，再跑受影响及完整verify。
+- 新增API、架构、使用边界已同步文档；用户四个未跟踪设计文档保持原样。无真实paid调用、无Release、无验收状态上调。
+
