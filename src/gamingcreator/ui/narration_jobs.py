@@ -31,6 +31,10 @@ def voices(repository: Path) -> dict[str, Any]:
         for v in asyncio.run(list_local_voices())
     ]
     configured = bool(os.environ.get("DASHSCOPE_API_KEY", "").strip())
+    preferred = next(
+        (v for v in local if v["language"] in ("804", "zh-CN") or "中文" in str(v["description"])),
+        local[0] if local else None,
+    )
     cloud = [
         {
             "voiceId": CLOUD + name,
@@ -44,7 +48,7 @@ def voices(repository: Path) -> dict[str, Any]:
     ]
     return {
         "voices": local + cloud,
-        "defaultVoiceId": DEFAULT_CLOUD_VOICE if configured else None,
+        "defaultVoiceId": preferred["voiceId"] if preferred else None,
         "monthlyCapYuan": MONTHLY_CAP_YUAN,
         "spentThisMonthYuan": round(_spent(_rows(repository)), 4),
         "licenseStatus": "unknown",

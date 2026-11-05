@@ -19,6 +19,7 @@ from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.creation import CreativeBrief
 from gamingcreator.domain.media import MediaAsset
 from gamingcreator.domain.models import SemanticEvent
+from gamingcreator.domain.time import SourceRange
 
 # Generic structures keep shots at two seconds or longer instead of slicing every event.
 GENERIC_SHOT_SECONDS = 2
@@ -28,10 +29,15 @@ GENERIC_SHOT_SECONDS = 2
 class CreationClip:
     asset: MediaAsset
     event: SemanticEvent
+    source_range: SourceRange | None = None
+
+    @property
+    def framing(self) -> SourceRange:
+        return self.source_range or self.event.source_range
 
 
 def candidates(
-    timelines: tuple[StoredTimeline, ...], event_ids: tuple[str, ...]
+    timelines: tuple[StoredTimeline, ...], event_ids: tuple[str, ...], clip_ranges: object = None
 ) -> tuple[CreationClip, ...]:
     if len(event_ids) != len(set(event_ids)):
         raise ValueError("Duplicate selected events.")
@@ -53,7 +59,80 @@ def candidates(
             found[event.event_id] = CreationClip(asset, event)
     if set(event_ids) - found.keys():
         raise ValueError("Unknown selected event.")
-    return tuple(clip for key, clip in found.items() if not event_ids or key in event_ids)
+    ranges = validate_clip_ranges(clip_ranges, event_ids)
+    result = []
+    for key, clip in found.items():
+        if event_ids and key not in event_ids:
+            continue
+        if key in ranges:
+            row = ranges[key]
+            if row["runId"] != clip.event.run_id:
+                raise ValueError("Selected range belongs to another run.")
+            source = selected_source_range(row, clip.event, clip.asset.duration_us)
+            clip = CreationClip(clip.asset, clip.event, source)
+        result.append(clip)
+    return tuple(result)
+
+
+def validate_clip_ranges(value: object, event_ids: tuple[str, ...]) -> dict[str, dict[str, object]]:
+    if value is None:
+        return {}
+    if not isinstance(value, list) or not value or len(value) != len(event_ids):
+        raise ValueError("Clip ranges must match selected events.")
+    result: dict[str, dict[str, object]] = {}
+    for row in value:
+        if (
+            not isinstance(row, dict)
+            or set(row) != {"runId", "eventId", "startUs", "endUs"}
+            or not isinstance(row["eventId"], str)
+            or not isinstance(row["runId"], str)
+            or type(row["startUs"]) is not int
+            or type(row["endUs"]) is not int
+            or not 0 <= row["startUs"] < row["endUs"]
+            or row["eventId"] in result
+        ):
+            raise ValueError("Invalid or duplicate clip range.")
+        result[row["eventId"]] = row
+    if set(result) != set(event_ids):
+        raise ValueError("Clip ranges must match selected events.")
+    return result
+
+
+def selected_source_range(
+    row: dict[str, object], event: SemanticEvent, duration: int
+) -> SourceRange:
+    start, end = row.get("startUs"), row.get("endUs")
+    if type(start) is not int or type(end) is not int:
+        raise ValueError("Selected source times must be integers.")
+    source = SourceRange(start, end, duration)
+    original = event.source_range
+    if (
+        original.duration_us != duration
+        or not 0 <= original.start_us <= original.end_us <= duration
+    ):
+        raise ValueError("Invalid analysed range.")
+    if not overlaps_observation(start, end, original.start_us, original.end_us, duration):
+        raise ValueError("Selected range must intersect original event.")
+    return source
+
+
+def overlaps_observation(
+    start: int, end: int, observed_start: int, observed_end: int, duration: int
+) -> bool:
+    if observed_start == observed_end:
+        return start <= observed_start < end or start < observed_start == end == duration
+    return start < observed_end and end > observed_start
+
+
+def _segment_range(clip: CreationClip, frames: int, fps: int) -> SourceRange:
+    framing, observed = clip.framing, clip.event.source_range
+    length = (frames * 1_000_000 + fps - 1) // fps
+    start = framing.start_us
+    if clip.source_range is not None:
+        left, right = max(start, observed.start_us), min(framing.end_us, observed.end_us)
+        anchor = left if left == right else (left + right - 1) // 2
+        start = min(max(start, anchor - length // 2), framing.end_us - length)
+    return SourceRange(start, start + length, framing.duration_us)
 
 
 # Neighbouring analysed events closer than this count as one continuous stretch of footage.
@@ -64,7 +143,7 @@ MAX_OPENING_SECONDS = 6
 
 
 def _event_frames(clip: CreationClip, fps: int) -> int:
-    source = clip.event.source_range
+    source = clip.framing
     return (source.end_us - source.start_us) * fps // 1_000_000
 
 
@@ -81,11 +160,11 @@ def _shots(
     shots = []
     for clip in ordered:
         group = [clip]
-        length = clip.event.source_range.end_us - clip.event.source_range.start_us
+        length = clip.framing.end_us - clip.framing.start_us
         cursor = position[id(clip)] + 1
         while length < shot_us and cursor < len(eligible):
-            following, last = eligible[cursor], group[-1].event.source_range
-            start = following.event.source_range.start_us
+            following, last = eligible[cursor], group[-1].framing
+            start = following.framing.start_us
             if (
                 id(following) in used
                 or following.asset.sha256 != clip.asset.sha256
@@ -94,7 +173,7 @@ def _shots(
                 break
             group.append(following)
             used.add(id(following))
-            length += following.event.source_range.end_us - start
+            length += following.framing.end_us - start
             cursor += 1
         shots.append(group)
     return shots
@@ -143,7 +222,7 @@ def plan_creation(
             for word in brief.exclude
         )
         and clip.event.observable_facts
-        and (clip.event.source_range.end_us - clip.event.source_range.start_us) * fps >= 1_000_000
+        and (clip.framing.end_us - clip.framing.start_us) * fps >= 1_000_000
     ]
     # A different analysis version is not another shot of the same source interval.
     unique: dict[tuple[str, int, int], CreationClip] = {}
@@ -151,14 +230,14 @@ def plan_creation(
         sha: index for index, sha in enumerate(dict.fromkeys(clip.asset.sha256 for clip in clips))
     }
     for clip in eligible:
-        key = (clip.asset.sha256, clip.event.source_range.start_us, clip.event.source_range.end_us)
+        key = (clip.asset.sha256, clip.framing.start_us, clip.framing.end_us)
         unique.setdefault(key, clip)
     eligible = sorted(
         unique.values(),
         key=lambda clip: (
             source_order[clip.asset.sha256],
-            clip.event.source_range.start_us,
-            clip.event.source_range.end_us,
+            clip.framing.start_us,
+            clip.framing.end_us,
         ),
     )
     scores = score_materials(brief, eligible)
@@ -229,8 +308,9 @@ def plan_creation(
                 if frames <= 0:
                     break
                 event = clip.event
-                end_us = event.source_range.start_us + (frames * 1_000_000 + fps - 1) // fps
-                interval_key = (clip.asset.sha256, event.source_range.start_us, end_us)
+                selected_range = _segment_range(clip, frames, fps)
+                start_us, end_us = selected_range.start_us, selected_range.end_us
+                interval_key = (clip.asset.sha256, start_us, end_us)
                 if interval_key in used_intervals:
                     continue
                 used_intervals.add(interval_key)
@@ -241,7 +321,7 @@ def plan_creation(
                         "mediaId": clip.asset.media_id,
                         "sourceSha256": clip.asset.sha256,
                         "sourcePath": str(clip.asset.source_path),
-                        "startUs": event.source_range.start_us,
+                        "startUs": start_us,
                         "endUs": end_us,
                         "sourceDurationUs": clip.asset.duration_us,
                         "outputStartFrame": position,
@@ -249,6 +329,19 @@ def plan_creation(
                         "evidenceIds": list(event.evidence_ids),
                         "scriptDraft": "；".join(event.observable_facts),
                         "uncertainty": event.uncertainty,
+                        **(
+                            {
+                                "rangeProvenance": {
+                                    "schemaVersion": "user-framing-v1",
+                                    "analysisStartUs": event.source_range.start_us,
+                                    "analysisEndUs": event.source_range.end_us,
+                                    "startUs": clip.framing.start_us,
+                                    "endUs": clip.framing.end_us,
+                                }
+                            }
+                            if clip.source_range is not None
+                            else {}
+                        ),
                         "score": scores[(event.run_id, event.event_id)],
                         **({"role": roles[index]} if roles is not None else {}),
                     }

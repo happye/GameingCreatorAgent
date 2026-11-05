@@ -3,6 +3,7 @@ import {h} from "../vendor/preact.module.js";
 import {useCallback, useEffect, useMemo, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
+import {recordingRuns} from "./recordings.js";
 import {editTimeline, shots, timeline, usePlanPlayer} from "./preview.js";
 import {ClipInspector, CommandDock, transitionProblem, useClipEditor} from "./clipedit.js";
 import {AudioPanel, narrationProblem, useAudioPreview, useMusicCatalog} from "./audio.js";
@@ -104,14 +105,15 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     const generate = async () => {
         const eventIds = fromBasket ? basket.items.map((i) => i.eventId) : null;
         const runIds = fromBasket ? [...new Set(basket.items.map((i) => i.runId))]
-            : draft.runIds.filter((id) => runs.some((r) => r.id === id && r.completedEligible));
+            : recordingRuns(runs.filter((r) => draft.runIds.includes(r.id)), draft.runIds).map((r) => r.id);
         if (!runIds.length) return setMessage("先在上面勾选至少一段录像。");
         if (!draft.game.trim()) return setMessage("请填写游戏名。");
         const brief = {game: draft.game.trim(), contentType: draft.contentType, platforms: [draft.platform], targetDuration: Number(draft.targetDuration),
             objective: draft.objective, audience: draft.audience, tone: draft.tone, mandatoryTopics: list(draft.mandatoryTopics), exclude: list(draft.exclude)};
         setBusy("plan"); setMessage("正在生成方案…");
         try {
-            const accepted = await client.submit("plan", {projectId: project, runIds, brief, fps: Number(draft.fps), ...(eventIds ? {eventIds} : {})});
+            const accepted = await client.submit("plan", {projectId: project, runIds, brief, fps: Number(draft.fps), ...(eventIds ? {eventIds,
+                clipRanges: basket.items.map(({runId, eventId, startUs, endUs}) => ({runId, eventId, startUs, endUs}))} : {})});
             const done = await follow(accepted.jobId, () => {});
             if (done?.status === "completed") { client.forgetIntent("plan"); showPlan(done); setMessage(""); onWorksChanged(); }
             else if (done) setMessage(`方案生成失败：${done.error?.message || done.status}`);
@@ -150,6 +152,9 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     const player = usePlanPlayer(planVideo, items, urlFor);
     const music = useMusicCatalog();
     const [audioBusy, setAudioBusy] = useState(false);
+    const saveReason = !editable ? "正在读取可编辑镜头" : busy ? "任务正在处理，完成后可保存"
+        : commandRows ? "请先应用或取消创作助手的改动" : audioBusy ? "声音任务正在处理，完成后可保存"
+        : problem || (!editing.dirty ? "修改镜头或声音后可保存新版本" : "");
     // The inspector has three pages so sound and export stay reachable while a clip is selected.
     const [inspTab, setInspTab] = useState("shot");
     const sound = useAudioPreview(player, editing.audio, fps, planVideo, music.tracks);
@@ -249,7 +254,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                 ${plan && html`<div class="field"><div class="k">编辑状态</div>
                     <div class="v">${editing.status === "loading" ? "正在读取镜头…" : !editable ? `只能预览和导出${editing.reason ? `（${editing.reason}）` : ""}` : editing.dirty ? "有未保存的修改" : editing.base?.kind === "revision" ? "已保存的版本" : "方案原样"}</div>
                     ${problem && html`<p class="hint warn">${problem}</p>`}
-                    ${editable && html`<div class="actions-row"><button class="btn ghost" disabled=${!editing.dirty || !!busy || !!problem || !!commandRows || audioBusy} onClick=${saveVersion}>保存版本</button>
+                    ${editable && html`<p class="hint" role="status" aria-label="版本保存状态">${saveReason || "修改已就绪，可以保存新版本"}</p><div class="actions-row"><button class="btn ghost" disabled=${!!saveReason} title=${saveReason || "保存新版本"} onClick=${saveVersion}>保存版本</button>
                         <button class="btn ghost" disabled=${!editing.dirty || !!busy} onClick=${() => editing.ops.reset()}>撤销修改</button></div>`}</div>`}
                 <div hidden=${inspTab !== "shot"}>
                 ${selectedIndex >= 0 && !commandRows ? html`<${ClipInspector} editing=${editing} index=${selectedIndex} onSeek=${seekClip} basket=${basket} />`
@@ -282,7 +287,7 @@ function confirmLeave() {
 }
 
 function Brief({runs, draft, update, busy, onGenerate, basket}) {
-    const usable = runs.filter((r) => r.completedEligible);
+    const usable = recordingRuns(runs, draft.runIds);
     const field = (name, label, props = {}) => html`<label class="form-row">${label}<input class="input" value=${draft[name]} onInput=${(e) => update({[name]: e.currentTarget.value})} ...${props} /></label>`;
     return html`<form class="brief" onSubmit=${(e) => { e.preventDefault(); void onGenerate(); }}>
         ${basket.items.length ? html`<label class="check basket-option"><input type="checkbox" checked=${!!draft.useBasket} onChange=${(e) => update({useBasket: e.currentTarget.checked})} />

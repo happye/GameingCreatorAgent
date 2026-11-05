@@ -27,3 +27,5 @@ Rules for this file:
 13. The long Zhongkui run is finished (269 succeeded, 3 rejected). Do not rerun its launchers.
 
 14. **角色重复先核客户端导入记录。** 2026-11-04确认gc-*来自Codex external_agent_config_imports的Claude SUBAGENTS迁移，不凭文件出现就归因模型/提示词；不转换角色，gitignore不能阻止再次导入。
+
+15. **共享venv不改变editable install目标。** 子工作树跑测试必须显式设置PYTHONPATH为自己的src；否则共享.venv会导入主树源码，不能把误跑结果当该树验证。

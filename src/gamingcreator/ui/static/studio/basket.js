@@ -6,6 +6,7 @@ import {h} from "../vendor/preact.module.js";
 import {useCallback, useEffect, useMemo, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
+import {clipSelection, recordingRuns} from "./recordings.js";
 
 const html = htm.bind(h);
 const STORE = "studio-basket-v1";
@@ -27,8 +28,13 @@ export function useBasket(project) {
         toggle: (event, run, thumb) => {
             if (ids.has(event.eventId)) return save(items.filter((i) => i.eventId !== event.eventId));
             if (items.length >= MAX_ITEMS) return;
-            save([...items, {eventId: event.eventId, runId: run.id, runName: run.sourceName || "", startUs: event.startUs, endUs: event.endUs, fact: factsOf(event)[0] || "", thumb: thumb || null}]);
+            const selected = clipSelection(event, event.sourceDurationUs || run.durationUs);
+            if (selected.endUs <= selected.startUs) return;
+            save([...items, {eventId: event.eventId, runId: run.id, runName: run.sourceName || "", startUs: selected.startUs, endUs: selected.endUs,
+                analysisStartUs: selected.analysisStartUs, analysisEndUs: selected.analysisEndUs, sourceDurationUs: selected.sourceDurationUs,
+                fact: factsOf(event)[0] || "", thumb: thumb || null}]);
         },
+        updateRange: (eventId, range) => save(items.map((i) => i.eventId === eventId ? {...i, ...range} : i)),
         remove: (eventId) => save(items.filter((i) => i.eventId !== eventId)),
         clear: () => save([]),
     };
@@ -37,10 +43,11 @@ export function useBasket(project) {
 // Timelines of every finished recording, loaded once per project when search is first used.
 function useAllTimelines(project, runs) {
     const cache = useRef(new Map());
+    const generation = useRef(0);
     const [state, setState] = useState({loading: false, loaded: false, rows: []});
     const load = useCallback(async () => {
+        const request = generation.current;
         const usable = runs.filter((r) => r.completedEligible);
-        if (!usable.length) return;
         setState((s) => ({...s, loading: true}));
         const rows = [];
         for (const run of usable) {
@@ -49,18 +56,20 @@ function useAllTimelines(project, runs) {
             const view = await cache.current.get(key);
             if (!view || view.runId !== run.id) continue;
             const images = Object.fromEntries((view.evidence || []).filter((e) => e.kind === "image").map((e) => [e.id, client.sameOrigin(e.url, "/api/evidence")]));
-            for (const event of view.timeline || []) rows.push({run, event, thumb: images[event.evidenceIds?.[0]] || null});
+            for (const event of view.timeline || []) rows.push({run, event: {...event, sourceDurationUs: view.media?.durationUs || run.durationUs}, thumb: images[event.evidenceIds?.[0]] || null});
         }
-        setState({loading: false, loaded: true, rows});
+        if (request === generation.current) setState({loading: false, loaded: true, rows});
     }, [project, runs]);
     // A different project or recording list invalidates what was loaded.
-    useEffect(() => { setState({loading: false, loaded: false, rows: []}); }, [project, runs]);
+    useEffect(() => { generation.current += 1; setState({loading: false, loaded: false, rows: []}); return () => { generation.current += 1; }; }, [project, runs]);
     return {...state, load};
 }
 
-export function ClipSearch({project, runs, basket, onShow}) {
+export function ClipSearch({project, runs, runId, basket, onShow}) {
     const [query, setQuery] = useState("");
-    const all = useAllTimelines(project, runs);
+    const [scope, setScope] = useState("current");
+    const scopedRuns = useMemo(() => scope === "all" ? recordingRuns(runs, runId) : runs.filter((r) => r.id === runId), [runs, runId, scope]);
+    const all = useAllTimelines(project, scopedRuns);
     useEffect(() => { if (query.trim() && !all.loaded && !all.loading) void all.load(); }, [query, all.loaded, all.loading, all.load]);
     const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
     const hits = useMemo(() => (terms.length ? all.rows.filter(({event}) => {
@@ -68,6 +77,9 @@ export function ClipSearch({project, runs, basket, onShow}) {
         return terms.every((t) => text.includes(t));
     }) : []), [all.rows, query]);
     return html`<div class="clip-search">
+        <label class="form-row">搜索范围<select class="select" aria-label="搜索范围" value=${scope} onChange=${(e) => setScope(e.currentTarget.value)}>
+            <option value="current">当前录像</option><option value="all">全部录像（可跨游戏）</option>
+        </select></label>
         <input class="input" type="search" value=${query} onInput=${(e) => setQuery(e.currentTarget.value)} placeholder="搜索片段，例如：跳跃 金币" aria-label="搜索片段" />
         ${terms.length ? html`<div class="hits">
             ${all.loading || !all.loaded ? html`<p class="note">正在读取所有录像的分析片段…</p>`
@@ -75,7 +87,7 @@ export function ClipSearch({project, runs, basket, onShow}) {
             ${hits.slice(0, 60).map(({run, event, thumb}) => html`<div class="hit">
                 <button class="hit-main" onClick=${() => onShow(run, event)} title=${factsOf(event).join("；")}>
                     <span class="hit-thumb" style=${{backgroundImage: thumb ? `url("${thumb}")` : "none"}}></span>
-                    <span class="hit-text"><span class="meta">${(run.sourceName || "").slice(0, 14)} · ${timecode(event.startUs)}</span>${factsOf(event)[0] || ""}</span>
+                    <span class="hit-text"><span class="meta">${(run.sourceName || "").slice(0, 14)} · ${timecode(event.startUs)} · 取景 ${((clipSelection(event, event.sourceDurationUs).endUs - clipSelection(event, event.sourceDurationUs).startUs) / 1e6).toFixed(1)} 秒</span>${factsOf(event)[0] || ""}</span>
                 </button>
                 <button class="icon-btn" aria-pressed=${basket.ids.has(event.eventId)} aria-label=${basket.ids.has(event.eventId) ? "移出片段篮" : "加入片段篮"} title=${basket.ids.has(event.eventId) ? "移出片段篮" : "加入片段篮"}
                     onClick=${() => basket.toggle(event, run, thumb)}>${basket.ids.has(event.eventId) ? "✓" : "+"}</button>
@@ -91,10 +103,11 @@ export function BasketList({basket, onShow, onUse}) {
             ${basket.items.map((item) => html`<div class="hit">
                 <button class="hit-main" onClick=${() => onShow(item)} title=${item.fact}>
                     <span class="hit-thumb" style=${{backgroundImage: item.thumb ? `url("${item.thumb}")` : "none"}}></span>
-                    <span class="hit-text"><span class="meta">${item.runName.slice(0, 14)} · ${timecode(item.startUs)}</span>${item.fact}</span>
+                    <span class="hit-text"><span class="meta">${item.runName.slice(0, 14)} · ${timecode(item.startUs)} · ${((item.endUs - item.startUs) / 1e6).toFixed(1)} 秒</span>${item.fact}</span>
                 </button>
                 <button class="icon-btn" aria-label="移出片段篮" title="移出片段篮" onClick=${() => basket.remove(item.eventId)}>×</button>
             </div>`)}
+            <p class="hint">短观察点建议取前后画面作为选段；点开可回看并调整入点、出点。描述只对应分析区间，扩展画面请回看确认。</p>
             <div class="actions-row"><button class="btn" onClick=${onUse}>用片段篮生成方案</button><button class="btn ghost" onClick=${basket.clear}>清空</button></div>`
             : html`<p class="note">搜索或在时间轴上选中片段，点“加入片段篮”（快捷键 B）。生成方案时可以只用篮里的片段。</p>`}
     </div>`;

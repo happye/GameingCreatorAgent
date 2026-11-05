@@ -26,11 +26,15 @@ export function useAudioPreview(player, audio, fps, video, tracks) {
     const track = tracks.find((t) => t.trackId === audio.mix.bgm?.trackId);
     const voiceSrc = audio.asset ? sameOrigin(audio.asset.audioUrl) : null;
     const musicSrc = track ? musicUrl(track) : null;
+    useEffect(() => {
+        const elements = [voice.current, music.current];
+        return () => elements.forEach((el) => el?.pause());
+    }, []);
     useEffect(() => { if (video.current) video.current.volume = level(audio.mix.sourceGainDb); });
     useEffect(() => {
         const sync = (el, src, offsetS, gainDb, loop = false) => {
             if (!el) return;
-            if (!src || !player.playing || offsetS < 0) { el.pause(); return; }
+            if (!src || !player.playing || player.buffering || offsetS < 0) { el.pause(); return; }
             if (!el.src.endsWith(src)) el.src = src;
             el.volume = level(gainDb);
             // Music loops in the render; narration plays once.
@@ -39,13 +43,14 @@ export function useAudioPreview(player, audio, fps, video, tracks) {
                 offsetS %= el.duration;
             }
             el.loop = loop;
-            if (Math.abs(el.currentTime - offsetS) > 0.3) el.currentTime = offsetS;
+            // Align once after a pause/seek; never rewind a running track on each frame.
+            if (el.paused && Math.abs(el.currentTime - offsetS) > 0.015) el.currentTime = offsetS;
             if (el.paused) void el.play().catch(() => {});
         };
         const out = player.outUs / 1e6;
         sync(voice.current, voiceSrc, out - (audio.narration?.startFrame || 0) / fps, audio.narration?.gainDb);
         sync(music.current, musicSrc, out, audio.mix.bgm?.gainDb, true);
-    }, [player.playing, player.outUs, voiceSrc, musicSrc, audio, fps]);
+    }, [player.playing, player.buffering, player.outUs, voiceSrc, musicSrc, audio, fps]);
     return html`<audio ref=${voice} preload="auto" hidden></audio><audio ref=${music} preload="auto" hidden></audio>`;
 }
 
@@ -75,7 +80,8 @@ export function AudioPanel({editing, project, fps, totalUs, music, onBusy}) {
             setVoices(data.voices || []);
             setBilling({spent: data.spentThisMonthYuan || 0, cap: data.monthlyCapYuan || 0});
             const chinese = (data.voices || []).find((v) => !v.paid && (v.language === "804" || /chinese|中文/i.test(v.description)));
-            setVoiceId(data.defaultVoiceId || (chinese || data.voices?.[0])?.voiceId || "");
+            const preferred = (data.voices || []).find((v) => v.voiceId === data.defaultVoiceId && !v.paid);
+            setVoiceId((preferred || chinese || (data.voices || []).find((v) => !v.paid))?.voiceId || "");
         }).catch(() => setVoices([]));
     }, []);
     useEffect(() => { setScript(null); setText(""); setNote(""); }, [editing.base?.jobId, editing.base?.planId]);
@@ -141,6 +147,7 @@ export function AudioPanel({editing, project, fps, totalUs, music, onBusy}) {
             ${script ? html`<p class="hint">离线模板稿，请先改一遍再合成。约 ${estimate.toFixed(0)} 秒 / 成片 ${(totalUs / 1e6).toFixed(0)} 秒${estimate > totalUs / 1e6 ? "：太长了，请删减" : ""}</p>
                 <textarea class="input" rows="6" value=${text} onInput=${(e) => setText(e.currentTarget.value)} aria-label="旁白稿"></textarea>
                 <label class="form-row">声音<select class="select" value=${voiceId} onChange=${(e) => setVoiceId(e.currentTarget.value)}>
+                    ${!voiceId && html`<option value="">未找到本机声音，请选择声音</option>`}
                     ${voices.map((v) => html`<option value=${v.voiceId} disabled=${v.paid && !v.available}>${v.description}${v.paid && !v.available ? "（未配置）" : ""}</option>`)}</select></label>
                 ${paid ? html`<p class="hint">云端付费，约 ¥${cost.toFixed(4)}（${billedCharacters(text.trim())} 计费字符上限）。本月已用约 ¥${billing.spent.toFixed(2)} / 上限 ¥${billing.cap.toFixed(0)}；同样的文字和音色不会重复付费。</p>`
                     : html`<p class="hint">本机 Windows 语音，免费离线，听感偏机械。${voices.some((v) => v.paid && !v.available) ? "云端音色需在启动工作台的终端里设置 DASHSCOPE_API_KEY 后重启。" : ""}</p>`}

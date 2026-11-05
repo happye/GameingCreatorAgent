@@ -111,8 +111,8 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout})
                     ${pkg && html`<div class="pkg-result">
                         <p class="v">${PLATFORMS[pkg.profile?.Platform] || ""}：${pkg.generationStatus === "completed" ? "已生成" : "未完成"}；本地检查${STATUS[pkg.localChecks] || "未知"}${pkg.publicationEligibility === "blocked" ? "；发布受阻（含仅供测试的音乐等）" : ""}${pkg.watermark ? "；含水印" : ""}。平台官方规则、素材权利尚未核实。</p>
                         <p class="hint">${Object.entries(pkg.validation?.checks || {}).map(([k, s]) => `${CHECKS[k] || k}：${STATUS[s] || "未知"}`).join("　")}</p>
-                        <div class="actions-row"><a class="btn" href=${`${jobPath(pkg.jobId)}/package-files/package.zip?download=1`} download>下载平台包（zip）</a>
-                            <a class="btn ghost" href=${`${jobPath(pkg.jobId)}/package-files/video.mp4?download=1`} download>只下载视频</a></div>
+                        <div class="actions-row"><a class="btn" href=${`${jobPath(pkg.jobId)}/package-files/package.zip?download=1`} download="package.zip">下载平台包（zip）</a>
+                            <a class="btn ghost" href=${`${jobPath(pkg.jobId)}/package-files/video.mp4?download=1`} download="video.mp4">只下载视频</a></div>
                     </div>`}
                 </div>
             </section>

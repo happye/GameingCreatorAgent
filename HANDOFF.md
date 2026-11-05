@@ -1,30 +1,31 @@
 # HANDOFF（覆盖快照）
 
-## 最近一次会话（2026-11-04，Codex）
+## 最近一次会话（2026-11-05，Codex）
 
-先读 STATUS.md，再读 [J1 第四次试用核查](docs/exec-plans/j1-fourth-trial-audit.md)。本轮仅诊断和状态更新，未修产品代码，未运行全量测试，未新分析/合成/转码/付费，未删除旧页面。
+当前goal active：按用户反馈和全功能路线继续开发直到额度耗尽；语音暂用免费本机。第一轮修复不是整个目标完成。先读STATUS，再读docs/exec-plans/sprint-j1-feedback-iteration.md。
 
-用户已做新工作台 J1，报告七组问题，全流程未通过；journeys.json 已按本次反馈更新。第三次“初版过得去”只评价初稿，不覆盖新增编辑/声音/发布验收。用时与干预次数未知，不代填。human-inputs 已改为等开发修复，不重复要求用户立即测试。
+## 本轮已实现
 
-## 核实结果
+素材按原文件SHA归组，保留分析版本；搜索默认当前录像、全部搜索明确跨游戏且同源只选一个版本。短/微小事件建议3秒上下文，入出点可改，篮子clipRanges经后端原事件/源/证据验证后进入plan/EDL/render/revision；分析事实区间不改。预算裁短必须包含原观察，修订不能裁掉原观察，替换清除旧来源并保留合法framing。
 
-- 当前最新任务来自 artifacts/demo-phase0。素材箱六条是分析运行，实际三个源文件（漫画群星 PV、Atom PV、Atom 实机），有重复分析及失败记录；搜索只取四条 completedEligible 运行，跨游戏本地文字包含匹配，没有游戏过滤。漫画群星111事件中37零时长、71一秒、2两秒、1四秒；篮子直接累加事件时长。未取得用户当时十个篮项，不宣称逐项复算八秒。
-- 最新漫画群星源 SHA 与 GameVideos 下 TapTap PV 一致，没有找到本工具成片回灌证据。原片本来是剪辑好的宣传片。
-- 点素材片段只 seek 起点，没有区间终点暂停。四个方案是固定结构模板，随输入换镜头；eventIds 传递及过滤真实存在。开放式 AI 策划未实现。
-- 创作助手是 timeline_commands.py 的本地正则白名单，不调用云模型；支持删除第三个等句式，不理解 logo/剪辑意图。即时预览的转场仍是直接切换。
-- BGM 偏差>0.3秒回拨，视频缓冲时会造成音乐重复；单video逐段seek，未预加载。
-- 保存按钮无dirty或忙/校验错误/助手待应用/音频忙时禁用；用户“始终灰”未复现，需补状态解释及真实路径覆盖。
-- 既有平台包 d09f1173645a49768594fed4d57ed559，27,821,175字节，GET和真实Playwright点击均正常：package.zip，failure=None。DOM download="true" 是裸属性的结果，不能据此把用户true.txt故障判定已解决。报告内有直接下载链接。
-- 云端语音 cosyvoice-v3-flash / longanyang，需北京地域 Key + 同地域空间；只在启动服务进程里设 DASHSCOPE_API_KEY / DASHSCOPE_WORKSPACE_ID。旧服务必须先关闭再从配置终端启动。配置步骤和官方链接在报告第五节，未付费验证。
+素材单片段终点暂停/重播，查看整段可解除；媒体缓冲/seek暂停音轨，恢复校音，离开编辑器停止已分离音视频。保存灰原因可见；下载显式package.zip/video.mp4；有Key也默认本机免费，无本机声音不自动付费。
 
-## Codex 角色重复的直接原因
+Sol/high闭环预算锚点、时长评分、替换兼容三项P2。test-affected -Browser 1235 passed/2 skipped。verify原始4719 passed/7 skipped/2 desktop fixture errors：子Windows PowerShell继承PS7 module路径导致Get-FileHash缺失；build-desktop显式导入本机Utility后原2桌面测试通过。Ruff格式/lint、mypy193源文件、CLI help/version通过；没重跑整仓，不能写原verify全绿。日志.cache/j1-feedback-verify.log、j1-feedback-affected.xml、j1-desktop-recheck.xml。
 
-已只读核实本机 state_5.sqlite.external_agent_config_imports：11-02 18:21:56、11-04 18:37:58，provider=claude-code，successes有本仓库九个SUBAGENTS；归档角色时间吻合。重复来自客户端导入机制，不是证明模型收到转换提示词。global-state保存导入同步类别选择，但不证明自动同步开关当前启用。不要再泛称“某个工具重新生成”或承认未证实的模型手写行为。
+预览http://127.0.0.1:8766/studio 已真实素材浏览器验证；自动审批拒绝停止8765旧服务（只给blocked by policy），未绕过，另起8766。8765后端可能仍旧；截图.cache/scratch/j1-feedback-live.png。不要误报已重启8765。
 
-不转换Claude角色，不改用户全局设置；Codex只用现有task_* / harness_*。.gitignore不阻止客户端再次写入，后续导入/同步应排除SUBAGENTS。原角色归档保留仓库外。
+## R3独立工作仍未集成
 
-## 下一步
+.worktrees/creation-reasoning-core（codex/creation-reasoning-core），8个新文件：application/creation_reasoning.py、creation_proposals.py，infrastructure/creation_reasoning_provider.py，ui/creation_reasoning_service.py及4个对应tests。未接server/UI、未提交主树、无真实模型调用。
 
-按核查报告末尾顺序修复后验证，再邀请J1复测；不要继续加同义词假装实现通用创作助手。开发迭代test-affected -Browser；里程碑verify；分发前-Release。界面汇报前真实浏览器走用户路径。
+Sol/high发现的价目缺失/自造0费、v4祖先、坏usage身份丢失、cancelOutcome问题已由worker修复，报告76 fake tests。最后一项：async service.execute->_current->load_chain内部asyncio.run嵌套loop。中断后只读agent resume_reasoning_audit正核对是否已to_thread并加真实链回归；先接收结论再继续。子Agent旧句柄在额度中断后已不存在，不凭旧状态声称仍运行。
 
-用户已有四个未跟踪的设计文档，未改动或暂存。保留费用门、不可变证据/账本；不要重跑长钟馗，不重付重标。P038/P046–P051解冻不撤回，真实发布/支付/付费仍需各自授权。推送代理127.0.0.1:7890，不force。
+下一步先审查该服务真实链修复，集成核心/适配器/服务，再接可信准备→费用确认→模型澄清/提案→预览/应用→既有修订。不得靠正则别名冒称AI；文本发送仍需独立批准，不用旧分析¥50许可。未有真实许可不阻断离线开发/本地预览优化。单video预加载与预览转场一致性仍未完成。
+
+## 保护
+
+用户原有4个未跟踪设计文档保持不动、不暂存。旧页面不删，J1真人仍未通过；不重跑长钟馗，不改证据/账本、不重付重标。Codex只用task_* / harness_*，不转换Claude角色；重复gc-*来自客户端导入，gitignore挡不住再次导入。已归档角色留仓库外。
+
+两个已集成但未退休工作树：.worktrees/j1-preview-corrections、.worktrees/j1-selected-ranges（不要遗漏其.tools/.venv junction）；第三树reasoning仍有唯一未集成成果，不能删。所有删除先核路径及源内容保存，不清用户cache。
+
+推送走127.0.0.1:7890，不force。更新STATUS只在里程碑/会话结束；进度数字python -B scripts/status.py。未运行Release（未分发）。

@@ -9,7 +9,7 @@ import re
 import threading
 
 import pytest
-from test_clip_replacement_jobs import replacements  # noqa: F401
+from test_clip_replacement_jobs import framed_replacements, replacements  # noqa: F401
 from test_creation_jobs import service  # noqa: F401
 from test_creation_revision_jobs import revisions  # noqa: F401
 from test_narration_jobs import engine, narrated  # noqa: F401
@@ -163,6 +163,10 @@ def test_edit_clip_save_version_and_command(revisions, monkeypatch):  # noqa: F8
             page.goto(base + "/studio")
             clips = page.locator(".timeline .clip")
             playwright.expect(page.get_by_text("方案原样")).to_be_visible()
+            playwright.expect(page.get_by_label("版本保存状态")).to_have_text(
+                "修改镜头或声音后可保存新版本"
+            )
+            playwright.expect(page.get_by_role("button", name="保存版本")).to_be_disabled()
             clips.nth(1).click()
             page.get_by_label("速度").select_option("2/1")
             playwright.expect(page.locator(".clip-speed")).to_have_text("2×")
@@ -179,6 +183,10 @@ def test_edit_clip_save_version_and_command(revisions, monkeypatch):  # noqa: F8
             page.get_by_label("一句话修改镜头").fill("第1个镜头慢放")
             page.get_by_role("button", name="预览改动").click()
             playwright.expect(page.locator(".timeline .clip.changed")).to_have_count(1)
+            playwright.expect(page.get_by_label("版本保存状态")).to_have_text(
+                "请先应用或取消创作助手的改动"
+            )
+            playwright.expect(page.get_by_role("button", name="保存版本")).to_be_disabled()
             page.get_by_role("button", name="应用").click()
             playwright.expect(page.get_by_text("有未保存的修改")).to_be_visible()
             assert not errors
@@ -248,7 +256,7 @@ def test_narration_draft_synthesize_and_save(narrated, monkeypatch):  # noqa: F8
 
 
 def test_cloud_voice_confirms_cost_before_paying(narrated, monkeypatch):  # noqa: F811
-    """The default cloud voice shows its cost on the button; one click pays once."""
+    """Free local voice stays default; explicitly choosing cloud requires cost confirmation."""
     playwright = pytest.importorskip("playwright.sync_api")
     import io
     import wave
@@ -304,9 +312,13 @@ def test_cloud_voice_confirms_cost_before_paying(narrated, monkeypatch):  # noqa
             )
             page.get_by_role("button", name="起草旁白稿").click()
             page.get_by_label("旁白稿").fill("测试旁白")
-            playwright.expect(page.get_by_label("声音", exact=False).first).to_have_value(
-                "cosyvoice:longanyang"
-            )
+            voices = page.get_by_label("声音", exact=False).first
+            playwright.expect(voices).to_have_value("v1")
+            playwright.expect(
+                page.get_by_role("button", name="合成旁白", exact=True)
+            ).to_be_visible()
+            assert calls == []
+            voices.select_option("cosyvoice:longanyang")
             pay = page.get_by_role("button", name=re.compile(r"确认付费合成（约 ¥0\.0008）"))
             pay.click()
             playwright.expect(page.locator(".lane.voice")).to_contain_text("秒")
@@ -341,9 +353,19 @@ def test_clip_basket_search_add_and_plan_uses_only_basket(service, monkeypatch):
         }
 
     async def planner(
-        project, runs_, brief, output, events, fps, selection, preferences=None, edit_kinds=None
+        project,
+        runs_,
+        brief,
+        output,
+        events,
+        fps,
+        selection,
+        preferences=None,
+        edit_kinds=None,
+        clip_ranges=None,
     ):
         seen.append(list(events))
+        assert clip_ranges and len(clip_ranges) == len(events)
         segment = {
             "runId": "run",
             "eventId": events[0],
@@ -439,12 +461,13 @@ def test_clip_basket_search_add_and_plan_uses_only_basket(service, monkeypatch):
         server.server_close()
 
 
-def test_replace_clip_saves_and_follow_up_edit_keeps_manifest(replacements, monkeypatch):  # noqa: F811
+@pytest.mark.parametrize("fixture_name", ["replacements", "framed_replacements"])
+def test_replace_clip_saves_and_follow_up_edit_keeps_manifest(fixture_name, request, monkeypatch):
     """Replace a clip's footage, save; then edit that version again and save once more."""
     playwright = pytest.importorskip("playwright.sync_api")
     import gamingcreator.ui.server as server_module
 
-    jobs, root, _ = replacements
+    jobs, root, _ = request.getfixturevalue(fixture_name)
 
     async def runs(project):
         listed = [

@@ -185,7 +185,7 @@ class CreationJobs:
                 if kind == "revision"
                 else {"costConfirmationYuan"}
                 if kind == "narration"
-                else {"eventIds"}
+                else {"eventIds", "clipRanges"}
                 if kind == "plan"
                 else set()
             )
@@ -267,6 +267,15 @@ class CreationJobs:
                     or any(e.split(":", 1)[0] not in runs for e in events)
                 ):
                     raise fail("creation.input", "片段篮里的片段无效，或不属于所选录像。")
+                if "clipRanges" in request:
+                    from gamingcreator.application.creative_planner import validate_clip_ranges
+
+                    try:
+                        if not isinstance(request["clipRanges"], list):
+                            raise ValueError("Clip ranges must be a list.")
+                        validate_clip_ranges(request["clipRanges"], tuple(events))
+                    except ValueError as error:
+                        raise fail("creation.input", str(error)) from error
                 project_id = request["projectId"]
             elif kind == "package":
                 parent_id = identity(request["publicationJobId"])
@@ -617,6 +626,11 @@ class CreationJobs:
                         None,
                         preferences=self._preferences(directory),
                         edit_kinds=self._edit_habits(directory),
+                        **(
+                            {"clip_ranges": request["clipRanges"]}
+                            if "clipRanges" in request
+                            else {}
+                        ),
                     )
                 )
             elif state["kind"] == "package":

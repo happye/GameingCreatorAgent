@@ -5,6 +5,7 @@ from fractions import Fraction
 from hashlib import sha256
 from typing import Any
 
+from gamingcreator.application.creative_planner import overlaps_observation
 from gamingcreator.application.rendering import (
     RenderClip,
     RenderPlan,
@@ -110,6 +111,15 @@ def build_revision(
             raise ValueError("Edits may only shorten the parent source range.")
         row = deepcopy(parent)
         row.update(startUs=start, endUs=end, outputFrames=frames, outputStartFrame=offset)
+        provenance = row.get("rangeProvenance")
+        if provenance is not None and not overlaps_observation(
+            start,
+            end,
+            provenance["analysisStartUs"],
+            provenance["analysisEndUs"],
+            row["sourceDurationUs"],
+        ):
+            raise ValueError("裁切后不含原观察画面，请保留观察位置或替换镜头。")
         if v2:
             row["speed"] = deepcopy(edit["speed"])
         if v3:

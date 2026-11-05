@@ -21,6 +21,7 @@ async def execute_plan_creation(
     selection: str | None,
     preferences: dict[str, int] | None = None,
     edit_kinds: dict[str, int] | None = None,
+    clip_ranges: object = None,
 ) -> dict[str, object]:
     try:
         if not runs or len(runs) != len(set(runs)):
@@ -35,7 +36,7 @@ async def execute_plan_creation(
         finally:
             await store.close()
         report = plan_creation(
-            brief, candidates(timelines, tuple(events)), fps, preferences, edit_kinds
+            brief, candidates(timelines, tuple(events), clip_ranges), fps, preferences, edit_kinds
         )
         report["brief"] = raw
         documents: dict[str, object] = {"plans.json": report}

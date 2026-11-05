@@ -1,3 +1,4 @@
+import asyncio
 import json
 from dataclasses import replace
 from types import SimpleNamespace
@@ -8,7 +9,7 @@ from test_creation_render import decision
 
 from gamingcreator.domain.errors import AppError
 from gamingcreator.domain.models import EvidenceReference
-from gamingcreator.domain.time import SourceInstant
+from gamingcreator.domain.time import SourceInstant, SourceRange
 from gamingcreator.infrastructure.creation_files import write_creation
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
@@ -86,6 +87,58 @@ def replacements(service, monkeypatch):  # noqa: F811
     root = service.submit("plan", req)["jobId"]
     assert finish(service, root)["status"] == "completed"
     return service, root, b
+
+
+@pytest.fixture
+def framed_replacements(replacements, monkeypatch):
+    from test_creation_planner import brief
+
+    from gamingcreator.application.creative_planner import candidates as planning_candidates
+    from gamingcreator.application.creative_planner import plan_creation
+
+    jobs, _, other = replacements
+
+    async def load():
+        store = await SqliteTimelineStore.open(jobs.repository / "artifacts/project")
+        return await store.load_completed_timeline("run")
+
+    saved = asyncio.run(load())
+    selected = [
+        dict(
+            runId="run",
+            eventId=e.event_id,
+            startUs=e.source_range.start_us,
+            endUs=e.source_range.start_us + 2_000_000,
+        )
+        for e in saved.events
+    ]
+    saved.events = tuple(
+        replace(
+            e,
+            source_range=SourceRange(
+                e.source_range.start_us + 500_000,
+                e.source_range.start_us + 500_001,
+                e.source_range.duration_us,
+            ),
+        )
+        for e in saved.events
+    )
+    material = planning_candidates((saved,), tuple(e.event_id for e in saved.events), selected)
+    report = plan_creation(brief(), material, 30)
+
+    async def planner(
+        project, runs, brief, output, events, fps, selection, preferences=None, edit_kinds=None
+    ):
+        report["brief"] = json.loads(brief.read_text())
+        write_creation(output, {"plans.json": report}, ())
+
+    monkeypatch.setattr("gamingcreator.ui.creation_jobs.execute_plan_creation", planner)
+    req = request()
+    req.update(requestId="f" * 32, runIds=["run", "B"])
+    req["brief"]["targetDuration"] = 6
+    root = jobs.submit("plan", req)["jobId"]
+    assert finish(jobs, root)["status"] == "completed"
+    return jobs, root, other
 
 
 def replacement_request(jobs, root, token="b"):

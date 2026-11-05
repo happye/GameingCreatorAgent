@@ -18,6 +18,13 @@ function normalize(editor) {
 // The server's rule: transitions only between clips, and each clip keeps at least one frame of its own.
 export function transitionProblem(clips, fps) {
     for (let i = 0; i < clips.length; i++) {
+        const clip = clips[i], p = clip.rangeProvenance;
+        if (p) {
+            const overlaps = p.analysisStartUs === p.analysisEndUs
+                ? clip.startUs <= p.analysisStartUs && (p.analysisStartUs < clip.endUs || clip.startUs < p.analysisStartUs && p.analysisStartUs === clip.endUs && clip.endUs === clip.sourceDurationUs)
+                : clip.startUs < p.analysisEndUs && clip.endUs > p.analysisStartUs;
+            if (!overlaps) return `第 ${i + 1} 个镜头不含原观察画面，请保留观察位置或替换镜头`;
+        }
         const t = clips[i].transitionIn, next = clips[i + 1]?.transitionIn.frames || 0;
         if (i === 0 && (t.type !== "cut" || t.frames !== 0)) return "第一个镜头不能有入场转场";
         if (t.frames + next >= clipFrames(clips[i], fps)) return `第 ${i + 1} 个镜头太短，放不下两侧的转场`;
@@ -90,8 +97,12 @@ export function useClipEditor(project) {
             const clips = s.clips.map((c) => {
                 if (c.clipId !== id) return c;
                 const length = Math.max(1, c.endUs - c.startUs);
-                return {...c, runId: candidate.runId, eventId: candidate.eventId, evidenceIds: candidate.evidenceIds, scriptDraft: candidate.scriptDraft,
+                const next = {...c, ...candidate, clipId: c.clipId,
                     startUs: candidate.startUs, endUs: Math.min(candidate.endUs, candidate.startUs + length), speed: {numerator: 1, denominator: 1}, transitionIn: {type: "cut", frames: 0}};
+                // Source paths are private; the server reconstructs them from its manifest.
+                delete next.sourcePath;
+                if (!candidate.rangeProvenance) delete next.rangeProvenance;
+                return next;
             });
             const at = clips.findIndex((c) => c.clipId === id);
             if (clips[at + 1]) clips[at + 1] = {...clips[at + 1], transitionIn: {type: "cut", frames: 0}};

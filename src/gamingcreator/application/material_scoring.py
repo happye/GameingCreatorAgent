@@ -48,7 +48,7 @@ def score_materials(
     scores: dict[tuple[str, str], dict[str, Any]] = {}
     for clip in clips:
         event = clip.event
-        seconds = Fraction(event.source_range.end_us - event.source_range.start_us, 1_000_000)
+        seconds = Fraction(clip.framing.end_us - clip.framing.start_us, 1_000_000)
         parts: dict[str, Fraction | None] = {name: None for name in WEIGHTS}
         if topics:
             parts["briefMatch"] = Fraction(
@@ -99,10 +99,7 @@ def advisories(
             "可在分析时多选录像或补拍更多玩法。"
         )
     available = sum(
-        (
-            Fraction(c.event.source_range.end_us - c.event.source_range.start_us, 1_000_000)
-            for c in clips
-        ),
+        (Fraction(c.framing.end_us - c.framing.start_us, 1_000_000) for c in clips),
         Fraction(0),
     )
     if available < brief.target_duration:

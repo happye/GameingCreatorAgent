@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from gamingcreator.application.creation_editing import build_revision, editable_clips
-from gamingcreator.application.rendering import RenderClip, RenderPlan
+from gamingcreator.application.rendering import RenderClip, RenderPlan, allowed_source_range
 from gamingcreator.application.storage import RunStatus, StoredTimeline
 from gamingcreator.domain.time import SourceInstant, SourceRange
 
@@ -294,11 +294,9 @@ def validate_revision_v4(
             "scriptDraft": "；".join(event.observable_facts),
             "uncertainty": event.uncertainty,
         }
+        allowed = allowed_source_range(row, event, timeline)
         if any(_canonical(row.get(k)) != _canonical(v) for k, v in expected.items()) or not (
-            event.source_range.start_us
-            <= row["startUs"]
-            < row["endUs"]
-            <= event.source_range.end_us
+            allowed.start_us <= row["startUs"] < row["endUs"] <= allowed.end_us
         ):
             raise ValueError("Replacement source binding is invalid.")
         rendered.append(

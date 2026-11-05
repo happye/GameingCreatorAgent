@@ -3,12 +3,17 @@
 Real static server; the creation APIs are answered by the test so no media is processed.
 """
 
+import hashlib
+import io
 import json
 import threading
+import zipfile
 
 import pytest
 from test_creation_jobs import service  # noqa: F401
 
+from gamingcreator.ui.creation_jobs import CreationJobs
+from gamingcreator.ui.media import MediaResource
 from gamingcreator.ui.server import create_server
 
 RENDER, PUB, PKG = "a" * 32, "b" * 32, "c" * 32
@@ -39,11 +44,28 @@ def test_publish_copy_cover_and_package(service, monkeypatch):  # noqa: F811
         "videoUrl": f"/api/creation/jobs/{RENDER}/video",
     }
     posted = {}
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as package:
+        package.writestr("video.mp4", b"fixture-video")
+        package.writestr("description.txt", "发布文案")
+    package_bytes = buffer.getvalue()
+    package_path = service.repository / "fixture-package.zip"
+    package_path.write_bytes(package_bytes)
+
+    def package_file(self, job_id, name):
+        assert job_id == PKG and name == "package.zip"
+        return MediaResource(
+            package_path, hashlib.sha256(package_bytes).hexdigest(), "application/zip"
+        )
+
+    monkeypatch.setattr(CreationJobs, "package_file", package_file)
 
     def answer(route):
         request = route.request
         path = request.url.split("://", 1)[1].split("/", 1)[1]
         path = "/" + path.split("?", 1)[0]
+        if path == f"/api/creation/jobs/{PKG}/package-files/package.zip":
+            return route.continue_()
         if path == "/api/creation/jobs":
             jobs = [
                 {
@@ -121,6 +143,16 @@ def test_publish_copy_cover_and_package(service, monkeypatch):  # noqa: F811
             playwright.expect(page.get_by_role("link", name="下载平台包（zip）")).to_have_attribute(
                 "href", f"/api/creation/jobs/{PKG}/package-files/package.zip?download=1"
             )
+            # Click the link and read bytes from the real media HTTP handler.
+            link = page.get_by_role("link", name="下载平台包（zip）")
+            playwright.expect(link).to_have_attribute("download", "package.zip")
+            with page.expect_download() as downloaded:
+                link.click()
+            download = downloaded.value
+            assert download.suggested_filename == "package.zip" and download.failure() is None
+            assert download.path().read_bytes() == package_bytes
+            with zipfile.ZipFile(download.path()) as package:
+                assert package.read("video.mp4") == b"fixture-video"
             assert posted["package"]["publicationJobId"] == PUB
             assert posted["package"]["profile"]["Platform"] == "bilibili"
             assert not errors

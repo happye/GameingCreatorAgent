@@ -1,12 +1,13 @@
 // Studio shell: design system, workspaces, the read-only Assets workspace
 // (recordings → viewer + event timeline + inspector) and the Edit workspace (edit.js).
 import {h, render} from "../vendor/preact.module.js";
-import {useCallback, useEffect, useMemo, useRef, useState} from "../vendor/hooks.module.js";
+import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
 import {BasketList, ClipSearch, useBasket} from "./basket.js";
 import {PublishWorkspace} from "./publish.js";
 import {EditWorkspace} from "./edit.js";
+import {clipSelection, groupRecordings} from "./recordings.js";
 
 const html = htm.bind(h);
 const STORE = "studio-v1";
@@ -45,10 +46,11 @@ function App() {
     const [status, setStatus] = useState("正在读取项目…");
     const [time, setTime] = useState(0);
     const [open, setOpen] = useState(null);
-    const [pendingEvent, setPendingEvent] = useState("");
+    const [pendingEvent, setPendingEvent] = useState(null);
     const [basketAt, setBasketAt] = useState(0);
     const basket = useBasket(project);
     const video = useRef(null);
+    const pendingSeek = useRef(null);
     const latestRuns = useLatest(), latestView = useLatest(), latestWorks = useLatest();
 
     useEffect(() => { savePrefs({project, runId, workspace, bin: layout.bin, insp: layout.insp}); }, [project, runId, workspace, layout]);
@@ -81,6 +83,7 @@ function App() {
 
     useEffect(() => {
         setView(null); setSelected(null); setTime(0);
+        pendingSeek.current?.();
         if (!project || !runId) return;
         setStatus("正在读取时间线…");
         latestView((signal) => client.inspect(project, runId, signal)).then((result) => {
@@ -92,11 +95,11 @@ function App() {
     }, [project, runId]);
 
     // A search hit or basket item opens its recording, then selects the clip once loaded.
-    const showEvent = useCallback((runIdToShow, eventId) => { setWorkspace("assets"); setRunId(runIdToShow); setPendingEvent(eventId); }, []);
+    const showEvent = useCallback((runIdToShow, eventId, range = null) => { setWorkspace("assets"); setRunId(runIdToShow); setPendingEvent({runId: runIdToShow, eventId, range}); }, []);
     useEffect(() => {
-        if (!pendingEvent || !view) return;
-        const event = view.timeline.find((e) => e.eventId === pendingEvent);
-        if (event) { setPendingEvent(""); selectEvent(event); }
+        if (!pendingEvent || !view || pendingEvent.runId !== view.runId) return;
+        const event = view.timeline.find((e) => e.eventId === pendingEvent.eventId);
+        if (event) { setPendingEvent(null); selectEvent(pendingEvent.range ? {...clipSelection(event, view.media?.durationUs), startUs: pendingEvent.range.startUs, endUs: pendingEvent.range.endUs} : event); }
     }, [view, pendingEvent]);
     const thumbOf = (event) => {
         const image = (view?.evidence || []).find((e) => e.id === event?.evidenceIds?.[0] && e.kind === "image");
@@ -115,10 +118,28 @@ function App() {
 
     const seek = useCallback((us, play = false) => {
         const el = video.current; if (!el) return;
-        el.currentTime = seconds(us); setTime(us);
-        if (play) void el.play().catch(() => {});
+        pendingSeek.current?.();
+        const apply = () => {
+            if (video.current !== el) return;
+            el.currentTime = seconds(us); setTime(us);
+            if (play) void el.play().catch(() => {});
+        };
+        if (el.readyState >= 1) apply();
+        else { el.addEventListener("loadedmetadata", apply, {once: true}); pendingSeek.current = () => el.removeEventListener("loadedmetadata", apply); }
     }, []);
-    const selectEvent = useCallback((event) => { setSelected(event); seek(event.startUs); }, [seek]);
+    const selectEvent = useCallback((event) => {
+        const selection = clipSelection(event, view?.media?.durationUs);
+        video.current?.pause(); setSelected(selection); seek(selection.startUs);
+    }, [seek, view]);
+    const changeRange = (range) => {
+        const next = {...selected, ...range};
+        const point = next.analysisStartUs === next.analysisEndUs;
+        const covers = point ? next.startUs <= next.analysisStartUs && (next.analysisStartUs < next.endUs || next.endUs === next.sourceDurationUs && next.analysisStartUs === next.endUs)
+            : next.startUs < next.analysisEndUs && next.endUs > next.analysisStartUs;
+        if (!Number.isSafeInteger(next.startUs) || !Number.isSafeInteger(next.endUs) || next.startUs < 0 || next.endUs <= next.startUs || next.endUs > view.media.durationUs || !covers) return;
+        video.current?.pause(); setSelected(next); seek(next.startUs);
+        if (basket.ids.has(next.eventId)) basket.updateRange(next.eventId, {startUs: next.startUs, endUs: next.endUs});
+    };
 
     useEffect(() => {
         const onKey = (event) => {
@@ -131,7 +152,7 @@ function App() {
             } else if ((event.key === "b" || event.key === "B") && selected) {
                 toggleBasket(selected);
             } else if ((event.key === "j" || event.key === "l") && events.length) {
-                const index = events.findIndex((e) => e === selected);
+                const index = events.findIndex((e) => e.eventId === selected?.eventId);
                 const next = events[Math.min(events.length - 1, Math.max(0, index + (event.key === "l" ? 1 : -1)))];
                 if (next) selectEvent(next);
             }
@@ -145,13 +166,13 @@ function App() {
         ${workspace === "assets"
             ? html`<div class=${work}>
                 <${Bin} runs=${runs} runId=${runId} setRunId=${setRunId} works=${works} onOpen=${openWork} hidden=${!layout.bin}
-                    top=${html`<${ClipSearch} project=${project} runs=${runs} basket=${basket} onShow=${(run, event) => showEvent(run.id, event.eventId)} />
-                        <${BasketList} basket=${basket} onShow=${(item) => showEvent(item.runId, item.eventId)} onUse=${() => { setBasketAt(Date.now()); setWorkspace("edit"); }} />`} />
+                    top=${html`<${ClipSearch} project=${project} runs=${runs} runId=${runId} basket=${basket} onShow=${(run, event) => showEvent(run.id, event.eventId)} />
+                        <${BasketList} basket=${basket} onShow=${(item) => showEvent(item.runId, item.eventId, item)} onUse=${() => { setBasketAt(Date.now()); setWorkspace("edit"); }} />`} />
                 <div class="center">
-                    <${Viewer} media=${view?.media} videoRef=${video} time=${time} setTime=${setTime} />
+                    <${Viewer} media=${view?.media} videoRef=${video} time=${time} setTime=${setTime} selected=${selected} onFullSource=${() => setSelected(null)} />
                     <${Timeline} view=${view} time=${time} selected=${selected} onSelect=${selectEvent} inBasket=${basket.ids} />
                 </div>
-                <${Inspector} view=${view} selected=${selected} run=${currentRun} hidden=${!layout.insp} inBasket=${!!selected && basket.ids.has(selected.eventId)} onBasket=${() => toggleBasket(selected)} />
+                <${Inspector} view=${view} selected=${selected} run=${currentRun} hidden=${!layout.insp} inBasket=${!!selected && basket.ids.has(selected.eventId)} onBasket=${() => toggleBasket(selected)} onRange=${changeRange} />
             </div>`
             : workspace === "edit"
                 ? html`<${EditWorkspace} project=${project} runs=${runs} open=${open} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} />`
@@ -184,13 +205,8 @@ function Bin({runs, runId, setRunId, works, onOpen, hidden, top}) {
         <div class="panel-head">素材箱</div>
         <div class="panel-body">
             ${top}
-            <div class="section-label">录像</div>
-            ${runs.map((run) => {
-                const tone = run.completedEligible ? "ok" : run.status === "failed" ? "bad" : "warn";
-                const label = run.completedEligible ? timecode(run.durationUs || 0).slice(0, 5) : run.status === "failed" ? "分析失败" : "未完成";
-                return html`<button class="row" aria-current=${run.id === runId} disabled=${!run.completedEligible} title=${run.sourceName}
-                    onClick=${() => setRunId(run.id)}><span class=${`dot ${tone}`}></span><span class="name">${run.sourceName || run.id.slice(0, 8)}</span><span class="meta">${label}</span></button>`;
-            })}
+            <div class="section-label">原始录像（${groupRecordings(runs).length} 个文件）</div>
+            ${groupRecordings(runs).map((group) => html`<${Recording} group=${group} runId=${runId} onSelect=${setRunId} />`)}
             ${!runs.length && html`<p class="note">这里会列出项目里的录像。</p>`}
             <div class="section-label">我的作品</div>
             ${groups.map(([kind, list]) => html`<details class="group" open=${kind === "render"}>
@@ -206,9 +222,41 @@ function Bin({runs, runId, setRunId, works, onOpen, hidden, top}) {
     </aside>`;
 }
 
-function Viewer({media, videoRef, time, setTime}) {
+function Recording({group, runId, onSelect}) {
+    const run = group.runs.find((r) => r.id === runId) || group.runs.find((r) => r.completedEligible) || group.runs[0];
+    return html`<div class="recording">
+        <button class="row" aria-current=${group.runs.some((r) => r.id === runId)} disabled=${!run.completedEligible} title=${run.sourceName}
+            onClick=${() => onSelect(run.id)}><span class=${`dot ${run.completedEligible ? "ok" : "bad"}`}></span><span class="name">${run.sourceName || run.id.slice(0, 8)}</span><span class="meta">${timecode(run.durationUs || 0).slice(0, 5)}</span></button>
+        <details class="group"><summary>分析记录（${group.runs.length}）</summary>
+            ${group.runs.map((version, i) => html`<button class="row" disabled=${!version.completedEligible} aria-current=${version.id === runId}
+                onClick=${() => onSelect(version.id)}><span class="name">${version.analysisProfile || "分析"} · ${i + 1}</span><span class="meta">${version.completedEligible ? "查看" : version.status === "failed" ? "分析失败" : "未完成"}</span></button>`)}
+        </details>
+    </div>`;
+}
+
+function Viewer({media, videoRef, time, setTime, selected, onFullSource}) {
     const src = media ? client.sameOrigin(media.videoUrl, "/api/media") : null;
     const [playing, setPlaying] = useState(false);
+    useLayoutEffect(() => {
+        const el = videoRef.current;
+        if (!el || !selected) return;
+        let frame = 0;
+        const bound = () => {
+            cancelAnimationFrame(frame);
+            if (el.currentTime * 1e6 >= selected.endUs) {
+                el.pause();
+                if (Math.abs(el.currentTime * 1e6 - selected.endUs) > 1000) el.currentTime = selected.endUs / 1e6;
+                setTime(selected.endUs);
+            } else if (!el.paused) frame = requestAnimationFrame(bound);
+        };
+        const play = () => {
+            if (el.currentTime * 1e6 >= selected.endUs || el.currentTime * 1e6 < selected.startUs) el.currentTime = selected.startUs / 1e6;
+            cancelAnimationFrame(frame); bound();
+        };
+        const pause = () => cancelAnimationFrame(frame);
+        el.addEventListener("play", play); el.addEventListener("timeupdate", bound); el.addEventListener("pause", pause);
+        return () => { cancelAnimationFrame(frame); el.removeEventListener("play", play); el.removeEventListener("timeupdate", bound); el.removeEventListener("pause", pause); };
+    }, [selected, src]);
     return html`<section class="viewer" aria-label="预览窗">
         ${src
             ? html`<video ref=${videoRef} src=${src} preload="metadata" playsinline
@@ -219,6 +267,7 @@ function Viewer({media, videoRef, time, setTime}) {
             <button class="icon-btn" disabled=${!src} onClick=${() => { const el = videoRef.current; if (el) el.paused ? void el.play().catch(() => {}) : el.pause(); }}>${playing ? "暂停" : "播放"}</button>
             <span class="tc">${timecode(time)} / ${media ? timecode(media.durationUs) : "00:00.000"}</span>
             <span class="spacer"></span>
+            ${selected && html`<span class="hint">仅播放选中片段</span><button class="btn ghost" onClick=${onFullSource}>查看整段录像</button>`}
             <span class="tc">空格 播放/暂停 · ←/→ 1 秒 · J/L 上/下一段</span>
         </div>
     </section>`;
@@ -252,7 +301,7 @@ function Timeline({view, time, selected, onSelect, inBasket}) {
                 <div class="track">
                     ${view.timeline.map((event) => {
                         const thumb = thumbs[event.evidenceIds?.[0]];
-                        return html`<button class=${`clip${inBasket.has(event.eventId) ? " in-basket" : ""}`} aria-current=${selected === event} title=${`${event.startTimecode} ${event.displayFacts?.[0] || ""}`}
+                        return html`<button class=${`clip${inBasket.has(event.eventId) ? " in-basket" : ""}`} aria-current=${selected?.eventId === event.eventId} title=${`${event.startTimecode} ${event.displayFacts?.[0] || ""}`}
                             style=${{left: `${event.startUs * scale}px`, width: `${Math.max(3, (event.endUs - event.startUs) * scale - 1)}px`, backgroundImage: thumb ? `url("${thumb}")` : "none"}}
                             onClick=${() => onSelect(event)} aria-label=${`片段 ${event.startTimecode}`}></button>`;
                     })}
@@ -264,7 +313,7 @@ function Timeline({view, time, selected, onSelect, inBasket}) {
     </section>`;
 }
 
-function Inspector({view, selected, run, hidden, inBasket, onBasket}) {
+function Inspector({view, selected, run, hidden, inBasket, onBasket, onRange}) {
     const images = useMemo(() => {
         if (!selected || !view) return [];
         const byId = Object.fromEntries(view.evidence.filter((e) => e.kind === "image").map((e) => [e.id, e]));
@@ -274,7 +323,10 @@ function Inspector({view, selected, run, hidden, inBasket, onBasket}) {
         <div class="panel-head">检查器</div>
         <div class="panel-body">
             ${selected ? html`
-                <div class="field"><div class="k">片段</div><div class="v num">${selected.startTimecode} – ${selected.endTimecode}（${(seconds(selected.endUs - selected.startUs)).toFixed(1)} 秒）</div>
+                <div class="field"><div class="k">取景选段</div><div class="v num">${timecode(selected.startUs)} – ${timecode(selected.endUs)}（${(seconds(selected.endUs - selected.startUs)).toFixed(1)} 秒）</div>
+                    <div class="pair even"><label class="form-row">入点（秒）<input class="input" aria-label="选段入点" type="number" min="0" step="0.1" value=${selected.startUs / 1e6} onChange=${(e) => onRange({startUs: Math.round(Number(e.currentTarget.value) * 1e6)})} /></label>
+                        <label class="form-row">出点（秒）<input class="input" aria-label="选段出点" type="number" min="0" max=${view.media.durationUs / 1e6} step="0.1" value=${selected.endUs / 1e6} onChange=${(e) => onRange({endUs: Math.round(Number(e.currentTarget.value) * 1e6)})} /></label></div>
+                    <p class="hint">分析区间 ${timecode(selected.analysisStartUs)} – ${timecode(selected.analysisEndUs)}；取景可包含上下文，需覆盖原观察位置。扩展画面请回看确认。</p>
                     <div class="actions-row"><button class=${inBasket ? "btn ghost" : "btn"} onClick=${onBasket}>${inBasket ? "移出片段篮" : "加入片段篮"}</button><span class="hint">快捷键 B</span></div></div>
                 <div class="field"><div class="k">分析描述（模型观察，未经人工核对）</div><ul class="facts">${(selected.displayFacts || selected.observableFacts || []).map((fact) => html`<li>${fact}</li>`)}</ul></div>
                 ${selected.uncertainty && html`<div class="field"><div class="k">不确定</div><div class="v">${selected.uncertainty}</div></div>`}

@@ -207,9 +207,11 @@ def test_generate_persist_restart_without_resynthesis(narrated):
             restarted.narration_file(state["jobId"], name)
 
 
-def test_voice_listing_and_missing_voice_never_completes(narrated):
+def test_voice_listing_and_missing_voice_never_completes(narrated, monkeypatch):
+    monkeypatch.setenv("DASHSCOPE_API_KEY", "test-key-no-network")
     jobs, engine = narrated.jobs, narrated.engine
     listing = jobs.voices()
+    assert listing["defaultVoiceId"] == "v1"
     assert listing["voices"][0] == {
         "voiceId": "v1",
         "description": "Fixture 中文",
@@ -231,6 +233,7 @@ def test_voice_listing_and_missing_voice_never_completes(narrated):
     state = done(jobs)
     engine.voices = []
     assert [v for v in jobs.voices()["voices"] if not v["paid"]] == []
+    assert jobs.voices()["defaultVoiceId"] is None
     assert jobs.get(state["jobId"])["status"] == "completed"
     assert (
         finish(

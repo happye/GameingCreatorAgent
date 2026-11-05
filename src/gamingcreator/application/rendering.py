@@ -4,8 +4,10 @@ from dataclasses import dataclass
 from fractions import Fraction
 from typing import Any
 
+from gamingcreator.application.creative_planner import selected_source_range
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.media import MediaAsset
+from gamingcreator.domain.models import SemanticEvent
 from gamingcreator.domain.time import SourceRange
 
 
@@ -116,15 +118,13 @@ def validate_render_plan(
         for key in ("startUs", "endUs", "sourceDurationUs", "outputStartFrame", "outputFrames"):
             if type(row.get(key)) is not int:
                 raise ValueError("Source and output times must be integers.")
+        allowed = allowed_source_range(row, event, timeline)
         if (
             row.get("mediaId") != asset.media_id
             or row.get("sourceSha256") != asset.sha256
             or row.get("sourcePath") != str(asset.source_path)
             or row["sourceDurationUs"] != asset.duration_us
-            or not event.source_range.start_us
-            <= row["startUs"]
-            < row["endUs"]
-            <= event.source_range.end_us
+            or not allowed.start_us <= row["startUs"] < row["endUs"] <= allowed.end_us
             or row["outputFrames"] <= 0
             or row["outputStartFrame"] != frames
             or row["endUs"] - row["startUs"] != (row["outputFrames"] * 1_000_000 + fps - 1) // fps
@@ -148,3 +148,27 @@ def validate_render_plan(
     if type(duration) is not int or duration <= 0 or frames > duration * fps:
         raise ValueError("EDL exceeds Brief duration.")
     return RenderPlan(tuple(clips), fps)
+
+
+def allowed_source_range(
+    row: dict[str, Any], event: SemanticEvent, timeline: StoredTimeline
+) -> SourceRange:
+    original = event.source_range
+    if "rangeProvenance" not in row:
+        return original
+    asset = timeline.run.asset
+    value = row["rangeProvenance"]
+    if (
+        not isinstance(value, dict)
+        or set(value) != {"schemaVersion", "analysisStartUs", "analysisEndUs", "startUs", "endUs"}
+        or value.get("schemaVersion") != "user-framing-v1"
+        or type(value.get("analysisStartUs")) is not int
+        or type(value.get("analysisEndUs")) is not int
+        or value["analysisStartUs"] != original.start_us
+        or value["analysisEndUs"] != original.end_us
+        or not event.evidence_ids
+        or not set(event.evidence_ids) <= {e.evidence_id for e in timeline.evidence}
+    ):
+        raise ValueError("Invalid range provenance or evidence.")
+    selected_source_range(row, event, asset.duration_us)
+    return selected_source_range(value, event, asset.duration_us)
