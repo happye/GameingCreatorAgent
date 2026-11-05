@@ -188,6 +188,7 @@ def test_inspect_empty_query_is_a_read_with_metadata(tmp_path):
         payload = json.loads(body)
         assert status == 200 and payload["candidates"] == []
         assert payload["media"]["durationUs"] == 2_000_000
+        assert "sourceClock" in payload["media"]
         assert payload["analysisKind"] == "frame_observations"
         assert payload["timeline"][0]["mechanicTags"] == ["fixture-mechanic"]
         assert payload["evidence"][0]["startUs"] == 100_000
@@ -200,6 +201,7 @@ def test_inspect_empty_query_is_a_read_with_metadata(tmp_path):
         assert get(base, "/api/inspect?" + query + "&top=101")[0] == 400
         status, _, runs = get(base, "/api/runs?" + urlencode({"project": str(project)}))
         assert status == 200 and json.loads(runs)["runs"][0]["sourceName"] == "source.fixture"
+        assert json.loads(runs)["runs"][0]["sourceClock"] == payload["media"]["sourceClock"]
 
 
 def test_verified_media_invalidates_cached_stat(tmp_path):

@@ -1,15 +1,16 @@
 // Instant plan preview: play a plan's edit list straight from the source recordings,
 // jumping between segments, so a plan can be watched before anything is rendered.
-import {useCallback, useEffect, useLayoutEffect, useRef, useState} from "../vendor/hooks.module.js";
+import "../source-clock.js";
+import {useCallback, useLayoutEffect, useRef, useState} from "../vendor/hooks.module.js";
 
 // Plan segments → playback items on an output clock (microseconds). Each item plays
 // source [startUs, endUs) at `rate` (speed), taking outDurUs of output time.
 export function timeline(segments, fps) {
     let out = 0;
     return segments.map((segment) => {
-        const duration = Math.round((segment.outputFrames * 1e6) / fps);
-        const item = {...segment, rate: 1, endUs: segment.startUs + duration, outStartUs: out, outDurUs: duration};
-        out += duration;
+        const duration = segment.outputFrames * 1e6 / fps;
+        const item = {...segment, rate: 1, endUs: segment.startUs + duration, outStartUs: out * 1e6 / fps, outDurUs: duration};
+        out += segment.outputFrames;
         return item;
     });
 }
@@ -20,13 +21,15 @@ export function clipFrames(clip, fps) {
     return Number((BigInt(clip.endUs - clip.startUs) * BigInt(fps) * BigInt(denominator)) / (1000000n * BigInt(numerator)));
 }
 
-// Editor clips → playback items. Transitions preview as cuts.
+// Editor clips → playback items on the integer export frame clock.
 export function editTimeline(clips, fps) {
     let out = 0;
     return clips.map((clip) => {
-        const duration = Math.round((clipFrames(clip, fps) * 1e6) / fps);
-        const item = {...clip, rate: clip.speed.numerator / clip.speed.denominator, outStartUs: out, outDurUs: duration};
-        out += duration;
+        const frames = clipFrames(clip, fps);
+        const duration = frames * 1e6 / fps;
+        out -= clip.transitionIn?.frames || 0;
+        const item = {...clip, rate: clip.speed.numerator / clip.speed.denominator, outStartUs: out * 1e6 / fps, outDurUs: duration};
+        out += frames;
         return item;
     });
 }
@@ -43,119 +46,192 @@ export function shots(items) {
     return groups;
 }
 
-function mediaReady(video, signal, metadata = false) {
-    const complete = () => metadata ? video.readyState >= 1 : !video.seeking && video.readyState >= 3;
+function waitMedia(video, signal, complete, message) {
     if (signal.aborted) return Promise.reject(new DOMException("Cancelled", "AbortError"));
     if (complete()) return Promise.resolve();
     return new Promise((resolve, reject) => {
-        const events = ["loadedmetadata", "seeked", "canplay", "loadeddata"];
+        const events = ["loadedmetadata", "seeked", "canplay", "loadeddata", "progress", "durationchange"];
         const cleanup = () => {
-            events.forEach((name) => video.removeEventListener(name, check));
+            clearTimeout(timer);
+            events.forEach(name => video.removeEventListener(name, check));
             video.removeEventListener("error", fail); signal.removeEventListener("abort", abort);
         };
         const check = () => { if (complete()) { cleanup(); resolve(); } };
-        const fail = () => { cleanup(); reject(new Error("素材无法播放")); };
+        const fail = () => { cleanup(); reject(new Error(message)); };
         const abort = () => { cleanup(); reject(new DOMException("Cancelled", "AbortError")); };
-        events.forEach((name) => video.addEventListener(name, check));
+        const timer = setTimeout(fail, 8000);
+        events.forEach(name => video.addEventListener(name, check));
         video.addEventListener("error", fail); signal.addEventListener("abort", abort);
     });
 }
 
-export function usePlanPlayer(videoRef, items, urlFor) {
-    const [outUs, setOutUs] = useState(0);
-    const [playing, setPlaying] = useState(false);
-    const [buffering, setBuffering] = useState(false);
-    const pending = useRef(null), stalled = useRef(false);
-    const current = useRef({index: -1, src: ""});
-    const frame = useRef(0), busy = useRef(false), token = useRef(0);
-    const total = items.length ? items.at(-1).outStartUs + items.at(-1).outDurUs : 0;
+function mediaReady(video, signal, metadata = false, target = null) {
+    return waitMedia(video, signal, () => metadata ? video.readyState >= 1
+        : !video.seeking && video.readyState >= 3
+            && (target === null || Math.abs(video.currentTime - target) <= .015),
+    "素材无法定位到所选片段，请导出成片后观看");
+}
 
-    const live = useRef(false);
-    const stop = useCallback(() => { token.current += 1; pending.current?.abort(); busy.current = false; live.current = false; cancelAnimationFrame(frame.current); videoRef.current?.pause(); setPlaying(false); }, []);
-
-    const load = useCallback(async (index, offsetUs, run) => {
-        pending.current?.abort();
-        const controller = new AbortController(); pending.current = controller;
-        const video = videoRef.current, item = items[index], src = urlFor(item.runId);
-        stalled.current = true; setBuffering(true); video.pause();
-        if (current.current.src !== src) { video.src = src; current.current.src = src; }
-        await mediaReady(video, controller.signal, true);
-        if (run !== token.current) return;
-        video.playbackRate = item.rate || 1;
-        const target = (item.startUs + offsetUs * (item.rate || 1)) / 1e6;
-        if (Math.abs(video.currentTime - target) > 0.015) video.currentTime = target;
-        await mediaReady(video, controller.signal);
-        if (run !== token.current) return;
-        current.current.index = index;
-        stalled.current = false; setBuffering(false);
-    }, [items, urlFor]);
-
-    // Advance across segment boundaries and update the output clock. Called from animation
-    // frames (smooth while visible) and from the video's timeupdate (keeps working in background).
-    const tick = useCallback(async (run) => {
-        if (run !== token.current || !live.current || busy.current || stalled.current) return;
-        const video = videoRef.current, index = current.current.index, item = items[index];
-        if (!video || !item) return;
-        if (video.currentTime * 1e6 >= item.endUs - 15000) {
-            if (index + 1 >= items.length) { stop(); setOutUs(total); return; }
-            const next = items[index + 1];
-            if (urlFor(next.runId) === current.current.src && (next.rate || 1) === (item.rate || 1) && Math.abs(next.startUs - video.currentTime * 1e6) < 60000) current.current.index = index + 1;
-            else {
-                busy.current = true;
-                try { await load(index + 1, 0, run); if (run === token.current && live.current) await video.play(); } catch { if (run === token.current) stop(); return; } finally { if (run === token.current) busy.current = false; }
-            }
+function seekableTarget(video, signal, target) {
+    if (Number.isFinite(video.duration) && target > video.duration) {
+        return Promise.reject(new Error("所选片段超出素材可播放范围，请导出成片后观看"));
+    }
+    return waitMedia(video, signal, () => {
+        for (let index = 0; index < video.seekable.length; index++) {
+            if (video.seekable.start(index) <= target && video.seekable.end(index) >= target) return true;
         }
-        if (run !== token.current) return;
-        const now = items[current.current.index];
-        setOutUs(now.outStartUs + Math.min(now.outDurUs, Math.max(0, (video.currentTime * 1e6 - now.startUs) / (now.rate || 1))));
-    }, [items, urlFor, load, stop, total]);
+        return false;
+    }, "素材无法读取所选片段，请导出成片后观看");
+}
 
-    const loop = useCallback((run) => {
-        frame.current = requestAnimationFrame(async () => { await tick(run); if (run === token.current && live.current) loop(run); });
-    }, [tick]);
-
-    useEffect(() => {
-        const video = videoRef.current; if (!video) return;
-        const onTime = () => void tick(token.current);
-        const waiting = () => { stalled.current = true; setBuffering(true); };
-        const resumed = () => {
-            if (!video.seeking && video.readyState >= 3 && !busy.current) {
-                stalled.current = false; setBuffering(false);
-            }
-        };
-        video.addEventListener("timeupdate", onTime);
-        ["waiting", "seeking"].forEach((name) => video.addEventListener(name, waiting));
-        ["playing", "canplay", "seeked"].forEach((name) => video.addEventListener(name, resumed));
-        return () => {
-            video.removeEventListener("timeupdate", onTime);
-            ["waiting", "seeking"].forEach((name) => video.removeEventListener(name, waiting));
-            ["playing", "canplay", "seeked"].forEach((name) => video.removeEventListener(name, resumed));
-        };
-    }, [tick]);
-
-    const seek = useCallback(async (target, play = false) => {
-        if (!items.length || !videoRef.current) return;
-        const run = ++token.current; cancelAnimationFrame(frame.current); live.current = false; busy.current = false; setPlaying(false);
-        const clamped = Math.max(0, Math.min(target, total - 1));
-        const index = Math.max(0, items.findIndex((item) => clamped < item.outStartUs + item.outDurUs));
-        setOutUs(clamped);
-        // Media that cannot load or play leaves the player stopped; the timeline stays usable.
+class PlanPlayback {
+    constructor(videos, items, urlFor, publish, disabled) {
+        Object.assign(this, {items, urlFor, publish, disabled, error: disabled, run: 0, live: false, out: 0});
+        this.slots = videos.map(video => {
+            video.dataset.previewSlot = "";
+            video.style.opacity = "0";
+            return {video, index: -1, ready: false, loading: false, run: -1};
+        });
+        this.total = items.length ? items.at(-1).outStartUs + items.at(-1).outDurUs : 0;
+        this.listeners = [];
+        for (const slot of this.slots) for (const name of ["waiting", "seeking", "canplay", "seeked", "playing", "timeupdate"]) {
+            const fn = () => this.event(slot, name);
+            slot.video.addEventListener(name, fn);
+            this.listeners.push(() => slot.video.removeEventListener(name, fn));
+        }
+    }
+    state(buffering = false) { if (this.disposed) return; this.publish({outUs: this.out, totalUs: this.total, playing: this.live, buffering, error: this.error || ""}); }
+    active() {
+        return this.items.map((item, index) => ({item, index}))
+            .filter(({item}) => this.out >= item.outStartUs && this.out < item.outStartUs + item.outDurUs)
+            .map(({index}) => index);
+    }
+    async prepare(slot, index, run) {
+        slot.pending?.abort();
+        const controller = new AbortController(); slot.pending = controller;
+        slot.index = index; slot.ready = false; slot.loading = true; slot.error = ""; slot.run = run;
+        const video = slot.video, item = this.items[index], src = this.urlFor(item.runId);
+        video.pause(); video.style.opacity = "0"; video.volume = 0;
+        if (video.getAttribute("src") !== src) { video.src = src; video.load(); }
+        await mediaReady(video, controller.signal, true);
+        if (run !== this.run) return;
+        video.playbackRate = item.rate || 1;
+        const target = ((item.sourceClock?.originUs || 0) + item.startUs
+            + Math.max(0, this.out - item.outStartUs) * (item.rate || 1)) / 1e6;
+        if (target > 0) await seekableTarget(video, controller.signal, target);
+        if (run !== this.run) return;
+        if (Math.abs(video.currentTime - target) > .015) video.currentTime = target;
+        await mediaReady(video, controller.signal, false, target);
+        if (run === this.run) { slot.ready = true; slot.loading = false; if (this.live) { this.paint(); this.resume(); } }
+    }
+    stop() {
+        this.run++; this.live = false; cancelAnimationFrame(this.frame);
+        this.slots.forEach(slot => {
+            slot.pending?.abort(); slot.video.pause();
+            slot.index = -1; slot.ready = false; slot.loading = false; slot.run = -1; slot.error = "";
+        });
+        this.state();
+    }
+    dispose() { this.disposed = true; this.stop(); this.listeners.forEach(remove => remove()); }
+    async seek(target, play = false) {
+        if (this.disabled || !this.items.length) return;
+        this.stop(); this.error = ""; const run = this.run;
+        this.slots.forEach(slot => {
+            slot.video.style.opacity = "0"; slot.video.dataset.previewGain = "0"; slot.video.volume = 0;
+        });
+        this.out = Math.max(0, Math.min(target, this.total - 1)); this.state(true);
         try {
-            await load(index, clamped - items[index].outStartUs, run);
-            if (play && run === token.current) { live.current = true; await videoRef.current.play(); if (run !== token.current) return; setPlaying(true); loop(run); }
-        } catch { if (run === token.current) stop(); }
-    }, [items, load, loop, total, stop]);
+            await Promise.all(this.active().map((index, n) => this.prepare(this.slots[n], index, run)));
+            if (run !== this.run) return;
+            this.live = play; this.paint(); this.state();
+            if (play) { this.resume(); this.loop(); }
+            this.preload();
+        } catch (error) { if (run === this.run) this.fail(error.message); }
+    }
+    fail(message) { this.error = message; this.stop(); }
+    preload() {
+        const active = this.active(), next = Math.max(...active) + 1;
+        if (!this.items[next] || this.slots.some(slot => slot.index === next && slot.run === this.run && (slot.loading || slot.ready))) return;
+        const slot = this.slots.find(candidate => !active.includes(candidate.index));
+        if (!slot) return;
+        const run = this.run;
+        void this.prepare(slot, next, run).catch(error => {
+            if (run !== this.run || error.name === "AbortError") return;
+            slot.error = error.message; slot.loading = false;
+            if (this.active().includes(slot.index)) this.fail(slot.error);
+        });
+    }
+    event(slot, name) {
+        if (slot.loading || !this.active().includes(slot.index)) return;
+        if (name === "waiting" || name === "seeking") {
+            slot.ready = false; this.slots.forEach(other => other.video.pause());
+            if (this.live) this.state(true);
+        } else if (["canplay", "seeked", "playing"].includes(name)) {
+            if (!slot.video.seeking && slot.video.readyState >= 3) slot.ready = true;
+            if (this.live) this.resume();
+        } else this.tick();
+    }
+    resume() {
+        const required = this.active().map(index => this.slots.find(slot => slot.index === index));
+        const failed = required.find(slot => slot?.error);
+        if (failed) { this.fail(failed.error); return false; }
+        if (required.some(slot => !slot?.ready)) return false;
+        this.state();
+        const run = this.run;
+        for (const slot of required) if (slot.video.paused) {
+            void slot.video.play().catch(error => {
+                if (run === this.run && this.live) this.fail(error.message || "素材无法播放");
+            });
+        }
+        return true;
+    }
+    paint() {
+        const active = this.active();
+        for (const slot of this.slots) {
+            const visible = active.includes(slot.index);
+            slot.video.style.opacity = visible ? "1" : "0";
+            slot.video.style.zIndex = visible ? "2" : "1";
+            slot.video.dataset.previewGain = visible ? "1" : "0";
+            slot.video.volume = visible ? Math.min(1, Number(slot.video.dataset.sourceLevel || 1)) : 0;
+            if (!visible) slot.video.pause();
+        }
+    }
+    tick() {
+        if (!this.live) return;
+        const indices = this.active(), master = this.slots.find(slot => slot.index === indices[0]);
+        if (!master?.ready || !this.resume()) return;
+        const item = this.items[master.index];
+        const proposed = item.outStartUs + (master.video.currentTime * 1e6
+            - (item.sourceClock?.originUs || 0) - item.startUs) / (item.rate || 1);
+        const boundary = this.items[master.index + 1]?.outStartUs;
+        if (boundary !== undefined && proposed >= boundary && !indices.includes(master.index + 1)) {
+            this.out = boundary;
+            if (!this.resume()) { if (!this.live) return; this.slots.forEach(slot => slot.video.pause()); this.state(true); return; }
+        } else this.out = Math.max(this.out, proposed);
+        if (this.out >= this.total) { this.out = this.total; this.stop(); return; }
+        this.paint(); this.state(); this.preload();
+    }
+    loop() { this.frame = requestAnimationFrame(() => { this.tick(); if (this.live) this.loop(); }); }
+}
 
+export function usePlanPlayer(videoRef, items, urlFor, secondRef, disabled = "") {
+    const [state, setState] = useState({outUs: 0, totalUs: 0, playing: false, buffering: false});
+    const engine = useRef(null);
+    useLayoutEffect(() => {
+        const first = videoRef.current;
+        if (!first) return;
+        const second = secondRef?.current || first.cloneNode(false);
+        if (!secondRef) first.after(second);
+        const player = new PlanPlayback([first, second], items, urlFor, setState, disabled);
+        engine.current = player; player.state();
+        return () => { player.dispose(); if (!secondRef) second.remove(); };
+    }, [items, urlFor, disabled]);
+    const seek = useCallback((target, play = false) => engine.current?.seek(target, play), []);
+    const stop = useCallback(() => engine.current?.stop(), []);
     const toggle = useCallback(() => {
-        if (playing) return stop();
-        void seek(outUs >= total - 50000 ? 0 : outUs, true);
-    }, [playing, outUs, total, seek, stop]);
-
-    // A different plan resets the player.
-    useLayoutEffect(() => { token.current += 1; stop(); setOutUs(0); current.current = {index: -1, src: ""}; }, [items]);
-    useEffect(() => {
-        const video = videoRef.current;
-        return () => { token.current += 1; live.current = false; pending.current?.abort(); cancelAnimationFrame(frame.current); video?.pause(); };
+        const player = engine.current;
+        if (player?.live) player.stop();
+        else if (player) void player.seek(player.out >= player.total - 50000 ? 0 : player.out, true);
     }, []);
-    return {outUs, totalUs: total, playing, buffering, seek, toggle, stop};
+    return {...state, seek, stop, toggle};
 }

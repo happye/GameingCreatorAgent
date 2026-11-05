@@ -304,3 +304,19 @@ def test_bad_usage_preserves_valid_response_identities_and_unknown_reservation()
     assert result.metadata.usage.input_tokens is None
     assert recorder.records[0].metadata == result.metadata
     assert ledger.reserved_cny == 3 and len(transport.calls) == 1
+
+
+@pytest.mark.parametrize(
+    "prompt,schema",
+    [
+        ("plan-reasoning-prompt-v1", "creation-reasoning-v1"),
+        ("creation-reasoning-prompt-v1", "plan-proposal-v1"),
+        ("invented", "plan-proposal-v1"),
+    ],
+)
+def test_plan_and_edit_versions_must_be_explicit_pairs(prompt, schema):
+    provider, ledger, recorder, transport, approvals = setup()
+    with pytest.raises(ValueError, match="version"):
+        call(provider, request=ReasoningRequest("system", "user", prompt, schema))
+    assert not transport.calls and not approvals
+    assert ledger.requests == 0

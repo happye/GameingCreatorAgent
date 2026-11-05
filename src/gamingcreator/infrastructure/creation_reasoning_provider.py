@@ -13,6 +13,8 @@ from typing import Any
 from gamingcreator.application.budget import BudgetLedger, InvocationRecorder
 from gamingcreator.application.creation_proposals import SCHEMA_VERSION, canonical
 from gamingcreator.application.creation_reasoning import PROMPT_VERSION, ReasoningRequest
+from gamingcreator.application.plan_proposals import SCHEMA_VERSION as PLAN_SCHEMA_VERSION
+from gamingcreator.application.plan_reasoning import PROMPT_VERSION as PLAN_PROMPT_VERSION
 from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004, PriceSnapshot
 from gamingcreator.application.providers import (
     CancellationContext,
@@ -111,7 +113,10 @@ class DeepSeekCreationReasoningProvider:
         self._max_output_tokens = max_output_tokens
 
     def _payload(self, request: ReasoningRequest) -> dict[str, object]:
-        if request.prompt_version != PROMPT_VERSION or request.schema_version != SCHEMA_VERSION:
+        if (request.prompt_version, request.schema_version) not in {
+            (PROMPT_VERSION, SCHEMA_VERSION),
+            (PLAN_PROMPT_VERSION, PLAN_SCHEMA_VERSION),
+        }:
             raise ValueError("Unsupported reasoning request version.")
         if any(not isinstance(s, str) or not s.strip() for s in (request.system, request.user)):
             raise ValueError("Reasoning messages must be nonempty text.")

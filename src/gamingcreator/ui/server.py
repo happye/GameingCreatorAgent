@@ -66,6 +66,7 @@ ASSETS = {
     "/assets/studio/main.js": ("studio/main.js", "text/javascript; charset=utf-8"),
     "/assets/studio/api.js": ("studio/api.js", "text/javascript; charset=utf-8"),
     "/assets/studio/reasoning.js": ("studio/reasoning.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/planning.js": ("studio/planning.js", "text/javascript; charset=utf-8"),
     "/assets/studio/edit.js": ("studio/edit.js", "text/javascript; charset=utf-8"),
     "/assets/studio/clipedit.js": ("studio/clipedit.js", "text/javascript; charset=utf-8"),
     "/assets/studio/audio.js": ("studio/audio.js", "text/javascript; charset=utf-8"),

@@ -7,6 +7,7 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 from gamingcreator.application.acceptance_readiness import build_acceptance_readiness
+from gamingcreator.application.browser_source_clock import runtime_clock_document
 from gamingcreator.application.coverage_gap_report import build_coverage_gap_report
 from gamingcreator.application.detail_query import loads_constraint, query_options
 from gamingcreator.application.detail_refinement import (
@@ -228,6 +229,7 @@ async def project_runs_payload(project: Path) -> dict[str, object]:
                     "sourceSha256": run.asset.sha256,
                     "mediaId": run.asset.media_id,
                     "durationUs": run.asset.duration_us,
+                    "sourceClock": runtime_clock_document(run.asset),
                     "errorCode": run.error_code,
                     "searchEligible": status == RunStatus.COMPLETED.value,
                     "completedEligible": status == RunStatus.COMPLETED.value,
@@ -486,6 +488,7 @@ async def inspect_run(
                 "id": asset.media_id,
                 "name": asset.source_path.name,
                 "durationUs": asset.duration_us,
+                "sourceClock": runtime_clock_document(asset),
                 "sha256": asset.sha256,
                 "videoUrl": "/api/media?" + urlencode(identity),
                 # Offered only while a verified proxy exists; the page keeps the original by default.

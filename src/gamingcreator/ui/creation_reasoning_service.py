@@ -22,6 +22,12 @@ from gamingcreator.application.creation_proposals import (
 )
 from gamingcreator.application.creation_reasoning import ReasoningRequest, reasoning_request
 from gamingcreator.application.creation_replacements import candidate_manifest_sha
+from gamingcreator.application.plan_proposals import (
+    PlanSnapshot,
+    compile_plan_proposal,
+    validate_plan_proposal,
+)
+from gamingcreator.application.plan_reasoning import plan_reasoning_request
 from gamingcreator.application.pricing import PriceSnapshot
 from gamingcreator.application.providers import (
     CancellationContext,
@@ -147,12 +153,40 @@ class CreationReasoningService:
 
     def prepare(self, job_id: str, plan_id: str, instruction: str) -> dict[str, Any]:
         snapshot, project_id = self._snapshot(job_id, plan_id)
-        request = reasoning_request(snapshot, instruction)
+        return self._prepare(snapshot, project_id, job_id, plan_id, instruction)
+
+    def prepare_plan(self, job_id: str) -> dict[str, Any]:
+        from gamingcreator.ui.plan_reasoning_jobs import original_snapshot
+
+        snapshot, original = original_snapshot(self.jobs, job_id)
+        result = self._prepare(snapshot, original["projectId"], job_id, "", "", "plan")
+        result["originalRequest"] = {
+            key: original[key]
+            for key in ("brief", "fps", "runIds", "eventIds", "clipRanges")
+            if key in original
+        }
+        return result
+
+    def _prepare(
+        self,
+        snapshot: EditingSnapshot | PlanSnapshot,
+        project_id: str,
+        job_id: str,
+        plan_id: str,
+        instruction: str,
+        purpose: str = "edit",
+    ) -> dict[str, Any]:
+        request = (
+            plan_reasoning_request(snapshot)
+            if isinstance(snapshot, PlanSnapshot)
+            else reasoning_request(snapshot, instruction)
+        )
         quote = self.price.reservation_cny(self.price.context_limit_tokens, 2048)
         if quote <= 0 or MODEL.casefold() not in {s.casefold() for s in self.price.model_aliases}:
             raise ValueError("Unknown or invalid pilot cost upper bound.")
         record = {
             "schemaVersion": PREPARED_SCHEMA,
+            "purpose": purpose,
             "intentId": uuid4().hex,
             "jobId": job_id,
             "planId": plan_id,
@@ -171,6 +205,7 @@ class CreationReasoningService:
         directory = self._directory(prepared_hash)
         _write(directory, "prepared.json", record)
         return {
+            "purpose": purpose,
             "preparedHash": prepared_hash,
             "snapshotFingerprint": snapshot.fingerprint,
             "requestedModel": MODEL,
@@ -184,7 +219,9 @@ class CreationReasoningService:
             "payloadSummary": {
                 "textOnly": True,
                 "inputFrames": 0,
-                "clipCount": len(snapshot.payload["parent_edl"]["segments"]),
+                "clipCount": len(snapshot.clips)
+                if isinstance(snapshot, PlanSnapshot)
+                else len(snapshot.payload["parent_edl"]["segments"]),
             },
         }
 
@@ -194,7 +231,9 @@ class CreationReasoningService:
             raise ValueError("Prepared parameters changed.")
         return record
 
-    def _current(self, record: dict[str, Any]) -> EditingSnapshot:
+    def _current(self, record: dict[str, Any]) -> EditingSnapshot | PlanSnapshot:
+        if record.get("purpose", "edit") == "plan":
+            return self._current_plan(record)
         snapshot, project_id = self._snapshot(record["jobId"], record["planId"])
         if (
             project_id != record["projectId"]
@@ -207,6 +246,23 @@ class CreationReasoningService:
         ):
             raise ValueError("Prepared request changed.")
         return snapshot
+
+    def _current_plan(self, record: dict[str, Any]) -> PlanSnapshot:
+        from gamingcreator.ui.plan_reasoning_jobs import original_snapshot
+
+        snapshot, original = original_snapshot(self.jobs, record["jobId"])
+        if (
+            original["projectId"] != record["projectId"]
+            or snapshot.fingerprint != record["snapshotFingerprint"]
+            or _digest(asdict(plan_reasoning_request(snapshot))) != record["requestHash"]
+        ):
+            raise ValueError("Saved planning inputs changed; prepare again.")
+        return snapshot
+
+    def adopt_plan(self, prepared_hash: str) -> dict[str, Any]:
+        from gamingcreator.ui.plan_reasoning_jobs import adopt
+
+        return adopt(self, prepared_hash)
 
     def read_result(self, prepared_hash: str) -> dict[str, Any]:
         self._prepared(prepared_hash)
@@ -265,7 +321,7 @@ class CreationReasoningService:
         self,
         record: dict[str, Any],
         prepared_hash: str,
-        snapshot: EditingSnapshot,
+        snapshot: EditingSnapshot | PlanSnapshot,
         attempt: Path,
         confirmed_max_cny: Decimal,
     ) -> dict[str, Any]:
@@ -294,6 +350,7 @@ class CreationReasoningService:
         )
         result: dict[str, Any] = {
             "schemaVersion": RESULT_SCHEMA,
+            "purpose": record.get("purpose", "edit"),
             "preparedHash": prepared_hash,
             "status": "failed",
             "proposal": None,
@@ -309,8 +366,7 @@ class CreationReasoningService:
                 errorCode=None if response.error is None else response.error.code,
             )
             if response.status == ProviderStatus.COMPLETED:
-                proposal = validate_proposal(snapshot, response.output)  # type: ignore[arg-type]
-                result["proposal"] = _jsonable({**asdict(proposal), "response": proposal.response})
+                result.update(_validated_output(snapshot, response.output))
         except asyncio.CancelledError:
             result.update(status="cancelled", errorCode="reasoning.cancelled")
         except Exception:
@@ -325,6 +381,8 @@ class CreationReasoningService:
 
     def revision_for_application(self, prepared_hash: str) -> dict[str, Any]:
         record = self._prepared(prepared_hash)
+        if record.get("purpose", "edit") != "edit":
+            raise ValueError("Plan results cannot edit a timeline.")
         result = self.read_result(prepared_hash)
         if result["status"] != "completed" or result["proposal"] is None:
             raise ValueError("No successful edit proposal is available.")
@@ -333,6 +391,7 @@ class CreationReasoningService:
         saved["changes"] = tuple(saved["changes"])
         proposal = CreationProposal(**saved)
         current = self._current(record)
+        assert isinstance(current, EditingSnapshot)
         chain = load_chain(self.jobs, record["jobId"], record["planId"])
         verified = create_snapshot(
             record["jobId"], chain.plan_id, chain.digest, chain.root_sha, chain.edl
@@ -364,7 +423,10 @@ class CreationReasoningService:
         record = self._prepared(prepared_hash)
         if record["jobId"] != job_id or record["planId"] != plan_id:
             raise ValueError("Prepared job or plan does not match the editor.")
+        if record.get("purpose", "edit") != "edit":
+            raise ValueError("Plan results cannot edit a timeline.")
         current = self._current(record)
+        assert isinstance(current, EditingSnapshot)
         if current.payload["parentReceiptSha256"] != expected_parent_receipt_sha256:
             raise ValueError("Saved parent changed; prepare again.")
         revised = self.revision_for_application(prepared_hash)
@@ -382,3 +444,28 @@ class CreationReasoningService:
             "planId": plan_id,
             "expectedParentReceiptSha256": expected_parent_receipt_sha256,
         }
+
+
+def _validated_output(snapshot: EditingSnapshot | PlanSnapshot, output: Any) -> dict[str, Any]:
+    if isinstance(snapshot, PlanSnapshot):
+        proposal = validate_plan_proposal(snapshot, output)
+        preview = []
+        if proposal.response["kind"] == "plan_proposal":
+            report = compile_plan_proposal(snapshot, proposal)
+            preview = [
+                {
+                    **plan,
+                    "segments": [
+                        {key: value for key, value in segment.items() if key != "sourcePath"}
+                        for segment in plan["segments"]
+                    ],
+                }
+                for plan in report["plans"]
+            ]
+        return {
+            "purpose": "plan",
+            "proposal": {**asdict(proposal), "response": proposal.response},
+            "planPreview": {"fps": snapshot.fps, "plans": preview},
+        }
+    edit = validate_proposal(snapshot, output)
+    return {"purpose": "edit", "proposal": _jsonable({**asdict(edit), "response": edit.response})}

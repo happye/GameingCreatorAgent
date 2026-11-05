@@ -169,6 +169,9 @@ details.group[open] > summary::before { content: "▾ "; }
 .reasoning-input .input { flex: 1; min-width: 100px; }
 .reasoning pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 120px; overflow: auto; }
 .reasoning-message { white-space: pre-wrap; color: var(--ink-1); }
+.dynamic-planning pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 180px; overflow: auto; }
+.dynamic-planning .btn { white-space: normal; margin: 4px 0; }
+.dynamic-plan-preview ol { padding-left: 22px; }
 
 /* Sound: narration and music in the inspector, and their lanes under the program track. */
 .audio-panel textarea.input { width: 100%; resize: vertical; min-height: 96px; line-height: 1.5; }

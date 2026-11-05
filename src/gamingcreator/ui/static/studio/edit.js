@@ -7,6 +7,7 @@ import {recordingRuns} from "./recordings.js";
 import {editTimeline, shots, timeline, usePlanPlayer} from "./preview.js";
 import {ClipInspector, CommandDock, transitionProblem, useClipEditor} from "./clipedit.js";
 import {AudioPanel, narrationProblem, useAudioPreview, useMusicCatalog} from "./audio.js";
+import {PlanReasoningPanel} from "./planning.js";
 
 const html = htm.bind(h);
 const DRAFT = "studio-brief-v1";
@@ -47,7 +48,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     const [selectedShot, setSelectedShot] = useState(null);
     const [size, setSize] = useState("1280,720");
     const [subtitles, setSubtitles] = useState("none");
-    const planVideo = useRef(null), resultVideo = useRef(null), work = useRef(null), restoring = useRef(null);
+    const planVideo = useRef(null), planVideoNext = useRef(null), resultVideo = useRef(null), work = useRef(null), restoring = useRef(null);
     const editing = useClipEditor(project);
     const [commandRows, setCommandRows] = useState(null);
 
@@ -136,7 +137,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         const byId = new Map(editing.clips.map((c) => [c.clipId, c]));
         return commandRows.map((row) => ({...byId.get(row.clipId), ...row}));
     }, [commandRows, editable, editing.clips]);
-    const items = useMemo(() => (shownClips ? editTimeline(shownClips, fps) : plan ? timeline(plan.segments || [], fps) : []), [shownClips, plan, fps]);
+    const items = useMemo(() => (shownClips ? editTimeline(shownClips, fps) : plan ? timeline(plan.segments || [], fps) : []).map(item => ({...item, sourceClock: runs.find(run => run.id === item.runId)?.sourceClock})), [shownClips, plan, fps, runs]);
     const changed = useMemo(() => {
         if (!commandRows) return new Set();
         // Highlight clips whose content changed or that moved relative to the others; a deletion
@@ -147,10 +148,11 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         const expected = editing.clips.map((c) => c.clipId).filter((id) => kept.has(id));
         return new Set(commandRows.filter((r, i) => !before.has(r.clipId) || before.get(r.clipId) !== key(r) || expected[i] !== r.clipId).map((r) => r.clipId));
     }, [commandRows, editing.clips]);
+    const previewProblem = items.some(item => (item.transitionIn?.frames || 0) > 0) ? "含转场的方案请导出成片后观看；即时预览暂仅支持直接切换" : items.some(item => !SourceClock.clockCandidates({sourceClock: item.sourceClock}).length) ? "素材源时钟不支持即时预览，请导出成片后观看" : "";
     const problem = editable ? transitionProblem(editing.clips, fps) || narrationProblem(editing.audio, items.length ? items.at(-1).outStartUs + items.at(-1).outDurUs : 0, fps) : "";
     const groups = useMemo(() => shots(items), [items]);
     const urlFor = useCallback((runId) => client.mediaUrl(project, runId), [project]);
-    const player = usePlanPlayer(planVideo, items, urlFor);
+    const player = usePlanPlayer(planVideo, items, urlFor, planVideoNext, previewProblem);
     const music = useMusicCatalog();
     const [audioBusy, setAudioBusy] = useState(false);
     const saveReason = !editable ? "正在读取可编辑镜头" : busy ? "任务正在处理，完成后可保存"
@@ -165,6 +167,16 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         setBusy("save"); setMessage("正在保存版本…"); player.stop();
         try { const id = await editing.save((jobId) => follow(jobId, () => {})); setMessage("已保存为新版本。"); onWorksChanged(); lastJob(project, {id, kind: "revision"}); return id; }
         catch (error) { setMessage(error.message); return null; }
+        finally { setBusy(""); }
+    };
+
+    const adoptPlans = async (jobId) => {
+        setBusy("adopt"); setMessage("正在登记动态方案，不会再次调用模型…"); player.stop();
+        try {
+            const done = await follow(jobId, () => {});
+            if (done?.status !== "completed") throw new Error(done?.error?.message || "动态方案未能登记完成");
+            setCommandRows(null); showPlan(done); onWorksChanged(); setMessage("");
+        } catch (error) { setMessage(error.message); }
         finally { setBusy(""); }
     };
 
@@ -211,12 +223,15 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                 ${planJob ? planJob.plans.map((p) => html`<${PlanCard} plan=${p} fps=${fps} active=${p.id === planId} thumb=${thumb}
                     onPick=${() => { if (editing.dirty && !confirmLeave()) return; setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommandRows(null); lastJob(project, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
                     : html`<p class="note">填好需求后点“生成方案”。方案只是剪辑清单，生成很快；选中后可以直接预览，不用先渲染。</p>`}
+                ${planJob ? html`<${PlanReasoningPanel} key=${`${project}:${planJob.jobId}`} project=${project} jobId=${planJob.jobId}
+                    disabled=${!!busy || editing.dirty || !!commandRows || audioBusy} onAdopt=${adoptPlans} />` : null}
             </div>
         </aside>
         <div class="center">
             <section class="viewer" aria-label="预览窗">
                 <div class="stage">
-                    <video ref=${planVideo} hidden=${mode !== "plan" || !items.length} playsinline preload="metadata" onClick=${player.toggle}></video>${sound}
+                    <video ref=${planVideo} hidden=${mode !== "plan" || !items.length} playsinline preload="metadata" onClick=${() => { if (!previewProblem) player.toggle(); }}></video><video ref=${planVideoNext} hidden=${mode !== "plan" || !items.length} playsinline preload="auto" onClick=${() => { if (!previewProblem) player.toggle(); }}></video>${sound}
+                    ${mode === "plan" && (previewProblem || player.error) ? html`<div class="empty">${previewProblem || player.error}</div>` : null}
                     ${mode === "result" && resultSrc ? html`<video ref=${resultVideo} src=${resultSrc} controls playsinline preload="metadata"></video>` : null}
                     ${(mode === "plan" && !items.length) || (mode === "result" && !resultSrc) ? html`<div class="empty">${planJob ? "在左侧选一个方案，即可在这里预览" : "生成方案后，在这里即时预览"}</div>` : null}
                 </div>
@@ -317,7 +332,7 @@ function PlanCard({plan, fps, active, thumb, onPick}) {
     const items = timeline(plan.segments || [], fps), groups = shots(items);
     const total = items.length ? items.at(-1).outStartUs + items.at(-1).outDurUs : 0;
     return html`<button class="plan" aria-current=${active} disabled=${!plan.ready} onClick=${onPick} title=${plan.ready ? "选中后在预览窗播放" : "方案有缺口，不能选择"}>
-        <span class="plan-title">${plan.mode ? html`<span class="badge rec">推荐</span>` : null}${plan.structure}</span>
+        <span class="plan-title">${plan.mode ? html`<span class="badge rec">推荐</span>` : null}${plan.title || plan.structure}</span>
         <span class="plan-meta">${secondsText(total)} · ${items.length} 个镜头 · 平均 ${(total / 1e6 / Math.max(1, items.length)).toFixed(1)} 秒</span>
         <span class="strip">${groups.slice(0, 8).map((g) => { const src = thumb(g.items[0]); return html`<span style=${{backgroundImage: src ? `url("${src}")` : "none"}}></span>`; })}</span>
         ${!plan.ready && html`<span class="plan-gap">缺口：${(plan.gaps || []).join("；")}</span>`}

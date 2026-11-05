@@ -198,21 +198,10 @@ def _budgets(capacities: list[int], weights: list[Fraction], target: int) -> lis
     return budgets
 
 
-def plan_creation(
-    brief: CreativeBrief,
-    clips: tuple[CreationClip, ...],
-    fps: int,
-    preferences: dict[str, int] | None = None,
-    edit_kinds: dict[str, int] | None = None,
-) -> dict[str, object]:
-    """Template plans; ``preferences`` (finished videos per plan structure on this machine)
-    only reorders the generic structures. The content-mode template stays recommended first.
-
-    ``edit_kinds`` (frozen at plan registration) may cap segment length when trimming is common;
-    the decision is always written into ``ordering.editHabits`` when provided.
-    """
-    if type(fps) is not int or not 1 <= fps <= 120:
-        raise ValueError("Output fps must be an integer in 1..120.")
+def eligible_clips(
+    brief: CreativeBrief, clips: tuple[CreationClip, ...], fps: int
+) -> list[CreationClip]:
+    """Shared exclusion, source deduplication and minimum-frame policy."""
     eligible = [
         clip
         for clip in clips
@@ -240,6 +229,25 @@ def plan_creation(
             clip.framing.end_us,
         ),
     )
+    return eligible
+
+
+def plan_creation(
+    brief: CreativeBrief,
+    clips: tuple[CreationClip, ...],
+    fps: int,
+    preferences: dict[str, int] | None = None,
+    edit_kinds: dict[str, int] | None = None,
+) -> dict[str, object]:
+    """Template plans; ``preferences`` (finished videos per plan structure on this machine)
+    only reorders the generic structures. The content-mode template stays recommended first.
+
+    ``edit_kinds`` (frozen at plan registration) may cap segment length when trimming is common;
+    the decision is always written into ``ordering.editHabits`` when provided.
+    """
+    if type(fps) is not int or not 1 <= fps <= 120:
+        raise ValueError("Output fps must be an integer in 1..120.")
+    eligible = eligible_clips(brief, clips, fps)
     scores = score_materials(brief, eligible)
 
     def total(clip: CreationClip) -> float:

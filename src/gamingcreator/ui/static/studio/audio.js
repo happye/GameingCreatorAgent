@@ -30,7 +30,13 @@ export function useAudioPreview(player, audio, fps, video, tracks) {
         const elements = [voice.current, music.current];
         return () => elements.forEach((el) => el?.pause());
     }, []);
-    useEffect(() => { if (video.current) video.current.volume = level(audio.mix.sourceGainDb); });
+    useEffect(() => {
+        const videos = video.current?.parentElement?.querySelectorAll("video[data-preview-slot]") || [];
+        videos.forEach(el => {
+            el.dataset.sourceLevel = String(level(audio.mix.sourceGainDb));
+            el.volume = Math.min(1, level(audio.mix.sourceGainDb) * Number(el.dataset.previewGain ?? 1));
+        });
+    });
     useEffect(() => {
         const sync = (el, src, offsetS, gainDb, loop = false) => {
             if (!el) return;

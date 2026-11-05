@@ -185,7 +185,7 @@ class CreationJobs:
                 if kind == "revision"
                 else {"costConfirmationYuan"}
                 if kind == "narration"
-                else {"eventIds", "clipRanges"}
+                else {"eventIds", "clipRanges", "reasoningPreparedHash"}
                 if kind == "plan"
                 else set()
             )
@@ -276,6 +276,10 @@ class CreationJobs:
                         validate_clip_ranges(request["clipRanges"], tuple(events))
                     except ValueError as error:
                         raise fail("creation.input", str(error)) from error
+                if "reasoningPreparedHash" in request:
+                    from gamingcreator.ui.plan_reasoning_jobs import verified_plan
+
+                    verified_plan(self, request)
                 project_id = request["projectId"]
             elif kind == "package":
                 parent_id = identity(request["publicationJobId"])
@@ -614,6 +618,10 @@ class CreationJobs:
                 asyncio.run(check_sources())
             if state["kind"] == "narration":
                 asyncio.run(narration_jobs.generate(self, directory, request))
+            elif state["kind"] == "plan" and "reasoningPreparedHash" in request:
+                from gamingcreator.ui.plan_reasoning_jobs import save_plan
+
+                save_plan(self, directory, request)
             elif state["kind"] == "plan":
                 asyncio.run(
                     execute_plan_creation(
