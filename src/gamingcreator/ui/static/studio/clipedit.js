@@ -2,10 +2,11 @@
 // saved version, edit it locally (trim, order, delete, speed, transition, one-line commands),
 // and save it as a new version that names its parent's receipt hash.
 import {h} from "../vendor/preact.module.js";
-import {useCallback, useEffect, useState} from "../vendor/hooks.module.js";
+import {useCallback, useEffect, useLayoutEffect, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
 import {clipFrames} from "./preview.js";
+import {ReasoningDock} from "./reasoning.js";
 
 const html = htm.bind(h);
 // The only speeds the server accepts (creation_editing.py).
@@ -42,17 +43,27 @@ export function useClipEditor(project) {
     // Replacement candidates of the plan's recordings, loaded on first use per plan/version.
     const [candidates, setCandidates] = useState(null);
     const [selectedId, setSelectedId] = useState("");
+    const loading = useRef(0);
+    useLayoutEffect(() => {
+        loading.current += 1;
+        setState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), bounds: {}, replacements: {}, dirty: false});
+        setCandidates(null); setSelectedId("");
+        return () => { loading.current += 1; };
+    }, [project]);
 
     const load = useCallback(async (jobId, planId, kind) => {
+        const generation = ++loading.current;
         setState((s) => ({...s, status: "loading"})); setSelectedId("");
         try {
             const editor = await client.api(`/api/creation/jobs/${encodeURIComponent(jobId)}/edit`, {planId});
+            if (generation !== loading.current) return null;
             if (editor.parentJobId !== jobId || editor.planId !== planId) throw new Error("剪辑数据与所选方案不一致");
             const clips = normalize(editor);
             setCandidates(null);
             setState({status: "ready", base: {jobId, planId, kind}, editor, clips, audio: audioOf(editor), bounds: Object.fromEntries(clips.map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, dirty: false});
             return editor;
         } catch (error) {
+            if (generation !== loading.current) return null;
             // Plans that cannot be edited still preview and export as they are.
             setState({status: "unavailable", base: {jobId, planId, kind}, editor: null, clips: [], audio: audioOf({}), bounds: {}, replacements: {}, dirty: false, reason: error.message});
             return null;
@@ -136,7 +147,7 @@ export function useClipEditor(project) {
         return done.jobId;
     }, [state, load, candidates]);
 
-    return {...state, selectedId, setSelectedId, load, ops, save, candidates, loadCandidates, rows: () => rows(state.clips)};
+    return {...state, project, selectedId, setSelectedId, load, ops, save, candidates, loadCandidates, rows: () => rows(state.clips)};
 }
 
 export function ClipInspector({editing, index, onSeek, basket}) {
@@ -198,7 +209,7 @@ function ReplacePicker({editing, clip, basket}) {
 }
 
 // One-line edits in the assistant dock: preview the change on the timeline, then apply or discard.
-export function CommandDock({editing, onPreview}) {
+function LocalCommandDock({editing, onPreview}) {
     const [text, setText] = useState("");
     const [result, setResult] = useState(null);
     const [message, setMessage] = useState("");
@@ -223,4 +234,14 @@ export function CommandDock({editing, onPreview}) {
             : html`<button class="btn ghost" disabled=${!ready || !text.trim()}>预览改动</button>`}
         <span class="dock-msg" role="status">${message}</span>
     </form>`;
+}
+
+export function CommandDock({editing, onPreview}) {
+    const [mode, setMode] = useState("local");
+    return html`<div class="assistant-host"><label class="assistant-mode">创作助手模式
+        <select class="select" aria-label="创作助手模式" value=${mode} onChange=${(e) => { onPreview(null); setMode(e.currentTarget.value); }}>
+            <option value="local">本地指令（免费）</option><option value="ai">AI对话（按次确认）</option>
+        </select></label>
+        ${mode === "local" ? html`<${LocalCommandDock} editing=${editing} onPreview=${onPreview} />` : html`<${ReasoningDock} editing=${editing} onPreview=${onPreview} />`}
+    </div>`;
 }

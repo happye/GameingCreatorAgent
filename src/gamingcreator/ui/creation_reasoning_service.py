@@ -15,6 +15,7 @@ from gamingcreator.application.creation_proposals import (
     CreationProposal,
     EditingSnapshot,
     canonical,
+    clip_rows,
     create_snapshot,
     revision_for_application,
     validate_proposal,
@@ -179,6 +180,7 @@ class CreationReasoningService:
             "promptVersion": request.prompt_version,
             "schemaVersion": request.schema_version,
             "requestHash": record["requestHash"],
+            "payloadPreview": {"system": request.system, "user": request.user},
             "payloadSummary": {
                 "textOnly": True,
                 "inputFrames": 0,
@@ -351,3 +353,32 @@ class CreationReasoningService:
                 chain,
             )
         return revised
+
+    def proposal_for_editor(
+        self,
+        prepared_hash: str,
+        job_id: str,
+        plan_id: str,
+        expected_parent_receipt_sha256: str,
+    ) -> dict[str, Any]:
+        record = self._prepared(prepared_hash)
+        if record["jobId"] != job_id or record["planId"] != plan_id:
+            raise ValueError("Prepared job or plan does not match the editor.")
+        current = self._current(record)
+        if current.payload["parentReceiptSha256"] != expected_parent_receipt_sha256:
+            raise ValueError("Saved parent changed; prepare again.")
+        revised = self.revision_for_application(prepared_hash)
+        snapshot = create_snapshot(
+            job_id,
+            plan_id,
+            expected_parent_receipt_sha256,
+            current.payload["rootReceiptSha256"],
+            revised,
+        )
+        return {
+            "clips": clip_rows(snapshot),
+            "preparedHash": prepared_hash,
+            "jobId": job_id,
+            "planId": plan_id,
+            "expectedParentReceiptSha256": expected_parent_receipt_sha256,
+        }

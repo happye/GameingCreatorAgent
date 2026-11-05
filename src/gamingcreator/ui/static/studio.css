@@ -161,6 +161,14 @@ details.group[open] > summary::before { content: "▾ "; }
 .dock.assistant .input { flex: 1; max-width: 560px; }
 .dock.assistant .btn { padding: 4px 12px; }
 .dock-msg { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); }
+.assistant-host { display: grid; grid-template-columns: 180px minmax(0, 1fr); background: var(--bg-1); }
+.assistant-mode { padding: 4px 8px; font-size: var(--t-xs); }
+.assistant-mode select { width: 100%; }
+.dock.reasoning { display: block; height: auto; max-height: 40vh; overflow: auto; padding: 8px 12px; }
+.reasoning-input { display: flex; align-items: center; gap: 8px; }
+.reasoning-input .input { flex: 1; min-width: 100px; }
+.reasoning pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 120px; overflow: auto; }
+.reasoning-message { white-space: pre-wrap; color: var(--ink-1); }
 
 /* Sound: narration and music in the inspector, and their lanes under the program track. */
 .audio-panel textarea.input { width: 100%; resize: vertical; min-height: 96px; line-height: 1.5; }

@@ -64,9 +64,10 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         catch (error) { if (!controller.signal.aborted) setMessage(error.message); return null; }
     }, []);
 
-    const showPlan = useCallback((job) => {
-        setPlanJob(job); setRenderJob(null); setMode("plan"); setSelectedShot(null); lastJob(project, {id: job.jobId, kind: "plan"});
-        const first = (job.plans || []).find((p) => p.ready);
+    const showPlan = useCallback((job, selectedPlanId = null) => {
+        setPlanJob(job); setRenderJob(null); setMode("plan"); setSelectedShot(null);
+        const first = (job.plans || []).find((p) => p.ready && p.id === selectedPlanId) || (job.plans || []).find((p) => p.ready);
+        lastJob(project, {id: job.jobId, kind: "plan", planId: first?.id || ""});
         setPlanId(first ? first.id : "");
     }, [project]);
 
@@ -77,7 +78,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         void follow(target.id, (job) => {
             if (job.status !== "completed") return setMessage(job.status === "failed" ? `任务失败：${job.error?.message || ""}` : "处理中…");
             setMessage("");
-            if (job.kind === "plan") showPlan(job);
+            if (job.kind === "plan") showPlan(job, target.planId);
             if (job.kind === "revision") void reopenVersion(job);
             if (job.kind === "render") {
                 setRenderJob(job); setMode("result"); lastJob(project, {id: job.jobId, kind: "render"});
@@ -208,7 +209,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                 <${Brief} runs=${runs} draft=${draft} update=${update} busy=${busy} onGenerate=${generate} basket=${basket} />
                 <div class="section-label">方案${planJob ? `（${planJob.plans.length}）` : ""}</div>
                 ${planJob ? planJob.plans.map((p) => html`<${PlanCard} plan=${p} fps=${fps} active=${p.id === planId} thumb=${thumb}
-                    onPick=${() => { if (editing.dirty && !confirmLeave()) return; setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommandRows(null); }} />`)
+                    onPick=${() => { if (editing.dirty && !confirmLeave()) return; setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommandRows(null); lastJob(project, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
                     : html`<p class="note">填好需求后点“生成方案”。方案只是剪辑清单，生成很快；选中后可以直接预览，不用先渲染。</p>`}
             </div>
         </aside>

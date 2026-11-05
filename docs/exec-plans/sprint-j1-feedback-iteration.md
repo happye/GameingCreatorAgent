@@ -42,3 +42,13 @@
 独立Sol/high发现的v4祖先、费用依据、坏usage调用身份、取消结果与async嵌套loop均已处理。最后一项补保留真实load_chain的CreationJobs回归。主树相关测试全通过，精确数量见.cache/reasoning-main.xml；Ruff格式/lint及mypy197源文件通过。未因该离线核心再重复23分钟整仓，不冒称新核心已通过整仓或真实AI质量验收。
 
 下一步是可信服务的界面纵切片与动态方案；实际调用仍须独立确认，不能把旧分析授权当新文本发送许可。适配依据已核对 [DeepSeek Chat Completions](https://api-docs.deepseek.com/api/create-chat-completion/) 和 [官方中文价目](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/)；不改旧价格/调用证据。未知实际模型或usage保留未知费用。
+
+## 2026-11-05 R3界面里程碑
+
+HTTP与Studio已接入：默认免费本地规则，显式切换AI后准备可信已保存版本的文字请求；展示实际请求与保守费用上限，勾选并逐次确认才发送。澄清不改镜头；提案先预览，再经后端核对job/plan/父回执和修订规则，应用后由用户保存。切项目/版本/模式或未保存修改使旧UI结果失效；已发送记录可在对应保存版本恢复，只读结果、不重新调用。刷新恢复所选方案，避免读错父版本。
+
+7项真实浏览器回归使用真实HTTP/CreationJobs/修订链和明确fake模型传输；覆盖单次确认、失联后恢复、模式ABA、未保存修改、同文双请求恢复失败不残留旧提案。HTTP8项及服务/Studio定向合计40项通过。界面截图 `.cache/scratch/reasoning-ui-quote.png`、`reasoning-ui-proposal.png`；合成测试素材，不是实际AI质量证明。
+
+完整 `scripts/verify.ps1`：4813 passed、7 skipped，1237.56秒；格式/lint/mypy198源文件和CLI烟测通过，日志 `.cache/reasoning-ui-verify.log`。没有真实模型或付费语音调用，未运行Release，J1人评仍未通过。
+
+后续并行核心：`.worktrees/j1-preview-corrections`预加载在真实媒体槽位跨源复用失败，尚不可集成，TD025未完成；架构角色一次升级定位。`.worktrees/creation-reasoning-core`动态方案协议/本地编译已定向验证，等待独立身份审查，尚未接provider/service/UI。动态策划与剪辑提案分别绑定各自输入，不用旧EDL冒充新候选篮子。

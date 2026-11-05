@@ -13,6 +13,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from gamingcreator.application.detail_query_draft import draft_detail_query
+from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
 from gamingcreator.application.retrieval import RetrievalMode
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.ffmpeg_fullres import FfmpegFullResolutionFrames
@@ -21,6 +22,8 @@ from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.windows_ocr import WindowsOcrEngine
 from gamingcreator.ui.benchmark_workflow import BenchmarkWorkflows
 from gamingcreator.ui.creation_jobs import CreationJobs
+from gamingcreator.ui.creation_reasoning_http import reasoning_config, reasoning_post
+from gamingcreator.ui.creation_reasoning_service import CreationReasoningService
 from gamingcreator.ui.frame_text import (
     DENSITIES,
     cached_frame_text_payload,
@@ -62,6 +65,7 @@ ASSETS = {
     "/assets/studio.css": ("studio.css", "text/css; charset=utf-8"),
     "/assets/studio/main.js": ("studio/main.js", "text/javascript; charset=utf-8"),
     "/assets/studio/api.js": ("studio/api.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/reasoning.js": ("studio/reasoning.js", "text/javascript; charset=utf-8"),
     "/assets/studio/edit.js": ("studio/edit.js", "text/javascript; charset=utf-8"),
     "/assets/studio/clipedit.js": ("studio/clipedit.js", "text/javascript; charset=utf-8"),
     "/assets/studio/audio.js": ("studio/audio.js", "text/javascript; charset=utf-8"),
@@ -139,6 +143,7 @@ def error_status(error: AppError) -> int:
 
 class WorkspaceServer(ThreadingHTTPServer):
     creation_jobs: CreationJobs
+    creation_reasoning: CreationReasoningService
     preparation_jobs: MediaPreparationJobs
     benchmark_workflows: BenchmarkWorkflows
 
@@ -167,6 +172,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
     repository = Path.cwd()
     media_cache = VerifiedMediaCache()
     creation_jobs: CreationJobs
+    creation_reasoning: CreationReasoningService
     preparation_jobs: MediaPreparationJobs
     benchmark_workflows: BenchmarkWorkflows
 
@@ -440,6 +446,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return
             path = urlparse(self.path).path
             if path not in {
+                "/api/creation/reasoning",
                 "/api/creation/plans",
                 "/api/creation/renders",
                 "/api/creation/revisions",
@@ -481,6 +488,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return result
 
             value = json.loads(body, object_pairs_hook=unique)
+            if path == "/api/creation/reasoning":
+                if urlparse(self.path).query:
+                    raise ValueError("Unexpected query.")
+                self._json(200, reasoning_post(self.creation_reasoning, value))
+                return
             if path == "/api/creation/activity-rules":
                 self._require("activityRules")
                 self._json(200, self._activity_rules(value))
@@ -896,6 +908,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(403, {"code": "input.origin", "message": "请从本机工作台访问。"})
                 return
             path = urlparse(self.path).path
+            if path == "/api/creation/reasoning/config":
+                if urlparse(self.path).query:
+                    raise ValueError("Unexpected query.")
+                self._json(200, reasoning_config())
+                return
             if path in ASSETS:
                 name, mime = ASSETS[path]
                 self._send(200, (STATIC / name).read_bytes(), mime)
@@ -1370,6 +1387,7 @@ def create_server(host: str, port: int, repository: Path) -> ThreadingHTTPServer
     if host != "127.0.0.1":
         raise ValueError("The inspection workspace only binds to 127.0.0.1")
     creations = CreationJobs(repository)
+    reasoning = CreationReasoningService(creations, price_snapshot=DEEPSEEK_FLASH_20261004)
     jobs = MediaPreparationJobs(repository)
     workflows = BenchmarkWorkflows(repository)
     handler = type(
@@ -1379,12 +1397,14 @@ def create_server(host: str, port: int, repository: Path) -> ThreadingHTTPServer
             "repository": repository.resolve(),
             "media_cache": VerifiedMediaCache(),
             "creation_jobs": creations,
+            "creation_reasoning": reasoning,
             "preparation_jobs": jobs,
             "benchmark_workflows": workflows,
         },
     )
     server = WorkspaceServer((host, port), handler)
     server.creation_jobs = creations
+    server.creation_reasoning = reasoning
     server.preparation_jobs = jobs
     server.benchmark_workflows = workflows
     return server

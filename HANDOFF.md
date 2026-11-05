@@ -1,31 +1,30 @@
 # HANDOFF（覆盖快照）
 
-## 最近一次会话（2026-11-05，Codex）
+## 当前目标（2026-11-05，Codex）
 
-当前goal active：按用户反馈和全功能路线继续开发直到额度耗尽；语音暂用免费本机。第一轮修复不是整个目标完成。先读STATUS，再读docs/exec-plans/sprint-j1-feedback-iteration.md。
+goal active：按计划持续开发；语音暂用免费本机。不要因一次里程碑结束而标整个goal完成。先读STATUS，再读docs/exec-plans/sprint-j1-feedback-iteration.md。J1第四次人评仍not_usable，没有新真实AI/付费调用。
 
-## 本轮已实现
+## 已集成
 
-素材按原文件SHA归组，保留分析版本；搜索默认当前录像、全部搜索明确跨游戏且同源只选一个版本。短/微小事件建议3秒上下文，入出点可改，篮子clipRanges经后端原事件/源/证据验证后进入plan/EDL/render/revision；分析事实区间不改。预算裁短必须包含原观察，修订不能裁掉原观察，替换清除旧来源并保留合法framing。
+第一轮J1：原文件SHA归组/分析版本、当前录像默认搜索、独立clipRanges取景与原观察证据分离、3秒建议上下文、片段终点暂停/重播、缓冲时暂停音轨、保存禁用原因、明确下载文件名、本机免费声音默认。原true.txt故障未复现，不能冒称已确证根因。
 
-素材单片段终点暂停/重播，查看整段可解除；媒体缓冲/seek暂停音轨，恢复校音，离开编辑器停止已分离音视频。保存灰原因可见；下载显式package.zip/video.mp4；有Key也默认本机免费，无本机声音不自动付费。
+R3核心a604d09：可信EDL快照、文本提案/澄清、应用前父身份核对、v4链兼容、准备报价/单次明确确认、OS锁和不可覆盖attempt；失败/未知/中断不重发，未知费用保留占用。真实load_chain在async中使用to_thread。
 
-Sol/high闭环预算锚点、时长评分、替换兼容三项P2。test-affected -Browser 1235 passed/2 skipped。verify原始4719 passed/7 skipped/2 desktop fixture errors：子Windows PowerShell继承PS7 module路径导致Get-FileHash缺失；build-desktop显式导入本机Utility后原2桌面测试通过。Ruff格式/lint、mypy193源文件、CLI help/version通过；没重跑整仓，不能写原verify全绿。日志.cache/j1-feedback-verify.log、j1-feedback-affected.xml、j1-desktop-recheck.xml。
+本轮R3界面：server/HTTP端点、Studio默认local可切AI，准备展示实际文字与费用上限；确认后才发送，预览再后端校验应用，用户保存。请求身份随项目/父版本/dirty/行/text变更作废，防ABA。localStorage存最小恢复身份，切模式/刷新可读结果，不再调用；恢复另一条失败时清旧预览。刷新记住具体planId。
 
-预览http://127.0.0.1:8766/studio 已真实素材浏览器验证；自动审批拒绝停止8765旧服务（只给blocked by policy），未绕过，另起8766。8765后端可能仍旧；截图.cache/scratch/j1-feedback-live.png。不要误报已重启8765。
+全量verify成功：4813 passed、7 skipped，1237.56秒，格式/lint/mypy198源文件、CLI通过；.cache/reasoning-ui-verify.log。7浏览器+8HTTP+22service+3shell定向40项也过。全部fake transport；截图.cache/scratch/reasoning-ui-quote.png、reasoning-ui-proposal.png。未跑Release，不把测试当真人质量验收。
 
-## R3核心已集成（未接页面）
+## 正在独立树继续
 
-8个新文件已集成主树：application/creation_reasoning.py、creation_proposals.py，infrastructure/creation_reasoning_provider.py，ui/creation_reasoning_service.py及4个对应tests。可信snapshot→文本模型提案/澄清→应用前父身份核对；只公开文字、不发送路径/媒体。prepare无发送；execute要求新请求明确确认金额，整上下文上界预留、可信官方价目全字段身份、OS锁和不可覆盖attempt记录；成功重启读回，失败/未知/中断不重发。v4替换父链保manifest；坏usage保实际model/requestId、取消保metadata。
+1. .worktrees/j1-preview-corrections，task_developer preview_dual_player已停止，未集成。修改preview/audio/edit.js、ui/service.py与播放/inspection测试。预加载cuts的fake4项过，真实生成媒体跨源槽位重用后currentTime=2写入却从0播放/output卡2s；复现-k real -q -x -s。preview_parity_design（Astra/low）正在一次升级只读定位。转场仍未实现，树内页面明确需导出观看，TD025未完成。此树含主树R3未提交基线，集成时只取预览增量，不回退R3。
+2. .worktrees/creation-reasoning-core，dynamic_plan_core（Sol/medium）已完成新application/plan_proposals.py、tests/test_plan_proposals.py，creative_planner仅提取共用资格函数。快照绑定brief/源/候选/范围，封闭1–3案+澄清，编译真实渲染兼容方案与准确帧差。94相关项、14核心项通过（fake模型）。dynamic_plan_guard（Sol/high）正只读审查身份/重复源段风险，尚未集成，未接provider/service/UI。下一步复用既有单次确认服务，不能复制费用账本或用edit快照冒充新策划。
 
-最后的async嵌套loop已改await asyncio.to_thread(self._current,record)，锁覆盖不变；真实CreationJobs+真实load_chain+fake transport回归已通过。主树定向项数见.cache/reasoning-main.xml；Ruff格式/lint、mypy197源文件通过。原76fake只是子树结果，主树结果以XML为准。没有接server/Studio UI，没有真实AI/云请求，不算质量验收；本轮新核心仅定向验证，未再次整仓。
+共享.venv指向主树editable：每次env后显式设PYTHONPATH=本树src；test-affected也会重设，所以按相同清单直接pytest并说明。两树.venv/.tools junction已恢复，.cache独立。第三j1-selected-ranges保留，最多三树；退休先核对成果和junction。
 
-下一步接server与Studio的准备→费用确认→模型澄清/提案→预览/应用→既有修订。用户当前未批准真实文本调用，不能自动点击付费按钮或借旧分析许可发送；免费语音保持。UI务必绑定当前已保存job/plan/父receipt，用户切换或有未保存改动时不应用旧提案；服务不会自动知道用户另选了哪个版本。动态策划（不固定四模板）、预览双缓冲/转场一致性仍未实现，继续既定路线，不把核心API当产品全部完成。
+## 保护与运行
 
-## 保护
+用户4个未跟踪设计文档不改不暂存。Codex只用task_*/harness_*，不转换Claude角色；重复gc-*证据为客户端external_agent_config_imports，不能断言谁触发。旧稿/账本/证据不删、不重付重标，不重跑钟馗。
 
-用户原有4个未跟踪设计文档保持不动、不暂存。旧页面不删，J1真人仍未通过；不重跑长钟馗，不改证据/账本、不重付重标。Codex只用task_* / harness_*，不转换Claude角色；重复gc-*来自客户端导入，gitignore挡不住再次导入。已归档角色留仓库外。
+8766是旧后端（R3路由未加载），8765更旧。此前自动审批拒绝停止8765（blocked by policy），没绕过；需要新版服务用安全空闲新端口，不借其他方式重试终止。
 
-两个已集成但未退休工作树：.worktrees/j1-preview-corrections、.worktrees/j1-selected-ranges（不要遗漏其.tools/.venv junction）；第三树reasoning成果已集成，暂保留供追溯；退休前核对主树提交完整。所有删除先核路径及源内容保存，不清用户cache。
-
-推送走127.0.0.1:7890，不force。更新STATUS只在里程碑/会话结束；进度数字python -B scripts/status.py。未运行Release（未分发）。
+所有真实文本AI仍需独立确认，旧¥50分析授权不覆盖。主指标只由python -B scripts/status.py计算。推送用127.0.0.1:7890代理，不force；只暂存自有文件。保持goal active继续动态策划与真实预览。
