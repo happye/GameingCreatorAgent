@@ -34,3 +34,11 @@
 - 单video随机seek解码等待及即时预览转场与导出不一致仍需处理，见TD025。
 - R3文本创作对话在独立工作树 .worktrees/creation-reasoning-core，有8个新文件（应用提案/协议、DeepSeek适配器、可信准备确认服务及各自测试），未集成主树/未接UI。Sol/high要求已修价目身份/完整上下文预留、v4祖先、坏usage保留身份、取消Outcome；最后发现真实load_chain在async execute里嵌套asyncio.run，需核对是否已to_thread并补真实链测试。所有模型测试为fake，不能记真实AI已验收。
 - 实际文本AI调用需要独立费用确认；旧分析¥50与免费语音选择不授予新调用。无需为此停掉其他开发。
+
+## 2026-11-05 R3核心检查点（尚非界面交付）
+
+8个核心/适配器/服务及测试文件已集成主树。支持可信版本快照、纯文字模型协议、严格可执行编辑提案/澄清、过期检查、v4 manifest兼容、准备报价/单次明确API确认、OS锁幂等及不可覆盖调用记录。未接server/Studio UI，未授权/未发送真实模型请求；语音仍免费。
+
+独立Sol/high发现的v4祖先、费用依据、坏usage调用身份、取消结果与async嵌套loop均已处理。最后一项补保留真实load_chain的CreationJobs回归。主树相关测试全通过，精确数量见.cache/reasoning-main.xml；Ruff格式/lint及mypy197源文件通过。未因该离线核心再重复23分钟整仓，不冒称新核心已通过整仓或真实AI质量验收。
+
+下一步是可信服务的界面纵切片与动态方案；实际调用仍须独立确认，不能把旧分析授权当新文本发送许可。适配依据已核对 [DeepSeek Chat Completions](https://api-docs.deepseek.com/api/create-chat-completion/) 和 [官方中文价目](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/)；不改旧价格/调用证据。未知实际模型或usage保留未知费用。
