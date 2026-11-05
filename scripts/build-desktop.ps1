@@ -5,6 +5,9 @@ param(
 # (.NET Framework 4.x). Nothing is downloaded. -Smoke starts the workspace service through the
 # built host, waits until it answers, and stops it again without opening a window.
 $ErrorActionPreference = 'Stop'
+# A PowerShell 7 parent can pass its module paths to Windows PowerShell 5.1.
+# Load this process's own utility module so SDK hashing cannot resolve the wrong version.
+Import-Module (Join-Path $PSHOME 'Modules/Microsoft.PowerShell.Utility/Microsoft.PowerShell.Utility.psd1') -ErrorAction Stop
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if (-not (Test-Path -LiteralPath $compiler)) { throw 'The Windows .NET Framework C# compiler (csc.exe) is not available.' }
