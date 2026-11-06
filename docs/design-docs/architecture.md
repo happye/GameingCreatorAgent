@@ -87,7 +87,7 @@ v4精分析新增独立实体连续性证据：注册帧及源时钟→角色/�
 
 Studio本地命令与显式AI对话分开。UI经CreationReasoningService从已保存EDL及父回执构建可信快照；Application定义纯文字请求及编辑/澄清协议，Infrastructure文本适配器执行明确的一次费用确认。prepare不发送，execute重检快照、价目及确认，OS锁与不可覆盖attempt保护重复发送；未知费用保留占用，失败/中断不自动重试。结果先预览，应用前再次核父身份及既有修订约束，随后由用户保存普通修订。UI切版本/项目/需求或产生未保存改动时作废旧提案；已发送请求可只读恢复。合同见[工作台API](inspection-workspace-api.md)。
 
-动态新方案与双槽预加载目前仅在暂停检查点分支，未合入main：新策划快照绑定原始brief和候选篮子，不能复用EDL快照替代；尚需Studio集成浏览器验收及新一轮全量验证。此状态不表示真人创作质量通过。
+动态新方案与双槽预加载目前仅在暂停检查点分支，未合入main：新策划快照绑定原始brief和候选篮子，不能复用EDL快照替代；Studio组合浏览器回归已通过；完整验证仍有manifest初始化错误，尚未合main。此状态不表示真人创作质量通过。
 
 统一验收入口由UI的BenchmarkWorkflows复用公开登记／标注／候选评审脚本及CLI冻结／绑定／benchmark函数。后台线程逐步执行，输入及独占新输出保存在artifacts/benchmark-workflows；状态原子替换，SHA登记已完成文件。流程OS锁持有期间才表示执行所有权，中断不自动重试；有后续成果时拒绝改写早期步骤。按上下文来源与SHA通过现有VerifiedMediaCache和Range服务原片，动态页面复用renderer并保持hash CSP／同源媒体。没有新SQL结构或付费调用；明确生成排名步骤才追加原检索记录，计分不搜索。合同见[工作台API](inspection-workspace-api.md)，操作见[验收入口指南](../references/benchmark-workspace-guide.md)。
 

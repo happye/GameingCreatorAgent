@@ -66,4 +66,16 @@ HTTP与Studio已接入：默认免费本地规则，显式切换AI后准备可�
 
 双槽即时dissolve现支持同输出整数帧时钟、旧画面不透明/新画面线性淡入、源音三角增益。三速真实206素材、同源远跳和跨源连续转场，18张暂停截图与生产导出帧中心像素误差≤12/255；WebAudio实际解码FFT证明旧音减弱/新音增强，非逐样本等价。独立P2非法三重布局通过现有transitionProblem阻止预览，指定回归闭环。
 
-root原组合40通过，受影响1174通过/2跳过；新组合初次54通过/3失败，分别修新editor就绪等待、测试安全端口、FFT关闭历史平滑（保原阈值），最终58通过。格式/lint/mypy201源通过。完整verify尚待运行，不使用旧4813结果替代。无付费调用、无Release、J1人评不变。证据.cache/resume-combined-final.xml、resume-affected.xml；截图.cache/scratch/dynamic-planning-*.png（亦保留子树副本），导出/频谱.cache/dissolve-evidence/。
+root原组合40通过，受影响1174通过/2跳过；新组合初次54通过/3失败，分别修新editor就绪等待、测试安全端口、FFT关闭历史平滑（保原阈值），最终58通过。格式/lint/mypy201源通过。完整verify结果见下节，不使用旧4813结果替代。无付费调用、无Release、J1人评不变。证据.cache/resume-combined-final.xml、resume-affected.xml；截图.cache/scratch/dynamic-planning-*.png（亦保留子树副本），导出/频谱.cache/dissolve-evidence/。
+
+## 2026-11-06 再次暂停收尾
+
+用户额度不足5%，明确暂停；没有再启动修复/长测试，goal已paused。完整verify（03ac1e0）：4871 passed、7 skipped、1 error，1449.39秒。错误位于 `test_saved_detail_retrieval.py::test_tampered_saved_detail_manifest_is_refused_at_read[snapshot]` 的fixture setup：`test_project_detail_query.py:154 → ffmpeg_media.py:350 write_manifest → Path.replace`，media-manifest.tmp替换json出现WinError5。根因未证实，不能称只是临时锁，也不能冒称全量通过。格式/lint/mypy201源通过；verify因pytest退出1而未继续本轮CLI烟测。日志.cache/resume-full-verify.log、保留目录.cache/pytest-runs/0b39324b3d004598935787ed7e2d21d9。尚未合main。
+
+真实任务只执行了prepare_plan：HTTP200、8个候选、无页面异常，未确认发送；截图.cache/scratch/dynamic-planning-real-prepare.png。现有8秒方案在浏览器到达00:08末尾，wall约9.86秒、8次playing/8次seeking、无waiting/error；.cache/scratch/real-preview-playback.json。这是单次观测，不证明所有设备不卡顿。服务8768 PID5192为本工作分支；8767旧后端。
+
+后续两份WIP已另存并推送，未混进03ac的完整检查结果：
+- codex/paused-audio-preview-20261106（6e8d384，.worktrees/j1-selected-ranges）：DSP15项OfflineAudioContext/FFmpeg PCM对照通过；图接线已有真实4媒体组合1项通过，但尚余hook生命周期、起点/loop/seek及旧播放回归，尚未注册生产static路由。每级limiter5ms延迟，释放曲线未证实与FFmpeg等价。不当成已交付开关功能。
+- codex/paused-material-clock-20261106（93d1818，.worktrees/j1-preview-corrections）：main.js复用共享SourceClock，zero/nonzero真实barcode和未知时钟等素材5项、shell3项通过。独立审查被用户暂停中断，未完成；尚未集成/全量。
+
+下一步先单独复现完整门禁setup错误并检查保留现场，必要修复后完整验证再合main；随后恢复两个WIP及其独立评估。所有子Agent已停止，没有仍运行的pytest。无真实云调用/Release/验收上调，用户4份未跟踪设计文档保持原样。
