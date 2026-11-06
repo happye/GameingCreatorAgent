@@ -63,11 +63,11 @@ def pcm_browser():
         thread.join()
 
 
-def reference(tmp_path, gain_db, right, enabled):
+def reference(tmp_path, gain_db, right, enabled, key_amplitude=0.4):
     """Two 768kB PCM inputs and one output, safely below 10MB each."""
     key = array.array("f")
     for i in range(COUNT):
-        sample = 0.4 * math.sin(2 * math.pi * 337 * i / RATE) if 12000 <= i < 48000 else 0
+        sample = key_amplitude * math.sin(2 * math.pi * 337 * i / RATE) if 12000 <= i < 48000 else 0
         key.extend((sample, sample * right))
     (tmp_path / "key.f32").write_bytes(key.tobytes())
     (tmp_path / "bed.f32").write_bytes(array.array("f", [0.1] * (COUNT * 2)).tobytes())

@@ -47,7 +47,7 @@ const urlFor = id => '/media/' + id;
 const audio = {mix:{sourceGainDb:-12, bgm:{trackId:'music', gainDb:0}}};
 const tracks = [{trackId:'music', trackReceiptSha256:'test'}];
 function App() {
-    const video = useRef(null);
+    const video = useRef(null), second = useRef(null);
     const [plan, setPlan] = useState(items);
     const [disabled, setDisabled] = useState("");
     window.transitionPlan = () => {
@@ -56,9 +56,9 @@ function App() {
             speed:{numerator:1, denominator:1}, transitionIn:{frames:index ? 15 : 0}})), 30));
     };
     window.replacePlan = () => setPlan([{...items[0], startUs:11000000, endUs:13000000}]);
-    const player = usePlanPlayer(video, plan, urlFor, null, disabled);
+    const player = usePlanPlayer(video, plan, urlFor, second, disabled);
     window.player = player;
-    return h('div', {}, h('video', {ref:video}), h('video', {id:'exported'}), useAudioPreview(player, audio, 30, video, tracks));
+    return h('div', {}, h('video', {ref:video}), h('video', {ref:second}), h('video', {id:'exported'}), useAudioPreview(player, audio, 30, video, tracks));
 }
 render(h(App), document.body);
 window.media = () => ({videos:[...document.querySelectorAll('video')], video:[...document.querySelectorAll('[data-preview-slot]')].find(v => v.style.opacity !== '0') || document.querySelector('[data-preview-slot]'), music:document.querySelectorAll('audio')[1]});
@@ -331,7 +331,15 @@ def test_transition_seek_paints_two_layers_and_linear_source_gains(playback_page
     ) == ["1", "0.5"]
     assert page.evaluate(
         "[...document.querySelectorAll('[data-preview-slot]')].map(v => v.volume)"
-    ) == pytest.approx([10 ** (-12 / 20) / 2] * 2)
+    ) == [1, 1]
+    page.evaluate("media().video.studioAudioGraph.context.resume()")
+    page.wait_for_function(
+        "media().video.studioAudioGraph.node.parameters.get('sourceGainDb').value === -12"
+    )
+    assert page.evaluate("""() => {
+        const g = media().video.studioAudioGraph;
+        return ['slotAGain','slotBGain','sourceGainDb'].map(name => g.node.parameters.get(name).value);
+    }""") == pytest.approx([0.5, 0.5, -12])
     assert page.evaluate(
         "[...document.querySelectorAll('[data-preview-slot]')].map(v => v.currentTime)"
     ) == [2.75, 7.25]
@@ -393,8 +401,10 @@ def test_seek_into_preloaded_clip_releases_previous_slot(playback_page):
 def test_source_gain_does_not_change_mixed_export_volume(playback_page):
     page = playback_page
     start(page)
-    assert page.evaluate("media().video.volume") == pytest.approx(10 ** (-12 / 20))
+    assert page.evaluate("media().video.volume") == 1
+    assert page.evaluate("media().video.studioAudioGraph.settings.mix.sourceGainDb") == -12
     assert page.evaluate("document.querySelector('#exported').volume") == 1
+    assert page.evaluate("document.querySelector('#exported').studioAudioGraph === undefined")
 
 
 def test_composition_preserves_integer_clock_origin_and_mixed_speeds(playback_page):

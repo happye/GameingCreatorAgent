@@ -94,9 +94,30 @@ CAPTURE = """async settings => {
 def amplitude(samples, rate, frequency):
     # Phase independent projection, measured after limiter lookahead and RMS attack.
     window = samples[round(rate * 0.3) : round(rate * 0.7)]
-    sine = sum(x * math.sin(2 * math.pi * frequency * i / rate) for i, x in enumerate(window))
-    cosine = sum(x * math.cos(2 * math.pi * frequency * i / rate) for i, x in enumerate(window))
-    return 2 * math.hypot(sine, cosine) / len(window)
+    # Fit all three known tones together: simple projection leaks the loud raw key
+    # through the finite window and falsely makes its user gain alter the music.
+    columns = [
+        [fn(2 * math.pi * f * i / rate) for i in range(len(window))]
+        for f in (337, 587, 907)
+        for fn in (math.sin, math.cos)
+    ]
+    matrix = [
+        [sum(a * b for a, b in zip(left, right, strict=True)) for right in columns]
+        + [sum(a * b for a, b in zip(left, window, strict=True))]
+        for left in columns
+    ]
+    for i in range(6):
+        pivot = max(range(i, 6), key=lambda row: abs(matrix[row][i]))
+        matrix[i], matrix[pivot] = matrix[pivot], matrix[i]
+        divisor = matrix[i][i]
+        matrix[i] = [x / divisor for x in matrix[i]]
+        for row in range(6):
+            if row == i:
+                continue
+            factor = matrix[row][i]
+            matrix[row] = [x - factor * y for x, y in zip(matrix[row], matrix[i], strict=True)]
+    index = (337, 587, 907).index(frequency) * 2
+    return math.hypot(matrix[index][-1], matrix[index + 1][-1])
 
 
 def test_actual_media_graph_two_ducking_switches(live_graph):
@@ -122,6 +143,7 @@ def test_actual_media_graph_two_ducking_switches(live_graph):
     assert measured[True, False] < baseline * 0.2
     assert measured[False, True] < baseline * 0.2
     assert measured[True, True] < min(measured[True, False], measured[False, True]) * 0.3
+
 
 HOOK = """async () => {
     const {h,render}=await import('/assets/vendor/preact.module.js');
@@ -164,24 +186,80 @@ def test_real_hook_narration_offset_pause_seek_loop_and_unmount(live_graph):
     page.wait_for_function("!audioHarness.root.querySelectorAll('audio')[1].paused")
     before = page.evaluate(HOOK_CAPTURE)
     assert before["paused"][0]
-    assert amplitude(before["samples"], before["rate"], 907) == pytest.approx(.1, abs=.004)
+    assert amplitude(before["samples"], before["rate"], 907) == pytest.approx(0.1, abs=0.004)
     page.evaluate("setAudioPlayer({outUs:1250000})")
     page.wait_for_function("!audioHarness.root.querySelectorAll('audio')[0].paused")
     during = page.evaluate(HOOK_CAPTURE)
-    assert amplitude(during["samples"], during["rate"], 907) < .02
+    assert amplitude(during["samples"], during["rate"], 907) < 0.02
     page.evaluate("setAudioPlayer({buffering:true})")
     silent = page.evaluate(HOOK_CAPTURE)
     assert all(silent["paused"])
     assert max(abs(x) for x in silent["samples"][2048:]) < 1e-8
     page.evaluate("setAudioPlayer({buffering:false,outUs:2250000})")
     page.wait_for_function("!audioHarness.root.querySelectorAll('audio')[1].paused")
-    page.wait_for_function("audioHarness.root.querySelectorAll('audio')[1].currentTime >= .15", timeout=2000)
-    assert page.evaluate("audioHarness.root.querySelectorAll('audio')[1].currentTime") == pytest.approx(.25, abs=.15)
+    page.wait_for_function(
+        "audioHarness.root.querySelectorAll('audio')[1].currentTime >= .15", timeout=2000
+    )
+    assert page.evaluate(
+        "audioHarness.root.querySelectorAll('audio')[1].currentTime"
+    ) == pytest.approx(0.25, abs=0.15)
     page.evaluate("setAudioPlayer({playing:false})")
     paused = page.evaluate(HOOK_CAPTURE)
     assert max(abs(x) for x in paused["samples"][2048:]) < 1e-8
-    assert page.evaluate("""() => {
+    assert (
+        page.evaluate("""() => {
         const graph=audioHarness.root.querySelector('video').studioAudioGraph;
         audioHarness.render(null,audioHarness.root); audioHarness.root.remove();
         return graph.context.state;
-    }""") == "closed"
+    }""")
+        == "closed"
+    )
+    # A new mounted editor has fresh elements/context and exactly one audible bed.
+    page.evaluate(HOOK)
+    page.wait_for_function("audioHarness.root.querySelector('video').studioAudioGraph?.node")
+    page.evaluate("audioHarness.root.querySelector('video').studioAudioGraph.context.resume()")
+    page.evaluate("setAudioPlayer({playing:true,outUs:500000})")
+    page.wait_for_function("!audioHarness.root.querySelectorAll('audio')[1].paused")
+    remounted = page.evaluate(HOOK_CAPTURE)
+    assert amplitude(remounted["samples"], remounted["rate"], 907) == pytest.approx(0.1, abs=0.004)
+    page.evaluate("audioHarness.render(null,audioHarness.root); audioHarness.root.remove()")
+
+
+@pytest.mark.parametrize("control,key_amplitude", [("source", 0.4), ("narration", 0.3)])
+def test_live_graph_raw_keys_ignore_user_gain(live_graph, tmp_path, control, key_amplitude):
+    gains = []
+    for db in (0, -24, -60):
+        settings = dict(
+            mix=dict(
+                sourceGainDb=db if control == "source" else -60,
+                bgm=dict(gainDb=0),
+                ducking="source-v1" if control == "source" else "off",
+            ),
+            narration=dict(
+                gainDb=db if control == "narration" else -60,
+                ducking="narration-v1" if control == "narration" else "off",
+            ),
+        )
+        result = live_graph.evaluate(CAPTURE, settings)
+        gains.append(amplitude(result["samples"], result["rate"], 907) / 0.1)
+    from test_audio_ducking_browser import reference as ffmpeg_reference
+
+    output = ffmpeg_reference(tmp_path, -60, 1, True, key_amplitude)[0]
+    reference = sum(output[19200:38400]) / 19200 / 0.1
+    assert all(abs(20 * math.log10(gain / reference)) < 1 for gain in gains), (gains, reference)
+    assert (
+        max(20 * math.log10(gain) for gain in gains) - min(20 * math.log10(gain) for gain in gains)
+        < 0.2
+    )
+
+
+def test_browser_servers_do_not_share_a_live_windows_port():
+    first = browser_server(SimpleHTTPRequestHandler)
+    try:
+        second = browser_server(SimpleHTTPRequestHandler)
+        try:
+            assert first.server_port != second.server_port
+        finally:
+            second.server_close()
+    finally:
+        first.server_close()
