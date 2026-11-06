@@ -124,7 +124,8 @@ class PlanPlayback {
         const controller = new AbortController(); slot.pending = controller;
         slot.index = index; slot.ready = false; slot.loading = true; slot.error = ""; slot.run = run;
         const video = slot.video, item = this.items[index], src = this.urlFor(item.runId);
-        video.pause(); video.style.opacity = "0"; video.volume = 0;
+        video.pause(); video.style.opacity = "0";
+        video.studioAudioGraph ? video.studioAudioGraph.slot(video, 0) : video.volume = 0;
         if (video.getAttribute("src") !== src) { video.src = src; video.load(); }
         await mediaReady(video, controller.signal, true);
         if (run !== this.run) return;
@@ -138,6 +139,7 @@ class PlanPlayback {
         if (run === this.run) { slot.ready = true; slot.loading = false; if (this.live) { this.paint(); this.resume(); } }
     }
     stop() {
+        this.slots[0].video.studioAudioGraph?.reset();
         this.run++; this.live = false; cancelAnimationFrame(this.frame);
         this.slots.forEach(slot => {
             slot.pending?.abort(); slot.video.pause();
@@ -150,7 +152,7 @@ class PlanPlayback {
         if (this.disabled || !this.items.length) return;
         this.stop(); this.error = ""; const run = this.run;
         this.slots.forEach(slot => {
-            slot.video.style.opacity = "0"; slot.video.dataset.previewGain = "0"; slot.video.volume = 0;
+            slot.video.style.opacity = "0"; slot.video.dataset.previewGain = "0"; slot.video.studioAudioGraph ? slot.video.studioAudioGraph.slot(slot.video, 0) : slot.video.volume = 0;
         });
         this.out = Math.max(0, Math.min(target, this.total - 1)); this.state(true);
         try {
@@ -178,6 +180,7 @@ class PlanPlayback {
         if (slot.loading || !this.active().includes(slot.index)) return;
         if (name === "waiting" || name === "seeking") {
             slot.ready = false; this.slots.forEach(other => other.video.pause());
+            this.slots[0].video.studioAudioGraph?.enable(false);
             if (this.live) this.state(true);
         } else if (["canplay", "seeked", "playing"].includes(name)) {
             if (!slot.video.seeking && slot.video.readyState >= 3) slot.ready = true;
@@ -189,8 +192,10 @@ class PlanPlayback {
         const failed = required.find(slot => slot?.error);
         if (failed) { this.fail(failed.error); return false; }
         if (required.some(slot => !slot?.ready)) {
+            this.slots[0].video.studioAudioGraph?.enable(false);
             this.slots.forEach(slot => slot.video.pause()); this.state(true); return false;
         }
+        this.slots[0].video.studioAudioGraph?.enable(this.live);
         this.state();
         const run = this.run;
         for (const slot of required) if (slot.video.paused) {
@@ -207,7 +212,8 @@ class PlanPlayback {
             slot.video.style.opacity = String(part?.opacity || 0);
             slot.video.style.zIndex = String(part ? part.layer + 2 : 1);
             slot.video.dataset.previewGain = String(part?.gain || 0);
-            slot.video.volume = part ? Math.min(1, Number(slot.video.dataset.sourceLevel ?? 1) * part.gain) : 0;
+            if (slot.video.studioAudioGraph) slot.video.studioAudioGraph.slot(slot.video, part?.gain || 0);
+            else slot.video.volume = part ? Math.min(1, Number(slot.video.dataset.sourceLevel ?? 1) * part.gain) : 0;
             if (!part) slot.video.pause();
         }
     }

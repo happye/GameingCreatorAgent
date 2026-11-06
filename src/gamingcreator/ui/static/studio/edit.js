@@ -166,7 +166,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         : problem || (!editing.dirty ? "修改镜头或声音后可保存新版本" : "");
     // The inspector has three pages so sound and export stay reachable while a clip is selected.
     const [inspTab, setInspTab] = useState("shot");
-    const sound = useAudioPreview(player, editing.audio, fps, planVideo, music.tracks);
+    const sound = useAudioPreview(player, editing.audio, fps, planVideo, music.tracks, `${project}:${editing.base?.jobId}:${editing.base?.planId}`);
     const thumb = useCallback((item) => (item?.evidenceIds?.[0] ? client.evidenceUrl(project, item.runId, item.evidenceIds[0]) : null), [project]);
 
     const saveVersion = async () => {
