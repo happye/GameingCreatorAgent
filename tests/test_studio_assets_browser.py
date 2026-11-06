@@ -43,7 +43,7 @@ def assets_page(service, monkeypatch, tmp_path, request):  # noqa: F811
         timeout=20,
     )
     kind = getattr(request, "param", None)
-    if kind in {"zero", "nonzero"}:
+    if kind in {"zero", "nonzero", "video_late"}:
         from test_benchmark_source_clock_browser import synthesize
 
         synthesize(source, kind)
@@ -113,11 +113,15 @@ def assets_page(service, monkeypatch, tmp_path, request):  # noqa: F811
                 "evidenceIds": [],
                 "mechanicTags": [],
             }
-            if kind in {"zero", "nonzero"}:
+            if kind in {"zero", "nonzero", "video_late"}:
                 event.update(
                     analysisStartUs=300_000,
                     analysisEndUs=700_000,
                     sourceDurationUs=clock["durationUs"],
+                )
+            if kind == "video_late":
+                event.update(
+                    startUs=0, endUs=1_000_000, analysisStartUs=600_000, analysisEndUs=700_000
                 )
             return route.fulfill(
                 json={
@@ -255,3 +259,36 @@ def test_unknown_asset_clock_does_not_claim_precise_addressing(assets_page):
     page.locator(".timeline .clip").click()
     expect(page.locator(".viewer .tc").first).to_contain_text("源时间未校准")
     expect(page.get_by_text("片段寻址不可用", exact=True)).to_be_visible()
+
+
+@pytest.mark.parametrize("assets_page", ["video_late"], indirect=True)
+def test_pictureless_head_keeps_selected_end_and_replay_boundaries(assets_page):
+    from test_benchmark_source_clock_browser import read_marker
+
+    page, _ = assets_page
+    expect = pytest.importorskip("playwright.sync_api").expect
+    expect(page.locator(".viewer")).to_have_attribute("data-source-clock", "ready")
+    page.locator(".timeline .clip").click()
+    expect(page.get_by_label("选段入点")).to_have_value("0")
+    expect(page.get_by_label("选段出点")).to_have_value("1")
+    video = page.locator(".viewer video")
+    video.evaluate("v => {v.style.width='320px'; v.style.height='180px';}")
+    page.get_by_role("button", name="播放", exact=True).click()
+    page.wait_for_function("() => document.querySelector('.viewer video').paused")
+    assert abs(video.evaluate("v => v.currentTime") - 1) < 0.06
+    expect(page.locator(".viewer .tc").first).to_contain_text("00:01.000")
+    expect(
+        page.get_by_text("片段开头无画面，从首个可播放画面开始，仍在选段终点暂停", exact=True)
+    ).to_be_visible()
+    page.get_by_role("button", name="播放", exact=True).click()
+    page.wait_for_function(
+        "() => {const v=document.querySelector('.viewer video'); return !v.paused && !v.seeking && v.currentTime >= 0.5 && v.currentTime < 0.8;}"
+    )
+    video.evaluate("v => v.pause()")
+    marker, sync = read_marker(video.screenshot())
+    assert 0 <= marker <= 10 and sync in range(115, 145)
+    expect(page.get_by_label("选段入点")).to_have_value("0")
+    page.get_by_role("button", name="查看整段录像").click()
+    video.evaluate("v => {v.currentTime=1.1; return v.play();}")
+    page.wait_for_function("() => document.querySelector('.viewer video').currentTime > 1.3")
+    assert not video.evaluate("v => v.paused")

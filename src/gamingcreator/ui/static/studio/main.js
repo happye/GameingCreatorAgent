@@ -140,16 +140,16 @@ function App() {
     }, [clock]);
     const selectEvent = useCallback((event) => {
         const selection = clipSelection(event, view?.media?.durationUs);
-        video.current?.pause(); setSelected(selection); seek(selection.startUs);
-    }, [seek, view]);
-    useEffect(() => { if (clock && selected) seek(selected.startUs); }, [clock]);
+        video.current?.pause(); setSelected(selection); seek(clock ? Math.max(selection.startUs, clock.videoStartUs) : selection.startUs);
+    }, [seek, view, clock]);
+    useEffect(() => { if (clock && selected) seek(Math.max(selected.startUs, clock.videoStartUs)); }, [clock]);
     const changeRange = (range) => {
         const next = {...selected, ...range};
         const point = next.analysisStartUs === next.analysisEndUs;
         const covers = point ? next.startUs <= next.analysisStartUs && (next.analysisStartUs < next.endUs || next.endUs === next.sourceDurationUs && next.analysisStartUs === next.endUs)
             : next.startUs < next.analysisEndUs && next.endUs > next.analysisStartUs;
         if (!Number.isSafeInteger(next.startUs) || !Number.isSafeInteger(next.endUs) || next.startUs < 0 || next.endUs <= next.startUs || next.endUs > view.media.durationUs || !covers) return;
-        video.current?.pause(); setSelected(next); seek(next.startUs);
+        video.current?.pause(); setSelected(next); seek(clock ? Math.max(next.startUs, clock.videoStartUs) : next.startUs);
         if (basket.ids.has(next.eventId)) basket.updateRange(next.eventId, {startUs: next.startUs, endUs: next.endUs});
     };
 
@@ -250,9 +250,14 @@ function Recording({group, runId, onSelect}) {
 function Viewer({onClockInvalid, clock, media, videoRef, time, setTime, selected, onFullSource}) {
     const src = media ? client.sameOrigin(media.videoUrl, "/api/media") : null;
     const [playing, setPlaying] = useState(false);
+    const bounded = selected && clock && selected.startUs < selected.endUs
+        && SourceClock.sourceUsToPlayerSeconds(clock, selected.startUs) !== null
+        && SourceClock.sourceUsToPlayerSeconds(clock, selected.endUs) !== null;
+    const playableStart = bounded ? Math.max(selected.startUs, clock.videoStartUs) : null;
+    const hasPicture = bounded && playableStart < Math.min(selected.endUs, clock.videoEndUs);
     useLayoutEffect(() => {
         const el = videoRef.current;
-        if (!el || !selected || !SourceClock.intervalReplayable(clock, selected.startUs, selected.endUs)) return;
+        if (!el || !bounded) return;
         let frame = 0;
         const bound = () => {
             cancelAnimationFrame(frame);
@@ -265,14 +270,15 @@ function Viewer({onClockInvalid, clock, media, videoRef, time, setTime, selected
             } else if (!el.paused) frame = requestAnimationFrame(bound);
         };
         const play = () => {
+            if (!hasPicture) { el.pause(); return; }
             const source = SourceClock.playerToSourceUs(clock, el.currentTime);
-            if (source === null || source >= selected.endUs || source < selected.startUs) el.currentTime = SourceClock.sourceUsToPlayerSeconds(clock, selected.startUs);
+            if (source === null || source >= selected.endUs || source < playableStart) el.currentTime = SourceClock.sourceUsToPlayerSeconds(clock, playableStart);
             cancelAnimationFrame(frame); bound();
         };
         const pause = () => cancelAnimationFrame(frame);
         el.addEventListener("play", play); el.addEventListener("timeupdate", bound); el.addEventListener("pause", pause);
         return () => { cancelAnimationFrame(frame); el.removeEventListener("play", play); el.removeEventListener("timeupdate", bound); el.removeEventListener("pause", pause); };
-    }, [selected, src, clock]);
+    }, [selected, src, clock, bounded, playableStart, hasPicture]);
     return html`<section class="viewer" aria-label="预览窗" data-source-clock=${clock ? "ready" : "unavailable"}>
         ${src
             ? html`<video ref=${videoRef} src=${src} preload="metadata" playsinline
@@ -285,7 +291,9 @@ function Viewer({onClockInvalid, clock, media, videoRef, time, setTime, selected
             <span class="tc">${clock ? timecode(time) : "源时间未校准"} / ${media ? timecode(media.durationUs) : "00:00.000"}</span>
             <span class="spacer"></span>
             ${!clock && src ? html`<span class="hint">无法精确定位片段，可观看整段录像</span>` : null}
-            ${selected && html`<span class="hint">${clock ? "仅播放选中片段" : "片段寻址不可用"}</span><button class="btn ghost" onClick=${onFullSource}>查看整段录像</button>`}
+            ${bounded && !hasPicture ? html`<span class="hint">选段内没有可播放画面，不能预览；取景范围已保留</span>`
+                : bounded && selected.startUs < clock.videoStartUs ? html`<span class="hint">片段开头无画面，从首个可播放画面开始，仍在选段终点暂停</span>` : null}
+            ${selected && html`<span class="hint">${bounded ? "仅播放选中片段" : "片段寻址不可用"}</span><button class="btn ghost" onClick=${onFullSource}>查看整段录像</button>`}
             <span class="tc">空格 播放/暂停 · ←/→ 1 秒 · J/L 上/下一段</span>
         </div>
     </section>`;
