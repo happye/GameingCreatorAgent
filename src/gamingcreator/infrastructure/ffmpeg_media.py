@@ -20,6 +20,7 @@ from gamingcreator.domain.media import (
     VisualEvidence,
     ceil_us,
 )
+from gamingcreator.infrastructure.file_sharing import retry_file_sharing
 from gamingcreator.infrastructure.local_files import LocalInputReader
 from gamingcreator.infrastructure.media_process import run_media_process
 
@@ -347,7 +348,7 @@ def write_manifest(result: MediaPreprocessingResult, parameters: SamplingParamet
         json.dump(payload, destination, ensure_ascii=False, separators=(",", ":"))
         destination.flush()
         os.fsync(destination.fileno())
-    temporary.replace(result.manifest_path)
+    retry_file_sharing(lambda: temporary.replace(result.manifest_path))
 
 
 class FfmpegMediaProcessor:
