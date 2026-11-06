@@ -164,6 +164,6 @@ timeline/candidate行新增 `detailRefinement:{status:"unverified",availability,
 
 prepare返回准备身份、请求身份、实际 `payloadPreview={system,user}` 和费用上限；没有路径或媒体。execute返回completed/failed/cancelled等状态、提案或澄清、实际调用metadata与billing。未知费用保留reservedCny；不把缺usage写成零。已成功请求可恢复结果，失败/中断/未知不自动重试；新一次发送须重新准备并明确确认。validate后的clips经既有修订API保存，不能把前端预览当已保存。
 
-### 暂停检查点中的动态策划（未合入main）
+### 动态策划（main已实现，模型质量待验）
 
-分支 `codex/paused-j1-dynamic-preview-20261105` 增加 `prepare_plan {jobId}` 与 `adopt_plan {preparedHash}`，其余execute/result复用上述机制。准备读取已完成plan任务的原始需求和候选篮子；结果 `planPreview={fps,plans}` 展示顺序、时长和素材不足，去除sourcePath。采用生成普通plan job，不再调用模型，重复采用复用同任务；注册和执行都核对原需求/源身份。该分支的Studio接入已有浏览器组合回归通过，但完整verify仍有manifest初始化错误，不能当main现有接口使用。
+接口增加 `prepare_plan {jobId}` 与 `adopt_plan {preparedHash}`，其余execute/result复用上述机制。准备读取已完成plan任务的原始需求和候选篮子；结果 `planPreview={fps,plans}` 展示顺序、时长和素材不足，去除sourcePath。采用生成普通plan job，不再调用模型，重复采用复用同任务；注册和执行都核对原需求/源身份。Studio接入及完整verify已通过（2026-11-07：4874通过/7跳过）；模型调用均fake，真实AI创作质量尚未验收。

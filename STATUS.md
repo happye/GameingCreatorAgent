@@ -20,7 +20,7 @@
 
 ## 下一步
 
-1. 2026-11-07：用户已恢复，goal active。策划/转场组合58通过；上轮完整verify4871/7/1的manifest替换错误，原单项此次通过。13508c5复用有界文件共享重试，46项及独立审查通过；新完整验证正在运行（.cache/manifest-full-verify.log，session90488），未合main。音频接线和素材video_late边界修复在独立树推进；无真实付费，J1人评不变。详见[HANDOFF](HANDOFF.md)。
+1. 2026-11-07：策划/转场及manifest共享等待修复完整verify通过：4874通过/7跳过，格式/lint/mypy201源及CLI通过，合入main。模型响应测试均fake、J1人评不变。下一批：音频graph与素材source-clock边界已子树定向及独立审查通过，仍须主树接线/组合/全量；见[HANDOFF](HANDOFF.md)和[迭代证据](docs/exec-plans/sprint-j1-feedback-iteration.md)。goal active，不自动付费。
 2. TD024 已处理（2026-11-03）：修了一处真回归（attack 标签被语义闸门挡掉），另外两条改为按 TD004 精度设计的测试。J2 仍需你亲自判定前 10 名。
 3. 分发前：处理许可证缺口（human-inputs）和 TD003 FFmpeg 来源。
 

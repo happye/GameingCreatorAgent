@@ -79,3 +79,9 @@ root原组合40通过，受影响1174通过/2跳过；新组合初次54通过/3�
 - codex/paused-material-clock-20261106（93d1818，.worktrees/j1-preview-corrections）：main.js复用共享SourceClock，zero/nonzero真实barcode和未知时钟等素材5项、shell3项通过。独立审查被用户暂停中断，未完成；尚未集成/全量。
 
 下一步先单独复现完整门禁setup错误并检查保留现场，必要修复后完整验证再合main；随后恢复两个WIP及其独立评估。所有子Agent已停止，没有仍运行的pytest。无真实云调用/Release/验收上调，用户4份未跟踪设计文档保持原样。
+
+## 2026-11-07 策划/转场批次通过完整门禁
+
+原失败snapshot单项重跑1通过，但不据此断言上次WinError5根因；write_manifest最后replace复用现有1秒有界sharing重试，不重跑写入/分析流程。真实跨进程占用释放/持续占用及相关46通过，独立审查通过。新完整verify：4874 passed/7 skipped、1124.26秒，格式/lint/mypy201源及CLI通过；.cache/manifest-full-verify.log，session90488退出0。本批合入main，J1人评与feature passes保持。
+
+后续子树证据：素材video_late取景撤掉终点约束P2经真实媒体先复现后修复，9项+独立新增1项通过，7f50700。音频082b1be：36DSP/graph/播放/helper组合过；另新增确定性真Studio页面1项过（非合37项已跑），独立源码及证据审查通过。页面测试fake为planner/SAPI/SqliteTimelineStore.open/project_runs_payload，真实HTTP/PlanPlayback/probe/hash/音乐与任务回执/媒体PCM；证明同源远跳+dissolve、<120ms音轨相位、ducking/peak/必经重播及暂停/退出。仍需父控生产static注册、主树组合及新完整门禁后才合入下一批。无真实云/Release。
