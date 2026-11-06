@@ -148,3 +148,22 @@ timeline/candidate行新增 `detailRefinement:{status:"unverified",availability,
 ## 连续实体精分析v4
 
 显式detailProfile=v4读取新schema-v2身份和4096输出token设置；页面默认v2、inspect默认v1继续保留。reused详情为actor-details-v2，增加temporalScene（temporal-scene-v1）：注册evidence、实体classification/observations/parts、相邻帧transitions、owners、environment和notes。返回前完整校验scene与确定性shots投影一致；unknown实体或关系不得通过遗漏变成no_match。匹配结果使用actor-detail-matcher-v2，保存文件名也按此版本隔离。缺该精确key为unverified，不借用v2/v3或发送模型请求。页面提供分类、遮挡、持有、切镜依据与注册帧回看；不确定实体的属性明确待核对，所有文本用textContent。真实v4识别效果尚未验证，原模型结果和基础账本保持。
+
+## Studio文字创作对话（main已实现）
+
+`GET /api/creation/reasoning/config` 不接受query，返回 `available/provider/requestedModel`，不暴露Key。`available`表示启动进程有 `DEEPSEEK_API_KEY`，不保证账号可用或质量通过。改环境变量后需从配置它的终端重启新服务。
+
+`POST /api/creation/reasoning` 使用JSON与现有同源保护；以下字段必须精确匹配，值均为非空字符串：
+
+| action | 其余字段 | 行为 |
+| --- | --- | --- |
+| prepare | jobId, planId, instruction | 从已保存版本准备文字快照及报价，不调用模型 |
+| execute | preparedHash, snapshotFingerprint, confirmedMaxCny | 金额为有限十进制字符串；显式确认后至多发送一次 |
+| result | preparedHash | 读取既有结果，不重发 |
+| validate | preparedHash, jobId, planId, expectedParentReceiptSha256 | 重检父身份与修订约束，返回最小clips，不保存版本 |
+
+prepare返回准备身份、请求身份、实际 `payloadPreview={system,user}` 和费用上限；没有路径或媒体。execute返回completed/failed/cancelled等状态、提案或澄清、实际调用metadata与billing。未知费用保留reservedCny；不把缺usage写成零。已成功请求可恢复结果，失败/中断/未知不自动重试；新一次发送须重新准备并明确确认。validate后的clips经既有修订API保存，不能把前端预览当已保存。
+
+### 暂停检查点中的动态策划（未合入main）
+
+分支 `codex/paused-j1-dynamic-preview-20261105` 增加 `prepare_plan {jobId}` 与 `adopt_plan {preparedHash}`，其余execute/result复用上述机制。准备读取已完成plan任务的原始需求和候选篮子；结果 `planPreview={fps,plans}` 展示顺序、时长和素材不足，去除sourcePath。采用生成普通plan job，不再调用模型，重复采用复用同任务；注册和执行都核对原需求/源身份。该分支的Studio接入尚无浏览器集成验收，不能当main现有接口使用。
