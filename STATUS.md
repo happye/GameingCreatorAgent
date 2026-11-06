@@ -20,7 +20,7 @@
 
 ## 下一步
 
-1. 2026-11-07：策划/转场及manifest共享等待修复完整verify通过：4874通过/7跳过，格式/lint/mypy201源及CLI通过，合入main。模型响应测试均fake、J1人评不变。下一批：音频graph与素材source-clock边界已子树定向及独立审查通过，仍须主树接线/组合/全量；见[HANDOFF](HANDOFF.md)和[迭代证据](docs/exec-plans/sprint-j1-feedback-iteration.md)。goal active，不自动付费。
+1. 2026-11-07：策划/转场及manifest共享等待修复完整verify通过：4874通过/7跳过，格式/lint/mypy201源及CLI通过，合入main。模型响应测试均fake、J1人评不变。下一批：音频graph与素材source-clock已在独立集成分支接线，组合46通过，完整verify正在运行（session71506/.cache/audio-source-full-verify.log）；见[HANDOFF](HANDOFF.md)和[迭代证据](docs/exec-plans/sprint-j1-feedback-iteration.md)。goal active，不自动付费。
 2. TD024 已处理（2026-11-03）：修了一处真回归（attack 标签被语义闸门挡掉），另外两条改为按 TD004 精度设计的测试。J2 仍需你亲自判定前 10 名。
 3. 分发前：处理许可证缺口（human-inputs）和 TD003 FFmpeg 来源。
 

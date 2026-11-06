@@ -2,7 +2,7 @@
 
 ## 最近一次会话（2026-11-07，持续开发）
 
-goal active，用户已恢复并要求持续工作，不能因单批完成标整体目标完成。先读STATUS/迭代合同。真实付费仍逐次独立确认，语音免费本机，不搬Claude角色。
+goal active，持续工作。root现codex/audio-source-clock-integration-20261107，42c0c40已推送：已合音频082b1be/素材7f50700并加生产static两路由，组合46通过（.cache/audio-source-combined.xml）。新完整verify session71506正在跑，.cache/audio-source-full-verify.log；勿重复启动/改root源码。main已2878004且4874/7完整通过。真实付费仍逐次独立确认，语音免费本机，不搬Claude角色。
 
 ## 已验证并合入main的批次
 
@@ -18,7 +18,7 @@ dissolve：整数frame输出时钟，双槽原片预加载，旧层不透明/新
    必须父控server ASSETS加/assets/studio/audio-preview-graph.js和audio-ducking-processor.js；测试临时注册不等于生产已注册。合入要保adopt generation/dissolve，不整文件覆盖。helper禁Windows reuse且10013/10048跳端口，同树pytest严格串行。
 2. 素材clock codex/paused-material-clock-20261106，7f50700，.worktrees/j1-preview-corrections。main.js/test_studio_assets_browser.py复用SourceClock统一seek/keys/终点/replay/time；unknown明确不精确定位可看整片。新P2：video_late[0,1]取景含无图像头部曾取消边界，已改合法canonical端点始终安装end约束，选段/replay从首画面.5起但原range不变；全片快捷键保音频头部0行为。6browser+shell3=9通过，独立新增真实video_late1通过，.cache/studio-assets-clock-resume.xml。尚未主树集成/全量。
 
-下一步从main开新集成分支，合两批、加static、跑受影响及新完整verify；成功再merge。第三creation-reasoning-core已有成果在main保留，不盲删树/junction。
+已建集成分支/合两批/加static并组合46通过；下一步跟踪session71506完整验证，成功后才merge main并更新API/架构/STATUS。第三creation-reasoning-core成果已在main，不盲删树/junction。
 
 ## 运行与保护
 
