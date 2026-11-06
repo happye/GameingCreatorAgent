@@ -171,7 +171,7 @@ export function ClipInspector({editing, index, onSeek, basket}) {
             <label class="form-row">进入方式<select class="select" disabled=${index === 0} value=${String(clip.transitionIn.frames)}
                 onChange=${(e) => editing.ops.transition(clip.clipId, Number(e.currentTarget.value))}>
                 <option value="0">直接切换</option><option value=${String(fade(0.25))}>交叉淡化 0.25 秒</option><option value=${String(fade(0.5))}>交叉淡化 0.5 秒</option></select></label>
-        </div><p class="hint">预览里转场显示为直接切换；导出的成片里会是淡化。</p></div>
+        </div><p class="hint">即时预览支持交叉淡化；镜头需足够长，才能容纳两侧转场。</p></div>
         <div class="field actions-row">
             <button class="btn ghost" onClick=${() => onSeek(clip.clipId)}>从这段播放</button>
             <button class="btn ghost" disabled=${index === 0} onClick=${() => editing.ops.move(clip.clipId, -1)}>前移</button>

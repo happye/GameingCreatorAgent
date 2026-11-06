@@ -3,10 +3,11 @@
 import functools
 import subprocess
 import threading
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
 
 import pytest
+from browser_http import browser_server
 
 from gamingcreator.application.rendering import output_start_frames
 
@@ -50,7 +51,7 @@ function App() {
     const [plan, setPlan] = useState(items);
     const [disabled, setDisabled] = useState("");
     window.transitionPlan = () => {
-        setDisabled("转场请导出后观看");
+        setDisabled("");
         setPlan(editTimeline(items.map((item, index) => ({...item,
             speed:{numerator:1, denominator:1}, transitionIn:{frames:index ? 15 : 0}})), 30));
     };
@@ -76,7 +77,7 @@ def playback_page():
     playwright = pytest.importorskip("playwright.sync_api")
     static = Path(__file__).resolve().parents[1] / "src/gamingcreator/ui/static"
     handler = functools.partial(SimpleHTTPRequestHandler, directory=str(static))
-    server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    server = browser_server(handler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     try:
         with playwright.sync_playwright() as runtime:
@@ -246,7 +247,7 @@ def test_real_decoders_preload_distant_same_file_and_cross_file(tmp_path, speed,
     )
     static = Path(__file__).resolve().parents[1] / "src/gamingcreator/ui/static"
     handler = functools.partial(SimpleHTTPRequestHandler, directory=str(static))
-    server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    server = browser_server(handler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     try:
         with playwright.sync_playwright() as runtime:
@@ -315,18 +316,44 @@ def test_speculative_seek_does_not_freeze_music(playback_page):
     assert page.evaluate("[...document.querySelectorAll('video')].every(v => v.paused)")
 
 
-def test_transition_preview_disabled_preserves_export_duration(playback_page):
+def test_transition_seek_paints_two_layers_and_linear_source_gains(playback_page):
     page = playback_page
     page.evaluate("transitionPlan()")
-    page.wait_for_function("player.totalUs === 3500000 && player.error.length > 0")
-    starts = output_start_frames((60, 60), (0, 15))
-    assert page.evaluate("player.totalUs") == (starts[-1] + 60) * 1_000_000 / 30
-    page.evaluate("void player.seek(0, true); player.toggle()")
-    page.wait_for_timeout(100)
-    assert page.evaluate("!player.playing && !player.buffering")
-    assert page.evaluate(
-        "[...document.querySelectorAll('video')].every(v => v.paused && !clock(v).writes.length)"
+    page.wait_for_function("player.totalUs === 3500000 && !player.error")
+    page.evaluate("void player.seek(1750000)")
+    page.wait_for_function(
+        "[...document.querySelectorAll('[data-preview-slot]')].every(v => clock(v).seeking)"
     )
+    page.evaluate("finishSeek()")
+    page.wait_for_function("!player.buffering")
+    assert page.evaluate(
+        "[...document.querySelectorAll('[data-preview-slot]')].map(v => v.style.opacity)"
+    ) == ["1", "0.5"]
+    assert page.evaluate(
+        "[...document.querySelectorAll('[data-preview-slot]')].map(v => v.volume)"
+    ) == pytest.approx([10 ** (-12 / 20) / 2] * 2)
+    assert page.evaluate(
+        "[...document.querySelectorAll('[data-preview-slot]')].map(v => v.currentTime)"
+    ) == [2.75, 7.25]
+    assert page.evaluate(
+        "[...document.querySelectorAll('[data-preview-slot]')].every(v => v.paused)"
+    )
+
+
+def test_overlap_waiting_and_unmount_pause_both_sources(playback_page):
+    page = playback_page
+    page.evaluate("transitionPlan()")
+    page.wait_for_function("player.totalUs === 3500000")
+    start(page, 1750000)
+    page.evaluate("event('waiting')")
+    page.wait_for_function("player.buffering && media().music.paused")
+    assert page.evaluate(
+        "[...document.querySelectorAll('[data-preview-slot]')].every(v => v.paused)"
+    )
+    page.evaluate("event('canplay')")
+    page.wait_for_function("!player.buffering")
+    page.evaluate("closeEditor()")
+    assert page.evaluate("removedMedia.videos.every(v => v.paused) && removedMedia.music.paused")
 
 
 def test_stop_during_preload_then_resume_restarts_pending_slot(playback_page):
@@ -368,3 +395,102 @@ def test_source_gain_does_not_change_mixed_export_volume(playback_page):
     start(page)
     assert page.evaluate("media().video.volume") == pytest.approx(10 ** (-12 / 20))
     assert page.evaluate("document.querySelector('#exported').volume") == 1
+
+
+def test_composition_preserves_integer_clock_origin_and_mixed_speeds(playback_page):
+    result = playback_page.evaluate(r"""async () => {
+        const {editTimeline, compositionAt} = await import('/studio/preview.js');
+        const clips = [.5, 1, 2].map((rate, i) => ({runId: 'one',
+            startUs: 1000000, endUs: 1000000 + 3000000 * rate,
+            sourceClock: {originUs: 123456}, speed: {numerator: rate * 2, denominator: 2},
+            transitionIn: {frames: i ? 30 : 0}}));
+        const items = editTimeline(clips, 30);
+        return {starts: items.map(i => i.outStartFrame),
+            first: compositionAt(items, 2500000), second: compositionAt(items, 4500000)};
+    }""")
+    assert result["starts"] == [0, 60, 120]
+    assert [part["sourceUs"] for part in result["first"]] == [2373456, 1623456]
+    assert [part["sourceUs"] for part in result["second"]] == [3623456, 2123456]
+    assert [part["gain"] for part in result["first"]] == [0.5, 0.5]
+
+
+def test_editor_short_middle_clip_blocks_three_layer_preview(playback_page):
+    page = playback_page
+    errors = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    page.route("**/api/**", lambda route: route.fulfill(json={}))
+    clips = [
+        {
+            "clipId": f"c{i}",
+            "runId": "one",
+            "startUs": start,
+            "endUs": end,
+            "speed": {"numerator": 1, "denominator": 1},
+            "transitionIn": {"type": "dissolve" if i else "cut", "frames": 15 if i else 0},
+            "evidenceIds": [],
+        }
+        for i, (start, end) in enumerate(
+            [(1000000, 3000000), (4000000, 5333334), (7000000, 9000000)]
+        )
+    ]
+    plan = {
+        "id": "p",
+        "ready": True,
+        "gaps": [],
+        "segments": [
+            {**clip, "outputFrames": 60 if i != 1 else 40} for i, clip in enumerate(clips)
+        ],
+    }
+    page.route(
+        "**/api/creation/jobs/root",
+        lambda route: route.fulfill(
+            json={
+                "jobId": "root",
+                "kind": "plan",
+                "status": "completed",
+                "fps": 30,
+                "plans": [plan],
+            }
+        ),
+    )
+    page.route(
+        "**/api/creation/jobs/root/edit?*",
+        lambda route: route.fulfill(
+            json={"parentJobId": "root", "planId": "p", "fps": 30, "clips": clips}
+        ),
+    )
+    page.evaluate(r"""async () => {
+        const {h, render} = await import('/vendor/preact.module.js');
+        const {EditWorkspace} = await import('/studio/edit.js');
+        render(null, document.body);
+        const sourceClock = {schemaVersion:'browser-source-clock-v1', originUs:0,
+            durationUs:10000000, videoStartUs:0, videoEndUs:10000000,
+            audioStartUs:null, audioEndUs:null, axisToleranceUs:2000, durationToleranceUs:50000};
+        render(h(EditWorkspace, {project:'test', runs:[{id:'one', sourceClock}],
+            open:{id:'root',kind:'plan'}, onWorksChanged:()=>{},
+            layout:{lib:true,insp:true}, basket:{items:[]}, onBasketSeen:()=>{}}), document.body);
+    }""")
+    page.wait_for_function("document.querySelectorAll('.timeline .clip').length === 3")
+    page.get_by_label("版本保存状态").wait_for()
+    page.locator(".timeline .clip").nth(1).click()
+    page.get_by_label("速度").select_option("2/1")
+    page.wait_for_function(
+        "document.querySelector('.stage .empty')?.textContent.includes('放不下两侧的转场')"
+    )
+    before = page.evaluate(
+        "[...document.querySelectorAll('[data-preview-slot]')].map(v => clock(v).writes)"
+    )
+    page.get_by_role("button", name="预览方案", exact=True).click()
+    page.locator(".timeline .clip").nth(2).click()
+    page.wait_for_timeout(80)
+    assert page.locator(".stage .empty").inner_text() == "第 2 个镜头太短，放不下两侧的转场"
+    assert page.evaluate(
+        "[...document.querySelectorAll('[data-preview-slot]')].every(v => v.paused)"
+    )
+    assert (
+        page.evaluate(
+            "[...document.querySelectorAll('[data-preview-slot]')].map(v => clock(v).writes)"
+        )
+        == before
+    )
+    assert not errors

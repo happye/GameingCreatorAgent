@@ -58,7 +58,7 @@ function usePlanReasoning(project, jobId, disabled, onAdopt) {
             const result = await post({action: "result", preparedHash: saved.quote.preparedHash});
             update({result});
         }),
-        adopt: () => state.result?.planPreview && run("adopt", async () => {
+        adopt: () => state.result?.planPreview?.plans?.length > 0 && run("adopt", async () => {
             const accepted = await post({action: "adopt_plan", preparedHash: state.quote.preparedHash});
             if (valid()) await onAdopt(accepted.jobId);
         }),
@@ -90,7 +90,7 @@ export function PlanReasoningPanel({project, jobId, disabled, onAdopt}) {
         ${flow.result?.billing ? html`<p class="hint">${flow.result.billing.unresolvedAttempts || flow.result.billing.knownCostCny === null
             ? `实际费用未知，保留 ¥${flow.result.billing.reservedCny} 的费用占用。`
             : `按价目估算费用 ¥${flow.result.billing.knownCostCny}，以提供方账单为准。`}</p>` : null}
-        ${flow.result?.planPreview ? html`<${PlanPreview} preview=${flow.result.planPreview} />
+        ${flow.result?.planPreview?.plans?.length > 0 ? html`<${PlanPreview} preview=${flow.result.planPreview} />
             <button class="btn" disabled=${disabled || !!flow.busy} onClick=${flow.adopt}>采用这些方案（不再调用模型）</button>` : null}
     </details>`;
 }

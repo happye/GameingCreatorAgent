@@ -9,7 +9,7 @@ export function timeline(segments, fps) {
     let out = 0;
     return segments.map((segment) => {
         const duration = segment.outputFrames * 1e6 / fps;
-        const item = {...segment, rate: 1, endUs: segment.startUs + duration, outStartUs: out * 1e6 / fps, outDurUs: duration};
+        const item = {...segment, rate: 1, endUs: segment.startUs + duration, outStartFrame: out, outFrames: segment.outputFrames, transitionFrames: 0, fps, outStartUs: out * 1e6 / fps, outDurUs: duration};
         out += segment.outputFrames;
         return item;
     });
@@ -28,10 +28,25 @@ export function editTimeline(clips, fps) {
         const frames = clipFrames(clip, fps);
         const duration = frames * 1e6 / fps;
         out -= clip.transitionIn?.frames || 0;
-        const item = {...clip, rate: clip.speed.numerator / clip.speed.denominator, outStartUs: out * 1e6 / fps, outDurUs: duration};
+        const item = {...clip, rate: clip.speed.numerator / clip.speed.denominator, outStartFrame: out, outFrames: frames, transitionFrames: clip.transitionIn?.frames || 0, fps, outStartUs: out * 1e6 / fps, outDurUs: duration};
         out += frames;
         return item;
     });
+}
+
+// Source targets and linear dissolve weights share one output clock.
+export function compositionAt(items, outUs) {
+    const active = items.flatMap((item, index) => outUs >= item.outStartUs
+        && outUs < item.outStartUs + item.outDurUs ? [{index, item}] : []);
+    const incoming = active[1]?.item;
+    const overlap = incoming ? incoming.transitionFrames * 1e6 / incoming.fps : 0;
+    const progress = overlap ? Math.min(1, Math.max(0, (outUs - incoming.outStartUs) / overlap)) : 0;
+    return active.map(({index, item}, layer) => ({index,
+        sourceUs: (item.sourceClock?.originUs || 0) + item.startUs
+            + (outUs - item.outStartUs) * (item.rate || 1),
+        gain: incoming ? (layer ? progress : 1 - progress) : 1,
+        opacity: layer ? progress : 1, layer
+    }));
 }
 
 // Back-to-back segments of one source play as one continuous shot.
@@ -102,9 +117,7 @@ class PlanPlayback {
     }
     state(buffering = false) { if (this.disposed) return; this.publish({outUs: this.out, totalUs: this.total, playing: this.live, buffering, error: this.error || ""}); }
     active() {
-        return this.items.map((item, index) => ({item, index}))
-            .filter(({item}) => this.out >= item.outStartUs && this.out < item.outStartUs + item.outDurUs)
-            .map(({index}) => index);
+        return compositionAt(this.items, this.out).map(part => part.index);
     }
     async prepare(slot, index, run) {
         slot.pending?.abort();
@@ -175,7 +188,9 @@ class PlanPlayback {
         const required = this.active().map(index => this.slots.find(slot => slot.index === index));
         const failed = required.find(slot => slot?.error);
         if (failed) { this.fail(failed.error); return false; }
-        if (required.some(slot => !slot?.ready)) return false;
+        if (required.some(slot => !slot?.ready)) {
+            this.slots.forEach(slot => slot.video.pause()); this.state(true); return false;
+        }
         this.state();
         const run = this.run;
         for (const slot of required) if (slot.video.paused) {
@@ -186,14 +201,23 @@ class PlanPlayback {
         return true;
     }
     paint() {
-        const active = this.active();
+        const composition = compositionAt(this.items, this.out);
         for (const slot of this.slots) {
-            const visible = active.includes(slot.index);
-            slot.video.style.opacity = visible ? "1" : "0";
-            slot.video.style.zIndex = visible ? "2" : "1";
-            slot.video.dataset.previewGain = visible ? "1" : "0";
-            slot.video.volume = visible ? Math.min(1, Number(slot.video.dataset.sourceLevel || 1)) : 0;
-            if (!visible) slot.video.pause();
+            const part = composition.find(part => part.index === slot.index);
+            slot.video.style.opacity = String(part?.opacity || 0);
+            slot.video.style.zIndex = String(part ? part.layer + 2 : 1);
+            slot.video.dataset.previewGain = String(part?.gain || 0);
+            slot.video.volume = part ? Math.min(1, Number(slot.video.dataset.sourceLevel ?? 1) * part.gain) : 0;
+            if (!part) slot.video.pause();
+        }
+    }
+    alignRequired() {
+        for (const part of compositionAt(this.items, this.out)) {
+            const slot = this.slots.find(slot => slot.index === part.index);
+            if (!slot?.ready) continue;
+            const tolerance = (this.items[part.index].rate || 1) / (this.items[part.index].fps || 30);
+            if (Math.abs(slot.video.currentTime - part.sourceUs / 1e6) <= tolerance) continue;
+            slot.ready = false; slot.video.currentTime = part.sourceUs / 1e6;
         }
     }
     tick() {
@@ -209,7 +233,9 @@ class PlanPlayback {
             if (!this.resume()) { if (!this.live) return; this.slots.forEach(slot => slot.video.pause()); this.state(true); return; }
         } else this.out = Math.max(this.out, proposed);
         if (this.out >= this.total) { this.out = this.total; this.stop(); return; }
-        this.paint(); this.state(); this.preload();
+        this.alignRequired(); this.paint();
+        if (!this.resume()) return;
+        this.state(); this.preload();
     }
     loop() { this.frame = requestAnimationFrame(() => { this.tick(); if (this.live) this.loop(); }); }
 }

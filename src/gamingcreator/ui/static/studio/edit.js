@@ -51,6 +51,12 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     const planVideo = useRef(null), planVideoNext = useRef(null), resultVideo = useRef(null), work = useRef(null), restoring = useRef(null);
     const editing = useClipEditor(project);
     const [commandRows, setCommandRows] = useState(null);
+    // A monotonic edit generation preserves changes even after an A/B/A roundtrip.
+    const adoptionView = [project, planJob?.jobId, planId, editing.clips, editing.audio, editing.replacements, commandRows];
+    const adoptionGuard = useRef({view: adoptionView, generation: 0});
+    if (adoptionView.some((value, index) => value !== adoptionGuard.current.view[index])) {
+        adoptionGuard.current = {view: adoptionView, generation: adoptionGuard.current.generation + 1};
+    }
 
     useEffect(() => { setDraft(readDraft(project)); setPlanJob(null); setRenderJob(null); setPlanId(""); setMode("plan"); }, [project]);
     const update = (patch) => { const next = {...draft, ...patch}; setDraft(next); setSaved(writeDraft(project, next) ? "草稿已保存" : "浏览器不允许保存草稿"); };
@@ -148,7 +154,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         const expected = editing.clips.map((c) => c.clipId).filter((id) => kept.has(id));
         return new Set(commandRows.filter((r, i) => !before.has(r.clipId) || before.get(r.clipId) !== key(r) || expected[i] !== r.clipId).map((r) => r.clipId));
     }, [commandRows, editing.clips]);
-    const previewProblem = items.some(item => (item.transitionIn?.frames || 0) > 0) ? "含转场的方案请导出成片后观看；即时预览暂仅支持直接切换" : items.some(item => !SourceClock.clockCandidates({sourceClock: item.sourceClock}).length) ? "素材源时钟不支持即时预览，请导出成片后观看" : "";
+    const previewProblem = (shownClips ? transitionProblem(shownClips, fps) : "") || (items.some(item => !SourceClock.clockCandidates({sourceClock: item.sourceClock}).length) ? "素材源时钟不支持即时预览，请导出成片后观看" : "");
     const problem = editable ? transitionProblem(editing.clips, fps) || narrationProblem(editing.audio, items.length ? items.at(-1).outStartUs + items.at(-1).outDurUs : 0, fps) : "";
     const groups = useMemo(() => shots(items), [items]);
     const urlFor = useCallback((runId) => client.mediaUrl(project, runId), [project]);
@@ -171,11 +177,16 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     };
 
     const adoptPlans = async (jobId) => {
+        const generation = adoptionGuard.current.generation;
         setBusy("adopt"); setMessage("正在登记动态方案，不会再次调用模型…"); player.stop();
         try {
             const done = await follow(jobId, () => {});
+            onWorksChanged();
+            if (adoptionGuard.current.generation !== generation) {
+                setMessage("动态方案已登记到作品，当前编辑已保留，可稍后打开。"); return;
+            }
             if (done?.status !== "completed") throw new Error(done?.error?.message || "动态方案未能登记完成");
-            setCommandRows(null); showPlan(done); onWorksChanged(); setMessage("");
+            setCommandRows(null); showPlan(done); setMessage("");
         } catch (error) { setMessage(error.message); }
         finally { setBusy(""); }
     };
