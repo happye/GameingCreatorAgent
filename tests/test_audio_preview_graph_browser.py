@@ -1,0 +1,187 @@
+"""Capture actual live MediaElementSource PCM; no cloud, footage or paid models."""
+
+import array
+import functools
+import math
+import threading
+import wave
+from http.server import SimpleHTTPRequestHandler
+from pathlib import Path
+
+import pytest
+from browser_http import browser_server
+
+ROOT = Path(__file__).resolve().parents[1]
+STATIC = ROOT / "src/gamingcreator/ui/static/studio"
+
+
+@pytest.fixture(scope="module")
+def live_graph(tmp_path_factory):
+    pw = pytest.importorskip("playwright.sync_api")
+    root = tmp_path_factory.mktemp("audio-graph")
+    for name, frequency, amplitude in (
+        ("source", 337, 0.4),
+        ("music", 907, 0.1),
+        ("voice", 587, 0.3),
+    ):
+        samples = array.array("h")
+        for i in range(48000):
+            value = round(32767 * amplitude * math.sin(2 * math.pi * frequency * i / 48000))
+            samples.extend((value, value))
+        with wave.open(str(root / f"{name}.wav"), "wb") as output:
+            output.setparams((2, 2, 48000, 0, "NONE", "not compressed"))
+            output.writeframes(samples.tobytes())
+
+    class Handler(SimpleHTTPRequestHandler):
+        def translate_path(self, path):
+            if path.startswith("/assets/studio/"):
+                return str(STATIC / path.split("/")[-1])
+            if path.startswith("/assets/"):
+                return str(STATIC.parent / path.removeprefix("/assets/"))
+            if path.startswith("/api/creation/music/"):
+                return str(root / "music.wav")
+            return super().translate_path(path)
+
+    server = browser_server(functools.partial(Handler, directory=str(root)))
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with pw.sync_playwright() as runtime:
+            browser = runtime.chromium.launch(
+                headless=True, args=["--autoplay-policy=no-user-gesture-required"]
+            )
+            page = browser.new_page()
+            page.goto(f"http://127.0.0.1:{server.server_port}/")
+            yield page
+            browser.close()
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join()
+
+
+CAPTURE = """async settings => {
+    const {AudioPreviewGraph} = await import('/assets/studio/audio-preview-graph.js');
+    const elements = ['source', 'source', 'music', 'voice'].map(name => {
+        const el=document.createElement('audio'); el.src=`/${name}.wav`; el.loop=true;
+        document.body.append(el); return el;
+    });
+    const errors=[];
+    const graph=new AudioPreviewGraph(elements, message=>errors.push(message));
+    await graph.ready;
+    graph.configure(settings);
+    graph.slot(elements[0],1); graph.slot(elements[1],0);
+    const chunks=[];
+    const recorder=graph.context.createScriptProcessor(1024,2,2);
+    const done=new Promise(resolve=> {
+        recorder.onaudioprocess=event=> {
+            chunks.push(...event.inputBuffer.getChannelData(0));
+            if(chunks.length>=graph.context.sampleRate*.8) resolve();
+        };
+    });
+    graph.gate.connect(recorder); recorder.connect(graph.context.destination);
+    await graph.context.resume();
+    await Promise.all([elements[0],elements[2],elements[3]].map(el=>el.play()));
+    graph.enable(true);
+    await done;
+    graph.reset();
+    recorder.disconnect(); graph.dispose();
+    const ended=elements.every(el=>el.paused); elements.forEach(el=>el.remove());
+    return {samples:chunks,rate:graph.context.sampleRate,errors,ended,state:graph.context.state};
+}"""
+
+
+def amplitude(samples, rate, frequency):
+    # Phase independent projection, measured after limiter lookahead and RMS attack.
+    window = samples[round(rate * 0.3) : round(rate * 0.7)]
+    sine = sum(x * math.sin(2 * math.pi * frequency * i / rate) for i, x in enumerate(window))
+    cosine = sum(x * math.cos(2 * math.pi * frequency * i / rate) for i, x in enumerate(window))
+    return 2 * math.hypot(sine, cosine) / len(window)
+
+
+def test_actual_media_graph_two_ducking_switches(live_graph):
+    measured = {}
+    for source_duck, voice_duck in ((False, False), (True, False), (False, True), (True, True)):
+        result = live_graph.evaluate(
+            CAPTURE,
+            dict(
+                mix=dict(
+                    sourceGainDb=-24,
+                    bgm=dict(gainDb=0),
+                    ducking="source-v1" if source_duck else "off",
+                ),
+                narration=dict(gainDb=-24, ducking="narration-v1" if voice_duck else "off"),
+            ),
+        )
+        assert result["errors"] == []
+        assert result["ended"] and result["state"] == "closed"
+        assert max(abs(x) for x in result["samples"]) <= 0.951
+        measured[source_duck, voice_duck] = amplitude(result["samples"], result["rate"], 907)
+    baseline = measured[False, False]
+    assert baseline == pytest.approx(0.1, abs=0.003)
+    assert measured[True, False] < baseline * 0.2
+    assert measured[False, True] < baseline * 0.2
+    assert measured[True, True] < min(measured[True, False], measured[False, True]) * 0.3
+
+HOOK = """async () => {
+    const {h,render}=await import('/assets/vendor/preact.module.js');
+    const {useRef,useState}=await import('/assets/vendor/hooks.module.js');
+    const {useAudioPreview}=await import('/assets/studio/audio.js');
+    const root=document.createElement('div'); document.body.append(root);
+    const audio={mix:{sourceGainDb:-60,bgm:{trackId:'test',gainDb:0},ducking:'off'},
+        narration:{assetJobId:'voice',startFrame:30,gainDb:-60,ducking:'narration-v1'},
+        asset:{audioUrl:'/voice.wav'}};
+    function App() {
+        const video=useRef(null), [player,setPlayer]=useState({playing:false,buffering:false,outUs:0});
+        window.setAudioPlayer=value=>setPlayer(old=>({...old,...value}));
+        const sound=useAudioPreview(player,audio,30,video,[{trackId:'test',trackReceiptSha256:'test'}],'test');
+        return h('div',{},h('video',{ref:video,'data-preview-slot':'',src:'/source.wav',loop:true}),
+            h('video',{'data-preview-slot':'',src:'/source.wav',loop:true}),sound);
+    }
+    render(h(App),root); window.audioHarness={root,render};
+}"""
+
+HOOK_CAPTURE = """async () => {
+    const graph=audioHarness.root.querySelector('video').studioAudioGraph;
+    const recorder=graph.context.createScriptProcessor(1024,2,2), samples=[];
+    const done=new Promise(resolve=>{recorder.onaudioprocess=e=>{
+        samples.push(...e.inputBuffer.getChannelData(0));
+        if(samples.length>graph.context.sampleRate*.4) resolve();
+    }});
+    graph.gate.connect(recorder); recorder.connect(graph.context.destination);
+    await done; graph.gate.disconnect(recorder); recorder.disconnect();
+    return {samples,rate:graph.context.sampleRate,
+        paused:[...audioHarness.root.querySelectorAll('audio')].map(el=>el.paused)};
+}"""
+
+
+def test_real_hook_narration_offset_pause_seek_loop_and_unmount(live_graph):
+    page = live_graph
+    page.evaluate(HOOK)
+    page.wait_for_function("audioHarness.root.querySelector('video').studioAudioGraph?.node")
+    page.evaluate("audioHarness.root.querySelector('video').studioAudioGraph.context.resume()")
+    page.evaluate("setAudioPlayer({playing:true,outUs:500000})")
+    page.wait_for_function("!audioHarness.root.querySelectorAll('audio')[1].paused")
+    before = page.evaluate(HOOK_CAPTURE)
+    assert before["paused"][0]
+    assert amplitude(before["samples"], before["rate"], 907) == pytest.approx(.1, abs=.004)
+    page.evaluate("setAudioPlayer({outUs:1250000})")
+    page.wait_for_function("!audioHarness.root.querySelectorAll('audio')[0].paused")
+    during = page.evaluate(HOOK_CAPTURE)
+    assert amplitude(during["samples"], during["rate"], 907) < .02
+    page.evaluate("setAudioPlayer({buffering:true})")
+    silent = page.evaluate(HOOK_CAPTURE)
+    assert all(silent["paused"])
+    assert max(abs(x) for x in silent["samples"][2048:]) < 1e-8
+    page.evaluate("setAudioPlayer({buffering:false,outUs:2250000})")
+    page.wait_for_function("!audioHarness.root.querySelectorAll('audio')[1].paused")
+    page.wait_for_function("audioHarness.root.querySelectorAll('audio')[1].currentTime >= .15", timeout=2000)
+    assert page.evaluate("audioHarness.root.querySelectorAll('audio')[1].currentTime") == pytest.approx(.25, abs=.15)
+    page.evaluate("setAudioPlayer({playing:false})")
+    paused = page.evaluate(HOOK_CAPTURE)
+    assert max(abs(x) for x in paused["samples"][2048:]) < 1e-8
+    assert page.evaluate("""() => {
+        const graph=audioHarness.root.querySelector('video').studioAudioGraph;
+        audioHarness.render(null,audioHarness.root); audioHarness.root.remove();
+        return graph.context.state;
+    }""") == "closed"

@@ -5,10 +5,10 @@ import {h} from "../vendor/preact.module.js";
 import {useEffect, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
+import {AudioPreviewGraph} from "./audio-preview-graph.js";
 
 const html = htm.bind(h);
 const GAINS = [0, -3, -6, -12, -18, -24];
-const level = (db) => Math.pow(10, (db || 0) / 20);
 const sameOrigin = (url) => { try { const u = new URL(url, location.origin); return u.origin === location.origin ? u.pathname + u.search : null; } catch { return null; } };
 export const musicUrl = (track) => `/api/creation/music/${encodeURIComponent(track.trackId)}/audio?${new URLSearchParams({receipt: track.trackReceiptSha256})}`;
 
@@ -21,28 +21,35 @@ export function narrationProblem(audio, totalUs, fps) {
 }
 
 // Keep narration and music in step with the plan player; the source video follows its level.
-export function useAudioPreview(player, audio, fps, video, tracks) {
+export function useAudioPreview(player, audio, fps, video, tracks, identity) {
+    const graph = useRef(null);
+    const [audioError, setAudioError] = useState("");
     const voice = useRef(null), music = useRef(null);
     const track = tracks.find((t) => t.trackId === audio.mix.bgm?.trackId);
     const voiceSrc = audio.asset ? sameOrigin(audio.asset.audioUrl) : null;
     const musicSrc = track ? musicUrl(track) : null;
     useEffect(() => {
-        const elements = [voice.current, music.current];
-        return () => elements.forEach((el) => el?.pause());
+        const videos = video.current?.parentElement?.querySelectorAll("video[data-preview-slot]");
+        try {
+            graph.current = new AudioPreviewGraph([...videos, music.current, voice.current], setAudioError);
+        } catch (error) {
+            [...(videos || []), voice.current, music.current].forEach(el => { if (el) { el.pause(); el.muted = true; } });
+            setAudioError(`即时音频试听不可用：${error.message}。请导出成片试听。`);
+        }
+        return () => { graph.current?.dispose(); graph.current = null; };
     }, []);
+    useEffect(() => { graph.current?.reset(); }, [identity]);
     useEffect(() => {
-        const videos = video.current?.parentElement?.querySelectorAll("video[data-preview-slot]") || [];
-        videos.forEach(el => {
-            el.dataset.sourceLevel = String(level(audio.mix.sourceGainDb));
-            el.volume = Math.min(1, level(audio.mix.sourceGainDb) * Number(el.dataset.previewGain ?? 1));
-        });
+        graph.current?.configure(audio);
+        graph.current?.enable(player.playing && !player.buffering);
     });
     useEffect(() => {
         const sync = (el, src, offsetS, gainDb, loop = false) => {
             if (!el) return;
+            if (!graph.current?.node || graph.current.failed) { el.pause(); return; }
             if (!src || !player.playing || player.buffering || offsetS < 0) { el.pause(); return; }
             if (!el.src.endsWith(src)) el.src = src;
-            el.volume = level(gainDb);
+            el.volume = 1;
             // Music loops in the render; narration plays once.
             if (Number.isFinite(el.duration) && el.duration > 0 && offsetS >= el.duration) {
                 if (!loop) { el.pause(); return; }
@@ -57,7 +64,7 @@ export function useAudioPreview(player, audio, fps, video, tracks) {
         sync(voice.current, voiceSrc, out - (audio.narration?.startFrame || 0) / fps, audio.narration?.gainDb);
         sync(music.current, musicSrc, out, audio.mix.bgm?.gainDb, true);
     }, [player.playing, player.buffering, player.outUs, voiceSrc, musicSrc, audio, fps]);
-    return html`<audio ref=${voice} preload="auto" hidden></audio><audio ref=${music} preload="auto" hidden></audio>`;
+    return html`${audioError && html`<p class="note warn" role="alert">${audioError}</p>`}<audio ref=${voice} preload="auto" hidden></audio><audio ref=${music} preload="auto" hidden></audio>`;
 }
 
 export function useMusicCatalog() {
