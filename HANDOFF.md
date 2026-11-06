@@ -1,12 +1,12 @@
 # HANDOFF（覆盖快照）
 
-## 最近一次会话（2026-11-06，用户再次要求暂停）
+## 最近一次会话（2026-11-07，已恢复开发）
 
-goal paused，用户额度不足5%要求收尾。子Agent已中断/结束，检查时没有运行的pytest。不要自行恢复；用户下次恢复后先读STATUS和docs/exec-plans/sprint-j1-feedback-iteration.md。
+goal active，用户已恢复并要求持续工作。root仍在策划/转场工作分支。最新：原失败snapshot单项1通过；manifest publication最后replace已复用existing retry_file_sharing，真实跨进程占用释放/不释放及相关46项通过，独立审查通过；13508c5已推送。新完整verify session90488正在运行，日志.cache/manifest-full-verify.log，别重复启动或修改root源码。音频树33项播放/graph/DSP过，补PCM与helper隔离中；素材审查发现video_late取景头部无图像时取消终点边界P2，原owner在子树修复。先读STATUS及迭代合同。
 
 ## 主树所在分支与完整门禁
 
-root当前codex/paused-j1-dynamic-preview-20261105，功能检查点03ac1e0已推送，尚未合main。main仍是13af6e1的已验证R3版本。动态策划/双槽dissolve组合58通过；此前受影响1174通过/2跳过。原组合3失败已修：测试editor-ready等待、安全高端口、FFT关闭历史平滑而不降低阈值。独立评估闭环采用期间编辑/项目ABA丢状态P1，以及非法三重转场预览P2。未知源clock仍拒精确预览。模型均fake，不算真实AI质量验收。
+root当前codex/paused-j1-dynamic-preview-20261105，功能检查点03ac1e0已推送，尚未合main。main仍是13af6e1的已验证R3版本。动态策划/双槽dissolve组合58通过；此前受影响1174通过/2跳过。原组合3失败已修：测试editor-ready等待、安全高端口、FFT关闭历史平滑而不降低阈值。独立评估闭环采用期间编辑/项目ABA丢状态P1，以及非法三重转场预览P2。未知clock拒精确预览；fake模型不算AI质量验收。
 
 完整verify：4871 passed/7 skipped/1 error，1449.39秒，session28158已退出1。格式/lint/mypy201源通过；本轮CLI未执行（pytest失败已中止脚本）。.cache/resume-full-verify.log。唯一错误test_saved_detail_retrieval.py::test_tampered_saved_detail_manifest_is_refused_at_read[snapshot]的fixture：test_project_detail_query.py154→ffmpeg_media.py350 write_manifest→Path.replace，media-manifest.tmp→json出现WinError5。根因未知，不断言临时锁。保留.cache/pytest-runs/0b39324b3d004598935787ed7e2d21d9，未清理。恢复首要：复现该单项/检查文件现场；必要修复后完整verify再合main，不能用旧4813或新4871声称全量通过。
 
@@ -20,10 +20,10 @@ dissolve：整数帧输出时钟、双槽预加载、旧层不透明/新层渐�
 
 ## 两个独立暂停WIP（已提交推送，未集成）
 
-1. codex/paused-audio-preview-20261106，6e8d384，.worktrees/j1-selected-ranges。8文件：audio-ducking-processor.js、audio-preview-graph.js、audio/preview/edit.js、tests/browser_http.py及2音频tests。DSP15项PCM对照FFmpeg通过（.cache/audio-ducking-pcm.xml）；图接线真实4媒体/四组合1项曾过，但hook生命周期/旁白起点/loop/seek/旧播放回归未完成。static路由尚未加，独立审查未做。graph使用相对import.meta.url，helper增加10013跳端口。每级limiter延迟5ms；释放曲线未证与FFmpeg等价。不能当已交付。
+1. codex/paused-audio-preview-20261106，6e8d384，.worktrees/j1-selected-ranges。8文件：audio-ducking-processor.js、audio-preview-graph.js、audio/preview/edit.js、tests/browser_http.py及2音频tests。DSP15项PCM对照FFmpeg通过（.cache/audio-ducking-pcm.xml）；图接线真实4媒体/四组合1项曾过，但hook生命周期/旁白起点/loop/seek/旧播放回归未完成。static路由尚未加，独立审查未做。graph使用相对import.meta.url，helper增加10013跳端口。每级limiter5ms，释放曲线未证等价，未交付。
 2. codex/paused-material-clock-20261106，93d1818，.worktrees/j1-preview-corrections。main.js/test_studio_assets_browser.py：复用SourceClock统一seek/终点/重播/keys/time，unknown明确不精确定位可看整段，async映射建立后补定位并防seeking旧终点暂停。素材5真实barcode等+shell3过；.cache/studio-assets-clock.xml。独立guard被暂停中断，无结论，待续评再集成。
 
-第三树creation-reasoning-core仍保留已有浏览器成果，已集入03ac，不盲删。共享.venv/.tools是junction；树内env后显式PYTHONPATH=本树src，affected脚本会重设路径，按同清单直接pytest并记差异。并发≤3树，一写者/树；以后集成勿整文件覆盖adopt generation或dissolve。
+第三树creation-reasoning-core成果已集入03ac；不盲删junction。共享venv测试须env后PYTHONPATH=本树src；同树pytest串行，集成勿覆盖adopt generation/dissolve。
 
 ## 运行与保护
 
