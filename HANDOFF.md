@@ -2,23 +2,15 @@
 
 ## 最近一次会话（2026-11-07，持续开发）
 
-goal active，持续工作。root现codex/audio-source-clock-integration-20261107，42c0c40已推送：已合音频082b1be/素材7f50700并加生产static两路由，组合46通过（.cache/audio-source-combined.xml）。新完整verify session71506正在跑，.cache/audio-source-full-verify.log；勿重复启动/改root源码。main已2878004且4874/7完整通过。真实付费仍逐次独立确认，语音免费本机，不搬Claude角色。
+goal active，用户要求持续开发。音频graph/素材clock批次完整verify4899 passed/7 skipped、1179.88秒，格式/lint/mypy201源及CLI通过；.cache/audio-source-full-verify.log，session71506已退出0，合入main。源状态无需重复全量。实际8769四路graph running/gate1，旧8秒方案到末尾无pageerror/alert，.cache/scratch/audio-real-preview.json/png；保持CSP，字符串wait_for_function会unsafe-eval报错，用locator等待/CDP函数体读。无真实付费。下一批P028见下面新增段。
 
-## 已验证并合入main的批次
+## 已合main
 
-策划/双槽预加载+dissolve、UI采用竞态保护、manifest有界sharing等待。最新完整verify 4874 passed/7 skipped，1124.26秒；格式/lint/mypy201源、CLI均过。.cache/manifest-full-verify.log，session90488已退出0。此前4871/7/1 error不是绿：原snapshot fixture Path.replace WinError5具体成因未证实，单项重跑过，随后只包最后replace的retry_file_sharing（1s后仍抛原异常）并用真实跨进程释放/持续占用验证；46相关过，独立审查过。没有重跑paid或生成证据流程。
+策划/转场4874/7、音频/素材clock4899/7完整门禁过，详细证据见迭代合同。J1第四次人评仍not_usable，passes/质量不变；真人AI质量未验。
 
-动态策划prepare_plan从保存原需求/候选快照，逐次确认一次send，1–3案或澄清、时长/缺口预览、幂等采用普通plan不再send；12Studio浏览器过，采用期间编辑/项目ABA保护独立4过。文本模型均fake，不能叫真实AI创作质量通过。
+## 已集成两树
 
-dissolve：整数frame输出时钟，双槽原片预加载，旧层不透明/新层渐入和三角源gain；3速真实206、同源远跳和跨源连续转场，18张图对照导出误差≤12/255，FFT方向过。非法shownClips三重布局明确挡播放/seek。root组合58通过。全音轨ducking见下一批，J1第四次人评仍not_usable，passes不变。
-
-## 下一批待集成（两树成果已推送）
-
-1. 音频codex/paused-audio-preview-20261106，082b1be，.worktrees/j1-selected-ranges。生产6e8d384含processor/graph及audio/preview/edit接线；后续tests/helper已082b1be。DSP15实际PCM对照FFmpeg误差<1e-5；36组合（15DSP+2graph/hook+2keygain+16旧播放+helper1）过，.cache/audio-lifecycle-final.xml。另新增真实Studio1项过.cache/studio-audio-vertical.xml，必等末尾重播，确认00:00/源6秒起点+PCM有声，再暂停静音/退出contextclosed。fake仅planner/SAPI/SQLite timeline读取/runs响应；实际probe/hash/MusicLibrary/HTTP/保存回执/PlanPlayback/解码PCM真。独立源码及证据审查过；36+1尚未合37项跑。PCM相位容差120ms，不冒称全部速率/所有跨源全流程。每级limiter5ms延迟，释放曲线未证与FFmpeg等价。
-   必须父控server ASSETS加/assets/studio/audio-preview-graph.js和audio-ducking-processor.js；测试临时注册不等于生产已注册。合入要保adopt generation/dissolve，不整文件覆盖。helper禁Windows reuse且10013/10048跳端口，同树pytest严格串行。
-2. 素材clock codex/paused-material-clock-20261106，7f50700，.worktrees/j1-preview-corrections。main.js/test_studio_assets_browser.py复用SourceClock统一seek/keys/终点/replay/time；unknown明确不精确定位可看整片。新P2：video_late[0,1]取景含无图像头部曾取消边界，已改合法canonical端点始终安装end约束，选段/replay从首画面.5起但原range不变；全片快捷键保音频头部0行为。6browser+shell3=9通过，独立新增真实video_late1通过，.cache/studio-assets-clock-resume.xml。尚未主树集成/全量。
-
-已建集成分支/合两批/加static并组合46通过；下一步跟踪session71506完整验证，成功后才merge main并更新API/架构/STATUS。第三creation-reasoning-core成果已在main，不盲删树/junction。
+音频082b1be与素材7f50700已合入本批，生产static两路由已注册。原子树36+独立Studio1及素材9+独立video_late1的结果不冒充组合；root后来组合46、完整4899/7均过。真实Studio fixture中planner/SAPI/SQLite timeline/runs是假，解码/probe/hash/回执/HTTP/播放器/PCM是真。每级limiter5ms，释放曲线未证与FFmpeg等价。主树已更新，不再重复取这些旧树文件覆盖新开发。
 
 ## 运行与保护
 
@@ -27,3 +19,13 @@ dissolve：整数frame输出时钟，双槽原片预加载，旧层不透明/新
 用户4个未跟踪设计文档未动未暂存。共享venv/tools为junction，树内env后PYTHONPATH须本树src；affected脚本会重设，按同清单直接pytest并记录差异。并发≤3树/一写者每树。同树pytest不重叠。
 
 原视频/证据/账本不改不删，不重付重标，不重跑钟馗。无真实云/Release。status数字python -B scripts/status.py，质量不由开发测试代填。push走127.0.0.1:7890代理，不force。
+
+## 下一批P028（未交付）
+
+输出时间线的定时文字/PNG独立层：startFrame/endFrame左闭右开，x/y/width归一化0..10000，淡入/出frame，层序固定。不能编辑烘焙源logo。root合main后建新feature分支。
+
+协议worker timed_overlay_core在.worktrees/creation-reasoning-core已写domain/creation_overlays.py和tests/test_creation_overlays.py，25focused/ruff/mypy过，未提交。top schemaVersion=creation-overlays-v1/items；每item overlayId/kind/startFrame/endFrame/x/y/width/fadeInFrames/fadeOutFrames/assetId/assetReceiptSha256，text额外rawtext。Opacity Fraction，几何半向上等比，超画布拒绝，预算16层/PNG8MiB/4096/16M/累计128MiB（同资产计一次）。三速仅纯输出frame测试不冒称render。
+
+资产worker overlay_assets在.worktrees/j1-selected-ranges branchcodex/timed-overlay-assets-20261107做新infra/overlay_assets.py及test（可拆overlay_text.py）。接口OverlayAssetLibrary(repo)，async register_png/register_text，resolve(id,receipt)；public assetReceiptSha256、width/height、kind text/image、text仅text，无路径。永久artifacts/overlay-assets，原PNG不删；真实FFmpeg ASS alpha=1/MicrosoftYaHei透明CJK proof已成功，注册/预算/receipt测试仍在跑。不要覆盖该树正在写的文件。
+
+后续还须资产/文字身份验证、metadata省略继承/显式空清除及旧v4兼容、输出帧叠加render（safe-area后字幕/徽标/水印前）、Studio上传编辑/版本重开/预览/导出真实闭环及独立quality guard。当前仅组件，不能翻P028状态。

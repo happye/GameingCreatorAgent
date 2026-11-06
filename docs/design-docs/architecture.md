@@ -96,3 +96,9 @@ Studio本地命令与显式AI对话分开。UI经CreationReasoningService从已�
 本地准备页面由UI的有界后台任务管理器接入既有CLI批量准备入口，沿用Application媒体处理与Infrastructure冻结清单／状态／原项目锁。检查点已保存后向页面投影逐项进度；真实线程／协程状态独立于磁盘记录。取消、原ID接续和已准备素材核验复用沿原流程，页面不进入Provider或账本，不启动分析。接口与新旧服务能力确认见[工作台合同](./inspection-workspace-api.md)，用户步骤见[准备页面指南](../references/media-preparation-workspace-guide.md)。
 
 F001 建立包导入方向、类型和格式检查；F004 检查 SQLite 与文件原子边界、断点恢复；F003 检查 Provider 替换和未知 usage；F005 检查时间码、稳定排序和重复事件；F006 执行独立 benchmark。架构基线可据失败证据修订，修订保留原因、影响与版本。
+
+### Studio试听音频及源时钟
+
+每挂载编辑器一个AudioContext，四路MediaElementSource进入本地AudioWorklet，成片video不接图。源视频双槽三角增益先合成原始key；用户源gain之后才进入听觉分支，原声先压配乐，旁白key再压整个bed。两开关真正影响试听，暂停/seek/缓冲先关闭输出门并重置包络，卸载释放节点/context；失败明确提示导出试听。每级限幅约5ms前视，释放曲线未声明与FFmpeg逐样本等价。2026-11-07完整4899/7通过，PCM/真实页面证据见反馈迭代合同。
+
+素材页复用共享SourceClock建立canonical与媒体时钟映射；未知时钟仍可整片观看，不声称精确定位。已建立时钟的合法取景保持终点约束，video_late头部从首图起播并说明，原取景/事实区间不改。输出预览和素材预览分别使用各自输出/源时钟，不混用。

@@ -85,3 +85,9 @@ root原组合40通过，受影响1174通过/2跳过；新组合初次54通过/3�
 原失败snapshot单项重跑1通过，但不据此断言上次WinError5根因；write_manifest最后replace复用现有1秒有界sharing重试，不重跑写入/分析流程。真实跨进程占用释放/持续占用及相关46通过，独立审查通过。新完整verify：4874 passed/7 skipped、1124.26秒，格式/lint/mypy201源及CLI通过；.cache/manifest-full-verify.log，session90488退出0。本批合入main，J1人评与feature passes保持。
 
 后续子树证据：素材video_late取景撤掉终点约束P2经真实媒体先复现后修复，9项+独立新增1项通过，7f50700。音频082b1be：36DSP/graph/播放/helper组合过；另新增确定性真Studio页面1项过（非合37项已跑），独立源码及证据审查通过。页面测试fake为planner/SAPI/SqliteTimelineStore.open/project_runs_payload，真实HTTP/PlanPlayback/probe/hash/音乐与任务回执/媒体PCM；证明同源远跳+dissolve、<120ms音轨相位、ducking/peak/必经重播及暂停/退出。仍需父控生产static注册、主树组合及新完整门禁后才合入下一批。无真实云/Release。
+
+## 2026-11-07 音频与素材时钟批次通过完整门禁
+
+生产静态路由接入后root组合46通过；完整verify4899 passed/7 skipped、1179.88秒，格式/lint/mypy201源与CLI通过（.cache/audio-source-full-verify.log，session71506退出0），合main。原始素材未变、模型/云语音未调用，人评/passes未上调。实际8769工作台不关闭CSP检查四路图context running/gate1，旧8秒方案播至末尾且无pageerror/alert；证据.cache/scratch/audio-real-preview.json及png。这不是全设备不卡顿或DSP逐样本等价声明。
+
+定时文字/PNG叠加为下一独立切片：协议核心25项通过，资产库文字透明PNG初证通过，尚未接revision/render/Studio，不能把未交付组件标完成。

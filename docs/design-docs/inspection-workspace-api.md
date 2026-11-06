@@ -167,3 +167,9 @@ prepare返回准备身份、请求身份、实际 `payloadPreview={system,user}`
 ### 动态策划（main已实现，模型质量待验）
 
 接口增加 `prepare_plan {jobId}` 与 `adopt_plan {preparedHash}`，其余execute/result复用上述机制。准备读取已完成plan任务的原始需求和候选篮子；结果 `planPreview={fps,plans}` 展示顺序、时长和素材不足，去除sourcePath。采用生成普通plan job，不再调用模型，重复采用复用同任务；注册和执行都核对原需求/源身份。Studio接入及完整verify已通过（2026-11-07：4874通过/7跳过）；模型调用均fake，真实AI创作质量尚未验收。
+
+## Studio派生源时钟与音频模块
+
+`/api/runs`各run与`/api/inspect`的media现在提供派生`sourceClock`（browser-source-clock-v1或null）；它不修改原run/evidence身份。实际映射按共享source-clock.js校准，未知不承诺精确片段寻址。已校准video_late选段仍在canonical终点停播。
+
+静态`/assets/studio/audio-preview-graph.js`与`audio-ducking-processor.js`由同源路由提供，AudioWorklet在本地浏览器运行，不调用云端、不新增付费API。依赖浏览器AudioContext/AudioWorklet与用户播放手势；不可用时明确提示，仍可保存/导出。
