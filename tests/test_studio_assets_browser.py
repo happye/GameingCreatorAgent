@@ -13,7 +13,7 @@ from gamingcreator.ui.server import create_server
 
 
 @pytest.fixture
-def assets_page(service, monkeypatch, tmp_path):  # noqa: F811
+def assets_page(service, monkeypatch, tmp_path, request):  # noqa: F811
     playwright = pytest.importorskip("playwright.sync_api")
     import gamingcreator.ui.server as implementation
 
@@ -42,6 +42,17 @@ def assets_page(service, monkeypatch, tmp_path):  # noqa: F811
         capture_output=True,
         timeout=20,
     )
+    kind = getattr(request, "param", None)
+    if kind in {"zero", "nonzero"}:
+        from test_benchmark_source_clock_browser import synthesize
+
+        synthesize(source, kind)
+    from test_benchmark_source_clock_browser import probe_source
+
+    from gamingcreator.application.browser_source_clock import build_source_clock, clock_document
+
+    asset = probe_source(source)
+    clock = clock_document(build_source_clock(asset))
     media = source.read_bytes()
     runs = [
         {
@@ -64,7 +75,15 @@ def assets_page(service, monkeypatch, tmp_path):  # noqa: F811
         return {"runs": runs}
 
     monkeypatch.setattr(implementation, "project_runs_payload", list_runs)
-    server = create_server("127.0.0.1", 0, service.repository)
+    for port in range(20000, 21000):
+        try:
+            server = create_server("127.0.0.1", port, service.repository)
+            break
+        except OSError as error:
+            if getattr(error, "winerror", None) != 10048:
+                raise
+    else:
+        raise RuntimeError("No browser-safe local port available")
     threading.Thread(target=server.serve_forever, daemon=True).start()
     posted = []
 
@@ -86,14 +105,20 @@ def assets_page(service, monkeypatch, tmp_path):  # noqa: F811
             run = parse_qs(url.query)["run"][0]
             event = {
                 "eventId": f"{run}:m:event:0",
-                "startUs": 2_000_000,
-                "endUs": 2_000_000,
+                "startUs": 300_000 if kind else 2_000_000,
+                "endUs": 700_000 if kind else 2_000_000,
                 "startTimecode": "00:00:02.000",
                 "endTimecode": "00:00:02.000",
                 "displayFacts": ["跳跃"],
                 "evidenceIds": [],
                 "mechanicTags": [],
             }
+            if kind in {"zero", "nonzero"}:
+                event.update(
+                    analysisStartUs=300_000,
+                    analysisEndUs=700_000,
+                    sourceDurationUs=clock["durationUs"],
+                )
             return route.fulfill(
                 json={
                     "runId": run,
@@ -101,7 +126,8 @@ def assets_page(service, monkeypatch, tmp_path):  # noqa: F811
                     "evidence": [],
                     "media": {
                         "videoUrl": f"/api/media?project=x&run={run}",
-                        "durationUs": 8_000_000,
+                        "durationUs": clock["durationUs"],
+                        "sourceClock": None if kind == "unknown" else clock,
                     },
                 }
             )
@@ -159,6 +185,9 @@ def test_recordings_deduplicate_search_scope_and_keep_selected_ranges(assets_pag
 
 def test_source_clip_stops_at_end_replays_and_full_source_can_continue(assets_page):
     page, _ = assets_page
+    page.wait_for_function(
+        "() => document.querySelector('.viewer .tc').textContent.includes('00:00.000')"
+    )
     page.locator(".timeline .clip").click()
     pytest.importorskip("playwright.sync_api").expect(page.get_by_label("选段入点")).to_have_value(
         "0.5"
@@ -177,3 +206,52 @@ def test_source_clip_stops_at_end_replays_and_full_source_can_continue(assets_pa
     video.evaluate("v => { v.currentTime = 4; return v.play(); }")
     page.wait_for_function("() => document.querySelector('.viewer video').currentTime > 4.2")
     assert not video.evaluate("v => v.paused")
+
+
+@pytest.mark.parametrize("assets_page", ["zero", "nonzero"], indirect=True)
+def test_asset_clock_maps_marker_bounds_replay_and_keys(assets_page):
+    from test_benchmark_source_clock_browser import read_marker
+
+    page, _ = assets_page
+    expect = pytest.importorskip("playwright.sync_api").expect
+    expect(page.locator(".viewer")).to_have_attribute("data-source-clock", "ready")
+    page.locator(".timeline .clip").click()
+    video = page.locator(".viewer video")
+    expect(page.locator(".viewer .tc").first).to_contain_text("00:00.300")
+    page.wait_for_function("() => !document.querySelector('.viewer video').seeking")
+    video.evaluate("v => {v.style.width='320px'; v.style.height='180px';}")
+    marker, sync = read_marker(video.screenshot())
+    assert sync in range(115, 145)
+    assert abs(marker - 9) <= 1
+    start = video.evaluate("v => v.currentTime")
+    page.get_by_role("button", name="播放", exact=True).click()
+    page.wait_for_function("() => document.querySelector('.viewer video').paused")
+    assert abs(video.evaluate("v => v.currentTime") - start - 0.4) < 0.05
+    expect(page.locator(".viewer .tc").first).to_contain_text("00:00.700")
+    page.get_by_role("button", name="播放", exact=True).click()
+    page.wait_for_function(
+        "start => {const v=document.querySelector('.viewer video'); return !v.paused && !v.seeking && v.currentTime < start + 0.2;}",
+        arg=start,
+    )
+    assert video.evaluate("v => v.currentTime") < start + 0.2
+    video.evaluate("v => v.pause()")
+    page.get_by_role("button", name="查看整段录像").click()
+    video.click()
+    page.wait_for_function(
+        "() => document.querySelector('.viewer video').currentTime > " + str(start + 0.6)
+    )
+    video.evaluate("v => v.pause()")
+    page.keyboard.press("ArrowLeft")
+    expect(page.locator(".viewer .tc").first).to_contain_text("00:00.000")
+    page.keyboard.press("ArrowRight")
+    expect(page.locator(".viewer .tc").first).to_contain_text("00:01.000")
+
+
+@pytest.mark.parametrize("assets_page", ["unknown"], indirect=True)
+def test_unknown_asset_clock_does_not_claim_precise_addressing(assets_page):
+    page, _ = assets_page
+    expect = pytest.importorskip("playwright.sync_api").expect
+    expect(page.get_by_text("无法精确定位片段，可观看整段录像", exact=True)).to_be_visible()
+    page.locator(".timeline .clip").click()
+    expect(page.locator(".viewer .tc").first).to_contain_text("源时间未校准")
+    expect(page.get_by_text("片段寻址不可用", exact=True)).to_be_visible()

@@ -4,6 +4,7 @@ import {h, render} from "../vendor/preact.module.js";
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
+import "../source-clock.js";
 import {BasketList, ClipSearch, useBasket} from "./basket.js";
 import {PublishWorkspace} from "./publish.js";
 import {EditWorkspace} from "./edit.js";
@@ -51,6 +52,15 @@ function App() {
     const basket = useBasket(project);
     const video = useRef(null);
     const pendingSeek = useRef(null);
+    const [clock, setClock] = useState(null);
+    useEffect(() => {
+        let active = true; setClock(null);
+        const media = view?.media;
+        const url = media && client.sameOrigin(media.videoUrl, "/api/media");
+        if (url) SourceClock.establish(SourceClock.clockCandidates(media), new URL(url, location.href).href)
+            .then(result => { if (active) setClock(result.established ? result.clock : null); });
+        return () => { active = false; pendingSeek.current?.(); };
+    }, [view]);
     const latestRuns = useLatest(), latestView = useLatest(), latestWorks = useLatest();
 
     useEffect(() => { savePrefs({project, runId, workspace, bin: layout.bin, insp: layout.insp}); }, [project, runId, workspace, layout]);
@@ -117,20 +127,22 @@ function App() {
     }, []);
 
     const seek = useCallback((us, play = false) => {
-        const el = video.current; if (!el) return;
-        pendingSeek.current?.();
-        const apply = () => {
-            if (video.current !== el) return;
-            el.currentTime = seconds(us); setTime(us);
+        const el = video.current, target = SourceClock.sourceUsToPlayerSeconds(clock, us);
+        if (!el || target === null) return;
+        pendingSeek.current?.(); let active = true;
+        pendingSeek.current = () => { active = false; };
+        void SourceClock.settle(el, target).then(actual => {
+            if (!active || video.current !== el || actual === null) return;
+            const source = SourceClock.playerToSourceUs(clock, actual);
+            if (source !== null) setTime(source);
             if (play) void el.play().catch(() => {});
-        };
-        if (el.readyState >= 1) apply();
-        else { el.addEventListener("loadedmetadata", apply, {once: true}); pendingSeek.current = () => el.removeEventListener("loadedmetadata", apply); }
-    }, []);
+        });
+    }, [clock]);
     const selectEvent = useCallback((event) => {
         const selection = clipSelection(event, view?.media?.durationUs);
         video.current?.pause(); setSelected(selection); seek(selection.startUs);
     }, [seek, view]);
+    useEffect(() => { if (clock && selected) seek(selected.startUs); }, [clock]);
     const changeRange = (range) => {
         const next = {...selected, ...range};
         const point = next.analysisStartUs === next.analysisEndUs;
@@ -148,7 +160,8 @@ function App() {
             if (event.key === " " && el) { event.preventDefault(); el.paused ? void el.play().catch(() => {}) : el.pause(); }
             else if ((event.key === "ArrowLeft" || event.key === "ArrowRight") && el) {
                 event.preventDefault(); const step = (event.shiftKey ? 5 : 1) * (event.key === "ArrowLeft" ? -1 : 1);
-                el.currentTime = Math.max(0, el.currentTime + step);
+                const source = SourceClock.playerToSourceUs(clock, el.currentTime);
+                if (source !== null) seek(Math.min(clock.durationUs, Math.max(0, source + step * 1e6)));
             } else if ((event.key === "b" || event.key === "B") && selected) {
                 toggleBasket(selected);
             } else if ((event.key === "j" || event.key === "l") && events.length) {
@@ -158,7 +171,7 @@ function App() {
             }
         };
         addEventListener("keydown", onKey); return () => removeEventListener("keydown", onKey);
-    }, [view, selected, workspace, selectEvent, basket, currentRun]);
+    }, [view, selected, workspace, selectEvent, basket, currentRun, clock, seek]);
 
     const work = `work${layout.bin ? "" : " no-bin"}${layout.insp ? "" : " no-insp"}`;
     return html`<div class="shell">
@@ -169,7 +182,7 @@ function App() {
                     top=${html`<${ClipSearch} project=${project} runs=${runs} runId=${runId} basket=${basket} onShow=${(run, event) => showEvent(run.id, event.eventId)} />
                         <${BasketList} basket=${basket} onShow=${(item) => showEvent(item.runId, item.eventId, item)} onUse=${() => { setBasketAt(Date.now()); setWorkspace("edit"); }} />`} />
                 <div class="center">
-                    <${Viewer} media=${view?.media} videoRef=${video} time=${time} setTime=${setTime} selected=${selected} onFullSource=${() => setSelected(null)} />
+                    <${Viewer} onClockInvalid=${() => setClock(null)} clock=${clock} media=${view?.media} videoRef=${video} time=${time} setTime=${setTime} selected=${selected} onFullSource=${() => setSelected(null)} />
                     <${Timeline} view=${view} time=${time} selected=${selected} onSelect=${selectEvent} inBasket=${basket.ids} />
                 </div>
                 <${Inspector} view=${view} selected=${selected} run=${currentRun} hidden=${!layout.insp} inBasket=${!!selected && basket.ids.has(selected.eventId)} onBasket=${() => toggleBasket(selected)} onRange=${changeRange} />
@@ -234,40 +247,45 @@ function Recording({group, runId, onSelect}) {
     </div>`;
 }
 
-function Viewer({media, videoRef, time, setTime, selected, onFullSource}) {
+function Viewer({onClockInvalid, clock, media, videoRef, time, setTime, selected, onFullSource}) {
     const src = media ? client.sameOrigin(media.videoUrl, "/api/media") : null;
     const [playing, setPlaying] = useState(false);
     useLayoutEffect(() => {
         const el = videoRef.current;
-        if (!el || !selected) return;
+        if (!el || !selected || !SourceClock.intervalReplayable(clock, selected.startUs, selected.endUs)) return;
         let frame = 0;
         const bound = () => {
             cancelAnimationFrame(frame);
-            if (el.currentTime * 1e6 >= selected.endUs) {
+            if (el.seeking) { if (!el.paused) frame = requestAnimationFrame(bound); return; }
+            const source = SourceClock.playerToSourceUs(clock, el.currentTime);
+            if (source !== null && source >= selected.endUs) {
                 el.pause();
-                if (Math.abs(el.currentTime * 1e6 - selected.endUs) > 1000) el.currentTime = selected.endUs / 1e6;
+                if (Math.abs(source - selected.endUs) > 1000) el.currentTime = SourceClock.sourceUsToPlayerSeconds(clock, selected.endUs);
                 setTime(selected.endUs);
             } else if (!el.paused) frame = requestAnimationFrame(bound);
         };
         const play = () => {
-            if (el.currentTime * 1e6 >= selected.endUs || el.currentTime * 1e6 < selected.startUs) el.currentTime = selected.startUs / 1e6;
+            const source = SourceClock.playerToSourceUs(clock, el.currentTime);
+            if (source === null || source >= selected.endUs || source < selected.startUs) el.currentTime = SourceClock.sourceUsToPlayerSeconds(clock, selected.startUs);
             cancelAnimationFrame(frame); bound();
         };
         const pause = () => cancelAnimationFrame(frame);
         el.addEventListener("play", play); el.addEventListener("timeupdate", bound); el.addEventListener("pause", pause);
         return () => { cancelAnimationFrame(frame); el.removeEventListener("play", play); el.removeEventListener("timeupdate", bound); el.removeEventListener("pause", pause); };
-    }, [selected, src]);
-    return html`<section class="viewer" aria-label="预览窗">
+    }, [selected, src, clock]);
+    return html`<section class="viewer" aria-label="预览窗" data-source-clock=${clock ? "ready" : "unavailable"}>
         ${src
             ? html`<video ref=${videoRef} src=${src} preload="metadata" playsinline
-                onTimeUpdate=${(e) => setTime(Math.round(e.currentTarget.currentTime * 1e6))}
+                onTimeUpdate=${(e) => { const source = SourceClock.playerToSourceUs(clock, e.currentTarget.currentTime); if (source !== null) setTime(source); }}
+                onDurationChange=${e => { if (clock && SourceClock.durationChangeVerdict(clock, e.currentTarget.duration, true)) onClockInvalid(); }}
                 onPlay=${() => setPlaying(true)} onPause=${() => setPlaying(false)} onClick=${(e) => (e.currentTarget.paused ? void e.currentTarget.play().catch(() => {}) : e.currentTarget.pause())}></video>`
             : html`<div class="empty">从左侧素材箱选择一段已分析的录像</div>`}
         <div class="transport">
             <button class="icon-btn" disabled=${!src} onClick=${() => { const el = videoRef.current; if (el) el.paused ? void el.play().catch(() => {}) : el.pause(); }}>${playing ? "暂停" : "播放"}</button>
-            <span class="tc">${timecode(time)} / ${media ? timecode(media.durationUs) : "00:00.000"}</span>
+            <span class="tc">${clock ? timecode(time) : "源时间未校准"} / ${media ? timecode(media.durationUs) : "00:00.000"}</span>
             <span class="spacer"></span>
-            ${selected && html`<span class="hint">仅播放选中片段</span><button class="btn ghost" onClick=${onFullSource}>查看整段录像</button>`}
+            ${!clock && src ? html`<span class="hint">无法精确定位片段，可观看整段录像</span>` : null}
+            ${selected && html`<span class="hint">${clock ? "仅播放选中片段" : "片段寻址不可用"}</span><button class="btn ghost" onClick=${onFullSource}>查看整段录像</button>`}
             <span class="tc">空格 播放/暂停 · ←/→ 1 秒 · J/L 上/下一段</span>
         </div>
     </section>`;
