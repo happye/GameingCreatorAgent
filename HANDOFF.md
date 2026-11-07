@@ -1,8 +1,8 @@
 # HANDOFF（覆盖快照）
 
-## 当前（2026-11-07，持续开发）
+## 最近一次会话（2026-11-07，持续开发）
 
-goal active。用户要求额度恢复后持续开发，不能因旧额度或旧暂停记录停工。root分支codex/timed-overlays-20261107已快进到1deb9fe，包含P028图层、AI图层时间提案及preview稳定性修复，尚未合main/交付。原4个未跟踪用户设计文档未动未暂存。
+goal active。用户要求额度恢复后持续开发，不能因旧额度或旧暂停记录停工。root分支codex/timed-overlays-20261107已快进到1deb9fe，包含P028图层、AI图层时间提案及preview稳定性修复，本批技术已完整验证并合main，未按完整P028/P041或人评交付。原4个未跟踪用户设计文档未动未暂存。
 
 ## 已完成及证据
 
@@ -25,10 +25,12 @@ P028早期55/68/54，root相关85、重开9、像素/HTTP guard11；AI旧88/新1
 - 选段onInput立即更新，避免失焦前被异步seek rerender覆盖。原范围/观察覆盖校验不变。
 - 稳态ducking使用4秒非循环fixture，等三路媒体时钟>=.25后录，原阈值不变；原1秒hook循环fixture保留，避免循环相位破坏稳态谱测量。assets/planning/audio联合23过。
 
-最新root集成20项通过：.cache/overlay-ai-root-integrated.xml（session57307退出0），已确认import为root/src。root将运行scripts/verify.ps1完整组合门禁，日志.cache/overlays-combined-full-verify.log；待完整全绿才合main。共有venv editable指root，子树直接verify会清PYTHONPATH误导入root，因此完整门禁必须在root执行；不得删除工具链检查。当前源码应冻结到该运行结束。
+最终root完整组合verify已通过：.cache/overlays-combined-full-verify.log，4981 passed/7 skipped、1734.98秒，格式/Ruff/mypy207源/CLI通过；session89751退出0。先前root集成20过，import确认为root/src。代码与证据合main后继续字幕主线；没有真实云/付费、人评/feature passes不变。共有venv editable指root，子树直接verify会清PYTHONPATH误导入root，完整门禁在root执行，工具链检查不删。
 
 ## 子树与保护
 
-preview树分支codex/overlay-assistant-20261107也在1deb9fe已推；无MERGE_HEAD。core保留clock修复/旧core副本，assets保留前端旧副本，勿再覆盖root。3子树、一树一写者、同树pytest串行；env后核PYTHONPATH与实际导入。root原未跟踪AI合同已移到.cache/scratch备份避免快进遮挡，用户4份文档未碰。
+下批Studio字幕已在preview树codex/studio-captions-20261107提交推送a4b6ed0：后端复用不变、本地字幕/清空/撤销/保存/重开/删除过滤/替换禁编，24项字幕及7项浏览器过（重叠不相加），guard闭环通过。原转录不改，真实SRT/MP4已测，即时预览无字幕已提示。root未跟踪合同sprint-studio-caption-editor.md与该分支同名，集成前保存到scratch避免遮挡。接下来集成字幕、相关检查及下一完整门禁；不能把未集成当已实现。
+
+preview树当前codex/studio-captions-20261107在a4b6ed0已推；overlay-assistant分支1deb9fe为此前组合快照。无MERGE_HEAD。core保留clock修复/旧core副本，assets保留前端旧副本，勿再覆盖root。3子树、一树一写者、同树pytest串行；env后核PYTHONPATH与实际导入。root原未跟踪AI合同已移到.cache/scratch备份避免快进遮挡，用户4份文档未碰。
 
 旧8769 PID38232及8768/8767/8766/8765均旧服务，先核health/identity；新routes用新进程，不绕过停止8765的自动审批拒绝。生产CSP保留。原视频/证据/账本不改不删、不重付重标、不重跑钟馗。无Release/真实平台写，push走127.0.0.1:7890代理，不force main。状态计数只由python -B scripts/status.py计算。

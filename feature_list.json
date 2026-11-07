@@ -782,12 +782,20 @@
                 "tests/test_clip_transition_browser.py",
                 "docs/archive/sprints/sprint-t23-render-safe-area-badge.md",
                 "tests/test_creation_presentation.py",
-                "src/gamingcreator/domain/creation_presentation.py"
+                "src/gamingcreator/domain/creation_presentation.py",
+                "docs/exec-plans/sprint-timed-overlays.md",
+                "tests/test_creation_overlays.py",
+                "tests/test_overlay_assets.py",
+                "tests/test_overlay_http.py",
+                "tests/test_overlay_render.py",
+                "tests/test_overlay_revisions.py",
+                "tests/test_overlay_composition.py",
+                "tests/test_studio_overlays_browser.py"
             ],
             "quality_status": "technical_render_tests_passed_creative_quality_unreviewed",
             "release_status": "not_released",
             "implementation_status": "partial",
-            "remaining": "Safe-area crop and static corner badge have local FFmpeg render+receipt evidence; dynamic overlays/timeline stickers remain. Creative quality and commercial release remain unverified."
+            "remaining": "Timed text/PNG layers now have source-bound save/reopen, Studio preview and real FFmpeg output-frame evidence, including speed/crossfade and caption/watermark stacking. Broader compositing, creative quality and commercial release remain unverified."
         },
         {
             "id": "P029",
@@ -1011,12 +1019,16 @@
                 "2026-11-01: rule-based Chinese timeline commands (speed/delete/move/swap/trim/transitions) previewed via stateless API, applied in the editor and persisted through normal revision validation with ancestor undo; whole-command refusal for unknown/impossible clauses; 20 parser/HTTP tests + browser preview/apply/save test; real 35-clip revision -> 34 clips saved as d7d7a4d5 with narration inherited; no model understanding",
                 "docs/archive/sprints/sprint-t26-timeline-command-corpus.md",
                 "tests/test_timeline_commands.py",
-                "2026-11-01 T26: expanded accept/reject Chinese corpus (rule-v4-corpus); refuses cloud-model / merge / reverse / illegal speed talk; no unapproved cloud models"
+                "2026-11-01 T26: expanded accept/reject Chinese corpus (rule-v4-corpus); refuses cloud-model / merge / reverse / illegal speed talk; no unapproved cloud models",
+                "docs/exec-plans/sprint-ai-overlay-timing.md",
+                "tests/test_creation_overlay_reasoning.py",
+                "tests/test_overlay_reasoning_e2e_browser.py",
+                "tests/test_studio_overlay_reasoning_browser.py"
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released",
             "implementation_status": "partial",
-            "remaining": "Rule corpus expanded; open-ended semantics and model understanding remain out of scope. Creative quality of edits unverified."
+            "remaining": "Deterministic local commands and separately confirmed text-model proposals support bounded clip edits and existing overlay end/fade timing. Fake transports prove validation, recovery and real export flow; actual model semantic understanding and edit creative quality remain unverified."
         },
         {
             "id": "P042",

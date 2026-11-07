@@ -1,6 +1,6 @@
 # P028 定时文字与 PNG 图层
 
-2026-11-07，分支 `codex/timed-overlays-20261107`；实现中，未合 main、未按完整 P028 交付。延续全功能路线 R2 与 J1 第四次反馈：独立图层可以控制消失时间和淡化，原录像已烘焙的 logo 不可拆成图层。
+2026-11-07，开发线 `codex/timed-overlays-20261107` 本批完整验证通过并合main，未按完整P028或人评交付。延续全功能路线R2与J1第四次反馈：独立图层可以控制消失时间和淡化，原录像已烘焙的logo不可拆成图层。
 
 ## 合同与归属
 
@@ -25,3 +25,5 @@
 - 精确65/127/130帧、真实PNG/CJK预览与导出、保存重开/清空/越界/撤销/迟到登记：3项浏览器回归通过，`.cache/overlay-studio-e2e.xml`。规划/声音fixture为假，HTTP/资产/解码/保存/FFmpeg合成是真；不能当真人创意验收。
 - 组合渲染及主树相关85项、素材箱版本重开联合9项通过。首轮全量4958通过/7跳过/3失败（1500.19秒，`.cache/overlays-full-verify.log`）。已定位并修复canonical seek目标超过首次seekable范围的夹紧、无CSS harness画布尺寸反馈；音频夹具在播放就绪后才开始计时采样，不改变阈值。失败联合7项及更广26项通过（`overlay-full-failure-fixes.xml`、`overlay-failure-regressions.xml`）。
 - 新settleExact保留低轴探针原语义，精确定位等目标可寻址后再赋值；原2ms容差、单deadline、换源/同URL重载/旧token失败闭锁。reference恢复失败不能自动重试后把origin当原用户位置。独立树原clock104项、新reference等2项通过，guard源码/XML最终复核通过；待完整verify重跑，通过前不合main、不修改passes/人评/交付状态。
+
+2026-11-07最终组合门禁通过：`.cache/overlays-combined-full-verify.log`，4981通过/7跳过，1734.98秒；格式/Ruff/mypy207源/CLI均过，session89751退出0。含nonzero初始header无canonical位置的beforeOrigin分支（完整clock106过）及取消请求返回/选段即时输入修复；稳态音频谱测量使用4秒连续fixture，1秒循环hook测试保留，判定阈值未放宽。前两轮失败保留日志，当前技术绿不替代真人质量/发布验收。
