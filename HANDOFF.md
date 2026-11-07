@@ -1,8 +1,8 @@
 # HANDOFF（覆盖快照）
 
-## 最近一次会话（2026-11-07，持续开发）
+## 最近一次会话（2026-11-07，按用户要求暂停）
 
-goal active，用户要求持续开发。音频graph/素材clock批次完整verify4899 passed/7 skipped、1179.88秒，格式/lint/mypy201源及CLI通过；.cache/audio-source-full-verify.log，session71506已退出0，合入main。源状态无需重复全量。实际8769四路graph running/gate1，旧8秒方案到末尾无pageerror/alert，.cache/scratch/audio-real-preview.json/png；保持CSP，字符串wait_for_function会unsafe-eval报错，用locator等待/CDP函数体读。无真实付费。下一批P028见下面新增段。
+用户因额度不足5%要求暂停，goal paused；恢复从P028 Studio开始，先核分支。音频graph/素材clock完整verify4899 passed/7 skipped、1179.88秒，格式/lint/mypy201源及CLI通过；.cache/audio-source-full-verify.log，session71506退出0，已合main。实际8769四路graph running/gate1，旧8秒方案到末尾无pageerror/alert，.cache/scratch/audio-real-preview.json/png；保持CSP，字符串wait_for_function会unsafe-eval报错，用locator等待/CDP函数体读。无真实付费。
 
 ## 已合main
 
