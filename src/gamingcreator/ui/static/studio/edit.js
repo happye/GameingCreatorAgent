@@ -5,7 +5,7 @@ import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
 import {recordingRuns} from "./recordings.js";
 import {editTimeline, shots, timeline, usePlanPlayer} from "./preview.js";
-import {ClipInspector, CommandDock, transitionProblem, useClipEditor} from "./clipedit.js";
+import {ClipInspector, CommandDock, captionProblem, transitionProblem, useClipEditor} from "./clipedit.js";
 import {AudioPanel, narrationProblem, useAudioPreview, useMusicCatalog} from "./audio.js";
 import {PlanReasoningPanel} from "./planning.js";
 import {OverlayPanel, OverlayPreview, overlayProblem} from "./overlays.js";
@@ -74,7 +74,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     const [commandOverlays, setCommandOverlays] = useState(null);
     const commandPreview = !!commandRows || !!commandOverlays;
     // A monotonic edit generation preserves changes even after an A/B/A roundtrip.
-    const adoptionView = [project, planJob?.jobId, planId, editing.clips, editing.audio, editing.replacements, editing.overlays, commandRows, commandOverlays];
+    const adoptionView = [project, planJob?.jobId, planId, editing.clips, editing.subtitleOverrides, editing.audio, editing.replacements, editing.overlays, commandRows, commandOverlays];
     const adoptionGuard = useRef({view: adoptionView, generation: 0});
     if (adoptionView.some((value, index) => value !== adoptionGuard.current.view[index])) {
         adoptionGuard.current = {view: adoptionView, generation: adoptionGuard.current.generation + 1};
@@ -178,7 +178,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     }, [commandRows, editing.clips]);
     const previewProblem = (shownClips ? transitionProblem(shownClips, fps) : "") || (items.some(item => !SourceClock.clockCandidates({sourceClock: item.sourceClock}).length) ? "素材源时钟不支持即时预览，请导出成片后观看" : "");
     const totalFrames = items.length ? items.at(-1).outStartFrame + items.at(-1).outFrames : 0;
-    const problem = editable ? transitionProblem(editing.clips, fps) || narrationProblem(editing.audio, items.length ? items.at(-1).outStartUs + items.at(-1).outDurUs : 0, fps)
+    const problem = editable ? captionProblem(editing.subtitleOverrides) || transitionProblem(editing.clips, fps) || narrationProblem(editing.audio, items.length ? items.at(-1).outStartUs + items.at(-1).outDurUs : 0, fps)
         || overlayProblem(editing.overlays, editing.overlayAssets, totalFrames, canvasWidth, canvasHeight) : "";
     const groups = useMemo(() => shots(items), [items]);
     const urlFor = useCallback((runId) => client.mediaUrl(project, runId), [project]);

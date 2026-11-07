@@ -33,6 +33,17 @@ export function transitionProblem(clips, fps) {
     return "";
 }
 
+// Validate without rewriting the user's text; the server owns SRT normalization.
+export function captionProblem(overrides) {
+    for (const {text} of overrides) {
+        if ([...text].length > 2000) return "镜头字幕不能超过 2000 字";
+        if (text && (!text.trim() || text.includes("-->") || /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(text))) return "镜头字幕不能仅含空白、空字符或 SRT 时间标记";
+    }
+    return "";
+}
+const captionsOf = (editor) => ({subtitleOverrides: editor.subtitleOverrides || []});
+const keptCaptions = (overrides, clips) => overrides.filter((o) => clips.some((c) => c.clipId === o.clipId));
+
 // The sound of a version: source and music levels, and an optional narration asset placed in the output.
 const audioOf = (editor) => ({mix: editor.audioMix || {bgm: null, sourceGainDb: 0, ducking: "off"}, narration: editor.narration || null, asset: editor.narrationAsset || null});
 
@@ -40,7 +51,7 @@ const rows = (clips) => clips.map(({clipId, startUs, endUs, speed, transitionIn}
 const overlaysOf = (editor) => ({overlays: editor.overlays?.items || [], overlayAssets: editor.overlayAssets || []});
 
 export function useClipEditor(project) {
-    const [state, setState] = useState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), bounds: {}, replacements: {}, dirty: false});
+    const [state, setState] = useState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), ...captionsOf({}), bounds: {}, replacements: {}, dirty: false});
     const overlayEpoch = useRef(0);
     // Replacement candidates of the plan's recordings, loaded on first use per plan/version.
     const [candidates, setCandidates] = useState(null);
@@ -49,7 +60,7 @@ export function useClipEditor(project) {
     useLayoutEffect(() => {
         loading.current += 1;
         overlayEpoch.current += 1;
-        setState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), bounds: {}, replacements: {}, dirty: false});
+        setState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), ...captionsOf({}), bounds: {}, replacements: {}, dirty: false});
         setCandidates(null); setSelectedId("");
         return () => { loading.current += 1; };
     }, [project]);
@@ -64,12 +75,12 @@ export function useClipEditor(project) {
             if (editor.parentJobId !== jobId || editor.planId !== planId) throw new Error("剪辑数据与所选方案不一致");
             const clips = normalize(editor);
             setCandidates(null);
-            setState({status: "ready", base: {jobId, planId, kind}, editor, clips, audio: audioOf(editor), ...overlaysOf(editor), bounds: Object.fromEntries(clips.map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, dirty: false});
+            setState({status: "ready", base: {jobId, planId, kind}, editor, clips, audio: audioOf(editor), ...overlaysOf(editor), ...captionsOf(editor), bounds: Object.fromEntries(clips.map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, dirty: false});
             return editor;
         } catch (error) {
             if (generation !== loading.current) return null;
             // Plans that cannot be edited still preview and export as they are.
-            setState({status: "unavailable", base: {jobId, planId, kind}, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), bounds: {}, replacements: {}, dirty: false, reason: error.message});
+            setState({status: "unavailable", base: {jobId, planId, kind}, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), ...captionsOf({}), bounds: {}, replacements: {}, dirty: false, reason: error.message});
             return null;
         }
     }, []);
@@ -78,10 +89,16 @@ export function useClipEditor(project) {
         if (s.status !== "ready") return s;
         const clips = mutate(s.clips.map((c) => ({...c})));
         if (clips[0]) clips[0].transitionIn = {type: "cut", frames: 0};
-        return {...s, clips, dirty: true};
+        return {...s, clips, subtitleOverrides: keptCaptions(s.subtitleOverrides, clips), dirty: true};
     }), []);
 
     const ops = {
+        caption: (clipId, text) => setState((s) => {
+            if (s.status !== "ready" || !s.clips.some((c) => c.clipId === clipId)) return s;
+            const subtitleOverrides = s.subtitleOverrides.filter((o) => o.clipId !== clipId);
+            if (text !== null) subtitleOverrides.push({clipId, text});
+            return {...s, subtitleOverrides, dirty: true};
+        }),
         trim: (id, field, seconds) => change((clips) => {
             const clip = clips.find((c) => c.clipId === id), bound = state.bounds[id], fps = state.editor.fps;
             const us = Math.round(seconds * 1e6), minLength = Math.ceil(1e6 / fps);
@@ -107,7 +124,7 @@ export function useClipEditor(project) {
             if (s.status !== "ready") return s;
             const byId = new Map(s.clips.map((c) => [c.clipId, c]));
             const clips = proposal.clips.map((row) => ({...byId.get(row.clipId), ...row}));
-            return {...s, clips, overlays: proposal.overlays?.items ?? s.overlays, dirty: true};
+            return {...s, clips, subtitleOverrides: keptCaptions(s.subtitleOverrides, clips), overlays: proposal.overlays?.items ?? s.overlays, dirty: true};
         }),
         mix: (patch) => setState((s) => (s.status === "ready" ? {...s, audio: {...s.audio, mix: {...s.audio.mix, ...patch}}, dirty: true} : s)),
         overlays: (items, assets, expectedEpoch) => setState((s) => (s.status === "ready" && (expectedEpoch === undefined || expectedEpoch === overlayEpoch.current)
@@ -129,9 +146,9 @@ export function useClipEditor(project) {
             });
             const at = clips.findIndex((c) => c.clipId === id);
             if (clips[at + 1]) clips[at + 1] = {...clips[at + 1], transitionIn: {type: "cut", frames: 0}};
-            return {...s, clips, bounds: {...s.bounds, [id]: {startUs: candidate.startUs, endUs: candidate.endUs}}, replacements: {...s.replacements, [id]: candidate.candidateId}, dirty: true};
+            return {...s, clips, subtitleOverrides: s.subtitleOverrides.filter((o) => o.clipId !== id), bounds: {...s.bounds, [id]: {startUs: candidate.startUs, endUs: candidate.endUs}}, replacements: {...s.replacements, [id]: candidate.candidateId}, dirty: true};
         }),
-        reset: () => { overlayEpoch.current += 1; setState((s) => (s.editor ? {...s, clips: normalize(s.editor), audio: audioOf(s.editor), ...overlaysOf(s.editor), bounds: Object.fromEntries(normalize(s.editor).map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, dirty: false} : s)); },
+        reset: () => { overlayEpoch.current += 1; setState((s) => (s.editor ? {...s, clips: normalize(s.editor), audio: audioOf(s.editor), ...overlaysOf(s.editor), ...captionsOf(s.editor), bounds: Object.fromEntries(normalize(s.editor).map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, dirty: false} : s)); },
     };
 
     const loadCandidates = useCallback(async () => {
@@ -142,14 +159,16 @@ export function useClipEditor(project) {
 
     // Save the local edit as a new version; returns the version's job id.
     const save = useCallback(async (follow) => {
-        const {editor, base, clips, audio, replacements, overlays} = state;
+        const {editor, base, clips, audio, replacements, overlays, subtitleOverrides} = state;
+        const problem = captionProblem(subtitleOverrides);
+        if (problem) throw new Error(problem);
         const kept = new Set(clips.map((c) => c.clipId));
         // A version with replaced footage (or descended from one) carries the candidate manifest.
         const swaps = Object.entries(replacements).filter(([id]) => kept.has(id)).map(([targetClipId, candidateId]) => ({targetClipId, candidateId}));
         const manifest = editor.candidateManifestSha256 || (swaps.length ? candidates?.candidateManifestSha256 : null);
         const accepted = await client.submit("revision", {
             parentJobId: base.jobId, planId: base.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256,
-            clips: rows(clips), audioMix: audio.mix, narration: audio.narration, subtitleOverrides: (editor.subtitleOverrides || []).filter((o) => kept.has(o.clipId)),
+            clips: rows(clips), audioMix: audio.mix, narration: audio.narration, subtitleOverrides: subtitleOverrides.filter((o) => kept.has(o.clipId)),
             overlays: {schemaVersion: "creation-overlays-v1", items: overlays},
             ...(manifest ? {candidateManifestSha256: manifest, replacements: swaps} : {}),
         });
@@ -168,6 +187,8 @@ export function ClipInspector({editing, index, onSeek, basket}) {
     const fps = editing.editor.fps, bound = editing.bounds[clip.clipId];
     const frames = clipFrames(clip, fps), seconds = (us) => (us / 1e6).toFixed(2);
     const fade = (s) => Math.round(s * fps);
+    const replacing = !!editing.replacements[clip.clipId];
+    const caption = editing.subtitleOverrides.find((o) => o.clipId === clip.clipId);
     return html`<div class="field"><div class="k">第 ${index + 1} 个镜头 · 成片 ${(frames / fps).toFixed(2)} 秒</div>
             <div class="v">${clip.role ? `【${clip.role}】` : ""}${clip.scriptDraft || "无描述"}</div></div>
         <div class="field"><div class="k">取材范围（原片秒，可在 ${seconds(bound.startUs)}–${seconds(bound.endUs)} 内裁短）</div>
@@ -185,6 +206,15 @@ export function ClipInspector({editing, index, onSeek, basket}) {
                 onChange=${(e) => editing.ops.transition(clip.clipId, Number(e.currentTarget.value))}>
                 <option value="0">直接切换</option><option value=${String(fade(0.25))}>交叉淡化 0.25 秒</option><option value=${String(fade(0.5))}>交叉淡化 0.5 秒</option></select></label>
         </div><p class="hint">即时预览支持交叉淡化；镜头需足够长，才能容纳两侧转场。</p></div>
+        <div class="field">
+            <label class="form-row">镜头字幕<textarea class="input" rows="3" disabled=${replacing} value=${caption?.text ?? ""}
+                onInput=${(e) => editing.ops.caption(clip.clipId, e.currentTarget.value)} /></label>
+            <p class="hint" role="status" aria-label="镜头字幕状态">${!caption ? "自动字幕：有原片转录时使用语音字幕，无转录则无字幕。" : caption.text === "" ? "此镜头不显示字幕。" : "手写字幕：覆盖整个镜头。"}</p>
+            <p class="hint">仅修改成片字幕，不修改原片转录。最多 2000 字；保存后导出生效。在导出页选择 SRT 或烧入字幕；即时预览暂不显示字幕。</p>
+            ${replacing && html`<p class="hint">先保存替换版本，再编辑新镜头字幕。</p>`}
+            <div class="actions-row"><button class="btn ghost" disabled=${replacing || !caption} onClick=${() => editing.ops.caption(clip.clipId, null)}>恢复自动字幕</button>
+                <button class="btn ghost" disabled=${replacing} onClick=${() => editing.ops.caption(clip.clipId, "")}>此镜头不显示字幕</button></div>
+        </div>
         <div class="field actions-row">
             <button class="btn ghost" onClick=${() => onSeek(clip.clipId)}>从这段播放</button>
             <button class="btn ghost" disabled=${index === 0} onClick=${() => editing.ops.move(clip.clipId, -1)}>前移</button>
