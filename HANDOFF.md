@@ -23,7 +23,9 @@ J1第四次人评仍not_usable，passes/质量不变。策划/转场完整4874�
 
 ## 下一步及保护
 
-先完成P028完整verify与最终证据，再合main/推送；状态计数只由python -B scripts/status.py计算。下一切片只读设计中：AI编辑可信快照包含独立图层、可提案改时间/淡化，不可注入资产/路径/回执；架构结论未返回前不当已实现。
+P028首轮全量终态：3失败/4958通过/7跳过、1500.19秒，.cache/overlays-full-verify.log（session1472退出1）。三项是音频采样夹具过早启动、nonzero-mp4范围尚未可寻址被clamp、无CSS harness中画布反馈撑动/遮挡。root已集成settleExact与5调用点、reference恢复失败直接不可用、absolute画布；音频fixture在play后才record，不改容差。相关7项先过；更广audio/Studio/clock联合session59457运行中，待完成后完整verify。core树clock原104项过、新2项过，独立guard恢复失败闭锁P2已修待最后确认。
+
+下一AI图层切片已在preview-corrections树实现未提交：creation_overlay_proposals.py新增版本快照/仅已有图层endFrame+fadeOutFrames提案、旧v1逐字节请求恢复；service/provider版本配对保持费用闸门。旧88、新12后端测试过。assets树前端三JS与new test已复制到preview树，联合session66060运行中(.cache/overlay-ai-ui.xml在该树)。真实模型0调用；fake HTTP语义不当人评。root先过P028门禁，再集成AI切片并独立审查，不能旧树整树覆盖root。后端子Agent两次Bad Request，parent接手；前端Sol已交文件。
 
 用户4个未跟踪设计文档未动未暂存。3棵子树保留：core有旧未提交core副本；assets有本批新增模块/组合测试副本；preview-corrections干净可用于后续写者。共享venv/tools为junction，树env后显式PYTHONPATH核实际导入。至多3子树，一树一写者；不递归删junction。
 

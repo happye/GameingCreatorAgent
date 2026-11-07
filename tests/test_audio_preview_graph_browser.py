@@ -71,10 +71,11 @@ CAPTURE = """async settings => {
     await graph.ready;
     graph.configure(settings);
     graph.slot(elements[0],1); graph.slot(elements[1],0);
-    const chunks=[];
+    const chunks=[]; let recording=false;
     const recorder=graph.context.createScriptProcessor(1024,2,2);
     const done=new Promise(resolve=> {
         recorder.onaudioprocess=event=> {
+            if(!recording) return;
             chunks.push(...event.inputBuffer.getChannelData(0));
             if(chunks.length>=graph.context.sampleRate*.8) resolve();
         };
@@ -83,6 +84,7 @@ CAPTURE = """async settings => {
     await graph.context.resume();
     await Promise.all([elements[0],elements[2],elements[3]].map(el=>el.play()));
     graph.enable(true);
+    recording=true;
     await done;
     graph.reset();
     recorder.disconnect(); graph.dispose();

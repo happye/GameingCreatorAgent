@@ -262,10 +262,10 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         </aside>
         <div class="center">
             <section class="viewer" aria-label="预览窗">
-                <div class="stage" ref=${stage}>
-                    <div class="program-frame" hidden=${mode !== "plan" || !items.length} style=${{width: `${canvas.width}px`, height: `${canvas.height}px`}}>
+                <div class="stage" ref=${stage} style=${{position: "relative"}}>
+                    <div class="program-frame" hidden=${mode !== "plan" || !items.length} style=${{position: "absolute", overflow: "hidden", left: "50%", top: "50%", transform: "translate(-50%, -50%)", width: `${canvas.width}px`, height: `${canvas.height}px`}}>
                     <video ref=${planVideo} hidden=${mode !== "plan" || !items.length} playsinline preload="metadata" onClick=${() => { if (!previewProblem) player.toggle(); }}></video><video ref=${planVideoNext} hidden=${mode !== "plan" || !items.length} playsinline preload="auto" onClick=${() => { if (!previewProblem) player.toggle(); }}></video>${sound}
-                    ${editable ? html`<div class="overlay-scale" style=${{width: `${canvasWidth}px`, height: `${canvasHeight}px`, transform: `scale(${canvas.scale})`}}>
+                    ${editable ? html`<div class="overlay-scale" style=${{position: "absolute", pointerEvents: "none", left: 0, top: 0, width: `${canvasWidth}px`, height: `${canvasHeight}px`, transform: `scale(${canvas.scale})`}}>
                         <${OverlayPreview} items=${editing.overlays} assets=${editing.overlayAssets} outUs=${player.outUs} fps=${fps} width=${canvasWidth} height=${canvasHeight} />
                     </div>` : null}
                     </div>

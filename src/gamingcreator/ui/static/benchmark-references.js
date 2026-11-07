@@ -208,8 +208,9 @@
             const axis = await SourceClock.settle(video, 0.000001);
             if (!sameVisibleMedia()) return;
             if (restoreTo !== null) {
-                await SourceClock.settle(video, restoreTo);
+                const restored = await SourceClock.settleExact(video, restoreTo, {toleranceSeconds: clock.axisToleranceUs / 1000000, isCurrent: sameVisibleMedia});
                 if (!sameVisibleMedia()) return;
+                if (restored === null) { markUnavailable("seek_incomplete"); return; }
             }
             if (axis === null) { deferAxis(generation, token, "seek_incomplete"); return; }
             if (Math.abs(axis * 1000000 - clock.originUs) > clock.axisToleranceUs) {

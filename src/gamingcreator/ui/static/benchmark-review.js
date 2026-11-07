@@ -189,7 +189,7 @@ async function startPlayback(token, media, clock, slot, query, start, end) {
       visibleValidatedGeneration = generation;
       visibleClock = clock;
     }
-    const settled = await SourceClock.settle(video, start);
+    const settled = await SourceClock.settleExact(video, start, {toleranceSeconds: clock.axisToleranceUs / 1000000, isCurrent: current});
     if (!current()) return;
     if (settled === null || Math.abs(settled - start) > clock.axisToleranceUs / 1000000) {
       playState.textContent = "浏览器未能定位到规范区间起点，请打开本机原片手动核对。";
