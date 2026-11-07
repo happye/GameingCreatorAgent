@@ -23,7 +23,9 @@ J1第四次人评仍not_usable，passes/质量不变。策划/转场完整4874�
 
 ## 下一步及保护
 
-先完成P028完整verify与最终证据，再合main/推送；状态计数只由python -B scripts/status.py计算。下一切片只读设计中：AI编辑可信快照包含独立图层、可提案改时间/淡化，不可注入资产/路径/回执；架构结论未返回前不当已实现。
+P028首轮3失败/4958过/7跳过，overlays-full-verify.log/session1472退出1。root修seekable/absolute画布/音频play采样屏障，7+26项过，998edc2已推。复验59221活跃，overlays-fixed-full-verify.log，14%两F继续收集。core修reference nonzero初始header2.022误恢复到origin2.478：beforeOrigin只跳过无canonical映射初始值，原容差不变，有效T恢复错误仍闭锁。5项定向、新3项及完整clock106项全过（core .cache/clock-origin-all.xml），guard边界通过。新修法未复制root，测试期间禁改root源码。
+
+AI分支codex/overlay-assistant-20261107在preview树，fec55fa已推。旧88、新14、UI21、真实HTTP+fake transport→保存刷新→真实导出像素1过，Ruff/mypy207源及Sol/high审查过。snapshot显式绑定层/v1字节兼容/仅end+fade/v4保manifest。为一次最终组合门禁，该树已组合998edc2与core beforeOrigin/new3test，冲突保commandOverlays及absolute布局；联合25项通过(.cache/overlay-combined.xml)，Ruff/mypy207源通过。root旧full收齐后，改在该组合树完整verify，再统一合root/main，组合commit后不得再用旧文件覆盖。合同在分支及root未跟踪同名副本，合入前处理遮挡。无真实调用，不冒称人评；勿整树覆盖root。backend agent Bad Request由parent接手。
 
 用户4个未跟踪设计文档未动未暂存。3棵子树保留：core有旧未提交core副本；assets有本批新增模块/组合测试副本；preview-corrections干净可用于后续写者。共享venv/tools为junction，树env后显式PYTHONPATH核实际导入。至多3子树，一树一写者；不递归删junction。
 

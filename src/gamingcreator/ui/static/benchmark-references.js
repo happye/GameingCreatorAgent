@@ -193,7 +193,12 @@
             // bounded retry may probe an idle player and restores its position afterwards.
             const retrying = (session.axisAttempts || 0) > 0;
             const idle = !video.seeking;
-            const atStart = idle && Math.abs(video.currentTime) <= 0.000001;
+            // A nonzero-PTS MP4 can initially report its old header duration as
+            // currentTime, below the measured origin. That has no canonical position
+            // to restore; valid user positions still take the strict restore path.
+            const beforeOrigin = video.currentTime >= 0
+                && video.currentTime * 1000000 < clock.originUs - clock.axisToleranceUs;
+            const atStart = idle && (Math.abs(video.currentTime) <= 0.000001 || beforeOrigin);
             if (!atStart && !(retrying && idle && Number.isFinite(video.currentTime))) {
                 deferAxis(generation, token, "axis_mismatch");
                 return;
@@ -208,8 +213,9 @@
             const axis = await SourceClock.settle(video, 0.000001);
             if (!sameVisibleMedia()) return;
             if (restoreTo !== null) {
-                await SourceClock.settle(video, restoreTo);
+                const restored = await SourceClock.settleExact(video, restoreTo, {toleranceSeconds: clock.axisToleranceUs / 1000000, isCurrent: sameVisibleMedia});
                 if (!sameVisibleMedia()) return;
+                if (restored === null) { markUnavailable("seek_incomplete"); return; }
             }
             if (axis === null) { deferAxis(generation, token, "seek_incomplete"); return; }
             if (Math.abs(axis * 1000000 - clock.originUs) > clock.axisToleranceUs) {

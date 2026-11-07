@@ -108,3 +108,5 @@ F001 建立包导入方向、类型和格式检查；F004 检查 SQLite 与文�
 domain creation_overlays定义输出整数帧范围、淡化与规范化几何；infrastructure overlay_assets把原PNG或本机FFmpeg文字sprite存为永久资产，回执绑定源/sprite哈希。修订metadata在whole-file hash下保存图层完整快照，省略继承、空数组清除，读回和渲染核对资产receipt。overlay_render在safe-area后用RGB合成保留奇数坐标，再叠字幕/静态角标/水印；源速/转场不改变图层的输出时钟。
 
 Studio叠加面板登记资产后更新本地版本状态，输出画布按导出比例适配，透明sprite与导出共用；加载/撤销epoch在异步返回和state更新两处核验，防止迟到登记改写新版本。图层越界显式阻止保存/导出，不能反向修改已烘焙在原录像里的logo。API与操作见[工作台API](inspection-workspace-api.md)，验收合同见[定时叠加](../exec-plans/sprint-timed-overlays.md)。
+
+AI图层编辑使用独立prompt/schema配对及显式图层snapshot；Chain.edl不携带图层，故必须单独把overlays和已核资产公开上下文纳入fingerprint。恢复旧请求按原版本构建逐字节兼容的快照/消息。模型提案仅给已有overlayId及结束/淡出整数帧，Application从可信selection重建完整层，UI临时预览后再次验证再原子应用clips+overlays；保存/导出不另开持久化路径。真实HTTP和FFmpeg以fake文本transport验证，真实模型理解质量尚未验收。合同见[AI图层时间](../exec-plans/sprint-ai-overlay-timing.md)。

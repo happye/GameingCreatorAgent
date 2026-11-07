@@ -192,6 +192,51 @@
         });
     }
 
+    async function settleExact(video, seconds, {toleranceSeconds = 0.002, timeoutMs = 3000, isCurrent = () => true} = {}) {
+        validateSeekTimeout(timeoutMs);
+        if (!Number.isFinite(seconds) || seconds < 0 || !Number.isFinite(toleranceSeconds) || toleranceSeconds < 0) return null;
+        const deadline = performance.now() + timeoutMs, source = video.currentSrc;
+        let invalidated = false;
+        const invalidateScope = () => { invalidated = true; };
+        const scopeEvents = ["loadstart", "emptied", "error"];
+        scopeEvents.forEach(name => video.addEventListener(name, invalidateScope));
+        const valid = () => !invalidated && isCurrent() && video.currentSrc === source;
+        const accessible = () => {
+            for (let i = 0; i < video.seekable.length; i++) {
+                if (video.seekable.start(i) <= seconds && video.seekable.end(i) >= seconds) return true;
+            }
+            return false;
+        };
+        // MP4 duration and seekable can grow after the low-axis probe. Assigning early
+        // silently clamps currentTime, even though a subsequent seeked looks successful.
+        try {
+            const ready = await new Promise(resolve => {
+                let timer;
+                const events = ["progress", "durationchange", "loadeddata", "canplay", "seeked"];
+                const invalidating = ["loadstart", "emptied", "error"];
+                const finish = value => {
+                    clearTimeout(timer);
+                    events.forEach(name => video.removeEventListener(name, check));
+                    invalidating.forEach(name => video.removeEventListener(name, invalidate));
+                    resolve(value);
+                };
+                const check = () => { if (!valid()) finish(false); else if (accessible()) finish(true); };
+                const invalidate = () => { invalidated = true; finish(false); };
+                events.forEach(name => video.addEventListener(name, check));
+                invalidating.forEach(name => video.addEventListener(name, invalidate));
+                timer = setTimeout(() => finish(false), timeoutMs);
+                check();
+            });
+            if (!ready || !valid() || !accessible()) return null;
+            const remaining = Math.floor(deadline - performance.now());
+            if (remaining <= 0) return null;
+            const actual = await settle(video, seconds, remaining);
+            return valid() && actual !== null && Math.abs(actual - seconds) <= toleranceSeconds ? actual : null;
+        } finally {
+            scopeEvents.forEach(name => video.removeEventListener(name, invalidateScope));
+        }
+    }
+
     function prepare(video, url) {
         if (video.currentSrc === url && video.readyState >= 1) return Promise.resolve();
         return new Promise((resolve, reject) => {
@@ -288,6 +333,7 @@
         durationChangeVerdict,
         validate,
         settle,
+        settleExact,
         prepare,
         observe,
         establish,

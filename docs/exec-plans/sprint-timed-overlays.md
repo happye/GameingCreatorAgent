@@ -23,4 +23,5 @@
 - 前批资产/HTTP相关55、版本链相关68、渲染相关54通过，分别见 `.cache/overlays-http.xml`、`overlays-version-chain.xml`、`overlays-render-integrated.xml`。
 - 两处独立发现（GET再次hash信任新字节、YUV420奇数坐标偏移）已修，真实HTTP替换/FFmpeg像素及相关11项通过：`.cache/overlay-guard-fixes.xml`。
 - 精确65/127/130帧、真实PNG/CJK预览与导出、保存重开/清空/越界/撤销/迟到登记：3项浏览器回归通过，`.cache/overlay-studio-e2e.xml`。规划/声音fixture为假，HTTP/资产/解码/保存/FFmpeg合成是真；不能当真人创意验收。
-- 正在运行受影响测试；待组合渲染证据、最终审查与 `scripts/verify.ps1` 全量。通过前不合 main、不修改 passes/人评/交付状态。
+- 组合渲染及主树相关85项、素材箱版本重开联合9项通过。首轮全量4958通过/7跳过/3失败（1500.19秒，`.cache/overlays-full-verify.log`）。已定位并修复canonical seek目标超过首次seekable范围的夹紧、无CSS harness画布尺寸反馈；音频夹具在播放就绪后才开始计时采样，不改变阈值。失败联合7项及更广26项通过（`overlay-full-failure-fixes.xml`、`overlay-failure-regressions.xml`）。
+- 新settleExact保留低轴探针原语义，精确定位等目标可寻址后再赋值；原2ms容差、单deadline、换源/同URL重载/旧token失败闭锁。reference恢复失败不能自动重试后把origin当原用户位置。独立树原clock104项、新reference等2项通过，guard源码/XML最终复核通过；待完整verify重跑，通过前不合main、不修改passes/人评/交付状态。

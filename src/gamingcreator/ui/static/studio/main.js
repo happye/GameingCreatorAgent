@@ -131,7 +131,7 @@ function App() {
         if (!el || target === null) return;
         pendingSeek.current?.(); let active = true;
         pendingSeek.current = () => { active = false; };
-        void SourceClock.settle(el, target).then(actual => {
+        void SourceClock.settleExact(el, target, {toleranceSeconds: clock.axisToleranceUs / 1e6, isCurrent: () => active && video.current === el}).then(actual => {
             if (!active || video.current !== el || actual === null) return;
             const source = SourceClock.playerToSourceUs(clock, actual);
             if (source !== null) setTime(source);
