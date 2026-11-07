@@ -102,3 +102,9 @@ F001 建立包导入方向、类型和格式检查；F004 检查 SQLite 与文�
 每挂载编辑器一个AudioContext，四路MediaElementSource进入本地AudioWorklet，成片video不接图。源视频双槽三角增益先合成原始key；用户源gain之后才进入听觉分支，原声先压配乐，旁白key再压整个bed。两开关真正影响试听，暂停/seek/缓冲先关闭输出门并重置包络，卸载释放节点/context；失败明确提示导出试听。每级限幅约5ms前视，释放曲线未声明与FFmpeg逐样本等价。2026-11-07完整4899/7通过，PCM/真实页面证据见反馈迭代合同。
 
 素材页复用共享SourceClock建立canonical与媒体时钟映射；未知时钟仍可整片观看，不声称精确定位。已建立时钟的合法取景保持终点约束，video_late头部从首图起播并说明，原取景/事实区间不改。输出预览和素材预览分别使用各自输出/源时钟，不混用。
+
+### 输出时间线文字与PNG图层（工作分支）
+
+domain creation_overlays定义输出整数帧范围、淡化与规范化几何；infrastructure overlay_assets把原PNG或本机FFmpeg文字sprite存为永久资产，回执绑定源/sprite哈希。修订metadata在whole-file hash下保存图层完整快照，省略继承、空数组清除，读回和渲染核对资产receipt。overlay_render在safe-area后用RGB合成保留奇数坐标，再叠字幕/静态角标/水印；源速/转场不改变图层的输出时钟。
+
+Studio叠加面板登记资产后更新本地版本状态，输出画布按导出比例适配，透明sprite与导出共用；加载/撤销epoch在异步返回和state更新两处核验，防止迟到登记改写新版本。图层越界显式阻止保存/导出，不能反向修改已烘焙在原录像里的logo。API与操作见[工作台API](inspection-workspace-api.md)，验收合同见[定时叠加](../exec-plans/sprint-timed-overlays.md)。

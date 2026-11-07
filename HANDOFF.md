@@ -1,33 +1,30 @@
 # HANDOFF（覆盖快照）
 
-## 最近一次会话（2026-11-07，按用户要求暂停）
+## 当前（2026-11-07，继续开发）
 
-用户因额度不足5%要求暂停，goal paused；恢复从P028 Studio开始，先核分支。音频graph/素材clock完整verify4899 passed/7 skipped、1179.88秒，格式/lint/mypy201源及CLI通过；.cache/audio-source-full-verify.log，session71506退出0，已合main。实际8769四路graph running/gate1，旧8秒方案到末尾无pageerror/alert，.cache/scratch/audio-real-preview.json/png；保持CSP，字符串wait_for_function会unsafe-eval报错，用locator等待/CDP函数体读。无真实付费。
+用户明确恢复开发，goal active，不因旧额度或旧暂停记录自行停工。分支codex/timed-overlays-20261107，P028定时文字/PNG叠加已接core→资产→HTTP→修订→Studio→真实渲染，仍待完整verify，尚未合main/交付。
 
-## 已合main
+## 主指标及已合main
 
-策划/转场4874/7、音频/素材clock4899/7完整门禁过，详细证据见迭代合同。J1第四次人评仍not_usable，passes/质量不变；真人AI质量未验。
+J1第四次人评仍not_usable，passes/质量不变。策划/转场完整4874通过/7跳过；音频graph/素材source-clock完整4899通过/7跳过（.cache/audio-source-full-verify.log，旧session71506退出0）已合main。模型fixture不当作真人AI质量。无真实云/付费调用，语音仍免费本机。
 
-## 已集成两树
+## P028本批
 
-音频082b1be与素材7f50700已合入本批，生产static两路由已注册。原子树36+独立Studio1及素材9+独立video_late1的结果不冒充组合；root后来组合46、完整4899/7均过。真实Studio fixture中planner/SAPI/SQLite timeline/runs是假，解码/probe/hash/回执/HTTP/播放器/PCM是真。每级limiter5ms，释放曲线未证与FFmpeg等价。主树已更新，不再重复取这些旧树文件覆盖新开发。
+合同docs/exec-plans/sprint-timed-overlays.md；API文档inspection-workspace-api.md、用户creation-guide.md已同步。overlays.js已从资产树复制集成，旧树副本不要覆盖root后续修复。
 
-## 运行与保护
+- domain输出整数帧[start,end)、Fraction淡化、规范化几何；最多16层/PNG8MiB/4096/16M/累计解码128MiB，文字120单行原值。永久资产artifacts/overlay-assets/uuid，原PNG保留，不进cache清理。
+- revision省略继承/空items清除，逐层receipt/kind/text/预算核对；不改EDL/v4 manifest；render回执绑定完整快照。PNG输入追加在音乐和旁白之后，RGB合成在safe-area后、字幕/角标/水印前。
+- Studio叠加页支持登记/上传、位置/宽度/时间/淡化/层级、保存/撤销/重开/清空。画布按横竖导出比例适配，成片模式隐藏live层。源片烘焙logo不能抠除。迟到登记用project/base/epoch双重核验；素材箱剪辑版本原来禁用打开，现已修复并真浏览器核验。
+- 独立guard Sol/high三处P2已闭环：GET沿用sprite receipt hash防校验后换字节；RGB保留奇数坐标；overlayFrame相对4ULP纠正65/127/130精确帧浮点退位。此前shared text validator和apostrophe路径修复也已复核。guard未重跑pytest，核源码/XML，不冒称人评。
 
-8768 PID5192曾是本策划分支服务；8767/8766/8765旧后端。使用前核健康/identity，后台进程可能尚未加载新routes；不得绕过此前对停止8765的自动审批拒绝。
+证据：前批55/68/54相关通过；本批guard11（.cache/overlay-guard-fixes.xml）；Studio3（overlay-studio-e2e.xml）；主树组合85（overlay-studio-integrated.xml）；素材箱重开联合9（overlay-reopen-integrated.xml）。新test_overlay_composition.py实证0.5x+2x、6帧转场共69帧、PNG/CJK输出时序与字幕/角标/水印覆盖顺序。Ruff与mypy206源已过。
 
-用户4个未跟踪设计文档未动未暂存。共享venv/tools为junction，树内env后PYTHONPATH须本树src；affected脚本会重设，按同清单直接pytest并记录差异。并发≤3树/一写者每树。同树pytest不重叠。
+受影响99文件运行在147项处遇旧benchmark_source_clock nonzero-mp4定位超时（146过/1失败，overlay-affected.xml）；同一项单跑无改源码通过（overlay-clock-recheck.xml），不能称99全绿。待完整门禁验证，不靠缩阈值掩盖。所有pytest同树串行，运行期间不改受测源码。
 
-原视频/证据/账本不改不删，不重付重标，不重跑钟馗。无真实云/Release。status数字python -B scripts/status.py，质量不由开发测试代填。push走127.0.0.1:7890代理，不force。
+## 下一步及保护
 
-## 当前P028（未交付）
+先完成P028完整verify与最终证据，再合main/推送；状态计数只由python -B scripts/status.py计算。下一切片只读设计中：AI编辑可信快照包含独立图层、可提案改时间/淡化，不可注入资产/路径/回执；架构结论未返回前不当已实现。
 
-root在codex/timed-overlays-20261107。core/assets/HTTP已主树相关55通过（.cache/overlays-http.xml），格式/lint/mypy205源通过；版本链已接入（相关68过），未做P028全量、Studio尚未接，不翻交付/质量状态。子Agent额度限制，parent当前接手；不要重复派任务假称已执行。
+用户4个未跟踪设计文档未动未暂存。3棵子树保留：core有旧未提交core副本；assets有本批新增模块/组合测试副本；preview-corrections干净可用于后续写者。共享venv/tools为junction，树env后显式PYTHONPATH核实际导入。至多3子树，一树一写者；不递归删junction。
 
-新增domain/creation_overlays.py：top schemaVersion=creation-overlays-v1/items；item overlayId/kind/startFrame/endFrame/x/y/width/fadeInFrames/fadeOutFrames/assetId/assetReceiptSha256，text另有rawtext。26core过。公开validate_overlay_text原值不trim，禁止{}\<>/category C/单行，assets登记/resolve复用，guard文字差异P2已修。纯输出frame Fraction fade、半向上几何、16层/PNG8MiB/4096/16M/累计128MiB去重。不能修改烘焙源logo。
-
-新增infra/overlay_assets.py永久artifacts/overlay-assets/uuid，原PNG不删；真实FFmpeg ASS alpha=1/微软雅黑透明120字CJK证明，DTO无path，public assetReceiptSha256。guard第二P2路径含apostrophe无法渲染已由parent修：新ffmpeg_filters.filter_path提取原ffmpeg_render._filter_path逻辑，旧私有函数保一行兼容转发，asset复用shared escaping不额外quote；含Creator's repo中文sprite回归过。原guard额度耗尽后未复核最终两个修法，不可写独立闭环已通过。
-
-新增ui/overlay_jobs.py：register_asset严格text/image请求，resolve_assets核kind/text/receipt与解码预算。POST /api/creation/overlay-assets text{kind,text}或image{kind,fileName,dataBase64}；GET /api/creation/overlay-assets/<id>/image?receipt=<sha>走VerifiedMediaCache；server只该upload放宽11MiB body，rawPNG≤8MiB。HTTP真上传/读取字节/Origin/query/未知字段/base64/借用别的text拒绝过，无模型调用。
-
-metadata现已支持省略继承/显式空清除及旧v4兼容，按当前输出frames验证范围，editor提供overlays及overlayAssets公开URL/尺寸；相关68通过（.cache/overlays-version-chain.xml），新3回归保存继承清除/重启/剪短拒绝/篡改拒绝。render_revision现已传递overlays给真正FFmpeg合成（safe-area后字幕/徽标/水印前，追加PNG输入不可改音乐/旁白索引）；渲染已实测2种有/无BGM、两层覆盖、首末帧/淡化/几何/20帧总长，首轮发现浮点setpts重帧已改叠加路径settb=1/fps,setpts=N（旧无叠加路径不变）。实际保存revision→正常render job→MP4→任务重开也通过，回执核overlay快照；相关54通过.cache/overlays-render-integrated.xml，ruff/mypy206源通过。下一步Studio上传编辑/版本重开/输出时钟preview，并补中文/字幕/水印、变速/转场等组合的像素及UI验证。需要最终identity/persistence独立guard，子Agent额度恢复后再评估。core/asset旧子树有副本但不再覆盖root修法。用户4个未跟踪设计文档不动。
+旧8769 PID38232为上批服务；8768/8767/8766/8765亦旧。先核health/identity，新routes用新服务；不得绕过此前停止8765的自动审批拒绝。生产CSP不关闭。原视频/证据/账本不改不删，不重付重标，不重跑钟馗。无Release/真实平台写。push走127.0.0.1:7890代理，不force main。

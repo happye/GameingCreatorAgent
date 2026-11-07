@@ -49,7 +49,7 @@ def overlay_filters(
         filters.append(sprite + f"[sprite-{index}]")
         output = f"layer-{index}"
         filters.append(
-            f"[{base}][sprite-{index}]overlay=x={x}:y={y}:"
+            f"[{base}][sprite-{index}]overlay=x={x}:y={y}:format=rgb:"
             f"enable='gte(n,{item.start_frame})*lt(n,{item.end_frame})':"
             f"eof_action=pass[{output}]"
         )

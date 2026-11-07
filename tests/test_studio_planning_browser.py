@@ -132,7 +132,7 @@ def test_confirm_preview_adopt_and_reopen(studio):
     last = page.evaluate("JSON.parse(localStorage.getItem('studio-last-job-v1'))")
     assert editor["parentJobId"] == last["artifacts/project"]["id"]
     expect(page.get_by_role("status", name="版本保存状态")).to_have_text(
-        "修改镜头或声音后可保存新版本"
+        "修改镜头、声音或叠加后可保存新版本"
     )
     page.locator(".timeline .clip").first.click()
     expect(page.get_by_label("速度")).to_have_value("1/1")

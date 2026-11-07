@@ -112,3 +112,28 @@ def test_layer_kind_and_text_cannot_borrow_other_asset_identity(library):  # noq
     overlays = CreationOverlays.from_json({"schemaVersion": "creation-overlays-v1", "items": [row]})
     with pytest.raises(ValueError, match="text or kind"):
         resolve_assets(library, overlays)
+
+
+def test_sprite_replaced_after_resolve_is_not_served(http, monkeypatch):
+    from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
+
+    request, assets = http
+    status, _, data = request(
+        {
+            "kind": "image",
+            "fileName": "logo.png",
+            "dataBase64": base64.b64encode(png()).decode(),
+        }
+    )
+    assert status == 200
+    original = OverlayAssetLibrary.resolve
+
+    def replaced(self, asset_id, receipt):
+        asset = original(self, asset_id, receipt)
+        asset.path.write_bytes(png(3, 2))
+        return asset
+
+    monkeypatch.setattr(OverlayAssetLibrary, "resolve", replaced)
+    status, _, body = request(path=json.loads(data)["imageUrl"])
+    assert status != 200
+    assert body != png(3, 2)

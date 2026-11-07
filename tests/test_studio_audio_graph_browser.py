@@ -203,13 +203,14 @@ def studio_audio(service, engine, monkeypatch):  # noqa: F811
             prefs = json.dumps({"project": "artifacts/project", "workspace": "edit"})
             last = json.dumps({"artifacts/project": {"id": revision, "kind": "revision"}})
             page.add_init_script(
-                f"localStorage.setItem('studio-v1',{prefs!r});localStorage.setItem('studio-last-job-v1',{last!r});"
+                f"if(!localStorage.getItem('studio-v1'))localStorage.setItem('studio-v1',{prefs!r});"
+                f"if(!localStorage.getItem('studio-last-job-v1'))localStorage.setItem('studio-last-job-v1',{last!r});"
             )
             page.route("**/api/evidence?*", lambda route: route.fulfill(status=204))
             page.goto(f"http://127.0.0.1:{http.server_port}/studio")
             pw.expect(page.locator(".timeline .clip")).to_have_count(2)
             pw.expect(page.get_by_role("status", name="版本保存状态")).to_have_text(
-                "修改镜头或声音后可保存新版本"
+                "修改镜头、声音或叠加后可保存新版本"
             )
             yield page
             assert not errors

@@ -37,22 +37,26 @@ export function transitionProblem(clips, fps) {
 const audioOf = (editor) => ({mix: editor.audioMix || {bgm: null, sourceGainDb: 0, ducking: "off"}, narration: editor.narration || null, asset: editor.narrationAsset || null});
 
 const rows = (clips) => clips.map(({clipId, startUs, endUs, speed, transitionIn}) => ({clipId, startUs, endUs, speed, transitionIn}));
+const overlaysOf = (editor) => ({overlays: editor.overlays?.items || [], overlayAssets: editor.overlayAssets || []});
 
 export function useClipEditor(project) {
-    const [state, setState] = useState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), bounds: {}, replacements: {}, dirty: false});
+    const [state, setState] = useState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), bounds: {}, replacements: {}, dirty: false});
+    const overlayEpoch = useRef(0);
     // Replacement candidates of the plan's recordings, loaded on first use per plan/version.
     const [candidates, setCandidates] = useState(null);
     const [selectedId, setSelectedId] = useState("");
     const loading = useRef(0);
     useLayoutEffect(() => {
         loading.current += 1;
-        setState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), bounds: {}, replacements: {}, dirty: false});
+        overlayEpoch.current += 1;
+        setState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), bounds: {}, replacements: {}, dirty: false});
         setCandidates(null); setSelectedId("");
         return () => { loading.current += 1; };
     }, [project]);
 
     const load = useCallback(async (jobId, planId, kind) => {
         const generation = ++loading.current;
+        overlayEpoch.current += 1;
         setState((s) => ({...s, status: "loading"})); setSelectedId("");
         try {
             const editor = await client.api(`/api/creation/jobs/${encodeURIComponent(jobId)}/edit`, {planId});
@@ -60,12 +64,12 @@ export function useClipEditor(project) {
             if (editor.parentJobId !== jobId || editor.planId !== planId) throw new Error("剪辑数据与所选方案不一致");
             const clips = normalize(editor);
             setCandidates(null);
-            setState({status: "ready", base: {jobId, planId, kind}, editor, clips, audio: audioOf(editor), bounds: Object.fromEntries(clips.map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, dirty: false});
+            setState({status: "ready", base: {jobId, planId, kind}, editor, clips, audio: audioOf(editor), ...overlaysOf(editor), bounds: Object.fromEntries(clips.map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, dirty: false});
             return editor;
         } catch (error) {
             if (generation !== loading.current) return null;
             // Plans that cannot be edited still preview and export as they are.
-            setState({status: "unavailable", base: {jobId, planId, kind}, editor: null, clips: [], audio: audioOf({}), bounds: {}, replacements: {}, dirty: false, reason: error.message});
+            setState({status: "unavailable", base: {jobId, planId, kind}, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), bounds: {}, replacements: {}, dirty: false, reason: error.message});
             return null;
         }
     }, []);
@@ -100,6 +104,8 @@ export function useClipEditor(project) {
             return newRows.map((row) => ({...byId.get(row.clipId), ...row}));
         }),
         mix: (patch) => setState((s) => (s.status === "ready" ? {...s, audio: {...s.audio, mix: {...s.audio.mix, ...patch}}, dirty: true} : s)),
+        overlays: (items, assets, expectedEpoch) => setState((s) => (s.status === "ready" && (expectedEpoch === undefined || expectedEpoch === overlayEpoch.current)
+            ? {...s, overlays: items, overlayAssets: assets ?? s.overlayAssets, dirty: true} : s)),
         narration: (selection, asset) => setState((s) => (s.status === "ready" ? {...s, audio: {...s.audio, narration: selection, asset: selection ? asset ?? s.audio.asset : null}, dirty: true} : s)),
         // Swap a clip's footage for another analysed clip of the same recordings (1x, cut in);
         // its length stays as close to the old one as the new clip allows.
@@ -119,7 +125,7 @@ export function useClipEditor(project) {
             if (clips[at + 1]) clips[at + 1] = {...clips[at + 1], transitionIn: {type: "cut", frames: 0}};
             return {...s, clips, bounds: {...s.bounds, [id]: {startUs: candidate.startUs, endUs: candidate.endUs}}, replacements: {...s.replacements, [id]: candidate.candidateId}, dirty: true};
         }),
-        reset: () => setState((s) => (s.editor ? {...s, clips: normalize(s.editor), audio: audioOf(s.editor), bounds: Object.fromEntries(normalize(s.editor).map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, dirty: false} : s)),
+        reset: () => { overlayEpoch.current += 1; setState((s) => (s.editor ? {...s, clips: normalize(s.editor), audio: audioOf(s.editor), ...overlaysOf(s.editor), bounds: Object.fromEntries(normalize(s.editor).map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, dirty: false} : s)); },
     };
 
     const loadCandidates = useCallback(async () => {
@@ -130,7 +136,7 @@ export function useClipEditor(project) {
 
     // Save the local edit as a new version; returns the version's job id.
     const save = useCallback(async (follow) => {
-        const {editor, base, clips, audio, replacements} = state;
+        const {editor, base, clips, audio, replacements, overlays} = state;
         const kept = new Set(clips.map((c) => c.clipId));
         // A version with replaced footage (or descended from one) carries the candidate manifest.
         const swaps = Object.entries(replacements).filter(([id]) => kept.has(id)).map(([targetClipId, candidateId]) => ({targetClipId, candidateId}));
@@ -138,6 +144,7 @@ export function useClipEditor(project) {
         const accepted = await client.submit("revision", {
             parentJobId: base.jobId, planId: base.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256,
             clips: rows(clips), audioMix: audio.mix, narration: audio.narration, subtitleOverrides: (editor.subtitleOverrides || []).filter((o) => kept.has(o.clipId)),
+            overlays: {schemaVersion: "creation-overlays-v1", items: overlays},
             ...(manifest ? {candidateManifestSha256: manifest, replacements: swaps} : {}),
         });
         const done = await follow(accepted.jobId);
@@ -147,7 +154,7 @@ export function useClipEditor(project) {
         return done.jobId;
     }, [state, load, candidates]);
 
-    return {...state, project, selectedId, setSelectedId, load, ops, save, candidates, loadCandidates, rows: () => rows(state.clips)};
+    return {...state, project, overlayEpoch: overlayEpoch.current, selectedId, setSelectedId, load, ops, save, candidates, loadCandidates, rows: () => rows(state.clips)};
 }
 
 export function ClipInspector({editing, index, onSeek, basket}) {

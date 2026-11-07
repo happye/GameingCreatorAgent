@@ -118,6 +118,15 @@ details.group[open] > summary::before { content: "▾ "; }
 .work.edit { --bin-w: 300px; }
 .viewer .stage { position: relative; display: grid; min-height: 0; background: #000; }
 .viewer .stage > * { grid-area: 1 / 1; min-height: 0; }
+.viewer .program-frame { position: relative; align-self: center; justify-self: center; overflow: hidden; background: #000; }
+.viewer .program-frame > video { position: absolute; inset: 0; }
+.overlay-scale { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
+.overlay-panel fieldset { border: 0; padding: 0; min-width: 0; }
+.overlay-panel label { display: grid; gap: 4px; margin: 8px 0; color: var(--ink-2); }
+.overlay-panel input { width: 100%; min-width: 0; border: 1px solid var(--line); background: var(--bg-0); padding: 6px; border-radius: var(--r-1); }
+.overlay-panel button { border: 1px solid var(--line); background: var(--bg-2); padding: 5px 8px; border-radius: var(--r-1); margin: 3px; }
+.overlay-row { border-top: 1px solid var(--line); padding: 12px 0; }
+.insp-tabs button { padding-left: 10px; padding-right: 10px; }
 .brief { padding: var(--s-2) var(--s-3) var(--s-3); display: grid; gap: var(--s-2); }
 .form-row { display: grid; gap: 2px; color: var(--ink-3); font-size: var(--t-xs); }
 .form-row .select, .input { width: 100%; max-width: none; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-1); padding: 5px 8px; color: var(--ink-1); font-size: var(--t-md); }

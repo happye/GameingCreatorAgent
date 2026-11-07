@@ -17,7 +17,6 @@ from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
 from gamingcreator.application.retrieval import RetrievalMode
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.ffmpeg_fullres import FfmpegFullResolutionFrames
-from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.infrastructure.ffmpeg_shots import FfmpegShotDetector
 from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
@@ -80,6 +79,7 @@ ASSETS = {
     "/assets/studio/planning.js": ("studio/planning.js", "text/javascript; charset=utf-8"),
     "/assets/studio/edit.js": ("studio/edit.js", "text/javascript; charset=utf-8"),
     "/assets/studio/clipedit.js": ("studio/clipedit.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/overlays.js": ("studio/overlays.js", "text/javascript; charset=utf-8"),
     "/assets/studio/audio.js": ("studio/audio.js", "text/javascript; charset=utf-8"),
     "/assets/studio/basket.js": ("studio/basket.js", "text/javascript; charset=utf-8"),
     "/assets/studio/recordings.js": ("studio/recordings.js", "text/javascript; charset=utf-8"),
@@ -976,7 +976,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     path.removeprefix("/api/creation/overlay-assets/").removesuffix("/image"),
                     query["receipt"],
                 )
-                self._serve_media(MediaResource(asset.path, hash_file(asset.path), "image/png"))
+                self._serve_media(MediaResource(asset.path, asset.sprite_sha256, "image/png"))
                 return
             if path.startswith("/api/creation/music/") and path.endswith("/audio"):
                 if set(query) != {"receipt"}:

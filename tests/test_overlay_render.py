@@ -18,7 +18,8 @@ from gamingcreator.domain.time import SourceRange
 from gamingcreator.infrastructure.ffmpeg_media import FfmpegMediaProcessor
 from gamingcreator.infrastructure.ffmpeg_render import FfmpegCreationRenderer
 from gamingcreator.infrastructure.music_library import MusicLibrary
-from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
+from gamingcreator.infrastructure.overlay_assets import OverlayAsset, OverlayAssetLibrary
+from gamingcreator.infrastructure.overlay_render import overlay_filters
 
 
 def run(tool, args):
@@ -123,3 +124,53 @@ def test_real_overlay_frames_geometry_fade_and_receipt(tmp_path, with_music):
     assert pixel(12)[0] > 235
     assert 40 < pixel(15)[0] < 85
     assert max(pixel(8, 5, 5)) < 15
+
+
+def test_real_compositor_keeps_odd_pixel_coordinates():
+    item = dict(
+        overlayId="a" * 32,
+        kind="image",
+        startFrame=0,
+        endFrame=1,
+        x=4250,
+        y=3667,
+        width=1000,
+        fadeInFrames=0,
+        fadeOutFrames=0,
+        assetId="b" * 32,
+        assetReceiptSha256="c" * 64,
+    )
+    overlays = CreationOverlays.from_json(
+        {"schemaVersion": "creation-overlays-v1", "items": [item]}
+    )
+    asset = OverlayAsset("b" * 32, "c" * 64, "image", 2, 2, Path("unused.png"))
+    _, graph = overlay_filters(overlays, (asset,), 1, 1, 1, 40, 30, "null", "")
+    raw = run(
+        Path(".tools/ffmpeg/bin/ffmpeg.exe"),
+        [
+            "-f",
+            "lavfi",
+            "-i",
+            "color=black:s=40x30:r=1:d=1",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=red:s=4x4:r=1:d=1,format=rgba",
+            "-filter_complex_threads",
+            "1",
+            "-filter_complex",
+            graph,
+            "-map",
+            "[overlay-video]",
+            "-frames:v",
+            "1",
+            "-pix_fmt",
+            "rgb24",
+            "-f",
+            "rawvideo",
+            "-",
+        ],
+    )
+    points = [(x, y) for y in range(30) for x in range(40) if raw[(y * 40 + x) * 3] > 180]
+    assert (min(x for x, _ in points), min(y for _, y in points)) == (17, 11)
+    assert (max(x for x, _ in points), max(y for _, y in points)) == (20, 14)

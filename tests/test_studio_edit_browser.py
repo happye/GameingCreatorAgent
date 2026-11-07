@@ -164,7 +164,7 @@ def test_edit_clip_save_version_and_command(revisions, monkeypatch):  # noqa: F8
             clips = page.locator(".timeline .clip")
             playwright.expect(page.get_by_text("方案原样")).to_be_visible()
             playwright.expect(page.get_by_label("版本保存状态")).to_have_text(
-                "修改镜头或声音后可保存新版本"
+                "修改镜头、声音或叠加后可保存新版本"
             )
             playwright.expect(page.get_by_role("button", name="保存版本")).to_be_disabled()
             clips.nth(1).click()

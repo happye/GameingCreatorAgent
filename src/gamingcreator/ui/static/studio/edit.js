@@ -8,6 +8,7 @@ import {editTimeline, shots, timeline, usePlanPlayer} from "./preview.js";
 import {ClipInspector, CommandDock, transitionProblem, useClipEditor} from "./clipedit.js";
 import {AudioPanel, narrationProblem, useAudioPreview, useMusicCatalog} from "./audio.js";
 import {PlanReasoningPanel} from "./planning.js";
+import {OverlayPanel, OverlayPreview, overlayProblem} from "./overlays.js";
 
 const html = htm.bind(h);
 const DRAFT = "studio-brief-v1";
@@ -36,6 +37,21 @@ function writeDraft(project, draft) {
     try { const all = JSON.parse(localStorage.getItem(DRAFT) || "{}"); all[project] = draft; localStorage.setItem(DRAFT, JSON.stringify(all)); return true; } catch { return false; }
 }
 
+// Fit the entire output canvas in the viewer, including portrait exports.
+function useOutputCanvas(stage, width, height) {
+    const [bounds, setBounds] = useState({width: 0, height: 0});
+    useEffect(() => {
+        const element = stage.current;
+        if (!element) return;
+        const measure = () => setBounds({width: element.clientWidth, height: element.clientHeight});
+        const observer = new ResizeObserver(measure);
+        observer.observe(element); measure();
+        return () => observer.disconnect();
+    }, []);
+    const scale = Math.min(bounds.width / width, bounds.height / height);
+    return {width: width * scale, height: height * scale, scale};
+}
+
 export function EditWorkspace({project, runs, open, onWorksChanged, layout, basket, basketAt, onBasketSeen}) {
     const [draft, setDraft] = useState(() => readDraft(project));
     const [saved, setSaved] = useState("");
@@ -48,11 +64,15 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     const [selectedShot, setSelectedShot] = useState(null);
     const [size, setSize] = useState("1280,720");
     const [subtitles, setSubtitles] = useState("none");
+    const [overlayBusy, setOverlayBusy] = useState(false);
+    const stage = useRef(null);
+    const [canvasWidth, canvasHeight] = size.split(",").map(Number);
+    const canvas = useOutputCanvas(stage, canvasWidth, canvasHeight);
     const planVideo = useRef(null), planVideoNext = useRef(null), resultVideo = useRef(null), work = useRef(null), restoring = useRef(null);
     const editing = useClipEditor(project);
     const [commandRows, setCommandRows] = useState(null);
     // A monotonic edit generation preserves changes even after an A/B/A roundtrip.
-    const adoptionView = [project, planJob?.jobId, planId, editing.clips, editing.audio, editing.replacements, commandRows];
+    const adoptionView = [project, planJob?.jobId, planId, editing.clips, editing.audio, editing.replacements, editing.overlays, commandRows];
     const adoptionGuard = useRef({view: adoptionView, generation: 0});
     if (adoptionView.some((value, index) => value !== adoptionGuard.current.view[index])) {
         adoptionGuard.current = {view: adoptionView, generation: adoptionGuard.current.generation + 1};
@@ -155,15 +175,17 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         return new Set(commandRows.filter((r, i) => !before.has(r.clipId) || before.get(r.clipId) !== key(r) || expected[i] !== r.clipId).map((r) => r.clipId));
     }, [commandRows, editing.clips]);
     const previewProblem = (shownClips ? transitionProblem(shownClips, fps) : "") || (items.some(item => !SourceClock.clockCandidates({sourceClock: item.sourceClock}).length) ? "素材源时钟不支持即时预览，请导出成片后观看" : "");
-    const problem = editable ? transitionProblem(editing.clips, fps) || narrationProblem(editing.audio, items.length ? items.at(-1).outStartUs + items.at(-1).outDurUs : 0, fps) : "";
+    const totalFrames = items.length ? items.at(-1).outStartFrame + items.at(-1).outFrames : 0;
+    const problem = editable ? transitionProblem(editing.clips, fps) || narrationProblem(editing.audio, items.length ? items.at(-1).outStartUs + items.at(-1).outDurUs : 0, fps)
+        || overlayProblem(editing.overlays, editing.overlayAssets, totalFrames, canvasWidth, canvasHeight) : "";
     const groups = useMemo(() => shots(items), [items]);
     const urlFor = useCallback((runId) => client.mediaUrl(project, runId), [project]);
     const player = usePlanPlayer(planVideo, items, urlFor, planVideoNext, previewProblem);
     const music = useMusicCatalog();
     const [audioBusy, setAudioBusy] = useState(false);
     const saveReason = !editable ? "正在读取可编辑镜头" : busy ? "任务正在处理，完成后可保存"
-        : commandRows ? "请先应用或取消创作助手的改动" : audioBusy ? "声音任务正在处理，完成后可保存"
-        : problem || (!editing.dirty ? "修改镜头或声音后可保存新版本" : "");
+        : commandRows ? "请先应用或取消创作助手的改动" : audioBusy ? "声音任务正在处理，完成后可保存" : overlayBusy ? "叠加素材正在处理，完成后可保存"
+        : problem || (!editing.dirty ? "修改镜头、声音或叠加后可保存新版本" : "");
     // The inspector has three pages so sound and export stay reachable while a clip is selected.
     const [inspTab, setInspTab] = useState("shot");
     const sound = useAudioPreview(player, editing.audio, fps, planVideo, music.tracks, `${project}:${editing.base?.jobId}:${editing.base?.planId}`);
@@ -232,16 +254,21 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                 <${Brief} runs=${runs} draft=${draft} update=${update} busy=${busy} onGenerate=${generate} basket=${basket} />
                 <div class="section-label">方案${planJob ? `（${planJob.plans.length}）` : ""}</div>
                 ${planJob ? planJob.plans.map((p) => html`<${PlanCard} plan=${p} fps=${fps} active=${p.id === planId} thumb=${thumb}
-                    onPick=${() => { if (editing.dirty && !confirmLeave()) return; setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommandRows(null); lastJob(project, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
+                    onPick=${() => { if (overlayBusy || audioBusy || busy) return; if (editing.dirty && !confirmLeave()) return; setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommandRows(null); lastJob(project, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
                     : html`<p class="note">填好需求后点“生成方案”。方案只是剪辑清单，生成很快；选中后可以直接预览，不用先渲染。</p>`}
                 ${planJob ? html`<${PlanReasoningPanel} key=${`${project}:${planJob.jobId}`} project=${project} jobId=${planJob.jobId}
-                    disabled=${!!busy || editing.dirty || !!commandRows || audioBusy} onAdopt=${adoptPlans} />` : null}
+                    disabled=${!!busy || editing.dirty || !!commandRows || audioBusy || overlayBusy} onAdopt=${adoptPlans} />` : null}
             </div>
         </aside>
         <div class="center">
             <section class="viewer" aria-label="预览窗">
-                <div class="stage">
+                <div class="stage" ref=${stage}>
+                    <div class="program-frame" hidden=${mode !== "plan" || !items.length} style=${{width: `${canvas.width}px`, height: `${canvas.height}px`}}>
                     <video ref=${planVideo} hidden=${mode !== "plan" || !items.length} playsinline preload="metadata" onClick=${() => { if (!previewProblem) player.toggle(); }}></video><video ref=${planVideoNext} hidden=${mode !== "plan" || !items.length} playsinline preload="auto" onClick=${() => { if (!previewProblem) player.toggle(); }}></video>${sound}
+                    ${editable ? html`<div class="overlay-scale" style=${{width: `${canvasWidth}px`, height: `${canvasHeight}px`, transform: `scale(${canvas.scale})`}}>
+                        <${OverlayPreview} items=${editing.overlays} assets=${editing.overlayAssets} outUs=${player.outUs} fps=${fps} width=${canvasWidth} height=${canvasHeight} />
+                    </div>` : null}
+                    </div>
                     ${mode === "plan" && (previewProblem || player.error) ? html`<div class="empty">${previewProblem || player.error}</div>` : null}
                     ${mode === "result" && resultSrc ? html`<video ref=${resultVideo} src=${resultSrc} controls playsinline preload="metadata"></video>` : null}
                     ${(mode === "plan" && !items.length) || (mode === "result" && !resultSrc) ? html`<div class="empty">${planJob ? "在左侧选一个方案，即可在这里预览" : "生成方案后，在这里即时预览"}</div>` : null}
@@ -255,7 +282,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                     <span class="spacer"></span>
                     ${result ? html`<div class="tabs"><button aria-selected=${mode === "plan"} onClick=${() => setMode("plan")}>方案预览</button><button aria-selected=${mode === "result"} onClick=${() => { player.stop(); setMode("result"); }}>成片</button></div>` : null}
                     ${result && resultDownload ? html`<a class="btn ghost" href=${resultDownload} download>下载 MP4（${(result.sizeBytes / 1048576).toFixed(1)} MB）</a>` : null}
-                    <button class="btn" disabled=${!plan?.ready || !!busy || !!problem || !!commandRows} title=${!plan ? "先在左侧选择一个方案" : !plan.ready ? "这个方案有缺口，不能导出" : problem || (commandRows ? "先应用或取消一句话修改" : editing.dirty ? "先保存为新版本，再渲染 MP4" : "按当前内容渲染 MP4")} onClick=${exportVideo}>${busy === "render" ? "正在生成…" : busy === "save" ? "正在保存…" : "导出成片"}</button>
+                    <button class="btn" disabled=${!plan?.ready || !!busy || audioBusy || overlayBusy || !!problem || !!commandRows} title=${!plan ? "先在左侧选择一个方案" : !plan.ready ? "这个方案有缺口，不能导出" : problem || (commandRows ? "先应用或取消一句话修改" : editing.dirty ? "先保存为新版本，再渲染 MP4" : "按当前内容渲染 MP4")} onClick=${exportVideo}>${busy === "render" ? "正在生成…" : busy === "save" ? "正在保存…" : "导出成片"}</button>
                 </div>
             </section>
             <${ProgramTrack} items=${items} totalUs=${player.totalUs} outUs=${player.outUs} thumb=${thumb} selectedId=${editing.selectedId} changed=${changed} preview=${!!commandRows} lanes=${editable ? audioLanes(editing.audio, music.tracks, fps, player.totalUs) : []}
@@ -265,7 +292,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         <aside class="panel" hidden=${!layout.insp} aria-label="检查器">
             <div class="panel-head">检查器</div>
             <div class="tabs insp-tabs" role="tablist" aria-label="检查器页面">
-                ${[["shot", "镜头"], ["sound", "声音"], ["export", "导出"]].map(([key, label]) => html`<button role="tab" aria-selected=${inspTab === key} onClick=${() => setInspTab(key)}>${label}</button>`)}
+                ${[["shot", "镜头"], ["overlay", "叠加"], ["sound", "声音"], ["export", "导出"]].map(([key, label]) => html`<button role="tab" aria-selected=${inspTab === key} onClick=${() => setInspTab(key)}>${label}</button>`)}
             </div>
             <div class="panel-body">
                 ${message && html`<p class="note" role="status">${message}</p>`}
@@ -290,6 +317,10 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                 <div hidden=${inspTab !== "sound"}>
                 ${editable ? html`<${AudioPanel} editing=${editing} project=${project} fps=${fps} totalUs=${player.totalUs} music=${music} onBusy=${setAudioBusy} />`
                     : html`<p class="note">${plan ? "这个方案还不能编辑声音（正在读取或只能导出）。" : "先在左侧选一个方案，再在这里加旁白和配乐。"}</p>`}
+                </div>
+                <div hidden=${inspTab !== "overlay"}>
+                ${editable ? html`<${OverlayPanel} key=${`${project}:${editing.base?.jobId}:${editing.base?.planId}`} editing=${editing} fps=${fps} totalFrames=${totalFrames} canvasWidth=${canvasWidth} canvasHeight=${canvasHeight} onBusy=${setOverlayBusy} disabled=${!!busy || !!commandRows} />`
+                    : html`<p class="note">选中可编辑的方案后，可以添加定时文字或PNG图片。</p>`}
                 </div>
             </div>
         </aside>

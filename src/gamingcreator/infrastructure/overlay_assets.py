@@ -107,6 +107,7 @@ class OverlayAsset:
     height: int
     path: Path
     text: str | None = None
+    sprite_sha256: str = ""
 
     def public(self) -> dict[str, Any]:
         result: dict[str, Any] = {
@@ -325,7 +326,15 @@ class OverlayAssetLibrary:
             or _sha(source) != receipt["sourceSha256"]
         ):
             raise ValueError("Overlay bytes or metadata changed.")
-        return OverlayAsset(asset_id, receipt_sha256, receipt["kind"], *dimensions, path, text)
+        return OverlayAsset(
+            asset_id,
+            receipt_sha256,
+            receipt["kind"],
+            *dimensions,
+            path,
+            text,
+            receipt["spriteSha256"],
+        )
 
 
 def resolve_overlay_assets(

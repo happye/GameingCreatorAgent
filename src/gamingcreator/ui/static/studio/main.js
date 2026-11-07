@@ -122,7 +122,7 @@ function App() {
         if (project) latestWorks((signal) => client.creationJobs(project, signal)).then((result) => { if (result.ok) setWorks(result.value.jobs); });
     }, [project]);
     const openWork = useCallback((job) => {
-        if (!["plan", "render", "publication", "package"].includes(job.kind) || job.status !== "completed") return;
+        if (!["plan", "revision", "render", "publication", "package"].includes(job.kind) || job.status !== "completed") return;
         setOpen({id: job.jobId, kind: job.kind, at: Date.now()}); setWorkspace(["publication", "package"].includes(job.kind) ? "deliver" : "edit");
     }, []);
 
@@ -225,7 +225,7 @@ function Bin({runs, runId, setRunId, works, onOpen, hidden, top}) {
             ${groups.map(([kind, list]) => html`<details class="group" open=${kind === "render"}>
                 <summary>${KIND[kind]}（${list.length}）</summary>
                 ${list.slice(0, 20).map((job) => {
-                    const openable = ["plan", "render", "publication", "package"].includes(job.kind) && job.status === "completed";
+                    const openable = ["plan", "revision", "render", "publication", "package"].includes(job.kind) && job.status === "completed";
                     return html`<button class="row" disabled=${!openable} title=${openable ? (["publication", "package"].includes(job.kind) ? "在发布区打开" : "在剪辑区打开") : ""} onClick=${() => onOpen(job)}><span class=${`dot ${job.status === "completed" ? "ok" : job.status === "failed" ? "bad" : "warn"}`}></span>
                     <span class="name">${new Date(job.createdAt).toLocaleString("zh-CN", {hour12: false})}</span><span class="meta">${job.status === "completed" ? (openable ? "打开" : "") : job.status}</span></button>`;
                 })}
