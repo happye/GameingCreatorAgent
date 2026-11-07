@@ -28,7 +28,10 @@ function useLatest() {
     const ref = useRef(null);
     return useCallback(async (task) => {
         ref.current?.abort(); const controller = new AbortController(); ref.current = controller;
-        try { return {ok: true, value: await task(controller.signal)}; }
+        try {
+            const value = await task(controller.signal);
+            return controller.signal.aborted ? {ok: false, aborted: true} : {ok: true, value};
+        }
         catch (error) { return controller.signal.aborted ? {ok: false, aborted: true} : {ok: false, error}; }
     }, []);
 }
@@ -350,8 +353,8 @@ function Inspector({view, selected, run, hidden, inBasket, onBasket, onRange}) {
         <div class="panel-body">
             ${selected ? html`
                 <div class="field"><div class="k">取景选段</div><div class="v num">${timecode(selected.startUs)} – ${timecode(selected.endUs)}（${(seconds(selected.endUs - selected.startUs)).toFixed(1)} 秒）</div>
-                    <div class="pair even"><label class="form-row">入点（秒）<input class="input" aria-label="选段入点" type="number" min="0" step="0.1" value=${selected.startUs / 1e6} onChange=${(e) => onRange({startUs: Math.round(Number(e.currentTarget.value) * 1e6)})} /></label>
-                        <label class="form-row">出点（秒）<input class="input" aria-label="选段出点" type="number" min="0" max=${view.media.durationUs / 1e6} step="0.1" value=${selected.endUs / 1e6} onChange=${(e) => onRange({endUs: Math.round(Number(e.currentTarget.value) * 1e6)})} /></label></div>
+                    <div class="pair even"><label class="form-row">入点（秒）<input class="input" aria-label="选段入点" type="number" min="0" step="0.1" value=${selected.startUs / 1e6} onInput=${(e) => { if (e.currentTarget.value !== "") onRange({startUs: Math.round(Number(e.currentTarget.value) * 1e6)}); }} /></label>
+                        <label class="form-row">出点（秒）<input class="input" aria-label="选段出点" type="number" min="0" max=${view.media.durationUs / 1e6} step="0.1" value=${selected.endUs / 1e6} onInput=${(e) => { if (e.currentTarget.value !== "") onRange({endUs: Math.round(Number(e.currentTarget.value) * 1e6)}); }} /></label></div>
                     <p class="hint">分析区间 ${timecode(selected.analysisStartUs)} – ${timecode(selected.analysisEndUs)}；取景可包含上下文，需覆盖原观察位置。扩展画面请回看确认。</p>
                     <div class="actions-row"><button class=${inBasket ? "btn ghost" : "btn"} onClick=${onBasket}>${inBasket ? "移出片段篮" : "加入片段篮"}</button><span class="hint">快捷键 B</span></div></div>
                 <div class="field"><div class="k">分析描述（模型观察，未经人工核对）</div><ul class="facts">${(selected.displayFacts || selected.observableFacts || []).map((fact) => html`<li>${fact}</li>`)}</ul></div>

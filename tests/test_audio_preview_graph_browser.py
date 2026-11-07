@@ -28,9 +28,10 @@ def live_graph(tmp_path_factory):
         for i in range(48000):
             value = round(32767 * amplitude * math.sin(2 * math.pi * frequency * i / 48000))
             samples.extend((value, value))
-        with wave.open(str(root / f"{name}.wav"), "wb") as output:
-            output.setparams((2, 2, 48000, 0, "NONE", "not compressed"))
-            output.writeframes(samples.tobytes())
+        for suffix, copies in (("", 1), ("-steady", 4)):
+            with wave.open(str(root / f"{name}{suffix}.wav"), "wb") as output:
+                output.setparams((2, 2, 48000, 0, "NONE", "not compressed"))
+                output.writeframes(samples.tobytes() * copies)
 
     class Handler(SimpleHTTPRequestHandler):
         def translate_path(self, path):
@@ -63,7 +64,9 @@ def live_graph(tmp_path_factory):
 CAPTURE = """async settings => {
     const {AudioPreviewGraph} = await import('/assets/studio/audio-preview-graph.js');
     const elements = ['source', 'source', 'music', 'voice'].map(name => {
-        const el=document.createElement('audio'); el.src=`/${name}.wav`; el.loop=true;
+        // Steady-state detector checks avoid the phase discontinuity of a 1s media
+        // element loop. The hook tests below retain the original 1s looping files.
+        const el=document.createElement('audio'); el.src=`/${name}-steady.wav`; el.loop=false;
         document.body.append(el); return el;
     });
     const errors=[];
@@ -83,6 +86,13 @@ CAPTURE = """async settings => {
     graph.gate.connect(recorder); recorder.connect(graph.context.destination);
     await graph.context.resume();
     await Promise.all([elements[0],elements[2],elements[3]].map(el=>el.play()));
+    // play() can resolve before the three media clocks have all advanced. Keep
+    // startup scheduling out of the steady-state detector measurement window.
+    await Promise.all([elements[0],elements[2],elements[3]].map(el=>new Promise((resolve,reject)=>{
+        const check=()=>{if(el.currentTime>=.25){clearTimeout(timer);el.removeEventListener('timeupdate',check);resolve();}};
+        const timer=setTimeout(()=>{el.removeEventListener('timeupdate',check);reject(new Error('Media clock did not advance'));},5000);
+        el.addEventListener('timeupdate',check);check();
+    })));
     graph.enable(true);
     recording=true;
     await done;
