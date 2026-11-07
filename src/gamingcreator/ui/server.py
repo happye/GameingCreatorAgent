@@ -17,8 +17,10 @@ from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
 from gamingcreator.application.retrieval import RetrievalMode
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.ffmpeg_fullres import FfmpegFullResolutionFrames
+from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.infrastructure.ffmpeg_shots import FfmpegShotDetector
 from gamingcreator.infrastructure.music_library import MusicLibrary
+from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
 from gamingcreator.infrastructure.windows_ocr import WindowsOcrEngine
 from gamingcreator.ui.benchmark_workflow import BenchmarkWorkflows
 from gamingcreator.ui.creation_jobs import CreationJobs
@@ -31,6 +33,7 @@ from gamingcreator.ui.frame_text import (
 )
 from gamingcreator.ui.media import MediaResource, VerifiedMediaCache, byte_range
 from gamingcreator.ui.media_preparation import MediaPreparationJobs
+from gamingcreator.ui.overlay_jobs import register_asset
 from gamingcreator.ui.service import (
     detail_costs,
     inspect_run,
@@ -436,6 +439,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/knowledge": 14_680_064,
                 # A music file of up to 30 MB arrives base64-encoded inside JSON.
                 "/api/creation/music": 41_943_040,
+                "/api/creation/overlay-assets": 11_534_336,
             }.get(path, 65536)
             # Socket read timeout prevents a partial body from retaining a handler indefinitely.
             self.connection.settimeout(10)
@@ -465,6 +469,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/narration-cancel",
                 "/api/creation/timeline-commands",
                 "/api/creation/music",
+                "/api/creation/overlay-assets",
                 "/api/creation/activity-rules",
                 "/api/knowledge",
                 "/api/creation/publish",
@@ -497,6 +502,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return result
 
             value = json.loads(body, object_pairs_hook=unique)
+            if path == "/api/creation/overlay-assets":
+                if urlparse(self.path).query:
+                    raise ValueError("Unexpected query.")
+                self._json(200, register_asset(OverlayAssetLibrary(self.repository), value))
+                return
             if path == "/api/creation/reasoning":
                 if urlparse(self.path).query:
                     raise ValueError("Unexpected query.")
@@ -959,6 +969,15 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(200, {"projects": discover_projects(self.repository)})
                 return
             query = _query(self.path)
+            if path.startswith("/api/creation/overlay-assets/") and path.endswith("/image"):
+                if set(query) != {"receipt"}:
+                    raise ValueError("Expected overlay receipt.")
+                asset = OverlayAssetLibrary(self.repository).resolve(
+                    path.removeprefix("/api/creation/overlay-assets/").removesuffix("/image"),
+                    query["receipt"],
+                )
+                self._serve_media(MediaResource(asset.path, hash_file(asset.path), "image/png"))
+                return
             if path.startswith("/api/creation/music/") and path.endswith("/audio"):
                 if set(query) != {"receipt"}:
                     raise ValueError("Expected music receipt")

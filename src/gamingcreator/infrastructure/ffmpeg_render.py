@@ -16,6 +16,7 @@ from gamingcreator.domain.creation_presentation import (
 )
 from gamingcreator.domain.creation_subtitles import SubtitleCue, parse_srt, serialize_srt
 from gamingcreator.infrastructure.crossfade_render import compose_transitions
+from gamingcreator.infrastructure.ffmpeg_filters import filter_path
 from gamingcreator.infrastructure.ffmpeg_media import hash_source
 from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
 from gamingcreator.infrastructure.media_process import run_media_process
@@ -181,9 +182,7 @@ def _burn_ass(cues: tuple[SubtitleCue, ...], width: int, height: int) -> str:
 
 
 def _filter_path(path: Path) -> str:
-    value = path.as_posix()
-    value = value.replace("\\", "\\\\").replace("'", "\\'").replace(":", "\\:")
-    return "".join("\\" + char if char in "\\'[],;" else char for char in value)
+    return filter_path(path)
 
 
 def _mix_filter(mix: AudioMix, frames: int, fps: int, output: str = "mixed") -> str:

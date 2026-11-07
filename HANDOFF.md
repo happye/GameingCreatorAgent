@@ -20,12 +20,14 @@ goal active，用户要求持续开发。音频graph/素材clock批次完整veri
 
 原视频/证据/账本不改不删，不重付重标，不重跑钟馗。无真实云/Release。status数字python -B scripts/status.py，质量不由开发测试代填。push走127.0.0.1:7890代理，不force。
 
-## 下一批P028（未交付）
+## 当前P028（未交付）
 
-输出时间线的定时文字/PNG独立层：startFrame/endFrame左闭右开，x/y/width归一化0..10000，淡入/出frame，层序固定。不能编辑烘焙源logo。root合main后建新feature分支。
+root在codex/timed-overlays-20261107。core/assets/HTTP已主树相关55通过（.cache/overlays-http.xml），格式/lint/mypy205源通过；未做P028组合全量、未接revision/render/Studio，不翻交付/质量状态。子Agent额度限制，parent当前接手；不要重复派任务假称已执行。
 
-协议worker timed_overlay_core在.worktrees/creation-reasoning-core已写domain/creation_overlays.py和tests/test_creation_overlays.py，25focused/ruff/mypy过，未提交。top schemaVersion=creation-overlays-v1/items；每item overlayId/kind/startFrame/endFrame/x/y/width/fadeInFrames/fadeOutFrames/assetId/assetReceiptSha256，text额外rawtext。Opacity Fraction，几何半向上等比，超画布拒绝，预算16层/PNG8MiB/4096/16M/累计128MiB（同资产计一次）。三速仅纯输出frame测试不冒称render。
+新增domain/creation_overlays.py：top schemaVersion=creation-overlays-v1/items；item overlayId/kind/startFrame/endFrame/x/y/width/fadeInFrames/fadeOutFrames/assetId/assetReceiptSha256，text另有rawtext。26core过。公开validate_overlay_text原值不trim，禁止{}\<>/category C/单行，assets登记/resolve复用，guard文字差异P2已修。纯输出frame Fraction fade、半向上几何、16层/PNG8MiB/4096/16M/累计128MiB去重。不能修改烘焙源logo。
 
-资产worker overlay_assets在.worktrees/j1-selected-ranges branchcodex/timed-overlay-assets-20261107做新infra/overlay_assets.py及test（可拆overlay_text.py）。接口OverlayAssetLibrary(repo)，async register_png/register_text，resolve(id,receipt)；public assetReceiptSha256、width/height、kind text/image、text仅text，无路径。永久artifacts/overlay-assets，原PNG不删；真实FFmpeg ASS alpha=1/MicrosoftYaHei透明CJK proof已成功，注册/预算/receipt测试仍在跑。不要覆盖该树正在写的文件。
+新增infra/overlay_assets.py永久artifacts/overlay-assets/uuid，原PNG不删；真实FFmpeg ASS alpha=1/微软雅黑透明120字CJK证明，DTO无path，public assetReceiptSha256。guard第二P2路径含apostrophe无法渲染已由parent修：新ffmpeg_filters.filter_path提取原ffmpeg_render._filter_path逻辑，旧私有函数保一行兼容转发，asset复用shared escaping不额外quote；含Creator's repo中文sprite回归过。原guard额度耗尽后未复核最终两个修法，不可写独立闭环已通过。
 
-后续还须资产/文字身份验证、metadata省略继承/显式空清除及旧v4兼容、输出帧叠加render（safe-area后字幕/徽标/水印前）、Studio上传编辑/版本重开/预览/导出真实闭环及独立quality guard。当前仅组件，不能翻P028状态。
+新增ui/overlay_jobs.py：register_asset严格text/image请求，resolve_assets核kind/text/receipt与解码预算。POST /api/creation/overlay-assets text{kind,text}或image{kind,fileName,dataBase64}；GET /api/creation/overlay-assets/<id>/image?receipt=<sha>走VerifiedMediaCache；server只该upload放宽11MiB body，rawPNG≤8MiB。HTTP真上传/读取字节/Origin/query/未知字段/base64/借用别的text拒绝过，无模型调用。
+
+下一步metadata省略继承/显式空清除及旧v4兼容，按输出frames验证叠加范围，assets元数据public映射；真正FFmpeg合成（safe-area后字幕/徽标/水印前，追加PNG输入不可改音乐/旁白索引）；Studio上传编辑/版本重开/输出时钟preview/实际export。需要最终identity/persistence独立guard，子Agent额度恢复后再评估。core/asset旧子树有副本但不再覆盖root修法。用户4个未跟踪设计文档不动。
