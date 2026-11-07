@@ -10,6 +10,7 @@ from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.rendering import RenderClip, RenderPlan
 from gamingcreator.domain.creation_audio import AudioMix
 from gamingcreator.domain.creation_narration import NarrationSelection, validate_narration_fit
+from gamingcreator.domain.creation_overlays import CreationOverlays, overlay_pixel_geometry
 from gamingcreator.domain.creation_presentation import (
     PresentationOptions,
     safe_area_crop_filter,
@@ -26,6 +27,8 @@ from gamingcreator.infrastructure.narration_mix import (
     narration_receipt,
     verify_narration,
 )
+from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary, resolve_overlay_assets
+from gamingcreator.infrastructure.overlay_render import overlay_filters
 from gamingcreator.infrastructure.render_limits import render_output_limit
 
 
@@ -269,7 +272,15 @@ class FfmpegCreationRenderer:
         narration_artifact: NarrationArtifact | None = None,
         watermark: str | None = None,
         presentation: PresentationOptions | None = None,
+        overlays: CreationOverlays | None = None,
     ) -> dict[str, object]:
+        overlays = (
+            CreationOverlays.from_json(overlays.to_json()) if overlays else CreationOverlays(())
+        )
+        overlays.validate_duration(plan.frames)
+        overlay_library = OverlayAssetLibrary(self.bin.parent.parent.parent)
+        overlay_assets = resolve_overlay_assets(overlay_library, overlays)
+        protected = (*protected, *(asset.path.parent for asset in overlay_assets))
         mix = audio_mix if audio_mix is not None else AudioMix()
         # Re-parse even constructed dataclasses, so bool/non-finite gains fail closed.
         mix = AudioMix.from_json(mix.to_json())
@@ -319,6 +330,8 @@ class FfmpegCreationRenderer:
             for value in (width, height)
         ):
             raise ValueError("Render dimensions must be even integers in 16..3840.")
+        for item, overlay_asset in zip(overlays.items, overlay_assets, strict=True):
+            overlay_pixel_geometry(item, width, height, overlay_asset.width, overlay_asset.height)
         if presentation is None:
             presentation = PresentationOptions()
         else:
@@ -337,13 +350,17 @@ class FfmpegCreationRenderer:
         badge_path = target / "badge.ass"
         # The final fps filter needs an EOF frame beyond the last presentation
         # instant; cap by frames after padding, rather than stopping the muxer early.
+        frame_clock = (
+            f"settb=expr=1/{plan.fps},setpts=N" if overlays.items else "setpts=N/FRAME_RATE/TB"
+        )
         video_filter = (
             f"tpad=stop_mode=clone:stop_duration=1,fps={plan.fps},"
-            f"trim=end_frame={plan.frames},setpts=N/FRAME_RATE/TB"
+            f"trim=end_frame={plan.frames},{frame_clock}"
         )
         crop = safe_area_crop_filter(width, height, presentation.safe_area_margin_percent)
         if crop:
             video_filter += f",{crop}"
+        overlay_prefix = video_filter
         if subtitle_mode != "none":
             with subtitle_path.open("x", encoding="utf-8", newline="\n") as handle:
                 handle.write(subtitle_text)
@@ -426,6 +443,23 @@ class FfmpegCreationRenderer:
                 audio_filter += ";" + narration_filter(
                     narration, plan.frames, plan.fps, 2 if music is not None else 1
                 )
+            overlay_inputs: list[str] = []
+            video_graph = ""
+            if overlays.items:
+                overlay_inputs, video_graph = overlay_filters(
+                    overlays,
+                    overlay_assets,
+                    1 + int(music is not None) + int(narration_artifact is not None),
+                    plan.frames,
+                    plan.fps,
+                    width,
+                    height,
+                    overlay_prefix,
+                    video_filter[len(overlay_prefix) :],
+                )
+            graph = ";".join(
+                part for part in (audio_filter if has_mix else "", video_graph) if part
+            )
             try:
                 pending = target / "render.partial.mp4"
                 final_limit = render_output_limit(pending, plan.frames, plan.fps, width, height)
@@ -466,13 +500,14 @@ class FfmpegCreationRenderer:
                             if narration_artifact is not None
                             else []
                         ),
-                        *(["-filter_complex", audio_filter] if has_mix else []),
+                        *overlay_inputs,
+                        *(["-filter_complex_threads", "1"] if overlays.items else []),
+                        *(["-filter_complex", graph] if graph else []),
                         "-map",
-                        "0:v:0",
+                        "[overlay-video]" if overlays.items else "0:v:0",
                         "-map",
                         "[mixed]" if has_mix else "0:a:0",
-                        "-vf",
-                        video_filter,
+                        *([] if overlays.items else ["-vf", video_filter]),
                         "-c:v",
                         "libx264",
                         "-preset",
@@ -543,6 +578,7 @@ class FfmpegCreationRenderer:
                     await _verify_music(music, context)
                 if narration is not None and narration_artifact is not None:
                     verify_narration(narration, narration_artifact)
+                resolve_overlay_assets(overlay_library, overlays)
                 context.check_cancelled()
                 final = target / "video.mp4"
                 pending.rename(final)
@@ -597,6 +633,8 @@ class FfmpegCreationRenderer:
                     "limitations": _presentation_limitations(watermark, presentation),
                 }
                 presentation_receipt = presentation.receipt()
+                if overlays.items:
+                    result["overlays"] = overlays.to_json()
                 if presentation_receipt is not None:
                     result["presentation"] = presentation_receipt
                 if any(clip.speed != 1 for clip in plan.clips):

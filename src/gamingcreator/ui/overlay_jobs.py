@@ -5,15 +5,12 @@ import base64
 from typing import Any
 from urllib.parse import urlencode
 
-from gamingcreator.domain.creation_overlays import (
-    CreationOverlays,
-    OverlayAssetMetadata,
-    validate_asset_budget,
-)
+from gamingcreator.domain.creation_overlays import CreationOverlays
 from gamingcreator.infrastructure.overlay_assets import (
     MAX_PNG_BYTES,
     OverlayAsset,
     OverlayAssetLibrary,
+    resolve_overlay_assets,
 )
 
 
@@ -47,20 +44,7 @@ def register_asset(library: OverlayAssetLibrary, value: Any) -> dict[str, Any]:
 def resolve_assets(
     library: OverlayAssetLibrary, overlays: CreationOverlays
 ) -> tuple[OverlayAsset, ...]:
-    assets = tuple(library.resolve(i.asset_id, i.asset_receipt_sha256) for i in overlays.items)
-    for item, asset in zip(overlays.items, assets, strict=True):
-        if item.kind != asset.kind or item.text != asset.text:
-            raise ValueError("Overlay text or kind differs from its asset receipt.")
-    validate_asset_budget(
-        overlays,
-        tuple(
-            OverlayAssetMetadata(
-                a.asset_id, a.receipt_sha256, a.path.stat().st_size, a.width, a.height
-            )
-            for a in assets
-        ),
-    )
-    return assets
+    return resolve_overlay_assets(library, overlays)
 
 
 def resolve_selection(

@@ -20,7 +20,7 @@
 
 ## 下一步
 
-1. 2026-11-07：音频试听graph/侧链ducking与素材source-clock边界完整verify通过：4899通过/7跳过，格式/lint/mypy201源及CLI通过，合入main。策划/转场此前完整4874/7也通过；模型均fake、人评不变。下一批定时文字/PNG叠加：核心/资产/HTTP相关55通过；两个审查问题parent修复，待独立复核，版本链相关68通过，渲染/Studio尚未接；非空图层导出暂明确拒绝。goal active，无真实付费；[HANDOFF](HANDOFF.md)。
+1. 2026-11-07：音频试听graph/侧链ducking与素材source-clock边界完整verify通过：4899通过/7跳过，格式/lint/mypy201源及CLI通过，合入main。策划/转场此前完整4874/7也通过；模型均fake、人评不变。下一批定时文字/PNG叠加：核心/资产/HTTP相关55通过；两个审查问题parent修复，待独立复核，版本链相关68通过，渲染已接，相关54通过（真实像素/实际job导出）；Studio尚未接，整批未验收。goal active，无真实付费；[HANDOFF](HANDOFF.md)。
 2. TD024 已处理（2026-11-03）：修了一处真回归（attack 标签被语义闸门挡掉），另外两条改为按 TD004 精度设计的测试。J2 仍需你亲自判定前 10 名。
 3. 分发前：处理许可证缺口（human-inputs）和 TD003 FFmpeg 来源。
 

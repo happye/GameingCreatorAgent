@@ -478,11 +478,13 @@ class CreationJobs:
                 raise ValueError("Parent receipt changed")
             audio_mix = AudioMix()
             narration = None
+            expected_overlays = None
             if "revisionJobId" in request:
                 chain = load_chain(self, parent_id)
                 parent_report, expected_edl = chain.report, chain.edl
                 audio_mix = chain.audio_mix
                 narration = chain.narration
+                expected_overlays = chain.overlays.to_json() if chain.overlays.items else None
                 if state["projectId"] != chain.project_id:
                     raise ValueError("Render project changed")
             else:
@@ -492,6 +494,8 @@ class CreationJobs:
             if selection_report != parent_report or selected_edl != expected_edl:
                 raise ValueError("Selection belongs to another request")
             receipt = self.read(receipt_path)
+            if receipt.get("overlays") != expected_overlays:
+                raise ValueError("Render overlay selection changed")
             if (
                 receipt.get("width") != request["width"]
                 or receipt.get("height") != request["height"]

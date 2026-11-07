@@ -7,6 +7,7 @@ import pytest
 from test_creation_jobs import finish, service  # noqa: F401
 from test_creation_revision_jobs import payload, revisions  # noqa: F401
 from test_overlay_assets import png
+from test_studio_audio_graph_browser import saved_plan
 
 from gamingcreator.domain.errors import AppError
 from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
@@ -79,3 +80,33 @@ def test_saved_asset_tampering_blocks_revision_read(selected):
     asset.path.write_bytes(png(3, 2))
     with pytest.raises((ValueError, AppError)):
         jobs.edit(parent, "hook-first")
+
+
+def test_saved_overlay_revision_renders_with_real_job_and_ffmpeg(service, monkeypatch):  # noqa: F811
+    root, _, _ = saved_plan(service, monkeypatch)
+    asset = asyncio.run(OverlayAssetLibrary(service.repository).register_png(png()))
+    row = dict(
+        overlayId="a" * 32,
+        kind="image",
+        startFrame=0,
+        endFrame=2,
+        x=0,
+        y=0,
+        width=1000,
+        fadeInFrames=0,
+        fadeOutFrames=0,
+        assetId=asset.asset_id,
+        assetReceiptSha256=asset.receipt_sha256,
+    )
+    overlays = {"schemaVersion": "creation-overlays-v1", "items": [row]}
+    parent, _ = save(service, root, "b", overlays)
+    accepted = service.submit(
+        "render", {"requestId": "e" * 32, "revisionJobId": parent, "width": 160, "height": 96}
+    )
+    state = finish(service, accepted["jobId"])
+    assert state["status"] == "completed", state
+    directory = service.directory(accepted["jobId"])
+    receipt = service.read(directory / "result/receipt.json")
+    assert receipt["overlays"] == overlays
+    assert (directory / "result/video.mp4").stat().st_size > 0
+    assert CreationJobs(service.repository).get(accepted["jobId"])["status"] == "completed"

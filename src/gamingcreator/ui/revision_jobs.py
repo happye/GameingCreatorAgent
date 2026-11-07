@@ -380,8 +380,6 @@ def save_revision(jobs: Any, directory: Path, request: dict[str, Any], chain: Ch
 async def render_revision(
     jobs: Any, directory: Path, request: dict[str, Any], chain: Chain, watermark: str | None = None
 ) -> None:
-    if chain.overlays.items:
-        raise ValueError("Timed overlay rendering is not connected yet.")
     project = jobs.project(chain.project_id)
     jobs.safe(directory / "selection")
     write_creation(
@@ -410,6 +408,8 @@ async def render_revision(
             "narration": chain.narration,
             "narration_artifact": narration_jobs.asset(jobs, chain.narration, chain.project_id),
         }
+    if chain.overlays.items:
+        narration_kwargs["overlays"] = chain.overlays
     await FfmpegCreationRenderer(jobs.repository).render(
         chain.plan,
         directory / "result",

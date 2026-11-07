@@ -14,7 +14,12 @@ from typing import Any
 from uuid import uuid4
 
 from gamingcreator.application.providers import CancellationContext
-from gamingcreator.domain.creation_overlays import validate_overlay_text
+from gamingcreator.domain.creation_overlays import (
+    CreationOverlays,
+    OverlayAssetMetadata,
+    validate_asset_budget,
+    validate_overlay_text,
+)
 from gamingcreator.infrastructure.ffmpeg_filters import filter_path
 from gamingcreator.infrastructure.local_files import read_bounded
 from gamingcreator.infrastructure.local_paths import is_link
@@ -321,3 +326,22 @@ class OverlayAssetLibrary:
         ):
             raise ValueError("Overlay bytes or metadata changed.")
         return OverlayAsset(asset_id, receipt_sha256, receipt["kind"], *dimensions, path, text)
+
+
+def resolve_overlay_assets(
+    library: OverlayAssetLibrary, overlays: CreationOverlays
+) -> tuple[OverlayAsset, ...]:
+    assets = tuple(library.resolve(i.asset_id, i.asset_receipt_sha256) for i in overlays.items)
+    for item, asset in zip(overlays.items, assets, strict=True):
+        if item.kind != asset.kind or item.text != asset.text:
+            raise ValueError("Overlay text or kind differs from its asset receipt.")
+    validate_asset_budget(
+        overlays,
+        tuple(
+            OverlayAssetMetadata(
+                a.asset_id, a.receipt_sha256, a.path.stat().st_size, a.width, a.height
+            )
+            for a in assets
+        ),
+    )
+    return assets
