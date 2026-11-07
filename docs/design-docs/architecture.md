@@ -103,7 +103,11 @@ F001 建立包导入方向、类型和格式检查；F004 检查 SQLite 与文�
 
 素材页复用共享SourceClock建立canonical与媒体时钟映射；未知时钟仍可整片观看，不声称精确定位。已建立时钟的合法取景保持终点约束，video_late头部从首图起播并说明，原取景/事实区间不改。输出预览和素材预览分别使用各自输出/源时钟，不混用。
 
-### 输出时间线文字与PNG图层（工作分支）
+### Studio逐镜字幕
+
+Studio逐镜字幕入口复用既有revision.subtitleOverrides，不新增字幕协议或改写转录。本地ClipEditor持有覆盖数组并参与dirty/撤销/重开、建议generation；删除过滤，替换清除旧覆盖，未保存替换时禁编，保存取得新clipId后恢复。原空串/删除覆盖语义分别为隐藏生成字幕/恢复自动，实际SRT/烧录仍由原后端负责。合同见[Studio字幕](../exec-plans/sprint-studio-caption-editor.md)。
+
+### 输出时间线文字与PNG图层
 
 domain creation_overlays定义输出整数帧范围、淡化与规范化几何；infrastructure overlay_assets把原PNG或本机FFmpeg文字sprite存为永久资产，回执绑定源/sprite哈希。修订metadata在whole-file hash下保存图层完整快照，省略继承、空数组清除，读回和渲染核对资产receipt。overlay_render在safe-area后用RGB合成保留奇数坐标，再叠字幕/静态角标/水印；源速/转场不改变图层的输出时钟。
 

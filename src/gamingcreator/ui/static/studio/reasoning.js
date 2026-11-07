@@ -32,7 +32,7 @@ function remember(editing, quote, text) {
 function useReasoning(editing, text, onPreview, onOverlayPreview) {
     const [state, setState] = useState(empty);
     const [available, setAvailable] = useState(false);
-    const key = JSON.stringify([editing.project, editing.base, editing.editor?.expectedParentReceiptSha256, editing.status, editing.dirty, editing.rows(), editing.overlays, editing.audio, editing.replacements, text]);
+    const key = JSON.stringify([editing.project, editing.base, editing.editor?.expectedParentReceiptSha256, editing.status, editing.dirty, editing.rows(), editing.subtitleOverrides, editing.overlays, editing.audio, editing.replacements, text]);
     const live = useRef({key, generation: 0, mounted: true});
     if (live.current.key !== key) { live.current.key = key; live.current.generation += 1; }
     const generation = live.current.generation;

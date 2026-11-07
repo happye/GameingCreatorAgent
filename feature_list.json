@@ -820,7 +820,9 @@
                 "tests/test_clip_transition_browser.py",
                 "docs/archive/sprints/sprint-t24-subtitle-word-timing.md",
                 "tests/test_asr_word_timing.py",
-                "src/gamingcreator/application/asr_word_timing.py"
+                "src/gamingcreator/application/asr_word_timing.py",
+                "docs/exec-plans/sprint-studio-caption-editor.md",
+                "tests/test_studio_caption_editor_browser.py"
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released",
@@ -883,7 +885,9 @@
                 "tests/test_clip_replacement_core.py",
                 "tests/test_clip_replacement_jobs.py",
                 "tests/test_clip_replacement_http.py",
-                "tests/test_clip_replacement_browser.py"
+                "tests/test_clip_replacement_browser.py",
+                "docs/exec-plans/sprint-studio-caption-editor.md",
+                "tests/test_studio_caption_editor_browser.py"
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"
