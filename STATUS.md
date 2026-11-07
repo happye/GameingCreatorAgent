@@ -20,7 +20,7 @@
 
 ## 下一步（2026-11-07 用户已恢复持续开发）
 
-1. P028定时文字/PNG与AI图层时间提案已合main：完整verify4981通过/7跳过、1734.98秒，格式/Ruff/mypy207源/CLI通过。真实上传→保存重开→预览→导出及fake文本提案链已接；v1恢复/费用闸门保留，真实模型语义与创意人评未验收。此前两轮失败均有定位与回归，非缩阈值处理。下一Studio逐镜字幕独立分支已24项字幕/7项浏览器通过并审查，待集成和门禁。goal active，无真实付费。见[HANDOFF](HANDOFF.md)与[合同](docs/exec-plans/sprint-timed-overlays.md)。
+1. Studio逐镜字幕已合main：完整verify4986通过/7跳过、1782.19秒，格式/Ruff/mypy207源/CLI通过。手写/隐藏/恢复自动、撤销/重开、删除/替换身份与保存期保护已接，真实SRT/MP4通过，原转录不变。此前P028/AI图层批完整4981/7通过，真实模型语义和创意人评仍未验收。下一修复启动器误复用旧backend：独立树按启动时固定源码指纹核对，保留旧服务并提示新端口，实施中。goal active，无真实付费。见[HANDOFF](HANDOFF.md)与[字幕合同](docs/exec-plans/sprint-studio-caption-editor.md)。
 2. TD024 已处理（2026-11-03）：修了一处真回归（attack 标签被语义闸门挡掉），另外两条改为按 TD004 精度设计的测试。J2 仍需你亲自判定前 10 名。
 3. 分发前：处理许可证缺口（human-inputs）和 TD003 FFmpeg 来源。
 

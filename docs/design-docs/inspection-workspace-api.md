@@ -178,7 +178,7 @@ prepare返回准备身份、请求身份、实际 `payloadPreview={system,user}`
 
 静态`/assets/studio/audio-preview-graph.js`与`audio-ducking-processor.js`由同源路由提供，AudioWorklet在本地浏览器运行，不调用云端、不新增付费API。依赖浏览器AudioContext/AudioWorklet与用户播放手势；不可用时明确提示，仍可保存/导出。
 
-## 工作分支定时叠加资产（未合main/未交付P028）
+## 定时叠加资产（main技术已接，未完整交付P028）
 
 `POST /api/creation/overlay-assets` 只接受 `{"kind":"text","text":"标题"}` 或 `{"kind":"image","fileName":"logo.png","dataBase64":"..."}`，不接受query/路径/额外字段。PNG原字节≤8MiB，HTTP JSON上限11MiB，预校验尺寸/像素预算后实际解码；拒绝APNG。返回assetId/assetReceiptSha256/kind/width/height/imageUrl，text资产另带原text。固定字体透明PNG由本机FFmpeg生成，无云调用。
 
