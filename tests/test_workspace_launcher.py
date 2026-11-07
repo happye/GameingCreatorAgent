@@ -20,7 +20,7 @@ import pytest
 
 pytestmark = pytest.mark.skipif(sys.platform != "win32", reason="Windows desktop launcher")
 LAUNCHER = Path(__file__).resolve().parents[1] / "scripts" / "start-workspace.ps1"
-REPOSITORY = Path(sys.executable).resolve().parents[2]
+REPOSITORY = LAUNCHER.parents[1]
 
 
 def _command(port, repository=REPOSITORY):
@@ -130,6 +130,9 @@ def test_starts_from_other_directory_and_reuses_matching_service(workspace_port,
     assert health["application"] == "gamingcreator-workspace"
     assert Path(health["repository"]).resolve() == REPOSITORY
     assert health["apiVersion"] == 1
+    from gamingcreator.ui.runtime_identity import runtime_identity
+
+    assert health["runtimeIdentity"] == runtime_identity(REPOSITORY / "src/gamingcreator")
     assert f"PID {health['pid']}" in first.stdout
     state_path = REPOSITORY / ".cache" / "workspace" / f"port-{workspace_port}.json"
     state = json.loads(state_path.read_text(encoding="utf-8-sig"))
@@ -182,17 +185,28 @@ def test_simultaneous_launches_start_only_one_service(workspace_port, tmp_path):
     assert sum("Reusing workspace:" in output for output in outputs) == 1
 
 
-def test_foreign_listener_is_reported_and_remains_alive(tmp_path):
+@pytest.mark.parametrize("identity_case", ["foreign", "missing", "stale", "wrong-root"])
+def test_foreign_listener_is_reported_and_remains_alive(tmp_path, identity_case):
     class ForeignService(BaseHTTPRequestHandler):
         def do_GET(self):
-            payload = json.dumps(
-                {
-                    "application": "gamingcreator-workspace",
-                    "apiVersion": 1,
-                    "repository": str(tmp_path / "different-repository"),
-                    "pid": os.getpid(),
-                }
-            ).encode()
+            from gamingcreator.ui.runtime_identity import runtime_identity
+
+            identity = runtime_identity(REPOSITORY / "src/gamingcreator")
+            if identity_case == "stale":
+                identity["sha256"] = "0" * 64
+            if identity_case == "wrong-root":
+                identity["packageRoot"] = str(tmp_path / "other-checkout/gamingcreator")
+            health = {
+                "application": "gamingcreator-workspace",
+                "apiVersion": 1,
+                "repository": str(REPOSITORY),
+                "pid": os.getpid(),
+            }
+            if identity_case == "foreign":
+                health["repository"] = str(tmp_path / "different-repository")
+            if identity_case != "missing":
+                health["runtimeIdentity"] = identity
+            payload = json.dumps(health).encode()
             self.send_response(200)
             self.send_header("Content-Length", str(len(payload)))
             self.end_headers()
@@ -210,6 +224,7 @@ def test_foreign_listener_is_reported_and_remains_alive(tmp_path):
             assert result.returncode != 0
             assert "occupied" in result.stderr
             assert "Nothing was stopped" in result.stderr
+            assert "-Port <free-port>" in result.stderr
             assert _health(port)["pid"] == os.getpid()
         finally:
             server.shutdown()
@@ -242,8 +257,12 @@ def _helper_repository(tmp_path, source):
     python_path.parent.mkdir(parents=True)
     shutil.copy2(sys.executable, python_path)
     shutil.copy2(REPOSITORY / ".venv" / "pyvenv.cfg", repository / ".venv" / "pyvenv.cfg")
-    package = repository / "gamingcreator"
-    package.mkdir()
+    package = repository / "src" / "gamingcreator"
+    package.mkdir(parents=True)
+    (package / "ui").mkdir()
+    shutil.copy2(
+        REPOSITORY / "src/gamingcreator/ui/runtime_identity.py", package / "ui/runtime_identity.py"
+    )
     (package / "__init__.py").write_text("", encoding="utf-8")
     (package / "ui.py").write_text(source, encoding="utf-8")
     return repository
@@ -280,3 +299,48 @@ def test_unresponsive_startup_is_bounded_and_its_child_is_stopped(tmp_path):
             assert exit_code.value != 259, "test-owned venv child was left running"
         finally:
             kernel.CloseHandle(handle)
+
+
+@pytest.mark.parametrize("portable", [False, True])
+def test_expected_identity_uses_development_or_portable_package(tmp_path, portable):
+    from gamingcreator.ui.runtime_identity import runtime_identity
+
+    repository = _helper_repository(tmp_path, "raise AssertionError('must reuse')")
+    package = repository / "src/gamingcreator"
+    if portable:
+        destination = repository / ".venv/Lib/site-packages/gamingcreator"
+        destination.parent.mkdir(parents=True)
+        shutil.move(str(package), str(destination))
+        package = destination
+    identity = runtime_identity(package)
+
+    class MatchingService(BaseHTTPRequestHandler):
+        def do_GET(self):
+            payload = json.dumps(
+                {
+                    "application": "gamingcreator-workspace",
+                    "apiVersion": 1,
+                    "pid": os.getpid(),
+                    "repository": str(repository),
+                    "runtimeIdentity": identity,
+                }
+            ).encode()
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+
+        def log_message(self, *args):
+            pass
+
+    with ThreadingHTTPServer(("127.0.0.1", 0), MatchingService) as server:
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            result = _run(server.server_port, tmp_path, repository)
+            assert result.returncode == 0, result.stdout + result.stderr
+            assert "Reusing workspace" in result.stdout
+            assert _health(server.server_port)["pid"] == os.getpid()
+        finally:
+            server.shutdown()
+            thread.join(timeout=5)

@@ -1,33 +1,37 @@
 # HANDOFF（覆盖快照）
 
-## 最近一次会话（2026-11-07，持续开发）
+## 最近一次会话（2026-11-07，额度恢复持续开发）
 
-goal active，用户要求额度恢复后继续，不能自行停工。root开发线codex/timed-overlays-20261107，本批字幕完整门禁通过后提交merge并合main；原4个未跟踪用户设计文档未动未暂存。
+用户目标：按计划持续开发直到额度用光；goal active，不能自行停工/缩成小目标。root分支codex/timed-overlays-20261107，main以git refs为准。4个用户未跟踪设计文档未动未暂存，禁止git add全目录。不要复制Claude/Cloud角色到Codex；此前重复来自客户端external_agent_config_imports，不是模型提示词。
 
-## 已验证的main能力
+## main与验收
 
-P028定时文字/PNG与AI独立图层时间提案：完整4981过/7跳过，1734.98秒，.cache/overlays-combined-full-verify.log，session89751退出0，f08d0e5已合main。纯输出整数帧、RGB奇数几何、透明CJK/PNG、图层时长/淡化/位置/层级、保存重开/清空/预览/真实导出。永久资产原PNG保留，回执绑源/sprite；旧EDL/v4不改。不能抠除烘焙源logo。
+P028文字/PNG与AI图层时间提案f08d0e5：完整4981/7跳、1734.98秒，.cache/overlays-combined-full-verify.log。Studio逐镜字幕e98e913：完整4986/7跳、1782.19秒，.cache/studio-captions-full-verify.log，格式/Ruff/mypy207源/CLI过。原转录不改。不能抠除源视频烘焙logo，真实AI语义/创意/真人观感未验收。
 
-AI新snapshot显式绑定Chain.overlays及去重public资产，v1旧请求字节恢复，新prompt/schema配对仅让模型patch已有图层endFrame/fadeOutFrames；先预览再验证原子应用、费用闸门不变、v4保manifest。真实HTTP+fake transport→保存刷新→MP4第60帧像素通过，实际模型理解/创意质量未验收。
+status.py最近实算51=10交付41部分，质量0/51，F8/3，债25=17解决3部分5未解，人工9。J1第四次not_usable，J2/J3未做人评，技术绿不能翻passes/质量。本机免费语音，无真实云/付费/Release/实际平台发布。
 
-Studio逐镜字幕：本次完整4986过/7跳过、1782.19秒，.cache/studio-captions-full-verify.log，session99627退出0，格式/Ruff/mypy207源/CLI过。旧后端复用；手写/空覆盖隐藏/恢复自动/撤销/重开/删除过滤，替换未保存禁编防旧clipId误绑。保存/render期间fieldset锁检查器，adoption/AI等待仍可编辑并失效旧建议。原转录不改，真实SRT/MP4通过，即时预览不显示字幕已提示。独立24/7有重叠；root相关33及新增保存期12过，guard闭环。合同sprint-studio-caption-editor.md。
+## root运行时身份集成（未提交merge）
 
-两批仅补技术实现，J1第四次人评not_usable、passes/质量不变。计数只能python -B scripts/status.py算，不因技术绿提升人评。无真实云/付费，语音仍免费本机。没有Release/平台实际写。
+来自已推codex/workspace-runtime-identity-20261107的711734f，runtime guard通过；本批root完整门禁已绿，准备提交当前merge并FF推main。提交后MERGE_HEAD应消失，以git refs为准。
 
-## 已处理的门禁失败
+首轮session97268退出1：仅旧health整对象断言漏runtimeIdentity，1失败/4999通过/7跳。补当前包根/hash后相关42过/1跳57.241秒，.cache/runtime-health-contract.xml。最终session99097退出0：5000过/7跳1716.69秒，.cache/workspace-runtime-fixed-full-verify.log，格式/Ruff/mypy208源/CLI全过。失败日志保留，不冒充第一轮即绿。
 
-早期overlays-full-verify.log与overlays-fixed-full-verify.log失败保留，不当全绿。最终修复seekable增长夹紧、nonzero初始header在origin前不可当有效用户位置恢复、reference恢复失败不可重试掩盖；原2ms/总deadline/token/同URL重载闭锁不变，低轴探针语义不改，clock106过。画布absolute消除无CSS布局反馈；useLatest成功返回也查本次abort防null/runs；选段onInput防失焦前异步seek覆写。稳态PCM用4秒不循环fixture/三路时钟>=.25，原1秒循环hook测试保留，阈值不放宽。最终完整门禁均过。
+stdlib包源码指纹在服务启动固定，health返回packageRoot/version/hash；PS独立dev/portable来源、显式PYTHONPATH，拒旧进程复用并提示新端口，保留原PID/repo/owned helper检查。NTFS junction剪枝/读前包内校验已修。真实root临时8770 PID28620启动+复用、health与源码匹配、Studio及模块200，.cache/runtime-live-smoke.json；测试后只清理本次28620，旧8765–8769未动。新端口8770目前无本次服务。
 
-## 当前下一步：运行时身份
+## 字幕预览已在功能分支，待root完整集成
 
-只读已证start-workspace.ps1只查app/apiVersion/PID/repository，会误reuse同repo旧进程；旧ASSETS缺overlays.js，新static会404。不得停8765绕过既有审批拒绝。短期显式-Port空闲可新启动，尚未实际启动/停止任何旧服务。
+preview树分支codex/studio-caption-preview-20261107，已推2c89477，树干净；基线fc90e85已含711734f及e98e913。Sol/medium caption_preview_impl完成，唯一Sol/high caption_preview_guard专项通过，无遗留缺陷。
 
-Astra方案已给；task_developer /root/runtime_identity_impl正在preview树独占实现，分支codex/workspace-runtime-identity-20261107基于f08d0e5。拥有新ui/runtime_identity.py、server.py、start-workspace.ps1及测试。单一stdlib源码指纹：只包内源码/前端资产，服务启动固定并health返回version/packageRoot/sha256；PS独立选dev src或portable site-packages并直接执行预期helper，避免共享editable误指其他checkout。原toolchain/PID/repo/parent检查保留，过时占用直接拒绝提示新-Port，不kill。待实现→定向→唯一关键边界guard→root集成完整gate，勿复制该树整树覆盖root。
+只读POST共享修订/转录/SRT毫秒及ASS百分秒/lifted；UI outUs+250ms/abort/seq/key清旧。guard发现旁白依赖jobs.get恢复写盘P2，现read_only贯穿load_chain/resolve/asset，非completed拒绝，正常默认恢复保持。后端111过0跳70.651秒(.cache/caption-preview-backend-final.xml)，浏览器12过0跳54.266秒(.cache/caption-preview-browser-combined.xml)。同v4B run/2x/3帧双字幕草稿真实SRT/ASS/MP4；迟到success/error跨project/parent/none、重复A/A/B、继承删除/字段注入/依赖全字节不变均覆盖。Ruff/format/mypy5源过。
 
-## 树与保护
+合同/架构/API/指南/feature evidence已随2c89477，未翻状态。root有parent未跟踪同名sprint-studio-caption-preview.md旧稿，merge前移动到.cache/scratch备份以免冲突；应采用分支最终稿。不以定向绿代完整gate。
 
-root原字幕合同未跟踪副本已移动.cache/scratch备份，MERGE_HEAD=a4b6ed0的字幕集成将提交；提交后以git为准。字幕分支a4b6ed0已推，root另有保存期fieldset增量。preview树已切运行时分支，别覆盖worker。core保留clock/旧core副本，assets保留旧前端副本。≤3子树，一树一写者，同树pytest串行。
+## 正在独立实施P035多平台批量包
 
-共享venv editable指root；env清PYTHONPATH。子树测试必须env后显式PYTHONPATH自身src并核实际import；完整verify在root执行，不能删工具链检查。源码测试期间冻结。
+Sol/medium /root/multi_platform_impl唯一写assets树.worktrees/j1-selected-ranges，分支codex/studio-multi-platform-20261107基于e98e913。合同root sprint-studio-multi-platform-packages.md；Astra选pub投影+UI串行，无batchmanifest。Sol/high multi_platform_guard发现3P2，串行及跨project旧open已修；未知retry尚未注册时重复requestId窗口正在补scoped sessionStorage意图，恢复后不可遗忘未知R。真实双七文件ZIP/解码、105历史、Free、失败重试及迟到已有证据；最后修复需同guard复核，未提交/集成。不要重复派普通review。
 
-旧8769 PID38232及8768/8767/8766/8765均需先核health/identity，新routes用新进程；禁止绕过停止8765审批拒绝。生产CSP保留，原录像/证据/账本不改不删、不重付重标、不重跑钟馗。push走127.0.0.1:7890代理，禁止force main。不要将Claude角色迁移到Codex目录。
+该树旧tracked/untracked源改动完整保存在stash b55207b68ce12b3682607687c54dc818d1f6f849，禁止drop/pop覆盖新实现。core树仍保留旧clock副本，不整树覆盖root。≤3子树，一树一写者，同树pytest串行；共享venv editable指root，env清PYTHONPATH，子树必须env后显式设自身src并核import，完整verify在root。
+
+## 操作红线
+
+不绕过既有停止8765审批拒绝；旧服务均先核health/PID，改磁盘不代表已重载。原录像/分析证据/账本不改不删、不重付重标、不重跑钟馗。push用127.0.0.1:7890代理，禁止force main。

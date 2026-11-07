@@ -33,6 +33,7 @@ from gamingcreator.ui.frame_text import (
 from gamingcreator.ui.media import MediaResource, VerifiedMediaCache, byte_range
 from gamingcreator.ui.media_preparation import MediaPreparationJobs
 from gamingcreator.ui.overlay_jobs import register_asset
+from gamingcreator.ui.runtime_identity import runtime_identity
 from gamingcreator.ui.service import (
     detail_costs,
     inspect_run,
@@ -181,6 +182,7 @@ class WorkspaceServer(ThreadingHTTPServer):
 
 
 class InspectionHandler(BaseHTTPRequestHandler):
+    runtime_identity: dict[str, str]
     repository = Path.cwd()
     media_cache = VerifiedMediaCache()
     creation_jobs: CreationJobs
@@ -962,6 +964,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                         "repository": str(self.repository.resolve()),
                         "pid": os.getpid(),
                         "parentPid": os.getppid(),
+                        "runtimeIdentity": self.runtime_identity,
                     },
                 )
                 return
@@ -1423,6 +1426,7 @@ def create_server(host: str, port: int, repository: Path) -> ThreadingHTTPServer
         (InspectionHandler,),
         {
             "repository": repository.resolve(),
+            "runtime_identity": runtime_identity(Path(__file__).resolve().parents[1]),
             "media_cache": VerifiedMediaCache(),
             "creation_jobs": creations,
             "creation_reasoning": reasoning,

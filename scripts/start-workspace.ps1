@@ -33,6 +33,9 @@ function Test-WorkspaceIdentity($Health) {
   try {
     return ($Health.application -eq 'gamingcreator-workspace' -and
       $Health.apiVersion -eq 1 -and [int]$Health.pid -gt 0 -and
+      $Health.runtimeIdentity.version -ceq $expectedIdentity.version -and
+      $Health.runtimeIdentity.sha256 -ceq $expectedIdentity.sha256 -and
+      [IO.Path]::GetFullPath([string]$Health.runtimeIdentity.packageRoot).TrimEnd('\', '/') -eq $expectedIdentity.packageRoot -and
       [IO.Path]::GetFullPath([string]$Health.repository).TrimEnd('\', '/') -eq $repositoryRoot)
   } catch { return $false }
 }
@@ -119,6 +122,16 @@ try {
   catch [System.Threading.AbandonedMutexException] { $lockAcquired = $true }
   if (-not $lockAcquired) { throw 'Another workspace launch is still starting; retry shortly.' }
 
+  $packageRoot = Join-Path $repositoryRoot 'src/gamingcreator'
+  if (-not (Test-Path -LiteralPath $packageRoot -PathType Container)) {
+    $packageRoot = Join-Path $repositoryRoot '.venv/Lib/site-packages/gamingcreator'
+  }
+  $identityScript = Join-Path $packageRoot 'ui/runtime_identity.py'
+  $identityJson = & $pythonPath -B $identityScript --package-root $packageRoot
+  if ($LASTEXITCODE -ne 0) { throw 'Cannot determine workspace source identity.' }
+  $expectedIdentity = $identityJson | ConvertFrom-Json
+  # Pin development imports to this checkout, including shared editable environments.
+  $env:PYTHONPATH = Split-Path -Parent $expectedIdentity.packageRoot
   $health = Read-WorkspaceHealth
   $statePath = Join-Path $workspaceDirectory "port-$Port.json"
   if (Test-WorkspaceIdentity $health) {

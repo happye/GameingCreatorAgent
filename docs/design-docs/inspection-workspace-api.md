@@ -174,6 +174,8 @@ prepare返回准备身份、请求身份、实际 `payloadPreview={system,user}`
 
 ## Studio派生源时钟与音频模块
 
+工作区health新增`runtimeIdentity={version:"workspace-runtime-v1",packageRoot,sha256}`：包根和源码摘要在create_server启动时固定，后续磁盘JS/Py变更不会让旧进程的health假装更新。启动器在mutex内独立计算预期，保留原application/apiVersion/PID/repository及owned-helper检查，并比较实际包目录/摘要。旧服务缺字段或身份不匹配时不复用、不停止，提示改用空闲`-Port`。这是本机源码兼容性检查，不是签名或原子部署。
+
 `/api/runs`各run与`/api/inspect`的media现在提供派生`sourceClock`（browser-source-clock-v1或null）；它不修改原run/evidence身份。实际映射按共享source-clock.js校准，未知不承诺精确片段寻址。已校准video_late选段仍在canonical终点停播。
 
 静态`/assets/studio/audio-preview-graph.js`与`audio-ducking-processor.js`由同源路由提供，AudioWorklet在本地浏览器运行，不调用云端、不新增付费API。依赖浏览器AudioContext/AudioWorklet与用户播放手势；不可用时明确提示，仍可保存/导出。

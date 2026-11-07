@@ -8,6 +8,7 @@ import threading
 from contextlib import contextmanager
 from dataclasses import replace
 from decimal import Decimal
+from pathlib import Path
 from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import ProxyHandler, Request, build_opener
@@ -20,6 +21,7 @@ from gamingcreator.application.storage import InvocationStatus, StoredInvocation
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 from gamingcreator.ui.media import MediaResource, VerifiedMediaCache, byte_range
+from gamingcreator.ui.runtime_identity import runtime_identity
 from gamingcreator.ui.server import create_server, error_status
 from gamingcreator.ui.service import cost_payload, registered_media
 
@@ -147,6 +149,9 @@ def test_health_identifies_repository_and_pid_without_model_or_storage(tmp_path)
             "repository": str(tmp_path.resolve()),
             "pid": os.getpid(),
             "parentPid": os.getppid(),
+            "runtimeIdentity": runtime_identity(
+                Path(__file__).resolve().parents[1] / "src/gamingcreator"
+            ),
         }
         assert get(base, "/api/health", headers={"Host": "external.invalid"})[0] == 403
         assert get(base, "/api/health", headers={"Origin": "https://external.invalid"})[0] == 403
