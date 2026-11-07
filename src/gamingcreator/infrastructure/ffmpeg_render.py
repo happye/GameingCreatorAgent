@@ -1,7 +1,7 @@
 """Fixed local FFmpeg renderer, preserving source clocks and publishing receipt last."""
 
 import json
-from dataclasses import replace
+from collections.abc import Iterator
 from fractions import Fraction
 from pathlib import Path
 
@@ -15,7 +15,7 @@ from gamingcreator.domain.creation_presentation import (
     PresentationOptions,
     safe_area_crop_filter,
 )
-from gamingcreator.domain.creation_subtitles import SubtitleCue, parse_srt, serialize_srt
+from gamingcreator.domain.creation_subtitles import SubtitleCue, quantize_srt, serialize_srt
 from gamingcreator.infrastructure.crossfade_render import compose_transitions
 from gamingcreator.infrastructure.ffmpeg_filters import filter_path
 from gamingcreator.infrastructure.ffmpeg_media import hash_source
@@ -154,6 +154,14 @@ def _burn_ass(cues: tuple[SubtitleCue, ...], width: int, height: int) -> str:
         hours, minute = divmod(minutes, 60)
         return f"{hours}:{minute:02d}:{sec:02d}.{cs:02d}"
 
+    for start, end, content, lifted in burn_events(cues):
+        margin = max(24, height // 8) if lifted else 4
+        text = content.replace("\n", r"\N")
+        header += f"Dialogue: 0,{clock(start)},{clock(end)},Default,,0,0,{margin},,{text}\n"
+    return header
+
+
+def burn_events(cues: tuple[SubtitleCue, ...]) -> Iterator[tuple[Fraction, Fraction, str, bool]]:
     # Split only at overlap edges. Earlier clips lift above later clips while
     # both are visible; outside those intervals every cue uses the bottom lane.
     for cue in cues:
@@ -170,7 +178,7 @@ def _burn_ass(cues: tuple[SubtitleCue, ...], width: int, height: int) -> str:
             edges.update((max(cue.start, other.start), min(cue.end, other.end)))
         boundaries = sorted(edges)
         for start, end in zip(boundaries, boundaries[1:], strict=False):
-            if clock(start) == clock(end):
+            if (start * 100).__floor__() == (end * 100).__floor__():
                 continue
             lifted = any(
                 other.start < end
@@ -178,10 +186,7 @@ def _burn_ass(cues: tuple[SubtitleCue, ...], width: int, height: int) -> str:
                 and (cue.clip_index or 0) < (other.clip_index or 0)
                 for other in others
             )
-            margin = max(24, height // 8) if lifted else 4
-            text = cue.text.translate(str.maketrans("\\{}", "＼｛｝")).replace("\n", r"\N")
-            header += f"Dialogue: 0,{clock(start)},{clock(end)},Default,,0,0,{margin},,{text}\n"
-    return header
+            yield start, end, cue.text.translate(str.maketrans("\\{}", "＼｛｝")), lifted
 
 
 def _filter_path(path: Path) -> str:
@@ -310,19 +315,7 @@ class FfmpegCreationRenderer:
         if subtitle_mode not in ("none", "sidecar", "burn"):
             raise ValueError("Unknown subtitle mode.")
         subtitle_text = serialize_srt(cues) if subtitle_mode != "none" else ""
-        # SRT order is deterministic; carry identities by record position after quantization.
-        ordered = sorted(cues, key=lambda cue: (cue.start, cue.end))
-        identities = [
-            cue for cue in ordered if (cue.start * 1000).__floor__() < (cue.end * 1000).__floor__()
-        ]
-        saved_cues = (
-            tuple(
-                replace(saved, clip_index=original.clip_index)
-                for saved, original in zip(parse_srt(subtitle_text), identities, strict=True)
-            )
-            if subtitle_mode != "none"
-            else ()
-        )
+        saved_cues = quantize_srt(cues) if subtitle_mode != "none" else ()
         if any(cue.end > Fraction(plan.frames, plan.fps) for cue in saved_cues):
             raise ValueError("Subtitle extends beyond render output.")
         if any(

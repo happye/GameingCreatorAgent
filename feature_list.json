@@ -822,7 +822,10 @@
                 "tests/test_asr_word_timing.py",
                 "src/gamingcreator/application/asr_word_timing.py",
                 "docs/exec-plans/sprint-studio-caption-editor.md",
-                "tests/test_studio_caption_editor_browser.py"
+                "tests/test_studio_caption_editor_browser.py",
+                "docs/exec-plans/sprint-studio-caption-preview.md",
+                "tests/test_studio_caption_preview.py",
+                "tests/test_studio_caption_preview_browser.py"
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released",

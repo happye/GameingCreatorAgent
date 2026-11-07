@@ -78,6 +78,7 @@ ASSETS = {
         "text/javascript; charset=utf-8",
     ),
     "/assets/studio/planning.js": ("studio/planning.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/subtitles.js": ("studio/subtitles.js", "text/javascript; charset=utf-8"),
     "/assets/studio/edit.js": ("studio/edit.js", "text/javascript; charset=utf-8"),
     "/assets/studio/clipedit.js": ("studio/clipedit.js", "text/javascript; charset=utf-8"),
     "/assets/studio/overlays.js": ("studio/overlays.js", "text/javascript; charset=utf-8"),
@@ -469,6 +470,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/packages",
                 "/api/creation/narrations",
                 "/api/creation/narration-cancel",
+                "/api/creation/subtitle-preview",
                 "/api/creation/timeline-commands",
                 "/api/creation/music",
                 "/api/creation/overlay-assets",
@@ -629,6 +631,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 except CommandError as error:
                     raise AppError("creation.command", str(error), ExitCode.INPUT) from error
                 self._json(200, preview)
+                return
+            if path == "/api/creation/subtitle-preview":
+                from gamingcreator.ui.subtitle_preview import preview
+
+                self._json(200, preview(self.creation_jobs, value))
                 return
             if path == "/api/creation/narration-cancel":
                 if not isinstance(value, dict) or set(value) != {"jobId"}:

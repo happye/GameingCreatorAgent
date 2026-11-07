@@ -168,14 +168,19 @@ def verify_asset(jobs: Any, directory: Path, state: dict[str, Any], stored: dict
     state["narrationAsset"] = public(directory.name, artifact)
 
 
-def asset(jobs: Any, selection: NarrationSelection, project_id: str) -> NarrationArtifact:
-    state = jobs.get(selection.asset_job_id)
+def asset(
+    jobs: Any, selection: NarrationSelection, project_id: str, *, read_only: bool = False
+) -> NarrationArtifact:
+    directory = jobs.directory(selection.asset_job_id)
+    state = jobs.read(directory / "status.json") if read_only else jobs.get(selection.asset_job_id)
     if (
         state["kind"] != "narration"
         or state["status"] != "completed"
         or state["projectId"] != project_id
     ):
         raise ValueError("Narration must be a completed asset of this project.")
+    if read_only:
+        jobs.verify(directory, state)
     return read_narration_artifact(
         jobs.safe(jobs.directory(selection.asset_job_id) / "result"), selection.receipt_sha256
     )
@@ -188,6 +193,8 @@ def resolve(
     project_id: str,
     frames: int,
     fps: int,
+    *,
+    read_only: bool = False,
 ) -> NarrationSelection | None:
     selection = inherited
     if "narration" in request:
@@ -197,7 +204,7 @@ def resolve(
             else NarrationSelection.from_json(request["narration"])
         )
     if selection is not None:
-        source = asset(jobs, selection, project_id)
+        source = asset(jobs, selection, project_id, read_only=read_only)
         try:
             validate_narration_fit(selection, source.sample_count, source.sample_rate, frames, fps)
         except ValueError as error:

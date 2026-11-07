@@ -107,6 +107,8 @@ F001 建立包导入方向、类型和格式检查；F004 检查 SQLite 与文�
 
 Studio逐镜字幕入口复用既有revision.subtitleOverrides，不新增字幕协议或改写转录。本地ClipEditor持有覆盖数组并参与dirty/撤销/重开、建议generation；删除过滤，替换清除旧覆盖，未保存替换时禁编，保存取得新clipId后恢复。原空串/删除覆盖语义分别为隐藏生成字幕/恢复自动，实际SRT/烧录仍由原后端负责。合同见[Studio字幕](../exec-plans/sprint-studio-caption-editor.md)。
 
+即时字幕预览通过只读草稿POST复用修订验证、逐镜run转录选择及build_subtitles；导出与预览共享SRT毫秒量化、ASS百分秒分段/重叠层位。load_chain显式只读模式贯穿旁白依赖，非completed依赖拒绝，不触发任务恢复写入；正常保存/导出仍保留原恢复行为。前端请求绑定项目/父回执/方案/模式/有效草稿，防抖后取内存cue，换键同步隐旧字幕并丢弃迟到响应；播放与定位只按输出时钟查cue。见[草稿字幕预览合同](../exec-plans/sprint-studio-caption-preview.md)。
+
 ### 输出时间线文字与PNG图层
 
 domain creation_overlays定义输出整数帧范围、淡化与规范化几何；infrastructure overlay_assets把原PNG或本机FFmpeg文字sprite存为永久资产，回执绑定源/sprite哈希。修订metadata在whole-file hash下保存图层完整快照，省略继承、空数组清除，读回和渲染核对资产receipt。overlay_render在safe-area后用RGB合成保留奇数坐标，再叠字幕/静态角标/水印；源速/转场不改变图层的输出时钟。

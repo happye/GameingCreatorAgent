@@ -2,7 +2,7 @@
 
 import re
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from fractions import Fraction
 
 
@@ -86,3 +86,15 @@ def parse_srt(text: str) -> tuple[SubtitleCue, ...]:
             )
         )
     return tuple(cues)
+
+
+def quantize_srt(cues: tuple[SubtitleCue, ...]) -> tuple[SubtitleCue, ...]:
+    """Round-trip the export format while retaining each cue's clip identity."""
+    ordered = sorted(cues, key=lambda cue: (cue.start, cue.end))
+    identities = [
+        cue for cue in ordered if (cue.start * 1000).__floor__() < (cue.end * 1000).__floor__()
+    ]
+    return tuple(
+        replace(saved, clip_index=original.clip_index)
+        for saved, original in zip(parse_srt(serialize_srt(cues)), identities, strict=True)
+    )

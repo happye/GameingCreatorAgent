@@ -210,7 +210,7 @@ export function ClipInspector({editing, index, onSeek, basket}) {
             <label class="form-row">镜头字幕<textarea class="input" rows="3" disabled=${replacing} value=${caption?.text ?? ""}
                 onInput=${(e) => editing.ops.caption(clip.clipId, e.currentTarget.value)} /></label>
             <p class="hint" role="status" aria-label="镜头字幕状态">${!caption ? "自动字幕：有原片转录时使用语音字幕，无转录则无字幕。" : caption.text === "" ? "此镜头不显示字幕。" : "手写字幕：覆盖整个镜头。"}</p>
-            <p class="hint">仅修改成片字幕，不修改原片转录。最多 2000 字；保存后导出生效。在导出页选择 SRT 或烧入字幕；即时预览暂不显示字幕。</p>
+            <p class="hint">仅修改成片字幕，不修改原片转录。最多 2000 字；保存后导出生效。在导出页选择 SRT 或烧入字幕，即可预览内容与时机；字体排版以导出为准。</p>
             ${replacing && html`<p class="hint">先保存替换版本，再编辑新镜头字幕。</p>`}
             <div class="actions-row"><button class="btn ghost" disabled=${replacing || !caption} onClick=${() => editing.ops.caption(clip.clipId, null)}>恢复自动字幕</button>
                 <button class="btn ghost" disabled=${replacing} onClick=${() => editing.ops.caption(clip.clipId, "")}>此镜头不显示字幕</button></div>

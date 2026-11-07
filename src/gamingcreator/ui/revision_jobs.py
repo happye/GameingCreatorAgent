@@ -30,6 +30,7 @@ from gamingcreator.domain.creation_audio import AudioMix
 from gamingcreator.domain.creation_narration import NarrationSelection
 from gamingcreator.domain.creation_overlays import CreationOverlays
 from gamingcreator.domain.creation_presentation import PresentationOptions
+from gamingcreator.domain.creation_subtitles import SubtitleCue
 from gamingcreator.infrastructure.creation_files import write_creation
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.infrastructure.ffmpeg_render import FfmpegCreationRenderer
@@ -117,7 +118,12 @@ def _record(
 
 
 def load_chain(
-    jobs: Any, job_id: str, plan_id: str | None = None, *, pending: bool = False
+    jobs: Any,
+    job_id: str,
+    plan_id: str | None = None,
+    *,
+    pending: bool = False,
+    read_only: bool = False,
 ) -> Chain:
     """Read all ancestors, then validate from the original ready plan forward."""
     records = []
@@ -260,7 +266,13 @@ def load_chain(
             OverlayAssetLibrary(jobs.repository), request, overlays, plan.frames
         )
         narration = narration_jobs.resolve(
-            jobs, request, narration, root_state["projectId"], plan.frames, plan.fps
+            jobs,
+            request,
+            narration,
+            root_state["projectId"],
+            plan.frames,
+            plan.fps,
+            read_only=read_only,
         )
         edl, parent_sha = revised, digest
     ancestry = [
@@ -282,7 +294,7 @@ def load_chain(
         audio_mix,
         manifest,
         narration,
-        narration_jobs.asset(jobs, narration, root_state["projectId"])
+        narration_jobs.asset(jobs, narration, root_state["projectId"], read_only=read_only)
         if narration is not None
         else None,
         overlays,
@@ -387,21 +399,8 @@ async def render_revision(
         {"plans.json": chain.report, "edit-decision.json": chain.edl},
         (project,),
     )
-    runs = {timeline.run.run_id: timeline for timeline in chain.timelines}
     mode = request.get("subtitleMode", "none")
-    overrides = {item["clipId"]: item["text"] for item in chain.subtitle_overrides}
-    cues = (
-        ()
-        if mode == "none"
-        else build_subtitles(
-            chain.plan,
-            (),
-            per_clip=(runs[row["runId"]].transcripts for row in chain.edl["segments"]),
-            overrides=(
-                overrides.get(row["clipId"]) for row in editable_clips(chain.edl, chain.root_sha)
-            ),
-        )
-    )
+    cues = revision_subtitles(chain, mode)
     narration_kwargs: dict[str, Any] = {}
     if chain.narration is not None:
         narration_kwargs = {
@@ -466,3 +465,20 @@ def editable_clips(edl: dict[str, Any], root_sha: str) -> list[dict[str, Any]]:
     if edl.get("schemaVersion") == "edit-decision-revision-v4":
         edl = {**edl, "schemaVersion": "edit-decision-revision-v3"}
     return legacy_editable_clips(edl, root_sha)
+
+
+def revision_subtitles(chain: Chain, mode: str) -> tuple[SubtitleCue, ...]:
+    runs = {timeline.run.run_id: timeline for timeline in chain.timelines}
+    overrides = {item["clipId"]: item["text"] for item in chain.subtitle_overrides}
+    return (
+        ()
+        if mode == "none"
+        else build_subtitles(
+            chain.plan,
+            (),
+            per_clip=(runs[row["runId"]].transcripts for row in chain.edl["segments"]),
+            overrides=(
+                overrides.get(row["clipId"]) for row in editable_clips(chain.edl, chain.root_sha)
+            ),
+        )
+    )
