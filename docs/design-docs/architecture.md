@@ -114,3 +114,7 @@ domain creation_overlays定义输出整数帧范围、淡化与规范化几何�
 Studio叠加面板登记资产后更新本地版本状态，输出画布按导出比例适配，透明sprite与导出共用；加载/撤销epoch在异步返回和state更新两处核验，防止迟到登记改写新版本。图层越界显式阻止保存/导出，不能反向修改已烘焙在原录像里的logo。API与操作见[工作台API](inspection-workspace-api.md)，验收合同见[定时叠加](../exec-plans/sprint-timed-overlays.md)。
 
 AI图层编辑使用独立prompt/schema配对及显式图层snapshot；Chain.edl不携带图层，故必须单独把overlays和已核资产公开上下文纳入fingerprint。恢复旧请求按原版本构建逐字节兼容的快照/消息。模型提案仅给已有overlayId及结束/淡出整数帧，Application从可信selection重建完整层，UI临时预览后再次验证再原子应用clips+overlays；保存/导出不另开持久化路径。真实HTTP和FFmpeg以fake文本transport验证，真实模型理解质量尚未验收。合同见[AI图层时间](../exec-plans/sprint-ai-overlay-timing.md)。
+
+### Studio多平台包任务
+
+同一已保存publication通过项目限定的packages投影列出全部匹配尝试，复用原status/request/receipt身份且不在列表hash完成视频。Studio固定发布版本及profile快照后逐项等待终结，刷新恢复已接受任务，不自动补交尚未提交的平台。项目/open/works归属及每次await后的代次核验隔离旧回调；scoped会话意图在POST前保留未知requestId，显式重试仅在对应任务终结后更新。原包任务、OS锁、Free跨publication同render的平台限制及下载完整校验保持。见[多平台批量合同](../exec-plans/sprint-studio-multi-platform-packages.md)。

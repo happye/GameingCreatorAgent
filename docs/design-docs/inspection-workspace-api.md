@@ -187,3 +187,9 @@ GET imageUrl为 `/api/creation/overlay-assets/<id>/image?receipt=<sha>`，只允
 工作分支的revision请求可额外携带`overlays={schemaVersion:"creation-overlays-v1",items:[...]}`：省略继承、空items清除。保存及读回逐层核对assetId/assetReceiptSha256/kind/text和解码预算，按实际输出frames检查endFrame；剪短越界明确拒绝，不自动截断。editor有非空图层时返回overlays和overlayAssets（公开图片URL/尺寸，无本地路径）；旧无图层版本响应保持。旧EDL/v4 candidate manifest不改，overlays只进已受whole-file hash保护的revision metadata。渲染按整数输出帧及RGB几何合成图片，位于safe-area之后、字幕/角标/水印之前，PNG输入追加在全部音乐/旁白输入后；渲染前后重验资产，render回执绑定完整overlays快照。
 
 Studio检查器的“叠加”页支持登记文字/PNG、调整开始结束/淡入淡出秒（换算输出整数帧）、位置/宽度百分比及图层顺序。修改后“保存版本”保存完整快照，删除最后一层显式清除；撤销恢复当前已保存版本。文字修改需“更新文字”生成对应sprite。画布随导出横竖屏尺寸适配，预览与导出复用同一透明sprite；图层按列表从底到顶、`[startFrame,endFrame)`显示。已有录像中烘焙的logo不能当作独立图层修改。越界或淡化时长非法会显示原因并禁用保存/导出，登记未完成时亦禁用。Studio接入仍在工作分支验证，整批全量/最终审查前不计交付。
+
+## Studio 发布版本的平台包任务
+
+`GET /api/creation/jobs/{publicationId}/packages?projectId=…` 返回`{publicationJobId,publicationReceiptSha256,jobs}`。每行含`jobId,status,createdAt,updatedAt,error,parentJobId,parentReceiptSha256,profile,platform`，保留旧失败/中断尝试，不受项目任务目录最近100条截断。核父项目、publication/render完成状态、原request规范摘要与receipt整文件hash；列表不hash所有完成视频，详情/下载继续完整产物核验。匹配未终结任务沿既有get恢复中断；不新提交任务或转码。
+
+Studio批量沿既有单包POST逐项submit/settle，相同profile已完成则保留，运行中先等待；刷新仅恢复已提交任务。作用域绑定项目/pub/回执/profile；scoped package发送前把请求身份放入sessionStorage，网络结果不明及刷新复用原requestId。仅该意图绑定job已确认failed/interrupted才允许新意图；旧失败行不证明新发送已终结。存储不可用提交前报intent.storage，默认unscoped接口兼容。每次提交仍走原OS锁、幂等和套餐权限，不自动更换套餐或发布。

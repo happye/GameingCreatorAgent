@@ -933,7 +933,9 @@
             "implementation_evidence": [
                 "docs/exec-plans/sprint-platform-packages.md",
                 "tests/test_platform_package.py",
-                "tests/test_platform_package_browser.py"
+                "tests/test_platform_package_browser.py",
+                "docs/exec-plans/sprint-studio-multi-platform-packages.md",
+                "tests/test_studio_multi_platform.py"
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

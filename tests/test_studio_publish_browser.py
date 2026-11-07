@@ -89,6 +89,8 @@ def test_publish_copy_cover_and_package(service, monkeypatch):  # noqa: F811
             return route.fulfill(
                 status=202, json={"jobId": PUB, "kind": "publication", "status": "pending"}
             )
+        if path == f"/api/creation/jobs/{PUB}/packages":
+            return route.fulfill(json={"jobs": []})
         if path == "/api/creation/packages":
             posted["package"] = json.loads(request.post_data)
             return route.fulfill(

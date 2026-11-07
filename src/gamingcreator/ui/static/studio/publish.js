@@ -21,30 +21,49 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout})
     const [form, setForm] = useState({title: "", description: "", tags: "", coverFrame: 0});
     const [profiles, setProfiles] = useState([]);
     const [platform, setPlatform] = useState("");
-    const [pkg, setPkg] = useState(null);
+    const [packages, setPackages] = useState([]);
+    const [selected, setSelected] = useState([]);
+    const epoch = useRef(0);
+    const polling = useRef(new AbortController());
+    const activeProject = useRef(project);
+    const shownProject = useRef(null);
+    const shownOpen = useRef(null);
+    const rejectedOpen = useRef(null);
+    if (activeProject.current !== project) { activeProject.current = project; epoch.current++; polling.current.abort(); polling.current = new AbortController(); }
+    useEffect(() => () => { epoch.current++; polling.current.abort(); }, []);
     const [busy, setBusy] = useState("");
     const [message, setMessage] = useState("");
     const video = useRef(null);
 
     useEffect(() => {
-        client.api("/api/creation/platform-profiles").then((data) => { setProfiles(data.profiles || []); setPlatform(data.profiles?.[0]?.Platform || ""); }).catch(() => setProfiles([]));
+        client.api("/api/creation/platform-profiles").then((data) => { setProfiles(data.profiles || []); setPlatform(data.profiles?.[0]?.Platform || ""); setSelected([data.profiles?.[0]?.Platform].filter(Boolean)); }).catch(() => setProfiles([]));
     }, []);
     // Open what was asked for (a video, publication or package from the bin), else the newest video.
     useEffect(() => {
-        if (open && ["render", "publication", "package"].includes(open.kind)) void show(open.id, open.kind);
-        else if (!renderId && renders[0]) void show(renders[0].jobId, "render");
+        const changedProject = shownProject.current !== null && shownProject.current !== project;
+        if (changedProject && open === shownOpen.current) rejectedOpen.current = open;
+        if (open !== rejectedOpen.current && open && ["render", "publication", "package"].includes(open.kind)) void show(open.id, open.kind);
+        else if ((!renderId || shownProject.current !== project) && renders[0]) void show(renders[0].jobId, "render");
+        else if (changedProject) { setPub(null); setPackages([]); setRenderId(""); setBusy(""); setMessage(""); }
+        shownProject.current = project; shownOpen.current = open;
     }, [open, project, renders.length]);
 
     const show = useCallback(async (id, kind) => {
-        setMessage(""); setPkg(null);
+        polling.current.abort(); polling.current = new AbortController();
+        const generation = ++epoch.current;
+        const current = () => generation === epoch.current;
+        setMessage(""); setPackages([]); setPub(null); setBusy("");
         try {
             let publicationId = id;
-            if (kind === "package") { const data = await client.api(`${jobPath(id)}/package`); setPkg({...data, jobId: id}); publicationId = data.publicationJobId; }
+            if (kind === "package") { const data = await client.api(`${jobPath(id)}/package`); if (!current()) return; publicationId = data.publicationJobId; }
             const data = await client.api(`${jobPath(publicationId)}/publication`);
+            if (!current()) return;
             setRenderId(data.renderJobId); setPub(data);
             setForm({title: data.title, description: data.description, tags: data.tags.join("，"), coverFrame: data.coverFrame});
-        } catch (error) { setMessage(error.message); }
-    }, []);
+            if (data.publicationJobId) await restore(data, generation);
+            return generation;
+        } catch (error) { if (current()) setMessage(error.message); }
+    }, [project]);
 
     const fps = pub ? pub.fps.numerator / pub.fps.denominator : 30;
     const dirty = pub && (form.title !== pub.title || form.description !== pub.description || tagList(form.tags).join("|") !== pub.tags.join("|") || form.coverFrame !== pub.coverFrame);
@@ -54,27 +73,93 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout})
     };
     const save = async () => {
         if (!pub) return;
+        const generation = epoch.current;
+        const current = () => generation === epoch.current;
         setBusy("publication"); setMessage("正在保存发布信息并截取封面…");
         try {
             const accepted = await client.submit("publication", {renderJobId: pub.renderJobId, expectedRenderReceiptSha256: pub.expectedRenderReceiptSha256,
                 coverFrame: form.coverFrame, title: form.title.trim(), description: form.description, tags: tagList(form.tags)});
+            if (!current()) return;
             const done = await client.settle(accepted.jobId);
+            if (!current()) return;
             if (done.status !== "completed") throw new Error(`保存失败：${done.error?.message || done.status}`);
             client.forgetIntent("publication"); onWorksChanged();
-            await show(done.jobId, "publication"); setMessage("已保存。可以生成平台包了。");
-        } catch (error) { setMessage(error.message); } finally { setBusy(""); }
+            setBusy("");
+            const shown = await show(done.jobId, "publication"); if (epoch.current !== shown) return; setMessage("已保存。可以生成平台包了。");
+        } catch (error) { if (current()) setMessage(error.message); } finally { if (current()) setBusy(""); }
     };
-    const buildPackage = async () => {
-        const profile = profiles.find((p) => p.Platform === platform);
-        if (!pub?.publicationJobId || !profile) return;
-        setBusy("package"); setMessage(`正在生成${PLATFORMS[platform] || platform}平台包（会转码，可能需要一分钟）…`);
+    const restore = async (snapshot, generation) => {
+        const data = await client.api(`${jobPath(snapshot.publicationJobId)}/packages`, {projectId: project});
+        if (generation !== epoch.current) return [];
+        setPackages(data.jobs);
+        for (const row of data.jobs) {
+            if (generation !== epoch.current) return data.jobs;
+            if (["pending", "running"].includes(row.status)) {
+                void client.settle(row.jobId, polling.current.signal, (state) => {
+                    if (generation === epoch.current) setPackages((rows) => rows.map((r) => r.jobId === row.jobId ? {...r, ...state} : r));
+                }).then(() => loadDetail(row, generation)).catch((error) => { if (generation === epoch.current) setMessage(error.message); });
+            } else if (row.status === "completed") void loadDetail(row, generation).catch((error) => { if (generation === epoch.current) setMessage(error.message); });
+        }
+        return data.jobs;
+    };
+    const loadDetail = async (row, generation) => {
+        const data = await client.api(`${jobPath(row.jobId)}/package`);
+        if (generation === epoch.current) setPackages((rows) => rows.map((r) => r.jobId === row.jobId ? {...r, ...data} : r));
+    };
+    const buildPackage = async (retry = null) => {
+        if (!pub?.publicationJobId) return;
+        const generation = epoch.current, snapshot = pub;
+        const current = () => generation === epoch.current;
+        const chosen = profiles.filter((p) => retry ? JSON.stringify(p) === JSON.stringify(retry.profile) : selected.includes(p.Platform));
+        setBusy("package"); setMessage("");
         try {
-            const accepted = await client.submit("package", {publicationJobId: pub.publicationJobId, expectedPublicationReceiptSha256: pub.publicationReceiptSha256, profile});
-            const done = await client.settle(accepted.jobId);
-            if (done.status !== "completed") throw new Error(`生成失败：${done.error?.message || done.status}`);
-            client.forgetIntent("package"); onWorksChanged();
-            setPkg({...(await client.api(`${jobPath(done.jobId)}/package`)), jobId: done.jobId}); setMessage("");
-        } catch (error) { setMessage(error.message); } finally { setBusy(""); }
+            const existing = await restore(snapshot, generation);
+            for (const profile of chosen) {
+                if (!current()) return;
+                const scope = JSON.stringify([project, snapshot.publicationJobId, snapshot.publicationReceiptSha256, profile]);
+                const attempts = existing.filter((r) => JSON.stringify(r.profile) === JSON.stringify(profile));
+                const running = attempts.find((r) => ["pending", "running"].includes(r.status));
+                if (running) {
+                    const done = await client.settle(running.jobId, polling.current.signal, (state) => {
+                        if (current()) setPackages((rows) => rows.map((r) => r.jobId === running.jobId ? {...r, ...state} : r));
+                    });
+                    if (!current()) return;
+                    if (done.status === "completed") await loadDetail(running, generation);
+                    continue;
+                }
+                if (attempts.some((r) => r.status === "completed")) continue;
+                if (retry) {
+                    if (!attempts.some((r) => r.jobId === retry.jobId && ["failed", "interrupted"].includes(r.status))) continue;
+                    client.retryPackageIntent(scope, attempts);
+                } else if (attempts.length) continue;
+                let accepted;
+                try {
+                    accepted = await client.submit("package", {publicationJobId: snapshot.publicationJobId, expectedPublicationReceiptSha256: snapshot.publicationReceiptSha256, profile}, scope);
+                } catch (error) {
+                    if (!current()) return;
+                    // Unknown transport outcome retains this scope's request id. Reconcile before any resubmit.
+                    await restore(snapshot, generation);
+                    if (!current()) return;
+                    setMessage(error.message);
+                    if (!error.status) return;
+                    setPackages((rows) => [...rows, {jobId: scope, profile, status: "denied", error: {message: error.message}}]);
+                    continue;
+                }
+                if (!current()) return;
+                const row = {...accepted, profile};
+                setPackages((rows) => [...rows.filter((r) => r.jobId !== row.jobId), row]);
+                const done = await client.settle(accepted.jobId, polling.current.signal, (state) => {
+                    if (current()) setPackages((rows) => rows.map((r) => r.jobId === row.jobId ? {...r, ...state} : r));
+                });
+                if (!current()) return;
+                onWorksChanged();
+                if (done.status === "completed") {
+                    try { await loadDetail(row, generation); }
+                    catch (error) { if (current()) setMessage(error.message); }
+                }
+            }
+        } catch (error) { if (current()) setMessage(error.message); }
+        finally { if (current()) setBusy(""); }
     };
 
     const saved = !!pub?.publicationJobId && !dirty;
@@ -104,16 +189,20 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout})
                 <div class="panel-head">平台包<span class="track-label">${saved ? "按平台预设转码、截封面、打包；不会自动发布" : "先保存右侧的发布信息"}</span></div>
                 <div class="track-area">
                     <div class="actions-row">
-                        <select class="select" aria-label="平台" value=${platform} onChange=${(e) => setPlatform(e.currentTarget.value)}>${profiles.map((p) => html`<option value=${p.Platform}>${PLATFORMS[p.Platform] || p.Platform}</option>`)}</select>
-                        <button class="btn" disabled=${!saved || !!busy || !platform} onClick=${buildPackage}>${busy === "package" ? "正在生成…" : "生成平台包"}</button>
+                        ${profiles.map((p) => html`<label><input type="checkbox" checked=${selected.includes(p.Platform)} disabled=${!!busy} onChange=${(e) => { setPlatform(p.Platform); setSelected(e.currentTarget.checked ? [...selected, p.Platform] : selected.filter((v) => v !== p.Platform)); }} />${PLATFORMS[p.Platform] || p.Platform}${selected.includes(p.Platform) && !packages.some((r) => r.profile?.Platform === p.Platform) ? " · 尚未提交" : ""}</label>`)}
+                        <button class="btn" disabled=${!saved || !!busy || !selected.length} onClick=${() => buildPackage()}>${busy === "package" ? "正在生成…" : "生成平台包"}</button>
                         <span class="hint">${["titleMaxChars", "descriptionMaxChars", "tagMaxCount"].filter((k) => limits[k]).map((k) => `${CHECKS[k]}≤${limits[k]}`).join(" · ")}</span>
                     </div>
-                    ${pkg && html`<div class="pkg-result">
+                    ${packages.map((pkg) => html`<div class="pkg-result">
+                        <p>${PLATFORMS[pkg.profile?.Platform] || ""} · ${pkg.status} ${pkg.error?.message || ""}</p>
+                        ${["failed", "interrupted"].includes(pkg.status) && html`<button class="btn ghost" disabled=${!!busy || !saved} onClick=${() => buildPackage(pkg)}>重试此平台</button>`}
+                        ${pkg.generationStatus && html`<div>
                         <p class="v">${PLATFORMS[pkg.profile?.Platform] || ""}：${pkg.generationStatus === "completed" ? "已生成" : "未完成"}；本地检查${STATUS[pkg.localChecks] || "未知"}${pkg.publicationEligibility === "blocked" ? "；发布受阻（含仅供测试的音乐等）" : ""}${pkg.watermark ? "；含水印" : ""}。平台官方规则、素材权利尚未核实。</p>
                         <p class="hint">${Object.entries(pkg.validation?.checks || {}).map(([k, s]) => `${CHECKS[k] || k}：${STATUS[s] || "未知"}`).join("　")}</p>
                         <div class="actions-row"><a class="btn" href=${`${jobPath(pkg.jobId)}/package-files/package.zip?download=1`} download="package.zip">下载平台包（zip）</a>
                             <a class="btn ghost" href=${`${jobPath(pkg.jobId)}/package-files/video.mp4?download=1`} download="video.mp4">只下载视频</a></div>
                     </div>`}
+                    </div>`)}
                 </div>
             </section>
         </div>

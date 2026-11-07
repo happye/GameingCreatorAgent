@@ -789,6 +789,105 @@ class CreationJobs:
                 state.pop("publicationArtifacts", None)
         return {key: value for key, value in state.items() if key != "resultReceiptSha256"}
 
+    def _projection_identity(self, directory: Path, state: dict[str, Any]) -> dict[str, Any]:
+        """Verify persisted identity without opening media artifacts."""
+        stored = self.read(directory / "request.json")
+        canonical = json.dumps(
+            {"kind": state["kind"], "request": stored["request"]},
+            sort_keys=True,
+            ensure_ascii=False,
+        )
+        if (
+            state["jobId"] != directory.name
+            or hashlib.sha256(canonical.encode()).hexdigest() != stored["digest"]
+        ):
+            raise ValueError("Invalid persisted job identity")
+        if state["status"] == "completed":
+            path = self.safe(directory / "result/receipt.json")
+            receipt = self.read(path)
+            schema = f"creation-{state['kind']}-receipt-v1"
+            parent_field = {
+                "publication": "parentRenderReceiptSha256",
+                "package": "parentPublicationReceiptSha256",
+            }.get(state["kind"])
+            if (
+                receipt.get("schemaVersion") != schema
+                or receipt.get("status") != "completed"
+                or (parent_field and receipt.get(parent_field) != stored["parentReceiptSha256"])
+            ):
+                raise ValueError("Receipt parent identity changed")
+            if (
+                hash_file(path) != state.get("resultReceiptSha256")
+                or receipt.get("jobId") != directory.name
+                or receipt.get("requestDigest") != stored["digest"]
+            ):
+                raise ValueError("Receipt identity changed")
+        return stored
+
+    def packages(self, publication_id: str, project_id: str) -> dict[str, Any]:
+        self.project(project_id)
+        directory = self.directory(publication_id)
+        parent = self.read(directory / "status.json")
+        if (
+            parent.get("kind") != "publication"
+            or parent.get("status") != "completed"
+            or parent.get("projectId") != project_id
+        ):
+            raise ValueError("Expected completed publication in this project")
+        stored_parent = self._projection_identity(directory, parent)
+        render_id = stored_parent["request"]["renderJobId"]
+        render_dir = self.directory(render_id)
+        render = self.read(render_dir / "status.json")
+        if (
+            render.get("kind") != "render"
+            or render.get("status") != "completed"
+            or render.get("projectId") != project_id
+            or parent.get("parentJobId") != render_id
+            or stored_parent["parentReceiptSha256"] != render.get("resultReceiptSha256")
+            or stored_parent["request"]["expectedRenderReceiptSha256"]
+            != render.get("resultReceiptSha256")
+        ):
+            raise ValueError("Publication parent identity changed")
+        self._projection_identity(render_dir, render)
+        digest = parent["resultReceiptSha256"]
+        rows = []
+        for state in self._statuses():
+            if (
+                state.get("projectId") != project_id
+                or state.get("kind") != "package"
+                or state.get("parentJobId") != publication_id
+            ):
+                continue
+            target = state.pop("directory")
+            stored = self._projection_identity(target, state)
+            request = stored["request"]
+            if (
+                request.get("publicationJobId") != publication_id
+                or request.get("expectedPublicationReceiptSha256") != digest
+                or stored.get("parentReceiptSha256") != digest
+            ):
+                raise ValueError("Package parent identity changed")
+            if state["status"] in {"pending", "running"}:
+                state = self.get(state["jobId"])
+            rows.append(
+                {
+                    **{
+                        key: state.get(key)
+                        for key in ("jobId", "status", "createdAt", "updatedAt", "error")
+                    },
+                    "parentJobId": publication_id,
+                    "parentReceiptSha256": digest,
+                    "profile": request["profile"],
+                    "platform": request["profile"]["Platform"],
+                }
+            )
+        rows.sort(key=lambda row: (row["createdAt"], row["jobId"]))
+        return {
+            "publicationJobId": publication_id,
+            "publicationReceiptSha256": digest,
+            "jobs": rows,
+        }
+
     def package(self, job_id: str) -> dict[str, Any]:
         state = self.get(job_id)
         if state["kind"] != "package" or state["status"] != "completed":

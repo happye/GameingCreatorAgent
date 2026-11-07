@@ -46,6 +46,7 @@ function App() {
     const [runId, setRunId] = useState("");
     const [view, setView] = useState(null);
     const [works, setWorks] = useState([]);
+    const [worksProject, setWorksProject] = useState("");
     const [selected, setSelected] = useState(null);
     const [status, setStatus] = useState("正在读取项目…");
     const [time, setTime] = useState(0);
@@ -78,7 +79,7 @@ function App() {
     }, []);
 
     useEffect(() => {
-        setRuns([]); setView(null); setSelected(null); setWorks([]);
+        setRuns([]); setView(null); setSelected(null); setWorks([]); setOpen(null);
         if (!project) return;
         setStatus("正在读取录像…");
         latestRuns((signal) => client.runs(project, signal)).then((result) => {
@@ -122,12 +123,12 @@ function App() {
     const toggleBasket = (event) => { if (event && currentRun) basket.toggle(event, currentRun, thumbOf(event)); };
 
     const reloadWorks = useCallback(() => {
-        if (project) latestWorks((signal) => client.creationJobs(project, signal)).then((result) => { if (result.ok) setWorks(result.value.jobs); });
+        if (project) latestWorks((signal) => client.creationJobs(project, signal)).then((result) => { if (result.ok) { setWorksProject(project); setWorks(result.value.jobs); } });
     }, [project]);
     const openWork = useCallback((job) => {
         if (!["plan", "revision", "render", "publication", "package"].includes(job.kind) || job.status !== "completed") return;
-        setOpen({id: job.jobId, kind: job.kind, at: Date.now()}); setWorkspace(["publication", "package"].includes(job.kind) ? "deliver" : "edit");
-    }, []);
+        setOpen({id: job.jobId, kind: job.kind, project, at: Date.now()}); setWorkspace(["publication", "package"].includes(job.kind) ? "deliver" : "edit");
+    }, [project]);
 
     const seek = useCallback((us, play = false) => {
         const el = video.current, target = SourceClock.sourceUsToPlayerSeconds(clock, us);
@@ -181,7 +182,7 @@ function App() {
         <${TopBar} ...${{workspace, setWorkspace, projects, project, setProject, layout, setLayout, status}} />
         ${workspace === "assets"
             ? html`<div class=${work}>
-                <${Bin} runs=${runs} runId=${runId} setRunId=${setRunId} works=${works} onOpen=${openWork} hidden=${!layout.bin}
+                <${Bin} runs=${runs} runId=${runId} setRunId=${setRunId} works=${worksProject === project ? works : []} onOpen=${openWork} hidden=${!layout.bin}
                     top=${html`<${ClipSearch} project=${project} runs=${runs} runId=${runId} basket=${basket} onShow=${(run, event) => showEvent(run.id, event.eventId)} />
                         <${BasketList} basket=${basket} onShow=${(item) => showEvent(item.runId, item.eventId, item)} onUse=${() => { setBasketAt(Date.now()); setWorkspace("edit"); }} />`} />
                 <div class="center">
@@ -191,8 +192,8 @@ function App() {
                 <${Inspector} view=${view} selected=${selected} run=${currentRun} hidden=${!layout.insp} inBasket=${!!selected && basket.ids.has(selected.eventId)} onBasket=${() => toggleBasket(selected)} onRange=${changeRange} />
             </div>`
             : workspace === "edit"
-                ? html`<${EditWorkspace} project=${project} runs=${runs} open=${open} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} />`
-                : html`<${PublishWorkspace} project=${project} works=${works} open=${open} onWorksChanged=${reloadWorks} layout=${layout} />`}
+                ? html`<${EditWorkspace} project=${project} runs=${runs} open=${open?.project === project ? open : null} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} />`
+                : html`<${PublishWorkspace} project=${project} works=${worksProject === project ? works : []} open=${open?.project === project ? open : null} onWorksChanged=${reloadWorks} layout=${layout} />`}
         ${workspace === "assets" && html`<div class="dock"><strong>提示</strong><span>左上角“搜索片段”按描述找画面，“+”或 B 键加入片段篮，再点“用片段篮生成方案”。一句话修改镜头在剪辑区底部。</span></div>`}
     </div>`;
 }

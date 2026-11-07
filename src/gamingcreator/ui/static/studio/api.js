@@ -31,18 +31,61 @@ export function sameOrigin(value, pathname) {
 // One request id per intent: resubmitting the same payload reuses it, so the server never
 // creates a duplicate job for a double click or a retry.
 const intents = new Map();
-export function requestId(kind, payload) {
-    const key = JSON.stringify(payload), known = intents.get(kind);
+const persisted = (kind, scope) => kind === "package" && !!scope;
+const intentSlot = (kind, scope) => `${kind}:${scope}`;
+const storageKey = (slot) => `studio-intent-v1:${slot}`;
+function intent(kind, scope) {
+    const slot = intentSlot(kind, scope);
+    if (persisted(kind, scope)) {
+        try {
+            const raw = sessionStorage.getItem(storageKey(slot));
+            const value = raw === null ? null : JSON.parse(raw);
+            if (value && (typeof value.key !== "string" || !/^[0-9a-f]{32}$/.test(value.id) || (value.jobId !== undefined && !/^[0-9a-f]{32}$/.test(value.jobId)))) throw new Error("invalid intent");
+            return value;
+        } catch { throw new ApiError("无法读取平台包请求身份，请恢复本页会话存储后重试；尚未发送新请求。", "intent.storage"); }
+    }
+    return intents.get(slot);
+}
+function saveIntent(kind, scope, value) {
+    const slot = intentSlot(kind, scope);
+    if (persisted(kind, scope)) {
+        try { sessionStorage.setItem(storageKey(slot), JSON.stringify(value)); }
+        catch { throw new ApiError("无法保存平台包请求身份，请允许本页会话存储后重试。", "intent.storage"); }
+    }
+    intents.set(slot, value);
+}
+export function requestId(kind, payload, scope = "") {
+    const key = JSON.stringify(payload), known = intent(kind, scope);
     if (known?.key === key) return known.id;
+    if (known && persisted(kind, scope)) throw new ApiError("平台包请求身份与内容不一致，不能创建第二个请求。", "intent.conflict");
     const id = Array.from(crypto.getRandomValues(new Uint8Array(16)), (v) => v.toString(16).padStart(2, "0")).join("");
-    intents.set(kind, {key, id});
+    saveIntent(kind, scope, {key, id});
     return id;
 }
-export const forgetIntent = (kind) => intents.delete(kind);
+export function forgetIntent(kind, scope = "") {
+    const slot = intentSlot(kind, scope);
+    if (persisted(kind, scope)) {
+        try { sessionStorage.removeItem(storageKey(slot)); }
+        catch { throw new ApiError("无法更新平台包请求身份，请恢复会话存储后重试。", "intent.storage"); }
+    }
+    intents.delete(slot);
+}
+export function retryPackageIntent(scope, attempts) {
+    const known = intent("package", scope);
+    // An old failed row says nothing about a newer POST still waiting for registration.
+    // Only the task acknowledged for this exact intent can authorize a fresh request id.
+    if (known?.jobId && attempts.some((row) => row.jobId === known.jobId && ["failed", "interrupted"].includes(row.status))) forgetIntent("package", scope);
+}
 
-export async function submit(kind, payload) {
+export async function submit(kind, payload, scope = "") {
     const path = {plan: "/api/creation/plans", revision: "/api/creation/revisions", render: "/api/creation/renders", narration: "/api/creation/narrations", publication: "/api/creation/publications", package: "/api/creation/packages"}[kind];
-    return api(path, {}, {body: {...payload, requestId: requestId(kind, payload)}});
+    const id = requestId(kind, payload, scope);
+    const accepted = await api(path, {}, {body: {...payload, requestId: id}});
+    if (persisted(kind, scope)) {
+        const current = intent(kind, scope);
+        if (current?.id === id && current.key === JSON.stringify(payload)) saveIntent(kind, scope, {...current, jobId: accepted.jobId});
+    }
+    return accepted;
 }
 export const job = (id, signal) => api(`/api/creation/jobs/${encodeURIComponent(id)}`, {}, {signal});
 

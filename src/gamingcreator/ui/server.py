@@ -1075,6 +1075,16 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return
             if path.startswith("/api/creation/jobs/"):
                 tail = path.removeprefix("/api/creation/jobs/")
+                if tail.endswith("/packages"):
+                    if set(query) != {"projectId"}:
+                        raise ValueError("Expected registered project ID")
+                    self._json(
+                        200,
+                        self.creation_jobs.packages(
+                            tail.removesuffix("/packages"), query["projectId"]
+                        ),
+                    )
+                    return
                 if "/narration-files/" in tail:
                     job_id, name = tail.split("/narration-files/", 1)
                     if query not in ({}, {"download": "1"}):
