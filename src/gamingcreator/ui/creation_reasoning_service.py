@@ -11,7 +11,18 @@ from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 from gamingcreator.application.budget import BudgetLedger
+from gamingcreator.application.creation_overlay_proposals import (
+    PROMPT_VERSION as OVERLAY_PROMPT_VERSION,
+)
+from gamingcreator.application.creation_overlay_proposals import (
+    SCHEMA_VERSION as OVERLAY_SCHEMA_VERSION,
+)
+from gamingcreator.application.creation_overlay_proposals import (
+    create_overlay_snapshot,
+    overlay_selection,
+)
 from gamingcreator.application.creation_proposals import (
+    SCHEMA_VERSION,
     CreationProposal,
     EditingSnapshot,
     canonical,
@@ -20,7 +31,11 @@ from gamingcreator.application.creation_proposals import (
     revision_for_application,
     validate_proposal,
 )
-from gamingcreator.application.creation_reasoning import ReasoningRequest, reasoning_request
+from gamingcreator.application.creation_reasoning import (
+    PROMPT_VERSION,
+    ReasoningRequest,
+    reasoning_request,
+)
 from gamingcreator.application.creation_replacements import candidate_manifest_sha
 from gamingcreator.application.plan_proposals import (
     PlanSnapshot,
@@ -35,6 +50,7 @@ from gamingcreator.application.providers import (
     ProviderStatus,
 )
 from gamingcreator.application.storage import InvocationStatus
+from gamingcreator.domain.creation_overlays import CreationOverlays
 from gamingcreator.infrastructure.creation_files import write_creation
 from gamingcreator.infrastructure.creation_reasoning_provider import (
     MODEL,
@@ -43,7 +59,9 @@ from gamingcreator.infrastructure.creation_reasoning_provider import (
 )
 from gamingcreator.infrastructure.http_transport import VisionTransport
 from gamingcreator.infrastructure.local_files import read_bounded
+from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
+from gamingcreator.ui.overlay_jobs import resolve_selection
 from gamingcreator.ui.revision_jobs import load_chain, prepare_revision
 
 if TYPE_CHECKING:
@@ -51,6 +69,45 @@ if TYPE_CHECKING:
 
 PREPARED_SCHEMA = "creation-reasoning-prepared-v1"
 RESULT_SCHEMA = "creation-reasoning-result-v1"
+
+
+def _editing_snapshot(chain: Any, job_id: str, overlay_mode: bool | None) -> EditingSnapshot:
+    parent = create_snapshot(job_id, chain.plan_id, chain.digest, chain.root_sha, chain.edl)
+    overlays = getattr(chain, "overlays", CreationOverlays(()))
+    if overlay_mode is False or (overlay_mode is None and not overlays.items):
+        return parent
+    return create_overlay_snapshot(
+        parent, overlays.to_json(), [asset.public() for asset in chain.overlay_assets]
+    )
+
+
+def _overlay_mode(record: dict[str, Any]) -> bool:
+    request = record["request"]
+    pair = (request["prompt_version"], request["schema_version"])
+    if pair == (PROMPT_VERSION, SCHEMA_VERSION):
+        return False
+    if pair == (OVERLAY_PROMPT_VERSION, OVERLAY_SCHEMA_VERSION):
+        return True
+    raise ValueError("Unsupported editing request version pair.")
+
+
+def _proposal_overlays(
+    jobs: Any,
+    chain: Any,
+    current: EditingSnapshot,
+    response: dict[str, Any],
+    revised: dict[str, Any],
+) -> CreationOverlays:
+    inherited = getattr(chain, "overlays", CreationOverlays(()))
+    selected = (
+        overlay_selection(current, response)
+        if "overlaySnapshotVersion" in current.payload
+        else inherited
+    )
+    frames = max(r["outputStartFrame"] + r["outputFrames"] for r in revised["segments"])
+    return resolve_selection(
+        OverlayAssetLibrary(jobs.repository), {"overlays": selected.to_json()}, inherited, frames
+    )
 
 
 def _jsonable(value: Any) -> Any:
@@ -144,10 +201,12 @@ class CreationReasoningService:
             raise ValueError("Invalid prepared hash.")
         return self.jobs.safe(self.root / prepared_hash)
 
-    def _snapshot(self, job_id: str, plan_id: str) -> tuple[EditingSnapshot, str]:
+    def _snapshot(
+        self, job_id: str, plan_id: str, overlay_mode: bool | None = None
+    ) -> tuple[EditingSnapshot, str]:
         chain = load_chain(self.jobs, job_id, plan_id)
         return (
-            create_snapshot(job_id, chain.plan_id, chain.digest, chain.root_sha, chain.edl),
+            _editing_snapshot(chain, job_id, overlay_mode),
             chain.project_id,
         )
 
@@ -234,7 +293,9 @@ class CreationReasoningService:
     def _current(self, record: dict[str, Any]) -> EditingSnapshot | PlanSnapshot:
         if record.get("purpose", "edit") == "plan":
             return self._current_plan(record)
-        snapshot, project_id = self._snapshot(record["jobId"], record["planId"])
+        snapshot, project_id = self._snapshot(
+            record["jobId"], record["planId"], _overlay_mode(record)
+        )
         if (
             project_id != record["projectId"]
             or snapshot.fingerprint != record["snapshotFingerprint"]
@@ -393,9 +454,7 @@ class CreationReasoningService:
         current = self._current(record)
         assert isinstance(current, EditingSnapshot)
         chain = load_chain(self.jobs, record["jobId"], record["planId"])
-        verified = create_snapshot(
-            record["jobId"], chain.plan_id, chain.digest, chain.root_sha, chain.edl
-        )
+        verified = _editing_snapshot(chain, record["jobId"], _overlay_mode(record))
         if verified.fingerprint != current.fingerprint:
             raise ValueError("Saved parent changed before application.")
         revised = revision_for_application(proposal, current, candidate_manifest=chain.manifest)
@@ -405,12 +464,15 @@ class CreationReasoningService:
             revised, _ = prepare_revision(
                 self.jobs,
                 {
-                    "clips": proposal.response["clips"],
+                    "clips": clip_rows(current)
+                    if proposal.response["kind"] == "overlay_edit_proposal"
+                    else proposal.response["clips"],
                     "replacements": [],
                     "candidateManifestSha256": candidate_manifest_sha(chain.manifest),
                 },
                 chain,
             )
+        _proposal_overlays(self.jobs, chain, current, json.loads(proposal.response_json), revised)
         return revised
 
     def proposal_for_editor(
@@ -437,13 +499,22 @@ class CreationReasoningService:
             current.payload["rootReceiptSha256"],
             revised,
         )
-        return {
+        result: dict[str, Any] = {
             "clips": clip_rows(snapshot),
             "preparedHash": prepared_hash,
             "jobId": job_id,
             "planId": plan_id,
             "expectedParentReceiptSha256": expected_parent_receipt_sha256,
         }
+        chain = load_chain(self.jobs, job_id, plan_id)
+        verified = _editing_snapshot(chain, job_id, _overlay_mode(record))
+        if verified.fingerprint != current.fingerprint:
+            raise ValueError("Saved parent changed before editor preview.")
+        response = self.read_result(prepared_hash)["proposal"]["response"]
+        selected = _proposal_overlays(self.jobs, chain, current, response, revised)
+        if _overlay_mode(record) or selected.items:
+            result["overlays"] = selected.to_json()
+        return result
 
 
 def _validated_output(snapshot: EditingSnapshot | PlanSnapshot, output: Any) -> dict[str, Any]:

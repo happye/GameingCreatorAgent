@@ -103,6 +103,12 @@ export function useClipEditor(project) {
             const byId = new Map(clips.map((c) => [c.clipId, c]));
             return newRows.map((row) => ({...byId.get(row.clipId), ...row}));
         }),
+        applyProposal: (proposal) => setState((s) => {
+            if (s.status !== "ready") return s;
+            const byId = new Map(s.clips.map((c) => [c.clipId, c]));
+            const clips = proposal.clips.map((row) => ({...byId.get(row.clipId), ...row}));
+            return {...s, clips, overlays: proposal.overlays?.items ?? s.overlays, dirty: true};
+        }),
         mix: (patch) => setState((s) => (s.status === "ready" ? {...s, audio: {...s.audio, mix: {...s.audio.mix, ...patch}}, dirty: true} : s)),
         overlays: (items, assets, expectedEpoch) => setState((s) => (s.status === "ready" && (expectedEpoch === undefined || expectedEpoch === overlayEpoch.current)
             ? {...s, overlays: items, overlayAssets: assets ?? s.overlayAssets, dirty: true} : s)),
@@ -243,12 +249,12 @@ function LocalCommandDock({editing, onPreview}) {
     </form>`;
 }
 
-export function CommandDock({editing, onPreview}) {
+export function CommandDock({editing, onPreview, onOverlayPreview = () => {}}) {
     const [mode, setMode] = useState("local");
     return html`<div class="assistant-host"><label class="assistant-mode">创作助手模式
-        <select class="select" aria-label="创作助手模式" value=${mode} onChange=${(e) => { onPreview(null); setMode(e.currentTarget.value); }}>
+        <select class="select" aria-label="创作助手模式" value=${mode} onChange=${(e) => { onPreview(null); onOverlayPreview(null); setMode(e.currentTarget.value); }}>
             <option value="local">本地指令（免费）</option><option value="ai">AI对话（按次确认）</option>
         </select></label>
-        ${mode === "local" ? html`<${LocalCommandDock} editing=${editing} onPreview=${onPreview} />` : html`<${ReasoningDock} editing=${editing} onPreview=${onPreview} />`}
+        ${mode === "local" ? html`<${LocalCommandDock} editing=${editing} onPreview=${onPreview} />` : html`<${ReasoningDock} editing=${editing} onPreview=${onPreview} onOverlayPreview=${onOverlayPreview} />`}
     </div>`;
 }

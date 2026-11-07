@@ -71,8 +71,10 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     const planVideo = useRef(null), planVideoNext = useRef(null), resultVideo = useRef(null), work = useRef(null), restoring = useRef(null);
     const editing = useClipEditor(project);
     const [commandRows, setCommandRows] = useState(null);
+    const [commandOverlays, setCommandOverlays] = useState(null);
+    const commandPreview = !!commandRows || !!commandOverlays;
     // A monotonic edit generation preserves changes even after an A/B/A roundtrip.
-    const adoptionView = [project, planJob?.jobId, planId, editing.clips, editing.audio, editing.replacements, editing.overlays, commandRows];
+    const adoptionView = [project, planJob?.jobId, planId, editing.clips, editing.audio, editing.replacements, editing.overlays, commandRows, commandOverlays];
     const adoptionGuard = useRef({view: adoptionView, generation: 0});
     if (adoptionView.some((value, index) => value !== adoptionGuard.current.view[index])) {
         adoptionGuard.current = {view: adoptionView, generation: adoptionGuard.current.generation + 1};
@@ -184,7 +186,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     const music = useMusicCatalog();
     const [audioBusy, setAudioBusy] = useState(false);
     const saveReason = !editable ? "正在读取可编辑镜头" : busy ? "任务正在处理，完成后可保存"
-        : commandRows ? "请先应用或取消创作助手的改动" : audioBusy ? "声音任务正在处理，完成后可保存" : overlayBusy ? "叠加素材正在处理，完成后可保存"
+        : commandPreview ? "请先应用或取消创作助手的改动" : audioBusy ? "声音任务正在处理，完成后可保存" : overlayBusy ? "叠加素材正在处理，完成后可保存"
         : problem || (!editing.dirty ? "修改镜头、声音或叠加后可保存新版本" : "");
     // The inspector has three pages so sound and export stay reachable while a clip is selected.
     const [inspTab, setInspTab] = useState("shot");
@@ -238,11 +240,11 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         const onKey = (event) => {
             if (event.target.closest("input, textarea, select") || mode !== "plan" || !items.length) return;
             if (event.key === " ") { event.preventDefault(); player.toggle(); }
-            if ((event.key === "Delete" || event.key === "Backspace") && editing.selectedId && editable && !commandRows) { event.preventDefault(); editing.ops.remove(editing.selectedId); }
+            if ((event.key === "Delete" || event.key === "Backspace") && editing.selectedId && editable && !commandPreview) { event.preventDefault(); editing.ops.remove(editing.selectedId); }
             if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); void player.seek(player.outUs + (event.key === "ArrowLeft" ? -1 : 1) * (event.shiftKey ? 5e6 : 1e6), player.playing); }
         };
         addEventListener("keydown", onKey); return () => removeEventListener("keydown", onKey);
-    }, [player, mode, items, editing, editable, commandRows]);
+    }, [player, mode, items, editing, editable, commandPreview]);
 
     const cls = `work edit${layout.bin ? "" : " no-bin"}${layout.insp ? "" : " no-insp"}`;
     const selectedIndex = editable ? editing.clips.findIndex((c) => c.clipId === editing.selectedId) : -1;
@@ -257,16 +259,16 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                     onPick=${() => { if (overlayBusy || audioBusy || busy) return; if (editing.dirty && !confirmLeave()) return; setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommandRows(null); lastJob(project, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
                     : html`<p class="note">填好需求后点“生成方案”。方案只是剪辑清单，生成很快；选中后可以直接预览，不用先渲染。</p>`}
                 ${planJob ? html`<${PlanReasoningPanel} key=${`${project}:${planJob.jobId}`} project=${project} jobId=${planJob.jobId}
-                    disabled=${!!busy || editing.dirty || !!commandRows || audioBusy || overlayBusy} onAdopt=${adoptPlans} />` : null}
+                    disabled=${!!busy || editing.dirty || commandPreview || audioBusy || overlayBusy} onAdopt=${adoptPlans} />` : null}
             </div>
         </aside>
         <div class="center">
             <section class="viewer" aria-label="预览窗">
-                <div class="stage" ref=${stage}>
-                    <div class="program-frame" hidden=${mode !== "plan" || !items.length} style=${{width: `${canvas.width}px`, height: `${canvas.height}px`}}>
+                <div class="stage" ref=${stage} style=${{position: "relative"}}>
+                    <div class="program-frame" hidden=${mode !== "plan" || !items.length} style=${{position: "absolute", overflow: "hidden", left: "50%", top: "50%", transform: "translate(-50%, -50%)", width: `${canvas.width}px`, height: `${canvas.height}px`}}>
                     <video ref=${planVideo} hidden=${mode !== "plan" || !items.length} playsinline preload="metadata" onClick=${() => { if (!previewProblem) player.toggle(); }}></video><video ref=${planVideoNext} hidden=${mode !== "plan" || !items.length} playsinline preload="auto" onClick=${() => { if (!previewProblem) player.toggle(); }}></video>${sound}
-                    ${editable ? html`<div class="overlay-scale" style=${{width: `${canvasWidth}px`, height: `${canvasHeight}px`, transform: `scale(${canvas.scale})`}}>
-                        <${OverlayPreview} items=${editing.overlays} assets=${editing.overlayAssets} outUs=${player.outUs} fps=${fps} width=${canvasWidth} height=${canvasHeight} />
+                    ${editable ? html`<div class="overlay-scale" style=${{position: "absolute", pointerEvents: "none", left: 0, top: 0, width: `${canvasWidth}px`, height: `${canvasHeight}px`, transform: `scale(${canvas.scale})`}}>
+                        <${OverlayPreview} items=${commandOverlays ?? editing.overlays} assets=${editing.overlayAssets} outUs=${player.outUs} fps=${fps} width=${canvasWidth} height=${canvasHeight} />
                     </div>` : null}
                     </div>
                     ${mode === "plan" && (previewProblem || player.error) ? html`<div class="empty">${previewProblem || player.error}</div>` : null}
@@ -282,7 +284,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                     <span class="spacer"></span>
                     ${result ? html`<div class="tabs"><button aria-selected=${mode === "plan"} onClick=${() => setMode("plan")}>方案预览</button><button aria-selected=${mode === "result"} onClick=${() => { player.stop(); setMode("result"); }}>成片</button></div>` : null}
                     ${result && resultDownload ? html`<a class="btn ghost" href=${resultDownload} download>下载 MP4（${(result.sizeBytes / 1048576).toFixed(1)} MB）</a>` : null}
-                    <button class="btn" disabled=${!plan?.ready || !!busy || audioBusy || overlayBusy || !!problem || !!commandRows} title=${!plan ? "先在左侧选择一个方案" : !plan.ready ? "这个方案有缺口，不能导出" : problem || (commandRows ? "先应用或取消一句话修改" : editing.dirty ? "先保存为新版本，再渲染 MP4" : "按当前内容渲染 MP4")} onClick=${exportVideo}>${busy === "render" ? "正在生成…" : busy === "save" ? "正在保存…" : "导出成片"}</button>
+                    <button class="btn" disabled=${!plan?.ready || !!busy || audioBusy || overlayBusy || !!problem || commandPreview} title=${!plan ? "先在左侧选择一个方案" : !plan.ready ? "这个方案有缺口，不能导出" : problem || (commandPreview ? "先应用或取消一句话修改" : editing.dirty ? "先保存为新版本，再渲染 MP4" : "按当前内容渲染 MP4")} onClick=${exportVideo}>${busy === "render" ? "正在生成…" : busy === "save" ? "正在保存…" : "导出成片"}</button>
                 </div>
             </section>
             <${ProgramTrack} items=${items} totalUs=${player.totalUs} outUs=${player.outUs} thumb=${thumb} selectedId=${editing.selectedId} changed=${changed} preview=${!!commandRows} lanes=${editable ? audioLanes(editing.audio, music.tracks, fps, player.totalUs) : []}
@@ -311,7 +313,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                     ${editable && html`<p class="hint" role="status" aria-label="版本保存状态">${saveReason || "修改已就绪，可以保存新版本"}</p><div class="actions-row"><button class="btn ghost" disabled=${!!saveReason} title=${saveReason || "保存新版本"} onClick=${saveVersion}>保存版本</button>
                         <button class="btn ghost" disabled=${!editing.dirty || !!busy} onClick=${() => editing.ops.reset()}>撤销修改</button></div>`}</div>`}
                 <div hidden=${inspTab !== "shot"}>
-                ${selectedIndex >= 0 && !commandRows ? html`<${ClipInspector} editing=${editing} index=${selectedIndex} onSeek=${seekClip} basket=${basket} />`
+                ${selectedIndex >= 0 && !commandPreview ? html`<${ClipInspector} editing=${editing} index=${selectedIndex} onSeek=${seekClip} basket=${basket} />`
                     : plan ? html`<p class="hint">点时间轴上的一个镜头，可以裁短、调速、换顺序或替换画面。</p><${PlanInspector} plan=${plan} groups=${groups} count=${items.length} totalUs=${player.totalUs} shot=${null} />` : html`<p class="note">选中方案后，这里显示它的时长、镜头和缺口。</p>`}
                 </div>
                 <div hidden=${inspTab !== "sound"}>
@@ -319,13 +321,13 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                     : html`<p class="note">${plan ? "这个方案还不能编辑声音（正在读取或只能导出）。" : "先在左侧选一个方案，再在这里加旁白和配乐。"}</p>`}
                 </div>
                 <div hidden=${inspTab !== "overlay"}>
-                ${editable ? html`<${OverlayPanel} key=${`${project}:${editing.base?.jobId}:${editing.base?.planId}`} editing=${editing} fps=${fps} totalFrames=${totalFrames} canvasWidth=${canvasWidth} canvasHeight=${canvasHeight} onBusy=${setOverlayBusy} disabled=${!!busy || !!commandRows} />`
+                ${editable ? html`<${OverlayPanel} key=${`${project}:${editing.base?.jobId}:${editing.base?.planId}`} editing=${editing} fps=${fps} totalFrames=${totalFrames} canvasWidth=${canvasWidth} canvasHeight=${canvasHeight} onBusy=${setOverlayBusy} disabled=${!!busy || commandPreview} />`
                     : html`<p class="note">选中可编辑的方案后，可以添加定时文字或PNG图片。</p>`}
                 </div>
             </div>
         </aside>
     </div>
-    <${CommandDock} editing=${editing} onPreview=${setCommandRows} />`;
+    <${CommandDock} editing=${editing} onPreview=${setCommandRows} onOverlayPreview=${setCommandOverlays} />`;
 }
 
 function audioLanes(audio, tracks, fps, totalUs) {

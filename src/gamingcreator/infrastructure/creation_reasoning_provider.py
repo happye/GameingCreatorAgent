@@ -11,6 +11,12 @@ from time import monotonic
 from typing import Any
 
 from gamingcreator.application.budget import BudgetLedger, InvocationRecorder
+from gamingcreator.application.creation_overlay_proposals import (
+    PROMPT_VERSION as OVERLAY_PROMPT_VERSION,
+)
+from gamingcreator.application.creation_overlay_proposals import (
+    SCHEMA_VERSION as OVERLAY_SCHEMA_VERSION,
+)
 from gamingcreator.application.creation_proposals import SCHEMA_VERSION, canonical
 from gamingcreator.application.creation_reasoning import PROMPT_VERSION, ReasoningRequest
 from gamingcreator.application.plan_proposals import SCHEMA_VERSION as PLAN_SCHEMA_VERSION
@@ -115,6 +121,7 @@ class DeepSeekCreationReasoningProvider:
     def _payload(self, request: ReasoningRequest) -> dict[str, object]:
         if (request.prompt_version, request.schema_version) not in {
             (PROMPT_VERSION, SCHEMA_VERSION),
+            (OVERLAY_PROMPT_VERSION, OVERLAY_SCHEMA_VERSION),
             (PLAN_PROMPT_VERSION, PLAN_SCHEMA_VERSION),
         }:
             raise ValueError("Unsupported reasoning request version.")

@@ -61,6 +61,10 @@ class ReasoningOutcome:
 
 
 def reasoning_request(snapshot: EditingSnapshot, instruction: str) -> ReasoningRequest:
+    if "overlaySnapshotVersion" in snapshot.payload:
+        from gamingcreator.application.creation_overlay_proposals import overlay_reasoning_request
+
+        return overlay_reasoning_request(snapshot, instruction)
     if not isinstance(instruction, str) or not instruction.strip() or len(instruction) > 8000:
         raise ValueError("Instruction must contain 1–8000 characters.")
     edl = snapshot.payload["parent_edl"]

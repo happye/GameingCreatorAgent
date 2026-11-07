@@ -4,7 +4,20 @@ import {useEffect, useLayoutEffect, useRef, useState} from "../vendor/hooks.modu
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
 
+import {clipFrames} from "./preview.js";
+
 const html = htm.bind(h);
+export function overlayProposalItems(editing, patch) {
+    if (!patch || Object.keys(patch).sort().join() !== "endFrame,fadeOutFrames,overlayId") throw new Error("图层建议格式无效");
+    const item = editing.overlays.find((row) => row.overlayId === patch.overlayId);
+    const total = editing.clips.reduce((n, row) => n + clipFrames(row, editing.editor.fps) - (row.transitionIn?.frames || 0), 0);
+    if (!item || !editing.overlayAssets.some((a) => a.assetId === item.assetId && a.assetReceiptSha256 === item.assetReceiptSha256)
+        || !Number.isSafeInteger(patch.endFrame) || patch.endFrame <= item.startFrame || patch.endFrame > total
+        || !Number.isSafeInteger(patch.fadeOutFrames) || patch.fadeOutFrames < 0
+        || item.fadeInFrames + patch.fadeOutFrames > patch.endFrame - item.startFrame) throw new Error("图层建议超出当前图层范围");
+    return editing.overlays.map((row) => row === item ? {...row, endFrame: patch.endFrame, fadeOutFrames: patch.fadeOutFrames} : row);
+}
+const noop = () => {};
 const empty = () => ({quote: null, result: null, busy: "", message: "", confirmed: false, sent: false});
 const post = (body) => client.api("/api/creation/reasoning", {}, {body});
 const STORE = "studio-reasoning-attempts-v1";
@@ -16,15 +29,15 @@ function remember(editing, quote, text) {
     catch { return false; }
 }
 
-function useReasoning(editing, text, onPreview) {
+function useReasoning(editing, text, onPreview, onOverlayPreview) {
     const [state, setState] = useState(empty);
     const [available, setAvailable] = useState(false);
-    const key = JSON.stringify([editing.project, editing.base, editing.editor?.expectedParentReceiptSha256, editing.dirty, editing.rows(), text]);
+    const key = JSON.stringify([editing.project, editing.base, editing.editor?.expectedParentReceiptSha256, editing.status, editing.dirty, editing.rows(), editing.overlays, editing.audio, editing.replacements, text]);
     const live = useRef({key, generation: 0, mounted: true});
     if (live.current.key !== key) { live.current.key = key; live.current.generation += 1; }
     const generation = live.current.generation;
-    useLayoutEffect(() => { setState(empty()); onPreview(null); }, [key]);
-    useLayoutEffect(() => () => { live.current.mounted = false; onPreview(null); }, []);
+    useLayoutEffect(() => { setState(empty()); onPreview(null); onOverlayPreview(null); }, [key]);
+    useLayoutEffect(() => () => { live.current.mounted = false; onPreview(null); onOverlayPreview(null); }, []);
     useEffect(() => {
         let active = true;
         client.api("/api/creation/reasoning/config").then((data) => { if (active) setAvailable(data.available === true); }).catch(() => {});
@@ -35,12 +48,14 @@ function useReasoning(editing, text, onPreview) {
     return {...state, available, valid, update, key};
 }
 
-function reasoningActions(flow, editing, text, onPreview) {
+function reasoningActions(flow, editing, text, onPreview, onOverlayPreview) {
     const identity = {jobId: editing.base?.jobId, planId: editing.base?.planId};
     const ready = editing.status === "ready" && !editing.dirty;
     const show = (data) => {
         if (!flow.valid()) return;
         const response = data.proposal?.response;
+        const overlays = response?.kind === "overlay_edit_proposal" ? overlayProposalItems(editing, response.overlayEdit) : null;
+        onOverlayPreview(overlays);
         flow.update({result: data, message: response?.message || "调用未产生可用建议；失败或未知费用不会自动重试。"});
         onPreview(response?.kind === "edit_proposal" ? response.clips : null);
     };
@@ -52,7 +67,7 @@ function reasoningActions(flow, editing, text, onPreview) {
     return {
         prepare: () => ready && text.trim() && run("prepare", async () => {
             const quote = await post({action: "prepare", ...identity, instruction: text.trim()});
-            flow.update({quote, result: null, confirmed: false, sent: false}); if (flow.valid()) onPreview(null);
+            flow.update({quote, result: null, confirmed: false, sent: false}); if (flow.valid()) { onPreview(null); onOverlayPreview(null); }
         }),
         execute: () => {
             if (!ready || !flow.quote || !flow.confirmed || flow.sent || !flow.available) return;
@@ -64,23 +79,29 @@ function reasoningActions(flow, editing, text, onPreview) {
         },
         recover: () => flow.quote && run("result", async () => show(await post({action: "result", preparedHash: flow.quote.preparedHash}))),
         restore: (saved) => ready && saved.parentKey === parentKey(editing) && run("result", async () => {
-            flow.update({quote: saved.quote, result: null, sent: true, confirmed: false}); onPreview(null);
+            flow.update({quote: saved.quote, result: null, sent: true, confirmed: false}); onPreview(null); onOverlayPreview(null);
             show(await post({action: "result", preparedHash: saved.quote.preparedHash}));
         }),
-        apply: () => ready && flow.result?.proposal?.response.kind === "edit_proposal" && run("validate", async () => {
+        apply: () => ready && ["edit_proposal", "overlay_edit_proposal"].includes(flow.result?.proposal?.response.kind) && run("validate", async () => {
             const data = await post({action: "validate", preparedHash: flow.quote.preparedHash, ...identity, expectedParentReceiptSha256: editing.editor.expectedParentReceiptSha256});
             if (!flow.valid()) return;
-            onPreview(null); editing.ops.apply(data.clips);
+            const response = flow.result.proposal.response;
+            if (response.kind === "overlay_edit_proposal") {
+                const expected = overlayProposalItems(editing, response.overlayEdit), items = data.overlays?.items;
+                if (!Array.isArray(items) || items.length !== expected.length || expected.some((item, i) =>
+                    Object.keys(item).length !== Object.keys(items[i]).length || Object.entries(item).some(([k, v]) => items[i][k] !== v))) throw new Error("图层验证结果与预览不一致");
+            }
+            onPreview(null); onOverlayPreview(null); editing.ops.applyProposal(data);
         }),
-        discard: () => { flow.update(empty()); onPreview(null); },
+        discard: () => { flow.update(empty()); onPreview(null); onOverlayPreview(null); },
     };
 }
 
-export function ReasoningDock({editing, onPreview}) {
+export function ReasoningDock({editing, onPreview, onOverlayPreview = noop}) {
     const [text, setText] = useState("");
     const [restoring, setRestoring] = useState(null);
-    const flow = useReasoning(editing, text, onPreview);
-    const actions = reasoningActions(flow, editing, text, onPreview);
+    const flow = useReasoning(editing, text, onPreview, onOverlayPreview);
+    const actions = reasoningActions(flow, editing, text, onPreview, onOverlayPreview);
     const ready = editing.status === "ready" && !editing.dirty;
     const identity = parentKey(editing);
     useEffect(() => {
@@ -117,6 +138,8 @@ export function ReasoningDock({editing, onPreview}) {
             : `${flow.result.metadata?.usage?.cost_status === "confirmed" ? "已确认费用" : "按价目估算费用"} ¥${flow.result.billing.knownCostCny}，以提供方账单为准。`}</p>`}
         ${response?.questions?.length ? html`<ul>${response.questions.map((q) => html`<li>${q}</li>`)}</ul>` : null}
         ${response?.kind === "edit_proposal" && html`<div class="actions-row"><span>改动预览：${flow.result.proposal.before_seconds.toFixed(1)} → ${flow.result.proposal.after_seconds.toFixed(1)} 秒；尚未应用。</span>
+            <button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI建议</button></div>`}
+        ${response?.kind === "overlay_edit_proposal" && html`<div class="actions-row"><span>图层预览：结束 ${(editing.overlays.find((o) => o.overlayId === response.overlayEdit.overlayId)?.endFrame / editing.editor.fps).toFixed(2)} → ${(response.overlayEdit.endFrame / editing.editor.fps).toFixed(2)} 秒；淡出 ${(editing.overlays.find((o) => o.overlayId === response.overlayEdit.overlayId)?.fadeOutFrames / editing.editor.fps).toFixed(2)} → ${(response.overlayEdit.fadeOutFrames / editing.editor.fps).toFixed(2)} 秒；尚未应用。</span>
             <button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI建议</button></div>`}
         ${flow.quote && html`<button type="button" class="btn ghost" disabled=${!!flow.busy} onClick=${actions.discard}>关闭本次建议</button>`}
     </section>`;
