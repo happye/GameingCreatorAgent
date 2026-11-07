@@ -8,6 +8,7 @@ import {editTimeline, shots, timeline, usePlanPlayer} from "./preview.js";
 import {ClipInspector, CommandDock, captionProblem, transitionProblem, useClipEditor} from "./clipedit.js";
 import {AudioPanel, narrationProblem, useAudioPreview, useMusicCatalog} from "./audio.js";
 import {PlanReasoningPanel} from "./planning.js";
+import {SubtitlePreview, useSubtitlePreview} from "./subtitles.js";
 import {OverlayPanel, OverlayPreview, overlayProblem} from "./overlays.js";
 
 const html = htm.bind(h);
@@ -183,6 +184,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     const groups = useMemo(() => shots(items), [items]);
     const urlFor = useCallback((runId) => client.mediaUrl(project, runId), [project]);
     const player = usePlanPlayer(planVideo, items, urlFor, planVideoNext, previewProblem);
+    const captionPreview = useSubtitlePreview(project, editing, shownClips, subtitles);
     const music = useMusicCatalog();
     const [audioBusy, setAudioBusy] = useState(false);
     const saveReason = !editable ? "正在读取可编辑镜头" : busy ? "任务正在处理，完成后可保存"
@@ -268,6 +270,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                     <div class="program-frame" hidden=${mode !== "plan" || !items.length} style=${{position: "absolute", overflow: "hidden", left: "50%", top: "50%", transform: "translate(-50%, -50%)", width: `${canvas.width}px`, height: `${canvas.height}px`}}>
                     <video ref=${planVideo} hidden=${mode !== "plan" || !items.length} playsinline preload="metadata" onClick=${() => { if (!previewProblem) player.toggle(); }}></video><video ref=${planVideoNext} hidden=${mode !== "plan" || !items.length} playsinline preload="auto" onClick=${() => { if (!previewProblem) player.toggle(); }}></video>${sound}
                     ${editable ? html`<div class="overlay-scale" style=${{position: "absolute", pointerEvents: "none", left: 0, top: 0, width: `${canvasWidth}px`, height: `${canvasHeight}px`, transform: `scale(${canvas.scale})`}}>
+                        <${SubtitlePreview} cues=${captionPreview.cues} outUs=${player.outUs} />
                         <${OverlayPreview} items=${commandOverlays ?? editing.overlays} assets=${editing.overlayAssets} outUs=${player.outUs} fps=${fps} width=${canvasWidth} height=${canvasHeight} />
                     </div>` : null}
                     </div>
@@ -303,6 +306,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                     <div class="k">导出设置（导出按钮在预览窗下方）</div>
                     <div class="pair even">
                         <label class="form-row">尺寸<select class="select" value=${size} onChange=${(e) => setSize(e.currentTarget.value)}><option value="1280,720">横屏 1280×720</option><option value="720,1280">竖屏 720×1280</option></select></label>
+                        <p role="status" aria-label="字幕预览状态">${captionPreview.status}</p>
                         <label class="form-row">字幕<select class="select" value=${subtitles} onChange=${(e) => setSubtitles(e.currentTarget.value)}><option value="none">不加字幕</option><option value="sidecar">导出 SRT</option><option value="burn">烧入并导出 SRT</option></select></label>
                     </div>
                 </div>

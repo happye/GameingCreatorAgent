@@ -189,3 +189,9 @@ GET imageUrl为 `/api/creation/overlay-assets/<id>/image?receipt=<sha>`，只允
 工作分支的revision请求可额外携带`overlays={schemaVersion:"creation-overlays-v1",items:[...]}`：省略继承、空items清除。保存及读回逐层核对assetId/assetReceiptSha256/kind/text和解码预算，按实际输出frames检查endFrame；剪短越界明确拒绝，不自动截断。editor有非空图层时返回overlays和overlayAssets（公开图片URL/尺寸，无本地路径）；旧无图层版本响应保持。旧EDL/v4 candidate manifest不改，overlays只进已受whole-file hash保护的revision metadata。渲染按整数输出帧及RGB几何合成图片，位于safe-area之后、字幕/角标/水印之前，PNG输入追加在全部音乐/旁白输入后；渲染前后重验资产，render回执绑定完整overlays快照。
 
 Studio检查器的“叠加”页支持登记文字/PNG、调整开始结束/淡入淡出秒（换算输出整数帧）、位置/宽度百分比及图层顺序。修改后“保存版本”保存完整快照，删除最后一层显式清除；撤销恢复当前已保存版本。文字修改需“更新文字”生成对应sprite。画布随导出横竖屏尺寸适配，预览与导出复用同一透明sprite；图层按列表从底到顶、`[startFrame,endFrame)`显示。已有录像中烘焙的logo不能当作独立图层修改。越界或淡化时长非法会显示原因并禁用保存/导出，登记未完成时亦禁用。Studio接入仍在工作分支验证，整批全量/最终审查前不计交付。
+
+## Studio 草稿字幕预览
+
+`POST /api/creation/subtitle-preview` 的body必填`projectId,parentJobId,planId,expectedParentReceiptSha256,clips,subtitleMode`；可选`subtitleOverrides,candidateManifestSha256,replacements`，其余body字段拒绝。clips沿既有修订格式，v4替换须携带匹配manifest及replacements。模式为`none|sidecar|burn`，返回`{mode,cues:[{startUs,endUs,text,lifted}]}`，时间为成片半开微秒区间。
+
+请求核父链、项目、方案、回执及替换身份，复用修订校验与实际导出的转录选择。sidecar按SRT毫秒向下取整，burn再按ASS百分秒分段，重叠时早镜头抬高；字幕安全字符与导出一致。只返回内存结果，不创建任务/修订或写转录/账本；旁白依赖也采用无恢复只读校验，非completed直接拒绝。没有转录则自动字幕为空，none返回空cue。Studio按有效草稿防抖查询并在换项目/父版本/模式时立即隐旧cue，不在播放、拖动或选镜头时发新请求。内容/时机可预览，字体排版以导出为准。
