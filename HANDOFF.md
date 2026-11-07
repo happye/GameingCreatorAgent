@@ -1,32 +1,34 @@
 # HANDOFF（覆盖快照）
 
-## 当前（2026-11-07，继续开发）
+## 当前（2026-11-07，持续开发）
 
-用户明确恢复开发，goal active，不因旧额度或旧暂停记录自行停工。分支codex/timed-overlays-20261107，P028定时文字/PNG叠加已接core→资产→HTTP→修订→Studio→真实渲染，仍待完整verify，尚未合main/交付。
+goal active。用户要求额度恢复后持续开发，不能因旧额度或旧暂停记录停工。root分支codex/timed-overlays-20261107已快进到1deb9fe，包含P028图层、AI图层时间提案及preview稳定性修复，尚未合main/交付。原4个未跟踪用户设计文档未动未暂存。
 
-## 主指标及已合main
+## 已完成及证据
 
-J1第四次人评仍not_usable，passes/质量不变。策划/转场完整4874通过/7跳过；音频graph/素材source-clock完整4899通过/7跳过（.cache/audio-source-full-verify.log，旧session71506退出0）已合main。模型fixture不当作真人AI质量。无真实云/付费调用，语音仍免费本机。
+main仍为上批音频/素材clock完整4899过/7跳过，策划/转场此前4874/7。J1第四次人评not_usable不变，passes/质量不翻。真实云/付费0，语音仍免费本机。
 
-## P028本批
+P028：domain输出整数帧[start,end)、Fraction淡化、半向上几何；16层/PNG8MiB/4096/16M/累计128MiB。永久asset保原PNG/透明CJK sprite，receipt绑定源与sprite，客户端无路径。revision省略继承/空清除，EDL/v4不改；RGB叠加在safe-area后字幕/角标/水印前，PNG输入不改音乐/旁白索引。Studio上传/文字/时间/淡化/位置/宽度/层级、保存/撤销/刷新/清空/素材箱打开revision均已接，absolute输出画布随横竖比例适配。不能抠除源录像烘焙logo。
 
-合同docs/exec-plans/sprint-timed-overlays.md；API文档inspection-workspace-api.md、用户creation-guide.md已同步。overlays.js已从资产树复制集成，旧树副本不要覆盖root后续修复。
+AI：create_overlay_snapshot显式绑定Chain.overlays与去重public资产，不能误认为EDL自带图层。模型只patch已有overlayId的endFrame/fadeOutFrames，v1请求逐字节恢复、新prompt/schema严格配对；v4保manifest，音频/其他层继承。UI临时预览不dirty，验证后原子apply clips+overlays再保存。原确认/费用/恢复闸门不变。合同sprint-ai-overlay-timing.md及工作台API/architecture/creation-guide已同步。fake语义不冒充真实模型质量。
 
-- domain输出整数帧[start,end)、Fraction淡化、规范化几何；最多16层/PNG8MiB/4096/16M/累计解码128MiB，文字120单行原值。永久资产artifacts/overlay-assets/uuid，原PNG保留，不进cache清理。
-- revision省略继承/空items清除，逐层receipt/kind/text/预算核对；不改EDL/v4 manifest；render回执绑定完整快照。PNG输入追加在音乐和旁白之后，RGB合成在safe-area后、字幕/角标/水印前。
-- Studio叠加页支持登记/上传、位置/宽度/时间/淡化/层级、保存/撤销/重开/清空。画布按横竖导出比例适配，成片模式隐藏live层。源片烘焙logo不能抠除。迟到登记用project/base/epoch双重核验；素材箱剪辑版本原来禁用打开，现已修复并真浏览器核验。
-- 独立guard Sol/high三处P2已闭环：GET沿用sprite receipt hash防校验后换字节；RGB保留奇数坐标；overlayFrame相对4ULP纠正65/127/130精确帧浮点退位。此前shared text validator和apostrophe路径修复也已复核。guard未重跑pytest，核源码/XML，不冒称人评。
+P028早期55/68/54，root相关85、重开9、像素/HTTP guard11；AI旧88/新14、UI21、真实HTTP+fake transport→保存刷新→真实MP4第60帧绿色像素1、组合25过。core整套clock106过。guard已复核资产换字节/奇数像素/浮点帧、sourceclock失败闭锁、AI快照/恢复/应用和本次取消请求边界。guard未重跑测试，核源码/XML。
 
-证据：前批55/68/54相关通过；本批guard11（.cache/overlay-guard-fixes.xml）；Studio3（overlay-studio-e2e.xml）；主树组合85（overlay-studio-integrated.xml）；素材箱重开联合9（overlay-reopen-integrated.xml）。新test_overlay_composition.py实证0.5x+2x、6帧转场共69帧、PNG/CJK输出时序与字幕/角标/水印覆盖顺序。Ruff与mypy206源已过。
+## 完整门禁与最新修复
 
-受影响99文件运行在147项处遇旧benchmark_source_clock nonzero-mp4定位超时（146过/1失败，overlay-affected.xml）；同一项单跑无改源码通过（overlay-clock-recheck.xml），不能称99全绿。待完整门禁验证，不靠缩阈值掩盖。所有pytest同树串行，运行期间不改受测源码。
+首轮root .cache/overlays-full-verify.log：3失败/4958过/7跳过，1500.19秒，session1472退出1。第二轮overlays-fixed-full-verify.log：4957过/7跳过/6失败/1error，1872.31秒，session59221退出1；监控exec cell53已结束。两轮都不能称全绿。
 
-## 下一步及保护
+修复已组合：
+- settleExact等目标进入seekable才赋值，原2ms/总deadline/token/同URL重载闭锁；低轴settle语义不改。reference恢复失败不可重试掩盖；nonzero初始header2.022在origin2.478前无canonical映射，不当作有效用户T恢复；有效T错位仍禁用。真实clock106项过。
+- absolute画布解决无CSS harness尺寸反馈与遮挡。
+- useLatest成功路径仍查本次controller.abort，阻止取消body解析返回null后读runs。
+- 选段onInput立即更新，避免失焦前被异步seek rerender覆盖。原范围/观察覆盖校验不变。
+- 稳态ducking使用4秒非循环fixture，等三路媒体时钟>=.25后录，原阈值不变；原1秒hook循环fixture保留，避免循环相位破坏稳态谱测量。assets/planning/audio联合23过。
 
-P028首轮3失败/4958过/7跳过，overlays-full-verify.log/session1472退出1。root修seekable/absolute画布/音频play采样屏障，7+26项过，998edc2已推。复验59221活跃，overlays-fixed-full-verify.log，14%两F继续收集。core修reference nonzero初始header2.022误恢复到origin2.478：beforeOrigin只跳过无canonical映射初始值，原容差不变，有效T恢复错误仍闭锁。5项定向、新3项及完整clock106项全过（core .cache/clock-origin-all.xml），guard边界通过。新修法未复制root，测试期间禁改root源码。
+最新root集成20项通过：.cache/overlay-ai-root-integrated.xml（session57307退出0），已确认import为root/src。root将运行scripts/verify.ps1完整组合门禁，日志.cache/overlays-combined-full-verify.log；待完整全绿才合main。共有venv editable指root，子树直接verify会清PYTHONPATH误导入root，因此完整门禁必须在root执行；不得删除工具链检查。当前源码应冻结到该运行结束。
 
-AI分支codex/overlay-assistant-20261107在preview树，fec55fa已推。旧88、新14、UI21、真实HTTP+fake transport→保存刷新→真实导出像素1过，Ruff/mypy207源及Sol/high审查过。snapshot显式绑定层/v1字节兼容/仅end+fade/v4保manifest。为一次最终组合门禁，该树已组合998edc2与core beforeOrigin/new3test，冲突保commandOverlays及absolute布局；联合25项通过(.cache/overlay-combined.xml)，Ruff/mypy207源通过。root旧full收齐后，改在该组合树完整verify，再统一合root/main，组合commit后不得再用旧文件覆盖。合同在分支及root未跟踪同名副本，合入前处理遮挡。无真实调用，不冒称人评；勿整树覆盖root。backend agent Bad Request由parent接手。
+## 子树与保护
 
-用户4个未跟踪设计文档未动未暂存。3棵子树保留：core有旧未提交core副本；assets有本批新增模块/组合测试副本；preview-corrections干净可用于后续写者。共享venv/tools为junction，树env后显式PYTHONPATH核实际导入。至多3子树，一树一写者；不递归删junction。
+preview树分支codex/overlay-assistant-20261107也在1deb9fe已推；无MERGE_HEAD。core保留clock修复/旧core副本，assets保留前端旧副本，勿再覆盖root。3子树、一树一写者、同树pytest串行；env后核PYTHONPATH与实际导入。root原未跟踪AI合同已移到.cache/scratch备份避免快进遮挡，用户4份文档未碰。
 
-旧8769 PID38232为上批服务；8768/8767/8766/8765亦旧。先核health/identity，新routes用新服务；不得绕过此前停止8765的自动审批拒绝。生产CSP不关闭。原视频/证据/账本不改不删，不重付重标，不重跑钟馗。无Release/真实平台写。push走127.0.0.1:7890代理，不force main。
+旧8769 PID38232及8768/8767/8766/8765均旧服务，先核health/identity；新routes用新进程，不绕过停止8765的自动审批拒绝。生产CSP保留。原视频/证据/账本不改不删、不重付重标、不重跑钟馗。无Release/真实平台写，push走127.0.0.1:7890代理，不force main。状态计数只由python -B scripts/status.py计算。

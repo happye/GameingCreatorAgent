@@ -20,7 +20,7 @@
 
 ## 下一步（2026-11-07 用户已恢复持续开发）
 
-1. 音频/素材clock完整4899/7已合main。P028叠加已接Studio→真实导出，首轮全量4958过/7跳过/3失败；已修实际seekable范围增长时序、画布布局反馈，并给音频采样夹具加播放就绪屏障，7项失败联合及更广26项通过，独立clock104项及reference恢复失败闭锁2项通过。待重跑整批verify再合main，不提前交付或修改人评。下一AI图层提案在独立preview树联合21过、审查中，未集成。goal active，无真实付费；见[HANDOFF](HANDOFF.md)与[合同](docs/exec-plans/sprint-timed-overlays.md)。
+1. main音频/素材clock完整4899/7。root开发分支已组合P028与AI图层时间提案，真实上传→保存重开→预览→导出及fake文本提案链可测；原v1恢复/费用闸门保留。前两轮全量未过（第二轮4957过/7跳过/6失败/1error），已修源时钟初始值/seekable、画布、取消返回和选段覆盖，稳态音频夹具隔离循环相位。clock106、assets/planning/audio23、root最新集成20项通过，guard复核通过，准备完整组合门禁。通过前不合main、不改人评；goal active，无真实付费。见[HANDOFF](HANDOFF.md)与[合同](docs/exec-plans/sprint-timed-overlays.md)。
 2. TD024 已处理（2026-11-03）：修了一处真回归（attack 标签被语义闸门挡掉），另外两条改为按 TD004 精度设计的测试。J2 仍需你亲自判定前 10 名。
 3. 分发前：处理许可证缺口（human-inputs）和 TD003 FFmpeg 来源。
 
