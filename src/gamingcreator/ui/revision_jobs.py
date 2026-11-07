@@ -3,7 +3,7 @@
 import asyncio
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -28,13 +28,16 @@ from gamingcreator.application.rendering import RenderPlan, validate_render_plan
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.creation_audio import AudioMix
 from gamingcreator.domain.creation_narration import NarrationSelection
+from gamingcreator.domain.creation_overlays import CreationOverlays
 from gamingcreator.domain.creation_presentation import PresentationOptions
 from gamingcreator.infrastructure.creation_files import write_creation
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.infrastructure.ffmpeg_render import FfmpegCreationRenderer
 from gamingcreator.infrastructure.music_library import MusicLibrary
+from gamingcreator.infrastructure.overlay_assets import OverlayAsset, OverlayAssetLibrary
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 from gamingcreator.ui import narration_jobs
+from gamingcreator.ui.overlay_jobs import public_asset, resolve_assets, resolve_selection
 
 
 @dataclass
@@ -54,6 +57,8 @@ class Chain:
     manifest: dict[str, Any] | None = None
     narration: NarrationSelection | None = None
     narration_asset: NarrationArtifact | None = None
+    overlays: CreationOverlays = field(default_factory=lambda: CreationOverlays(()))
+    overlay_assets: tuple[OverlayAsset, ...] = ()
 
 
 def resolve_audio(jobs: Any, request: dict[str, Any], inherited: AudioMix) -> AudioMix:
@@ -172,6 +177,7 @@ def load_chain(
     overrides: list[dict[str, str]] = []
     audio_mix = AudioMix()
     narration: NarrationSelection | None = None
+    overlays = CreationOverlays(())
     for current_id, state, stored, digest in reversed(records[:-1]):
         request = stored["request"]
         if (
@@ -212,6 +218,8 @@ def load_chain(
             expected_metadata["audioMix"] = request["audioMix"]
         if "narration" in request:
             expected_metadata["narration"] = request["narration"]
+        if "overlays" in request:
+            expected_metadata["overlays"] = request["overlays"]
         if is_v4:
             expected_metadata.update(
                 candidateManifestSha256=request["candidateManifestSha256"],
@@ -248,6 +256,9 @@ def load_chain(
             plan = validate_revision(root_edl, report, edl, revised, timelines, root_sha)
         overrides = resolve_overrides(request, overrides, revised, root_sha)
         audio_mix = resolve_audio(jobs, request, audio_mix)
+        overlays = resolve_selection(
+            OverlayAssetLibrary(jobs.repository), request, overlays, plan.frames
+        )
         narration = narration_jobs.resolve(
             jobs, request, narration, root_state["projectId"], plan.frames, plan.fps
         )
@@ -274,6 +285,8 @@ def load_chain(
         narration_jobs.asset(jobs, narration, root_state["projectId"])
         if narration is not None
         else None,
+        overlays,
+        resolve_assets(OverlayAssetLibrary(jobs.repository), overlays),
     )
 
 
@@ -303,6 +316,14 @@ def editor(chain: Chain, job_id: str) -> dict[str, Any]:
         "ancestry": chain.ancestry,
         "subtitleOverrides": [dict(item) for item in chain.subtitle_overrides],
         "audioMix": chain.audio_mix.to_json(),
+        **(
+            {
+                "overlays": chain.overlays.to_json(),
+                "overlayAssets": [public_asset(asset) for asset in chain.overlay_assets],
+            }
+            if chain.overlays.items
+            else {}
+        ),
         **narration_context,
         **(
             {"candidateManifestSha256": candidate_manifest_sha(chain.manifest)}
@@ -328,10 +349,13 @@ def save_revision(jobs: Any, directory: Path, request: dict[str, Any], chain: Ch
     resolve_audio(jobs, request, chain.audio_mix)
     frames = revised["segments"][-1]["outputStartFrame"] + revised["segments"][-1]["outputFrames"]
     narration_jobs.resolve(jobs, request, chain.narration, chain.project_id, frames, chain.plan.fps)
+    resolve_selection(OverlayAssetLibrary(jobs.repository), request, chain.overlays, frames)
     if "audioMix" in request:
         metadata["audioMix"] = request["audioMix"]
     if "narration" in request:
         metadata["narration"] = request["narration"]
+    if "overlays" in request:
+        metadata["overlays"] = request["overlays"]
     files: dict[str, object] = {"revision.json": metadata, "edit-decision.json": revised}
     if manifest is not None:
         metadata.update(
@@ -356,6 +380,8 @@ def save_revision(jobs: Any, directory: Path, request: dict[str, Any], chain: Ch
 async def render_revision(
     jobs: Any, directory: Path, request: dict[str, Any], chain: Chain, watermark: str | None = None
 ) -> None:
+    if chain.overlays.items:
+        raise ValueError("Timed overlay rendering is not connected yet.")
     project = jobs.project(chain.project_id)
     jobs.safe(directory / "selection")
     write_creation(

@@ -61,3 +61,17 @@ def resolve_assets(
         ),
     )
     return assets
+
+
+def resolve_selection(
+    library: OverlayAssetLibrary,
+    request: dict[str, Any],
+    inherited: CreationOverlays,
+    total_frames: int,
+) -> CreationOverlays:
+    overlays = (
+        CreationOverlays.from_json(request["overlays"]) if "overlays" in request else inherited
+    )
+    overlays.validate_duration(total_frames)
+    resolve_assets(library, overlays)
+    return overlays

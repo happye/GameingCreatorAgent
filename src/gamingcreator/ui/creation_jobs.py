@@ -181,6 +181,7 @@ class CreationJobs:
                     "candidateManifestSha256",
                     "replacements",
                     "narration",
+                    "overlays",
                 }
                 if kind == "revision"
                 else {"costConfirmationYuan"}
@@ -303,6 +304,12 @@ class CreationJobs:
                     frames = (
                         revised["segments"][-1]["outputStartFrame"]
                         + revised["segments"][-1]["outputFrames"]
+                    )
+                    from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
+                    from gamingcreator.ui.overlay_jobs import resolve_selection
+
+                    resolve_selection(
+                        OverlayAssetLibrary(self.repository), request, chain.overlays, frames
                     )
                     narration_jobs.resolve(
                         self, request, chain.narration, chain.project_id, frames, chain.plan.fps

@@ -179,3 +179,5 @@ prepare返回准备身份、请求身份、实际 `payloadPreview={system,user}`
 `POST /api/creation/overlay-assets` 只接受 `{"kind":"text","text":"标题"}` 或 `{"kind":"image","fileName":"logo.png","dataBase64":"..."}`，不接受query/路径/额外字段。PNG原字节≤8MiB，HTTP JSON上限11MiB，预校验尺寸/像素预算后实际解码；拒绝APNG。返回assetId/assetReceiptSha256/kind/width/height/imageUrl，text资产另带原text。固定字体透明PNG由本机FFmpeg生成，无云调用。
 
 GET imageUrl为 `/api/creation/overlay-assets/<id>/image?receipt=<sha>`，只允许receipt query；核验回执与PNG后按image/png同源范围服务。原图片/文字sprite永久存artifacts/overlay-assets，不按cache清理。当前只实现资产，不代表图层已可加入版本或导出；客户端不可把asset receipt用于不同kind/text。
+
+工作分支的revision请求可额外携带`overlays={schemaVersion:"creation-overlays-v1",items:[...]}`：省略继承、空items清除。保存及读回逐层核对assetId/assetReceiptSha256/kind/text和解码预算，按实际输出frames检查endFrame；剪短越界明确拒绝，不自动截断。editor有非空图层时返回overlays和overlayAssets（公开图片URL/尺寸，无本地路径）；旧无图层版本响应保持。旧EDL/v4 candidate manifest不改，overlays只进已受whole-file hash保护的revision metadata。当前渲染尚未接线，非空叠加的导出明确拒绝，不能当完整图层功能交付。
