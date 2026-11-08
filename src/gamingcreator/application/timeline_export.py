@@ -245,11 +245,54 @@ def _xmeml_timeremap(timeline_frames: int, speed: Fraction) -> str:
     )
 
 
+@dataclass(frozen=True, slots=True)
+class ExportNarration:
+    """Verified WAV facts and output placement; carries no mix claims or I/O."""
+
+    wav_path: str
+    start_frame: int
+    sample_rate: int
+    channels: int
+    sample_width: int
+    sample_count: int
+
+
+def _xmeml_narration(narration: ExportNarration, fps: int, total: int, rate: str) -> str:
+    from gamingcreator.domain.creation_narration import NarrationSelection, validate_narration_fit
+
+    validate_narration_fit(
+        NarrationSelection("0" * 32, "0" * 64, narration.start_frame, 0, "off"),
+        narration.sample_count,
+        narration.sample_rate,
+        total,
+        fps,
+    )
+    if type(narration.channels) is not int or narration.channels <= 0:
+        raise ValueError("Narration channels must be positive.")
+    if type(narration.sample_width) is not int or narration.sample_width not in (1, 2, 3, 4):
+        raise ValueError("Unsupported narration sample width.")
+    frames = -(-narration.sample_count * fps // narration.sample_rate)
+    return (
+        '<track><clipitem id="narration-clip"><name>Narration (dry)</name>'
+        f"{rate}<start>{narration.start_frame}</start>"
+        f"<end>{narration.start_frame + frames}</end><in>0</in><out>{frames}</out>"
+        f'<duration>{frames}</duration><file id="narration-file">'
+        f"<name>{escape(Path(narration.wav_path).name)}</name>"
+        f"<pathurl>{escape(_uri(narration.wav_path))}</pathurl>{rate}"
+        f"<duration>{frames}</duration><media><audio><samplecharacteristics>"
+        f"<depth>{narration.sample_width * 8}</depth><samplerate>{narration.sample_rate}</samplerate>"
+        f"</samplecharacteristics><channelcount>{narration.channels}</channelcount>"
+        "</audio></media></file><sourcetrack><mediatype>audio</mediatype>"
+        "<trackindex>1</trackindex></sourcetrack></clipitem></track>"
+    )
+
+
 def to_xmeml(
     edl: dict[str, Any],
     name: str,
     captions: Sequence[ExportCaption] | None = None,
     include_audio_track: bool = False,
+    narration: ExportNarration | None = None,
 ) -> str:
     """Final Cut Pro 7 XML (xmeml v4), which Premiere Pro often imports.
 
@@ -337,6 +380,13 @@ def to_xmeml(
         if include_audio_track
         else ""
     )
+    if narration is not None:
+        narration_xml = _xmeml_narration(narration, fps, total, rate)
+        audio_xml = (
+            audio_xml.removesuffix("</audio>") + narration_xml + "</audio>"
+            if audio_xml
+            else "\n    <audio>" + narration_xml + "</audio>"
+        )
     marker_xml = ("\n" + "\n".join(markers)) if markers else ""
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE xmeml>\n<xmeml version="4">\n'

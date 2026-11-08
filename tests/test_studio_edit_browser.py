@@ -167,9 +167,51 @@ def test_edit_clip_save_version_and_command(revisions, monkeypatch):  # noqa: F8
                 "修改镜头、声音或叠加后可保存新版本"
             )
             playwright.expect(page.get_by_role("button", name="保存版本")).to_be_disabled()
+            page.get_by_role("tab", name="导出", exact=True).click()
+            for label, suffix in [
+                ("下载 FCPXML", ".fcpxml"),
+                ("下载 OTIO", ".otio"),
+                ("下载 Premiere XML", "-premiere.xml"),
+            ]:
+                with page.expect_download() as pending:
+                    page.get_by_role("button", name=label, exact=True).click()
+                download = pending.value
+                assert download.suggested_filename.endswith(suffix)
+                assert download.failure() is None
+            page.route(
+                "**/timeline?**",
+                lambda route: route.fulfill(
+                    status=403,
+                    content_type="application/json",
+                    body='{"error":{"message":"套餐不允许时间线导出"}}',
+                ),
+            )
+            page.get_by_role("button", name="下载 Premiere XML", exact=True).click()
+            playwright.expect(page.get_by_label("时间线下载状态")).to_have_text(
+                "套餐不允许时间线导出"
+            )
+            page.unroute("**/timeline?**")
+            pending_routes, downloads = [], []
+            page.on("download", lambda download: downloads.append(download))
+            page.route("**/timeline?**", lambda route: pending_routes.append(route))
+            page.get_by_role("button", name="下载 Premiere XML", exact=True).click()
+            page.wait_for_timeout(100)
+            assert pending_routes
+            page.get_by_role("tab", name="镜头", exact=True).click()
+
             clips.nth(1).click()
             page.get_by_label("速度").select_option("2/1")
             playwright.expect(page.locator(".clip-speed")).to_have_text("2×")
+            # Changing the draft while a response waits must never download an old base.
+            pending_routes[0].fulfill(status=200, content_type="application/xml", body="<xmeml/>")
+            page.wait_for_timeout(100)
+            assert not downloads
+            page.unroute("**/timeline?**")
+            page.get_by_role("tab", name="导出", exact=True).click()
+            playwright.expect(
+                page.get_by_role("button", name="下载 Premiere XML", exact=True)
+            ).to_be_disabled()
+            playwright.expect(page.get_by_label("时间线下载状态")).to_have_text("请先保存版本")
             # With a clip selected, sound and export stay one tab away.
             page.get_by_role("tab", name="声音").click()
             playwright.expect(page.get_by_role("button", name="起草旁白稿")).to_be_visible()

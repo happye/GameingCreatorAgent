@@ -201,3 +201,7 @@ Studio检查器的“叠加”页支持登记文字/PNG、调整开始结束/淡
 `GET /api/creation/jobs/{publicationId}/packages?projectId=…` 返回`{publicationJobId,publicationReceiptSha256,jobs}`。每行含`jobId,status,createdAt,updatedAt,error,parentJobId,parentReceiptSha256,profile,platform`，保留旧失败/中断尝试，不受项目任务目录最近100条截断。核父项目、publication/render完成状态、原request规范摘要与receipt整文件hash；列表不hash所有完成视频，详情/下载继续完整产物核验。匹配未终结任务沿既有get恢复中断；不新提交任务或转码。
 
 Studio批量沿既有单包POST逐项submit/settle，相同profile已完成则保留，运行中先等待；刷新仅恢复已提交任务。作用域绑定项目/pub/回执/profile；scoped package发送前把请求身份放入sessionStorage，网络结果不明及刷新复用原requestId。仅该意图绑定job已确认failed/interrupted才允许新意图；旧失败行不证明新发送已终结。存储不可用提交前报intent.storage，默认unscoped接口兼容。每次提交仍走原OS锁、幂等和套餐权限，不自动更换套餐或发布。
+
+## Studio专业时间线与XMEML旁白
+
+沿用`GET /api/creation/jobs/{jobId}/timeline?planId=…&format=fcpxml|otio|xmeml&size=1280x720`及原套餐门禁。时间线GET以只读父链/旁白资产验证，不触发任务恢复、合成或新媒体。XMEML额外引用已保存旁白WAV，写独立音轨及真实采样率/位深/声道，按start_frame与ceil(sample_count*fps/sample_rate)确定输出范围；无旁白保持原字节。此为独立干声交接，不表示已映射混音/闪避/淡化或BGM。Studio只下载保存基线，拒未保存草稿/助手预览/忙碌；先处理HTTP错误，成功才保存明确文件名，身份变化拒迟到下载。真实编辑器导入仍待验证。

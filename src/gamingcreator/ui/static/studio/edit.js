@@ -195,6 +195,44 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     const sound = useAudioPreview(player, editing.audio, fps, planVideo, music.tracks, `${project}:${editing.base?.jobId}:${editing.base?.planId}`);
     const thumb = useCallback((item) => (item?.evidenceIds?.[0] ? client.evidenceUrl(project, item.runId, item.evidenceIds[0]) : null), [project]);
 
+    const [timelineMessage, setTimelineMessage] = useState("");
+    const [timelineBusy, setTimelineBusy] = useState(false);
+    const timelineWork = useRef(null);
+    const timelineReason = !plan?.ready || !editing.base || editing.status !== "ready" ? "先选择并读取已保存方案"
+        : editing.dirty ? "请先保存版本" : commandPreview ? "请先应用或取消创作助手的改动"
+        : busy || audioBusy || overlayBusy ? "任务正在处理" : problem;
+    const timelineView = [project, editing.base?.jobId, editing.base?.planId, size, adoptionGuard.current.generation, timelineReason];
+    const timelineGuard = useRef({view: timelineView, generation: 0});
+    if (timelineView.some((value, index) => value !== timelineGuard.current.view[index])) {
+        timelineWork.current?.abort();
+        timelineGuard.current = {view: timelineView, generation: timelineGuard.current.generation + 1};
+    }
+    useEffect(() => () => { timelineWork.current?.abort(); timelineGuard.current.generation++; }, []);
+    const downloadTimeline = async (format) => {
+        if (timelineReason || timelineBusy) return;
+        const controller = new AbortController(); timelineWork.current = controller;
+        const generation = timelineGuard.current.generation;
+        const current = () => !controller.signal.aborted && generation === timelineGuard.current.generation;
+        const base = editing.base;
+        setTimelineBusy(true); setTimelineMessage("");
+        try {
+            const query = new URLSearchParams({planId: base.planId || planId, format, size: size.replace(",", "x")});
+            const response = await fetch(`/api/creation/jobs/${encodeURIComponent(base.jobId)}/timeline?${query}`, {signal: controller.signal});
+            if (!response.ok) {
+                let detail; try { detail = await response.json(); } catch { /* HTTP status remains useful. */ }
+                throw new Error(detail?.error?.message || detail?.message || `时间线下载失败（${response.status}）`);
+            }
+            const blob = await response.blob();
+            if (!current()) return;
+            const url = URL.createObjectURL(blob), link = document.createElement("a");
+            link.href = url; link.download = `gamingcreator-${base.jobId.slice(0, 8)}${format === "xmeml" ? "-premiere.xml" : `.${format}`}`;
+            document.body.append(link); link.click(); link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 0);
+            setTimelineMessage("时间线已下载，请在剪辑软件中复核。");
+        } catch (error) { if (current()) setTimelineMessage(error.message); }
+        finally { if (timelineWork.current === controller) { timelineWork.current = null; setTimelineBusy(false); } }
+    };
+
     const saveVersion = async () => {
         setBusy("save"); setMessage("正在保存版本…"); player.stop();
         try { const id = await editing.save((jobId) => follow(jobId, () => {})); setMessage("已保存为新版本。"); onWorksChanged(); lastJob(project, {id, kind: "revision"}); return id; }
@@ -302,6 +340,11 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
             <div class="panel-body">
                 ${message && html`<p class="note" role="status">${message}</p>`}
                 <div hidden=${inspTab !== "export"}>
+                <div class="field"><div class="k">专业时间线</div>
+                    <p class="hint">FCPXML / OTIO：镜头、变速及实验字幕和源音轨。Premiere XML 另含已保存旁白的独立干声轨；增益、闪避、淡入淡出与配乐需在剪辑软件中复核配置。导入兼容性尚未验证。</p>
+                    <div class="actions-row">${[["fcpxml", "下载 FCPXML"], ["otio", "下载 OTIO"], ["xmeml", "下载 Premiere XML"]].map(([format, label]) => html`<button class="btn ghost" disabled=${!!timelineReason || timelineBusy} title=${timelineReason || "下载已保存版本"} onClick=${() => downloadTimeline(format)}>${label}</button>`)}</div>
+                    <p class="hint" role="status" aria-label="时间线下载状态">${timelineReason || timelineMessage || (timelineBusy ? "正在下载…" : "下载当前已保存版本")}</p>
+                </div>
                 <div class="field">
                     <div class="k">导出设置（导出按钮在预览窗下方）</div>
                     <div class="pair even">

@@ -89,6 +89,16 @@ def playback_page():
             page.evaluate("document.body.innerHTML = ''")
             page.add_script_tag(type="module", content=HARNESS)
             page.wait_for_function("window.player !== undefined")
+            # These clocks stay still until a test advances them, so graph startup
+            # must finish before playback; a real video supplies later timeupdates.
+            page.wait_for_function(
+                "() => { const graph = media().music?.studioAudioGraph; "
+                "return !!(graph?.node || graph?.failed); }"
+            )
+            assert page.evaluate(
+                "async () => { const graph = media().music.studioAudioGraph; "
+                "await graph.ready; return !!graph.node && !graph.failed; }"
+            )
             yield page
             browser.close()
     finally:

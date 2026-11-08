@@ -1,25 +1,29 @@
 # HANDOFF（覆盖快照）
 
-## 最近一次会话（2026-11-08，重新授权自主开发）
+## 最近一次会话（2026-11-08，自主开发恢复）
 
-用户已明确恢复自主开发，goal active；先收口当前交付再推进下一主任务。规则以工作区AGENTS.md为准。AGENTS.md/CLAUDE.md/CODEX.md/.grok/rules/project.md的已批准规范修改仍未提交，不混入业务merge；此前独立规范提交方案未另执行。用户未跟踪设计文件/开发审计报告均保留，不git add全目录。
+Goal active。通用规范AGENTS.md生效；四入口AGENTS/CLAUDE/CODEX/.grok/rules/project.md未提交，独立提交方案尚未另执行，不混业务。用户设计稿/审计报告未动，不git add全目录。
 
-## 当前业务交付
+## P033技术集成闭环
 
-root分支codex/timed-overlays-20261107，恢复时HEAD0016554，MERGE_HEAD c655092，main/origin-main b4023c4。字幕预览2c89477、多平台c655092、音频fixture修复9f4f6ef均已推功能分支；root已集成，仅API文档冲突且已保留两份合同。阶段集成待提交当前merge，以实时git refs为准。
+root开发线codex/timed-overlays-20261107。本批业务合并30a94a4，提交/远端实际SHA以git为准；architecture/API两处EOF冲突已保留两边，无源码冲突。当前完整门禁已结束，不能再把session46005当活进程或重复启动。
 
-最终完整门禁已完成（无进程在跑）：.cache/r2-audio-worklet-full-verify.log，5035通过/7跳过1723.43秒，486文件格式/Ruff/mypy209源/CLI全过。无需因会话恢复重复全量。先前8999在mypy失败的preview重名已别名修复；47902整套1失败5030过7跳的PCM问题，ScriptProcessor已可控制阻塞复现；改AudioWorklet后root9过0跳25.889秒(.cache/audio-worklet-root.xml)，唯一review清理P2闭环。原阈值/生产graph/1s LOOP保持，不宣称已追回原次逐块故障证据。
+最终.cache/premiere-readiness-full-verify.log：5054通过/7跳过1794.68秒，488文件格式/Ruff/mypy209源/CLI全过，session46005终态0。root相关47过153.124秒，子树35项及唯一Sol/high专项通过。P033为Studio三格式保存基线下载、HTTP错误/迟到下载隔离，XMEML只读核验WAV独立旁白轨、真实格式/输出帧、None旧字节保持。干声不等于完整混音/BGM/图层交接；P033保持partial，实导与人评未验。
 
-字幕只读preview共享SRT/ASS输出时钟，旁白依赖不恢复写盘；111后端+12browser通过。多平台同pub串行、刷新恢复/失败retry/未知requestId跨刷新复用、Free跨pub同render限制与跨project隔离，14相关通过。两项均有唯一审查，技术完成不等于P029/P035整项或真人质量验收。合同已补最终全量证据，STATUS本次更新。
+首轮.cache/premiere-integration-full-verify.log：1失败/5053过/7跳1998.64秒，CLI未执行。test_speculative_seek_does_not_freeze_music启动等待失败，未进主体；现场.cache/pytest-runs/fc45f2d3cb2940c884c93394475afa69保留。Sol/medium用750ms Worklet延迟确定触发同类问题：静止模拟时钟无后续同步，推进timeupdate即恢复；不声称取得原失败逐事件轨迹。仅补夹具graph.ready，parent有界node/failed等待，不改生产播放/DSP/阈值/原断言。assets树受控旧失败→新过日志.cache/scratch/playback_delayed_before_after.log；文件16过、相邻音频10过；root16过35.130秒(.cache/playback-readiness-root.xml)。合同sprint-premiere-narration-track.md已补最终证据。
 
-## 下一主任务：P033
+前一批main3b345d0交字幕即时预览/多平台包/Worklet采集修复，完整5035过7跳1723.43秒（.cache/r2-audio-worklet-full-verify.log）。无需再跑这一批，人评及P029/P035整项未提升。
 
-preview树codex/premiere-narration-track-20261107已推30a94a4，树干净，基线0016554。35过0跳112.552秒（其.cache/premiere-contract-final.xml）及唯一guard通过。补Studio三格式已保存基线下载与XMEML独立旁白WAV轨，GET只读、无旁白旧字节兼容；非零2.5s源替换→v4后代2x/3帧+2206samples旁白、HTTP坏依赖/迟到/无错误下载均覆盖。源/文档/feature evidence齐，root尚未集成。root同名合同旧稿须先移scratch备份，采用分支最终稿。其基线server仍旧导入名，root别名修复合并时保留。
+## 下一步：接入Studio活动规则
 
-实际Premiere23.0.0.63启动探针4192停在reset preferences提示；未接受，后仅清理本次进程，没有打开项目。不可擅装全局CEP或改注册表。可用真实MP4+免费David英语WAV+XML试件在.cache/scratch/premiere-import-9981c86096b44d308e0cd1199f76b9fa，117帧/旁白起7长67，manifest.sha256已封存，startup.png/launch记录同处，真实导入未验。P033仍partial，干声不是完整混音/BGM/图层交接。
+preview树codex/studio-activity-rules-20261108，d28d668已推、干净；从3b345d0起步，旧P033分支30a94a4保留。复用现有本地规则API接Studio：提取、原文行/页数、显式填当前Brief、再生成真实离线计划；无模型/新依赖/大型软件。合同复用docs/exec-plans/sprint-activity-rules.md末节，当前该合同仍未混P033提交。
 
-## 数字与保护
+仅4文件：studio/activity.js、edit.js规则入口、server.py静态白名单、tests/test_studio_activity_rules_browser.py。最终12过0跳26.723秒，Ruff/format/mypyserver通过；preview树.cache/scratch/studio-activity-rules/results.xml。唯一Sol/medium审查P2为普通input剥换行使话题再编辑粘连，改逗号并在原测试验证再次编辑后4主题独立；parent核修复和结果。text/file-viewport.png已目检三栏/播放器/左栏滚动正常，旧窄长裁图不用。OCR/PDF旧后端证据沿用，尚未root集成/完整门禁，不提升P020整体或人评。先核P033实际提交推送完成，再merge d28d668，按变更更新使用指南/feature证据和验证。
 
-status.py本次实算51=10交付41部分、质量0/51、F8/3、债25=17解决3部分5未解、人工9；J1第四次not_usable、J2/J3未做，人评/feature passes不因工程绿翻转。无真实云/付费/Release/实际平台发布，免费本机语音。
+## 用户约束与保护
 
-≤3子树，一树一写者，同树pytest串行；共享venv editable指root，env清PYTHONPATH，子树需env后设自身src并核import，完整verify在root。assets树当前audio分支9f4f6ef，原旧工作stash b55207b68ce12b3682607687c54dc818d1f6f849不可drop/pop；core树旧clock副本不覆盖root。用户旧8765–8769未动，8770临时服务已清理。原片/证据/账本不改不删、不重付重标、不重跑钟馗，不绕过停止8765审批拒绝。push用127.0.0.1:7890代理，不force main，不复制Claude角色到Codex。
+避免PR/AE等大型软件，使用项目FFmpeg/浏览器；专业导出为可选交接，不是成片依赖，实导未验不转人工必做。后续开桌面程序先说名字和目的。Premiere第二次PID43528由用户手动关闭，不是软件故障；未导入XML/开用户项目/确认重置/装CEP/改注册表，不能声称PR全功能控制。合成试件及safe-probe仍在.cache/scratch/。
+
+最近status.py --check：51=10交付41部分，质量0/51，F8/3；债25=17解决3部分5未解，人工9。J1第四次not_usable，J2/J3未做，不翻人评/passes。
+
+≤3子树，一树一写者，同树pytest串行。共享venv editable指root，env清PYTHONPATH，子树须env后设本树src并核import，完整verify只root。assets树9f4f6ef保留夹具单文件未提交（root已有改进版）；preview树d28d668干净；core树旧副本不覆盖root。stash b55207b68ce12b3682607687c54dc818d1f6f849不drop/pop。用户旧8765–8769不动，8770已清理，不绕过停8765审批拒绝。原片/证据/账本/标签不改删，不重付重标，不重跑钟馗；无新云/Release/真实发布。免费本机语音，新模型文字发送需独立许可。push走127.0.0.1:7890，不force main，不复制Claude角色到Codex。
