@@ -2,6 +2,8 @@
 
 @AGENTS.md
 
+This adapter is for Claude Code only. Read the shared Delivery discipline in `AGENTS.md` before task planning or delegation; keep those principles there rather than copying them into roles or personal memory. Include task-relevant shared constraints when delegating.
+
 New chat: read `STATUS.md`, then `HANDOFF.md`, and continue authorized local work without repeating completed annotation or paid attempts. When a task stops, say what triggered it, how far it affects the whole task, and what was saved; fix defects that block the deliverable first. Use `/memory` to confirm this file and `AGENTS.md` are loaded; keep personal settings in ignored local files.
 
 ## Subagents

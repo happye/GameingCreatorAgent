@@ -6,6 +6,14 @@ Gaming Creator Agent turns local game footage and a brief into content. Scope: `
 
 Read root `STATUS.md`, then `HANDOFF.md` (≤5KB overwrite snapshot). Update STATUS once at milestone or session end. `progress.md`, `assignments.md` and `docs/archive/` are history: do not append or read by default.
 
+## Delivery discipline
+
+- Delivery first: prioritize the agreed user outcome, not engineering activity or test counts.
+- Converge: define scope, acceptance and evidence before work. Justify scope growth; defer nonblocking improvements without stopping authorized work.
+- Reuse existing code, checks and records. Repeat analysis, reviews or documentation only when new evidence or changes require it.
+- Validate by risk: run cheap static/contract and affected behavior checks first; broaden for demonstrated risk. Keep the Testing and safety gates below. Diagnose failures before expanding fixes or tests.
+- Close the agreed verification, integration and delivery record within task scope before switching the main task. Independent parallel work remains allowed; blockers affect dependent work only. Stay autonomous within authorization; do not impose quotas on task splits, tests or time.
+
 ## Map
 
 - `src/gamingcreator/{cli,application,domain,infrastructure,ui}/`, `tests/test_*.py`
@@ -32,7 +40,7 @@ Design budget:
 ## Testing
 
 1. Iterate with `./scripts/test-affected.ps1` (affected tests only; browser/local_data excluded unless UI changed).
-2. Run `./scripts/verify.ps1` (full suite) at milestone end or before merge.
+2. `./scripts/verify.ps1` at batch end, not each feature/merge; log run/defer.
 3. Run `./scripts/verify.ps1 -Release` before distribution.
 
 Known failures: `xfail(strict=False, reason="TDxxx")` plus a tech-debt row. Top-10 Useful Rate: ten fixed slots, missing/duplicate count zero, ≥70% after human judgment. Mark `passes: true` only with evidence; tooling readiness is not acceptance.
@@ -48,7 +56,7 @@ One commit = one user-visible capability or one fix, message says behavior + ver
 ## Delivery and reporting
 
 - Primary metric: end-to-end journeys in `docs/exec-plans/journeys.json`. Counts come from `python -B scripts/status.py`; never invent them.
-- Report to the user only when a primary metric changes: ≤150 Chinese characters plus one openable artifact.
+- Normal progress reports require a primary metric change: ≤150 Chinese characters plus one openable artifact. Promptly report needed user decisions, additional authorization, or persistent blockers that cannot be resolved autonomously; state the impact and what is needed even when metrics are unchanged.
 - Prefer milestone delivery over polishing loops; hard issues go to `docs/exec-plans/tech-debt.md`.
 - Need user annotation or manual help: tell the user at once and add a row to `docs/exec-plans/human-inputs.md`. Pending items block only dependent work.
 - Delegation: `development-agent-pipeline.md`, routing guides in `docs/references/`. `agent-workflow.md` covers handoff, parallel and fee mechanics.
