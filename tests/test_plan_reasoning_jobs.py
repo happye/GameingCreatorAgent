@@ -209,3 +209,106 @@ def test_plan_http_rejects_extra_fields(planning, value):
     with pytest.raises(ValueError, match="fields"):
         reasoning_post(planning.reasoning, value)
     assert not planning.transport.calls
+
+
+def knowledge_context(ctx):
+    from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
+
+    snapshot, _ = original_snapshot(ctx.jobs, ctx.root)
+    store = KnowledgeStore(ctx.jobs.repository)
+    value = {
+        "game": snapshot.brief.game,
+        "title": "Registered reference",
+        "text": "prefix " + snapshot.brief.objective + " original knowledge",
+        "sourceKind": "wiki",
+        "sourceLabel": "Registered wiki",
+    }
+    entry = store.add(value)
+    return store, value, entry
+
+
+def knowledge_output(ctx, prep, entry, uses=None):
+    snapshot = ctx.reasoning._current(ctx.reasoning._prepared(prep["preparedHash"]))
+    value = output(snapshot, ((3, 1),))
+    value["schemaVersion"] = "plan-proposal-v2"
+    value["plans"][0]["knowledgeUses"] = (
+        uses
+        if uses is not None
+        else [{"entryId": entry["entryId"], "structureQuote": value["plans"][0]["structure"]}]
+    )
+    ctx.transport.content = value
+
+
+def test_knowledge_frozen_quote_replacement_adoption(planning):
+    ctx = planning
+    store, value, entry = knowledge_context(ctx)
+    prep = prepared(ctx)
+    assert prep["knowledge"] == [
+        {
+            **{key: entry[key] for key in ("entryId", "title", "source", "createdAt")},
+            "text": entry["text"],
+        }
+    ]
+    replacement = store.add(
+        {**value, "replaces": entry["entryId"], "text": value["text"] + " updated"}
+    )
+    knowledge_output(ctx, prep, entry)
+    result = execute(ctx, prep)
+    assert result["status"] == "completed"
+    messages = ctx.transport.calls[0]["messages"]
+    assert messages[0]["content"] == prep["payloadPreview"]["system"] + "\nReturn valid JSON only."
+    assert messages[1]["content"] == prep["payloadPreview"]["user"]
+    use = result["planPreview"]["plans"][0]["knowledgeUses"][0]
+    assert use["entryId"] == entry["entryId"] and use["text"] == entry["text"]
+    adopted = ctx.reasoning.adopt_plan(prep["preparedHash"])
+    assert finish(ctx.jobs, adopted["jobId"])["status"] == "completed"
+    report = ctx.jobs.plan_report(ctx.jobs.directory(adopted["jobId"]))
+    assert report["plans"][0]["knowledgeUses"] == [use]
+    assert ctx.reasoning.adopt_plan(prep["preparedHash"])["jobId"] == adopted["jobId"]
+    assert len(ctx.transport.calls) == 1
+    assert prepared(ctx)["knowledge"][0]["entryId"] == replacement["entryId"]
+
+
+@pytest.mark.parametrize("fault", ["unknown", "quote", "duplicate", "empty", "source"])
+def test_knowledge_reference_service_boundaries(planning, fault):
+    ctx = planning
+    _, _, entry = knowledge_context(ctx)
+    prep = prepared(ctx)
+    knowledge_output(ctx, prep, entry)
+    uses = ctx.transport.content["plans"][0]["knowledgeUses"]
+    if fault == "unknown":
+        uses[0]["entryId"] = "a" * 64
+    elif fault == "quote":
+        uses[0]["structureQuote"] = "fabricated quote"
+    elif fault == "duplicate":
+        uses.append(uses[0].copy())
+    elif fault == "empty":
+        uses.clear()
+    else:
+        ctx.source.write_bytes(b"changed footage with knowledge")
+        with pytest.raises(ValueError, match="source bytes"):
+            execute(ctx, prep)
+        assert not ctx.transport.calls
+        return
+    result = execute(ctx, prep)
+    assert result["status"] == ("completed" if fault == "empty" else "failed")
+    if fault != "empty":
+        with pytest.raises(ValueError):
+            ctx.reasoning.adopt_plan(prep["preparedHash"])
+
+
+def test_zero_match_preserves_v1_request(planning):
+    from dataclasses import asdict
+
+    from gamingcreator.application.plan_reasoning import plan_reasoning_request
+
+    ctx = planning
+    snapshot, _ = original_snapshot(ctx.jobs, ctx.root)
+    store, value, _ = knowledge_context(ctx)
+    # Replace the only matching entry with unrelated text and title.
+    old = store.entries()[0]
+    store.add({**value, "title": "unrelated", "text": "unrelated", "replaces": old["entryId"]})
+    prep = prepared(ctx)
+    record = ctx.reasoning._prepared(prep["preparedHash"])
+    assert not prep["knowledge"]
+    assert record["request"] == asdict(plan_reasoning_request(snapshot))

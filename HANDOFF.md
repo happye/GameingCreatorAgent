@@ -2,28 +2,36 @@
 
 ## 最近一次会话（2026-11-08，自主开发恢复）
 
-Goal active。通用规范AGENTS.md生效；四入口AGENTS/CLAUDE/CODEX/.grok/rules/project.md未提交，独立提交方案尚未另执行，不混业务。用户设计稿/审计报告未动，不git add全目录。
+Goal active：用户本轮明确恢复自主开发。通用规范AGENTS.md生效；四入口规范已独立提交5809705。用户设计稿/审计报告未动，不git add全目录。
+
+## 本轮恢复核查与验证
+
+知识核心已迁入root，不再次迁移。唯一Sol/high已核知识费用/快照/来源、audio及knowledge.js/narration_drafts.js边界；发现的两项P2均修复并获同一审查者定向复核。编辑代次隔离迟到重合成，asset切换关闭编辑器避免B稿写入A键。4项浏览器定向通过20.79s（.cache/studio-resume-revision-scope.log/XML），含保存版本新旧asset/start/gain/mix回读。
+
+原full session27435于63%主动中止修复第二项P2，不作绿；日志.cache/studio-resume-full-verify.log保留。最终门禁采用.cache/studio-resume-final-verify.log与final-freeze.json；先读日志/查活进程，不重复启动。P020已独立合并baf2a20，规范5809705；main仍8ea3293。余下Studio批次先开发线checkpoint，最终完整绿后再推进main。用户设计稿/工单不整目录add，未真实发送/投稿。
 
 ## P033技术集成闭环
 
-root开发线codex/timed-overlays-20261107。本批业务合并30a94a4，提交/远端实际SHA以git为准；architecture/API两处EOF冲突已保留两边，无源码冲突。当前完整门禁已结束，不能再把session46005当活进程或重复启动。
+main/HEAD/origin-main已核8ea3293；P033完整5054过7跳，静态/CLI全过，session46005终态0，不重跑旧诊断。证据.cache/premiere-readiness-full-verify.log及sprint-premiere-narration-track.md。三格式下载与独立WAV旁白轨已集成，干声不等于完整混音/BGM/图层；P033仍partial，实导/人评未验。
 
-最终.cache/premiere-readiness-full-verify.log：5054通过/7跳过1794.68秒，488文件格式/Ruff/mypy209源/CLI全过，session46005终态0。root相关47过153.124秒，子树35项及唯一Sol/high专项通过。P033为Studio三格式保存基线下载、HTTP错误/迟到下载隔离，XMEML只读核验WAV独立旁白轨、真实格式/输出帧、None旧字节保持。干声不等于完整混音/BGM/图层交接；P033保持partial，实导与人评未验。
+## 当前主线：活动规则+知识策划交付批次
 
-首轮.cache/premiere-integration-full-verify.log：1失败/5053过/7跳1998.64秒，CLI未执行。test_speculative_seek_does_not_freeze_music启动等待失败，未进主体；现场.cache/pytest-runs/fc45f2d3cb2940c884c93394475afa69保留。Sol/medium用750ms Worklet延迟确定触发同类问题：静止模拟时钟无后续同步，推进timeupdate即恢复；不声称取得原失败逐事件轨迹。仅补夹具graph.ready，parent有界node/failed等待，不改生产播放/DSP/阈值/原断言。assets树受控旧失败→新过日志.cache/scratch/playback_delayed_before_after.log；文件16过、相邻音频10过；root16过35.130秒(.cache/playback-readiness-root.xml)。合同sprint-premiere-narration-track.md已补最终证据。
+历史P020合并现场（现已baf2a20结束）：P020自动合并无冲突，相关30过0跳79.816秒(.cache/studio-activity-root.xml)。session49998已终态0，.cache/studio-activity-full-verify.log显示5066过7跳1949.77秒、静态/CLI全过，但期间知识写者曾误写root六源码再撤回，父核六路径diff空；源码一致性无法证明，此全量仅诊断，不准当交付绿。事故/工具chunk依据已记sprint-activity-rules.md，日志不改。
 
-前一批main3b345d0交字幕即时预览/多平台包/Worklet采集修复，完整5035过7跳1723.43秒（.cache/r2-audio-worklet-full-verify.log）。无需再跑这一批，人评及P029/P035整项未提升。
+验证频率遵AGENTS.md Testing第2条。当前批次是活动规则+知识策划，最终全量暂缓，待知识定向/关键审查/组合集成闭环再冻结写入统一验证。不要为P020单独重跑；main仍8ea3293，尚未发布本批。开发线checkpoint记录定向证据与批次待办，不提前推main。
 
-## 下一步：接入Studio活动规则
+P020复用本地规则API，状态仍partial。
 
-preview树codex/studio-activity-rules-20261108，d28d668已推、干净；从3b345d0起步，旧P033分支30a94a4保留。复用现有本地规则API接Studio：提取、原文行/页数、显式填当前Brief、再生成真实离线计划；无模型/新依赖/大型软件。合同复用docs/exec-plans/sprint-activity-rules.md末节，当前该合同仍未混P033提交。
+## 知识与真实媒体证据
 
-仅4文件：studio/activity.js、edit.js规则入口、server.py静态白名单、tests/test_studio_activity_rules_browser.py。最终12过0跳26.723秒，Ruff/format/mypyserver通过；preview树.cache/scratch/studio-activity-rules/results.xml。唯一Sol/medium审查P2为普通input剥换行使话题再编辑粘连，改逗号并在原测试验证再次编辑后4主题独立；parent核修复和结果。text/file-viewport.png已目检三栏/播放器/左栏滚动正常，旧窄长裁图不用。OCR/PDF旧后端证据沿用，尚未root集成/完整门禁，不提升P020整体或人评。先核P033实际提交推送完成，再merge d28d668，按变更更新使用指南/feature证据和验证。
+preview子树的知识7源码/3测试已由Grok迁入root，来源补丁在R11报告目录；不再次迁移或派重复审查。无资料v1、有资料v2冻结请求/引用已获唯一Sol/high通过，真实AI发送仍未授权。规则/知识全链与旧v1磁盘夹具等缺口不冒充完成。
+
+独立真实媒体链已跑通：.cache/scratch/resume-real-media.py与result.json，日志.cache/studio-resume-real-media2.log；同一隔离repo两条2s fake语音440/880Hz经真实旁白任务/修订、真实FFmpeg、新版180帧30fps6秒MP4、B站七文件ZIP。880Hz幅度0.2447，440Hz 2.48e-7，旧修订所有文件字节保持；包localChecks pass、投稿资格unverified、权利/人评unknown。详见docs/exec-plans/sprint-studio-narration-revision.md。同库任务链随后补证见同一sprint及.cache/scratch/resume-full-journey/summary.json；fake模型一次，R41预算18字未容纳引用，仍未通过；非完整Studio操作/人评。旧门禁期间520源码/测试hash一致，随后补修草稿隔离；最终门禁另记。
 
 ## 用户约束与保护
 
 避免PR/AE等大型软件，使用项目FFmpeg/浏览器；专业导出为可选交接，不是成片依赖，实导未验不转人工必做。后续开桌面程序先说名字和目的。Premiere第二次PID43528由用户手动关闭，不是软件故障；未导入XML/开用户项目/确认重置/装CEP/改注册表，不能声称PR全功能控制。合成试件及safe-probe仍在.cache/scratch/。
 
-最近status.py --check：51=10交付41部分，质量0/51，F8/3；债25=17解决3部分5未解，人工9。J1第四次not_usable，J2/J3未做，不翻人评/passes。
+计数以status.py为准；J1未过，J2/J3未做，不翻人评/passes。
 
-≤3子树，一树一写者，同树pytest串行。共享venv editable指root，env清PYTHONPATH，子树须env后设本树src并核import，完整verify只root。assets树9f4f6ef保留夹具单文件未提交（root已有改进版）；preview树d28d668干净；core树旧副本不覆盖root。stash b55207b68ce12b3682607687c54dc818d1f6f849不drop/pop。用户旧8765–8769不动，8770已清理，不绕过停8765审批拒绝。原片/证据/账本/标签不改删，不重付重标，不重跑钟馗；无新云/Release/真实发布。免费本机语音，新模型文字发送需独立许可。push走127.0.0.1:7890，不force main，不复制Claude角色到Codex。
+≤3子树，一树一写者，同树pytest串行。共享venv editable指root，env清PYTHONPATH，子树须env后设本树src并核import，完整verify只root。assets树9f4f6ef保留夹具单文件未提交（root已有改进版）；preview树并行知识；core旧副本不覆盖root。stash b55207b68ce12b3682607687c54dc818d1f6f849不drop/pop。旧8765–8769不动，8770已清理，不绕过停8765审批拒绝。原片/证据/账本/标签不改删，不重付重标，不重跑钟馗；无新云/Release/真实发布。免费本机语音，新模型文字发送需独立许可。push走127.0.0.1:7890，不force main，不复制Claude角色到Codex。

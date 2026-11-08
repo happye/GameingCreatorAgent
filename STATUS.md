@@ -20,7 +20,7 @@
 
 ## 下一步（2026-11-08 用户重新授权自主开发）
 
-1. Studio专业时间线下载与XMEML独立旁白轨已完成技术集成：完整5054通过/7跳过、1794.68秒，格式/Ruff/mypy209源/CLI全部通过（`.cache/premiere-readiness-full-verify.log`）。首轮夹具启动时序失败已有受控复现和最小前置修复，生产播放/DSP未改；P033整项/实导/人评仍未通过。前一批字幕即时预览与多平台包已在main。下一步接入已推送的d28d668活动规则Studio切片（12项及独立审查闭环），不重复实现后端。协作规范四入口继续独立未提交；goal active。见[HANDOFF](HANDOFF.md)。
+1. 自主开发已恢复，main仍8ea3293。P020活动规则已独立合并；知识策划/旁白批次两项并发与草稿隔离缺陷均修复，唯一关键审查闭环，4项定向通过。独立及同库任务链已产出6秒180帧MP4与B站七文件包；fake模型一次，投稿/人评不提升，R41短预算无引用仍未验。开发线checkpoint后运行最终完整门禁（.cache/studio-resume-final-verify.log）；原63%门禁主动中止修复，不作绿。详见sprint-studio-narration-revision.md与[HANDOFF](HANDOFF.md)。
 2. TD024 已处理（2026-11-03）：修了一处真回归（attack 标签被语义闸门挡掉），另外两条改为按 TD004 精度设计的测试。J2 仍需你亲自判定前 10 名。
 3. 分发前：处理许可证缺口（human-inputs）和 TD003 FFmpeg 来源。
 

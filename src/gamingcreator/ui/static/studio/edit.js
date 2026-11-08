@@ -8,7 +8,7 @@ import {editTimeline, shots, timeline, usePlanPlayer} from "./preview.js";
 import {ClipInspector, CommandDock, captionProblem, transitionProblem, useClipEditor} from "./clipedit.js";
 import {AudioPanel, narrationProblem, useAudioPreview, useMusicCatalog} from "./audio.js";
 import {ActivityRules} from "./activity.js";
-import {PlanReasoningPanel} from "./planning.js";
+import {KnowledgeUses, PlanReasoningPanel} from "./planning.js";
 import {SubtitlePreview, useSubtitlePreview} from "./subtitles.js";
 import {OverlayPanel, OverlayPreview, overlayProblem} from "./overlays.js";
 
@@ -366,7 +366,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                     : plan ? html`<p class="hint">点时间轴上的一个镜头，可以裁短、调速、换顺序或替换画面。</p><${PlanInspector} plan=${plan} groups=${groups} count=${items.length} totalUs=${player.totalUs} shot=${null} />` : html`<p class="note">选中方案后，这里显示它的时长、镜头和缺口。</p>`}
                 </div>
                 <div hidden=${inspTab !== "sound"}>
-                ${editable ? html`<${AudioPanel} editing=${editing} project=${project} fps=${fps} totalUs=${player.totalUs} music=${music} onBusy=${setAudioBusy} />`
+                ${editable ? html`<${AudioPanel} editing=${editing} project=${project} game=${planJob?.brief?.game || ""} fps=${fps} totalUs=${player.totalUs} music=${music} onBusy=${setAudioBusy} />`
                     : html`<p class="note">${plan ? "这个方案还不能编辑声音（正在读取或只能导出）。" : "先在左侧选一个方案，再在这里加旁白和配乐。"}</p>`}
                 </div>
                 <div hidden=${inspTab !== "overlay"}>
@@ -465,6 +465,7 @@ function ProgramTrack({items, totalUs, outUs, thumb, selectedId, changed, previe
 function PlanInspector({plan, groups, count, totalUs, shot}) {
     return html`
         <div class="field"><div class="k">方案</div><div class="v">${plan.structure}</div></div>
+        <${KnowledgeUses} uses=${plan.knowledgeUses} />
         <div class="field"><div class="k">时长与镜头</div><div class="v num">${secondsText(totalUs)} · ${count ?? groups.length} 个镜头</div></div>
         ${(plan.advisories || []).length ? html`<div class="field"><div class="k">提醒</div><ul class="facts">${plan.advisories.map((a) => html`<li>${a}</li>`)}</ul></div>` : null}
         ${shot ? html`<div class="field"><div class="k">选中镜头 · 成片 ${timecode(shot.outStartUs)} 起 ${(shot.outDurUs / 1e6).toFixed(1)} 秒</div>

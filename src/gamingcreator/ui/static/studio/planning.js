@@ -79,6 +79,8 @@ export function PlanReasoningPanel({project, jobId, disabled, onAdopt}) {
             ${history.map(saved => html`<div><span class="hint">${saved.at}</span><button class="btn ghost" disabled=${disabled || !!flow.busy} onClick=${() => flow.recover(saved)}>读取策划结果（不调用模型）</button></div>`)}
         </details>` : null}
         ${flow.quote ? html`<p class="hint">费用上限 ¥${flow.quote.maxCostCny}，按完整上下文保守预留，非实际费用。</p>
+            ${flow.quote.knowledge?.length === 0 ? html`<p class="hint">未命中当前同游戏的登记知识；本次未发送知识资料。按主题/目标字面匹配，长中文词可能零命中。</p>` : null}
+            ${flow.quote.knowledge ? html`<details><summary>本次登记知识（${flow.quote.knowledge.length} 条）</summary><p class="hint">按游戏及主题/目标字面匹配；长中文词可能零命中。资料与引用未做真实性或语义核验。</p>${flow.quote.knowledge.map(entry => html`<p style="overflow-wrap:anywhere">${entry.title} · ${entry.source.kind} · ${entry.source.label} · ${entry.createdAt} · ${entry.entryId}</p><blockquote>${entry.text}</blockquote>`)}</details>` : null}
             ${flow.quote.originalRequest ? html`<details><summary>本次已保存需求</summary><pre>${JSON.stringify(flow.quote.originalRequest, null, 2)}</pre></details>` : null}
             ${flow.quote.payloadPreview ? html`<details><summary>本次将发送的文字</summary><pre>${JSON.stringify(flow.quote.payloadPreview, null, 2)}</pre></details>` : null}
             ${!flow.sent ? html`<label class="check"><input type="checkbox" aria-label="同意本次动态策划费用" checked=${flow.confirmed} disabled=${disabled || !!flow.busy} onChange=${e => flow.update({confirmed: e.currentTarget.checked})} />同意发送文字并确认本次费用上限</label>
@@ -97,10 +99,18 @@ export function PlanReasoningPanel({project, jobId, disabled, onAdopt}) {
 
 function PlanPreview({preview}) {
     return html`<div class="dynamic-plan-preview" aria-label="动态方案预览">${preview.plans.map(plan => html`<section class="field">
-        <strong>${plan.title}</strong><p class="hint">${plan.structure}</p>
+        <strong>${plan.title}</strong><p class="hint">${plan.structure}</p><${KnowledgeUses} uses=${plan.knowledgeUses} />
         <p>${(plan.actualFrames / preview.fps).toFixed(1)} 秒 / 目标 ${(plan.targetFrames / preview.fps).toFixed(1)} 秒</p>
         ${plan.durationStatus !== "target-met" ? html`<p class="note">${plan.durationStatus === "insufficient-candidate-pool" ? "候选素材不足" : "本案选材不足"}：差 ${(plan.frameGap / preview.fps).toFixed(1)} 秒，不会凭空补镜头。</p>` : null}
         ${plan.gaps?.length ? html`<ul>${plan.gaps.map(gap => html`<li>${gap}</li>`)}</ul>` : null}
         <ol>${plan.segments.map(segment => html`<li>${segment.role || "镜头"} · ${(segment.startUs / 1e6).toFixed(1)}–${(segment.endUs / 1e6).toFixed(1)} 秒 <span class="hint">${segment.scriptDraft}</span></li>`)}</ol>
     </section>`)}</div>`;
+}
+
+export function KnowledgeUses({uses}) {
+    if (!uses?.length) return null;
+    return html`<details class="knowledge-uses"><summary>登记知识引用（未核验真实性与语义）</summary>${uses.map(use => html`<div>
+        <p>策划原句：${use.structureQuote}</p><blockquote>资料原文：${use.text}</blockquote>
+        <p class="hint" style="overflow-wrap:anywhere">登记来源：${use.title} · ${use.source.kind} · ${use.source.label} · ${use.createdAt} · ${use.entryId}</p>
+    </div>`)}</details>`;
 }

@@ -14,3 +14,19 @@
 ## 追加（T21）
 
 2026-11-01：本机目录批量导入 txt／md（可选截图／PDF）；CLI import-knowledge、POST /api/knowledge-import、创作页路径输入；来源含「目录导入」；不联网。自动引用与联网抓取仍未做。
+
+## 2026-11-08：知识进入动态策划（实施合同）
+
+Astra/low只读方案：沿用现有知识录入/检索及单次确认服务，交付“已登记知识→动态策划准备→检查实际发送资料→确认后预览/采用/重开可核出处”。不能把手工复制UI冒充Planner自动引用，不建复杂RAG或新费用/状态系统。root当前P020完整门禁不受此独立分支影响，先收口P020再集成本批。新文字调用仍未授权，本批仅fake transport证明技术路径，不能计真实AI或创作质量。
+
+- 选择：从可信普通plan job的Brief取game、必须主题/目标，复用同游戏current/search与标题权重；仅当前版本、实际命中，空查询/零命中为空。至多3条、每条至多400字连续原文，截段围绕命中；同分同时间按entryId稳定排序。冻结完整entryId、title、source.kind/label、createdAt及实际发送片段。无整库发送/网页抓取/新检索依赖；长中文词法召回限制和零命中如实显示。
+- 请求身份：有知识才用v2 snapshot/prompt/proposal，无知识严格沿用v1字节、fingerprint/requestHash及旧记录读回。prepare仅查询一次KnowledgeStore，资料进入实际request.user、hash和报价预览；保守全上下文报价算法不变，不伪称资料越少必然降价。执行/采用/恢复从不可覆盖prepared record里的request.user取冻结资料，重建原job/候选/源校验后核完整requestHash，不重新查最新库、不改旧quote或账本、不自动重发。
+- 引用：v2每plan增加knowledgeUses数组，允许空；每项entryId来自本次资料，structureQuote为该plan.structure里的非空原文，拒未知ID/重复对/编造原句。编译报告从冻结资料补出处和原文，不能信模型自填来源。预览、采用结果和重开同时显示策划原句/资料原文/出处。此检查只证明引用对应关系，不核资料真实性或语义结论，不削弱候选画面证据规则。
+- 归属：Sol/medium唯一写者preview树新分支；application/knowledge.py、plan_proposals.py、plan_reasoning.py，ui/creation_reasoning_service.py、plan_reasoning_jobs.py必要部分，studio/planning.js及edit.js已采用方案引用展示。测试复用test_knowledge.py、test_plan_proposals.py、test_plan_reasoning_jobs.py、test_studio_planning_browser.py的现有fixture；必要新增具名单文件先说明用途。parent持合同/feature/指南/集成，唯一Sol/high核费用/快照/来源边界，不叠普通审查。范围外文件先报告，函数≤80行，旧付费记录和结果继续可读。
+- 验收：同游戏新旧版本/他游戏/无关资料混合时，仅当前命中片段进入quote且逐字可回源；零命中与历史v1保持字节身份。quote后替换库条目，fake确认捕获请求与展示请求完全一致，新quote才选新版本；原视频改变仍拒发送。合法/未知ID、编造原句/空引用各经真实服务校验；合法引用采用并重开可回读，重复采用无新增发送，非法结果不采用。真实Studio走准备→确认→预览→采用→重开，沿现有明确fake模型传输和真实job/收据，不伪造云端质量。覆盖同一边界的场景复用，不扩成镜像测试或重跑全量；父集成时执行完整门禁。
+
+本批不重做整库Studio管理页、联网抓取或独立脚本/Hook/CTA生成；这些最终产品目标仍保留。数据保留本机，任何真实发送到执行前再申请具体许可。
+
+## 2026-11-08 自主恢复收口
+
+唯一task_quality_guard（Sol/high）核知识费用/冻结/来源通过；同轮发现audio重合成等待中撤销或裁剪可被迟到结果覆盖，已用编辑代次隔离并获定向复核通过。新增浏览器延迟撤销回归及成功保存新修订的新旧asset/start/gain/mix回读，3 passed / 16.42s，证据`.cache/studio-resume-revision-final2.log`及`.cache/studio-resume-revision.xml`。完整verify运行中，`.cache/studio-resume-full-verify.log`；不提前声明交付或质量通过。受影响含browser迭代于12%主动中断用于修复该真实缺陷，不作绿证据。

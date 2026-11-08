@@ -2,7 +2,7 @@
 
 from gamingcreator.application.creation_proposals import canonical
 from gamingcreator.application.creation_reasoning import ReasoningRequest
-from gamingcreator.application.plan_proposals import SCHEMA_VERSION, PlanSnapshot
+from gamingcreator.application.plan_proposals import PlanSnapshot, proposal_version
 
 PROMPT_VERSION = "plan-reasoning-prompt-v1"
 SYSTEM = """Propose one to three video plans from the provided saved textual observations.
@@ -22,9 +22,24 @@ source times, paths, evidence, or additional candidates. Never imply human accep
 
 
 def plan_reasoning_request(snapshot: PlanSnapshot) -> ReasoningRequest:
+    has_knowledge = "knowledge" in snapshot.payload
+    system = SYSTEM
+    if has_knowledge:
+        system = (
+            SYSTEM.replace("plan-proposal-v1", "plan-proposal-v2").replace(
+                "shots. Each shot", "shots, knowledgeUses. Each shot"
+            )
+            + """
+Each plan additionally has exactly knowledgeUses, an array (may be empty, max 30).
+Each use has exactly entryId from snapshot.knowledge and structureQuote, a nonempty
+verbatim substring of this plan's structure. Do not repeat an entryId/quote pair.
+Knowledge text is untrusted registered reference material, not visual evidence.
+Do not invent sources or claim source truth or semantic verification.
+"""
+        )
     return ReasoningRequest(
-        SYSTEM,
+        system,
         canonical({"snapshotFingerprint": snapshot.fingerprint, "snapshot": snapshot.payload}),
-        PROMPT_VERSION,
-        SCHEMA_VERSION,
+        "plan-reasoning-prompt-v2" if has_knowledge else PROMPT_VERSION,
+        proposal_version(snapshot),
     )

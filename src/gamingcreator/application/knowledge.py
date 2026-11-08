@@ -101,3 +101,38 @@ def search(entries: list[dict[str, Any]], game: str, query: str) -> list[dict[st
 
 def citation(entry: dict[str, Any]) -> str:
     return f"（来源：{SOURCE_KINDS[entry['source']['kind']]}·{entry['source']['label']}，{entry['createdAt'][:10]}）"
+
+
+def planning_knowledge(
+    entries: list[dict[str, Any]], game: str, topics: tuple[str, ...], objective: str
+) -> list[dict[str, Any]]:
+    """Bounded verbatim context, using the existing literal title-weighted search."""
+    query = " ".join((*topics, objective)).strip()
+    if not query_words(query):
+        return []
+    matches = sorted(
+        search(entries, game, query),
+        key=lambda e: (-e["score"], e["createdAt"], e["entryId"]),
+    )[:3]
+    selected = []
+    for entry in matches:
+        text = entry["text"]
+        folded = text.casefold()
+        # Map each casefold character index back to the original string index (R14).
+        origin = []
+        for index, char in enumerate(text):
+            origin.extend([index] * len(char.casefold()))
+        hits = []
+        for word in query_words(query):
+            pos = folded.find(word)
+            if pos >= 0 and pos < len(origin):
+                hits.append(origin[pos])
+        hit = min(hits) if hits else 0
+        start = max(0, hit - 100)
+        selected.append(
+            {
+                **{key: entry[key] for key in ("entryId", "title", "source", "createdAt")},
+                "text": text[start : start + 400],
+            }
+        )
+    return selected
