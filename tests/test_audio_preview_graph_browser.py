@@ -71,35 +71,68 @@ CAPTURE = """async settings => {
     });
     const errors=[];
     const graph=new AudioPreviewGraph(elements, message=>errors.push(message));
-    await graph.ready;
-    graph.configure(settings);
-    graph.slot(elements[0],1); graph.slot(elements[1],0);
-    const chunks=[]; let recording=false;
-    const recorder=graph.context.createScriptProcessor(1024,2,2);
-    const done=new Promise(resolve=> {
-        recorder.onaudioprocess=event=> {
-            if(!recording) return;
-            chunks.push(...event.inputBuffer.getChannelData(0));
-            if(chunks.length>=graph.context.sampleRate*.8) resolve();
-        };
-    });
-    graph.gate.connect(recorder); recorder.connect(graph.context.destination);
-    await graph.context.resume();
-    await Promise.all([elements[0],elements[2],elements[3]].map(el=>el.play()));
-    // play() can resolve before the three media clocks have all advanced. Keep
-    // startup scheduling out of the steady-state detector measurement window.
-    await Promise.all([elements[0],elements[2],elements[3]].map(el=>new Promise((resolve,reject)=>{
-        const check=()=>{if(el.currentTime>=.25){clearTimeout(timer);el.removeEventListener('timeupdate',check);resolve();}};
-        const timer=setTimeout(()=>{el.removeEventListener('timeupdate',check);reject(new Error('Media clock did not advance'));},5000);
-        el.addEventListener('timeupdate',check);check();
-    })));
-    graph.enable(true);
-    recording=true;
-    await done;
-    graph.reset();
-    recorder.disconnect(); graph.dispose();
-    const ended=elements.every(el=>el.paused); elements.forEach(el=>el.remove());
-    return {samples:chunks,rate:graph.context.sampleRate,errors,ended,state:graph.context.state};
+    let captured; let timer; let recorder;
+    try {
+        await graph.ready;
+        graph.configure(settings);
+        graph.slot(elements[0],1); graph.slot(elements[1],0);
+        // Capture on the render thread: ScriptProcessor callbacks queued during a
+        // main-thread stall can deliver stale/repeated input blocks as fresh PCM.
+        const captureModule=URL.createObjectURL(new Blob([`
+            class Capture extends AudioWorkletProcessor {
+                constructor() {
+                    super(); this.samples=[]; this.recording=false; this.firstFrame=null;
+                    this.port.onmessage=()=>{this.recording=true;};
+                }
+                process(inputs) {
+                    if(this.recording && inputs[0]?.[0]) {
+                        if(this.firstFrame===null) this.firstFrame=currentFrame;
+                        this.samples.push(...inputs[0][0]);
+                        if(this.samples.length>=sampleRate*.8) {
+                            this.port.postMessage({samples:this.samples,firstFrame:this.firstFrame,
+                                endFrame:currentFrame+inputs[0][0].length});
+                            this.recording=false;
+                        }
+                    }
+                    return true;
+                }
+            }
+            registerProcessor('capture',Capture);
+        `],{type:'text/javascript'}));
+        try {
+            await graph.context.audioWorklet.addModule(captureModule);
+        } finally {
+            URL.revokeObjectURL(captureModule);
+        }
+        recorder=new AudioWorkletNode(graph.context,'capture');
+        const done=new Promise(resolve=>{recorder.port.onmessage=e=>resolve(e.data);});
+        graph.gate.connect(recorder); recorder.connect(graph.context.destination);
+        await graph.context.resume();
+        await Promise.all([elements[0],elements[2],elements[3]].map(el=>el.play()));
+        // play() can resolve before the three media clocks have all advanced. Keep
+        // startup scheduling out of the steady-state detector measurement window.
+        await Promise.all([elements[0],elements[2],elements[3]].map(el=>new Promise((resolve,reject)=>{
+            const check=()=>{if(el.currentTime>=.25){clearTimeout(timer);el.removeEventListener('timeupdate',check);resolve();}};
+            const timer=setTimeout(()=>{el.removeEventListener('timeupdate',check);reject(new Error('Media clock did not advance'));},5000);
+            el.addEventListener('timeupdate',check);check();
+        })));
+        if([elements[0],elements[2],elements[3]].some(el=>el.duration-el.currentTime<.8))
+            throw new Error('Insufficient media remains for capture');
+        graph.enable(true);
+        recorder.port.postMessage('record');
+        captured=await Promise.race([done,new Promise((_,reject)=>{
+            timer=setTimeout(()=>reject(new Error('Audio capture timed out')),5000);
+        })]);
+        if([elements[0],elements[2],elements[3]].some(el=>el.ended))
+            throw new Error('Media ended during capture');
+    } finally {
+        clearTimeout(timer);
+        graph.reset();
+        recorder?.disconnect(); graph.dispose();
+        elements.forEach(el=>el.remove());
+    }
+    const ended=elements.every(el=>el.paused);
+    return {...captured,rate:graph.context.sampleRate,errors,ended,state:graph.context.state};
 }"""
 
 
@@ -275,3 +308,72 @@ def test_browser_servers_do_not_share_a_live_windows_port():
             second.server_close()
     finally:
         first.server_close()
+
+
+@pytest.mark.parametrize("boundary", ["startup", "recording"])
+def test_render_clock_capture_survives_main_thread_stall(live_graph, boundary):
+    stall = "const until=performance.now()+600; while(performance.now()<until){};"
+    marker = (
+        "graph.enable(true);" if boundary == "startup" else "recorder.port.postMessage('record');"
+    )
+    capture = CAPTURE.replace(marker, stall + marker if boundary == "startup" else marker + stall)
+    result = live_graph.evaluate(
+        capture,
+        dict(
+            mix=dict(sourceGainDb=-24, bgm=dict(gainDb=0), ducking="off"),
+            narration=dict(gainDb=-24, ducking="off"),
+        ),
+    )
+    assert result["endFrame"] - result["firstFrame"] == len(result["samples"])
+    assert result["rate"] * 0.8 <= len(result["samples"]) < result["rate"] * 0.8 + 128
+    assert amplitude(result["samples"], result["rate"], 907) == pytest.approx(0.1, abs=0.003)
+    assert result["ended"] and result["state"] == "closed"
+
+
+def test_render_clock_capture_rejects_insufficient_media(live_graph):
+    capture = CAPTURE.replace(
+        "    if([elements[0],elements[2],elements[3]].some(el=>el.duration-el.currentTime<.8))",
+        "    const until=performance.now()+3900; while(performance.now()<until){};\n"
+        "    if([elements[0],elements[2],elements[3]].some(el=>el.duration-el.currentTime<.8))",
+    )
+    pw = pytest.importorskip("playwright.sync_api")
+    with pytest.raises(pw.Error, match="Insufficient media remains for capture"):
+        live_graph.evaluate(capture, dict(mix=dict(bgm=dict(gainDb=0)), narration={}))
+    assert live_graph.locator("audio").count() == 0
+
+
+def test_render_clock_capture_cleans_up_rejected_module(live_graph):
+    result = live_graph.evaluate(
+        """async capture => {
+            const contexts=[],created=[],revoked=[];
+            const NativeContext=window.AudioContext;
+            const nativeAdd=AudioWorklet.prototype.addModule;
+            const nativeCreate=URL.createObjectURL, nativeRevoke=URL.revokeObjectURL;
+            window.AudioContext=new Proxy(NativeContext,{
+                construct(target,args){const context=new target(...args);contexts.push(context);return context;}
+            });
+            AudioWorklet.prototype.addModule=function(url,...args){
+                if(String(url).startsWith('blob:')) return Promise.reject(new Error('Capture module rejected'));
+                return nativeAdd.call(this,url,...args);
+            };
+            URL.createObjectURL=function(blob){const url=nativeCreate.call(this,blob);created.push(url);return url;};
+            URL.revokeObjectURL=function(url){revoked.push(url);return nativeRevoke.call(this,url);};
+            let error;
+            try {
+                await (0,eval)(`(${capture})`)({mix:{bgm:{gainDb:0}},narration:{}});
+            } catch(reason) {error=reason.message;}
+            finally {
+                window.AudioContext=NativeContext;
+                AudioWorklet.prototype.addModule=nativeAdd;
+                URL.createObjectURL=nativeCreate; URL.revokeObjectURL=nativeRevoke;
+            }
+            return {error,created,revoked,states:contexts.map(context=>context.state),
+                elements:document.querySelectorAll('audio').length};
+        }""",
+        CAPTURE,
+    )
+    assert result["error"] == "Capture module rejected"
+    assert len(result["created"]) == 1
+    assert result["created"] == result["revoked"]
+    assert result["states"] == ["closed"]
+    assert result["elements"] == 0
