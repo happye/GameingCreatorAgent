@@ -279,7 +279,7 @@ def test_narration_draft_synthesize_and_save(narrated, monkeypatch):  # noqa: F8
                 "aria-selected", "true"
             )
             page.get_by_role("button", name="起草旁白稿").click()
-            page.get_by_label("旁白稿").fill("测试旁白")
+            page.get_by_role("textbox", name="旁白稿", exact=True).fill("测试旁白")
             page.get_by_role("button", name="合成旁白").click()
             playwright.expect(page.locator(".lane.voice")).to_contain_text("秒")
             playwright.expect(page.get_by_text("有未保存的修改")).to_be_visible()
@@ -353,7 +353,7 @@ def test_cloud_voice_confirms_cost_before_paying(narrated, monkeypatch):  # noqa
                 "aria-selected", "true"
             )
             page.get_by_role("button", name="起草旁白稿").click()
-            page.get_by_label("旁白稿").fill("测试旁白")
+            page.get_by_role("textbox", name="旁白稿", exact=True).fill("测试旁白")
             voices = page.get_by_label("声音", exact=False).first
             playwright.expect(voices).to_have_value("v1")
             playwright.expect(
@@ -361,7 +361,7 @@ def test_cloud_voice_confirms_cost_before_paying(narrated, monkeypatch):  # noqa
             ).to_be_visible()
             assert calls == []
             voices.select_option("cosyvoice:longanyang")
-            pay = page.get_by_role("button", name=re.compile(r"确认付费合成（约 ¥0\.0008）"))
+            pay = page.get_by_role("button", name=re.compile(r"确认付费合成（约 [¥￥]0\.0008）"))
             pay.click()
             playwright.expect(page.locator(".lane.voice")).to_contain_text("秒")
             assert calls == ["longanyang"]

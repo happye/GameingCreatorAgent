@@ -190,6 +190,12 @@ def test_draft_citations_edit_restore_and_late_isolation(studio_plan):
 
     page.reload()
     page.get_by_role("tab", name="声音", exact=True).click()
+    expect(page.get_by_role("textbox", name="旁白稿", exact=True)).to_have_value("原始旁白一句。")
+    # Explicitly clear this restored draft before the independent late-response scenario.
+    page.once("dialog", lambda dialog: dialog.accept())
+    page.get_by_role("button", name="清除本机草稿", exact=True).click()
+    page.reload()
+    page.get_by_role("tab", name="声音", exact=True).click()
     expect(page.get_by_role("button", name="起草旁白稿", exact=True)).to_be_visible()
     page.evaluate(
         """() => {

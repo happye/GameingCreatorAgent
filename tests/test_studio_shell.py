@@ -12,6 +12,14 @@ import pytest
 from gamingcreator.ui.server import ASSETS, create_server
 
 STATIC = Path(__file__).resolve().parents[1] / "src/gamingcreator/ui/static"
+IMPORT_SPECIFIERS = re.compile(r'(?<![\w-])(?:from|import)\s*"([^"]+)"')
+
+
+def test_import_guard_catches_commented_remote_import_without_matching_api_route():
+    remote = "https://example.invalid/module.js"
+    assert IMPORT_SPECIFIERS.findall(f'import{{}}/*comment*/from"{remote}";') == [remote]
+    assert IMPORT_SPECIFIERS.findall(f'import"{remote}";') == [remote]
+    assert not IMPORT_SPECIFIERS.findall('client.api("/api/knowledge-import", {}, {body});')
 
 
 def test_vendored_modules_match_their_recorded_hashes():
@@ -21,7 +29,7 @@ def test_vendored_modules_match_their_recorded_hashes():
     # Every module import stays relative, so no inline import map is needed.
     for path in [*STATIC.glob("vendor/*.js"), *STATIC.glob("studio/*.js")]:
         text = path.read_text(encoding="utf-8")
-        for specifier in re.findall(r'(?:from|import)\s*"([^"]+)"', text):
+        for specifier in IMPORT_SPECIFIERS.findall(text):
             assert specifier.startswith(("./", "../")), (path.name, specifier)
 
 
