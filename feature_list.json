@@ -647,6 +647,9 @@
             "first_product": true,
             "delivery_status": "partial",
             "implementation_evidence": [
+                "docs/exec-plans/sprint-activity-rules.md",
+                "tests/test_studio_activity_rules_browser.py",
+                "2026-11-08: Studio local activity-rule panel reuses the existing extraction API; citations, explicit application to the current brief, source/project/unmount stale-result isolation, and text-input topic round-trip verified by 12 real HTTP browser cases. No cloud calls, remote URL fetching or large editor dependency; existing OCR/PDF evidence reused, creative quality unreviewed.",
                 "2026-11-01: offline activity-rule extraction (name, period, platforms, min/max duration, orientation, required topics, forbidden items) with exact source-line citations from pasted text or local txt/md/html, screenshots via Windows OCR and PDFs via Windows.Data.Pdf page rendering + OCR; one-click brief filling; real Windows screenshot/PDF tests pass; no network fetching or model understanding"
             ],
             "quality_status": "not_separately_assessed",

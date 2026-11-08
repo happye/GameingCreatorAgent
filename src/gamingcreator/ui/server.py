@@ -79,6 +79,7 @@ ASSETS = {
     ),
     "/assets/studio/planning.js": ("studio/planning.js", "text/javascript; charset=utf-8"),
     "/assets/studio/subtitles.js": ("studio/subtitles.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/activity.js": ("studio/activity.js", "text/javascript; charset=utf-8"),
     "/assets/studio/edit.js": ("studio/edit.js", "text/javascript; charset=utf-8"),
     "/assets/studio/clipedit.js": ("studio/clipedit.js", "text/javascript; charset=utf-8"),
     "/assets/studio/overlays.js": ("studio/overlays.js", "text/javascript; charset=utf-8"),

@@ -7,6 +7,7 @@ import {recordingRuns} from "./recordings.js";
 import {editTimeline, shots, timeline, usePlanPlayer} from "./preview.js";
 import {ClipInspector, CommandDock, captionProblem, transitionProblem, useClipEditor} from "./clipedit.js";
 import {AudioPanel, narrationProblem, useAudioPreview, useMusicCatalog} from "./audio.js";
+import {ActivityRules} from "./activity.js";
 import {PlanReasoningPanel} from "./planning.js";
 import {SubtitlePreview, useSubtitlePreview} from "./subtitles.js";
 import {OverlayPanel, OverlayPreview, overlayProblem} from "./overlays.js";
@@ -293,7 +294,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         <aside class="panel" hidden=${!layout.bin} aria-label="需求与方案">
             <div class="panel-head">需求<span class="spacer"></span><span class="track-label">${saved}</span></div>
             <div class="panel-body">
-                <${Brief} runs=${runs} draft=${draft} update=${update} busy=${busy} onGenerate=${generate} basket=${basket} />
+                <${Brief} project=${project} runs=${runs} draft=${draft} update=${update} busy=${busy} onGenerate=${generate} basket=${basket} />
                 <div class="section-label">方案${planJob ? `（${planJob.plans.length}）` : ""}</div>
                 ${planJob ? planJob.plans.map((p) => html`<${PlanCard} plan=${p} fps=${fps} active=${p.id === planId} thumb=${thumb}
                     onPick=${() => { if (overlayBusy || audioBusy || busy) return; if (editing.dirty && !confirmLeave()) return; setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommandRows(null); lastJob(project, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
@@ -394,7 +395,7 @@ function confirmLeave() {
     try { return window.confirm("当前方案有未保存的修改，切换会丢弃这些修改。继续吗？"); } catch { return false; }
 }
 
-function Brief({runs, draft, update, busy, onGenerate, basket}) {
+function Brief({project, runs, draft, update, busy, onGenerate, basket}) {
     const usable = recordingRuns(runs, draft.runIds);
     const field = (name, label, props = {}) => html`<label class="form-row">${label}<input class="input" value=${draft[name]} onInput=${(e) => update({[name]: e.currentTarget.value})} ...${props} /></label>`;
     return html`<form class="brief" onSubmit=${(e) => { e.preventDefault(); void onGenerate(); }}>
@@ -411,6 +412,7 @@ function Brief({runs, draft, update, busy, onGenerate, basket}) {
             ${field("targetDuration", "秒数", {type: "number", min: 1, max: 86400})}
         </div>
         <label class="form-row">平台<select class="select" value=${draft.platform} onChange=${(e) => update({platform: e.currentTarget.value})}>${PLATFORMS.map(([v, l]) => html`<option value=${v}>${l}</option>`)}</select></label>
+        <${ActivityRules} key=${project} draft=${draft} update=${update} />
         <details class="group"><summary>高级选项（可不填）</summary>
             ${field("objective", "创作目标")}${field("audience", "目标观众")}${field("tone", "表达语气")}
             ${field("mandatoryTopics", "必须包含的主题（逗号分隔）")}${field("exclude", "排除这些词的片段（如：加载, 菜单）")}
