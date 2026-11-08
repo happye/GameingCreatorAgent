@@ -39,6 +39,32 @@ const copyText = async (value, onOk, onFail) => {
     }
 };
 
+function KnowledgeComparison({value, onOpen}) {
+    const [showEqual, setShowEqual] = useState(false);
+    const labels = {equal: "未变", removed: "删除", added: "新增"};
+    return html`<section class="field" aria-label="知识版本差异" style=${{minWidth: 0, overflowWrap: "anywhere"}}>
+        <div class="k">知识文本版本对比</div>
+        <p class="hint">只对照已登记原文，不自动判断玩法变化；方向由你选择。</p>
+        <div>${[["before", "旧版"], ["after", "新版"]].map(([key, label]) => html`<div style=${{marginBottom: "12px"}}>
+            <strong>${label}：${value[key].title}</strong>
+            <p class="hint">${value[key].citation}</p>
+            <details><summary>条目 ID 与登记时间</summary>
+                <code style=${{overflowWrap: "anywhere"}}>${value[key].entryId}</code>
+                <p class="hint">${value[key].createdAt}</p>
+            </details>
+            <button type="button" class="btn ghost" onClick=${() => onOpen(value[key])}>查看${label}原文</button>
+        </div>`)}</div>
+        ${value.sameText && html`<p class="note">正文无差异；两侧出处和日期仍可分别核对。</p>`}
+        <label class="check"><input type="checkbox" checked=${showEqual} onChange=${(e) => setShowEqual(e.currentTarget.checked)} />显示未变化行</label>
+        <div style=${{maxHeight: "320px", overflow: "auto"}} aria-label="知识逐行差异">
+            ${value.rows.map((row, index) => row.kind === "equal" && !showEqual ? null : html`<div key=${index} data-change=${row.kind}>
+                <span class="hint" style=${{color: row.kind === "added" ? "#65d4a4" : row.kind === "removed" ? "#ef7b7b" : "inherit"}}>${labels[row.kind]}</span>
+                <pre style=${{whiteSpace: "pre-wrap", overflowWrap: "anywhere", margin: "0 0 8px"}}>${row.text}</pre>
+            </div>`)}
+        </div>
+    </section>`;
+}
+
 export function KnowledgePanel({project, game}) {
     const gameName = String(game || "").trim();
     const [query, setQuery] = useState("");
@@ -50,6 +76,11 @@ export function KnowledgePanel({project, game}) {
     const [historyNote, setHistoryNote] = useState("");
     const [historyBusy, setHistoryBusy] = useState(false);
     const [historyOwner, setHistoryOwner] = useState("");
+    const [compareBefore, setCompareBefore] = useState(null);
+    const [compareAfter, setCompareAfter] = useState(null);
+    const [comparison, setComparison] = useState(null);
+    const [comparing, setComparing] = useState(false);
+    const [compareNote, setCompareNote] = useState("");
     const [mode, setMode] = useState("text"); // text | file
     const [title, setTitle] = useState("");
     const [text, setText] = useState("");
@@ -78,6 +109,7 @@ export function KnowledgePanel({project, game}) {
     const saveEpoch = useRef(0);
     const historyEpoch = useRef(0);
     const importEpoch = useRef(0);
+    const compareEpoch = useRef(0);
     const panelEpoch = useRef(0);
     const mounted = useRef(true);
     const fileInputRef = useRef(null);
@@ -105,6 +137,12 @@ export function KnowledgePanel({project, game}) {
         setHistoryNote("");
         setHistoryBusy(false);
         setHistoryOwner("");
+        compareEpoch.current += 1;
+        setCompareBefore(null);
+        setCompareAfter(null);
+        setComparison(null);
+        setComparing(false);
+        setCompareNote("");
         setTitle("");
         setText("");
         setFile(null);
@@ -399,6 +437,35 @@ export function KnowledgePanel({project, game}) {
     };
 
     const viewing = selected;
+    const chooseComparison = (entry, side) => {
+        compareEpoch.current += 1;
+        setComparing(false);
+        setComparison(null);
+        setCompareNote("");
+        if (side === "before") setCompareBefore(entry);
+        else setCompareAfter(entry);
+    };
+    const compareButtons = (entry) => html`<button type="button" class="btn ghost" onClick=${() => chooseComparison(entry, "before")}>设为旧版</button>
+        <button type="button" class="btn ghost" onClick=${() => chooseComparison(entry, "after")}>设为新版</button>`;
+    const runComparison = async () => {
+        if (!compareBefore || !compareAfter || comparing) return;
+        const token = ++compareEpoch.current;
+        const panel = panelEpoch.current;
+        setComparing(true);
+        setComparison(null);
+        setCompareNote("正在对比…");
+        try {
+            const data = await api("/api/knowledge", {before: compareBefore.entryId, after: compareAfter.entryId});
+            if (compareEpoch.current !== token || panelEpoch.current !== panel || !mounted.current) return;
+            if (data.schemaVersion !== "game-knowledge-comparison-v1") throw new Error("无法识别对比响应版本。");
+            setComparison(data);
+            setCompareNote("");
+        } catch (error) {
+            if (compareEpoch.current === token && panelEpoch.current === panel && mounted.current) setCompareNote(`对比失败：${error.message}`);
+        } finally {
+            if (compareEpoch.current === token && panelEpoch.current === panel && mounted.current) setComparing(false);
+        }
+    };
     const canEditSelected = !!(viewing && entries?.some((row) => row.entryId === viewing.entryId));
     const filteredItems = !importItems ? null : importFilter === "all"
         ? importItems
@@ -421,6 +488,7 @@ export function KnowledgePanel({project, game}) {
                 <div class="actions-row">
                     <button type="button" class="btn ghost" onClick=${() => openDetail(entry)}>查看全文</button>
                     <button type="button" class="btn ghost" disabled=${historyBusy} onClick=${() => void loadHistory(entry.entryId)}>历史</button>
+                    ${compareButtons(entry)}
                     <button type="button" class="btn ghost" disabled=${saving} onClick=${() => beginEdit(entry)}>修改并保存新版本</button>
                 </div>
             </li>`)}
@@ -445,8 +513,17 @@ export function KnowledgePanel({project, game}) {
             ${history.map((entry, index) => html`<li key=${entry.entryId}>
                 <button type="button" class="btn ghost" onClick=${() => openDetail(entry)}>查看版本 ${index + 1}</button>
                 <span class="hint"> ${entry.title} · ${entry.entryId}</span>
+                ${compareButtons(entry)}
             </li>`)}
         </ul>`}
+
+        <div class="field" aria-label="知识对比选择" style=${{overflowWrap: "anywhere"}}>
+            <p class="hint">旧版：${compareBefore ? `${compareBefore.title} · ${compareBefore.entryId}` : "未选择"}</p>
+            <p class="hint">新版：${compareAfter ? `${compareAfter.title} · ${compareAfter.entryId}` : "未选择"}</p>
+            <button type="button" class="btn ghost" disabled=${!compareBefore || !compareAfter || comparing} onClick=${runComparison}>${comparing ? "正在对比…" : "对比所选版本"}</button>
+            <p class="note" role="status" aria-label="知识对比状态">${compareNote}</p>
+        </div>
+        ${comparison && html`<${KnowledgeComparison} value=${comparison} onOpen=${openDetail} />`}
 
         <form class="knowledge-form" onSubmit=${save}>
             <div class="k">${editingCurrent ? "修改并保存新版本" : "新增知识"}</div>

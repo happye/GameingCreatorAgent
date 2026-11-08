@@ -669,3 +669,93 @@ def test_r31_r38_directory_import_five_files(studio_knowledge, tmp_path):
     lines = [line for line in failure_text.splitlines() if line.strip()]
     assert len(lines) == 2
     page.screenshot(path=str(EVIDENCE_R2 / "knowledge-import-1440x900.png"))
+
+
+def _save_patch_versions(page, expect):
+    results = page.get_by_label("知识搜索结果")
+    page.get_by_label("知识标题", exact=True).fill("补丁一")
+    page.get_by_label("知识正文", exact=True).fill("公共😀\n\n删除技能\n数值10")
+    page.get_by_label("知识来源说明", exact=True).fill("官网第一版")
+    page.get_by_role("button", name="保存知识", exact=True).click()
+    expect(results).to_contain_text("补丁一")
+    results.get_by_role("button", name="修改并保存新版本", exact=True).click()
+    page.get_by_label("知识标题", exact=True).fill("补丁二")
+    page.get_by_label("知识正文", exact=True).fill("公共😀\n\n新增技能\n数值20")
+    page.get_by_label("知识来源说明", exact=True).fill("官网第二版")
+    page.get_by_role("button", name="保存新版本", exact=True).click()
+    expect(results).to_contain_text("补丁二")
+
+
+def test_compare_patch_versions_readonly_and_late_selection(studio_knowledge):
+    from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
+
+    page, expect = studio_knowledge.page, studio_knowledge.expect
+    _save_patch_versions(page, expect)
+    results = page.get_by_label("知识搜索结果")
+    results.get_by_role("button", name="历史", exact=True).click()
+    history_rows = page.get_by_label("知识历史版本").locator(":scope > li")
+    expect(history_rows).to_have_count(2)
+    history_rows.nth(1).get_by_role("button", name="设为旧版", exact=True).click()
+    history_rows.nth(0).get_by_role("button", name="设为新版", exact=True).click()
+    files = {
+        p: p.read_bytes() for p in KnowledgeStore(studio_knowledge.repository).root.glob("*.json")
+    }
+    posts_before = list(studio_knowledge.posts)
+    page.get_by_role("button", name="对比所选版本", exact=True).click()
+    compared = page.get_by_label("知识版本差异")
+    expect(compared).to_contain_text("旧版：补丁一")
+    expect(compared).to_contain_text("新版：补丁二")
+    expect(compared).to_contain_text("官网第一版")
+    expect(compared).to_contain_text("官网第二版")
+    stored = {e["title"]: e for e in KnowledgeStore(studio_knowledge.repository).entries()}
+    for index, title in enumerate(("补丁一", "补丁二")):
+        metadata = compared.locator("details").nth(index)
+        metadata.locator(":scope > summary").click()
+        expect(metadata).to_contain_text(stored[title]["entryId"])
+        expect(metadata).to_contain_text(stored[title]["createdAt"])
+        metadata.locator(":scope > summary").click()
+    assert compared.locator('[data-change="removed"] pre').all_text_contents() == [
+        "删除技能\n",
+        "数值10",
+    ]
+    assert compared.locator('[data-change="added"] pre').all_text_contents() == [
+        "新增技能\n",
+        "数值20",
+    ]
+    compared.get_by_role("checkbox", name="显示未变化行", exact=True).check()
+    assert compared.locator('[data-change="equal"] pre').all_text_contents() == ["公共😀\n", "\n"]
+    evidence = Path(".cache/scratch/knowledge-version-compare")
+    evidence.mkdir(parents=True, exist_ok=True)
+    for width, height in ((1440, 900), (1280, 720)):
+        page.set_viewport_size({"width": width, "height": height})
+        assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1")
+        page.screenshot(path=str(evidence / f"comparison-{width}.png"))
+    compared.get_by_role("button", name="查看旧版原文", exact=True).click()
+    expect(page.get_by_label("知识全文详情")).to_contain_text("删除技能")
+    page.evaluate("""() => {
+        const original = window.fetch;
+        let delay = true;
+        window.fetch = async (...args) => {
+            const response = await original(...args);
+            if (delay && String(args[0]).includes('/api/knowledge?before=')) {
+                delay = false;
+                return new Promise(resolve => { window.releaseComparison = () => resolve(response); });
+            }
+            return response;
+        };
+    }""")
+    page.get_by_role("button", name="对比所选版本", exact=True).click()
+    page.wait_for_function("() => !!window.releaseComparison")
+    results.get_by_role("button", name="设为旧版", exact=True).click()
+    page.get_by_role("button", name="对比所选版本", exact=True).click()
+    expect(compared).to_contain_text("正文无差异")
+    page.evaluate("() => window.releaseComparison()")
+    page.evaluate("() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
+    expect(compared).to_contain_text("正文无差异")
+    expect(compared.locator('[data-change="removed"]')).to_have_count(0)
+    compared.get_by_role("button", name="查看新版原文", exact=True).click()
+    expect(page.get_by_label("知识全文详情")).to_contain_text("新增技能")
+    assert studio_knowledge.posts == posts_before
+    assert {
+        p: p.read_bytes() for p in KnowledgeStore(studio_knowledge.repository).root.glob("*.json")
+    } == files

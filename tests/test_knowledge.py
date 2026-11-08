@@ -9,7 +9,14 @@ from pathlib import Path
 
 import pytest
 
-from gamingcreator.application.knowledge import current, history, is_valid, new_entry, search
+from gamingcreator.application.knowledge import (
+    compare_entries,
+    current,
+    history,
+    is_valid,
+    new_entry,
+    search,
+)
 from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
 
 
@@ -24,6 +31,46 @@ def entry(title, text, replaces=None, game="代号Atom", at="2026-11-01T00:00:00
     if replaces:
         value["replaces"] = replaces
     return new_entry(value, at)
+
+
+def test_compare_patch_notes_preserves_text_sources_and_direction():
+    old = entry("补丁一", "公共😀\n\n删除技能\n数值10")
+    new = entry("补丁二", "公共😀\n\n新增技能\n数值20", old["entryId"], at="2026-11-02")
+    original = json.dumps([old, new], ensure_ascii=False)
+    result = compare_entries([old, new], old["entryId"], new["entryId"])
+    assert result["schemaVersion"] == "game-knowledge-comparison-v1"
+    assert result["before"]["entryId"] == old["entryId"]
+    assert result["after"]["citation"] == "（来源：官方说明·官网公告，2026-11-02）"
+    assert result["rows"][:2] == [
+        {"kind": "equal", "text": "公共😀\n"},
+        {"kind": "equal", "text": "\n"},
+    ]
+    for side, excluded in (("before", "added"), ("after", "removed")):
+        assert (
+            "".join(r["text"] for r in result["rows"] if r["kind"] != excluded)
+            == result[side]["text"]
+        )
+    assert not result["sameText"]
+    assert json.dumps([old, new], ensure_ascii=False) == original
+    same_body = new_entry(
+        {
+            "game": old["game"],
+            "title": "出处不同",
+            "text": old["text"],
+            "sourceKind": "wiki",
+            "sourceLabel": "另一来源",
+        },
+        "2026-11-03",
+    )
+    same = compare_entries([old, same_body], old["entryId"], same_body["entryId"])
+    assert same["sameText"] and all(row["kind"] == "equal" for row in same["rows"])
+    assert same["before"]["createdAt"] != same["after"]["createdAt"]
+    assert same["before"]["source"] != same["after"]["source"]
+    foreign = entry("其他", "内容", game="其他游戏")
+    with pytest.raises(ValueError, match="同一个游戏"):
+        compare_entries([old, foreign], old["entryId"], foreign["entryId"])
+    with pytest.raises(ValueError, match="不存在"):
+        compare_entries([old], old["entryId"], "0" * 64)
 
 
 def test_entries_are_validated_and_content_addressed():
@@ -158,6 +205,28 @@ def test_http_add_from_text_and_file_then_search_and_history(tmp_path):
         found = get("game=%E4%BB%A3%E5%8F%B7Atom&q=%E9%BD%BF%E8%BD%AE")
         assert [e["entryId"] for e in found["entries"]] == [filed["entryId"]]
         assert get(f"entryId={typed['entryId']}")["history"][0]["entryId"] == typed["entryId"]
+        files = {p: p.read_bytes() for p in KnowledgeStore(tmp_path).root.glob("*.json")}
+        compared = get(f"before={typed['entryId']}&after={filed['entryId']}")
+        assert compared["before"]["text"] == typed["text"]
+        assert compared["after"]["text"] == filed["text"]
+        assert compared["rows"] == [
+            {"kind": "removed", "text": typed["text"]},
+            {"kind": "added", "text": filed["text"]},
+        ]
+        assert {p: p.read_bytes() for p in KnowledgeStore(tmp_path).root.glob("*.json")} == files
+        foreign = post(
+            {
+                "game": "其他游戏",
+                "title": "补丁",
+                "text": "正文",
+                "sourceKind": "user",
+                "sourceLabel": "用户资料",
+            }
+        )
+        for other in (foreign["entryId"], "0" * 64):
+            with pytest.raises(urllib.error.HTTPError) as refused_comparison:
+                get(f"before={typed['entryId']}&after={other}")
+            assert refused_comparison.value.code == 400
         with pytest.raises(urllib.error.HTTPError) as refused:
             post(
                 {

@@ -2,11 +2,13 @@
 
 ## 最近一次会话（2026-11-08，批次交付）
 
-Goal active，用户已恢复自主开发。root开发线codex/timed-overlays-20261107；源码检查点51cd54c、测试适配41ff654，本批完整工程验证闭环后按快进集成main。接手先核HEAD/main/origin-main实际refs；不重跑已结束门禁。规范四入口已独立5809705，用户设计稿/审计报告/未跟踪Grok工单保留，不整目录add。
+Goal active。root当前codex/knowledge-version-compare-20261108，main36d8325为上一批完整交付基线。新切片P018本机补丁说明逐行对比已实现（纯difflib、现有GET/api/knowledge before/after、Studio显式选择与出处/原文）。唯一Sol/high审查通过，受影响29过1跳（symlink不可用），最终布局/ID/时间定向1过4.16秒、Ruff/mypy过。准备冻结并跑本批完整门禁.cache/knowledge-compare-full-verify.log；查活句柄/日志，不重复启动。源码清单.cache/knowledge-compare-freeze.json，完整绿前不推main。新合同docs/exec-plans/sprint-knowledge-version-compare.md。
+
+上一批已集成main，不重复施工/全量诊断。规范5809705生效。用户设计稿/审计报告/未跟踪Grok工单保留，不整目录add。
 
 活动规则P020独立合并baf2a20。Studio显式将规则填入Brief；本机知识进入v2策划快照、实际请求、报价与采用引用，无资料沿用v1。旁白可编辑、复制/TXT、本机草稿恢复、免费本机重合成与保存新修订。唯一Sol/high审查知识费用/快照/来源及Studio草稿边界，修复并复核两项P2：编辑代次隔离迟到合成；asset变化关闭会话，防止B稿写入A键。只做fake模型/本机引擎技术验证，无真实新云发送。
 
-## 验证与证据
+## 上一批验证与证据
 
 最终.cache/studio-resume-final-r2-verify.log：5098过7跳，1760.46秒，493文件格式、Ruff、mypy209源、CLI全过；session52192终态0。520源码/测试与r2-freeze.json完整一致。前一final60190为4失败5093过7跳，4项均为测试适配，修复后定向过，原失败现场1e0cb189eb0546fda8283a3247f2dcd2保留。更早full27435在63%主动中止修P2、affected在12%中止，均非绿。旧49998的5066日志有临时源码写入窗口，仅诊断。不要覆盖原日志。
 
@@ -16,7 +18,7 @@ P033此前8ea3293完整5054过7跳，三格式下载/独立WAV干声已集成；
 
 ## 下一步与边界
 
-先确认本批refs已集成，再沿加速产品路线R3推进真正未完成能力。J1第四次not_usable保持；已记录本地缺陷已有修复，不为凑任务重复施工。开放式动态策划真实文本调用仍需具体许可；其他本地能力不受阻。媒体目录批量导入、多页提示及完整双尺寸专项仍不扩大声明。P018/P020/P026保持partial，不翻人评/passes；数字用status.py，不手抄。完整门禁之后不为docs/evidence微改再跑全量；分发仍须Release与许可材料。
+先收口新版本对比批次，再沿加速产品路线R3推进真正未完成能力。J1第四次not_usable保持；已记录本地缺陷已有修复，不为凑任务重复施工。开放式动态策划真实文本调用仍需具体许可；其他本地能力不受阻。媒体目录批量导入、多页提示及完整双尺寸专项仍不扩大声明。P018/P020/P026保持partial，不翻人评/passes；数字用status.py，不手抄。完整门禁之后不为docs/evidence微改再跑全量；分发仍须Release与许可材料。
 
 ## 工作树与保护
 

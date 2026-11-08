@@ -1022,10 +1022,13 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(200, profiles())
                 return
             if path == "/api/knowledge":
-                from gamingcreator.application.knowledge import history, search
+                from gamingcreator.application.knowledge import compare_entries, history, search
                 from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
 
                 entries = KnowledgeStore(self.repository).entries()
+                if set(query) == {"before", "after"}:
+                    self._json(200, compare_entries(entries, query["before"], query["after"]))
+                    return
                 if set(query) == {"entryId"}:
                     self._json(200, {"history": history(entries, query["entryId"])})
                     return

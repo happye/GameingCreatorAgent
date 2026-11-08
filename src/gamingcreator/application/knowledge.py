@@ -8,6 +8,7 @@ import hashlib
 import json
 import re
 import unicodedata
+from difflib import SequenceMatcher
 from typing import Any
 
 SOURCE_KINDS = {"official": "官方说明", "wiki": "Wiki/攻略站", "user": "用户资料"}
@@ -101,6 +102,34 @@ def search(entries: list[dict[str, Any]], game: str, query: str) -> list[dict[st
 
 def citation(entry: dict[str, Any]) -> str:
     return f"（来源：{SOURCE_KINDS[entry['source']['kind']]}·{entry['source']['label']}，{entry['createdAt'][:10]}）"
+
+
+def compare_entries(entries: list[dict[str, Any]], before_id: str, after_id: str) -> dict[str, Any]:
+    """Read-only line comparison of two registered entries; no semantic claims."""
+    by_id = {entry["entryId"]: entry for entry in entries}
+    if before_id not in by_id or after_id not in by_id:
+        raise ValueError("对比条目不存在。")
+    before, after = by_id[before_id], by_id[after_id]
+    if before["game"].casefold() != after["game"].casefold():
+        raise ValueError("只能对比同一个游戏的知识条目。")
+    old_lines = before["text"].splitlines(keepends=True)
+    new_lines = after["text"].splitlines(keepends=True)
+    rows: list[dict[str, str]] = []
+    for kind, start_old, end_old, start_new, end_new in SequenceMatcher(
+        None, old_lines, new_lines
+    ).get_opcodes():
+        if kind == "equal":
+            rows.extend({"kind": "equal", "text": line} for line in old_lines[start_old:end_old])
+        else:
+            rows.extend({"kind": "removed", "text": line} for line in old_lines[start_old:end_old])
+            rows.extend({"kind": "added", "text": line} for line in new_lines[start_new:end_new])
+    return {
+        "schemaVersion": "game-knowledge-comparison-v1",
+        "before": {**before, "citation": citation(before)},
+        "after": {**after, "citation": citation(after)},
+        "sameText": before["text"] == after["text"],
+        "rows": rows,
+    }
 
 
 def planning_knowledge(

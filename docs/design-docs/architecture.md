@@ -130,3 +130,5 @@ Studio专业下载复用原时间线路由，XMEML以纯ExportNarration数据声
 动态准备复用本机 KnowledgeStore 的同游戏当前版本及字面检索，最多三条、每条400字连续原文。命中时以 v2 snapshot/prompt/proposal 将 entryId、出处和原文冻结到实际请求、hash与报价；无命中沿用 v1。确认、采用与恢复从 prepared request 重建冻结资料，不查询新库替换旧请求。模型仅声明已冻结 entryId 与策划原句，编译层核对应关系并从冻结记录补出处；不证明语义真实性。见[知识合同](../exec-plans/sprint-game-knowledge.md)。
 
 本机草稿按项目/job/plan/asset保存在 localStorage，与不可覆盖的知识和任务回执分离。重合成复用既有 narration/revision 流程，只新增免费本机入口；clip/audio 编辑代次隔离迟到返回，资产变化关闭编辑会话并重新按资产键恢复。保存新修订保留旧音轨证据，FFmpeg与发布包继续使用原回执链。操作见[创作指南](../references/creation-guide.md)，证据见[旁白修订合同](../exec-plans/sprint-studio-narration-revision.md)。
+
+本机补丁说明对照复用同一KnowledgeStore只读快照，Application以标准库SequenceMatcher产生逐行增删/未变记录，返回两侧原始身份与出处；不把文本差异解释成玩法变化。UI显式选定before/after，改选使请求代次失效，project/game父组件key隔离作用域，结果不回写知识或策划。GET合同见[工作台API](inspection-workspace-api.md)。
