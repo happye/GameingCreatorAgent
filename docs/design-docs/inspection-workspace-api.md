@@ -172,6 +172,8 @@ prepare返回准备身份、请求身份、实际 `payloadPreview={system,user}`
 
 接口增加 `prepare_plan {jobId}` 与 `adopt_plan {preparedHash}`，其余execute/result复用上述机制。准备读取已完成plan任务的原始需求和候选篮子；结果 `planPreview={fps,plans}` 展示顺序、时长和素材不足，去除sourcePath。采用生成普通plan job，不再调用模型，重复采用复用同任务；注册和执行都核对原需求/源身份。Studio接入及完整verify已通过（2026-11-07：4874通过/7跳过）；模型调用均fake，真实AI创作质量尚未验收。
 
+本机知识接入保持原 action/确认协议。prepare 响应新增 `knowledge`，命中时实际请求使用 `plan-snapshot-v2` / `plan-proposal-v2` 及匹配 prompt；无资料保持 v1。资料最多三条，每条400字连续原文，含 entryId/title/source/createdAt。v2 每个 plan 的 `knowledgeUses` 为 `{entryId,structureQuote}` 数组；未知ID、重复对、非该策划结构原文的 quote 拒绝。预览/保存结果由编译层补可信资料原文与出处。quote后恢复使用冻结 request.user，不重查知识库；旧v1 prepared记录继续可读。技术验收与未验边界见[知识合同](../exec-plans/sprint-game-knowledge.md)。
+
 ## Studio派生源时钟与音频模块
 
 工作区health新增`runtimeIdentity={version:"workspace-runtime-v1",packageRoot,sha256}`：包根和源码摘要在create_server启动时固定，后续磁盘JS/Py变更不会让旧进程的health假装更新。启动器在mutex内独立计算预期，保留原application/apiVersion/PID/repository及owned-helper检查，并比较实际包目录/摘要。旧服务缺字段或身份不匹配时不复用、不停止，提示改用空闲`-Port`。这是本机源码兼容性检查，不是签名或原子部署。

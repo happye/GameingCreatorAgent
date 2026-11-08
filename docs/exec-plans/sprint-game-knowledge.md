@@ -29,4 +29,6 @@ Astra/low只读方案：沿用现有知识录入/检索及单次确认服务，�
 
 ## 2026-11-08 自主恢复收口
 
-唯一task_quality_guard（Sol/high）核知识费用/冻结/来源通过；同轮发现audio重合成等待中撤销或裁剪可被迟到结果覆盖，已用编辑代次隔离并获定向复核通过。新增浏览器延迟撤销回归及成功保存新修订的新旧asset/start/gain/mix回读，3 passed / 16.42s，证据`.cache/studio-resume-revision-final2.log`及`.cache/studio-resume-revision.xml`。完整verify运行中，`.cache/studio-resume-full-verify.log`；不提前声明交付或质量通过。受影响含browser迭代于12%主动中断用于修复该真实缺陷，不作绿证据。
+唯一task_quality_guard（Sol/high）核知识费用/冻结/来源及Studio草稿边界，通过两项真实P2修复的定向复核。4项旁白定向通过20.79秒，原失败隔离与最终细节见`sprint-studio-narration-revision.md`。完整门禁`.cache/studio-resume-final-r2-verify.log`最终5098通过/7跳过，1760.46秒，静态/CLI通过，520源码/测试冻结hash一致；更早中止及4项测试适配失败日志保留，不作绿证据。P018仍partial，真实AI与人评未提升。
+
+旧 v1 磁盘兼容补证：`.cache/scratch/legacy-v1-compat.py` 在独立目录加载 `8ea3293` 的 `creation_reasoning_service.py` 源码（其基础依赖沿用当前环境），生成无知识的真实 v1 prepared record；当前服务回读 record 不变，经明确 fake 传输执行后实际 user 逐字一致、一次发送，采用/重复采用/新 CreationJobs 实例重开均通过，保留 plan-reasoning-prompt-v1。日志 `.cache/studio-resume-legacy-v1-final.log` 退出0；基线源码hash、quote及隔离仓库路径在 `.cache/scratch/legacy-v1-compat/result.json`。这是基线服务生成的兼容夹具，不是读取或重发用户历史付费记录，也不声称对所有历史记录逐一验证。

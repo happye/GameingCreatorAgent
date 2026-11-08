@@ -616,7 +616,10 @@
             "delivery_status": "partial",
             "implementation_evidence": [
                 "2026-11-01: local game knowledge entries with source kind/label, content-addressed immutable files and replaces-based version history; text or local file input via the activity-rule readers; game-scoped keyword search with citations and insert-into-narration; HTTP and unit tests; no automatic planner citation or web crawling",
-                "2026-11-01: local directory batch import for txt/md (optional screenshots/PDF via existing read_rule_source OCR); CLI import-knowledge, POST /api/knowledge-import, creation-page folder path; source labels include 目录导入 + filename; no network scraping; duplicate game+text skipped; auto planner citation and web crawl still open"
+                "2026-11-01: local directory batch import for txt/md (optional screenshots/PDF via existing read_rule_source OCR); CLI import-knowledge, POST /api/knowledge-import, creation-page folder path; source labels include 目录导入 + filename; no network scraping; duplicate game+text skipped; auto planner citation and web crawl still open",
+                "docs/exec-plans/sprint-game-knowledge.md",
+                "docs/exec-plans/sprint-studio-narration-revision.md",
+                "2026-11-08: Studio manages local knowledge and imports real PNG/PDF with OCR source warnings. Matched current knowledge is frozen into v2 planning requests/quotes and adopted citations; empty context retains v1. Fake transport and baseline-v1 disk compatibility verified; real AI and human quality remain unassessed."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"
@@ -729,7 +732,10 @@
             "first_product": false,
             "delivery_status": "partial",
             "implementation_evidence": [
-                "2026-10-31 R2-I: local Windows SAPI narration asset jobs, preview, output-frame attachment with gain/ducking, inherit/remove/ancestor restore, three-way mix render; 165 targeted tests (.cache/narration-main.xml), real Huihui 5.688s voice located at 3.000s in a 360-frame MP4 (.cache/narration-real-render.json), Bilibili seven-file package from the narrated render; code-quality-guard PASS; voice license unknown"
+                "2026-10-31 R2-I: local Windows SAPI narration asset jobs, preview, output-frame attachment with gain/ducking, inherit/remove/ancestor restore, three-way mix render; 165 targeted tests (.cache/narration-main.xml), real Huihui 5.688s voice located at 3.000s in a 360-frame MP4 (.cache/narration-real-render.json), Bilibili seven-file package from the narrated render; code-quality-guard PASS; voice license unknown",
+                "docs/exec-plans/sprint-studio-narration-revision.md",
+                "tests/test_studio_narration_revision_browser.py",
+                "2026-11-08: Studio edits attached narration, restores per-asset local drafts and resynthesizes with free local voices into a new revision. Late results and asset-switch draft isolation verified; real WAV/MP4/7-file package chain uses explicit fake voice engine. Voice quality and human acceptance remain unassessed."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

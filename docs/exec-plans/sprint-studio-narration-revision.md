@@ -1,34 +1,34 @@
-# Studio 本机旁白修订与真实制作收口
+# Studio 知识与本机旁白修订收口
 
-2026-11-08，自主恢复后接收 Grok 第二轮已有成果；不是整项 P018/P020 或创作质量验收。
+日期：2026-11-08。接收 Grok 第二轮已有成果并收口；P018/P020仍为部分实现，不代表创作质量、人评或分发验收。
 
 ## 合同与边界
 
-沿用现有任务、修订、免费本机语音、FFmpeg 和发布包 API。用户修改挂接旁白后可重新合成并保存新版本；失败或等待期间编辑状态发生变化时保留当前音轨。新旧修订可分别回读，旧证据不改。真实云端、付费语音和平台发布均不执行。
+已有本机知识进入动态策划准备、实际请求与引用；用户修改挂接旁白后，可免费本机重合成并保存新修订。失败、越界或等待期间编辑状态变化时保留当前音轨；新旧修订分别可回读，旧证据不改。复用既有任务、费用确认、修订、FFmpeg与发布包路径，无新数据库、真实云端发送、付费语音或平台投稿。
 
-唯一 task_quality_guard（Sol/high）完成知识费用/快照/引用审查，未发现知识路径阻塞；同轮发现重合成期间撤销/裁剪可被迟到结果覆盖。修复以 clips/audio 编辑代次隔离返回，包含 ABA；该修复经同一审查者定向复核通过，未叠普通审查。
+唯一task_quality_guard（Sol/high）审查知识费用/快照/来源、audio、knowledge.js及narration_drafts.js边界。发现并修复两项P2，均由同一审查者定向复核通过：
 
-## 当前证据
+- 重合成期间撤销参数或裁剪，迟到结果会按旧参数/旧时长覆盖。现按clips/audio编辑代次隔离返回，包含ABA。
+- 新音轨B编辑期间撤销回A，B稿可写入A草稿键。现资产ID变化关闭编辑会话、清空旧状态并使异步结果失效；重新打开按当前资产键恢复。
 
-- `tests/test_studio_narration_revision_browser.py`：3 passed，16.42 秒。延迟真实 POST 返回期间撤销，结果保留当前音轨；成功路径保存新修订后，新旧 asset 不同、位置 30 帧、gain -6、混音保持且旧编辑结果不变。日志 `.cache/studio-resume-revision-final2.log`，XML `.cache/studio-resume-revision.xml`。
-- 独立真实媒体流程：`.cache/scratch/resume-real-media.py`，日志 `.cache/studio-resume-real-media2.log`，结构化结果 `.cache/scratch/resume-real-media/result.json`。复用已有 service/saved_plan，但恢复真实 `execute_render_creation`；真实 FFmpeg 渲染和包编码均未 mock。仅本机语音引擎以明确 fake 生成两条 2 秒 WAV（440/880Hz），时间线库使用既有隔离 fixture。
-- 隔离仓库 `cb8f3c15b61c45178b94302902e05b3b`：静音合成源，6 秒真实普通方案；旧/新语音经真实任务回执和两次修订挂接，start 30 帧、gain -6、ducking off、无 BGM。旧修订目录所有原文件逐字节保持。
-- 新修订真实 MP4：render `ecf58f6a92294755bf230b34dd1c9483`；回执 180 帧、30fps，ffprobe 180 帧、30/1、6 秒。解码后 1.25–1.75 秒窗口，880Hz 幅度 0.24470486、440Hz 幅度 0.0000002475；满足 >0.01 及 >5 倍条件。
-- 同一 render 经真实 publication → B站 profile → package `e9e501e4b35d4031820e368ba8e124a8`；ZIP 七文件集合与现有 FILES 完全相同。localChecks pass，publicationEligibility unverified；平台规则、来源权利和人评保持 unknown，不代表可真实投稿。
-- 完整门禁正在运行：`.cache/studio-resume-full-verify.log`、session 27435。源码冻结清单 `.cache/studio-resume-source-freeze.json`。原受影响组合为修复审查发现而主动中断，不作通过证据。
+## 定向与真实链路证据
+
+1. `tests/test_studio_narration_revision_browser.py`：4 passed /20.79s，Ruff/format通过。覆盖失败保持、成功保存新修订后新旧asset/start30/gain-6/mix回读、延迟撤销隔离、A→B→撤销A后恢复A原稿。日志`.cache/studio-resume-revision-scope.log`，XML同名。
+2. 独立媒体链：`.cache/scratch/resume-real-media.py`与`.cache/studio-resume-real-media2.log`。两条真实2秒WAV（明确fake本机引擎，440/880Hz）经真实旁白任务/两版修订，真实FFmpeg输出180帧/30fps/6秒MP4，再生成B站七文件ZIP。旧修订所有原文件字节保持。索引`.cache/scratch/resume-real-media/result.json`。
+3. 同库任务链：`.cache/scratch/resume-full-journey.py`，日志`.cache/studio-resume-full-journey-final.log`退出0。真实规则HTTP提取主题→普通计划Brief→真实知识HTTP登记→动态prepare，确认前发送0次；明确fake文本输出合法v2，实际user逐字等于报价预览，确认/采用/重复采用后发送共1次，采用结果重读含该entryId。随后同库两版旁白任务/修订→真实MP4→publication→B站ZIP。索引`.cache/scratch/resume-full-journey/summary.json`及planning-evidence/result。6秒旁白预算18字未容纳知识句，此短样例不作为引用展示证据。
+4. 同库Studio引用与草稿：`.cache/scratch/resume-ui-journey.py`（SHA256 a478b3f07d93bd219b54eb7cfb28880e87c61a16884d0bbe1c17adad363ae995），日志`.cache/studio-resume-ui-journey-final2.log`退出0。更长隔离素材经真实普通Planner与同一知识/动态采用链，Studio实际显示narration-script的知识句及出处；编辑后剪贴板/TXT逐字一致，刷新恢复、语音POST为0，1440/1280宽度无横向溢出。截图、browser-evidence.json、summary.json、planning-evidence.json和result.json均在`.cache/scratch/resume-ui-journey/`。
+5. 上述Studio同库链随后生成真实360帧/30fps/12秒MP4及七文件ZIP；静音源、无BGM、旁白start30/gain-6/ducking off。解码1.25–1.75秒窗口880Hz幅度0.24470486、440Hz幅度0.0000002475，满足>0.01与>5倍条件。包localChecks pass，publicationEligibility unverified，平台规则/来源权利/人评保持unknown。
+6. 旧v1磁盘兼容：基线8ea3293服务源码在当前基础依赖中生成prepared record，由当前服务回读/执行/采用/重复采用及新实例重开，record不变、实际user逐字一致、fake仅1次，保持v1 prompt。证据`.cache/studio-resume-legacy-v1-final.log`及`.cache/scratch/legacy-v1-compat/result.json`；未读取或重发用户历史付费记录。
+7. Studio真实图片/PDF输入：`.cache/scratch/studio-real-knowledge-media.py`（SHA256 `972e8440cc8122184e785eacc8b37bb9867638178edee89f06b182af54f1db68`），日志`.cache/studio-real-knowledge-media-final.log`退出0。本机生成PNG及单页PDF，经真实Windows OCR/Windows.Data.Pdf和Studio文件输入各保存一次；搜索/全文显示识别文字及“文字由本机OCR识别，可能有错字”来源说明，语音任务0。结果和两张详情截图在`.cache/scratch/studio-real-knowledge-media/`。使用既有隔离timeline夹具；未验证多页截断提示或目录媒体批量导入，不能扩大成全部格式/页数验收。
+8. 目录导入ABA隔离（R38）：`.cache/scratch/studio-import-scope.py`，SHA256 `deb223cf5718f5d42953a1b58283a4783488359f4e1b6b697e2e9dff4219e3f3`，日志`.cache/studio-import-scope.log`退出0。浏览器挂载实际KnowledgePanel，实际目录API已完成写入后挂起响应；game A→B→A，新导入等待时释放旧成功或注入旧HTTP500，当前busy不清、旧结果不回流；新响应只显示new.txt。每例两POST，原游戏两条知识保留，无自动重试。注入500模拟传输失败，非声称真实后端拒绝；是组件作用域验收，不是整个Studio换游戏点击流程。结果`.cache/scratch/studio-import-scope/result.json`。
+9. 旁白跨项目与丢响应重试（R28）：`.cache/scratch/studio-narration-scope.py`，SHA256 `cf21250c83332aef254ccbb567f3c708e04445e0a070ef5fe37a6a42f0b9987a`，日志`.cache/studio-narration-scope-final.log`退出0。在真实Studio项目下拉切换A→B，A重合成的迟到成功/注入HTTP失败均不清B合成busy，不覆盖B正文；B挂接后起点仍0帧。另在实际接受任务后模拟响应丢失，用户手动重试的requestId/jobId完全相同，唯一新任务1个。旁白引擎仍明确fake、接口/回执/作用域实际执行；结果`.cache/scratch/studio-narration-scope/result.json`。
+
+## 完整门禁与集成
+
+源码检查点51cd54c、测试适配41ff654已推开发线；P020独立合并baf2a20、规范独立5809705。本批按最终完整门禁结果快进集成，保留开发线。
+
+完整门禁`.cache/studio-resume-final-verify.log`（60190）终态5093通过/4失败/7跳过，1778.94秒；静态通过，CLI未执行。4失败为旧定位/草稿恢复契约/货币字形/import子串检查的测试适配，业务源码哈希不变。修后原4项组合4通过11.63秒，shell补注释与无空格导入回归后全4项通过1.79秒，唯一关键审查者补审通过。证据`.cache/studio-gate-fixes-combined.log`及`.cache/studio-shell-import-guard.log`。最终重试`.cache/studio-resume-final-r2-verify.log`已通过：**5098 passed /7 skipped，1760.46秒**；493文件格式/Ruff/mypy209源及CLI全过，session52192终态0。520源码/测试完整匹配`.cache/studio-resume-final-r2-freeze.json`；不为后续文档/证据同步重复全量。未跑Release，不代表分发或人评通过。前序受影响测试于12%及完整门禁于63%主动中止以修复审查发现，不作通过证据；原日志保留，不覆盖。此前全量5066日志还有源码临时误写窗口，仅作历史诊断。
 
 ## 仍未证明
 
-同一隔离仓库内规则 → 知识动态策划 → 采用 → 旁白 → 成片的 R39–R44 全链尚未贯通；本轮真实媒体证据覆盖 R42–R44 的任务/媒体路径，不冒充完整 Studio 操作验收。R09、旧 v1 磁盘夹具、跨 scope 专项、双尺寸专项等剩余项以原工单及 R48 报告为准。无真实声音质量、模型内容质量或人评提升。
-
-## 同库任务链补证（随后完成）
-
-`.cache/scratch/resume-full-journey.py`，最终退出 0，日志 `.cache/studio-resume-full-journey-final.log`；`summary.json`、`planning-evidence.json` 和 `result.json` 位于 `.cache/scratch/resume-full-journey/`。脚本 SHA256 `873713016ce30e5e9cfbe4d18ab49a1a858ba3b2807201dbeb4522f13aa4f417`。
-
-同一隔离仓库 `5dae1aeb341b43b6a042ddc7bf45117b` 经真实规则 HTTP 提取 `#fact#` → 填入普通计划 Brief → 真实知识 HTTP 登记 → 动态 prepare；确认前发送 0 次。明确 fake 文本传输返回合法 v2，实际 user 请求逐字等于报价预览，确认/采用/重复采用后总发送 1 次，重读的采用结果含该知识 entryId。随后沿真实旁白任务、两版修订、MP4、publication、B站七文件 ZIP；新 render `ef4cab27e7a2418087e9d816fdf0d3b2`，package `252efe3441dc40358274def8c9230e85`。再次验证 180 帧、30fps、6 秒及相同信号幅度条件；旧修订目录字节保持。localChecks pass，投稿资格仍 unverified。
-
-这补齐 R39/R40 与 R42–R44 的同库任务/媒体路径，仍不等于全部 Studio 点击操作通过。R41 调用了真实 narration-script，但该 6 秒方案预算仅 18 字，已有模板内容占用后 citations 为空，故本例**未证明旁白知识引用展示**；不降低生产字数预算或伪造 citation。先前“未贯通”描述是补证前状态，以本节为最新证据。真实 AI/语音质量、人评和平台发布仍未验。
-
-## 草稿资产隔离最终修复
-
-补查发现撤销从新asset B回旧asset A时旧编辑器可把B稿写入A键。清理scope effect增加attachedAssetJobId依赖，切轨关闭编辑器并使旧会话失效，重新打开按当前asset恢复。唯一Sol/high定向复核通过；4 passed /20.79s（.cache/studio-resume-revision-scope.log/XML），Ruff/format通过。本轮审查范围现已闭环。原完整verify在63%主动中止用于修此实际缺陷，未发现失败但不是通过证据；日志保留。最终全量改用.cache/studio-resume-final-verify.log，源码清单用.cache/studio-resume-final-freeze.json，前序证据不覆盖。
+规则/准备/采用/修订/渲染使用实际服务接口，旁白编辑、跨项目隔离与知识文件输入经过浏览器，不能声称所有步骤均已通过Studio点击。源/时间线为隔离合成夹具，模型/本机声音为明确fake；真实AI、音色质量和用户录像创作质量均未验。媒体目录批量导入、多页提示与完整双尺寸专项等原工单剩余项继续保留；不以本批证据标记整项交付、人评或真实平台发布通过。
