@@ -33,4 +33,4 @@ Rules for this file:
 
 16. **生产 CSP 保持开启。** 2026-11-07真实工作台诊断中，Playwright的字符串 `wait_for_function` 触发unsafe-eval拒绝；改用locator断言等待和CDP函数体读取，不能关闭应用CSP来让诊断通过。测试端口需独占绑定，同一工作树pytest严格串行。
 
-17. **Playwright同步fixture仍运行事件循环。** 测试内不要直接调用内部使用asyncio.run的CreationJobs.edit；通过实际HTTP读取。重载测试的localStorage种子仅在key不存在时写入，否则每次reload会覆盖用户刚保存的版本，制造假回归。
+17. **Playwright同步fixture仍运行事件循环。** 测试内不要直接调用内部使用asyncio.run的CreationJobs.edit；通过实际HTTP读取。不能用threading.Event.wait等待依赖route回调的事件，会阻断Playwright分发；用页面/locator的异步等待让事件循环前进。重载测试的localStorage种子仅在key不存在时写入，否则每次reload会覆盖用户刚保存的版本，制造假回归。

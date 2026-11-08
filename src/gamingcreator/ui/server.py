@@ -633,9 +633,9 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(200, preview)
                 return
             if path == "/api/creation/subtitle-preview":
-                from gamingcreator.ui.subtitle_preview import preview
+                from gamingcreator.ui.subtitle_preview import preview as subtitle_preview
 
-                self._json(200, preview(self.creation_jobs, value))
+                self._json(200, subtitle_preview(self.creation_jobs, value))
                 return
             if path == "/api/creation/narration-cancel":
                 if not isinstance(value, dict) or set(value) != {"jobId"}:
@@ -1085,6 +1085,16 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return
             if path.startswith("/api/creation/jobs/"):
                 tail = path.removeprefix("/api/creation/jobs/")
+                if tail.endswith("/packages"):
+                    if set(query) != {"projectId"}:
+                        raise ValueError("Expected registered project ID")
+                    self._json(
+                        200,
+                        self.creation_jobs.packages(
+                            tail.removesuffix("/packages"), query["projectId"]
+                        ),
+                    )
+                    return
                 if "/narration-files/" in tail:
                     job_id, name = tail.split("/narration-files/", 1)
                     if query not in ({}, {"download": "1"}):

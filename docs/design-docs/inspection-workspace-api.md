@@ -195,3 +195,9 @@ Studio检查器的“叠加”页支持登记文字/PNG、调整开始结束/淡
 `POST /api/creation/subtitle-preview` 的body必填`projectId,parentJobId,planId,expectedParentReceiptSha256,clips,subtitleMode`；可选`subtitleOverrides,candidateManifestSha256,replacements`，其余body字段拒绝。clips沿既有修订格式，v4替换须携带匹配manifest及replacements。模式为`none|sidecar|burn`，返回`{mode,cues:[{startUs,endUs,text,lifted}]}`，时间为成片半开微秒区间。
 
 请求核父链、项目、方案、回执及替换身份，复用修订校验与实际导出的转录选择。sidecar按SRT毫秒向下取整，burn再按ASS百分秒分段，重叠时早镜头抬高；字幕安全字符与导出一致。只返回内存结果，不创建任务/修订或写转录/账本；旁白依赖也采用无恢复只读校验，非completed直接拒绝。没有转录则自动字幕为空，none返回空cue。Studio按有效草稿防抖查询并在换项目/父版本/模式时立即隐旧cue，不在播放、拖动或选镜头时发新请求。内容/时机可预览，字体排版以导出为准。
+
+## Studio 发布版本的平台包任务
+
+`GET /api/creation/jobs/{publicationId}/packages?projectId=…` 返回`{publicationJobId,publicationReceiptSha256,jobs}`。每行含`jobId,status,createdAt,updatedAt,error,parentJobId,parentReceiptSha256,profile,platform`，保留旧失败/中断尝试，不受项目任务目录最近100条截断。核父项目、publication/render完成状态、原request规范摘要与receipt整文件hash；列表不hash所有完成视频，详情/下载继续完整产物核验。匹配未终结任务沿既有get恢复中断；不新提交任务或转码。
+
+Studio批量沿既有单包POST逐项submit/settle，相同profile已完成则保留，运行中先等待；刷新仅恢复已提交任务。作用域绑定项目/pub/回执/profile；scoped package发送前把请求身份放入sessionStorage，网络结果不明及刷新复用原requestId。仅该意图绑定job已确认failed/interrupted才允许新意图；旧失败行不证明新发送已终结。存储不可用提交前报intent.storage，默认unscoped接口兼容。每次提交仍走原OS锁、幂等和套餐权限，不自动更换套餐或发布。

@@ -24,3 +24,5 @@
 唯一Sol/high曾发现旁白依赖走jobs.get导致恢复写盘的P2；复现失败XML保留，现load_chain/resolve/asset只读模式贯穿，旁白pending/running/interrupted均拒绝且全库文件字节不变。默认正常调用仍保留恢复行为。专项复核通过，无未修复缺陷；Ruff/format/mypy5源/diff检查通过。根目录完整门禁与main集成仍待完成，不提升P029整体交付或人评状态。
 
 root集成新字幕两文件、既有字幕浏览器及health合同：25通过/0跳过、75.847秒（`.cache/r2-caption-root-integrated.xml`）。另对既有8镜头方案做只读内存覆盖投影，禁止调用save/get、4份任务文件hash不变（`.cache/caption-preview-existing-data.json`）；单次热缓存投影约0.168秒，不作通用性能承诺。随后与多平台批量包共同执行完整R2集成门禁，main在通过前保持已验证运行时版本。
+
+最终组合门禁通过：`.cache/r2-audio-worklet-full-verify.log`，5035通过/7跳过、1723.43秒，格式/Ruff/mypy209源/CLI全部通过。此前音频采集fixture主线程阻塞问题已有控制复现，AudioWorklet采集及失败清理9项通过、独立复核通过，保留原幅度阈值和生产graph。技术集成完成，真人创作质量不据此提升。
