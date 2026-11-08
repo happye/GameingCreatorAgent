@@ -107,7 +107,7 @@ F001 建立包导入方向、类型和格式检查；F004 检查 SQLite 与文�
 
 Studio逐镜字幕入口复用既有revision.subtitleOverrides，不新增字幕协议或改写转录。本地ClipEditor持有覆盖数组并参与dirty/撤销/重开、建议generation；删除过滤，替换清除旧覆盖，未保存替换时禁编，保存取得新clipId后恢复。原空串/删除覆盖语义分别为隐藏生成字幕/恢复自动，实际SRT/烧录仍由原后端负责。合同见[Studio字幕](../exec-plans/sprint-studio-caption-editor.md)。
 
-即时字幕预览通过只读草稿POST复用修订验证、逐镜run转录选择及build_subtitles；导出与预览共享SRT毫秒量化、ASS百分秒分段/重叠层位。load_chain显式只读模式贯穿旁白依赖，非completed依赖拒绝，不触发任务恢复写入；正常保存/导出仍保留原恢复行为。前端请求绑定项目/父回执/方案/模式/有效草稿，防抖后取内存cue，换键同步隐旧字幕并丢弃迟到响应；播放与定位只按输出时钟查cue。见[草稿字幕预览合同](../exec-plans/sprint-studio-caption-preview.md)。
+即时字幕预览通过只读草稿POST复用修订验证、逐镜run转录选择及build_subtitles；导出与预览共享SRT毫秒量化、ASS百分秒分段/重叠层位。load_chain显式只读模式贯穿旁白依赖，非completed依赖拒绝，不触发任务恢复写入；正常保存/渲染仍保留原恢复行为，时间线GET另以只读方式核验。前端请求绑定项目/父回执/方案/模式/有效草稿，防抖后取内存cue，换键同步隐旧字幕并丢弃迟到响应；播放与定位只按输出时钟查cue。见[草稿字幕预览合同](../exec-plans/sprint-studio-caption-preview.md)。
 
 ### 输出时间线文字与PNG图层
 
@@ -116,3 +116,7 @@ domain creation_overlays定义输出整数帧范围、淡化与规范化几何�
 Studio叠加面板登记资产后更新本地版本状态，输出画布按导出比例适配，透明sprite与导出共用；加载/撤销epoch在异步返回和state更新两处核验，防止迟到登记改写新版本。图层越界显式阻止保存/导出，不能反向修改已烘焙在原录像里的logo。API与操作见[工作台API](inspection-workspace-api.md)，验收合同见[定时叠加](../exec-plans/sprint-timed-overlays.md)。
 
 AI图层编辑使用独立prompt/schema配对及显式图层snapshot；Chain.edl不携带图层，故必须单独把overlays和已核资产公开上下文纳入fingerprint。恢复旧请求按原版本构建逐字节兼容的快照/消息。模型提案仅给已有overlayId及结束/淡出整数帧，Application从可信selection重建完整层，UI临时预览后再次验证再原子应用clips+overlays；保存/导出不另开持久化路径。真实HTTP和FFmpeg以fake文本transport验证，真实模型理解质量尚未验收。合同见[AI图层时间](../exec-plans/sprint-ai-overlay-timing.md)。
+
+### 专业时间线旁白交接
+
+Studio专业下载复用原时间线路由，XMEML以纯ExportNarration数据声明独立WAV轨，读取层复用旁白回执/PCM校验，帧级放置不改变视频源时钟。timeline GET显式只读，因此不属于保存/渲染路径的任务恢复行为；非completed依赖拒绝。干声轨不冒充最终混音，编辑器实导另验。见[专业时间线旁白合同](../exec-plans/sprint-premiere-narration-track.md)。

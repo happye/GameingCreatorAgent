@@ -905,7 +905,10 @@
                 "2026-11-01: FCPXML 1.9 and OTIO JSON export of saved revisions with source file URIs, frame-aligned rational times, speed time maps and crossfades as centred transitions with whole-frame trims so exported length equals the render; real 34-clip revision exported (299/30s); not import-verified in Final Cut/DaVinci/Premiere; no Premiere XML or audio/subtitle tracks",
                 "docs/archive/sprints/sprint-t25-timeline-export-av-tracks.md",
                 "tests/test_timeline_export_av_tracks.py",
-                "2026-11-01 T25: best-effort FCPXML title lane + stereo audio-channel-source, OTIO A1/Captions tracks, xmeml audio track + caption markers; NLE import still unverified"
+                "2026-11-01 T25: best-effort FCPXML title lane + stereo audio-channel-source, OTIO A1/Captions tracks, xmeml audio track + caption markers; NLE import still unverified",
+                "docs/exec-plans/sprint-premiere-narration-track.md",
+                "tests/test_premiere_narration_export.py",
+                "tests/test_studio_timeline_download_browser.py"
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released",

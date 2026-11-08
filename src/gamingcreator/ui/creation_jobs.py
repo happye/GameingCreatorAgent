@@ -1217,9 +1217,12 @@ class CreationJobs:
     def timeline_export(
         self, job_id: str, plan_id: str, fmt: str, size: str = "1920x1080"
     ) -> tuple[bytes, str, str]:
+        import wave
+
         from gamingcreator.application.creation_subtitles import build_subtitles
         from gamingcreator.application.timeline_export import (
             ExportCaption,
+            ExportNarration,
             captions_from_cues,
             to_fcpxml,
             to_otio,
@@ -1231,7 +1234,10 @@ class CreationJobs:
             16 <= int(v) <= 3840 and int(v) % 2 == 0 for v in (width, height)
         ):
             raise fail("creation.input", "时间线尺寸须为 16–3840 之间的偶数，如 1280x720。")
-        chain = load_chain(self, job_id, plan_id)
+        try:
+            chain = load_chain(self, job_id, plan_id, read_only=True)
+        except (EOFError, wave.Error) as error:
+            raise ValueError("旁白 WAV 已损坏，请检查已保存的素材。") from error
         name = f"gamingcreator-{job_id[:8]}"
         # Best-effort AV extras; Final Cut / Resolve / Premiere import remains unverified.
         captions: tuple[ExportCaption, ...] = ()
@@ -1268,10 +1274,25 @@ class CreationJobs:
                 "application/json",
             )
         if fmt == "xmeml":
+            narration = None
+            if chain.narration is not None and chain.narration_asset is not None:
+                asset = chain.narration_asset
+                narration = ExportNarration(
+                    str(asset.wav_path),
+                    chain.narration.start_frame,
+                    asset.sample_rate,
+                    asset.channels,
+                    asset.sample_width,
+                    asset.sample_count,
+                )
             return (
-                to_xmeml(chain.edl, name, captions=captions, include_audio_track=True).encode(
-                    "utf-8"
-                ),
+                to_xmeml(
+                    chain.edl,
+                    name,
+                    captions=captions,
+                    include_audio_track=True,
+                    narration=narration,
+                ).encode("utf-8"),
                 f"{name}-premiere.xml",
                 "application/xml",
             )

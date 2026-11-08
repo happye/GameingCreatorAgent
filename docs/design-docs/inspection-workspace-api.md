@@ -195,3 +195,7 @@ Studio检查器的“叠加”页支持登记文字/PNG、调整开始结束/淡
 `POST /api/creation/subtitle-preview` 的body必填`projectId,parentJobId,planId,expectedParentReceiptSha256,clips,subtitleMode`；可选`subtitleOverrides,candidateManifestSha256,replacements`，其余body字段拒绝。clips沿既有修订格式，v4替换须携带匹配manifest及replacements。模式为`none|sidecar|burn`，返回`{mode,cues:[{startUs,endUs,text,lifted}]}`，时间为成片半开微秒区间。
 
 请求核父链、项目、方案、回执及替换身份，复用修订校验与实际导出的转录选择。sidecar按SRT毫秒向下取整，burn再按ASS百分秒分段，重叠时早镜头抬高；字幕安全字符与导出一致。只返回内存结果，不创建任务/修订或写转录/账本；旁白依赖也采用无恢复只读校验，非completed直接拒绝。没有转录则自动字幕为空，none返回空cue。Studio按有效草稿防抖查询并在换项目/父版本/模式时立即隐旧cue，不在播放、拖动或选镜头时发新请求。内容/时机可预览，字体排版以导出为准。
+
+## Studio专业时间线与XMEML旁白
+
+沿用`GET /api/creation/jobs/{jobId}/timeline?planId=…&format=fcpxml|otio|xmeml&size=1280x720`及原套餐门禁。时间线GET以只读父链/旁白资产验证，不触发任务恢复、合成或新媒体。XMEML额外引用已保存旁白WAV，写独立音轨及真实采样率/位深/声道，按start_frame与ceil(sample_count*fps/sample_rate)确定输出范围；无旁白保持原字节。此为独立干声交接，不表示已映射混音/闪避/淡化或BGM。Studio只下载保存基线，拒未保存草稿/助手预览/忙碌；先处理HTTP错误，成功才保存明确文件名，身份变化拒迟到下载。真实编辑器导入仍待验证。
