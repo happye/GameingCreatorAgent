@@ -591,6 +591,13 @@ def _validated_output(snapshot: EditingSnapshot | PlanSnapshot, output: Any) -> 
 
 
 def _validated_plan_output(snapshot: PlanSnapshot, output: Any) -> dict[str, Any]:
+    # execute() already bound this attempt to the snapshot (fingerprint + request hash in the
+    # send gate). Models mis-copy 64-hex strings (2026-11-09 real send inserted six chars),
+    # so the echoed fingerprint is recorded, never trusted, and the bound one is used.
+    echo = None
+    if isinstance(output, dict) and "snapshotFingerprint" in output:
+        echo = "exact" if output["snapshotFingerprint"] == snapshot.fingerprint else "mismatch"
+        output = {**output, "snapshotFingerprint": snapshot.fingerprint}
     proposal = validate_plan_proposal(snapshot, output)
     preview = []
     if proposal.response["kind"] == "plan_proposal":
@@ -612,4 +619,5 @@ def _validated_plan_output(snapshot: PlanSnapshot, output: Any) -> dict[str, Any
         "purpose": "plan",
         "proposal": {**asdict(proposal), "response": proposal.response},
         "planPreview": {"fps": snapshot.fps, "plans": preview},
+        "fingerprintEcho": echo,
     }

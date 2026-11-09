@@ -312,3 +312,22 @@ def test_zero_match_preserves_v1_request(planning):
     record = ctx.reasoning._prepared(prep["preparedHash"])
     assert not prep["knowledge"]
     assert record["request"] == asdict(plan_reasoning_request(snapshot))
+
+
+def test_mis_copied_fingerprint_echo_is_recorded_not_trusted(planning):
+    """2026-11-09 real send: the model inserted six characters into the 64-hex echo."""
+    ctx = planning
+    snapshot, _ = original_snapshot(ctx.jobs, ctx.root)
+    bad = output(snapshot, ((3, 1),))
+    good = bad["snapshotFingerprint"]
+    bad["snapshotFingerprint"] = good[:24] + "61b87d" + good[24:58]
+    ctx.reasoning.transport = ctx.transport = Transport(bad)
+    prep = prepared(ctx)
+    result = execute(ctx, prep)
+    assert result["status"] == "completed" and result["fingerprintEcho"] == "mismatch"
+    assert result["proposal"]["response"]["snapshotFingerprint"] == good
+    retained = ctx.reasoning.read_provider_output(prep["preparedHash"])
+    assert retained["output"]["snapshotFingerprint"] != good  # original bytes kept
+    adopted = ctx.reasoning.adopt_plan(prep["preparedHash"])
+    assert finish(ctx.jobs, adopted["jobId"])["status"] == "completed"
+    assert len(ctx.transport.calls) == 1
