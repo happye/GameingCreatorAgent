@@ -18,3 +18,7 @@ request_user_input_async是直接工具，不在functions.exec的tools对象；�
 ## 2026-11-09 本机连接队列与远端推送
 
 Studio首次加载多模块时，默认Python 3.13监听队列仅5；延迟accept的真实模块连接突发回归在旧配置超时，128队列通过，保留新旧XML。不能仅凭Playwright标签超时增加等待或宣称业务失败；先捕获console/requestfailed/body。GitHub直连失败但Windows已有本机代理可用，单次git -c http.proxy使用现有端点即可推送，不修改全局配置或费用Provider的trust_env边界。搜索命令仍须目录加-g，避免重复猜文件名/PowerShell通配参数。
+
+## 2026-11-09 音频采样器与中途门禁汇报
+
+完整门禁终态有3失败，但中途监控错误报告无失败；进度尾部PASS不能代表前面无失败。后续以父控直接扫描全日志终态词、保存快照标识和最终XML/exit为准，禁用彩色日志；独立监控摘要只作提示。HOOK_CAPTURE仍用ScriptProcessor，600ms主线程阻塞回归测得0.02957而非0.1；换AudioWorklet保留原0.4秒采样及阈值，并核渲染帧连续性。共享页面的hook若断言提前退出，fixture须finally卸载，否则残留2个audio污染后续清理测试。原/新证据保留，不把测试采样修复冒称业务音频修复；循环边界的实际短暂缺口仍由不变断言检验。

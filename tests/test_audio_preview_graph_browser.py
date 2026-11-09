@@ -16,7 +16,7 @@ STATIC = ROOT / "src/gamingcreator/ui/static/studio"
 
 
 @pytest.fixture(scope="module")
-def live_graph(tmp_path_factory):
+def graph_page(tmp_path_factory):
     pw = pytest.importorskip("playwright.sync_api")
     root = tmp_path_factory.mktemp("audio-graph")
     for name, frequency, amplitude in (
@@ -59,6 +59,20 @@ def live_graph(tmp_path_factory):
         server.shutdown()
         server.server_close()
         thread.join()
+
+
+@pytest.fixture
+def live_graph(graph_page):
+    try:
+        yield graph_page
+    finally:
+        graph_page.evaluate("""() => {
+            const harness=window.audioHarness;
+            if(harness?.root.isConnected) {
+                harness.render(null,harness.root); harness.root.remove();
+            }
+            delete window.audioHarness; delete window.setAudioPlayer;
+        }""")
 
 
 CAPTURE = """async settings => {
@@ -210,15 +224,40 @@ HOOK = """async () => {
 
 HOOK_CAPTURE = """async () => {
     const graph=audioHarness.root.querySelector('video').studioAudioGraph;
-    const recorder=graph.context.createScriptProcessor(1024,2,2), samples=[];
-    const done=new Promise(resolve=>{recorder.onaudioprocess=e=>{
-        samples.push(...e.inputBuffer.getChannelData(0));
-        if(samples.length>graph.context.sampleRate*.4) resolve();
-    }});
-    graph.gate.connect(recorder); recorder.connect(graph.context.destination);
-    await done; graph.gate.disconnect(recorder); recorder.disconnect();
-    return {samples,rate:graph.context.sampleRate,
-        paused:[...audioHarness.root.querySelectorAll('audio')].map(el=>el.paused)};
+    const name='hook-capture-'+(window.hookCaptureSerial=(window.hookCaptureSerial||0)+1);
+    const module=URL.createObjectURL(new Blob([`
+        class Capture extends AudioWorkletProcessor {
+            constructor() {super();this.samples=[];this.firstFrame=null;this.done=false;}
+            process(inputs) {
+                if(!this.done && inputs[0]?.[0]) {
+                    if(this.firstFrame===null) this.firstFrame=currentFrame;
+                    this.samples.push(...inputs[0][0]);
+                    if(this.samples.length>=sampleRate*.4) {
+                        this.port.postMessage({samples:this.samples,firstFrame:this.firstFrame,
+                            endFrame:currentFrame+inputs[0][0].length});
+                        this.done=true;
+                    }
+                }
+                return true;
+            }
+        }
+        registerProcessor(${JSON.stringify(name)},Capture);
+    `],{type:'text/javascript'}));
+    let recorder, timer;
+    try {
+        await graph.context.audioWorklet.addModule(module);
+        recorder=new AudioWorkletNode(graph.context,name);
+        const done=new Promise(resolve=>{recorder.port.onmessage=e=>resolve(e.data);});
+        graph.gate.connect(recorder); recorder.connect(graph.context.destination);
+        const captured=await Promise.race([done,new Promise((_,reject)=>{
+            timer=setTimeout(()=>reject(new Error('Hook audio capture timed out')),5000);
+        })]);
+        return {...captured,rate:graph.context.sampleRate,
+            paused:[...audioHarness.root.querySelectorAll('audio')].map(el=>el.paused)};
+    } finally {
+        clearTimeout(timer); URL.revokeObjectURL(module);
+        if(recorder) {graph.gate.disconnect(recorder);recorder.disconnect();}
+    }
 }"""
 
 
@@ -268,6 +307,25 @@ def test_real_hook_narration_offset_pause_seek_loop_and_unmount(live_graph):
     remounted = page.evaluate(HOOK_CAPTURE)
     assert amplitude(remounted["samples"], remounted["rate"], 907) == pytest.approx(0.1, abs=0.004)
     page.evaluate("audioHarness.render(null,audioHarness.root); audioHarness.root.remove()")
+
+
+def test_hook_capture_survives_main_thread_stall(live_graph):
+    page = live_graph
+    page.evaluate(HOOK)
+    page.wait_for_function("audioHarness.root.querySelector('video').studioAudioGraph?.node")
+    page.evaluate("audioHarness.root.querySelector('video').studioAudioGraph.context.resume()")
+    page.evaluate("setAudioPlayer({playing:true,outUs:500000})")
+    page.wait_for_function("!audioHarness.root.querySelectorAll('audio')[1].paused")
+    capture = HOOK_CAPTURE.replace(
+        "recorder.connect(graph.context.destination);",
+        "recorder.connect(graph.context.destination);"
+        "const until=performance.now()+600; while(performance.now()<until){};",
+    )
+    result = page.evaluate(capture)
+    assert result["paused"][0]
+    assert amplitude(result["samples"], result["rate"], 907) == pytest.approx(0.1, abs=0.004)
+    assert result["endFrame"] - result["firstFrame"] == len(result["samples"])
+    assert result["rate"] * 0.4 <= len(result["samples"]) < result["rate"] * 0.4 + 128
 
 
 @pytest.mark.parametrize("control,key_amplitude", [("source", 0.4), ("narration", 0.3)])
