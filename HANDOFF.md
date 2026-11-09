@@ -21,6 +21,8 @@ J1剩余工程项均依赖模型或人评；可继续的本机项见看板“还
 
 ## 已知
 
+11-10续（未跑全量，下一批末尾统一）：663d319 字幕样式、bbc4abf 受限端口、38fa31b quiet.ps1。长测试用 ./scripts/quiet.ps1 test-affected|verify|pytest，只读摘要；同一工作树不要同时跑两个pytest。
+
 本批完整门禁 ba01459：5104过6跳0失败（.cache/batch-20261109-claude-full.log，verify-last.json=passed）。前两次启动失败是在Windows PowerShell 5.1下重定向导致uv的stderr变成终止错误（未跑任何测试），已在ba01459修复；失败于pytest前记setup-failed，不阻断重跑。
 
 用户同意AGENTS预算调至8192（22cab2a）。verify.ps1新增同批重跑门槛：.cache/verify-last.json非passed时，除非之后有feat:提交或用户明确要求-AllowRerun，否则拒绝全量。当前记录为84c7341 interrupted；之后已有feat 97c6843，下一次全量属于新批次可跑。

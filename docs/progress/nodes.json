@@ -305,9 +305,9 @@
    ]
   },
   "P039": {
-   "done": "可构建便携版EXE（内嵌WebView2、自带Python/FFmpeg约660MB），可安装/升级/卸载，Smoke通过",
+   "done": "可构建便携版EXE（内嵌WebView2、自带Python/FFmpeg约660MB），可安装/升级/卸载，Smoke通过；宿主不再选用WebView2禁用端口（低动态端口段机器不再白屏）",
    "todo": "干净机器测试、代码签名、第三方许可缺口审阅仍待完成",
-   "updated": "2026-11-05",
+   "updated": "2026-11-10",
    "sprints": [
     "sprint-desktop-host"
    ]
@@ -315,7 +315,7 @@
   "P040": {
    "done": "新工作台/studio可看素材、选方案、时间线剪辑、旁白音乐、字幕与导出，J1可走通初稿",
    "todo": "J1全流程第四次试看未通过；Agent对话区与人评验收未完成",
-   "updated": "2026-11-09",
+   "updated": "2026-11-10",
    "sprints": [
     "sprint-studio-workbench",
     "sprint-creation-workspace",
@@ -1053,6 +1053,6 @@
   "counts": "5104 过 · 6 跳 · 0 失败（38分28秒）",
   "branch": "main",
   "merged": true,
-  "note": "提交 ba01459 上运行；格式/Ruff/mypy/CLI 均通过。未跑 -Release"
+  "note": "提交 ba01459 上运行；之后 663d319/bbc4abf/38fa31b 仅定向测试通过，下一批末尾再跑全量"
  }
 }

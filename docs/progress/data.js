@@ -28,9 +28,9 @@ window.PROGRESS_DATA = {
   "phase0Pass": 8,
   "phase0Total": 11,
   "td": {
-   "resolved": 17,
+   "resolved": 18,
    "partial": 3,
-   "open": 8
+   "open": 7
   },
   "tdTotal": 28,
   "humanPending": 9,
@@ -976,9 +976,9 @@ window.PROGRESS_DATA = {
     "tests/test_license_visibility.py",
     "2026-11-01 T27: build-app/install-app (+Smoke) print reminder to read licenses/THIRD-PARTY-NOTICES.md and licenses/gaps.json; no download to fill gaps"
    ],
-   "done": "可构建便携版EXE（内嵌WebView2、自带Python/FFmpeg约660MB），可安装/升级/卸载，Smoke通过",
+   "done": "可构建便携版EXE（内嵌WebView2、自带Python/FFmpeg约660MB），可安装/升级/卸载，Smoke通过；宿主不再选用WebView2禁用端口（低动态端口段机器不再白屏）",
    "todo": "干净机器测试、代码签名、第三方许可缺口审阅仍待完成",
-   "updated": "2026-11-05",
+   "updated": "2026-11-10",
    "sprints": [
     "sprint-desktop-host"
    ]
@@ -1000,7 +1000,7 @@ window.PROGRESS_DATA = {
    ],
    "done": "新工作台/studio可看素材、选方案、时间线剪辑、旁白音乐、字幕与导出，J1可走通初稿",
    "todo": "J1全流程第四次试看未通过；Agent对话区与人评验收未完成",
-   "updated": "2026-11-09",
+   "updated": "2026-11-10",
    "sprints": [
     "sprint-studio-workbench",
     "sprint-creation-workspace",
@@ -1967,7 +1967,7 @@ window.PROGRESS_DATA = {
   "counts": "5104 过 · 6 跳 · 0 失败（38分28秒）",
   "branch": "main",
   "merged": true,
-  "note": "提交 ba01459 上运行；格式/Ruff/mypy/CLI 均通过。未跑 -Release"
+  "note": "提交 ba01459 上运行；之后 663d319/bbc4abf/38fa31b 仅定向测试通过，下一批末尾再跑全量"
  },
  "fees": [
   "2026-11-08：用户要求尽量避免PR/AE等大型软件。开发、日常验证和成片导出走项目FFmpeg/浏览器路径，专业格式为可选交接，实际导入保持未验。此前Premiere退出由用户手动关闭，不是软件故障；不转成人工待办。",
@@ -1980,7 +1980,7 @@ window.PROGRESS_DATA = {
   "本批完整门禁通过（2026-11-09，ba01459）：5104过6跳0失败，38分28秒，格式/Ruff/mypy/CLI通过；含P018版本对比、TD026留痕、连接队列、下载文件名、发布草稿要点、动态策划指纹绑定、网页活动规则与verify同批重跑门槛。未Release，不提升人评或整项状态。",
   "J1第四次反馈7组：素材去重/取景、云端音色默认本机、保存禁用原因、下载true.txt均已工程修复（true.txt根因确认为htm裸download属性，平台包与成片下载均已改真实文件名并加静态守卫）；预览卡顿TD025已合main，真机待你试。剩余“方案更有创作价值/开放式创作对话”需真实文本模型调用，须你单独授权。",
   "动态策划：第1次授权调用（估算¥0.0094516）因模型抄错快照指纹被拒，已修为后端绑定（1838938）。第2次授权调用（2026-11-09，估算¥0.0174276）成功：3套方案均可用（20/20/19镜头），已采用为方案任务4c857005（artifacts/demo-phase0），可在Studio剪辑页打开；方案质量待你评价。J1复测待你方便时。",
-  "进度看板：docs/progress/index.html（双击打开）；更新规则见docs/references/progress-dashboard.md。分发前许可证缺口及TD003仍待处理。"
+  "2026-11-10 续：P029烧入字幕可选标准/大字/半透明底框（663d319）；工作台与桌面EXE不再使用Chromium禁用端口（bbc4abf，本机动态端口段1024起会触发）；新增scripts/quiet.ps1，测试只输出摘要和失败ID文件，AGENTS/CODEX已要求所有Agent使用（38fa31b）。定向测试通过，这批尚未跑全量。\n\u0001docs/progress/index.html（双击打开）；更新规则见docs/references/progress-dashboard.md。分发前许可证缺口及TD003仍待处理。"
  ],
  "sprints": [
   {
@@ -2628,8 +2628,8 @@ window.PROGRESS_DATA = {
    "severity": "low; browser test flake",
    "impact": "浏览器测试用 create_server(127.0.0.1, 0) 取随机端口，偶尔拿到 Chromium 禁用端口（如1720）导致 ERR_UNSAFE_PORT 假错误（2026-11-10 单项复跑即过）",
    "fix": "测试服务器取端口时跳过 Chromium 受限端口列表，或固定从安全端口段分配",
-   "status": "open",
-   "state": "open"
+   "status": "resolved: 2026-11-10 create_server(port 0) 与桌面宿主 FreePort 均跳过 Chromium 受限端口；本机动态端口段为1024起，真实用户同样可能遇到；回归测试+桌面构建Smoke通过",
+   "state": "resolved"
   }
  ],
  "human": [
