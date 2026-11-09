@@ -107,6 +107,13 @@ def test_brief_to_exported_video(service, monkeypatch):  # noqa: F811
             playwright.expect(page.locator("a[download]")).to_have_attribute(
                 "href", re.compile(r"^/api/creation/jobs/[0-9a-f]{32}/video\?download=1$")
             )
+            # J1 fourth trial: a bare `download` attribute became download="true" in htm,
+            # so the browser saved the file as "true". The real click must save an MP4.
+            with page.expect_download() as pending:
+                page.locator("a[download]").click()
+            assert pending.value.suggested_filename.endswith(".mp4")
+            assert page.locator("a[download]").get_attribute("download").endswith(".mp4")
+            assert pending.value.failure() is None
             # The page never scrolls; panels do.
             assert page.evaluate("document.documentElement.scrollHeight <= innerHeight")
             # The brief survives a reload, and the last result reopens.

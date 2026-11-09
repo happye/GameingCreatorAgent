@@ -325,7 +325,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                         : html`<span class="badge">成片</span>`}
                     <span class="spacer"></span>
                     ${result ? html`<div class="tabs"><button aria-selected=${mode === "plan"} onClick=${() => setMode("plan")}>方案预览</button><button aria-selected=${mode === "result"} onClick=${() => { player.stop(); setMode("result"); }}>成片</button></div>` : null}
-                    ${result && resultDownload ? html`<a class="btn ghost" href=${resultDownload} download>下载 MP4（${(result.sizeBytes / 1048576).toFixed(1)} MB）</a>` : null}
+                    ${result && resultDownload ? html`<a class="btn ghost" href=${resultDownload} download=${`gamingcreator-${renderJob.jobId.slice(0, 8)}.mp4`}>下载 MP4（${(result.sizeBytes / 1048576).toFixed(1)} MB）</a>` : null}
                     <button class="btn" disabled=${!plan?.ready || !!busy || audioBusy || overlayBusy || !!problem || commandPreview} title=${!plan ? "先在左侧选择一个方案" : !plan.ready ? "这个方案有缺口，不能导出" : problem || (commandPreview ? "先应用或取消一句话修改" : editing.dirty ? "先保存为新版本，再渲染 MP4" : "按当前内容渲染 MP4")} onClick=${exportVideo}>${busy === "render" ? "正在生成…" : busy === "save" ? "正在保存…" : "导出成片"}</button>
                 </div>
             </section>
