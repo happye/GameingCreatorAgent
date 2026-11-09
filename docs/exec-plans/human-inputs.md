@@ -74,6 +74,6 @@
 
 本地“验收就绪 ↗”与覆盖报告只读显示阻断，不代表质量已通过。需要实际操作时负责人给出具体入口和通俗字段说明；未知只阻断依赖它的工作。标注保存／导入／下载成功不等于真实判断已经完成。完整规则见[人工验收](../references/human-acceptance-guide.md)及[协作协议](../references/agent-workflow.md)。
 
-## 已授权、待恢复执行（不是新增人工待办）
+## 已授权单次试跑已执行（不是新增人工待办）
 
-2026-11-08用户明确回复“允许这1次，上限¥2.02”：现有漫画群星分析74候选文字、60秒需求，仅一次DeepSeek Flash文本请求，不发媒体、不自动重试。preparedHash `9bcc9d01729bf0e59ff4934fdacaf5f6ed74c12147b1741c95eb0fa83bc0dcea`，保守报价¥2.016384；[发送预览](../../.cache/scratch/j1-dynamic-plan-authorization/one-minute-prepared-preview.json)。用户随后要求暂停，实际发送仍0；授权已保存，恢复时先复核原快照/价格与一次性范围，无需就同一未执行请求重复索取许可，范围改变另行确认。
+用户明确“允许这1次，上限¥2.02”，2026-11-09恢复后已执行冻结请求 `9bcc9d01729bf0e59ff4934fdacaf5f6ed74c12147b1741c95eb0fa83bc0dcea`，仅一次DeepSeek Flash文本调用，无媒体/重分析/自动重试。Provider completed，应用校验/编译失败；账本估算¥0.05877，非实扣核对。一次授权已耗用，无第二次许可。[结果和留痕缺口](../../.cache/scratch/j1-dynamic-plan-authorization/outcome.md)；TD026先做离线代码修复，不要求用户重复付费或判断不存在的方案。
