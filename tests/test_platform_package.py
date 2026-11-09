@@ -43,7 +43,10 @@ def test_platform_package_real(rendered, monkeypatch, index):  # noqa: F811
     assert package["localChecks"] == "pass"
     assert package["publicationEligibility"] == "unverified"
     assert package["validation"]["platformRules"] == "unknown"
-    assert package["validation"]["checks"]["maxBytes"] == "not_configured"
+    preset_bytes = profile["Fields"]["limits"]["maxBytes"]
+    # Presets fill only officially sourced limits (docs/references/platform-limits-sources.md).
+    expected = "not_configured" if preset_bytes is None else "pass"
+    assert package["validation"]["checks"]["maxBytes"] == expected
     assert package["validation"]["facts"]["frames"] == 4
     with zipfile.ZipFile(jobs.package_file(job, "package.zip").path) as archive:
         assert set(archive.namelist()) == set(package_jobs.FILES)
@@ -58,7 +61,7 @@ def test_platform_package_real(rendered, monkeypatch, index):  # noqa: F811
     req["requestId"] = uuid4().hex
     limited = jobs.submit("package", req)["jobId"]
     assert finish(jobs, limited)["package"]["localChecks"] == "fail"
-    assert jobs.package(job)["profile"]["Fields"]["limits"]["maxBytes"] is None
+    assert jobs.package(job)["profile"]["Fields"]["limits"]["maxBytes"] == preset_bytes
     jobs.package_file(job, "title.txt").path.write_text("tampered")
     assert jobs.get(job)["status"] == "failed"
 

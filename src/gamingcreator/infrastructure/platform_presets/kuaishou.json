@@ -1,7 +1,7 @@
 {
   "Platform": "kuaishou",
-  "RuleVersion": "local-v1",
-  "UpdatedAt": "2026-10-31",
+  "RuleVersion": "local-v2",
+  "UpdatedAt": "2026-11-10",
   "Source": {
     "kind": "local_preset",
     "label": "用户可编辑本地导出配置，非官方规则"
@@ -20,9 +20,9 @@
       "fit": "pad"
     },
     "limits": {
-      "maxBytes": null,
+      "maxBytes": 4000000000,
       "minDurationMs": null,
-      "maxDurationMs": null,
+      "maxDurationMs": 900000,
       "titleMaxChars": null,
       "descriptionMaxChars": null,
       "tagMaxCount": null,

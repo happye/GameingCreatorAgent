@@ -1,6 +1,11 @@
 {
   "schemaVersion": "platform-presets-v1",
-  "disclaimer": "Local export presets only. Not official Douyin/Kuaishou/Bilibili/Xiaohongshu rules; values are not verified against current platform documentation and must not be cited as official compliance.",
-  "ruleVersion": "local-v1",
-  "platforms": ["bilibili", "douyin", "kuaishou", "xiaohongshu"]
+  "disclaimer": "Local export presets only. Not official Douyin/Kuaishou/Bilibili/Xiaohongshu rules. A few limits are copied from public official help pages (sources and dates in docs/references/platform-limits-sources.md); they are not verified compliance and the platform's current rules prevail.",
+  "ruleVersion": "local-v2",
+  "platforms": [
+    "bilibili",
+    "douyin",
+    "kuaishou",
+    "xiaohongshu"
+  ]
 }

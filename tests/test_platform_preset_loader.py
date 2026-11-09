@@ -19,11 +19,16 @@ ROOT = Path(__file__).resolve().parents[1]
 PRESETS = ROOT / "src/gamingcreator/infrastructure/platform_presets"
 
 
+SOURCES = (
+    Path(__file__).resolve().parents[1] / "docs/references/platform-limits-sources.md"
+).read_text(encoding="utf-8")
+
+
 def test_manifest_declares_non_official_versioned_catalog() -> None:
     manifest = load_platform_manifest()
     assert manifest["schemaVersion"] == SCHEMA
     assert "not official" in manifest["disclaimer"].lower()
-    assert manifest["ruleVersion"] == "local-v1"
+    assert manifest["ruleVersion"] == "local-v2"
     assert manifest["platforms"] == ["bilibili", "douyin", "kuaishou", "xiaohongshu"]
 
 
@@ -38,9 +43,12 @@ def test_loader_returns_four_validated_local_presets() -> None:
     for profile in profiles:
         assert profile["Source"]["kind"] == "local_preset"
         assert "非官方" in profile["Source"]["label"]
-        assert profile["RuleVersion"] == "local-v1"
-        # Null limits stay not_configured in validation; do not invent official numbers.
-        assert profile["Fields"]["limits"]["maxBytes"] is None
+        assert profile["RuleVersion"] == "local-v2"
+        # Null limits stay not_configured; every filled number must cite an official page.
+        for field, value in profile["Fields"]["limits"].items():
+            if field != "requiredTags" and value is not None:
+                cited = f"| {profile['Platform']} | {field} | {value}"
+                assert cited in SOURCES, cited
         digest = profile_digest(profile)
         assert len(digest) == 64
         assert profile_digest(validate_profile(json.loads(json.dumps(profile)))) == digest
@@ -70,7 +78,7 @@ def test_page_override_keeps_preset_files_unchanged() -> None:
         },
     }
     validate_profile(edited)
-    assert edited["RuleVersion"] != "local-v1"
+    assert edited["RuleVersion"] != "local-v2"
     after = {path.name: path.read_bytes() for path in PRESETS.glob("*.json")}
     assert after == before
 

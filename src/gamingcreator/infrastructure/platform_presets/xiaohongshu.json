@@ -1,7 +1,7 @@
 {
   "Platform": "xiaohongshu",
-  "RuleVersion": "local-v1",
-  "UpdatedAt": "2026-10-31",
+  "RuleVersion": "local-v2",
+  "UpdatedAt": "2026-11-10",
   "Source": {
     "kind": "local_preset",
     "label": "用户可编辑本地导出配置，非官方规则"
