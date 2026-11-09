@@ -1,6 +1,6 @@
 {
  "schemaVersion": 1,
- "updated": "2026-11-09",
+ "updated": "2026-11-10",
  "howTo": "每个节点只改 done/todo/updated/status 等字段；状态枚举 done|active|partial|todo|blocked。改完运行 python -B scripts/progress_ui.py。规则：docs/references/progress-dashboard.md",
  "features": {
   "P001": {
@@ -216,9 +216,9 @@
    ]
   },
   "P029": {
-   "done": "按镜头生成并编辑字幕，可在成片时间轴预览草稿并烧入渲染，原始转写保持不变",
-   "todo": "本机ASR无逐字时间戳，逐字字幕未做；字幕样式与质量未验证",
-   "updated": "2026-11-08",
+   "done": "按镜头生成/编辑字幕，草稿即时预览并烧入；烧入可选三种样式（标准/大字/半透明底框），预览同步近似显示",
+   "todo": "本机ASR无逐字时间戳，逐字字幕未做；字体/颜色自定义与字幕质量未人评",
+   "updated": "2026-11-10",
    "sprints": [
     "sprint-creation-subtitles",
     "sprint-creation-caption-editing",

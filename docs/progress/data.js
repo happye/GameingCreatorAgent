@@ -1,6 +1,6 @@
 window.PROGRESS_DATA = {
  "schemaVersion": 1,
- "nodesUpdated": "2026-11-09",
+ "nodesUpdated": "2026-11-10",
  "groups": {
   "A": "基础架构与本地处理",
   "B": "视频理解与检索",
@@ -30,9 +30,9 @@ window.PROGRESS_DATA = {
   "td": {
    "resolved": 17,
    "partial": 3,
-   "open": 6
+   "open": 8
   },
-  "tdTotal": 26,
+  "tdTotal": 28,
   "humanPending": 9,
   "journeyAgentPass": 3,
   "journeyHumanUsable": 0,
@@ -716,9 +716,9 @@ window.PROGRESS_DATA = {
     "tests/test_studio_caption_preview.py",
     "tests/test_studio_caption_preview_browser.py"
    ],
-   "done": "按镜头生成并编辑字幕，可在成片时间轴预览草稿并烧入渲染，原始转写保持不变",
-   "todo": "本机ASR无逐字时间戳，逐字字幕未做；字幕样式与质量未验证",
-   "updated": "2026-11-08",
+   "done": "按镜头生成/编辑字幕，草稿即时预览并烧入；烧入可选三种样式（标准/大字/半透明底框），预览同步近似显示",
+   "todo": "本机ASR无逐字时间戳，逐字字幕未做；字体/颜色自定义与字幕质量未人评",
+   "updated": "2026-11-10",
    "sprints": [
     "sprint-creation-subtitles",
     "sprint-creation-caption-editing",
@@ -2611,6 +2611,24 @@ window.PROGRESS_DATA = {
    "impact": "Provider完成后应用验证/编译失败，只留reasoning.failed，未保存parsed output/具体异常，无法离线诊断已付费结果",
    "fix": "指定单次许可已耗用；原失败回执/账本不可改或重发。下一切片在应用验证前用既有不可覆盖文件/receipt保存Provider parsed output并保留受控校验错误，以fake验证旧记录兼容，不能伪造丢失原文；实证见.cache/scratch/j1-dynamic-plan-authorization/outcome.md",
    "status": "open: paid output diagnosis lost; no retry authorized",
+   "state": "open"
+  },
+  {
+   "id": "TD027",
+   "found": "2026-11-10/P029",
+   "severity": "low; receipt verification",
+   "impact": "渲染回执校验（creation_jobs verify）不把 receipt.presentation（安全区/角标/字幕样式）与请求重算的 PresentationOptions.receipt() 比对；篡改该字段不会被发现（2026-11-10 字幕样式审查发现，既有缺口）",
+   "fix": "verify 时由请求重算 presentation 回执并逐字段比对，旧回执无该键时按无 presentation 处理",
+   "status": "open",
+   "state": "open"
+  },
+  {
+   "id": "TD028",
+   "found": "2026-11-10/测试",
+   "severity": "low; browser test flake",
+   "impact": "浏览器测试用 create_server(127.0.0.1, 0) 取随机端口，偶尔拿到 Chromium 禁用端口（如1720）导致 ERR_UNSAFE_PORT 假错误（2026-11-10 单项复跑即过）",
+   "fix": "测试服务器取端口时跳过 Chromium 受限端口列表，或固定从安全端口段分配",
+   "status": "open",
    "state": "open"
   }
  ],
