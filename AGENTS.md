@@ -23,9 +23,9 @@ Read root `STATUS.md`, then `HANDOFF.md` (≤5KB overwrite snapshot). Update STA
 
 ## Environment
 
-Windows PowerShell. Runtimes `.tools/`, packages `.venv/`, caches `.cache/`; never install globally (`docs/references/isolated-environment.md`). Load `. ./scripts/env.ps1` before Python. Script usage lives in each script header and `docs/references/`. Paid vision only through an explicitly authorized path (e.g. `run-demo.ps1 -Video`).
+Windows PowerShell. Runtimes `.tools/`, packages `.venv/`, caches `.cache/`; never install globally (`docs/references/isolated-environment.md`). Load `. ./scripts/env.ps1` before Python. Paid vision only through an explicitly authorized path (e.g. `run-demo.ps1 -Video`).
 
-Write files with the editor tool, a single-quoted here-string, or Python; never PowerShell double-quoted strings (they turn `` `a `` `` `f `` `` `t `` into control characters). Throwaway scripts go in `.cache/scratch/`.
+Write files with the editor tool, a single-quoted here-string, or Python; never PowerShell double-quoted strings (backtick escapes become control characters). Throwaway scripts go in `.cache/scratch/`.
 
 ## Code
 
@@ -57,7 +57,8 @@ One commit = one user-visible capability or one fix, message says behavior + ver
 
 ## Delivery and reporting
 
-- Primary metric: end-to-end journeys in `docs/exec-plans/journeys.json`. Counts come from `python -B scripts/status.py`; never invent them.
+- Primary metric: journeys in `docs/exec-plans/journeys.json`; counts from `python -B scripts/status.py`, never invented.
+- Dashboard `docs/progress/`: on a node change, edit its source or `nodes.json`, run `python -B scripts/progress_ui.py`, commit both (`docs/references/progress-dashboard.md`).
 - Normal progress reports require a primary metric change: ≤150 Chinese characters plus one openable artifact. Promptly report needed user decisions, additional authorization, or persistent blockers that cannot be resolved autonomously; state the impact and what is needed even when metrics are unchanged.
 - Prefer milestone delivery over polishing loops; hard issues go to `docs/exec-plans/tech-debt.md`.
 - Need user annotation or manual help: tell the user at once and add a row to `docs/exec-plans/human-inputs.md`. Pending items block only dependent work.

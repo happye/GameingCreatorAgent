@@ -1,0 +1,1058 @@
+{
+ "schemaVersion": 1,
+ "updated": "2026-11-09",
+ "howTo": "每个节点只改 done/todo/updated/status 等字段；状态枚举 done|active|partial|todo|blocked。改完运行 python -B scripts/progress_ui.py。规则：docs/references/progress-dashboard.md",
+ "features": {
+  "P001": {
+   "done": "可用FFmpeg从本地录像（含MKV/WebM）抽帧、取音频，作为分析与成片的基础，已工程交付",
+   "todo": "未单独做质量评估，未发布",
+   "updated": "2026-10-07",
+   "sprints": []
+  },
+  "P002": {
+   "done": "开发用CLI可运行analyze、search等命令完成分析与检索，已工程交付",
+   "todo": "未单独做质量评估，未发布",
+   "updated": "2026-11-05",
+   "sprints": []
+  },
+  "P003": {
+   "done": "模型Provider可替换；11-09实现付费Provider原始输出在校验前留存（TD026，完整门禁未绿、未合main）",
+   "todo": "真实付费调用应用校验失败原因待新证据；质量未评估",
+   "updated": "2026-11-09",
+   "sprints": [
+    "sprint-paid-output-evidence"
+   ]
+  },
+  "P004": {
+   "done": "Prompt按版本记录，分析结果可追溯到所用提示词版本，已工程交付",
+   "todo": "未单独做质量评估，未发布",
+   "updated": "2026-10-04",
+   "sprints": []
+  },
+  "P005": {
+   "done": "模型调用费用写入账本，未知费用不记为零，已工程交付",
+   "todo": "未单独做质量评估，未发布",
+   "updated": "2026-10-07",
+   "sprints": []
+  },
+  "P006": {
+   "done": "分析状态存SQLite，任务中断后可恢复继续，已工程交付",
+   "todo": "未单独做质量评估，未发布",
+   "updated": "2026-10-25",
+   "sprints": []
+  },
+  "P007": {
+   "done": "可一次排队准备多段本地录像，失败后可续跑，已工程交付",
+   "todo": "未单独做质量评估，未发布",
+   "updated": "2026-10-07",
+   "sprints": []
+  },
+  "P008": {
+   "done": "窗口级片段缓存命中可跳过视觉调用；有渲染容量门、媒体回收、向量缓存和分析复用检查",
+   "todo": "缓存整体仍为部分完成；准确率与人评不在本项，未发布",
+   "updated": "2026-11-03",
+   "sprints": [
+    "sprint-cache-reclamation"
+   ]
+  },
+  "P009": {
+   "done": "工作台一键用Windows OCR识别画面文字，可点文字跳转、按词查找；有离线难例回归",
+   "todo": "风格化标题读不出，准确率未人评，OCR结果未进入检索",
+   "updated": "2026-11-01",
+   "sprints": [
+    "sprint-ocr-frames"
+   ]
+  },
+  "P010": {
+   "done": "detect-shots本地检测镜头切换与黑场，有合成硬切/黑场夹具回归",
+   "todo": "仅抽查2处，准确率未人评",
+   "updated": "2026-11-01",
+   "sprints": [
+    "sprint-shot-boundaries"
+   ]
+  },
+  "P011": {
+   "done": "可生成360p编辑代理（按时长限额），工作台可切换代理预览，CLI/API/工作台可批量生成",
+   "todo": "代理清理入口未做，播放器尚不自动改用代理",
+   "updated": "2026-11-01",
+   "sprints": [
+    "sprint-editing-proxy"
+   ]
+  },
+  "P012": {
+   "done": "本地语音识别可把录像语音转成文字，已工程交付",
+   "todo": "本机ASR无词级时间戳；质量未单独评估，未发布",
+   "updated": "2026-10-04",
+   "sprints": []
+  },
+  "P013": {
+   "done": "录像可生成带时间点的语义时间线（F004），已工程交付",
+   "todo": "未单独做质量评估，未发布",
+   "updated": "2026-10-24",
+   "sprints": []
+  },
+  "P014": {
+   "done": "可用自然语言搜索录像片段（F005技术可用），11-03修复攻击标签回归",
+   "todo": "检索质量依赖P015人工验收，尚未通过",
+   "updated": "2026-11-03",
+   "sprints": []
+  },
+  "P015": {
+   "done": "Phase 0检索验收8步工具全部就绪（登记参考、固定排名、前十评分、门槛报告）",
+   "todo": "真实执行0/8：需你登记素材与参考、批准付费分析、人工评分",
+   "updated": "2026-10-27",
+   "sprints": []
+  },
+  "P016": {
+   "done": "视觉多帧动作理解已实现（F009），可从多帧判断动作",
+   "todo": "质量未验收，需人工评估",
+   "updated": "2026-10-11",
+   "sprints": []
+  },
+  "P017": {
+   "done": "人物、衣物、持有物细节识别与检索已实现（F010）",
+   "todo": "质量未验收，需人工评估",
+   "updated": "2026-10-24",
+   "sprints": []
+  },
+  "P018": {
+   "done": "本机知识条目带出处和版本历史，可导入文本/目录/PNG/PDF，Studio策划引用；可对比两版补丁说明",
+   "todo": "联网抓取未做；本批完整门禁未通过、未合main；真实AI与人评未做",
+   "updated": "2026-11-09",
+   "sprints": [
+    "sprint-game-knowledge",
+    "sprint-studio-narration-revision",
+    "sprint-knowledge-version-compare"
+   ]
+  },
+  "P019": {
+   "done": "填结构化需求（时长/主题/模式）离线生成模板方案；Studio可从活动规则和本地知识带入需求",
+   "todo": "一句话自然语言理解未做；完整创意需求未覆盖；未经人工验收",
+   "updated": "2026-11-08",
+   "sprints": [
+    "sprint-creation-planner",
+    "sprint-creation-workspace",
+    "sprint-j1-creation-usability"
+   ]
+  },
+  "P020": {
+   "done": "粘贴文字或本地txt/md/html/截图/PDF离线提取活动规则带逐行出处；Studio可确认后填入当前需求",
+   "todo": "不抓取远程网页；规则提取与创意质量未人工评审",
+   "updated": "2026-11-08",
+   "sprints": [
+    "sprint-activity-rules"
+   ]
+  },
+  "P021": {
+   "done": "按需求离线生成多套模板方案卡片（贴合目标时长、2-4秒连续镜头），Studio可采用方案",
+   "todo": "无模型创意策划；方案质量为模板草稿，未经人工验收",
+   "updated": "2026-11-08",
+   "sprints": [
+    "sprint-creation-planner",
+    "sprint-creation-workspace",
+    "sprint-j1-creation-usability"
+   ]
+  },
+  "P022": {
+   "done": "玩法展示/攻略/活动投稿离线结构模板（角色、时长权重、单镜头时长上限），方案列表首推",
+   "todo": "基于模型的结构生成未做；模板创意效果未单独评估",
+   "updated": "2026-11-01",
+   "sprints": [
+    "sprint-content-modes"
+   ]
+  },
+  "P023": {
+   "done": "按总方案八维权重给候选素材打分，仅离线可测维度计分并报告覆盖率，方案按分数选片",
+   "todo": "画面质量/情绪/叙事维度仍未知；评分准确性未人工评估",
+   "updated": "2026-11-05",
+   "sprints": [
+    "sprint-material-scoring"
+   ]
+  },
+  "P024": {
+   "done": "方案附非阻断缺口提示（片段过少、素材总量不足、单一来源等）及补充建议",
+   "todo": "缺口提示有效性未人工评估；未联动自动补素材",
+   "updated": "2026-11-01",
+   "sprints": [
+    "sprint-material-scoring"
+   ]
+  },
+  "P025": {
+   "done": "按已保存镜头描述和成片时长离线生成解说模板草稿；Studio可结合本地知识修订旁白",
+   "todo": "无模型生成解说；文案质量未人工评审",
+   "updated": "2026-11-08",
+   "sprints": [
+    "sprint-narration-script"
+   ]
+  },
+  "P026": {
+   "done": "本机Windows语音合成旁白，可试听、挂接成片时间、调音量/闪避；Studio可编辑并重合成为新版本",
+   "todo": "本机声音授权未知；云端配音需付费单独批准；音质未人工评审",
+   "updated": "2026-11-08",
+   "sprints": [
+    "sprint-local-narration",
+    "sprint-studio-narration-revision"
+   ]
+  },
+  "P027": {
+   "done": "生成源绑定结构化剪辑决策（EDL），可保存版本、换镜头、调整并重开",
+   "todo": "自然语言驱动剪辑决策未做；决策质量为模板草稿未验收",
+   "updated": "2026-11-06",
+   "sprints": [
+    "sprint-creation-planner",
+    "sprint-creation-editing",
+    "sprint-clip-replacements"
+   ]
+  },
+  "P028": {
+   "done": "FFmpeg本地渲染MP4：裁剪拼接、变速、转场、音频混合、定时文字/图片叠层，均有真实输出帧证据",
+   "todo": "更复杂合成未做；成片创意质量与商用发布未验证",
+   "updated": "2026-11-07",
+   "sprints": [
+    "sprint-creation-render",
+    "sprint-clip-speed",
+    "sprint-clip-transitions",
+    "sprint-timed-overlays"
+   ]
+  },
+  "P029": {
+   "done": "按镜头生成并编辑字幕，可在成片时间轴预览草稿并烧入渲染，原始转写保持不变",
+   "todo": "本机ASR无逐字时间戳，逐字字幕未做；字幕样式与质量未验证",
+   "updated": "2026-11-08",
+   "sprints": [
+    "sprint-creation-subtitles",
+    "sprint-creation-caption-editing",
+    "sprint-studio-caption-editor",
+    "sprint-studio-caption-preview"
+   ]
+  },
+  "P030": {
+   "done": "登记本地音乐并记录许可状态，可在工作台选BGM、调音量并真实混音渲染",
+   "todo": "AI选曲、节拍/节奏匹配未做；曲目授权与响度质量未核",
+   "updated": "2026-11-03",
+   "sprints": [
+    "sprint-creation-audio-mix"
+   ]
+  },
+  "P031": {
+   "done": "从成片选首/末帧做封面，填写标题/简介/标签并保存多版本、下载",
+   "todo": "无自动生成标题/简介/标签；封面设计与文案质量未评估",
+   "updated": "2026-11-01",
+   "sprints": [
+    "sprint-publication-assets"
+   ]
+  },
+  "P032": {
+   "done": "Studio可调出入点、换镜头、改字幕、换BGM/旁白、变速转场并另存版本重渲染",
+   "todo": "编辑器整体易用性未经人工验收；部分编辑项仍不完整",
+   "updated": "2026-11-08",
+   "sprints": [
+    "sprint-creation-editing",
+    "sprint-clip-replacements",
+    "sprint-studio-caption-editor",
+    "sprint-studio-workbench"
+   ]
+  },
+  "P033": {
+   "done": "导出FCPXML 1.9、OTIO、Premiere XML时间线，含尽力而为的字幕/音轨和独立旁白轨",
+   "todo": "未在Final Cut/DaVinci/Premiere实际导入验证；样式往返未验证",
+   "updated": "2026-11-08",
+   "sprints": [
+    "sprint-timeline-export",
+    "sprint-premiere-narration-track"
+   ]
+  },
+  "P034": {
+   "done": "四平台（B站/抖音/快手/小红书）规格来自本地 platform-presets-v1 配置，页面可编辑并生成规则版本",
+   "todo": "限值仍为未配置，官方平台规则未核对，不能宣称官方合规",
+   "updated": "2026-11-01",
+   "sprints": [
+    "sprint-platform-packages"
+   ]
+  },
+  "P035": {
+   "done": "同一成片可在Studio串行生成多平台独立发布包，可恢复已提交任务并列出各平台结果",
+   "todo": "按平台智能改时长/Hook/CTA的变体未做，无持久批量队列",
+   "updated": "2026-11-08",
+   "sprints": [
+    "sprint-studio-multi-platform-packages",
+    "sprint-platform-packages"
+   ]
+  },
+  "P036": {
+   "done": "可导出平台尺寸变体视频＋封面＋文案七文件ZIP，真实ZIP已验证，Studio可按序构建与恢复",
+   "todo": "真实平台投稿可用性与商用权利未验，质量未单独评估",
+   "updated": "2026-11-08",
+   "sprints": [
+    "sprint-platform-packages",
+    "sprint-publication-assets"
+   ]
+  },
+  "P037": {
+   "done": "发布包生成时做本地限值与资格检查，结果写入包内并在页面展示，blocked会阻止沙箱发布",
+   "todo": "依赖官方完整规则，未配置限值多，检查质量未经人评",
+   "updated": "2026-11-01",
+   "sprints": [
+    "sprint-platform-packages"
+   ]
+  },
+  "P038": {
+   "done": "本机沙箱发布：核验包与本地检查后模拟提交→处理→发布，可查状态与历史；已解冻",
+   "todo": "真实平台未接入，需官方API、账号授权及你的单独同意",
+   "updated": "2026-11-01",
+   "sprints": [
+    "sprint-sandbox-publish"
+   ]
+  },
+  "P039": {
+   "done": "可构建便携版EXE（内嵌WebView2、自带Python/FFmpeg约660MB），可安装/升级/卸载，Smoke通过",
+   "todo": "干净机器测试、代码签名、第三方许可缺口审阅仍待完成",
+   "updated": "2026-11-05",
+   "sprints": [
+    "sprint-desktop-host"
+   ]
+  },
+  "P040": {
+   "done": "新工作台/studio可看素材、选方案、时间线剪辑、旁白音乐、字幕与导出，J1可走通初稿",
+   "todo": "J1全流程第四次试看未通过；Agent对话区与人评验收未完成",
+   "updated": "2026-11-09",
+   "sprints": [
+    "sprint-studio-workbench",
+    "sprint-creation-workspace",
+    "sprint-j1-creation-usability"
+   ]
+  },
+  "P041": {
+   "done": "规则版中文指令改镜头（快慢/删/换序/裁剪/转场）可预览应用保存；确认后的文字模型可调图层时间",
+   "todo": "真实模型语义理解与修改创意质量未验证，开放式说法不支持",
+   "updated": "2026-11-07",
+   "sprints": [
+    "sprint-timeline-commands",
+    "sprint-ai-overlay-timing"
+   ]
+  },
+  "P042": {
+   "done": "本机统计推荐采用率、常见修改与成片→发布包漏斗；常用结构前移，频繁裁剪时自动缩短片段并记录依据",
+   "todo": "采用数据多来自Agent测试而非真人；更深权重学习未做",
+   "updated": "2026-11-01",
+   "sprints": [
+    "sprint-creation-feedback",
+    "sprint-j1-feedback-iteration"
+   ]
+  },
+  "P043": {
+   "done": "玩法展示模板：开场高光→顺序展示→收尾，真实录像→MP4→B站包已走通，即J1主路径",
+   "todo": "J1第四次试看全流程未通过；高光靠描述而非画面理解",
+   "updated": "2026-11-08",
+   "sprints": [
+    "sprint-content-modes",
+    "sprint-j1-creation-usability"
+   ]
+  },
+  "P044": {
+   "done": "活动投稿模板按必须主题取片、缺主题报缺口；Studio可引用本地活动规则生成简报",
+   "todo": "成片质量与真实投稿未经人评，平台活动规则仍需手动录入",
+   "updated": "2026-11-08",
+   "sprints": [
+    "sprint-content-modes",
+    "sprint-activity-rules"
+   ]
+  },
+  "P045": {
+   "done": "攻略模板按录像均匀取第N步并读步号，真实录像→MP4→B站包已走通",
+   "todo": "攻略逻辑与正确性未经人工评审",
+   "updated": "2026-11-01",
+   "sprints": [
+    "sprint-content-modes"
+   ]
+  },
+  "P046": {
+   "done": "游戏解说模板约3秒/段顺序取材并留解说时间，真实出片＋B站包已走通；已解冻",
+   "todo": "解说文案与成片质量未经人评",
+   "updated": "2026-11-01",
+   "sprints": [
+    "sprint-content-modes"
+   ]
+  },
+  "P047": {
+   "done": "实况精剪模板约1.5秒/段按顺序紧凑取材，真实出片＋B站包已走通；已解冻",
+   "todo": "剪辑节奏与成片质量未经人评",
+   "updated": "2026-11-01",
+   "sprints": [
+    "sprint-content-modes"
+   ]
+  },
+  "P048": {
+   "done": "高光模板取评分最高片段按顺序、最高分作收尾，真实出片＋B站包已走通；已解冻",
+   "todo": "评分是描述代理而非画面理解，质量未经人评",
+   "updated": "2026-11-01",
+   "sprints": [
+    "sprint-content-modes"
+   ]
+  },
+  "P049": {
+   "done": "广告/买量模板：钩子＋最多3卖点＋行动号召，真实出片＋B站包已走通；已解冻",
+   "todo": "投放效果未知，质量未经人评",
+   "updated": "2026-11-01",
+   "sprints": [
+    "sprint-content-modes"
+   ]
+  },
+  "P050": {
+   "done": "本地Free/Creator/Pro套餐模型：月渲染配额、Free包数限制与水印、功能门槛已生效（本地评估）",
+   "todo": "无支付、订阅、签名许可证；分析分钟计量未做",
+   "updated": "2026-11-01",
+   "sprints": [
+    "sprint-creator-plans"
+   ]
+  },
+  "P051": {
+   "done": "本机团队角色、品牌词检查、发布包审核与职责分离、审计导出，审核通过才可沙箱发布",
+   "todo": "无账号登录、共享存储、企业素材库、外部API与席位计费",
+   "updated": "2026-11-01",
+   "sprints": [
+    "sprint-enterprise-basics"
+   ]
+  }
+ },
+ "roadmap": [
+  {
+   "id": "R1",
+   "name": "创作主链",
+   "goal": "需求+素材→可选方案→真实可解码MP4",
+   "status": "partial",
+   "done": "结构化需求、三种离线模板方案、素材缺口与EDL已通；EDL真实渲染MP4、工作台持久任务与/studio创作页可用",
+   "todo": "J1人评第四次仍未通过；任意自然语言理解与创作质量人评未做",
+   "features": [
+    "P019",
+    "P021",
+    "P022",
+    "P024",
+    "P027",
+    "P028",
+    "P043",
+    "P044",
+    "P045"
+   ],
+   "slices": [
+    {
+     "id": "R1-1",
+     "name": "首切片：素材→方案→剪辑决策",
+     "status": "done",
+     "sprint": "sprint-creation-planner"
+    },
+    {
+     "id": "R1-2",
+     "name": "第二切片：EDL真实渲染MP4",
+     "status": "done",
+     "sprint": "sprint-creation-render"
+    },
+    {
+     "id": "R1-3",
+     "name": "工作台创作与持久任务历史",
+     "status": "done",
+     "sprint": "sprint-creation-workspace"
+    },
+    {
+     "id": "R1-4",
+     "name": "三种内容模式离线模板",
+     "status": "done",
+     "sprint": "sprint-content-modes"
+    },
+    {
+     "id": "R1-5",
+     "name": "J1可用：创作页重做",
+     "status": "partial",
+     "sprint": "sprint-j1-creation-usability"
+    },
+    {
+     "id": "R1-6",
+     "name": "创作工作台 /studio",
+     "status": "partial",
+     "sprint": "sprint-studio-workbench"
+    },
+    {
+     "id": "R1-7",
+     "name": "J1第四次反馈迭代",
+     "status": "partial",
+     "sprint": "sprint-j1-feedback-iteration"
+    }
+   ]
+  },
+  {
+   "id": "R2",
+   "name": "完整制作",
+   "goal": "改镜头/字幕/配乐/比例→重渲染→发布包",
+   "status": "partial",
+   "done": "镜头裁剪换序替换、变速、交叉淡化、逐镜字幕编辑与预览、本地配乐混音、本机旁白、定时图层、封面文案、四平台七文件包与时间线导出均有真实产物",
+   "todo": "创意质量人评、AI文案/节拍匹配、商用曲目与声音权利、NLE真机导入未验",
+   "features": [
+    "P008",
+    "P025",
+    "P026",
+    "P029",
+    "P030",
+    "P031",
+    "P032",
+    "P033",
+    "P034",
+    "P035",
+    "P036",
+    "P037"
+   ],
+   "slices": [
+    {
+     "id": "R2-A",
+     "name": "镜头编辑、版本与重渲染",
+     "status": "done",
+     "sprint": "sprint-creation-editing"
+    },
+    {
+     "id": "R2-B",
+     "name": "手写字幕、版本继承与烧录",
+     "status": "done",
+     "sprint": "sprint-creation-caption-editing"
+    },
+    {
+     "id": "R2-C",
+     "name": "本地音乐登记与真实混音",
+     "status": "done",
+     "sprint": "sprint-creation-audio-mix"
+    },
+    {
+     "id": "R2-D",
+     "name": "真实封面与可编辑文案",
+     "status": "done",
+     "sprint": "sprint-publication-assets"
+    },
+    {
+     "id": "R2-E",
+     "name": "四平台变体与七文件包",
+     "status": "done",
+     "sprint": "sprint-platform-packages"
+    },
+    {
+     "id": "R2-F",
+     "name": "逐镜头变速与字幕/原声同步",
+     "status": "done",
+     "sprint": "sprint-clip-speed"
+    },
+    {
+     "id": "R2-G",
+     "name": "交叉淡化转场",
+     "status": "done",
+     "sprint": "sprint-clip-transitions"
+    },
+    {
+     "id": "R2-H",
+     "name": "从已选录像替换镜头",
+     "status": "done",
+     "sprint": "sprint-clip-replacements"
+    },
+    {
+     "id": "R2-I",
+     "name": "本地单段旁白",
+     "status": "done",
+     "sprint": "sprint-local-narration"
+    },
+    {
+     "id": "R2-字幕",
+     "name": "源语音映射成片字幕",
+     "status": "done",
+     "sprint": "sprint-creation-subtitles"
+    },
+    {
+     "id": "P025",
+     "name": "解说模板草稿",
+     "status": "done",
+     "sprint": "sprint-narration-script"
+    },
+    {
+     "id": "P028",
+     "name": "定时文字与PNG图层",
+     "status": "done",
+     "sprint": "sprint-timed-overlays"
+    },
+    {
+     "id": "P033",
+     "name": "专业时间线导出",
+     "status": "done",
+     "sprint": "sprint-timeline-export"
+    },
+    {
+     "id": "P033-b",
+     "name": "Studio时间线入口+Premiere旁白轨",
+     "status": "done",
+     "sprint": "sprint-premiere-narration-track"
+    },
+    {
+     "id": "P029-a",
+     "name": "Studio逐镜字幕编辑",
+     "status": "done",
+     "sprint": "sprint-studio-caption-editor"
+    },
+    {
+     "id": "P029-b",
+     "name": "Studio草稿字幕即时预览",
+     "status": "done",
+     "sprint": "sprint-studio-caption-preview"
+    },
+    {
+     "id": "P035",
+     "name": "Studio同版本多平台包",
+     "status": "done",
+     "sprint": "sprint-studio-multi-platform-packages"
+    }
+   ]
+  },
+  {
+   "id": "R3",
+   "name": "智能与七模式",
+   "goal": "自然语言改片、规则/知识引用、七种视频模式",
+   "status": "active",
+   "done": "规则版一句话改镜头、活动规则离线提取并填需求、知识版本/出处进入策划与旁白；七模式均有真实出片+包；P018版本对比已实现",
+   "todo": "P018批次完整门禁未绿未合main；开放语义理解、八维评分画面维度、联网抓取未做",
+   "features": [
+    "P018",
+    "P020",
+    "P023",
+    "P041",
+    "P042",
+    "P046",
+    "P047",
+    "P048",
+    "P049"
+   ],
+   "slices": [
+    {
+     "id": "P020",
+     "name": "活动规则解析（离线）",
+     "status": "done",
+     "sprint": "sprint-activity-rules"
+    },
+    {
+     "id": "P018",
+     "name": "游戏知识层（本机）",
+     "status": "done",
+     "sprint": "sprint-game-knowledge"
+    },
+    {
+     "id": "P018-cmp",
+     "name": "补丁说明版本对比（当前）",
+     "status": "active",
+     "sprint": "sprint-knowledge-version-compare"
+    },
+    {
+     "id": "P041",
+     "name": "一句话改镜头（规则版）",
+     "status": "done",
+     "sprint": "sprint-timeline-commands"
+    },
+    {
+     "id": "P041-b",
+     "name": "AI编辑独立图层时间",
+     "status": "done",
+     "sprint": "sprint-ai-overlay-timing"
+    },
+    {
+     "id": "P042",
+     "name": "用户修改反馈闭环",
+     "status": "done",
+     "sprint": "sprint-creation-feedback"
+    },
+    {
+     "id": "P023/P024",
+     "name": "素材评分与缺口",
+     "status": "done",
+     "sprint": "sprint-material-scoring"
+    },
+    {
+     "id": "R3-收口",
+     "name": "Studio知识与本机旁白修订",
+     "status": "done",
+     "sprint": "sprint-studio-narration-revision"
+    },
+    {
+     "id": "Grok-1",
+     "name": "Grok工单一：Studio旁白工具与知识面板（T01–T32）",
+     "status": "done",
+     "sprint": "grok-studio-coding-checklist-20261108"
+    },
+    {
+     "id": "Grok-2",
+     "name": "Grok工单二：核心接入、旁白可编辑（R01–R48）",
+     "status": "done",
+     "sprint": "grok-studio-coding-round2-20261108"
+    }
+   ]
+  },
+  {
+   "id": "R4",
+   "name": "桌面产品",
+   "goal": "安装Windows EXE在桌面完成全流程",
+   "status": "partial",
+   "done": "EXE薄宿主+build/install脚本、许可缺口提示；360p编辑代理；启动器拒绝旧运行时",
+   "todo": "干净机器安装实测、签名、许可证缺口确认、J3人评未做",
+   "features": [
+    "P011",
+    "P039",
+    "P040"
+   ],
+   "slices": [
+    {
+     "id": "P039",
+     "name": "桌面EXE薄宿主",
+     "status": "done",
+     "sprint": "sprint-desktop-host"
+    },
+    {
+     "id": "P011",
+     "name": "编辑代理文件",
+     "status": "done",
+     "sprint": "sprint-editing-proxy"
+    },
+    {
+     "id": "R4-rt",
+     "name": "启动器拒绝旧运行时",
+     "status": "done",
+     "sprint": "sprint-workspace-runtime-identity"
+    }
+   ]
+  },
+  {
+   "id": "R5",
+   "name": "发布与商业化",
+   "goal": "真实平台发布、创作者套餐、企业协作",
+   "status": "partial",
+   "done": "本机沙箱发布与状态查询；Free/Creator/Pro本地授权与额度生效；企业本机角色/审核门禁",
+   "todo": "真实平台发布、支付订阅、账号登录与企业API均未接入，需单独授权",
+   "features": [
+    "P038",
+    "P050",
+    "P051"
+   ],
+   "slices": [
+    {
+     "id": "P038",
+     "name": "自动发布（本机沙箱）",
+     "status": "done",
+     "sprint": "sprint-sandbox-publish"
+    },
+    {
+     "id": "P050",
+     "name": "创作者套餐（本地授权）",
+     "status": "done",
+     "sprint": "sprint-creator-plans"
+    },
+    {
+     "id": "P051",
+     "name": "企业版基础（本机团队）",
+     "status": "done",
+     "sprint": "sprint-enterprise-basics"
+    }
+   ]
+  },
+  {
+   "id": "Q",
+   "name": "持续质量与上线",
+   "goal": "证明找得准、剪得对、可商业交付",
+   "status": "partial",
+   "done": "Phase0基础10项已交付；验收工具8/8就绪；OCR/镜头切分本地可用；缓存事故止血与限额；TD026付费输出留痕已实现",
+   "todo": "质量已验收0/51；J2检索人评0/8步；完整门禁3失败修复待复验；未跑Release",
+   "features": [
+    "P001",
+    "P002",
+    "P003",
+    "P004",
+    "P005",
+    "P006",
+    "P007",
+    "P009",
+    "P010",
+    "P012",
+    "P013",
+    "P014",
+    "P015",
+    "P016",
+    "P017"
+   ],
+   "slices": [
+    {
+     "id": "Q-ocr",
+     "name": "本地画面文字识别",
+     "status": "done",
+     "sprint": "sprint-ocr-frames"
+    },
+    {
+     "id": "Q-shot",
+     "name": "镜头切分与黑屏检测",
+     "status": "done",
+     "sprint": "sprint-shot-boundaries"
+    },
+    {
+     "id": "Q-cache",
+     "name": "58GiB缓存事故回收",
+     "status": "done",
+     "sprint": "sprint-cache-reclamation"
+    },
+    {
+     "id": "Q-sync",
+     "name": "Phase0版本推送与文档同步",
+     "status": "done",
+     "sprint": "sprint-phase0-publication-sync"
+    },
+    {
+     "id": "TD026",
+     "name": "付费返回结果本机留痕",
+     "status": "active",
+     "sprint": "sprint-paid-output-evidence"
+    },
+    {
+     "id": "Q-U10",
+     "name": "检索各主查询前十可用≥70%（J2/F006）",
+     "status": "todo",
+     "sprint": ""
+    },
+    {
+     "id": "Q-review",
+     "name": "事实/结构/字幕/配音真人评审",
+     "status": "todo",
+     "sprint": ""
+    },
+    {
+     "id": "Q-time",
+     "name": "创作主动时间节省>60%",
+     "status": "todo",
+     "sprint": ""
+    },
+    {
+     "id": "Q-commercial",
+     "name": "安装/凭据/权利/费用/恢复证据",
+     "status": "todo",
+     "sprint": ""
+    }
+   ]
+  }
+ ],
+ "stages": [
+  {
+   "id": "S1",
+   "name": "Phase 0 技术验证",
+   "output": "录像→语义时间线→自然语言找片段",
+   "status": "partial",
+   "note": "工程完成；检索质量验收0/8步，F006/F009/F010仍false",
+   "entry": "—"
+  },
+  {
+   "id": "S2",
+   "name": "Creative Planner",
+   "output": "一句话需求→3套视频方案",
+   "status": "partial",
+   "note": "结构化输入/模板/EDL及知识规则引用可用；自然语言理解与人评未过",
+   "entry": "实现立即开展；质量/发布另验"
+  },
+  {
+   "id": "S3",
+   "name": "Edit Decision + FFmpeg",
+   "output": "自动输出MP4",
+   "status": "partial",
+   "note": "真实渲染含变速/转场/字幕/图层/旁白已通；J1人评第四次未通过",
+   "entry": "EDL合同可执行；审片独立"
+  },
+  {
+   "id": "S4",
+   "name": "正式 Windows EXE",
+   "output": "桌面工作区（预览/Agent/时间线）",
+   "status": "partial",
+   "note": "EXE薄宿主与安装脚本已有；干净机器、签名、许可缺口与J3人评未做",
+   "entry": "阶段 3"
+  },
+  {
+   "id": "S5",
+   "name": "活动规则/多平台/发布包",
+   "output": "多平台版本+投稿前检查+发布包",
+   "status": "partial",
+   "note": "规则离线提取、四平台七文件包、本地Preflight已交；官方规则与商用资格待补",
+   "entry": "按ADR-003并行实现；正式发布另验"
+  },
+  {
+   "id": "S6",
+   "name": "真实账号发布",
+   "output": "创始人账号实测",
+   "status": "todo",
+   "note": "仅本机沙箱发布；真实平台发布需单独授权",
+   "entry": "阶段 5"
+  }
+ ],
+ "qualitySteps": [
+  {
+   "id": "Q1",
+   "name": "素材录制分组/开发·测试划分",
+   "toolReady": true,
+   "executed": false,
+   "owner": "用户",
+   "note": "待你决定分组及是否补原始录像；不阻断开发"
+  },
+  {
+   "id": "Q2",
+   "name": "事前查询与原片参考（每主查询≥10事件）",
+   "toolReady": true,
+   "executed": false,
+   "owner": "用户",
+   "note": "依赖第1步；登记工具含计数与重叠提醒"
+  },
+  {
+   "id": "Q3",
+   "name": "冻结评测计划",
+   "toolReady": true,
+   "executed": false,
+   "owner": "Agent",
+   "note": "默认自动盘点，待前两步完成"
+  },
+  {
+   "id": "Q4",
+   "name": "分析素材（付费）",
+   "toolReady": true,
+   "executed": false,
+   "owner": "用户批准费用提案→Agent",
+   "note": "需你批准具体费用提案后执行"
+  },
+  {
+   "id": "Q5",
+   "name": "关联已完成分析版本",
+   "toolReady": true,
+   "executed": false,
+   "owner": "用户选版本/Agent",
+   "note": "依赖第4步"
+  },
+  {
+   "id": "Q6",
+   "name": "生成固定排名",
+   "toolReady": true,
+   "executed": false,
+   "owner": "Agent",
+   "note": "依赖第5步"
+  },
+  {
+   "id": "Q7",
+   "name": "前十名人工评分",
+   "toolReady": true,
+   "executed": false,
+   "owner": "用户",
+   "note": "排名生成后触发；J2人评仍未做"
+  },
+  {
+   "id": "Q8",
+   "name": "门槛报告（逐主查询≥7/10）",
+   "toolReady": true,
+   "executed": false,
+   "owner": "Agent",
+   "note": "F006仍false，验收0/8"
+  }
+ ],
+ "journeyFixes": {
+  "J1": [
+   {
+    "id": "J1-1",
+    "name": "素材去重、搜索范围、短事件取景区间",
+    "status": "done",
+    "note": "11-05 合同1–3落地并浏览器验证；未经真人复测"
+   },
+   {
+    "id": "J1-2",
+    "name": "四个方案价值不足 / 动态策划",
+    "status": "partial",
+    "note": "R3动态策划核心已集成；唯一真实调用应用失败（TD026），新调用需授权"
+   },
+   {
+    "id": "J1-3",
+    "name": "创作助手开放式对话",
+    "status": "partial",
+    "note": "规则版改镜头可用；开放式对话未做"
+   },
+   {
+    "id": "J1-4",
+    "name": "切镜卡顿 / BGM 重复",
+    "status": "partial",
+    "note": "缓冲暂停音轨已修；双槽预加载与转场一致性在工作分支（TD025）"
+   },
+   {
+    "id": "J1-5",
+    "name": "云端音色配置",
+    "status": "done",
+    "note": "默认免费本机声音，云端需显式选择并过费用门"
+   },
+   {
+    "id": "J1-6",
+    "name": "保存版本按钮灰色",
+    "status": "done",
+    "note": "禁用原因可见，修改可保存并重开"
+   },
+   {
+    "id": "J1-7",
+    "name": "平台包下载成 true.txt",
+    "status": "partial",
+    "note": "指定真实文件名并验证ZIP；原故障未复现、未证实已解决"
+   },
+   {
+    "id": "J1-8",
+    "name": "邀请你复测 J1",
+    "status": "todo",
+    "note": "开发验证通过后再邀请；当前不要求操作"
+   }
+  ]
+ },
+ "releaseGates": [
+  {
+   "id": "RG1",
+   "name": "第三方许可证缺口（6项）",
+   "status": "todo",
+   "source": "human-inputs T2 / licenses/gaps.json"
+  },
+  {
+   "id": "RG2",
+   "name": "TD003 固定 FFmpeg 来源与 GPL 义务",
+   "status": "todo",
+   "source": "tech-debt TD003"
+  },
+  {
+   "id": "RG3",
+   "name": "verify.ps1 -Release 门禁",
+   "status": "todo",
+   "source": "STATUS 第4条：本批未跑"
+  },
+  {
+   "id": "RG4",
+   "name": "干净机器安装/启动/卸载实测",
+   "status": "todo",
+   "source": "P039 / R4"
+  },
+  {
+   "id": "RG5",
+   "name": "代码签名",
+   "status": "todo",
+   "source": "P039"
+  },
+  {
+   "id": "RG6",
+   "name": "J3 你亲自试安装",
+   "status": "todo",
+   "source": "journeys.json J3"
+  },
+  {
+   "id": "RG7",
+   "name": "商用上线材料：发布账号/平台、授权音乐与品牌、支付与套餐",
+   "status": "todo",
+   "source": "user-actions.md；到 R5 执行前申请"
+  }
+ ],
+ "gate": {
+  "date": "2026-11-09",
+  "scope": "完整门禁 verify.ps1（knowledge-evidence-batch-full）",
+  "result": "fail",
+  "counts": "5108 过 · 7 跳 · 3 失败",
+  "branch": "codex/knowledge-version-compare-20261108",
+  "merged": false,
+  "note": "3失败均为音频采样级联；修复后重跑 knowledge-evidence-hook-fixed-full 进行中，绿前不合 main"
+ }
+}

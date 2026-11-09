@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GamingCreator 开发进度</title>
+<!-- 静态页面：数据来自同目录 data.js（由 python -B scripts/progress_ui.py 生成）。不要手改本文件来更新进度。 -->
+<style>
+:root{
+  --bg:#f5f6f8;--panel:#ffffff;--panel2:#f9fafb;--line:#e4e7ec;--line2:#eef0f3;
+  --text:#14171f;--text2:#4a5160;--muted:#8a91a0;
+  --accent:#4f46e5;--accent-soft:#eef0ff;
+  --ok:#16a34a;--ok-soft:#e7f6ec;--warn:#d97706;--warn-soft:#fdf3e2;
+  --info:#2563eb;--info-soft:#e8effd;--bad:#dc2626;--bad-soft:#fdeaea;
+  --idle:#9aa1ad;--idle-soft:#eff1f4;--star:#e0a100;
+  --shadow:0 1px 2px rgba(16,24,40,.04),0 4px 14px rgba(16,24,40,.05);
+  --radius:14px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1015;--panel:#161922;--panel2:#1b1f2a;--line:#272c38;--line2:#20242f;
+  --text:#e8eaf0;--text2:#b2b8c6;--muted:#7d8597;
+  --accent:#8b85ff;--accent-soft:#232445;
+  --ok:#3ccf74;--ok-soft:#14291d;--warn:#f0a83a;--warn-soft:#2d2313;
+  --info:#5c93ff;--info-soft:#16223b;--bad:#ff6b6b;--bad-soft:#331a1c;
+  --idle:#6d7486;--idle-soft:#20242e;--star:#f5c542;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25);
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1015;--panel:#161922;--panel2:#1b1f2a;--line:#272c38;--line2:#20242f;
+  --text:#e8eaf0;--text2:#b2b8c6;--muted:#7d8597;
+  --accent:#8b85ff;--accent-soft:#232445;
+  --ok:#3ccf74;--ok-soft:#14291d;--warn:#f0a83a;--warn-soft:#2d2313;
+  --info:#5c93ff;--info-soft:#16223b;--bad:#ff6b6b;--bad-soft:#331a1c;
+  --idle:#6d7486;--idle-soft:#20242e;--star:#f5c542;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:14px/1.6 "PingFang SC","Microsoft YaHei UI","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+code,.mono{font-family:"Cascadia Code",Consolas,"SFMono-Regular",monospace;font-size:12px}
+.wrap{max-width:1320px;margin:0 auto;padding:0 24px 64px}
+header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topin{max-width:1320px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;white-space:nowrap}
+.logo{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#22b8cf);
+  display:grid;place-items:center;color:#fff;font-size:13px}
+nav.tabs{display:flex;gap:2px;flex-wrap:nowrap;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+nav.tabs a{padding:6px 11px;border-radius:8px;color:var(--text2);font-size:13px;white-space:nowrap;flex:none}
+nav.tabs a:hover{background:var(--panel);color:var(--text)}
+.meta{color:var(--muted);font-size:12px;white-space:nowrap}
+@media (max-width:1500px){.meta{display:none}}
+.iconbtn{border:1px solid var(--line);background:var(--panel);color:var(--text2);border-radius:8px;
+  padding:5px 9px;cursor:pointer;font:inherit;font-size:12px}
+section{margin-top:34px}
+h2{font-size:19px;margin:0 0 4px;letter-spacing:.2px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.pad{padding:18px 20px}
+.grid{display:grid;gap:14px}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;font-size:12px;
+  line-height:20px;white-space:nowrap;background:var(--idle-soft);color:var(--text2)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.info{background:var(--info-soft);color:var(--info)}.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.idle{background:var(--idle-soft);color:var(--muted)}.chip.acc{background:var(--accent-soft);color:var(--accent)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:currentColor;flex:none}
+.muted{color:var(--muted)}.small{font-size:12px}
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px}
+.journey{padding:16px 18px;border-bottom:1px solid var(--line2)}
+.journey:last-child{border-bottom:0}
+.jhead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.jid{font-weight:800;color:var(--accent);font-size:15px;width:26px}
+.jname{font-weight:600;flex:1}
+.lanes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-left:36px}
+.lane{border:1px solid var(--line2);border-radius:10px;padding:8px 10px;background:var(--panel2)}
+.lane .lt{font-size:11px;color:var(--muted);margin-bottom:3px}
+.lane .lv{display:flex;align-items:center;gap:6px;font-weight:600}
+.steps{margin:8px 0 0 36px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:12px;color:var(--text2)}
+.steps .arrow{color:var(--muted)}
+details.ev{margin:6px 0 0 36px;font-size:12px;color:var(--text2)}
+details.ev summary{cursor:pointer;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.kpi{padding:16px 18px;display:flex;gap:14px;align-items:center}
+.kpi .kv{font-size:26px;font-weight:750;line-height:1.1;letter-spacing:-.5px}
+.kpi .kv small{font-size:14px;color:var(--muted);font-weight:500;margin-left:2px}
+.kpi .kl{color:var(--text2);font-size:13px}
+.kpi .kd{color:var(--muted);font-size:12px;margin-top:2px}
+.ring{flex:none}
+.ring text{font-weight:750;fill:var(--text)}
+.bar{height:8px;border-radius:99px;background:var(--idle-soft);overflow:hidden;display:flex}
+.bar>i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--text2);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:3px;display:inline-block}
+.ladder{padding:18px 20px;margin-top:14px}
+.ladder .bar{height:22px;border-radius:8px}
+.ladder .bar>i{display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600;min-width:0}
+.nowlist{counter-reset:n;margin:0;padding:0;list-style:none}
+.nowlist li{position:relative;padding:12px 14px 12px 46px;border-bottom:1px solid var(--line2);color:var(--text2);font-size:13px}
+.nowlist li:last-child{border-bottom:0}
+.nowlist li::before{counter-increment:n;content:counter(n);position:absolute;left:14px;top:12px;width:22px;height:22px;
+  border-radius:7px;background:var(--accent-soft);color:var(--accent);font-weight:700;display:grid;place-items:center;font-size:12px}
+.clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.nowlist li.open .clamp{-webkit-line-clamp:unset}
+.more{border:0;background:none;color:var(--accent);cursor:pointer;font:inherit;font-size:12px;padding:0;margin-top:2px}
+/* roadmap */
+.road{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;position:relative}
+.rnode{padding:14px 14px 12px;position:relative;cursor:pointer;transition:transform .12s,border-color .12s}
+.rnode:hover{transform:translateY(-2px);border-color:var(--accent)}
+.rnode .rid{font-weight:800;font-size:13px;color:var(--muted)}
+.rnode .rn{font-weight:650;font-size:15px;margin:2px 0 6px}
+.rnode .rg{font-size:12px;color:var(--text2);min-height:38px}
+.rnode .rfoot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:6px}
+.rnode::after{content:"";position:absolute;right:-12px;top:30px;width:12px;height:2px;background:var(--line)}
+.rnode:last-child::after{display:none}
+.slbar{display:flex;gap:3px;margin-top:10px}
+.slbar i{flex:1;height:6px;border-radius:3px;background:var(--idle-soft)}
+.qnode{margin-top:12px;cursor:pointer;padding:12px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.stages{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;margin-top:14px;padding:18px 10px 14px}
+.stage{text-align:center;position:relative;padding:0 8px}
+.stage .sc{width:30px;height:30px;border-radius:50%;margin:0 auto 8px;display:grid;place-items:center;font-weight:700;
+  font-size:13px;border:2px solid var(--line);background:var(--panel);position:relative;z-index:1}
+.stage::before{content:"";position:absolute;top:15px;left:-50%;width:100%;height:2px;background:var(--line)}
+.stage:first-child::before{display:none}
+.stage .sn{font-weight:600;font-size:13px}
+.stage .so{font-size:12px;color:var(--muted);margin-top:2px}
+.stage .snote{font-size:11.5px;color:var(--text2);margin-top:6px}
+/* features */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:2px}
+.seg button{border:0;background:none;color:var(--text2);font:inherit;font-size:13px;padding:5px 11px;border-radius:8px;cursor:pointer}
+.seg button.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+input.search{flex:1;min-width:180px;max-width:340px;border:1px solid var(--line);background:var(--panel);color:var(--text);
+  border-radius:10px;padding:7px 12px;font:inherit;font-size:13px;outline:none}
+input.search:focus{border-color:var(--accent)}
+.group{margin-bottom:16px}
+.ghead{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line2)}
+.gletter{width:28px;height:28px;border-radius:8px;background:var(--accent-soft);color:var(--accent);font-weight:800;display:grid;place-items:center}
+.gname{font-weight:650}
+.gstat{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}
+.gstat .bar{width:140px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px;padding:14px}
+.tile{border:1px solid var(--line2);border-radius:11px;padding:11px 12px 10px;background:var(--panel2);cursor:pointer;
+  position:relative;transition:border-color .12s,box-shadow .12s;border-left:3px solid var(--idle)}
+.tile:hover{border-color:var(--accent);box-shadow:var(--shadow)}
+.tile.s-delivered{border-left-color:var(--ok)}.tile.s-partial{border-left-color:var(--warn)}.tile.s-not_started{border-left-color:var(--idle)}
+.tile .th{display:flex;align-items:center;gap:6px}
+.tile .tid{font-family:Consolas,monospace;font-size:11.5px;color:var(--muted)}
+.tile .star{color:var(--star);font-size:12px}
+.tile .tn{font-weight:600;font-size:13.5px;margin:3px 0 6px;line-height:1.45}
+.pips{display:flex;gap:4px;margin-left:auto}
+.pip{width:18px;height:6px;border-radius:3px;background:var(--idle-soft)}
+.pip.ok{background:var(--ok)}.pip.warn{background:var(--warn)}
+.tile .tdone,.tile .ttodo{font-size:12px;color:var(--text2);display:flex;gap:6px;line-height:1.5}
+.tile .ttodo{color:var(--muted);margin-top:3px}
+.tile .tdone b,.tile .ttodo b{flex:none;font-weight:600}
+.tile .tdone b{color:var(--ok)}.tile .ttodo b{color:var(--warn)}
+.tile .tupd{font-size:11px;color:var(--muted);margin-top:6px}
+/* phase0 */
+.flist{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;padding:14px}
+.fitem{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border-radius:10px;background:var(--panel2);border:1px solid var(--line2);cursor:pointer}
+.fitem .fi{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:12px;flex:none;margin-top:1px}
+.qsteps{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;padding:14px}
+.qs{border:1px solid var(--line2);border-radius:10px;padding:10px;background:var(--panel2);font-size:12px}
+.qs .qn{font-weight:600;font-size:12.5px;margin-bottom:6px;min-height:36px}
+.qs .qr{display:flex;justify-content:space-between;color:var(--muted);margin-top:3px}
+/* tables */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--panel2);position:sticky;top:0}
+td{padding:9px 12px;border-bottom:1px solid var(--line2);vertical-align:top;color:var(--text2)}
+tr:last-child td{border-bottom:0}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--panel2)}
+.tscroll{max-height:560px;overflow:auto;border-radius:var(--radius)}
+.cell-clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+/* commits */
+.spark{display:flex;align-items:flex-end;gap:3px;height:70px;padding:0 4px}
+.spark i{flex:1;background:var(--accent);opacity:.75;border-radius:3px 3px 0 0;min-height:2px;position:relative}
+.spark i:hover{opacity:1}
+.tl{list-style:none;margin:0;padding:6px 0}
+.tl li{display:flex;gap:10px;padding:7px 16px;align-items:baseline;font-size:13px;border-bottom:1px solid var(--line2)}
+.tl li:last-child{border-bottom:0}
+.tl .sha{color:var(--muted);flex:none;width:62px}
+.tl .dt{color:var(--muted);flex:none;width:84px;font-size:12px}
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(10,12,18,.38);opacity:0;pointer-events:none;transition:opacity .18s;z-index:40}
+.scrim.on{opacity:1;pointer-events:auto}
+aside.drawer{position:fixed;top:0;right:0;height:100%;width:min(560px,100%);background:var(--panel);border-left:1px solid var(--line);
+  z-index:41;transform:translateX(100%);visibility:hidden;transition:transform .2s ease,visibility 0s linear .2s;overflow:auto;box-shadow:-10px 0 30px rgba(0,0,0,.12)}
+aside.drawer.on{transform:none;visibility:visible;transition:transform .2s ease}
+.dh{padding:18px 22px 12px;border-bottom:1px solid var(--line2);position:sticky;top:0;background:var(--panel)}
+.dh .x{position:absolute;right:16px;top:16px}
+.db{padding:16px 22px 30px}
+.kvs{display:grid;grid-template-columns:96px 1fr;gap:8px 12px;font-size:13px;margin-bottom:14px}
+.kvs dt{color:var(--muted)}.kvs dd{margin:0;color:var(--text2);word-break:break-word}
+.db h4{margin:18px 0 6px;font-size:13px;color:var(--muted);font-weight:600}
+.db ul{margin:0;padding-left:18px;color:var(--text2);font-size:12.5px}
+.db p{margin:0 0 6px;color:var(--text2);font-size:13px}
+footer{margin-top:40px;color:var(--muted);font-size:12.5px}
+footer .panel{padding:16px 20px}
+footer ol{margin:6px 0 0;padding-left:20px}
+.relgrid{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
+.empty{padding:22px;color:var(--muted);text-align:center}
+.err{padding:30px;margin:40px auto;max-width:640px}
+@media (max-width:1100px){.road{grid-template-columns:repeat(3,minmax(0,1fr))}.rnode::after{display:none}
+  .qsteps{grid-template-columns:repeat(4,minmax(0,1fr))}.hero{grid-template-columns:1fr}}
+@media (max-width:760px){.relgrid{grid-template-columns:1fr}.wrap,.topin{padding-left:16px;padding-right:16px}.g3,.g4,.kpis{grid-template-columns:1fr}
+  .road{grid-template-columns:1fr}.stages{grid-template-columns:repeat(3,1fr);row-gap:18px}.stage:nth-child(4)::before{display:none}
+  .lanes{grid-template-columns:1fr;margin-left:0}.steps,details.ev{margin-left:0}.qsteps{grid-template-columns:repeat(2,1fr)}
+  .gstat .bar{display:none}.meta{display:none}
+  nav.tabs{order:3;flex:0 0 100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -4px}.topin{gap:8px 12px}.iconbtn{margin-left:auto}}
+</style>
+</head>
+<body>
+<header class="top"><div class="topin">
+  <div class="brand"><span class="logo">GC</span>开发进度</div>
+  <nav class="tabs">
+    <a href="#overview">总览</a><a href="#roadmap">路线图</a><a href="#features">51 项功能</a>
+    <a href="#phase0">Phase 0</a><a href="#sprints">冲刺合同</a><a href="#debt">技术债</a>
+    <a href="#human">等你处理</a><a href="#release">上线前提</a><a href="#commits">提交记录</a>
+  </nav>
+  <span class="meta" id="meta"></span>
+  <button class="iconbtn" id="theme" title="切换明暗">◐</button>
+</div></header>
+
+<div class="wrap" id="app"></div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true"><div class="dh"><button class="iconbtn x" id="dclose">关闭 ✕</button><div id="dhead"></div></div><div class="db" id="dbody"></div></aside>
+
+<script src="data.js"></script>
+<script src="live.js" onerror="window.PROGRESS_LIVE=null"></script>
+<script>
+(function(){
+"use strict";
+var D = window.PROGRESS_DATA, L = window.PROGRESS_LIVE || null;
+var app = document.getElementById("app");
+var root = document.documentElement;
+try{var t=localStorage.getItem("gc-progress-theme");if(t)root.setAttribute("data-theme",t);}catch(e){}
+document.getElementById("theme").onclick=function(){
+  var dark = root.getAttribute("data-theme")==="dark" || (!root.getAttribute("data-theme") && matchMedia("(prefers-color-scheme: dark)").matches);
+  var next = dark?"light":"dark"; root.setAttribute("data-theme",next);
+  try{localStorage.setItem("gc-progress-theme",next);}catch(e){}
+};
+if(!D){app.innerHTML='<div class="panel err"><h2>没有找到进度数据</h2><p class="muted">在仓库根目录运行 <code>python -B scripts/progress_ui.py</code> 生成 <code>docs/progress/data.js</code>，然后刷新本页。</p></div>';return;}
+
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function h(tag,cls,html){return "<"+tag+(cls?' class="'+cls+'"':"")+">"+(html||"")+"</"+tag+">";}
+var NODE={done:["ok","已完成"],active:["info","进行中"],partial:["warn","部分"],todo:["idle","未开始"],blocked:["bad","受阻"]};
+var DELIV={delivered:["ok","已交付"],partial:["warn","部分"],not_started:["idle","未开始"]};
+var VERDICT={usable:["ok","可用"],usable_draft:["warn","初版可用"],not_usable:["bad","未通过"],not_done:["idle","未试"]};
+var QUAL={accepted:"质量已验收",not_separately_assessed:"质量未单独验收",template_draft_not_human_accepted:"模板草稿·未人评",
+  technical_render_tests_passed_creative_quality_unreviewed:"技术渲染通过·创意未人评"};
+function chip(map,key,extra){var m=map[key]||["idle",key||"—"];return '<span class="chip '+m[0]+'"><span class="dot"></span>'+esc(m[1])+(extra?" "+esc(extra):"")+"</span>";}
+function ring(pct,color,size){size=size||76;var r=size/2-7,c=2*Math.PI*r,o=c*(1-pct/100);
+  return '<svg class="ring" width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'"><circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="var(--idle-soft)" stroke-width="8"/>'+
+  '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="8" stroke-linecap="round" stroke-dasharray="'+c.toFixed(2)+'" stroke-dashoffset="'+o.toFixed(2)+'" transform="rotate(-90 '+size/2+' '+size/2+')"/>'+
+  '<text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-size="'+(size/4.6).toFixed(0)+'">'+Math.round(pct)+'%</text></svg>';}
+function bar(parts,total){return '<div class="bar">'+parts.map(function(p){return p[0]?'<i style="width:'+(p[0]/total*100)+'%;background:'+p[1]+'" title="'+esc(p[2]||"")+'">'+(p[3]||"")+'</i>':"";}).join("")+'</div>';}
+
+var S=D.summary, dl=S.delivery||{}, fdl=S.firstDelivery||{}, td=S.td||{};
+document.getElementById("meta").textContent=L?(L.branch+" @ "+L.head+" · 生成于 "+L.generatedAt):("节点更新 "+(D.nodesUpdated||"—"));
+
+/* ---------- overview ---------- */
+function fixes(id){var F=(D.journeyFixes||{})[id];if(!F||!F.length)return "";var d=F.filter(function(x){return x.status==="done";}).length;
+  return '<details class="ev"><summary>修复清单 '+d+' / '+F.length+' 完成（第四次试用反馈）</summary><div style="margin-top:6px">'+F.map(function(x){var m=NODE[x.status]||NODE.todo;return '<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0"><span class="dot" style="color:var(--'+m[0]+')"></span><span style="flex:1"><b style="font-weight:600;color:var(--text)">'+esc(x.name)+'</b> <span class="muted">'+esc(x.note)+'</span></span>'+chip(NODE,x.status)+'</div>';}).join("")+'</div></details>';}
+function journeys(){
+  return D.journeys.map(function(j){
+    var a=j.agent_run||{},c=j.human_check||{};
+    var steps=(j.steps||"").split("→").map(function(s){return esc(s.trim());}).join('<span class="arrow">→</span>');
+    return '<div class="journey"><div class="jhead"><span class="jid">'+esc(j.id)+'</span><span class="jname">'+esc(j.name)+'</span></div>'+
+      '<div class="lanes"><div class="lane"><div class="lt">Agent 离线跑通</div><div class="lv">'+(a.result==="pass"?chip({p:["ok","跑通"]},"p"):chip({f:["bad",a.result||"未跑"]},"f"))+'<span class="muted small">'+esc(a.date||"")+'</span></div></div>'+
+      '<div class="lane"><div class="lt">你亲自试过</div><div class="lv">'+chip(VERDICT,c.verdict)+'<span class="muted small">'+esc(c.date||"")+'</span></div></div></div>'+
+      '<div class="steps">'+steps+'</div>'+fixes(j.id)+
+      ((c.evidence||a.evidence)?'<details class="ev"><summary>证据与说明</summary><p>'+esc(c.evidence||"")+'</p><p class="muted">Agent：'+esc(a.evidence||"")+'</p>'+(j.unlocks?'<p class="muted">解锁：'+esc(j.unlocks)+'</p>':"")+'</details>':"")+
+      '</div>';
+  }).join("");
+}
+var RG=D.releaseGates||[],G=D.gate||{};
+function kpis(){
+  var stDone=(D.stages||[]).filter(function(s){return s.status==="done";}).length;
+  var tiles=[
+    ['<div>'+ring(S.pct,"var(--accent)")+'</div>',"全部计划功能","<b>"+(dl.delivered||0)+"</b> 已交付 · <b>"+(dl.partial||0)+"</b> 部分 · "+(dl.not_started||0)+" 未开始","按 已交付=1、部分=0.5 计 · 共 "+S.planned+" 项"],
+    ['<div>'+ring(S.firstPct,"#22b8cf")+'</div>',"首个可用产品（★）","<b>"+(fdl.delivered||0)+"</b> 已交付 · <b>"+(fdl.partial||0)+"</b> 部分 · "+(fdl.not_started||0)+" 未开始","总方案 §8 第一阶段 · 共 "+S.first+" 项"],
+    [null,"质量已验收",S.qualityAccepted+"<small>/ "+S.planned+"</small>","需真人质量验收；工具就绪不算"],
+    [null,"Phase 0 技术验证",S.phase0Pass+"<small>/ "+S.phase0Total+" passes</small>","F000–F010，未过见 Phase 0 区"],
+    [null,"总方案阶段正式通过",stDone+"<small>/ "+(D.stages||[]).length+"</small>","阶段通过≠禁止开发（ADR-003）"],
+    [null,"技术债已解决",(td.resolved||0)+"<small>/ "+S.tdTotal+"</small>",(td.open||0)+" 未解决 · "+(td.partial||0)+" 部分"],
+    [null,"上线前提已满足",RG.filter(function(g){return g.status==="done";}).length+"<small>/ "+RG.length+"</small>","许可证 · FFmpeg · Release · 干净机 · 签名 · J3 · 商用材料"],
+    [null,"最近完整门禁",(G.result==="pass"?'<span style="color:var(--ok)">通过</span>':G.result?'<span style="color:var(--bad)">未通过</span>':"—")+"<small> "+esc(G.date||"")+"</small>",esc(G.counts||"")+(G.merged===false?" · 未合 main":G.merged?" · 已合 main":"")],
+  ];
+  return tiles.map(function(t){
+    if(t[0]) return '<div class="panel kpi">'+t[0]+'<div><div class="kl">'+t[1]+'</div><div style="margin:4px 0 2px">'+t[2]+'</div><div class="kd">'+t[3]+'</div></div></div>';
+    return '<div class="panel kpi"><div><div class="kl">'+t[1]+'</div><div class="kv">'+t[2]+'</div><div class="kd">'+t[3]+'</div></div></div>';
+  }).join("");
+}
+function ladder(){
+  var F=D.features,n=F.length;
+  var lv={ns:0,part:0,del:0,qa:0,rel:0};
+  F.forEach(function(f){
+    if(f.release && f.release!=="not_released") lv.rel++;
+    else if(f.quality==="accepted") lv.qa++;
+    else if(f.delivery==="delivered") lv.del++;
+    else if(f.delivery==="partial") lv.part++;
+    else lv.ns++;
+  });
+  var parts=[[lv.ns,"var(--idle)","未开始",lv.ns],[lv.part,"var(--warn)","部分实现",lv.part],[lv.del,"var(--ok)","实现已交付",lv.del],[lv.qa,"var(--info)","质量已验收",lv.qa],[lv.rel,"var(--accent)","已发布",lv.rel]];
+  return '<div class="panel ladder"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><b>51 项成熟度阶梯</b><span class="muted small">每项只落在它达到的最高一级：部分实现 → 实现交付 → 质量验收 → 已发布</span></div>'+
+    bar(parts,n)+'<div class="legend">'+parts.map(function(p){return '<span><i class="sw" style="background:'+p[1]+'"></i>'+p[2]+' '+p[0]+'</span>';}).join("")+'</div></div>';
+}
+function nowList(){
+  if(!D.now.length) return '<div class="empty">STATUS.md 没有“当前交付与下一步”条目</div>';
+  return '<ol class="nowlist">'+D.now.map(function(t){return '<li><div class="clamp">'+esc(t)+'</div><button class="more">展开</button></li>';}).join("")+'</ol>';
+}
+function overview(){
+  return '<section id="overview" style="margin-top:22px"><h2>总览</h2><p class="sub">主指标是端到端流程：Agent 跑通 ≠ 你亲自试过。数字全部由源文件计算，节点说明更新于 '+esc(D.nodesUpdated||"—")+'。</p>'+
+    '<div class="hero"><div class="panel"><div class="pad" style="padding-bottom:4px"><b>主指标 · 端到端流程</b> <span class="muted small">你试过可用 '+S.journeyHumanUsable+' / '+S.journeyTotal+' · Agent 跑通 '+S.journeyAgentPass+' / '+S.journeyTotal+'</span></div>'+journeys()+'</div>'+
+    '<div class="kpis">'+kpis()+'</div></div>'+ladder()+
+    '<div class="grid" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);margin-top:14px">'+
+      '<div class="panel"><div class="pad" style="padding-bottom:0"><b>正在做 / 下一步</b> <span class="muted small">来自 STATUS.md</span></div>'+nowList()+'</div>'+
+      '<div class="panel"><div class="pad"><b>等你处理</b> <span class="muted small">'+S.humanPending+' 项，详见下方</span>'+
+        '<div style="margin-top:10px">'+D.human.slice(0,6).map(function(x){return '<div style="padding:7px 0;border-bottom:1px solid var(--line2);font-size:13px">'+esc(x.item)+'<div class="muted small cell-clamp">'+esc(x.when)+'</div></div>';}).join("")+'</div></div></div>'+
+    '</div></section>';
+}
+
+/* ---------- roadmap ---------- */
+function roadmap(){
+  var R=D.roadmap||[],main=R.filter(function(r){return r.id!=="Q";}),q=R.filter(function(r){return r.id==="Q";})[0];
+  function slbar(r){return '<div class="slbar">'+(r.slices||[]).map(function(s){var m=NODE[s.status]||NODE.todo;return '<i title="'+esc(s.id+" "+s.name)+'" style="background:var(--'+m[0]+')"></i>';}).join("")+'</div>';}
+  function count(r){var sl=r.slices||[],d=sl.filter(function(s){return s.status==="done";}).length;return sl.length?d+"/"+sl.length+" 切片完成":"";}
+  var html='<div class="road">'+main.map(function(r){return '<div class="panel rnode" data-road="'+esc(r.id)+'"><div class="rid">'+esc(r.id)+'</div><div class="rn">'+esc(r.name)+'</div><div class="rg">'+esc(r.goal)+'</div>'+slbar(r)+'<div class="rfoot">'+chip(NODE,r.status)+'<span class="muted small">'+count(r)+'</span></div></div>';}).join("")+'</div>';
+  if(q) html+='<div class="panel qnode" data-road="Q"><b style="color:var(--muted)">Q</b><b>'+esc(q.name)+'</b><span class="muted small" style="flex:1">'+esc(q.goal)+' · 与 R1–R5 并行，只阻断相关验收/商用声明</span>'+chip(NODE,q.status)+'<span class="muted small">'+count(q)+'</span><div style="flex-basis:100%">'+slbar(q)+'</div></div>';
+  var st=D.stages||[];
+  html+='<div class="panel stages">'+st.map(function(s,i){var m=NODE[s.status]||NODE.todo;return '<div class="stage"><div class="sc" style="border-color:var(--'+m[0]+');color:var(--'+m[0]+')">'+(s.status==="done"?"✓":i+1)+'</div><div class="sn">'+esc(s.name)+'</div><div class="so">'+esc(s.output)+'</div><div style="margin-top:6px">'+chip(NODE,s.status)+'</div><div class="snote">'+esc(s.note)+'</div>'+(s.entry&&s.entry!=="—"?'<div class="so" style="margin-top:4px">进入条件：'+esc(s.entry)+'</div>':"")+'</div>';}).join("")+'</div>';
+  return '<section id="roadmap"><h2>路线图</h2><p class="sub">实施批次 R1–R5 与并行质量线 Q（accelerated-product-roadmap），下方为总方案 6 个阶段。点卡片看切片。</p>'+html+'</section>';
+}
+
+/* ---------- features ---------- */
+var fstate={filter:"all",q:""};
+function pips(f){
+  var impl=f.delivery==="delivered"?"ok":f.delivery==="partial"?"warn":"";
+  var qa=f.quality==="accepted"?"ok":(f.quality&&f.quality!=="not_separately_assessed")?"warn":"";
+  var rel=f.release&&f.release!=="not_released"?"ok":"";
+  return '<span class="pips" title="实现 / 质量 / 发布"><i class="pip '+impl+'"></i><i class="pip '+qa+'"></i><i class="pip '+rel+'"></i></span>';
+}
+function tile(f){
+  return '<div class="tile s-'+esc(f.delivery)+'" data-f="'+esc(f.id)+'"><div class="th"><span class="tid">'+esc(f.id)+'</span>'+(f.first?'<span class="star" title="首个可用产品范围">★</span>':"")+chip(DELIV,f.delivery)+pips(f)+'</div>'+
+    '<div class="tn">'+esc(f.name)+'</div>'+
+    (f.done?'<div class="tdone"><b>已有</b><span>'+esc(f.done)+'</span></div>':"")+
+    (f.todo?'<div class="ttodo"><b>还缺</b><span>'+esc(f.todo)+'</span></div>':"")+
+    (f.updated?'<div class="tupd">更新 '+esc(f.updated)+(f.sprints&&f.sprints.length?' · '+f.sprints.length+' 份合同':"")+'</div>':"")+'</div>';
+}
+function featureMatch(f){
+  var flt=fstate.filter;
+  if(flt==="first"&&!f.first) return false;
+  if((flt==="delivered"||flt==="partial"||flt==="not_started")&&f.delivery!==flt) return false;
+  if(fstate.q){var s=(f.id+" "+f.name+" "+f.done+" "+f.todo+" "+(f.remaining||"")).toLowerCase();if(s.indexOf(fstate.q.toLowerCase())<0) return false;}
+  return true;
+}
+function featureGroups(){
+  var out="";
+  Object.keys(D.groups).forEach(function(g){
+    var all=D.features.filter(function(f){return f.group===g;}),shown=all.filter(featureMatch);
+    if(!shown.length) return;
+    var d=all.filter(function(f){return f.delivery==="delivered";}).length,p=all.filter(function(f){return f.delivery==="partial";}).length;
+    out+='<div class="panel group"><div class="ghead"><span class="gletter">'+g+'</span><span class="gname">'+esc(D.groups[g])+'</span><span class="gstat"><span>✅ '+d+' · 🟡 '+p+' · ⬜ '+(all.length-d-p)+' / '+all.length+'</span>'+
+      bar([[d,"var(--ok)"],[p,"var(--warn)"]],all.length)+'<b style="color:var(--text)">'+Math.round((d+p*0.5)/all.length*100)+'%</b></span></div><div class="tiles">'+shown.map(tile).join("")+'</div></div>';
+  });
+  return out||'<div class="panel empty">没有匹配的功能</div>';
+}
+function features(){
+  var fl=[["all","全部 "+D.features.length],["first","★ 首产品 "+S.first],["delivered","已交付 "+(dl.delivered||0)],["partial","部分 "+(dl.partial||0)],["not_started","未开始 "+(dl.not_started||0)]];
+  return '<section id="features"><h2>51 项计划功能</h2><p class="sub">分母始终是总方案全部 51 项。色条三格 = 实现 / 质量验收 / 发布；左边线颜色 = 交付状态。点卡片看证据与合同。</p>'+
+    '<div class="toolbar"><div class="seg" id="fseg">'+fl.map(function(x){return '<button data-v="'+x[0]+'"'+(x[0]===fstate.filter?' class="on"':"")+'>'+x[1]+'</button>';}).join("")+'</div>'+
+    '<input class="search" id="fq" placeholder="搜索编号、名称、说明…"><span class="legend" style="margin:0"><span><i class="sw" style="background:var(--ok)"></i>已交付</span><span><i class="sw" style="background:var(--warn)"></i>部分</span><span><i class="sw" style="background:var(--idle)"></i>未开始</span></span></div>'+
+    '<div id="fgroups">'+featureGroups()+'</div></section>';
+}
+
+/* ---------- phase0 ---------- */
+function phase0(){
+  var F=D.phase0.map(function(f){return '<div class="fitem" data-p0="'+esc(f.id)+'"><span class="fi" style="background:var(--'+(f.passes?"ok":"bad")+'-soft);color:var(--'+(f.passes?"ok":"bad")+')">'+(f.passes?"✓":"✗")+'</span><div><div class="mono muted">'+esc(f.id)+'</div><div style="font-size:13px;font-weight:600">'+esc(f.name)+'</div></div></div>';}).join("");
+  var Q=(D.qualitySteps||[]).map(function(q){return '<div class="qs"><div class="mono muted">'+esc(q.id)+'</div><div class="qn">'+esc(q.name)+'</div><div class="qr"><span>工具</span>'+(q.toolReady?'<span style="color:var(--ok)">✓ 就绪</span>':'<span>—</span>')+'</div><div class="qr"><span>真实执行</span>'+(q.executed?'<span style="color:var(--ok)">✓</span>':'<span>⬜</span>')+'</div><div class="qr"><span>谁做</span><span style="color:var(--text2)">'+esc(q.owner)+'</span></div>'+(q.note?'<div class="muted" style="margin-top:6px;font-size:11.5px">'+esc(q.note)+'</div>':"")+'</div>';}).join("");
+  var tr=(D.qualitySteps||[]).filter(function(q){return q.toolReady;}).length,ex=(D.qualitySteps||[]).filter(function(q){return q.executed;}).length;
+  return '<section id="phase0"><h2>Phase 0 技术验证与质量线</h2><p class="sub">F000–F010 以 feature_list.json 的 passes 为准；检索验收 8 步：工具就绪 '+tr+'/8，真实执行 '+ex+'/8（并行质量线，不阻断开发）。</p>'+
+    '<div class="panel"><div class="flist">'+F+'</div></div><div class="panel" style="margin-top:14px"><div class="qsteps">'+Q+'</div></div></section>';
+}
+
+/* ---------- sprints ---------- */
+function sprintBatch(){var map={};(D.roadmap||[]).forEach(function(r){(r.slices||[]).forEach(function(s){if(s.sprint)map[s.sprint]={batch:r.id,status:s.status,slice:s.id};});});return map;}
+function sprints(){
+  var map=sprintBatch(),rows=D.sprints.slice().sort(function(a,b){return (b.date||"").localeCompare(a.date||"");});
+  return '<section id="sprints"><h2>冲刺合同</h2><p class="sub">docs/exec-plans/sprint-*.md 共 '+rows.length+' 份；日期取最近一次提交，批次与状态来自 nodes.json 的路线图切片。</p>'+
+    '<div class="panel tscroll"><table><thead><tr><th style="width:104px">最近提交</th><th>合同</th><th style="width:70px">批次</th><th style="width:90px">状态</th><th style="width:170px">关联编号</th></tr></thead><tbody>'+
+    rows.map(function(s){var m=map[s.file]||{};return '<tr><td class="muted" style="white-space:nowrap">'+esc(s.date||"未提交")+'</td><td><div style="color:var(--text);font-weight:550">'+esc(s.title)+'</div><div class="mono muted">'+esc(s.file)+'.md</div></td><td>'+esc(m.batch||"—")+'</td><td>'+(m.status?chip(NODE,m.status):'<span class="muted">—</span>')+'</td><td class="mono muted">'+esc((s.ids||[]).join(" "))+'</td></tr>';}).join("")+
+    '</tbody></table></div></section>';
+}
+
+/* ---------- debt / human / commits ---------- */
+var dstate="open";
+var TDST={open:["bad","未解决"],partial:["warn","部分"],resolved:["ok","已解决"]};
+function debtRows(){return D.techDebt.filter(function(t){return dstate==="all"||t.state===dstate;}).map(function(t){return '<tr class="click" data-td="'+esc(t.id)+'"><td class="mono">'+esc(t.id)+'</td><td>'+chip(TDST,t.state)+'</td><td class="small">'+esc(t.severity)+'</td><td><div class="cell-clamp">'+esc(t.impact)+'</div></td><td class="muted small">'+esc(t.found)+'</td></tr>';}).join("")||'<tr><td colspan="5" class="empty">无</td></tr>';}
+function debt(){
+  var opts=[["open","未解决 "+(td.open||0)],["partial","部分 "+(td.partial||0)],["resolved","已解决 "+(td.resolved||0)],["all","全部 "+S.tdTotal]];
+  return '<section id="debt"><h2>技术债</h2><p class="sub">来自 tech-debt.md 表格状态列；解决 '+(td.resolved||0)+' / '+S.tdTotal+'。</p>'+
+    '<div class="panel pad" style="margin-bottom:12px">'+bar([[td.resolved||0,"var(--ok)","已解决"],[td.partial||0,"var(--warn)","部分"],[td.open||0,"var(--bad)","未解决"]],S.tdTotal)+'</div>'+
+    '<div class="toolbar"><div class="seg" id="dseg">'+opts.map(function(o){return '<button data-v="'+o[0]+'"'+(o[0]===dstate?' class="on"':"")+'>'+o[1]+'</button>';}).join("")+'</div></div>'+
+    '<div class="panel tscroll"><table><thead><tr><th style="width:70px">编号</th><th style="width:90px">状态</th><th style="width:160px">严重度</th><th>影响</th><th style="width:150px">发现</th></tr></thead><tbody id="dbody2">'+debtRows()+'</tbody></table></div></section>';
+}
+function human(){
+  return '<section id="human"><h2>等你处理</h2><p class="sub">human-inputs.md “仍待真实输入”表，'+S.humanPending+' 项；只阻断各自依赖的步骤。</p>'+
+    '<div class="grid g3">'+D.human.map(function(x){return '<div class="panel pad"><div style="font-weight:650;margin-bottom:6px">'+esc(x.item)+'</div><div class="small" style="color:var(--text2)"><b class="muted">何时：</b>'+esc(x.when)+'</div><div class="small muted cell-clamp" style="margin-top:6px" title="'+esc(x.state)+'"><b>状态：</b>'+esc(x.state)+'</div><details class="small" style="margin-top:6px"><summary class="muted" style="cursor:pointer">怎么做</summary><div style="color:var(--text2)">'+esc(x.how)+'</div></details></div>';}).join("")+'</div></section>';
+}
+function release(){
+  var g='<div class="panel">'+(G.date?'<div class="pad" style="border-bottom:1px solid var(--line2)"><b>最近完整门禁</b> '+(G.result==="pass"?chip({p:["ok","通过"]},"p"):chip({f:["bad","未通过"]},"f"))+' <span class="muted small">'+esc(G.date)+' · '+esc(G.scope||"")+'</span><div class="small" style="color:var(--text2);margin-top:4px">'+esc(G.counts||"")+' · 分支 <span class="mono">'+esc(G.branch||"")+'</span> · '+(G.merged?"已合 main":"未合 main")+'</div><div class="small muted">'+esc(G.note||"")+'</div></div>':"")+
+    '<table><tbody>'+RG.map(function(x){return '<tr><td class="mono" style="width:56px">'+esc(x.id)+'</td><td style="color:var(--text)">'+esc(x.name)+'<div class="muted small">'+esc(x.source)+'</div></td><td style="width:96px">'+chip(NODE,x.status)+'</td></tr>';}).join("")+'</tbody></table></div>';
+  var f='<div class="panel pad"><b>费用与授权</b> <span class="muted small">来自 STATUS.md</span><ul style="margin:8px 0 0;padding-left:18px;color:var(--text2);font-size:13px">'+(D.fees||[]).map(function(x){return '<li style="margin-bottom:6px">'+esc(x)+'</li>';}).join("")+'</ul></div>';
+  return '<section id="release"><h2>上线前提与费用</h2><p class="sub">对外分发 / 商用前必须满足的条件，以及当前费用授权边界。</p><div class="grid relgrid">'+g+f+'</div></section>';
+}
+function commits(){
+  var C=(L&&L.commits)||[];if(!C.length) return '<section id="commits"><h2>提交记录</h2><div class="panel empty">运行 python -B scripts/progress_ui.py 后显示（live.js 不入库）</div></section>';
+  var by={};C.forEach(function(c){by[c.date]=(by[c.date]||0)+1;});
+  var days=Object.keys(by).sort(),max=Math.max.apply(null,days.map(function(d){return by[d];}));
+  var KIND={feat:"ok",fix:"warn",test:"info",docs:"acc",refactor:"acc",chore:"idle"};
+  return '<section id="commits"><h2>提交记录</h2><p class="sub">最近 '+C.length+' 次提交（生成时的分支 '+esc(L.branch)+'）。</p>'+
+    '<div class="panel pad" style="margin-bottom:12px"><div class="spark">'+days.map(function(d){return '<i style="height:'+(by[d]/max*100)+'%" title="'+d+'：'+by[d]+' 次"></i>';}).join("")+'</div><div class="muted small" style="display:flex;justify-content:space-between;margin-top:6px"><span>'+days[0]+'</span><span>每日提交数</span><span>'+days[days.length-1]+'</span></div></div>'+
+    '<div class="panel tscroll"><ul class="tl">'+C.map(function(c){return '<li><span class="mono sha">'+esc(c.sha)+'</span><span class="dt">'+esc(c.date)+'</span><span class="chip '+(KIND[c.kind]||"idle")+'" style="flex:none">'+esc(c.kind)+'</span><span style="color:var(--text2)">'+esc(c.subject.replace(/^[a-z]+:\s*/,""))+'</span></li>';}).join("")+'</ul></div></section>';
+}
+function footer(){
+  return '<footer><div class="panel"><b style="color:var(--text)">怎么更新这张图</b>（给 AI，也给你）<ol>'+
+    '<li>功能状态 → 改 <code>feature_list.json</code> 对应 P0xx 的 delivery/quality/release；流程 → 改 <code>journeys.json</code>；技术债/人工待办 → 改各自表格行。</li>'+
+    '<li>节点说明 → 改 <code>docs/progress/nodes.json</code> 里对应节点的 done/todo/updated（功能用 P 编号键，路线图切片改 status）。</li>'+
+    '<li>运行 <code>python -B scripts/progress_ui.py</code>，与改动同一次提交。完整规则见 <code>docs/references/progress-dashboard.md</code>。</li></ol></div></footer>';
+}
+
+/* ---------- drawer ---------- */
+var drawer=document.getElementById("drawer"),scrim=document.getElementById("scrim");
+function openDrawer(head,body){document.getElementById("dhead").innerHTML=head;document.getElementById("dbody").innerHTML=body;drawer.classList.add("on");scrim.classList.add("on");drawer.setAttribute("aria-hidden","false");}
+function closeDrawer(){drawer.classList.remove("on");scrim.classList.remove("on");drawer.setAttribute("aria-hidden","true");}
+scrim.onclick=closeDrawer;document.getElementById("dclose").onclick=closeDrawer;
+document.addEventListener("keydown",function(e){if(e.key==="Escape")closeDrawer();});
+function list(a,mono){return a&&a.length?'<ul>'+a.map(function(x){return '<li'+(mono?' class="mono"':"")+'>'+esc(x)+'</li>';}).join("")+'</ul>':'<p class="muted">无</p>';}
+function featureDrawer(id){
+  var f=D.features.filter(function(x){return x.id===id;})[0];if(!f)return;
+  var spr=D.sprints.reduce(function(m,s){m[s.file]=s;return m;},{});
+  var linked=D.sprints.filter(function(s){return (s.ids||[]).indexOf(id)>=0;}).map(function(s){return s.file;});
+  var all=(f.sprints||[]).concat(linked.filter(function(x){return (f.sprints||[]).indexOf(x)<0;}));
+  openDrawer('<div class="mono muted">'+esc(f.id)+' · '+esc(f.group)+' '+esc(D.groups[f.group]||"")+(f.first?' · <span style="color:var(--star)">★ 首产品</span>':"")+'</div><h3 style="margin:4px 0 8px">'+esc(f.name)+'</h3>'+chip(DELIV,f.delivery),
+    '<dl class="kvs"><dt>实现</dt><dd>'+esc(f.delivery)+(f.impl?" / "+esc(f.impl):"")+'</dd><dt>质量</dt><dd>'+esc(QUAL[f.quality]||f.quality)+'</dd><dt>发布</dt><dd>'+esc(f.release==="not_released"?"未发布":f.release)+'</dd><dt>节点更新</dt><dd>'+esc(f.updated||"—")+'</dd></dl>'+
+    '<h4>已有</h4><p>'+esc(f.done||"—")+'</p><h4>还缺</h4><p>'+esc(f.todo||"—")+'</p>'+
+    (f.remaining?'<h4>feature_list 记录的剩余项</h4><p>'+esc(f.remaining)+'</p>':"")+
+    '<h4>冲刺合同</h4>'+(all.length?'<ul>'+all.map(function(x){return '<li>'+esc(spr[x]?spr[x].title:x)+' <span class="mono muted">'+esc(x)+'</span></li>';}).join("")+'</ul>':'<p class="muted">无</p>')+
+    '<h4>实现证据（'+f.evidence.length+'）</h4>'+list(f.evidence,true));
+}
+function roadDrawer(id){
+  var r=(D.roadmap||[]).filter(function(x){return x.id===id;})[0];if(!r)return;
+  var fm=D.features.reduce(function(m,f){m[f.id]=f;return m;},{});
+  openDrawer('<div class="mono muted">路线图 '+esc(r.id)+'</div><h3 style="margin:4px 0 8px">'+esc(r.name)+'</h3>'+chip(NODE,r.status),
+    '<p>'+esc(r.goal)+'</p><h4>已完成</h4><p>'+esc(r.done||"—")+'</p><h4>还缺</h4><p>'+esc(r.todo||"—")+'</p>'+
+    '<h4>切片（'+(r.slices||[]).length+'）</h4>'+((r.slices||[]).length?'<table><tbody>'+r.slices.map(function(s){return '<tr><td class="mono" style="width:70px">'+esc(s.id)+'</td><td>'+esc(s.name)+(s.sprint?'<div class="mono muted">'+esc(s.sprint)+'</div>':"")+'</td><td style="width:90px">'+chip(NODE,s.status)+'</td></tr>';}).join("")+'</tbody></table>':'<p class="muted">无</p>')+
+    '<h4>覆盖功能</h4><ul>'+(r.features||[]).map(function(id){var f=fm[id];return '<li><span class="mono">'+esc(id)+'</span> '+esc(f?f.name:"")+' '+(f?chip(DELIV,f.delivery):"")+'</li>';}).join("")+'</ul>');
+}
+function p0Drawer(id){var f=D.phase0.filter(function(x){return x.id===id;})[0];if(!f)return;
+  openDrawer('<div class="mono muted">Phase 0 '+esc(f.id)+'</div><h3 style="margin:4px 0 8px">'+esc(f.name)+'</h3>'+(f.passes?chip({y:["ok","passes"]},"y"):chip({n:["bad","未通过"]},"n")),
+    '<h4>说明</h4><p>'+esc(f.description)+'</p><h4>验收标准</h4><p>'+esc(f.criteria)+'</p>');}
+function tdDrawer(id){var t=D.techDebt.filter(function(x){return x.id===id;})[0];if(!t)return;
+  openDrawer('<div class="mono muted">技术债 '+esc(t.id)+' · '+esc(t.found)+'</div><h3 style="margin:4px 0 8px">'+esc(t.severity)+'</h3>'+chip(TDST,t.state),
+    '<h4>影响</h4><p>'+esc(t.impact)+'</p><h4>修复方案</h4><p>'+esc(t.fix)+'</p><h4>状态</h4><p>'+esc(t.status)+'</p>');}
+
+/* ---------- render + events ---------- */
+app.innerHTML=overview()+roadmap()+features()+phase0()+sprints()+debt()+human()+release()+commits()+footer();
+app.addEventListener("click",function(e){
+  var el=e.target.closest("[data-f],[data-road],[data-p0],[data-td],.more,#fseg button,#dseg button");if(!el)return;
+  if(el.classList.contains("more")){var li=el.parentNode;li.classList.toggle("open");el.textContent=li.classList.contains("open")?"收起":"展开";return;}
+  if(el.parentNode.id==="fseg"){fstate.filter=el.getAttribute("data-v");[].forEach.call(el.parentNode.children,function(b){b.classList.toggle("on",b===el);});document.getElementById("fgroups").innerHTML=featureGroups();return;}
+  if(el.parentNode.id==="dseg"){dstate=el.getAttribute("data-v");[].forEach.call(el.parentNode.children,function(b){b.classList.toggle("on",b===el);});document.getElementById("dbody2").innerHTML=debtRows();return;}
+  if(el.dataset.f) return featureDrawer(el.dataset.f);
+  if(el.dataset.road) return roadDrawer(el.dataset.road);
+  if(el.dataset.p0) return p0Drawer(el.dataset.p0);
+  if(el.dataset.td) return tdDrawer(el.dataset.td);
+});
+document.getElementById("fq").addEventListener("input",function(e){fstate.q=e.target.value.trim();document.getElementById("fgroups").innerHTML=featureGroups();});
+})();
+</script>
+</body>
+</html>
