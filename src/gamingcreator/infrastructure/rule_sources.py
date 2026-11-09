@@ -1,13 +1,21 @@
-"""Read activity rules from local text, HTML, screenshots or PDFs (no network, no downloads).
+"""Read activity rules from local text, HTML, screenshots or PDFs, or one web page the user names.
 
 Screenshots use Windows' built-in OCR; PDFs are rendered page by page with Windows.Data.Pdf
 and then recognized the same way. Everything stays in this job's own scratch directory.
+A web page is fetched only for an http(s) address the user typed: one GET, bounded size and
+time, HTML or plain text only, never followed to other links or saved as a download.
 """
 
 import base64
+import hashlib
+import ipaddress
 import json
 import re
 import shutil
+import urllib.error
+import urllib.parse
+import urllib.request
+from datetime import UTC, datetime
 from html.parser import HTMLParser
 from pathlib import Path
 from uuid import uuid4
@@ -113,6 +121,53 @@ def _decode(data: bytes) -> str:
         except UnicodeDecodeError:
             continue
     raise AppError("rules.encoding", "无法识别文件编码（请另存为UTF-8）。", ExitCode.INPUT)
+
+
+WEB_TIMEOUT_SECONDS = 15
+WEB_TYPES = {"text/html": "html", "application/xhtml+xml": "html", "text/plain": "text"}
+
+
+def _loopback(host: str) -> bool:
+    try:
+        return host == "localhost" or ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def fetch_rule_page(url: str) -> dict[str, object]:
+    """Text of one user-named web page with its provenance (address, time, SHA-256)."""
+    parts = urllib.parse.urlsplit(url.strip()) if isinstance(url, str) else None
+    if parts is None or parts.scheme not in ("http", "https") or not parts.hostname:
+        raise AppError("rules.url", "请输入以 http:// 或 https:// 开头的网页地址。", ExitCode.INPUT)
+    # Loopback never goes through a system proxy; other hosts use the normal Windows settings.
+    proxies: dict[str, str] | None = {} if _loopback(parts.hostname) else None
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler(proxies))
+    request = urllib.request.Request(
+        parts.geturl(), headers={"User-Agent": "GamingCreator/0.1 (activity rules reader)"}
+    )
+    try:
+        with opener.open(request, timeout=WEB_TIMEOUT_SECONDS) as response:
+            kind = response.headers.get_content_type()
+            charset = response.headers.get_content_charset()
+            data = response.read(MAX_BYTES + 1)
+            final = response.geturl()
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError) as error:
+        raise AppError("rules.fetch", f"网页读取失败：{error}", ExitCode.INPUT) from error
+    if kind not in WEB_TYPES:
+        raise AppError("rules.type", f"网页类型 {kind} 不是文字或HTML。", ExitCode.INPUT)
+    if not data or len(data) > MAX_BYTES:
+        raise AppError("rules.size", "网页为空或超过10MB。", ExitCode.INPUT)
+    try:
+        markup = data.decode(charset) if charset else _decode(data)
+    except (LookupError, UnicodeDecodeError):
+        markup = _decode(data)
+    return {
+        "text": html_text(markup) if WEB_TYPES[kind] == "html" else markup,
+        "sourceKind": "web",
+        "url": final,
+        "fetchedAt": datetime.now(UTC).isoformat(timespec="seconds"),
+        "sha256": hashlib.sha256(data).hexdigest(),
+    }
 
 
 def html_text(markup: str) -> str:

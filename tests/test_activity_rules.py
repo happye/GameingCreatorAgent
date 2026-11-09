@@ -1,7 +1,9 @@
-"""Activity rule extraction: cited fields, unknowns stay empty, local sources only."""
+"""Activity rule extraction: cited fields, unknowns stay empty; a web page only when named."""
 
 import asyncio
 import base64
+import hashlib
+import http.server
 import json
 import subprocess
 import sys
@@ -13,7 +15,14 @@ import pytest
 
 from gamingcreator.application.activity_rules import extract_activity_rules
 from gamingcreator.application.providers import CancellationContext
-from gamingcreator.infrastructure.rule_sources import html_text, join_ocr_line, read_rule_source
+from gamingcreator.domain.errors import AppError
+from gamingcreator.infrastructure.rule_sources import (
+    MAX_BYTES,
+    fetch_rule_page,
+    html_text,
+    join_ocr_line,
+    read_rule_source,
+)
 
 RULES = """《代号Atom》新版本创作活动
 活动名称：《星际奔跑》创作季
@@ -24,6 +33,62 @@ RULES = """《代号Atom》新版本创作活动
 3. 禁止使用未授权音乐
 4. 不得搬运他人作品
 """
+
+
+PAGES = {
+    "/rules.html": (
+        "text/html; charset=gb2312",
+        (
+            "<html><script>x()</script><body><p>" + "</p><p>".join(RULES.splitlines()) + "</p>"
+        ).encode("gb2312"),
+    ),
+    "/rules.txt": ("text/plain", RULES.encode("utf-8")),
+    "/data.json": ("application/json", b"{}"),
+    "/huge.txt": ("text/plain", b"a" * (MAX_BYTES + 1)),
+}
+
+
+@pytest.fixture
+def site():
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            kind, body = PAGES.get(self.path, ("text/plain", b""))
+            self.send_response(200 if self.path in PAGES else 404)
+            self.send_header("Content-Type", kind)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    yield f"http://127.0.0.1:{server.server_port}"
+    server.shutdown()
+    server.server_close()
+    thread.join()
+
+
+def test_web_page_fetch_keeps_provenance_and_rejects_non_text(site):
+    page = fetch_rule_page(site + "/rules.html")
+    assert page["sourceKind"] == "web" and page["url"] == site + "/rules.html"
+    assert page["sha256"] == hashlib.sha256(PAGES["/rules.html"][1]).hexdigest()
+    assert "x()" not in page["text"]
+    assert extract_activity_rules(page["text"])["knownFields"] == 8
+    assert fetch_rule_page(site + "/rules.txt")["text"] == RULES
+    for address, code in (
+        (site + "/data.json", "rules.type"),
+        (site + "/huge.txt", "rules.size"),
+        (site + "/missing", "rules.fetch"),
+        ("file:///C:/Windows/win.ini", "rules.url"),
+        ("ftp://example.com/a", "rules.url"),
+        ("http://127.0.0.1:9/closed", "rules.fetch"),
+    ):
+        with pytest.raises(AppError) as refused:
+            fetch_rule_page(address)
+        assert refused.value.code == code, address
 
 
 def values(result, field):
@@ -98,7 +163,7 @@ def test_text_and_html_sources_and_rejections(tmp_path):
     assert list(tmp_path.iterdir()) == []
 
 
-def test_http_pasted_text_file_and_refusal(tmp_path):
+def test_http_pasted_text_file_and_refusal(tmp_path, site):
     from gamingcreator.ui.server import create_server
 
     server = create_server("127.0.0.1", 0, tmp_path)
@@ -123,7 +188,15 @@ def test_http_pasted_text_file_and_refusal(tmp_path):
         )
         assert upload["source"]["sourceKind"] == "text"
         assert upload["fields"]["period"] == pasted["fields"]["period"]
-        for body in ({"text": ""}, {"fileName": "a.txt", "dataBase64": "%%%"}, {"other": 1}):
+        web = post({"url": site + "/rules.html"})
+        assert web["source"]["sourceKind"] == "web" and web["source"]["url"].endswith("/rules.html")
+        assert web["fields"]["period"] == pasted["fields"]["period"]
+        for body in (
+            {"text": ""},
+            {"fileName": "a.txt", "dataBase64": "%%%"},
+            {"other": 1},
+            {"url": "file:///C:/Windows/win.ini"},
+        ):
             with pytest.raises(urllib.error.HTTPError) as refused:
                 post(body)
             assert refused.value.code == 400

@@ -246,10 +246,12 @@ class InspectionHandler(BaseHTTPRequestHandler):
 
         from gamingcreator.application.activity_rules import extract_activity_rules
         from gamingcreator.application.providers import CancellationContext
-        from gamingcreator.infrastructure.rule_sources import read_rule_source
+        from gamingcreator.infrastructure.rule_sources import fetch_rule_page, read_rule_source
 
         if isinstance(value, dict) and set(value) == {"text"} and isinstance(value["text"], str):
             source: dict[str, object] = {"text": value["text"], "sourceKind": "pasted"}
+        elif isinstance(value, dict) and set(value) == {"url"} and isinstance(value["url"], str):
+            source = fetch_rule_page(value["url"])
         elif (
             isinstance(value, dict)
             and set(value) == {"fileName", "dataBase64"}

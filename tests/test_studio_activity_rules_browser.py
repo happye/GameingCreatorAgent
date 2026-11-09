@@ -6,7 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from test_activity_rules import RULES
+from test_activity_rules import RULES, site  # noqa: F401
 from test_creation_jobs import service  # noqa: F401
 from test_plan_reasoning_jobs import planning  # noqa: F401
 
@@ -176,6 +176,21 @@ def test_invalid_and_unknown_inputs(studio):
     expect(page.get_by_label("秒数", exact=True)).to_have_value("60")
     page.get_by_label("规则文字").fill("新规则")
     expect(page.get_by_role("button", name="填入创作需求", exact=True)).to_have_count(0)
+
+
+def test_web_address_reads_page_once_and_shows_provenance(studio, site):  # noqa: F811
+    page, expect = studio.page, studio.expect
+    page.get_by_label("规则文字").fill("会被网页地址覆盖的文字")
+    page.get_by_label("或网页地址").fill(site + "/rules.html")
+    expect(page.locator(".activity-rules")).to_contain_text("将读取网页（优先于文字）")
+    page.get_by_role("button", name="解析规则", exact=True).click()
+    result = page.locator(".rules-result")
+    expect(result).to_contain_text("来源：网页（" + site + "/rules.html，读取于")
+    expect(page.locator(".activity-rules [role=status]")).to_contain_text("识别到 8/8 项")
+    expect(result).to_contain_text("星际奔跑")
+    page.get_by_label("或网页地址").fill("ftp://example.com/rules")
+    page.get_by_role("button", name="解析规则", exact=True).click()
+    expect(page.locator(".activity-rules [role=status]")).to_contain_text("http:// 或 https://")
 
 
 @pytest.mark.parametrize("change", ["input", "aba", "unmount", "request"])
