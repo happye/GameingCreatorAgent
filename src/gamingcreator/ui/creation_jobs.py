@@ -55,6 +55,19 @@ def fail(code: str, message: str, conflict: bool = False) -> AppError:
     return AppError(code, message, ExitCode.STORAGE if conflict else ExitCode.INPUT)
 
 
+def expected_presentation_receipt(request: dict[str, Any], burned: bool) -> dict[str, Any] | None:
+    """The presentation receipt a render of this request must carry (TD027).
+
+    Mirrors the renderer: a subtitle style counts only when subtitles were actually burned.
+    """
+    from gamingcreator.domain.creation_presentation import PresentationOptions
+
+    options = PresentationOptions.from_request(request) or PresentationOptions()
+    if not burned:
+        options = PresentationOptions.from_json({**options.to_json(), "subtitleStyle": "standard"})
+    return options.receipt()
+
+
 def identity(value: object) -> str:
     if not isinstance(value, str) or re.fullmatch("[0-9a-f]{32}", value) is None:
         raise fail("creation.input", "无效任务标识。")
@@ -525,6 +538,14 @@ class CreationJobs:
             if mode not in ("none", "sidecar", "burn"):
                 raise ValueError("Invalid saved subtitle mode")
             subtitles = receipt.get("subtitles")
+            burned = (
+                mode == "burn"
+                and isinstance(subtitles, dict)
+                and type(subtitles.get("cueCount")) is int
+                and subtitles["cueCount"] > 0
+            )
+            if receipt.get("presentation") != expected_presentation_receipt(request, burned):
+                raise ValueError("Render presentation changed")
             expected_files = {"video.mp4"}
             if mode != "none":
                 expected_files.add("subtitles.srt")

@@ -432,6 +432,35 @@ def test_subtitle_style_needs_burn_and_known_value(service, mode, style):
     assert not service.threads
 
 
+@pytest.mark.parametrize("claim", [{"subtitleStyle": "boxed"}, {"badge": {"text": "X"}}])
+def test_orphan_rejects_presentation_not_in_request(service, claim):
+    """TD027: a receipt may not claim presentation the request never asked for."""
+    parent = service.submit("plan", request())["jobId"]
+    finish(service, parent)
+    job_id = service.submit(
+        "render",
+        {
+            "requestId": "d" * 32,
+            "planJobId": parent,
+            "planId": "chronological",
+            "width": 64,
+            "height": 48,
+        },
+    )["jobId"]
+    assert finish(service, job_id)["status"] == "completed"
+    directory = service.directory(job_id)
+    assert CreationJobs(service.repository).get(job_id)["status"] == "completed"
+    receipt = service.read(directory / "result/receipt.json")
+    assert "presentation" not in receipt
+    receipt["presentation"] = {"version": "creation-presentation-v1", **claim}
+    service.save(directory / "result/receipt.json", receipt)
+    state = service.read(directory / "status.json")
+    state["status"] = "running"
+    state.pop("resultReceiptSha256")
+    service.save(directory / "status.json", state)
+    assert CreationJobs(service.repository).get(job_id)["status"] == "interrupted"
+
+
 @pytest.mark.parametrize("change", ["mode", "files", "count"])
 def test_orphan_rejects_inconsistent_subtitle_receipt(service, change):
     parent = service.submit("plan", request())["jobId"]
