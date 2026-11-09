@@ -33,7 +33,7 @@ window.PROGRESS_DATA = {
    "open": 5
   },
   "tdTotal": 28,
-  "humanPending": 9,
+  "humanPending": 10,
   "journeyAgentPass": 3,
   "journeyHumanUsable": 0,
   "journeyTotal": 3
@@ -2687,6 +2687,12 @@ window.PROGRESS_DATA = {
    "how": "正式评测前确认时间误差、负例告警、等待时间和费用核对口径",
    "when": "相应验收指标冻结前",
    "state": "未确定项保持null；已确认零扣费不重复要求，也不把其他unknown代填0"
+  },
+  {
+   "item": "各平台登录后的上传限值（可选）",
+   "how": "在你登录的B站/抖音/快手/小红书网页投稿页，看文件大小、时长、标题/简介字数、标签数的提示，告诉agent或在Studio发布页“平台规格”里填写",
+   "when": "想让投稿前检查覆盖更多项时；不阻断开发或出包",
+   "state": "2026-11-10 公开官方页仅查到快手15分钟/4G、B站10小时，其余为未配置，见 docs/references/platform-limits-sources.md"
   }
  ]
 };
