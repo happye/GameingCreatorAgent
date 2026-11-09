@@ -409,8 +409,8 @@ window.PROGRESS_DATA = {
     "docs/exec-plans/sprint-studio-narration-revision.md",
     "2026-11-08: Studio manages local knowledge and imports real PNG/PDF with OCR source warnings. Matched current knowledge is frozen into v2 planning requests/quotes and adopted citations; empty context retains v1. Fake transport and baseline-v1 disk compatibility verified; real AI and human quality remain unassessed."
    ],
-   "done": "本机知识条目带出处和版本历史，可导入文本/目录/PNG/PDF，Studio策划引用；可对比两版补丁说明",
-   "todo": "联网抓取未做；本批完整门禁未通过、未合main；真实AI与人评未做",
+   "done": "本机知识条目带出处和版本历史，可导入文本/目录/PNG/PDF，Studio策划引用；同游戏两版补丁说明逐行对比（已合main）",
+   "todo": "联网抓取未做；真实AI引用与人评未做",
    "updated": "2026-11-09",
    "sprints": [
     "sprint-game-knowledge",
@@ -461,9 +461,9 @@ window.PROGRESS_DATA = {
     "2026-11-08: Studio local activity-rule panel reuses the existing extraction API; citations, explicit application to the current brief, source/project/unmount stale-result isolation, and text-input topic round-trip verified by 12 real HTTP browser cases. No cloud calls, remote URL fetching or large editor dependency; existing OCR/PDF evidence reused, creative quality unreviewed.",
     "2026-11-01: offline activity-rule extraction (name, period, platforms, min/max duration, orientation, required topics, forbidden items) with exact source-line citations from pasted text or local txt/md/html, screenshots via Windows OCR and PDFs via Windows.Data.Pdf page rendering + OCR; one-click brief filling; real Windows screenshot/PDF tests pass; no network fetching or model understanding"
    ],
-   "done": "粘贴文字或本地txt/md/html/截图/PDF离线提取活动规则带逐行出处；Studio可确认后填入当前需求",
-   "todo": "不抓取远程网页；规则提取与创意质量未人工评审",
-   "updated": "2026-11-08",
+   "done": "粘贴文字、填写活动网页地址（只读该页一次，记录网址/时间/SHA-256）或本地txt/md/html/截图/PDF，离线提取规则带逐行出处；Studio确认后填入需求",
+   "todo": "需登录或脚本渲染的网页读不到正文；规则提取与创意质量未人工评审",
+   "updated": "2026-11-09",
    "sprints": [
     "sprint-activity-rules"
    ]
