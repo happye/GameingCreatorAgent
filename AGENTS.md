@@ -44,6 +44,7 @@ Design budget:
 3. If full verification fails, preserve its failing node IDs and passing evidence; repair and rerun only failures plus genuinely affected behavior. Passing targeted checks close that repair; they do not automatically trigger another full run. Test-only sampler/fixture fixes do not invalidate unrelated passing business checks.
 4. A second full run in the same batch requires an explicit user instruction (`verify.ps1` enforces this via `.cache/verify-last.json`: after a failed/interrupted run it refuses until a new `feat:` commit or `-AllowRerun`). Otherwise defer it to the next substantive batch and continue authorized development; do not manufacture an approval request or use “closure / must be all green” to force a rerun.
 5. Run `./scripts/verify.ps1 -Release` before distribution. Report full, targeted and interrupted results separately; never label a failed/stopped full run green because targeted repairs pass.
+6. Token economy: run long checks via `./scripts/quiet.ps1 <test-affected|verify|pytest> [args]` (full log to `.cache/test-logs/`, console gets counts + failing IDs + a rerun file). Read only the failing parts of the log; never poll or re-read whole logs; never start a second pytest while one runs (shared basetemp is wiped).
 
 Known failures: `xfail(strict=False, reason="TDxxx")` plus a tech-debt row. Top-10 Useful Rate: ten fixed slots, missing/duplicate count zero, ≥70% after human judgment. Mark `passes: true` only with evidence; tooling readiness is not acceptance.
 
