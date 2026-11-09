@@ -28,9 +28,9 @@ window.PROGRESS_DATA = {
   "phase0Pass": 8,
   "phase0Total": 11,
   "td": {
-   "resolved": 19,
+   "resolved": 20,
    "partial": 3,
-   "open": 6
+   "open": 5
   },
   "tdTotal": 28,
   "humanPending": 9,
@@ -2611,8 +2611,8 @@ window.PROGRESS_DATA = {
    "severity": "high; paid-result evidence",
    "impact": "Provider完成后应用验证/编译失败，只留reasoning.failed，未保存parsed output/具体异常，无法离线诊断已付费结果",
    "fix": "指定单次许可已耗用；原失败回执/账本不可改或重发。下一切片在应用验证前用既有不可覆盖文件/receipt保存Provider parsed output并保留受控校验错误，以fake验证旧记录兼容，不能伪造丢失原文；实证见.cache/scratch/j1-dynamic-plan-authorization/outcome.md",
-   "status": "open: paid output diagnosis lost; no retry authorized",
-   "state": "open"
+   "status": "resolved: retention shipped (e15e39e) and used 2026-11-09: the authorized send's retained output diagnosed the fingerprint mis-copy offline (fix 1838938); the original 11-09 lost output stays unrecoverable, no retry",
+   "state": "resolved"
   },
   {
    "id": "TD027",
