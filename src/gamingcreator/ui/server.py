@@ -1444,6 +1444,14 @@ class InspectionHandler(BaseHTTPRequestHandler):
             )
 
 
+# Chromium's restricted ports at or above 1024 (net/base/port_util.cc kRestrictedPorts).
+CHROMIUM_UNSAFE_PORTS = frozenset(
+    {1719, 1720, 1723, 2049, 3659, 4045, 4190, 5060, 5061, 6000, 6566}
+    | set(range(6665, 6670))
+    | {6679, 6697, 10080}
+)
+
+
 def create_server(host: str, port: int, repository: Path) -> ThreadingHTTPServer:
     if host != "127.0.0.1":
         raise ValueError("The inspection workspace only binds to 127.0.0.1")
@@ -1465,6 +1473,13 @@ def create_server(host: str, port: int, repository: Path) -> ThreadingHTTPServer
         },
     )
     server = WorkspaceServer((host, port), handler)
+    # Machines with a lowered dynamic port range (e.g. 1024+) can hand out a port that
+    # Chromium/WebView2 refuses to open (ERR_UNSAFE_PORT); pick again in that case.
+    for _ in range(32):
+        if port != 0 or server.server_port not in CHROMIUM_UNSAFE_PORTS:
+            break
+        server.server_close()
+        server = WorkspaceServer((host, port), handler)
     server.creation_jobs = creations
     server.creation_reasoning = reasoning
     server.preparation_jobs = jobs

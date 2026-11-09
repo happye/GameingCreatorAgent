@@ -212,13 +212,22 @@ internal static class GamingCreatorHost
         }
     }
 
+    // Chromium/WebView2 refuses these ports (ERR_UNSAFE_PORT); machines with a lowered dynamic
+    // port range (e.g. 1024+) can hand them out, which would leave the window blank.
+    private static readonly int[] UnsafePorts = {
+        1719, 1720, 1723, 2049, 3659, 4045, 4190, 5060, 5061, 6000, 6566,
+        6665, 6666, 6667, 6668, 6669, 6679, 6697, 10080 };
+
     private static int FreePort()
     {
-        var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        int port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
+        for (int attempt = 0; ; attempt++)
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+            listener.Stop();
+            if (Array.IndexOf(UnsafePorts, port) < 0 || attempt >= 31) return port;
+        }
     }
 
     private static IntPtr KillOnCloseJob()
