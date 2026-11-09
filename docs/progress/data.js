@@ -859,9 +859,9 @@ window.PROGRESS_DATA = {
     "tests/test_platform_package_browser.py",
     "2026-11-01: versioned platform-presets-v1 manifest + platform_preset_loader loads bilibili/douyin/kuaishou/xiaohongshu JSON locally; Source remains local_preset (非官方规则); page edits still create RuleVersion-edited overrides; limits stay null/not_configured — not claimed as official verification"
    ],
-   "done": "四平台（B站/抖音/快手/小红书）规格来自本地 platform-presets-v1 配置，页面可编辑并生成规则版本",
-   "todo": "限值仍为未配置，官方平台规则未核对，不能宣称官方合规",
-   "updated": "2026-11-01",
+   "done": "四平台规格为本地可编辑预设（local-v2）；快手15分钟/4G、B站10小时按官方公开页填写并附原文出处",
+   "todo": "抖音/小红书及各平台标题、简介、标签上限无可读官方页，仍未配置；不能宣称官方合规",
+   "updated": "2026-11-10",
    "sprints": [
     "sprint-platform-packages"
    ]
@@ -930,8 +930,8 @@ window.PROGRESS_DATA = {
     "tests/test_platform_package_browser.py"
    ],
    "done": "发布包生成时做本地限值与资格检查，结果写入包内并在页面展示，blocked会阻止沙箱发布",
-   "todo": "依赖官方完整规则，未配置限值多，检查质量未经人评",
-   "updated": "2026-11-01",
+   "todo": "多数平台限值仍未配置（无官方可读来源），检查质量未经人评",
+   "updated": "2026-11-10",
    "sprints": [
     "sprint-platform-packages"
    ]
