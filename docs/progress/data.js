@@ -766,9 +766,9 @@ window.PROGRESS_DATA = {
     "tests/test_creation_publication_http.py",
     "tests/test_creation_publication_browser.py"
    ],
-   "done": "从成片选首/末帧做封面，填写标题/简介/标签并保存多版本、下载",
-   "todo": "无自动生成标题/简介/标签；封面设计与文案质量未评估",
-   "updated": "2026-11-01",
+   "done": "从成片选帧做封面；标题/简介/标签有本地模板草稿（简介列出成片镜头已保存画面要点，标签含必须主题），可编辑保存多版本、下载",
+   "todo": "无模型生成文案；封面设计与文案质量未评估",
+   "updated": "2026-11-09",
    "sprints": [
     "sprint-publication-assets"
    ]
