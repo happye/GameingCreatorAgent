@@ -65,7 +65,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     const [message, setMessage] = useState("");
     const [selectedShot, setSelectedShot] = useState(null);
     const [size, setSize] = useState("1280,720");
-    const [subtitles, setSubtitles] = useState("none");
+    const [subtitles, setSubtitles] = useState("none"), [subtitleStyle, setSubtitleStyle] = useState("standard");
     const [overlayBusy, setOverlayBusy] = useState(false);
     const stage = useRef(null);
     const [canvasWidth, canvasHeight] = size.split(",").map(Number);
@@ -265,7 +265,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         else if (editable && editing.base?.kind === "revision") source = {revisionJobId: editing.base.jobId};
         setBusy("render"); setMessage("正在生成成片，60 秒的视频大约需要一分钟…"); player.stop();
         try {
-            const accepted = await client.submit("render", {...source, width, height, subtitleMode: subtitles});
+            const accepted = await client.submit("render", {...source, width, height, subtitleMode: subtitles, ...(subtitles === "burn" ? {subtitleStyle} : {})});
             const done = await follow(accepted.jobId, (job) => setRenderJob(job));
             if (done?.status === "completed") { client.forgetIntent("render"); setMode("result"); setMessage(""); onWorksChanged(); lastJob(project, {id: done.jobId, kind: "render"}); }
             else if (done) setMessage(`成片生成失败：${done.error?.message || done.status}`);
@@ -309,7 +309,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                     <div class="program-frame" hidden=${mode !== "plan" || !items.length} style=${{position: "absolute", overflow: "hidden", left: "50%", top: "50%", transform: "translate(-50%, -50%)", width: `${canvas.width}px`, height: `${canvas.height}px`}}>
                     <video ref=${planVideo} hidden=${mode !== "plan" || !items.length} playsinline preload="metadata" onClick=${() => { if (!previewProblem) player.toggle(); }}></video><video ref=${planVideoNext} hidden=${mode !== "plan" || !items.length} playsinline preload="auto" onClick=${() => { if (!previewProblem) player.toggle(); }}></video>${sound}
                     ${editable ? html`<div class="overlay-scale" style=${{position: "absolute", pointerEvents: "none", left: 0, top: 0, width: `${canvasWidth}px`, height: `${canvasHeight}px`, transform: `scale(${canvas.scale})`}}>
-                        <${SubtitlePreview} cues=${captionPreview.cues} outUs=${player.outUs} />
+                        <${SubtitlePreview} cues=${captionPreview.cues} outUs=${player.outUs} styleName=${subtitles === "burn" ? subtitleStyle : "standard"} />
                         <${OverlayPreview} items=${commandOverlays ?? editing.overlays} assets=${editing.overlayAssets} outUs=${player.outUs} fps=${fps} width=${canvasWidth} height=${canvasHeight} />
                     </div>` : null}
                     </div>
@@ -352,6 +352,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                         <label class="form-row">尺寸<select class="select" value=${size} onChange=${(e) => setSize(e.currentTarget.value)}><option value="1280,720">横屏 1280×720</option><option value="720,1280">竖屏 720×1280</option></select></label>
                         <p role="status" aria-label="字幕预览状态">${captionPreview.status}</p>
                         <label class="form-row">字幕<select class="select" value=${subtitles} onChange=${(e) => setSubtitles(e.currentTarget.value)}><option value="none">不加字幕</option><option value="sidecar">导出 SRT</option><option value="burn">烧入并导出 SRT</option></select></label>
+                        ${subtitles === "burn" ? html`<label class="form-row">字幕样式<select class="select" value=${subtitleStyle} onChange=${(e) => setSubtitleStyle(e.currentTarget.value)}><option value="standard">标准（白字细描边）</option><option value="large">大字（手机更清楚）</option><option value="boxed">半透明底框</option></select></label>` : null}
                     </div>
                 </div>
                 </div>

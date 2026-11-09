@@ -1,4 +1,4 @@
-"""Strict local creation presentation: safe-area crop and static corner badge."""
+"""Strict local creation presentation: safe-area crop, static corner badge, subtitle style."""
 
 from __future__ import annotations
 
@@ -8,6 +8,8 @@ from typing import Any
 BADGE_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
 BADGE_MAX_CHARS = 24
 SAFE_AREA_MARGIN_MAX = 40
+# "standard" is the original burn-in look, so requests without a style render unchanged.
+SUBTITLE_STYLES = ("standard", "large", "boxed")
 PRESENTATION_VERSION = "creation-presentation-v1"
 
 
@@ -34,6 +36,7 @@ class PresentationOptions:
     safe_area_margin_percent: int = 0
     badge_text: str | None = None
     badge_corner: str = "bottom-left"
+    subtitle_style: str = "standard"
 
     def __post_init__(self) -> None:
         margin = self.safe_area_margin_percent
@@ -50,10 +53,16 @@ class PresentationOptions:
                 raise ValueError("Badge text must be 1..24 plain characters.")
         if self.badge_corner not in BADGE_CORNERS:
             raise ValueError("Unsupported badge corner.")
+        if self.subtitle_style not in SUBTITLE_STYLES:
+            raise ValueError("Unsupported subtitle style.")
 
     @property
     def enabled(self) -> bool:
-        return self.safe_area_margin_percent > 0 or self.badge_text is not None
+        return (
+            self.safe_area_margin_percent > 0
+            or self.badge_text is not None
+            or self.subtitle_style != "standard"
+        )
 
     @classmethod
     def from_json(cls, value: object) -> PresentationOptions:
@@ -61,17 +70,18 @@ class PresentationOptions:
             return cls()
         if not isinstance(value, dict):
             raise ValueError("Invalid presentation object.")
-        allowed = {"safeAreaMarginPercent", "badgeText", "badgeCorner"}
+        allowed = {"safeAreaMarginPercent", "badgeText", "badgeCorner", "subtitleStyle"}
         if set(value) - allowed:
             raise ValueError("Unknown presentation fields.")
         margin = value.get("safeAreaMarginPercent", 0)
         text = value.get("badgeText")
         corner = value.get("badgeCorner", "bottom-left")
-        return cls(margin, text, corner)
+        style = value.get("subtitleStyle", "standard")
+        return cls(margin, text, corner, style)
 
     @classmethod
     def from_request(cls, request: dict[str, Any]) -> PresentationOptions | None:
-        keys = ("safeAreaMarginPercent", "badgeText", "badgeCorner")
+        keys = ("safeAreaMarginPercent", "badgeText", "badgeCorner", "subtitleStyle")
         if not any(key in request for key in keys):
             return None
         payload = {key: request[key] for key in keys if key in request}
@@ -83,6 +93,7 @@ class PresentationOptions:
             "safeAreaMarginPercent": self.safe_area_margin_percent,
             "badgeText": self.badge_text,
             "badgeCorner": self.badge_corner,
+            "subtitleStyle": self.subtitle_style,
         }
 
     def receipt(self) -> dict[str, Any] | None:
@@ -100,4 +111,5 @@ class PresentationOptions:
                 if self.badge_text is None
                 else {"text": self.badge_text, "corner": self.badge_corner}
             ),
+            **({"subtitleStyle": self.subtitle_style} if self.subtitle_style != "standard" else {}),
         }

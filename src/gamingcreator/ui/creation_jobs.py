@@ -172,7 +172,7 @@ class CreationJobs:
                 "profile",
             }
         optional = (
-            {"subtitleMode", "safeAreaMarginPercent", "badgeText", "badgeCorner"}
+            {"subtitleMode", "safeAreaMarginPercent", "badgeText", "badgeCorner", "subtitleStyle"}
             if kind == "render"
             else (
                 {
@@ -199,6 +199,12 @@ class CreationJobs:
             "burn",
         ):
             raise fail("creation.input", "无效字幕选项。")
+        if (
+            kind == "render"
+            and "subtitleStyle" in request
+            and request.get("subtitleMode") != "burn"
+        ):
+            raise fail("creation.input", "字幕样式只用于烧入字幕。")
         if kind == "render":
             try:
                 from gamingcreator.domain.creation_presentation import PresentationOptions

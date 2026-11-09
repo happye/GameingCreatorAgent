@@ -103,7 +103,18 @@ def test_brief_to_exported_video(service, monkeypatch):  # noqa: F811
             playwright.expect(page.locator(".plan").nth(1)).to_be_disabled()
             playwright.expect(page.locator(".plan").first).to_have_attribute("aria-current", "true")
             playwright.expect(page.locator(".timeline .clip")).to_have_count(2)
-            page.get_by_role("button", name="导出成片").click()
+            # Subtitle style is offered only for burned subtitles and travels with the export.
+            page.get_by_role("tab", name="导出").click()
+            style = page.locator("select:has(option[value=boxed])")
+            playwright.expect(style).to_have_count(0)
+            page.locator("select:has(option[value=burn])").select_option("burn")
+            style.select_option("boxed")
+            with page.expect_request(
+                lambda r: r.method == "POST" and r.url.endswith("/api/creation/renders")
+            ) as submitted:
+                page.get_by_role("button", name="导出成片").click()
+            body = json.loads(submitted.value.post_data)
+            assert body["subtitleMode"] == "burn" and body["subtitleStyle"] == "boxed"
             playwright.expect(page.locator("a[download]")).to_have_attribute(
                 "href", re.compile(r"^/api/creation/jobs/[0-9a-f]{32}/video\?download=1$")
             )

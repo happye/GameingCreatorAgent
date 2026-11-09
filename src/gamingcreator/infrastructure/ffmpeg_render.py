@@ -136,16 +136,29 @@ def _badge_ass(text: str, corner: str, width: int, height: int, duration: Fracti
     )
 
 
-def _burn_ass(cues: tuple[SubtitleCue, ...], width: int, height: int) -> str:
+def _subtitle_style_line(style: str, height: int) -> str:
+    if style == "large":
+        # Bigger bold text with a thicker outline, readable on a phone screen.
+        size, rest = max(14, height // 13), "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,1"
+    elif style == "boxed":
+        # BorderStyle 3 draws a box in OutlineColour; alpha 0x60 keeps it see-through.
+        size, rest = max(12, height // 18), "&H60000000,&H60000000,0,0,0,0,100,100,0,0,3,6,0"
+    else:
+        size, rest = max(12, height // 18), "&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,1,0"
+    return f"Style: Default,Arial,{size},&H00FFFFFF,&H00FFFFFF,{rest},2,4,4,4,1\n"
+
+
+def _burn_ass(
+    cues: tuple[SubtitleCue, ...], width: int, height: int, style: str = "standard"
+) -> str:
     # Never interpret transcript text as ASS override commands.
     header = (
         f"[Script Info]\nScriptType: v4.00+\nPlayResX: {width}\nPlayResY: {height}\n"
         "[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, "
         "OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, "
         "Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
-        f"Style: Default,Arial,{max(12, height // 18)},&H00FFFFFF,&H00FFFFFF,&H00000000,"
-        "&H00000000,0,0,0,0,100,100,0,0,1,1,0,2,4,4,4,1\n"
-        "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
+        + _subtitle_style_line(style, height)
+        + "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
     )
 
     def clock(time: Fraction) -> str:
@@ -329,6 +342,11 @@ class FfmpegCreationRenderer:
             presentation = PresentationOptions()
         else:
             presentation = PresentationOptions.from_json(presentation.to_json())
+        if subtitle_mode != "burn" or not saved_cues:
+            # A style only exists in the video when subtitles were burned; never claim it otherwise.
+            presentation = PresentationOptions.from_json(
+                {**presentation.to_json(), "subtitleStyle": "standard"}
+            )
         target = resolve_existing(output)
         if is_link(output) or any(
             target == resolve_existing(path) or target.is_relative_to(resolve_existing(path))
@@ -358,7 +376,10 @@ class FfmpegCreationRenderer:
             with subtitle_path.open("x", encoding="utf-8", newline="\n") as handle:
                 handle.write(subtitle_text)
         if subtitle_mode == "burn" and saved_cues:
-            ass_path.write_text(_burn_ass(saved_cues, width, height), encoding="utf-8")
+            ass_path.write_text(
+                _burn_ass(saved_cues, width, height, presentation.subtitle_style),
+                encoding="utf-8",
+            )
             video_filter += f",ass=filename={_filter_path(ass_path)}"
         if presentation.badge_text is not None:
             badge_path.write_text(

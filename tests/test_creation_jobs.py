@@ -412,6 +412,26 @@ def test_invalid_subtitle_choice_rejected_before_dispatch(service, value):
     assert not service.threads
 
 
+@pytest.mark.parametrize(
+    "mode,style", [("none", "boxed"), ("sidecar", "large"), ("burn", "neon"), ("burn", None)]
+)
+def test_subtitle_style_needs_burn_and_known_value(service, mode, style):
+    with pytest.raises(AppError):
+        service.submit(
+            "render",
+            {
+                "requestId": "b" * 32,
+                "planJobId": "c" * 32,
+                "planId": "chronological",
+                "width": 64,
+                "height": 48,
+                "subtitleMode": mode,
+                "subtitleStyle": style,
+            },
+        )
+    assert not service.threads
+
+
 @pytest.mark.parametrize("change", ["mode", "files", "count"])
 def test_orphan_rejects_inconsistent_subtitle_receipt(service, change):
     parent = service.submit("plan", request())["jobId"]

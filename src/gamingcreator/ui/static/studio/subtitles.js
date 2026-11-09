@@ -35,8 +35,16 @@ export function useSubtitlePreview(project, editing, clips, mode) {
     return state.key === key ? state : {cues: [], status: payload ? "正在读取字幕…" : "正在读取可编辑镜头"};
 }
 
-export function SubtitlePreview({cues, outUs}) {
-    return html`<div aria-label="字幕预览" style=${{position: "absolute", inset: 0, pointerEvents: "none", zIndex: 4}}>
-        ${cues.filter(c => c.startUs <= outUs && outUs < c.endUs).map(c => html`<div style=${{position: "absolute", bottom: c.lifted ? "12.5%" : "1%", width: "100%", textAlign: "center", whiteSpace: "pre-line", color: "white", textShadow: "0 1px 3px black, 1px 0 2px black", fontSize: "1.25rem"}}>${c.text}</div>`)}
+// Approximates the burned ASS styles (standard / large / boxed) in ffmpeg_render._subtitle_style_line.
+const CUE_STYLES = {
+    standard: {textShadow: "0 1px 3px black, 1px 0 2px black", fontSize: "1.25rem"},
+    large: {textShadow: "0 0 3px black, 0 0 3px black, 1px 1px 2px black", fontSize: "1.75rem", fontWeight: 700},
+    boxed: {fontSize: "1.25rem", background: "rgba(0, 0, 0, 0.62)", padding: "0.1em 0.45em", borderRadius: "2px"},
+};
+
+export function SubtitlePreview({cues, outUs, styleName = "standard"}) {
+    const look = CUE_STYLES[styleName] || CUE_STYLES.standard;
+    return html`<div aria-label="字幕预览" data-subtitle-style=${styleName} style=${{position: "absolute", inset: 0, pointerEvents: "none", zIndex: 4}}>
+        ${cues.filter(c => c.startUs <= outUs && outUs < c.endUs).map(c => html`<div style=${{position: "absolute", bottom: c.lifted ? "12.5%" : "1%", width: "100%", textAlign: "center", whiteSpace: "pre-line", color: "white"}}><span style=${{...look, display: "inline-block"}}>${c.text}</span></div>`)}
     </div>`;
 }
