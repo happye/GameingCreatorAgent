@@ -1,5 +1,6 @@
 """Studio rule import: real extraction, HTTP jobs and offline planning; no paid calls."""
 
+import json
 import threading
 from pathlib import Path
 from types import SimpleNamespace
@@ -41,7 +42,29 @@ def studio(planning, monkeypatch):  # noqa: F811
             browser = runtime.chromium.launch(headless=True)
             page = browser.new_page(viewport={"width": 1440, "height": 1000})
             errors = []
+            network = []
+            pending = set()
             page.on("pageerror", lambda error: errors.append(str(error)))
+            page.on(
+                "console",
+                lambda message: (
+                    network.append({"console": message.text}) if message.type == "error" else None
+                ),
+            )
+            page.on("request", lambda request: pending.add(request.url))
+            page.on("requestfinished", lambda request: pending.discard(request.url))
+            page.on(
+                "requestfailed",
+                lambda request: network.append({"url": request.url, "failure": request.failure}),
+            )
+            page.on(
+                "response",
+                lambda response: (
+                    network.append({"url": response.url, "status": response.status})
+                    if response.status >= 400
+                    else None
+                ),
+            )
             page.route("**/api/evidence?*", lambda route: route.fulfill(status=204))
             page.add_init_script(
                 "localStorage.setItem('studio-v1', JSON.stringify({project:'artifacts/project',workspace:'edit'}))"
@@ -57,8 +80,28 @@ def studio(planning, monkeypatch):  # noqa: F811
                     }
                 ),
             )
-            page.goto(f"http://127.0.0.1:{http.server_port}/studio")
-            page.get_by_role("tab", name="剪辑", exact=True).click()
+            try:
+                page.goto(f"http://127.0.0.1:{http.server_port}/studio")
+                page.get_by_role("tab", name="剪辑", exact=True).click()
+            except Exception:
+                try:
+                    (planning.jobs.repository / "studio-bootstrap-failure.json").write_text(
+                        json.dumps(
+                            {
+                                "url": page.url,
+                                "pageErrors": errors,
+                                "network": network,
+                                "pending": sorted(pending),
+                                "body": page.locator("body").inner_text(timeout=1000),
+                            },
+                            ensure_ascii=False,
+                            indent=2,
+                        ),
+                        encoding="utf-8",
+                    )
+                except Exception:
+                    pass  # Diagnostics must not replace the original setup exception.
+                raise
             page.locator(".activity-rules > summary").click()
             yield SimpleNamespace(page=page, expect=pw.expect, ctx=planning)
             assert not errors

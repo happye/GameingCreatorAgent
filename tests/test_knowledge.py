@@ -226,7 +226,9 @@ def test_http_add_from_text_and_file_then_search_and_history(tmp_path):
         for other in (foreign["entryId"], "0" * 64):
             with pytest.raises(urllib.error.HTTPError) as refused_comparison:
                 get(f"before={typed['entryId']}&after={other}")
-            assert refused_comparison.value.code == 400
+            with refused_comparison.value as error:
+                assert error.code == 400
+                error.read()
         with pytest.raises(urllib.error.HTTPError) as refused:
             post(
                 {
