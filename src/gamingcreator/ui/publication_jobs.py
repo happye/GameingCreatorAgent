@@ -56,30 +56,16 @@ def snapshot(jobs: Any, job_id: str) -> dict[str, Any]:
             "publicationReceiptSha256": verified["resultReceiptSha256"],
         }
     _, receipt, digest = render_parent(jobs, job_id)
-    _, report, _ = read_creation(jobs.safe(directory / "selection"))
+    edl, report, _ = read_creation(jobs.safe(directory / "selection"))
     brief = report["brief"]
-
-    def clean(value: str, limit: int) -> str:
-        return "".join(c for c in value if unicodedata.category(c) != "Cc")[:limit]
-
+    copy = draft_copy(brief, edl.get("segments") or [])
     return {
         "publicationJobId": None,
         "publicationReceiptSha256": None,
         "renderJobId": job_id,
         "expectedRenderReceiptSha256": digest,
         "coverFrame": 0,
-        "title": clean(brief["game"] + " · " + brief["objective"], 200) or "创作视频",
-        "description": clean(brief["objective"], 5000),
-        "tags": list(
-            dict.fromkeys(
-                clean(tag, 50)
-                for tag in [
-                    brief["game"],
-                    MODE_LABELS.get(brief["contentType"], brief["contentType"]),
-                ]
-                if clean(tag, 50).strip()
-            )
-        ),
+        **copy,
         **clock(receipt),
         "videoUrl": "/api/creation/jobs/" + job_id + "/video",
         "draftStatus": "editable-template-not-ai",
@@ -87,6 +73,44 @@ def snapshot(jobs: Any, job_id: str) -> dict[str, Any]:
         "draft": True,
         "metadataOrigin": "brief_template",
         "qualityStatus": "unreviewed",
+    }
+
+
+HIGHLIGHT_LIMIT = 6
+
+
+def _clean(value: object, limit: int) -> str:
+    text = value if isinstance(value, str) else ""
+    return "".join(c for c in text if unicodedata.category(c) != "Cc")[:limit]
+
+
+def draft_copy(brief: dict[str, Any], segments: list[Any]) -> dict[str, Any]:
+    """Editable local template: the brief plus saved observable facts of the rendered shots.
+
+    No model writes anything here; facts are the analysis text already shown in the plan.
+    """
+    highlights: list[str] = []
+    for segment in segments:
+        fact = _clean(segment.get("scriptDraft") if isinstance(segment, dict) else "", 400)
+        first = fact.split("；")[0].strip().rstrip("。")[:40]
+        if first and first not in highlights:
+            highlights.append(first)
+        if len(highlights) == HIGHLIGHT_LIMIT:
+            break
+    objective = _clean(brief["objective"], 2000).strip()
+    description = objective
+    if highlights:
+        lines = "\n".join("· " + line for line in highlights)
+        description = (objective + "\n\n" if objective else "") + "本期内容：\n" + lines
+    tags = [
+        brief["game"],
+        MODE_LABELS.get(brief["contentType"], brief["contentType"]),
+        *(brief.get("mandatoryTopics") or []),
+    ]
+    return {
+        "title": _clean(brief["game"] + " · " + brief["objective"], 200) or "创作视频",
+        "description": description[:5000],
+        "tags": list(dict.fromkeys(t for t in (_clean(x, 50).strip() for x in tags) if t))[:20],
     }
 
 

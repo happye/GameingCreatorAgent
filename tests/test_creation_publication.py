@@ -12,6 +12,7 @@ from gamingcreator.domain.publication import validate_metadata
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.infrastructure.publication_assets import extract_cover
 from gamingcreator.ui.creation_jobs import CreationJobs
+from gamingcreator.ui.publication_jobs import draft_copy
 
 ROOT = Path(__file__).resolve().parents[1]
 ROOT = next(
@@ -292,3 +293,29 @@ def test_async_save_runs_parent_verification_outside_its_event_loop(rendered, mo
     assert calls == ["sources-verified", "sources-verified"]
     assert jobs.read(directory / "result/receipt.json")["status"] == "completed"
     assert (directory / "result/cover.png").read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
+
+
+def test_draft_copy_lists_rendered_shot_facts_and_topics():
+    brief = {
+        "game": "测试游戏",
+        "objective": "展示新地图",
+        "contentType": "gameplay_showcase",
+        "mandatoryTopics": ["新地图", "测试游戏"],
+    }
+    segments = [
+        {"scriptDraft": "角色跳上屋顶；镜头拉远"},
+        {"scriptDraft": "角色跳上屋顶"},
+        {"scriptDraft": ""},
+        {"scriptDraft": "Boss 释放\x07技能。"},
+        *({"scriptDraft": f"片段{n}"} for n in range(10)),
+    ]
+    copy = draft_copy(brief, segments)
+    lines = copy["description"].split("\n")
+    assert lines[:3] == ["展示新地图", "", "本期内容："]
+    assert lines[3:5] == ["· 角色跳上屋顶", "· Boss 释放技能"]
+    assert len(lines) == 3 + 6  # at most six highlights, duplicates and empties skipped
+    assert copy["tags"][0] == "测试游戏" and copy["tags"][-1] == "新地图"
+    assert len(copy["tags"]) == len(set(copy["tags"]))
+    validate_metadata({**copy, "coverFrame": 0}, 1)
+    plain = draft_copy(brief, [])
+    assert plain["description"] == "展示新地图" and plain["title"] == "测试游戏 · 展示新地图"
