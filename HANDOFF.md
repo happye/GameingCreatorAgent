@@ -12,8 +12,8 @@ Codex已按用户要求暂停（额度不足）；本会话由Claude Code接手�
 
 ## 等用户
 
-1. 单次动态策划付费调用许可：已准备.cache/scratch/j1-dynamic-plan-evidence-trial/（74候选、保守¥2.016384、hash 7abf86df0b4458a22b7482806e15799b277e89285aa11cbeecb4230da5aabf3a），发送0次；无新许可不得执行execute-once.py。旧一次许可已耗用（估算¥0.05877，失败不回填）。
-2. J1复测（human-inputs顶部步骤），当前不催。
+1. 11-09授权的单次动态策划已执行并耗用：.cache/scratch/j1-dynamic-plan-evidence-trial/（execute-authorized.py、real-result.json、diagnose.py、offline-replay-preview.json）。失败因模型抄错指纹；1838938修复。不得重发或自动采用该次；新的Studio动态方案需新的单次授权。
+2. J1复测（用户方便时）。
 
 ## 下一步（无需授权）
 
@@ -21,7 +21,7 @@ J1剩余工程项均依赖模型或人评；可继续的本机项见看板“还
 
 ## 已知
 
-status.py --check：AGENTS.md 7181字节超6144预算，来自e2fd3a4用户要求的Testing强化；未擅自压缩，需决定迁出细则到docs/references或调高预算。
+用户同意AGENTS预算调至8192（22cab2a）。verify.ps1新增同批重跑门槛：.cache/verify-last.json非passed时，除非之后有feat:提交或用户明确要求-AllowRerun，否则拒绝全量。当前记录为84c7341 interrupted；之后已有feat 97c6843，下一次全量属于新批次可跑。
 
 ## 保护
 
