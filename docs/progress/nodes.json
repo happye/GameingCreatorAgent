@@ -1047,12 +1047,12 @@
   }
  ],
  "gate": {
-  "date": "2026-11-09",
-  "scope": "完整门禁 verify.ps1（本批：下载修复、发布草稿、指纹绑定、网页规则、verify门槛）",
+  "date": "2026-11-10",
+  "scope": "完整门禁 verify.ps1（经 quiet.ps1；本批：字幕样式、受限端口、quiet.ps1、TD027回执校验）",
   "result": "pass",
-  "counts": "5104 过 · 6 跳 · 0 失败（38分28秒）",
+  "counts": "5115 过 · 6 跳 · 0 失败（37分24秒）",
   "branch": "main",
   "merged": true,
-  "note": "提交 ba01459 上运行；之后 663d319/bbc4abf/38fa31b 仅定向测试通过，下一批末尾再跑全量"
+  "note": "提交 9a8bdba 上运行；格式/Ruff/mypy/CLI 均通过。未跑 -Release"
  }
 }

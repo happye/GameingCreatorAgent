@@ -28,9 +28,9 @@ window.PROGRESS_DATA = {
   "phase0Pass": 8,
   "phase0Total": 11,
   "td": {
-   "resolved": 18,
+   "resolved": 19,
    "partial": 3,
-   "open": 7
+   "open": 6
   },
   "tdTotal": 28,
   "humanPending": 9,
@@ -1961,13 +1961,13 @@ window.PROGRESS_DATA = {
   }
  ],
  "gate": {
-  "date": "2026-11-09",
-  "scope": "完整门禁 verify.ps1（本批：下载修复、发布草稿、指纹绑定、网页规则、verify门槛）",
+  "date": "2026-11-10",
+  "scope": "完整门禁 verify.ps1（经 quiet.ps1；本批：字幕样式、受限端口、quiet.ps1、TD027回执校验）",
   "result": "pass",
-  "counts": "5104 过 · 6 跳 · 0 失败（38分28秒）",
+  "counts": "5115 过 · 6 跳 · 0 失败（37分24秒）",
   "branch": "main",
   "merged": true,
-  "note": "提交 ba01459 上运行；之后 663d319/bbc4abf/38fa31b 仅定向测试通过，下一批末尾再跑全量"
+  "note": "提交 9a8bdba 上运行；格式/Ruff/mypy/CLI 均通过。未跑 -Release"
  },
  "fees": [
   "2026-11-08：用户要求尽量避免PR/AE等大型软件。开发、日常验证和成片导出走项目FFmpeg/浏览器路径，专业格式为可选交接，实际导入保持未验。此前Premiere退出由用户手动关闭，不是软件故障；不转成人工待办。",
@@ -1980,7 +1980,8 @@ window.PROGRESS_DATA = {
   "本批完整门禁通过（2026-11-09，ba01459）：5104过6跳0失败，38分28秒，格式/Ruff/mypy/CLI通过；含P018版本对比、TD026留痕、连接队列、下载文件名、发布草稿要点、动态策划指纹绑定、网页活动规则与verify同批重跑门槛。未Release，不提升人评或整项状态。",
   "J1第四次反馈7组：素材去重/取景、云端音色默认本机、保存禁用原因、下载true.txt均已工程修复（true.txt根因确认为htm裸download属性，平台包与成片下载均已改真实文件名并加静态守卫）；预览卡顿TD025已合main，真机待你试。剩余“方案更有创作价值/开放式创作对话”需真实文本模型调用，须你单独授权。",
   "动态策划：第1次授权调用（估算¥0.0094516）因模型抄错快照指纹被拒，已修为后端绑定（1838938）。第2次授权调用（2026-11-09，估算¥0.0174276）成功：3套方案均可用（20/20/19镜头），已采用为方案任务4c857005（artifacts/demo-phase0），可在Studio剪辑页打开；方案质量待你评价。J1复测待你方便时。",
-  "2026-11-10 续：P029烧入字幕可选标准/大字/半透明底框（663d319）；工作台与桌面EXE不再使用Chromium禁用端口（bbc4abf，本机动态端口段1024起会触发）；新增scripts/quiet.ps1，测试只输出摘要和失败ID文件，AGENTS/CODEX已要求所有Agent使用（38fa31b）。定向测试通过，这批尚未跑全量。\n\u0001docs/progress/index.html（双击打开）；更新规则见docs/references/progress-dashboard.md。分发前许可证缺口及TD003仍待处理。"
+  "进度看板：docs/progress/index.html（双击打开）；更新规则见docs/references/progress-dashboard.md。分发前许可证缺口及TD003仍待处理。",
+  "2026-11-10 续：P029烧入字幕可选标准/大字/半透明底框（663d319）；工作台与桌面EXE不再使用Chromium禁用端口（bbc4abf，本机动态端口段1024起会触发）；新增scripts/quiet.ps1，测试只输出摘要和失败ID文件，AGENTS/CODEX已要求所有Agent使用（38fa31b）。TD027回执校验改为按请求重算展示选项（b48e212）。本批完整门禁通过：5115过6跳0失败，37分24秒（9a8bdba，经quiet.ps1）。"
  ],
  "sprints": [
   {
@@ -2619,8 +2620,8 @@ window.PROGRESS_DATA = {
    "severity": "low; receipt verification",
    "impact": "渲染回执校验（creation_jobs verify）不把 receipt.presentation（安全区/角标/字幕样式）与请求重算的 PresentationOptions.receipt() 比对；篡改该字段不会被发现（2026-11-10 字幕样式审查发现，既有缺口）",
    "fix": "verify 时由请求重算 presentation 回执并逐字段比对，旧回执无该键时按无 presentation 处理",
-   "status": "open",
-   "state": "open"
+   "status": "resolved: 2026-11-10 verify 由请求重算 presentation 回执比对（字幕样式仅在实际烧入时计入）；注入回执的样式/角标被识别为interrupted",
+   "state": "resolved"
   },
   {
    "id": "TD028",

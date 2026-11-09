@@ -21,7 +21,7 @@ J1剩余工程项均依赖模型或人评；可继续的本机项见看板“还
 
 ## 已知
 
-11-10续（未跑全量，下一批末尾统一）：663d319 字幕样式、bbc4abf 受限端口、38fa31b quiet.ps1。长测试用 ./scripts/quiet.ps1 test-affected|verify|pytest，只读摘要；同一工作树不要同时跑两个pytest。
+11-10续：663d319 字幕样式、bbc4abf 受限端口、38fa31b quiet.ps1、b48e212 TD027；本批完整门禁 9a8bdba 5115过6跳0失败（.cache/test-logs/verify-20261110-002448.log）。长测试用 ./scripts/quiet.ps1 test-affected|verify|pytest，只读摘要；同一工作树不要同时跑两个pytest。
 
 本批完整门禁 ba01459：5104过6跳0失败（.cache/batch-20261109-claude-full.log，verify-last.json=passed）。前两次启动失败是在Windows PowerShell 5.1下重定向导致uv的stderr变成终止错误（未跑任何测试），已在ba01459修复；失败于pytest前记setup-failed，不阻断重跑。
 
