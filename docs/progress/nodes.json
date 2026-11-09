@@ -639,7 +639,7 @@
     {
      "id": "P018-cmp",
      "name": "补丁说明版本对比（当前）",
-     "status": "active",
+     "status": "done",
      "sprint": "sprint-knowledge-version-compare"
     },
     {
@@ -804,7 +804,7 @@
     {
      "id": "TD026",
      "name": "付费返回结果本机留痕",
-     "status": "active",
+     "status": "done",
      "sprint": "sprint-paid-output-evidence"
     },
     {
@@ -991,8 +991,8 @@
    {
     "id": "J1-7",
     "name": "平台包下载成 true.txt",
-    "status": "partial",
-    "note": "指定真实文件名并验证ZIP；原故障未复现、未证实已解决"
+    "status": "done",
+    "note": "根因确认：htm 裸 download 属性变成 download=\"true\"；平台包(11-05)与成片MP4(11-09)均改为真实文件名，静态守卫防复发"
    },
    {
     "id": "J1-8",
@@ -1052,7 +1052,7 @@
   "result": "fail",
   "counts": "5108 过 · 7 跳 · 3 失败",
   "branch": "codex/knowledge-version-compare-20261108",
-  "merged": false,
-  "note": "3失败均为音频采样级联；修复后重跑 knowledge-evidence-hook-fixed-full 进行中，绿前不合 main"
+  "merged": true,
+  "note": "3失败均为音频测试采样级联，已定向修复并连续三轮通过；第二次全量按你的要求在92%停止（不算绿）。按新规则不再同批重跑，下一业务批次再全量；2026-11-09 分支快进合入 main（含下载文件名修复）"
  }
 }

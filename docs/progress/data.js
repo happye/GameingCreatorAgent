@@ -1553,7 +1553,7 @@ window.PROGRESS_DATA = {
     {
      "id": "P018-cmp",
      "name": "补丁说明版本对比（当前）",
-     "status": "active",
+     "status": "done",
      "sprint": "sprint-knowledge-version-compare"
     },
     {
@@ -1718,7 +1718,7 @@ window.PROGRESS_DATA = {
     {
      "id": "TD026",
      "name": "付费返回结果本机留痕",
-     "status": "active",
+     "status": "done",
      "sprint": "sprint-paid-output-evidence"
     },
     {
@@ -1905,8 +1905,8 @@ window.PROGRESS_DATA = {
    {
     "id": "J1-7",
     "name": "平台包下载成 true.txt",
-    "status": "partial",
-    "note": "指定真实文件名并验证ZIP；原故障未复现、未证实已解决"
+    "status": "done",
+    "note": "根因确认：htm 裸 download 属性变成 download=\"true\"；平台包(11-05)与成片MP4(11-09)均改为真实文件名，静态守卫防复发"
    },
    {
     "id": "J1-8",
@@ -1966,8 +1966,8 @@ window.PROGRESS_DATA = {
   "result": "fail",
   "counts": "5108 过 · 7 跳 · 3 失败",
   "branch": "codex/knowledge-version-compare-20261108",
-  "merged": false,
-  "note": "3失败均为音频采样级联；修复后重跑 knowledge-evidence-hook-fixed-full 进行中，绿前不合 main"
+  "merged": true,
+  "note": "3失败均为音频测试采样级联，已定向修复并连续三轮通过；第二次全量按你的要求在92%停止（不算绿）。按新规则不再同批重跑，下一业务批次再全量；2026-11-09 分支快进合入 main（含下载文件名修复）"
  },
  "fees": [
   "2026-11-08：用户要求尽量避免PR/AE等大型软件。开发、日常验证和成片导出走项目FFmpeg/浏览器路径，专业格式为可选交接，实际导入保持未验。此前Premiere退出由用户手动关闭，不是软件故障；不转成人工待办。",
@@ -1976,10 +1976,10 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "本批规则/知识/旁白完成工程交付：Studio规则填需求、知识进入冻结策划请求/引用、本机旁白编辑/草稿恢复/重合成与独立修订。最终完整门禁5098通过/7跳过，1760.46秒，格式/Ruff/mypy及CLI通过；520源码/测试hash不变。真实Windows图片/PDF输入、同库知识到MP4/七文件包、迟到隔离与旧v1兼容均有证据，模型与声音仍明确fake，不提升人评或整项交付状态。见[批次验收](docs/exec-plans/sprint-studio-narration-revision.md)。",
-  "当前R3/P018本机补丁说明版本对比已实现：显式选择同游戏两条记录，逐行增删/未变、两侧出处与原文核对。唯一边界审查通过，受影响29过1跳、最终浏览器定向过；原完整门禁因额度中断停91%并有1个未定位F，不作绿；恢复完整门禁已结束但未通过（.cache/knowledge-compare-resume-full.log），通过前不推进main。单次DeepSeek Flash许可已执行：Provider完成、应用验证失败，账本估算¥0.05877；因缺少输出/错误留痕无法离线辨因，登记TD026，许可已耗用不重发；J2/J3人评不提升。",
-  "恢复完整门禁终态为5098过7跳1失败1错误（2083.73秒），未通过，CLI未执行。知识比较HTTP拒绝测试已关闭响应，核心12项及Ruff/格式检查通过；浏览器启动诊断复现模块请求ERR_CONNECTION_REFUSED，根因未修。保留失败现场，未合并main。用户已恢复开发；模块连接队列修复后22项通过，TD026输出留痕实现及唯一边界审查通过，受影响脚本82项通过。本批完整门禁5108过7跳3失败，2229.875秒，均为音频采样及级联清理；采样器/fixture修复后整文件10项连续三轮通过、唯一审查通过。冻结后再执行完整门禁（knowledge-evidence-hook-fixed-full），绿前不合main。详见HANDOFF.md。",
-  "分发前：处理许可证缺口（human-inputs）和TD003 FFmpeg来源；本批未跑Release，不宣称分发就绪。"
+  "main仍36d8325，上批规则/知识/旁白完整5098过7跳。开发分支codex/knowledge-version-compare-20261108已保存P018版本比较、Provider输出留痕和Studio连接队列修复；定向与独立边界审查通过，业务/测试检查点84c7341已推。未集成main、未Release，不提升人评或整项状态。",
+  "本次继续指令后全量2次：首次5108过7跳3失败（2229.875秒）；失败仅音频测试采样及级联清理，修后整文件10项连续三轮通过。第二次在约92%被停止，未完成、不作绿；现场见knowledge-evidence-hook-fixed-full-stopped.json。没有第三轮。",
+  "用户纠正已固化AGENTS Testing及三工具引用：失败先只测失败/受影响范围，复用已通过证据，不每修一次就全量；同批额外全量须用户明确要求，不制造确认请求或换名为新批次。恢复后推进实际交付，下一实质业务批次再统一全量。本次因额度不足7%暂停，交接见HANDOFF.md。",
+  "单次真实DeepSeek许可早已耗用，估算¥0.05877、原应用失败不回填；本轮没有新增付费调用。新预览未获许可。分发前许可证及TD003仍待处理。"
  ],
  "sprints": [
   {
@@ -2201,7 +2201,7 @@ window.PROGRESS_DATA = {
     "P018"
    ],
    "date": "2026-11-09",
-   "bytes": 3590
+   "bytes": 4211
   },
   {
    "file": "sprint-local-narration",
@@ -2246,7 +2246,7 @@ window.PROGRESS_DATA = {
     "TD026"
    ],
    "date": "2026-11-09",
-   "bytes": 2229
+   "bytes": 2850
   },
   {
    "file": "sprint-phase0-publication-sync",
