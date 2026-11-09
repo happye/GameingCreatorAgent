@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PLANS = ROOT / "docs" / "exec-plans"
 # Unfrozen 2026-11-03 by the user; list items here if a feature is frozen again.
 FREEZE_IDS: tuple[str, ...] = ()
-SIZE_BUDGETS = {"STATUS.md": 5120, "AGENTS.md": 6144, "HANDOFF.md": 5120}
+SIZE_BUDGETS = {"STATUS.md": 5120, "AGENTS.md": 8192, "HANDOFF.md": 5120}
 TIER = {"usable": "✅", "usable_draft": "🟡", "not_usable": "❌", "not_done": "⬜"}
 
 

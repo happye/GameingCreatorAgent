@@ -1,6 +1,8 @@
 # Tier 2 (milestone) gate: lock, format, lint, types, full pytest, CLI smoke.
 # -Release adds the two reproducible offline wheel builds (tier 3). -SkipBuild is accepted for old callers.
-param([switch]$Release, [switch]$SkipBuild, [switch]$PreserveRuns)
+# After a failed or interrupted full run, a new one needs a new `feat:` commit (next substantive
+# batch) or -AllowRerun, which AGENTS.md Testing reserves for an explicit user instruction.
+param([switch]$Release, [switch]$SkipBuild, [switch]$PreserveRuns, [switch]$AllowRerun)
 
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -17,7 +19,28 @@ function Remove-RunDirectory([string]$Path) {
   cmd /c "rmdir /s /q `"$Path`" 2>nul" | Out-Null
 }
 
+$lastRunPath = Join-Path $repositoryRoot '.cache/verify-last.json'
+function Write-LastRun([string]$Result) {
+  $head = (git -C $repositoryRoot rev-parse HEAD).Trim()
+  $record = [ordered]@{ result = $Result; head = $head; at = (Get-Date).ToString('o'); release = [bool]$Release }
+  New-Item -ItemType Directory -Path (Split-Path $lastRunPath) -Force | Out-Null
+  $record | ConvertTo-Json | Set-Content -LiteralPath $lastRunPath -Encoding utf8
+}
+if ((Test-Path -LiteralPath $lastRunPath) -and -not $AllowRerun) {
+  $last = Get-Content -LiteralPath $lastRunPath -Raw -Encoding utf8 | ConvertFrom-Json
+  if ($last.result -ne 'passed') {
+    $features = @(git -C $repositoryRoot log --format=%s "$($last.head)..HEAD" | Where-Object { $_ -match '^feat' })
+    if ($features.Count -eq 0) {
+      Pop-Location
+      throw ('Last full verify ' + $last.result + ' at ' + $last.at + ' (' + $last.head.Substring(0, 7) + ') and no feat: commit since. ' +
+        'Repair with ./scripts/test-affected.ps1 or the failing node IDs (AGENTS.md Testing 3-4). ' +
+        'A second full run in the same batch needs the user''s explicit instruction: -AllowRerun.')
+    }
+  }
+}
+
 try {
+  Write-LastRun 'running'
   Assert-ProjectToolchain -RepositoryRoot $repositoryRoot -RequireVenv
   $pythonPath = Join-Path $repositoryRoot '.venv/Scripts/python.exe'
   $uvPath = Join-Path $repositoryRoot '.tools/uv/uv.exe'
@@ -59,6 +82,7 @@ try {
   $passed = $true
   Write-Host 'All project checks passed. Media integration requires project-local FFmpeg; check pytest skip counts.'
 } finally {
+  Write-LastRun $(if ($passed) { 'passed' } else { 'failed' })
   # A passing run keeps nothing; a failing run keeps its temp files for diagnosis (pruned after a day).
   if ($testRunRoot -and $passed -and -not $PreserveRuns -and $env:GC_KEEP_TEST_MEDIA -ne '1') {
     Remove-RunDirectory $testRunRoot
