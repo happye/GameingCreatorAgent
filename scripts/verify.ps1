@@ -28,7 +28,8 @@ function Write-LastRun([string]$Result) {
 }
 if ((Test-Path -LiteralPath $lastRunPath) -and -not $AllowRerun) {
   $last = Get-Content -LiteralPath $lastRunPath -Raw -Encoding utf8 | ConvertFrom-Json
-  if ($last.result -ne 'passed') {
+  # setup-failed: stopped before pytest started (environment/lock/format/types), cheap to rerun.
+  if ($last.result -notin @('passed', 'setup-failed')) {
     $features = @(git -C $repositoryRoot log --format=%s "$($last.head)..HEAD" | Where-Object { $_ -match '^feat' })
     if ($features.Count -eq 0) {
       Pop-Location
@@ -39,12 +40,17 @@ if ((Test-Path -LiteralPath $lastRunPath) -and -not $AllowRerun) {
   }
 }
 
+$testsStarted = $false
 try {
   Write-LastRun 'running'
   Assert-ProjectToolchain -RepositoryRoot $repositoryRoot -RequireVenv
   $pythonPath = Join-Path $repositoryRoot '.venv/Scripts/python.exe'
   $uvPath = Join-Path $repositoryRoot '.tools/uv/uv.exe'
-  & $uvPath --no-config lock --check --offline --python $pythonPath --no-python-downloads
+  # uv reports "Resolved N packages" on stderr; Windows PowerShell 5.1 with redirected streams
+  # would turn that into a terminating error, so only the exit code decides.
+  $ErrorActionPreference = 'Continue'
+  & $uvPath --no-config lock --check --offline --python $pythonPath --no-python-downloads 2>&1 | Out-Host
+  $ErrorActionPreference = 'Stop'
   if ($LASTEXITCODE -ne 0) { throw 'Dependency lock does not match the project.' }
   # Runs older than a day are leftovers of failed or interrupted runs.
   $runsRoot = Join-Path $repositoryRoot '.cache/pytest-runs'
@@ -60,6 +66,7 @@ try {
   New-Item -ItemType Directory -Path (Join-Path $testRunRoot 'cache') -Force | Out-Null
   $pytestArguments = @('-m', 'pytest', '-W', 'error', '--basetemp', (Join-Path $testRunRoot 'tmp'), '-o', ('cache_dir=' + (Join-Path $testRunRoot 'cache')))
   foreach ($arguments in @(@('-m', 'ruff', 'format', '--check', 'src', 'tests', 'scripts/validate-media.py', 'scripts/validate-storage.py', 'scripts/validate-inspection-ui.py', 'scripts/validate-temporal-gameplay.py', 'scripts/validate-visual-details.py', 'scripts/prepare-benchmark-review.py', 'scripts/prepare-benchmark-references.py', 'scripts/prepare-benchmark-plan.py', 'scripts/affected_tests.py', 'scripts/status.py'), @('-m', 'ruff', 'check', 'src', 'tests', 'scripts/validate-media.py', 'scripts/validate-storage.py', 'scripts/validate-inspection-ui.py', 'scripts/validate-temporal-gameplay.py', 'scripts/validate-visual-details.py', 'scripts/prepare-benchmark-review.py', 'scripts/prepare-benchmark-references.py', 'scripts/prepare-benchmark-plan.py', 'scripts/affected_tests.py', 'scripts/status.py'), @('-m', 'mypy'), $pytestArguments)) {
+    if ([object]::ReferenceEquals($arguments, $pytestArguments)) { $testsStarted = $true }
     & $pythonPath @arguments
     if ($LASTEXITCODE -ne 0) { throw "Project check failed: $($arguments -join ' ')" }
   }
@@ -82,7 +89,7 @@ try {
   $passed = $true
   Write-Host 'All project checks passed. Media integration requires project-local FFmpeg; check pytest skip counts.'
 } finally {
-  Write-LastRun $(if ($passed) { 'passed' } else { 'failed' })
+  Write-LastRun $(if ($passed) { 'passed' } elseif ($testsStarted) { 'failed' } else { 'setup-failed' })
   # A passing run keeps nothing; a failing run keeps its temp files for diagnosis (pruned after a day).
   if ($testRunRoot -and $passed -and -not $PreserveRuns -and $env:GC_KEEP_TEST_MEDIA -ne '1') {
     Remove-RunDirectory $testRunRoot
