@@ -72,6 +72,13 @@ if TYPE_CHECKING:
 
 PREPARED_SCHEMA = "creation-reasoning-prepared-v1"
 RESULT_SCHEMA = "creation-reasoning-result-v1"
+OUTPUT_SCHEMA = "creation-reasoning-provider-output-v1"
+
+
+class _OutputValidationError(ValueError):
+    def __init__(self, stage: str) -> None:
+        super().__init__("Provider output could not produce a usable proposal.")
+        self.stage = stage
 
 
 def _editing_snapshot(chain: Any, job_id: str, overlay_mode: bool | None) -> EditingSnapshot:
@@ -349,7 +356,36 @@ class CreationReasoningService:
         )
         if result.get("preparedHash") != prepared_hash:
             raise ValueError("Result belongs to another preparation.")
+        if "providerOutputSha256" in result:
+            reference = result["providerOutputSha256"]
+            if not isinstance(reference, str) or not re.fullmatch("[a-f0-9]{64}", reference):
+                raise ValueError("Invalid provider output reference.")
+            self.read_provider_output(prepared_hash, reference)
         return result
+
+    def read_provider_output(
+        self, prepared_hash: str, expected_sha256: str | None = None
+    ) -> dict[str, Any]:
+        """Read local evidence, including an interrupted attempt; never apply or resend it."""
+        self._prepared(prepared_hash)
+        directory = self.jobs.safe(self._directory(prepared_hash) / "attempt/provider-output")
+        document = _read(directory, "output.json", OUTPUT_SCHEMA)
+        if document.get("preparedHash") != prepared_hash or (
+            expected_sha256 is not None
+            and sha256(read_bounded(directory / "output.json")).hexdigest() != expected_sha256
+        ):
+            raise ValueError("Provider output identity or result reference mismatch.")
+        return document
+
+    def _retain_output(self, attempt: Path, prepared_hash: str, output: Any) -> str:
+        directory = self.jobs.safe(attempt / "provider-output")
+        _write(
+            directory,
+            "output.json",
+            {"schemaVersion": OUTPUT_SCHEMA, "preparedHash": prepared_hash, "output": output},
+        )
+        self.read_provider_output(prepared_hash)
+        return sha256(read_bounded(directory / "output.json")).hexdigest()
 
     async def execute(
         self,
@@ -432,6 +468,7 @@ class CreationReasoningService:
             "proposal": None,
             "metadata": None,
         }
+        stage = "provider"
         try:
             response = await provider.complete(
                 request, CancellationContext(prepared_hash, self.timeout_seconds)
@@ -442,11 +479,17 @@ class CreationReasoningService:
                 errorCode=None if response.error is None else response.error.code,
             )
             if response.status == ProviderStatus.COMPLETED:
+                stage = "persist_output"
+                result["providerOutputSha256"] = self._retain_output(
+                    attempt, prepared_hash, response.output
+                )
                 result.update(_validated_output(snapshot, response.output))
         except asyncio.CancelledError:
             result.update(status="cancelled", errorCode="reasoning.cancelled")
+        except _OutputValidationError as error:
+            result.update(status="failed", errorCode="reasoning.failed", failureStage=error.stage)
         except Exception:
-            result.update(status="failed", errorCode="reasoning.failed")
+            result.update(status="failed", errorCode="reasoning.failed", failureStage=stage)
         result["billing"] = {
             "reservedCny": str(ledger.reserved_cny),
             "knownCostCny": None if ledger.unresolved_attempts else str(ledger.known_cost_cny),
@@ -533,25 +576,40 @@ class CreationReasoningService:
 
 
 def _validated_output(snapshot: EditingSnapshot | PlanSnapshot, output: Any) -> dict[str, Any]:
-    if isinstance(snapshot, PlanSnapshot):
-        proposal = validate_plan_proposal(snapshot, output)
-        preview = []
-        if proposal.response["kind"] == "plan_proposal":
-            report = compile_plan_proposal(snapshot, proposal)
-            preview = [
-                {
-                    **plan,
-                    "segments": [
-                        {key: value for key, value in segment.items() if key != "sourcePath"}
-                        for segment in plan["segments"]
-                    ],
-                }
-                for plan in report["plans"]
-            ]
+    try:
+        if isinstance(snapshot, PlanSnapshot):
+            return _validated_plan_output(snapshot, output)
+        edit = validate_proposal(snapshot, output)
         return {
-            "purpose": "plan",
-            "proposal": {**asdict(proposal), "response": proposal.response},
-            "planPreview": {"fps": snapshot.fps, "plans": preview},
+            "purpose": "edit",
+            "proposal": _jsonable({**asdict(edit), "response": edit.response}),
         }
-    edit = validate_proposal(snapshot, output)
-    return {"purpose": "edit", "proposal": _jsonable({**asdict(edit), "response": edit.response})}
+    except _OutputValidationError:
+        raise
+    except Exception as error:
+        raise _OutputValidationError("validate_proposal") from error
+
+
+def _validated_plan_output(snapshot: PlanSnapshot, output: Any) -> dict[str, Any]:
+    proposal = validate_plan_proposal(snapshot, output)
+    preview = []
+    if proposal.response["kind"] == "plan_proposal":
+        try:
+            report = compile_plan_proposal(snapshot, proposal)
+        except Exception as error:
+            raise _OutputValidationError("compile_plan") from error
+        preview = [
+            {
+                **plan,
+                "segments": [
+                    {key: value for key, value in segment.items() if key != "sourcePath"}
+                    for segment in plan["segments"]
+                ],
+            }
+            for plan in report["plans"]
+        ]
+    return {
+        "purpose": "plan",
+        "proposal": {**asdict(proposal), "response": proposal.response},
+        "planPreview": {"fps": snapshot.fps, "plans": preview},
+    }

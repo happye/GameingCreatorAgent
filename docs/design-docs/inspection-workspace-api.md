@@ -164,6 +164,8 @@ timeline/candidate行新增 `detailRefinement:{status:"unverified",availability,
 
 prepare返回准备身份、请求身份、实际 `payloadPreview={system,user}` 和费用上限；没有路径或媒体。execute返回completed/failed/cancelled等状态、提案或澄清、实际调用metadata与billing。未知费用保留reservedCny；不把缺usage写成零。已成功请求可恢复结果，失败/中断/未知不自动重试；新一次发送须重新准备并明确确认。validate后的clips经既有修订API保存，不能把前端预览当已保存。
 
+新COMPLETED Provider返回在应用验证前，先以不可覆盖receipt保存本机`attempt/provider-output/output.json`（creation-reasoning-provider-output-v1、preparedHash、output），结果附`providerOutputSha256`。读取引用须核文件hash/schema/身份，不接受损坏材料；旧无引用结果兼容。应用异常只增加受控`failureStage`（provider/persist_output/validate_proposal/compile_plan），不返回异常文本或未验证原文；保存失败保留调用metadata与账本并停止采用。无最终result的已存输出仅可经Python `read_provider_output`离线检查，不自动恢复成功或重发；HTTP不新增原始输出入口。见[TD026合同](../exec-plans/sprint-paid-output-evidence.md)。
+
 工作分支对含已保存独立图层的新prepare使用 `creation-reasoning-overlays-prompt-v1` / `creation-reasoning-overlays-v1` 配对。新snapshot显式绑定Chain的overlays及去重公开资产，模型只得到图层id/文字/几何/输出帧/尺寸。旧prepared严格按原持久版本重建请求，恢复不会升级或重发。无图层仍用旧协议。
 
 新response在原字段外精确增加`overlayEdit`：kind为`overlay_edit_proposal`时该值为`{overlayId,endFrame,fadeOutFrames}`，仅修改一个已有图层的结束/淡出，clips/questions为空且citations只列该图层；其他kind须为null。不接受新资产、路径、回执或修改源logo。validate重检父身份、asset绑定和实际输出帧，返回可信clips及完整`overlays={schemaVersion,items}`；图层预览不落盘，明确应用后再走已有revision保存。v4候选manifest、音频和其他图层继承。
