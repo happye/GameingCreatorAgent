@@ -25,3 +25,7 @@
 源码检查点后冻结并运行本批完整门禁：.cache/knowledge-compare-full-verify.log；清单.cache/knowledge-compare-freeze.json。完整绿前不推进main，不提升P018整项交付/人评。
 
 恢复完整门禁终态5098过7跳1失败1错误，2083.73秒：HTTP拒绝测试响应未关闭引发GC ResourceWarning，活动规则fixture模块连接失败。前者补close/read（知识核心12过）；后者保留失败诊断后，实测Python 3.13默认监听队列5在模块连接突发/延迟accept时超时，显式128后真实模块请求及活动规则组合22过、28.366秒。原队列回归失败证据`.cache/studio-backlog-original.xml`，修复证据`.cache/studio-backlog-fixed.xml`；Sol/high静审通过。与TD026切片合并后执行一次完整门禁，旧失败日志/目录不删、不改作成功。
+
+## 用户纠正后的暂停记录（2026-11-09）
+
+本次全量首次5108过7跳3失败，2229.875秒；失败范围仅音频采样测试及级联清理，修复后整文件10项连续三轮通过，业务音频代码未改。第二轮全量属于不必要扩大，按用户要求在约92%停止，记录`.cache/knowledge-evidence-hook-fixed-full-stopped.json`，不作全量绿。复用已通过业务证据和定向修复结果，不为“闭环”自动重跑；后续全量放到下一实质业务批次。当前保存开发分支，未集成main或提高人评状态。完整规则已写入根AGENTS.md Testing。

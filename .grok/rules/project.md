@@ -7,3 +7,5 @@ Grok-specific:
 - Codex model names in the routing guides do not apply; use this tool's models with bounded context and explicit file ownership, and verify the model actually used before claiming routing.
 - Edit files with the editor tool. Never write through PowerShell double-quoted strings (backticks become control characters).
 - Keep session history and credentials local.
+
+Testing scope and full-rerun limits come from `AGENTS.md` §Testing; apply them after resuming a chat as well.

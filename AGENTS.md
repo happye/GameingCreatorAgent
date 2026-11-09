@@ -39,9 +39,11 @@ Design budget:
 
 ## Testing
 
-1. Iterate with `./scripts/test-affected.ps1` (affected tests only; browser/local_data excluded unless UI changed).
-2. `./scripts/verify.ps1` at batch end, not each feature/merge; log run/defer.
-3. Run `./scripts/verify.ps1 -Release` before distribution.
+1. Default to affected tests (`./scripts/test-affected.ps1`) or explicit failing node IDs/files. With `--lf`, use the original failure cache and `--last-failed-no-failures=none`; an empty/missing cache must never silently run everything.
+2. Full `./scripts/verify.ps1` is for the end of a substantive delivery batch. Never run it per feature, local fix, commit, review or documentation update; do not rename a failure fix as a new batch.
+3. If full verification fails, preserve its failing node IDs and passing evidence; repair and rerun only failures plus genuinely affected behavior. Passing targeted checks close that repair; they do not automatically trigger another full run. Test-only sampler/fixture fixes do not invalidate unrelated passing business checks.
+4. A second full run in the same batch requires an explicit user instruction. Otherwise defer it to the next substantive batch and continue authorized development; do not manufacture an approval request or use “closure / must be all green” to force a rerun.
+5. Run `./scripts/verify.ps1 -Release` before distribution. Report full, targeted and interrupted results separately; never label a failed/stopped full run green because targeted repairs pass.
 
 Known failures: `xfail(strict=False, reason="TDxxx")` plus a tech-debt row. Top-10 Useful Rate: ten fixed slots, missing/duplicate count zero, ≥70% after human judgment. Mark `passes: true` only with evidence; tooling readiness is not acceptance.
 

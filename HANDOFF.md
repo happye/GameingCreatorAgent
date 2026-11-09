@@ -1,29 +1,31 @@
 # HANDOFF（覆盖快照）
 
-## 当前会话（2026-11-09，已恢复）
+## 暂停（2026-11-09，用户明确要求）
 
-用户明确继续开发，称额度46%可用；撤销此前暂停，不自行恢复已清除的Goal。先完成P018版本比较批次与TD026，再推进下一切片。父主控唯一写者，三个脏子树保留。
+用户额度不足7%，要求把重复全量问题同步Harness并收尾。当前开发与验证均暂停，不自行续跑；原Goal已清除，不创建或恢复。恢复先读STATUS/AGENTS Testing与git状态。
 
-## 已实现与门禁
+## 必须遵守的纠正
 
-分支codex/knowledge-version-compare-20261108；main仍36d8325，上批完整5098过7跳。本批P018已实现、唯一边界审查通过，受影响29过1跳；源码732a6ae。旧验证中断不作绿；恢复完整5098过7跳1失败1错误，2083.73秒，.cache/knowledge-compare-resume-full.log/xml与exit.json保留。
+根AGENTS.md Testing已强化：默认失败node IDs/真正受影响文件；全量只在实质业务批次收口。全量失败先定向修复，复用其它已通过证据，不因单项修复、提交、文档或“闭环/必须全绿”自动再全量，不把修失败改称新批次。同批第二轮全量须用户明确要求，平时直接推迟到下一实际业务批次，勿制造确认请求。Release分发要求保留。CODEX/CLAUDE/Grok适配器只引用这一共享规则，新对话同样生效。
 
-fe6993a关闭比较HTTP拒绝响应并加浏览器启动失败诊断，核心12过。47c8c29修Studio模块连接突发：Python3.13默认backlog5在延迟accept回归中超时，128配置后模块请求与活动规则组合22过28.366秒；旧失败XML与新XML均保留。Sol/high边界审查通过。旧bootstrap诊断为同端口subtitles.js/overlays.js ERR_CONNECTION_REFUSED，无pageerror，body fallback，不是中文标签问题。
+## 本次两轮全量及有效证据
 
-TD026已实现：COMPLETED在验证/编译前独占保存attempt/provider-output/output.json与receipt；result仅附providerOutputSha256与失败时受控failureStage；读取校验schema/receipt/身份/hash；旧无ref兼容；写失败保留metadata/账本，最终结果失败传播且attempt禁止重发。Python read_provider_output可离线读中断输出，不自动编译/采用/重发；无新HTTP原文入口。合同sprint-paid-output-evidence.md，唯一Sol/high审查通过。组合60过15.444秒；受影响脚本82过454 deselected68.04秒，Ruff/mypy通过，均fake且无付费调用。
+用户“继续开发，额度46%”后共2次verify。第一次.cache/knowledge-evidence-batch-full：5108过7跳3失败，2229.875秒；CLI未运行。3项均audio_preview_graph_browser：HOOK幅度失败提前退出留下2个audio，后两项清理断言级联。旧日志/目录保留，不作绿。
 
-本批完整门禁knowledge-evidence-batch-full已终态失败：5108过7跳3失败、2229.875秒，CLI未执行。3失败均audio_preview_graph_browser：首项HOOK幅度0.067526vs0.1，提前退出留下2个audio导致后两项清理断言级联。中途监控错误漏报，不能再凭尾部PASS宣称全日志无失败。HOOK_CAPTURE换AudioWorklet（原CAPTURE已换但漏此处），保持0.4秒/原阈值，增600ms主线程阻塞与渲染帧连续回归，fixture finally卸载。旧采样回归0.029572稳定失败；整文件10项连续3轮通过（27.951/27.794/28.160秒），唯一Sol/medium只读审查通过，未改业务audio.js；不能据此证明旧0.0675必为同因，最终负载门禁仍需验。
+84c7341仅修测试：HOOK_CAPTURE换AudioWorklet，保持0.4秒及原阈值；加600ms主线程阻塞/渲染帧连续性，fixture finally卸载，业务audio.js未改。旧采样回归0.029572vs0.1稳定失败；整文件10项连续三轮通过（27.951/27.794/28.160秒），独立Sol/medium通过。.cache/hook-clock-original.xml及hook-repeat-1/2/3.xml。已有证据足够覆盖这次局部修复，不要再跑三轮或全量。
 
-下一完整门禁证据前缀.cache/knowledge-evidence-hook-fixed-full（.log/.xml/-exit.json/-manifest.json/-freeze.json），PID同前缀.pid；Hidden独立pwsh，verify.ps1 -PreserveRuns，日志无颜色、UTF8、逐项nodeid。先查PID/exit，不重启活任务。父控scratch/read-batch-progress.py直接扫描全日志失败词和最新进度，最终以XML/exit为准；源码/测试冻结。所有旧失败现场保留，完整绿前不合main、不提升质量/人评，本批未Release。
+第二次.cache/knowledge-evidence-hook-fixed-full在约92%按用户纠正停止，PID40844及其6个子进程已停止，记录*-stopped.json（21:55:50+08）；未形成完整终态/CLI，不算绿，不得重启它来“收口”。536文件freeze、日志都保留；scratch/finalize-knowledge-evidence-records.py只适用全量成功，当前不能运行。中途监控曾漏报第一轮早期失败，不能从尾部PASS推整体绿；最终事实以完整XML或明确停止记录为准。
 
-## 真实文字单次许可耗用，禁止重发
+## 已保存业务能力
 
-最多1次、上限¥2.02已执行preparedHash 9bcc9d01729bf0e59ff4934fdacaf5f6ed74c12147b1741c95eb0fa83bc0dcea，漫画群星60秒job e01c7683a5eb4e5590adff9f129ba620，74候选无媒体。Provider completed（deepseek-flash，26381/751 tokens，request a9570c35-0ec2-4b0a-8d69-2528c789cf1c），应用失败，未采用；估算¥0.05877，非实扣对账。旧代码丢失parsed output不能恢复，TD026新机制不能补造或回写。原result/receipt/账本保持。资料.cache/scratch/j1-dynamic-plan-authorization/，paid-attempt-manifest.json保全hash。无第二次许可，文本AI新调用仍需独立授权。
+分支codex/knowledge-version-compare-20261108；业务/测试检查点84c7341已推，main仍36d8325，未集成/Release。本批P018同游戏逐行版本比较、原文/出处、迟到隔离已实现，唯一边界审查通过，受影响29过1跳；TD026先留parsed output/receipt再验证、受控错误及SHA引用已实现，旧无ref兼容，组合60过、受影响脚本82过、唯一Sol/high通过；真实旧失败记录只读恢复11文件hash不变。队列128解决默认5连接积压，真实模块突发及规则浏览器22过。合同sprint-knowledge-version-compare.md、sprint-paid-output-evidence.md。当前不提升人评/质量/整项交付。
 
-## Git与保护
+恢复后复用上述完整与定向证据，推进实际开发和交付记录；不得把自定“全量绿前合main”当作自动重跑理由。需额外验证时只选真实影响范围，下一实质批次再统一全量。
 
-GitHub直连失败，现有Windows本机代理127.0.0.1:7890可用；单次git -c http.proxy=http://127.0.0.1:7890 push可成功，未改全局配置；不得改变费用Provider trust_env=False。fe6993a已推远端，新检查点长任务前推送。
+## 费用与现场保护
 
-未跟踪用户设计稿/审计报告/Grok工单不动，仅具名add。3子树不reset/复用/删除；stash b55207b68ce12b3682607687c54dc818d1f6f849不drop/pop。原片/标签/账本/证据不改删，不重跑钟馗，不真实发布/支付。旧8765–8769服务不动。避免PR/AE，免费本机声音。质量/人评未通过不阻止无依赖的本地开发。
+原一次¥2.02许可已耗用：preparedHash 9bcc9d01729bf0e59ff4934fdacaf5f6ed74c12147b1741c95eb0fa83bc0dcea，Provider完成但应用失败，估算¥0.05877非实扣对账；原输出丢失不可恢复，原result/receipt/账本不改。本轮无新增付费调用。
 
-已免费准备新的74候选请求，预览.cache/scratch/j1-dynamic-plan-evidence-trial/prepared-preview.json，hash7abf86df0b4458a22b7482806e15799b277e89285aa11cbeecb4230da5aabf3a，保守报价2.016384；未申请/收到新许可、发送0次。execute-once.py只可在新明确许可与当前完整门禁通过且冻结文件未变后执行。此前一次许可不适用；官方价已再核。真实旧失败结果只读恢复证明.cache/paid-evidence-legacy-proof.json，11文件字节未改。
+免费准备的新请求7abf86df0b4458a22b7482806e15799b277e89285aa11cbeecb4230da5aabf3a在.cache/scratch/j1-dynamic-plan-evidence-trial/，74候选文字、保守报价2.016384。未申请/收到新许可，发送0次，不执行execute-once.py，也不为其自设全量前置重启测试。新调用仍须新明确许可，旧一次许可不适用。
+
+GitHub直连失败，单次git -c http.proxy=http://127.0.0.1:7890 push可用，未改全局配置及Provider网络。Harness当前有并发新增dashboard/环境说明改动，和未跟踪docs/progress、progress-dashboard.md、scripts/progress_ui.py；保留原样、不替其提交。仅分离暂存本次Testing纠正。其余用户设计稿/审计报告/Grok工单、三脏子树、stash均不动。原片/标签/账本不删改，不重跑钟馗，不停8765–8769，不启动PR/AE，不真实发布/支付。

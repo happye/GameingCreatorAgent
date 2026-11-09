@@ -13,3 +13,5 @@ Roles in `.claude/agents/`: `gc-explorer`, `task-progress-monitor`, `gc-runner` 
 ## Cloud sessions
 
 In a Linux cloud container, work in a separate clone or worktree, sync through GitHub, and record which Windows-only checks (`verify.ps1`, project FFmpeg, real footage) remain. Never edit the user's tree while another tool's writer is active, never upload footage or project databases, and send no images to paid providers without explicit authorization of a concrete proposal.
+
+Testing scope and full-rerun limits come from `AGENTS.md` §Testing; apply them after resuming a chat as well.

@@ -16,3 +16,7 @@
 ## 验证记录
 
 Sol/high唯一边界审查通过：独占留痕、receipt/schema/身份/hash、旧记录兼容、保存失败保账本及attempt阻止重发；未执行外部调用。root的evidence/service/HTTP/plan jobs组合60项通过，15.444秒；`test-affected.ps1 -Browser -PytestArgs '-k reasoning'`为82通过、454 deselected，68.04秒。证据`.cache/paid-evidence-affected.xml`和`.cache/paid-evidence-script-affected.xml`。Ruff及两处源文件mypy通过。本批完整门禁待执行，不宣称真实模型质量验收。
+
+## 用户纠正后的暂停记录（2026-11-09）
+
+本次全量首次5108过7跳3失败，2229.875秒；失败范围仅音频采样测试及级联清理，修复后整文件10项连续三轮通过，业务音频代码未改。第二轮全量属于不必要扩大，按用户要求在约92%停止，记录`.cache/knowledge-evidence-hook-fixed-full-stopped.json`，不作全量绿。复用已通过业务证据和定向修复结果，不为“闭环”自动重跑；后续全量放到下一实质业务批次。当前保存开发分支，未集成main或提高人评状态。完整规则已写入根AGENTS.md Testing。
