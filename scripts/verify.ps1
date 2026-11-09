@@ -1,6 +1,6 @@
 # Tier 2 (milestone) gate: lock, format, lint, types, full pytest, CLI smoke.
 # -Release adds the two reproducible offline wheel builds (tier 3). -SkipBuild is accepted for old callers.
-param([switch]$Release, [switch]$SkipBuild)
+param([switch]$Release, [switch]$SkipBuild, [switch]$PreserveRuns)
 
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -25,7 +25,7 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'Dependency lock does not match the project.' }
   # Runs older than a day are leftovers of failed or interrupted runs.
   $runsRoot = Join-Path $repositoryRoot '.cache/pytest-runs'
-  if (Test-Path -LiteralPath $runsRoot) {
+  if (-not $PreserveRuns -and (Test-Path -LiteralPath $runsRoot)) {
     Get-ChildItem -LiteralPath $runsRoot -Directory -ErrorAction SilentlyContinue |
       Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-1) } |
       ForEach-Object { Remove-RunDirectory $_.FullName }
@@ -60,7 +60,7 @@ try {
   Write-Host 'All project checks passed. Media integration requires project-local FFmpeg; check pytest skip counts.'
 } finally {
   # A passing run keeps nothing; a failing run keeps its temp files for diagnosis (pruned after a day).
-  if ($testRunRoot -and $passed -and $env:GC_KEEP_TEST_MEDIA -ne '1') {
+  if ($testRunRoot -and $passed -and -not $PreserveRuns -and $env:GC_KEEP_TEST_MEDIA -ne '1') {
     Remove-RunDirectory $testRunRoot
   } elseif ($testRunRoot -and (Test-Path -LiteralPath $testRunRoot)) {
     Write-Host "Kept run files: $testRunRoot"
