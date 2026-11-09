@@ -23,3 +23,5 @@
 `test-affected.ps1 -Browser -PytestArgs -k knowledge`：29过1跳439 deselected，53.45秒；跳过为Windows当前账户不能创建symlink（test_knowledge_import.py:46），未绕过。证据.cache/knowledge-compare-affected.log/XML。新增HTTP/浏览器完整目录字节快照及真实增删截图2项过4.96秒；最终布局/ID/日期定向1过4.16秒（.cache/knowledge-compare-final-focused.log/XML）。Ruff及mypy209源通过。截图.cache/scratch/knowledge-version-compare/comparison-1440.png与1280.png，人工视检已完成，无横向溢出。
 
 源码检查点后冻结并运行本批完整门禁：.cache/knowledge-compare-full-verify.log；清单.cache/knowledge-compare-freeze.json。完整绿前不推进main，不提升P018整项交付/人评。
+
+恢复完整门禁终态5098过7跳1失败1错误，2083.73秒：HTTP拒绝测试响应未关闭引发GC ResourceWarning，活动规则fixture模块连接失败。前者补close/read（知识核心12过）；后者保留失败诊断后，实测Python 3.13默认监听队列5在模块连接突发/延迟accept时超时，显式128后真实模块请求及活动规则组合22过、28.366秒。原队列回归失败证据`.cache/studio-backlog-original.xml`，修复证据`.cache/studio-backlog-fixed.xml`；Sol/high静审通过。与TD026切片合并后执行一次完整门禁，旧失败日志/目录不删、不改作成功。

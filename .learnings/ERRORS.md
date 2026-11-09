@@ -14,3 +14,7 @@ request_user_input_async是直接工具，不在functions.exec的tools对象；�
 ## 2026-11-09 额度耗尽与验证恢复
 
 用户要求低额度停止但未及时收尾，原验证随会话失效且无终态。改从当前线程JSONL的rate_limits读取实际余量，12%预留收尾、约10%按用户要求暂停；不由累计token猜百分比。长验证用Hidden独立pwsh，逐项日志及退出JSON，恢复先核OS进程/终态，不重启活任务。verify可选PreserveRuns只保留现场，不删减门禁。
+
+## 2026-11-09 本机连接队列与远端推送
+
+Studio首次加载多模块时，默认Python 3.13监听队列仅5；延迟accept的真实模块连接突发回归在旧配置超时，128队列通过，保留新旧XML。不能仅凭Playwright标签超时增加等待或宣称业务失败；先捕获console/requestfailed/body。GitHub直连失败但Windows已有本机代理可用，单次git -c http.proxy使用现有端点即可推送，不修改全局配置或费用Provider的trust_env边界。搜索命令仍须目录加-g，避免重复猜文件名/PowerShell通配参数。

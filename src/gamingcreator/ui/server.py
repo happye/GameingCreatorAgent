@@ -162,6 +162,8 @@ def error_status(error: AppError) -> int:
 
 
 class WorkspaceServer(ThreadingHTTPServer):
+    # Studio imports many modules at once; Python 3.13's default backlog is only five.
+    request_queue_size = 128
     creation_jobs: CreationJobs
     creation_reasoning: CreationReasoningService
     preparation_jobs: MediaPreparationJobs

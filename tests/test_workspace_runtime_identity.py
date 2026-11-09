@@ -1,16 +1,43 @@
 """Runtime source identity and immutable server startup snapshots."""
 
+import http.client
 import json
 import os
+import socket
 import subprocess
 import sys
 import threading
 import urllib.request
+from contextlib import ExitStack
 
 import pytest
 
 from gamingcreator.ui import server as server_module
 from gamingcreator.ui.runtime_identity import runtime_identity
+
+
+def test_studio_module_connection_burst_survives_delayed_accept(tmp_path):
+    """Module connections may queue while the server thread is busy scheduling handlers."""
+    paths = [path for path in server_module.ASSETS if path.startswith("/assets/studio/")]
+    assert len(paths) > 5
+    with server_module.create_server("127.0.0.1", 0, tmp_path) as server, ExitStack() as peers:
+        connections = [
+            peers.enter_context(socket.create_connection(server.server_address, timeout=2))
+            for _ in paths
+        ]
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            for peer, path in zip(connections, paths, strict=True):
+                peer.sendall(f"GET {path} HTTP/1.0\r\nHost: localhost\r\n\r\n".encode())
+            for peer in connections:
+                with http.client.HTTPResponse(peer) as response:
+                    response.begin()
+                    assert response.status == 200
+                    assert response.read()
+        finally:
+            server.shutdown()
+            thread.join(timeout=5)
 
 
 @pytest.mark.parametrize("suffix", [".py", ".js", ".css", ".json", ".txt", ".html"])
