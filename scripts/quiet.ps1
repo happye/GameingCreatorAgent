@@ -19,7 +19,9 @@ $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $out = Join-Path $logs ($Name + '-' + $stamp + '.log')
 $err = Join-Path $logs ($Name + '-' + $stamp + '.err.log')
 $failedFile = Join-Path $logs ($Name + '-' + $stamp + '-failed.txt')
-$quoted = @($Rest | Where-Object { $_ } | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } })
+# Single quotes: Start-Process does not escape double quotes, so Windows argument parsing would
+# strip them and split "a or b" into separate arguments.
+$quoted = @($Rest | Where-Object { $_ } | ForEach-Object { if ($_ -match '[\s''"]') { "'" + ($_ -replace "'", "''") + "'" } else { $_ } })
 if ($Name -eq 'pytest') {
   $command = '. ./scripts/env.ps1; python -B -m pytest -p no:cacheprovider -rfE ' + ($quoted -join ' ')
 } else {
