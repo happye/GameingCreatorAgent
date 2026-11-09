@@ -144,8 +144,8 @@
    ]
   },
   "P021": {
-   "done": "离线模板多套方案；动态策划（文本模型）已实测：3套方案离线重放均可用，指纹抄错问题已修复",
-   "todo": "已付费那次不重发/不自动采用；Studio动态方案需新的单次授权；方案质量未人评",
+   "done": "离线模板多套方案＋真实文本模型动态策划：3套方案已采用进Studio（任务4c857005），模型抄错指纹的问题已修",
+   "todo": "方案质量未人评；每次新的模型调用需单独授权",
    "updated": "2026-11-09",
    "sprints": [
     "sprint-creation-planner",
@@ -961,8 +961,8 @@
    {
     "id": "J1-2",
     "name": "四个方案价值不足 / 动态策划",
-    "status": "partial",
-    "note": "11-09授权调用已执行：模型给出3套可用方案，但抄错快照指纹被拒；已修复（后端绑定）。放进Studio需再授权一次"
+    "status": "done",
+    "note": "第2次授权调用成功：3套动态方案（20/20/19镜头）已采用进Studio；创作价值待你评价"
    },
    {
     "id": "J1-3",
@@ -1048,11 +1048,11 @@
  ],
  "gate": {
   "date": "2026-11-09",
-  "scope": "完整门禁 verify.ps1（knowledge-evidence-batch-full）",
-  "result": "fail",
-  "counts": "5108 过 · 7 跳 · 3 失败",
-  "branch": "codex/knowledge-version-compare-20261108",
+  "scope": "完整门禁 verify.ps1（本批：下载修复、发布草稿、指纹绑定、网页规则、verify门槛）",
+  "result": "pass",
+  "counts": "5104 过 · 6 跳 · 0 失败（38分28秒）",
+  "branch": "main",
   "merged": true,
-  "note": "上一全量（84c7341）在92%被停止，不算绿。verify.ps1 现会拒绝同批重跑（需新 feat 提交或你明确要求）"
+  "note": "提交 ba01459 上运行；格式/Ruff/mypy/CLI 均通过。未跑 -Release"
  }
 }
