@@ -16,7 +16,7 @@
    "sprints": []
   },
   "P003": {
-   "done": "模型Provider可替换；11-09实现付费Provider原始输出在校验前留存（TD026，完整门禁未绿、未合main）",
+   "done": "模型Provider可替换；11-09起付费Provider原始输出在校验前留存（TD026），已合main",
    "todo": "真实付费调用应用校验失败原因待新证据；质量未评估",
    "updated": "2026-11-09",
    "sprints": [
