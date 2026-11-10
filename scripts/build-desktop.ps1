@@ -36,7 +36,7 @@ if ($Smoke) {
   $stdout = $process.StandardOutput.ReadToEnd()
   $stderr = $process.StandardError.ReadToEnd()
   if (-not $process.WaitForExit(90000)) { $process.Kill(); throw 'Desktop host smoke test timed out.' }
-  if ($process.ExitCode -ne 0 -or $stdout -notmatch 'READY http://127\.0\.0\.1:\d+/creation') {
+  if ($process.ExitCode -ne 0 -or $stdout -notmatch 'READY http://127\.0\.0\.1:\d+/studio') {
     throw "Desktop host smoke test failed (exit $($process.ExitCode)): $stdout $stderr"
   }
   Write-Host $stdout.Trim()

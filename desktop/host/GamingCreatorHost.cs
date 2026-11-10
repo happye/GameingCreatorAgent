@@ -94,8 +94,9 @@ internal static class GamingCreatorHost
             {
                 return Fail("缺少项目运行环境（.venv）。请先运行 scripts\\setup-demo.ps1。");
             }
-            int port = FreePort();
-            string url = "http://127.0.0.1:" + port + "/creation";
+            // Studio keeps its basket and drafts per origin, so the same port is reused when free.
+            int port = StablePort(logDirectory);
+            string url = "http://127.0.0.1:" + port + "/studio";
             string log = Path.Combine(logDirectory, "host-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".log");
             job = KillOnCloseJob();
             var service = new ProcessStartInfo(python,
@@ -217,6 +218,35 @@ internal static class GamingCreatorHost
     private static readonly int[] UnsafePorts = {
         1719, 1720, 1723, 2049, 3659, 4045, 4190, 5060, 5061, 6000, 6566,
         6665, 6666, 6667, 6668, 6669, 6679, 6697, 10080 };
+
+    private const int DefaultPort = 18765;
+
+    private static bool PortFree(int port)
+    {
+        if (port < 1024 || port > 65535 || Array.IndexOf(UnsafePorts, port) >= 0) return false;
+        try
+        {
+            var probe = new TcpListener(IPAddress.Loopback, port);
+            probe.Start();
+            probe.Stop();
+            return true;
+        }
+        catch (System.Net.Sockets.SocketException)
+        {
+            return false;
+        }
+    }
+
+    private static int StablePort(string directory)
+    {
+        string file = Path.Combine(directory, "port.txt");
+        int saved;
+        int port = File.Exists(file) && int.TryParse(File.ReadAllText(file).Trim(), out saved) && PortFree(saved)
+            ? saved
+            : PortFree(DefaultPort) ? DefaultPort : FreePort();
+        try { File.WriteAllText(file, port.ToString()); } catch (IOException) { }
+        return port;
+    }
 
     private static int FreePort()
     {

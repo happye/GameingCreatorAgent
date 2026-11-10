@@ -119,7 +119,7 @@ if ($Smoke) {
   if (-not $process.WaitForExit(120000)) { $process.Kill(); throw 'Packaged app smoke test timed out.' }
   $stdout = $outTask.Result
   $stderr = $errTask.Result
-  if ($process.ExitCode -ne 0 -or $stdout -notmatch 'READY http://127\.0\.0\.1:\d+/creation') {
+  if ($process.ExitCode -ne 0 -or $stdout -notmatch 'READY http://127\.0\.0\.1:\d+/studio') {
     throw "Packaged app smoke test failed (exit $($process.ExitCode)): $stdout $stderr"
   }
   Write-Host ("Smoke " + $stdout.Trim())

@@ -53,9 +53,33 @@ def test_smoke_serves_then_stops_whole_service_tree(built):
     result = subprocess.run([str(built), "--smoke"], capture_output=True, text=True, timeout=120)
     assert result.returncode == 0, result.stderr
     line = result.stdout.strip()
-    assert line.startswith("READY http://127.0.0.1:") and line.endswith("/creation")
+    assert line.startswith("READY http://127.0.0.1:") and line.endswith("/studio")
     port = line.rsplit(":", 1)[1].split("/")[0]
     assert service_processes(port) == []
+
+
+def smoke_port(built):
+    result = subprocess.run([str(built), "--smoke"], capture_output=True, text=True, timeout=120)
+    assert result.returncode == 0, result.stderr
+    return int(result.stdout.strip().rsplit(":", 1)[1].split("/")[0])
+
+
+def test_port_is_reused_and_falls_back_when_taken(built):
+    """Studio keeps basket/drafts per origin, so relaunching reuses the port when free."""
+    import socket
+
+    from gamingcreator.ui.server import CHROMIUM_UNSAFE_PORTS
+
+    first = smoke_port(built)
+    assert smoke_port(built) == first
+    holder = socket.socket()
+    holder.bind(("127.0.0.1", first))
+    holder.listen()
+    try:
+        other = smoke_port(built)
+        assert other != first and other not in CHROMIUM_UNSAFE_PORTS
+    finally:
+        holder.close()
 
 
 def test_second_instance_refuses_while_first_holds_the_lock(built):
