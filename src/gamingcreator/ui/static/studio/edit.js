@@ -54,7 +54,7 @@ function useOutputCanvas(stage, width, height) {
     return {width: width * scale, height: height * scale, scale};
 }
 
-export function EditWorkspace({project, runs, open, onWorksChanged, layout, basket, basketAt, onBasketSeen}) {
+export function EditWorkspace({project, runs, open, onWorksChanged, layout, basket, basketAt, onBasketSeen, onFindMaterial = () => {}}) {
     const [draft, setDraft] = useState(() => readDraft(project));
     const [saved, setSaved] = useState("");
     const [planJob, setPlanJob] = useState(null);
@@ -296,7 +296,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
             <div class="panel-body">
                 <${Brief} project=${project} runs=${runs} draft=${draft} update=${update} busy=${busy} onGenerate=${generate} basket=${basket} />
                 <div class="section-label">方案${planJob ? `（${planJob.plans.length}）` : ""}</div>
-                ${planJob ? planJob.plans.map((p) => html`<${PlanCard} plan=${p} fps=${fps} active=${p.id === planId} thumb=${thumb}
+                ${planJob ? planJob.plans.map((p) => html`<${PlanCard} plan=${p} fps=${fps} active=${p.id === planId} thumb=${thumb} onFind=${onFindMaterial}
                     onPick=${() => { if (overlayBusy || audioBusy || busy) return; if (editing.dirty && !confirmLeave()) return; setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommandRows(null); lastJob(project, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
                     : html`<p class="note">填好需求后点“生成方案”。方案只是剪辑清单，生成很快；选中后可以直接预览，不用先渲染。</p>`}
                 ${planJob ? html`<${PlanReasoningPanel} key=${`${project}:${planJob.jobId}`} project=${project} jobId=${planJob.jobId}
@@ -423,15 +423,19 @@ function Brief({project, runs, draft, update, busy, onGenerate, basket}) {
     </form>`;
 }
 
-function PlanCard({plan, fps, active, thumb, onPick}) {
+// P024: a topic the footage lacks gets a one-click search in the Assets workspace.
+const gapTopics = (gaps = []) => gaps.map((g) => /^主题缺少[^：]*：(.+)$/.exec(g)?.[1]?.trim()).filter(Boolean);
+
+function PlanCard({plan, fps, active, thumb, onPick, onFind = () => {}}) {
     const items = timeline(plan.segments || [], fps), groups = shots(items);
+    const topics = plan.ready ? [] : gapTopics(plan.gaps);
     const total = items.length ? items.at(-1).outStartUs + items.at(-1).outDurUs : 0;
     return html`<button class="plan" aria-current=${active} disabled=${!plan.ready} onClick=${onPick} title=${plan.ready ? "选中后在预览窗播放" : "方案有缺口，不能选择"}>
         <span class="plan-title">${plan.mode ? html`<span class="badge rec">推荐</span>` : null}${plan.title || plan.structure}</span>
         <span class="plan-meta">${secondsText(total)} · ${items.length} 个镜头 · 平均 ${(total / 1e6 / Math.max(1, items.length)).toFixed(1)} 秒</span>
         <span class="strip">${groups.slice(0, 8).map((g) => { const src = thumb(g.items[0]); return html`<span style=${{backgroundImage: src ? `url("${src}")` : "none"}}></span>`; })}</span>
         ${!plan.ready && html`<span class="plan-gap">缺口：${(plan.gaps || []).join("；")}</span>`}
-    </button>`;
+    </button>${topics.length ? html`<div class="actions-row gap-find">${topics.map((t) => html`<button type="button" class="btn ghost" onClick=${() => onFind(t)}>在素材里找「${t}」</button>`)}</div>` : null}`;
 }
 
 function ProgramTrack({items, totalUs, outUs, thumb, selectedId, changed, preview, lanes = [], onLane, onPick}) {

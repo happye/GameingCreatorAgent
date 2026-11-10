@@ -64,7 +64,7 @@ def test_brief_to_exported_video(service, monkeypatch):  # noqa: F811
                 "id": "reverse",
                 "structure": "倒序",
                 "ready": False,
-                "gaps": ["缺少主题"],
+                "gaps": ["主题缺少已保存文字证据：Boss战"],
                 "scriptStatus": "draft",
                 "segments": [{**segment, "startUs": 0, "endUs": 2_000_000}],
             },
@@ -136,6 +136,12 @@ def test_brief_to_exported_video(service, monkeypatch):  # noqa: F811
             export = page.get_by_role("button", name="导出成片")
             playwright.expect(export).to_be_enabled()
             assert export.evaluate("e => e.getBoundingClientRect().bottom <= innerHeight")
+            # P024: a missing topic offers a one-click search in the Assets workspace.
+            page.get_by_role("button", name="在素材里找「Boss战」").click()
+            playwright.expect(page.get_by_role("tab", name="素材")).to_have_attribute(
+                "aria-selected", "true"
+            )
+            playwright.expect(page.get_by_label("搜索片段")).to_have_value("Boss战")
             assert not errors
             browser.close()
     finally:

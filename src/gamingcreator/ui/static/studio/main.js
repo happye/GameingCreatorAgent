@@ -39,6 +39,8 @@ function useLatest() {
 function App() {
     const prefs = useMemo(loadPrefs, []);
     const [workspace, setWorkspace] = useState(prefs.workspace || "assets");
+    const [searchSeed, setSearchSeed] = useState(null);
+    const findMaterial = useCallback((text) => { setSearchSeed({text, at: Date.now()}); setWorkspace("assets"); }, []);
     const [layout, setLayout] = useState({bin: prefs.bin !== false, insp: prefs.insp !== false});
     const [projects, setProjects] = useState([]);
     const [project, setProject] = useState("");
@@ -183,7 +185,7 @@ function App() {
         ${workspace === "assets"
             ? html`<div class=${work}>
                 <${Bin} runs=${runs} runId=${runId} setRunId=${setRunId} works=${worksProject === project ? works : []} onOpen=${openWork} hidden=${!layout.bin}
-                    top=${html`<${ClipSearch} project=${project} runs=${runs} runId=${runId} basket=${basket} onShow=${(run, event) => showEvent(run.id, event.eventId)} />
+                    top=${html`<${ClipSearch} project=${project} runs=${runs} runId=${runId} basket=${basket} seed=${searchSeed} onShow=${(run, event) => showEvent(run.id, event.eventId)} />
                         <${BasketList} basket=${basket} onShow=${(item) => showEvent(item.runId, item.eventId, item)} onUse=${() => { setBasketAt(Date.now()); setWorkspace("edit"); }} />`} />
                 <div class="center">
                     <${Viewer} onClockInvalid=${() => setClock(null)} clock=${clock} media=${view?.media} videoRef=${video} time=${time} setTime=${setTime} selected=${selected} onFullSource=${() => setSelected(null)} />
@@ -192,7 +194,7 @@ function App() {
                 <${Inspector} view=${view} selected=${selected} run=${currentRun} hidden=${!layout.insp} inBasket=${!!selected && basket.ids.has(selected.eventId)} onBasket=${() => toggleBasket(selected)} onRange=${changeRange} />
             </div>`
             : workspace === "edit"
-                ? html`<${EditWorkspace} project=${project} runs=${runs} open=${open?.project === project ? open : null} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} />`
+                ? html`<${EditWorkspace} project=${project} runs=${runs} open=${open?.project === project ? open : null} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} onFindMaterial=${findMaterial} />`
                 : html`<${PublishWorkspace} project=${project} works=${worksProject === project ? works : []} open=${open?.project === project ? open : null} onWorksChanged=${reloadWorks} layout=${layout} />`}
         ${workspace === "assets" && html`<div class="dock"><strong>提示</strong><span>左上角“搜索片段”按描述找画面，“+”或 B 键加入片段篮，再点“用片段篮生成方案”。一句话修改镜头在剪辑区底部。</span></div>`}
     </div>`;

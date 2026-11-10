@@ -65,8 +65,9 @@ function useAllTimelines(project, runs) {
     return {...state, load};
 }
 
-export function ClipSearch({project, runs, runId, basket, onShow}) {
+export function ClipSearch({project, runs, runId, basket, onShow, seed = null}) {
     const [query, setQuery] = useState("");
+    useEffect(() => { if (seed?.text) setQuery(seed.text); }, [seed?.at]);
     const [scope, setScope] = useState("current");
     const scopedRuns = useMemo(() => scope === "all" ? recordingRuns(runs, runId) : runs.filter((r) => r.id === runId), [runs, runId, scope]);
     const all = useAllTimelines(project, scopedRuns);
