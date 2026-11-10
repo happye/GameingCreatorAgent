@@ -80,9 +80,9 @@ window.PROGRESS_DATA = {
    "name": "安装：便携包安装后启动工作台",
    "steps": "build-app → install-app → 启动 GamingCreator.exe → 工作台可用 → 卸载",
    "agent_run": {
-    "date": "2026-11-01",
+    "date": "2026-11-11",
     "result": "pass",
-    "evidence": "feature_list.json P039 implementation_evidence（install-app -Smoke 安装/升级/卸载）"
+    "evidence": "Claude Code：build-app -Smoke（867 MB，READY http://127.0.0.1:18765/studio）→ install-app 到临时目录 -Smoke（READY .../studio）→ 用安装副本自带 Python 启动服务，浏览器打开 /studio 正常、无控制台错误 → install-app -Uninstall（程序移除、用户数据 .cache 保留）。实测发现全新安装无项目时只有一行状态提示，已补首次使用引导。干净机器、签名、许可证缺口（9项）未处理；人评仍以 human_check 为准。"
    },
    "human_check": {
     "date": null,

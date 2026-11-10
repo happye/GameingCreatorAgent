@@ -85,7 +85,7 @@ function App() {
             setProjects(data.projects);
             const keep = data.projects.some((p) => p.path === prefs.project) ? prefs.project : data.projects[0]?.path || "";
             setProject(keep);
-            if (!data.projects.length) setStatus("还没有项目：先在旧版素材工作台准备素材。");
+            if (!data.projects.length) { setStatus("还没有项目：先在旧版素材工作台准备素材。"); setRunsLoaded(true); }
         }).catch((error) => setStatus(`无法读取项目：${error.message}`));
     }, []);
 

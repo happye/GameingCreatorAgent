@@ -11,6 +11,7 @@ from gamingcreator.ui.server import create_server
 @pytest.mark.parametrize(
     "recordings",
     [
+        None,  # a fresh install: no project at all
         [],
         [
             {
@@ -34,9 +35,10 @@ def test_empty_project_shows_first_run_guide(tmp_path, recordings):
         if route.request.method == "POST":
             posts.append(path)
         if path == "/api/projects":
-            route.fulfill(json={"projects": [{"path": "p", "name": "p"}]})
+            projects = [] if recordings is None else [{"path": "p", "name": "p"}]
+            route.fulfill(json={"projects": projects})
         elif path == "/api/runs":
-            route.fulfill(json={"runs": recordings})
+            route.fulfill(json={"runs": recordings or []})
         elif path == "/api/creation/jobs":
             route.fulfill(json={"jobs": []})
         else:
