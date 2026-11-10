@@ -21,7 +21,8 @@ J1剩余工程项均依赖模型或人评；可继续的本机项见看板“还
 
 ## 已知
 
-2026-11-10 因用户额度不足暂停。最后提交：b193590 平台限值（local-v2，出处 docs/references/platform-limits-sources.md）仅定向测试，下一批末尾统一全量。无进行中的后台任务。
+11-10晚批次：601b15e节拍对齐、cdf57d6缺口找素材、2e03859一句话需求、本次Studio J1衔接（去发布/禁用原因/中文状态/首次引导）。全量5f3dd2e失败2+1错误，均为测试问题已定向修复（0fa7a8d系列）；之后的改动仅定向+受影响测试，下一批末尾全量。
+
 
 11-10续：663d319 字幕样式、bbc4abf 受限端口、38fa31b quiet.ps1、b48e212 TD027；本批完整门禁 9a8bdba 5115过6跳0失败（.cache/test-logs/verify-20261110-002448.log）。长测试用 ./scripts/quiet.ps1 test-affected|verify|pytest，只读摘要；同一工作树不要同时跑两个pytest。
 
