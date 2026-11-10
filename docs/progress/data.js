@@ -976,7 +976,7 @@ window.PROGRESS_DATA = {
     "tests/test_license_visibility.py",
     "2026-11-01 T27: build-app/install-app (+Smoke) print reminder to read licenses/THIRD-PARTY-NOTICES.md and licenses/gaps.json; no download to fill gaps"
    ],
-   "done": "可构建便携版EXE（内嵌WebView2、自带Python/FFmpeg约660MB），可安装/升级/卸载，Smoke通过；宿主不再选用WebView2禁用端口（低动态端口段机器不再白屏）",
+   "done": "可构建便携版EXE（内嵌WebView2、自带Python/FFmpeg），可安装/升级/卸载；启动即进入Studio并沿用固定端口（片段篮/草稿重开不丢），不选WebView2禁用端口",
    "todo": "干净机器测试、代码签名、第三方许可缺口审阅仍待完成",
    "updated": "2026-11-10",
    "sprints": [
