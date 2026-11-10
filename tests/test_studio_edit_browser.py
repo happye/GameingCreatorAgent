@@ -139,6 +139,23 @@ def test_brief_to_exported_video(service, monkeypatch):  # noqa: F811
             assert pending.value.failure() is None
             # The page never scrolls; panels do.
             assert page.evaluate("document.documentElement.scrollHeight <= innerHeight")
+            # A render still running when the page reloads stays visible and blocks re-export.
+            running_id = re.search(
+                r"jobs/([0-9a-f]{32})/video", page.locator("a[download]").get_attribute("href")
+            ).group(1)
+
+            def still_running(route):
+                body = route.fetch().json()
+                body.update(status="running")
+                body.pop("artifact", None)
+                route.fulfill(json=body)
+
+            page.route(f"**/api/creation/jobs/{running_id}", still_running)
+            page.reload()
+            playwright.expect(page.get_by_text("正在生成成片（已用")).to_be_visible()
+            playwright.expect(page.get_by_role("button", name="正在生成…")).to_be_disabled()
+            page.unroute(f"**/api/creation/jobs/{running_id}")
+            playwright.expect(page.locator("a[download]")).to_be_visible()
             # The brief survives a reload, and the last result reopens.
             page.reload()
             playwright.expect(page.locator(".brief input.input").first).to_have_value("测试游戏")
@@ -287,6 +304,25 @@ def test_edit_clip_save_version_and_command(revisions, monkeypatch):  # noqa: F8
             page.get_by_role("button", name="应用").click()
             playwright.expect(page.get_by_role("status", name="导出状态")).to_have_count(0)
             playwright.expect(page.get_by_text("有未保存的修改")).to_be_visible()
+            # Leaving with unsaved edits asks first; cancelling keeps the work (J1 data loss).
+            dialogs = []
+            page.once("dialog", lambda d: (dialogs.append(d.message), d.dismiss()))
+            page.get_by_role("tab", name="素材").click()
+            playwright.expect(page.get_by_role("tab", name="剪辑")).to_have_attribute(
+                "aria-selected", "true"
+            )
+            playwright.expect(page.get_by_text("有未保存的修改")).to_be_visible()
+            assert dialogs and "未保存" in dialogs[0]
+            page.once("dialog", lambda d: d.accept())
+            page.get_by_role("tab", name="素材").click()
+            playwright.expect(page.get_by_role("tab", name="素材")).to_have_attribute(
+                "aria-selected", "true"
+            )
+            # Nothing unsaved now: switching back and forth never asks.
+            page.on("dialog", lambda d: (dialogs.append("unexpected"), d.dismiss()))
+            page.get_by_role("tab", name="剪辑").click()
+            page.get_by_role("tab", name="发布").click()
+            assert "unexpected" not in dialogs
             assert not errors
             browser.close()
     finally:

@@ -7,7 +7,7 @@ import * as client from "./api.js";
 import "../source-clock.js";
 import {BasketList, ClipSearch, useBasket} from "./basket.js";
 import {PublishWorkspace} from "./publish.js";
-import {EditWorkspace} from "./edit.js";
+import {EditWorkspace, confirmLeave} from "./edit.js";
 import {clipSelection, groupRecordings} from "./recordings.js";
 
 const html = htm.bind(h);
@@ -40,7 +40,16 @@ function App() {
     const prefs = useMemo(loadPrefs, []);
     const [workspace, setWorkspace] = useState(prefs.workspace || "assets");
     const [searchSeed, setSearchSeed] = useState(null);
-    const findMaterial = useCallback((text) => { setSearchSeed({text, at: Date.now()}); setWorkspace("assets"); }, []);
+    // Unsaved edit/publish work: leaving the workspace or project asks first (J1 data loss).
+    const dirtyRef = useRef(false);
+    const onDirtyChange = useCallback((value) => { dirtyRef.current = value; }, []);
+    const leave = useCallback((fn) => { if (dirtyRef.current && !confirmLeave()) return false; dirtyRef.current = false; fn(); return true; }, []);
+    useEffect(() => {
+        const warn = (event) => { if (dirtyRef.current) { event.preventDefault(); event.returnValue = ""; } };
+        window.addEventListener("beforeunload", warn);
+        return () => window.removeEventListener("beforeunload", warn);
+    }, []);
+    const findMaterial = useCallback((text) => { leave(() => { setSearchSeed({text, at: Date.now()}); setWorkspace("assets"); }); }, [leave]);
     const [layout, setLayout] = useState({bin: prefs.bin !== false, insp: prefs.insp !== false});
     const [projects, setProjects] = useState([]);
     const [project, setProject] = useState("");
@@ -128,7 +137,7 @@ function App() {
         if (project) latestWorks((signal) => client.creationJobs(project, signal)).then((result) => { if (result.ok) { setWorksProject(project); setWorks(result.value.jobs); } });
     }, [project]);
     // After export, open exactly that render in Publish (not just the newest one).
-    const publishRender = useCallback((jobId) => { reloadWorks(); setOpen({id: jobId, kind: "render", project, at: Date.now()}); setWorkspace("deliver"); }, [project, reloadWorks]);
+    const publishRender = useCallback((jobId) => { leave(() => { reloadWorks(); setOpen({id: jobId, kind: "render", project, at: Date.now()}); setWorkspace("deliver"); }); }, [project, reloadWorks, leave]);
     const openWork = useCallback((job) => {
         if (!["plan", "revision", "render", "publication", "package"].includes(job.kind) || job.status !== "completed") return;
         setOpen({id: job.jobId, kind: job.kind, project, at: Date.now()}); setWorkspace(["publication", "package"].includes(job.kind) ? "deliver" : "edit");
@@ -183,7 +192,7 @@ function App() {
 
     const work = `work${layout.bin ? "" : " no-bin"}${layout.insp ? "" : " no-insp"}`;
     return html`<div class="shell">
-        <${TopBar} ...${{workspace, setWorkspace, projects, project, setProject, layout, setLayout, status}} />
+        <${TopBar} ...${{workspace, setWorkspace: (w) => w !== workspace && leave(() => setWorkspace(w)), projects, project, setProject: (p) => p === project || leave(() => setProject(p)), layout, setLayout, status}} />
         ${workspace === "assets"
             ? html`<div class=${work}>
                 <${Bin} runs=${runs} runsLoaded=${runsLoaded} runId=${runId} setRunId=${setRunId} works=${worksProject === project ? works : []} onOpen=${openWork} hidden=${!layout.bin}
@@ -196,8 +205,8 @@ function App() {
                 <${Inspector} view=${view} selected=${selected} run=${currentRun} hidden=${!layout.insp} inBasket=${!!selected && basket.ids.has(selected.eventId)} onBasket=${() => toggleBasket(selected)} onRange=${changeRange} />
             </div>`
             : workspace === "edit"
-                ? html`<${EditWorkspace} project=${project} runs=${runs} open=${open?.project === project ? open : null} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} onFindMaterial=${findMaterial} onPublish=${publishRender} />`
-                : html`<${PublishWorkspace} project=${project} works=${worksProject === project ? works : []} open=${open?.project === project ? open : null} onWorksChanged=${reloadWorks} layout=${layout} />`}
+                ? html`<${EditWorkspace} project=${project} runs=${runs} open=${open?.project === project ? open : null} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} onFindMaterial=${findMaterial} onPublish=${publishRender} onDirtyChange=${onDirtyChange} />`
+                : html`<${PublishWorkspace} project=${project} works=${worksProject === project ? works : []} open=${open?.project === project ? open : null} onWorksChanged=${reloadWorks} layout=${layout} onDirtyChange=${onDirtyChange} />`}
         ${workspace === "assets" && html`<div class="dock"><strong>提示</strong><span>左上角“搜索片段”按描述找画面，“+”或 B 键加入片段篮，再点“用片段篮生成方案”。一句话修改镜头在剪辑区底部。</span></div>`}
     </div>`;
 }
@@ -208,7 +217,7 @@ function TopBar({workspace, setWorkspace, projects, project, setProject, layout,
         <div class="tabs" role="tablist" aria-label="工作区">
             ${WORKSPACES.map(([id, label]) => html`<button role="tab" aria-selected=${workspace === id} onClick=${() => setWorkspace(id)}>${label}</button>`)}
         </div>
-        <select class="select" aria-label="项目" value=${project} onChange=${(e) => setProject(e.currentTarget.value)}>
+        <select class="select" aria-label="项目" value=${project} onChange=${(e) => { if (!setProject(e.currentTarget.value)) e.currentTarget.value = project; }}>
             ${projects.map((p) => html`<option value=${p.path}>${p.name || p.path}</option>`)}
         </select>
         <span class="status" role="status" aria-live="polite">${status}</span>

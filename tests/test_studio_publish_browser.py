@@ -136,6 +136,15 @@ def test_publish_copy_cover_and_package(service, monkeypatch):  # noqa: F811
             # Packaging waits for saved copy.
             playwright.expect(page.get_by_role("button", name="生成平台包")).to_be_disabled()
             title.fill("三分钟看懂玩法")
+            # Unsaved copy: leaving Publish asks first; cancelling keeps the edit.
+            asked = []
+            page.once("dialog", lambda d: (asked.append(d.message), d.dismiss()))
+            page.get_by_role("tab", name="剪辑").click()
+            playwright.expect(page.get_by_role("tab", name="发布")).to_have_attribute(
+                "aria-selected", "true"
+            )
+            playwright.expect(title).to_have_value("三分钟看懂玩法")
+            assert asked
             page.get_by_role("button", name="保存发布信息").click()
             playwright.expect(page.get_by_text("已保存的版本")).to_be_visible()
             assert posted["publication"]["title"] == "三分钟看懂玩法"

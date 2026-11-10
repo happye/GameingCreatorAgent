@@ -14,7 +14,7 @@ const jobPath = (id) => `/api/creation/jobs/${encodeURIComponent(id)}`;
 const when = (iso) => new Date(iso).toLocaleString("zh-CN", {hour12: false});
 const tagList = (text) => [...new Set(text.split(/[,，\n]/).map((t) => t.trim()).filter(Boolean))];
 
-export function PublishWorkspace({project, works, open, onWorksChanged, layout}) {
+export function PublishWorkspace({project, works, open, onWorksChanged, layout, onDirtyChange = () => {}}) {
     const renders = works.filter((j) => j.kind === "render" && j.status === "completed");
     const [renderId, setRenderId] = useState("");
     const [pub, setPub] = useState(null); // the snapshot shown: a draft from the render or a saved publication
@@ -67,6 +67,8 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout})
 
     const fps = pub ? pub.fps.numerator / pub.fps.denominator : 30;
     const dirty = pub && (form.title !== pub.title || form.description !== pub.description || tagList(form.tags).join("|") !== pub.tags.join("|") || form.coverFrame !== pub.coverFrame);
+    useEffect(() => { onDirtyChange(!!dirty); }, [dirty]);
+    useEffect(() => () => onDirtyChange(false), []);
     const useFrame = () => {
         const el = video.current; if (!el || !pub) return;
         setForm({...form, coverFrame: Math.max(0, Math.min(pub.frames - 1, Math.floor(el.currentTime * fps)))});

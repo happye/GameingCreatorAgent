@@ -28,6 +28,11 @@ function readDraft(project) {
     try { const all = JSON.parse(localStorage.getItem(DRAFT) || "{}"); return {...DEFAULTS, ...(all[project] || {})}; } catch { return {...DEFAULTS}; }
 }
 // The last plan or video opened per project comes back after a reload.
+function renderWaiting(job) {
+    const seconds = Math.max(0, Math.round((Date.now() - Date.parse(job.createdAt)) / 1000));
+    return `正在生成成片（已用 ${Number.isFinite(seconds) ? seconds : 0} 秒），可以先去别处，回来会接着显示。`;
+}
+
 function lastJob(project, value) {
     try {
         const all = JSON.parse(localStorage.getItem(LAST) || "{}");
@@ -55,7 +60,7 @@ function useOutputCanvas(stage, width, height) {
     return {width: width * scale, height: height * scale, scale};
 }
 
-export function EditWorkspace({project, runs, open, onWorksChanged, layout, basket, basketAt, onBasketSeen, onFindMaterial = () => {}, onPublish = () => {}}) {
+export function EditWorkspace({project, runs, open, onWorksChanged, layout, basket, basketAt, onBasketSeen, onFindMaterial = () => {}, onPublish = () => {}, onDirtyChange = () => {}}) {
     const [draft, setDraft] = useState(() => readDraft(project));
     const [saved, setSaved] = useState("");
     const [planJob, setPlanJob] = useState(null);
@@ -76,6 +81,9 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     const [commandRows, setCommandRows] = useState(null);
     const [commandOverlays, setCommandOverlays] = useState(null);
     const commandPreview = !!commandRows || !!commandOverlays;
+    // Tell the shell about unsaved work so leaving this workspace asks first.
+    useEffect(() => { onDirtyChange(!!editing.dirty || commandPreview); }, [editing.dirty, commandPreview]);
+    useEffect(() => () => onDirtyChange(false), []);
     // A monotonic edit generation preserves changes even after an A/B/A roundtrip.
     const adoptionView = [project, planJob?.jobId, planId, editing.clips, editing.subtitleOverrides, editing.audio, editing.replacements, editing.overlays, commandRows, commandOverlays];
     const adoptionGuard = useRef({view: adoptionView, generation: 0});
@@ -108,8 +116,16 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         if (!target) return;
         setMessage("正在打开…");
         void follow(target.id, (job) => {
+            if (job.kind === "render" && ["pending", "running"].includes(job.status)) {
+                // A render started before leaving or reloading: keep export busy and show progress.
+                setBusy("render"); return setMessage(renderWaiting(job));
+            }
+            if (job.kind === "render" && job.status !== "completed") {
+                setBusy(""); if (job.parentJobId) lastJob(project, {id: job.parentJobId, kind: "parent"});
+                return setMessage(`成片生成失败：${job.error?.message || job.status}`);
+            }
             if (job.status !== "completed") return setMessage(job.status === "failed" ? `任务失败：${job.error?.message || ""}` : "处理中…");
-            setMessage("");
+            setMessage(""); if (job.kind === "render") setBusy("");
             if (job.kind === "plan") showPlan(job, target.planId);
             if (job.kind === "revision") void reopenVersion(job);
             if (job.kind === "render") {
@@ -267,7 +283,9 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         setBusy("render"); setMessage("正在生成成片，60 秒的视频大约需要一分钟…"); player.stop();
         try {
             const accepted = await client.submit("render", {...source, width, height, subtitleMode: subtitles, ...(subtitles === "burn" ? {subtitleStyle} : {})});
-            const done = await follow(accepted.jobId, (job) => setRenderJob(job));
+            // Remember the render at once, so leaving or reloading reopens it while it runs.
+            lastJob(project, {id: accepted.jobId, kind: "render"});
+            const done = await follow(accepted.jobId, (job) => { setRenderJob(job); if (job.status !== "completed") setMessage(renderWaiting(job)); });
             if (done?.status === "completed") { client.forgetIntent("render"); setMode("result"); setMessage(""); onWorksChanged(); lastJob(project, {id: done.jobId, kind: "render"}); }
             else if (done) setMessage(`成片生成失败：${done.error?.message || done.status}`);
         } catch (error) { setMessage(`${error.message}。再次点击会复用同一请求，不会重复创建。`); }
@@ -398,7 +416,7 @@ function audioLanes(audio, tracks, fps, totalUs) {
     return lanes;
 }
 
-function confirmLeave() {
+export function confirmLeave() {
     // window.confirm may be unavailable in some hosts; then keep the edits.
     try { return window.confirm("当前方案有未保存的修改，切换会丢弃这些修改。继续吗？"); } catch { return false; }
 }
