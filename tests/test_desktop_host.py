@@ -41,10 +41,12 @@ def service_processes(port):
             "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | ForEach-Object { $_.CommandLine }",
         ],
         capture_output=True,
-        text=True,
         check=True,
     ).stdout
-    return [line for line in listing.splitlines() if f"--port {port} " in line]
+    # Other processes' command lines may hold non-UTF-8 text (e.g. GBK paths); only the
+    # ASCII "--port N " marker matters here.
+    text = listing.decode("utf-8", errors="replace")
+    return [line for line in text.splitlines() if f"--port {port} " in line]
 
 
 def test_smoke_serves_then_stops_whole_service_tree(built):

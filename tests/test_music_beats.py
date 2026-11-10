@@ -100,6 +100,7 @@ def test_http_preview_snaps_cuts_and_rejects_unknown_track(library, tmp_path):  
         with pytest.raises(urllib.error.HTTPError) as refused:
             post({**body, "trackReceiptSha256": "0" * 64})
         assert refused.value.code == 400
+        refused.value.close()  # an unread error response still holds its socket
     finally:
         server.shutdown()
         server.server_close()
