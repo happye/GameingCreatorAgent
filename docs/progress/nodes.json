@@ -1054,11 +1054,11 @@
  ],
  "gate": {
   "date": "2026-11-10",
-  "scope": "完整门禁 verify.ps1（经 quiet.ps1；本批：字幕样式、受限端口、quiet.ps1、TD027回执校验）",
-  "result": "pass",
-  "counts": "5115 过 · 6 跳 · 0 失败（37分24秒）",
+  "scope": "完整门禁 verify.ps1（本批：节拍对齐、缺口搜索、一句话需求、平台限值）",
+  "result": "fail",
+  "counts": "5143 过 · 6 跳 · 2 失败 · 1 错误（35分）",
   "branch": "main",
   "merged": true,
-  "note": "提交 9a8bdba 上运行；格式/Ruff/mypy/CLI 均通过。未跑 -Release"
+  "note": "失败均为测试自身问题（未关闭的HTTP错误响应、进程列表编码），已定向修复并在 -W error 下通过；按规则不同批重跑，下一批末尾再全量"
  }
 }
