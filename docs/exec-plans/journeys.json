@@ -7,9 +7,9 @@
       "name": "玩法展示：本地录像 → 约1分钟可发布成片",
       "steps": "导入录像 → 已有分析/检索 → 选玩法展示模板 → 渲染MP4 → 封面文案与B站发布包",
       "agent_run": {
-        "date": "2026-11-01",
+        "date": "2026-11-11",
         "result": "pass",
-        "evidence": "commit a164740 (P043-P045)；feature_list.json P043 implementation_evidence：demo-phase0 方案→MP4→封面→B站包"
+        "evidence": "Claude Code 在 http://127.0.0.1:8791/studio 用真实录像《漫画群星：大集结》（artifacts/demo-phase0）走完新 Studio 全流程：一句话需求→填入→本地模板方案（推荐方案30秒、20个镜头）→导出MP4约30秒（预计29秒）→去发布→保存文案与封面→B站平台包约10秒，本地检查通过（官方规则与素材权利未核）。全程无付费调用。人评仍以 human_check 为准。"
       },
       "human_check": {
         "date": "2026-11-04",

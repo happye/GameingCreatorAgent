@@ -478,7 +478,7 @@ function PlanCard({plan, fps, active, thumb, onPick, onFind = () => {}}) {
     const total = items.length ? items.at(-1).outStartUs + items.at(-1).outDurUs : 0;
     return html`<button class="plan" aria-current=${active} disabled=${!plan.ready} onClick=${onPick} title=${plan.ready ? "选中后在预览窗播放" : "方案有缺口，不能选择"}>
         <span class="plan-title">${plan.mode ? html`<span class="badge rec">推荐</span>` : null}${plan.title || plan.structure}</span>
-        <span class="plan-meta">${secondsText(total)} · ${items.length} 个镜头 · 平均 ${(total / 1e6 / Math.max(1, items.length)).toFixed(1)} 秒</span>
+        <span class="plan-meta">${secondsText(total)} · ${groups.length} 个镜头${groups.length !== items.length ? `（${items.length} 段）` : ""} · 平均 ${(total / 1e6 / Math.max(1, groups.length)).toFixed(1)} 秒</span>
         <span class="strip">${groups.slice(0, 8).map((g) => { const src = thumb(g.items[0]); return html`<span style=${{backgroundImage: src ? `url("${src}")` : "none"}}></span>`; })}</span>
         ${!plan.ready && html`<span class="plan-gap">缺口：${(plan.gaps || []).join("；")}</span>`}
     </button>${topics.length ? html`<div class="actions-row gap-find">${topics.map((t) => html`<button type="button" class="btn ghost" onClick=${() => onFind(t)}>在素材里找「${t}」</button>`)}</div>` : null}`;
@@ -517,7 +517,7 @@ function PlanInspector({plan, groups, count, totalUs, shot}) {
     return html`
         <div class="field"><div class="k">方案</div><div class="v">${plan.structure}</div></div>
         <${KnowledgeUses} uses=${plan.knowledgeUses} />
-        <div class="field"><div class="k">时长与镜头</div><div class="v num">${secondsText(totalUs)} · ${count ?? groups.length} 个镜头</div></div>
+        <div class="field"><div class="k">时长与镜头</div><div class="v num">${secondsText(totalUs)} · ${groups.length} 个镜头${count && count !== groups.length ? `（${count} 段）` : ""}</div></div>
         ${(plan.advisories || []).length ? html`<div class="field"><div class="k">提醒</div><ul class="facts">${plan.advisories.map((a) => html`<li>${a}</li>`)}</ul></div>` : null}
         ${shot ? html`<div class="field"><div class="k">选中镜头 · 成片 ${timecode(shot.outStartUs)} 起 ${(shot.outDurUs / 1e6).toFixed(1)} 秒</div>
             <ul class="facts">${shot.items.map((i) => html`<li>${i.role ? `【${i.role}】` : ""}原片 ${(i.startUs / 1e6).toFixed(1)} 秒：${i.scriptDraft || "无描述"}</li>`)}</ul></div>`
