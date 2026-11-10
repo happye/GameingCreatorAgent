@@ -254,6 +254,8 @@ def test_edit_clip_save_version_and_command(revisions, monkeypatch):  # noqa: F8
             # Step undo/redo: Delete a shot, Ctrl+Z brings it back clean, Ctrl+Shift+Z redoes.
             count = clips.count()
             clips.nth(1).click()
+            # Delete acts on the selection; wait until the click has selected the clip.
+            playwright.expect(clips.nth(1)).to_have_attribute("aria-current", "true")
             page.keyboard.press("Delete")
             playwright.expect(clips).to_have_count(count - 1)
             page.keyboard.press("Control+z")

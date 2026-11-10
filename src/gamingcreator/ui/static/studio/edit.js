@@ -314,13 +314,15 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
 
     useEffect(() => {
         const onKey = (event) => {
-            if (event.target.closest("input, textarea, select, [contenteditable]") || mode !== "plan" || !items.length) return;
+            if (event.target.closest("input, textarea, select, [contenteditable]")) return;
+            // Undo/redo edit the timeline, not the player, so they also work while the result shows.
             const key = event.key.toLowerCase();
             if ((event.ctrlKey || event.metaKey) && (key === "z" || key === "y") && editable && !commandPreview && !busy) {
                 event.preventDefault();
                 if (key === "y" || event.shiftKey) editing.ops.redo(); else editing.ops.undo();
                 return;
             }
+            if (mode !== "plan" || !items.length) return;
             if (event.key === " ") { event.preventDefault(); player.toggle(); }
             if ((event.key === "Delete" || event.key === "Backspace") && editing.selectedId && editable && !commandPreview) { event.preventDefault(); editing.ops.remove(editing.selectedId); }
             if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); void player.seek(player.outUs + (event.key === "ArrowLeft" ? -1 : 1) * (event.shiftKey ? 5e6 : 1e6), player.playing); }
