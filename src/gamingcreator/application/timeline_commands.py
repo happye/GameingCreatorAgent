@@ -399,6 +399,22 @@ def _clause(clause: str, rows: list[dict[str, Any]], fps: int) -> list[str]:
     raise CommandError(f"没听懂“{clause}”。目前支持：{EXAMPLES}。")
 
 
+def guard_transitions(rows: list[dict[str, Any]], fps: int) -> list[str]:
+    """Shots too short for their crossfades fall back to cuts; returns the change notes."""
+    changes = []
+    rows[0]["transitionIn"] = {"type": "cut", "frames": 0}
+    for i in range(1, len(rows)):
+        frames = rows[i]["transitionIn"]["frames"]
+        outgoing = rows[i + 1]["transitionIn"]["frames"] if i + 1 < len(rows) else 0
+        if frames and (
+            frames + outgoing >= _frames(rows[i], fps)
+            or frames + rows[i - 1]["transitionIn"]["frames"] >= _frames(rows[i - 1], fps)
+        ):
+            rows[i]["transitionIn"] = {"type": "cut", "frames": 0}
+            changes.append(f"第{i + 1}个镜头太短，入场淡化改为直接切换")
+    return changes
+
+
 def apply_timeline_command(text: object, clips: object, fps: object) -> dict[str, object]:
     if not isinstance(text, str) or not text.strip() or len(text) > 500:
         raise CommandError("请输入1–500字的修改要求。")
@@ -414,16 +430,7 @@ def apply_timeline_command(text: object, clips: object, fps: object) -> dict[str
             changes += _clause(clause, rows, fps)
     if not changes:
         raise CommandError("没有可执行的修改。")
-    rows[0]["transitionIn"] = {"type": "cut", "frames": 0}
-    for i in range(1, len(rows)):
-        frames = rows[i]["transitionIn"]["frames"]
-        outgoing = rows[i + 1]["transitionIn"]["frames"] if i + 1 < len(rows) else 0
-        if frames and (
-            frames + outgoing >= _frames(rows[i], fps)
-            or frames + rows[i - 1]["transitionIn"]["frames"] >= _frames(rows[i - 1], fps)
-        ):
-            rows[i]["transitionIn"] = {"type": "cut", "frames": 0}
-            changes.append(f"第{i + 1}个镜头太短，入场淡化改为直接切换")
+    changes += guard_transitions(rows, fps)
     starts = _starts(rows, fps)
     after = max(s + _frames(r, fps) for s, r in zip(starts, rows, strict=True))
     return {

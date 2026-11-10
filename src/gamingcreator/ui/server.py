@@ -239,6 +239,40 @@ class InspectionHandler(BaseHTTPRequestHandler):
         except EntitlementError as error:
             raise AppError("entitlement.denied", str(error), ExitCode.INPUT) from error
 
+    def _beat_snap(self, value: object) -> dict[str, object]:
+        """Preview shortening shots so cuts land on the selected BGM's beats (local, free)."""
+        import asyncio
+
+        from gamingcreator.application.beat_snap import snap_to_beats
+        from gamingcreator.application.providers import CancellationContext
+        from gamingcreator.application.timeline_commands import CommandError
+        from gamingcreator.infrastructure.music_beats import analyze_track
+        from gamingcreator.infrastructure.music_library import MusicLibrary
+
+        keys = {"fps", "clips", "trackId", "trackReceiptSha256"}
+        if not isinstance(value, dict) or set(value) != keys:
+            raise AppError("creation.beats", "需要镜头、帧率和配乐身份。", ExitCode.INPUT)
+        try:
+            track = MusicLibrary(self.repository).resolve(
+                value["trackId"], value["trackReceiptSha256"]
+            )
+            grid = asyncio.run(
+                analyze_track(self.repository, track, CancellationContext("beat-snap", 120))
+            )
+            preview = snap_to_beats(
+                value["clips"], value["fps"], grid["beatsUs"], track.duration_us
+            )
+        except CommandError as error:
+            raise AppError("creation.beats", str(error), ExitCode.INPUT) from error
+        except ValueError as error:
+            raise AppError("creation.beats", str(error), ExitCode.INPUT) from error
+        return {
+            **preview,
+            "bpm": grid["bpm"],
+            "confidence": grid["confidence"],
+            "status": grid["status"],
+        }
+
     def _activity_rules(self, value: object) -> dict[str, object]:
         import asyncio
         import base64
@@ -482,6 +516,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/narration-cancel",
                 "/api/creation/subtitle-preview",
                 "/api/creation/timeline-commands",
+                "/api/creation/beat-snap",
                 "/api/creation/music",
                 "/api/creation/overlay-assets",
                 "/api/creation/activity-rules",
@@ -627,6 +662,9 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 except ValueError as error:
                     raise AppError("knowledge.import", str(error), ExitCode.INPUT) from error
                 self._json(200, report)
+                return
+            if path == "/api/creation/beat-snap":
+                self._json(200, self._beat_snap(value))
                 return
             if path == "/api/creation/timeline-commands":
                 from gamingcreator.application.timeline_commands import (

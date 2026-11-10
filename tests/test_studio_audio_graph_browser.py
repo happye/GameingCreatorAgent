@@ -3,6 +3,7 @@
 import asyncio
 import json
 import os
+import re
 import subprocess
 import threading
 from dataclasses import replace
@@ -296,3 +297,44 @@ def test_real_studio_dissolve_audio_clock_ducking_and_pause(studio_audio):
     page.get_by_role("tab", name="素材", exact=True).click()
     page.wait_for_function("() => exitedAudioGraph.context.state === 'closed'")
     assert page.evaluate("exitedAudioGraph.elements.every(el=>el.paused)")
+
+
+def test_beat_snap_preview_apply_marks_draft(studio_audio):
+    """P030 UI wiring: BGM present -> preview shortens a shot -> apply leaves an unsaved draft."""
+    page = studio_audio
+    sent = []
+
+    def fulfill(route):
+        body = json.loads(route.request.post_data)
+        sent.append(body)
+        clips = [dict(c) for c in body["clips"]]
+        clips[0]["endUs"] -= 500_000
+        route.fulfill(
+            json={
+                "schemaVersion": "beat-snap-v1",
+                "clips": clips,
+                "changes": ["第1个镜头缩短 0.50 秒，切换落在拍点"],
+                "beforeSeconds": 4.0,
+                "afterSeconds": 3.5,
+                "beatFrames": [15, 30],
+                "bpm": 120.0,
+                "confidence": 0.8,
+                "status": "local-estimate-unreviewed",
+            }
+        )
+
+    page.route("**/api/creation/beat-snap", fulfill)
+    page.get_by_role("tab", name="声音").click()
+    button = page.get_by_role("button", name="预览对齐节拍")
+    button.click()
+    status = page.get_by_role("status", name="节拍对齐状态")
+    playwright = pytest.importorskip("playwright.sync_api")
+    playwright.expect(status).to_contain_text("约 120 BPM")
+    assert set(sent[0]) == {"fps", "clips", "trackId", "trackReceiptSha256"}
+    page.get_by_role("button", name="应用", exact=True).click()
+    playwright.expect(status).to_contain_text("已应用")
+    # The shortened timeline is an unsaved draft; here the saved narration no longer fits after
+    # the shorter first shot, so the existing guard blocks saving with its reason (no truncation).
+    save = page.get_by_role("button", name="保存版本")
+    playwright.expect(save).to_have_attribute("title", re.compile("旁白.*不会自动截断"))
+    playwright.expect(page.locator(".timeline .clip").first).to_be_visible()

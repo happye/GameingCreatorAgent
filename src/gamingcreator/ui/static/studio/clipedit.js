@@ -279,6 +279,31 @@ function LocalCommandDock({editing, onPreview}) {
     </form>`;
 }
 
+// P030: shorten shots so cuts land on the selected BGM's local beat estimate; preview first.
+export function BeatSnap({editing, onPreview}) {
+    const [result, setResult] = useState(null), [message, setMessage] = useState(""), [busy, setBusy] = useState(false);
+    const bgm = editing.audio?.mix?.bgm;
+    useEffect(() => { setResult(null); setMessage(""); onPreview(null); }, [editing.base?.jobId, editing.base?.planId, bgm?.trackId]);
+    if (!bgm || editing.status !== "ready") return null;
+    const preview = async () => {
+        setBusy(true); setMessage("正在本机分析配乐节拍…");
+        try {
+            const data = await client.api("/api/creation/beat-snap", {}, {body: {fps: editing.editor.fps, clips: editing.rows(), trackId: bgm.trackId, trackReceiptSha256: bgm.trackReceiptSha256}});
+            setResult(data); onPreview(data.clips);
+            setMessage(`约 ${data.bpm} BPM（本机估计，置信度 ${data.confidence}）。将会：${data.changes.join("；")}（${data.beforeSeconds.toFixed(1)} → ${data.afterSeconds.toFixed(1)} 秒）`);
+        } catch (error) { setResult(null); onPreview(null); setMessage(`没有改动：${error.message}`); }
+        finally { setBusy(false); }
+    };
+    const apply = () => { editing.ops.apply(result.clips); setResult(null); onPreview(null); setMessage("已应用：镜头只缩短不加长；预览检查后保存版本。"); };
+    const cancel = () => { setResult(null); onPreview(null); setMessage("已取消，时间轴没有变化。"); };
+    return html`<div class="field beat-snap"><div class="k">按配乐节拍对齐剪辑点（本机，免费）</div>
+        <p class="hint">只缩短镜头，让每次切换落在它之前最近的拍点（0.7 秒内）。节拍是本机估计，未人工核对。</p>
+        <div class="actions-row">${result ? html`<button type="button" class="btn" onClick=${apply}>应用</button><button type="button" class="btn ghost" onClick=${cancel}>取消</button>`
+            : html`<button type="button" class="btn ghost" disabled=${busy} onClick=${preview}>${busy ? "分析中…" : "预览对齐节拍"}</button>`}</div>
+        <p class="hint" role="status" aria-label="节拍对齐状态">${message}</p>
+    </div>`;
+}
+
 export function CommandDock({editing, onPreview, onOverlayPreview = () => {}}) {
     const [mode, setMode] = useState("local");
     return html`<div class="assistant-host"><label class="assistant-mode">创作助手模式
