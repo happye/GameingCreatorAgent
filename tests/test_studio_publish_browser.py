@@ -141,6 +141,18 @@ def test_publish_copy_cover_and_package(service, monkeypatch):  # noqa: F811
             assert posted["publication"]["title"] == "三分钟看懂玩法"
             assert posted["publication"]["tags"] == ["游戏", "玩法展示"]
             assert posted["publication"]["expectedRenderReceiptSha256"] == DIGEST
+            # With no platform ticked, the reason is shown next to the disabled button.
+            boxes = page.locator("[aria-label=平台包] input[type=checkbox]")
+            ticked = [i for i in range(boxes.count()) if boxes.nth(i).is_checked()]
+            for i in ticked:
+                boxes.nth(i).uncheck()
+            playwright.expect(page.get_by_role("status", name="平台包状态")).to_have_text(
+                "至少勾选一个平台"
+            )
+            playwright.expect(page.get_by_role("button", name="生成平台包")).to_be_disabled()
+            for i in ticked:
+                boxes.nth(i).check()
+            playwright.expect(page.get_by_role("status", name="平台包状态")).to_have_count(0)
             page.get_by_role("button", name="生成平台包").click()
             playwright.expect(page.get_by_role("link", name="下载平台包（zip）")).to_have_attribute(
                 "href", f"/api/creation/jobs/{PKG}/package-files/package.zip?download=1"

@@ -87,6 +87,9 @@ export async function submit(kind, payload, scope = "") {
     }
     return accepted;
 }
+// Job states the backend writes (creation_jobs.py); unknown values fall back to the raw text.
+export const JOB_STATUS = {pending: "排队中", running: "处理中", completed: "完成", failed: "失败", interrupted: "已中断", cancelled: "已取消"};
+export const jobStatus = (status) => JOB_STATUS[status] || status;
 export const job = (id, signal) => api(`/api/creation/jobs/${encodeURIComponent(id)}`, {}, {signal});
 
 // Poll a creation job until it settles; the server recovers crashed jobs as "interrupted".

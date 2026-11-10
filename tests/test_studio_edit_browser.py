@@ -148,12 +148,26 @@ def test_brief_to_exported_video(service, monkeypatch):  # noqa: F811
             export = page.get_by_role("button", name="导出成片")
             playwright.expect(export).to_be_enabled()
             assert export.evaluate("e => e.getBoundingClientRect().bottom <= innerHeight")
+            # After export, "去发布" opens exactly this render in Publish.
+            render_id = re.search(
+                r"jobs/([0-9a-f]{32})/video", page.locator("a[download]").get_attribute("href")
+            ).group(1)
+            with page.expect_request(lambda r: f"/jobs/{render_id}/publication" in r.url):
+                page.get_by_role("button", name="去发布：写标题和封面").click()
+            playwright.expect(page.get_by_role("tab", name="发布")).to_have_attribute(
+                "aria-selected", "true"
+            )
+            page.get_by_role("tab", name="剪辑").click()
             # P024: a missing topic offers a one-click search in the Assets workspace.
             page.get_by_role("button", name="在素材里找「Boss战」").click()
             playwright.expect(page.get_by_role("tab", name="素材")).to_have_attribute(
                 "aria-selected", "true"
             )
             playwright.expect(page.get_by_label("搜索片段")).to_have_value("Boss战")
+            # Work lists use Chinese states and mark the newest finished item.
+            playwright.expect(
+                page.locator(".row .meta", has_text="最新 · 打开").first
+            ).to_be_visible()
             assert not errors
             browser.close()
     finally:
@@ -265,7 +279,13 @@ def test_edit_clip_save_version_and_command(revisions, monkeypatch):  # noqa: F8
                 "请先应用或取消创作助手的改动"
             )
             playwright.expect(page.get_by_role("button", name="保存版本")).to_be_disabled()
+            # Export says why it is unavailable, visibly, not only in a tooltip.
+            playwright.expect(page.get_by_role("status", name="导出状态")).to_have_text(
+                "先应用或取消一句话修改"
+            )
+            playwright.expect(page.get_by_role("button", name="导出成片")).to_be_disabled()
             page.get_by_role("button", name="应用").click()
+            playwright.expect(page.get_by_role("status", name="导出状态")).to_have_count(0)
             playwright.expect(page.get_by_text("有未保存的修改")).to_be_visible()
             assert not errors
             browser.close()

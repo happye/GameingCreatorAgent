@@ -191,10 +191,11 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout})
                     <div class="actions-row">
                         ${profiles.map((p) => html`<label><input type="checkbox" checked=${selected.includes(p.Platform)} disabled=${!!busy} onChange=${(e) => { setPlatform(p.Platform); setSelected(e.currentTarget.checked ? [...selected, p.Platform] : selected.filter((v) => v !== p.Platform)); }} />${PLATFORMS[p.Platform] || p.Platform}${selected.includes(p.Platform) && !packages.some((r) => r.profile?.Platform === p.Platform) ? " · 尚未提交" : ""}</label>`)}
                         <button class="btn" disabled=${!saved || !!busy || !selected.length} onClick=${() => buildPackage()}>${busy === "package" ? "正在生成…" : "生成平台包"}</button>
+                        ${saved && !selected.length ? html`<span class="hint" role="status" aria-label="平台包状态">至少勾选一个平台</span>` : null}
                         <span class="hint">${["titleMaxChars", "descriptionMaxChars", "tagMaxCount"].filter((k) => limits[k]).map((k) => `${CHECKS[k]}≤${limits[k]}`).join(" · ")}</span>
                     </div>
                     ${packages.map((pkg) => html`<div class="pkg-result">
-                        <p>${PLATFORMS[pkg.profile?.Platform] || ""} · ${pkg.status} ${pkg.error?.message || ""}</p>
+                        <p>${PLATFORMS[pkg.profile?.Platform] || ""} · ${client.jobStatus(pkg.status)} ${pkg.error?.message || ""}</p>
                         ${["failed", "interrupted"].includes(pkg.status) && html`<button class="btn ghost" disabled=${!!busy || !saved} onClick=${() => buildPackage(pkg)}>重试此平台</button>`}
                         ${pkg.generationStatus && html`<div>
                         <p class="v">${PLATFORMS[pkg.profile?.Platform] || ""}：${pkg.generationStatus === "completed" ? "已生成" : "未完成"}；本地检查${STATUS[pkg.localChecks] || "未知"}${pkg.publicationEligibility === "blocked" ? "；发布受阻（含仅供测试的音乐等）" : ""}${pkg.watermark ? "；含水印" : ""}。平台官方规则、素材权利尚未核实。</p>

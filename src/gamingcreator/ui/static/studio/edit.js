@@ -55,7 +55,7 @@ function useOutputCanvas(stage, width, height) {
     return {width: width * scale, height: height * scale, scale};
 }
 
-export function EditWorkspace({project, runs, open, onWorksChanged, layout, basket, basketAt, onBasketSeen, onFindMaterial = () => {}}) {
+export function EditWorkspace({project, runs, open, onWorksChanged, layout, basket, basketAt, onBasketSeen, onFindMaterial = () => {}, onPublish = () => {}}) {
     const [draft, setDraft] = useState(() => readDraft(project));
     const [saved, setSaved] = useState("");
     const [planJob, setPlanJob] = useState(null);
@@ -277,6 +277,9 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     const result = renderJob?.status === "completed" ? renderJob.artifact : null;
     const resultSrc = result ? client.sameOrigin(result.previewUrl, `/api/creation/jobs/${renderJob.jobId}/video`) : null;
     const resultDownload = result ? client.sameOrigin(result.downloadUrl, `/api/creation/jobs/${renderJob.jobId}/video`) : null;
+    // Why export is unavailable, shown next to the button (not only as a tooltip).
+    const exportBlocker = !plan ? "先在左侧选择一个方案" : !plan.ready ? "这个方案有缺口，不能导出"
+        : problem || (commandPreview ? "先应用或取消一句话修改" : audioBusy || overlayBusy ? "声音或叠加正在处理，稍候" : "");
 
     useEffect(() => {
         const onKey = (event) => {
@@ -328,7 +331,9 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                     <span class="spacer"></span>
                     ${result ? html`<div class="tabs"><button aria-selected=${mode === "plan"} onClick=${() => setMode("plan")}>方案预览</button><button aria-selected=${mode === "result"} onClick=${() => { player.stop(); setMode("result"); }}>成片</button></div>` : null}
                     ${result && resultDownload ? html`<a class="btn ghost" href=${resultDownload} download=${`gamingcreator-${renderJob.jobId.slice(0, 8)}.mp4`}>下载 MP4（${(result.sizeBytes / 1048576).toFixed(1)} MB）</a>` : null}
-                    <button class="btn" disabled=${!plan?.ready || !!busy || audioBusy || overlayBusy || !!problem || commandPreview} title=${!plan ? "先在左侧选择一个方案" : !plan.ready ? "这个方案有缺口，不能导出" : problem || (commandPreview ? "先应用或取消一句话修改" : editing.dirty ? "先保存为新版本，再渲染 MP4" : "按当前内容渲染 MP4")} onClick=${exportVideo}>${busy === "render" ? "正在生成…" : busy === "save" ? "正在保存…" : "导出成片"}</button>
+                    ${result ? html`<button type="button" class="btn" onClick=${() => onPublish(renderJob.jobId)}>去发布：写标题和封面</button>` : null}
+                    ${plan && exportBlocker && !busy ? html`<span class="hint" role="status" aria-label="导出状态">${exportBlocker}</span>` : null}
+                    <button class="btn" disabled=${!plan?.ready || !!busy || audioBusy || overlayBusy || !!problem || commandPreview} title=${exportBlocker || (editing.dirty ? "先保存为新版本，再渲染 MP4" : "按当前内容渲染 MP4")} onClick=${exportVideo}>${busy === "render" ? "正在生成…" : busy === "save" ? "正在保存…" : "导出成片"}</button>
                 </div>
             </section>
             <${ProgramTrack} items=${items} totalUs=${player.totalUs} outUs=${player.outUs} thumb=${thumb} selectedId=${editing.selectedId} changed=${changed} preview=${!!commandRows} lanes=${editable ? audioLanes(editing.audio, music.tracks, fps, player.totalUs) : []}

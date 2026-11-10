@@ -44,7 +44,7 @@ function App() {
     const [layout, setLayout] = useState({bin: prefs.bin !== false, insp: prefs.insp !== false});
     const [projects, setProjects] = useState([]);
     const [project, setProject] = useState("");
-    const [runs, setRuns] = useState([]);
+    const [runs, setRuns] = useState([]), [runsLoaded, setRunsLoaded] = useState(false);
     const [runId, setRunId] = useState("");
     const [view, setView] = useState(null);
     const [works, setWorks] = useState([]);
@@ -81,14 +81,14 @@ function App() {
     }, []);
 
     useEffect(() => {
-        setRuns([]); setView(null); setSelected(null); setWorks([]); setOpen(null);
+        setRuns([]); setRunsLoaded(false); setView(null); setSelected(null); setWorks([]); setOpen(null);
         if (!project) return;
         setStatus("正在读取录像…");
         latestRuns((signal) => client.runs(project, signal)).then((result) => {
             if (result.aborted) return;
             if (!result.ok) return setStatus(result.error.message);
             const list = result.value.runs;
-            setRuns(list);
+            setRuns(list); setRunsLoaded(true);
             const usable = list.filter((r) => r.completedEligible);
             const keep = usable.find((r) => r.id === prefs.runId) || usable[0];
             setRunId(keep ? keep.id : "");
@@ -127,6 +127,8 @@ function App() {
     const reloadWorks = useCallback(() => {
         if (project) latestWorks((signal) => client.creationJobs(project, signal)).then((result) => { if (result.ok) { setWorksProject(project); setWorks(result.value.jobs); } });
     }, [project]);
+    // After export, open exactly that render in Publish (not just the newest one).
+    const publishRender = useCallback((jobId) => { reloadWorks(); setOpen({id: jobId, kind: "render", project, at: Date.now()}); setWorkspace("deliver"); }, [project, reloadWorks]);
     const openWork = useCallback((job) => {
         if (!["plan", "revision", "render", "publication", "package"].includes(job.kind) || job.status !== "completed") return;
         setOpen({id: job.jobId, kind: job.kind, project, at: Date.now()}); setWorkspace(["publication", "package"].includes(job.kind) ? "deliver" : "edit");
@@ -184,7 +186,7 @@ function App() {
         <${TopBar} ...${{workspace, setWorkspace, projects, project, setProject, layout, setLayout, status}} />
         ${workspace === "assets"
             ? html`<div class=${work}>
-                <${Bin} runs=${runs} runId=${runId} setRunId=${setRunId} works=${worksProject === project ? works : []} onOpen=${openWork} hidden=${!layout.bin}
+                <${Bin} runs=${runs} runsLoaded=${runsLoaded} runId=${runId} setRunId=${setRunId} works=${worksProject === project ? works : []} onOpen=${openWork} hidden=${!layout.bin}
                     top=${html`<${ClipSearch} project=${project} runs=${runs} runId=${runId} basket=${basket} seed=${searchSeed} onShow=${(run, event) => showEvent(run.id, event.eventId)} />
                         <${BasketList} basket=${basket} onShow=${(item) => showEvent(item.runId, item.eventId, item)} onUse=${() => { setBasketAt(Date.now()); setWorkspace("edit"); }} />`} />
                 <div class="center">
@@ -194,7 +196,7 @@ function App() {
                 <${Inspector} view=${view} selected=${selected} run=${currentRun} hidden=${!layout.insp} inBasket=${!!selected && basket.ids.has(selected.eventId)} onBasket=${() => toggleBasket(selected)} onRange=${changeRange} />
             </div>`
             : workspace === "edit"
-                ? html`<${EditWorkspace} project=${project} runs=${runs} open=${open?.project === project ? open : null} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} onFindMaterial=${findMaterial} />`
+                ? html`<${EditWorkspace} project=${project} runs=${runs} open=${open?.project === project ? open : null} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} onFindMaterial=${findMaterial} onPublish=${publishRender} />`
                 : html`<${PublishWorkspace} project=${project} works=${worksProject === project ? works : []} open=${open?.project === project ? open : null} onWorksChanged=${reloadWorks} layout=${layout} />`}
         ${workspace === "assets" && html`<div class="dock"><strong>提示</strong><span>左上角“搜索片段”按描述找画面，“+”或 B 键加入片段篮，再点“用片段篮生成方案”。一句话修改镜头在剪辑区底部。</span></div>`}
     </div>`;
@@ -218,7 +220,7 @@ function TopBar({workspace, setWorkspace, projects, project, setProject, layout,
     </header>`;
 }
 
-function Bin({runs, runId, setRunId, works, onOpen, hidden, top}) {
+function Bin({runs, runsLoaded = false, runId, setRunId, works, onOpen, hidden, top}) {
     const groups = Object.keys(KIND).map((kind) => [kind, works.filter((job) => job.kind === kind)]).filter(([, list]) => list.length);
     return html`<aside class="panel" hidden=${hidden} aria-label="素材箱">
         <div class="panel-head">素材箱</div>
@@ -226,14 +228,21 @@ function Bin({runs, runId, setRunId, works, onOpen, hidden, top}) {
             ${top}
             <div class="section-label">原始录像（${groupRecordings(runs).length} 个文件）</div>
             ${groupRecordings(runs).map((group) => html`<${Recording} group=${group} runId=${runId} onSelect=${setRunId} />`)}
-            ${!runs.length && html`<p class="note">这里会列出项目里的录像。</p>`}
+            ${!runs.length && (runsLoaded ? html`<div class="note first-run" role="note" aria-label="第一次使用">
+                <strong>第一次使用：三步出片</strong>
+                <ol><li>打开<a class="link" href="/">素材工作台</a>，选择本地录像并分析（会先显示费用确认，本页不会发送任何请求）。</li>
+                <li>回到这里，在左上角“搜索片段”挑画面放进片段篮。</li><li>到“剪辑”填需求、生成方案，再导出成片和发布包。</li></ol>
+            </div>` : html`<p class="note">这里会列出项目里的录像。</p>`)}
             <div class="section-label">我的作品</div>
             ${groups.map(([kind, list]) => html`<details class="group" open=${kind === "render"}>
                 <summary>${KIND[kind]}（${list.length}）</summary>
                 ${list.slice(0, 20).map((job) => {
                     const openable = ["plan", "revision", "render", "publication", "package"].includes(job.kind) && job.status === "completed";
-                    return html`<button class="row" disabled=${!openable} title=${openable ? (["publication", "package"].includes(job.kind) ? "在发布区打开" : "在剪辑区打开") : ""} onClick=${() => onOpen(job)}><span class=${`dot ${job.status === "completed" ? "ok" : job.status === "failed" ? "bad" : "warn"}`}></span>
-                    <span class="name">${new Date(job.createdAt).toLocaleString("zh-CN", {hour12: false})}</span><span class="meta">${job.status === "completed" ? (openable ? "打开" : "") : job.status}</span></button>`;
+                    const newest = openable && job === list.find((j) => j.status === "completed");
+                    const reason = job.error?.message || "";
+                    const meta = job.status === "completed" ? (openable ? (newest ? "最新 · 打开" : "打开") : "") : client.jobStatus(job.status) + (reason ? `：${reason}` : "");
+                    return html`<button class="row" disabled=${!openable} title=${openable ? (["publication", "package"].includes(job.kind) ? "在发布区打开" : "在剪辑区打开") : reason || client.jobStatus(job.status)} onClick=${() => onOpen(job)}><span class=${`dot ${job.status === "completed" ? "ok" : job.status === "failed" ? "bad" : "warn"}`}></span>
+                    <span class="name">${new Date(job.createdAt).toLocaleString("zh-CN", {hour12: false})}</span><span class="meta">${meta}</span></button>`;
                 })}
             </details>`)}
             ${!groups.length && html`<p class="note">生成的成片、方案会出现在这里。</p>`}
