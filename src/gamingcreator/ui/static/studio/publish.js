@@ -14,6 +14,20 @@ const jobPath = (id) => `/api/creation/jobs/${encodeURIComponent(id)}`;
 const when = (iso) => new Date(iso).toLocaleString("zh-CN", {hour12: false});
 const tagList = (text) => [...new Set(text.split(/[,，\n]/).map((t) => t.trim()).filter(Boolean))];
 
+// Platform publishing is manual for now, so copying title, description and tags saves retyping.
+function CopyRow({form, dirty}) {
+    const [note, setNote] = useState("");
+    const tags = tagList(form.tags);
+    const copy = (label, value) => void client.copyText(value, () => setNote(`已复制${label}${dirty ? "（含未保存的修改）" : ""}`), () => setNote(`无法自动复制${label}，请手动选择文字`));
+    const all = [form.title, form.description, tags.map((t) => `#${t}`).join(" ")].filter(Boolean).join("\n\n");
+    return html`<div class="field copy-row"><div class="actions-row">
+        <button type="button" class="btn ghost" disabled=${!form.title} onClick=${() => copy("标题", form.title)}>复制标题</button>
+        <button type="button" class="btn ghost" disabled=${!form.description} onClick=${() => copy("简介", form.description)}>复制简介</button>
+        <button type="button" class="btn ghost" disabled=${!tags.length} onClick=${() => copy("标签", tags.join(" "))}>复制标签</button>
+        <button type="button" class="btn ghost" disabled=${!form.title} onClick=${() => copy("全部", all)}>复制全部</button></div>
+        <p class="hint" role="status" aria-label="复制状态">${note}</p></div>`;
+}
+
 export function PublishWorkspace({project, works, open, onWorksChanged, layout, onDirtyChange = () => {}}) {
     const renders = works.filter((j) => j.kind === "render" && j.status === "completed");
     const [renderId, setRenderId] = useState("");
@@ -218,6 +232,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                     <label class="form-row">标题（${form.title.length} 字）<input class="input" value=${form.title} maxLength="200" onInput=${(e) => setForm({...form, title: e.currentTarget.value})} /></label>
                     <label class="form-row">简介（${form.description.length} 字）<textarea class="input" rows="6" value=${form.description} onInput=${(e) => setForm({...form, description: e.currentTarget.value})}></textarea></label>
                     <label class="form-row">标签（逗号分隔，${tagList(form.tags).length} 个）<input class="input" value=${form.tags} onInput=${(e) => setForm({...form, tags: e.currentTarget.value})} /></label>
+                    <${CopyRow} form=${form} dirty=${dirty} />
                     <div class="field"><div class="k">封面</div>${coverSrc ? html`<img class="cover" src=${coverSrc} alt="封面" />` : html`<p class="hint">保存后在这里显示封面截图。</p>`}</div>
                     <div class="actions-row"><button class="btn" disabled=${!!busy || !form.title.trim() || (pub.publicationJobId && !dirty)} onClick=${save}>${busy === "publication" ? "正在保存…" : "保存发布信息"}</button></div>`
                 : html`<p class="note">选中成片后，在这里写标题、简介和标签。</p>`}

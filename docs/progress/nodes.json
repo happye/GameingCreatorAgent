@@ -1,6 +1,6 @@
 {
  "schemaVersion": 1,
- "updated": "2026-11-10",
+ "updated": "2026-11-11",
  "howTo": "每个节点只改 done/todo/updated/status 等字段；状态枚举 done|active|partial|todo|blocked。改完运行 python -B scripts/progress_ui.py。规则：docs/references/progress-dashboard.md",
  "features": {
   "P001": {
@@ -235,17 +235,17 @@
    ]
   },
   "P031": {
-   "done": "从成片选帧做封面；标题/简介/标签有本地模板草稿（简介列出成片镜头已保存画面要点，标签含必须主题），可编辑保存多版本、下载",
+   "done": "从成片选帧做封面；标题/简介/标签有本地模板草稿（简介列出成片镜头已保存画面要点，标签含必须主题），可编辑保存多版本、下载；发布页可一键复制标题/简介/标签/全部",
    "todo": "无模型生成文案；封面设计与文案质量未评估",
-   "updated": "2026-11-09",
+   "updated": "2026-11-11",
    "sprints": [
     "sprint-publication-assets"
    ]
   },
   "P032": {
-   "done": "Studio可调出入点、换镜头、改字幕、换BGM/旁白、变速转场并另存版本重渲染",
+   "done": "Studio可调出入点、换镜头、改字幕、换BGM/旁白、变速转场并另存版本重渲染；支持逐步撤销/重做（Ctrl+Z）",
    "todo": "编辑器整体易用性未经人工验收；部分编辑项仍不完整",
-   "updated": "2026-11-08",
+   "updated": "2026-11-11",
    "sprints": [
     "sprint-creation-editing",
     "sprint-clip-replacements",
@@ -313,9 +313,9 @@
    ]
   },
   "P040": {
-   "done": "新工作台/studio可看素材、选方案、时间线剪辑、旁白音乐、字幕与导出；导出后一键去发布、禁用按钮显示原因、作品列表中文状态与失败原因、空项目三步引导",
+   "done": "新工作台/studio可看素材、选方案、时间线剪辑、旁白音乐、字幕与导出；导出后一键去发布、禁用按钮显示原因、作品列表中文状态与失败原因、空项目三步引导；片段篮清空可恢复、渲染按本机历史显示预计耗时",
    "todo": "J1全流程第四次试看未通过；Agent对话区与人评验收未完成",
-   "updated": "2026-11-10",
+   "updated": "2026-11-11",
    "sprints": [
     "sprint-studio-workbench",
     "sprint-creation-workspace",

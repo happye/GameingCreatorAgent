@@ -292,3 +292,25 @@ def test_pictureless_head_keeps_selected_end_and_replay_boundaries(assets_page):
     video.evaluate("v => {v.currentTime=1.1; return v.play();}")
     page.wait_for_function("() => document.querySelector('.viewer video').currentTime > 1.3")
     assert not video.evaluate("v => v.paused")
+
+
+def test_cleared_basket_can_be_restored_until_something_new_is_added(assets_page):
+    page, _ = assets_page
+    expect = pytest.importorskip("playwright.sync_api").expect
+    page.get_by_label("搜索片段").fill("跳跃")
+    page.get_by_label("搜索范围").select_option("all")
+    hits = page.locator(".clip-search .hit")
+    expect(hits).to_have_count(2)
+    hits.nth(0).get_by_role("button", name="加入片段篮").click()
+    hits.nth(1).get_by_role("button", name="加入片段篮").click()
+    expect(page.locator(".basket .section-label")).to_contain_text("2 段")
+    page.locator(".basket").get_by_role("button", name="清空").click()
+    expect(page.locator(".basket .section-label")).to_contain_text("0 段")
+    page.reload()
+    page.locator(".basket").get_by_role("button", name="恢复").click()
+    expect(page.locator(".basket .section-label")).to_contain_text("2 段")
+    page.locator(".basket").get_by_role("button", name="清空").click()
+    page.get_by_label("搜索片段").fill("跳跃")
+    page.get_by_label("搜索范围").select_option("all")
+    hits.nth(0).get_by_role("button", name="加入片段篮").click()
+    expect(page.locator(".basket").get_by_role("button", name="恢复")).to_have_count(0)

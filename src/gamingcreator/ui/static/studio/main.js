@@ -7,7 +7,7 @@ import * as client from "./api.js";
 import "../source-clock.js";
 import {BasketList, ClipSearch, useBasket} from "./basket.js";
 import {PublishWorkspace} from "./publish.js";
-import {EditWorkspace, confirmLeave} from "./edit.js";
+import {EditWorkspace, confirmLeave, renderRate} from "./edit.js";
 import {clipSelection, groupRecordings} from "./recordings.js";
 
 const html = htm.bind(h);
@@ -133,6 +133,8 @@ function App() {
     const currentRun = runs.find((r) => r.id === runId);
     const toggleBasket = (event) => { if (event && currentRun) basket.toggle(event, currentRun, thumbOf(event)); };
 
+    // A number, not the list: passing the list re-rendered the edit page on every list refresh.
+    const secondsPerSecond = useMemo(() => (worksProject === project ? renderRate(works) : null), [works, worksProject, project]);
     const reloadWorks = useCallback(() => {
         if (project) latestWorks((signal) => client.creationJobs(project, signal)).then((result) => { if (result.ok) { setWorksProject(project); setWorks(result.value.jobs); } });
     }, [project]);
@@ -205,7 +207,7 @@ function App() {
                 <${Inspector} view=${view} selected=${selected} run=${currentRun} hidden=${!layout.insp} inBasket=${!!selected && basket.ids.has(selected.eventId)} onBasket=${() => toggleBasket(selected)} onRange=${changeRange} />
             </div>`
             : workspace === "edit"
-                ? html`<${EditWorkspace} project=${project} runs=${runs} open=${open?.project === project ? open : null} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} onFindMaterial=${findMaterial} onPublish=${publishRender} onDirtyChange=${onDirtyChange} />`
+                ? html`<${EditWorkspace} project=${project} runs=${runs} open=${open?.project === project ? open : null} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} onFindMaterial=${findMaterial} onPublish=${publishRender} onDirtyChange=${onDirtyChange} renderSecondsPerSecond=${secondsPerSecond} />`
                 : html`<${PublishWorkspace} project=${project} works=${worksProject === project ? works : []} open=${open?.project === project ? open : null} onWorksChanged=${reloadWorks} layout=${layout} onDirtyChange=${onDirtyChange} />`}
         ${workspace === "assets" && html`<div class="dock"><strong>提示</strong><span>左上角“搜索片段”按描述找画面，“+”或 B 键加入片段篮，再点“用片段篮生成方案”。一句话修改镜头在剪辑区底部。</span></div>`}
     </div>`;

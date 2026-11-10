@@ -19,8 +19,16 @@ export const factsOf = (event) => event.displayFacts || event.observableFacts ||
 
 export function useBasket(project) {
     const [items, setItems] = useState(() => read()[project] || []);
-    useEffect(() => { setItems(read()[project] || []); }, [project]);
-    const save = useCallback((next) => { setItems(next); write({...read(), [project]: next}); }, [project]);
+    // The last cleared basket stays restorable until something new goes in (one misclick is cheap).
+    const slot = `cleared:${project}`;
+    const [cleared, setCleared] = useState(() => read()[slot] || []);
+    useEffect(() => { setItems(read()[project] || []); setCleared(read()[slot] || []); }, [project]);
+    const save = useCallback((next, keepCleared = false) => {
+        setItems(next);
+        const stored = {...read(), [project]: next};
+        if (!keepCleared) { delete stored[slot]; setCleared([]); }
+        write(stored);
+    }, [project, slot]);
     const ids = useMemo(() => new Set(items.map((i) => i.eventId)), [items]);
     return {
         items, ids,
@@ -36,7 +44,9 @@ export function useBasket(project) {
         },
         updateRange: (eventId, range) => save(items.map((i) => i.eventId === eventId ? {...i, ...range} : i)),
         remove: (eventId) => save(items.filter((i) => i.eventId !== eventId)),
-        clear: () => save([]),
+        cleared: cleared.length,
+        clear: () => { const kept = items; save([], true); setCleared(kept); write({...read(), [slot]: kept}); },
+        restore: () => { if (!items.length && cleared.length) save(cleared.slice(0, MAX_ITEMS)); },
     };
 }
 
@@ -110,6 +120,7 @@ export function BasketList({basket, onShow, onUse}) {
             </div>`)}
             <p class="hint">短观察点建议取前后画面作为选段；点开可回看并调整入点、出点。描述只对应分析区间，扩展画面请回看确认。</p>
             <div class="actions-row"><button class="btn" onClick=${onUse}>用片段篮生成方案</button><button class="btn ghost" onClick=${basket.clear}>清空</button></div>`
-            : html`<p class="note">搜索或在时间轴上选中片段，点“加入片段篮”（快捷键 B）。生成方案时可以只用篮里的片段。</p>`}
+            : html`<p class="note">搜索或在时间轴上选中片段，点“加入片段篮”（快捷键 B）。生成方案时可以只用篮里的片段。</p>
+                ${basket.cleared ? html`<p class="hint">已清空 ${basket.cleared} 段 · <button type="button" class="btn ghost" onClick=${basket.restore}>恢复</button></p>` : null}`}
     </div>`;
 }

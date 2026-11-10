@@ -28,9 +28,21 @@ function readDraft(project) {
     try { const all = JSON.parse(localStorage.getItem(DRAFT) || "{}"); return {...DEFAULTS, ...(all[project] || {})}; } catch { return {...DEFAULTS}; }
 }
 // The last plan or video opened per project comes back after a reload.
-function renderWaiting(job) {
+// Seconds of wall clock per second of finished video on this machine: median of the last five
+// completed renders that record both times and a length (null when there is no history).
+export function renderRate(jobs = []) {
+    const rates = jobs.filter((j) => j.kind === "render" && j.status === "completed" && j.video?.durationSeconds > 0)
+        .slice(0, 5).map((j) => (Date.parse(j.updatedAt) - Date.parse(j.createdAt)) / 1000 / j.video.durationSeconds)
+        .filter((r) => Number.isFinite(r) && r > 0).sort((a, b) => a - b);
+    return rates.length ? rates[Math.floor((rates.length - 1) / 2)] : null; // lower median
+}
+
+function renderWaiting(job, rate = null, outputSeconds = 0) {
     const seconds = Math.max(0, Math.round((Date.now() - Date.parse(job.createdAt)) / 1000));
-    return `正在生成成片（已用 ${Number.isFinite(seconds) ? seconds : 0} 秒），可以先去别处，回来会接着显示。`;
+    const used = Number.isFinite(seconds) ? seconds : 0;
+    const estimate = rate && outputSeconds > 0 ? Math.max(5, Math.round(rate * outputSeconds)) : null;
+    const hint = estimate == null ? "" : used > estimate * 2 ? "，比平时慢，仍在处理" : `，按本机以往约需 ${estimate} 秒`;
+    return `正在生成成片（已用 ${used} 秒${hint}），可以先去别处，回来会接着显示。`;
 }
 
 function lastJob(project, value) {
@@ -60,7 +72,7 @@ function useOutputCanvas(stage, width, height) {
     return {width: width * scale, height: height * scale, scale};
 }
 
-export function EditWorkspace({project, runs, open, onWorksChanged, layout, basket, basketAt, onBasketSeen, onFindMaterial = () => {}, onPublish = () => {}, onDirtyChange = () => {}}) {
+export function EditWorkspace({project, runs, open, onWorksChanged, layout, basket, basketAt, onBasketSeen, onFindMaterial = () => {}, onPublish = () => {}, onDirtyChange = () => {}, renderSecondsPerSecond = null}) {
     const [draft, setDraft] = useState(() => readDraft(project));
     const [saved, setSaved] = useState("");
     const [planJob, setPlanJob] = useState(null);
@@ -285,7 +297,8 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
             const accepted = await client.submit("render", {...source, width, height, subtitleMode: subtitles, ...(subtitles === "burn" ? {subtitleStyle} : {})});
             // Remember the render at once, so leaving or reloading reopens it while it runs.
             lastJob(project, {id: accepted.jobId, kind: "render"});
-            const done = await follow(accepted.jobId, (job) => { setRenderJob(job); if (job.status !== "completed") setMessage(renderWaiting(job)); });
+            const rate = renderSecondsPerSecond, outputSeconds = player.totalUs / 1e6;
+            const done = await follow(accepted.jobId, (job) => { setRenderJob(job); if (job.status !== "completed") setMessage(renderWaiting(job, rate, outputSeconds)); });
             if (done?.status === "completed") { client.forgetIntent("render"); setMode("result"); setMessage(""); onWorksChanged(); lastJob(project, {id: done.jobId, kind: "render"}); }
             else if (done) setMessage(`成片生成失败：${done.error?.message || done.status}`);
         } catch (error) { setMessage(`${error.message}。再次点击会复用同一请求，不会重复创建。`); }

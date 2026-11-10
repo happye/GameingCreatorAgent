@@ -2,7 +2,7 @@
 import {h} from "../vendor/preact.module.js";
 import {useEffect, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
-import {api} from "./api.js";
+import {api, copyText} from "./api.js";
 
 const html = htm.bind(h);
 const SOURCE_KINDS = [
@@ -29,14 +29,6 @@ const toBase64 = async (file) => {
     let binary = "";
     for (let i = 0; i < bytes.length; i += 32768) binary += String.fromCharCode(...bytes.subarray(i, i + 32768));
     return btoa(binary);
-};
-const copyText = async (value, onOk, onFail) => {
-    try {
-        await navigator.clipboard.writeText(value);
-        onOk();
-    } catch {
-        onFail();
-    }
 };
 
 function KnowledgeComparison({value, onOpen}) {

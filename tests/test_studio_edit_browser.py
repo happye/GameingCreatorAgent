@@ -94,6 +94,21 @@ def test_brief_to_exported_video(service, monkeypatch):  # noqa: F811
             errors = []
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.goto(base + "/studio")
+            # Render wait estimate: median seconds-per-output-second of recent renders.
+            rates = page.evaluate(
+                """async () => {
+                    const {renderRate} = await import("/assets/studio/edit.js");
+                    const job = (start, end, length, kind = "render") => ({kind, status: "completed",
+                        createdAt: start, updatedAt: end, video: {durationSeconds: length}});
+                    const t = (s) => new Date(Date.UTC(2026, 0, 1, 0, 0, s)).toISOString();
+                    return [
+                        renderRate([]),
+                        renderRate([job(t(0), t(20), 10), job(t(0), t(30), 10), job(t(0), t(900), 10),
+                            job(t(0), t(10), 10), job(t(0), "bad", 10), job(t(0), t(50), 10, "plan")]),
+                    ];
+                }"""
+            )
+            assert rates == [None, 2]
             page.get_by_role("tab", name="剪辑").click()
             # P019: one sentence fills only the fields it states, after an explicit click.
             page.get_by_label("一句话需求", exact=True).fill(

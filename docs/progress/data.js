@@ -1,6 +1,6 @@
 window.PROGRESS_DATA = {
  "schemaVersion": 1,
- "nodesUpdated": "2026-11-10",
+ "nodesUpdated": "2026-11-11",
  "groups": {
   "A": "基础架构与本地处理",
   "B": "视频理解与检索",
@@ -766,9 +766,9 @@ window.PROGRESS_DATA = {
     "tests/test_creation_publication_http.py",
     "tests/test_creation_publication_browser.py"
    ],
-   "done": "从成片选帧做封面；标题/简介/标签有本地模板草稿（简介列出成片镜头已保存画面要点，标签含必须主题），可编辑保存多版本、下载",
+   "done": "从成片选帧做封面；标题/简介/标签有本地模板草稿（简介列出成片镜头已保存画面要点，标签含必须主题），可编辑保存多版本、下载；发布页可一键复制标题/简介/标签/全部",
    "todo": "无模型生成文案；封面设计与文案质量未评估",
-   "updated": "2026-11-09",
+   "updated": "2026-11-11",
    "sprints": [
     "sprint-publication-assets"
    ]
@@ -806,9 +806,9 @@ window.PROGRESS_DATA = {
     "docs/exec-plans/sprint-studio-caption-editor.md",
     "tests/test_studio_caption_editor_browser.py"
    ],
-   "done": "Studio可调出入点、换镜头、改字幕、换BGM/旁白、变速转场并另存版本重渲染",
+   "done": "Studio可调出入点、换镜头、改字幕、换BGM/旁白、变速转场并另存版本重渲染；支持逐步撤销/重做（Ctrl+Z）",
    "todo": "编辑器整体易用性未经人工验收；部分编辑项仍不完整",
-   "updated": "2026-11-08",
+   "updated": "2026-11-11",
    "sprints": [
     "sprint-creation-editing",
     "sprint-clip-replacements",
@@ -998,9 +998,9 @@ window.PROGRESS_DATA = {
     "tests/test_creation_jobs.py",
     "tests/test_creation_workspace_browser.py"
    ],
-   "done": "新工作台/studio可看素材、选方案、时间线剪辑、旁白音乐、字幕与导出；导出后一键去发布、禁用按钮显示原因、作品列表中文状态与失败原因、空项目三步引导",
+   "done": "新工作台/studio可看素材、选方案、时间线剪辑、旁白音乐、字幕与导出；导出后一键去发布、禁用按钮显示原因、作品列表中文状态与失败原因、空项目三步引导；片段篮清空可恢复、渲染按本机历史显示预计耗时",
    "todo": "J1全流程第四次试看未通过；Agent对话区与人评验收未完成",
-   "updated": "2026-11-10",
+   "updated": "2026-11-11",
    "sprints": [
     "sprint-studio-workbench",
     "sprint-creation-workspace",
@@ -1983,12 +1983,11 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "本批完整门禁通过（2026-11-09，ba01459）：5104过6跳0失败，38分28秒，格式/Ruff/mypy/CLI通过；含P018版本对比、TD026留痕、连接队列、下载文件名、发布草稿要点、动态策划指纹绑定、网页活动规则与verify同批重跑门槛。未Release，不提升人评或整项状态。",
-  "J1第四次反馈7组：素材去重/取景、云端音色默认本机、保存禁用原因、下载true.txt均已工程修复（true.txt根因确认为htm裸download属性，平台包与成片下载均已改真实文件名并加静态守卫）；预览卡顿TD025已合main，真机待你试。剩余“方案更有创作价值/开放式创作对话”需真实文本模型调用，须你单独授权。",
-  "动态策划：第1次授权调用（估算¥0.0094516）因模型抄错快照指纹被拒，已修为后端绑定（1838938）。第2次授权调用（2026-11-09，估算¥0.0174276）成功：3套方案均可用（20/20/19镜头），已采用为方案任务4c857005（artifacts/demo-phase0），可在Studio剪辑页打开；方案质量待你评价。J1复测待你方便时。",
-  "进度看板：docs/progress/index.html（双击打开）；更新规则见docs/references/progress-dashboard.md。分发前许可证缺口及TD003仍待处理。",
-  "2026-11-10 续：P029烧入字幕可选标准/大字/半透明底框（663d319）；工作台与桌面EXE不再使用Chromium禁用端口（bbc4abf，本机动态端口段1024起会触发）；新增scripts/quiet.ps1，测试只输出摘要和失败ID文件，AGENTS/CODEX已要求所有Agent使用（38fa31b）。TD027回执校验改为按请求重算展示选项（b48e212）。本批完整门禁通过：5115过6跳0失败，37分24秒（9a8bdba，经quiet.ps1）。之后b193590平台预设填入有官方出处的限值（快手15分钟/4G、B站10小时），定向测试通过，未跑全量。",
-  "2026-11-10 晚：P030配乐节拍对齐（601b15e）、P024缺口一键找素材（cdf57d6）、P019一句话需求（2e03859）。本批全量5143过6跳2失败1错误（5f3dd2e），均为测试自身问题，已定向修复（-W error下18过），不同批重跑。之后Studio衔接（去发布/禁用原因/中文状态/首次引导，3687078）、离开确认与渲染进度（10468a7）、桌面EXE进Studio且固定端口（653b4f1）、作品列表分辨率时长大小（03c3489）；本批全量通过5150过6跳0失败（03c3489）。"
+  "最新完整门禁通过：5150过6跳0失败（03c3489，33分，经quiet.ps1）；未Release，不提升人评或整项状态。逐批记录见HANDOFF与提交历史。",
+  "J1第四次反馈7组工程修复完毕（含下载true.txt根因、预览卡顿TD025）；近两日又补：一句话需求、缺口一键找素材、配乐节拍对齐、字幕样式、导出后去发布、禁用原因可见、离开前确认、渲染进度保持、作品列表信息、首次引导、桌面EXE进Studio且固定端口。等你复测J1。",
+  "动态策划：两次授权调用均已耗用（¥0.0094516失败已修因；¥0.0174276成功），3套方案已采用为方案任务4c857005（artifacts/demo-phase0），质量待你评价；新调用需新授权。",
+  "平台限值仅填官方可读来源（快手15分钟/4G、B站10小时，docs/references/platform-limits-sources.md）；其余待你登录后核对（可选）。",
+  "进度看板docs/progress/index.html；分发前许可证缺口及TD003仍待处理。"
  ],
  "sprints": [
   {

@@ -15,14 +15,6 @@ const sameOrigin = (url) => { try { const u = new URL(url, location.origin); ret
 export const musicUrl = (track) => `/api/creation/music/${encodeURIComponent(track.trackId)}/audio?${new URLSearchParams({receipt: track.trackReceiptSha256})}`;
 const codepoints = (value) => [...String(value ?? "")].length;
 
-const copyText = async (value, onOk, onFail) => {
-    try {
-        await navigator.clipboard.writeText(value);
-        onOk();
-    } catch {
-        onFail();
-    }
-};
 
 const downloadTxt = (value) => {
     const blob = new Blob([value], {type: "text/plain;charset=utf-8"});
@@ -438,7 +430,7 @@ export function AudioPanel({editing, project, game = "", fps, totalUs, music, on
         const usable = String(value ?? "").trim().length > 0;
         return html`<div class="actions-row">
             <button type="button" class="btn ghost" disabled=${!usable} aria-label=${`${labelPrefix}复制旁白稿`}
-                onClick=${() => void copyText(value, () => setNote("已复制旁白稿到剪贴板"), () => setNote("无法自动复制，请手动选择旁白文字复制"))}>复制旁白稿</button>
+                onClick=${() => void client.copyText(value, () => setNote("已复制旁白稿到剪贴板"), () => setNote("无法自动复制，请手动选择旁白文字复制"))}>复制旁白稿</button>
             <button type="button" class="btn ghost" disabled=${!usable} aria-label=${`${labelPrefix}下载旁白TXT`}
                 onClick=${() => { downloadTxt(value); setNote("已下载 narration-draft.txt"); }}>下载旁白TXT</button>
         </div>`;
