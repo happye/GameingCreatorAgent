@@ -330,7 +330,8 @@ def test_beat_snap_preview_apply_marks_draft(studio_audio):
     status = page.get_by_role("status", name="节拍对齐状态")
     playwright = pytest.importorskip("playwright.sync_api")
     playwright.expect(status).to_contain_text("约 120 BPM")
-    assert set(sent[0]) == {"fps", "clips", "trackId", "trackReceiptSha256"}
+    assert set(sent[0]) == {"fps", "clips", "sources", "trackId", "trackReceiptSha256"}
+    assert len(sent[0]["sources"]) == len(sent[0]["clips"]) and all(sent[0]["sources"])
     page.get_by_role("button", name="应用", exact=True).click()
     playwright.expect(status).to_contain_text("已应用")
     # The shortened timeline is an unsaved draft; here the saved narration no longer fits after

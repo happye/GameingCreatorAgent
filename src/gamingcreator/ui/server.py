@@ -254,7 +254,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
         from gamingcreator.infrastructure.music_library import MusicLibrary
 
         keys = {"fps", "clips", "trackId", "trackReceiptSha256"}
-        if not isinstance(value, dict) or set(value) != keys:
+        if not isinstance(value, dict) or set(value) - {"sources"} != keys:
             raise AppError("creation.beats", "需要镜头、帧率和配乐身份。", ExitCode.INPUT)
         try:
             track = MusicLibrary(self.repository).resolve(
@@ -264,7 +264,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 analyze_track(self.repository, track, CancellationContext("beat-snap", 120))
             )
             preview = snap_to_beats(
-                value["clips"], value["fps"], grid["beatsUs"], track.duration_us
+                value["clips"],
+                value["fps"],
+                grid["beatsUs"],
+                track.duration_us,
+                sources=value.get("sources"),
             )
         except CommandError as error:
             raise AppError("creation.beats", str(error), ExitCode.INPUT) from error

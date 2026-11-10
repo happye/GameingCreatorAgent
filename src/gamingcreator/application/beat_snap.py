@@ -19,6 +19,8 @@ from gamingcreator.application.timeline_commands import (
 )
 
 MIN_SHOT_US = 500_000
+# Same tolerance as Studio's shot grouping: the next segment continues the same footage.
+CONTINUOUS_US = 250_000
 
 
 def _beat_frames(beats_us: list[int], track_us: int, total_frames: int, fps: int) -> list[int]:
@@ -43,10 +45,23 @@ def _source_us_for(frames: int, row: dict[str, Any], fps: int) -> int:
 
 
 def snap_to_beats(
-    clips: object, fps: object, beats_us: object, track_duration_us: object, max_shift_ms: int = 700
+    clips: object,
+    fps: object,
+    beats_us: object,
+    track_duration_us: object,
+    max_shift_ms: int = 700,
+    sources: object = None,
 ) -> dict[str, object]:
+    """``sources`` (one recording id per clip) marks segments that continue the same footage;
+    their boundaries are not visible cuts, so they are never shortened (that would add a jump)."""
     rows = _check(clips, fps)
     assert isinstance(fps, int)
+    if sources is not None and (
+        not isinstance(sources, list)
+        or len(sources) != len(rows)
+        or any(not isinstance(s, str) for s in sources)
+    ):
+        raise CommandError("镜头来源无效。")
     if (
         not isinstance(beats_us, list)
         or not beats_us
@@ -67,6 +82,14 @@ def snap_to_beats(
             if index + 1 < len(rows)
             else starts[index] + _frames(rows[index], fps)
         )
+        if (
+            sources is not None
+            and index + 1 < len(rows)
+            and sources[index]
+            and sources[index] == sources[index + 1]
+            and abs(rows[index + 1]["startUs"] - rows[index]["endUs"]) <= CONTINUOUS_US
+        ):
+            continue  # inside one continuous shot: no visible cut here
         earlier = [b for b in beats if cut - max_shift <= b <= cut]
         if not earlier or earlier[-1] == cut:
             continue

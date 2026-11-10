@@ -69,3 +69,16 @@ def test_never_shortens_below_minimum():
     # Beat 0.2 s before a 0.6 s shot's end would leave 0.4 s: keep the shot as it is.
     with pytest.raises(CommandError):
         snap_to_beats([row("a", 0, 600_000)], 30, [400_000], 20_000_000)
+
+
+def test_continuous_segments_of_one_recording_are_not_cut():
+    """Real-data finding: shortening inside a continuous shot adds a tiny jump cut."""
+    beats = [i * 500_000 for i in range(40)]
+    rows = [row("a", 0, 1_100_000), row("b", 1_100_000, 2_300_000), row("c", 9_000_000, 10_100_000)]
+    result = snap_to_beats(rows, 30, beats, 20_000_000, sources=["run1", "run1", "run2"])
+    after = {r["clipId"]: r for r in result["clips"]}
+    assert after["a"]["endUs"] == 1_100_000  # continuous with "b": untouched
+    assert after["b"]["endUs"] < 2_300_000  # the real cut moved onto a beat
+    assert cuts(result["clips"])[1] % 15 == 0
+    with pytest.raises(CommandError):
+        snap_to_beats(rows, 30, beats, 20_000_000, sources=["run1"])

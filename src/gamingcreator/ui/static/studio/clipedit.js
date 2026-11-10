@@ -314,7 +314,7 @@ export function BeatSnap({editing, onPreview}) {
     const preview = async () => {
         setBusy(true); setMessage("正在本机分析配乐节拍…");
         try {
-            const data = await client.api("/api/creation/beat-snap", {}, {body: {fps: editing.editor.fps, clips: editing.rows(), trackId: bgm.trackId, trackReceiptSha256: bgm.trackReceiptSha256}});
+            const data = await client.api("/api/creation/beat-snap", {}, {body: {fps: editing.editor.fps, clips: editing.rows(), sources: editing.clips.map((c) => c.runId || ""), trackId: bgm.trackId, trackReceiptSha256: bgm.trackReceiptSha256}});
             setResult(data); onPreview(data.clips);
             setMessage(`约 ${data.bpm} BPM（本机估计，置信度 ${data.confidence}）。将会：${data.changes.join("；")}（${data.beforeSeconds.toFixed(1)} → ${data.afterSeconds.toFixed(1)} 秒）`);
         } catch (error) { setResult(null); onPreview(null); setMessage(`没有改动：${error.message}`); }
