@@ -31,10 +31,14 @@ if ($Name -eq 'pytest') {
 }
 # A separate process with process-level redirection: Windows PowerShell 5.1 would otherwise turn
 # native stderr lines (uv "Resolved ...") into terminating errors.
+. (Join-Path $PSScriptRoot 'test-run-lock.ps1')
+$lock = Enter-TestRunLock $root ($Name + ' ' + ($Rest -join ' '))
 $started = Get-Date
-$process = Start-Process -FilePath 'powershell.exe' -WorkingDirectory $root -NoNewWindow -Wait -PassThru `
-  -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', $command) `
-  -RedirectStandardOutput $out -RedirectStandardError $err
+try {
+  $process = Start-Process -FilePath 'powershell.exe' -WorkingDirectory $root -NoNewWindow -Wait -PassThru `
+    -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', $command) `
+    -RedirectStandardOutput $out -RedirectStandardError $err
+} finally { Exit-TestRunLock $lock }
 $seconds = [int]((Get-Date) - $started).TotalSeconds
 $lines = @(Get-Content -LiteralPath $out, $err -Encoding utf8 -ErrorAction SilentlyContinue)
 $failed = @($lines | Where-Object { $_ -match '^(FAILED|ERROR) (\S+\.py(::\S+)?)' } | ForEach-Object { ($_ -split ' ')[1] } | Sort-Object -Unique)
