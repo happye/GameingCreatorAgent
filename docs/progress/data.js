@@ -62,9 +62,9 @@ window.PROGRESS_DATA = {
    "name": "一句话找片段：Top-10 中可用 ≥70%",
    "steps": "选已完成录像 → 输入一句话查询 → 看前10名并逐个打分",
    "agent_run": {
-    "date": "2026-10-07",
+    "date": "2026-11-11",
     "result": "pass",
-    "evidence": "feature_list.json F005/F007 passes=true（commit 24ded10 起）"
+    "evidence": "Claude Code：scripts/search-project.ps1 在 artifacts/demo-phase0 的真实录像（漫画群星，run f76f5d64…）上 hybrid 检索“3V3积分争夺模式”，3.1 秒、0 次模型调用、返回8个候选（记录 artifacts/demo-phase0/project-searches/bc39275f…/result.json）；前3为“积分争夺（3V3）”画面。可用率只按人工评分计，未由Agent判定；F006仍为false。"
    },
    "human_check": {
     "date": null,
