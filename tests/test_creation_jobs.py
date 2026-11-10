@@ -567,3 +567,36 @@ def test_plan_from_clip_basket_passes_only_those_events(service, monkeypatch):
     for bad in ([], ["run:x", "run:x"], ["other:media:event:a"], [""], "run:a"):
         with pytest.raises(AppError):
             service.submit("plan", {**request(), "requestId": "f" * 32, "eventIds": bad})
+
+
+def test_catalog_lists_video_facts_without_hashing(service, monkeypatch):
+    """Work lists show size, frame size and length of finished renders; listing never hashes."""
+    import gamingcreator.ui.creation_jobs as implementation
+
+    parent = service.submit("plan", request())["jobId"]
+    finish(service, parent)
+    job_id = service.submit(
+        "render",
+        {
+            "requestId": "e" * 32,
+            "planJobId": parent,
+            "planId": "chronological",
+            "width": 64,
+            "height": 48,
+        },
+    )["jobId"]
+    assert finish(service, job_id)["status"] == "completed"
+
+    def no_hash(*args, **kwargs):
+        raise AssertionError("catalog must not hash")
+
+    receipt_path = service.directory(job_id) / "result/receipt.json"
+    receipt = json.loads(receipt_path.read_text())
+    receipt.update(frames=90, fpsNumerator=30, fpsDenominator=1)  # as real renders record
+    receipt_path.write_text(json.dumps(receipt))
+    monkeypatch.setattr(implementation, "hash_file", no_hash)
+    rows = {row["jobId"]: row for row in service.catalog("artifacts/project")["jobs"]}
+    video = rows[job_id]["video"]
+    assert (video["width"], video["height"]) == (64, 48)
+    assert video["durationSeconds"] == 3.0 and video["sizeBytes"] > 0
+    assert "video" not in rows[parent]

@@ -229,6 +229,13 @@ function TopBar({workspace, setWorkspace, projects, project, setProject, layout,
     </header>`;
 }
 
+// "横屏 1280×720 · 0:32 · 15.2 MB" so finished videos can be told apart in the list.
+function videoFacts({width, height, durationSeconds, sizeBytes}) {
+    const shape = width > height ? "横屏" : width < height ? "竖屏" : "方形";
+    const total = Math.round(durationSeconds ?? -1), clock = total < 0 ? null : `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+    return [`${shape} ${width}×${height}`, clock, sizeBytes ? `${(sizeBytes / 1048576).toFixed(1)} MB` : null].filter(Boolean).join(" · ");
+}
+
 function Bin({runs, runsLoaded = false, runId, setRunId, works, onOpen, hidden, top}) {
     const groups = Object.keys(KIND).map((kind) => [kind, works.filter((job) => job.kind === kind)]).filter(([, list]) => list.length);
     return html`<aside class="panel" hidden=${hidden} aria-label="素材箱">
@@ -251,7 +258,7 @@ function Bin({runs, runsLoaded = false, runId, setRunId, works, onOpen, hidden, 
                     const reason = job.error?.message || "";
                     const meta = job.status === "completed" ? (openable ? (newest ? "最新 · 打开" : "打开") : "") : client.jobStatus(job.status) + (reason ? `：${reason}` : "");
                     return html`<button class="row" disabled=${!openable} title=${openable ? (["publication", "package"].includes(job.kind) ? "在发布区打开" : "在剪辑区打开") : reason || client.jobStatus(job.status)} onClick=${() => onOpen(job)}><span class=${`dot ${job.status === "completed" ? "ok" : job.status === "failed" ? "bad" : "warn"}`}></span>
-                    <span class="name">${new Date(job.createdAt).toLocaleString("zh-CN", {hour12: false})}</span><span class="meta">${meta}</span></button>`;
+                    <span class="name">${new Date(job.createdAt).toLocaleString("zh-CN", {hour12: false})}${job.video ? html`<small class="video-facts" style=${{display: "block", opacity: 0.7}}>${videoFacts(job.video)}</small>` : null}</span><span class="meta">${meta}</span></button>`;
                 })}
             </details>`)}
             ${!groups.length && html`<p class="note">生成的成片、方案会出现在这里。</p>`}

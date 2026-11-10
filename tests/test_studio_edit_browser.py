@@ -185,6 +185,8 @@ def test_brief_to_exported_video(service, monkeypatch):  # noqa: F811
             playwright.expect(
                 page.locator(".row .meta", has_text="最新 · 打开").first
             ).to_be_visible()
+            # Finished renders show their frame size so attempts can be told apart.
+            playwright.expect(page.locator(".video-facts").first).to_contain_text("横屏 1280×720")
             assert not errors
             browser.close()
     finally:

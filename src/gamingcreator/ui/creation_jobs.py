@@ -10,6 +10,7 @@ import time
 from collections.abc import Iterator
 from contextlib import contextmanager, suppress
 from datetime import UTC, datetime
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -1462,8 +1463,29 @@ class CreationJobs:
             states.append(state)
         states.sort(key=lambda state: state["createdAt"], reverse=True)
         summary = ("jobId", "kind", "status", "createdAt", "updatedAt", "projectId", "error")
-        jobs = [{key: state[key] for key in summary if key in state} for state in states[:100]]
+        jobs = [
+            {key: state[key] for key in summary if key in state} | self._video_facts(state)
+            for state in states[:100]
+        ]
         return {"jobs": jobs, "truncated": len(states) > 100}
+
+    def _video_facts(self, state: dict[str, Any]) -> dict[str, Any]:
+        """Size, frame size and length of a finished render for list display (no hashing)."""
+        if state.get("kind") != "render" or state.get("status") != "completed":
+            return {}
+        try:
+            receipt = self.read(self.directory(state["jobId"]) / "result/receipt.json")
+            facts: dict[str, Any] = {
+                "width": int(receipt["width"]),
+                "height": int(receipt["height"]),
+            }
+        except (OSError, KeyError, TypeError, ValueError):
+            return {}
+        with suppress(KeyError, TypeError, ValueError, ZeroDivisionError):
+            fps = Fraction(receipt["fpsNumerator"], receipt["fpsDenominator"])
+            facts["durationSeconds"] = round(float(receipt["frames"] / fps), 2)
+        size = (state.get("artifact") or {}).get("sizeBytes")
+        return {"video": facts | ({"sizeBytes": size} if type(size) is int else {})}
 
     def video(self, job_id: str) -> MediaResource:
         state = self.get(job_id)
