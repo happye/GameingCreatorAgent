@@ -743,9 +743,9 @@ window.PROGRESS_DATA = {
     "tests/test_creation_audio_jobs.py",
     "tests/test_creation_audio_browser.py"
    ],
-   "done": "登记本地音乐并记录许可状态，可在工作台选BGM、调音量并真实混音渲染",
-   "todo": "AI选曲、节拍/节奏匹配未做；曲目授权与响度质量未核",
-   "updated": "2026-11-03",
+   "done": "本地曲库登记/手选、音量/闪避与真实混音；本机估计配乐节拍（BPM+拍点），Studio一键预览把剪辑点对齐到拍点（只缩短镜头）",
+   "todo": "AI选曲与情绪匹配未做；节拍为本机估计未人工核对；曲目授权与响度质量未核",
+   "updated": "2026-11-10",
    "sprints": [
     "sprint-creation-audio-mix"
    ]
@@ -1597,6 +1597,12 @@ window.PROGRESS_DATA = {
      "name": "Grok工单二：核心接入、旁白可编辑（R01–R48）",
      "status": "done",
      "sprint": "grok-studio-coding-round2-20261108"
+    },
+    {
+     "id": "P030-beats",
+     "name": "配乐节拍估计与剪辑点对齐",
+     "status": "done",
+     "sprint": ""
     }
    ]
   },
@@ -1981,7 +1987,7 @@ window.PROGRESS_DATA = {
   "J1第四次反馈7组：素材去重/取景、云端音色默认本机、保存禁用原因、下载true.txt均已工程修复（true.txt根因确认为htm裸download属性，平台包与成片下载均已改真实文件名并加静态守卫）；预览卡顿TD025已合main，真机待你试。剩余“方案更有创作价值/开放式创作对话”需真实文本模型调用，须你单独授权。",
   "动态策划：第1次授权调用（估算¥0.0094516）因模型抄错快照指纹被拒，已修为后端绑定（1838938）。第2次授权调用（2026-11-09，估算¥0.0174276）成功：3套方案均可用（20/20/19镜头），已采用为方案任务4c857005（artifacts/demo-phase0），可在Studio剪辑页打开；方案质量待你评价。J1复测待你方便时。",
   "进度看板：docs/progress/index.html（双击打开）；更新规则见docs/references/progress-dashboard.md。分发前许可证缺口及TD003仍待处理。",
-  "2026-11-10 续：P029烧入字幕可选标准/大字/半透明底框（663d319）；工作台与桌面EXE不再使用Chromium禁用端口（bbc4abf，本机动态端口段1024起会触发）；新增scripts/quiet.ps1，测试只输出摘要和失败ID文件，AGENTS/CODEX已要求所有Agent使用（38fa31b）。TD027回执校验改为按请求重算展示选项（b48e212）。本批完整门禁通过：5115过6跳0失败，37分24秒（9a8bdba，经quiet.ps1）。"
+  "2026-11-10 续：P029烧入字幕可选标准/大字/半透明底框（663d319）；工作台与桌面EXE不再使用Chromium禁用端口（bbc4abf，本机动态端口段1024起会触发）；新增scripts/quiet.ps1，测试只输出摘要和失败ID文件，AGENTS/CODEX已要求所有Agent使用（38fa31b）。TD027回执校验改为按请求重算展示选项（b48e212）。本批完整门禁通过：5115过6跳0失败，37分24秒（9a8bdba，经quiet.ps1）。之后b193590平台预设填入有官方出处的限值（快手15分钟/4G、B站10小时），定向测试通过，未跑全量。因额度不足暂停。"
  ],
  "sprints": [
   {
