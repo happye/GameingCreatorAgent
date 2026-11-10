@@ -1053,12 +1053,12 @@
   }
  ],
  "gate": {
-  "date": "2026-11-10",
-  "scope": "完整门禁 verify.ps1（本批：测试修复、Studio衔接四项、离开确认与渲染进度、桌面固定端口、作品信息）",
+  "date": "2026-11-11",
+  "scope": "完整门禁 verify.ps1（本批：撤销重做、复制/篮恢复/耗时预估、镜头计数、成片态撤销、节拍不切连续镜头、测试锁与选择）",
   "result": "pass",
-  "counts": "5150 过 · 6 跳 · 0 失败（33分）",
+  "counts": "5152 过 · 6 跳 · 0 失败（31分）",
   "branch": "main",
   "merged": true,
-  "note": "提交 03c3489 上运行；格式/Ruff/mypy/CLI 均通过。未跑 -Release"
+  "note": "提交 08e9cae 上运行；格式/Ruff/mypy/CLI 均通过。未跑 -Release"
  }
 }
