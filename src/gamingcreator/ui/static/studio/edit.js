@@ -8,6 +8,7 @@ import {editTimeline, shots, timeline, usePlanPlayer} from "./preview.js";
 import {BeatSnap, ClipInspector, CommandDock, captionProblem, transitionProblem, useClipEditor} from "./clipedit.js";
 import {AudioPanel, narrationProblem, useAudioPreview, useMusicCatalog} from "./audio.js";
 import {ActivityRules} from "./activity.js";
+import {BriefSentence} from "./brief_sentence.js";
 import {KnowledgeUses, PlanReasoningPanel} from "./planning.js";
 import {SubtitlePreview, useSubtitlePreview} from "./subtitles.js";
 import {OverlayPanel, OverlayPreview, overlayProblem} from "./overlays.js";
@@ -294,6 +295,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         <aside class="panel" hidden=${!layout.bin} aria-label="需求与方案">
             <div class="panel-head">需求<span class="spacer"></span><span class="track-label">${saved}</span></div>
             <div class="panel-body">
+                <${BriefSentence} draft=${draft} update=${update} />
                 <${Brief} project=${project} runs=${runs} draft=${draft} update=${update} busy=${busy} onGenerate=${generate} basket=${basket} />
                 <div class="section-label">方案${planJob ? `（${planJob.plans.length}）` : ""}</div>
                 ${planJob ? planJob.plans.map((p) => html`<${PlanCard} plan=${p} fps=${fps} active=${p.id === planId} thumb=${thumb} onFind=${onFindMaterial}

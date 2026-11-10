@@ -80,6 +80,10 @@ ASSETS = {
     "/assets/studio/planning.js": ("studio/planning.js", "text/javascript; charset=utf-8"),
     "/assets/studio/subtitles.js": ("studio/subtitles.js", "text/javascript; charset=utf-8"),
     "/assets/studio/activity.js": ("studio/activity.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/brief_sentence.js": (
+        "studio/brief_sentence.js",
+        "text/javascript; charset=utf-8",
+    ),
     "/assets/studio/knowledge.js": ("studio/knowledge.js", "text/javascript; charset=utf-8"),
     "/assets/studio/narration_drafts.js": (
         "studio/narration_drafts.js",
@@ -517,6 +521,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/subtitle-preview",
                 "/api/creation/timeline-commands",
                 "/api/creation/beat-snap",
+                "/api/creation/brief-sentence",
                 "/api/creation/music",
                 "/api/creation/overlay-assets",
                 "/api/creation/activity-rules",
@@ -662,6 +667,16 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 except ValueError as error:
                     raise AppError("knowledge.import", str(error), ExitCode.INPUT) from error
                 self._json(200, report)
+                return
+            if path == "/api/creation/brief-sentence":
+                from gamingcreator.application.brief_sentence import parse_brief_sentence
+
+                if not isinstance(value, dict) or set(value) != {"text"}:
+                    raise AppError("creation.brief", "需要一句话需求。", ExitCode.INPUT)
+                try:
+                    self._json(200, parse_brief_sentence(value["text"]))
+                except ValueError as error:
+                    raise AppError("creation.brief", str(error), ExitCode.INPUT) from error
                 return
             if path == "/api/creation/beat-snap":
                 self._json(200, self._beat_snap(value))

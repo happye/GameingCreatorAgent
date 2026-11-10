@@ -95,6 +95,18 @@ def test_brief_to_exported_video(service, monkeypatch):  # noqa: F811
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.goto(base + "/studio")
             page.get_by_role("tab", name="剪辑").click()
+            # P019: one sentence fills only the fields it states, after an explicit click.
+            page.get_by_label("一句话需求", exact=True).fill(
+                "给新玩家做《句子游戏》30秒高光，发抖音"
+            )
+            page.get_by_role("button", name="解析", exact=True).click()
+            playwright.expect(page.get_by_role("status", name="一句话需求状态")).to_contain_text(
+                "时长：30 秒"
+            )
+            page.get_by_role("button", name="填入需求").click()
+            playwright.expect(page.locator(".brief input.input").first).to_have_value("句子游戏")
+            playwright.expect(page.get_by_label("秒数")).to_have_value("30")
+            playwright.expect(page.locator(".brief select").first).to_have_value("highlight")
             page.locator(".brief input[type=checkbox]").check()
             page.locator(".brief input.input").first.fill("测试游戏")
             page.get_by_role("button", name="生成方案").click()
