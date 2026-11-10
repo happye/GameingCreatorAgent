@@ -236,6 +236,20 @@ def test_edit_clip_save_version_and_command(revisions, monkeypatch):  # noqa: F8
                 "修改镜头、声音或叠加后可保存新版本"
             )
             playwright.expect(page.get_by_role("button", name="保存版本")).to_be_disabled()
+            # Step undo/redo: Delete a shot, Ctrl+Z brings it back clean, Ctrl+Shift+Z redoes.
+            count = clips.count()
+            clips.nth(1).click()
+            page.keyboard.press("Delete")
+            playwright.expect(clips).to_have_count(count - 1)
+            page.keyboard.press("Control+z")
+            playwright.expect(clips).to_have_count(count)
+            playwright.expect(page.get_by_text("方案原样")).to_be_visible()
+            page.keyboard.press("Control+Shift+z")
+            playwright.expect(clips).to_have_count(count - 1)
+            page.get_by_role("button", name="撤销一步").click()
+            playwright.expect(clips).to_have_count(count)
+            playwright.expect(page.get_by_role("button", name="撤销一步")).to_be_disabled()
+            playwright.expect(page.get_by_role("button", name="重做")).to_be_enabled()
             page.get_by_role("tab", name="导出", exact=True).click()
             for label, suffix in [
                 ("下载 FCPXML", ".fcpxml"),

@@ -53,6 +53,19 @@ const overlaysOf = (editor) => ({overlays: editor.overlays?.items || [], overlay
 export function useClipEditor(project) {
     const [state, setState] = useState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), ...captionsOf({}), bounds: {}, replacements: {}, dirty: false});
     const overlayEpoch = useRef(0);
+    // Step undo/redo of local edits (not saved versions): snapshots of the editable fields.
+    const history = useRef({past: [], future: [], key: null});
+    const snap = (s) => ({clips: s.clips, subtitleOverrides: s.subtitleOverrides, audio: s.audio, overlays: s.overlays, overlayAssets: s.overlayAssets, bounds: s.bounds, replacements: s.replacements, dirty: s.dirty});
+    const clearHistory = () => { history.current = {past: [], future: [], key: null}; };
+    // Apply an edit and remember the state before it; repeated edits with the same key merge.
+    const edit = useCallback((updater, key = null) => setState((s) => {
+        const next = updater(s);
+        if (next === s || s.status !== "ready") return next;
+        const h = history.current;
+        if (!(key && h.key === key)) h.past = [...h.past.slice(-49), snap(s)];
+        h.future = []; h.key = key;
+        return next;
+    }), []);
     // Replacement candidates of the plan's recordings, loaded on first use per plan/version.
     const [candidates, setCandidates] = useState(null);
     const [selectedId, setSelectedId] = useState("");
@@ -61,7 +74,7 @@ export function useClipEditor(project) {
         loading.current += 1;
         overlayEpoch.current += 1;
         setState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), ...captionsOf({}), bounds: {}, replacements: {}, dirty: false});
-        setCandidates(null); setSelectedId("");
+        setCandidates(null); setSelectedId(""); clearHistory();
         return () => { loading.current += 1; };
     }, [project]);
 
@@ -74,7 +87,7 @@ export function useClipEditor(project) {
             if (generation !== loading.current) return null;
             if (editor.parentJobId !== jobId || editor.planId !== planId) throw new Error("剪辑数据与所选方案不一致");
             const clips = normalize(editor);
-            setCandidates(null);
+            setCandidates(null); clearHistory();
             setState({status: "ready", base: {jobId, planId, kind}, editor, clips, audio: audioOf(editor), ...overlaysOf(editor), ...captionsOf(editor), bounds: Object.fromEntries(clips.map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, dirty: false});
             return editor;
         } catch (error) {
@@ -85,15 +98,15 @@ export function useClipEditor(project) {
         }
     }, []);
 
-    const change = useCallback((mutate) => setState((s) => {
+    const change = useCallback((mutate, key = null) => edit((s) => {
         if (s.status !== "ready") return s;
         const clips = mutate(s.clips.map((c) => ({...c})));
         if (clips[0]) clips[0].transitionIn = {type: "cut", frames: 0};
         return {...s, clips, subtitleOverrides: keptCaptions(s.subtitleOverrides, clips), dirty: true};
-    }), []);
+    }, key), [edit]);
 
     const ops = {
-        caption: (clipId, text) => setState((s) => {
+        caption: (clipId, text) => edit((s) => {
             if (s.status !== "ready" || !s.clips.some((c) => c.clipId === clipId)) return s;
             const subtitleOverrides = s.subtitleOverrides.filter((o) => o.clipId !== clipId);
             if (text !== null) subtitleOverrides.push({clipId, text});
@@ -105,7 +118,7 @@ export function useClipEditor(project) {
             if (field === "startUs") clip.startUs = Math.min(Math.max(bound.startUs, us), clip.endUs - minLength);
             else clip.endUs = Math.max(Math.min(bound.endUs, us), clip.startUs + minLength);
             return clips;
-        }),
+        }, `trim:${id}:${field}`),
         speed: (id, numerator, denominator) => change((clips) => { clips.find((c) => c.clipId === id).speed = {numerator, denominator}; return clips; }),
         transition: (id, frames) => change((clips) => { clips.find((c) => c.clipId === id).transitionIn = frames ? {type: "crossfade", frames} : {type: "cut", frames: 0}; return clips; }),
         move: (id, delta) => change((clips) => {
@@ -120,19 +133,19 @@ export function useClipEditor(project) {
             const byId = new Map(clips.map((c) => [c.clipId, c]));
             return newRows.map((row) => ({...byId.get(row.clipId), ...row}));
         }),
-        applyProposal: (proposal) => setState((s) => {
+        applyProposal: (proposal) => edit((s) => {
             if (s.status !== "ready") return s;
             const byId = new Map(s.clips.map((c) => [c.clipId, c]));
             const clips = proposal.clips.map((row) => ({...byId.get(row.clipId), ...row}));
             return {...s, clips, subtitleOverrides: keptCaptions(s.subtitleOverrides, clips), overlays: proposal.overlays?.items ?? s.overlays, dirty: true};
         }),
-        mix: (patch) => setState((s) => (s.status === "ready" ? {...s, audio: {...s.audio, mix: {...s.audio.mix, ...patch}}, dirty: true} : s)),
-        overlays: (items, assets, expectedEpoch) => setState((s) => (s.status === "ready" && (expectedEpoch === undefined || expectedEpoch === overlayEpoch.current)
+        mix: (patch) => edit((s) => (s.status === "ready" ? {...s, audio: {...s.audio, mix: {...s.audio.mix, ...patch}}, dirty: true} : s)),
+        overlays: (items, assets, expectedEpoch) => edit((s) => (s.status === "ready" && (expectedEpoch === undefined || expectedEpoch === overlayEpoch.current)
             ? {...s, overlays: items, overlayAssets: assets ?? s.overlayAssets, dirty: true} : s)),
-        narration: (selection, asset) => setState((s) => (s.status === "ready" ? {...s, audio: {...s.audio, narration: selection, asset: selection ? asset ?? s.audio.asset : null}, dirty: true} : s)),
+        narration: (selection, asset) => edit((s) => (s.status === "ready" ? {...s, audio: {...s.audio, narration: selection, asset: selection ? asset ?? s.audio.asset : null}, dirty: true} : s)),
         // Swap a clip's footage for another analysed clip of the same recordings (1x, cut in);
         // its length stays as close to the old one as the new clip allows.
-        replace: (id, candidate) => setState((s) => {
+        replace: (id, candidate) => edit((s) => {
             if (s.status !== "ready") return s;
             const clips = s.clips.map((c) => {
                 if (c.clipId !== id) return c;
@@ -148,7 +161,19 @@ export function useClipEditor(project) {
             if (clips[at + 1]) clips[at + 1] = {...clips[at + 1], transitionIn: {type: "cut", frames: 0}};
             return {...s, clips, subtitleOverrides: s.subtitleOverrides.filter((o) => o.clipId !== id), bounds: {...s.bounds, [id]: {startUs: candidate.startUs, endUs: candidate.endUs}}, replacements: {...s.replacements, [id]: candidate.candidateId}, dirty: true};
         }),
-        reset: () => { overlayEpoch.current += 1; setState((s) => (s.editor ? {...s, clips: normalize(s.editor), audio: audioOf(s.editor), ...overlaysOf(s.editor), ...captionsOf(s.editor), bounds: Object.fromEntries(normalize(s.editor).map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, dirty: false} : s)); },
+        undo: () => setState((s) => {
+            const h = history.current, previous = h.past.at(-1);
+            if (!previous || s.status !== "ready") return s;
+            h.past = h.past.slice(0, -1); h.future = [...h.future, snap(s)]; h.key = null;
+            return {...s, ...previous};
+        }),
+        redo: () => setState((s) => {
+            const h = history.current, next = h.future.at(-1);
+            if (!next || s.status !== "ready") return s;
+            h.future = h.future.slice(0, -1); h.past = [...h.past, snap(s)]; h.key = null;
+            return {...s, ...next};
+        }),
+        reset: () => { overlayEpoch.current += 1; clearHistory(); setState((s) => (s.editor ? {...s, clips: normalize(s.editor), audio: audioOf(s.editor), ...overlaysOf(s.editor), ...captionsOf(s.editor), bounds: Object.fromEntries(normalize(s.editor).map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, dirty: false} : s)); },
     };
 
     const loadCandidates = useCallback(async () => {
@@ -179,7 +204,8 @@ export function useClipEditor(project) {
         return done.jobId;
     }, [state, load, candidates]);
 
-    return {...state, project, overlayEpoch: overlayEpoch.current, selectedId, setSelectedId, load, ops, save, candidates, loadCandidates, rows: () => rows(state.clips)};
+    return {...state, project, overlayEpoch: overlayEpoch.current, selectedId, setSelectedId, load, ops, save, candidates, loadCandidates, rows: () => rows(state.clips),
+        canUndo: history.current.past.length > 0, canRedo: history.current.future.length > 0};
 }
 
 export function ClipInspector({editing, index, onSeek, basket}) {

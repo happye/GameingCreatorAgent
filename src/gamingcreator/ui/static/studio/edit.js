@@ -301,13 +301,19 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
 
     useEffect(() => {
         const onKey = (event) => {
-            if (event.target.closest("input, textarea, select") || mode !== "plan" || !items.length) return;
+            if (event.target.closest("input, textarea, select, [contenteditable]") || mode !== "plan" || !items.length) return;
+            const key = event.key.toLowerCase();
+            if ((event.ctrlKey || event.metaKey) && (key === "z" || key === "y") && editable && !commandPreview && !busy) {
+                event.preventDefault();
+                if (key === "y" || event.shiftKey) editing.ops.redo(); else editing.ops.undo();
+                return;
+            }
             if (event.key === " ") { event.preventDefault(); player.toggle(); }
             if ((event.key === "Delete" || event.key === "Backspace") && editing.selectedId && editable && !commandPreview) { event.preventDefault(); editing.ops.remove(editing.selectedId); }
             if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); void player.seek(player.outUs + (event.key === "ArrowLeft" ? -1 : 1) * (event.shiftKey ? 5e6 : 1e6), player.playing); }
         };
         addEventListener("keydown", onKey); return () => removeEventListener("keydown", onKey);
-    }, [player, mode, items, editing, editable, commandPreview]);
+    }, [player, mode, items, editing, editable, commandPreview, busy]);
 
     const cls = `work edit${layout.bin ? "" : " no-bin"}${layout.insp ? "" : " no-insp"}`;
     const selectedIndex = editable ? editing.clips.findIndex((c) => c.clipId === editing.selectedId) : -1;
@@ -385,6 +391,8 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                     <div class="v">${editing.status === "loading" ? "正在读取镜头…" : !editable ? `只能预览和导出${editing.reason ? `（${editing.reason}）` : ""}` : editing.dirty ? "有未保存的修改" : editing.base?.kind === "revision" ? "已保存的版本" : "方案原样"}</div>
                     ${problem && html`<p class="hint warn">${problem}</p>`}
                     ${editable && html`<p class="hint" role="status" aria-label="版本保存状态">${saveReason || "修改已就绪，可以保存新版本"}</p><div class="actions-row"><button class="btn ghost" disabled=${!!saveReason} title=${saveReason || "保存新版本"} onClick=${saveVersion}>保存版本</button>
+                        <button class="btn ghost" disabled=${!editing.canUndo || !!busy || commandPreview} title="Ctrl+Z" onClick=${() => editing.ops.undo()}>撤销一步</button>
+                        <button class="btn ghost" disabled=${!editing.canRedo || !!busy || commandPreview} title="Ctrl+Shift+Z" onClick=${() => editing.ops.redo()}>重做</button>
                         <button class="btn ghost" disabled=${!editing.dirty || !!busy} onClick=${() => editing.ops.reset()}>撤销修改</button></div>`}</div>`}
                 <div hidden=${inspTab !== "shot"}>
                 ${selectedIndex >= 0 && !commandPreview ? html`<fieldset aria-label="镜头编辑" disabled=${busy === "save" || busy === "render"} style=${{border: 0, padding: 0, margin: 0, minWidth: 0}}>
