@@ -64,7 +64,33 @@ def _texts(paths: list[Path]) -> dict[Path, str]:
     return {p: p.read_text(encoding="utf-8", errors="replace") for p in paths}
 
 
-def select(changed: list[str], deep: bool = False) -> tuple[list[str], bool, bool]:
+# Modules imported by almost every HTTP/browser test: a change selects tests by what it touched.
+HUBS = {"gamingcreator.ui.server", "gamingcreator.ui.creation_jobs"}
+_ROUTE = re.compile(r"/api/[a-z0-9_\-/]+")
+_DEF = re.compile(r"^\s*(?:async\s+)?def\s+(\w+)")
+
+
+def _diff_tokens(base: str, path: str) -> set[str]:
+    """API routes and function names on the changed lines of one file (empty: fall back)."""
+    try:
+        lines = _git("diff", "-U0", base, "--", path)
+    except subprocess.CalledProcessError:
+        return set()
+    tokens: set[str] = set()
+    for line in lines:
+        if line.startswith(("+++", "---")) or not line.startswith(("+", "-", "@@")):
+            continue
+        text = line.split("@@")[-1] if line.startswith("@@") else line[1:]
+        tokens |= set(_ROUTE.findall(text))
+        if match := _DEF.match(text):
+            name = match.group(1)
+            tokens.add(name.lstrip("_") if len(name.lstrip("_")) > 4 else name)
+    return {t.rstrip("/") for t in tokens if len(t) > 4}
+
+
+def select(
+    changed: list[str], deep: bool = False, base: str | None = None
+) -> tuple[list[str], bool, bool]:
     """Return (test files, full_suite, touches_ui)."""
     if FULL_TRIGGERS & set(changed):
         return [], True, False
@@ -83,6 +109,13 @@ def select(changed: list[str], deep: bool = False) -> tuple[list[str], bool, boo
             picked |= {t for t, text in test_texts.items() if pattern.search(text)}
             continue
         module = _module_name(path)
+        if module in HUBS and base is not None:
+            tokens = _diff_tokens(base, path)
+            if tokens:
+                # Nearly every HTTP/browser test imports this hub; follow what the diff touched.
+                touches_ui = touches_ui or module.startswith("gamingcreator.ui")
+                picked |= {t for t, text in test_texts.items() if any(k in text for k in tokens)}
+                continue
         if module:
             touches_ui = touches_ui or module.startswith("gamingcreator.ui")
             modules = {module}
@@ -120,7 +153,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("pytest_args", nargs="*", help="extra pytest arguments after --")
     args = parser.parse_args(argv)
     changed = changed_files(args.base)
-    tests, full, touches_ui = select(changed, deep=args.deep)
+    tests, full, touches_ui = select(changed, deep=args.deep, base=args.base)
     marks = None if (args.browser or touches_ui) else DEFAULT_MARKS
     print(f"changed files: {len(changed)}")
     if full:
