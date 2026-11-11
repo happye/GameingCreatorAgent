@@ -65,3 +65,18 @@ def test_unstated_fields_are_not_invented():
 def test_refusals(bad):
     with pytest.raises(ValueError):
         parse_brief_sentence(bad)
+
+
+def test_retest_sentence_from_2026_11_11():
+    """The user's J1 sentence: topics across commas, type not taken from a topic, game by name."""
+    text = "给新玩家做个漫画群星：大集结的3V3和1V1的玩法展示。发布到B站，要有可玩角色介绍，技能解说、玩法思路、游戏特色。"
+    result = parse_brief_sentence(text, ["漫画群星：大集结", "代号：Atom"])["fields"]
+    assert result["game"] == "漫画群星：大集结"
+    assert result["contentType"] == "feature_showcase"
+    assert result["platform"] == "bilibili"
+    assert result["mandatoryTopics"] == ["可玩角色介绍", "技能解说", "玩法思路", "游戏特色"]
+
+
+def test_topic_list_stops_at_another_instruction():
+    result = fields("要有Boss战，发B站，30秒高光")
+    assert result["mandatoryTopics"] == ["Boss战"] and result["platform"] == "bilibili"

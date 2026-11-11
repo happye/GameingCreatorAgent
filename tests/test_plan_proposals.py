@@ -175,11 +175,14 @@ def test_compiled_identical_intervals_deduplicate_before_readiness(additional_ma
         snapshot, validate_plan_proposal(snapshot, output(snapshot, ((1, 2),)))
     )
     plan = report["plans"][0]
-    assert len(plan["segments"]) == 1
-    assert plan["actualFrames"] == 120
-    assert plan["frameGap"] == 120
+    # Since 2026-11-11 overlaps are removed before the snapshot: the 0-6 s pick keeps only its
+    # uncovered 5-6 s tail, so no source second repeats.
+    spans = [(row["startUs"], row["endUs"]) for row in plan["segments"]]
+    assert spans == [(0, 4_000_000), (5_000_000, 6_000_000)]
+    assert plan["actualFrames"] == 150
+    assert plan["frameGap"] == 90
     assert plan["durationStatus"] == (
         "insufficient-selection" if additional_material else "insufficient-candidate-pool"
     )
     edl = select_edit_decision(report, plan["id"])
-    assert validate_render_plan(edl, report, (original,)).frames == 120
+    assert validate_render_plan(edl, report, (original,)).frames == 150

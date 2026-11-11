@@ -229,7 +229,37 @@ def eligible_clips(
             clip.framing.end_us,
         ),
     )
-    return eligible
+    return _without_overlaps(eligible)
+
+
+MIN_REMNANT_US = 1_000_000
+
+
+def _without_overlaps(clips: list[CreationClip]) -> list[CreationClip]:
+    """Each source second plays at most once (J1 2026-11-11: overlapping basket picks repeated
+    footage). Per recording, in source order, a clip starts where the earlier coverage ended; a
+    clip that is covered, leaves under a second, or no longer meets its analysed event is dropped.
+    The caller's order is kept."""
+    kept: dict[int, CreationClip] = {}
+    covered: dict[str, int] = {}
+    order = sorted(
+        range(len(clips)), key=lambda i: (clips[i].asset.sha256, clips[i].framing.start_us)
+    )
+    for index in order:
+        clip = clips[index]
+        frame, end = clip.framing, covered.get(clip.asset.sha256)
+        if end is not None and frame.start_us < end:
+            observed = clip.event.source_range
+            if frame.end_us - end < MIN_REMNANT_US or not overlaps_observation(
+                end, frame.end_us, observed.start_us, observed.end_us, frame.duration_us
+            ):
+                continue
+            clip = CreationClip(
+                clip.asset, clip.event, SourceRange(end, frame.end_us, frame.duration_us)
+            )
+        kept[index] = clip
+        covered[clip.asset.sha256] = max(end or 0, clip.framing.end_us)
+    return [kept[i] for i in sorted(kept)]
 
 
 def plan_creation(
@@ -363,11 +393,14 @@ def plan_creation(
             for segment, shot_no in zip(segments, segment_shots, strict=True):
                 segment["role"] = f"第{numbers[shot_no]}步"
         text = " ".join(str(segment["scriptDraft"]) for segment in segments).casefold()
-        gaps = [
-            f"主题缺少已保存文字证据：{topic}"
+        # Topics are content goals, not filters: an editorial topic ("角色介绍") rarely appears
+        # verbatim in a visual description, so a miss is advice and never blocks the plan.
+        topic_notes = [
+            f"主题未在画面摘要中找到：{topic}（可在旁白或字幕里讲，或补充画面）"
             for topic in brief.mandatory_topics
             if topic.casefold() not in text
         ]
+        gaps = []
         if len(segments) < 3:
             gaps.append("不足三个不同源区间，不能形成完整的三段结构")
         plans.append(
@@ -377,11 +410,11 @@ def plan_creation(
                 "segments": segments,
                 "gaps": gaps,
                 "ready": not gaps,
-                "advisories": (
-                    [TRIM_TIP, *advisories(brief, eligible, segments, fps)]
-                    if trim_applied
-                    else advisories(brief, eligible, segments, fps)
-                ),
+                "advisories": [
+                    *topic_notes,
+                    *([TRIM_TIP] if trim_applied else []),
+                    *advisories(brief, eligible, segments, fps),
+                ],
                 "scriptStatus": "saved-descriptions-draft-human-review-required",
                 **(
                     {"localRenders": habits[identity], "rankedByHistory": identity in moved}

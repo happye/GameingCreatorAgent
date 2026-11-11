@@ -16,12 +16,15 @@ export function patchFor(fields, draft) {
     return patch;
 }
 
-export function BriefSentence({draft, update}) {
+// Game names from recording file names ("漫画群星：大集结 - TapTap.mp4" -> "漫画群星：大集结").
+const gameNames = (runs = []) => [...new Set(runs.map((r) => (r.sourceName || "").replace(/\.[^.]+$/, "").split(/\s+-\s+/)[0].trim()).filter((n) => n.length >= 2))];
+
+export function BriefSentence({draft, update, runs = []}) {
     const [text, setText] = useState(""), [result, setResult] = useState(null), [message, setMessage] = useState("");
     const parse = async () => {
         if (!text.trim()) return;
         try {
-            const parsed = await api("/api/creation/brief-sentence", {}, {body: {text: text.trim()}});
+            const parsed = await api("/api/creation/brief-sentence", {}, {body: {text: text.trim(), games: gameNames(runs)}});
             setResult(parsed);
             setMessage(parsed.recognized.length ? `识别到：${parsed.recognized.join("；")}。其余保持不变。` : "没有识别到时长、类型、平台等，只会把这句话作为创作目标。");
         } catch (error) { setResult(null); setMessage(`未能解析：${error.message}`); }

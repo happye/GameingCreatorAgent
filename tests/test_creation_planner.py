@@ -61,14 +61,38 @@ def test_three_structures_and_source_frame_clocks():
         assert all(s["endUs"] <= s["sourceDurationUs"] for s in segments)
 
 
-def test_missing_material_and_topics_are_not_ready():
-    for material, request in (
-        (clips()[:1], brief()),
-        (clips(), replace(brief(), mandatory_topics=("unseen",))),
-    ):
-        report = plan_creation(request, material, 30)
-        with pytest.raises(ValueError, match="gaps"):
-            select_edit_decision(report, "chronological")
+def test_missing_material_is_not_ready_but_topic_misses_only_advise():
+    report = plan_creation(brief(), clips()[:1], 30)
+    with pytest.raises(ValueError, match="gaps"):
+        select_edit_decision(report, "chronological")
+    # J1 2026-11-11: editorial topics rarely appear verbatim in visual facts; never grey out.
+    report = plan_creation(replace(brief(), mandatory_topics=("unseen",)), clips(), 30)
+    plan = next(p for p in report["plans"] if p["id"] == "chronological")
+    assert plan["ready"] and any("unseen" in note for note in plan["advisories"])
+    select_edit_decision(report, "chronological")
+
+
+def test_overlapping_picks_of_one_recording_play_each_second_once():
+    """J1 2026-11-11: basket picks 1-4 s, 2-5 s, 2.5-5.5 s repeated the same footage."""
+    base = clips()[0]
+    picks = [(1_000_000, 4_000_000), (2_000_000, 5_000_000), (2_500_000, 5_500_000)]
+    material = tuple(
+        replace(
+            base,
+            event=replace(
+                base.event, event_id=f"pick{i}", source_range=SourceRange(start, end, 30_000_000)
+            ),
+            source_range=SourceRange(start, end, 30_000_000),
+        )
+        for i, (start, end) in enumerate(picks)
+    )
+    report = plan_creation(replace(brief(), target_duration=20), material, 30)
+    for plan in report["plans"]:
+        spans = sorted((row["startUs"], row["endUs"]) for row in plan["segments"])
+        assert all(
+            a_end <= b_start for (_, a_end), (b_start, _) in zip(spans, spans[1:], strict=False)
+        )
+        assert sum(row["outputFrames"] for row in plan["segments"]) <= 4.5 * 30
 
 
 def test_excluded_facts_are_removed():

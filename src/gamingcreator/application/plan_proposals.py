@@ -290,11 +290,12 @@ def _compile_one(
             )
             position += frames
     text = " ".join(s["scriptDraft"] for s in segments).casefold()
-    gaps = [
-        f"主题缺少已保存文字证据：{topic}"
+    topic_notes = [
+        f"主题未在画面摘要中找到：{topic}（可在旁白或字幕里讲，或补充画面）"
         for topic in snapshot.brief.mandatory_topics
         if topic.casefold() not in text
     ]
+    gaps = []
     if not segments:
         gaps.append("没有可渲染素材")
     pool_intervals: set[tuple[str, int, int]] = set()
@@ -317,7 +318,7 @@ def _compile_one(
         "durationStatus": "target-met"
         if position == target
         else ("insufficient-candidate-pool" if pool < target else "insufficient-selection"),
-        "advisories": [],
+        "advisories": topic_notes,
         "scriptStatus": "saved-descriptions-draft-human-review-required",
     }
 

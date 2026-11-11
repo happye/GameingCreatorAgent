@@ -675,10 +675,10 @@ class InspectionHandler(BaseHTTPRequestHandler):
             if path == "/api/creation/brief-sentence":
                 from gamingcreator.application.brief_sentence import parse_brief_sentence
 
-                if not isinstance(value, dict) or set(value) != {"text"}:
+                if not isinstance(value, dict) or set(value) - {"games"} != {"text"}:
                     raise AppError("creation.brief", "需要一句话需求。", ExitCode.INPUT)
                 try:
-                    self._json(200, parse_brief_sentence(value["text"]))
+                    self._json(200, parse_brief_sentence(value["text"], value.get("games")))
                 except ValueError as error:
                     raise AppError("creation.brief", str(error), ExitCode.INPUT) from error
                 return

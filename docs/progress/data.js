@@ -436,9 +436,9 @@ window.PROGRESS_DATA = {
     "tests/test_creation_jobs.py",
     "tests/test_creation_workspace_browser.py"
    ],
-   "done": "一句话需求按本机规则识别游戏/时长/类型/平台/必须主题/排除/观众，确认后填入；结构化需求离线生成模板方案，可带入活动规则与本地知识",
-   "todo": "规则覆盖之外的说法需手填；完整创意需求未覆盖；未经人工验收",
-   "updated": "2026-11-10",
+   "done": "一句话需求按本机规则识别游戏/时长/类型/平台/必须主题/排除/观众，确认后填入（主题列表跨逗号到句号；类型不从主题词误判；未加《》时按本项目录像里的游戏名匹配）；结构化需求离线生成模板方案，可带入活动规则与本地知识",
+   "todo": "规则覆盖之外的说法需手填，AI 解析待 B 阶段预算授权；未经人工验收",
+   "updated": "2026-11-11",
    "sprints": [
     "sprint-creation-planner",
     "sprint-creation-workspace",
@@ -486,9 +486,9 @@ window.PROGRESS_DATA = {
     "tests/test_creation_jobs.py",
     "tests/test_creation_workspace_browser.py"
    ],
-   "done": "离线模板多套方案＋真实文本模型动态策划：3套方案已采用进Studio（任务4c857005），模型抄错指纹的问题已修",
+   "done": "离线模板多套方案＋真实文本模型动态策划：3套方案已采用进Studio（任务4c857005），模型抄错指纹的问题已修；同一录像的重叠片段在规划前去重（每秒只播一次），目标时长跟随去重后的素材篮总长",
    "todo": "方案质量未人评；每次新的模型调用需单独授权",
-   "updated": "2026-11-09",
+   "updated": "2026-11-11",
    "sprints": [
     "sprint-creation-planner",
     "sprint-creation-workspace",
@@ -548,9 +548,9 @@ window.PROGRESS_DATA = {
    "evidence": [
     "2026-11-01: non-blocking plan advisories (too few clips, insufficient total footage, short output, single source, single-clip topic, unknown dimensions) with suggestions alongside existing blocking gaps; real demo-phase0 single-source advisory correct"
    ],
-   "done": "方案附阻断缺口与提醒及补素材建议；主题缺口可一键跳到素材页并填好搜索词，挑片入篮后再生成方案",
-   "todo": "缺口提示有效性未人工评估；画面层面的缺口判断未做",
-   "updated": "2026-11-10",
+   "done": "方案附缺口与提醒及补素材建议；必须主题在画面摘要里找不到时只提醒、不再让方案变灰；主题缺口可一键跳到素材页并填好搜索词，挑片入篮后再生成方案",
+   "todo": "主题仍按字面匹配，语义判断待 AI 导演；缺口提示有效性未人工评估",
+   "updated": "2026-11-11",
    "sprints": [
     "sprint-material-scoring"
    ]
@@ -1984,7 +1984,7 @@ window.PROGRESS_DATA = {
  ],
  "now": [
   "最新完整门禁通过：5152过6跳0失败（08e9cae，31分，经quiet.ps1）；未Release，不提升人评或整项状态。逐批记录见HANDOFF与提交历史。",
-  "J1第四次反馈7组工程修复完毕（含下载true.txt根因、预览卡顿TD025）；近两日又补：一句话需求、缺口一键找素材、配乐节拍对齐、字幕样式、导出后去发布、禁用原因可见、离开前确认、渲染进度保持、作品列表信息、首次引导、桌面EXE进Studio且固定端口。2026-11-11 Agent用真实录像在新Studio走通J1全流程（journeys.json已记），并修了实测发现的镜头计数误导、成片态撤销失效、节拍对齐切开连续镜头。等你复测J1（human-inputs顶部步骤已更新）。",
+  "J1第五次试用（2026-11-11）未通过：成片不能发；创作环节（需求理解、选片、剪辑、文案）几乎全是规则/模板，AI只用于素材理解。重构方案 docs/design-docs/ai-native-creation-plan.md：A修硬伤（无需授权）→B AI编导（需你批准月度AI预算）→C专业编辑体验。等你拍板第五节。",
   "动态策划：两次授权调用均已耗用（¥0.0094516失败已修因；¥0.0174276成功），3套方案已采用为方案任务4c857005（artifacts/demo-phase0），质量待你评价；新调用需新授权。",
   "平台限值仅填官方可读来源（快手15分钟/4G、B站10小时，docs/references/platform-limits-sources.md）；其余待你登录后核对（可选）。",
   "进度看板docs/progress/index.html；分发前许可证缺口及TD003仍待处理。"

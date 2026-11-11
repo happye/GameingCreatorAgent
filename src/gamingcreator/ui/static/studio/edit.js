@@ -106,7 +106,9 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     useEffect(() => { setDraft(readDraft(project)); setPlanJob(null); setRenderJob(null); setPlanId(""); setMode("plan"); }, [project]);
     const update = (patch) => { const next = {...draft, ...patch}; setDraft(next); setSaved(writeDraft(project, next) ? "草稿已保存" : "浏览器不允许保存草稿"); };
     // "用片段篮生成方案" in Assets turns the basket option on.
-    useEffect(() => { if (basketAt) { update({useBasket: true}); onBasketSeen(); } }, [basketAt]);
+    // Coming from the basket, the target length is the basket's distinct footage (J1: 24 s picked, 10 s target).
+    const basketSeconds = distinctSeconds(basket);
+    useEffect(() => { if (basketAt) { update({useBasket: true, ...(basket.items.length ? {targetDuration: String(basketSeconds)} : {})}); onBasketSeen(); } }, [basketAt]);
     const fromBasket = !!draft.useBasket && basket.items.length > 0;
 
     // Abort polling of a previous job when another one is opened.
@@ -337,7 +339,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         <aside class="panel" hidden=${!layout.bin} aria-label="需求与方案">
             <div class="panel-head">需求<span class="spacer"></span><span class="track-label">${saved}</span></div>
             <div class="panel-body">
-                <${BriefSentence} draft=${draft} update=${update} />
+                <${BriefSentence} draft=${draft} update=${update} runs=${runs} />
                 <${Brief} project=${project} runs=${runs} draft=${draft} update=${update} busy=${busy} onGenerate=${generate} basket=${basket} />
                 <div class="section-label">方案${planJob ? `（${planJob.plans.length}）` : ""}</div>
                 ${planJob ? planJob.plans.map((p) => html`<${PlanCard} plan=${p} fps=${fps} active=${p.id === planId} thumb=${thumb} onFind=${onFindMaterial}
@@ -444,12 +446,16 @@ export function confirmLeave() {
     try { return window.confirm("当前方案有未保存的修改，切换会丢弃这些修改。继续吗？"); } catch { return false; }
 }
 
+const distinctSeconds = (basket) => Math.max(1, Math.round(basket.uniqueUs / 1e6));
+
 function Brief({project, runs, draft, update, busy, onGenerate, basket}) {
-    const usable = recordingRuns(runs, draft.runIds);
+    const usable = recordingRuns(runs, draft.runIds), basketSeconds = distinctSeconds(basket);
     const field = (name, label, props = {}) => html`<label class="form-row">${label}<input class="input" value=${draft[name]} onInput=${(e) => update({[name]: e.currentTarget.value})} ...${props} /></label>`;
     return html`<form class="brief" onSubmit=${(e) => { e.preventDefault(); void onGenerate(); }}>
         ${basket.items.length ? html`<label class="check basket-option"><input type="checkbox" checked=${!!draft.useBasket} onChange=${(e) => update({useBasket: e.currentTarget.checked})} />
-            <span>只用片段篮里的 ${basket.items.length} 段（共 ${(basket.totalUs / 1e6).toFixed(0)} 秒）${draft.useBasket && basket.totalUs / 1e6 < Number(draft.targetDuration) ? "：比目标秒数短，方案会偏短" : ""}</span></label>` : null}
+            <span>只用片段篮里的 ${basket.items.length} 段（共 ${(basket.totalUs / 1e6).toFixed(0)} 秒${basket.uniqueUs < basket.totalUs - 500000 ? `，去掉重叠后 ${basketSeconds} 秒` : ""}）</span></label>
+            ${draft.useBasket && Math.abs(basketSeconds - Number(draft.targetDuration)) >= 2 ? html`<p class="hint warn" role="status" aria-label="时长提示">目标 ${draft.targetDuration} 秒，片段篮有 ${basketSeconds} 秒不重复的画面：${basketSeconds > Number(draft.targetDuration) ? "方案只会用其中一部分" : "方案会偏短"}。
+                <button type="button" class="btn ghost" onClick=${() => update({targetDuration: String(basketSeconds)})}>改为 ${basketSeconds} 秒</button></p>` : null}` : null}
         <fieldset class="runs" disabled=${!!draft.useBasket && basket.items.length > 0}><legend>录像${draft.useBasket && basket.items.length ? "（按片段篮自动选择）" : ""}</legend>
             ${usable.map((run) => html`<label class="check"><input type="checkbox" checked=${draft.runIds.includes(run.id)}
                 onChange=${(e) => update({runIds: e.currentTarget.checked ? [...draft.runIds, run.id] : draft.runIds.filter((id) => id !== run.id)})} /><span>${run.sourceName}</span></label>`)}
@@ -472,11 +478,11 @@ function Brief({project, runs, draft, update, busy, onGenerate, basket}) {
 }
 
 // P024: a topic the footage lacks gets a one-click search in the Assets workspace.
-const gapTopics = (gaps = []) => gaps.map((g) => /^主题缺少[^：]*：(.+)$/.exec(g)?.[1]?.trim()).filter(Boolean);
+const gapTopics = (notes = []) => notes.map((g) => /^主题(?:缺少|未在)[^：]*：([^（]+)/.exec(g)?.[1]?.trim()).filter(Boolean);
 
 function PlanCard({plan, fps, active, thumb, onPick, onFind = () => {}}) {
     const items = timeline(plan.segments || [], fps), groups = shots(items);
-    const topics = plan.ready ? [] : gapTopics(plan.gaps);
+    const topics = gapTopics([...(plan.gaps || []), ...(plan.advisories || [])]);
     const total = items.length ? items.at(-1).outStartUs + items.at(-1).outDurUs : 0;
     return html`<button class="plan" aria-current=${active} disabled=${!plan.ready} onClick=${onPick} title=${plan.ready ? "选中后在预览窗播放" : "方案有缺口，不能选择"}>
         <span class="plan-title">${plan.mode ? html`<span class="badge rec">推荐</span>` : null}${plan.title || plan.structure}</span>

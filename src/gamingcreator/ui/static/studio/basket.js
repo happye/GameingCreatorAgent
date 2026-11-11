@@ -17,6 +17,19 @@ const read = () => { try { return JSON.parse(localStorage.getItem(STORE) || "{}"
 const write = (value) => { try { localStorage.setItem(STORE, JSON.stringify(value)); } catch { /* Storage may be disabled. */ } };
 export const factsOf = (event) => event.displayFacts || event.observableFacts || [];
 
+// Seconds of distinct footage: overlapping picks from one recording count once (the planner
+// plays each source second at most once).
+export function uniqueLength(items) {
+    const byRun = new Map();
+    for (const i of items) byRun.set(i.runId, [...(byRun.get(i.runId) || []), [i.startUs, i.endUs]]);
+    let total = 0;
+    for (const ranges of byRun.values()) {
+        let end = -Infinity;
+        for (const [s, e] of ranges.sort((a, b) => a[0] - b[0])) { if (e > end) { total += e - Math.max(s, end); end = e; } }
+    }
+    return total;
+}
+
 export function useBasket(project) {
     const [items, setItems] = useState(() => read()[project] || []);
     // The last cleared basket stays restorable until something new goes in (one misclick is cheap).
@@ -33,6 +46,7 @@ export function useBasket(project) {
     return {
         items, ids,
         totalUs: items.reduce((sum, i) => sum + (i.endUs - i.startUs), 0),
+        uniqueUs: uniqueLength(items),
         toggle: (event, run, thumb) => {
             if (ids.has(event.eventId)) return save(items.filter((i) => i.eventId !== event.eventId));
             if (items.length >= MAX_ITEMS) return;

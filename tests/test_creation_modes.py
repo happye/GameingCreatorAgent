@@ -94,7 +94,7 @@ def test_guide_steps_sample_the_whole_recording_with_contiguous_numbers():
     assert all(s["outputFrames"] >= 45 for s in segments)
 
 
-def test_campaign_topics_follow_opening_and_missing_topic_is_a_gap():
+def test_campaign_topics_follow_opening_and_missing_topic_is_advised():
     facts = [["角色奔跑"], ["新英雄登场", "技能展示"], ["限时活动入口"], ["结算"]]
     report = plan_creation(brief("campaign", topics=("限时活动",)), material(facts), 30)
     campaign = report["plans"][0]
@@ -106,8 +106,9 @@ def test_campaign_topics_follow_opening_and_missing_topic_is_a_gap():
         ("e3", "收尾"),
     ]
     missing = plan_creation(brief("campaign", topics=("周年庆",)), material(facts), 30)
-    assert not missing["plans"][0]["ready"]
-    assert any("周年庆" in gap for gap in missing["plans"][0]["gaps"])
+    # Since 2026-11-11 a topic not seen in the facts only advises; it never greys the plan out.
+    assert missing["plans"][0]["ready"]
+    assert any("周年庆" in note for note in missing["plans"][0]["advisories"])
 
 
 def test_mode_plan_is_a_valid_render_decision():

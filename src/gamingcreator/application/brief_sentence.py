@@ -84,46 +84,77 @@ def _duration(text: str) -> int | None:
     return seconds_total if 1 <= seconds_total <= 86400 else None
 
 
+# A list item that is really another instruction ("要有Boss战，发B站") ends the list.
+_NOT_A_TOPIC = re.compile(
+    r"^(?:发|发布|投|做|给|面向|时长|不要|别|排除|去掉|\d+\s*(?:秒|分))|b站|抖音|快手|小红书", re.I
+)
+
+
 def _items(match: re.Match[str] | None) -> list[str]:
     if match is None:
         return []
-    parts = re.split(r"[、和与及跟/]|以及", match.group(1))
-    return [p.strip(" 的") for p in parts if p.strip(" 的")][:10]
+    items = []
+    for part in re.split(r"[、，,和与及跟/]|以及", match.group(1)):
+        part = part.strip(" 的")
+        if not part:
+            continue
+        if _NOT_A_TOPIC.search(part):
+            break
+        items.append(part)
+    return items[:10]
 
 
-def parse_brief_sentence(text: object) -> dict[str, object]:
+TOPIC_CLAUSE = r"(?:要有|包含|突出|重点(?:讲|放)?|带上|必须有|一定要有)([^。；;！!？?]+)"
+EXCLUDE_CLAUSE = r"(?:不要|别放|排除|去掉)([^，,。；;！!？?]+)"
+
+
+def _game(sentence: str, games: object) -> str | None:
+    marked = re.search(r"《([^》]{1,100})》", sentence)
+    if marked:
+        return marked.group(1).strip()
+    # Without 《》, the longest known game name of this project that the sentence mentions.
+    known = (
+        [g.strip() for g in games if isinstance(g, str) and g.strip()]
+        if isinstance(games, list)
+        else []
+    )
+    found = [g for g in known if g in sentence]
+    return max(found, key=len) if found else None
+
+
+def parse_brief_sentence(text: object, games: object = None) -> dict[str, object]:
     if not isinstance(text, str) or not text.strip() or len(text) > MAX_CHARS:
         raise ValueError("请输入1–500字的一句话需求。")
     sentence = re.sub(r"\s+", " ", text.strip())
-    lower = sentence.casefold()
     fields: dict[str, object] = {"objective": sentence}
     notes: list[str] = []
-    game = re.search(r"《([^》]{1,100})》", sentence)
-    if game:
-        fields["game"] = game.group(1).strip()
-        notes.append(f"游戏：{fields['game']}")
+    if game := _game(sentence, games):
+        fields["game"] = game
+        notes.append(f"游戏：{game}")
+    topics = _items(re.search(TOPIC_CLAUSE, sentence))
+    exclude = _items(re.search(EXCLUDE_CLAUSE, sentence))
+    # Words inside the topic/exclusion lists ("技能解说") must not decide the video type.
+    typed = sentence
+    for item in topics + exclude:
+        typed = typed.replace(item, "")
+    typed = typed.casefold()
     if (seconds := _duration(sentence)) is not None:
         fields["targetDuration"] = seconds
         notes.append(f"时长：{seconds} 秒")
     for value, words in TYPES:
-        if any(word in lower for word in words):
+        if any(word in typed for word in words):
             fields["contentType"] = value
             notes.append(f"类型：{words[0]}")
             break
+    lower = sentence.casefold()
     for name, aliases in PLATFORMS:
         if any(alias in lower for alias in aliases):
             fields["platform"] = name
             notes.append(f"平台：{aliases[0]}")
             break
-    topics = _items(
-        re.search(
-            r"(?:要有|包含|突出|重点(?:讲|放)?|带上|必须有|一定要有)([^，,。；;！!？?]+)", sentence
-        )
-    )
     if topics:
         fields["mandatoryTopics"] = topics
         notes.append(f"必须主题：{'、'.join(topics)}")
-    exclude = _items(re.search(r"(?:不要|别放|排除|去掉)([^，,。；;！!？?]+)", sentence))
     if exclude:
         fields["exclude"] = exclude
         notes.append(f"排除：{'、'.join(exclude)}")
