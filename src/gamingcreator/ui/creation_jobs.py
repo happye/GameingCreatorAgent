@@ -7,6 +7,7 @@ import re
 import shutil
 import threading
 import time
+import unicodedata
 from collections.abc import Iterator
 from contextlib import contextmanager, suppress
 from datetime import UTC, datetime
@@ -67,6 +68,11 @@ def expected_presentation_receipt(request: dict[str, Any], burned: bool) -> dict
     if not burned:
         options = PresentationOptions.from_json({**options.to_json(), "subtitleStyle": "standard"})
     return options.receipt()
+
+
+NAME_FILE = "name.json"
+NAME_SCHEMA = "job-name-v1"
+NAME_MAX = 60
 
 
 def identity(value: object) -> str:
@@ -1464,10 +1470,33 @@ class CreationJobs:
         states.sort(key=lambda state: state["createdAt"], reverse=True)
         summary = ("jobId", "kind", "status", "createdAt", "updatedAt", "projectId", "error")
         jobs = [
-            {key: state[key] for key in summary if key in state} | self._video_facts(state)
+            {key: state[key] for key in summary if key in state}
+            | self._video_facts(state)
+            | self._name(state["jobId"])
             for state in states[:100]
         ]
         return {"jobs": jobs, "truncated": len(states) > 100}
+
+    def _name(self, job_id: str) -> dict[str, Any]:
+        """The user's label for a work (J1 2026-11-11 "project naming"); not job evidence."""
+        try:
+            value = self.read(self.jobs / identity(job_id) / NAME_FILE)
+        except (OSError, ValueError, AppError):
+            return {}
+        name = value.get("name") if value.get("schemaVersion") == NAME_SCHEMA else None
+        return {"name": name} if isinstance(name, str) and name else {}
+
+    def set_name(self, job_id: object, name: object) -> dict[str, Any]:
+        directory = self.directory(identity(job_id))
+        if not isinstance(name, str) or len(name) > NAME_MAX:
+            raise ValueError(f"作品名最多 {NAME_MAX} 个字。")
+        clean = "".join(c for c in name if unicodedata.category(c)[0] != "C").strip()
+        path = directory / NAME_FILE
+        if clean:
+            self.save(path, {"schemaVersion": NAME_SCHEMA, "name": clean})
+        elif path.exists():
+            path.unlink()
+        return {"jobId": directory.name, "name": clean}
 
     def _video_facts(self, state: dict[str, Any]) -> dict[str, Any]:
         """Size, frame size and length of a finished render for list display (no hashing)."""

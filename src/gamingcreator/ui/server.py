@@ -526,6 +526,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/timeline-commands",
                 "/api/creation/beat-snap",
                 "/api/creation/brief-sentence",
+                "/api/creation/job-name",
                 "/api/creation/music",
                 "/api/creation/overlay-assets",
                 "/api/creation/activity-rules",
@@ -569,6 +570,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 if urlparse(self.path).query:
                     raise ValueError("Unexpected query.")
                 self._json(200, reasoning_post(self.creation_reasoning, value))
+                return
+            if path == "/api/creation/job-name":
+                if not isinstance(value, dict) or set(value) != {"jobId", "name"}:
+                    raise ValueError("Expected job and name")
+                self._json(200, self.creation_jobs.set_name(value["jobId"], value["name"]))
                 return
             if path == "/api/creation/activity-rules":
                 self._require("activityRules")

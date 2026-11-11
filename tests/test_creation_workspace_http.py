@@ -100,3 +100,54 @@ def test_subtitle_http_get_head_and_fixed_path(service):  # noqa: F811
         server.shutdown()
         server.server_close()
         thread.join()
+
+
+def test_http_work_name_labels_a_job_in_the_list(service):  # noqa: F811
+    """J1 2026-11-11: a work gets a name at export; the list shows it; empty clears it."""
+    server = create_server("127.0.0.1", 0, service.repository)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    base = f"http://127.0.0.1:{server.server_port}"
+
+    def post(path, payload):
+        return urlopen(
+            Request(
+                base + path,
+                json.dumps(payload).encode(),
+                {"Content-Type": "application/json", "Origin": base},
+            ),
+            timeout=10,
+        )
+
+    def listed():
+        with urlopen(base + "/api/creation/jobs?projectId=artifacts%2Fproject") as response:
+            return json.load(response)["jobs"][0]
+
+    try:
+        with post("/api/creation/plans", request()) as response:
+            job_id = json.load(response)["jobId"]
+        finish(server.creation_jobs, job_id)
+        assert "name" not in listed()
+        with post("/api/creation/job-name", {"jobId": job_id, "name": " 漫画群星\x07新手向 "}) as r:
+            assert json.load(r) == {"jobId": job_id, "name": "漫画群星新手向"}
+        assert listed()["name"] == "漫画群星新手向"
+        for bad in (
+            {"jobId": job_id},
+            {"jobId": job_id, "name": "x" * 61},
+            {"jobId": "../x", "name": "a"},
+        ):
+            try:
+                with post("/api/creation/job-name", bad):
+                    raise AssertionError("Expected refusal")
+            except HTTPError as error:
+                assert error.code == 400
+                error.close()
+        with post("/api/creation/job-name", {"jobId": job_id, "name": ""}):
+            pass
+        assert "name" not in listed()
+        # The label lives beside the job, never inside its verified result.
+        assert server.creation_jobs.get(job_id)["status"] == "completed"
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join()

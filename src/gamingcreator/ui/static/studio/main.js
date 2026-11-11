@@ -260,7 +260,7 @@ function Bin({runs, runsLoaded = false, runId, setRunId, works, onOpen, hidden, 
                     const reason = job.error?.message || "";
                     const meta = job.status === "completed" ? (openable ? (newest ? "最新 · 打开" : "打开") : "") : client.jobStatus(job.status) + (reason ? `：${reason}` : "");
                     return html`<button class="row" disabled=${!openable} title=${openable ? (["publication", "package"].includes(job.kind) ? "在发布区打开" : "在剪辑区打开") : reason || client.jobStatus(job.status)} onClick=${() => onOpen(job)}><span class=${`dot ${job.status === "completed" ? "ok" : job.status === "failed" ? "bad" : "warn"}`}></span>
-                    <span class="name">${new Date(job.createdAt).toLocaleString("zh-CN", {hour12: false})}${job.video ? html`<small class="video-facts" style=${{display: "block", opacity: 0.7}}>${videoFacts(job.video)}</small>` : null}</span><span class="meta">${meta}</span></button>`;
+                    <span class="name">${job.name ? html`${job.name}<small style=${{display: "block", opacity: 0.7}}>${new Date(job.createdAt).toLocaleString("zh-CN", {hour12: false})}</small>` : new Date(job.createdAt).toLocaleString("zh-CN", {hour12: false})}${job.video ? html`<small class="video-facts" style=${{display: "block", opacity: 0.7}}>${videoFacts(job.video)}</small>` : null}</span><span class="meta">${meta}</span></button>`;
                 })}
             </details>`)}
             ${!groups.length && html`<p class="note">生成的成片、方案会出现在这里。</p>`}

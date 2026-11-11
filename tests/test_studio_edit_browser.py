@@ -267,6 +267,22 @@ def test_edit_clip_save_version_and_command(revisions, monkeypatch):  # noqa: F8
             playwright.expect(clips).to_have_count(count)
             playwright.expect(page.get_by_role("button", name="撤销一步")).to_be_disabled()
             playwright.expect(page.get_by_role("button", name="重做")).to_be_enabled()
+            # J1 2026-11-11: drag the selected shot's edge to trim it; one drag = one undo step.
+            clips.nth(1).click()
+            out_point = page.get_by_label("出点", exact=True)
+            before_text = out_point.input_value()
+            before = float(before_text)
+            handle = page.get_by_label("拖动裁剪出点").bounding_box()
+            x, y = handle["x"] + handle["width"] / 2, handle["y"] + handle["height"] / 2
+            page.mouse.move(x, y)
+            page.mouse.down()
+            page.mouse.move(x - 30, y, steps=3)
+            page.mouse.move(x - 60, y, steps=3)
+            page.mouse.up()
+            playwright.expect(out_point).not_to_have_value(before_text)
+            assert 3.0 < float(out_point.input_value()) < before
+            page.get_by_role("button", name="撤销一步").click()
+            playwright.expect(out_point).to_have_value(before_text)
             page.get_by_role("tab", name="导出", exact=True).click()
             for label, suffix in [
                 ("下载 FCPXML", ".fcpxml"),

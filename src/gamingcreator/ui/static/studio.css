@@ -86,6 +86,9 @@ details.group[open] > summary::before { content: "▾ "; }
 .clip { position: absolute; top: 2px; bottom: 2px; border-radius: 3px; background: var(--clip) center/cover no-repeat; border: 1px solid #0006; overflow: hidden; padding: 0; }
 .clip:hover { filter: brightness(1.15); }
 .clip[aria-current="true"] { outline: 2px solid var(--clip-on); outline-offset: -1px; z-index: 1; }
+.trim-handle { position: absolute; top: 0; bottom: 0; width: 10px; margin-left: -5px; z-index: 3; cursor: ew-resize; touch-action: none; }
+.trim-handle::after { content: ""; position: absolute; top: 4px; bottom: 4px; left: 3px; width: 4px; border-radius: 2px; background: var(--clip-on); }
+.trim-handle.in::after { left: 4px; } .trim-handle.out::after { left: 2px; }
 .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #ff5d5d; pointer-events: none; z-index: 2; }
 .track-label { color: var(--ink-3); font-size: var(--t-xs); }
 
@@ -220,3 +223,4 @@ details.group[open] > summary::before { content: "▾ "; }
 .replace-picker .hits { max-height: 36vh; overflow: auto; margin-top: 6px; }
 .replace-picker .hit { align-items: flex-start; border-bottom: 1px solid var(--line); padding: 4px 0; }
 .replace-picker .hit-text { flex: 1; }
+

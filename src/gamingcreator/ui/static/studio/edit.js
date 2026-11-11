@@ -24,6 +24,12 @@ const list = (text) => [...new Set(text.split(/[,，\n]/).map((s) => s.trim()).f
 const secondsText = (us) => `${(us / 1e6).toFixed(1)} 秒`;
 function timecode(us) { const s = Math.max(0, Math.floor(us / 1e6)); return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; }
 
+// J1 2026-11-11: a work is named when it is exported; the name labels the render in the lists
+// and names the downloaded file. Empty means "game + date".
+const stamp = () => new Date().toLocaleString("zh-CN", {month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false});
+const workName = (draft) => (draft.workName || "").trim() || `${draft.game.trim() || "作品"} ${stamp()}`;
+const fileName = (name) => `${name.replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 60) || "gamingcreator"}.mp4`;
+
 function readDraft(project) {
     try { const all = JSON.parse(localStorage.getItem(DRAFT) || "{}"); return {...DEFAULTS, ...(all[project] || {})}; } catch { return {...DEFAULTS}; }
 }
@@ -297,6 +303,8 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         setBusy("render"); setMessage("正在生成成片，60 秒的视频大约需要一分钟…"); player.stop();
         try {
             const accepted = await client.submit("render", {...source, width, height, subtitleMode: subtitles, ...(subtitles === "burn" ? {subtitleStyle} : {})});
+            // Naming is a label only; a failure here never blocks the render.
+            void client.api("/api/creation/job-name", {}, {body: {jobId: accepted.jobId, name: workName(draft)}}).then(onWorksChanged).catch(() => {});
             // Remember the render at once, so leaving or reloading reopens it while it runs.
             lastJob(project, {id: accepted.jobId, kind: "render"});
             const rate = renderSecondsPerSecond, outputSeconds = player.totalUs / 1e6;
@@ -373,7 +381,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                         : html`<span class="badge">成片</span>`}
                     <span class="spacer"></span>
                     ${result ? html`<div class="tabs"><button aria-selected=${mode === "plan"} onClick=${() => setMode("plan")}>方案预览</button><button aria-selected=${mode === "result"} onClick=${() => { player.stop(); setMode("result"); }}>成片</button></div>` : null}
-                    ${result && resultDownload ? html`<a class="btn ghost" href=${resultDownload} download=${`gamingcreator-${renderJob.jobId.slice(0, 8)}.mp4`}>下载 MP4（${(result.sizeBytes / 1048576).toFixed(1)} MB）</a>` : null}
+                    ${result && resultDownload ? html`<a class="btn ghost" href=${resultDownload} download=${fileName(renderJob.name || (draft.workName || "").trim() || `gamingcreator-${renderJob.jobId.slice(0, 8)}`)}>下载 MP4（${(result.sizeBytes / 1048576).toFixed(1)} MB）</a>` : null}
                     ${result ? html`<button type="button" class="btn" onClick=${() => onPublish(renderJob.jobId)}>去发布：写标题和封面</button>` : null}
                     ${plan && exportBlocker && !busy ? html`<span class="hint" role="status" aria-label="导出状态">${exportBlocker}</span>` : null}
                     <button class="btn" disabled=${!plan?.ready || !!busy || audioBusy || overlayBusy || !!problem || commandPreview} title=${exportBlocker || (editing.dirty ? "先保存为新版本，再渲染 MP4" : "按当前内容渲染 MP4")} onClick=${exportVideo}>${busy === "render" ? "正在生成…" : busy === "save" ? "正在保存…" : "导出成片"}</button>
@@ -381,7 +389,8 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
             </section>
             <${ProgramTrack} items=${items} totalUs=${player.totalUs} outUs=${player.outUs} thumb=${thumb} selectedId=${editing.selectedId} changed=${changed} preview=${!!commandRows} lanes=${editable ? audioLanes(editing.audio, music.tracks, fps, player.totalUs) : []}
                 onLane=${() => setInspTab("sound")}
-                onPick=${(item) => { editing.setSelectedId(item.clipId || ""); setInspTab("shot"); setMode("plan"); void player.seek(item.outStartUs, false); }} />
+                onPick=${(item) => { editing.setSelectedId(item.clipId || ""); setInspTab("shot"); setMode("plan"); void player.seek(item.outStartUs, false); }}
+                onTrim=${editable && !commandPreview && !busy ? (id, field, seconds) => editing.ops.trim(id, field, seconds) : null} />
         </div>
         <aside class="panel" hidden=${!layout.insp} aria-label="检查器">
             <div class="panel-head">检查器</div>
@@ -391,6 +400,9 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
             <div class="panel-body">
                 ${message && html`<p class="note" role="status">${message}</p>`}
                 <div hidden=${inspTab !== "export"}>
+                <label class="form-row">作品名<input class="input" aria-label="作品名" maxLength="60" value=${draft.workName || ""} placeholder=${`默认：${draft.game.trim() || "作品"} + 日期`}
+                    onInput=${(e) => update({workName: e.currentTarget.value})} /></label>
+                <p class="hint">导出成片时用这个名字标记作品，并作为下载文件名。</p>
                 <div class="field"><div class="k">专业时间线</div>
                     <p class="hint">FCPXML / OTIO：镜头、变速及实验字幕和源音轨。Premiere XML 另含已保存旁白的独立干声轨；增益、闪避、淡入淡出与配乐需在剪辑软件中复核配置。导入兼容性尚未验证。</p>
                     <div class="actions-row">${[["fcpxml", "下载 FCPXML"], ["otio", "下载 OTIO"], ["xmeml", "下载 Premiere XML"]].map(([format, label]) => html`<button class="btn ghost" disabled=${!!timelineReason || timelineBusy} title=${timelineReason || "下载已保存版本"} onClick=${() => downloadTimeline(format)}>${label}</button>`)}</div>
@@ -494,7 +506,19 @@ function PlanCard({plan, fps, active, thumb, onPick, onFind = () => {}}) {
     </button>${topics.length ? html`<div class="actions-row gap-find">${topics.map((t) => html`<button type="button" class="btn ghost" onClick=${() => onFind(t)}>在素材里找「${t}」</button>`)}</div>` : null}`;
 }
 
-function ProgramTrack({items, totalUs, outUs, thumb, selectedId, changed, preview, lanes = [], onLane, onPick}) {
+// J1 2026-11-11: drag the selected shot's edges to trim it, as in PR/AE. Dragging moves the
+// source in/out point; the trim operation clamps to the shot's source bounds and one drag is
+// one undo step.
+function trimDrag(event, item, field, scale, onTrim) {
+    event.preventDefault(); event.stopPropagation();
+    const handle = event.currentTarget, x0 = event.clientX, base = item[field], rate = item.rate || 1;
+    handle.setPointerCapture?.(event.pointerId);
+    const move = (e) => onTrim(item.clipId, field, (base + (e.clientX - x0) / scale * rate) / 1e6);
+    const end = () => { handle.removeEventListener("pointermove", move); handle.removeEventListener("pointerup", end); handle.removeEventListener("pointercancel", end); };
+    handle.addEventListener("pointermove", move); handle.addEventListener("pointerup", end); handle.addEventListener("pointercancel", end);
+}
+
+function ProgramTrack({items, totalUs, outUs, thumb, selectedId, changed, preview, lanes = [], onLane, onPick, onTrim = null}) {
     const area = useRef(null);
     const [width, setWidth] = useState(800);
     useEffect(() => {
@@ -502,7 +526,8 @@ function ProgramTrack({items, totalUs, outUs, thumb, selectedId, changed, previe
         if (area.current) observer.observe(area.current); return () => observer.disconnect();
     }, []);
     const scale = totalUs ? width / totalUs : 0;
-    const hint = preview ? `一句话修改预览：高亮的是会变化的镜头（共 ${items.length} 个）` : `${items.length} 个镜头 · 点选一个可以裁短、调速、换顺序；Delete 删除`;
+    const hint = preview ? `一句话修改预览：高亮的是会变化的镜头（共 ${items.length} 个）` : `${items.length} 个镜头 · 点选一个后拖动两端可裁剪，也可调速、换顺序；Delete 删除`;
+    const chosen = onTrim && scale ? items.find((item) => item.clipId && item.clipId === selectedId) : null;
     return html`<section class="timeline" aria-label="方案时间轴">
         <div class="panel-head">时间轴<span class="track-label">${items.length ? hint : ""}</span></div>
         <div class="track-area" ref=${area}>
@@ -514,6 +539,10 @@ function ProgramTrack({items, totalUs, outUs, thumb, selectedId, changed, previe
                         title=${`第 ${index + 1} 个镜头 · ${timecode(item.outStartUs)} · ${(item.outDurUs / 1e6).toFixed(1)} 秒${speed ? ` · ${speed}×` : ""} · ${item.scriptDraft || ""}`} onClick=${() => onPick(item)}>
                         <span class="clip-no">${index + 1}</span>${speed ? html`<span class="clip-speed">${speed}×</span>` : null}</button>`;
                 })}
+                ${chosen ? ["startUs", "endUs"].map((field) => html`<div class=${`trim-handle ${field === "startUs" ? "in" : "out"}`} role="slider" aria-label=${field === "startUs" ? "拖动裁剪入点" : "拖动裁剪出点"}
+                    aria-valuenow=${(chosen[field] / 1e6).toFixed(2)} title="拖动裁剪；松开即生效，可撤销"
+                    style=${{left: `${(chosen.outStartUs + (field === "startUs" ? 0 : chosen.outDurUs)) * scale}px`}}
+                    onPointerDown=${(e) => trimDrag(e, chosen, field, scale, onTrim)}></div>`) : null}
                 <div class="playhead" style=${{left: `${outUs * scale}px`}}></div>
             </div>` : html`<p class="note">选中方案后，镜头按成片顺序排在这里。</p>`}
             ${items.length ? lanes.map((lane) => html`<button class=${`lane ${lane.kind}`} title=${`${lane.label} · 点击打开“声音”`} onClick=${onLane}>
