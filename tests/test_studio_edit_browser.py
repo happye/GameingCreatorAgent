@@ -122,7 +122,7 @@ def test_brief_to_exported_video(service, monkeypatch):  # noqa: F811
             playwright.expect(page.locator(".brief input.input").first).to_have_value("句子游戏")
             playwright.expect(page.get_by_label("秒数")).to_have_value("30")
             playwright.expect(page.locator(".brief select").first).to_have_value("highlight")
-            page.locator(".brief input[type=checkbox]").check()
+            page.locator(".brief .runs input[type=checkbox]").check()
             page.locator(".brief input.input").first.fill("测试游戏")
             page.get_by_role("button", name="生成方案").click()
             playwright.expect(page.locator(".plan")).to_have_count(2)
@@ -617,6 +617,27 @@ def test_clip_basket_search_add_and_plan_uses_only_basket(service, monkeypatch):
             page.route(
                 lambda url: "/api/inspect?" in url, lambda route: route.fulfill(json=inspect)
             )
+            # Stage B: after "生成方案" the AI plans once within the budget (model mocked here).
+            actions = []
+            page.route(
+                "**/api/creation/reasoning/config",
+                lambda route: route.fulfill(json={"available": True}),
+            )
+
+            def reasoning(route):
+                action = json.loads(route.request.post_data)["action"]
+                actions.append(action)
+                if action == "prepare_plan":
+                    budget = {"eligible": True, "monthSpentCny": "0", "monthCapCny": "30"}
+                    budget |= {"videoSpentCny": "0", "videoCapCny": "1", "ceilingCny": "0.03"}
+                    quote = {"preparedHash": "a" * 64, "snapshotFingerprint": "b" * 64}
+                    return route.fulfill(json={**quote, "maxCostCny": "2", "budget": budget})
+                plan = {"title": "AI 新手向", "structure": "先讲跳跃", "actualFrames": 60}
+                plan |= {"targetFrames": 60, "durationStatus": "target-met", "segments": []}
+                preview = {"fps": 30, "plans": [plan]}
+                return route.fulfill(json={"status": "completed", "planPreview": preview})
+
+            page.route("**/api/creation/reasoning", reasoning)
             page.goto(base + "/studio")
             page.get_by_label("搜索片段").fill("跳跃")
             playwright.expect(page.locator(".clip-search .hit")).to_have_count(2)
@@ -633,6 +654,8 @@ def test_clip_basket_search_add_and_plan_uses_only_basket(service, monkeypatch):
             page.get_by_role("button", name="生成方案").click()
             playwright.expect(page.locator(".plan")).to_have_count(1)
             assert seen == [["run:m:event:0", "run:m:event:1"]]
+            playwright.expect(page.get_by_label("动态方案预览")).to_contain_text("AI 新手向")
+            assert actions == ["prepare_plan", "execute_budget"]
             # The basket survives a reload.
             page.reload()
             page.get_by_role("tab", name="素材").click()

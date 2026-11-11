@@ -82,6 +82,8 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     const [draft, setDraft] = useState(() => readDraft(project));
     const [saved, setSaved] = useState("");
     const [planJob, setPlanJob] = useState(null);
+    // Stage B (2026-11-11): after "生成方案" the AI plans once more within the monthly budget.
+    const [aiPlanFor, setAiPlanFor] = useState("");
     const [planId, setPlanId] = useState("");
     const [renderJob, setRenderJob] = useState(null);
     const [mode, setMode] = useState("plan");
@@ -184,7 +186,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
             const accepted = await client.submit("plan", {projectId: project, runIds, brief, fps: Number(draft.fps), ...(eventIds ? {eventIds,
                 clipRanges: basket.items.map(({runId, eventId, startUs, endUs}) => ({runId, eventId, startUs, endUs}))} : {})});
             const done = await follow(accepted.jobId, () => {});
-            if (done?.status === "completed") { client.forgetIntent("plan"); showPlan(done); setMessage(""); onWorksChanged(); }
+            if (done?.status === "completed") { client.forgetIntent("plan"); showPlan(done); setMessage(""); onWorksChanged(); if (draft.aiPlan !== false) setAiPlanFor(done.jobId); }
             else if (done) setMessage(`方案生成失败：${done.error?.message || done.status}`);
         } catch (error) { setMessage(`${error.message}。再次点击会复用同一请求，不会重复创建。`); }
         finally { setBusy(""); }
@@ -356,7 +358,8 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                     onPick=${() => { if (overlayBusy || audioBusy || busy) return; if (editing.dirty && !confirmLeave()) return; setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommandRows(null); lastJob(project, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
                     : html`<p class="note">填好需求后点“生成方案”。方案只是剪辑清单，生成很快；选中后可以直接预览，不用先渲染。</p>`}
                 ${planJob ? html`<${PlanReasoningPanel} key=${`${project}:${planJob.jobId}`} project=${project} jobId=${planJob.jobId}
-                    disabled=${!!busy || editing.dirty || commandPreview || audioBusy || overlayBusy} onAdopt=${adoptPlans} />` : null}
+                    disabled=${!!busy || editing.dirty || commandPreview || audioBusy || overlayBusy} onAdopt=${adoptPlans}
+                    autoStart=${aiPlanFor === planJob.jobId} onAutoStarted=${() => setAiPlanFor("")} />` : null}
             </div>
         </aside>
         <div class="center">
@@ -487,6 +490,8 @@ function Brief({project, runs, draft, update, busy, onGenerate, basket}) {
             ${field("mandatoryTopics", "必须包含的主题（逗号分隔）")}${field("exclude", "排除这些词的片段（如：加载, 菜单）")}
             ${field("fps", "输出帧率", {type: "number", min: 1, max: 120})}
         </details>
+        <label class="check"><input type="checkbox" aria-label="生成后让AI再策划" checked=${draft.aiPlan !== false} onChange=${(e) => update({aiPlan: e.currentTarget.checked})} />
+            <span>生成后让 AI 按需求和素材再策划 1–3 套（月度预算内自动，通常几分钱）</span></label>
         <button class="btn wide" type="submit" disabled=${!!busy}>${busy === "plan" ? "正在生成…" : "生成方案"}</button>
     </form>`;
 }

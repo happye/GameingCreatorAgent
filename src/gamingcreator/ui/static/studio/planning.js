@@ -75,11 +75,18 @@ function usePlanReasoning(project, jobId, disabled, onAdopt) {
     };
 }
 
-export function PlanReasoningPanel({project, jobId, disabled, onAdopt}) {
+export function PlanReasoningPanel({project, jobId, disabled, onAdopt, autoStart = false, onAutoStarted = () => {}}) {
     const flow = usePlanReasoning(project, jobId, disabled, onAdopt);
+    const panel = useRef(null);
+    // Started by the user's "生成方案" click; runs once per plan job, only when a key is set.
+    useEffect(() => {
+        if (!autoStart || disabled || !flow.available || flow.quote || flow.busy) return;
+        if (panel.current) panel.current.open = true;
+        onAutoStarted(); void flow.prepare();
+    }, [autoStart, disabled, flow.available]);
     const history = records().filter(r => r.key === flow.identity);
     const response = flow.result?.proposal?.response;
-    return html`<details class="group dynamic-planning" aria-label="AI动态策划">
+    return html`<details class="group dynamic-planning" aria-label="AI动态策划" ref=${panel}>
         <summary>AI动态策划（预算内自动）</summary>
         <p class="hint">按此任务已保存的需求与候选素材重新策划，不使用尚未生成的表单修改。只发送文字，模型没有观看画面；声音仍用免费本机语音。</p>
         ${disabled ? html`<p class="hint">请先保存或撤销镜头修改，并完成当前任务。</p>` : null}
