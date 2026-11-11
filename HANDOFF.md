@@ -1,36 +1,29 @@
 # HANDOFF（覆盖快照）
 
-## 最近一次会话（2026-11-11，Claude Code）
+## 最近一次会话（2026-11-11 晚，Claude Code）
 
-Codex已按用户要求暂停（额度不足）；本会话由Claude Code接手为唯一写者。用户Goal：自主继续开发，关键节点同步Dashboard，需额外授权或无法安全解决时汇报。
+用户Goal：自主继续开发，关键节点同步Dashboard，需额外授权或无法安全解决时汇报。J1第五次试用未通过（8条反馈，journeys.json），重构方案 docs/design-docs/ai-native-creation-plan.md 第五节已拍板：创作AI每月¥30、单条视频¥1内自动调用，超出再逐次确认；DeepSeek；本机配音；顺序A→B→C。
 
-## 已完成
+## 本批提交（未跑全量）
 
-- cd60e5c 进度看板：docs/progress/index.html + scripts/progress_ui.py + docs/progress/nodes.json；四工具规则已引用docs/references/progress-dashboard.md。完成模块后改一个节点、运行脚本、同提交。
-- 9cb1076 修复Studio成片“下载MP4”裸download属性（htm生成download="true"，即J1“true.txt”根因）；加真实下载属性断言和全Studio模板静态守卫；edit+publish浏览器8过。
-- 3b28946 main快进至开发分支并推送（含P018版本对比、TD026留痕、连接队列修复）。全量首轮3个音频测试失败已定向修复；第二轮92%停止记录.cache/knowledge-evidence-hook-fixed-full-stopped.json，不算绿，不同批重跑。
+- 5e7f356 阶段A：同录像重叠片段规划前去重（每秒只播一次，剩余<1秒丢弃）；“用片段篮”把目标时长设为去重秒数并提示；必须主题找不到只提醒不置灰；一句话需求跨逗号取主题、类型不从主题误判、按录像名识别游戏。
+- 5e95259 发布页：封面保存前可从7张候选帧/当前画面选并预览；标题“游戏｜类型：主题”（新手向标记），简介=导语+带时间点分段；复制按钮已删。
+- 92a4314 Delete/撤销键竞态：键盘监听改layout effect（e8c12aa的“Delete flake”真因）。
+- 42436c1 AI预算门禁：application/ai_budget.py；execute_within_budget在根锁内判定并写confirmation（source monthly-budget-policy）；领养方案任务计入原视频；HTTP execute_budget；Studio预算内一键调用、4xx回退逐次确认。code-quality-guard审查PASS。
+- 受影响测试：5e7f356批1152过3失败→已修并定向复跑；5e7f356..批833过1失败（Delete竞态）→已修，文件7过。
 
-## 等用户
+## 下一步（已授权）
 
-1. 两次授权动态策划均已耗用：第1次失败（指纹抄错，已修）；第2次成功（.cache/scratch/j1-dynamic-plan-evidence-trial/second/，估算¥0.0174276），采用为方案任务4c857005。不得重发；新调用需新授权。
-2. J1复测（用户方便时）。
-
-## 下一步（无需授权）
-
-J1剩余工程项均依赖模型或人评；可继续的本机项见看板“还缺”。P011代理清理属.cache清理（用户另有安排），跳过。下一实质业务批次结束时统一跑一次verify.ps1。
+1. 阶段B：AI写标题/简介/标签（发布页按钮，走预算门禁，新purpose）；AI理解一句话需求；AI按主题选片编排（工具调用）。规则版保留为离线兜底并标注。
+2. 阶段A剩余：时间线拖拽裁剪、工程命名。
+3. 阶段B首批结束时跑一次 verify.ps1（本批未跑全量）。
+4. 之后请用户第六次J1复测。
 
 ## 已知
 
-2026-11-11：第三轮全部完成；Agent真实数据走通Studio J1（agent_run 11-11）并修3处实测问题；本批全量08e9cae 5152过6跳0失败。测试锁+批次规则+server.py窄选择已由用户批准合入（另一会话eda06d0/0984351）。下一步：等J1复测；可继续的本机项需重新规划（前三轮清单已完成）。
-
-11-10晚批次：601b15e节拍对齐、cdf57d6缺口找素材、2e03859一句话需求、本次Studio J1衔接（去发布/禁用原因/中文状态/首次引导）。全量5f3dd2e失败2+1错误，均为测试问题已定向修复（0fa7a8d系列）；之后的改动仅定向+受影响测试，下一批末尾全量。
-
-
-11-10续：663d319 字幕样式、bbc4abf 受限端口、38fa31b quiet.ps1、b48e212 TD027；本批完整门禁 9a8bdba 5115过6跳0失败（.cache/test-logs/verify-20261110-002448.log）。长测试用 ./scripts/quiet.ps1 test-affected|verify|pytest，只读摘要；同一工作树不要同时跑两个pytest。
-
-本批完整门禁 ba01459：5104过6跳0失败（.cache/batch-20261109-claude-full.log，verify-last.json=passed）。前两次启动失败是在Windows PowerShell 5.1下重定向导致uv的stderr变成终止错误（未跑任何测试），已在ba01459修复；失败于pytest前记setup-failed，不阻断重跑。
-
-用户同意AGENTS预算调至8192（22cab2a）。verify.ps1新增同批重跑门槛：.cache/verify-last.json非passed时，除非之后有feat:提交或用户明确要求-AllowRerun，否则拒绝全量。当前记录为84c7341 interrupted；之后已有feat 97c6843，下一次全量属于新批次可跑。
+- 8765上的用户服务器是旧代码（拒绝brief-sentence的games字段），需用户重启后才能看到改动；预览用 .claude/launch.json 的 workspace（8791）。
+- 发布页分段名仍是画面分析描述，等AI文案。
+- 全量门禁最近一次：08e9cae 5152过6跳0失败。
 
 ## 保护
 
