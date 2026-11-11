@@ -150,17 +150,10 @@ def test_publish_copy_cover_and_package(service, monkeypatch):  # noqa: F811
             assert posted["publication"]["title"] == "三分钟看懂玩法"
             assert posted["publication"]["tags"] == ["游戏", "玩法展示"]
             assert posted["publication"]["expectedRenderReceiptSha256"] == DIGEST
-            # Manual publishing: copy buttons put exactly the saved copy on the clipboard.
-            page.context.grant_permissions(["clipboard-read", "clipboard-write"])
-            page.get_by_role("button", name="复制标题").click()
-            playwright.expect(page.get_by_role("status", name="复制状态")).to_have_text(
-                "已复制标题"
-            )
-            assert page.evaluate("navigator.clipboard.readText()") == "三分钟看懂玩法"
-            page.get_by_role("button", name="复制全部").click()
-            # The Windows clipboard stores line breaks as CRLF.
-            copied = page.evaluate("navigator.clipboard.readText()").replace("\r\n", "\n")
-            assert copied.startswith("三分钟看懂玩法\n\n") and copied.endswith("#游戏 #玩法展示")
+            # J1 2026-11-11: copy buttons were useless and are gone; the cover is part of the
+            # publish info (saved cover shown once saved).
+            playwright.expect(page.get_by_role("button", name="复制标题")).to_have_count(0)
+            playwright.expect(page.get_by_text("封面（保存前可选）")).to_be_visible()
             # With no platform ticked, the reason is shown next to the disabled button.
             boxes = page.locator("[aria-label=平台包] input[type=checkbox]")
             ticked = [i for i in range(boxes.count()) if boxes.nth(i).is_checked()]

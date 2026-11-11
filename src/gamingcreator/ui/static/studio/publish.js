@@ -1,5 +1,5 @@
 // Publish workspace: pick a finished video, write its title, description and tags, pick the
-// cover from a frame, save that as a publication version, then build a platform package to
+// cover from candidate frames before saving, save that as a publication version, then build a platform package to
 // download. Nothing is posted to any platform from here.
 import {h} from "../vendor/preact.module.js";
 import {useCallback, useEffect, useRef, useState} from "../vendor/hooks.module.js";
@@ -14,18 +14,44 @@ const jobPath = (id) => `/api/creation/jobs/${encodeURIComponent(id)}`;
 const when = (iso) => new Date(iso).toLocaleString("zh-CN", {hour12: false});
 const tagList = (text) => [...new Set(text.split(/[,，\n]/).map((t) => t.trim()).filter(Boolean))];
 
-// Platform publishing is manual for now, so copying title, description and tags saves retyping.
-function CopyRow({form, dirty}) {
-    const [note, setNote] = useState("");
-    const tags = tagList(form.tags);
-    const copy = (label, value) => void client.copyText(value, () => setNote(`已复制${label}${dirty ? "（含未保存的修改）" : ""}`), () => setNote(`无法自动复制${label}，请手动选择文字`));
-    const all = [form.title, form.description, tags.map((t) => `#${t}`).join(" ")].filter(Boolean).join("\n\n");
-    return html`<div class="field copy-row"><div class="actions-row">
-        <button type="button" class="btn ghost" disabled=${!form.title} onClick=${() => copy("标题", form.title)}>复制标题</button>
-        <button type="button" class="btn ghost" disabled=${!form.description} onClick=${() => copy("简介", form.description)}>复制简介</button>
-        <button type="button" class="btn ghost" disabled=${!tags.length} onClick=${() => copy("标签", tags.join(" "))}>复制标签</button>
-        <button type="button" class="btn ghost" disabled=${!form.title} onClick=${() => copy("全部", all)}>复制全部</button></div>
-        <p class="hint" role="status" aria-label="复制状态">${note}</p></div>`;
+// J1 2026-11-11: the cover is chosen before saving. Candidates are grabbed in the browser from a
+// hidden copy of the video (preview only); saving still extracts the cover with FFmpeg.
+const COVER_POINTS = [0.08, 0.22, 0.36, 0.5, 0.64, 0.78, 0.92];
+function grabFrame(video, width = 240) {
+    const canvas = document.createElement("canvas");
+    canvas.width = width; canvas.height = Math.round(width * (video.videoHeight || 9) / (video.videoWidth || 16));
+    canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.82);
+}
+function useCoverCandidates(src, frames, fps) {
+    const [thumbs, setThumbs] = useState([]);
+    useEffect(() => {
+        setThumbs([]);
+        if (!src || !frames) return;
+        let cancelled = false;
+        const video = document.createElement("video");
+        video.muted = true; video.preload = "auto"; video.src = src;
+        const seek = (frame) => new Promise((resolve, reject) => { video.onseeked = resolve; video.onerror = reject; video.currentTime = (frame + 0.5) / fps; });
+        video.addEventListener("loadeddata", async () => {
+            const found = [];
+            for (const frame of [...new Set(COVER_POINTS.map((r) => Math.min(frames - 1, Math.floor(frames * r))))]) {
+                try { await seek(frame); } catch { return; }
+                if (cancelled) return;
+                found.push({frame, url: grabFrame(video)}); setThumbs([...found]);
+            }
+        }, {once: true});
+        return () => { cancelled = true; video.removeAttribute("src"); video.load(); };
+    }, [src, frames, fps]);
+    return thumbs;
+}
+
+function CoverField({savedSrc, preview, thumbs, coverFrame, fps, onPick}) {
+    const shown = savedSrc || preview || thumbs.find((t) => t.frame === coverFrame)?.url;
+    return html`<div class="field cover-field"><div class="k">封面（保存前可选）</div>
+        ${shown ? html`<img class="cover" src=${shown} alt="封面" />` : html`<p class="hint">选下面一张，或在预览里停到想要的画面后点“用当前画面做封面”。</p>`}
+        <div class="cover-picks" aria-label="封面候选">${thumbs.map((t) => html`<button type="button" class="cover-pick" aria-pressed=${t.frame === coverFrame}
+            title=${`第 ${t.frame} 帧（${(t.frame / fps).toFixed(1)} 秒）`} onClick=${() => onPick(t.frame, t.url)}><img src=${t.url} alt=${`封面候选 ${(t.frame / fps).toFixed(1)} 秒`} /></button>`)}</div>
+        <p class="hint">好封面：人物或技能特写、画面清晰不糊、没有转场残影；横版 16:9，留出放标题的位置。</p></div>`;
 }
 
 export function PublishWorkspace({project, works, open, onWorksChanged, layout, onDirtyChange = () => {}}) {
@@ -48,6 +74,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     const [busy, setBusy] = useState("");
     const [message, setMessage] = useState("");
     const video = useRef(null);
+    const [coverPreview, setCoverPreview] = useState("");
 
     useEffect(() => {
         client.api("/api/creation/platform-profiles").then((data) => { setProfiles(data.profiles || []); setPlatform(data.profiles?.[0]?.Platform || ""); setSelected([data.profiles?.[0]?.Platform].filter(Boolean)); }).catch(() => setProfiles([]));
@@ -66,7 +93,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
         polling.current.abort(); polling.current = new AbortController();
         const generation = ++epoch.current;
         const current = () => generation === epoch.current;
-        setMessage(""); setPackages([]); setPub(null); setBusy("");
+        setMessage(""); setPackages([]); setPub(null); setBusy(""); setCoverPreview("");
         try {
             let publicationId = id;
             if (kind === "package") { const data = await client.api(`${jobPath(id)}/package`); if (!current()) return; publicationId = data.publicationJobId; }
@@ -86,7 +113,10 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     const useFrame = () => {
         const el = video.current; if (!el || !pub) return;
         setForm({...form, coverFrame: Math.max(0, Math.min(pub.frames - 1, Math.floor(el.currentTime * fps)))});
+        try { setCoverPreview(grabFrame(el)); } catch { setCoverPreview(""); }
     };
+    const videoSrc = pub ? client.sameOrigin(pub.videoUrl, `${jobPath(pub.renderJobId)}/video`) || "" : "";
+    const thumbs = useCoverCandidates(videoSrc, pub?.frames || 0, fps);
     const save = async () => {
         if (!pub) return;
         const generation = epoch.current;
@@ -193,7 +223,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
         </aside>
         <div class="center">
             <section class="viewer" aria-label="成片预览">
-                <div class="stage">${pub ? html`<video ref=${video} src=${client.sameOrigin(pub.videoUrl, `${jobPath(pub.renderJobId)}/video`) || ""} controls playsinline preload="metadata"></video>` : html`<div class="empty">在左侧选一个成片</div>`}</div>
+                <div class="stage">${pub ? html`<video ref=${video} src=${videoSrc} controls playsinline preload="metadata"></video>` : html`<div class="empty">在左侧选一个成片</div>`}</div>
                 <div class="transport">
                     <button class="btn ghost" disabled=${!pub} onClick=${useFrame}>用当前画面做封面</button>
                     <span class="tc">封面：第 ${form.coverFrame} 帧（${(form.coverFrame / fps).toFixed(2)} 秒）</span>
@@ -232,8 +262,9 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                     <label class="form-row">标题（${form.title.length} 字）<input class="input" value=${form.title} maxLength="200" onInput=${(e) => setForm({...form, title: e.currentTarget.value})} /></label>
                     <label class="form-row">简介（${form.description.length} 字）<textarea class="input" rows="6" value=${form.description} onInput=${(e) => setForm({...form, description: e.currentTarget.value})}></textarea></label>
                     <label class="form-row">标签（逗号分隔，${tagList(form.tags).length} 个）<input class="input" value=${form.tags} onInput=${(e) => setForm({...form, tags: e.currentTarget.value})} /></label>
-                    <${CopyRow} form=${form} dirty=${dirty} />
-                    <div class="field"><div class="k">封面</div>${coverSrc ? html`<img class="cover" src=${coverSrc} alt="封面" />` : html`<p class="hint">保存后在这里显示封面截图。</p>`}</div>
+                    <p class="hint">简介里可以补一句作者的话和相关链接（官网、下载、活动页）。</p>
+                    <${CoverField} savedSrc=${coverSrc} preview=${coverPreview} thumbs=${thumbs} coverFrame=${form.coverFrame} fps=${fps}
+                        onPick=${(frame, url) => { setForm({...form, coverFrame: frame}); setCoverPreview(url); }} />
                     <div class="actions-row"><button class="btn" disabled=${!!busy || !form.title.trim() || (pub.publicationJobId && !dirty)} onClick=${save}>${busy === "publication" ? "正在保存…" : "保存发布信息"}</button></div>`
                 : html`<p class="note">选中成片后，在这里写标题、简介和标签。</p>`}
             </div>

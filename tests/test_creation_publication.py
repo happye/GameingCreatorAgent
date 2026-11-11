@@ -295,27 +295,38 @@ def test_async_save_runs_parent_verification_outside_its_event_loop(rendered, mo
     assert (directory / "result/cover.png").read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
 
 
-def test_draft_copy_lists_rendered_shot_facts_and_topics():
+def test_draft_copy_is_a_title_and_chaptered_description_not_the_brief_sentence():
+    """J1 2026-11-11: the title copied the brief and the description piled up summaries."""
     brief = {
         "game": "测试游戏",
-        "objective": "展示新地图",
-        "contentType": "gameplay_showcase",
-        "mandatoryTopics": ["新地图", "测试游戏"],
+        "objective": "给新玩家做个测试游戏的玩法展示，发B站",
+        "contentType": "feature_showcase",
+        "audience": "新玩家",
+        "mandatoryTopics": ["新地图", "技能解说", "测试游戏", "玩法思路"],
     }
     segments = [
-        {"scriptDraft": "角色跳上屋顶；镜头拉远"},
-        {"scriptDraft": "角色跳上屋顶"},
-        {"scriptDraft": ""},
-        {"scriptDraft": "Boss 释放\x07技能。"},
-        *({"scriptDraft": f"片段{n}"} for n in range(10)),
+        {"role": "开场", "scriptDraft": "角色跳上屋顶；镜头拉远", "outputFrames": 90},
+        {"role": "镜头", "scriptDraft": "角色跳上屋顶", "outputFrames": 60},
+        {"scriptDraft": "", "outputFrames": 30},
+        {"role": "镜头", "scriptDraft": "Boss 释放\x07技能。", "outputFrames": 2000},
+        *({"scriptDraft": f"片段{n}", "outputFrames": 30} for n in range(10)),
     ]
-    copy = draft_copy(brief, segments)
+    copy = draft_copy(brief, segments, 30)
+    assert copy["title"] == "【新手向】测试游戏｜玩法展示：新地图、技能解说、测试游戏"
+    assert "发B站" not in copy["title"] + copy["description"]
     lines = copy["description"].split("\n")
-    assert lines[:3] == ["展示新地图", "", "本期内容："]
-    assert lines[3:5] == ["· 角色跳上屋顶", "· Boss 释放技能"]
-    assert len(lines) == 3 + 6  # at most six highlights, duplicates and empties skipped
-    assert copy["tags"][0] == "测试游戏" and copy["tags"][-1] == "新地图"
-    assert len(copy["tags"]) == len(set(copy["tags"]))
+    assert (
+        lines[0]
+        == "这期给新玩家带来《测试游戏》的玩法展示，重点讲新地图、技能解说、测试游戏、玩法思路。"
+    )
+    assert lines[2] == "本期内容："
+    assert lines[3:6] == ["00:00 开场", "00:03 角色跳上屋顶", "00:06 Boss 释放技能"]
+    assert lines[6] == "01:12 片段0" and len(lines) == 3 + 6
+    assert copy["tags"][0] == "测试游戏" and len(copy["tags"]) == len(set(copy["tags"]))
     validate_metadata({**copy, "coverFrame": 0}, 1)
-    plain = draft_copy(brief, [])
-    assert plain["description"] == "展示新地图" and plain["title"] == "测试游戏 · 展示新地图"
+    plain = draft_copy({**brief, "mandatoryTopics": [], "audience": ""}, [])
+    assert plain == {
+        "title": "测试游戏｜玩法展示",
+        "description": "这期带来《测试游戏》的玩法展示。",
+        "tags": ["测试游戏", "玩法展示"],
+    }

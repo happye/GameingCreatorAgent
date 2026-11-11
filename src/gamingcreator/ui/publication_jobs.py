@@ -58,7 +58,8 @@ def snapshot(jobs: Any, job_id: str) -> dict[str, Any]:
     _, receipt, digest = render_parent(jobs, job_id)
     edl, report, _ = read_creation(jobs.safe(directory / "selection"))
     brief = report["brief"]
-    copy = draft_copy(brief, edl.get("segments") or [])
+    fps = receipt["fpsNumerator"] / receipt["fpsDenominator"]
+    copy = draft_copy(brief, edl.get("segments") or [], fps)
     return {
         "publicationJobId": None,
         "publicationReceiptSha256": None,
@@ -84,31 +85,52 @@ def _clean(value: object, limit: int) -> str:
     return "".join(c for c in text if unicodedata.category(c) != "Cc")[:limit]
 
 
-def draft_copy(brief: dict[str, Any], segments: list[Any]) -> dict[str, Any]:
-    """Editable local template: the brief plus saved observable facts of the rendered shots.
+NEWCOMER = ("新玩家", "新手", "萌新", "小白")
 
-    No model writes anything here; facts are the analysis text already shown in the plan.
+
+def _timestamp(seconds: float) -> str:
+    whole = int(seconds)
+    return f"{whole // 60:02d}:{whole % 60:02d}"
+
+
+def draft_copy(
+    brief: dict[str, Any], segments: list[Any], fps: float | None = None
+) -> dict[str, Any]:
+    """Editable local template from the structured brief and the rendered shots.
+
+    J1 2026-11-11: the title is no longer the raw brief sentence and the description is an
+    intro plus a timestamped chapter list instead of piled-up analysis text. No model writes
+    anything here.
     """
-    highlights: list[str] = []
+    game = _clean(brief["game"], 100).strip()
+    label = MODE_LABELS.get(brief["contentType"], brief["contentType"])
+    topics = [t for t in (_clean(x, 50).strip() for x in brief.get("mandatoryTopics") or []) if t]
+    audience = _clean(brief.get("audience"), 20).strip()
+    title = f"{game}｜{label}" + (f"：{'、'.join(topics[:3])}" if topics else "")
+    if audience in NEWCOMER:
+        title = "【新手向】" + title
+    intro = (
+        f"这期{('给' + audience) if audience else ''}带来{f'《{game}》的' if game else ''}{label}"
+    )
+    intro += f"，重点讲{'、'.join(topics)}。" if topics else "。"
+    chapters: list[str] = []
+    elapsed = 0.0
     for segment in segments:
-        fact = _clean(segment.get("scriptDraft") if isinstance(segment, dict) else "", 400)
-        first = fact.split("；")[0].strip().rstrip("。")[:40]
-        if first and first not in highlights:
-            highlights.append(first)
-        if len(highlights) == HIGHLIGHT_LIMIT:
+        row = segment if isinstance(segment, dict) else {}
+        role = _clean(row.get("role"), 40).strip()
+        fact = _clean(row.get("scriptDraft"), 400).split("；")[0].strip().rstrip("。")[:40]
+        name = role if role and role != "镜头" else fact
+        stamp = _timestamp(elapsed) + " " if fps else ""
+        if name and not any(line.endswith(" " + name) or line == name for line in chapters):
+            chapters.append(stamp + name)
+        frames = row.get("outputFrames")
+        elapsed += frames / fps if fps and isinstance(frames, int) else 0
+        if len(chapters) == HIGHLIGHT_LIMIT:
             break
-    objective = _clean(brief["objective"], 2000).strip()
-    description = objective
-    if highlights:
-        lines = "\n".join("· " + line for line in highlights)
-        description = (objective + "\n\n" if objective else "") + "本期内容：\n" + lines
-    tags = [
-        brief["game"],
-        MODE_LABELS.get(brief["contentType"], brief["contentType"]),
-        *(brief.get("mandatoryTopics") or []),
-    ]
+    description = intro + ("\n\n本期内容：\n" + "\n".join(chapters) if chapters else "")
+    tags = [game, label, *topics]
     return {
-        "title": _clean(brief["game"] + " · " + brief["objective"], 200) or "创作视频",
+        "title": _clean(title, 80) or "创作视频",
         "description": description[:5000],
         "tags": list(dict.fromkeys(t for t in (_clean(x, 50).strip() for x in tags) if t))[:20],
     }

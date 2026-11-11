@@ -766,8 +766,8 @@ window.PROGRESS_DATA = {
     "tests/test_creation_publication_http.py",
     "tests/test_creation_publication_browser.py"
    ],
-   "done": "从成片选帧做封面；标题/简介/标签有本地模板草稿（简介列出成片镜头已保存画面要点，标签含必须主题），可编辑保存多版本、下载；发布页可一键复制标题/简介/标签/全部",
-   "todo": "无模型生成文案；封面设计与文案质量未评估",
+   "done": "封面在保存前可从7张候选帧或当前画面选择并预览；标题按需求结构生成（游戏｜类型：主题，不再照抄需求原句），简介为导语＋带时间点的分段；可编辑保存多版本、下载；无用的复制按钮已移除",
+   "todo": "无模型生成文案（分段名仍是画面描述），待AI文案（B阶段，预算已授权）；封面设计与文案质量未评估",
    "updated": "2026-11-11",
    "sprints": [
     "sprint-publication-assets"
@@ -2686,7 +2686,7 @@ window.PROGRESS_DATA = {
    "item": "J1 修复后复测（新工作台全流程）",
    "how": "已于 2026-11-11 完成第五次试用",
    "when": "—",
-   "state": "2026-11-11 未通过，8条反馈记入 journeys.json；下一步待你对 docs/design-docs/ai-native-creation-plan.md 第五节拍板（AI费用规则、模型、配音、顺序）"
+   "state": "2026-11-11 未通过，8条反馈记入 journeys.json；2026-11-11 已拍板：AI 每月 ¥30、单条 ¥1 内自动调用，DeepSeek，本机配音，A→B→C；阶段 A 修复后再请你第六次复测"
   },
   {
    "item": "正式业务指标口径",

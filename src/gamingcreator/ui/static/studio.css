@@ -213,6 +213,10 @@ details.group[open] > summary::before { content: "▾ "; }
 .publish-pkg .track-area { padding: 8px 12px; overflow: auto; }
 .pkg-result { margin-top: 8px; }
 .panel-body img.cover { width: 100%; border-radius: var(--r-1); border: 1px solid var(--line); }
+.cover-picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; margin-top: 6px; }
+.cover-pick { padding: 0; border: 2px solid transparent; border-radius: var(--r-1); background: none; cursor: pointer; }
+.cover-pick[aria-pressed="true"] { border-color: var(--accent, #4c8dff); }
+.cover-pick img { display: block; width: 100%; border-radius: calc(var(--r-1) - 2px); }
 .replace-picker .hits { max-height: 36vh; overflow: auto; margin-top: 6px; }
 .replace-picker .hit { align-items: flex-start; border-bottom: 1px solid var(--line); padding: 4px 0; }
 .replace-picker .hit-text { flex: 1; }
