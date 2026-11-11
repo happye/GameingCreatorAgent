@@ -10,7 +10,7 @@ import {AudioPanel, narrationProblem, useAudioPreview, useMusicCatalog} from "./
 import {ActivityRules} from "./activity.js";
 import {BriefSentence} from "./brief_sentence.js";
 import {KnowledgeUses, PlanReasoningPanel} from "./planning.js";
-import {WaveLane} from "./waveform.js";
+import {WaveLane, envelopeDb} from "./waveform.js";
 import {SubtitlePreview, useSubtitlePreview} from "./subtitles.js";
 import {OverlayPanel, OverlayPreview, overlayProblem} from "./overlays.js";
 
@@ -395,7 +395,8 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                 onLane=${() => setInspTab("sound")}
                 onPick=${(item) => { editing.setSelectedId(item.clipId || ""); setInspTab("shot"); setMode("plan"); void player.seek(item.outStartUs, false); }}
                 onTrim=${editable && !commandPreview && !busy ? (id, field, seconds) => editing.ops.trim(id, field, seconds) : null}
-                project=${project} sourceGainDb=${editable ? editing.audio?.mix?.sourceGainDb ?? 0 : 0} />
+                project=${project} sourceGainDb=${editable ? editing.audio?.mix?.sourceGainDb ?? 0 : 0}
+                envelope=${editable && !commandPreview && !busy ? {points: editing.audio.mix.sourceEnvelope || [], fps, totalFrames: Math.round(player.totalUs * fps / 1e6), onChange: editing.ops.envelope} : null} />
         </div>
         <aside class="panel" hidden=${!layout.insp} aria-label="检查器">
             <div class="panel-head">检查器</div>
@@ -525,7 +526,7 @@ function trimDrag(event, item, field, scale, onTrim) {
     handle.addEventListener("pointermove", move); handle.addEventListener("pointerup", end); handle.addEventListener("pointercancel", end);
 }
 
-function ProgramTrack({items, totalUs, outUs, thumb, selectedId, changed, preview, lanes = [], onLane, onPick, onTrim = null, project = "", sourceGainDb = 0}) {
+function ProgramTrack({items, totalUs, outUs, thumb, selectedId, changed, preview, lanes = [], onLane, onPick, onTrim = null, project = "", sourceGainDb = 0, envelope = null}) {
     const area = useRef(null);
     const [width, setWidth] = useState(800);
     useEffect(() => {
@@ -552,7 +553,8 @@ function ProgramTrack({items, totalUs, outUs, thumb, selectedId, changed, previe
                     onPointerDown=${(e) => trimDrag(e, chosen, field, scale, onTrim)}></div>`) : null}
                 <div class="playhead" style=${{left: `${outUs * scale}px`}}></div>
             </div>` : html`<p class="note">选中方案后，镜头按成片顺序排在这里。</p>`}
-            ${items.length ? html`<${WaveLane} project=${project} items=${items} scale=${scale} gainDb=${sourceGainDb} />` : null}
+            ${items.length ? html`<${WaveLane} project=${project} items=${items} scale=${scale} gainDb=${sourceGainDb}
+                envelope=${envelope ? {...envelope, pxPerFrame: scale * 1e6 / envelope.fps} : null} />` : null}
             ${items.length ? lanes.map((lane) => html`<button class=${`lane ${lane.kind}`} title=${`${lane.label} · 点击打开“声音”`} onClick=${onLane}>
                 ${lane.durUs ? html`<span class="bar" style=${{left: `${lane.startUs * scale}px`, width: `${Math.max(3, Math.min(lane.durUs, totalUs - lane.startUs) * scale)}px`}}>${lane.label}</span>`
                     : html`<span class="lane-empty">${lane.label}</span>`}</button>`) : null}

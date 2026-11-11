@@ -140,6 +140,12 @@ export function useClipEditor(project) {
             return {...s, clips, subtitleOverrides: keptCaptions(s.subtitleOverrides, clips), overlays: proposal.overlays?.items ?? s.overlays, dirty: true};
         }),
         mix: (patch) => edit((s) => (s.status === "ready" ? {...s, audio: {...s.audio, mix: {...s.audio.mix, ...patch}}, dirty: true} : s)),
+        // Stage C keyframes; an empty envelope drops the key so saved JSON stays as before.
+        envelope: (points, key = null) => edit((s) => {
+            if (s.status !== "ready") return s;
+            const {sourceEnvelope: _old, ...mix} = s.audio.mix;
+            return {...s, audio: {...s.audio, mix: points.length ? {...mix, sourceEnvelope: points} : mix}, dirty: true};
+        }, key),
         overlays: (items, assets, expectedEpoch) => edit((s) => (s.status === "ready" && (expectedEpoch === undefined || expectedEpoch === overlayEpoch.current)
             ? {...s, overlays: items, overlayAssets: assets ?? s.overlayAssets, dirty: true} : s)),
         narration: (selection, asset) => edit((s) => (s.status === "ready" ? {...s, audio: {...s.audio, narration: selection, asset: selection ? asset ?? s.audio.asset : null}, dirty: true} : s)),

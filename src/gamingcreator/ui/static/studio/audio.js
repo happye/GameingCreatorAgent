@@ -2,6 +2,7 @@
 // background music (pick or upload, level), and a preview that plays both in
 // step with the plan player. Everything here becomes part of the next saved version.
 import {h} from "../vendor/preact.module.js";
+import {envelopeDb} from "./waveform.js";
 import {useEffect, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
@@ -60,7 +61,10 @@ export function useAudioPreview(player, audio, fps, video, tracks, identity) {
     }, []);
     useEffect(() => { graph.current?.reset(); }, [identity]);
     useEffect(() => {
-        graph.current?.configure(audio);
+        // Keyframed source volume: the preview follows the playhead, as the render does.
+        const envelope = audio.mix.sourceEnvelope;
+        const mix = envelope?.length ? {...audio.mix, sourceGainDb: Math.max(-60, (audio.mix.sourceGainDb || 0) + envelopeDb(envelope, player.outUs * fps / 1e6))} : audio.mix;
+        graph.current?.configure(mix === audio.mix ? audio : {...audio, mix});
         graph.current?.enable(player.playing && !player.buffering);
     });
     useEffect(() => {

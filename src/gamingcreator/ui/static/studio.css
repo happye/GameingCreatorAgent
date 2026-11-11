@@ -227,3 +227,6 @@ details.group[open] > summary::before { content: "▾ "; }
 .track.wave-lane { height: 30px; margin-top: 3px; color: var(--accent); }
 .wave-lane canvas.wave { position: absolute; top: 1px; height: 28px; opacity: 0.85; }
 .wave-lane canvas.wave.silent { opacity: 0.25; }
+.wave-lane svg.envelope { position: absolute; left: 0; top: 1px; overflow: visible; cursor: copy; }
+.wave-lane svg.envelope polyline { fill: none; stroke: var(--clip-on); stroke-width: 1.5; }
+.wave-lane svg.envelope circle { fill: var(--clip-on); stroke: var(--bg-0); cursor: grab; }

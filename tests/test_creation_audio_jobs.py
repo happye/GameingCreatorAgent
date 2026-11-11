@@ -38,6 +38,8 @@ def test_audio_inheritance_clear_and_subtitles(revisions, monkeypatch):
         },
         "sourceGainDb": -6,
         "ducking": "source-v1",
+        # Stage C keyframes save with the version and are inherited by its children.
+        "sourceEnvelope": [{"frame": 0, "gainDb": 0}, {"frame": 10, "gainDb": -9.5}],
     }
     req["subtitleOverrides"] = [{"clipId": req["clips"][0]["clipId"], "text": "字幕"}]
     parent = jobs.submit("revision", req)["jobId"]

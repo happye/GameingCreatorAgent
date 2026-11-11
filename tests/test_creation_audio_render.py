@@ -271,3 +271,33 @@ def test_matroska_pcm_source_clock_trim_and_pulse(tmp_path, with_music):
     assert abs(edge(original, 1.35) - 0.5 - edge(rendered, 0.85)) <= 1024 / 48000
     if with_music:
         assert amplitude(rendered, 880, 2.1, 2.8) > 0.04
+
+
+def test_source_envelope_keyframes_shape_the_rendered_level(tmp_path):
+    """Stage C: 0 dB until 0.5 s, ramp to -12 dB at 0.6 s, held after (source tone ends 1.5 s)."""
+    from gamingcreator.domain.creation_audio import GainPoint
+
+    source, track = inputs(tmp_path)
+
+    async def run(envelope, output):
+        context = CancellationContext("audio-envelope", 90)
+        asset = await FfmpegMediaProcessor(TOOLS).probe(source, context)
+        plan = RenderPlan(
+            (RenderClip(asset, SourceRange(0, 4_000_000, asset.duration_us), 40),), 10
+        )
+        mix = AudioMix(None, 0, "off", envelope)
+        return await FfmpegCreationRenderer(TOOLS).render(
+            plan, output, (source,), context, 64, 48, audio_mix=mix
+        )
+
+    asyncio.run(run((), tmp_path / "flat"))
+    asyncio.run(run((GainPoint(0, 0), GainPoint(5, 0), GainPoint(6, -12)), tmp_path / "env"))
+    flat, shaped = pcm(tmp_path / "flat/video.mp4"), pcm(tmp_path / "env/video.mp4")
+
+    def change(start, end):
+        return 20 * math.log10(
+            amplitude(shaped, 440, start, end) / amplitude(flat, 440, start, end)
+        )
+
+    assert change(0.1, 0.4) == pytest.approx(0, abs=0.5)
+    assert change(0.8, 1.3) == pytest.approx(-12, abs=0.7)

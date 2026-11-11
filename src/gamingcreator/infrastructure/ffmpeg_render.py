@@ -8,7 +8,7 @@ from pathlib import Path
 from gamingcreator.application.narration import NarrationArtifact
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.rendering import RenderClip, RenderPlan
-from gamingcreator.domain.creation_audio import AudioMix
+from gamingcreator.domain.creation_audio import AudioMix, envelope_expression
 from gamingcreator.domain.creation_narration import NarrationSelection, validate_narration_fit
 from gamingcreator.domain.creation_overlays import CreationOverlays, overlay_pixel_geometry
 from gamingcreator.domain.creation_presentation import (
@@ -206,9 +206,18 @@ def _filter_path(path: Path) -> str:
     return filter_path(path)
 
 
+def _source_gain(mix: AudioMix, fps: int) -> str:
+    """Static source gain, then the keyframe envelope evaluated per audio frame."""
+    chain = f"volume={mix.source_gain_db}dB"
+    if mix.source_envelope:
+        curve = envelope_expression(mix.source_envelope, fps)
+        chain += f",volume='pow(10,({curve})/20)':eval=frame"
+    return chain
+
+
 def _mix_filter(mix: AudioMix, frames: int, fps: int, output: str = "mixed") -> str:
     duration = f"{frames / fps:.12f}"
-    source = f"[0:a:0]volume={mix.source_gain_db}dB[src]"
+    source = f"[0:a:0]{_source_gain(mix, fps)}[src]"
     if mix.bgm is None:
         return source + f";[src]anull[{output}]"
     music = (
@@ -217,7 +226,7 @@ def _mix_filter(mix: AudioMix, frames: int, fps: int, output: str = "mixed") -> 
     )
     if mix.ducking == "source-v1":
         # Measure unattenuated source: lowering game volume must not disable ducking.
-        source = f"[0:a:0]asplit=2[raw][key];[raw]volume={mix.source_gain_db}dB[src]"
+        source = f"[0:a:0]asplit=2[raw][key];[raw]{_source_gain(mix, fps)}[src]"
         music += (
             ";[bgm][key]sidechaincompress=threshold=0.015:ratio=12:attack=10:"
             "release=200:makeup=1:knee=1:detection=rms[ducked]"
@@ -451,7 +460,12 @@ class FfmpegCreationRenderer:
                     ffmpeg, plan, parts, context, width, height
                 )
                 input_args = ["-i", str(joined)]
-            has_mix = mix.bgm is not None or mix.source_gain_db != 0 or narration is not None
+            has_mix = (
+                mix.bgm is not None
+                or mix.source_gain_db != 0
+                or bool(mix.source_envelope)
+                or narration is not None
+            )
             audio_filter = _mix_filter(mix, plan.frames, plan.fps, "bed" if narration else "mixed")
             if narration is not None:
                 audio_filter += ";" + narration_filter(

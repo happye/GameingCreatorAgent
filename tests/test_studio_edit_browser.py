@@ -283,6 +283,26 @@ def test_edit_clip_save_version_and_command(revisions, monkeypatch):  # noqa: F8
             assert 3.0 < float(out_point.input_value()) < before
             page.get_by_role("button", name="撤销一步").click()
             playwright.expect(out_point).to_have_value(before_text)
+            # Stage C: click the volume line to add a keyframe, drag it down; each is one step.
+            line = page.get_by_label("原声音量线")
+            box = line.bounding_box()
+            page.mouse.click(box["x"] + box["width"] / 2, box["y"] + 4)
+            point = line.get_by_role("slider")
+            playwright.expect(point).to_have_count(1)
+            assert point.get_attribute("aria-valuenow") == "0"
+            dot = point.bounding_box()
+            cx, cy = dot["x"] + dot["width"] / 2, dot["y"] + dot["height"] / 2
+            page.mouse.move(cx, cy)
+            page.mouse.down()
+            page.mouse.move(cx, cy + 8, steps=3)
+            page.mouse.move(cx, cy + 14, steps=3)
+            page.mouse.up()
+            playwright.expect(point).to_have_count(1)  # releasing the drag adds nothing
+            assert float(point.get_attribute("aria-valuenow")) < -10
+            page.get_by_role("button", name="撤销一步").click()
+            playwright.expect(point).to_have_attribute("aria-valuenow", "0")
+            page.get_by_role("button", name="撤销一步").click()
+            playwright.expect(point).to_have_count(0)
             page.get_by_role("tab", name="导出", exact=True).click()
             for label, suffix in [
                 ("下载 FCPXML", ".fcpxml"),
