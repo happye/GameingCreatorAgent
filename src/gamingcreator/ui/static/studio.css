@@ -224,3 +224,6 @@ details.group[open] > summary::before { content: "▾ "; }
 .replace-picker .hit { align-items: flex-start; border-bottom: 1px solid var(--line); padding: 4px 0; }
 .replace-picker .hit-text { flex: 1; }
 
+.track.wave-lane { height: 30px; margin-top: 3px; color: var(--accent); }
+.wave-lane canvas.wave { position: absolute; top: 1px; height: 28px; opacity: 0.85; }
+.wave-lane canvas.wave.silent { opacity: 0.25; }

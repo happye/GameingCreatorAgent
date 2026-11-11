@@ -151,3 +151,49 @@ def test_http_work_name_labels_a_job_in_the_list(service):  # noqa: F811
         server.shutdown()
         server.server_close()
         thread.join()
+
+
+def test_http_waveform_is_exact_cached_and_reports_silence(service, monkeypatch):  # noqa: F811
+    """Stage C waveform lane: registered run only, exact query, one FFmpeg pass per range."""
+    from pathlib import Path
+
+    import gamingcreator.ui.server as server_module
+    from gamingcreator.ui.media import MediaResource
+
+    calls = []
+
+    async def media(project, run_id, evidence_id=None):
+        return MediaResource(
+            Path("source.mp4"), ("s" if run_id == "run" else "q") * 64, "video/mp4"
+        )
+
+    def peaks(repository, source, start, end, buckets):
+        calls.append((start, end, buckets))
+        return None if start == 7 else [0.5] * buckets
+
+    monkeypatch.setattr(server_module, "registered_media", media)
+    monkeypatch.setattr(server_module, "audio_peaks", peaks)
+    server_module.InspectionHandler.waveform_cache.clear()
+    server = create_server("127.0.0.1", 0, service.repository)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    base = f"http://127.0.0.1:{server.server_port}/api/waveform?project=artifacts%2Fproject"
+    try:
+        url = base + "&run=run&startUs=0&endUs=1000000&buckets=4"
+        for _ in range(2):
+            with urlopen(url) as response:
+                assert json.load(response) == {"audio": True, "peaks": [0.5] * 4}
+        assert calls == [(0, 1_000_000, 4)]
+        with urlopen(base + "&run=run&startUs=7&endUs=9&buckets=2") as response:
+            assert json.load(response) == {"audio": False, "peaks": []}
+        try:
+            with urlopen(base + "&run=run&startUs=0&endUs=1"):
+                raise AssertionError("Expected refusal")
+        except HTTPError as error:
+            assert error.code == 400
+            error.close()
+    finally:
+        server_module.InspectionHandler.waveform_cache.clear()
+        server.shutdown()
+        server.server_close()
+        thread.join()

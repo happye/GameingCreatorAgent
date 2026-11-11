@@ -10,12 +10,14 @@ import sys
 from collections.abc import Sequence
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import ClassVar
 from urllib.parse import parse_qs, urlparse
 
 from gamingcreator.application.detail_query_draft import draft_detail_query
 from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
 from gamingcreator.application.retrieval import RetrievalMode
 from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.infrastructure.audio_peaks import audio_peaks
 from gamingcreator.infrastructure.ffmpeg_fullres import FfmpegFullResolutionFrames
 from gamingcreator.infrastructure.ffmpeg_shots import FfmpegShotDetector
 from gamingcreator.infrastructure.music_library import MusicLibrary
@@ -69,6 +71,7 @@ ASSETS = {
     "/assets/studio/main.js": ("studio/main.js", "text/javascript; charset=utf-8"),
     "/assets/studio/api.js": ("studio/api.js", "text/javascript; charset=utf-8"),
     "/assets/studio/reasoning.js": ("studio/reasoning.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/waveform.js": ("studio/waveform.js", "text/javascript; charset=utf-8"),
     "/assets/studio/audio-preview-graph.js": (
         "studio/audio-preview-graph.js",
         "text/javascript; charset=utf-8",
@@ -196,6 +199,8 @@ class WorkspaceServer(ThreadingHTTPServer):
 
 class InspectionHandler(BaseHTTPRequestHandler):
     runtime_identity: dict[str, str]
+    # (source sha256, startUs, endUs, buckets) -> peaks; display only, bounded, per process.
+    waveform_cache: ClassVar[dict[tuple[str, int, int, int], list[float] | None]] = {}
     repository = Path.cwd()
     media_cache = VerifiedMediaCache()
     creation_jobs: CreationJobs
@@ -439,6 +444,21 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 )
             resource = MediaResource(Path(receipt["path"]), receipt["proxySha256"], "video/mp4")
         self._serve_media(resource)
+
+    def _waveform(self, project: Path, query: dict[str, str]) -> dict[str, object]:
+        """Audio peaks of one registered recording range (Studio waveform lane, display only)."""
+        if set(query) != {"project", "run", "startUs", "endUs", "buckets"}:
+            raise ValueError("Expected project, run, startUs, endUs and buckets")
+        start, end, buckets = (int(query[k]) for k in ("startUs", "endUs", "buckets"))
+        resource = asyncio.run(registered_media(project, query["run"]))
+        key = (resource.sha256, start, end, buckets)
+        cache = type(self).waveform_cache
+        if key not in cache:
+            if len(cache) >= 512:
+                cache.pop(next(iter(cache)))
+            cache[key] = audio_peaks(self.repository, resource.path, start, end, buckets)
+        peaks = cache[key]
+        return {"audio": peaks is not None, "peaks": peaks or []}
 
     def _serve_media(
         self, resource: MediaResource, download: bool = False, filename: str = "creation.mp4"
@@ -1380,6 +1400,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/media",
                 "/api/evidence",
                 "/api/detail-cost-history",
+                "/api/waveform",
             }:
                 self._json(404, {"code": "input.route", "message": "没有这个页面。"})
                 return
@@ -1452,6 +1473,8 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 )
             elif path == "/api/detail-cost-history":
                 self._json(200, asyncio.run(detail_costs(project, query.get("run", ""))))
+            elif path == "/api/waveform":
+                self._json(200, self._waveform(project, query))
             elif path in {"/api/media", "/api/evidence"}:
                 evidence_id = query.get("id", "") if path == "/api/evidence" else None
                 self._media(
