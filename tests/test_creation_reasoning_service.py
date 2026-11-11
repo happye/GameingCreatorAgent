@@ -321,3 +321,51 @@ def test_service_rejects_forged_price_snapshot(context):
     with pytest.raises(ValueError, match="official pilot price"):
         CreationReasoningService(context.jobs, price_snapshot=forged, transport=context.transport)
     assert not context.transport.calls
+
+
+def run_budget(ctx, prepared):
+    return asyncio.run(
+        ctx.service.execute_within_budget(prepared["preparedHash"], prepared["snapshotFingerprint"])
+    )
+
+
+def test_budget_send_records_policy_and_charges_ceiling(context):
+    """2026-11-11 authorization: within ¥30/month and ¥1/video no per-call confirmation."""
+    prepared = context.service.prepare("job", "plan", "调整")
+    budget = prepared["budget"]
+    assert budget["eligible"] and Decimal(budget["ceilingCny"]) < Decimal("0.1")
+    result = run_budget(context, prepared)
+    assert result["status"] == "completed" and len(context.transport.calls) == 1
+    planned = context.service._directory(prepared["preparedHash"]) / "attempt/planned"
+    confirmation = module._read(planned, "confirmation.json", module.CONFIRMATION_SCHEMA)
+    assert confirmation["confirmationSource"] == "monthly-budget-policy"
+    assert confirmation["budgetCeilingCny"] == budget["ceilingCny"]
+    # Unknown provider cost is charged at the recorded ceiling; a repeat never re-sends.
+    assert run_budget(context, prepared) == result and len(context.transport.calls) == 1
+    again = context.service.prepare("job", "plan", "再调整")["budget"]
+    assert again["videoSpentCny"] == budget["ceilingCny"] == again["monthSpentCny"]
+
+
+def test_over_budget_sends_nothing_and_explicit_confirmation_still_works(context, monkeypatch):
+    monkeypatch.setattr(module.ai_budget, "PER_VIDEO_CAP_CNY", Decimal("0.001"))
+    prepared = context.service.prepare("job", "plan", "调整")
+    assert prepared["budget"]["eligible"] is False and "单条" in prepared["budget"]["reason"]
+    with pytest.raises(ValueError, match="单独确认"):
+        run_budget(context, prepared)
+    assert not context.transport.calls
+    assert not (context.service._directory(prepared["preparedHash"]) / "attempt").exists()
+    assert execute(context, prepared)["status"] == "completed"
+
+
+def test_adopted_plan_job_shares_its_videos_budget(context):
+    """Review 2026-11-11: adopting an AI plan creates a new job; it must not reset ¥1/video."""
+    prepared = context.service.prepare("job", "plan", "调整")
+    run_budget(context, prepared)
+    adopted = "b" * 32
+    directory = context.jobs.jobs / adopted
+    directory.mkdir(parents=True)
+    request = {"request": {"reasoningPreparedHash": prepared["preparedHash"]}}
+    (directory / "request.json").write_text(json.dumps(request), encoding="utf-8")
+    assert context.service._video_key(adopted) == "job"
+    assert context.service._video_key("c" * 32) == "c" * 32  # unknown job: itself
+    assert {row.job_id for row in context.service._spends()} == {"job"}

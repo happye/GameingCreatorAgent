@@ -1,4 +1,4 @@
-"""Exact, text-only HTTP contract for the separately confirmed reasoning service."""
+"""Exact, text-only HTTP contract for the reasoning service (per-call or monthly-budget sends)."""
 
 import asyncio
 import os
@@ -23,6 +23,7 @@ def reasoning_post(service: CreationReasoningService, value: Any) -> dict[str, A
         "adopt_plan": {"action", "preparedHash"},
         "prepare": {"action", "jobId", "planId", "instruction"},
         "execute": {"action", "preparedHash", "snapshotFingerprint", "confirmedMaxCny"},
+        "execute_budget": {"action", "preparedHash", "snapshotFingerprint"},
         "validate": {"action", "preparedHash", "jobId", "planId", "expectedParentReceiptSha256"},
         "result": {"action", "preparedHash"},
     }
@@ -41,6 +42,10 @@ def reasoning_post(service: CreationReasoningService, value: Any) -> dict[str, A
         return service.adopt_plan(value["preparedHash"])
     if action == "prepare":
         return service.prepare(value["jobId"], value["planId"], value["instruction"])
+    if action == "execute_budget":
+        return asyncio.run(
+            service.execute_within_budget(value["preparedHash"], value["snapshotFingerprint"])
+        )
     if action == "result":
         return service.read_result(value["preparedHash"])
     if action == "validate":

@@ -1,4 +1,5 @@
-// Dynamic alternatives use the saved brief and candidate basket, with one confirmed send.
+// Dynamic alternatives use the saved brief and candidate basket. Within the monthly AI budget
+// (2026-11-11) one click sends; past it the old per-call confirmation applies.
 import {h} from "../vendor/preact.module.js";
 import {useEffect, useLayoutEffect, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
@@ -45,6 +46,15 @@ function usePlanReasoning(project, jobId, disabled, onAdopt) {
         prepare: () => run("prepare", async () => {
             const quote = await post({action: "prepare_plan", jobId});
             update({quote, result: null, sent: false, confirmed: false});
+            if (!quote.budget?.eligible || !available) return;
+            if (!remember(identity, quote)) throw new Error("无法保存结果恢复入口，已阻止发送，请允许浏览器本地存储");
+            update({sent: true, busy: "execute"});
+            try { update({result: await post({action: "execute_budget", preparedHash: quote.preparedHash, snapshotFingerprint: quote.snapshotFingerprint})}); }
+            catch (error) {
+                // A refusal (4xx) happens before anything is sent: fall back to explicit confirmation.
+                if (error.status >= 400 && error.status < 500) { update({sent: false}); throw new Error(`${error.message}（本次未发送）`); }
+                throw new Error(`${error.message}。可读取本次结果，不会重复付费。`);
+            }
         }),
         execute: () => state.quote && state.confirmed && !state.sent && available && run("execute", async () => {
             if (!remember(identity, state.quote)) throw new Error("无法保存结果恢复入口，已阻止发送，请允许浏览器本地存储");
@@ -70,15 +80,15 @@ export function PlanReasoningPanel({project, jobId, disabled, onAdopt}) {
     const history = records().filter(r => r.key === flow.identity);
     const response = flow.result?.proposal?.response;
     return html`<details class="group dynamic-planning" aria-label="AI动态策划">
-        <summary>AI动态策划（按次确认）</summary>
+        <summary>AI动态策划（预算内自动）</summary>
         <p class="hint">按此任务已保存的需求与候选素材重新策划，不使用尚未生成的表单修改。只发送文字，模型没有观看画面；声音仍用免费本机语音。</p>
         ${disabled ? html`<p class="hint">请先保存或撤销镜头修改，并完成当前任务。</p>` : null}
-        <button class="btn ghost" disabled=${disabled || !!flow.busy} onClick=${flow.prepare}>准备动态策划（不发送）</button>
+        <button class="btn ghost" disabled=${disabled || !!flow.busy} onClick=${flow.prepare}>${flow.busy === "execute" ? "AI 正在策划…" : "让 AI 重新策划"}</button>
         ${!flow.available ? html`<p class="hint">未配置 DEEPSEEK_API_KEY，可以准备文字，暂不能发送。</p>` : null}
         ${history.length ? html`<details><summary>已确认策划的结果记录（${history.length}）</summary>
             ${history.map(saved => html`<div><span class="hint">${saved.at}</span><button class="btn ghost" disabled=${disabled || !!flow.busy} onClick=${() => flow.recover(saved)}>读取策划结果（不调用模型）</button></div>`)}
         </details>` : null}
-        ${flow.quote ? html`<p class="hint">费用上限 ¥${flow.quote.maxCostCny}，按完整上下文保守预留，非实际费用。</p>
+        ${flow.quote ? html`<p class="hint" aria-label="AI预算">${client.budgetText(flow.quote.budget)}${flow.quote.budget && !flow.quote.budget.eligible ? `${flow.quote.budget.reason}，这次需要你确认。` : ""}</p>
             ${flow.quote.knowledge?.length === 0 ? html`<p class="hint">未命中当前同游戏的登记知识；本次未发送知识资料。按主题/目标字面匹配，长中文词可能零命中。</p>` : null}
             ${flow.quote.knowledge ? html`<details><summary>本次登记知识（${flow.quote.knowledge.length} 条）</summary><p class="hint">按游戏及主题/目标字面匹配；长中文词可能零命中。资料与引用未做真实性或语义核验。</p>${flow.quote.knowledge.map(entry => html`<p style="overflow-wrap:anywhere">${entry.title} · ${entry.source.kind} · ${entry.source.label} · ${entry.createdAt} · ${entry.entryId}</p><blockquote>${entry.text}</blockquote>`)}</details>` : null}
             ${flow.quote.originalRequest ? html`<details><summary>本次已保存需求</summary><pre>${JSON.stringify(flow.quote.originalRequest, null, 2)}</pre></details>` : null}

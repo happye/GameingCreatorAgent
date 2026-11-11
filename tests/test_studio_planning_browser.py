@@ -2,6 +2,7 @@
 
 import json
 import threading
+from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -10,6 +11,7 @@ from test_creation_jobs import finish, service  # noqa: F401
 from test_plan_proposals import output
 from test_plan_reasoning_jobs import planning as planning_fixture
 
+from gamingcreator.application import ai_budget
 from gamingcreator.application.plan_proposals import (
     compile_plan_proposal,
     create_plan_snapshot,
@@ -53,6 +55,8 @@ def studio(planning, monkeypatch):
     monkeypatch.setattr(server, "CreationReasoningService", factory)
     monkeypatch.setattr(server, "project_runs_payload", runs)
     monkeypatch.setenv("DEEPSEEK_API_KEY", "fake-never-sent")
+    # Over budget: these tests cover the per-call confirmation path (2026-11-11 budget rule).
+    monkeypatch.setattr(ai_budget, "MONTHLY_CAP_CNY", Decimal(0))
     (ctx.jobs.repository / "artifacts/other").mkdir()
     (ctx.jobs.repository / "artifacts/other/timeline.sqlite3").touch()
     http = server.create_server("127.0.0.1", 0, ctx.jobs.repository)
@@ -85,7 +89,7 @@ def studio(planning, monkeypatch):
 
 
 def prepare(studio):
-    studio.page.get_by_role("button", name="准备动态策划（不发送）").click()
+    studio.page.get_by_role("button", name="让 AI 重新策划").click()
     studio.expect(studio.page.get_by_label("同意本次动态策划费用")).to_be_visible()
     assert not studio.ctx.transport.calls
 
@@ -193,7 +197,7 @@ def test_failed_restore_clears_previous_preview_and_dirty_blocks(studio):
     expect(page.get_by_role("button", name="采用这些方案（不再调用模型）")).to_have_count(0)
     page.locator(".timeline .clip").first.click()
     page.get_by_label("速度").select_option("2/1")
-    expect(page.get_by_role("button", name="准备动态策划（不发送）")).to_be_disabled()
+    expect(page.get_by_role("button", name="让 AI 重新策划")).to_be_disabled()
     expect(page.get_by_role("button", name="读取策划结果（不调用模型）")).to_be_disabled()
     assert len(studio.ctx.transport.calls) == 1
 
@@ -224,7 +228,7 @@ def test_project_roundtrip_discards_late_prepare(studio):
 
     page.route("**/api/creation/reasoning", hold)
     with page.expect_request("**/api/creation/reasoning"):
-        page.get_by_role("button", name="准备动态策划（不发送）").click()
+        page.get_by_role("button", name="让 AI 重新策划").click()
     page.get_by_label("项目", exact=True).select_option("artifacts/other")
     expect(page.locator(".dynamic-planning")).to_have_count(0)
     page.get_by_label("项目", exact=True).select_option("artifacts/project")
@@ -258,7 +262,7 @@ def test_job_roundtrip_discards_late_prepare(studio):
     held = []
     page.route("**/api/creation/reasoning", lambda route: held.append(route))
     with page.expect_request("**/api/creation/reasoning"):
-        page.get_by_role("button", name="准备动态策划（不发送）").click()
+        page.get_by_role("button", name="让 AI 重新策划").click()
     page.evaluate("window.mountPlanning('other-job')")
     page.evaluate("root => window.mountPlanning(root)", studio.ctx.root)
     held[0].fulfill(
@@ -379,3 +383,29 @@ def test_registered_knowledge_quote_preview_adopt_reopen(studio):
     expect(page.locator(".knowledge-uses")).to_contain_text(entry["text"])
     page.screenshot(path=str(artifacts / "knowledge-planning-reopened.png"), full_page=True)
     assert len(ctx.transport.calls) == 1
+
+
+@pytest.mark.parametrize("lose_response", [False, True])
+def test_within_budget_one_click_plans_and_a_lost_response_never_resends(
+    studio, monkeypatch, lose_response
+):
+    """2026-11-11: inside ¥30/month and ¥1/video the AI plans on one click."""
+    page, expect = studio.page, studio.expect
+    monkeypatch.setattr(ai_budget, "MONTHLY_CAP_CNY", Decimal(30))
+
+    def lose(route):
+        if route.request.post_data_json["action"] == "execute_budget":
+            route.fetch()
+            route.abort("failed")
+        else:
+            route.continue_()
+
+    if lose_response:
+        page.route("**/api/creation/reasoning", lose)
+    page.get_by_role("button", name="让 AI 重新策划").click()
+    if lose_response:
+        page.get_by_role("button", name="读取本次策划结果（不重新调用）").click()
+    expect(page.get_by_label("动态方案预览")).to_contain_text("6.0 秒 / 目标 6.0 秒")
+    expect(page.get_by_label("同意本次动态策划费用")).to_have_count(0)
+    expect(page.get_by_label("AI预算")).to_contain_text("这条视频")
+    assert len(studio.ctx.transport.calls) == 1

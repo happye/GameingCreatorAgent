@@ -71,7 +71,7 @@ def _exercise_proposal(page, editors, expect):
     page.get_by_label("创作对话需求").fill("这行文字多留一会儿，然后慢慢消失")
 
     def preview():
-        page.get_by_role("button", name="准备请求（不发送）").click()
+        page.get_by_role("button", name="交给 AI").click()
         page.get_by_label("同意本次文字发送和费用上限").check()
         page.get_by_role("button", name="确认本次调用", exact=False).click()
         expect(page.get_by_text("图层预览：", exact=False)).to_be_visible()
@@ -216,7 +216,7 @@ def test_overlay_hook_protocol_without_backend():
         pw.expect(image).to_have_css("opacity", "0")
         page.get_by_label("创作对话需求").fill("多留一会，然后淡出")
         for cancel in (True, False):
-            page.get_by_role("button", name="准备请求（不发送）").click()
+            page.get_by_role("button", name="交给 AI").click()
             page.get_by_label("同意本次文字发送和费用上限").check()
             page.get_by_role("button", name="确认本次调用", exact=False).click()
             pw.expect(image).to_have_css("opacity", "1")
@@ -246,7 +246,7 @@ def test_overlay_hook_protocol_without_backend():
         }""")
         assert all(rejected)
         page.get_by_label("创作对话需求").fill("再次预览")
-        page.get_by_role("button", name="准备请求（不发送）").click()
+        page.get_by_role("button", name="交给 AI").click()
         page.get_by_label("同意本次文字发送和费用上限").check()
         page.get_by_role("button", name="确认本次调用", exact=False).click()
         pw.expect(page.get_by_role("button", name="应用AI建议")).to_be_visible()

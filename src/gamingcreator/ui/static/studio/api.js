@@ -121,3 +121,6 @@ export const projects = (signal) => api("/api/projects", {}, {signal});
 export const runs = (project, signal) => api("/api/runs", {project}, {signal});
 export const inspect = (project, run, signal) => api("/api/inspect", {project, run, query: "", mode: "hybrid", top: 10, detailProfile: "v1"}, {signal});
 export const creationJobs = (projectId, signal) => api("/api/creation/jobs", {projectId}, {signal});
+
+// Monthly AI budget (user authorization 2026-11-11): one line shown wherever AI is called.
+export const budgetText = (b) => b ? `本月 AI 已用约 ¥${Number(b.monthSpentCny).toFixed(2)} / ¥${b.monthCapCny}，这条视频 ¥${Number(b.videoSpentCny).toFixed(2)} / ¥${b.videoCapCny}；本次最多 ¥${Number(b.ceilingCny).toFixed(2)}。` : "";

@@ -4,12 +4,14 @@ import asyncio
 import json
 import re
 from dataclasses import asdict
+from datetime import datetime
 from decimal import Decimal
 from hashlib import sha256
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
+from gamingcreator.application import ai_budget
 from gamingcreator.application.budget import BudgetLedger
 from gamingcreator.application.creation_overlay_proposals import (
     PROMPT_VERSION as OVERLAY_PROMPT_VERSION,
@@ -73,6 +75,8 @@ if TYPE_CHECKING:
 PREPARED_SCHEMA = "creation-reasoning-prepared-v1"
 RESULT_SCHEMA = "creation-reasoning-result-v1"
 OUTPUT_SCHEMA = "creation-reasoning-provider-output-v1"
+CONFIRMATION_SCHEMA = "creation-reasoning-confirmation-v1"
+BUDGET_SOURCE = "monthly-budget-policy"
 
 
 class _OutputValidationError(ValueError):
@@ -284,6 +288,7 @@ class CreationReasoningService:
         directory = self._directory(prepared_hash)
         _write(directory, "prepared.json", record)
         return {
+            "budget": self._budget_decision(record).as_dict(),
             "purpose": purpose,
             "preparedHash": prepared_hash,
             "snapshotFingerprint": snapshot.fingerprint,
@@ -393,7 +398,6 @@ class CreationReasoningService:
         expected_snapshot_fingerprint: str,
         confirmed_max_cny: Decimal,
     ) -> dict[str, Any]:
-        directory = self._directory(prepared_hash)
         record = self._prepared(prepared_hash)
         if (
             expected_snapshot_fingerprint != record["snapshotFingerprint"]
@@ -404,6 +408,29 @@ class CreationReasoningService:
             raise ValueError(
                 "Explicit matching snapshot and sufficient amount confirmation required."
             )
+        return await self._execute(prepared_hash, record, confirmed_max_cny, budget=False)
+
+    async def execute_within_budget(
+        self, prepared_hash: str, expected_snapshot_fingerprint: str
+    ) -> dict[str, Any]:
+        """Send without a per-call confirmation while the user's monthly AI budget allows it
+        (2026-11-11 authorization); the confirmation file records the policy instead."""
+        record = self._prepared(prepared_hash)
+        if expected_snapshot_fingerprint != record["snapshotFingerprint"]:
+            raise ValueError("Snapshot changed; prepare again.")
+        return await self._execute(
+            prepared_hash, record, Decimal(record["maxCostCny"]), budget=True
+        )
+
+    async def _execute(
+        self,
+        prepared_hash: str,
+        record: dict[str, Any],
+        confirmed_max_cny: Decimal,
+        *,
+        budget: bool,
+    ) -> dict[str, Any]:
+        directory = self._directory(prepared_hash)
         lock = ProjectWriterLock(directory)
         lock.acquire()
         try:
@@ -417,17 +444,92 @@ class CreationReasoningService:
             snapshot = await asyncio.to_thread(self._current, record)
             if record["priceHash"] != _digest(_jsonable(asdict(self.price))):
                 raise ValueError("Price snapshot changed; prepare again.")
-            confirmation = {
-                "schemaVersion": "creation-reasoning-confirmation-v1",
+            confirmation: dict[str, Any] = {
+                "schemaVersion": CONFIRMATION_SCHEMA,
                 "preparedHash": prepared_hash,
-                "expectedSnapshotFingerprint": expected_snapshot_fingerprint,
+                "expectedSnapshotFingerprint": record["snapshotFingerprint"],
                 "confirmedMaxCny": str(confirmed_max_cny),
                 "confirmationSource": "execute-api-parameters",
             }
-            _write(attempt / "planned", "confirmation.json", confirmation)
+            if budget:
+                self._confirm_within_budget(record, attempt, confirmation)
+            else:
+                _write(attempt / "planned", "confirmation.json", confirmation)
             return await self._run(record, prepared_hash, snapshot, attempt, confirmed_max_cny)
         finally:
             lock.close()
+
+    def _confirm_within_budget(
+        self, record: dict[str, Any], attempt: Path, confirmation: dict[str, Any]
+    ) -> None:
+        # One budget writer at a time: the check and the reservation it records are atomic.
+        budget_lock = ProjectWriterLock(self.root)
+        budget_lock.acquire()
+        try:
+            decision = self._budget_decision(record)
+            if not decision.allowed:
+                raise ValueError(f"{decision.reason}，需要你单独确认这次调用。")
+            confirmation.update(
+                confirmationSource=BUDGET_SOURCE,
+                policyId=ai_budget.POLICY_ID,
+                policyText=ai_budget.POLICY_TEXT,
+                budgetCeilingCny=str(decision.ceiling_cny),
+                monthSpentCny=str(decision.month_spent_cny),
+                videoSpentCny=str(decision.video_spent_cny),
+                confirmedAt=datetime.now().astimezone().isoformat(),
+            )
+            _write(attempt / "planned", "confirmation.json", confirmation)
+        finally:
+            budget_lock.close()
+
+    def _budget_decision(self, record: dict[str, Any]) -> ai_budget.BudgetDecision:
+        request = record["request"]
+        ceiling = ai_budget.call_ceiling_cny(
+            self.price, request["system"] + request["user"], record["maxOutputTokens"]
+        )
+        month = datetime.now().astimezone().strftime("%Y-%m")
+        return ai_budget.decide(self._spends(), self._video_key(record["jobId"]), month, ceiling)
+
+    def _video_key(self, job_id: str) -> str:
+        """The first plan job of a video: an adopted AI plan is a new job whose request names the
+        preparation it came from, so the per-video cap survives adoption."""
+        seen: set[str] = set()
+        while job_id not in seen and len(seen) < 20:
+            seen.add(job_id)
+            try:
+                request = self.jobs.read(self.jobs.directory(job_id) / "request.json")["request"]
+                prepared = request.get("reasoningPreparedHash")
+                if not isinstance(prepared, str):
+                    break
+                job_id = self._prepared(prepared)["jobId"]
+            except Exception:  # an unreadable link keeps the job itself as the video
+                break
+        return job_id
+
+    def _spends(self) -> list[ai_budget.Spend]:
+        """Every confirmed attempt, charged at its known cost, else its recorded ceiling, else
+        its full reservation; an unreadable attempt is charged the full-context reservation."""
+        rows = []
+        for directory in self.root.iterdir():
+            planned = directory / "attempt" / "planned" / "confirmation.json"
+            if not re.fullmatch("[a-f0-9]{64}", directory.name) or not planned.is_file():
+                continue
+            month = datetime.fromtimestamp(planned.stat().st_mtime).astimezone().strftime("%Y-%m")
+            job, cny = "?", self.price.reservation_cny(self.price.context_limit_tokens, 2048)
+            try:
+                record = self._prepared(directory.name)
+                job, cny = self._video_key(record["jobId"]), Decimal(record["maxCostCny"])
+                confirmation = _read(planned.parent, "confirmation.json", CONFIRMATION_SCHEMA)
+                month = str(confirmation.get("confirmedAt", month))[:7]
+                cny = Decimal(confirmation.get("budgetCeilingCny", cny))
+                if (directory / "attempt" / "result").exists():
+                    billing = self.read_result(directory.name).get("billing") or {}
+                    if billing.get("knownCostCny") is not None:
+                        cny = Decimal(billing["knownCostCny"])
+            except (ValueError, KeyError, TypeError, OSError, ArithmeticError):
+                pass
+            rows.append(ai_budget.Spend(month, job, cny))
+        return rows
 
     async def _run(
         self,
@@ -440,9 +542,7 @@ class CreationReasoningService:
         request = ReasoningRequest(**record["request"])
 
         async def gate(candidate: ReasoningRequest) -> bool:
-            confirmed = _read(
-                attempt / "planned", "confirmation.json", "creation-reasoning-confirmation-v1"
-            )
+            confirmed = _read(attempt / "planned", "confirmation.json", CONFIRMATION_SCHEMA)
             return (
                 confirmed["preparedHash"] == prepared_hash
                 and confirmed["expectedSnapshotFingerprint"] == snapshot.fingerprint

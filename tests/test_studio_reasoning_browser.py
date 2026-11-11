@@ -2,6 +2,7 @@
 
 import json
 import threading
+from decimal import Decimal
 from types import SimpleNamespace
 
 import pytest
@@ -10,6 +11,7 @@ from test_creation_proposals import output
 from test_creation_reasoning_service import Transport
 from test_creation_revision_jobs import revisions  # noqa: F401
 
+from gamingcreator.application import ai_budget
 from gamingcreator.application.creation_proposals import create_snapshot
 from gamingcreator.ui import server as implementation
 from gamingcreator.ui.creation_reasoning_service import CreationReasoningService
@@ -35,6 +37,8 @@ def studio(revisions, monkeypatch):  # noqa: F811
     monkeypatch.setattr(implementation, "CreationReasoningService", factory)
     monkeypatch.setattr(implementation, "project_runs_payload", runs)
     monkeypatch.setenv("DEEPSEEK_API_KEY", "fake-never-sent")
+    # Over budget: these tests cover the per-call confirmation path (2026-11-11 budget rule).
+    monkeypatch.setattr(ai_budget, "MONTHLY_CAP_CNY", Decimal(0))
     server = implementation.create_server("127.0.0.1", 0, jobs.repository)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -71,7 +75,7 @@ def prepare(studio):
     page = studio.page
     page.get_by_label("创作助手模式").select_option("ai")
     page.get_by_label("创作对话需求").fill("第二个镜头节奏太急，最后一个镜头可以去掉")
-    page.get_by_role("button", name="准备请求（不发送）").click()
+    page.get_by_role("button", name="交给 AI").click()
     pytest.importorskip("playwright.sync_api").expect(
         page.get_by_text("查看将发送的文字")
     ).to_be_visible()
@@ -122,7 +126,7 @@ def test_clarification_changes_nothing_and_dirty_state_blocks_model(studio):
     expect(page.get_by_text("方案原样", exact=True)).to_be_visible()
     page.locator(".timeline .clip").first.click()
     page.get_by_label("速度").select_option("2/1")
-    expect(page.get_by_role("button", name="准备请求（不发送）")).to_be_disabled()
+    expect(page.get_by_role("button", name="交给 AI")).to_be_disabled()
     assert len(studio.transport.calls) == 1
 
 
@@ -141,7 +145,7 @@ def test_delayed_prepare_is_discarded_after_mode_roundtrip(studio):
     page.get_by_label("创作助手模式").select_option("ai")
     page.get_by_label("创作对话需求").fill("改节奏")
     with page.expect_request("**/api/creation/reasoning"):
-        page.get_by_role("button", name="准备请求（不发送）").click()
+        page.get_by_role("button", name="交给 AI").click()
     page.get_by_label("创作助手模式").select_option("local")
     page.get_by_label("创作助手模式").select_option("ai")
     held[0].fulfill(
@@ -223,3 +227,16 @@ def test_failed_history_restore_cannot_apply_another_attempt(studio):
     expect(page.get_by_role("button", name="应用AI建议")).to_have_count(0)
     expect(page.locator(".timeline .clip")).to_have_count(3)
     assert len(studio.transport.calls) == 2
+
+
+def test_within_budget_one_click_sends_and_previews(studio, monkeypatch):
+    """2026-11-11: inside ¥30/month and ¥1/video the model is called on one click."""
+    monkeypatch.setattr(ai_budget, "MONTHLY_CAP_CNY", Decimal(30))
+    page = studio.page
+    page.get_by_label("创作助手模式").select_option("ai")
+    page.get_by_label("创作对话需求").fill("第二个镜头节奏太急，最后一个镜头可以去掉")
+    page.get_by_role("button", name="交给 AI").click()
+    expect = pytest.importorskip("playwright.sync_api").expect
+    expect(page.get_by_text("改动预览：", exact=False)).to_be_visible()
+    expect(page.get_by_label("同意本次文字发送和费用上限")).to_have_count(0)
+    assert len(studio.transport.calls) == 1

@@ -122,3 +122,19 @@ def test_reasoning_http_config_origin_and_exact_fields(http, monkeypatch):
     assert request({"action": "result", "preparedHash": "a" * 64, "extra": "x"})[0] == 400
     assert request({**value, "action": "unknown"})[0] == 400
     assert not transport.calls
+
+
+def test_reasoning_http_budget_send_has_exact_fields(http):
+    request, transport, _, _ = http
+    prepared = prepare(http)
+    assert prepared["budget"]["eligible"] is True
+    value = {
+        "action": "execute_budget",
+        "preparedHash": prepared["preparedHash"],
+        "snapshotFingerprint": prepared["snapshotFingerprint"],
+    }
+    assert request({**value, "confirmedMaxCny": prepared["maxCostCny"]})[0] == 400
+    assert not transport.calls
+    status, result = request(value)
+    assert status == 200 and result["status"] == "completed", result
+    assert request(value) == (status, result) and len(transport.calls) == 1

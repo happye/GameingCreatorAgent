@@ -1,4 +1,5 @@
-// Text-model proposals are prepared locally, explicitly confirmed, previewed, then validated.
+// Text-model proposals: prepared locally, sent within the monthly AI budget (2026-11-11) or
+// explicitly confirmed past it, previewed, then validated.
 import {h} from "../vendor/preact.module.js";
 import {useEffect, useLayoutEffect, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
@@ -68,6 +69,15 @@ function reasoningActions(flow, editing, text, onPreview, onOverlayPreview) {
         prepare: () => ready && text.trim() && run("prepare", async () => {
             const quote = await post({action: "prepare", ...identity, instruction: text.trim()});
             flow.update({quote, result: null, confirmed: false, sent: false}); if (flow.valid()) { onPreview(null); onOverlayPreview(null); }
+            if (!quote.budget?.eligible || !flow.available) return;
+            if (!remember(editing, quote, text)) throw new Error("无法保存本次结果的恢复入口，已阻止发送。请允许浏览器本地存储后再试");
+            flow.update({sent: true, busy: "execute"});
+            try { show(await post({action: "execute_budget", preparedHash: quote.preparedHash, snapshotFingerprint: quote.snapshotFingerprint})); }
+            catch (error) {
+                // A refusal (4xx) happens before anything is sent: fall back to explicit confirmation.
+                if (error.status >= 400 && error.status < 500) { flow.update({sent: false}); throw new Error(`${error.message}（本次未发送）`); }
+                throw new Error(`${error.message}。结果可能尚未取回，请读取本次结果，不会重复付费。`);
+            }
         }),
         execute: () => {
             if (!ready || !flow.quote || !flow.confirmed || flow.sent || !flow.available) return;
@@ -115,7 +125,7 @@ export function ReasoningDock({editing, onPreview, onOverlayPreview = noop}) {
         <form class="reasoning-input" onSubmit=${(e) => { e.preventDefault(); if (!flow.busy) void actions.prepare(); }}>
             <strong>AI创作对话</strong><input class="input" aria-label="创作对话需求" value=${text} disabled=${!ready || !!flow.busy}
                 placeholder="描述想改变的节奏或镜头；不清楚时会先询问" onInput=${(e) => setText(e.currentTarget.value)} />
-            <button class="btn ghost" disabled=${!ready || !text.trim() || !!flow.busy}>准备请求（不发送）</button>
+            <button class="btn ghost" disabled=${!ready || !text.trim() || !!flow.busy}>${flow.busy === "execute" ? "AI 正在修改…" : "交给 AI"}</button>
         </form>
         <p class="hint">${!ready ? "请先保存当前镜头和声音修改，再请求模型建议。" : "仅发送已保存镜头的文字和时间；模型没有观看画面。旁白仍用免费本机语音。"}
             ${!flow.available ? " 文本模型尚未配置 DEEPSEEK_API_KEY，不能发送；可先查看请求。" : ""}</p>
@@ -125,7 +135,7 @@ export function ReasoningDock({editing, onPreview, onOverlayPreview = noop}) {
             <p class="hint">切换模式或修改镜头不会清除已发送记录；回到对应的已保存版本后可恢复。未完成或失败的请求不会自动重发。</p>
         </details>` : null}
         ${flow.quote && html`<div class="reasoning-quote">
-            <p>DeepSeek 文本模型 · 本次费用上限 ¥${flow.quote.maxCostCny}（完整上下文的保守上界，非实际费用）</p>
+            <p aria-label="AI预算">DeepSeek 文本模型 · ${client.budgetText(flow.quote.budget)}${flow.quote.budget && !flow.quote.budget.eligible ? `${flow.quote.budget.reason}；确认后按完整上下文上限 ¥${flow.quote.maxCostCny} 预留。` : ""}</p>
             <details><summary>查看将发送的文字</summary><pre>${flow.quote.payloadPreview ? JSON.stringify(flow.quote.payloadPreview, null, 2) : JSON.stringify({instruction: text, clips: editing.clips.map((c) => ({clipId: c.clipId, startUs: c.startUs, endUs: c.endUs, scriptDraft: c.scriptDraft}))}, null, 2)}</pre></details>
             ${!flow.sent && html`<label class="check"><input type="checkbox" aria-label="同意本次文字发送和费用上限" checked=${flow.confirmed} disabled=${!!flow.busy}
                 onChange=${(e) => flow.update({confirmed: e.currentTarget.checked})} />我同意发送以上文字，并确认本次费用上限。</label>

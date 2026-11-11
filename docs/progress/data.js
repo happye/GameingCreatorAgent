@@ -487,7 +487,7 @@ window.PROGRESS_DATA = {
     "tests/test_creation_workspace_browser.py"
    ],
    "done": "离线模板多套方案＋真实文本模型动态策划：3套方案已采用进Studio（任务4c857005），模型抄错指纹的问题已修；同一录像的重叠片段在规划前去重（每秒只播一次），目标时长跟随去重后的素材篮总长",
-   "todo": "方案质量未人评；每次新的模型调用需单独授权",
+   "todo": "方案质量未人评；2026-11-11起每月¥30、单条¥1内自动调用（超出再确认），AI编导主流程待接入",
    "updated": "2026-11-11",
    "sprints": [
     "sprint-creation-planner",

@@ -71,11 +71,12 @@ def test_real_http_overlay_proposal_saves_and_extends_export(studio_audio, servi
     expect(page.get_by_text("已保存的版本", exact=True)).to_be_visible()
     page.get_by_label("创作助手模式").select_option("ai")
     page.get_by_label("创作对话需求").fill("让这张独立图层多留两秒，然后慢慢消失")
-    page.get_by_role("button", name="准备请求（不发送）").click()
-    assert fake_transport == []
-    page.get_by_label("同意本次文字发送和费用上限").check()
-    page.get_by_role("button", name="确认本次调用", exact=False).click()
+    # Within the monthly AI budget (2026-11-11) one click sends; no per-call checkbox.
+    page.get_by_role("button", name="交给 AI").click()
     expect(page.get_by_text("图层预览：", exact=False)).to_be_visible()
+    expect(page.get_by_label("同意本次文字发送和费用上限")).to_have_count(0)
+    expect(page.get_by_label("AI预算")).to_contain_text("本月 AI 已用约")
+    assert len(fake_transport) == 1
     expect(page.get_by_label("结束秒", exact=True)).to_have_value("1")
     page.get_by_role("button", name="应用AI建议").click()
     expect(page.get_by_label("结束秒", exact=True)).to_have_value("3")
