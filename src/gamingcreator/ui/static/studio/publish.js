@@ -45,6 +45,72 @@ function useCoverCandidates(src, frames, fps) {
     return thumbs;
 }
 
+// Stage B (2026-11-11): AI writes title, description and tags from the brief and the rendered
+// shots (text only). Within the monthly AI budget one click sends; past it the user ticks a
+// consent box for that one call. A recovery entry is stored before any send, so a lost
+// response is read back instead of paid again. The result only fills the form.
+const COPY_STORE = "studio-copy-reasoning-v1";
+function copyRecord(renderJobId, quote) {
+    try {
+        const all = JSON.parse(localStorage.getItem(COPY_STORE) || "{}");
+        if (quote === undefined) return all[renderJobId] || null;
+        all[renderJobId] = {preparedHash: quote.preparedHash, snapshotFingerprint: quote.snapshotFingerprint, at: new Date().toISOString()};
+        localStorage.setItem(COPY_STORE, JSON.stringify(all)); return true;
+    } catch { return quote === undefined ? null : false; }
+}
+
+function AiCopy({renderJobId, disabled, onCopy}) {
+    const [state, setState] = useState({busy: "", quote: null, message: "", sent: false, consent: false});
+    const [available, setAvailable] = useState(false);
+    const alive = useRef(true);
+    useEffect(() => () => { alive.current = false; }, []);
+    useEffect(() => { client.api("/api/creation/reasoning/config").then((d) => { if (alive.current) setAvailable(d.available === true); }).catch(() => {}); }, []);
+    const patch = (value) => { if (alive.current) setState((s) => ({...s, ...value})); };
+    const post = (body) => client.api("/api/creation/reasoning", {}, {body});
+    const saved = copyRecord(renderJobId);
+    const take = (result) => {
+        if (!alive.current) return; // another video is shown now: never fill its form
+        if (result.status === "completed" && result.copy) { onCopy(result.copy); patch({busy: "", message: "AI 文案已填入，可以修改后保存。"}); }
+        else patch({busy: "", message: `AI 没有写出可用文案（${result.status}），不会自动重试。`});
+    };
+    const send = async (quote, explicit) => {
+        if (!copyRecord(renderJobId, quote)) return patch({message: "无法保存结果恢复入口，已阻止发送，请允许浏览器本地存储"});
+        patch({busy: "send", sent: true, consent: false, message: "AI 正在写…"});
+        try {
+            take(await post(explicit ? {action: "execute", preparedHash: quote.preparedHash, snapshotFingerprint: quote.snapshotFingerprint, confirmedMaxCny: quote.maxCostCny}
+                : {action: "execute_budget", preparedHash: quote.preparedHash, snapshotFingerprint: quote.snapshotFingerprint}));
+        } catch (error) {
+            const refused = error.status >= 400 && error.status < 500;
+            patch({busy: "", sent: !refused, message: refused ? `${error.message}（本次未发送）` : `${error.message}。可点“读取上次 AI 结果”，不会重复付费。`});
+        }
+    };
+    const start = async () => {
+        patch({busy: "prepare", quote: null, message: "", sent: false, consent: false});
+        try {
+            const quote = await post({action: "prepare_copy", jobId: renderJobId});
+            patch({busy: "", quote});
+            if (quote.budget?.eligible) await send(quote, false);
+            else patch({message: `${quote.budget?.reason || "超出 AI 预算"}，需要你确认这一次。`});
+        } catch (error) { patch({busy: "", message: error.message}); }
+    };
+    const recover = async () => {
+        patch({busy: "send"});
+        try { take(await post({action: "result", preparedHash: saved.preparedHash})); }
+        catch (error) { patch({busy: "", message: error.message}); }
+    };
+    const {quote, busy, sent} = state;
+    return html`<div class="field ai-copy" aria-label="AI文案">
+        <div class="actions-row"><button type="button" class="btn" disabled=${disabled || !!busy || !available} onClick=${start}>${busy ? "AI 正在写…" : "让 AI 写标题、简介和标签"}</button>
+            ${saved && !busy ? html`<button type="button" class="btn ghost" onClick=${recover}>读取上次 AI 结果（不重新调用）</button>` : null}</div>
+        ${!available ? html`<p class="hint">未配置 DEEPSEEK_API_KEY，暂不能让 AI 写文案。</p>` : null}
+        ${quote?.budget ? html`<p class="hint" aria-label="AI预算">${client.budgetText(quote.budget)}</p>` : null}
+        ${quote && !quote.budget?.eligible && !sent ? html`<details><summary>本次将发送的文字</summary><pre>${JSON.stringify(quote.payloadPreview, null, 2)}</pre></details>
+            <label class="check"><input type="checkbox" aria-label="同意本次AI文案费用" checked=${state.consent} onChange=${(e) => patch({consent: e.currentTarget.checked})} />同意发送以上文字，并确认本次费用上限</label>
+            <button type="button" class="btn ghost" disabled=${!state.consent || !!busy} onClick=${() => send(quote, true)}>确认本次调用（最高 ¥${quote.maxCostCny}）</button>` : null}
+        ${state.message ? html`<p class="hint" role="status" aria-label="AI文案状态">${state.message}</p>` : null}
+        <p class="hint">AI 只读需求和每段镜头的文字描述，没有看画面；发出前请核对。</p></div>`;
+}
+
 function CoverField({savedSrc, preview, thumbs, coverFrame, fps, onPick}) {
     const shown = savedSrc || preview || thumbs.find((t) => t.frame === coverFrame)?.url;
     return html`<div class="field cover-field"><div class="k">封面（保存前可选）</div>
@@ -217,7 +283,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
             <div class="panel-head">成片</div>
             <div class="panel-body">
                 ${renders.map((job) => html`<button class="row" aria-current=${job.jobId === renderId} onClick=${() => show(job.jobId, "render")}>
-                    <span class="dot ok"></span><span class="name">${when(job.createdAt)}</span><span class="meta">成片</span></button>`)}
+                    <span class="dot ok"></span><span class="name">${job.name || when(job.createdAt)}</span><span class="meta">成片</span></button>`)}
                 ${!renders.length && html`<p class="note">还没有成片。先在剪辑区导出一个视频。</p>`}
             </div>
         </aside>
@@ -259,6 +325,8 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                 ${message && html`<p class="note" role="status">${message}</p>`}
                 ${pub ? html`
                     <p class="hint">${pub.publicationJobId ? (dirty ? "有未保存的修改" : "已保存的版本") : "按需求自动起草的模板，请改一遍再保存。"}</p>
+                    <${AiCopy} key=${pub.renderJobId} renderJobId=${pub.renderJobId} disabled=${!!busy}
+                        onCopy=${(copy) => setForm((f) => ({...f, title: copy.title, description: copy.description, tags: copy.tags.join("，")}))} />
                     <label class="form-row">标题（${form.title.length} 字）<input class="input" value=${form.title} maxLength="200" onInput=${(e) => setForm({...form, title: e.currentTarget.value})} /></label>
                     <label class="form-row">简介（${form.description.length} 字）<textarea class="input" rows="6" value=${form.description} onInput=${(e) => setForm({...form, description: e.currentTarget.value})}></textarea></label>
                     <label class="form-row">标签（逗号分隔，${tagList(form.tags).length} 个）<input class="input" value=${form.tags} onInput=${(e) => setForm({...form, tags: e.currentTarget.value})} /></label>

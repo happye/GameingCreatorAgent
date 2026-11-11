@@ -20,6 +20,7 @@ def reasoning_config() -> dict[str, Any]:
 def reasoning_post(service: CreationReasoningService, value: Any) -> dict[str, Any]:
     fields = {
         "prepare_plan": {"action", "jobId"},
+        "prepare_copy": {"action", "jobId"},
         "adopt_plan": {"action", "preparedHash"},
         "prepare": {"action", "jobId", "planId", "instruction"},
         "execute": {"action", "preparedHash", "snapshotFingerprint", "confirmedMaxCny"},
@@ -38,6 +39,8 @@ def reasoning_post(service: CreationReasoningService, value: Any) -> dict[str, A
     action = value["action"]
     if action == "prepare_plan":
         return service.prepare_plan(value["jobId"])
+    if action == "prepare_copy":
+        return service.prepare_copy(value["jobId"])
     if action == "adopt_plan":
         return service.adopt_plan(value["preparedHash"])
     if action == "prepare":

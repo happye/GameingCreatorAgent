@@ -30,6 +30,8 @@ from gamingcreator.application.providers import (
     ProviderStatus,
     ProviderUsage,
 )
+from gamingcreator.application.publish_copy import PROMPT_VERSION as COPY_PROMPT_VERSION
+from gamingcreator.application.publish_copy import SCHEMA_VERSION as COPY_SCHEMA_VERSION
 from gamingcreator.application.storage import InvocationStatus
 from gamingcreator.infrastructure.deepseek_vision import _json, _SchemaError, _usage
 from gamingcreator.infrastructure.http_transport import (
@@ -124,6 +126,7 @@ class DeepSeekCreationReasoningProvider:
             (OVERLAY_PROMPT_VERSION, OVERLAY_SCHEMA_VERSION),
             (PLAN_PROMPT_VERSION, PLAN_SCHEMA_VERSION),
             ("plan-reasoning-prompt-v2", "plan-proposal-v2"),
+            (COPY_PROMPT_VERSION, COPY_SCHEMA_VERSION),
         }:
             raise ValueError("Unsupported reasoning request version.")
         if any(not isinstance(s, str) or not s.strip() for s in (request.system, request.user)):

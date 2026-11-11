@@ -43,6 +43,14 @@ def prepare(jobs: Any, request: dict[str, Any]) -> tuple[str, str]:
     return state["projectId"], digest
 
 
+def copy_inputs(jobs: Any, job_id: str) -> tuple[str, dict[str, Any], list[Any], float]:
+    """Project, brief, rendered segments and output fps of a completed render (AI copy)."""
+    state, receipt, _ = render_parent(jobs, job_id)
+    edl, report, _ = read_creation(jobs.safe(jobs.directory(job_id) / "selection"))
+    fps = receipt["fpsNumerator"] / receipt["fpsDenominator"]
+    return state["projectId"], report["brief"], list(edl.get("segments") or []), fps
+
+
 def snapshot(jobs: Any, job_id: str) -> dict[str, Any]:
     directory = jobs.directory(job_id)
     state = jobs.read(directory / "status.json")

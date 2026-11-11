@@ -53,6 +53,12 @@ from gamingcreator.application.providers import (
     InvocationMetadata,
     ProviderStatus,
 )
+from gamingcreator.application.publish_copy import (
+    CopySnapshot,
+    copy_request,
+    copy_snapshot,
+    validate_copy,
+)
 from gamingcreator.application.storage import InvocationStatus
 from gamingcreator.domain.creation_overlays import CreationOverlays
 from gamingcreator.infrastructure.creation_files import write_creation
@@ -250,20 +256,24 @@ class CreationReasoningService:
         }
         return result
 
+    def prepare_copy(self, render_job_id: str) -> dict[str, Any]:
+        """Stage B: AI title/description/tags for a finished video (2026-11-11)."""
+        from gamingcreator.ui.publication_jobs import copy_inputs
+
+        project_id, brief, segments, fps = copy_inputs(self.jobs, render_job_id)
+        snapshot = copy_snapshot(render_job_id, brief, segments, fps)
+        return self._prepare(snapshot, project_id, render_job_id, "", "", "copy")
+
     def _prepare(
         self,
-        snapshot: EditingSnapshot | PlanSnapshot,
+        snapshot: EditingSnapshot | PlanSnapshot | CopySnapshot,
         project_id: str,
         job_id: str,
         plan_id: str,
         instruction: str,
         purpose: str = "edit",
     ) -> dict[str, Any]:
-        request = (
-            plan_reasoning_request(snapshot)
-            if isinstance(snapshot, PlanSnapshot)
-            else reasoning_request(snapshot, instruction)
-        )
+        request = _request_for(snapshot, instruction)
         quote = self.price.reservation_cny(self.price.context_limit_tokens, 2048)
         if quote <= 0 or MODEL.casefold() not in {s.casefold() for s in self.price.model_aliases}:
             raise ValueError("Unknown or invalid pilot cost upper bound.")
@@ -305,6 +315,8 @@ class CreationReasoningService:
                 "inputFrames": 0,
                 "clipCount": len(snapshot.clips)
                 if isinstance(snapshot, PlanSnapshot)
+                else len(snapshot.payload["shots"])
+                if isinstance(snapshot, CopySnapshot)
                 else len(snapshot.payload["parent_edl"]["segments"]),
             },
         }
@@ -315,9 +327,11 @@ class CreationReasoningService:
             raise ValueError("Prepared parameters changed.")
         return record
 
-    def _current(self, record: dict[str, Any]) -> EditingSnapshot | PlanSnapshot:
+    def _current(self, record: dict[str, Any]) -> EditingSnapshot | PlanSnapshot | CopySnapshot:
         if record.get("purpose", "edit") == "plan":
             return self._current_plan(record)
+        if record.get("purpose") == "copy":
+            return self._current_copy(record)
         snapshot, project_id = self._snapshot(
             record["jobId"], record["planId"], _overlay_mode(record)
         )
@@ -345,6 +359,19 @@ class CreationReasoningService:
             or _digest(asdict(plan_reasoning_request(snapshot))) != record["requestHash"]
         ):
             raise ValueError("Saved planning inputs changed; prepare again.")
+        return snapshot
+
+    def _current_copy(self, record: dict[str, Any]) -> CopySnapshot:
+        from gamingcreator.ui.publication_jobs import copy_inputs
+
+        project_id, brief, segments, fps = copy_inputs(self.jobs, record["jobId"])
+        snapshot = copy_snapshot(record["jobId"], brief, segments, fps)
+        if (
+            project_id != record["projectId"]
+            or snapshot.fingerprint != record["snapshotFingerprint"]
+            or _digest(asdict(copy_request(snapshot))) != record["requestHash"]
+        ):
+            raise ValueError("The video changed; prepare again.")
         return snapshot
 
     def adopt_plan(self, prepared_hash: str) -> dict[str, Any]:
@@ -499,9 +526,21 @@ class CreationReasoningService:
             try:
                 request = self.jobs.read(self.jobs.directory(job_id) / "request.json")["request"]
                 prepared = request.get("reasoningPreparedHash")
-                if not isinstance(prepared, str):
+                if isinstance(prepared, str):
+                    job_id = self._prepared(prepared)["jobId"]
+                    continue
+                # A render or revision belongs to the video of the plan it came from.
+                parent = next(
+                    (
+                        request[k]
+                        for k in ("planJobId", "revisionJobId", "parentJobId")
+                        if k in request
+                    ),
+                    None,
+                )
+                if not isinstance(parent, str):
                     break
-                job_id = self._prepared(prepared)["jobId"]
+                job_id = parent
             except Exception:  # an unreadable link keeps the job itself as the video
                 break
         return job_id
@@ -535,7 +574,7 @@ class CreationReasoningService:
         self,
         record: dict[str, Any],
         prepared_hash: str,
-        snapshot: EditingSnapshot | PlanSnapshot,
+        snapshot: EditingSnapshot | PlanSnapshot | CopySnapshot,
         attempt: Path,
         confirmed_max_cny: Decimal,
     ) -> dict[str, Any]:
@@ -675,10 +714,24 @@ class CreationReasoningService:
         return result
 
 
-def _validated_output(snapshot: EditingSnapshot | PlanSnapshot, output: Any) -> dict[str, Any]:
+def _request_for(
+    snapshot: EditingSnapshot | PlanSnapshot | CopySnapshot, instruction: str
+) -> ReasoningRequest:
+    if isinstance(snapshot, PlanSnapshot):
+        return plan_reasoning_request(snapshot)
+    if isinstance(snapshot, CopySnapshot):
+        return copy_request(snapshot)
+    return reasoning_request(snapshot, instruction)
+
+
+def _validated_output(
+    snapshot: EditingSnapshot | PlanSnapshot | CopySnapshot, output: Any
+) -> dict[str, Any]:
     try:
         if isinstance(snapshot, PlanSnapshot):
             return _validated_plan_output(snapshot, output)
+        if isinstance(snapshot, CopySnapshot):
+            return {"purpose": "copy", "copy": validate_copy(snapshot, output)}
         edit = validate_proposal(snapshot, output)
         return {
             "purpose": "edit",

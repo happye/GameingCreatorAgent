@@ -76,6 +76,28 @@ def test_publish_copy_cover_and_package(service, monkeypatch):  # noqa: F811
                 }
             ]
             return route.fulfill(json={"jobs": jobs})
+        if path == "/api/creation/reasoning/config":
+            return route.fulfill(json={"available": True})
+        if path == "/api/creation/reasoning":
+            body = json.loads(request.post_data)
+            posted.setdefault("reasoning", []).append(body["action"])
+            if body["action"] == "prepare_copy":
+                budget = {"eligible": True, "monthSpentCny": "0", "monthCapCny": "30"}
+                budget |= {"videoSpentCny": "0", "videoCapCny": "1", "ceilingCny": "0.02"}
+                return route.fulfill(
+                    json={
+                        "preparedHash": "c" * 64,
+                        "snapshotFingerprint": "d" * 64,
+                        "maxCostCny": "2.016384",
+                        "budget": budget,
+                    }
+                )
+            copy = {
+                "title": "新手必看：三分钟看懂玩法",
+                "description": "00:00 开场",
+                "tags": ["游戏", "玩法展示"],
+            }
+            return route.fulfill(json={"status": "completed", "copy": copy})
         if path == "/api/creation/platform-profiles":
             profile = {
                 "Platform": "bilibili",
@@ -135,6 +157,11 @@ def test_publish_copy_cover_and_package(service, monkeypatch):  # noqa: F811
             playwright.expect(title).to_have_value("游戏 · 目标")
             # Packaging waits for saved copy.
             playwright.expect(page.get_by_role("button", name="生成平台包")).to_be_disabled()
+            # Stage B: within the AI budget one click fills title/description/tags (unsaved).
+            page.get_by_role("button", name="让 AI 写标题、简介和标签").click()
+            playwright.expect(title).to_have_value("新手必看：三分钟看懂玩法")
+            playwright.expect(page.get_by_label("AI文案状态")).to_contain_text("已填入")
+            assert posted["reasoning"] == ["prepare_copy", "execute_budget"]
             title.fill("三分钟看懂玩法")
             # Unsaved copy: leaving Publish asks first; cancelling keeps the edit.
             asked = []
