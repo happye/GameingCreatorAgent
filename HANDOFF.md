@@ -21,6 +21,10 @@
 - eed03cb 原声音量关键帧：AudioMix.sourceEnvelope（空时JSON不出现，旧版本哈希不变）；FFmpeg volume eval=frame；试听同曲线；波形道上点线加点/拖动/双击删除。设计 docs/design-docs/volume-keyframes.md。
 - 本批 test-affected -Base 6172edb：911过3失败→已修（增益线aria-label含“声音”撞旧定位器→改名“原声增益线”；波形接口返回非预期形状时崩溃→加形状守卫）。定向复跑：playback/caption/edit 浏览器文件全过；test_replacement_clears_caption_and_requires_save 首次复跑超时、整文件复跑5过，疑为页面加载后立即点击的时序敏感，未深查。
 
+## 全量结果（7bedec9）
+
+verify 失败：5178过6跳1失败。失败节点 tests/test_studio_caption_editor_browser.py::test_replacement_clears_caption_and_requires_save（.cache/test-logs/verify-20261111-235115-failed.txt；单跑整文件曾5过）。推测：select_shot 在页面加载后立刻点镜头，编辑器尚未就绪（时间轴先显示方案回退镜头，波形请求使加载变慢），点中的不是可编辑镜头。下一会话先定向修（等“版本保存状态”就绪再点，或查产品侧竞态），只复跑该节点和受影响文件；按规则不在同批重跑全量。
+
 ## 下一步（已授权）
 
 1. 用户第六次J1复测（先重启8765服务器）；按反馈修。
