@@ -24,7 +24,7 @@ function ShotWave({project, item, left, width, gain}) {
     useEffect(() => {
         let alive = true;
         if (!item.runId || item.endUs <= item.startUs) return;
-        peaksFor(project, item, buckets).then((d) => { if (alive) setData(d); }).catch(() => { if (alive) setData({audio: false, peaks: []}); });
+        peaksFor(project, item, buckets).then((d) => { if (alive) setData({audio: d?.audio === true, peaks: Array.isArray(d?.peaks) ? d.peaks : []}); }).catch(() => { if (alive) setData({audio: false, peaks: []}); });
         return () => { alive = false; };
     }, [project, item.runId, item.startUs, item.endUs, buckets]);
     useEffect(() => {
@@ -91,9 +91,9 @@ export function EnvelopeOverlay({points = [], fps, totalFrames, pxPerFrame, onCh
         const end = () => { lastDragEnd = performance.now(); removeEventListener("pointermove", move); removeEventListener("pointerup", end); };
         addEventListener("pointermove", move); addEventListener("pointerup", end);
     };
-    return html`<svg class="envelope" width=${width} height=${HEIGHT} aria-label="原声音量线" onClick=${add}>
+    return html`<svg class="envelope" width=${width} height=${HEIGHT} aria-label="原声增益线" onClick=${add}>
         <polyline points=${line} />
-        ${points.map((p, i) => html`<circle cx=${p.frame * pxPerFrame} cy=${yOf(p.gainDb)} r="4" role="slider" aria-label=${`音量点 ${(p.frame / fps).toFixed(2)} 秒`}
+        ${points.map((p, i) => html`<circle cx=${p.frame * pxPerFrame} cy=${yOf(p.gainDb)} r="4" role="slider" aria-label=${`增益点 ${(p.frame / fps).toFixed(2)} 秒`}
             aria-valuenow=${p.gainDb} onPointerDown=${(e) => drag(e, i)} onDblClick=${(e) => { e.stopPropagation(); onChange(points.filter((_, j) => j !== i)); }}>
             <title>${`${(p.frame / fps).toFixed(2)} 秒 · ${p.gainDb} dB（拖动调整，双击删除）`}</title></circle>`)}
     </svg>`;

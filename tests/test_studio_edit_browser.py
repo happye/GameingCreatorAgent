@@ -284,7 +284,7 @@ def test_edit_clip_save_version_and_command(revisions, monkeypatch):  # noqa: F8
             page.get_by_role("button", name="撤销一步").click()
             playwright.expect(out_point).to_have_value(before_text)
             # Stage C: click the volume line to add a keyframe, drag it down; each is one step.
-            line = page.get_by_label("原声音量线")
+            line = page.get_by_label("原声增益线")
             box = line.bounding_box()
             page.mouse.click(box["x"] + box["width"] / 2, box["y"] + 4)
             point = line.get_by_role("slider")
