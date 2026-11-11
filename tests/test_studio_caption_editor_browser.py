@@ -16,8 +16,17 @@ pytestmark = pytest.mark.browser
 
 
 def select_shot(page):
-    page.locator(".timeline .clip").first.click(position={"x": 10, "y": 10})
-    return page.get_by_label("镜头字幕", exact=True)
+    # Until the editor has loaded, the timeline shows the plan's read-only shots and a click
+    # selects nothing (verify 7bedec9 failure). Click again until the shot inspector opens.
+    field = page.get_by_label("镜头字幕", exact=True)
+    for _ in range(20):
+        page.locator(".timeline .clip").first.click(position={"x": 10, "y": 10})
+        try:
+            field.wait_for(state="visible", timeout=500)
+            break
+        except Exception:  # noqa: BLE001 - editor still loading; retry the click
+            continue
+    return field
 
 
 def save_captions(page):

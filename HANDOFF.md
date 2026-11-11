@@ -23,7 +23,7 @@
 
 ## 全量结果（7bedec9）
 
-verify 失败：5178过6跳1失败。失败节点 tests/test_studio_caption_editor_browser.py::test_replacement_clears_caption_and_requires_save（.cache/test-logs/verify-20261111-235115-failed.txt；单跑整文件曾5过）。推测：select_shot 在页面加载后立刻点镜头，编辑器尚未就绪（时间轴先显示方案回退镜头，波形请求使加载变慢），点中的不是可编辑镜头。下一会话先定向修（等“版本保存状态”就绪再点，或查产品侧竞态），只复跑该节点和受影响文件；按规则不在同批重跑全量。
+verify：5178过6跳1失败（tests/test_studio_caption_editor_browser.py::test_replacement_clears_caption_and_requires_save）。原因：测试在编辑器加载完成前点镜头（时间轴先显示方案只读镜头，点了不选中）。已改测试助手为点到检查器出现为止；该文件定向5过。按规则不在同批重跑全量，下一实质批次末再跑。
 
 ## 下一步（已授权）
 
