@@ -4,26 +4,27 @@
 
 用户Goal：自主继续开发，关键节点同步Dashboard，需额外授权或无法安全解决时汇报。J1第五次试用未通过（8条反馈，journeys.json），重构方案 docs/design-docs/ai-native-creation-plan.md 第五节已拍板：创作AI每月¥30、单条视频¥1内自动调用，超出再逐次确认；DeepSeek；本机配音；顺序A→B→C。
 
-## 本批提交（未跑全量）
+## 本批提交（全量已过：8add4f5 5173过6跳0失败）
 
-- 5e7f356 阶段A：同录像重叠片段规划前去重（每秒只播一次，剩余<1秒丢弃）；“用片段篮”把目标时长设为去重秒数并提示；必须主题找不到只提醒不置灰；一句话需求跨逗号取主题、类型不从主题误判、按录像名识别游戏。
-- 5e95259 发布页：封面保存前可从7张候选帧/当前画面选并预览；标题“游戏｜类型：主题”（新手向标记），简介=导语+带时间点分段；复制按钮已删。
-- 92a4314 Delete/撤销键竞态：键盘监听改layout effect（e8c12aa的“Delete flake”真因）。
-- 42436c1 AI预算门禁：application/ai_budget.py；execute_within_budget在根锁内判定并写confirmation（source monthly-budget-policy）；领养方案任务计入原视频；HTTP execute_budget；Studio预算内一键调用、4xx回退逐次确认。code-quality-guard审查PASS。
-- 受影响测试：5e7f356批1152过3失败→已修并定向复跑；5e7f356..批833过1失败（Delete竞态）→已修，文件7过。
+- 5e7f356 阶段A：重叠片段去重；片段篮定目标时长；主题只提醒；一句话需求解析。
+- 5e95259 发布页：封面保存前可选7候选/当前帧；标题“游戏｜类型：主题”；简介导语+时间点分段；删复制按钮。
+- 92a4314 Delete/撤销键layout effect（e8c12aa“flake”真因）。
+- 42436c1 AI预算门禁（ai_budget.py，execute_within_budget，根锁内判定）。
+- 4b161f8 时间轴选中镜头拖两端裁剪；导出“作品名”（jobs/<id>/name.json，POST /api/creation/job-name）。
+- 76a3d75 AI文案（purpose copy，application/publish_copy.py；只填表单；超预算勾选确认；恢复入口）。真实调用一次验证通过。
+- 8add4f5 生成方案后AI自动再策划（可关闭；采用仍由人决定）。
+- 两次code-quality-guard：预算PASS；文案FAIL两项UI P1已按建议修复。
 
 ## 下一步（已授权）
 
-1. 阶段B：AI写标题/简介/标签（发布页按钮，走预算门禁，新purpose）；AI理解一句话需求；AI按主题选片编排（工具调用）。规则版保留为离线兜底并标注。
-2. 阶段A剩余：时间线拖拽裁剪、工程命名。
-3. 阶段B首批结束时跑一次 verify.ps1（本批未跑全量）。
-4. 之后请用户第六次J1复测。
+1. 阶段C：音轨波形（服务端FFmpeg低分辨率峰值）→音量关键帧（AudioMix扩展、FFmpeg volume表达式、Web Audio预览、版本格式），需先写小设计。
+2. 阶段B剩余：AI理解一句话需求（无job上下文，预算键需设计）；AI按主题选片深化。
+3. 用户第六次J1复测（需重启8765）。
 
 ## 已知
 
 - 8765上的用户服务器是旧代码（拒绝brief-sentence的games字段），需用户重启后才能看到改动；预览用 .claude/launch.json 的 workspace（8791）。
 - 发布页分段名仍是画面分析描述，等AI文案。
-- 全量门禁最近一次：08e9cae 5152过6跳0失败。
 
 ## 保护
 
