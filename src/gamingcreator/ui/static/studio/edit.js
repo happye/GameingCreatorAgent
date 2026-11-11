@@ -1,6 +1,6 @@
 // Edit workspace, step 2: brief → plans as filmstrips → instant preview → export an MP4.
 import {h} from "../vendor/preact.module.js";
-import {useCallback, useEffect, useMemo, useRef, useState} from "../vendor/hooks.module.js";
+import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
 import {recordingRuns} from "./recordings.js";
@@ -314,7 +314,9 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     const exportBlocker = !plan ? "先在左侧选择一个方案" : !plan.ready ? "这个方案有缺口，不能导出"
         : problem || (commandPreview ? "先应用或取消一句话修改" : audioBusy || overlayBusy ? "声音或叠加正在处理，稍候" : "");
 
-    useEffect(() => {
+    // Layout effect: the listener must see the new selection before the next key arrives
+    // (a Delete pressed right after a click acted on the stale, empty selection).
+    useLayoutEffect(() => {
         const onKey = (event) => {
             if (event.target.closest("input, textarea, select, [contenteditable]")) return;
             // Undo/redo edit the timeline, not the player, so they also work while the result shows.
