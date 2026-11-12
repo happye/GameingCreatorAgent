@@ -1,6 +1,6 @@
 {
  "schemaVersion": 1,
- "updated": "2026-11-11",
+ "updated": "2026-11-12",
  "howTo": "每个节点只改 done/todo/updated/status 等字段；状态枚举 done|active|partial|todo|blocked。改完运行 python -B scripts/progress_ui.py。规则：docs/references/progress-dashboard.md",
  "features": {
   "P001": {
@@ -1053,12 +1053,12 @@
   }
  ],
  "gate": {
-  "date": "2026-11-11",
-  "scope": "完整门禁 verify.ps1（本批：撤销重做、复制/篮恢复/耗时预估、镜头计数、成片态撤销、节拍不切连续镜头、测试锁与选择）",
+  "date": "2026-11-12",
+  "scope": "完整门禁 quiet.ps1 verify（AI一句话需求、预算与恢复；含既有波形/音量关键帧）",
   "result": "pass",
-  "counts": "5152 过 · 6 跳 · 0 失败（31分）",
-  "branch": "main",
-  "merged": true,
-  "note": "提交 08e9cae 上运行；格式/Ruff/mypy/CLI 均通过。未跑 -Release"
+  "counts": "5204 过 · 7 跳 · 0 失败（1762秒）",
+  "branch": "codex/knowledge-version-compare-20261108",
+  "merged": false,
+  "note": "95ae24c 上完整门禁通过，已推送当前分支，未合main。格式/Ruff/mypy/CLI通过，未Release。定向23过；扩展affected在401秒主动中断；前置setup-failed修复后才进入pytest。J1人评仍未通过。"
  }
 }

@@ -27,3 +27,8 @@ Studio首次加载多模块时，默认Python 3.13监听队列仅5；延迟accep
 ## 2026-11-12 接手需求理解草稿
 
 初跑发现fixture依赖未导入、模拟Provider无usage却断言已知费用；已补依赖并以预算ceiling核对未知费用。conftest改动会把affected扩至整套：本轮扩展运行401秒后主动中断，避免和批末verify重复；先用明确文件验证，再跑一次完整门禁。PowerShell路径通配须使用rg目录加-g（已有规则），不重试同一错误形式。
+
+
+## 2026-11-12 quiet子进程模块路径
+
+Start-Process继承Codex PowerShell7模块路径，Utility加载后Get-FileHash缺失，verify三次setup-failed。预导入Utility无效；改quiet子进程先把PSHOME/Modules置首，原工具链检查保持，完整verify通过。监控子任务后续Bad Request后由主控跟进现有exec会话，未重启验证。收尾长内联写入命令被自动审批拒绝，改编辑器创建scratch脚本后执行；apply_patch不支持同一patch删除并新增相同路径，应直接更新。
