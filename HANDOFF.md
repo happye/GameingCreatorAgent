@@ -1,31 +1,26 @@
 # HANDOFF（覆盖快照）
 
-## 最近一次会话（2026-11-12，Codex 接手 Claude Code）
+## 最近一次会话（2026-11-13，Codex，自主goal仍active）
 
-已读共享规范、STATUS、原HANDOFF、AI主导创作方案及Claude Harness，保留原分支和已有工作。用户继续授权自主开发；J1第五次未通过，第六次复测待用户方便时进行，不阻断开发。
+用户要求按计划持续开发直到额度用光；有额外授权或无法安全解决的阻塞才汇报。不要把单批交付当成整个goal完成。已接手Claude版本；J1第五次未通过，第六次复测待用户方便时进行，不阻断开发。
 
-## 本轮交付
+## 本批主题编排已交付
 
-- e452016：接手已有未提交AI需求理解草稿并补齐。DeepSeek纯文字结构化需求（完整主题/类型/游戏/时长/平台/观众/风格），点击填入才改表单；无模型/超预算/无有效输出时明确规则兜底。
-- 请求发送前按project存sessionStorage；发送异常（包括400）保留身份，只读恢复；项目key与卸载generation阻止跨项目混用。无法取回时可继续本机规则，保留旧hash，不重新付费。标签页关闭/手工清存储后尚无恢复入口。
-- 无job预算固定brief-unassigned；其花费计入所有视频，新brief按全部历史创作消费检查¥1上限，达到上限后降规则。TD029记录未来工程身份归属优化，旧账本不改，不按日重置。
-- 95ae24c：quiet.ps1子进程优先Windows PowerShell自身模块，修复继承Codex PowerShell7模块路径时Get-FileHash不可用；工具链门禁未删改。
-- 独立费用/身份审查通过（task_quality_guard）；调用测试使用模拟Transport，无真实付费/上传/发布。
+- 056b252（已推当前分支）：有主题新规划使用plan-proposal-v3，逐镜topicUses严格绑定brief主题、理由和该候选原facts/tags引文；topicCoverage仅计实际编译镜头，缺口不置灰。预览/采用后显示原方案主题安排，手工改镜头需重新核对。引文只证明来源，不冒称语义验证。
+- v3输出上限8192，报价/预算ceiling/预留/发送均绑定record.maxOutputTokens；v1/v2保留2048。旧有主题prepared按冻结快照重建，不自动升版本，hash/结果复用/采用兼容。
+- 自动策划HTTP400也保留发送身份和只读恢复，不再误称未发送。无真实模型调用或费用；仅模拟Transport。
+- 正式quiet.ps1 verify在056b252通过：5226 passed、7 skipped、0 failed，2132秒；格式/Ruff/mypy/CLI通过，未Release。日志.cache/test-logs/verify-20261112-235522.log；verify-last.json=passed。不要再次全量跑此批。
+- 受影响18文件226过；浏览器文件17过（知识+裁剪+主题映射HTTP准备/采用/刷新）；门禁后追加EDL渲染合同断言，定向5过，只有测试变更。合同docs/exec-plans/sprint-ai-theme-planning.md与Dashboard已同步。J1人评状态不变。
 
-## 验证
+## 已并行准备下一片，尚未集成/运行测试
 
-- 最终明确文件定向：23 passed（新增浏览器、brief服务、预算、旧Studio编辑）；此前相关服务/HTTP回归71 passed。
-- 扩展affected -Base 571f791因conftest选近全套，401秒后主动中断，不计通过；日志.cache/test-logs/test-affected-20261112-225029.log。
-- 前置verify三次setup-failed（未进pytest），定位并修复PowerShell模块路径后正式门禁通过。
-- 正式quiet.ps1 verify：5204 passed, 7 skipped, 0 failed，1762秒，HEAD 95ae24c。格式/Ruff/mypy/CLI通过；未Release。日志.cache/test-logs/verify-20261112-230110.log，verify-last.json=passed。无需再跑全量。
-- J1/J2/J3人评状态不提升；Dashboard P019、TD029与gate已同步。
+独立树.worktrees/work-budget-identity，分支codex/work-budget-identity-20261113，base056b252。勿删除此活动树。
 
-## 下一步（已授权）
+- 合同在该树docs/exec-plans/sprint-work-budget-identity.md，架构师与质量守卫已核设计。目标显式新建作品、稳定workId贯穿brief/多次根plan/AI采用/修订/render，共享月¥30、同作品跨月¥1；解决TD029的历史累计¥1后永久降规则问题。完整多轨工程另片。
+- task_developer已停笔，10个归属源码/测试文件：新增infrastructure/creation_work_store.py、ui/creation_works_http.py、ui/creation_budget_scope.py及3份测试；修改application/ai_budget.py、ui/creation_jobs.py、creation_reasoning_service.py、creation_reasoning_http.py。Ruff/mypy静态过，尚未跑pytest，不能称产品交付。没有路由/前端接线。
+- 关键审查P1已按建议修：不仅work根，新prepare的可信legacy根也冻结budgetKey；旧prepared不改字节，历史无key用严格解析，坏链归全局?，不再吞错退回中间job重获额度。theme_guard正在增量复查修复，需取最终结论。
+- 下一安全动作：主树当前批记录提交推送后，在下一树定向跑3个新测试文件及相关旧reasoning/job测试（先load主树env，借主树venv，cwd仍该worktree；不重新uv sync/安装）。主树verify已终止，可启动一个pytest。修失败后补server作品GET/POST路由、前端显式新建/恢复作品与按作品隔离草稿/最近job/待恢复brief，再做全链采用/导出/费用并发验证和唯一关键评估；不能只交store。
 
-1. 阶段B：AI按主题选片/编排深化。plan_reasoning.py发送完整snapshot；plan_proposals.py按eventIds/clipRanges限制候选（空则所加载timeline全部候选），含facts/tags/证据。复用候选身份/源区间校验，输出逐镜头主题对应与覆盖说明；material_scoring.py主题命中仍是词面规则，不能冒称语义覆盖。
-2. 用户第六次J1复测（需重启旧8765服务器）；已有人工待办，不重复要求。
-3. 阶段C剩余配乐/旁白信封、多轨与可回放工程文件；工程身份亦可解决TD029。
+## 保护与授权
 
-## 保护
-
-当前分支codex/knowledge-version-compare-20261108已推送功能和修复，未合main。原未跟踪设计稿/审计/Grok工单不动；四个既有工作树creation-reasoning-core、j1-preview-corrections、j1-selected-ranges、test-run-lock及stash不动。原片/标签/账本/证据不改；不发布/支付/云配音。文字AI每月¥30、单视频¥1内；视觉仅指定素材¥50/月；未知成本不写0；失败不自动重付。推送用git -c http.proxy=http://127.0.0.1:7890 push。
+当前主分支codex/knowledge-version-compare-20261108已推功能，未合main。原未跟踪设计稿/审计/Grok工单不动；四个旧worktree及stash不动。本批theme-topic-binding树已对照集成字节后移除；下一预算树保留。原片/标签/账本/证据不改，不发布/支付/云配音。文字AI月¥30/视频¥1内，超出再确认；视觉仅指定素材¥50/月，未知成本不写0，失败不自动重付。预算新片未交付前TD029保守限制继续。推送git -c http.proxy=http://127.0.0.1:7890 push。

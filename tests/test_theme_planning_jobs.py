@@ -128,6 +128,13 @@ def test_v3_knowledge_selected_ranges_adopt_and_read_back(planning, monkeypatch)
     assert plan["topicCoverage"] == result["planPreview"]["plans"][0]["topicCoverage"]
     assert plan["topicCoverage"][1]["status"] == "missing"
     assert report["understandingVerified"] is False and plan["ready"]
+    from gamingcreator.application.edit_decision import select_edit_decision
+    from gamingcreator.application.rendering import validate_render_plan
+
+    rendered = validate_render_plan(
+        select_edit_decision(report, plan["id"]), report, (ctx.timeline,)
+    )
+    assert rendered.frames == plan["actualFrames"]
     assert [(s["startUs"], s["endUs"]) for s in plan["segments"]] == [
         (6_000_000, 8_000_000),
         (0, 2_000_000),

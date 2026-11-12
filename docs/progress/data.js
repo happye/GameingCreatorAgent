@@ -1,6 +1,6 @@
 window.PROGRESS_DATA = {
  "schemaVersion": 1,
- "nodesUpdated": "2026-11-12",
+ "nodesUpdated": "2026-11-13",
  "groups": {
   "A": "基础架构与本地处理",
   "B": "视频理解与检索",
@@ -487,8 +487,8 @@ window.PROGRESS_DATA = {
     "tests/test_creation_workspace_browser.py"
    ],
    "done": "离线模板与预算内AI动态策划；重叠片段去重，时长随素材篮；有主题的新AI方案逐镜记录主题/理由/原摘要引文，预览及采用后可核对原方案主题安排，缺口不置灰；旧付费v1/v2仍可复用和采用，v3输出上限与费用门绑定",
-   "todo": "主题映射只证明引用来源，语义与方案质量待人评；AI旁白与完整编导闭环继续深化；本批完整门禁待运行",
-   "updated": "2026-11-12",
+   "todo": "主题映射只证明引用来源，语义与方案质量待人评；AI旁白与完整编导闭环继续深化；作品预算归属待TD029切片",
+   "updated": "2026-11-13",
    "sprints": [
     "sprint-creation-planner",
     "sprint-creation-workspace",
@@ -1542,7 +1542,7 @@ window.PROGRESS_DATA = {
     {
      "id": "R3-theme-planning",
      "name": "AI 按主题选片与编排说明",
-     "status": "active",
+     "status": "done",
      "sprint": "sprint-ai-theme-planning"
     },
     {
@@ -1974,13 +1974,13 @@ window.PROGRESS_DATA = {
   }
  ],
  "gate": {
-  "date": "2026-11-12",
-  "scope": "完整门禁 quiet.ps1 verify（AI一句话需求、预算与恢复；含既有波形/音量关键帧）",
+  "date": "2026-11-13",
+  "scope": "完整门禁 quiet.ps1 verify（AI逐镜主题映射、引文、旧付费版本兼容与8192输出费用上限）",
   "result": "pass",
-  "counts": "5204 过 · 7 跳 · 0 失败（1762秒）",
+  "counts": "5226 过 · 7 跳 · 0 失败（2132秒）",
   "branch": "codex/knowledge-version-compare-20261108",
   "merged": false,
-  "note": "95ae24c 上完整门禁通过，已推送当前分支，未合main。格式/Ruff/mypy/CLI通过，未Release。定向23过；扩展affected在401秒主动中断；前置setup-failed修复后才进入pytest。J1人评仍未通过。"
+  "note": "056b252 上完整门禁通过，已推送当前分支，未合main。格式/Ruff/mypy/CLI通过，未Release。受影响18文件226过，最终策划浏览器17过。J1人评仍未通过，主题语义未验收。"
  },
  "fees": [
   "2026-11-08：用户要求尽量避免PR/AE等大型软件。开发、日常验证和成片导出走项目FFmpeg/浏览器路径，专业格式为可选交接，实际导入保持未验。此前Premiere退出由用户手动关闭，不是软件故障；不转成人工待办。",
@@ -1991,9 +1991,9 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "最新完整门禁通过：5204过7跳0失败（95ae24c，quiet.ps1 verify，1762秒）；格式/Ruff/mypy/CLI均通过，未Release。最终定向23过；扩展affected因conftest触发近全套而主动中断（401秒），不计通过。前置setup-failed已修复：Windows PowerShell子进程优先系统模块，工具链检查保留。",
+  "最新完整门禁通过：5226过7跳0失败（056b252，quiet.ps1 verify，2132秒）；格式/Ruff/mypy/CLI均通过，未Release。受影响18文件226过、最终策划浏览器17过；门禁后追加EDL渲染合同定向5过（仅测试变更，不重跑全量）。",
   "J1第五次试用（2026-11-11）未通过，重构方案 docs/design-docs/ai-native-creation-plan.md 已拍板（AI每月¥30、单条¥1内自动调用；DeepSeek；本机配音；A→B→C）。阶段A已全部交付：重叠片段去重、目标时长随片段篮、主题不置灰、一句话需求解析、发布页封面前置/标题不抄需求/去复制按钮、Delete键竞态、时间轴拖动裁剪、作品命名。",
-  "阶段B新增AI理解一句话需求（e452016）：预算内纯文字解析，确认后填入全部主题等字段；规则兜底，按项目保存发送身份，HTTP400/丢失响应/重挂载只读恢复；可继续本机规则并保留旧请求。仅模拟模型验证，未发真实付费请求。此前AI文案/自动再策划与阶段C原声波形/关键帧均保留，本次全量覆盖。下一步AI按主题选片编排深化；你方便时做第六次J1复测（需重启8765服务器）。\n   无视频需求采用保守共享预算：全部历史创作消费累计达到¥1后退回规则版；工程归属优化见TD029，不按天重置或额外发放额度。",
+  "阶段B新增AI逐镜主题编排（056b252）：主题/理由/原摘要引文进入新v3方案，覆盖只计实际镜头，预览及采用后可核对原方案；旧有主题v1/v2付费结果仍可读回采用。新v3输出8192 tokens与报价/预算/发送绑定，旧版2048不变；auto策划HTTP400保留结果恢复。此前AI需求理解/文案/再策划、阶段C原声波形/关键帧保留。仅模拟模型验证，主题语义及J1质量未提升。下一步作品预算归属（TD029）→AI旁白及阶段C；你方便时做第六次J1复测（需重启8765服务器）。\n   无视频需求采用保守共享预算：全部历史创作消费累计达到¥1后退回规则版；工程归属优化见TD029，不按天重置或额外发放额度。",
   "平台限值仅填官方可读来源（快手15分钟/4G、B站10小时，docs/references/platform-limits-sources.md）；其余待你登录后核对（可选）。",
   "进度看板docs/progress/index.html；分发前许可证缺口及TD003仍待处理。"
  ],
@@ -2039,8 +2039,8 @@ window.PROGRESS_DATA = {
     "P021",
     "R3"
    ],
-   "date": "",
-   "bytes": 2771
+   "date": "2026-11-12",
+   "bytes": 2878
   },
   {
    "file": "sprint-cache-reclamation",
