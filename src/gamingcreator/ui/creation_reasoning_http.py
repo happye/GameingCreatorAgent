@@ -18,6 +18,17 @@ def reasoning_config() -> dict[str, Any]:
 
 
 def reasoning_post(service: CreationReasoningService, value: Any) -> dict[str, Any]:
+    if isinstance(value, dict) and value.get("action") == "prepare_brief":
+        games = value.get("games")
+        if (
+            set(value) != {"action", "text", "games"}
+            or not isinstance(value["text"], str)
+            or not isinstance(games, list)
+            or len(games) > 50
+            or any(not isinstance(g, str) or len(g) > 200 for g in games)
+        ):
+            raise ValueError("Invalid reasoning request fields.")
+        return service.prepare_brief(value["text"], games)
     fields = {
         "prepare_plan": {"action", "jobId"},
         "prepare_copy": {"action", "jobId"},

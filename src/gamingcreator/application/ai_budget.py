@@ -60,7 +60,17 @@ def call_ceiling_cny(price: PriceSnapshot, payload_text: str, max_output_tokens:
 def decide(spends: Iterable[Spend], job_id: str, month: str, ceiling: Decimal) -> BudgetDecision:
     rows = list(spends)
     month_spent = sum((r.cny for r in rows if r.month == month), Decimal(0))
-    video_spent = sum((r.cny for r in rows if r.job_id == job_id), Decimal(0))
+    # A brief has no video yet. Charge its spend conservatively to every video;
+    # another brief must also fit alongside all existing spend (across months).
+    # This avoids a fresh daily key giving the eventual video an extra allowance.
+    video_spent = sum(
+        (
+            r.cny
+            for r in rows
+            if job_id.startswith("brief-") or r.job_id == job_id or r.job_id.startswith("brief-")
+        ),
+        Decimal(0),
+    )
     if month_spent + ceiling > MONTHLY_CAP_CNY:
         reason = f"本月 AI 已用约 ¥{month_spent:.2f}，本次最多 ¥{ceiling:.2f} 会超过每月 ¥{MONTHLY_CAP_CNY}"
     elif video_spent + ceiling > PER_VIDEO_CAP_CNY:

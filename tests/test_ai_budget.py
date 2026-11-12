@@ -32,3 +32,13 @@ def test_month_cap_counts_every_video():
     decision = decide(rows, "new", "2026-11", Decimal("0.4"))
     assert not decision.allowed and "每月" in decision.reason
     assert decision.as_dict()["eligible"] is False
+
+
+def test_unassigned_brief_spend_follows_every_video_and_never_resets_daily():
+    rows = [
+        Spend("2026-10", "brief-2026-10-31", Decimal("0.2")),
+        Spend("2026-11", "video", Decimal("0.7")),
+    ]
+    assert not decide(rows, "video", "2026-11", Decimal("0.2")).allowed
+    assert not decide(rows, "brief-unassigned", "2026-11", Decimal("0.2")).allowed
+    assert decide(rows, "new-video", "2026-11", Decimal("0.7")).allowed

@@ -12,6 +12,12 @@ from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 from gamingcreator.application import ai_budget
+from gamingcreator.application.brief_reasoning import (
+    BriefSnapshot,
+    brief_request,
+    brief_snapshot,
+    validate_brief,
+)
 from gamingcreator.application.budget import BudgetLedger
 from gamingcreator.application.creation_overlay_proposals import (
     PROMPT_VERSION as OVERLAY_PROMPT_VERSION,
@@ -83,6 +89,7 @@ RESULT_SCHEMA = "creation-reasoning-result-v1"
 OUTPUT_SCHEMA = "creation-reasoning-provider-output-v1"
 CONFIRMATION_SCHEMA = "creation-reasoning-confirmation-v1"
 BUDGET_SOURCE = "monthly-budget-policy"
+Snapshot = EditingSnapshot | PlanSnapshot | CopySnapshot | BriefSnapshot
 
 
 class _OutputValidationError(ValueError):
@@ -264,9 +271,14 @@ class CreationReasoningService:
         snapshot = copy_snapshot(render_job_id, brief, segments, fps)
         return self._prepare(snapshot, project_id, render_job_id, "", "", "copy")
 
+    def prepare_brief(self, sentence: object, games: object) -> dict[str, Any]:
+        """No video exists yet: use the conservative shared unassigned-brief budget."""
+        snapshot = brief_snapshot(sentence, games)
+        return self._prepare(snapshot, "", "brief-unassigned", "", "", "brief")
+
     def _prepare(
         self,
-        snapshot: EditingSnapshot | PlanSnapshot | CopySnapshot,
+        snapshot: Snapshot,
         project_id: str,
         job_id: str,
         plan_id: str,
@@ -317,6 +329,8 @@ class CreationReasoningService:
                 if isinstance(snapshot, PlanSnapshot)
                 else len(snapshot.payload["shots"])
                 if isinstance(snapshot, CopySnapshot)
+                else 0
+                if isinstance(snapshot, BriefSnapshot)
                 else len(snapshot.payload["parent_edl"]["segments"]),
             },
         }
@@ -327,11 +341,13 @@ class CreationReasoningService:
             raise ValueError("Prepared parameters changed.")
         return record
 
-    def _current(self, record: dict[str, Any]) -> EditingSnapshot | PlanSnapshot | CopySnapshot:
+    def _current(self, record: dict[str, Any]) -> Snapshot:
         if record.get("purpose", "edit") == "plan":
             return self._current_plan(record)
         if record.get("purpose") == "copy":
             return self._current_copy(record)
+        if record.get("purpose") == "brief":
+            return self._current_brief(record)
         snapshot, project_id = self._snapshot(
             record["jobId"], record["planId"], _overlay_mode(record)
         )
@@ -372,6 +388,17 @@ class CreationReasoningService:
             or _digest(asdict(copy_request(snapshot))) != record["requestHash"]
         ):
             raise ValueError("The video changed; prepare again.")
+        return snapshot
+
+    def _current_brief(self, record: dict[str, Any]) -> BriefSnapshot:
+        # The sentence is the whole input: rebuild it from the frozen request and re-bind.
+        frozen = json.loads(record["request"]["user"])["snapshot"]
+        snapshot = brief_snapshot(frozen.get("sentence"), frozen.get("knownGames"))
+        if (
+            snapshot.fingerprint != record["snapshotFingerprint"]
+            or _digest(asdict(brief_request(snapshot))) != record["requestHash"]
+        ):
+            raise ValueError("Prepared brief changed; prepare again.")
         return snapshot
 
     def adopt_plan(self, prepared_hash: str) -> dict[str, Any]:
@@ -574,7 +601,7 @@ class CreationReasoningService:
         self,
         record: dict[str, Any],
         prepared_hash: str,
-        snapshot: EditingSnapshot | PlanSnapshot | CopySnapshot,
+        snapshot: Snapshot,
         attempt: Path,
         confirmed_max_cny: Decimal,
     ) -> dict[str, Any]:
@@ -714,24 +741,24 @@ class CreationReasoningService:
         return result
 
 
-def _request_for(
-    snapshot: EditingSnapshot | PlanSnapshot | CopySnapshot, instruction: str
-) -> ReasoningRequest:
+def _request_for(snapshot: Snapshot, instruction: str) -> ReasoningRequest:
     if isinstance(snapshot, PlanSnapshot):
         return plan_reasoning_request(snapshot)
     if isinstance(snapshot, CopySnapshot):
         return copy_request(snapshot)
+    if isinstance(snapshot, BriefSnapshot):
+        return brief_request(snapshot)
     return reasoning_request(snapshot, instruction)
 
 
-def _validated_output(
-    snapshot: EditingSnapshot | PlanSnapshot | CopySnapshot, output: Any
-) -> dict[str, Any]:
+def _validated_output(snapshot: Snapshot, output: Any) -> dict[str, Any]:
     try:
         if isinstance(snapshot, PlanSnapshot):
             return _validated_plan_output(snapshot, output)
         if isinstance(snapshot, CopySnapshot):
             return {"purpose": "copy", "copy": validate_copy(snapshot, output)}
+        if isinstance(snapshot, BriefSnapshot):
+            return {"purpose": "brief", "brief": validate_brief(snapshot, output)}
         edit = validate_proposal(snapshot, output)
         return {
             "purpose": "edit",

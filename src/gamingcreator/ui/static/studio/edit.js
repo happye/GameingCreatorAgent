@@ -352,7 +352,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         <aside class="panel" hidden=${!layout.bin} aria-label="需求与方案">
             <div class="panel-head">需求<span class="spacer"></span><span class="track-label">${saved}</span></div>
             <div class="panel-body">
-                <${BriefSentence} draft=${draft} update=${update} runs=${runs} />
+                <${BriefSentence} key=${project} project=${project} draft=${draft} update=${update} runs=${runs} />
                 <${Brief} project=${project} runs=${runs} draft=${draft} update=${update} busy=${busy} onGenerate=${generate} basket=${basket} />
                 <div class="section-label">方案${planJob ? `（${planJob.plans.length}）` : ""}</div>
                 ${planJob ? planJob.plans.map((p) => html`<${PlanCard} plan=${p} fps=${fps} active=${p.id === planId} thumb=${thumb} onFind=${onFindMaterial}

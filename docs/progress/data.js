@@ -30,9 +30,9 @@ window.PROGRESS_DATA = {
   "td": {
    "resolved": 20,
    "partial": 3,
-   "open": 5
+   "open": 6
   },
-  "tdTotal": 28,
+  "tdTotal": 29,
   "humanPending": 10,
   "journeyAgentPass": 3,
   "journeyHumanUsable": 0,
@@ -436,9 +436,9 @@ window.PROGRESS_DATA = {
     "tests/test_creation_jobs.py",
     "tests/test_creation_workspace_browser.py"
    ],
-   "done": "一句话需求按本机规则识别游戏/时长/类型/平台/必须主题/排除/观众，确认后填入（主题列表跨逗号到句号；类型不从主题词误判；未加《》时按本项目录像里的游戏名匹配）；结构化需求离线生成模板方案，可带入活动规则与本地知识",
-   "todo": "规则覆盖之外的说法需手填，AI 解析待 B 阶段预算授权；未经人工验收",
-   "updated": "2026-11-11",
+   "done": "一句话需求支持 DeepSeek 文字理解游戏/时长/类型/平台/全部主题/排除/观众/风格，确认后填入；超预算或模型不可用时标明本机规则兜底；请求身份按项目保留，丢失响应可只读恢复；结构化需求可带入活动规则与本地知识",
+   "todo": "AI 按主题选片编排深化；无视频需求暂用保守共享预算，待工程身份归属（TD029）；真实需求理解与成片质量待用户复测",
+   "updated": "2026-11-12",
    "sprints": [
     "sprint-creation-planner",
     "sprint-creation-workspace",
@@ -1986,7 +1986,7 @@ window.PROGRESS_DATA = {
  "now": [
   "最新完整门禁通过：5173过6跳0失败（8add4f5，35分，经quiet.ps1）；未Release，不提升人评或整项状态。",
   "J1第五次试用（2026-11-11）未通过，重构方案 docs/design-docs/ai-native-creation-plan.md 已拍板（AI每月¥30、单条¥1内自动调用；DeepSeek；本机配音；A→B→C）。阶段A已全部交付：重叠片段去重、目标时长随片段篮、主题不置灰、一句话需求解析、发布页封面前置/标题不抄需求/去复制按钮、Delete键竞态、时间轴拖动裁剪、作品命名。",
-  "阶段B已交付两项：AI写标题/简介/标签（真实调用验证，≤¥0.02）；生成方案后AI自动再策划（预算内）。预算门禁42436c1。下一步：阶段C音轨波形与音量关键帧；阶段B剩余AI理解需求、AI选片编排深化。请你方便时做第六次J1复测（需重启8765服务器）。",
+  "阶段B已交付两项：AI写标题/简介/标签（真实调用验证，≤¥0.02）；生成方案后AI自动再策划（预算内）。预算门禁42436c1。阶段C已交付原声波形与音量关键帧（52c8e6b、eed03cb，未跑全量）；阶段B剩余AI理解需求、AI选片编排深化。请你方便时做第六次J1复测（需重启8765服务器）。",
   "平台限值仅填官方可读来源（快手15分钟/4G、B站10小时，docs/references/platform-limits-sources.md）；其余待你登录后核对（可选）。",
   "进度看板docs/progress/index.html；分发前许可证缺口及TD003仍待处理。"
  ],
@@ -2638,6 +2638,15 @@ window.PROGRESS_DATA = {
    "fix": "测试服务器取端口时跳过 Chromium 受限端口列表，或固定从安全端口段分配",
    "status": "resolved: 2026-11-10 create_server(port 0) 与桌面宿主 FreePort 均跳过 Chromium 受限端口；本机动态端口段为1024起，真实用户同样可能遇到；回归测试+桌面构建Smoke通过",
    "state": "resolved"
+  },
+  {
+   "id": "TD029",
+   "found": "2026-11-12/P019",
+   "severity": "medium; conservative budget scope",
+   "impact": "AI需求理解尚无视频job：固定brief-unassigned消费计入所有视频，新brief按全部历史创作消费检查¥1上限，累计到限后规则兜底；安全但过度收紧",
+   "fix": "引入真实工程/草稿身份，将需求调用与后续策划/导出关联到同一预算键；旧账本保持只读兼容",
+   "status": "open: 保守共享预算已实施，归属优化待工程身份切片",
+   "state": "open"
   }
  ],
  "human": [

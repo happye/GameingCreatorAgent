@@ -24,6 +24,15 @@ _AUTO_MARKS = (
     ("ffmpeg", re.compile(r"ffmpeg|ffprobe", re.I)),
 )
 _module_marks: dict[Path, tuple[str, ...]] = {}
+# Paid providers read these; a key inherited from the developer's shell must never let a test
+# (in-process servers included) reach a real provider. Tests that need one set it themselves.
+_PROVIDER_KEYS = ("DEEPSEEK_API_KEY", "DASHSCOPE_API_KEY")
+
+
+@pytest.fixture(autouse=True)
+def _no_inherited_provider_keys(monkeypatch):
+    for name in _PROVIDER_KEYS:
+        monkeypatch.delenv(name, raising=False)
 
 
 def _marks_for(path: Path) -> tuple[str, ...]:

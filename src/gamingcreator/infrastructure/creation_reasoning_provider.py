@@ -10,6 +10,8 @@ from hashlib import sha256
 from time import monotonic
 from typing import Any
 
+from gamingcreator.application.brief_reasoning import PROMPT_VERSION as BRIEF_PROMPT_VERSION
+from gamingcreator.application.brief_reasoning import SCHEMA_VERSION as BRIEF_SCHEMA_VERSION
 from gamingcreator.application.budget import BudgetLedger, InvocationRecorder
 from gamingcreator.application.creation_overlay_proposals import (
     PROMPT_VERSION as OVERLAY_PROMPT_VERSION,
@@ -127,6 +129,7 @@ class DeepSeekCreationReasoningProvider:
             (PLAN_PROMPT_VERSION, PLAN_SCHEMA_VERSION),
             ("plan-reasoning-prompt-v2", "plan-proposal-v2"),
             (COPY_PROMPT_VERSION, COPY_SCHEMA_VERSION),
+            (BRIEF_PROMPT_VERSION, BRIEF_SCHEMA_VERSION),
         }:
             raise ValueError("Unsupported reasoning request version.")
         if any(not isinstance(s, str) or not s.strip() for s in (request.system, request.user)):
