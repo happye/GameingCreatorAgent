@@ -110,7 +110,7 @@ class DeepSeekCreationReasoningProvider:
         if (
             model != MODEL
             or type(max_output_tokens) is not int
-            or not 1 <= max_output_tokens <= 2048
+            or not 1 <= max_output_tokens <= 8192
         ):
             raise ValueError("Unsupported pilot model or output token limit.")
         self._approval = approval
@@ -128,6 +128,7 @@ class DeepSeekCreationReasoningProvider:
             (OVERLAY_PROMPT_VERSION, OVERLAY_SCHEMA_VERSION),
             (PLAN_PROMPT_VERSION, PLAN_SCHEMA_VERSION),
             ("plan-reasoning-prompt-v2", "plan-proposal-v2"),
+            ("plan-reasoning-prompt-v3", "plan-proposal-v3"),
             (COPY_PROMPT_VERSION, COPY_SCHEMA_VERSION),
             (BRIEF_PROMPT_VERSION, BRIEF_SCHEMA_VERSION),
         }:

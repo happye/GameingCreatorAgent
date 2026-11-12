@@ -51,8 +51,7 @@ function usePlanReasoning(project, jobId, disabled, onAdopt) {
             update({sent: true, busy: "execute"});
             try { update({result: await post({action: "execute_budget", preparedHash: quote.preparedHash, snapshotFingerprint: quote.snapshotFingerprint})}); }
             catch (error) {
-                // A refusal (4xx) happens before anything is sent: fall back to explicit confirmation.
-                if (error.status >= 400 && error.status < 500) { update({sent: false}); throw new Error(`${error.message}（本次未发送）`); }
+                // A 400 can also be a result-write failure after sending. Keep recovery identity.
                 throw new Error(`${error.message}。可读取本次结果，不会重复付费。`);
             }
         }),
@@ -120,6 +119,7 @@ function PlanPreview({preview}) {
         <p>${(plan.actualFrames / preview.fps).toFixed(1)} 秒 / 目标 ${(plan.targetFrames / preview.fps).toFixed(1)} 秒</p>
         ${plan.durationStatus !== "target-met" ? html`<p class="note">${plan.durationStatus === "insufficient-candidate-pool" ? "候选素材不足" : "本案选材不足"}：差 ${(plan.frameGap / preview.fps).toFixed(1)} 秒，不会凭空补镜头。</p>` : null}
         ${plan.gaps?.length ? html`<ul>${plan.gaps.map(gap => html`<li>${gap}</li>`)}</ul>` : null}
+        <${TopicCoverage} plan=${plan} />
         <ol>${plan.segments.map(segment => html`<li>${segment.role || "镜头"} · ${(segment.startUs / 1e6).toFixed(1)}–${(segment.endUs / 1e6).toFixed(1)} 秒 <span class="hint">${segment.scriptDraft}</span></li>`)}</ol>
     </section>`)}</div>`;
 }
@@ -130,4 +130,15 @@ export function KnowledgeUses({uses}) {
         <p>策划原句：${use.structureQuote}</p><blockquote>资料原文：${use.text}</blockquote>
         <p class="hint" style="overflow-wrap:anywhere">登记来源：${use.title} · ${use.source.kind} · ${use.source.label} · ${use.createdAt} · ${use.entryId}</p>
     </div>`)}</details>`;
+}
+
+export function TopicCoverage({plan}) {
+    if (!plan?.topicCoverage?.length) return null;
+    return html`<details class="topic-coverage" aria-label="方案主题安排"><summary>方案主题安排（AI 建议，需预览核对）</summary>
+        <p class="hint">以下对应原方案镜头编号；手动改镜头后请重新核对。引用的是已保存的画面描述，不代表已经确认画面能讲清这个主题。</p>
+        ${plan.topicCoverage.map(row => html`<div class="field"><div class="k">${row.topic}</div>
+            <p>${row.status === "missing" ? "缺少对应画面，可补素材或调整表达" : `建议使用镜头 ${row.shotIndexes.join("、")}`}</p>
+            ${row.shotIndexes.map(index => html`<div>${(plan.segments[index - 1]?.topicUses || []).filter(use => use.topic === row.topic).map(use => html`<p>镜头 ${index}：${use.rationale}</p><blockquote>摘要原文：${use.observationQuote}</blockquote>`)}</div>`)}
+        </div>`)}
+    </details>`;
 }

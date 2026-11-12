@@ -9,7 +9,7 @@ import {BeatSnap, ClipInspector, CommandDock, captionProblem, transitionProblem,
 import {AudioPanel, narrationProblem, useAudioPreview, useMusicCatalog} from "./audio.js";
 import {ActivityRules} from "./activity.js";
 import {BriefSentence} from "./brief_sentence.js";
-import {KnowledgeUses, PlanReasoningPanel} from "./planning.js";
+import {KnowledgeUses, PlanReasoningPanel, TopicCoverage} from "./planning.js";
 import {WaveLane, envelopeDb} from "./waveform.js";
 import {SubtitlePreview, useSubtitlePreview} from "./subtitles.js";
 import {OverlayPanel, OverlayPreview, overlayProblem} from "./overlays.js";
@@ -432,6 +432,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                         <button class="btn ghost" disabled=${!editing.canRedo || !!busy || commandPreview} title="Ctrl+Shift+Z" onClick=${() => editing.ops.redo()}>重做</button>
                         <button class="btn ghost" disabled=${!editing.dirty || !!busy} onClick=${() => editing.ops.reset()}>撤销修改</button></div>`}</div>`}
                 <div hidden=${inspTab !== "shot"}>
+                <${TopicCoverage} plan=${plan} />
                 ${selectedIndex >= 0 && !commandPreview ? html`<fieldset aria-label="镜头编辑" disabled=${busy === "save" || busy === "render"} style=${{border: 0, padding: 0, margin: 0, minWidth: 0}}>
                     <${ClipInspector} editing=${editing} index=${selectedIndex} onSeek=${seekClip} basket=${basket} /></fieldset>`
                     : plan ? html`<p class="hint">点时间轴上的一个镜头，可以裁短、调速、换顺序或替换画面。</p><${PlanInspector} plan=${plan} groups=${groups} count=${items.length} totalUs=${player.totalUs} shot=${null} />` : html`<p class="note">选中方案后，这里显示它的时长、镜头和缺口。</p>`}
@@ -500,7 +501,7 @@ function Brief({project, runs, draft, update, busy, onGenerate, basket}) {
 }
 
 // P024: a topic the footage lacks gets a one-click search in the Assets workspace.
-const gapTopics = (notes = []) => notes.map((g) => /^主题(?:缺少|未在)[^：]*：([^（]+)/.exec(g)?.[1]?.trim()).filter(Boolean);
+const gapTopics = (notes = []) => notes.map((g) => /^(?:主题(?:缺少|未在)[^：]*|缺少主题映射)：([^（]+)/.exec(g)?.[1]?.trim()).filter(Boolean);
 
 function PlanCard({plan, fps, active, thumb, onPick, onFind = () => {}}) {
     const items = timeline(plan.segments || [], fps), groups = shots(items);

@@ -17,6 +17,11 @@ from gamingcreator.application.creative_planner import (
     eligible_clips,
 )
 from gamingcreator.application.material_scoring import score_materials
+from gamingcreator.application.plan_topics import (
+    compiled_topics,
+    topic_advisories,
+    validate_topic_uses,
+)
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.creation import CreativeBrief
 
@@ -89,11 +94,14 @@ def with_knowledge(snapshot: PlanSnapshot, knowledge: list[dict[str, Any]]) -> P
     if not knowledge:
         return snapshot
     payload = snapshot.payload
-    payload.update(schemaVersion="plan-snapshot-v2", knowledge=knowledge)
+    version = "plan-snapshot-v3" if "topicMapping" in payload else "plan-snapshot-v2"
+    payload.update(schemaVersion=version, knowledge=knowledge)
     return replace(snapshot, payload_json=canonical(payload))
 
 
 def proposal_version(snapshot: PlanSnapshot) -> str:
+    if "topicMapping" in snapshot.payload:
+        return "plan-proposal-v3"
     return "plan-proposal-v2" if "knowledge" in snapshot.payload else SCHEMA_VERSION
 
 
@@ -185,11 +193,16 @@ def _validate_plans(snapshot: PlanSnapshot, plans: list[Any]) -> None:
             raise ValueError("Invalid shots.")
         ids = []
         for shot in shots:
-            if not isinstance(shot, dict) or set(shot) != {"candidateId", "role"}:
+            fields = {"candidateId", "role"}
+            if "topicMapping" in snapshot.payload:
+                fields.add("topicUses")
+            if not isinstance(shot, dict) or set(shot) != fields:
                 raise ValueError("Unexpected shot fields; source ranges belong to backend.")
             if not isinstance(shot["candidateId"], str) or shot["candidateId"] not in allowed:
                 raise ValueError("Unknown candidate.")
             _text(shot["role"], 200)
+            if "topicMapping" in snapshot.payload:
+                validate_topic_uses(snapshot, shot)
             ids.append(shot["candidateId"])
         if len(set(ids)) != len(ids) or tuple(ids) in selections:
             raise ValueError("Repeated candidate or duplicate plan selection.")
@@ -288,13 +301,10 @@ def _compile_one(
                     scores[(clip.event.run_id, clip.event.event_id)],
                 )
             )
+            if "topicMapping" in snapshot.payload:
+                segments[-1]["topicUses"] = shot["topicUses"]
             position += frames
-    text = " ".join(s["scriptDraft"] for s in segments).casefold()
-    topic_notes = [
-        f"主题未在画面摘要中找到：{topic}（可在旁白或字幕里讲，或补充画面）"
-        for topic in snapshot.brief.mandatory_topics
-        if topic.casefold() not in text
-    ]
+    topic_notes = topic_advisories(snapshot, segments)
     gaps = []
     if not segments:
         gaps.append("没有可渲染素材")
@@ -309,6 +319,7 @@ def _compile_one(
         "title": row["title"],
         "structure": row["structure"],
         **_compiled_knowledge(snapshot, row),
+        **compiled_topics(snapshot, segments),
         "segments": segments,
         "gaps": gaps,
         "ready": not gaps,

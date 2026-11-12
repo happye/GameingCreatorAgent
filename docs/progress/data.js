@@ -486,13 +486,14 @@ window.PROGRESS_DATA = {
     "tests/test_creation_jobs.py",
     "tests/test_creation_workspace_browser.py"
    ],
-   "done": "离线模板多套方案＋真实文本模型动态策划：3套方案已采用进Studio（任务4c857005），模型抄错指纹的问题已修；同一录像的重叠片段在规划前去重（每秒只播一次），目标时长跟随去重后的素材篮总长；点“生成方案”后AI自动再策划1–3套（预算内，可关闭），采用仍由人决定",
-   "todo": "方案质量未人评；2026-11-11起每月¥30、单条¥1内自动调用（超出再确认），AI编导主流程待接入",
-   "updated": "2026-11-11",
+   "done": "离线模板与预算内AI动态策划；重叠片段去重，时长随素材篮；有主题的新AI方案逐镜记录主题/理由/原摘要引文，预览及采用后可核对原方案主题安排，缺口不置灰；旧付费v1/v2仍可复用和采用，v3输出上限与费用门绑定",
+   "todo": "主题映射只证明引用来源，语义与方案质量待人评；AI旁白与完整编导闭环继续深化；本批完整门禁待运行",
+   "updated": "2026-11-12",
    "sprints": [
     "sprint-creation-planner",
     "sprint-creation-workspace",
-    "sprint-j1-creation-usability"
+    "sprint-j1-creation-usability",
+    "sprint-ai-theme-planning"
    ]
   },
   {
@@ -1539,6 +1540,12 @@ window.PROGRESS_DATA = {
    ],
    "slices": [
     {
+     "id": "R3-theme-planning",
+     "name": "AI 按主题选片与编排说明",
+     "status": "active",
+     "sprint": "sprint-ai-theme-planning"
+    },
+    {
      "id": "P020",
      "name": "活动规则解析（离线）",
      "status": "done",
@@ -2023,6 +2030,17 @@ window.PROGRESS_DATA = {
    ],
    "date": "2026-11-07",
    "bytes": 3296
+  },
+  {
+   "file": "sprint-ai-theme-planning",
+   "title": "AI 主题选片与编排说明",
+   "ids": [
+    "P019",
+    "P021",
+    "R3"
+   ],
+   "date": "",
+   "bytes": 2771
   },
   {
    "file": "sprint-cache-reclamation",

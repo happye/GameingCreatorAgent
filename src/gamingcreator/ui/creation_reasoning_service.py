@@ -53,6 +53,7 @@ from gamingcreator.application.plan_proposals import (
     with_knowledge,
 )
 from gamingcreator.application.plan_reasoning import plan_reasoning_request
+from gamingcreator.application.plan_topics import with_topics
 from gamingcreator.application.pricing import PriceSnapshot
 from gamingcreator.application.providers import (
     CancellationContext,
@@ -254,6 +255,7 @@ class CreationReasoningService:
                 snapshot.brief.objective,
             ),
         )
+        snapshot = with_topics(snapshot)
         result = self._prepare(snapshot, original["projectId"], job_id, "", "", "plan")
         result["knowledge"] = snapshot.payload.get("knowledge", [])
         result["originalRequest"] = {
@@ -286,7 +288,8 @@ class CreationReasoningService:
         purpose: str = "edit",
     ) -> dict[str, Any]:
         request = _request_for(snapshot, instruction)
-        quote = self.price.reservation_cny(self.price.context_limit_tokens, 2048)
+        output_tokens = 8192 if request.schema_version == "plan-proposal-v3" else 2048
+        quote = self.price.reservation_cny(self.price.context_limit_tokens, output_tokens)
         if quote <= 0 or MODEL.casefold() not in {s.casefold() for s in self.price.model_aliases}:
             raise ValueError("Unknown or invalid pilot cost upper bound.")
         record = {
@@ -301,7 +304,7 @@ class CreationReasoningService:
             "request": asdict(request),
             "requestHash": _digest(asdict(request)),
             "requestedModel": MODEL,
-            "maxOutputTokens": 2048,
+            "maxOutputTokens": output_tokens,
             "maxCostCny": str(quote),
             "priceVersion": self.price.version,
             "priceHash": _digest(_jsonable(asdict(self.price))),
@@ -315,7 +318,7 @@ class CreationReasoningService:
             "preparedHash": prepared_hash,
             "snapshotFingerprint": snapshot.fingerprint,
             "requestedModel": MODEL,
-            "maxOutputTokens": 2048,
+            "maxOutputTokens": output_tokens,
             "maxCostCny": str(quote),
             "priceVersion": self.price.version,
             "promptVersion": request.prompt_version,
@@ -369,6 +372,8 @@ class CreationReasoningService:
         snapshot, original = original_snapshot(self.jobs, record["jobId"])
         frozen = json.loads(record["request"]["user"])["snapshot"]
         snapshot = with_knowledge(snapshot, frozen.get("knowledge", []))
+        if "topicMapping" in frozen:
+            snapshot = with_topics(snapshot)
         if (
             original["projectId"] != record["projectId"]
             or snapshot.fingerprint != record["snapshotFingerprint"]
@@ -581,7 +586,7 @@ class CreationReasoningService:
             if not re.fullmatch("[a-f0-9]{64}", directory.name) or not planned.is_file():
                 continue
             month = datetime.fromtimestamp(planned.stat().st_mtime).astimezone().strftime("%Y-%m")
-            job, cny = "?", self.price.reservation_cny(self.price.context_limit_tokens, 2048)
+            job, cny = "?", self.price.reservation_cny(self.price.context_limit_tokens, 8192)
             try:
                 record = self._prepared(directory.name)
                 job, cny = self._video_key(record["jobId"]), Decimal(record["maxCostCny"])
@@ -624,7 +629,7 @@ class CreationReasoningService:
             reservation_cny=Decimal(record["maxCostCny"]),
             price_snapshot=self.price,
             transport=self.transport,
-            max_output_tokens=2048,
+            max_output_tokens=record["maxOutputTokens"],
         )
         result: dict[str, Any] = {
             "schemaVersion": RESULT_SCHEMA,

@@ -12,16 +12,21 @@ from test_plan_proposals import output
 from test_plan_reasoning_jobs import planning as planning_fixture
 
 from gamingcreator.application import ai_budget
+from gamingcreator.application.knowledge import planning_knowledge
 from gamingcreator.application.plan_proposals import (
     compile_plan_proposal,
     create_plan_snapshot,
     validate_plan_proposal,
+    with_knowledge,
 )
+from gamingcreator.application.plan_topics import with_topics
 from gamingcreator.domain.creation import CreativeBrief
 from gamingcreator.infrastructure.creation_files import write_creation
+from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 from gamingcreator.ui import creation_jobs, server
 from gamingcreator.ui.creation_reasoning_service import CreationReasoningService
+from gamingcreator.ui.plan_reasoning_jobs import original_snapshot
 
 
 @pytest.fixture
@@ -30,7 +35,11 @@ def planning(service, monkeypatch):  # noqa: F811
         store = await SqliteTimelineStore.open(project)
         timeline = await store.load_completed_timeline("run")
         snapshot = create_plan_snapshot(
-            CreativeBrief.from_json(json.loads(brief.read_text())), (timeline,), 30
+            CreativeBrief.from_json(json.loads(brief.read_text())),
+            (timeline,),
+            30,
+            tuple(args[0] or ()),
+            kwargs.get("clip_ranges"),
         )
         report = compile_plan_proposal(
             snapshot, validate_plan_proposal(snapshot, output(snapshot, ((1, 2),)))
@@ -97,6 +106,103 @@ def prepare(studio):
 def confirm(studio):
     studio.page.get_by_label("同意本次动态策划费用").check()
     studio.page.get_by_role("button", name="确认动态策划（最高", exact=False).click()
+
+
+def test_theme_preview_adoption_and_reload(studio):
+    from concurrent.futures import ThreadPoolExecutor
+
+    from test_theme_planning_jobs import theme_root
+
+    ctx, page, expect = studio.ctx, studio.page, studio.expect
+    theme_root(ctx, ranges=True)
+    store = KnowledgeStore(ctx.jobs.repository)
+    store.add(
+        {
+            "game": "g",
+            "title": "角色介绍",
+            "text": "角色介绍与技能思路",
+            "sourceKind": "wiki",
+            "sourceLabel": "registered wiki",
+        }
+    )
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        snapshot = pool.submit(original_snapshot, ctx.jobs, ctx.root).result()[0]
+    snapshot = with_topics(
+        with_knowledge(
+            snapshot,
+            planning_knowledge(
+                store.entries(),
+                snapshot.brief.game,
+                snapshot.brief.mandatory_topics,
+                snapshot.brief.objective,
+            ),
+        )
+    )
+    value = output(snapshot, ((2, 1),))
+    value["schemaVersion"] = "plan-proposal-v3"
+    value["plans"][0]["knowledgeUses"] = []
+    for shot in value["plans"][0]["shots"]:
+        shot["topicUses"] = []
+    value["plans"][0]["shots"][0]["topicUses"] = [
+        {
+            "topic": "角色介绍",
+            "rationale": "这段观察适合作为角色介绍的开场",
+            "observationQuote": snapshot.payload["candidates"][1]["facts"][0],
+        }
+    ]
+    ctx.transport.content = value
+    page.evaluate(
+        "id => localStorage.setItem('studio-last-job-v1', JSON.stringify({'artifacts/project': {id, kind: 'plan'}}))",
+        ctx.root,
+    )
+    page.reload()
+    expect(page.locator(".timeline .clip")).to_have_count(2)
+    page.locator(".dynamic-planning > summary").click()
+    prepare(studio)
+    confirm(studio)
+    preview = page.get_by_label("动态方案预览")
+    coverage = preview.get_by_label("方案主题安排")
+    coverage.locator("summary").click()
+    expect(coverage).to_contain_text("角色介绍")
+    expect(coverage).to_contain_text("缺少对应画面")
+    expect(coverage).to_contain_text("摘要原文：fact 2")
+    expect(coverage).to_contain_text("这段观察适合作为角色介绍的开场")
+    with page.expect_response(
+        lambda r: r.url.split("?")[0].endswith("/edit") and ctx.root not in r.url
+    ):
+        page.get_by_role("button", name="采用这些方案（不再调用模型）").click()
+    expect(preview).to_have_count(0)
+    inspector = page.get_by_label("检查器", exact=True)
+    expect(inspector.get_by_label("方案主题安排")).to_be_visible()
+    inspector.get_by_label("方案主题安排").locator("summary").click()
+    expect(inspector).to_contain_text("摘要原文：fact 2")
+    page.reload()
+    coverage = page.get_by_label("检查器", exact=True).get_by_label("方案主题安排")
+    expect(coverage).to_be_visible()
+    coverage.locator("summary").click()
+    expect(coverage).to_contain_text("角色介绍")
+    assert len(ctx.transport.calls) == 1
+
+
+def test_automatic_plan_http400_preserves_recovery_after_send(studio, monkeypatch):
+    monkeypatch.setattr(ai_budget, "MONTHLY_CAP_CNY", Decimal(30))
+    page, expect = studio.page, studio.expect
+
+    def lose(route):
+        if route.request.post_data_json["action"] == "execute_budget":
+            route.fetch()
+            route.fulfill(status=400, json={"error": "result write failed"})
+        else:
+            route.continue_()
+
+    page.route("**/api/creation/reasoning", lose)
+    page.get_by_role("button", name="让 AI 重新策划").click()
+    recover = page.get_by_role("button", name="读取本次策划结果（不重新调用）")
+    expect(recover).to_be_enabled()
+    expect(page.get_by_label("同意本次动态策划费用")).to_have_count(0)
+    recover.click()
+    expect(page.get_by_label("动态方案预览")).to_be_visible()
+    assert len(studio.ctx.transport.calls) == 1
 
 
 def test_confirm_preview_adopt_and_reopen(studio):
