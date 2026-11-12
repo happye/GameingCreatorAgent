@@ -31,6 +31,9 @@ if ($Name -eq 'pytest') {
 }
 # A separate process with process-level redirection: Windows PowerShell 5.1 would otherwise turn
 # native stderr lines (uv "Resolved ...") into terminating errors.
+# Start-Process inherits Codex's PowerShell 7 module paths. Give the Windows PowerShell
+# child its own built-in modules first, before any command can autoload an incompatible one.
+$command = '$env:PSModulePath = (Join-Path $PSHOME ''Modules'') + [IO.Path]::PathSeparator + $env:PSModulePath; ' + $command
 . (Join-Path $PSScriptRoot 'test-run-lock.ps1')
 $lock = Enter-TestRunLock $root ($Name + ' ' + ($Rest -join ' '))
 $started = Get-Date
