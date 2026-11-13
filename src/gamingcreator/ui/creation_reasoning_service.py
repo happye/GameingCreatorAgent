@@ -19,6 +19,7 @@ from gamingcreator.application.brief_reasoning import (
     validate_brief,
 )
 from gamingcreator.application.budget import BudgetLedger
+from gamingcreator.application.creation_editing import editable_clips as version_clips
 from gamingcreator.application.creation_overlay_proposals import (
     PROMPT_VERSION as OVERLAY_PROMPT_VERSION,
 )
@@ -46,6 +47,12 @@ from gamingcreator.application.creation_reasoning import (
 )
 from gamingcreator.application.creation_replacements import candidate_manifest_sha
 from gamingcreator.application.knowledge import planning_knowledge
+from gamingcreator.application.narration_reasoning import (
+    NarrationSnapshot,
+    narration_request,
+    narration_snapshot,
+    validate_narration,
+)
 from gamingcreator.application.plan_proposals import (
     PlanSnapshot,
     compile_plan_proposal,
@@ -67,6 +74,7 @@ from gamingcreator.application.publish_copy import (
     validate_copy,
 )
 from gamingcreator.application.storage import InvocationStatus
+from gamingcreator.domain.creation import CreativeBrief
 from gamingcreator.domain.creation_overlays import CreationOverlays
 from gamingcreator.domain.errors import AppError
 from gamingcreator.infrastructure.creation_files import write_creation
@@ -93,7 +101,7 @@ RESULT_SCHEMA = "creation-reasoning-result-v1"
 OUTPUT_SCHEMA = "creation-reasoning-provider-output-v1"
 CONFIRMATION_SCHEMA = "creation-reasoning-confirmation-v1"
 BUDGET_SOURCE = "monthly-budget-policy"
-Snapshot = EditingSnapshot | PlanSnapshot | CopySnapshot | BriefSnapshot
+Snapshot = EditingSnapshot | PlanSnapshot | CopySnapshot | BriefSnapshot | NarrationSnapshot
 
 
 class _OutputValidationError(ValueError):
@@ -276,6 +284,51 @@ class CreationReasoningService:
         snapshot = copy_snapshot(render_job_id, brief, segments, fps)
         return self._prepare(snapshot, project_id, render_job_id, "", "", "copy")
 
+    def _narration_snapshot(
+        self, job_id: str, plan_id: str, knowledge: list[dict[str, Any]] | None = None
+    ) -> tuple[NarrationSnapshot, str]:
+        chain = load_chain(self.jobs, job_id, plan_id)
+        brief = CreativeBrief.from_json(chain.report["brief"])
+        if knowledge is None:
+            entries = planning_knowledge(
+                KnowledgeStore(self.jobs.repository).entries(),
+                brief.game,
+                brief.mandatory_topics,
+                brief.objective,
+            )
+            knowledge = [
+                {
+                    "entryId": entry["entryId"],
+                    "text": entry["text"],
+                    "citation": " · ".join(
+                        str(part)
+                        for part in (
+                            entry["title"],
+                            entry["source"].get("label", ""),
+                            entry["entryId"],
+                        )
+                        if part
+                    ),
+                }
+                for entry in entries
+            ]
+        snapshot = narration_snapshot(
+            job_id,
+            plan_id,
+            chain.digest,
+            chain.root_sha,
+            brief,
+            version_clips(chain.edl, chain.root_sha),
+            chain.plan.frames,
+            chain.plan.fps,
+            knowledge,
+        )
+        return snapshot, chain.project_id
+
+    def prepare_narration(self, job_id: str, plan_id: str) -> dict[str, Any]:
+        snapshot, project_id = self._narration_snapshot(job_id, plan_id)
+        return self._prepare(snapshot, project_id, job_id, plan_id, "", "narration")
+
     def prepare_brief(
         self, sentence: object, games: object, project_id: object = None, work_id: object = None
     ) -> dict[str, Any]:
@@ -299,7 +352,11 @@ class CreationReasoningService:
         purpose: str = "edit",
     ) -> dict[str, Any]:
         request = _request_for(snapshot, instruction)
-        output_tokens = 8192 if request.schema_version == "plan-proposal-v3" else 2048
+        output_tokens = (
+            8192
+            if request.schema_version in ("plan-proposal-v3", "narration-understanding-v1")
+            else 2048
+        )
         quote = self.price.reservation_cny(self.price.context_limit_tokens, output_tokens)
         if quote <= 0 or MODEL.casefold() not in {s.casefold() for s in self.price.model_aliases}:
             raise ValueError("Unknown or invalid pilot cost upper bound.")
@@ -344,6 +401,8 @@ class CreationReasoningService:
                 "inputFrames": 0,
                 "clipCount": len(snapshot.clips)
                 if isinstance(snapshot, PlanSnapshot)
+                else len(snapshot.payload["clips"])
+                if isinstance(snapshot, NarrationSnapshot)
                 else len(snapshot.payload["shots"])
                 if isinstance(snapshot, CopySnapshot)
                 else 0
@@ -359,6 +418,8 @@ class CreationReasoningService:
         return record
 
     def _current(self, record: dict[str, Any]) -> Snapshot:
+        if record.get("purpose") == "narration":
+            return self._current_narration(record)
         if record.get("purpose", "edit") == "plan":
             return self._current_plan(record)
         if record.get("purpose") == "copy":
@@ -407,6 +468,19 @@ class CreationReasoningService:
             or _digest(asdict(copy_request(snapshot))) != record["requestHash"]
         ):
             raise ValueError("The video changed; prepare again.")
+        return snapshot
+
+    def _current_narration(self, record: dict[str, Any]) -> NarrationSnapshot:
+        frozen = json.loads(record["request"]["user"])["snapshot"]
+        snapshot, project_id = self._narration_snapshot(
+            record["jobId"], record["planId"], frozen["knowledge"]
+        )
+        if (
+            project_id != record["projectId"]
+            or snapshot.fingerprint != record["snapshotFingerprint"]
+            or _digest(asdict(narration_request(snapshot))) != record["requestHash"]
+        ):
+            raise ValueError("Saved narration inputs changed; prepare again.")
         return snapshot
 
     def _current_brief(self, record: dict[str, Any]) -> BriefSnapshot:
@@ -758,6 +832,8 @@ class CreationReasoningService:
 
 
 def _request_for(snapshot: Snapshot, instruction: str) -> ReasoningRequest:
+    if isinstance(snapshot, NarrationSnapshot):
+        return narration_request(snapshot)
     if isinstance(snapshot, PlanSnapshot):
         return plan_reasoning_request(snapshot)
     if isinstance(snapshot, CopySnapshot):
@@ -769,6 +845,8 @@ def _request_for(snapshot: Snapshot, instruction: str) -> ReasoningRequest:
 
 def _validated_output(snapshot: Snapshot, output: Any) -> dict[str, Any]:
     try:
+        if isinstance(snapshot, NarrationSnapshot):
+            return {"purpose": "narration", "script": validate_narration(snapshot, output)}
         if isinstance(snapshot, PlanSnapshot):
             return _validated_plan_output(snapshot, output)
         if isinstance(snapshot, CopySnapshot):

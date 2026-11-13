@@ -8,6 +8,7 @@ import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
 import {AudioPreviewGraph} from "./audio-preview-graph.js";
 import {KnowledgePanel} from "./knowledge.js";
+import {useNarrationAI} from "./narration_ai.js";
 import {clearDraft, draftKey, readDraft, writeDraft} from "./narration_drafts.js";
 
 const html = htm.bind(h);
@@ -200,11 +201,13 @@ export function AudioPanel({editing, project, game = "", fps, totalUs, music, on
     };
 
     const draft = async () => {
+        const editVersion = editGeneration.current.version;
         const token = ++draftEpoch.current;
         busy("script"); setNote("");
         try {
             const data = await client.api(`/api/creation/jobs/${encodeURIComponent(editing.base.jobId)}/narration-script`, {planId: editing.base.planId});
             if (draftEpoch.current !== token || !mounted.current) return;
+            if (editGeneration.current.version !== editVersion) return;
             const citations = Array.isArray(data.citations) ? data.citations : [];
             setScript(data);
             setText(data.text);
@@ -217,6 +220,14 @@ export function AudioPanel({editing, project, game = "", fps, totalUs, music, on
             if (draftEpoch.current === token && mounted.current) busy("");
         }
     };
+
+    const ai = useNarrationAI({editing, project, text, fallback: draft, adopt: (data) => {
+        draftEpoch.current += 1;
+        setScript(data); setText(data.text); setDraftMode("ai");
+        setOriginal({text: data.text, citations: data.citations || []});
+        persistFreeDraft(data.text, voiceId);
+        setNote("已填入 AI 旁白草稿，请核对后用本机声音试听。");
+    }});
 
     const startHandwritten = () => {
         draftEpoch.current += 1;
@@ -484,9 +495,10 @@ export function AudioPanel({editing, project, game = "", fps, totalUs, music, on
             </div>`}`
         : showEditor ? html`<p class="hint">${draftMode === "handwritten"
                 ? "手写旁白稿（非模板起草）。"
-                : `离线模板稿，请先改一遍再合成。约 ${estimate.toFixed(0)} 秒 / 成片 ${(totalUs / 1e6).toFixed(0)} 秒${estimate > totalUs / 1e6 ? "：太长了，请删减" : ""}`}</p>
+                : draftMode === "ai" ? `AI 草稿待核对，约 ${estimate.toFixed(0)} 秒。` : `离线模板稿，请先改一遍再合成。约 ${estimate.toFixed(0)} 秒 / 成片 ${(totalUs / 1e6).toFixed(0)} 秒${estimate > totalUs / 1e6 ? "：太长了，请删减" : ""}`}</p>
                 <textarea class="input" rows="6" value=${text} onInput=${(e) => {
                     const value = e.currentTarget.value;
+                    draftEpoch.current += 1;
                     setText(value);
                     persistFreeDraft(value, voiceId);
                 }} aria-label="旁白稿"></textarea>
@@ -515,9 +527,10 @@ export function AudioPanel({editing, project, game = "", fps, totalUs, music, on
                     : html`<p class="hint">本机 Windows 语音，免费离线，听感偏机械。${voices.some((v) => v.paid && !v.available) ? "云端音色需在启动工作台的终端里设置 DASHSCOPE_API_KEY 后重启。" : ""}</p>`}
                 <div class="actions-row"><button type="button" class="btn" disabled=${!!working || !text.trim() || !voiceId} onClick=${synthesize}>${working === "voice" ? "正在合成…" : paid ? `确认付费合成（约 ￥${cost.toFixed(4)}）` : "合成旁白"}</button></div>`
             : html`<div class="actions-row">
-                <button type="button" class="btn ghost" disabled=${!!working} onClick=${draft}>${working === "script" ? "正在起草…" : "起草旁白稿"}</button>
+                <button type="button" class="btn ghost" disabled=${!!working || ai.busy || editing.dirty || editing.status !== "ready"} onClick=${ai.start}>${working === "script" ? "正在起草…" : "起草旁白稿"}</button>
                 <button type="button" class="btn ghost" disabled=${!!working} aria-label="手写旁白稿" onClick=${startHandwritten}>手写旁白稿</button>
             </div>`}
+        ${!n && ai.view}
         </div>
         <${KnowledgePanel} key=${`${project}:${String(game || "")}`} project=${project} game=${game || ""} />
         <div class="field audio-panel"><div class="k">配乐与原声</div>
