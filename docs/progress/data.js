@@ -1,6 +1,6 @@
 window.PROGRESS_DATA = {
  "schemaVersion": 1,
- "nodesUpdated": "2026-11-13",
+ "nodesUpdated": "2026-11-14",
  "groups": {
   "A": "基础架构与本地处理",
   "B": "视频理解与检索",
@@ -28,9 +28,9 @@ window.PROGRESS_DATA = {
   "phase0Pass": 8,
   "phase0Total": 11,
   "td": {
-   "resolved": 20,
+   "resolved": 21,
    "partial": 3,
-   "open": 6
+   "open": 5
   },
   "tdTotal": 29,
   "humanPending": 10,
@@ -437,7 +437,7 @@ window.PROGRESS_DATA = {
     "tests/test_creation_workspace_browser.py"
    ],
    "done": "一句话需求支持 DeepSeek 文字理解游戏/时长/类型/平台/全部主题/排除/观众/风格，确认后填入；超预算或模型不可用时标明本机规则兜底；请求身份按项目保留，丢失响应可只读恢复；结构化需求可带入活动规则与本地知识",
-   "todo": "AI 按主题选片编排深化；无视频需求暂用保守共享预算，待工程身份归属（TD029）；真实需求理解与成片质量待用户复测",
+   "todo": "AI 按主题选片编排深化；新作品需求与策划共享作品预算，旧草稿保守兼容；真实需求理解与成片质量待用户复测",
    "updated": "2026-11-12",
    "sprints": [
     "sprint-creation-planner",
@@ -487,7 +487,7 @@ window.PROGRESS_DATA = {
     "tests/test_creation_workspace_browser.py"
    ],
    "done": "离线模板与预算内AI动态策划；重叠片段去重，时长随素材篮；有主题的新AI方案逐镜记录主题/理由/原摘要引文，预览及采用后可核对原方案主题安排，缺口不置灰；旧付费v1/v2仍可复用和采用，v3输出上限与费用门绑定",
-   "todo": "主题映射只证明引用来源，语义与方案质量待人评；AI旁白与完整编导闭环继续深化；作品预算归属待TD029切片",
+   "todo": "主题映射只证明引用来源，语义与方案质量待人评；AI旁白与完整编导闭环继续深化；作品预算归属已交付；旧草稿保守兼容",
    "updated": "2026-11-13",
    "sprints": [
     "sprint-creation-planner",
@@ -1548,7 +1548,7 @@ window.PROGRESS_DATA = {
     {
      "id": "R3-work-budget",
      "name": "作品身份与需求/策划预算归属",
-     "status": "active",
+     "status": "done",
      "sprint": "sprint-work-budget-identity"
     },
     {
@@ -1980,13 +1980,13 @@ window.PROGRESS_DATA = {
   }
  ],
  "gate": {
-  "date": "2026-11-13",
-  "scope": "完整门禁 quiet.ps1 verify（AI逐镜主题映射、引文、旧付费版本兼容与8192输出费用上限）",
+  "date": "2026-11-14",
+  "scope": "完整 quiet.ps1 verify（作品身份、跨阶段预算、导航与未保存修改保护）",
   "result": "pass",
-  "counts": "5226 过 · 7 跳 · 0 失败（2132秒）",
+  "counts": "5294 过 · 10 跳 · 0 失败（2353秒）",
   "branch": "codex/knowledge-version-compare-20261108",
   "merged": false,
-  "note": "056b252 上完整门禁通过，已推送当前分支，未合main。格式/Ruff/mypy/CLI通过，未Release。受影响18文件226过，最终策划浏览器17过。J1人评仍未通过，主题语义未验收。"
+  "note": "da2212c 已推送，未合main、未Release。格式/Ruff/mypy/CLI通过；受影响1078过3跳1失败，修正旧消息断言后最终定向9过。J1人评不提升。"
  },
  "fees": [
   "2026-11-08：用户要求尽量避免PR/AE等大型软件。开发、日常验证和成片导出走项目FFmpeg/浏览器路径，专业格式为可选交接，实际导入保持未验。此前Premiere退出由用户手动关闭，不是软件故障；不转成人工待办。",
@@ -1997,9 +1997,9 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "最新完整门禁通过：5226过7跳0失败（056b252，quiet.ps1 verify，2132秒）；格式/Ruff/mypy/CLI均通过，未Release。受影响18文件226过、最终策划浏览器17过；门禁后追加EDL渲染合同定向5过（仅测试变更，不重跑全量）。",
+  "最新完整门禁通过：5294过10跳0失败（da2212c，quiet.ps1 verify，2353秒）；格式/Ruff/mypy/CLI通过，未Release。受影响1078过3跳1失败（旧跨项目消息断言），修正后最终作品浏览器及该节点9过，已闭合。",
   "J1第五次试用（2026-11-11）未通过，重构方案 docs/design-docs/ai-native-creation-plan.md 已拍板（AI每月¥30、单条¥1内自动调用；DeepSeek；本机配音；A→B→C）。阶段A已全部交付：重叠片段去重、目标时长随片段篮、主题不置灰、一句话需求解析、发布页封面前置/标题不抄需求/去复制按钮、Delete键竞态、时间轴拖动裁剪、作品命名。",
-  "阶段B新增AI逐镜主题编排（056b252）：主题/理由/原摘要引文进入新v3方案，覆盖只计实际镜头，预览及采用后可核对原方案；旧有主题v1/v2付费结果仍可读回采用。新v3输出8192 tokens与报价/预算/发送绑定，旧版2048不变；auto策划HTTP400保留结果恢复。此前AI需求理解/文案/再策划、阶段C原声波形/关键帧保留。仅模拟模型验证，主题语义及J1质量未提升。下一步作品预算归属（TD029）→AI旁白及阶段C；你方便时做第六次J1复测（需重启8765服务器）。\n   无视频需求采用保守共享预算：全部历史创作消费累计达到¥1后退回规则版；工程归属优化见TD029，不按天重置或额外发放额度。",
+  "阶段B新增AI逐镜主题编排（056b252）：主题/理由/原摘要引文进入新v3方案，覆盖只计实际镜头，预览及采用后可核对原方案；旧有主题v1/v2付费结果仍可读回采用。新v3输出8192 tokens与报价/预算/发送绑定，旧版2048不变；auto策划HTTP400保留结果恢复。此前AI需求理解/文案/再策划、阶段C原声波形/关键帧保留。仅模拟模型验证，主题语义及J1质量未提升。作品预算归属已交付（da2212c，TD029解决）；下一步AI旁白及阶段C；你方便时做第六次J1复测（需重启8765服务器）。\n   显式新建作品后，需求/多次根方案/AI采用/修订/导出共享同作品跨月¥1、全部作品共享月¥30；旧草稿保守兼容，账本不改。AI旁白WIP已独立推送65f1302，未合主树、未跑pytest；剩余revision-v4投影与助手预览禁用等问题见HANDOFF。用户要求周额度不足2%时开始收尾，停止新增开发。",
   "平台限值仅填官方可读来源（快手15分钟/4G、B站10小时，docs/references/platform-limits-sources.md）；其余待你登录后核对（可选）。",
   "进度看板docs/progress/index.html；分发前许可证缺口及TD003仍待处理。"
  ],
@@ -2411,8 +2411,8 @@ window.PROGRESS_DATA = {
     "P039",
     "TD029"
    ],
-   "date": "",
-   "bytes": 4435
+   "date": "2026-11-13",
+   "bytes": 4756
   },
   {
    "file": "sprint-workspace-runtime-identity",
@@ -2681,8 +2681,8 @@ window.PROGRESS_DATA = {
    "severity": "medium; conservative budget scope",
    "impact": "AI需求理解尚无视频job：固定brief-unassigned消费计入所有视频，新brief按全部历史创作消费检查¥1上限，累计到限后规则兜底；安全但过度收紧",
    "fix": "引入真实工程/草稿身份，将需求调用与后续策划/导出关联到同一预算键；旧账本保持只读兼容",
-   "status": "open: 保守共享预算已实施，归属优化待工程身份切片",
-   "state": "open"
+   "status": "resolved: 2026-11-14 显式作品身份贯通需求/策划/采用/修订/导出；跨月单作品及共享月度并发预算已验，旧记录不改、坏链保守计费；full 5294过10跳，旧草稿保持保守兼容",
+   "state": "resolved"
   }
  ],
  "human": [

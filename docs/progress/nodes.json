@@ -1,6 +1,6 @@
 {
  "schemaVersion": 1,
- "updated": "2026-11-13",
+ "updated": "2026-11-14",
  "howTo": "每个节点只改 done/todo/updated/status 等字段；状态枚举 done|active|partial|todo|blocked。改完运行 python -B scripts/progress_ui.py。规则：docs/references/progress-dashboard.md",
  "features": {
   "P001": {
@@ -127,7 +127,7 @@
   },
   "P019": {
    "done": "一句话需求支持 DeepSeek 文字理解游戏/时长/类型/平台/全部主题/排除/观众/风格，确认后填入；超预算或模型不可用时标明本机规则兜底；请求身份按项目保留，丢失响应可只读恢复；结构化需求可带入活动规则与本地知识",
-   "todo": "AI 按主题选片编排深化；无视频需求暂用保守共享预算，待工程身份归属（TD029）；真实需求理解与成片质量待用户复测",
+   "todo": "AI 按主题选片编排深化；新作品需求与策划共享作品预算，旧草稿保守兼容；真实需求理解与成片质量待用户复测",
    "updated": "2026-11-12",
    "sprints": [
     "sprint-creation-planner",
@@ -145,7 +145,7 @@
   },
   "P021": {
    "done": "离线模板与预算内AI动态策划；重叠片段去重，时长随素材篮；有主题的新AI方案逐镜记录主题/理由/原摘要引文，预览及采用后可核对原方案主题安排，缺口不置灰；旧付费v1/v2仍可复用和采用，v3输出上限与费用门绑定",
-   "todo": "主题映射只证明引用来源，语义与方案质量待人评；AI旁白与完整编导闭环继续深化；作品预算归属待TD029切片",
+   "todo": "主题映射只证明引用来源，语义与方案质量待人评；AI旁白与完整编导闭环继续深化；作品预算归属已交付；旧草稿保守兼容",
    "updated": "2026-11-13",
    "sprints": [
     "sprint-creation-planner",
@@ -634,7 +634,7 @@
     {
      "id": "R3-work-budget",
      "name": "作品身份与需求/策划预算归属",
-     "status": "active",
+     "status": "done",
      "sprint": "sprint-work-budget-identity"
     },
     {
@@ -1066,12 +1066,12 @@
   }
  ],
  "gate": {
-  "date": "2026-11-13",
-  "scope": "完整门禁 quiet.ps1 verify（AI逐镜主题映射、引文、旧付费版本兼容与8192输出费用上限）",
+  "date": "2026-11-14",
+  "scope": "完整 quiet.ps1 verify（作品身份、跨阶段预算、导航与未保存修改保护）",
   "result": "pass",
-  "counts": "5226 过 · 7 跳 · 0 失败（2132秒）",
+  "counts": "5294 过 · 10 跳 · 0 失败（2353秒）",
   "branch": "codex/knowledge-version-compare-20261108",
   "merged": false,
-  "note": "056b252 上完整门禁通过，已推送当前分支，未合main。格式/Ruff/mypy/CLI通过，未Release。受影响18文件226过，最终策划浏览器17过。J1人评仍未通过，主题语义未验收。"
+  "note": "da2212c 已推送，未合main、未Release。格式/Ruff/mypy/CLI通过；受影响1078过3跳1失败，修正旧消息断言后最终定向9过。J1人评不提升。"
  }
 }
