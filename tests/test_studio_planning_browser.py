@@ -435,6 +435,12 @@ def test_edits_during_adoption_are_preserved(studio, activity):
         # Returning to A starts another follow which cancels the adopted GET;
         # its current-job restore may replace the status message.
         expect(page.locator(".timeline .clip")).to_have_count(2)
+    elif activity == "project":
+        # The project-keyed workspace discards A's view, including its late status message.
+        # The registered job remains on disk; it must not surface in B's editor.
+        expect(
+            page.get_by_text("动态方案已登记到作品，当前编辑已保留，可稍后打开。", exact=True)
+        ).to_have_count(0)
     else:
         expect(
             page.get_by_text("动态方案已登记到作品，当前编辑已保留，可稍后打开。", exact=True)

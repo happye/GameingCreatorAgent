@@ -95,6 +95,10 @@ def test_prepare_confirm_adopt_real_jobs_and_render_validation(planning):
     assert state["kind"] == "plan" and state["status"] == "completed"
     repeated = ctx.reasoning.adopt_plan(prep["preparedHash"])
     assert repeated["jobId"] == adopted["jobId"]
+    # A new prepared intent on the adopted job must still charge the same original video.
+    next_prepared = ctx.reasoning.prepare_plan(adopted["jobId"])
+    assert ctx.reasoning._prepared(next_prepared["preparedHash"])["budgetKey"] == ctx.root
+    assert {row.job_id for row in ctx.reasoning._spends()} == {ctx.root}
     assert len(ctx.transport.calls) == 1
     report = ctx.jobs.plan_report(ctx.jobs.directory(adopted["jobId"]))
     assert report["reasoningProvenance"]["promptVersion"] == "plan-reasoning-prompt-v1"

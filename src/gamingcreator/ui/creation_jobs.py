@@ -206,7 +206,7 @@ class CreationJobs:
                 if kind == "revision"
                 else {"costConfirmationYuan"}
                 if kind == "narration"
-                else {"eventIds", "clipRanges", "reasoningPreparedHash"}
+                else {"eventIds", "clipRanges", "reasoningPreparedHash", "workId"}
                 if kind == "plan"
                 else set()
             )
@@ -233,10 +233,9 @@ class CreationJobs:
             except ValueError as error:
                 raise fail("creation.input", str(error)) from error
         request_id = identity(request["requestId"])
-        canonical = json.dumps(
-            {"kind": kind, "request": request}, sort_keys=True, ensure_ascii=False
-        )
-        digest = hashlib.sha256(canonical.encode()).hexdigest()
+        from gamingcreator.ui.creation_budget_scope import request_digest
+
+        digest = request_digest(kind, request)
         root_lock = ProjectWriterLock(self.root)
         for attempt in range(100):
             try:
@@ -272,6 +271,12 @@ class CreationJobs:
                 project_id = request["projectId"]
             elif kind == "plan":
                 project = self.project(request["projectId"])
+                if "workId" in request:
+                    from gamingcreator.infrastructure.creation_work_store import CreationWorkStore
+
+                    CreationWorkStore(self.safe(self.root / "works")).read(
+                        request["workId"], request["projectId"]
+                    )
                 CreativeBrief.from_json(request["brief"])
                 runs = request["runIds"]
                 if (

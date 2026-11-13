@@ -1546,6 +1546,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-ai-theme-planning"
     },
     {
+     "id": "R3-work-budget",
+     "name": "作品身份与需求/策划预算归属",
+     "status": "active",
+     "sprint": "sprint-work-budget-identity"
+    },
+    {
      "id": "P020",
      "name": "活动规则解析（离线）",
      "status": "done",
@@ -2039,7 +2045,7 @@ window.PROGRESS_DATA = {
     "P021",
     "R3"
    ],
-   "date": "2026-11-12",
+   "date": "2026-11-13",
    "bytes": 2878
   },
   {
@@ -2395,6 +2401,18 @@ window.PROGRESS_DATA = {
    ],
    "date": "2026-11-01",
    "bytes": 2170
+  },
+  {
+   "file": "sprint-work-budget-identity",
+   "title": "作品身份与创作预算归属",
+   "ids": [
+    "P019",
+    "P021",
+    "P039",
+    "TD029"
+   ],
+   "date": "",
+   "bytes": 4435
   },
   {
    "file": "sprint-workspace-runtime-identity",

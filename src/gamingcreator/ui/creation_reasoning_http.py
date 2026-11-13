@@ -21,13 +21,24 @@ def reasoning_post(service: CreationReasoningService, value: Any) -> dict[str, A
     if isinstance(value, dict) and value.get("action") == "prepare_brief":
         games = value.get("games")
         if (
-            set(value) != {"action", "text", "games"}
+            set(value)
+            not in (
+                {"action", "text", "games"},
+                {"action", "text", "games", "projectId", "workId"},
+            )
             or not isinstance(value["text"], str)
             or not isinstance(games, list)
             or len(games) > 50
             or any(not isinstance(g, str) or len(g) > 200 for g in games)
         ):
             raise ValueError("Invalid reasoning request fields.")
+        if "projectId" in value:
+            if any(
+                not isinstance(value[key], str) or not value[key].strip()
+                for key in ("projectId", "workId")
+            ):
+                raise ValueError("Invalid work identity fields.")
+            return service.prepare_brief(value["text"], games, value["projectId"], value["workId"])
         return service.prepare_brief(value["text"], games)
     fields = {
         "prepare_plan": {"action", "jobId"},

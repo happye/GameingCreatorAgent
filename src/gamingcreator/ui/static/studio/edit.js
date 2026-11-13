@@ -79,8 +79,11 @@ function useOutputCanvas(stage, width, height) {
     return {width: width * scale, height: height * scale, scale};
 }
 
-export function EditWorkspace({project, runs, open, onWorksChanged, layout, basket, basketAt, onBasketSeen, onFindMaterial = () => {}, onPublish = () => {}, onDirtyChange = () => {}, renderSecondsPerSecond = null}) {
-    const [draft, setDraft] = useState(() => readDraft(project));
+export function EditWorkspace({project, workId = null, workControls = null, runs, open, onWorksChanged, layout, basket, basketAt, onBasketSeen, onFindMaterial = () => {}, onPublish = () => {}, onDirtyChange = () => {}, renderSecondsPerSecond = null}) {
+    const scope = workId ? `${project}:work:${workId}` : project;
+    const alive = useRef(true);
+    useEffect(() => () => { alive.current = false; work.current?.abort(); }, []);
+    const [draft, setDraft] = useState(() => readDraft(scope));
     const [saved, setSaved] = useState("");
     const [planJob, setPlanJob] = useState(null);
     // Stage B (2026-11-11): after "生成方案" the AI plans once more within the monthly budget.
@@ -112,8 +115,8 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         adoptionGuard.current = {view: adoptionView, generation: adoptionGuard.current.generation + 1};
     }
 
-    useEffect(() => { setDraft(readDraft(project)); setPlanJob(null); setRenderJob(null); setPlanId(""); setMode("plan"); }, [project]);
-    const update = (patch) => { const next = {...draft, ...patch}; setDraft(next); setSaved(writeDraft(project, next) ? "草稿已保存" : "浏览器不允许保存草稿"); };
+    useEffect(() => { setDraft(readDraft(scope)); setPlanJob(null); setRenderJob(null); setPlanId(""); setMode("plan"); }, [project]);
+    const update = (patch) => { if (!alive.current) return; const next = {...draft, ...patch}; setDraft(next); setSaved(writeDraft(scope, next) ? "草稿已保存" : "浏览器不允许保存草稿"); };
     // "用片段篮生成方案" in Assets turns the basket option on.
     // Coming from the basket, the target length is the basket's distinct footage (J1: 24 s picked, 10 s target).
     const basketSeconds = distinctSeconds(basket);
@@ -123,19 +126,20 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     // Abort polling of a previous job when another one is opened.
     const follow = useCallback(async (id, apply) => {
         work.current?.abort(); const controller = new AbortController(); work.current = controller;
-        try { return await client.settle(id, controller.signal, apply); }
+        try { return await client.settle(id, controller.signal, (job) => { if (alive.current) apply(job); }); }
         catch (error) { if (!controller.signal.aborted) setMessage(error.message); return null; }
     }, []);
 
     const showPlan = useCallback((job, selectedPlanId = null) => {
+        if (!alive.current) return;
         setPlanJob(job); setRenderJob(null); setMode("plan"); setSelectedShot(null);
         const first = (job.plans || []).find((p) => p.ready && p.id === selectedPlanId) || (job.plans || []).find((p) => p.ready);
-        lastJob(project, {id: job.jobId, kind: "plan", planId: first?.id || ""});
+        lastJob(scope, {id: job.jobId, kind: "plan", planId: first?.id || ""});
         setPlanId(first ? first.id : "");
     }, [project]);
 
     useEffect(() => {
-        const target = open || lastJob(project);
+        const target = open || lastJob(scope);
         if (!target) return;
         setMessage("正在打开…");
         void follow(target.id, (job) => {
@@ -144,7 +148,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
                 setBusy("render"); return setMessage(renderWaiting(job));
             }
             if (job.kind === "render" && job.status !== "completed") {
-                setBusy(""); if (job.parentJobId) lastJob(project, {id: job.parentJobId, kind: "parent"});
+                setBusy(""); if (job.parentJobId) lastJob(scope, {id: job.parentJobId, kind: "parent"});
                 return setMessage(`成片生成失败：${job.error?.message || job.status}`);
             }
             if (job.status !== "completed") return setMessage(job.status === "failed" ? `任务失败：${job.error?.message || ""}` : "处理中…");
@@ -152,10 +156,10 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
             if (job.kind === "plan") showPlan(job, target.planId);
             if (job.kind === "revision") void reopenVersion(job);
             if (job.kind === "render") {
-                setRenderJob(job); setMode("result"); lastJob(project, {id: job.jobId, kind: "render"});
+                setRenderJob(job); setMode("result"); lastJob(scope, {id: job.jobId, kind: "render"});
                 // Bring back the plans this video came from, so preview and re-export stay one click away.
                 if (job.parentJobId) void client.job(job.parentJobId).then((parent) => {
-                    if (parent.status !== "completed") return;
+                    if (!alive.current || parent.status !== "completed") return;
                     if (parent.kind === "revision") return reopenVersion(parent, false);
                     if (parent.kind !== "plan") return;
                     setPlanJob(parent); setPlanId((parent.plans || []).find((p) => p.ready)?.id || "");
@@ -167,11 +171,11 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
     // A saved version reopens with its edits, and with the plan job it started from.
     const reopenVersion = async (job, remember = true) => {
         const editor = await editing.load(job.jobId, job.editor?.planId || job.planId || "", "revision").catch(() => null);
-        if (!editor) return;
+        if (!alive.current || !editor) return;
         let parent = job;
         for (let hop = 0; hop < 20 && parent?.kind !== "plan" && parent?.parentJobId; hop++) parent = await client.job(parent.parentJobId).catch(() => null);
-        if (parent?.kind === "plan") { restoring.current = editor.planId; setPlanJob(parent); setPlanId(editor.planId); }
-        if (remember) lastJob(project, {id: job.jobId, kind: "revision"});
+        if (alive.current && parent?.kind === "plan") { restoring.current = editor.planId; setPlanJob(parent); setPlanId(editor.planId); }
+        if (alive.current && remember) lastJob(scope, {id: job.jobId, kind: "revision"});
     };
 
     const generate = async () => {
@@ -184,9 +188,11 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
             objective: draft.objective, audience: draft.audience, tone: draft.tone, mandatoryTopics: list(draft.mandatoryTopics), exclude: list(draft.exclude)};
         setBusy("plan"); setMessage("正在生成方案…");
         try {
-            const accepted = await client.submit("plan", {projectId: project, runIds, brief, fps: Number(draft.fps), ...(eventIds ? {eventIds,
+            const accepted = await client.submit("plan", {projectId: project, ...(workId ? {workId} : {}), runIds, brief, fps: Number(draft.fps), ...(eventIds ? {eventIds,
                 clipRanges: basket.items.map(({runId, eventId, startUs, endUs}) => ({runId, eventId, startUs, endUs}))} : {})});
+            if (!alive.current) return;
             const done = await follow(accepted.jobId, () => {});
+            if (!alive.current) return;
             if (done?.status === "completed") { client.forgetIntent("plan"); showPlan(done); setMessage(""); onWorksChanged(); if (draft.aiPlan !== false) setAiPlanFor(done.jobId); }
             else if (done) setMessage(`方案生成失败：${done.error?.message || done.status}`);
         } catch (error) { setMessage(`${error.message}。再次点击会复用同一请求，不会重复创建。`); }
@@ -276,7 +282,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
 
     const saveVersion = async () => {
         setBusy("save"); setMessage("正在保存版本…"); player.stop();
-        try { const id = await editing.save((jobId) => follow(jobId, () => {})); setMessage("已保存为新版本。"); onWorksChanged(); lastJob(project, {id, kind: "revision"}); return id; }
+        try { const id = await editing.save((jobId) => follow(jobId, () => {})); if (!alive.current) return null; setMessage("已保存为新版本。"); onWorksChanged(); lastJob(scope, {id, kind: "revision"}); return id; }
         catch (error) { setMessage(error.message); return null; }
         finally { setBusy(""); }
     };
@@ -286,6 +292,7 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         setBusy("adopt"); setMessage("正在登记动态方案，不会再次调用模型…"); player.stop();
         try {
             const done = await follow(jobId, () => {});
+            if (!alive.current) return;
             onWorksChanged();
             if (adoptionGuard.current.generation !== generation) {
                 setMessage("动态方案已登记到作品，当前编辑已保留，可稍后打开。"); return;
@@ -306,13 +313,14 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         setBusy("render"); setMessage("正在生成成片，60 秒的视频大约需要一分钟…"); player.stop();
         try {
             const accepted = await client.submit("render", {...source, width, height, subtitleMode: subtitles, ...(subtitles === "burn" ? {subtitleStyle} : {})});
+            if (!alive.current) return;
             // Naming is a label only; a failure here never blocks the render.
             void client.api("/api/creation/job-name", {}, {body: {jobId: accepted.jobId, name: workName(draft)}}).then(onWorksChanged).catch(() => {});
             // Remember the render at once, so leaving or reloading reopens it while it runs.
-            lastJob(project, {id: accepted.jobId, kind: "render"});
+            lastJob(scope, {id: accepted.jobId, kind: "render"});
             const rate = renderSecondsPerSecond, outputSeconds = player.totalUs / 1e6;
             const done = await follow(accepted.jobId, (job) => { setRenderJob(job); if (job.status !== "completed") setMessage(renderWaiting(job, rate, outputSeconds)); });
-            if (done?.status === "completed") { client.forgetIntent("render"); setMode("result"); setMessage(""); onWorksChanged(); lastJob(project, {id: done.jobId, kind: "render"}); }
+            if (done?.status === "completed") { client.forgetIntent("render"); setMode("result"); setMessage(""); onWorksChanged(); lastJob(scope, {id: done.jobId, kind: "render"}); }
             else if (done) setMessage(`成片生成失败：${done.error?.message || done.status}`);
         } catch (error) { setMessage(`${error.message}。再次点击会复用同一请求，不会重复创建。`); }
         finally { setBusy(""); }
@@ -352,11 +360,12 @@ export function EditWorkspace({project, runs, open, onWorksChanged, layout, bask
         <aside class="panel" hidden=${!layout.bin} aria-label="需求与方案">
             <div class="panel-head">需求<span class="spacer"></span><span class="track-label">${saved}</span></div>
             <div class="panel-body">
-                <${BriefSentence} key=${project} project=${project} draft=${draft} update=${update} runs=${runs} />
+                ${workControls}
+                <${BriefSentence} key=${scope} project=${project} workId=${workId} draft=${draft} update=${update} runs=${runs} />
                 <${Brief} project=${project} runs=${runs} draft=${draft} update=${update} busy=${busy} onGenerate=${generate} basket=${basket} />
                 <div class="section-label">方案${planJob ? `（${planJob.plans.length}）` : ""}</div>
                 ${planJob ? planJob.plans.map((p) => html`<${PlanCard} plan=${p} fps=${fps} active=${p.id === planId} thumb=${thumb} onFind=${onFindMaterial}
-                    onPick=${() => { if (overlayBusy || audioBusy || busy) return; if (editing.dirty && !confirmLeave()) return; setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommandRows(null); lastJob(project, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
+                    onPick=${() => { if (overlayBusy || audioBusy || busy) return; if (editing.dirty && !confirmLeave()) return; setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommandRows(null); lastJob(scope, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
                     : html`<p class="note">填好需求后点“生成方案”。方案只是剪辑清单，生成很快；选中后可以直接预览，不用先渲染。</p>`}
                 ${planJob ? html`<${PlanReasoningPanel} key=${`${project}:${planJob.jobId}`} project=${project} jobId=${planJob.jobId}
                     disabled=${!!busy || editing.dirty || commandPreview || audioBusy || overlayBusy} onAdopt=${adoptPlans}

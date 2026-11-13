@@ -3,12 +3,13 @@
 import asyncio
 
 import pytest
+from test_creation_jobs import service  # noqa: F401
 from test_creation_reasoning_service import Transport
 
 from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
 from gamingcreator.application.publish_copy import copy_request, copy_snapshot, validate_copy
 from gamingcreator.ui import publication_jobs
-from gamingcreator.ui.creation_jobs import CreationJobs
+from gamingcreator.ui.creation_budget_scope import request_digest
 from gamingcreator.ui.creation_reasoning_service import CreationReasoningService
 
 BRIEF = {
@@ -64,47 +65,60 @@ def test_output_is_bounded_and_tags_deduplicated():
             validate_copy(snapshot, bad)
 
 
-def test_service_copy_runs_within_budget_and_counts_toward_the_video(tmp_path, monkeypatch):
-    jobs = CreationJobs(tmp_path)
+def _budget_job(jobs, job_id, kind, request):
+    directory = jobs.jobs / job_id
+    directory.mkdir(parents=True)
+    jobs.save(
+        directory / "request.json", {"request": request, "digest": request_digest(kind, request)}
+    )
+    jobs.save(directory / "status.json", {"kind": kind, "projectId": "artifacts/project"})
+
+
+def test_service_copy_runs_within_budget_and_counts_toward_the_video(service, monkeypatch):  # noqa: F811
+    jobs = service
+    _budget_job(jobs, "b" * 32, "plan", {"projectId": "artifacts/project"})
+    _budget_job(jobs, "a" * 32, "render", {"planJobId": "b" * 32})
     monkeypatch.setattr(
-        publication_jobs, "copy_inputs", lambda _jobs, job: ("projects/p", BRIEF, SEGMENTS, 30.0)
+        publication_jobs,
+        "copy_inputs",
+        lambda _jobs, job: ("artifacts/project", BRIEF, SEGMENTS, 30.0),
     )
     snapshot = copy_snapshot("a" * 32, BRIEF, SEGMENTS, 30.0)
     transport = Transport(answer(snapshot))
-    service = CreationReasoningService(
+    reasoning = CreationReasoningService(
         jobs, price_snapshot=DEEPSEEK_FLASH_20261004, transport=transport
     )
-    prepared = service.prepare_copy("a" * 32)
+    prepared = reasoning.prepare_copy("a" * 32)
     assert prepared["purpose"] == "copy" and prepared["budget"]["eligible"]
     assert prepared["payloadSummary"] == {"textOnly": True, "inputFrames": 0, "clipCount": 2}
     result = asyncio.run(
-        service.execute_within_budget(prepared["preparedHash"], prepared["snapshotFingerprint"])
+        reasoning.execute_within_budget(prepared["preparedHash"], prepared["snapshotFingerprint"])
     )
     assert result["status"] == "completed", result
     assert result["copy"]["title"].startswith("新手必看") and len(transport.calls) == 1
     with pytest.raises(ValueError):
-        service.revision_for_application(prepared["preparedHash"])
-    again = service.prepare_copy("a" * 32)["budget"]
+        reasoning.revision_for_application(prepared["preparedHash"])
+    again = reasoning.prepare_copy("a" * 32)["budget"]
     assert again["videoSpentCny"] == prepared["budget"]["ceilingCny"]
 
 
-def test_render_copy_spend_belongs_to_the_plan_video(tmp_path):
+def test_render_copy_spend_belongs_to_the_plan_video(service):  # noqa: F811
     """Review 2026-11-11: render -> plan (and revision -> parent) links decide the video."""
-    jobs = CreationJobs(tmp_path)
-    service = CreationReasoningService(jobs, price_snapshot=DEEPSEEK_FLASH_20261004)
+    from gamingcreator.ui.creation_budget_scope import resolve_budget_key
+
+    jobs = service
+    reasoning = CreationReasoningService(jobs, price_snapshot=DEEPSEEK_FLASH_20261004)
     links = {
         "a" * 32: {"planJobId": "b" * 32, "planId": "p"},
         "c" * 32: {"revisionJobId": "d" * 32},
         "d" * 32: {"parentJobId": "b" * 32},
-        "b" * 32: {"runIds": ["run"]},
+        "b" * 32: {"runIds": ["run"], "projectId": "artifacts/project"},
     }
     for job, request in links.items():
-        (jobs.jobs / job).mkdir(parents=True)
-        (jobs.jobs / job / "request.json").write_text(
-            __import__("json").dumps({"request": request}), encoding="utf-8"
-        )
-    assert service._video_key("a" * 32) == "b" * 32
-    assert service._video_key("c" * 32) == "b" * 32
+        kind = "plan" if job == "b" * 32 else "revision" if job == "d" * 32 else "render"
+        _budget_job(jobs, job, kind, request)
+    assert resolve_budget_key(jobs, "a" * 32, "artifacts/project", reasoning._prepared) == "b" * 32
+    assert resolve_budget_key(jobs, "c" * 32, "artifacts/project", reasoning._prepared) == "b" * 32
 
 
 def test_tags_never_split_in_the_form():

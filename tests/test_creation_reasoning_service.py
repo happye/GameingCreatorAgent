@@ -355,17 +355,3 @@ def test_over_budget_sends_nothing_and_explicit_confirmation_still_works(context
     assert not context.transport.calls
     assert not (context.service._directory(prepared["preparedHash"]) / "attempt").exists()
     assert execute(context, prepared)["status"] == "completed"
-
-
-def test_adopted_plan_job_shares_its_videos_budget(context):
-    """Review 2026-11-11: adopting an AI plan creates a new job; it must not reset ¥1/video."""
-    prepared = context.service.prepare("job", "plan", "调整")
-    run_budget(context, prepared)
-    adopted = "b" * 32
-    directory = context.jobs.jobs / adopted
-    directory.mkdir(parents=True)
-    request = {"request": {"reasoningPreparedHash": prepared["preparedHash"]}}
-    (directory / "request.json").write_text(json.dumps(request), encoding="utf-8")
-    assert context.service._video_key(adopted) == "job"
-    assert context.service._video_key("c" * 32) == "c" * 32  # unknown job: itself
-    assert {row.job_id for row in context.service._spends()} == {"job"}

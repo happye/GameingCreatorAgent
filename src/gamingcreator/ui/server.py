@@ -24,9 +24,11 @@ from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
 from gamingcreator.infrastructure.windows_ocr import WindowsOcrEngine
 from gamingcreator.ui.benchmark_workflow import BenchmarkWorkflows
+from gamingcreator.ui.creation_budget_scope import resolve_budget_key
 from gamingcreator.ui.creation_jobs import CreationJobs
 from gamingcreator.ui.creation_reasoning_http import reasoning_config, reasoning_post
 from gamingcreator.ui.creation_reasoning_service import CreationReasoningService
+from gamingcreator.ui.creation_works_http import works_get, works_post
 from gamingcreator.ui.frame_text import (
     DENSITIES,
     cached_frame_text_payload,
@@ -70,6 +72,7 @@ ASSETS = {
     "/assets/studio.css": ("studio.css", "text/css; charset=utf-8"),
     "/assets/studio/main.js": ("studio/main.js", "text/javascript; charset=utf-8"),
     "/assets/studio/api.js": ("studio/api.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/works.js": ("studio/works.js", "text/javascript; charset=utf-8"),
     "/assets/studio/reasoning.js": ("studio/reasoning.js", "text/javascript; charset=utf-8"),
     "/assets/studio/waveform.js": ("studio/waveform.js", "text/javascript; charset=utf-8"),
     "/assets/studio/audio-preview-graph.js": (
@@ -534,6 +537,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return
             path = urlparse(self.path).path
             if path not in {
+                "/api/creation/works",
                 "/api/creation/reasoning",
                 "/api/creation/plans",
                 "/api/creation/renders",
@@ -581,6 +585,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return result
 
             value = json.loads(body, object_pairs_hook=unique)
+            if path == "/api/creation/works":
+                if urlparse(self.path).query:
+                    raise ValueError("Unexpected query.")
+                self._json(200, works_post(self.creation_jobs, value))
+                return
             if path == "/api/creation/overlay-assets":
                 if urlparse(self.path).query:
                     raise ValueError("Unexpected query.")
@@ -1029,6 +1038,30 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(403, {"code": "input.origin", "message": "请从本机工作台访问。"})
                 return
             path = urlparse(self.path).path
+            if path == "/api/creation/work-scope":
+                query = _query(self.path)
+                if set(query) != {"projectId", "jobId"}:
+                    raise ValueError("Unexpected query.")
+                self.creation_jobs.directory(query["jobId"])
+                key = resolve_budget_key(
+                    self.creation_jobs,
+                    query["jobId"],
+                    query["projectId"],
+                    self.creation_reasoning._prepared,
+                )
+                self._json(200, {"workId": key[5:] if key.startswith("work:") else None})
+                return
+            if path == "/api/creation/works" or path.startswith("/api/creation/works/"):
+                query = _query(self.path)
+                if set(query) != {"projectId"}:
+                    raise ValueError("Unexpected query.")
+                work_id = (
+                    path.removeprefix("/api/creation/works/")
+                    if path != "/api/creation/works"
+                    else None
+                )
+                self._json(200, works_get(self.creation_jobs, query["projectId"], work_id))
+                return
             if path == "/api/creation/reasoning/config":
                 if urlparse(self.path).query:
                     raise ValueError("Unexpected query.")

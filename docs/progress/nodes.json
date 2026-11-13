@@ -632,6 +632,12 @@
      "sprint": "sprint-ai-theme-planning"
     },
     {
+     "id": "R3-work-budget",
+     "name": "作品身份与需求/策划预算归属",
+     "status": "active",
+     "sprint": "sprint-work-budget-identity"
+    },
+    {
      "id": "P020",
      "name": "活动规则解析（离线）",
      "status": "done",

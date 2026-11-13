@@ -31,14 +31,14 @@ export function sameOrigin(value, pathname) {
 // One request id per intent: resubmitting the same payload reuses it, so the server never
 // creates a duplicate job for a double click or a retry.
 const intents = new Map();
-const persisted = (kind, scope) => kind === "package" && !!scope;
+const persisted = (kind, scope) => ["package", "work"].includes(kind) && !!scope;
 const intentSlot = (kind, scope) => `${kind}:${scope}`;
 const storageKey = (slot) => `studio-intent-v1:${slot}`;
 function intent(kind, scope) {
     const slot = intentSlot(kind, scope);
     if (persisted(kind, scope)) {
         try {
-            const raw = sessionStorage.getItem(storageKey(slot));
+            const raw = (kind === "work" ? localStorage : sessionStorage).getItem(storageKey(slot));
             const value = raw === null ? null : JSON.parse(raw);
             if (value && (typeof value.key !== "string" || !/^[0-9a-f]{32}$/.test(value.id) || (value.jobId !== undefined && !/^[0-9a-f]{32}$/.test(value.jobId)))) throw new Error("invalid intent");
             return value;
@@ -49,7 +49,7 @@ function intent(kind, scope) {
 function saveIntent(kind, scope, value) {
     const slot = intentSlot(kind, scope);
     if (persisted(kind, scope)) {
-        try { sessionStorage.setItem(storageKey(slot), JSON.stringify(value)); }
+        try { (kind === "work" ? localStorage : sessionStorage).setItem(storageKey(slot), JSON.stringify(value)); }
         catch { throw new ApiError("无法保存平台包请求身份，请允许本页会话存储后重试。", "intent.storage"); }
     }
     intents.set(slot, value);
@@ -65,7 +65,7 @@ export function requestId(kind, payload, scope = "") {
 export function forgetIntent(kind, scope = "") {
     const slot = intentSlot(kind, scope);
     if (persisted(kind, scope)) {
-        try { sessionStorage.removeItem(storageKey(slot)); }
+        try { (kind === "work" ? localStorage : sessionStorage).removeItem(storageKey(slot)); }
         catch { throw new ApiError("无法更新平台包请求身份，请恢复会话存储后重试。", "intent.storage"); }
     }
     intents.delete(slot);

@@ -68,17 +68,20 @@ from gamingcreator.application.publish_copy import (
 )
 from gamingcreator.application.storage import InvocationStatus
 from gamingcreator.domain.creation_overlays import CreationOverlays
+from gamingcreator.domain.errors import AppError
 from gamingcreator.infrastructure.creation_files import write_creation
 from gamingcreator.infrastructure.creation_reasoning_provider import (
     MODEL,
     DeepSeekCreationReasoningProvider,
     trusted_price_snapshot,
 )
+from gamingcreator.infrastructure.creation_work_store import CreationWorkStore
 from gamingcreator.infrastructure.http_transport import VisionTransport
 from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
 from gamingcreator.infrastructure.local_files import read_bounded
 from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
+from gamingcreator.ui.creation_budget_scope import resolve_budget_key
 from gamingcreator.ui.overlay_jobs import resolve_selection
 from gamingcreator.ui.revision_jobs import load_chain, prepare_revision
 
@@ -273,9 +276,17 @@ class CreationReasoningService:
         snapshot = copy_snapshot(render_job_id, brief, segments, fps)
         return self._prepare(snapshot, project_id, render_job_id, "", "", "copy")
 
-    def prepare_brief(self, sentence: object, games: object) -> dict[str, Any]:
-        """No video exists yet: use the conservative shared unassigned-brief budget."""
+    def prepare_brief(
+        self, sentence: object, games: object, project_id: object = None, work_id: object = None
+    ) -> dict[str, Any]:
+        """Bind an explicit work, or retain the conservative legacy unassigned budget."""
         snapshot = brief_snapshot(sentence, games)
+        if project_id is not None or work_id is not None:
+            if not isinstance(project_id, str) or not isinstance(work_id, str):
+                raise ValueError("项目与作品身份必须同时提供。")
+            self.jobs.project(project_id)
+            CreationWorkStore(self.jobs.safe(self.jobs.root / "works")).read(work_id, project_id)
+            return self._prepare(snapshot, project_id, "work:" + work_id, "", "", "brief")
         return self._prepare(snapshot, "", "brief-unassigned", "", "", "brief")
 
     def _prepare(
@@ -309,6 +320,9 @@ class CreationReasoningService:
             "priceVersion": self.price.version,
             "priceHash": _digest(_jsonable(asdict(self.price))),
         }
+        budget_key = self._scope_key(job_id, project_id)
+        if budget_key is not None:
+            record["budgetKey"] = budget_key
         prepared_hash = _digest(record)
         directory = self._directory(prepared_hash)
         _write(directory, "prepared.json", record)
@@ -501,6 +515,9 @@ class CreationReasoningService:
                         return result
                 raise ValueError("Attempt already consumed; prepare and confirm a new intent.")
             snapshot = await asyncio.to_thread(self._current, record)
+            current_key = self._scope_key(record["jobId"], record["projectId"])
+            if "budgetKey" in record and current_key != record["budgetKey"]:
+                raise ValueError("作品预算来源已变更。")
             if record["priceHash"] != _digest(_jsonable(asdict(self.price))):
                 raise ValueError("Price snapshot changed; prepare again.")
             confirmation: dict[str, Any] = {
@@ -547,35 +564,28 @@ class CreationReasoningService:
             self.price, request["system"] + request["user"], record["maxOutputTokens"]
         )
         month = datetime.now().astimezone().strftime("%Y-%m")
-        return ai_budget.decide(self._spends(), self._video_key(record["jobId"]), month, ceiling)
+        key = self._record_key(record)
+        return ai_budget.decide(self._spends(), key, month, ceiling)
 
-    def _video_key(self, job_id: str) -> str:
-        """The first plan job of a video: an adopted AI plan is a new job whose request names the
-        preparation it came from, so the per-video cap survives adoption."""
-        seen: set[str] = set()
-        while job_id not in seen and len(seen) < 20:
-            seen.add(job_id)
-            try:
-                request = self.jobs.read(self.jobs.directory(job_id) / "request.json")["request"]
-                prepared = request.get("reasoningPreparedHash")
-                if isinstance(prepared, str):
-                    job_id = self._prepared(prepared)["jobId"]
-                    continue
-                # A render or revision belongs to the video of the plan it came from.
-                parent = next(
-                    (
-                        request[k]
-                        for k in ("planJobId", "revisionJobId", "parentJobId")
-                        if k in request
-                    ),
-                    None,
-                )
-                if not isinstance(parent, str):
-                    break
-                job_id = parent
-            except Exception:  # an unreadable link keeps the job itself as the video
-                break
-        return job_id
+    def _scope_key(self, job_id: str, project_id: str) -> str | None:
+        if job_id.startswith("brief-"):
+            return None
+        # Old snapshot-only fixtures have non-job IDs and no persisted request at all.
+        if not re.fullmatch("[a-f0-9]{32}", job_id) and not job_id.startswith("work:"):
+            if not (self.jobs.jobs / job_id / "request.json").exists():
+                return None
+        return resolve_budget_key(self.jobs, job_id, project_id, self._prepared)
+
+    def _record_key(self, record: dict[str, Any]) -> str:
+        if "budgetKey" in record:
+            return str(record["budgetKey"])
+        return self._scope_key(record["jobId"], record["projectId"]) or str(record["jobId"])
+
+    def _spend_key(self, record: dict[str, Any]) -> str:
+        try:
+            return self._record_key(record)
+        except (AppError, ValueError, KeyError, TypeError, OSError):
+            return "?"
 
     def _spends(self) -> list[ai_budget.Spend]:
         """Every confirmed attempt, charged at its known cost, else its recorded ceiling, else
@@ -589,7 +599,8 @@ class CreationReasoningService:
             job, cny = "?", self.price.reservation_cny(self.price.context_limit_tokens, 8192)
             try:
                 record = self._prepared(directory.name)
-                job, cny = self._video_key(record["jobId"]), Decimal(record["maxCostCny"])
+                job = self._spend_key(record)
+                cny = Decimal(record["maxCostCny"])
                 confirmation = _read(planned.parent, "confirmation.json", CONFIRMATION_SCHEMA)
                 month = str(confirmation.get("confirmedAt", month))[:7]
                 cny = Decimal(confirmation.get("budgetCeilingCny", cny))
