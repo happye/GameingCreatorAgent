@@ -562,7 +562,7 @@
     {
      "id": "R2-multitrack-grok",
      "name": "多轨编辑与集中交互修复（Grok工单）",
-     "status": "todo",
+     "status": "partial",
      "sprint": "grok-studio-execution-20261115"
     },
     {
@@ -663,6 +663,12 @@
      "name": "AI旁白预览与免费本机合成",
      "status": "done",
      "sprint": "sprint-ai-narration"
+    },
+    {
+     "id": "R3-grok-heavy-development",
+     "name": "代理、屏幕文字检索、方案对照与逐词字幕（Grok100项）",
+     "status": "todo",
+     "sprint": "grok-heavy-development-20261115"
     },
     {
      "id": "P020",
