@@ -10,6 +10,10 @@ from test_creation_jobs import finish, service  # noqa: F401
 from test_creation_reasoning_service import Transport
 from test_creation_revision_jobs import revisions  # noqa: F401
 
+from gamingcreator.application.narration_reasoning import (
+    LEGACY_PROMPT_VERSION,
+    narration_request,
+)
 from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
 from gamingcreator.domain.errors import AppError
 from gamingcreator.ui import creation_reasoning_service as module
@@ -106,6 +110,23 @@ def test_real_saved_chain_prepare_auto_budget_script_and_recovery(context):
     assert restarted.read_provider_output(prepared["preparedHash"]) == before
     with pytest.raises(ValueError):
         restarted.revision_for_application(prepared["preparedHash"])
+
+
+def test_legacy_prepared_request_executes_and_recovers_after_prompt_upgrade(context, monkeypatch):
+    monkeypatch.setattr(
+        module,
+        "_request_for",
+        lambda snapshot, _instruction: narration_request(snapshot, LEGACY_PROMPT_VERSION),
+    )
+    prepared = context.service.prepare_narration(context.root, "hook-first")
+    assert prepared["preparedHash"] != context.prepared["preparedHash"]
+    context.prepared = prepared
+    result = execute(context)
+    assert result["status"] == "completed"
+    assert result["metadata"]["prompt_version"] == LEGACY_PROMPT_VERSION
+    assert context.service.read_result(prepared["preparedHash"]) == result
+    assert execute(context) == result
+    assert len(context.transport.calls) == 1
 
 
 def test_prepared_knowledge_is_frozen_even_if_catalog_changes(context):

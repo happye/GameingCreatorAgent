@@ -572,7 +572,7 @@ window.PROGRESS_DATA = {
     "2026-11-15: saved-revision text-only AI narration with frozen knowledge, source quotes, manual adoption and free local synthesis; revision-v4, work budgets, response-loss read-only recovery and stale UI guards verified with fake transport. Real-model naturalness and human acceptance remain unassessed."
    ],
    "done": "按已保存镜头描述与冻结知识生成AI旁白预览，逐句核对原描述与知识出处后手动填入并用本机声音合成；复用作品预算，丢响应只读恢复；离线模板兜底保留",
-   "todo": "仅假模型验证链路，真实模型自然度、语义与听感尚未人评；不提升J1质量状态",
+   "todo": "假模型链路通过；真实首稿39字超过33字被拒，短视频提示已改进但未重新付费验证；自然度、语义与听感待人评，不提升J1质量状态",
    "updated": "2026-11-15",
    "sprints": [
     "sprint-narration-script",
@@ -2062,8 +2062,8 @@ window.PROGRESS_DATA = {
     "P025",
     "R3"
    ],
-   "date": "",
-   "bytes": 3903
+   "date": "2026-11-15",
+   "bytes": 5337
   },
   {
    "file": "sprint-ai-overlay-timing",

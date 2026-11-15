@@ -478,7 +478,8 @@ class CreationReasoningService:
         if (
             project_id != record["projectId"]
             or snapshot.fingerprint != record["snapshotFingerprint"]
-            or _digest(asdict(narration_request(snapshot))) != record["requestHash"]
+            or _digest(asdict(narration_request(snapshot, record["request"]["prompt_version"])))
+            != record["requestHash"]
         ):
             raise ValueError("Saved narration inputs changed; prepare again.")
         return snapshot

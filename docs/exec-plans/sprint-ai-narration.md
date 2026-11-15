@@ -27,3 +27,9 @@ R3 / 阶段B · P025 · 2026-11-15 · 已集成，待本批完整门禁
 
 - 审查P2增量：模板文字失效与busy任务ownership分离，AI模板按钮遵守本机任务busy。延迟模板期间输入不被覆盖，随后本机合成、保存可继续：新增节点最终1 passed（`pytest-20261115-103313.log`）；前轮`pytest-20261115-103221.log`为1 failed、1 passed，其中旧迟响应节点通过，新增测试错误要求未修改版本能保存。修正断言到合成挂接后通过，未改业务规则，不把失败轮称全绿。
 - 主树集成：8个具名文件138 passed（`.cache/test-logs/pytest-20261115-103633.log`），覆盖纯合同、服务、HTTP/provider、作品预算及新旧旁白浏览器。Dashboard源与生成数据已同步；本批完整门禁留到与下一独立切片共同结束时运行一次，未Release。
+
+## 真实预览与短视频提示修正
+
+2026-11-15按现有自动授权在真实作品旧方案`ced944ef.../commentary-segments`只调用一次：准备`82f72415c79e192fe94ea63deee7551a6b718606ee1f118c2eb557ff3c6ddab7`，自动预算上界¥0.07369、月内既有消费¥0.10298832。模型返回39字，超过该输出时钟33字，严格校验拒绝（validate_proposal）；费用估算¥0.004132。原输出、失败结果与账本保留在原reasoning目录，没有重发、自动截短、采用或合成；可读说明在`.cache/scratch/ai-narration-real-20261115/preview-review.md`。
+
+新请求改为`narration-writing-prompt-v2`：建议目标为硬字数的75%，短片建议最多两句，明确总字数包含标点/数字且不是每句额度。硬上限及schema不放宽；v1 SYSTEM/user字节仍按冻结版本重建，provider保留v1/v2配对，旧结果只读恢复不变。唯一关键审查增量通过，主树3文件68 passed（`.cache/test-logs/pytest-20261115-105327.log`），包括旧prepared执行与仅一次transport恢复。v2没有重新付费试跑，不能宣称真实稿件已经可用。

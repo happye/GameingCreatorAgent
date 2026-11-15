@@ -15,7 +15,8 @@ from gamingcreator.application.narration_script import CHARS_PER_SECOND, FILL_RA
 from gamingcreator.domain.creation import CreativeBrief
 
 SCHEMA_VERSION = "narration-understanding-v1"
-PROMPT_VERSION = "narration-writing-prompt-v1"
+LEGACY_PROMPT_VERSION = "narration-writing-prompt-v1"
+PROMPT_VERSION = "narration-writing-prompt-v2"
 SYSTEM = """Write natural continuous Chinese spoken narration for this game's video, guided
 by the brief, audience, tone and requested topics. Avoid camera terminology and mechanical
 shot-by-shot summaries. You only have saved descriptions, never images or audio. Do not
@@ -129,11 +130,32 @@ def narration_snapshot(
     return NarrationSnapshot(canonical(payload))
 
 
-def narration_request(snapshot: NarrationSnapshot) -> ReasoningRequest:
+def narration_request(
+    snapshot: NarrationSnapshot, prompt_version: str = PROMPT_VERSION
+) -> ReasoningRequest:
+    if prompt_version not in (LEGACY_PROMPT_VERSION, PROMPT_VERSION):
+        raise ValueError("Unsupported narration prompt version.")
+    payload = {"snapshotFingerprint": snapshot.fingerprint, "snapshot": snapshot.payload}
+    system = SYSTEM
+    if prompt_version == PROMPT_VERSION:
+        budget = snapshot.payload["budgetCharacters"]
+        payload["writingGuidance"] = {
+            "targetCharacters": max(0, budget * 3 // 4),
+            "recommendedMaximumLines": min(
+                len(snapshot.payload["clips"]), 2 if budget < 50 else max(2, budget // 20)
+            ),
+        }
+        system += """
+For a short video, select only one or two useful descriptions; do not cover every clip.
+Use writingGuidance.targetCharacters as a conservative TOTAL for all spoken text,
+including Chinese characters, digits, spaces and punctuation, not a per-line allowance.
+Prefer fewer complete sentences; check the combined length before returning JSON.
+The hard budgetCharacters limit still applies. Do not quote descriptions in spoken text.
+"""
     return ReasoningRequest(
-        SYSTEM,
-        canonical({"snapshotFingerprint": snapshot.fingerprint, "snapshot": snapshot.payload}),
-        PROMPT_VERSION,
+        system,
+        canonical(payload),
+        prompt_version,
         SCHEMA_VERSION,
     )
 

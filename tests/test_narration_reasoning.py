@@ -7,6 +7,8 @@ from fractions import Fraction
 import pytest
 
 from gamingcreator.application.narration_reasoning import (
+    LEGACY_PROMPT_VERSION,
+    PROMPT_VERSION,
     SCHEMA_VERSION,
     narration_request,
     narration_snapshot,
@@ -45,6 +47,24 @@ CLIPS = [
 KNOWLEDGE = [
     {"entryId": "k", "text": "能量需要等待恢复", "citation": "本地手册", "path": "private"}
 ]
+
+
+def test_short_video_guidance_preserves_legacy_request_identity():
+    snap = snapshot(fps=34)
+    assert snap.payload["budgetCharacters"] == 33
+    legacy = narration_request(snap, LEGACY_PROMPT_VERSION)
+    current = narration_request(snap)
+    assert current.prompt_version == PROMPT_VERSION
+    assert legacy.prompt_version == LEGACY_PROMPT_VERSION
+    old, new = json.loads(legacy.user), json.loads(current.user)
+    assert set(old) == {"snapshotFingerprint", "snapshot"}
+    assert old["snapshot"] == new["snapshot"]
+    assert old["snapshotFingerprint"] == new["snapshotFingerprint"] == snap.fingerprint
+    assert new["writingGuidance"]["recommendedMaximumLines"] == 2
+    assert 0 < new["writingGuidance"]["targetCharacters"] < 33
+    assert legacy.system != current.system
+    with pytest.raises(ValueError, match="prompt version"):
+        narration_request(snap, "unregistered-version")
 
 
 def snapshot(**kwargs):
