@@ -1471,6 +1471,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-local-narration"
     },
     {
+     "id": "R2-multitrack-grok",
+     "name": "多轨编辑与集中交互修复（Grok工单）",
+     "status": "todo",
+     "sprint": "grok-studio-execution-20261115"
+    },
+    {
      "id": "R2-字幕",
      "name": "源语音映射成片字幕",
      "status": "done",
@@ -2019,6 +2025,19 @@ window.PROGRESS_DATA = {
    "bytes": 25323
   },
   {
+   "file": "grok-studio-execution-20261115",
+   "title": "给 Grok 的开发与集中修复清单",
+   "ids": [
+    "P029",
+    "P030",
+    "P032",
+    "P040",
+    "R2"
+   ],
+   "date": "",
+   "bytes": 10879
+  },
+  {
    "file": "sprint-activity-rules",
    "title": "P020：活动规则解析（离线）",
    "ids": [
@@ -2411,7 +2430,7 @@ window.PROGRESS_DATA = {
     "P039",
     "TD029"
    ],
-   "date": "2026-11-13",
+   "date": "2026-11-14",
    "bytes": 4756
   },
   {

@@ -557,6 +557,12 @@
      "sprint": "sprint-local-narration"
     },
     {
+     "id": "R2-multitrack-grok",
+     "name": "多轨编辑与集中交互修复（Grok工单）",
+     "status": "todo",
+     "sprint": "grok-studio-execution-20261115"
+    },
+    {
      "id": "R2-字幕",
      "name": "源语音映射成片字幕",
      "status": "done",
