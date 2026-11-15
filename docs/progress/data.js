@@ -487,8 +487,8 @@ window.PROGRESS_DATA = {
     "tests/test_creation_workspace_browser.py"
    ],
    "done": "离线模板与预算内AI动态策划；重叠片段去重，时长随素材篮；有主题的新AI方案逐镜记录主题/理由/原摘要引文，预览及采用后可核对原方案主题安排，缺口不置灰；旧付费v1/v2仍可复用和采用，v3输出上限与费用门绑定",
-   "todo": "主题映射只证明引用来源，语义与方案质量待人评；AI旁白与完整编导闭环继续深化；作品预算归属已交付；旧草稿保守兼容",
-   "updated": "2026-11-13",
+   "todo": "主题映射只证明引用来源，语义与方案质量待人评；AI旁白已接入，完整编导闭环仍待实际素材试用；旧草稿保守兼容",
+   "updated": "2026-11-15",
    "sprints": [
     "sprint-creation-planner",
     "sprint-creation-workspace",
@@ -567,13 +567,16 @@ window.PROGRESS_DATA = {
    "release": "not_released",
    "remaining": null,
    "evidence": [
-    "2026-10-31: offline template narration draft from saved revision clip descriptions sized to the output clock (3.5 chars/s budget, evenly sampled clips, honest omitted count), GET narration-script API and workspace button feeding local narration; 11 new tests plus 113 related (.cache/narration-script.xml); real 12s plan produced a 36-character draft spanning first and last clips; quality not human-reviewed"
+    "2026-10-31: offline template narration draft from saved revision clip descriptions sized to the output clock (3.5 chars/s budget, evenly sampled clips, honest omitted count), GET narration-script API and workspace button feeding local narration; 11 new tests plus 113 related (.cache/narration-script.xml); real 12s plan produced a 36-character draft spanning first and last clips; quality not human-reviewed",
+    "docs/exec-plans/sprint-ai-narration.md",
+    "2026-11-15: saved-revision text-only AI narration with frozen knowledge, source quotes, manual adoption and free local synthesis; revision-v4, work budgets, response-loss read-only recovery and stale UI guards verified with fake transport. Real-model naturalness and human acceptance remain unassessed."
    ],
-   "done": "按已保存镜头描述和成片时长离线生成解说模板草稿；Studio可结合本地知识修订旁白",
-   "todo": "无模型生成解说；文案质量未人工评审",
-   "updated": "2026-11-08",
+   "done": "按已保存镜头描述与冻结知识生成AI旁白预览，逐句核对原描述与知识出处后手动填入并用本机声音合成；复用作品预算，丢响应只读恢复；离线模板兜底保留",
+   "todo": "仅假模型验证链路，真实模型自然度、语义与听感尚未人评；不提升J1质量状态",
+   "updated": "2026-11-15",
    "sprints": [
-    "sprint-narration-script"
+    "sprint-narration-script",
+    "sprint-ai-narration"
    ]
   },
   {
@@ -1558,6 +1561,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-work-budget-identity"
     },
     {
+     "id": "R3-ai-narration",
+     "name": "AI旁白预览与免费本机合成",
+     "status": "done",
+     "sprint": "sprint-ai-narration"
+    },
+    {
      "id": "P020",
      "name": "活动规则解析（离线）",
      "status": "done",
@@ -2034,7 +2043,7 @@ window.PROGRESS_DATA = {
     "P040",
     "R2"
    ],
-   "date": "",
+   "date": "2026-11-15",
    "bytes": 10879
   },
   {
@@ -2045,6 +2054,16 @@ window.PROGRESS_DATA = {
    ],
    "date": "2026-11-01",
    "bytes": 6874
+  },
+  {
+   "file": "sprint-ai-narration",
+   "title": "AI 按已保存镜头写旁白",
+   "ids": [
+    "P025",
+    "R3"
+   ],
+   "date": "",
+   "bytes": 3903
   },
   {
    "file": "sprint-ai-overlay-timing",

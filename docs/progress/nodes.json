@@ -145,8 +145,8 @@
   },
   "P021": {
    "done": "离线模板与预算内AI动态策划；重叠片段去重，时长随素材篮；有主题的新AI方案逐镜记录主题/理由/原摘要引文，预览及采用后可核对原方案主题安排，缺口不置灰；旧付费v1/v2仍可复用和采用，v3输出上限与费用门绑定",
-   "todo": "主题映射只证明引用来源，语义与方案质量待人评；AI旁白与完整编导闭环继续深化；作品预算归属已交付；旧草稿保守兼容",
-   "updated": "2026-11-13",
+   "todo": "主题映射只证明引用来源，语义与方案质量待人评；AI旁白已接入，完整编导闭环仍待实际素材试用；旧草稿保守兼容",
+   "updated": "2026-11-15",
    "sprints": [
     "sprint-creation-planner",
     "sprint-creation-workspace",
@@ -179,11 +179,12 @@
    ]
   },
   "P025": {
-   "done": "按已保存镜头描述和成片时长离线生成解说模板草稿；Studio可结合本地知识修订旁白",
-   "todo": "无模型生成解说；文案质量未人工评审",
-   "updated": "2026-11-08",
+   "done": "按已保存镜头描述与冻结知识生成AI旁白预览，逐句核对原描述与知识出处后手动填入并用本机声音合成；复用作品预算，丢响应只读恢复；离线模板兜底保留",
+   "todo": "仅假模型验证链路，真实模型自然度、语义与听感尚未人评；不提升J1质量状态",
+   "updated": "2026-11-15",
    "sprints": [
-    "sprint-narration-script"
+    "sprint-narration-script",
+    "sprint-ai-narration"
    ]
   },
   "P026": {
@@ -642,6 +643,12 @@
      "name": "作品身份与需求/策划预算归属",
      "status": "done",
      "sprint": "sprint-work-budget-identity"
+    },
+    {
+     "id": "R3-ai-narration",
+     "name": "AI旁白预览与免费本机合成",
+     "status": "done",
+     "sprint": "sprint-ai-narration"
     },
     {
      "id": "P020",

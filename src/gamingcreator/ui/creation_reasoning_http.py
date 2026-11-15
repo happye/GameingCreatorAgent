@@ -43,6 +43,7 @@ def reasoning_post(service: CreationReasoningService, value: Any) -> dict[str, A
     fields = {
         "prepare_plan": {"action", "jobId"},
         "prepare_copy": {"action", "jobId"},
+        "prepare_narration": {"action", "jobId", "planId"},
         "adopt_plan": {"action", "preparedHash"},
         "prepare": {"action", "jobId", "planId", "instruction"},
         "execute": {"action", "preparedHash", "snapshotFingerprint", "confirmedMaxCny"},
@@ -59,10 +60,11 @@ def reasoning_post(service: CreationReasoningService, value: Any) -> dict[str, A
     ):
         raise ValueError("Invalid reasoning request fields.")
     action = value["action"]
-    if action == "prepare_plan":
-        return service.prepare_plan(value["jobId"])
-    if action == "prepare_copy":
-        return service.prepare_copy(value["jobId"])
+    if action in ("prepare_plan", "prepare_copy"):
+        prepare = {"prepare_plan": service.prepare_plan, "prepare_copy": service.prepare_copy}
+        return prepare[action](value["jobId"])
+    if action == "prepare_narration":
+        return service.prepare_narration(value["jobId"], value["planId"])
     if action == "adopt_plan":
         return service.adopt_plan(value["preparedHash"])
     if action == "prepare":

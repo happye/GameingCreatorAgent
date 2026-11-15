@@ -21,6 +21,8 @@ from gamingcreator.application.creation_overlay_proposals import (
 )
 from gamingcreator.application.creation_proposals import SCHEMA_VERSION, canonical
 from gamingcreator.application.creation_reasoning import PROMPT_VERSION, ReasoningRequest
+from gamingcreator.application.narration_reasoning import PROMPT_VERSION as NARRATION_PROMPT_VERSION
+from gamingcreator.application.narration_reasoning import SCHEMA_VERSION as NARRATION_SCHEMA_VERSION
 from gamingcreator.application.plan_proposals import SCHEMA_VERSION as PLAN_SCHEMA_VERSION
 from gamingcreator.application.plan_reasoning import PROMPT_VERSION as PLAN_PROMPT_VERSION
 from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004, PriceSnapshot
@@ -131,6 +133,7 @@ class DeepSeekCreationReasoningProvider:
             ("plan-reasoning-prompt-v3", "plan-proposal-v3"),
             (COPY_PROMPT_VERSION, COPY_SCHEMA_VERSION),
             (BRIEF_PROMPT_VERSION, BRIEF_SCHEMA_VERSION),
+            (NARRATION_PROMPT_VERSION, NARRATION_SCHEMA_VERSION),
         }:
             raise ValueError("Unsupported reasoning request version.")
         if any(not isinstance(s, str) or not s.strip() for s in (request.system, request.user)):

@@ -98,6 +98,7 @@ ASSETS = {
     "/assets/studio/edit.js": ("studio/edit.js", "text/javascript; charset=utf-8"),
     "/assets/studio/clipedit.js": ("studio/clipedit.js", "text/javascript; charset=utf-8"),
     "/assets/studio/overlays.js": ("studio/overlays.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/narration_ai.js": ("studio/narration_ai.js", "text/javascript; charset=utf-8"),
     "/assets/studio/audio.js": ("studio/audio.js", "text/javascript; charset=utf-8"),
     "/assets/studio/basket.js": ("studio/basket.js", "text/javascript; charset=utf-8"),
     "/assets/studio/recordings.js": ("studio/recordings.js", "text/javascript; charset=utf-8"),
