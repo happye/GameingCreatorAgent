@@ -30,9 +30,9 @@ window.PROGRESS_DATA = {
   "td": {
    "resolved": 21,
    "partial": 3,
-   "open": 5
+   "open": 6
   },
-  "tdTotal": 29,
+  "tdTotal": 30,
   "humanPending": 10,
   "journeyAgentPass": 3,
   "journeyHumanUsable": 0,
@@ -2005,13 +2005,13 @@ window.PROGRESS_DATA = {
   }
  ],
  "gate": {
-  "date": "2026-11-14",
-  "scope": "完整 quiet.ps1 verify（作品身份、跨阶段预算、导航与未保存修改保护）",
-  "result": "pass",
-  "counts": "5294 过 · 10 跳 · 0 失败（2353秒）",
+  "date": "2026-11-15",
+  "scope": "完整 quiet.ps1 verify（AI旁白、短视频提示与镜头草稿恢复，18e9e2d）",
+  "result": "fail",
+  "counts": "5363 过 · 10 跳 · 1 失败（2210秒）",
   "branch": "codex/knowledge-version-compare-20261108",
   "merged": false,
-  "note": "da2212c 已推送，未合main、未Release。格式/Ruff/mypy/CLI通过；受影响1078过3跳1失败，修正旧消息断言后最终定向9过。J1人评不提升。"
+  "note": "格式/Ruff/mypy通过，pytest失败后CLI冒烟未执行；试听同步单节点复核1过，未定位根因，TD030/Grok G37继续，按规范暂标xfail；不把完整检查改记通过。未合main、未Release，J1人评不提升。"
  },
  "fees": [
   "2026-11-08：用户要求尽量避免PR/AE等大型软件。开发、日常验证和成片导出走项目FFmpeg/浏览器路径，专业格式为可选交接，实际导入保持未验。此前Premiere退出由用户手动关闭，不是软件故障；不转成人工待办。",
@@ -2054,7 +2054,7 @@ window.PROGRESS_DATA = {
     "R2"
    ],
    "date": "2026-11-15",
-   "bytes": 10879
+   "bytes": 12104
   },
   {
    "file": "sprint-activity-rules",
@@ -2111,8 +2111,8 @@ window.PROGRESS_DATA = {
     "P040",
     "R2"
    ],
-   "date": "",
-   "bytes": 3179
+   "date": "2026-11-15",
+   "bytes": 3495
   },
   {
    "file": "sprint-clip-replacements",
@@ -2742,6 +2742,15 @@ window.PROGRESS_DATA = {
    "fix": "引入真实工程/草稿身份，将需求调用与后续策划/导出关联到同一预算键；旧账本保持只读兼容",
    "status": "resolved: 2026-11-14 显式作品身份贯通需求/策划/采用/修订/导出；跨月单作品及共享月度并发预算已验，旧记录不改、坏链保守计费；full 5294过10跳，旧草稿保持保守兼容",
    "state": "resolved"
+  },
+  {
+   "id": "TD030",
+   "found": "2026-11-15/试听",
+   "severity": "low; intermittent browser audio sync assertion",
+   "impact": "18e9e2d完整检查5363过10跳1失败，test_real_studio_dissolve_audio_clock_ducking_and_pause配乐相位误差0.130665秒超0.12秒；单节点复核1过，未定位实际播放偏移或采样抖动",
+   "fix": "Grok清单G37：定位后修试听或采样同步，保持原容差、暂停/转场/旁白/配乐断言，不靠重试与全量循环；日志verify-20261115-110159、pytest-20261115-114035",
+   "status": "open: 单项通过不等于已修复，完整检查仍记失败；交Grok继续",
+   "state": "open"
   }
  ],
  "human": [

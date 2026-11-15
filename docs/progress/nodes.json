@@ -1086,12 +1086,12 @@
   }
  ],
  "gate": {
-  "date": "2026-11-14",
-  "scope": "完整 quiet.ps1 verify（作品身份、跨阶段预算、导航与未保存修改保护）",
-  "result": "pass",
-  "counts": "5294 过 · 10 跳 · 0 失败（2353秒）",
+  "date": "2026-11-15",
+  "scope": "完整 quiet.ps1 verify（AI旁白、短视频提示与镜头草稿恢复，18e9e2d）",
+  "result": "fail",
+  "counts": "5363 过 · 10 跳 · 1 失败（2210秒）",
   "branch": "codex/knowledge-version-compare-20261108",
   "merged": false,
-  "note": "da2212c 已推送，未合main、未Release。格式/Ruff/mypy/CLI通过；受影响1078过3跳1失败，修正旧消息断言后最终定向9过。J1人评不提升。"
+  "note": "格式/Ruff/mypy通过，pytest失败后CLI冒烟未执行；试听同步单节点复核1过，未定位根因，TD030/Grok G37继续，按规范暂标xfail；不把完整检查改记通过。未合main、未Release，J1人评不提升。"
  }
 }

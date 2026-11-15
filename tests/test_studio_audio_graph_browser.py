@@ -239,6 +239,7 @@ CAPTURE = """async (seconds) => {
 }"""
 
 
+@pytest.mark.xfail(strict=False, reason="TD030")
 def test_real_studio_dissolve_audio_clock_ducking_and_pause(studio_audio):
     page = studio_audio
     page.get_by_role("button", name="预览方案", exact=True).click()
