@@ -814,14 +814,15 @@ window.PROGRESS_DATA = {
     "2026-11-15: per-work browser-local clip snapshots with parent receipt and whole-payload hash, explicit cross-refresh restore and real revision save; clip-only backup visibly freezes when unsupported edits occur. Full project operation replay and human usability remain unassessed."
    ],
    "done": "Studio可调出入点、换镜头、改字幕、换BGM/旁白、变速转场并另存版本重渲染；支持撤销/重做；同作品镜头快照可跨刷新手动恢复，校验父回执与原边界，任务竞态受控",
-   "todo": "最近快照仅含镜头顺序/裁剪/删除/速度/转场；新声音、字幕、替换与图层只提示未备份；完整工程回放与整体易用性未验收",
+   "todo": "v2快照已含字幕、混音与旁白选择；新替换和图层仍提示未备份，完整工程回放与整体易用性未验收",
    "updated": "2026-11-15",
    "sprints": [
     "sprint-creation-editing",
     "sprint-clip-replacements",
     "sprint-studio-caption-editor",
     "sprint-studio-workbench",
-    "sprint-clip-draft-recovery"
+    "sprint-clip-draft-recovery",
+    "sprint-full-edit-draft"
    ]
   },
   {
@@ -1488,6 +1489,12 @@ window.PROGRESS_DATA = {
      "name": "跨刷新手动恢复最近镜头快照",
      "status": "done",
      "sprint": "sprint-clip-draft-recovery"
+    },
+    {
+     "id": "R2-full-edit-draft",
+     "name": "字幕与声音草稿跨刷新恢复",
+     "status": "done",
+     "sprint": "sprint-full-edit-draft"
     },
     {
      "id": "R2-字幕",
@@ -2255,6 +2262,17 @@ window.PROGRESS_DATA = {
    ],
    "date": "2026-11-01",
    "bytes": 1930
+  },
+  {
+   "file": "sprint-full-edit-draft",
+   "title": "阶段 C：完整受支持编辑草稿恢复",
+   "ids": [
+    "P032",
+    "P040",
+    "R2"
+   ],
+   "date": "",
+   "bytes": 3010
   },
   {
    "file": "sprint-game-knowledge",

@@ -210,6 +210,12 @@ Studio检查器的“叠加”页支持登记文字/PNG、调整开始结束/淡
 
 Studio批量沿既有单包POST逐项submit/settle，相同profile已完成则保留，运行中先等待；刷新仅恢复已提交任务。作用域绑定项目/pub/回执/profile；scoped package发送前把请求身份放入sessionStorage，网络结果不明及刷新复用原requestId。仅该意图绑定job已确认failed/interrupted才允许新意图；旧失败行不证明新发送已终结。存储不可用提交前报intent.storage，默认unscoped接口兼容。每次提交仍走原OS锁、幂等和套餐权限，不自动更换套餐或发布。
 
+## Studio AI旁白与本机剪辑草稿恢复
+
+`POST /api/creation/reasoning`新增精确body`{action:"prepare_narration",jobId,planId}`。准备已保存版本的纯文字快照，沿用`execute_budget`/显式超额`execute`及`result`。有效结果为`purpose:"narration"`与兼容`creation-narration-script-v1`的`script`，有逐句镜头引文、冻结知识出处及字数预算；调用没有观看画面。Studio先预览，用户点“填入旁白稿”才采用。无模型、超预算或输出不合规可用离线模板，丢响应只读恢复，不自动重付。
+
+`POST /api/creation/draft-restore-preview`严格接受`projectId,parentJobId,planId,expectedParentReceiptSha256,clips,subtitleOverrides,audioMix,narration`八字段。clips用既有修订白名单；旁白/曲目仅以ID及期望回执引用，`narration:null`表示移除。服务端按已核父链和恢复后输出帧验证镜头、字幕、混音、继承图层与真实音频适配；父v4的manifest由可信父链取得，不接受新替换。返回`{subtitleOverrides,audioMix,narration,narrationAsset}`，素材URL由服务端生成。校验失败拒绝整份投影，不写任务、回执、音频、账本或转录。浏览器仅显式恢复v2调用，失败保留现场和原快照；v1沿原镜头恢复路径，不自动迁写。
+
 ## Studio专业时间线与XMEML旁白
 
 沿用`GET /api/creation/jobs/{jobId}/timeline?planId=…&format=fcpxml|otio|xmeml&size=1280x720`及原套餐门禁。时间线GET以只读父链/旁白资产验证，不触发任务恢复、合成或新媒体。XMEML额外引用已保存旁白WAV，写独立音轨及真实采样率/位深/声道，按start_frame与ceil(sample_count*fps/sample_rate)确定输出范围；无旁白保持原字节。此为独立干声交接，不表示已映射混音/闪避/淡化或BGM。Studio只下载保存基线，拒未保存草稿/助手预览/忙碌；先处理HTTP错误，成功才保存明确文件名，身份变化拒迟到下载。真实编辑器导入仍待验证。

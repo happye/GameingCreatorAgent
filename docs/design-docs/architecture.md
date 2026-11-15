@@ -131,6 +131,10 @@ Studio专业下载复用原时间线路由，XMEML以纯ExportNarration数据声
 
 ### Studio 知识策划与本机旁白修订
 
+AI旁白复用创作reasoning的prepare/execute_budget/result与作品预算，以已保存镜头、父/根回执及冻结知识形成纯文字请求；逐句引用与硬字数校验后仅供手动填入，本机语音继续走原资产任务。prompt-v2加入保守总字数指导，保留v1冻结请求及已付费结果读取，失败不自动重发。真实首稿超字数的原输出和费用保留，语义/自然度不由链路测试认证，见[AI旁白合同](../exec-plans/sprint-ai-narration.md)。
+
+本机剪辑快照按项目/作品/父任务/方案隔离，以payload schema和整体SHA256核对；v1仅镜头，v2含字幕覆盖、混音参数与旁白选择，沿用旧存储地址且不在读取时迁写。显式恢复v2通过`POST /api/creation/draft-restore-preview`只读核验父链及实际音频/曲目回执，返回可信公开资产，前端一次性落地；不信任存储URL，不新建任务或改费用/证据。编辑、丢弃、切作用域及异步任务代数使旧恢复失效。新替换/图层仍冻结旧快照并提示未备份；这不是全部操作回放，见[草稿恢复合同](../exec-plans/sprint-full-edit-draft.md)。
+
 动态准备复用本机 KnowledgeStore 的同游戏当前版本及字面检索，最多三条、每条400字连续原文。命中时以 v2 snapshot/prompt/proposal 将 entryId、出处和原文冻结到实际请求、hash与报价；无命中沿用 v1。确认、采用与恢复从 prepared request 重建冻结资料，不查询新库替换旧请求。模型仅声明已冻结 entryId 与策划原句，编译层核对应关系并从冻结记录补出处；不证明语义真实性。见[知识合同](../exec-plans/sprint-game-knowledge.md)。
 
 本机草稿按项目/job/plan/asset保存在 localStorage，与不可覆盖的知识和任务回执分离。重合成复用既有 narration/revision 流程，只新增免费本机入口；clip/audio 编辑代次隔离迟到返回，资产变化关闭编辑会话并重新按资产键恢复。保存新修订保留旧音轨证据，FFmpeg与发布包继续使用原回执链。操作见[创作指南](../references/creation-guide.md)，证据见[旁白修订合同](../exec-plans/sprint-studio-narration-revision.md)。
