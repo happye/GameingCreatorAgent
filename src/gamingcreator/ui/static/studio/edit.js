@@ -101,7 +101,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     const [canvasWidth, canvasHeight] = size.split(",").map(Number);
     const canvas = useOutputCanvas(stage, canvasWidth, canvasHeight);
     const planVideo = useRef(null), planVideoNext = useRef(null), resultVideo = useRef(null), work = useRef(null), restoring = useRef(null);
-    const editing = useClipEditor(project);
+    const editing = useClipEditor(project, workId);
     const [commandRows, setCommandRows] = useState(null);
     const [commandOverlays, setCommandOverlays] = useState(null);
     const commandPreview = !!commandRows || !!commandOverlays;
@@ -234,6 +234,8 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     const captionPreview = useSubtitlePreview(project, editing, shownClips, subtitles);
     const music = useMusicCatalog();
     const [audioBusy, setAudioBusy] = useState(false);
+    const draftRestoreAllowed = useRef(false);
+    draftRestoreAllowed.current = !busy && !commandPreview && !audioBusy && !overlayBusy;
     const saveReason = !editable ? "正在读取可编辑镜头" : busy ? "任务正在处理，完成后可保存"
         : commandPreview ? "请先应用或取消创作助手的改动" : audioBusy ? "声音任务正在处理，完成后可保存" : overlayBusy ? "叠加素材正在处理，完成后可保存"
         : problem || (!editing.dirty ? "修改镜头、声音或叠加后可保存新版本" : "");
@@ -435,6 +437,9 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                 </div>
                 ${plan && html`<div class="field"><div class="k">编辑状态</div>
                     <div class="v">${editing.status === "loading" ? "正在读取镜头…" : !editable ? `只能预览和导出${editing.reason ? `（${editing.reason}）` : ""}` : editing.dirty ? "有未保存的修改" : editing.base?.kind === "revision" ? "已保存的版本" : "方案原样"}</div>
+                    ${editable && html`<p class="hint" role="status" aria-label="镜头快照状态">${editing.draftError || editing.drafts.message}</p>
+                        ${editing.drafts.payload && html`<div class="actions-row"><button class="btn ghost" disabled=${!!busy || commandPreview || audioBusy || overlayBusy} onClick=${() => { if (busy || commandPreview || audioBusy || overlayBusy) return; void editing.restoreDraft(confirmLeave, () => draftRestoreAllowed.current); }}>恢复镜头快照</button>
+                        <button class="btn ghost" disabled=${!!busy || audioBusy || overlayBusy} onClick=${() => { if (busy || audioBusy || overlayBusy) return; editing.drafts.discard(); }}>丢弃镜头快照</button></div>`}`}
                     ${problem && html`<p class="hint warn">${problem}</p>`}
                     ${editable && html`<p class="hint" role="status" aria-label="版本保存状态">${saveReason || "修改已就绪，可以保存新版本"}</p><div class="actions-row"><button class="btn ghost" disabled=${!!saveReason} title=${saveReason || "保存新版本"} onClick=${saveVersion}>保存版本</button>
                         <button class="btn ghost" disabled=${!editing.canUndo || !!busy || commandPreview} title="Ctrl+Z" onClick=${() => editing.ops.undo()}>撤销一步</button>

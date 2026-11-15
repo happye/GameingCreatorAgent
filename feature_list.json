@@ -901,7 +901,10 @@
                 "tests/test_clip_replacement_http.py",
                 "tests/test_clip_replacement_browser.py",
                 "docs/exec-plans/sprint-studio-caption-editor.md",
-                "tests/test_studio_caption_editor_browser.py"
+                "tests/test_studio_caption_editor_browser.py",
+                "docs/exec-plans/sprint-clip-draft-recovery.md",
+                "tests/test_studio_clip_drafts_browser.py",
+                "2026-11-15: per-work browser-local clip snapshots with parent receipt and whole-payload hash, explicit cross-refresh restore and real revision save; clip-only backup visibly freezes when unsupported edits occur. Full project operation replay and human usability remain unassessed."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

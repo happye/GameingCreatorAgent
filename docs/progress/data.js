@@ -808,16 +808,20 @@ window.PROGRESS_DATA = {
     "tests/test_clip_replacement_http.py",
     "tests/test_clip_replacement_browser.py",
     "docs/exec-plans/sprint-studio-caption-editor.md",
-    "tests/test_studio_caption_editor_browser.py"
+    "tests/test_studio_caption_editor_browser.py",
+    "docs/exec-plans/sprint-clip-draft-recovery.md",
+    "tests/test_studio_clip_drafts_browser.py",
+    "2026-11-15: per-work browser-local clip snapshots with parent receipt and whole-payload hash, explicit cross-refresh restore and real revision save; clip-only backup visibly freezes when unsupported edits occur. Full project operation replay and human usability remain unassessed."
    ],
-   "done": "Studio可调出入点、换镜头、改字幕、换BGM/旁白、变速转场并另存版本重渲染；支持逐步撤销/重做（Ctrl+Z）",
-   "todo": "编辑器整体易用性未经人工验收；部分编辑项仍不完整",
-   "updated": "2026-11-11",
+   "done": "Studio可调出入点、换镜头、改字幕、换BGM/旁白、变速转场并另存版本重渲染；支持撤销/重做；同作品镜头快照可跨刷新手动恢复，校验父回执与原边界，任务竞态受控",
+   "todo": "最近快照仅含镜头顺序/裁剪/删除/速度/转场；新声音、字幕、替换与图层只提示未备份；完整工程回放与整体易用性未验收",
+   "updated": "2026-11-15",
    "sprints": [
     "sprint-creation-editing",
     "sprint-clip-replacements",
     "sprint-studio-caption-editor",
-    "sprint-studio-workbench"
+    "sprint-studio-workbench",
+    "sprint-clip-draft-recovery"
    ]
   },
   {
@@ -1003,7 +1007,7 @@ window.PROGRESS_DATA = {
     "tests/test_creation_workspace_browser.py"
    ],
    "done": "新工作台/studio可看素材、选方案、时间线剪辑、旁白音乐、字幕与导出；导出后一键去发布、禁用按钮显示原因、作品列表中文状态与失败原因、空项目三步引导；片段篮清空可恢复、渲染按本机历史显示预计耗时；时间轴上选中镜头后可拖动两端裁剪（一次拖动一步撤销）；导出时可给作品命名，作品列表与下载文件名使用该名",
-   "todo": "J1全流程第四次试看未通过；Agent对话区与人评验收未完成",
+   "todo": "J1全流程第五次试看未通过；Agent对话区与人评验收未完成",
    "updated": "2026-11-11",
    "sprints": [
     "sprint-studio-workbench",
@@ -1478,6 +1482,12 @@ window.PROGRESS_DATA = {
      "name": "多轨编辑与集中交互修复（Grok工单）",
      "status": "todo",
      "sprint": "grok-studio-execution-20261115"
+    },
+    {
+     "id": "R2-clip-drafts",
+     "name": "跨刷新手动恢复最近镜头快照",
+     "status": "done",
+     "sprint": "sprint-clip-draft-recovery"
     },
     {
      "id": "R2-字幕",
@@ -2092,6 +2102,17 @@ window.PROGRESS_DATA = {
    "ids": [],
    "date": "2026-10-31",
    "bytes": 7637
+  },
+  {
+   "file": "sprint-clip-draft-recovery",
+   "title": "阶段 C：最近镜头快照手动恢复",
+   "ids": [
+    "P032",
+    "P040",
+    "R2"
+   ],
+   "date": "",
+   "bytes": 3179
   },
   {
    "file": "sprint-clip-replacements",

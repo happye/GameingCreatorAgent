@@ -8,6 +8,8 @@ import * as client from "./api.js";
 import {clipFrames} from "./preview.js";
 import {ReasoningDock} from "./reasoning.js";
 
+import {useClipDrafts, readSnapshot, rebuild} from "./clip_drafts.js";
+
 const html = htm.bind(h);
 // The only speeds the server accepts (creation_editing.py).
 export const SPEEDS = [[1, 2, "0.5× 慢放"], [1, 1, "1× 原速"], [2, 1, "2× 快放"]];
@@ -50,8 +52,10 @@ const audioOf = (editor) => ({mix: editor.audioMix || {bgm: null, sourceGainDb: 
 const rows = (clips) => clips.map(({clipId, startUs, endUs, speed, transitionIn}) => ({clipId, startUs, endUs, speed, transitionIn}));
 const overlaysOf = (editor) => ({overlays: editor.overlays?.items || [], overlayAssets: editor.overlayAssets || []});
 
-export function useClipEditor(project) {
+export function useClipEditor(project, workId = null) {
     const [state, setState] = useState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), ...captionsOf({}), bounds: {}, replacements: {}, dirty: false});
+    const drafts = useClipDrafts(state, project, workId, {audio: audioOf(state.editor || {}), ...overlaysOf(state.editor || {})}, keptCaptions, [SPEEDS, clipFrames, transitionProblem]);
+    const current = useRef(state); current.current = state;
     const overlayEpoch = useRef(0);
     // Step undo/redo of local edits (not saved versions): snapshots of the editable fields.
     const history = useRef({past: [], future: [], key: null});
@@ -76,9 +80,10 @@ export function useClipEditor(project) {
         setState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), ...captionsOf({}), bounds: {}, replacements: {}, dirty: false});
         setCandidates(null); setSelectedId(""); clearHistory();
         return () => { loading.current += 1; };
-    }, [project]);
+    }, [project, workId]);
 
     const load = useCallback(async (jobId, planId, kind) => {
+        drafts.invalidate();
         const generation = ++loading.current;
         overlayEpoch.current += 1;
         setState((s) => ({...s, status: "loading"})); setSelectedId("");
@@ -182,6 +187,24 @@ export function useClipEditor(project) {
         reset: () => { overlayEpoch.current += 1; clearHistory(); setState((s) => (s.editor ? {...s, clips: normalize(s.editor), audio: audioOf(s.editor), ...overlaysOf(s.editor), ...captionsOf(s.editor), bounds: Object.fromEntries(normalize(s.editor).map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, dirty: false} : s)); },
     };
 
+    const restoreDraft = async (confirm, canRestore = () => true) => {
+        if (!canRestore()) return;
+        if (state.dirty && !confirm()) return;
+        const before = state;
+        try {
+            const editor = await client.api(`/api/creation/jobs/${encodeURIComponent(state.base.jobId)}/edit`, {planId: state.base.planId});
+            if (!canRestore() || current.current !== before || editor.parentJobId !== state.base.jobId || editor.planId !== state.base.planId) return;
+            if (editor.expectedParentReceiptSha256 !== state.editor.expectedParentReceiptSha256) throw Error("父版本已变化，不能恢复镜头快照");
+            const payload = await readSnapshot(localStorage, drafts.key, editor, [SPEEDS, clipFrames, transitionProblem]);
+            if (!canRestore() || !payload || current.current !== before) return;
+            const clips = rebuild(payload, editor, SPEEDS, clipFrames, transitionProblem);
+            drafts.invalidate(); overlayEpoch.current++;
+            edit(s => ({...s, clips, audio: audioOf(editor), ...overlaysOf(editor),
+                subtitleOverrides: keptCaptions(editor.subtitleOverrides || [], clips),
+                bounds: Object.fromEntries(normalize(editor).map(c => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, dirty: true}));
+        } catch (e) { setState(s => ({...s, draftError: `无法恢复镜头快照：${e.message}`})); }
+    };
+
     const loadCandidates = useCallback(async () => {
         if (candidates || !state.base) return candidates;
         const data = await client.api(`/api/creation/jobs/${encodeURIComponent(state.base.jobId)}/candidates`, {planId: state.base.planId});
@@ -205,12 +228,13 @@ export function useClipEditor(project) {
         });
         const done = await follow(accepted.jobId);
         if (done?.status !== "completed") throw new Error(done ? `保存失败：${done.error?.message || done.status}` : "保存已取消");
+        drafts.discard();
         client.forgetIntent("revision");
         await load(done.jobId, base.planId, "revision");
         return done.jobId;
     }, [state, load, candidates]);
 
-    return {...state, project, overlayEpoch: overlayEpoch.current, selectedId, setSelectedId, load, ops, save, candidates, loadCandidates, rows: () => rows(state.clips),
+    return {...state, drafts, restoreDraft, project, overlayEpoch: overlayEpoch.current, selectedId, setSelectedId, load, ops, save, candidates, loadCandidates, rows: () => rows(state.clips),
         canUndo: history.current.past.length > 0, canRedo: history.current.future.length > 0};
 }
 

@@ -96,6 +96,7 @@ ASSETS = {
         "text/javascript; charset=utf-8",
     ),
     "/assets/studio/edit.js": ("studio/edit.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/clip_drafts.js": ("studio/clip_drafts.js", "text/javascript; charset=utf-8"),
     "/assets/studio/clipedit.js": ("studio/clipedit.js", "text/javascript; charset=utf-8"),
     "/assets/studio/overlays.js": ("studio/overlays.js", "text/javascript; charset=utf-8"),
     "/assets/studio/narration_ai.js": ("studio/narration_ai.js", "text/javascript; charset=utf-8"),
