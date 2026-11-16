@@ -309,14 +309,20 @@ def test_default_worker_request_does_not_enable_word_timestamps(tmp_path):
     assert worded == default
 
 
-def test_damaged_result_is_not_recomputed(tmp_path):
+@pytest.mark.parametrize("mutation", ["whitespace", "model", "revision"])
+def test_damaged_result_is_not_recomputed(tmp_path, mutation):
     repository, project, _ = _seed(tmp_path)
     provider = FakeWords()
     summary = asyncio.run(
         transcribe_project_words(project, "run-1", MODEL, repository, provider=provider)
     )
     path = summary.result_directory / "words.json"
-    damaged = path.read_bytes() + b" "
+    if mutation == "whitespace":
+        damaged = path.read_bytes() + b" "
+    else:
+        document = json.loads(path.read_bytes())
+        document[mutation] = "another-nonempty-identity"
+        damaged = json.dumps(document).encode()
     path.write_bytes(damaged)
     with pytest.raises(AppError) as error:
         asyncio.run(

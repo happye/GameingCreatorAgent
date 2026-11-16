@@ -189,12 +189,9 @@ async def _find_existing_words(
     for directory in sorted(root.iterdir()):
         if directory.name.startswith("."):
             continue
-        published_model, published_revision = _published_model_identity(
-            project, run_id, directory.name
-        )
-        if (published_model, published_revision) != (model, revision):
-            continue
         document = await load_asr_words_projection(project, run_id, directory.name)
+        if (document["model"], document["revision"]) != (model, revision):
+            continue
         if (
             document["mediaId"] != asset.media_id
             or document["sourceSha256"] != asset.sha256
