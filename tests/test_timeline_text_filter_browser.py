@@ -17,6 +17,7 @@ def test_text_filter_instants_labels_persistence_and_missing_report(
     seed_project(tmp_path)
     refuse_sends(monkeypatch)
     available = [True]
+    verified = [True]
     with workspace(tmp_path) as base, playwright.sync_playwright() as runtime:
         browser = runtime.chromium.launch(headless=True)
         try:
@@ -57,6 +58,7 @@ def test_text_filter_instants_labels_persistence_and_missing_report(
                     return
                 query = parse_qs(urlparse(route.request.url).query)
                 payload = text_report(query["project"][0], query["run"][0])
+                payload["contentVerified"] = verified[0]
                 # Merged OCR span 0..4.9 must not make an event in its gap match.
                 payload["frames"] = [
                     {"timeUs": 0, "lines": [{"text": "gap", "likelyText": True}]},
@@ -99,6 +101,16 @@ def test_text_filter_instants_labels_persistence_and_missing_report(
             playwright.expect(toggle).to_be_checked()
             search.fill("文字词")
             playwright.expect(page.locator(".timeline-row")).to_have_count(2)
+            verified[0] = False
+            page.reload()
+            playwright.expect(page.locator("#frame-text-summary")).to_contain_text("仅供原文查看")
+            playwright.expect(page.locator("#frame-text-query")).to_be_disabled()
+            playwright.expect(toggle).to_be_disabled()
+            playwright.expect(page.locator("#frame-text-results")).to_contain_text("大蚌真君")
+            playwright.expect(page.locator(".frame-text-jump")).to_have_count(0)
+            search.fill("文字词")
+            playwright.expect(page.locator(".timeline-row")).to_have_count(1)
+            playwright.expect(page.locator("#filter-summary")).to_contain_text("请重新识别")
             available[0] = False
             page.reload()
             playwright.expect(page.locator("#timeline-count")).to_have_text("3")

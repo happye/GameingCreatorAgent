@@ -30,6 +30,7 @@ def text_report(project, run):
     line = lambda text, likely=True: {"text": text, "likelyText": likely}  # noqa: E731
     return {
         "available": True,
+        "contentVerified": True,
         "schemaVersion": "frame-text-v1",
         "runId": run,
         "project": project,
