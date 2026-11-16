@@ -56,9 +56,9 @@
    ]
   },
   "P009": {
-   "done": "工作台一键用Windows OCR识别画面文字，可点文字跳转、按词查找；有离线难例回归",
-   "todo": "风格化标题读不出，准确率未人评，OCR结果未进入检索",
-   "updated": "2026-11-01",
+   "done": "Windows OCR文字识别与独立屏幕文字查询、定位/导出；整文件hash验证，旧报告只读，原Top10不变；Unicode原字素高亮",
+   "todo": "风格化标题与准确率未人评，旧无hash报告需显式重扫",
+   "updated": "2026-11-16",
    "sprints": [
     "sprint-ocr-frames"
    ]
@@ -72,17 +72,17 @@
    ]
   },
   "P011": {
-   "done": "可生成360p编辑代理（按时长限额），工作台可切换代理预览，CLI/API/工作台可批量生成",
-   "todo": "代理清理入口未做，播放器尚不自动改用代理",
-   "updated": "2026-11-01",
+   "done": "360p代理批量生成、自动预览及失败回原片，时钟绑定/解码回退和只读空间清单已实现",
+   "todo": "真实清理入口仍未做，不删除原片/模型/用户产物",
+   "updated": "2026-11-16",
    "sprints": [
     "sprint-editing-proxy"
    ]
   },
   "P012": {
-   "done": "本地语音识别可把录像语音转成文字，已工程交付",
-   "todo": "本机ASR无词级时间戳；质量未单独评估，未发布",
-   "updated": "2026-10-04",
+   "done": "段级本地ASR及显式逐词sidecar、模型前复用、取消/异常终态；旧段级记录不改",
+   "todo": "识别质量未单独评估，未发布",
+   "updated": "2026-11-16",
    "sprints": []
   },
   "P013": {
@@ -155,9 +155,9 @@
    ]
   },
   "P022": {
-   "done": "玩法展示/攻略/活动投稿离线结构模板（角色、时长权重、单镜头时长上限），方案列表首推",
-   "todo": "基于模型的结构生成未做；模板创意效果未单独评估",
-   "updated": "2026-11-01",
+   "done": "离线结构模板、最终有序内容去重和A/B只读对照，按素材与约束诚实给出方案数量",
+   "todo": "开放式模型结构与模板创意效果未单独评估",
+   "updated": "2026-11-16",
    "sprints": [
     "sprint-content-modes"
    ]
@@ -218,9 +218,9 @@
    ]
   },
   "P029": {
-   "done": "按镜头生成/编辑字幕，草稿即时预览并烧入；烧入可选三种样式（标准/大字/半透明底框），预览同步近似显示",
-   "todo": "本机ASR无逐字时间戳，逐字字幕未做；字体/颜色自定义与字幕质量未人评",
-   "updated": "2026-11-10",
+   "done": "镜头字幕编辑/即时预览及三种烧入样式；可信逐词结果映射/预览/烧录，显式坏绑定拒绝而不静默降级",
+   "todo": "字体/颜色自定义与字幕质量未人评",
+   "updated": "2026-11-16",
    "sprints": [
     "sprint-creation-subtitles",
     "sprint-creation-caption-editing",
@@ -667,8 +667,14 @@
     {
      "id": "R3-grok-heavy-development",
      "name": "代理、屏幕文字检索、方案对照与逐词字幕（Grok100项）",
-     "status": "todo",
+     "status": "partial",
      "sprint": "grok-heavy-development-20261115"
+    },
+    {
+     "id": "R3-grok-repair-integration",
+     "name": "Grok交付异常/完整性修复与集成",
+     "status": "done",
+     "sprint": "sprint-grok-repair-integration"
     },
     {
      "id": "P020",
@@ -1099,12 +1105,12 @@
   }
  ],
  "gate": {
-  "date": "2026-11-15",
-  "scope": "完整 quiet.ps1 verify（AI旁白、短视频提示与镜头草稿恢复，18e9e2d）",
+  "date": "2026-11-16",
+  "scope": "Grok工作树原完整verify（e4e3d22含未提交A-F成果）；主树另有修复定向",
   "result": "fail",
-  "counts": "5363 过 · 10 跳 · 1 失败（2210秒）",
+  "counts": "5486 过 · 101 跳 · 43 失败 · 1 error（2714秒）",
   "branch": "codex/knowledge-version-compare-20261108",
   "merged": false,
-  "note": "格式/Ruff/mypy通过，pytest失败后CLI冒烟未执行；试听同步单节点复核1过，未定位根因，TD030/Grok G37继续，按规范暂标xfail；不把完整检查改记通过。未合main、未Release，J1人评不提升。"
+  "note": "原全量仍记失败，不重跑改绿。主树修复集成99过，原失败44节点全部44过，试听图与受控循环3过、TD030解决；Ruff/格式及mypy通过。未合main、未Release，J1人评不提升。"
  }
 }

@@ -28,9 +28,9 @@ window.PROGRESS_DATA = {
   "phase0Pass": 8,
   "phase0Total": 11,
   "td": {
-   "resolved": 21,
+   "resolved": 22,
    "partial": 3,
-   "open": 6
+   "open": 5
   },
   "tdTotal": 30,
   "humanPending": 10,
@@ -248,9 +248,9 @@ window.PROGRESS_DATA = {
    "evidence": [
     "2026-11-01: offline hard-case fixture catalog (tests/fixtures/ocr-hard-cases) synthesizes byte-capped PNGs for plain_control / low_contrast / stylized_title; regression smokes Windows OCR without claiming accuracy, human review, or F006; retrieval integration still open"
    ],
-   "done": "工作台一键用Windows OCR识别画面文字，可点文字跳转、按词查找；有离线难例回归",
-   "todo": "风格化标题读不出，准确率未人评，OCR结果未进入检索",
-   "updated": "2026-11-01",
+   "done": "Windows OCR文字识别与独立屏幕文字查询、定位/导出；整文件hash验证，旧报告只读，原Top10不变；Unicode原字素高亮",
+   "todo": "风格化标题与准确率未人评，旧无hash报告需显式重扫",
+   "updated": "2026-11-16",
    "sprints": [
     "sprint-ocr-frames"
    ]
@@ -289,9 +289,9 @@ window.PROGRESS_DATA = {
     "2026-11-01: make-proxy builds/reuses a 360p low-bitrate editing proxy per source SHA with a duration-scaled byte budget (<=1 GiB) enforced by -fs and MediaOutputLimit, duration check, temp-dir build and full cleanup on failure; /api/media?proxy=1 serves it only while its receipt matches; real 54.7s recording 25.3MB -> 4.2MB proxy; player auto-switch not done",
     "2026-11-01: batch make-proxy queues many prepared/analyzed runs via CLI (--run repeat / --all-eligible), scripts/make-proxy.ps1 -AllEligible, POST /api/make-proxy-batch, and workbench tasks dialog; each item still uses single make_proxy byte budget/duration/temp-dir cleanup; same-SHA shared in batch; cleanup entry still open"
    ],
-   "done": "可生成360p编辑代理（按时长限额），工作台可切换代理预览，CLI/API/工作台可批量生成",
-   "todo": "代理清理入口未做，播放器尚不自动改用代理",
-   "updated": "2026-11-01",
+   "done": "360p代理批量生成、自动预览及失败回原片，时钟绑定/解码回退和只读空间清单已实现",
+   "todo": "真实清理入口仍未做，不删除原片/模型/用户产物",
+   "updated": "2026-11-16",
    "sprints": [
     "sprint-editing-proxy"
    ]
@@ -307,9 +307,9 @@ window.PROGRESS_DATA = {
    "release": "not_released",
    "remaining": null,
    "evidence": [],
-   "done": "本地语音识别可把录像语音转成文字，已工程交付",
-   "todo": "本机ASR无词级时间戳；质量未单独评估，未发布",
-   "updated": "2026-10-04",
+   "done": "段级本地ASR及显式逐词sidecar、模型前复用、取消/异常终态；旧段级记录不改",
+   "todo": "识别质量未单独评估，未发布",
+   "updated": "2026-11-16",
    "sprints": []
   },
   {
@@ -509,9 +509,9 @@ window.PROGRESS_DATA = {
    "evidence": [
     "2026-11-01: offline structure templates for feature showcase / guide / campaign (roles, duration weights, ~1.5s per shot cap) recommended first; generic plans byte-identical; 200 related tests; gc-reviewer PASS; ad/live templates and model-based structure not done"
    ],
-   "done": "玩法展示/攻略/活动投稿离线结构模板（角色、时长权重、单镜头时长上限），方案列表首推",
-   "todo": "基于模型的结构生成未做；模板创意效果未单独评估",
-   "updated": "2026-11-01",
+   "done": "离线结构模板、最终有序内容去重和A/B只读对照，按素材与约束诚实给出方案数量",
+   "todo": "开放式模型结构与模板创意效果未单独评估",
+   "updated": "2026-11-16",
    "sprints": [
     "sprint-content-modes"
    ]
@@ -720,9 +720,9 @@ window.PROGRESS_DATA = {
     "tests/test_studio_caption_preview.py",
     "tests/test_studio_caption_preview_browser.py"
    ],
-   "done": "按镜头生成/编辑字幕，草稿即时预览并烧入；烧入可选三种样式（标准/大字/半透明底框），预览同步近似显示",
-   "todo": "本机ASR无逐字时间戳，逐字字幕未做；字体/颜色自定义与字幕质量未人评",
-   "updated": "2026-11-10",
+   "done": "镜头字幕编辑/即时预览及三种烧入样式；可信逐词结果映射/预览/烧录，显式坏绑定拒绝而不静默降级",
+   "todo": "字体/颜色自定义与字幕质量未人评",
+   "updated": "2026-11-16",
    "sprints": [
     "sprint-creation-subtitles",
     "sprint-creation-caption-editing",
@@ -1586,8 +1586,14 @@ window.PROGRESS_DATA = {
     {
      "id": "R3-grok-heavy-development",
      "name": "代理、屏幕文字检索、方案对照与逐词字幕（Grok100项）",
-     "status": "todo",
+     "status": "partial",
      "sprint": "grok-heavy-development-20261115"
+    },
+    {
+     "id": "R3-grok-repair-integration",
+     "name": "Grok交付异常/完整性修复与集成",
+     "status": "done",
+     "sprint": "sprint-grok-repair-integration"
     },
     {
      "id": "P020",
@@ -2018,13 +2024,13 @@ window.PROGRESS_DATA = {
   }
  ],
  "gate": {
-  "date": "2026-11-15",
-  "scope": "完整 quiet.ps1 verify（AI旁白、短视频提示与镜头草稿恢复，18e9e2d）",
+  "date": "2026-11-16",
+  "scope": "Grok工作树原完整verify（e4e3d22含未提交A-F成果）；主树另有修复定向",
   "result": "fail",
-  "counts": "5363 过 · 10 跳 · 1 失败（2210秒）",
+  "counts": "5486 过 · 101 跳 · 43 失败 · 1 error（2714秒）",
   "branch": "codex/knowledge-version-compare-20261108",
   "merged": false,
-  "note": "格式/Ruff/mypy通过，pytest失败后CLI冒烟未执行；试听同步单节点复核1过，未定位根因，TD030/Grok G37继续，按规范暂标xfail；不把完整检查改记通过。未合main、未Release，J1人评不提升。"
+  "note": "原全量仍记失败，不重跑改绿。主树修复集成99过，原失败44节点全部44过，试听图与受控循环3过、TD030解决；Ruff/格式及mypy通过。未合main、未Release，J1人评不提升。"
  },
  "fees": [
   "2026-11-08：用户要求尽量避免PR/AE等大型软件。开发、日常验证和成片导出走项目FFmpeg/浏览器路径，专业格式为可选交接，实际导入保持未验。此前Premiere退出由用户手动关闭，不是软件故障；不转成人工待办。",
@@ -2035,12 +2041,11 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "最新完整门禁在18e9e2d：5363过10跳1失败，2210秒，格式/Ruff/mypy通过；试听配乐同步0.130665秒超过0.12秒，单节点复核1过但根因未闭合，TD030保留并按规范标xfail。完整检查仍记失败，不重跑全量；CLI帮助/安装入口已单独补验，未Release、未合main。后续v2草稿恢复另有主树49项定向通过，不冒称包含在该完整门禁内。",
-  "J1第五次试用（2026-11-11）未通过；阶段A已交付。按`ai-native-creation-plan.md`继续A→B→C，DeepSeek文字预算每月¥30/单作品¥1，本机配音。",
-  "阶段B的AI需求/主题策划/剪辑/文案及旁白已接主树，作品预算沿用da2212c。旁白5efd3ce支持已保存v4镜头、逐句引用、手动填入、本机合成和断线只读恢复；主树8文件138过。真实首稿39字超过33字被拒，估算¥0.004132，原输出/账本保留未重发；e7174d0新prompt-v2加强短视频字数指导并保持v1请求恢复，3文件68过，v2未重新付费试跑。自然度与J1人评不提升，第六次J1仍待你方便时复测，旧8765需用新服务替代。",
-  "阶段C镜头快照18e9e2d及字幕/音轨恢复ecd9570已集成：按作品/父版本隔离，刷新后手动恢复，服务端重验音频/曲目回执；失败不部分应用、不新建任务/付费。旧v1原字节兼容，新替换/图层仍提示未备份，不冒称完整工程回放。两片主树集成各49过，唯一关键边界审查通过。",
-  "Grok上一轮在`.worktrees/grok-studio-20261115`交付11文件未提交，报告受影响23过；尚未集成。独立审查发现多轨坐标偏移、旁白尾界、撤销后旧拖动落地、转场字幕选错镜头4个P2及验收缺口。下一轮`docs/exec-plans/grok-heavy-development-20261115.md`已固定100项：先修遗留，再做代理自动预览/只读盘点、OCR查询、规则方案对照、真实逐词字幕及混合源制作实例；不让Grok设计、不空转凑额度。",
-  "看板`docs/progress/index.html`已同步；许可证TD003、人评及干净机门槛保持，不阻止授权开发。"
+  "Grok A01–F16成果与审查修复已集成至主树6771587，原工作树保留。损坏逐词绑定拒绝、异常任务终态、模型前复用、取消不发布、手势清理、OCR全文hash/旧缓存隔离/Unicode高亮均修好，唯一关键边界审查通过。未重新付费、下载或修改原片/账本/旧分析。",
+  "主树核心及v2草稿集成99过，Grok原全量失败44节点定向44过；原试听图及循环回绕/受控偏移3过，TD030解决。Ruff/格式612文件、mypy233源通过。原Grok完整检查仍为5486过101跳43失败1error，未重跑全量、未Release、未合main，不以定向通过改绿；J1/J2/J3人评不变。",
+  "已接入代理自动预览/只读空间盘点、OCR独立文字查询、规则方案去重/A-B对照、显式本机逐词ASR/烧录及多轨交互。已完成的技术链路不代表内容质量已验收；旧OCR无hash只能查看，显式重扫写独立v2缓存。见sprint-grok-repair-integration及ocr-frames-guide。",
+  "下一步按已批准阶段C扩展本机草稿到新替换镜头和图层；v1/v2原字节兼容，原子只读恢复，不生成资产/费用。代理实际删除入口、完整工程操作回放、人评/许可证/干净机门槛仍独立记录。",
+  "AI旁白真实首稿曾39字超过33字被拒（估算¥0.004132），原结果未重发；prompt-v2仅模拟验证，不能称真实自然度通过。第六次J1仍待你方便时复测，新服务需替代旧8765；看板docs/progress/index.html同步。"
  ],
  "sprints": [
   {
@@ -2056,8 +2061,8 @@ window.PROGRESS_DATA = {
     "R2",
     "R3"
    ],
-   "date": "",
-   "bytes": 20568
+   "date": "2026-11-15",
+   "bytes": 20690
   },
   {
    "file": "grok-studio-coding-checklist-20261108",
@@ -2305,6 +2310,21 @@ window.PROGRESS_DATA = {
    ],
    "date": "2026-11-08",
    "bytes": 6753
+  },
+  {
+   "file": "sprint-grok-repair-integration",
+   "title": "Grok交付修复与集成",
+   "ids": [
+    "P009",
+    "P011",
+    "P022",
+    "P029",
+    "P032",
+    "R2",
+    "R3"
+   ],
+   "date": "",
+   "bytes": 2864
   },
   {
    "file": "sprint-j1-creation-usability",
@@ -2788,10 +2808,10 @@ window.PROGRESS_DATA = {
    "id": "TD030",
    "found": "2026-11-15/试听",
    "severity": "low; intermittent browser audio sync assertion",
-   "impact": "18e9e2d完整检查5363过10跳1失败，test_real_studio_dissolve_audio_clock_ducking_and_pause配乐相位误差0.130665秒超0.12秒；单节点复核1过，未定位实际播放偏移或采样抖动",
-   "fix": "Grok清单G37：定位后修试听或采样同步，保持原容差、暂停/转场/旁白/配乐断言，不靠重试与全量循环；日志verify-20261115-110159、pytest-20261115-114035",
-   "status": "open: 单项通过不等于已修复，完整检查仍记失败；交Grok继续",
-   "state": "open"
+   "impact": "18e9e2d完整检查5363过10跳1失败，配乐相位误差0.130665秒超0.12秒",
+   "fix": "播放中按输出时钟纠正循环相位，保留原容差与暂停/转场/旁白/配乐断言",
+   "status": "resolved: 2026-11-16已集成Grok同步修复；主树原图测试与循环回绕/受控0.45秒偏移共3 passed（pytest-20261116-201436），非重试或放宽容差；原全量失败记录保持",
+   "state": "resolved"
   }
  ],
  "human": [

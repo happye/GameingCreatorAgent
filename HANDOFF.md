@@ -1,29 +1,27 @@
 # HANDOFF（覆盖快照）
 
-## 最近一次会话（2026-11-15，主控收尾转Grok）
+## 最近一次会话（2026-11-16，用户授权修复后继续原计划）
 
-用户在额度不足14%时要求完成中断工作后收尾，随后反馈Grok首轮已做完，要求扩大任务。已收好中断的v2草稿恢复，并交下一轮100项纯实施清单；不继续开主控新功能。无后台pytest。
+此前暂停已被用户撤销：修好Grok交付的问题，再继续最高优先级未完成计划。主树分支codex/knowledge-version-compare-20261108，修复集成6771587；原Grok树及所有旧树/stash/用户未跟踪文件保留，不反拷旧副本。
 
-## 主树实际交付
+## 已交付修复
 
-分支`codex/knowledge-version-compare-20261108`，功能提交`ecd9570`：字幕/混音/旁白选择的v2本机草稿只读重验后原子恢复，v1原字节可读，旧录音/账本/证据不改。主树两文件49过（pytest-20261115-162519.log），独立关键边界审查通过。新替换/图层仍partial，不是完整工程回放。
+Grok149文件从e4e3d22三方合入375cc54，保留ecd9570的v2字幕/音轨草稿恢复和Grok手势editEpoch。隔离基线50967b8，ASR365a4a9/6c6d236，UI/OCR67e476e/04070ce，集成后tip6771587。R01–R05、E10和取消发布边界全部闭合，唯一task_quality_guard通过；详sprint-grok-repair-integration.md。
 
-前序已集成：5efd3ce AI旁白（主树138过）、e7174d0短片prompt-v2及v1恢复（68过）、18e9e2d镜头快照（49过）、da2212c作品预算。文档/API/README/使用指南/看板已同步；J1人评仍第五次未通过，J2/J3未人评，未Release、未合main。
+显式坏逐词来源/clock/hash报错，可信空词可段级降级；文件错误/未知异常任务终态failed；推理前验证完整sidecar再筛模型，不重算坏结果；staging后可观察取消不发布。手势失效先清监听。OCR新v2缓存+.sha256，缺回执/正文篡改拒绝且不回退；legacy只看原文、不查询/定位，重扫不动旧字节。Unicode15.1 casefold差异表保原字素。
 
-## 完整检查与费用
+## 验证与不要重复的检查
 
-本批唯一完整检查18e9e2d：5363 passed、10 skipped、1 failed，2210秒。日志`.cache/test-logs/verify-20261115-110159.log`，verify-last.json=failed，工具94999已结束。失败节点`test_studio_audio_graph_browser.py::test_real_studio_dissolve_audio_clock_ducking_and_pause`配乐相位0.130665>0.12；单节点114035.log为1过，未定位根因，TD030仍open，根测试暂xfail。不把全量改绿、不为此重跑；CLI冒烟另已补过。v2草稿切片不在该全量范围，仅定向通过。
+主树9文件99过（pytest-20261116-200740）；Grok原完整失败清单44节点全部44过（201027）；试听原图与循环/受控0.45秒偏移3过（201436），容差0.12不改，TD030解决。Ruff/格式612文件、mypy233源通过；CLI冒烟随本批记录。无后台pytest。
 
-真实旁白仅调用一次：prepared `82f72415...`，旧方案ced944ef/commentary-segments，自动预算上界¥0.07369，39字超33字被拒，估算¥0.004132；原输出/失败结果/费用保留，未重发或采用。说明`.cache/scratch/ai-narration-real-20261115/preview-review.md`。prompt-v2未重新付费验证，不能称真实稿件已可用。
+Grok原完整verify-20261116-031427仍5486过101跳43失败1error，定向闭合不改全量历史，不在本批再跑完整。主树旧完整18e9e2d同样失败，保留原记录。未Release、未合main，人评不变。工人原失败/修复后日志分列在合同，不把fixture失败称全绿。
 
-## Grok工作位置与下一轮
+## 下一步
 
-原工作树`.worktrees/grok-studio-20261115`，分支`grok/studio-execution-20261115`，基线e4e3d22，11文件未提交。交付报告`.cache/grok-to-codex-handoff-20261115.md`，实际受影响23过；保持其原有不自行commit/merge/push要求，不在主树直接覆盖或整批宣称37项完成。
+按阶段C做v3草稿：支持本次新替换/图层，沿原存储键、旧v1/v2原字节兼容；服务端用可信candidate manifest及资产回执重建，只读校验后原子恢复，不能信任本机URL/路径或猜来源。架构师已给最小字段和投影合同，先闭合当前修复记录再实施。不要新建通用队列/数据库。
 
-唯一审查发现4P2：多轨内容与轨名栏原点差36px；旁白round时长允许尾越界；同scope撤销后拖动旧闭包写回；转场字幕按起点猜镜头会选错。ProgramTrack约200行超规范，拖动pointerup闭环等未测。G37有通过日志但缺受控漂移证据，TD030未闭合。先修再集成，保留0.12容差。
+## 保护与费用
 
-新清单在主树`docs/exec-plans/grok-heavy-development-20261115.md`，100项唯一ID：A12遗留修复，B16代理自动预览/只读空间盘点，C18 OCR查询，D14方案差异及A/B对照，E24真实逐词ASR/字幕，F16混合源制作与错误提示。接口/边界已定，不让Grok设计；沿用其工作树，不能用旧clipedit覆盖主树新v2恢复。没有运行或发送新Grok任务，清单供用户交给其继续。
+真实旁白prepared82f72415旧方案ced944ef只调用过一次，39字超33被拒，估算¥0.004132；原输出/失败/账本保留且不重发。DeepSeek文字月¥30/同作品跨月¥1、视觉仅指定素材月¥50、免费本机声音规则不变；模型/原片/证据/账本/人工标签不删不重标。
 
-## 保护
-
-保留Grok成果、全部旧工作树/stash及用户未跟踪设计稿/审计/旧工单。ai-narration/clip-draft-recovery/full-edit-draft树保留原快照，但主树有后续集成，不能整文件反拷。原片/模型/人工标签/账本/证据不清理；不自动重付/重标。推送沿用`git -c http.proxy=http://127.0.0.1:7890 push`。下次先核实际Git及Grok新增报告，不照旧暂停文字重复开发。
+原Grok树仍是未提交原交付，当前主树包含后续修复；修复树grok-repairs和grok-ui-fixes是已提交快照。用户的新授权允许主控提交集成，不受旧Grok报告的临时停笔要求限制。推送用git -c http.proxy=http://127.0.0.1:7890 push。
