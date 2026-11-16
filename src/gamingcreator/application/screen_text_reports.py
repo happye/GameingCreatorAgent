@@ -374,6 +374,8 @@ def read_screen_text_report(path: Path) -> ScreenTextReportRead:
         with receipt.open("rb") as stream:
             expected = stream.read(66).decode("ascii").strip()
     except FileNotFoundError:
+        if path.name.endswith(".v2.json"):
+            return _fail("报告整体校验回执无法读取。")
         return parsed  # Legacy viewing only; search explicitly refuses unverified text.
     except (OSError, UnicodeError):
         return _fail("报告整体校验回执无法读取。")

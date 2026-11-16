@@ -1158,10 +1158,15 @@
     // Hits closer than this on the source clock merge into one range: small text such as a
     // boss name is read only every few frames, so a whole fight should stay one range.
     const FRAME_TEXT_GAP_US = 30000000;
+    const FRAME_TEXT_RESCAN = "旧画面文字正文未经完整性验证，仅供原文查看；请重新识别后使用筛选和时间标记。";
+    function verifiedFrameText() {
+        return state.frameText?.runId === state.run && state.frameText.contentVerified === true ? state.frameText : null;
+    }
+
     function frameTextHits(query) {
         const needle = compactText(query);
         const ranges = [];
-        if (!needle || !state.frameText) return ranges;
+        if (!needle || !verifiedFrameText()) return ranges;
         for (const frame of state.frameText.frames) {
             const line = frame.lines.find((item) => compactText(item.text).includes(needle));
             if (!line) continue;
@@ -1178,7 +1183,7 @@
     // with likely text. Cached per report and query, since the timeline redraws every frame.
     let frameTextStopsCache = { report: null, query: null, instants: [], ranges: [] };
     function frameTextStops() {
-        const report = state.frameText?.runId === state.run ? state.frameText : null;
+        const report = verifiedFrameText();
         const query = ui["frame-text-query"].value.trim();
         if (frameTextStopsCache.report === report && frameTextStopsCache.query === query) return frameTextStopsCache;
         const needle = compactText(query);
@@ -1203,14 +1208,18 @@
 
     function renderFrameText() {
         const report = state.frameText?.runId === state.run ? state.frameText : null;
+        const verified = Boolean(verifiedFrameText());
         const enabled = state.frameTextAvailable && Boolean(state.view) && !state.frameTextBusy;
         ui["frame-text-card"].hidden = !state.frameTextAvailable;
         ui["scan-frame-text"].disabled = !enabled;
         ui["frame-text-density"].disabled = !enabled;
         ui["scan-frame-text"].textContent = state.frameTextBusy ? "正在本机识别…" : report ? "重新识别" : "识别画面文字";
         ui["frame-text-query"].hidden = !report;
+        ui["frame-text-query"].disabled = !verified;
+        ui["timeline-include-text"].disabled = !verified;
         if (state.frameTextBusy) ui["frame-text-summary"].textContent = "正在本机识别原片画面文字（15分钟录像：快速约1分钟，完整约4–5分钟），不发送任何请求。";
         else if (!report) ui["frame-text-summary"].textContent = state.view ? "尚未识别。点击后本机读出取帧时刻的画面文字（Boss名、字幕、菜单等）。" : "选择分析结果后可识别原片画面上的文字";
+        else if (!verified) ui["frame-text-summary"].textContent = FRAME_TEXT_RESCAN;
         else {
             const summary = report.summary;
             const missing = Array.isArray(report.engine?.unavailableLanguages) && report.engine.unavailableLanguages.length
@@ -1218,11 +1227,12 @@
             const failed = Number.isSafeInteger(summary.failedFrames) && summary.failedFrames > 0 ? `其中 ${summary.failedFrames} 帧读取失败。` : "";
             ui["frame-text-summary"].textContent = `${report.density === "full" ? "完整" : "快速"}识别 ${summary.frames} 帧 · 有文字 ${summary.framesWithText} 帧（像真实文字 ${summary.framesWithLikelyText} 帧）。${failed}${missing}点文字跳到出现处；本机识别，可能有错字，未经人工核对，不影响分析与排名。`;
         }
-        const query = report ? ui["frame-text-query"].value.trim() : "";
+        const query = verified ? ui["frame-text-query"].value.trim() : "";
         const spans = !report ? [] : query ? frameTextHits(query) : report.recurringTexts.slice(0, 12);
         if (report && query && !spans.length) {
             ui["frame-text-results"].replaceChildren(element("li", "muted small", "画面文字里没有找到。识别可能有错字，可以试更短的词。"));
-        } else ui["frame-text-results"].replaceChildren(...spans.slice(0, 50).map(frameTextItem));
+        } else ui["frame-text-results"].replaceChildren(...spans.slice(0, 50).map((span) =>
+            verified ? frameTextItem(span) : element("li", "small", span.text)));
         renderActiveLocalContext();
         renderTimeline();
     }
@@ -2846,7 +2856,7 @@
     // Actual sampled instants only: merged OCR spans must not fill unsampled gaps.
     let timelineTextCache = { report: null, needle: null, instants: [] };
     function timelineTextInstants() {
-        const report = state.frameText?.runId === state.run ? state.frameText : null;
+        const report = verifiedFrameText();
         const needle = compactText(ui["timeline-filter"].value.trim());
         if (timelineTextCache.report !== report || timelineTextCache.needle !== needle) {
             const instants = !report || !needle ? [] : report.frames
@@ -2890,6 +2900,7 @@
         if (ui["timeline-include-text"].checked) {
             ui["filter-summary"].textContent += ` · ${textOnly} 个只因画面文字匹配（本机识别，未经人工核对）`;
             if (!state.frameText) ui["filter-summary"].textContent += " · 尚无画面文字，请先在左侧识别";
+            else if (!verifiedFrameText()) ui["filter-summary"].textContent += ` · ${FRAME_TEXT_RESCAN}`;
         }
         ui["timeline-list"].replaceChildren();
         if (!rows.length) empty(ui["timeline-list"], state.view ? (state.view.timeline.length ? "没有符合筛选条件的事件。" : "此运行尚未保存视觉事件。") : "请选择一份分析结果。");
@@ -2946,7 +2957,7 @@
             for (const range of state.shots.blackIntervals) context.fillRect(width * range.startUs / duration, 27, Math.max(1, width * (range.endUs - range.startUs) / duration), 3);
             for (const cut of state.shots.cuts) context.fillRect(width * cut.timeUs / duration, 0, 1, 8);
         }
-        if (state.frameText?.runId === state.run) {
+        if (verifiedFrameText()) {
             // On-screen text lane: query hits as merged ranges, else every frame with likely text.
             context.fillStyle = colors.getPropertyValue("--warning").trim() || "#edc58a";
             for (const range of frameTextStops().ranges) context.fillRect(width * range.firstUs / duration, 36, Math.max(2, width * (range.lastUs - range.firstUs) / duration), 4);
@@ -2991,7 +3002,8 @@
         }
         const times = kind === "cut"
             ? (state.shots?.runId === state.run ? state.shots.cuts.map((cut) => cut.timeUs) : null)
-            : (state.frameText?.runId === state.run ? frameTextStops().instants : null);
+            : (verifiedFrameText() ? frameTextStops().instants : null);
+        if (kind !== "cut" && state.frameText && !verifiedFrameText()) return notice(FRAME_TEXT_RESCAN);
         if (times === null) return notice(kind === "cut" ? "请先在左侧“镜头切分”检测镜头切换。" : "请先在左侧“画面文字”识别画面文字。");
         if (!times.length) {
             const query = ui["frame-text-query"].value.trim();
@@ -3096,7 +3108,7 @@
             const last = 1 + shots.cuts.filter((cut) => cut.timeUs < row.endUs).length;
             container.append(element("p", "small", `镜头 ${first}${last > first ? `–${last}` : ""} · 区间内 ${last - first} 次切换（本机检测，抽检未人评）`));
         } else container.append(element("p", "muted small", "镜头：尚无检测报告，可在左侧检测。"));
-        const report = state.frameText?.runId === state.run ? state.frameText : null;
+        const report = verifiedFrameText();
         if (report) {
             const texts = new Set();
             for (const frame of report.frames) {

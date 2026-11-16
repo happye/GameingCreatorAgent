@@ -179,6 +179,8 @@ async def cached_frame_text_payload(
         raw = read_bounded(target, MAX_CACHED_REPORT_BYTES)
         report = json.loads(raw)
         receipt = target.with_name(target.name + ".sha256")
+        if target.name.endswith(".v2.json") and not receipt.exists():
+            return missing
         if (
             receipt.exists()
             and read_bounded(receipt, 65).decode("ascii").strip() != hashlib.sha256(raw).hexdigest()

@@ -217,7 +217,11 @@ def test_legacy_view_then_explicit_scan_preserves_old_bytes_and_prefers_new_cach
     assert frame_text_cache_path(tmp_path, project, "run-000") == fresh
     assert legacy.read_bytes() == old_bytes and legacy.stat().st_mtime_ns == old_stat
     assert not legacy.with_name(legacy.name + ".sha256").exists()
-    fresh.write_bytes(b"damaged")
+    document = json.loads(fresh.read_bytes())
+    document["frames"][0]["lines"][0]["text"] = "被篡改的正文"
+    fresh.write_text(json.dumps(document), encoding="utf-8")
+    fresh.with_name(fresh.name + ".sha256").unlink()
+    assert not read_screen_text_report(fresh).ok
     damaged = asyncio.run(
         cached_frame_text_payload(project, "run-000", tmp_path, engine, project_reference="p")
     )
