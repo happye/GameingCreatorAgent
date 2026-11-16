@@ -96,7 +96,7 @@ def test_cached_report_goes_stale_when_its_frames_or_source_identity_differ(tmp_
     reference = project.relative_to(tmp_path).as_posix()
     fakes(monkeypatch)
     query = "/api/frame-text?" + urlencode({"project": reference, "run": "run-000"})
-    cache = frame_text_cache_path(tmp_path, project, "run-000")
+    cache = frame_text_cache_path(tmp_path, project, "run-000", for_write=True)
     with workspace(tmp_path) as base:
         post(base, "/api/ocr-frames", {"project": reference, "run": "run-000", "density": "full"})
         original = cache.read_text(encoding="utf-8")
@@ -139,7 +139,7 @@ def test_density_steps_and_concurrent_scans_are_refused(tmp_path):
     with pytest.raises(AppError):
         density_every(500, "every-frame")
     project, _ = seed_tasks(tmp_path / "artifacts", 1)
-    target = frame_text_cache_path(tmp_path, project, "run-000")
+    target = frame_text_cache_path(tmp_path, project, "run-000", for_write=True)
     frame_text._busy.add(target)
     try:
         with pytest.raises(AppError) as busy:
@@ -168,3 +168,57 @@ def test_workbench_static_scans_only_on_click_and_renders_text_safely():
     assert 'id="frame-text-query"' in html and 'id="frame-text-results"' in html
     block = js[js.index("function renderFrameText") : js.index("async function loadFrameText")]
     assert "innerHTML" not in block
+
+
+def test_legacy_view_then_explicit_scan_preserves_old_bytes_and_prefers_new_cache(tmp_path):
+    from gamingcreator.application.screen_text_reports import read_screen_text_report
+    from gamingcreator.ui.frame_text import cached_frame_text_payload
+
+    project, _ = seed_tasks(tmp_path / "artifacts", 1)
+    engine = FakeEngine()
+    legacy = frame_text_cache_path(tmp_path, project, "run-000")
+    fresh = frame_text_cache_path(tmp_path, project, "run-000", for_write=True)
+    fresh.parent.mkdir(parents=True, exist_ok=True)
+    # First scan supplies a valid old-format fixture, then remove only the fixture's new files.
+    asyncio.run(
+        scan_frame_text_payload(
+            project,
+            "run-000",
+            tmp_path,
+            FakeFrames(),
+            engine,
+            density="quick",
+            project_reference="p",
+        )
+    )
+    old_bytes = fresh.read_bytes()
+    legacy.write_bytes(old_bytes)
+    fresh.unlink()
+    fresh.with_name(fresh.name + ".sha256").unlink()
+    old_stat = legacy.stat().st_mtime_ns
+    viewed = asyncio.run(
+        cached_frame_text_payload(project, "run-000", tmp_path, engine, project_reference="p")
+    )
+    assert viewed["available"] and viewed["contentVerified"] is False
+    assert not read_screen_text_report(legacy).report.content_verified
+    rescanned = asyncio.run(
+        scan_frame_text_payload(
+            project,
+            "run-000",
+            tmp_path,
+            FakeFrames(),
+            engine,
+            density="quick",
+            project_reference="p",
+        )
+    )
+    assert rescanned["contentVerified"] is True
+    assert read_screen_text_report(fresh).report.content_verified
+    assert frame_text_cache_path(tmp_path, project, "run-000") == fresh
+    assert legacy.read_bytes() == old_bytes and legacy.stat().st_mtime_ns == old_stat
+    assert not legacy.with_name(legacy.name + ".sha256").exists()
+    fresh.write_bytes(b"damaged")
+    damaged = asyncio.run(
+        cached_frame_text_payload(project, "run-000", tmp_path, engine, project_reference="p")
+    )
+    assert damaged["available"] is False  # Never hide v2 damage by falling back to legacy.

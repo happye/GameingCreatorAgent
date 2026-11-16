@@ -1,5 +1,6 @@
 """Production CLI assembly for the read-only local on-screen text report."""
 
+import hashlib
 import shutil
 from collections.abc import Callable, Sequence
 from fractions import Fraction
@@ -16,6 +17,7 @@ from gamingcreator.application.ocr_frames import (
     ocr_summary,
 )
 from gamingcreator.application.providers import CancellationContext
+from gamingcreator.application.screen_text_reports import MAX_CACHED_REPORT_BYTES
 from gamingcreator.cli.local_reports import (
     load_saved_timeline,
     publish_new_report,
@@ -24,6 +26,7 @@ from gamingcreator.cli.local_reports import (
 )
 from gamingcreator.cli.shot_boundaries import saved_frames
 from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.infrastructure.local_files import read_bounded, write_exclusive_text
 
 _SOURCE_CHANGED = "原片已不在原位置或内容已改变，未生成文字识别报告。"
 MAX_EVERY = 1000
@@ -123,6 +126,17 @@ async def execute_ocr_frames(
         before_scan=lambda source: refuse_report_output(output, project, source),
     )
     target = publish_new_report(output, report)
+    try:
+        write_exclusive_text(
+            target.with_name(target.name + ".sha256"),
+            hashlib.sha256(read_bounded(target, MAX_CACHED_REPORT_BYTES)).hexdigest() + "\n",
+        )
+    except (OSError, ValueError):
+        raise AppError(
+            "input.report_output",
+            "报告已保存，但整体校验回执保存失败，无法用于检索。",
+            ExitCode.STORAGE,
+        ) from None
     for line in ocr_summary(report):
         print(line)
     print(f"报告已保存：{target}")

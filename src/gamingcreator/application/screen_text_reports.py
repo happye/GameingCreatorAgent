@@ -10,7 +10,7 @@ import hashlib
 import json
 import unicodedata
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -39,6 +39,8 @@ NOTICE_DAMAGED = "屏幕文字报告已损坏，不能使用这份结果，也�
 NOTICE_PERMISSION = "没有权限读取屏幕文字报告，未开始新的识别任务。"
 NOTICE_UNAVAILABLE = "屏幕文字结果目前不可用，未开始新的识别任务。"
 DAMAGED_REASONS = {
+    "报告正文与整体校验回执不一致。",
+    "报告整体校验回执无法读取。",
     "报告不是合法的 JSON。",
     "报告格式无效。",
     "报告的 schema 不受支持。",
@@ -72,6 +74,7 @@ class LoadedScreenTextReport:
     frames_digest: str | None
     every: int | None
     frames: tuple[ScreenTextFrame, ...]
+    content_verified: bool = False
 
 
 @dataclass(frozen=True)
@@ -310,6 +313,9 @@ def _collect_one(
     if not identified.ok or identified.report is None:
         _add_diagnostic(diagnostics, identified.reason)
         return 0
+    if not identified.report.content_verified:
+        _add_diagnostic(diagnostics, "旧屏幕文字报告没有整体校验回执，无法验证正文，已跳过检索。")
+        return 0
     digest = check_frames_digest(identified.report, saved_by_run.get(identified.report.run_id, ()))
     if not digest.ok or digest.report is None:
         _add_diagnostic(diagnostics, digest.reason)
@@ -349,14 +355,31 @@ def read_screen_text_report(path: Path) -> ScreenTextReportRead:
     if size > MAX_CACHED_REPORT_BYTES:
         return _fail("报告过大，已拒绝读取。")
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        with path.open("rb") as stream:
+            raw = stream.read(MAX_CACHED_REPORT_BYTES + 1)
+        if len(raw) > MAX_CACHED_REPORT_BYTES:
+            return _fail("报告过大，已拒绝读取。")
+        payload = json.loads(raw)
     except PermissionError:
         return _fail("没有权限读取屏幕文字报告。")
     except (OSError, ValueError):
         return _fail("报告不是合法的 JSON。")
     if not isinstance(payload, dict):
         return _fail("报告格式无效。")
-    return _parse(payload)
+    parsed = _parse(payload)
+    if not parsed.ok or parsed.report is None:
+        return parsed
+    receipt = path.with_name(path.name + ".sha256")
+    try:
+        with receipt.open("rb") as stream:
+            expected = stream.read(66).decode("ascii").strip()
+    except FileNotFoundError:
+        return parsed  # Legacy viewing only; search explicitly refuses unverified text.
+    except (OSError, UnicodeError):
+        return _fail("报告整体校验回执无法读取。")
+    if not _is_sha(expected) or expected != hashlib.sha256(raw).hexdigest():
+        return _fail("报告正文与整体校验回执不一致。")
+    return ScreenTextReportRead(True, "", replace(parsed.report, content_verified=True))
 
 
 def check_frames_digest(

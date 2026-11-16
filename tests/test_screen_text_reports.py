@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -476,6 +477,9 @@ def test_one_bad_report_does_not_drop_other_sources(tmp_path):
     broken = tmp_path / "broken.json"
     stale = tmp_path / "stale.json"
     valid.write_text(json.dumps(_frame_text_report(saved), ensure_ascii=False), encoding="utf-8")
+    valid.with_name(valid.name + ".sha256").write_text(
+        hashlib.sha256(valid.read_bytes()).hexdigest(), encoding="ascii"
+    )
     broken.write_text("not json", encoding="utf-8")
     stale_doc = _frame_text_report(saved, sourceSha256=_sha("b"))
     stale.write_text(json.dumps(stale_doc), encoding="utf-8")
@@ -519,3 +523,32 @@ def test_one_bad_report_does_not_drop_other_sources(tmp_path):
     assert "报告不是合法的 JSON。" in only_bad["screenTextDiagnostics"]
     assert only_bad["screenTextNotice"] != "尚未准备屏幕文字，未开始新的识别任务。"
     assert _snapshot(broken) == before[broken]
+
+
+def test_search_rejects_changed_body_and_skips_legacy_without_rewriting(tmp_path):
+    saved = (("ev-1", 0),)
+    path = tmp_path / "ocr.json"
+    document = _frame_text_report(saved)
+    path.write_text(json.dumps(document), encoding="utf-8")
+    kwargs = dict(
+        query="开始",
+        query_run_ids=("run-1",),
+        sources=(ScreenTextSource("run-1", _sha("a"), 1_000_000),),
+        reports=(path,),
+        saved_by_run={"run-1": saved},
+    )
+    before = _snapshot(path)
+    legacy = collect_screen_text_group(**kwargs)
+    assert not legacy["screenTextPrepared"]
+    assert "无法验证正文" in str(legacy["screenTextDiagnostics"])
+    assert read_screen_text_report(path).ok
+    assert _snapshot(path) == before
+    receipt = path.with_name(path.name + ".sha256")
+    receipt.write_text(hashlib.sha256(path.read_bytes()).hexdigest(), encoding="ascii")
+    assert collect_screen_text_group(**kwargs)["screenTextPrepared"]
+    document["frames"][0]["lines"][0]["text"] = "伪造正文"
+    path.write_text(json.dumps(document), encoding="utf-8")
+    damaged = collect_screen_text_group(**{**kwargs, "query": "伪造"})
+    assert not damaged["screenTextPrepared"]
+    assert not damaged["screenTextMatches"]
+    assert "整体校验回执不一致" in str(damaged["screenTextDiagnostics"])

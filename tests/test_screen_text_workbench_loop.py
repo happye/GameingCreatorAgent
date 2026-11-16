@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import csv
+import hashlib
 import json
 from io import StringIO
 from pathlib import Path
@@ -52,6 +53,9 @@ def _plant_official_cache(repository, project, run_id, text):
     path = frame_text_cache_path(repository, project, run_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
+    path.with_name(path.name + ".sha256").write_text(
+        hashlib.sha256(path.read_bytes()).hexdigest(), encoding="ascii"
+    )
     return path, saved[0]
 
 
@@ -73,6 +77,9 @@ def _plant_stale_cache(repository, project, run_id, text):
     path = frame_text_cache_path(repository, project, run_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
+    path.with_name(path.name + ".sha256").write_text(
+        hashlib.sha256(path.read_bytes()).hexdigest(), encoding="ascii"
+    )
     return path
 
 
@@ -85,6 +92,9 @@ def _plant_stray_report(repository, text):
     document["frames"] = [{"timeUs": 100_000, "lines": [{"text": text, "likelyText": True}]}]
     document["framesDigest"] = frames_digest((("ghost:image", 100_000),))
     path.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
+    path.with_name(path.name + ".sha256").write_text(
+        hashlib.sha256(path.read_bytes()).hexdigest(), encoding="ascii"
+    )
     return path
 
 
@@ -96,6 +106,9 @@ def _plant_foreign_project_cache(repository, project, text):
     document["frames"] = [{"timeUs": 100_000, "lines": [{"text": text, "likelyText": True}]}]
     document["framesDigest"] = frames_digest((("run-0:image", 100_000),))
     path.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
+    path.with_name(path.name + ".sha256").write_text(
+        hashlib.sha256(path.read_bytes()).hexdigest(), encoding="ascii"
+    )
     return path
 
 

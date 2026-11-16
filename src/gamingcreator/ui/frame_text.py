@@ -18,6 +18,7 @@ from gamingcreator.cli.local_reports import load_saved_timeline
 from gamingcreator.cli.ocr_frames import build_run_ocr_report
 from gamingcreator.cli.shot_boundaries import saved_frames
 from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.infrastructure.local_files import read_bounded, write_exclusive_text
 
 DENSITIES = ("quick", "full")
 # "Quick" reads about one saved frame every two seconds; "full" reads every saved frame.
@@ -26,10 +27,14 @@ _busy: set[Path] = set()
 _busy_guard = threading.Lock()
 
 
-def frame_text_cache_path(repository: Path, project: Path, run_id: str) -> Path:
-    """One cache file per project and run, under the workbench cache, never in the project."""
+def frame_text_cache_path(
+    repository: Path, project: Path, run_id: str, *, for_write: bool = False
+) -> Path:
+    """Write only v2 caches; prefer v2 reads, with a read-only legacy fallback."""
     key = hashlib.sha256(f"{project.resolve()}\n{run_id}".encode()).hexdigest()[:32]
-    return repository.resolve() / ".cache" / "workspace" / "frame-text" / f"{key}.json"
+    directory = repository.resolve() / ".cache" / "workspace" / "frame-text"
+    current = directory / f"{key}.v2.json"
+    return current if for_write or current.exists() else directory / f"{key}.json"
 
 
 def density_every(sampling_interval_ms: int, density: str) -> int:
@@ -103,7 +108,7 @@ async def scan_frame_text_payload(
     """Read the run's on-screen text now (local, read-only) and replace its cached report."""
     if density not in DENSITIES:
         raise AppError("input.frame_text", "识别密度须为quick或full。", ExitCode.INPUT)
-    target = frame_text_cache_path(repository, project, run_id)
+    target = frame_text_cache_path(repository, project, run_id, for_write=True)
     with _busy_guard:
         if target in _busy:
             raise AppError(
@@ -125,9 +130,15 @@ async def scan_frame_text_payload(
         temporary = target.with_name(target.name + "." + uuid4().hex + ".tmp")
         try:
             target.parent.mkdir(parents=True, exist_ok=True)
-            temporary.write_text(json.dumps(payload, ensure_ascii=False) + "\n", encoding="utf-8")
+            content = json.dumps(payload, ensure_ascii=False) + "\n"
+            write_exclusive_text(temporary, content)
             temporary.replace(target)
-        except OSError:
+            receipt = target.with_name(target.name + ".sha256")
+            write_exclusive_text(
+                temporary, hashlib.sha256(content.encode("utf-8")).hexdigest() + "\n"
+            )
+            temporary.replace(receipt)
+        except (OSError, ValueError):
             raise AppError(
                 "frame_text.cache",
                 "画面文字已识别，但保存到工作台缓存失败（磁盘空间或权限），请稍后重试。",
@@ -135,7 +146,7 @@ async def scan_frame_text_payload(
             ) from None
         finally:
             temporary.unlink(missing_ok=True)
-        return _with_reference(payload, project_reference)
+        return _with_reference({**payload, "contentVerified": True}, project_reference)
     finally:
         with _busy_guard:
             _busy.discard(target)
@@ -165,7 +176,14 @@ async def cached_frame_text_payload(
     try:
         if target.stat().st_size > MAX_CACHED_REPORT_BYTES:
             return missing
-        report = json.loads(target.read_text(encoding="utf-8"))
+        raw = read_bounded(target, MAX_CACHED_REPORT_BYTES)
+        report = json.loads(raw)
+        receipt = target.with_name(target.name + ".sha256")
+        if (
+            receipt.exists()
+            and read_bounded(receipt, 65).decode("ascii").strip() != hashlib.sha256(raw).hexdigest()
+        ):
+            return missing
     except (OSError, ValueError):
         return missing
     if not isinstance(report, dict):
@@ -186,4 +204,4 @@ async def cached_frame_text_payload(
         or recorded.get("platform") != identity.platform
     ):
         return missing
-    return _with_reference(report, project_reference)
+    return _with_reference({**report, "contentVerified": receipt.exists()}, project_reference)
