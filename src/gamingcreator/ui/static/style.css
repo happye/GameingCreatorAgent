@@ -176,7 +176,7 @@ button.evidence-card { padding: 0; }
 .candidate-card-top { display: flex; align-items: center; gap: 7px; }
 .search-scope { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding-top: 8px; flex-shrink: 0; }
 .search-scope span { width: 100%; overflow-wrap: anywhere; }
-.search-result-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; flex-shrink: 0; }
+.search-result-actions { display: flex; gap: 8px; align-items: center; flex-wrap: nowrap; overflow-x: auto; flex-shrink: 0; }
 .candidate-condition-proof { margin-top: 6px; overflow-wrap: anywhere; font-size: 10px; }
 .candidate-condition-proof ul { padding-left: 16px; }
 .candidate-source { margin: 5px 0; color: var(--accent); font-size: 11px; overflow-wrap: anywhere; }
@@ -410,3 +410,13 @@ dialog::backdrop { background: #030713d9; }
 
 .active-clip { min-height: 0; max-height: 55%; overflow-y: auto; }
 @media (max-width: 1000px) { .active-clip { max-height: 100%; } }
+
+.screen-text-toggle { display: inline-flex; align-items: center; gap: 3px; margin: 0; font-size: 10px; line-height: 11px; white-space: nowrap; }
+.search-panel .search-options .screen-text-toggle input { width: 12px; height: 12px; padding: 0; margin: 0; }
+.screen-text-results { flex-shrink: 0; max-height: 42%; overflow: auto; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.screen-text-card { border: 1px solid var(--line); border-radius: 7px; background: #141a16; padding: 8px; margin-bottom: 7px; }
+.screen-text-source, .screen-text-meta, .screen-text-evidence, .screen-text-hash { margin: 0 0 4px; color: #8ea1be; font-size: 10px; overflow-wrap: anywhere; }
+.screen-text-text { margin: 6px 0 0; color: #d5deec; font-size: 12px; overflow-wrap: anywhere; }
+.screen-text-diagnostics { margin: 4px 0; padding-left: 16px; color: #c4a46a; font-size: 10px; overflow-wrap: anywhere; }
+.screen-text-card.active, .evidence-card.active { border-color: #577fbd; background: #243653; }
+.screen-text-text mark.screen-text-hit { background: #5a4a12; color: inherit; padding: 0 1px; }

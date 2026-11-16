@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from gamingcreator.application.package_validation import validate_package
+from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.platform_profile import profile_digest, validate_profile
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.infrastructure.publication_package import encode
@@ -126,8 +127,11 @@ def verify(
         raise ValueError("Package identity changed")
     target = directory / "result"
     for name in DOWNLOADS:
-        if hash_file(jobs.safe(target / name)) != receipt["files"][name]:
-            raise ValueError("Package artifact changed")
+        path = target / name
+        if not path.is_file() or path.is_symlink():
+            raise ValueError(f"缺少平台包文件 {name}")
+        if hash_file(jobs.safe(path)) != receipt["files"][name]:
+            raise ValueError(f"平台包文件 {name} 已损坏")
     if jobs.read(target / "platform.json") != {
         "profile": profile,
         "profileSha256": profile_digest(profile),
@@ -161,6 +165,13 @@ def resource(jobs: Any, job_id: str, name: str) -> MediaResource:
         raise ValueError("Unknown package file")
     state = jobs.get(job_id)
     if state["kind"] != "package" or state["status"] != "completed":
+        error = state.get("error") or {}
+        if error.get("code") == "creation.artifact_invalid":
+            raise AppError(
+                "creation.artifact_invalid",
+                str(error.get("message") or "任务产物已更改，不能预览或下载。"),
+                ExitCode.STORAGE,
+            )
         raise ValueError("Package unavailable")
     return MediaResource(
         jobs.safe(jobs.directory(job_id) / "result" / name),

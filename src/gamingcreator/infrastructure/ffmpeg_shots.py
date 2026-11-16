@@ -10,6 +10,7 @@ from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.media import MediaAsset
 from gamingcreator.domain.shot_boundaries import BlackTransition, CutCandidate
 from gamingcreator.infrastructure.media_process import run_media_process
+from gamingcreator.infrastructure.proxy_media import reject_editing_proxy_source
 
 SCENE_THRESHOLD = 10
 BLACK_PIXEL_THRESHOLD = "0.10"
@@ -111,6 +112,7 @@ class FfmpegShotDetector:
         video = next((item for item in asset.streams if item.kind == "video"), None)
         if video is None:
             raise AppError("media.shot_mapping", "素材没有视频流。", ExitCode.INPUT)
+        reject_editing_proxy_source(asset.source_path)
         parser = ShotLogParser(asset)
         await run_media_process(
             [

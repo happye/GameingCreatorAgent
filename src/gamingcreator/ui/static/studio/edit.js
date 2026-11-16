@@ -3,6 +3,7 @@ import {h} from "../vendor/preact.module.js";
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
+import "../preview-preference.js";
 import {recordingRuns} from "./recordings.js";
 import {editTimeline, shots, timeline, usePlanPlayer} from "./preview.js";
 import {BeatSnap, ClipInspector, CommandDock, captionProblem, transitionProblem, useClipEditor} from "./clipedit.js";
@@ -10,8 +11,9 @@ import {AudioPanel, narrationProblem, useAudioPreview, useMusicCatalog} from "./
 import {ActivityRules} from "./activity.js";
 import {BriefSentence} from "./brief_sentence.js";
 import {KnowledgeUses, PlanReasoningPanel, TopicCoverage} from "./planning.js";
-import {WaveLane, envelopeDb} from "./waveform.js";
-import {SubtitlePreview, useSubtitlePreview} from "./subtitles.js";
+import {PlanCompare} from "./compare.js";
+import {ProgramTrack} from "./multitrack.js";
+import {SubtitlePreview, useSubtitlePreview, WordHighlightSwitch, wordHighlightDraft, asrWordsPayload} from "./subtitles.js";
 import {OverlayPanel, OverlayPreview, overlayProblem} from "./overlays.js";
 
 const html = htm.bind(h);
@@ -89,6 +91,8 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     // Stage B (2026-11-11): after "生成方案" the AI plans once more within the monthly budget.
     const [aiPlanFor, setAiPlanFor] = useState("");
     const [planId, setPlanId] = useState("");
+    const [comparePreview, setComparePreview] = useState(null);
+    const pendingLocate = useRef(null);
     const [renderJob, setRenderJob] = useState(null);
     const [mode, setMode] = useState("plan");
     const [busy, setBusy] = useState("");
@@ -96,6 +100,8 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     const [selectedShot, setSelectedShot] = useState(null);
     const [size, setSize] = useState("1280,720");
     const [subtitles, setSubtitles] = useState("none"), [subtitleStyle, setSubtitleStyle] = useState("standard");
+    const [wordHighlight, setWordHighlight] = useState(() => wordHighlightDraft(project));
+    useEffect(() => { setWordHighlight(wordHighlightDraft(project)); }, [project]);
     const [overlayBusy, setOverlayBusy] = useState(false);
     const stage = useRef(null);
     const [canvasWidth, canvasHeight] = size.split(",").map(Number);
@@ -115,7 +121,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         adoptionGuard.current = {view: adoptionView, generation: adoptionGuard.current.generation + 1};
     }
 
-    useEffect(() => { setDraft(readDraft(scope)); setPlanJob(null); setRenderJob(null); setPlanId(""); setMode("plan"); }, [project]);
+    useEffect(() => { setDraft(readDraft(scope)); setPlanJob(null); setRenderJob(null); setPlanId(""); setMode("plan"); setComparePreview(null); pendingLocate.current = null; }, [project, workId]);
     const update = (patch) => { if (!alive.current) return; const next = {...draft, ...patch}; setDraft(next); setSaved(writeDraft(scope, next) ? "草稿已保存" : "浏览器不允许保存草稿"); };
     // "用片段篮生成方案" in Assets turns the basket option on.
     // Coming from the basket, the target length is the basket's distinct footage (J1: 24 s picked, 10 s target).
@@ -213,7 +219,12 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         const byId = new Map(editing.clips.map((c) => [c.clipId, c]));
         return commandRows.map((row) => ({...byId.get(row.clipId), ...row}));
     }, [commandRows, editable, editing.clips]);
-    const items = useMemo(() => (shownClips ? editTimeline(shownClips, fps) : plan ? timeline(plan.segments || [], fps) : []).map(item => ({...item, sourceClock: runs.find(run => run.id === item.runId)?.sourceClock})), [shownClips, plan, fps, runs]);
+    const comparePlan = comparePreview ? planJob?.plans?.find((item) => item.id === comparePreview.planId) || null : null;
+    const items = useMemo(() => {
+        const sourceClips = comparePlan ? null : shownClips;
+        const sourcePlan = comparePlan || plan;
+        return (sourceClips ? editTimeline(sourceClips, fps) : sourcePlan ? timeline(sourcePlan.segments || [], fps) : []).map(item => ({...item, sourceClock: runs.find(run => run.id === item.runId)?.sourceClock}));
+    }, [shownClips, plan, fps, runs, comparePlan]);
     const changed = useMemo(() => {
         if (!commandRows) return new Set();
         // Highlight clips whose content changed or that moved relative to the others; a deletion
@@ -229,9 +240,44 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     const problem = editable ? captionProblem(editing.subtitleOverrides) || transitionProblem(editing.clips, fps) || narrationProblem(editing.audio, items.length ? items.at(-1).outStartUs + items.at(-1).outDurUs : 0, fps)
         || overlayProblem(editing.overlays, editing.overlayAssets, totalFrames, canvasWidth, canvasHeight) : "";
     const groups = useMemo(() => shots(items), [items]);
-    const urlFor = useCallback((runId) => client.mediaUrl(project, runId), [project]);
+    const [playable, setPlayable] = useState({});
+    useEffect(() => {
+        let live = true;
+        const rows = runs || [];
+        (async () => {
+            const next = {};
+            for (const run of rows) {
+                const original = run.videoUrl || client.mediaUrl(project, run.id);
+                const preferProxy = globalThis.PreviewPreference?.get(run.mediaId) ?? true;
+                const offered = client.choosePreview(original, run.proxyUrl, preferProxy);
+                if (offered.source !== "proxy") {
+                    next[run.id] = {url: offered.url, source: offered.source || "original", reason: null};
+                    continue;
+                }
+                const result = await SourceClock.alignPreview(
+                    SourceClock.clockCandidates({sourceClock: run.sourceClock}),
+                    new URL(original, location.href).href,
+                    new URL(offered.url, location.href).href,
+                    true,
+                );
+                next[run.id] = {
+                    url: result.url,
+                    source: result.source,
+                    reason: result.source === "original" ? result.reason : null,
+                };
+            }
+            if (live) setPlayable(next);
+        })();
+        return () => { live = false; };
+    }, [project, runs]);
+    const previewClockNotice = Object.values(playable).map((item) => item.reason).find(Boolean);
+    const urlFor = useCallback((runId) => {
+        if (playable[runId]?.url) return playable[runId].url;
+        const run = (runs || []).find((item) => item.id === runId);
+        return client.choosePreview(run?.videoUrl || client.mediaUrl(project, runId), null).url;
+    }, [project, runs, playable]);
     const player = usePlanPlayer(planVideo, items, urlFor, planVideoNext, previewProblem);
-    const captionPreview = useSubtitlePreview(project, editing, shownClips, subtitles);
+    const captionPreview = useSubtitlePreview(project, editing, shownClips, subtitles, wordHighlight);
     const music = useMusicCatalog();
     const [audioBusy, setAudioBusy] = useState(false);
     const draftRestoreAllowed = useRef(false);
@@ -241,8 +287,42 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         : problem || (!editing.dirty ? "修改镜头、声音或叠加后可保存新版本" : "");
     // The inspector has three pages so sound and export stay reachable while a clip is selected.
     const [inspTab, setInspTab] = useState("shot");
-    const sound = useAudioPreview(player, editing.audio, fps, planVideo, music.tracks, `${project}:${editing.base?.jobId}:${editing.base?.planId}`);
+    const sound = useAudioPreview(player, comparePlan && comparePlan.id !== planId ? {} : editing.audio, fps, planVideo, music.tracks, `${project}:${editing.base?.jobId}:${editing.base?.planId}`);
     const thumb = useCallback((item) => (item?.evidenceIds?.[0] ? client.evidenceUrl(project, item.runId, item.evidenceIds[0]) : null), [project]);
+
+
+    const locateBlocked = audioBusy ? "声音任务正在处理，完成后可定位预览" : overlayBusy || busy ? "任务正在处理，完成后可定位预览" : "";
+    const locateComparePreview = (target) => {
+        if (!target || locateBlocked) {
+            if (locateBlocked) setMessage(locateBlocked);
+            return;
+        }
+        setMode("plan");
+        pendingLocate.current = target;
+        if (target.planId === planId) {
+            if (comparePreview) setComparePreview(null);
+            else {
+                void player.seek(target.outStartUs, false);
+                pendingLocate.current = null;
+            }
+            return;
+        }
+        setComparePreview(target);
+    };
+    useEffect(() => {
+        const target = pendingLocate.current;
+        if (!target) return;
+        if (target.planId === planId && !comparePreview) {
+            pendingLocate.current = null;
+            void player.seek(target.outStartUs, false);
+            return;
+        }
+        if (comparePreview && comparePreview.planId === target.planId) {
+            pendingLocate.current = null;
+            void player.seek(target.outStartUs, false);
+        }
+    }, [comparePreview, items, player, planId]);
+    useEffect(() => { setComparePreview(null); pendingLocate.current = null; }, [project, workId, planJob, planId]);
 
     const [timelineMessage, setTimelineMessage] = useState("");
     const [timelineBusy, setTimelineBusy] = useState(false);
@@ -309,18 +389,20 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         if (!plan?.ready || !planJob || problem) return;
         const [width, height] = size.split(",").map(Number);
         // Unsaved edits become a version first; the video is always rendered from a saved state.
+        // Compare preview must not change the adopted plan or the render source.
         let source = {planJobId: planJob.jobId, planId: plan.id};
         if (editable && editing.dirty) { const id = await saveVersion(); if (!id) return; source = {revisionJobId: id}; }
         else if (editable && editing.base?.kind === "revision") source = {revisionJobId: editing.base.jobId};
         setBusy("render"); setMessage("正在生成成片，60 秒的视频大约需要一分钟…"); player.stop();
         try {
-            const accepted = await client.submit("render", {...source, width, height, subtitleMode: subtitles, ...(subtitles === "burn" ? {subtitleStyle} : {})});
+            const accepted = await client.submit("render", {...source, width, height, subtitleMode: subtitles, ...(subtitles === "burn" ? {subtitleStyle} : {}), ...(subtitles !== "none" ? asrWordsPayload(wordHighlight) : {})});
             if (!alive.current) return;
             // Naming is a label only; a failure here never blocks the render.
             void client.api("/api/creation/job-name", {}, {body: {jobId: accepted.jobId, name: workName(draft)}}).then(onWorksChanged).catch(() => {});
             // Remember the render at once, so leaving or reloading reopens it while it runs.
             lastJob(scope, {id: accepted.jobId, kind: "render"});
-            const rate = renderSecondsPerSecond, outputSeconds = player.totalUs / 1e6;
+            const adoptedFrames = (shownClips || plan?.segments || []).reduce((n, clip) => n + (Number(clip.outputFrames) || 0), 0);
+            const rate = renderSecondsPerSecond, outputSeconds = comparePlan && fps ? adoptedFrames / fps : player.totalUs / 1e6;
             const done = await follow(accepted.jobId, (job) => { setRenderJob(job); if (job.status !== "completed") setMessage(renderWaiting(job, rate, outputSeconds)); });
             if (done?.status === "completed") { client.forgetIntent("render"); setMode("result"); setMessage(""); onWorksChanged(); lastJob(scope, {id: done.jobId, kind: "render"}); }
             else if (done) setMessage(`成片生成失败：${done.error?.message || done.status}`);
@@ -366,9 +448,11 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                 <${BriefSentence} key=${scope} project=${project} workId=${workId} draft=${draft} update=${update} runs=${runs} />
                 <${Brief} project=${project} runs=${runs} draft=${draft} update=${update} busy=${busy} onGenerate=${generate} basket=${basket} />
                 <div class="section-label">方案${planJob ? `（${planJob.plans.length}）` : ""}</div>
+                ${planJob && planJob.candidateCountReason ? html`<p class="note">${planJob.candidateCountReason}</p>` : null}
                 ${planJob ? planJob.plans.map((p) => html`<${PlanCard} plan=${p} fps=${fps} active=${p.id === planId} thumb=${thumb} onFind=${onFindMaterial}
-                    onPick=${() => { if (overlayBusy || audioBusy || busy) return; if (editing.dirty && !confirmLeave()) return; setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommandRows(null); lastJob(scope, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
+                    onPick=${() => { if (overlayBusy || audioBusy || busy) return; if (editing.dirty && !confirmLeave()) return; setComparePreview(null); setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommandRows(null); lastJob(scope, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
                     : html`<p class="note">填好需求后点“生成方案”。方案只是剪辑清单，生成很快；选中后可以直接预览，不用先渲染。</p>`}
+                ${planJob && planJob.plans.length >= 2 ? html`<${PlanCompare} key=${`${scope}:${planJob.jobId}`} plans=${planJob.plans} adoptedId=${planId} fps=${planJob.fps} compareScope=${`${scope}:${planJob.jobId}`} locateBlocked=${locateBlocked} onLocate=${locateComparePreview} onClose=${() => setComparePreview(null)} />` : planJob ? html`<p class="note">至少还要有两套方案才能对照。</p>` : null}
                 ${planJob ? html`<${PlanReasoningPanel} key=${`${project}:${planJob.jobId}`} project=${project} jobId=${planJob.jobId}
                     disabled=${!!busy || editing.dirty || commandPreview || audioBusy || overlayBusy} onAdopt=${adoptPlans}
                     autoStart=${aiPlanFor === planJob.jobId} onAutoStarted=${() => setAiPlanFor("")} />` : null}
@@ -376,11 +460,12 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         </aside>
         <div class="center">
             <section class="viewer" aria-label="预览窗">
+                ${comparePreview && comparePlan ? html`<p class="note" id="plan-compare-preview-notice">正在预览对照中的方案 ${comparePlan.structure || comparePlan.id}，没有改当前已采用的方案，也没有改未保存的编辑。</p>` : null}
                 <div class="stage" ref=${stage} style=${{position: "relative"}}>
                     <div class="program-frame" hidden=${mode !== "plan" || !items.length} style=${{position: "absolute", overflow: "hidden", left: "50%", top: "50%", transform: "translate(-50%, -50%)", width: `${canvas.width}px`, height: `${canvas.height}px`}}>
                     <video ref=${planVideo} hidden=${mode !== "plan" || !items.length} playsinline preload="metadata" onClick=${() => { if (!previewProblem) player.toggle(); }}></video><video ref=${planVideoNext} hidden=${mode !== "plan" || !items.length} playsinline preload="auto" onClick=${() => { if (!previewProblem) player.toggle(); }}></video>${sound}
                     ${editable ? html`<div class="overlay-scale" style=${{position: "absolute", pointerEvents: "none", left: 0, top: 0, width: `${canvasWidth}px`, height: `${canvasHeight}px`, transform: `scale(${canvas.scale})`}}>
-                        <${SubtitlePreview} cues=${captionPreview.cues} outUs=${player.outUs} styleName=${subtitles === "burn" ? subtitleStyle : "standard"} />
+                        <${SubtitlePreview} cues=${captionPreview.cues} outUs=${player.outUs} styleName=${subtitles === "burn" ? subtitleStyle : "standard"} wordHighlights=${captionPreview.wordHighlights} subtitleSource=${captionPreview.subtitleSource} />
                         <${OverlayPreview} items=${commandOverlays ?? editing.overlays} assets=${editing.overlayAssets} outUs=${player.outUs} fps=${fps} width=${canvasWidth} height=${canvasHeight} />
                     </div>` : null}
                     </div>
@@ -392,7 +477,8 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     ${mode === "plan"
                         ? html`<button class="icon-btn" disabled=${!items.length} onClick=${player.toggle}>${player.playing ? "暂停" : "预览方案"}</button>
                             <span class="tc">${timecode(player.outUs)} / ${timecode(player.totalUs)}</span>
-                            <span class="badge" title="直接播放原片，未渲染">即时预览·未渲染</span>`
+                            <span class="badge" title="直接播放原片，未渲染">即时预览·未渲染</span>
+                            ${player.proxyHttpFallback ? html`<span class="hint" role="status" data-preview-clock-reason=${player.proxyFailReason || "proxy_http_failed"}>${SourceClock.previewClockReason(player.proxyFailReason || "proxy_http_failed")}</span>` : previewClockNotice ? html`<span class="hint" role="status" data-preview-clock-reason=${previewClockNotice}>${SourceClock.previewClockReason(previewClockNotice)}</span>` : null}`
                         : html`<span class="badge">成片</span>`}
                     <span class="spacer"></span>
                     ${result ? html`<div class="tabs"><button aria-selected=${mode === "plan"} onClick=${() => setMode("plan")}>方案预览</button><button aria-selected=${mode === "result"} onClick=${() => { player.stop(); setMode("result"); }}>成片</button></div>` : null}
@@ -407,7 +493,13 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                 onPick=${(item) => { editing.setSelectedId(item.clipId || ""); setInspTab("shot"); setMode("plan"); void player.seek(item.outStartUs, false); }}
                 onTrim=${editable && !commandPreview && !busy ? (id, field, seconds) => editing.ops.trim(id, field, seconds) : null}
                 project=${project} sourceGainDb=${editable ? editing.audio?.mix?.sourceGainDb ?? 0 : 0}
-                envelope=${editable && !commandPreview && !busy ? {points: editing.audio.mix.sourceEnvelope || [], fps, totalFrames: Math.round(player.totalUs * fps / 1e6), onChange: editing.ops.envelope} : null} />
+                envelope=${editable && !commandPreview && !busy ? {points: editing.audio.mix.sourceEnvelope || [], fps, totalFrames: Math.round(player.totalUs * fps / 1e6), onChange: editing.ops.envelope} : null}
+                fps=${fps} cues=${captionPreview.cues} captionStatus=${captionPreview.status}
+                onSeek=${(us) => void player.seek(us, false)}
+                onOpenCaption=${(clipId) => { setInspTab("shot"); setMode("plan"); if (clipId) editing.setSelectedId(clipId); }}
+                narrationMove=${editable && !commandPreview && !busy && editing.status === "ready" && editing.audio?.narration && editing.audio?.asset ? {startFrame: editing.audio.narration.startFrame, durationSeconds: editing.audio.asset.durationSeconds, sampleCount: editing.audio.asset.sampleCount, sampleRate: editing.audio.asset.sampleRate, problem: narrationProblem(editing.audio, player.totalUs, fps), onMove: (frame) => editing.ops.narrationStart(frame), onStopPlayer: () => player.stop(), onCommitPreview: (frame) => void player.seek((frame / fps) * 1e6, true), editEpoch: editing.editEpoch, assetJobId: editing.audio.asset.assetJobId, receiptSha256: editing.audio.asset.receiptSha256, status: editing.status} : null}
+                scope=${`${project}:${editing.base?.jobId}:${editing.base?.planId}`} />
+
         </div>
         <aside class="panel" hidden=${!layout.insp} aria-label="检查器">
             <div class="panel-head">检查器</div>
@@ -431,6 +523,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                         <label class="form-row">尺寸<select class="select" value=${size} onChange=${(e) => setSize(e.currentTarget.value)}><option value="1280,720">横屏 1280×720</option><option value="720,1280">竖屏 720×1280</option></select></label>
                         <p role="status" aria-label="字幕预览状态">${captionPreview.status}</p>
                         <label class="form-row">字幕<select class="select" value=${subtitles} onChange=${(e) => setSubtitles(e.currentTarget.value)}><option value="none">不加字幕</option><option value="sidecar">导出 SRT</option><option value="burn">烧入并导出 SRT</option></select></label>
+                        ${subtitles !== "none" ? html`<${WordHighlightSwitch} project=${project} draft=${wordHighlight} onChange=${setWordHighlight} />` : null}
                         ${subtitles === "burn" ? html`<label class="form-row">字幕样式<select class="select" value=${subtitleStyle} onChange=${(e) => setSubtitleStyle(e.currentTarget.value)}><option value="standard">标准（白字细描边）</option><option value="large">大字（手机更清楚）</option><option value="boxed">半透明底框</option></select></label>` : null}
                     </div>
                 </div>
@@ -532,51 +625,6 @@ function PlanCard({plan, fps, active, thumb, onPick, onFind = () => {}}) {
 // J1 2026-11-11: drag the selected shot's edges to trim it, as in PR/AE. Dragging moves the
 // source in/out point; the trim operation clamps to the shot's source bounds and one drag is
 // one undo step.
-function trimDrag(event, item, field, scale, onTrim) {
-    event.preventDefault(); event.stopPropagation();
-    const handle = event.currentTarget, x0 = event.clientX, base = item[field], rate = item.rate || 1;
-    handle.setPointerCapture?.(event.pointerId);
-    const move = (e) => onTrim(item.clipId, field, (base + (e.clientX - x0) / scale * rate) / 1e6);
-    const end = () => { handle.removeEventListener("pointermove", move); handle.removeEventListener("pointerup", end); handle.removeEventListener("pointercancel", end); };
-    handle.addEventListener("pointermove", move); handle.addEventListener("pointerup", end); handle.addEventListener("pointercancel", end);
-}
-
-function ProgramTrack({items, totalUs, outUs, thumb, selectedId, changed, preview, lanes = [], onLane, onPick, onTrim = null, project = "", sourceGainDb = 0, envelope = null}) {
-    const area = useRef(null);
-    const [width, setWidth] = useState(800);
-    useEffect(() => {
-        const observer = new ResizeObserver(([entry]) => setWidth(Math.max(200, entry.contentRect.width - 24)));
-        if (area.current) observer.observe(area.current); return () => observer.disconnect();
-    }, []);
-    const scale = totalUs ? width / totalUs : 0;
-    const hint = preview ? `一句话修改预览：高亮的是会变化的镜头（共 ${items.length} 个）` : `${items.length} 个镜头 · 点选一个后拖动两端可裁剪，也可调速、换顺序；Delete 删除`;
-    const chosen = onTrim && scale ? items.find((item) => item.clipId && item.clipId === selectedId) : null;
-    return html`<section class="timeline" aria-label="方案时间轴">
-        <div class="panel-head">时间轴<span class="track-label">${items.length ? hint : ""}</span></div>
-        <div class="track-area" ref=${area}>
-            ${items.length ? html`<div class="track program">
-                ${items.map((item, index) => {
-                    const src = thumb(item), speed = item.rate && item.rate !== 1 ? item.rate : null;
-                    return html`<button class=${`clip${changed.has(item.clipId) ? " changed" : ""}`} aria-current=${!!item.clipId && item.clipId === selectedId}
-                        style=${{left: `${item.outStartUs * scale}px`, width: `${Math.max(3, item.outDurUs * scale - 1)}px`, backgroundImage: src ? `url("${src}")` : "none"}}
-                        title=${`第 ${index + 1} 个镜头 · ${timecode(item.outStartUs)} · ${(item.outDurUs / 1e6).toFixed(1)} 秒${speed ? ` · ${speed}×` : ""} · ${item.scriptDraft || ""}`} onClick=${() => onPick(item)}>
-                        <span class="clip-no">${index + 1}</span>${speed ? html`<span class="clip-speed">${speed}×</span>` : null}</button>`;
-                })}
-                ${chosen ? ["startUs", "endUs"].map((field) => html`<div class=${`trim-handle ${field === "startUs" ? "in" : "out"}`} role="slider" aria-label=${field === "startUs" ? "拖动裁剪入点" : "拖动裁剪出点"}
-                    aria-valuenow=${(chosen[field] / 1e6).toFixed(2)} title="拖动裁剪；松开即生效，可撤销"
-                    style=${{left: `${(chosen.outStartUs + (field === "startUs" ? 0 : chosen.outDurUs)) * scale}px`}}
-                    onPointerDown=${(e) => trimDrag(e, chosen, field, scale, onTrim)}></div>`) : null}
-                <div class="playhead" style=${{left: `${outUs * scale}px`}}></div>
-            </div>` : html`<p class="note">选中方案后，镜头按成片顺序排在这里。</p>`}
-            ${items.length ? html`<${WaveLane} project=${project} items=${items} scale=${scale} gainDb=${sourceGainDb}
-                envelope=${envelope ? {...envelope, pxPerFrame: scale * 1e6 / envelope.fps} : null} />` : null}
-            ${items.length ? lanes.map((lane) => html`<button class=${`lane ${lane.kind}`} title=${`${lane.label} · 点击打开“声音”`} onClick=${onLane}>
-                ${lane.durUs ? html`<span class="bar" style=${{left: `${lane.startUs * scale}px`, width: `${Math.max(3, Math.min(lane.durUs, totalUs - lane.startUs) * scale)}px`}}>${lane.label}</span>`
-                    : html`<span class="lane-empty">${lane.label}</span>`}</button>`) : null}
-        </div>
-    </section>`;
-}
-
 function PlanInspector({plan, groups, count, totalUs, shot}) {
     return html`
         <div class="field"><div class="k">方案</div><div class="v">${plan.structure}</div></div>

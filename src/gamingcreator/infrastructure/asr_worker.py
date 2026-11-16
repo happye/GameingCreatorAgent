@@ -1,16 +1,24 @@
 """One offline inference invocation. Never import native model packages in the parent process."""
+# ruff: noqa: I001
 
-import ctypes
-import json
-import os
 import sys
-import time
-from contextlib import ExitStack, redirect_stdout
 from pathlib import Path
-from typing import cast
 
-from gamingcreator.application.asr import ModelFile
-from gamingcreator.infrastructure.asr_runtime import loaded_runtime_libraries, verify_native
+# Isolated worker starts with -I, so PYTHONPATH is ignored. When this file lives in a
+# source checkout, put that checkout first so the worker matches the calling tree.
+_SRC = Path(__file__).resolve().parents[2]
+if _SRC.name == "src":
+    sys.path.insert(0, str(_SRC))
+
+import ctypes  # noqa: E402
+import json  # noqa: E402
+import os  # noqa: E402
+import time  # noqa: E402
+from contextlib import ExitStack, redirect_stdout  # noqa: E402
+from typing import cast  # noqa: E402
+
+from gamingcreator.application.asr import ModelFile  # noqa: E402
+from gamingcreator.infrastructure.asr_runtime import loaded_runtime_libraries, verify_native  # noqa: E402
 
 WORKER_SCHEMA = "local-asr-worker-v1"
 MAX_SEGMENTS = 10000
@@ -20,7 +28,7 @@ def _read_request(path: Path) -> dict[str, object]:
     if path.stat().st_size > 1024 * 1024:
         raise ValueError("Request limit.")
     value = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(value, dict) or set(value) != {
+    required = {
         "schema",
         "audioPath",
         "modelDirectory",
@@ -35,9 +43,16 @@ def _read_request(path: Path) -> dict[str, object]:
         "vadFilter",
         "language",
         "gameTerms",
-    }:
+    }
+    if (
+        not isinstance(value, dict)
+        or not required <= set(value)
+        or set(value) - required - {"wordTimestamps"}
+    ):
         raise ValueError("Request schema.")
     request = cast(dict[str, object], value)
+    if request.get("wordTimestamps") not in (None, True, False):
+        raise ValueError("Request values.")
     if (
         request["schema"] != WORKER_SCHEMA
         or any(
@@ -73,7 +88,9 @@ def _read_request(path: Path) -> dict[str, object]:
     return request
 
 
-def _infer(request: dict[str, object], readiness_path: Path | None = None) -> dict[str, object]:
+def _infer(  # noqa: C901
+    request: dict[str, object], readiness_path: Path | None = None
+) -> dict[str, object]:
     started = time.monotonic()
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
@@ -117,20 +134,42 @@ def _infer(request: dict[str, object], readiness_path: Path | None = None) -> di
         except Exception:
             return {"schema": WORKER_SCHEMA, "status": "failed", "code": "asr.model_load"}
         try:
-            segments, information = model.transcribe(
-                str(request["audioPath"]),
-                language=None if request["language"] == "auto" else str(request["language"]),
-                beam_size=cast(int, request["beamSize"]),
-                vad_filter=cast(bool, request["vadFilter"]),
-                hotwords=", ".join(cast(list[str], request["gameTerms"])) or None,
-            )
+            word_mode = request.get("wordTimestamps") is True
+            if word_mode:
+                segments, information = model.transcribe(
+                    str(request["audioPath"]),
+                    language=None if request["language"] == "auto" else str(request["language"]),
+                    beam_size=cast(int, request["beamSize"]),
+                    vad_filter=cast(bool, request["vadFilter"]),
+                    hotwords=", ".join(cast(list[str], request["gameTerms"])) or None,
+                    word_timestamps=True,
+                )
+            else:
+                segments, information = model.transcribe(
+                    str(request["audioPath"]),
+                    language=None if request["language"] == "auto" else str(request["language"]),
+                    beam_size=cast(int, request["beamSize"]),
+                    vad_filter=cast(bool, request["vadFilter"]),
+                    hotwords=", ".join(cast(list[str], request["gameTerms"])) or None,
+                )
             rows: list[dict[str, object]] = []
+            words: list[dict[str, object]] = []
             for segment in segments:
                 if len(rows) >= MAX_SEGMENTS:
                     raise ValueError("Segment limit.")
                 rows.append(
                     {"start": str(segment.start), "end": str(segment.end), "text": segment.text}
                 )
+                if word_mode:
+                    for word in getattr(segment, "words", None) or ():
+                        text = getattr(word, "word", None)
+                        if text is None:
+                            text = getattr(word, "text", None)
+                        start = getattr(word, "start", None)
+                        end = getattr(word, "end", None)
+                        if text is None or start is None or end is None:
+                            continue
+                        words.append({"start": str(start), "end": str(end), "text": text})
                 if len(rows) == 1 and readiness_path is not None:
                     temporary = readiness_path.with_suffix(".tmp")
                     temporary.write_text(
@@ -149,7 +188,7 @@ def _infer(request: dict[str, object], readiness_path: Path | None = None) -> di
             libraries = loaded_runtime_libraries(Path(str(request["repository"])))
         except Exception:
             return {"schema": WORKER_SCHEMA, "status": "failed", "code": "asr.inference"}
-    return {
+    result = {
         "schema": WORKER_SCHEMA,
         "status": "completed",
         "model": request["model"],
@@ -159,6 +198,9 @@ def _infer(request: dict[str, object], readiness_path: Path | None = None) -> di
         "segments": rows,
         "nativeLibraries": libraries,
     }
+    if request.get("wordTimestamps") is True:
+        result["words"] = words
+    return result
 
 
 def main() -> None:

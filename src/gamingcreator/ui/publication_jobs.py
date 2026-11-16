@@ -8,6 +8,7 @@ from typing import Any
 
 from gamingcreator.application.creation_modes import MODE_LABELS
 from gamingcreator.cli.creation_render import read_creation
+from gamingcreator.domain.publication import user_input_message as user_input_message  # noqa: F401
 from gamingcreator.domain.publication import validate_metadata
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.infrastructure.publication_assets import extract_cover, validate_png

@@ -20,7 +20,11 @@ from gamingcreator.application.creation_replacements import (
     candidate_manifest_sha,
     validate_revision_v4,
 )
-from gamingcreator.application.creation_subtitles import build_subtitles, validate_override_text
+from gamingcreator.application.creation_subtitles import (
+    build_subtitles,
+    present_subtitles,
+    validate_override_text,
+)
 from gamingcreator.application.edit_decision import select_edit_decision
 from gamingcreator.application.narration import NarrationArtifact
 from gamingcreator.application.providers import CancellationContext
@@ -401,6 +405,16 @@ async def render_revision(
     )
     mode = request.get("subtitleMode", "none")
     cues = revision_subtitles(chain, mode)
+    reserved = [
+        index
+        for index, row in enumerate(editable_clips(chain.edl, chain.root_sha))
+        if any(item["clipId"] == row["clipId"] for item in chain.subtitle_overrides)
+    ]
+    from gamingcreator.infrastructure.asr_words import resolve_word_burn_cues
+
+    burn_cues = await resolve_word_burn_cues(
+        project, chain.plan, cues, request, reserved_clip_indexes=reserved
+    )
     narration_kwargs: dict[str, Any] = {}
     if chain.narration is not None:
         narration_kwargs = {
@@ -428,6 +442,7 @@ async def render_revision(
         **narration_kwargs,
         watermark=watermark,
         presentation=PresentationOptions.from_request(request),
+        burn_cues=burn_cues,
     )
 
 
@@ -473,12 +488,15 @@ def revision_subtitles(chain: Chain, mode: str) -> tuple[SubtitleCue, ...]:
     return (
         ()
         if mode == "none"
-        else build_subtitles(
-            chain.plan,
-            (),
-            per_clip=(runs[row["runId"]].transcripts for row in chain.edl["segments"]),
-            overrides=(
-                overrides.get(row["clipId"]) for row in editable_clips(chain.edl, chain.root_sha)
-            ),
-        )
+        else present_subtitles(
+            build_subtitles(
+                chain.plan,
+                (),
+                per_clip=(runs[row["runId"]].transcripts for row in chain.edl["segments"]),
+                overrides=(
+                    overrides.get(row["clipId"])
+                    for row in editable_clips(chain.edl, chain.root_sha)
+                ),
+            )
+        ).cues
     )

@@ -23,6 +23,10 @@ const REASONS = {
   axis_unstable: "浏览器播放位置在核对过程中发生了变化",
   axis_mismatch: "浏览器播放起点与保存的原片起点不一致",
   media_unavailable: "浏览器不能读取这段原片",
+  media_http_error: "浏览器不能读取这段原片",
+  media_decode_error: "浏览器不能读取这段原片",
+  media_error: "浏览器不能读取这段原片",
+  metadata_timeout: "浏览器不能读取这段原片",
   observation_invalid: "浏览器返回的原片时间信息不完整",
   clock_unavailable: "这段原片的时间不能建立浏览器映射",
 };

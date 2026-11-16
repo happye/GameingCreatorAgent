@@ -3,22 +3,25 @@
 import hashlib
 import json
 import threading
-from collections.abc import Sequence
 from pathlib import Path
 from typing import cast
 from uuid import uuid4
 
 from gamingcreator.application.ocr_frames import FullResolutionFrames, OcrEngine
+from gamingcreator.application.screen_text_reports import (
+    FRAME_TEXT_VERSION,
+    MAX_CACHED_REPORT_BYTES,
+    frames_digest,
+    scanned_frames,
+)
 from gamingcreator.cli.local_reports import load_saved_timeline
 from gamingcreator.cli.ocr_frames import build_run_ocr_report
 from gamingcreator.cli.shot_boundaries import saved_frames
 from gamingcreator.domain.errors import AppError, ExitCode
 
-FRAME_TEXT_VERSION = "frame-text-v1"
 DENSITIES = ("quick", "full")
 # "Quick" reads about one saved frame every two seconds; "full" reads every saved frame.
 QUICK_SPACING_MS = 2000
-MAX_CACHED_REPORT_BYTES = 16 * 1024 * 1024
 _busy: set[Path] = set()
 _busy_guard = threading.Lock()
 
@@ -36,18 +39,6 @@ def density_every(sampling_interval_ms: int, density: str) -> int:
     if density == "quick":
         return max(1, round(QUICK_SPACING_MS / sampling_interval_ms))
     raise AppError("input.frame_text", "识别密度须为quick或full。", ExitCode.INPUT)
-
-
-def frames_digest(frames: Sequence[tuple[str, int]]) -> str:
-    """Identity of the exact saved instants a report read, in order."""
-    return hashlib.sha256(
-        "".join(f"{evidence}\t{time_us}\n" for evidence, time_us in frames).encode()
-    ).hexdigest()
-
-
-def scanned_frames(saved: Sequence[tuple[str, int]], every: int) -> tuple[tuple[str, int], ...]:
-    """The saved frames a scan with this step reads, in the order the OCR report lists them."""
-    return tuple(sorted(saved, key=lambda item: (item[1], item[0])))[::every]
 
 
 def slim_report(report: dict[str, object], density: str) -> dict[str, object]:

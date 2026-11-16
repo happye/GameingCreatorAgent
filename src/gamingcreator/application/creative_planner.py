@@ -1,7 +1,11 @@
 """Pure template planner over explicitly loaded, verified saved timelines."""
 
+import hashlib
+import json
+from collections.abc import Sequence
 from dataclasses import dataclass
 from fractions import Fraction
+from typing import Any
 
 from gamingcreator.application.creation_feedback import (
     TRIM_TIP,
@@ -23,6 +27,76 @@ from gamingcreator.domain.time import SourceRange
 
 # Generic structures keep shots at two seconds or longer instead of slicing every event.
 GENERIC_SHOT_SECONDS = 2
+
+
+def segment_content_key(segment: dict[str, object]) -> tuple[str, str, int, int, int]:
+    """Run, footage hash, source span and output length of one final renderable clip."""
+    start_us, end_us, output_frames = (
+        segment["startUs"],
+        segment["endUs"],
+        segment["outputFrames"],
+    )
+    if type(start_us) is not int or type(end_us) is not int or type(output_frames) is not int:
+        raise TypeError("片段时钟字段不是整数。")
+    return (
+        str(segment["runId"]),
+        str(segment["sourceSha256"]),
+        start_us,
+        end_us,
+        output_frames,
+    )
+
+
+def plan_content_signature(segments: Sequence[dict[str, object]]) -> str:
+    """Identity of the ordered final segments. Template names, IDs and filenames do not count."""
+    payload = [
+        {
+            "runId": run_id,
+            "sourceSha256": source,
+            "startUs": start,
+            "endUs": end,
+            "outputFrames": frames,
+        }
+        for run_id, source, start, end, frames in (segment_content_key(row) for row in segments)
+    ]
+    return hashlib.sha256(
+        json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def unique_rule_plans(plans: Sequence[dict[str, object]]) -> list[dict[str, object]]:
+    """Drop later candidates with the same final content. Incoming preference order is kept."""
+    seen: set[str] = set()
+    kept: list[dict[str, object]] = []
+    for plan in plans:
+        signature = str(plan["contentSignature"])
+        if signature in seen:
+            continue
+        seen.add(signature)
+        kept.append(plan)
+    return kept
+
+
+def distinct_source_intervals(clips: Sequence[Any]) -> int:
+    """Count usable source ranges, not template names or run copies of the same interval."""
+    return len({(clip.asset.sha256, clip.framing.start_us, clip.framing.end_us) for clip in clips})
+
+
+def candidate_count_reason(
+    plans: Sequence[dict[str, object]], distinct_intervals: int
+) -> str | None:
+    """Explain why fewer than three content-distinct rule plans remain; never invent a pad."""
+    count = len(plans)
+    if count >= 3:
+        return None
+    no_pad = "不会用重复画面、缩短时长或丢掉观察点来凑满 3 套。"
+    if distinct_intervals <= 0:
+        return f"没有可用的不同素材，所以现在只有 {count} 套方案。{no_pad}"
+    if distinct_intervals < 3:
+        return (
+            f"可用素材只有 {distinct_intervals} 条不同内容，最多只能给出 {count} 套方案。{no_pad}"
+        )
+    return f"按最终可渲染内容去重后只剩 {count} 套不同方案。{no_pad}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -408,6 +482,7 @@ def plan_creation(
                 "id": identity,
                 "structure": description,
                 "segments": segments,
+                "contentSignature": plan_content_signature(segments),
                 "gaps": gaps,
                 "ready": not gaps,
                 "advisories": [
@@ -432,6 +507,8 @@ def plan_creation(
                 ),
             }
         )
+    kept = unique_rule_plans(plans)
+    reason = candidate_count_reason(kept, distinct_source_intervals(eligible))
     return {
         "schemaVersion": "creation-plan-v1",
         "planner": "offline-template-v1",
@@ -453,5 +530,6 @@ def plan_creation(
             ),
         },
         "fps": fps,
-        "plans": plans,
+        "plans": kept,
+        **({"candidateCountReason": reason} if reason else {}),
     }

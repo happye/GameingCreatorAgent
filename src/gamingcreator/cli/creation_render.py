@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from gamingcreator.application.creation_subtitles import build_subtitles
+from gamingcreator.application.creation_subtitles import build_subtitles, present_subtitles
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.rendering import validate_render_plan
 from gamingcreator.domain.creation_presentation import PresentationOptions
@@ -61,6 +61,8 @@ async def execute_render_creation(
     subtitle_mode: str = "none",
     watermark: str | None = None,
     presentation: PresentationOptions | None = None,
+    word_run_id: str | None = None,
+    word_result_hash: str | None = None,
 ) -> dict[str, object]:
     try:
         if subtitle_mode not in ("none", "sidecar", "burn"):
@@ -90,10 +92,23 @@ async def execute_render_creation(
         cues = (
             ()
             if subtitle_mode == "none"
-            else build_subtitles(
-                plan, (), per_clip=(runs[row["runId"]].transcripts for row in rows)
-            )
+            else present_subtitles(
+                build_subtitles(plan, (), per_clip=(runs[row["runId"]].transcripts for row in rows))
+            ).cues
         )
+        burn_cues = None
+        if subtitle_mode == "burn" and word_run_id and word_result_hash:
+            from gamingcreator.infrastructure.asr_words import load_trusted_asr_words
+
+            words = await load_trusted_asr_words(project, word_run_id, word_result_hash)
+            burned = present_subtitles(
+                cues,
+                words=words,
+                sidecar_available=words is not None,
+                plan=plan,
+            )
+            if burned.word_highlights:
+                burn_cues = burned.cues
         return await renderer.render(
             plan,
             output,
@@ -106,6 +121,7 @@ async def execute_render_creation(
             subtitle_mode,
             watermark=watermark,
             presentation=presentation,
+            burn_cues=burn_cues,
         )
     except (ValueError, OSError, KeyError, TypeError, StopIteration) as error:
         raise AppError("creation.render_invalid", str(error), ExitCode.INPUT) from error

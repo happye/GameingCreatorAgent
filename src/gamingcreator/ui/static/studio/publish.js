@@ -5,6 +5,7 @@ import {h} from "../vendor/preact.module.js";
 import {useCallback, useEffect, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
+import {publicationErrorFields, publicationFieldErrors} from "./publication_form.js";
 
 const html = htm.bind(h);
 const PLATFORMS = {bilibili: "B站", douyin: "抖音", kuaishou: "快手", xiaohongshu: "小红书"};
@@ -25,10 +26,12 @@ function grabFrame(video, width = 240) {
 }
 function useCoverCandidates(src, frames, fps) {
     const [thumbs, setThumbs] = useState([]);
+    const generation = useRef(0);
     useEffect(() => {
+        const mine = ++generation.current;
+        const live = () => generation.current === mine;
         setThumbs([]);
         if (!src || !frames) return;
-        let cancelled = false;
         const video = document.createElement("video");
         video.muted = true; video.preload = "auto"; video.src = src;
         const seek = (frame) => new Promise((resolve, reject) => { video.onseeked = resolve; video.onerror = reject; video.currentTime = (frame + 0.5) / fps; });
@@ -36,11 +39,13 @@ function useCoverCandidates(src, frames, fps) {
             const found = [];
             for (const frame of [...new Set(COVER_POINTS.map((r) => Math.min(frames - 1, Math.floor(frames * r))))]) {
                 try { await seek(frame); } catch { return; }
-                if (cancelled) return;
-                found.push({frame, url: grabFrame(video)}); setThumbs([...found]);
+                if (!live()) return;
+                found.push({frame, url: grabFrame(video), src});
+                setThumbs((rows) => live() ? [...found] : rows);
             }
         }, {once: true});
-        return () => { cancelled = true; video.removeAttribute("src"); video.load(); };
+        video.addEventListener("error", () => { if (live()) setThumbs([]); });
+        return () => { if (live()) generation.current++; video.removeAttribute("src"); video.load(); };
     }, [src, frames, fps]);
     return thumbs;
 }
@@ -116,6 +121,7 @@ function CoverField({savedSrc, preview, thumbs, coverFrame, fps, onPick}) {
     return html`<div class="field cover-field"><div class="k">封面（保存前可选）</div>
         ${shown ? html`<img class="cover" src=${shown} alt="封面" />` : html`<p class="hint">选下面一张，或在预览里停到想要的画面后点“用当前画面做封面”。</p>`}
         <div class="cover-picks" aria-label="封面候选">${thumbs.map((t) => html`<button type="button" class="cover-pick" aria-pressed=${t.frame === coverFrame}
+            data-video-src=${t.src || ""}
             title=${`第 ${t.frame} 帧（${(t.frame / fps).toFixed(1)} 秒）`} onClick=${() => onPick(t.frame, t.url)}><img src=${t.url} alt=${`封面候选 ${(t.frame / fps).toFixed(1)} 秒`} /></button>`)}</div>
         <p class="hint">好封面：人物或技能特写、画面清晰不糊、没有转场残影；横版 16:9，留出放标题的位置。</p></div>`;
 }
@@ -139,6 +145,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     useEffect(() => () => { epoch.current++; polling.current.abort(); }, []);
     const [busy, setBusy] = useState("");
     const [message, setMessage] = useState("");
+    const [fieldError, setFieldError] = useState({});
     const video = useRef(null);
     const [coverPreview, setCoverPreview] = useState("");
 
@@ -151,7 +158,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
         if (changedProject && open === shownOpen.current) rejectedOpen.current = open;
         if (open !== rejectedOpen.current && open && ["render", "publication", "package"].includes(open.kind)) void show(open.id, open.kind);
         else if ((!renderId || shownProject.current !== project) && renders[0]) void show(renders[0].jobId, "render");
-        else if (changedProject) { setPub(null); setPackages([]); setRenderId(""); setBusy(""); setMessage(""); }
+        else if (changedProject) { setPub(null); setPackages([]); setRenderId(""); setBusy(""); setMessage(""); setFieldError({}); }
         shownProject.current = project; shownOpen.current = open;
     }, [open, project, renders.length]);
 
@@ -159,7 +166,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
         polling.current.abort(); polling.current = new AbortController();
         const generation = ++epoch.current;
         const current = () => generation === epoch.current;
-        setMessage(""); setPackages([]); setPub(null); setBusy(""); setCoverPreview("");
+        setMessage(""); setFieldError({}); setPackages([]); setPub(null); setBusy(""); setCoverPreview("");
         try {
             let publicationId = id;
             if (kind === "package") { const data = await client.api(`${jobPath(id)}/package`); if (!current()) return; publicationId = data.publicationJobId; }
@@ -187,6 +194,10 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
         if (!pub) return;
         const generation = epoch.current;
         const current = () => generation === epoch.current;
+        const rawTags = form.tags.split(/[,，\n]/).map((t) => t.trim()).filter(Boolean);
+        const next = publicationFieldErrors({title: form.title.trim(), description: form.description, tags: rawTags});
+        if (Object.keys(next).length) { setFieldError(next); setMessage(""); return; }
+        setFieldError({});
         setBusy("publication"); setMessage("正在保存发布信息并截取封面…");
         try {
             const accepted = await client.submit("publication", {renderJobId: pub.renderJobId, expectedRenderReceiptSha256: pub.expectedRenderReceiptSha256,
@@ -198,7 +209,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
             client.forgetIntent("publication"); onWorksChanged();
             setBusy("");
             const shown = await show(done.jobId, "publication"); if (epoch.current !== shown) return; setMessage("已保存。可以生成平台包了。");
-        } catch (error) { if (current()) setMessage(error.message); } finally { if (current()) setBusy(""); }
+        } catch (error) { if (current()) { const shown = publicationErrorFields(error.message); setFieldError(shown.fields); setMessage(shown.message); } } finally { if (current()) setBusy(""); }
     };
     const restore = async (snapshot, generation) => {
         const data = await client.api(`${jobPath(snapshot.publicationJobId)}/packages`, {projectId: project});
@@ -215,8 +226,16 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
         return data.jobs;
     };
     const loadDetail = async (row, generation) => {
-        const data = await client.api(`${jobPath(row.jobId)}/package`);
-        if (generation === epoch.current) setPackages((rows) => rows.map((r) => r.jobId === row.jobId ? {...r, ...data} : r));
+        try {
+            const data = await client.api(`${jobPath(row.jobId)}/package`);
+            if (generation === epoch.current) setPackages((rows) => rows.map((r) => r.jobId === row.jobId ? {...r, ...data, error: undefined} : r));
+        } catch (error) {
+            if (generation === epoch.current) {
+                setPackages((rows) => rows.map((r) => r.jobId === row.jobId ? {...r, generationStatus: "", artifacts: undefined, error: {code: error.code || "creation.artifact_invalid", message: error.message}} : r));
+                setMessage(error.message);
+            }
+            throw error;
+        }
     };
     const buildPackage = async (retry = null) => {
         if (!pub?.publicationJobId) return;
@@ -309,7 +328,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                     ${packages.map((pkg) => html`<div class="pkg-result">
                         <p>${PLATFORMS[pkg.profile?.Platform] || ""} · ${client.jobStatus(pkg.status)} ${pkg.error?.message || ""}</p>
                         ${["failed", "interrupted"].includes(pkg.status) && html`<button class="btn ghost" disabled=${!!busy || !saved} onClick=${() => buildPackage(pkg)}>重试此平台</button>`}
-                        ${pkg.generationStatus && html`<div>
+                        ${pkg.generationStatus === "completed" && !pkg.error && html`<div>
                         <p class="v">${PLATFORMS[pkg.profile?.Platform] || ""}：${pkg.generationStatus === "completed" ? "已生成" : "未完成"}；本地检查${STATUS[pkg.localChecks] || "未知"}${pkg.publicationEligibility === "blocked" ? "；发布受阻（含仅供测试的音乐等）" : ""}${pkg.watermark ? "；含水印" : ""}。平台官方规则、素材权利尚未核实。</p>
                         <p class="hint">${Object.entries(pkg.validation?.checks || {}).map(([k, s]) => `${CHECKS[k] || k}：${STATUS[s] || "未知"}`).join("　")}</p>
                         <div class="actions-row"><a class="btn" href=${`${jobPath(pkg.jobId)}/package-files/package.zip?download=1`} download="package.zip">下载平台包（zip）</a>
@@ -327,9 +346,9 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                     <p class="hint">${pub.publicationJobId ? (dirty ? "有未保存的修改" : "已保存的版本") : "按需求自动起草的模板，请改一遍再保存。"}</p>
                     <${AiCopy} key=${pub.renderJobId} renderJobId=${pub.renderJobId} disabled=${!!busy}
                         onCopy=${(copy) => setForm((f) => ({...f, title: copy.title, description: copy.description, tags: copy.tags.join("，")}))} />
-                    <label class="form-row">标题（${form.title.length} 字）<input class="input" value=${form.title} maxLength="200" onInput=${(e) => setForm({...form, title: e.currentTarget.value})} /></label>
-                    <label class="form-row">简介（${form.description.length} 字）<textarea class="input" rows="6" value=${form.description} onInput=${(e) => setForm({...form, description: e.currentTarget.value})}></textarea></label>
-                    <label class="form-row">标签（逗号分隔，${tagList(form.tags).length} 个）<input class="input" value=${form.tags} onInput=${(e) => setForm({...form, tags: e.currentTarget.value})} /></label>
+                    <label class="form-row">标题（${form.title.length} 字）<input class="input" value=${form.title} maxLength="200" onInput=${(e) => { setForm({...form, title: e.currentTarget.value}); setFieldError((cur) => ({...cur, title: ""})); }} />${fieldError.title ? html`<p class="hint" data-field="title">${fieldError.title}</p>` : null}</label>
+                    <label class="form-row">简介（${form.description.length} 字）<textarea class="input" rows="6" value=${form.description} onInput=${(e) => { setForm({...form, description: e.currentTarget.value}); setFieldError((cur) => ({...cur, description: ""})); }}></textarea>${fieldError.description ? html`<p class="hint" data-field="description">${fieldError.description}</p>` : null}</label>
+                    <label class="form-row">标签（逗号分隔，${tagList(form.tags).length} 个）<input class="input" value=${form.tags} onInput=${(e) => { setForm({...form, tags: e.currentTarget.value}); setFieldError((cur) => ({...cur, tags: ""})); }} />${fieldError.tags ? html`<p class="hint" data-field="tags">${fieldError.tags}</p>` : null}</label>
                     <p class="hint">简介里可以补一句作者的话和相关链接（官网、下载、活动页）。</p>
                     <${CoverField} savedSrc=${coverSrc} preview=${coverPreview} thumbs=${thumbs} coverFrame=${form.coverFrame} fps=${fps}
                         onPick=${(frame, url) => { setForm({...form, coverFrame: frame}); setCoverPreview(url); }} />

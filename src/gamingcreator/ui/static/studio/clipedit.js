@@ -57,6 +57,7 @@ export function useClipEditor(project, workId = null) {
     const drafts = useClipDrafts(state, project, workId, {audio: audioOf(state.editor || {}), ...overlaysOf(state.editor || {})}, keptCaptions, [SPEEDS, clipFrames, transitionProblem]);
     const current = useRef(state); current.current = state;
     const overlayEpoch = useRef(0), restoreEpoch = useRef(0);
+    const editEpoch = useRef(0);
     // Step undo/redo of local edits (not saved versions): snapshots of the editable fields.
     const history = useRef({past: [], future: [], key: null});
     const snap = (s) => ({clips: s.clips, subtitleOverrides: s.subtitleOverrides, audio: s.audio, overlays: s.overlays, overlayAssets: s.overlayAssets, bounds: s.bounds, replacements: s.replacements, dirty: s.dirty});
@@ -65,6 +66,7 @@ export function useClipEditor(project, workId = null) {
     const edit = useCallback((updater, key = null) => { restoreEpoch.current++; return setState((s) => {
         const next = updater(s);
         if (next === s || s.status !== "ready") return next;
+        editEpoch.current += 1;
         const h = history.current;
         if (!(key && h.key === key)) h.past = [...h.past.slice(-49), snap(s)];
         h.future = []; h.key = key;
@@ -77,6 +79,7 @@ export function useClipEditor(project, workId = null) {
     useLayoutEffect(() => {
         loading.current += 1;
         overlayEpoch.current += 1;
+        editEpoch.current += 1;
         setState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), ...captionsOf({}), bounds: {}, replacements: {}, dirty: false});
         setCandidates(null); setSelectedId(""); clearHistory();
         return () => { loading.current += 1; };
@@ -86,6 +89,7 @@ export function useClipEditor(project, workId = null) {
         drafts.invalidate();
         const generation = ++loading.current;
         overlayEpoch.current += 1;
+        editEpoch.current += 1;
         setState((s) => ({...s, status: "loading"})); setSelectedId("");
         try {
             const editor = await client.api(`/api/creation/jobs/${encodeURIComponent(jobId)}/edit`, {planId});
@@ -132,7 +136,14 @@ export function useClipEditor(project, workId = null) {
             [clips[i], clips[j]] = [clips[j], clips[i]];
             return clips;
         }),
-        remove: (id) => change((clips) => (clips.length > 1 ? clips.filter((c) => c.clipId !== id) : clips)),
+        remove: (id) => {
+            const clips = current.current.clips;
+            if (clips.length <= 1) return;
+            const index = clips.findIndex((c) => c.clipId === id);
+            const remaining = clips.filter((c) => c.clipId !== id);
+            change((rows) => (rows.length > 1 ? rows.filter((c) => c.clipId !== id) : rows));
+            setSelectedId((currentId) => currentId === id ? (remaining[Math.min(Math.max(index, 0), remaining.length - 1)]?.clipId || "") : currentId);
+        },
         // A previewed one-line command: take its clip rows, keep everything else we know about each clip.
         apply: (newRows) => change((clips) => {
             const byId = new Map(clips.map((c) => [c.clipId, c]));
@@ -153,7 +164,13 @@ export function useClipEditor(project, workId = null) {
         }, key),
         overlays: (items, assets, expectedEpoch) => edit((s) => (s.status === "ready" && (expectedEpoch === undefined || expectedEpoch === overlayEpoch.current)
             ? {...s, overlays: items, overlayAssets: assets ?? s.overlayAssets, dirty: true} : s)),
-        narration: (selection, asset) => edit((s) => (s.status === "ready" ? {...s, audio: {...s.audio, narration: selection, asset: selection ? asset ?? s.audio.asset : null}, dirty: true} : s)),
+        narration: (selection, asset, key = null) => edit((s) => (s.status === "ready" ? {...s, audio: {...s.audio, narration: selection, asset: selection ? asset ?? s.audio.asset : null}, dirty: true} : s), key),
+        // Drag and keyboard only change the start; never write a closed-over asset or selection back.
+        narrationStart: (startFrame) => edit((s) => {
+            if (s.status !== "ready" || !s.audio?.narration || !s.audio?.asset) return s;
+            if (s.audio.narration.startFrame === startFrame) return s;
+            return {...s, audio: {...s.audio, narration: {...s.audio.narration, startFrame}}, dirty: true};
+        }),
         // Swap a clip's footage for another analysed clip of the same recordings (1x, cut in);
         // its length stays as close to the old one as the new clip allows.
         replace: (id, candidate) => edit((s) => {
@@ -176,15 +193,17 @@ export function useClipEditor(project, workId = null) {
             const h = history.current, previous = h.past.at(-1);
             if (!previous || s.status !== "ready") return s;
             h.past = h.past.slice(0, -1); h.future = [...h.future, snap(s)]; h.key = null;
+            editEpoch.current += 1;
             return {...s, ...previous};
         }); },
         redo: () => { restoreEpoch.current++; setState((s) => {
             const h = history.current, next = h.future.at(-1);
             if (!next || s.status !== "ready") return s;
             h.future = h.future.slice(0, -1); h.past = [...h.past, snap(s)]; h.key = null;
+            editEpoch.current += 1;
             return {...s, ...next};
         }); },
-        reset: () => { restoreEpoch.current++; overlayEpoch.current += 1; clearHistory(); setState((s) => (s.editor ? {...s, clips: normalize(s.editor), audio: audioOf(s.editor), ...overlaysOf(s.editor), ...captionsOf(s.editor), bounds: Object.fromEntries(normalize(s.editor).map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, dirty: false} : s)); },
+        reset: () => { restoreEpoch.current++; overlayEpoch.current += 1; editEpoch.current += 1; clearHistory(); setState((s) => (s.editor ? {...s, clips: normalize(s.editor), audio: audioOf(s.editor), ...overlaysOf(s.editor), ...captionsOf(s.editor), bounds: Object.fromEntries(normalize(s.editor).map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, dirty: false} : s)); },
     };
 
     const discardDraft = () => { restoreEpoch.current++; return drafts.discard(); };
@@ -253,7 +272,7 @@ export function useClipEditor(project, workId = null) {
         return done.jobId;
     }, [state, load, candidates]);
 
-    return {...state, drafts: {...drafts, discard: discardDraft}, restoreDraft, project, overlayEpoch: overlayEpoch.current, selectedId, setSelectedId, load, ops, save, candidates, loadCandidates, rows: () => rows(state.clips),
+    return {...state, drafts: {...drafts, discard: discardDraft}, restoreDraft, project, overlayEpoch: overlayEpoch.current, editEpoch: editEpoch.current, selectedId, setSelectedId, load, ops, save, candidates, loadCandidates, rows: () => rows(state.clips),
         canUndo: history.current.past.length > 0, canRedo: history.current.future.length > 0};
 }
 

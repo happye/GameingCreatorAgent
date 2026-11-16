@@ -7,12 +7,16 @@ import re
 import sys
 import time
 import wave
-from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal
+from decimal import Decimal
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from gamingcreator.application.asr import LocalAsrSettings
+from gamingcreator.application.asr_word_timing import map_wav_seconds_to_source
+
+if TYPE_CHECKING:
+    from gamingcreator.application.asr_word_timing import AsrWord
 from gamingcreator.application.providers import (
     AsrRequest,
     CancellationContext,
@@ -31,6 +35,7 @@ from gamingcreator.infrastructure.asr_runtime import verify_native
 from gamingcreator.infrastructure.media_process import run_media_process
 
 MODEL_FILES = frozenset({"config.json", "model.bin", "tokenizer.json", "vocabulary.txt"})
+WORKER_SCRIPT = Path(__file__).resolve().parent / "asr_worker.py"
 WORKER_SCHEMA = "local-asr-worker-v1"
 MAX_SEGMENTS = 10000
 
@@ -55,18 +60,6 @@ def _object(value: object) -> dict[str, object]:
     if not isinstance(value, dict) or any(not isinstance(key, str) for key in value):
         raise _AsrFailure("asr.response_invalid")
     return cast(dict[str, object], value)
-
-
-def _seconds(seconds: object, rate: int, max_samples: int) -> Decimal:
-    if type(seconds) not in (str, int, float):
-        raise _AsrFailure("asr.response_invalid")
-    try:
-        value = Decimal(str(seconds))
-        if not value.is_finite() or value < 0 or value > Decimal(max_samples) / rate:
-            raise _AsrFailure("asr.response_invalid")
-        return value
-    except (ArithmeticError, ValueError):
-        raise _AsrFailure("asr.response_invalid") from None
 
 
 class LocalAsrProvider:
@@ -229,6 +222,11 @@ class LocalAsrProvider:
     def _parse_output(
         self, output: bytes, request: AsrRequest
     ) -> tuple[tuple[TranscriptSegment, ...], int, str, list[dict[str, str]]]:
+        return self._parse_output_core(output, request, require_words=False)
+
+    def _parse_output_core(
+        self, output: bytes, request: AsrRequest, *, require_words: bool
+    ) -> tuple[tuple[TranscriptSegment, ...], int, str, list[dict[str, str]]]:
         try:
             result = _object(json.loads(output))
         except (ValueError, UnicodeError):
@@ -244,7 +242,7 @@ class LocalAsrProvider:
                 "asr.inference",
             }
             raise _AsrFailure(code if isinstance(code, str) and code in allowed else "asr.worker")
-        if set(result) != {
+        expected = {
             "schema",
             "status",
             "model",
@@ -253,7 +251,10 @@ class LocalAsrProvider:
             "elapsedMs",
             "segments",
             "nativeLibraries",
-        }:
+        }
+        if require_words:
+            expected = expected | {"words"}
+        if set(result) != expected:
             raise _AsrFailure("asr.response_invalid")
         rows, elapsed, language = result["segments"], result["elapsedMs"], result["language"]
         if (
@@ -292,18 +293,13 @@ class LocalAsrProvider:
             if set(row) != {"start", "end", "text"} or not isinstance(row["text"], str):
                 raise _AsrFailure("asr.response_invalid")
             text = row["text"].strip()
-            start_seconds = _seconds(row["start"], clock.sample_rate, clock.sample_count)
-            end_seconds = _seconds(row["end"], clock.sample_rate, clock.sample_count)
-            if start_seconds >= end_seconds:
-                raise _AsrFailure("asr.response_invalid")
-            start = int((start_seconds * clock.sample_rate).to_integral_value(rounding=ROUND_FLOOR))
-            end = int((end_seconds * clock.sample_rate).to_integral_value(rounding=ROUND_CEILING))
-            if not text or len(text) > 16384 or start < previous_start or end > clock.sample_count:
-                raise _AsrFailure("asr.response_invalid")
             try:
-                mapping = clock.map_interval(start, end, asset)
+                interval = map_wav_seconds_to_source(clock, asset, row["start"], row["end"])
             except ValueError:
                 raise _AsrFailure("asr.response_invalid") from None
+            start, mapping = interval.start_sample, interval.mapping
+            if not text or len(text) > 16384 or start < previous_start:
+                raise _AsrFailure("asr.response_invalid")
             uncertainty = None
             if mapping.uncertain:
                 uncertainty = json.dumps(
@@ -320,6 +316,35 @@ class LocalAsrProvider:
             )
             previous_start = start
         return tuple(segments), elapsed, language, native_libraries
+
+    def _worker_request_json(self, request: AsrRequest, *, word_timestamps: bool) -> str:
+        assert request.audio_evidence is not None
+        payload = {
+            "schema": WORKER_SCHEMA,
+            "audioPath": str(request.audio_evidence.artifact_path.resolve()),
+            "modelDirectory": str(self.settings.model_directory.resolve()),
+            "model": self.settings.model_name,
+            "revision": self.settings.model_revision,
+            "nativeDirectory": (
+                str(self.settings.native_library_directory.resolve())
+                if self.settings.native_library_directory is not None
+                else None
+            ),
+            "repository": str(self.repository),
+            "nativeFiles": [
+                {"name": item.name, "size": item.size, "sha256": item.sha256}
+                for item in self.settings.native_library_files
+            ],
+            "computeType": self.settings.compute_type,
+            "cpuThreads": self.settings.cpu_threads,
+            "beamSize": self.settings.beam_size,
+            "vadFilter": self.settings.vad_filter,
+            "language": request.language,
+            "gameTerms": list(request.game_terms),
+        }
+        if word_timestamps:
+            payload["wordTimestamps"] = True
+        return json.dumps(payload, ensure_ascii=False)
 
     async def transcribe(
         self, request: AsrRequest, context: CancellationContext
@@ -353,32 +378,7 @@ class LocalAsrProvider:
                 with TemporaryDirectory(dir=request_directory) as temporary:
                     request_path = Path(temporary) / "request.json"
                     request_path.write_text(
-                        json.dumps(
-                            {
-                                "schema": WORKER_SCHEMA,
-                                "audioPath": str(request.audio_evidence.artifact_path.resolve()),
-                                "modelDirectory": str(self.settings.model_directory.resolve()),
-                                "model": self.settings.model_name,
-                                "revision": self.settings.model_revision,
-                                "nativeDirectory": (
-                                    str(self.settings.native_library_directory.resolve())
-                                    if self.settings.native_library_directory is not None
-                                    else None
-                                ),
-                                "repository": str(self.repository),
-                                "nativeFiles": [
-                                    {"name": item.name, "size": item.size, "sha256": item.sha256}
-                                    for item in self.settings.native_library_files
-                                ],
-                                "computeType": self.settings.compute_type,
-                                "cpuThreads": self.settings.cpu_threads,
-                                "beamSize": self.settings.beam_size,
-                                "vadFilter": self.settings.vad_filter,
-                                "language": request.language,
-                                "gameTerms": list(request.game_terms),
-                            },
-                            ensure_ascii=False,
-                        ),
+                        self._worker_request_json(request, word_timestamps=False),
                         encoding="utf-8",
                     )
                     result = await run_media_process(
@@ -386,8 +386,7 @@ class LocalAsrProvider:
                             str(interpreter),
                             "-I",
                             "-B",
-                            "-m",
-                            "gamingcreator.infrastructure.asr_worker",
+                            str(WORKER_SCRIPT),
                             str(request_path),
                         ],
                         context,
@@ -402,6 +401,124 @@ class LocalAsrProvider:
             return ProviderResult(
                 ProviderStatus.COMPLETED if segments else ProviderStatus.NO_SPEECH,
                 segments,
+                self._metadata(
+                    request,
+                    start,
+                    actual_model=self.settings.model_name,
+                    worker_elapsed_ms=elapsed,
+                    language=language,
+                    native_libraries=libraries,
+                ),
+            )
+        except asyncio.CancelledError:
+            return ProviderResult(
+                ProviderStatus.CANCELLED,
+                None,
+                self._metadata(request, start),
+                ProviderFailure("asr.cancelled", False),
+            )
+        except TimeoutError:
+            code = "asr.timeout"
+        except _AsrFailure as error:
+            code = error.code
+        except AppError as error:
+            code = {
+                "input.media_decode": "asr.worker_exit",
+                "environment.media_tool": "asr.runtime_unavailable",
+                "media.timeout": "asr.timeout",
+                "media.output_limit": "asr.output_limit",
+            }.get(error.code, "asr.worker")
+        except (OSError, ValueError):
+            code = "asr.input_invalid"
+        return ProviderResult(
+            ProviderStatus.FAILED,
+            None,
+            self._metadata(request, start),
+            ProviderFailure(code, False),
+        )
+
+    def _parse_word_output(
+        self, output: bytes, request: AsrRequest
+    ) -> tuple[tuple["AsrWord", ...], int, str, list[dict[str, str]]]:
+        from gamingcreator.application.asr_word_timing import (
+            collect_worker_words,
+            map_worker_words_to_source,
+            stitch_window_words,
+            validate_worker_words,
+        )
+
+        segments, elapsed, language, libraries = self._parse_output_core(
+            output, request, require_words=True
+        )
+        assert request.audio_clock is not None and request.media_asset is not None
+        result = _object(json.loads(output))
+        try:
+            collected = collect_worker_words(result)
+            validated = validate_worker_words(
+                collected,
+                sample_rate=request.audio_clock.sample_rate,
+                sample_count=request.audio_clock.sample_count,
+            )
+            mapped = map_worker_words_to_source(validated, request.audio_clock, request.media_asset)
+        except ValueError:
+            raise _AsrFailure("asr.response_invalid") from None
+        return stitch_window_words((mapped,)), elapsed, language, libraries
+
+    async def transcribe_words(
+        self, request: AsrRequest, context: CancellationContext
+    ) -> ProviderResult[tuple["AsrWord", ...]]:
+        start = time.monotonic()
+        try:
+            context.check_cancelled()
+            if request.run_id != context.run_id:
+                raise _AsrFailure("asr.run_identity")
+            if request.audio_evidence is None:
+                if request.audio_clock is not None or (
+                    request.media_asset is not None
+                    and any(stream.kind == "audio" for stream in request.media_asset.streams)
+                ):
+                    raise _AsrFailure("asr.audio_identity")
+                return ProviderResult(ProviderStatus.NO_AUDIO, (), self._metadata(request, start))
+            if (
+                not re.fullmatch(r"[a-z]{2,3}|auto", request.language)
+                or any(not isinstance(term, str) or not term.strip() for term in request.game_terms)
+                or sum(len(term) for term in request.game_terms) > 4096
+            ):
+                raise _AsrFailure("asr.request_invalid")
+            async with asyncio.timeout(context.timeout_seconds):
+                await self._validate_audio(request, context)
+                await self._validate_model(context)
+                interpreter = self.repository / ".venv" / "Scripts" / "python.exe"
+                if not interpreter.is_file():
+                    raise _AsrFailure("asr.runtime_unavailable")
+                request_directory = self.repository / ".cache" / "asr-requests"
+                request_directory.mkdir(parents=True, exist_ok=True)
+                with TemporaryDirectory(dir=request_directory) as temporary:
+                    request_path = Path(temporary) / "request.json"
+                    request_path.write_text(
+                        self._worker_request_json(request, word_timestamps=True),
+                        encoding="utf-8",
+                    )
+                    result = await run_media_process(
+                        [
+                            str(interpreter),
+                            "-I",
+                            "-B",
+                            str(WORKER_SCRIPT),
+                            str(request_path),
+                        ],
+                        context,
+                        max_stdout_bytes=4 * 1024 * 1024,
+                        max_stderr_bytes=1024 * 1024,
+                    )
+                    words, elapsed, language, libraries = self._parse_word_output(
+                        result.stdout, request
+                    )
+                await self._validate_audio(request, context)
+                context.check_cancelled()
+            return ProviderResult(
+                ProviderStatus.COMPLETED if words else ProviderStatus.NO_SPEECH,
+                words,
                 self._metadata(
                     request,
                     start,

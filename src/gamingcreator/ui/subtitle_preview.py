@@ -5,6 +5,7 @@ from typing import Any
 
 from gamingcreator.application.creation_editing import validate_revision
 from gamingcreator.application.creation_replacements import validate_revision_v4
+from gamingcreator.application.creation_subtitles import present_subtitles
 from gamingcreator.application.edit_decision import select_edit_decision
 from gamingcreator.domain.creation_subtitles import quantize_srt
 from gamingcreator.infrastructure.ffmpeg_render import burn_events
@@ -25,8 +26,27 @@ def preview(jobs: Any, request: dict[str, Any]) -> dict[str, Any]:
         "clips",
         "subtitleMode",
     }
-    allowed = required | {"subtitleOverrides", "candidateManifestSha256", "replacements"}
+    allowed = required | {
+        "subtitleOverrides",
+        "candidateManifestSha256",
+        "replacements",
+        "wordHighlights",
+        "asrWords",
+    }
     if not isinstance(request, dict) or not required <= request.keys() or request.keys() - allowed:
+        raise ValueError("Expected draft subtitle preview fields")
+    word_on = request.get("wordHighlights", False)
+    asr_words = request.get("asrWords")
+    if "wordHighlights" in request and type(word_on) is not bool:
+        raise ValueError("Expected draft subtitle preview fields")
+    if asr_words is not None and (
+        not isinstance(asr_words, dict)
+        or asr_words.keys() != {"runId", "resultHash"}
+        or not isinstance(asr_words["runId"], str)
+        or not isinstance(asr_words["resultHash"], str)
+        or not asr_words["runId"]
+        or not asr_words["resultHash"]
+    ):
         raise ValueError("Expected draft subtitle preview fields")
     mode = request["subtitleMode"]
     if mode not in ("none", "sidecar", "burn"):
@@ -67,12 +87,53 @@ def preview(jobs: Any, request: dict[str, Any]) -> dict[str, Any]:
         replace(chain, edl=revised, plan=plan, timelines=timelines, subtitle_overrides=overrides),
         mode,
     )
-    saved = quantize_srt(cues)
-    events = (
-        burn_events(saved)
-        if mode == "burn"
-        else ((cue.start, cue.end, cue.text, False) for cue in saved)
+    reserved = [
+        index
+        for index, clip in enumerate(request["clips"])
+        if any(item["clipId"] == clip["clipId"] for item in overrides)
+    ]
+    words = None
+    sidecar_available = False
+    if word_on and asr_words is not None:
+        import asyncio
+
+        from gamingcreator.infrastructure.asr_words import load_trusted_asr_words
+
+        words = asyncio.run(
+            load_trusted_asr_words(
+                jobs.project(request["projectId"]), asr_words["runId"], asr_words["resultHash"]
+            )
+        )
+        sidecar_available = words is not None
+    presentation = present_subtitles(
+        cues,
+        words=words,
+        sidecar_available=sidecar_available,
+        plan=plan if sidecar_available else None,
+        reserved_clip_indexes=reserved,
     )
+    saved = quantize_srt(presentation.cues)
+    clip_ids = [clip["clipId"] for clip in request["clips"]]
+
+    def clip_id(index: object) -> dict[str, str]:
+        if type(index) is not int or index < 0 or index >= len(clip_ids):
+            return {}
+        return {"clipId": clip_ids[index]}
+
+    if mode == "burn":
+        escaped = str.maketrans("\\{}", "＼｛｝")
+        events = []
+        for start, end, text, lifted in burn_events(saved):
+            owners = [
+                cue
+                for cue in saved
+                if cue.start <= start and end <= cue.end and cue.text.translate(escaped) == text
+            ]
+            events.append(
+                (start, end, text, lifted, owners[0].clip_index if len(owners) == 1 else None)
+            )
+    else:
+        events = [(cue.start, cue.end, cue.text, False, cue.clip_index) for cue in saved]
     scale = 100 if mode == "burn" else 1000
     result = [
         {
@@ -80,7 +141,13 @@ def preview(jobs: Any, request: dict[str, Any]) -> dict[str, Any]:
             "endUs": int(end * scale) * (1000000 // scale),
             "text": text,
             "lifted": lifted,
+            **clip_id(index),
         }
-        for start, end, text, lifted in events
+        for start, end, text, lifted, index in events
     ]
-    return {"cues": result, "mode": mode}
+    return {
+        "cues": result,
+        "mode": mode,
+        "subtitleSource": presentation.source,
+        "wordHighlights": presentation.word_highlights,
+    }

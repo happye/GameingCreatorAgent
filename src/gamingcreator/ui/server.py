@@ -17,12 +17,15 @@ from gamingcreator.application.detail_query_draft import draft_detail_query
 from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
 from gamingcreator.application.retrieval import RetrievalMode
 from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.infrastructure.asr_words import load_asr_words_projection
 from gamingcreator.infrastructure.audio_peaks import audio_peaks
 from gamingcreator.infrastructure.ffmpeg_fullres import FfmpegFullResolutionFrames
 from gamingcreator.infrastructure.ffmpeg_shots import FfmpegShotDetector
 from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
+from gamingcreator.infrastructure.proxy_inventory import proxy_space_csv, proxy_space_document
 from gamingcreator.infrastructure.windows_ocr import WindowsOcrEngine
+from gamingcreator.ui.asr_words_jobs import AsrWordsJobs
 from gamingcreator.ui.benchmark_workflow import BenchmarkWorkflows
 from gamingcreator.ui.creation_budget_scope import resolve_budget_key
 from gamingcreator.ui.creation_jobs import CreationJobs
@@ -39,6 +42,7 @@ from gamingcreator.ui.media_preparation import MediaPreparationJobs
 from gamingcreator.ui.overlay_jobs import register_asset
 from gamingcreator.ui.runtime_identity import runtime_identity
 from gamingcreator.ui.service import (
+    attach_run_previews,
     detail_costs,
     inspect_run,
     match_details,
@@ -60,6 +64,11 @@ ASSETS = {
     "/creation": ("creation.html", "text/html; charset=utf-8"),
     "/assets/creation.js": ("creation.js", "text/javascript; charset=utf-8"),
     "/assets/source-clock.js": ("source-clock.js", "text/javascript; charset=utf-8"),
+    "/assets/preview-preference.js": ("preview-preference.js", "text/javascript; charset=utf-8"),
+    "/assets/screen-text-highlight.js": (
+        "screen-text-highlight.js",
+        "text/javascript; charset=utf-8",
+    ),
     "/assets/creation.css": ("creation.css", "text/css; charset=utf-8"),
     "/": ("index.html", "text/html; charset=utf-8"),
     "/assets/app.js": ("app.js", "text/javascript; charset=utf-8"),
@@ -69,6 +78,9 @@ ASSETS = {
     "/assets/benchmark-workflow.css": ("benchmark-workflow.css", "text/css; charset=utf-8"),
     # Studio workbench (preview): ES modules, vendored Preact + htm, no build step.
     "/studio": ("studio.html", "text/html; charset=utf-8"),
+    "/proxy-space": ("proxy-space.html", "text/html; charset=utf-8"),
+    "/assets/proxy-space.css": ("proxy-space.css", "text/css; charset=utf-8"),
+    "/assets/proxy-space.js": ("proxy-space.js", "text/javascript; charset=utf-8"),
     "/assets/studio.css": ("studio.css", "text/css; charset=utf-8"),
     "/assets/studio/main.js": ("studio/main.js", "text/javascript; charset=utf-8"),
     "/assets/studio/api.js": ("studio/api.js", "text/javascript; charset=utf-8"),
@@ -85,6 +97,10 @@ ASSETS = {
     ),
     "/assets/studio/planning.js": ("studio/planning.js", "text/javascript; charset=utf-8"),
     "/assets/studio/subtitles.js": ("studio/subtitles.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/word_highlights.js": (
+        "studio/word_highlights.js",
+        "text/javascript; charset=utf-8",
+    ),
     "/assets/studio/activity.js": ("studio/activity.js", "text/javascript; charset=utf-8"),
     "/assets/studio/brief_sentence.js": (
         "studio/brief_sentence.js",
@@ -96,6 +112,8 @@ ASSETS = {
         "text/javascript; charset=utf-8",
     ),
     "/assets/studio/edit.js": ("studio/edit.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/compare.js": ("studio/compare.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/multitrack.js": ("studio/multitrack.js", "text/javascript; charset=utf-8"),
     "/assets/studio/clip_drafts.js": ("studio/clip_drafts.js", "text/javascript; charset=utf-8"),
     "/assets/studio/clipedit.js": ("studio/clipedit.js", "text/javascript; charset=utf-8"),
     "/assets/studio/overlays.js": ("studio/overlays.js", "text/javascript; charset=utf-8"),
@@ -104,6 +122,10 @@ ASSETS = {
     "/assets/studio/basket.js": ("studio/basket.js", "text/javascript; charset=utf-8"),
     "/assets/studio/recordings.js": ("studio/recordings.js", "text/javascript; charset=utf-8"),
     "/assets/studio/publish.js": ("studio/publish.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/publication_form.js": (
+        "studio/publication_form.js",
+        "text/javascript; charset=utf-8",
+    ),
     "/assets/studio/preview.js": ("studio/preview.js", "text/javascript; charset=utf-8"),
     "/assets/vendor/preact.module.js": (
         "vendor/preact.module.js",
@@ -160,6 +182,9 @@ def error_status(error: AppError) -> int:
         "storage.run_missing",
         "storage.run_not_found",
         "input.preparation_job",
+        "asr.run_missing",
+        "asr.words_not_found",
+        "asr.task_not_found",
     }:
         return 404
     return {
@@ -179,12 +204,16 @@ class WorkspaceServer(ThreadingHTTPServer):
     creation_jobs: CreationJobs
     creation_reasoning: CreationReasoningService
     preparation_jobs: MediaPreparationJobs
+    asr_words_jobs: AsrWordsJobs
     benchmark_workflows: BenchmarkWorkflows
 
     def server_close(self) -> None:
         jobs = getattr(self, "preparation_jobs", None)
         if jobs is not None:
             jobs.close()
+        words = getattr(self, "asr_words_jobs", None)
+        if words is not None:
+            words.close()
         workflows = getattr(self, "benchmark_workflows", None)
         if workflows is not None:
             workflows.close()
@@ -211,6 +240,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
     creation_jobs: CreationJobs
     creation_reasoning: CreationReasoningService
     preparation_jobs: MediaPreparationJobs
+    asr_words_jobs: AsrWordsJobs
     benchmark_workflows: BenchmarkWorkflows
 
     def log_message(self, format: str, *args: object) -> None:
@@ -244,6 +274,13 @@ class InspectionHandler(BaseHTTPRequestHandler):
             json.dumps(payload, ensure_ascii=False, allow_nan=False).encode(),
             "application/json; charset=utf-8",
         )
+
+    def _attachment(self, body: bytes, content_type: str, filename: str) -> None:
+        self._headers(200, len(body), content_type)
+        self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(body)
 
     def _require(self, feature: str) -> None:
         from gamingcreator.application.entitlements import EntitlementError, require
@@ -437,10 +474,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
     ) -> None:
         resource = asyncio.run(registered_media(project, run_id, evidence_id))
         if proxy:
-            from gamingcreator.infrastructure.proxy_media import read_proxy
+            from gamingcreator.infrastructure.proxy_media import load_proxy_receipt
 
             # Preview only: a missing or stale proxy is reported, never silently replaced.
-            receipt = read_proxy(self.repository, resource.sha256)
+            # Byte integrity is checked by MediaResource below, not by file size alone.
+            receipt = load_proxy_receipt(self.repository, resource.sha256)
             if receipt is None:
                 raise AppError(
                     "media.proxy_missing",
@@ -575,6 +613,8 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/ocr-frames",
                 "/api/make-proxy-batch",
                 "/api/knowledge-import",
+                "/api/asr-words",
+                "/api/asr-words-cancel",
             }:
                 self._json(404, {"code": "input.route", "message": "没有这个操作。"})
                 return
@@ -588,6 +628,20 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return result
 
             value = json.loads(body, object_pairs_hook=unique)
+            if path == "/api/asr-words":
+                if type(value) is not dict:
+                    raise ValueError("Expected asr-words fields.")
+                self._json(202, self.asr_words_jobs.submit(value))
+                return
+            if path == "/api/asr-words-cancel":
+                if (
+                    type(value) is not dict
+                    or set(value) != {"projectId", "taskId"}
+                    or any(type(value[key]) is not str or not value[key] for key in value)
+                ):
+                    raise ValueError("Expected asr-words cancellation identity.")
+                self._json(200, self.asr_words_jobs.cancel(value["projectId"], value["taskId"]))
+                return
             if path == "/api/creation/works":
                 if urlparse(self.path).query:
                     raise ValueError("Unexpected query.")
@@ -805,19 +859,29 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(200, self.preparation_jobs.cancel(value["project"], value["job"]))
                 return
             if path == "/api/search-project":
+                allowed = {
+                    "project",
+                    "runs",
+                    "query",
+                    "mode",
+                    "top",
+                    "detailProfile",
+                    "includeScreenText",
+                }
+                required = {"project", "runs", "query", "mode", "top"}
                 if (
                     type(value) is not dict
-                    or set(value)
-                    not in (
-                        {"project", "runs", "query", "mode", "top"},
-                        {"project", "runs", "query", "mode", "top", "detailProfile"},
-                    )
+                    or not required <= set(value) <= allowed
                     or (
                         "detailProfile" in value
                         and (
                             type(value["detailProfile"]) is not str
                             or value["detailProfile"] not in {"v1", "v2", "v3", "v4", "v5"}
                         )
+                    )
+                    or (
+                        "includeScreenText" in value
+                        and type(value["includeScreenText"]) is not bool
                     )
                     or any(type(value[key]) is not str for key in ("project", "query", "mode"))
                     or type(value["runs"]) is not list
@@ -841,6 +905,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             top_k=value["top"],
                             project_reference=value["project"],
                             detail_profile=value.get("detailProfile"),
+                            include_screen_text=bool(value.get("includeScreenText", False)),
                         )
                     ),
                 )
@@ -1078,6 +1143,42 @@ class InspectionHandler(BaseHTTPRequestHandler):
             if path in ASSETS:
                 name, mime = ASSETS[path]
                 self._send(200, (STATIC / name).read_bytes(), mime)
+                return
+            if path in {"/api/proxy-space", "/api/proxy-space.json", "/api/proxy-space.csv"}:
+                if urlparse(self.path).query:
+                    raise ValueError("Unexpected query.")
+                document = proxy_space_document(self.repository)
+                if path == "/api/proxy-space.csv":
+                    self._attachment(
+                        ("\ufeff" + proxy_space_csv(document)).encode(),
+                        "text/csv; charset=utf-8",
+                        "proxy-space.csv",
+                    )
+                    return
+                payload = json.dumps(document, ensure_ascii=False, allow_nan=False).encode()
+                if path == "/api/proxy-space.json":
+                    self._attachment(payload, "application/json; charset=utf-8", "proxy-space.json")
+                    return
+                self._send(200, payload, "application/json; charset=utf-8")
+                return
+            if path == "/api/asr-words":
+                query = _query(self.path)
+                if set(query) == {"projectId", "taskId"}:
+                    self._json(200, self.asr_words_jobs.get(query["projectId"], query["taskId"]))
+                    return
+                if set(query) != {"projectId", "runId", "resultHash"}:
+                    raise ValueError("Unexpected query.")
+                project = resolve_project(self.repository, query["projectId"])
+                self._json(
+                    200,
+                    asyncio.run(
+                        load_asr_words_projection(
+                            project,
+                            query["runId"],
+                            query["resultHash"],
+                        )
+                    ),
+                )
                 return
             if path == "/api/health":
                 self._json(
@@ -1447,7 +1548,14 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return
             project = resolve_project(self.repository, query.get("project", ""))
             if path == "/api/runs":
-                self._json(200, asyncio.run(project_runs_payload(project)))
+                self._json(
+                    200,
+                    attach_run_previews(
+                        asyncio.run(project_runs_payload(project)),
+                        self.repository,
+                        query.get("project"),
+                    ),
+                )
             elif path == "/api/tasks":
                 self._json(
                     200,
@@ -1535,7 +1643,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     raise AppError(
                         "retrieval.configuration", "检索模式或条数无效。", ExitCode.INPUT
                     )
-                payload = asyncio.run(
+                inspection_payload = asyncio.run(
                     inspect_run(
                         project,
                         query.get("run", ""),
@@ -1547,7 +1655,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                         detail_profile=query.get("detailProfile", "v1"),
                     )
                 )
-                self._json(200, payload)
+                self._json(200, inspection_payload)
         except AppError as error:
             self._json(
                 error_status(error),
@@ -1585,6 +1693,7 @@ def create_server(host: str, port: int, repository: Path) -> ThreadingHTTPServer
     creations = CreationJobs(repository)
     reasoning = CreationReasoningService(creations, price_snapshot=DEEPSEEK_FLASH_20261004)
     jobs = MediaPreparationJobs(repository)
+    words = AsrWordsJobs(repository)
     workflows = BenchmarkWorkflows(repository)
     handler = type(
         "WorkspaceHandler",
@@ -1596,6 +1705,7 @@ def create_server(host: str, port: int, repository: Path) -> ThreadingHTTPServer
             "creation_jobs": creations,
             "creation_reasoning": reasoning,
             "preparation_jobs": jobs,
+            "asr_words_jobs": words,
             "benchmark_workflows": workflows,
         },
     )
@@ -1610,6 +1720,7 @@ def create_server(host: str, port: int, repository: Path) -> ThreadingHTTPServer
     server.creation_jobs = creations
     server.creation_reasoning = reasoning
     server.preparation_jobs = jobs
+    server.asr_words_jobs = words
     server.benchmark_workflows = workflows
     return server
 

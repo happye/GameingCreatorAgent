@@ -31,6 +31,7 @@ from gamingcreator.cli.main import (
     execute_search_detail_match,
 )
 from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.domain.media import MediaAsset
 from gamingcreator.domain.time import SourceInstant, SourceRange
 from gamingcreator.infrastructure.detail_cost_history import refinement_cost_history
 from gamingcreator.infrastructure.detail_description_feedback import (
@@ -44,9 +45,10 @@ from gamingcreator.infrastructure.detail_query_sidecar import (
     refinement_settings_for_profile,
 )
 from gamingcreator.infrastructure.detail_refinement_sidecar import reuse_or_refuse
-from gamingcreator.infrastructure.proxy_media import read_proxy
+from gamingcreator.infrastructure.proxy_media import choose_preview
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 from gamingcreator.ui.media import MediaResource
+from gamingcreator.ui.screen_text_search import screen_text_group_for_search
 
 DETAIL_INSPECTION_VERSION = "actor-detail-inspection-v1"
 
@@ -214,31 +216,71 @@ async def list_project_runs(project: Path) -> tuple[tuple[str, str], ...]:
         await store.close()
 
 
-async def project_runs_payload(project: Path) -> dict[str, object]:
+def _source_has_audio(asset: MediaAsset) -> bool:
+    """Official original-stream identity: whether the registered recording has an audio track."""
+    return any(stream.kind == "audio" for stream in asset.streams)
+
+
+def attach_run_previews(
+    payload: dict[str, object], repository: Path | None, project_reference: str | None
+) -> dict[str, object]:
+    """给录像名单补上原片和已核代理预览地址；已有地址不覆盖，没有回执就不写代理。"""
+    rows = payload.get("runs") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        return payload
+    for row in rows:
+        if not isinstance(row, dict) or not row.get("id"):
+            continue
+        identity = {"project": project_reference or "", "run": str(row["id"])}
+        video_url = "/api/media?" + urlencode(identity)
+        if "videoUrl" not in row:
+            row["videoUrl"] = video_url
+        if "proxyUrl" in row or repository is None or not row.get("sourceSha256"):
+            continue
+        preview = choose_preview(
+            video_url,
+            repository=repository,
+            source_sha256=str(row["sourceSha256"]),
+            prefer_proxy=True,
+        )
+        row["proxyUrl"] = preview["url"] if preview["source"] == "proxy" else None
+    return payload
+
+
+async def project_runs_payload(
+    project: Path,
+    repository: Path | None = None,
+    *,
+    project_reference: str | None = None,
+) -> dict[str, object]:
     store = await SqliteTimelineStore.open(project, read_only=True)
     try:
         rows: list[dict[str, object]] = []
         for run_id, status in await store.list_runs():
             run = await store.load_run(run_id)
             profile = _analysis_profile(run.configuration.analysis.vision_prompt_version)
-            rows.append(
-                {
-                    "id": run_id,
-                    "status": status,
-                    "sourceName": run.asset.source_path.name,
-                    "sourceSha256": run.asset.sha256,
-                    "mediaId": run.asset.media_id,
-                    "durationUs": run.asset.duration_us,
-                    "sourceClock": runtime_clock_document(run.asset),
-                    "errorCode": run.error_code,
-                    "searchEligible": status == RunStatus.COMPLETED.value,
-                    "completedEligible": status == RunStatus.COMPLETED.value,
-                    "analysisKind": "temporal"
-                    if profile in ("temporal", "detailed")
-                    else "frame_observations",
-                    "analysisProfile": profile,
-                }
-            )
+            row = {
+                "id": run_id,
+                "status": status,
+                "sourceName": run.asset.source_path.name,
+                "sourceSha256": run.asset.sha256,
+                "mediaId": run.asset.media_id,
+                "durationUs": run.asset.duration_us,
+                "sourceHasAudio": _source_has_audio(run.asset),
+                "sourceClock": runtime_clock_document(run.asset),
+                "errorCode": run.error_code,
+                "searchEligible": status == RunStatus.COMPLETED.value,
+                "completedEligible": status == RunStatus.COMPLETED.value,
+                "analysisKind": "temporal"
+                if profile in ("temporal", "detailed")
+                else "frame_observations",
+                "analysisProfile": profile,
+            }
+            if repository is not None or project_reference is not None:
+                attach_run_previews(
+                    {"runs": [row]}, repository, project_reference or str(project.resolve())
+                )
+            rows.append(row)
         return {"runs": rows}
     finally:
         await store.close()
@@ -254,15 +296,22 @@ async def project_search_payload(
     top_k: int = 10,
     project_reference: str,
     detail_profile: str | None = None,
+    include_screen_text: bool = False,
 ) -> dict[str, object]:
     document = await execute_project_search(
         project, run_ids, query, repository, mode=mode, top_k=top_k, detail_profile=detail_profile
     )
-    return {
+    payload: dict[str, object] = {
         **document,
         "project": project_reference,
         "searchSha256": search_snapshot_sha256(document),
     }
+    if include_screen_text:
+        payload = {
+            **payload,
+            **(await screen_text_group_for_search(project, run_ids, query, repository)),
+        }
+    return payload
 
 
 async def search_detail_payload(
@@ -482,21 +531,22 @@ async def inspect_run(
             if row["eventId"] is not None
             else _refinement_payload(project, timeline, None, settings, refinement_identity)
         )
+    video_url = "/api/media?" + urlencode(identity)
+    preview = choose_preview(
+        video_url, repository=repository, source_sha256=asset.sha256, prefer_proxy=True
+    )
     payload.update(
         {
             "media": {
                 "id": asset.media_id,
                 "name": asset.source_path.name,
                 "durationUs": asset.duration_us,
+                "sourceHasAudio": _source_has_audio(asset),
                 "sourceClock": runtime_clock_document(asset),
                 "sha256": asset.sha256,
-                "videoUrl": "/api/media?" + urlencode(identity),
-                # Offered only while a verified proxy exists; the page keeps the original by default.
-                "proxyUrl": (
-                    "/api/media?" + urlencode({**identity, "proxy": "1"})
-                    if read_proxy(repository, asset.sha256) is not None
-                    else None
-                ),
+                "videoUrl": video_url,
+                # 只在回执有效时给出代理地址；是否自动选用由工作台按首次打开规则决定。
+                "proxyUrl": preview["url"] if preview["source"] == "proxy" else None,
             },
             "evidence": [
                 {

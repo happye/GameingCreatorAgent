@@ -10,8 +10,10 @@
         "current-time", "total-time", "play-selection", "play-context", "playback-range", "add-active", "active-title",
         "active-range", "active-facts", "active-local-context", "evidence-tab", "transcript-tab", "evidence-panel",
         "transcript-panel", "evidence-count", "evidence-list", "transcript-tab-count",
-        "transcript-list", "search-form", "query", "mode", "top", "search-button",
-        "saved-details-control", "include-saved-details",
+        "transcript-list", "search-form", "query", "mode", "top", "search-button", "cancel-search",
+        "saved-details-control", "include-saved-details", "include-screen-text",
+        "screen-text-results", "screen-text-count", "screen-text-notice",
+        "screen-text-diagnostics", "screen-text-list",
         "candidate-count", "search-context", "candidate-list", "selection-count",
         "selection-list", "selection-warning", "clear-selection", "export-json",
         "export-csv", "timeline-count", "timeline-filter", "timeline-include-text", "tag-filter", "timeline-map",
@@ -33,7 +35,7 @@
         "open-readiness", "readiness-dialog", "close-readiness", "readiness-status", "readiness-body", "refresh-readiness",
         "open-coverage-gaps", "coverage-gaps-dialog", "close-coverage-gaps", "coverage-gaps-status", "coverage-gaps-body", "refresh-coverage-gaps",
         "open-search-sources", "single-search-source", "search-scope-label", "search-sources-dialog",
-        "close-search-sources", "search-sources-list", "search-sources-summary", "apply-search-sources", "download-project-search",
+        "close-search-sources", "search-sources-list", "search-sources-summary", "apply-search-sources", "download-project-search", "download-project-search-csv",
         "open-preparation", "preparation-dialog", "close-preparation", "preparation-form", "preparation-project",
         "preparation-paths", "preparation-profile", "preparation-budget", "preparation-timeout", "start-preparation", "stop-preparation",
         "preparation-status", "preparation-summary", "preparation-items", "open-prepared-tasks", "download-preparation",
@@ -45,14 +47,14 @@
         project: "", run: "", revision: 0, runs: [], view: null, active: null,
         selections: [], basketMediaId: null, inspectController: null, runsController: null,
         projectsController: null, busy: false, playbackEndUs: null, pendingSeekUs: null,
-        frameRequest: null, sourceUrl: "", storageWarningShown: false,
+        frameRequest: null, sourceUrl: "", previewLoadGen: 0, storageWarningShown: false,
         matchController: null, matchRevision: 0, matching: false,
         costController: null, costRevision: 0,
         draftController: null, draftRevision: 0, drafting: false, draftScope: "manual",
         diagnosticsContext: null,
         tasksController: null, tasksRevision: 0, tasksOffset: 0,
         readinessController: null, readinessRevision: 0, coverageGapsController: null, coverageGapsRevision: 0,
-        searchRuns: [], projectSearch: null, projectSearchController: null,
+        searchRuns: [], projectSearch: null, projectSearchController: null, searchToken: 0, searching: false,
         detailProjectScope: false, projectDetail: null, projectDetailAvailable: false,
         detailSearchScope: false, searchDetail: null, searchDetailAvailable: false,
         savedDetailRetrievalAvailable: false,
@@ -60,6 +62,14 @@
         frameTextAvailable: false, frameText: null, frameTextController: null, frameTextBusy: false,
         preparationController: null, preparationRevision: 0, preparationTimer: null,
         preparationJob: null, preparationSubmitting: false, preparationOffset: 0, preparationCatalog: null,
+        previewByMedia: (typeof PreviewPreference === "object" && PreviewPreference.load()) || {},
+        previewHttpFailed: {},
+        previewClock: null,
+        previewAlignToken: 0,
+        previewAlignKey: null,
+        previewAlignCache: null,
+        previewPrefer: null,
+        previewMediaId: null,
     };
     const statusLabels = {
         pending: "等待分析", running: "分析中", completed: "已完成", failed: "失败",
@@ -271,6 +281,7 @@
     function updateSearchScope() {
         ui["saved-details-control"].hidden = !state.savedDetailRetrievalAvailable;
         ui["include-saved-details"].disabled = state.busy || !state.savedDetailRetrievalAvailable || !state.searchRuns.length;
+        ui["include-screen-text"].disabled = state.busy || !state.searchRuns.length;
         ui["saved-details-control"].title = `联合搜索时加入精分析 ${ui["detail-profile"].value} 的已有细节；不启动精分析。`;
         ui["open-search-detail-query"].hidden = !state.searchDetailAvailable || !state.projectSearch;
         ui["open-search-detail-query"].disabled = state.busy || !currentSearchDetailScope();
@@ -282,7 +293,118 @@
         ui["open-search-sources"].disabled = state.busy || !state.runs.some((run) => run.status === "completed");
         ui["download-project-search"].hidden = !state.searchRuns.length;
         ui["download-project-search"].disabled = state.busy || !state.projectSearch;
+        ui["download-project-search-csv"].hidden = !state.searchRuns.length;
+        ui["download-project-search-csv"].disabled = state.busy || !state.projectSearch;
         ui["open-retrieval-diagnostics"].hidden = Boolean(state.searchRuns.length);
+    }
+
+    const SCREEN_TEXT_DRAFT_PREFIX = "gamingcreator:screen-text-search-draft:";
+
+    function screenTextDraftStorageKey(project) {
+        return project ? `${SCREEN_TEXT_DRAFT_PREFIX}${project}` : "";
+    }
+
+    function readScreenTextDraft(project) {
+        const empty = { query: "", includeScreenText: false };
+        const key = screenTextDraftStorageKey(project);
+        if (!key) return empty;
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) return empty;
+            const document = JSON.parse(raw);
+            return {
+                query: typeof document.query === "string" ? document.query.slice(0, 4096) : "",
+                includeScreenText: document.includeScreenText === true,
+            };
+        } catch {
+            return empty;
+        }
+    }
+
+    function writeScreenTextDraft(project) {
+        const key = screenTextDraftStorageKey(project);
+        if (!key) return;
+        try {
+            const query = ui.query.value;
+            const includeScreenText = ui["include-screen-text"].checked;
+            if (!query && !includeScreenText) localStorage.removeItem(key);
+            else localStorage.setItem(key, JSON.stringify({ query, includeScreenText }));
+        } catch { /* 草稿只按项目记在本机，写失败不影响查询 */ }
+    }
+
+    function applyScreenTextDraft(project) {
+        const draft = readScreenTextDraft(project);
+        ui.query.value = draft.query;
+        ui["include-screen-text"].checked = draft.includeScreenText;
+        renderScreenTextResults();
+    }
+
+    function hideScreenTextResults() {
+        ui["screen-text-results"].hidden = true;
+        ui["screen-text-count"].textContent = "0";
+        ui["screen-text-notice"].textContent = "";
+        ui["screen-text-diagnostics"].replaceChildren();
+        ui["screen-text-diagnostics"].hidden = true;
+        ui["screen-text-list"].replaceChildren();
+    }
+
+    function validScreenTextGroup(result, runs) {
+        const matches = result.screenTextMatches;
+        if (!Array.isArray(matches) || matches.length > 10 || typeof result.screenTextPrepared !== "boolean"
+            || typeof result.screenTextNotice !== "string" || !Array.isArray(result.screenTextDiagnostics)
+            || result.screenTextDiagnostics.some((item) => typeof item !== "string")) return false;
+        const allowed = new Set(runs);
+        return matches.every((row) => allowed.has(row.runId) && typeof row.sourceSha256 === "string"
+            && /^[a-f0-9]{64}$/.test(row.sourceSha256) && typeof row.evidenceId === "string" && row.evidenceId
+            && Number.isSafeInteger(row.timeUs) && row.timeUs >= 0 && typeof row.text === "string");
+    }
+
+    function renderScreenTextResults() {
+        const result = state.projectSearch;
+        if (!ui["include-screen-text"].checked || !result || !Array.isArray(result.screenTextMatches)) {
+            hideScreenTextResults();
+            return;
+        }
+        ui["screen-text-results"].hidden = false;
+        const matches = result.screenTextMatches;
+        ui["screen-text-count"].textContent = String(matches.length);
+        ui["screen-text-notice"].textContent = result.screenTextNotice || "";
+        const diagnostics = Array.isArray(result.screenTextDiagnostics) ? result.screenTextDiagnostics : [];
+        ui["screen-text-diagnostics"].replaceChildren();
+        ui["screen-text-diagnostics"].hidden = diagnostics.length === 0;
+        for (const item of diagnostics) ui["screen-text-diagnostics"].append(element("li", "", item));
+        ui["screen-text-list"].replaceChildren();
+        if (!matches.length) {
+            empty(ui["screen-text-list"], result.screenTextPrepared ? "已有屏幕文字报告，但没有字面匹配。" : (result.screenTextNotice || "尚未准备屏幕文字。"));
+            return;
+        }
+        for (const row of matches) {
+            const selected = state.active?.kind === "screen-text" && state.active.row.runId === row.runId
+                && state.active.row.evidenceId === row.evidenceId && state.active.row.timeUs === row.timeUs;
+            const card = element("article", `screen-text-card${selected ? " active" : ""}`);
+            card.dataset.run = row.runId;
+            card.dataset.evidence = row.evidenceId;
+            card.dataset.timeUs = String(row.timeUs);
+            card.tabIndex = 0;
+            card.setAttribute("role", "button");
+            card.setAttribute("aria-label", `定位到 ${row.runId} 的源时刻 ${timecode(row.timeUs)}`);
+            card.addEventListener("click", () => { void openScreenTextHit(row); });
+            const source = Array.isArray(result.sources) ? result.sources.find((item) => item.runId === row.runId) : null;
+            card.append(
+                element("p", "screen-text-source", `来源 · ${row.runId}${source?.sourceName ? ` · ${source.sourceName}` : ""}`),
+                element("p", "screen-text-meta", `源时刻 ${timecode(row.timeUs)} · ${row.timeUs} μs`),
+                element("p", "screen-text-evidence", `证据 · ${row.evidenceId}`),
+                element("p", "screen-text-hash", `原片哈希 · ${row.sourceSha256}`),
+            );
+            const textNode = element("p", "screen-text-text");
+            if (window.ScreenTextHighlight) {
+                ScreenTextHighlight.appendScreenTextHighlight(textNode, row.text, result.query);
+            } else {
+                textNode.textContent = row.text;
+            }
+            card.append(textNode);
+            ui["screen-text-list"].append(card);
+        }
     }
 
     function clearProjectSearch() {
@@ -291,6 +413,7 @@
         state.projectSearchController = null;
         state.projectSearch = null;
         clearRetrievalDiagnostics();
+        hideScreenTextResults();
         updateSearchScope();
     }
 
@@ -344,9 +467,35 @@
         return { ...payload, candidates, query: result.query, mode: result.mode, retrievalVersion: result.retrievalVersion, retrievalDiagnostics: null };
     }
 
+    function beginSearchToken() {
+        state.searchToken += 1;
+        return state.searchToken;
+    }
+
+    function searchStillCurrent(token, controller, slot, revision) {
+        return token === state.searchToken && state[slot] === controller && Boolean(controller)
+            && !controller.signal.aborted && revision === state.revision;
+    }
+
+    function cancelInFlightSearch(message) {
+        beginSearchToken();
+        state.projectSearchController?.abort();
+        state.projectSearchController = null;
+        if (state.searching) {
+            state.inspectController?.abort();
+            state.inspectController = null;
+        }
+        notice(message);
+        empty(ui["candidate-list"], "查询已取消。");
+        ui["candidate-count"].textContent = "0";
+        hideScreenTextResults();
+        setBusy(false);
+    }
+
     async function searchProject(query) {
         const top = Number(ui.top.value);
         if (!Number.isInteger(top) || top < 1 || top > 100) return notice("候选条数需要是1到100的整数。");
+        const token = beginSearchToken();
         state.inspectController?.abort();
         clearProjectSearch();
         state.active = null;
@@ -360,14 +509,17 @@
         const runs = [...state.searchRuns];
         const mode = ui.mode.value;
         const detailProfile = state.savedDetailRetrievalAvailable && ui["include-saved-details"].checked ? ui["detail-profile"].value : null;
+        const includeScreenText = ui["include-screen-text"].checked;
         notice("");
         setBusy(true, true);
         empty(ui["candidate-list"], "正在搜索选中的录像…");
         ui["candidate-count"].textContent = "0";
+        hideScreenTextResults();
         try {
-            const result = await request("/api/search-project", {}, controller.signal, { project: state.project, runs, query, mode, top, ...(detailProfile ? {detailProfile} : {}) });
-            if (controller.signal.aborted || revision !== state.revision || state.projectSearchController !== controller) return;
+            const result = await request("/api/search-project", {}, controller.signal, { project: state.project, runs, query, mode, top, ...(detailProfile ? {detailProfile} : {}), ...(includeScreenText ? {includeScreenText: true} : {}) });
+            if (!searchStillCurrent(token, controller, "projectSearchController", revision)) return;
             if ((detailProfile !== null) !== ui["include-saved-details"].checked || (detailProfile && detailProfile !== ui["detail-profile"].value)) return;
+            if (includeScreenText !== ui["include-screen-text"].checked) return;
             if (result.schemaVersion !== "project-search-v1" || result.project !== state.project || result.query !== query
                 || result.mode !== mode || result.topK !== top || !Array.isArray(result.sources) || result.sources.length !== runs.length
                 || !Array.isArray(result.candidates) || result.candidates.length > top
@@ -383,18 +535,84 @@
                         || !Array.isArray(row.observableFacts) || !row.observableFacts.every((fact) => typeof fact === "string");
                 })) throw new Error("多录像结果的来源或排名不一致，请重新搜索。");
             if (detailProfile ? !validSavedDetailSearch(result, detailProfile) : result.detailRetrieval !== undefined) throw new Error("已有细节与本次所选版本、候选或支持帧不一致，请重新搜索。");
+            if (includeScreenText) {
+                if (!validScreenTextGroup(result, runs)) throw new Error("屏幕文字结果与本次查询范围不一致，请重新搜索。");
+            } else if (result.screenTextMatches !== undefined || result.screenTextPrepared !== undefined
+                || result.screenTextNotice !== undefined || result.screenTextDiagnostics !== undefined) {
+                throw new Error("未启用屏幕文字时不应返回该结果组，请重新搜索。");
+            }
+            if (!searchStillCurrent(token, controller, "projectSearchController", revision)) return;
             state.projectSearch = result;
             if (state.view) state.view = jointRowsForView(state.view);
             renderCandidates();
+            renderScreenTextResults();
             renderSelections();
         } catch (error) {
-            if (controller.signal.aborted || revision !== state.revision || state.projectSearchController !== controller) return;
+            if (!searchStillCurrent(token, controller, "projectSearchController", revision)) return;
             notice(error.message);
             empty(ui["candidate-list"], "搜索未完成，请查看提示后重试。");
             ui["candidate-count"].textContent = "0";
+            hideScreenTextResults();
         } finally {
-            if (revision === state.revision && state.projectSearchController === controller) setBusy(false);
+            if (token === state.searchToken && state.projectSearchController === controller && revision === state.revision) setBusy(false);
         }
+    }
+
+    function sourceClockForPreview() {
+        if (!window.SourceClock || !state.view?.media) return null;
+        if (state.previewClock) return state.previewClock;
+        const known = SourceClock.clockCandidates(state.view.media)[0];
+        if (known) return known;
+        if (Number.isSafeInteger(state.view.media.durationUs) && state.view.media.durationUs > 0) {
+            return { originUs: 0, durationUs: state.view.media.durationUs };
+        }
+        return null;
+    }
+
+    function seekSourceInstant(sourceUs) {
+        if (!state.view) return false;
+        const duration = state.view.media.durationUs;
+        if (!Number.isSafeInteger(sourceUs) || sourceUs < 0 || sourceUs > duration) return false;
+        const clock = sourceClockForPreview();
+        const seconds = window.SourceClock && clock
+            ? SourceClock.sourceUsToPlayerSeconds(clock, sourceUs)
+            : (sourceUs / 1000000);
+        if (typeof seconds !== "number" || !Number.isFinite(seconds)) {
+            notice("源时钟不可用，无法按源时刻定位。");
+            return false;
+        }
+        state.pendingSeekUs = sourceUs;
+        state.playbackEndUs = null;
+        const video = ui["source-video"];
+        if (state.sourceUrl && video.readyState >= 1) {
+            video.currentTime = seconds;
+            state.pendingSeekUs = null;
+        }
+        ui["video-scrubber"].value = String(seconds);
+        ui["current-time"].textContent = timecode(sourceUs);
+        return true;
+    }
+
+    async function openScreenTextHit(row) {
+        const result = state.projectSearch;
+        if (!result || !Array.isArray(result.screenTextMatches) || !result.screenTextMatches.includes(row)) return;
+        if (state.busy && state.run === row.runId) return;
+        if (state.run !== row.runId) {
+            ui["run-select"].value = row.runId;
+            const loaded = await switchRun(row.runId, true);
+            if (!loaded || state.projectSearch !== result || state.run !== row.runId) return;
+        }
+        if (state.run !== row.runId) return;
+        const evidence = (Array.isArray(state.view?.evidence) ? state.view.evidence : []).find((item) => item.id === row.evidenceId);
+        state.active = { kind: "screen-text", row: { ...row, evidenceIds: [row.evidenceId] } };
+        if (!evidence) notice("当前原片中没有这条屏幕文字对应的证据。");
+        seekSourceInstant(row.timeUs);
+        setTab(false);
+        updateActive();
+        renderScreenTextResults();
+        renderCandidates();
+        renderTimeline();
+        renderEvidence();
     }
 
     async function openJointCandidate(row, select = false) {
@@ -411,9 +629,56 @@
         else await previewClip("candidate", current);
     }
 
+    const BLOCKED_SEARCH_EXPORT_KEYS = new Set([
+        "cost", "costs", "fee", "fees", "budget", "secret", "secrets",
+        "apiKey", "api_key", "password", "ledger", "paidRequests",
+        "maxCostCny", "costCny", "providerKey", "authorization", "accessToken",
+    ]);
+
+    function omitBlockedSearchExportKeys(value) {
+        if (Array.isArray(value)) return value.map(omitBlockedSearchExportKeys);
+        if (!value || typeof value !== "object") return value;
+        const copy = {};
+        for (const [key, item] of Object.entries(value)) {
+            if (BLOCKED_SEARCH_EXPORT_KEYS.has(key)) continue;
+            copy[key] = omitBlockedSearchExportKeys(item);
+        }
+        return copy;
+    }
+
+    function screenTextExportMatches(result) {
+        return result.screenTextMatches.map((row) => ({
+            runId: row.runId,
+            sourceSha256: row.sourceSha256,
+            evidenceId: row.evidenceId,
+            timeUs: row.timeUs,
+            timeTimecode: timecode(row.timeUs),
+            text: row.text,
+        }));
+    }
+
+    function projectSearchExportDocument() {
+        const result = state.projectSearch;
+        const document = omitBlockedSearchExportKeys(JSON.parse(JSON.stringify(result)));
+        const visible = ui["include-screen-text"].checked && result && Array.isArray(result.sources)
+            && validScreenTextGroup(result, result.sources.map((source) => source.runId));
+        if (visible) {
+            document.screenTextMatches = screenTextExportMatches(result);
+            document.screenTextDisclaimer = "本机识别出的文字，不是事实，也不是人工验收结果";
+        } else {
+            delete document.screenTextMatches;
+            delete document.screenTextPrepared;
+            delete document.screenTextNotice;
+            delete document.screenTextDiagnostics;
+            delete document.screenTextDisclaimer;
+        }
+        return document;
+    }
+
     function downloadProjectSearch() {
         if (!state.projectSearch || state.busy) return;
-        const url = URL.createObjectURL(new Blob([JSON.stringify(state.projectSearch, null, 2) + "\n"], { type: "application/json;charset=utf-8" }));
+        const exported = projectSearchExportDocument();
+        const url = URL.createObjectURL(new Blob([JSON.stringify(exported, null, 2) + "\n"], { type: "application/json;charset=utf-8" }));
         const link = element("a");
         link.href = url;
         link.download = `project-search-${state.projectSearch.searchId}.json`;
@@ -1371,6 +1636,7 @@
         ui["download-search-details"].disabled = true;
         ui["search-detail-summary"].textContent = "确认条件后，为这次搜索的原候选补依据；不重排，不剔除未知结果。";
         if (state.projectSearch) renderCandidates();
+        renderScreenTextResults();
     }
 
     function stableJson(value) {
@@ -1788,8 +2054,42 @@
 
     function csvCell(value) {
         let text = value === null || value === undefined ? "" : String(value);
-        if (/^[\s\u0000-\u001f]*[=+\-@]|^[\t\r\n]/u.test(text)) text = `'${text}`;
+        if (/^[\s\u0000-\u001f\uFEFF]*[=+\-@\uFF1D\uFF0B\uFF0D\uFF20\u2212]|^[\t\r\n]/u.test(text)) text = `'${text}`;
         return `"${text.replaceAll('"', '""')}"`;
+    }
+
+    function exportProjectSearchCsv() {
+        const exported = projectSearchExportDocument();
+        const headers = ["rowKind", "project", "searchId", "query", "runId", "sourceSha256", "evidenceId", "timeUs", "timeTimecode", "text", "candidateId", "rank", "startUs", "endUs"];
+        const rows = [];
+        for (const row of exported.candidates || []) {
+            const facts = Array.isArray(row.displayFacts) ? row.displayFacts : row.observableFacts;
+            rows.push([
+                "candidate", exported.project, exported.searchId, exported.query, row.runId, row.sourceSha256,
+                "", "", "", Array.isArray(facts) ? facts.join("；") : "",
+                row.candidateId, row.rank, row.startUs, row.endUs,
+            ]);
+        }
+        for (const row of exported.screenTextMatches || []) {
+            rows.push([
+                "screen-text", exported.project, exported.searchId, exported.query, row.runId, row.sourceSha256,
+                row.evidenceId, row.timeUs, row.timeTimecode, row.text, "", "", "", "",
+            ]);
+        }
+        return `\uFEFF${[headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n")}\r\n`;
+    }
+
+    function downloadProjectSearchCsv() {
+        if (!state.projectSearch || state.busy) return;
+        const url = URL.createObjectURL(new Blob([exportProjectSearchCsv()], { type: "text/csv;charset=utf-8" }));
+        const link = element("a");
+        link.href = url;
+        link.download = `project-search-${state.projectSearch.searchId}.csv`;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        notice("已下载这次搜索的 CSV 清单。", true);
     }
 
     function exportCsv(doc) {
@@ -1959,11 +2259,14 @@
 
     function setBusy(busy, searching = false) {
         state.busy = busy;
+        state.searching = Boolean(busy && searching);
         if (busy) clearRetrievalDiagnostics();
         updateDiagnosticsButton();
         const completed = state.searchRuns.length > 0 || isSearchEligible(state.view);
-        ui["search-button"].disabled = busy || !completed;
-        ui["search-button"].textContent = busy ? (searching ? "正在本地检索…" : "正在读取…") : "查找片段 ↗";
+        ui["search-button"].disabled = (busy && !state.searching) || !completed;
+        ui["search-button"].textContent = busy && !state.searching ? "正在读取…" : "查找片段 ↗";
+        ui["cancel-search"].hidden = !state.searching;
+        ui["cancel-search"].disabled = !state.searching;
         ui["refresh-view"].disabled = busy || !state.run;
         for (const id of ["query", "mode", "top"]) ui[id].disabled = !completed;
         ui["timeline-filter"].disabled = !state.view;
@@ -2018,6 +2321,7 @@
         renderFrameText();
         ui["stage-list"].replaceChildren();
         ui["preview-badge"].textContent = "等待素材";
+        syncPreviewAudioStatus(true);
         ui["active-title"].textContent = "尚未选中片段";
         ui["active-range"].textContent = "选择事件或候选后显示源时间区间";
         ui["active-facts"].textContent = "模型观察、原始证据与视频可以在这里对照查看。";
@@ -2063,6 +2367,7 @@
     }
 
     async function loadRuns(project, preferredRun = "") {
+        if (state.project) writeScreenTextDraft(state.project);
         clearProjectSearch();
         state.searchRuns = [];
         if (ui["search-sources-dialog"].open) ui["search-sources-dialog"].close();
@@ -2075,6 +2380,7 @@
         state.project = project;
         state.run = "";
         state.runs = [];
+        applyScreenTextDraft(project);
         resetView();
         state.selections = [];
         state.basketMediaId = null;
@@ -2162,6 +2468,7 @@
 
     async function inspect(query, preserveActive = false) {
         if (!state.project || !state.run) return;
+        const token = query ? beginSearchToken() : state.searchToken;
         state.inspectController?.abort();
         invalidateDetailDraft(true);
         clearDetailMatch();
@@ -2177,10 +2484,11 @@
             const payload = await request("/api/inspect", {
                 project: state.project, run: state.run, query, mode: ui.mode.value, top, detailProfile: ui["detail-profile"].value,
             }, controller.signal);
-            if (controller.signal.aborted || state.revision !== revision || state.inspectController !== controller) return;
+            if (!searchStillCurrent(token, controller, "inspectController", revision)) return;
             if (payload.runId !== state.run || !Array.isArray(payload.timeline) || !Array.isArray(payload.candidates)
                 || !payload.media || typeof payload.media.id !== "string"
                 || !Number.isSafeInteger(payload.media.durationUs) || payload.media.durationUs <= 0) throw new Error("分析视图的素材或运行身份不一致。");
+            if (!searchStillCurrent(token, controller, "inspectController", revision)) return;
             state.view = jointRowsForView(payload);
             if (!query) { void loadShots(false); void loadFrameText(false); }
             const activeRow = previousActive && (previousActive.kind === "candidate" ? state.view.candidates : state.view.timeline)
@@ -2190,7 +2498,7 @@
             renderView();
             return true;
         } catch (error) {
-            if (error.name === "AbortError" || state.revision !== revision || state.inspectController !== controller) return;
+            if (error.name === "AbortError" || !searchStillCurrent(token, controller, "inspectController", revision)) return;
             notice(error.message);
             if (query) {
                 if (state.view) state.view = { ...state.view, candidates: [], retrievalDiagnostics: null };
@@ -2203,15 +2511,186 @@
                 ui["search-context"].textContent = `查询未完成：${query}`;
             } else if (!state.view) empty(ui["timeline-list"], error.message);
         } finally {
-            if (state.revision === revision && state.inspectController === controller) setBusy(false);
+            if (token === state.searchToken && state.inspectController === controller && revision === state.revision) setBusy(false);
         }
         return false;
+    }
+
+
+    function previewClockNotice(attemptedProxy, result) {
+        if (!attemptedProxy || !result || result.source !== "original" || !result.reason) return "";
+        return (window.SourceClock && SourceClock.previewClockReason(result.reason)) || "代理时钟不可信，已改用原片";
+    }
+
+    function showPreviewClockNotice(attemptedProxy, result) {
+        let reasonEl = document.getElementById("preview-clock-reason");
+        if (!reasonEl) {
+            reasonEl = document.createElement("p");
+            reasonEl.id = "preview-clock-reason";
+            reasonEl.className = "hint";
+            reasonEl.setAttribute("role", "status");
+            ui["preview-badge"].after(reasonEl);
+        }
+        const notice = previewClockNotice(attemptedProxy, result);
+        reasonEl.hidden = !notice;
+        reasonEl.textContent = notice;
+        if (notice && result.reason) reasonEl.setAttribute("data-preview-clock-reason", result.reason);
+        else reasonEl.removeAttribute("data-preview-clock-reason");
+    }
+
+    function bindPreviewUrl(mediaUrl) {
+        const video = ui["source-video"];
+        if ((state.sourceUrl || "") === (mediaUrl || "")) return false;
+        state.previewLoadGen += 1;
+        state.sourceUrl = mediaUrl || "";
+        if (mediaUrl) {
+            video.src = mediaUrl;
+            video.load();
+            ui["video-empty"].hidden = true;
+            ui["video-scrubber"].disabled = false;
+        } else {
+            video.pause();
+            video.removeAttribute("src");
+            video.load();
+            ui["video-empty"].hidden = false;
+            ui["video-scrubber"].disabled = true;
+        }
+        return true;
+    }
+
+    function refreshPreviewBoundControls() {
+        if (!state.view) return;
+        renderCandidates();
+        renderTimeline();
+        updateActive();
+    }
+
+    function applyAlignedPreview(result, attemptedProxy, resumeUs) {
+        const video = ui["source-video"];
+        const mediaUrl = result.url;
+        state.previewClock = result.clock || null;
+        showPreviewClockNotice(attemptedProxy, result);
+        if (mediaUrl) {
+            const shouldSeek = resumeUs !== undefined;
+            const wasPlaying = !video.paused;
+            const changed = bindPreviewUrl(mediaUrl);
+            if (changed) {
+                const gen = state.previewLoadGen;
+                const onReady = () => {
+                    if (gen !== state.previewLoadGen) return;
+                    if (!samePreviewSrc(mediaUrl, video.currentSrc || video.getAttribute("src") || "")) return;
+                    if (shouldSeek && result.clock && resumeUs !== null && window.SourceClock) {
+                        const seconds = SourceClock.sourceUsToPlayerSeconds(result.clock, resumeUs);
+                        if (seconds !== null) video.currentTime = seconds;
+                    }
+                    if (wasPlaying) video.play().catch(() => notice("请使用视频播放按钮开始播放。"));
+                    else video.pause();
+                };
+                video.addEventListener("loadedmetadata", onReady, { once: true });
+            } else if (shouldSeek && result.clock && resumeUs !== null && window.SourceClock) {
+                const seconds = SourceClock.sourceUsToPlayerSeconds(result.clock, resumeUs);
+                if (seconds !== null) video.currentTime = seconds;
+                if (wasPlaying && video.paused) video.play().catch(() => notice("请使用视频播放按钮开始播放。"));
+            }
+            ui["preview-badge"].textContent = result.source === "proxy" ? "编辑代理（非原片）" : "原始素材";
+        } else {
+            bindPreviewUrl("");
+            ui["video-empty"].querySelector("h3").textContent = "视频地址未通过校验";
+            ui["video-empty"].querySelector("p").textContent = "时间轴仍可查看，请刷新素材后重试。";
+            ui["preview-badge"].textContent = "暂不可播放";
+        }
+        refreshPreviewBoundControls();
+    }
+
+    function alignWorkbenchPreview(media, preferProxy, resumeUs) {
+        const original = safeMediaUrl(media.videoUrl, "/api/media");
+        const offered = choosePreview(media.videoUrl, media.proxyUrl, preferProxy);
+        const attemptedProxy = offered.source === "proxy";
+        // 先挂上当前能用的地址，让时间轴预览按钮可以立刻点；对齐完成后再换成最终地址。
+        bindPreviewUrl(offered.url || original || "");
+        const cacheKey = `${media.id}|${preferProxy}|${original}|${offered.url || ""}`;
+        if (state.previewAlignCache && state.previewAlignCache.key === cacheKey && state.previewAlignCache.result) {
+            applyAlignedPreview(state.previewAlignCache.result, attemptedProxy, resumeUs);
+            return;
+        }
+        if (state.previewAlignKey === cacheKey) return;
+        const token = ++state.previewAlignToken;
+        state.previewAlignKey = cacheKey;
+        const finish = (result) => {
+            if (token !== state.previewAlignToken) return;
+            if (attemptedProxy && (result.reason === "proxy_http_failed" || result.reason === "proxy_decode_failed") && media.id) {
+                state.previewHttpFailed[media.id] = true;
+                state.previewAlignCache = null;
+                state.previewAlignKey = null;
+                const box = document.getElementById("proxy-toggle-input");
+                if (box) box.checked = false;
+            } else {
+                state.previewAlignCache = {key: cacheKey, result};
+            }
+            applyAlignedPreview(result, attemptedProxy, resumeUs);
+        };
+        if (!window.SourceClock) {
+            finish({
+                url: original,
+                source: "original",
+                clock: null,
+                established: false,
+                reason: attemptedProxy ? "clock_unavailable" : null,
+            });
+            return;
+        }
+        const abs = (url) => url ? new URL(url, window.location.href).href : null;
+        SourceClock.alignPreview(
+            SourceClock.clockCandidates(media),
+            abs(original),
+            attemptedProxy ? abs(offered.url) : null,
+            attemptedProxy,
+        ).then(finish, () => finish({
+            url: original,
+            source: "original",
+            clock: null,
+            established: false,
+            reason: attemptedProxy ? "media_unavailable" : null,
+        }));
+    }
+
+    function choosePreview(videoUrl, offeredProxyUrl, preferProxy) {
+        const original = safeMediaUrl(videoUrl, "/api/media");
+        const proxy = offeredProxyUrl ? safeMediaUrl(offeredProxyUrl, "/api/media") : null;
+        if (!preferProxy || !original || !proxy) return {url: original, source: original ? "original" : null};
+        try {
+            if (new URL(proxy, window.location.origin).searchParams.get("proxy") !== "1") {
+                return {url: original, source: "original"};
+            }
+        } catch {
+            return {url: original, source: "original"};
+        }
+        return {url: proxy, source: "proxy"};
+    }
+
+
+    function syncPreviewAudioStatus(hasAudio) {
+        let el = document.getElementById("preview-audio-status");
+        if (hasAudio !== false) {
+            if (el) el.hidden = true;
+            return;
+        }
+        if (!el) {
+            el = document.createElement("p");
+            el.id = "preview-audio-status";
+            el.className = "muted small";
+            el.setAttribute("data-audio-status", "silent");
+            ui["preview-badge"].after(el);
+        }
+        el.hidden = false;
+        el.textContent = "这段录像没有声音";
     }
 
     function renderView() {
         const view = state.view;
         ui["source-name"].textContent = view.media.name || "源视频";
         ui["source-duration"].textContent = `源时长 ${timecode(view.media.durationUs)}`;
+        syncPreviewAudioStatus(view.media.sourceHasAudio);
         ui["run-state"].className = `run-state ${view.runStatus}`;
         const analysis = view.analysisProfile === "detailed" ? "细节动作分析（试验）"
             : view.analysisKind === "temporal" ? "连续动作分析（试验）" : "旧画面观察";
@@ -2223,36 +2702,44 @@
         ui["total-time"].textContent = ` / ${timecode(view.media.durationUs)}`;
         ui["timeline-end"].textContent = timecode(view.media.durationUs).split(".")[0];
         ui["video-scrubber"].max = String(view.media.durationUs / 1000000);
-        const originalUrl = safeMediaUrl(view.media.videoUrl, "/api/media");
         const proxyUrl = view.media.proxyUrl ? safeMediaUrl(view.media.proxyUrl, "/api/media") : null;
-        // The proxy is an opt-in preview only; frame-exact work keeps using the original.
+        const mediaId = view.media.id;
+        // 该素材第一次打开且代理回执有效时自动选用；手动开关仍可改，不把选择套到别的素材上。
+        if (mediaId && !(mediaId in state.previewByMedia) && proxyUrl) state.previewByMedia[mediaId] = true;
+        const preferProxy = Boolean(mediaId && state.previewByMedia[mediaId]) && !state.previewHttpFailed[mediaId];
+        const preview = choosePreview(view.media.videoUrl, view.media.proxyUrl, preferProxy);
+        const originalUrl = preview.source === "proxy" ? safeMediaUrl(view.media.videoUrl, "/api/media") : preview.url;
         let proxyToggle = document.getElementById("proxy-toggle");
         if (proxyUrl && !proxyToggle) {
             proxyToggle = document.createElement("label"); proxyToggle.id = "proxy-toggle";
             const box = document.createElement("input"); box.type = "checkbox"; box.id = "proxy-toggle-input";
             proxyToggle.append(box, " 使用编辑代理预览（360p，仅用于流畅浏览）");
             ui["preview-badge"].after(proxyToggle);
-            box.addEventListener("change", () => { state.useProxy = box.checked; renderView(); });
+            box.addEventListener("change", () => {
+                const mediaId = state.view?.media?.id;
+                if (mediaId) {
+                    state.previewByMedia[mediaId] = box.checked;
+                    if (box.checked) delete state.previewHttpFailed[mediaId];
+                    if (typeof PreviewPreference === "object") PreviewPreference.set(mediaId, box.checked);
+                }
+                renderView();
+            });
         }
-        if (proxyToggle) proxyToggle.hidden = !proxyUrl;
-        const mediaUrl = state.useProxy && proxyUrl ? proxyUrl : originalUrl;
-        if (mediaUrl) {
-            if (state.sourceUrl !== mediaUrl) {
-                const resume = ui["source-video"].currentTime || 0;
-                state.sourceUrl = mediaUrl;
-                ui["source-video"].src = mediaUrl;
-                ui["source-video"].load();
-                if (resume) ui["source-video"].addEventListener("loadedmetadata", () => { ui["source-video"].currentTime = resume; }, { once: true });
-            }
-            ui["video-empty"].hidden = true;
-            ui["video-scrubber"].disabled = false;
-            ui["preview-badge"].textContent = mediaUrl === proxyUrl ? "编辑代理（非原片）" : "原始素材";
-        } else {
-            ui["video-empty"].hidden = false;
-            ui["video-empty"].querySelector("h3").textContent = "视频地址未通过校验";
-            ui["video-empty"].querySelector("p").textContent = "时间轴仍可查看，请刷新素材后重试。";
-            ui["preview-badge"].textContent = "暂不可播放";
+        if (proxyToggle) {
+            proxyToggle.hidden = !proxyUrl;
+            const box = document.getElementById("proxy-toggle-input");
+            if (box) box.checked = Boolean(preferProxy && proxyUrl);
         }
+        const video = ui["source-video"];
+        const sameMedia = state.previewMediaId === mediaId;
+        const preferenceChanged = state.previewPrefer !== preferProxy || !sameMedia;
+        const resumeUs = sameMedia && preferenceChanged && state.previewClock && window.SourceClock
+            ? SourceClock.playerToSourceUs(state.previewClock, video.currentTime)
+            : undefined;
+        if (!sameMedia) state.pendingSeekUs = null;
+        state.previewPrefer = preferProxy;
+        state.previewMediaId = mediaId;
+        alignWorkbenchPreview(view.media, preferProxy, resumeUs);
         const known = view.cost?.knownCny;
         const unknown = Number.isSafeInteger(view.cost?.unknownAttempts) && view.cost.unknownAttempts >= 0 ? view.cost.unknownAttempts : null;
         ui["cost-known"].textContent = typeof known === "string" && /^\d+(?:\.\d+)?$/.test(known) ? `¥${known}` : "费用未知";
@@ -2563,13 +3050,25 @@
     }
 
     function updateActiveButton() {
-        ui["add-active"].disabled = !state.active;
+        ui["add-active"].disabled = !state.active || state.active.kind === "screen-text";
         const selected = state.active && state.selections.some((entry) => entry.key === selectionKey(state.active.row));
         ui["add-active"].textContent = selected ? "✓ 已加入（点击移除）" : "＋ 加入片段篮";
     }
 
     function updateActive() {
         const row = state.active?.row;
+        if (state.active?.kind === "screen-text" && row) {
+            ui["active-title"].textContent = `屏幕文字 · ${row.runId}`;
+            ui["active-range"].textContent = `源时刻 ${timecode(row.timeUs)}`;
+            ui["active-facts"].textContent = row.text || "";
+            ui["play-selection"].disabled = true;
+            ui["play-context"].disabled = true;
+            ui["playback-range"].textContent = `源时刻 ${timecode(row.timeUs)}`;
+            updateActiveButton();
+            updateDetailQueryButton();
+            renderActiveLocalContext();
+            return;
+        }
         ui["active-title"].textContent = row ? (state.active.kind === "candidate" ? `候选 #${row.rank}` : "时间轴事件") : "尚未选中片段";
         ui["active-range"].textContent = row ? intervalLabel(row) : "选择事件或候选后显示源时间区间";
         ui["active-facts"].textContent = row ? facts(row).join("；") : "模型观察、原始证据与视频可以在这里对照查看。";
@@ -2640,7 +3139,8 @@
                 continue;
             }
             if (item.kind === "image") {
-                const button = element("button", "evidence-card");
+                const focused = state.active?.kind === "screen-text" && state.active.row.evidenceId === item.id;
+                const button = element("button", `evidence-card${focused ? " active" : ""}`);
                 button.type = "button";
                 button.setAttribute("aria-label", `查看 ${timecode(item.startUs)} 的源帧证据`);
                 const image = element("img");
@@ -2931,6 +3431,8 @@
         void inspect("");
     });
     ui["download-project-search"].addEventListener("click", downloadProjectSearch);
+    ui["download-project-search-csv"].addEventListener("click", downloadProjectSearchCsv);
+
     ui["detail-profile"].addEventListener("change", () => { clearSearchDetailEvidence();void inspect(state.projectSearch ? "" : state.view?.query || "", true); });
     ui["open-detail-query"].addEventListener("click", () => {
         state.detailSearchScope=false;
@@ -3047,6 +3549,7 @@
             updateSearchScope();
             state.inspectController?.abort();
             if (state.projectSearchController && !state.projectSearch) {
+                beginSearchToken();
                 state.projectSearchController.abort();
                 state.projectSearchController = null;
                 setBusy(false);
@@ -3060,9 +3563,17 @@
     ui["include-saved-details"].addEventListener("change", () => {
         clearSearchDetailEvidence();
         if(state.detailSearchScope)clearDetailMatch();
+        beginSearchToken();
         state.projectSearchController?.abort();
         state.projectSearchController=null;
         setBusy(false);updateSearchScope();
+    });
+    ui["include-screen-text"].addEventListener("change", () => {
+        renderScreenTextResults();
+        writeScreenTextDraft(state.project);
+    });
+    ui.query.addEventListener("input", () => {
+        writeScreenTextDraft(state.project);
     });
     ui["detail-cost-dialog"].addEventListener("close", () => { state.costController?.abort(); state.costRevision += 1; });
     ui["refresh-projects"].addEventListener("click", () => { void loadProjects(); });
@@ -3070,7 +3581,7 @@
     ui["refresh-view"].addEventListener("click", () => { void inspect(""); });
     ui["search-form"].addEventListener("submit", (event) => {
         event.preventDefault();
-        if (state.busy) return;
+        if (state.busy && !state.searching) return;
         if (!state.searchRuns.length && !isSearchEligible(state.view)) {
             return notice(searchBlockedMessage(state.view));
         }
@@ -3080,7 +3591,12 @@
         if (state.searchRuns.length) void searchProject(query);
         else void inspect(query);
     });
+    ui["cancel-search"].addEventListener("click", () => {
+        if (!state.searching) return;
+        cancelInFlightSearch("已取消这次查询。");
+    });
     ui.query.addEventListener("keydown", (event) => {
+
         if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) { event.preventDefault(); ui["search-form"].requestSubmit(); }
     });
     function filterTimeline() {
@@ -3115,6 +3631,8 @@
     });
     ui["evidence-dialog"].addEventListener("close", () => ui["evidence-full"].removeAttribute("src"));
     ui["source-video"].addEventListener("loadedmetadata", () => {
+        const video = ui["source-video"];
+        if (!samePreviewSrc(state.sourceUrl || "", video.currentSrc || video.getAttribute("src") || "")) return;
         if (state.pendingSeekUs !== null) seek(state.pendingSeekUs);
         updatePlayback();
     });
@@ -3126,12 +3644,62 @@
         if (state.frameRequest !== null) cancelAnimationFrame(state.frameRequest);
         state.frameRequest = null;
     });
+    function proxySrcUsed(url) {
+        if (!url) return false;
+        try { return new URL(url, window.location.href).searchParams.get("proxy") === "1"; }
+        catch { return false; }
+    }
+
+    function fallbackPreviewAfterProxyError() {
+        const video = ui["source-video"];
+        const media = state.view?.media;
+        const assigned = state.sourceUrl || "";
+        const current = video.currentSrc || video.getAttribute("src") || "";
+        if (!assigned || !samePreviewSrc(assigned, current)) return false;
+        if (!media?.id || !proxySrcUsed(assigned) || state.previewHttpFailed[media.id]) return false;
+        const reason = (window.SourceClock && SourceClock.proxyLoadReason(video)) || "proxy_http_failed";
+        const resumeUs = state.previewClock && window.SourceClock
+            ? SourceClock.playerToSourceUs(state.previewClock, video.currentTime)
+            : 0;
+        state.previewHttpFailed[media.id] = true;
+        state.previewAlignKey = null;
+        state.previewAlignCache = null;
+        const original = safeMediaUrl(media.videoUrl, "/api/media");
+        if (!original) return false;
+        const token = ++state.previewAlignToken;
+        const abs = (url) => url ? new URL(url, window.location.href).href : null;
+        const finish = (result) => {
+            if (token !== state.previewAlignToken) return;
+            applyAlignedPreview({...result, reason}, true, resumeUs);
+        };
+        if (!window.SourceClock) {
+            finish({url: original, source: "original", clock: null, established: false, reason});
+            return true;
+        }
+        SourceClock.alignPreview(SourceClock.clockCandidates(media), abs(original), null, false).then(
+            finish,
+            () => finish({url: original, source: "original", clock: null, established: false, reason}),
+        );
+        return true;
+    }
+
+    function samePreviewSrc(left, right) {
+        if (!left || !right) return false;
+        try { return new URL(left, window.location.href).href === new URL(right, window.location.href).href; }
+        catch { return left === right; }
+    }
+
     ui["source-video"].addEventListener("error", () => {
-        if (!state.sourceUrl) return;
+        const video = ui["source-video"];
+        if (fallbackPreviewAfterProxyError()) return;
+        const assigned = state.sourceUrl || "";
+        const current = video.currentSrc || video.getAttribute("src") || "";
+        if (!assigned || !samePreviewSrc(assigned, current) || proxySrcUsed(assigned)) return;
         ui["video-empty"].hidden = false;
-        ui["video-empty"].querySelector("h3").textContent = "原视频暂时无法播放";
+        const heading = (window.SourceClock && SourceClock.playbackErrorText(video.error)) || "原视频暂时无法播放";
+        ui["video-empty"].querySelector("h3").textContent = heading;
+        ui["video-empty"].querySelector("h3").setAttribute("data-original-playback-error", heading);
         ui["video-empty"].querySelector("p").textContent = "请确认素材仍在原处且浏览器支持其编码。时间轴和片段清单仍可使用。";
-        ui["preview-badge"].textContent = "播放失败";
     });
     ui["video-scrubber"].addEventListener("input", () => { state.playbackEndUs = null; ui["playback-range"].textContent = "自由回看"; seek(Math.round(Number(ui["video-scrubber"].value) * 1000000)); });
     ui["timeline-map"].addEventListener("click", (event) => {

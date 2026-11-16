@@ -64,6 +64,14 @@ export function shots(items) {
 function waitMedia(video, signal, complete, message) {
     if (signal.aborted) return Promise.reject(new DOMException("Cancelled", "AbortError"));
     if (complete()) return Promise.resolve();
+    const expected = video.getAttribute("src") || "";
+    const matches = () => {
+        const now = video.getAttribute("src") || "";
+        if (now !== expected) return false;
+        if (!video.currentSrc) return true;
+        try { return new URL(video.currentSrc, location.href).href === new URL(expected, location.href).href; }
+        catch { return true; }
+    };
     return new Promise((resolve, reject) => {
         const events = ["loadedmetadata", "seeked", "canplay", "loadeddata", "progress", "durationchange"];
         const cleanup = () => {
@@ -72,7 +80,12 @@ function waitMedia(video, signal, complete, message) {
             video.removeEventListener("error", fail); signal.removeEventListener("abort", abort);
         };
         const check = () => { if (complete()) { cleanup(); resolve(); } };
-        const fail = () => { cleanup(); reject(new Error(message)); };
+        const fail = () => {
+            if (!matches()) return;
+            cleanup();
+            const reason = globalThis.SourceClock?.proxyLoadReason?.(video) || "proxy_http_failed";
+            reject(Object.assign(new Error(message), {proxyFailReason: reason, mediaError: video.error}));
+        };
         const abort = () => { cleanup(); reject(new DOMException("Cancelled", "AbortError")); };
         const timer = setTimeout(fail, 8000);
         events.forEach(name => video.addEventListener(name, check));
@@ -101,7 +114,7 @@ function seekableTarget(video, signal, target) {
 
 class PlanPlayback {
     constructor(videos, items, urlFor, publish, disabled) {
-        Object.assign(this, {items, urlFor, publish, disabled, error: disabled, run: 0, live: false, out: 0});
+        Object.assign(this, {items, urlFor, publish, disabled, error: disabled, run: 0, live: false, out: 0, proxyHttpFailed: new Set(), proxyFailReason: ""});
         this.slots = videos.map(video => {
             video.dataset.previewSlot = "";
             video.style.opacity = "0";
@@ -115,28 +128,54 @@ class PlanPlayback {
             this.listeners.push(() => slot.video.removeEventListener(name, fn));
         }
     }
-    state(buffering = false) { if (this.disposed) return; this.publish({outUs: this.out, totalUs: this.total, playing: this.live, buffering, error: this.error || ""}); }
+    state(buffering = false) { if (this.disposed) return; this.publish({outUs: this.out, totalUs: this.total, playing: this.live, buffering, error: this.error || "", proxyHttpFallback: this.proxyHttpFailed.size > 0, proxyFailReason: this.proxyFailReason || ""}); }
     active() {
         return compositionAt(this.items, this.out).map(part => part.index);
     }
-    async prepare(slot, index, run) {
+    previewOriginalUrl(url) {
+        if (!url) return url;
+        try {
+            const parsed = new URL(url, location.href);
+            if (parsed.searchParams.get("proxy") !== "1") return url;
+            parsed.searchParams.delete("proxy");
+            return parsed.pathname + parsed.search + parsed.hash;
+        } catch { return url; }
+    }
+    async prepare(slot, index, run, allowProxy = true) {
         slot.pending?.abort();
         const controller = new AbortController(); slot.pending = controller;
         slot.index = index; slot.ready = false; slot.loading = true; slot.error = ""; slot.run = run;
-        const video = slot.video, item = this.items[index], src = this.urlFor(item.runId);
+        const video = slot.video, item = this.items[index];
+        const offered = this.urlFor(item.runId);
+        const blocked = !allowProxy || this.proxyHttpFailed.has(item.runId);
+        const src = blocked ? this.previewOriginalUrl(offered) : offered;
         video.pause(); video.style.opacity = "0";
         video.studioAudioGraph ? video.studioAudioGraph.slot(video, 0) : video.volume = 0;
         if (video.getAttribute("src") !== src) { video.src = src; video.load(); }
-        await mediaReady(video, controller.signal, true);
-        if (run !== this.run) return;
-        video.playbackRate = item.rate || 1;
-        const target = ((item.sourceClock?.originUs || 0) + item.startUs
-            + Math.max(0, this.out - item.outStartUs) * (item.rate || 1)) / 1e6;
-        if (target > 0) await seekableTarget(video, controller.signal, target);
-        if (run !== this.run) return;
-        if (Math.abs(video.currentTime - target) > .015) video.currentTime = target;
-        await mediaReady(video, controller.signal, false, target);
-        if (run === this.run) { slot.ready = true; slot.loading = false; if (this.live) { this.paint(); this.resume(); } }
+        try {
+            await mediaReady(video, controller.signal, true);
+            if (run !== this.run) return;
+            video.playbackRate = item.rate || 1;
+            const target = ((item.sourceClock?.originUs || 0) + item.startUs
+                + Math.max(0, this.out - item.outStartUs) * (item.rate || 1)) / 1e6;
+            if (target > 0) await seekableTarget(video, controller.signal, target);
+            if (run !== this.run) return;
+            if (Math.abs(video.currentTime - target) > .015) video.currentTime = target;
+            await mediaReady(video, controller.signal, false, target);
+            if (run === this.run) { slot.ready = true; slot.loading = false; if (this.live) { this.paint(); this.resume(); } }
+        } catch (error) {
+            if (run !== this.run || error.name === "AbortError") throw error;
+            const usedProxy = typeof src === "string" && src.includes("proxy=1");
+            if (usedProxy && !this.proxyHttpFailed.has(item.runId)) {
+                this.proxyHttpFailed.add(item.runId);
+                this.proxyFailReason = error.proxyFailReason || "proxy_http_failed";
+                return this.prepare(slot, index, run, false);
+            }
+            if (!usedProxy && error.mediaError && globalThis.SourceClock?.playbackErrorText) {
+                throw new Error(SourceClock.playbackErrorText(error.mediaError));
+            }
+            throw error;
+        }
     }
     stop() {
         this.slots[0].video.studioAudioGraph?.reset();
@@ -200,7 +239,8 @@ class PlanPlayback {
         const run = this.run;
         for (const slot of required) if (slot.video.paused) {
             void slot.video.play().catch(error => {
-                if (run === this.run && this.live) this.fail(error.message || "素材无法播放");
+                if (run !== this.run || !this.live || error.name === "AbortError") return;
+                this.fail(error.message || "素材无法播放");
             });
         }
         return true;
@@ -249,14 +289,24 @@ class PlanPlayback {
 export function usePlanPlayer(videoRef, items, urlFor, secondRef, disabled = "") {
     const [state, setState] = useState({outUs: 0, totalUs: 0, playing: false, buffering: false});
     const engine = useRef(null);
+    const keepRef = useRef(null);
+    const itemsRef = useRef(items);
     useLayoutEffect(() => {
         const first = videoRef.current;
         if (!first) return;
         const second = secondRef?.current || first.cloneNode(false);
         if (!secondRef) first.after(second);
+        const keep = keepRef.current && itemsRef.current === items ? keepRef.current : null;
+        itemsRef.current = items;
         const player = new PlanPlayback([first, second], items, urlFor, setState, disabled);
-        engine.current = player; player.state();
-        return () => { player.dispose(); if (!secondRef) second.remove(); };
+        engine.current = player;
+        if (keep) void player.seek(keep.out, keep.live);
+        else player.state();
+        return () => {
+            keepRef.current = {out: player.out, live: player.live};
+            player.dispose();
+            if (!secondRef) second.remove();
+        };
     }, [items, urlFor, disabled]);
     const seek = useCallback((target, play = false) => engine.current?.seek(target, play), []);
     const stop = useCallback(() => engine.current?.stop(), []);

@@ -31,6 +31,7 @@ function ShotWave({project, item, left, width, gain}) {
         const el = canvas.current; if (!el || !data) return;
         const ctx = el.getContext("2d"), w = el.width, mid = el.height / 2;
         ctx.clearRect(0, 0, w, el.height);
+        if (!data.audio) return; // 缺音轨不画假波形
         ctx.fillStyle = getComputedStyle(el).color;
         const step = w / Math.max(1, data.peaks.length);
         data.peaks.forEach((p, i) => { const a = Math.max(0.5, Math.min(1, p * gain) * mid); ctx.fillRect(i * step, mid - a, Math.max(1, step - 0.5), a * 2); });

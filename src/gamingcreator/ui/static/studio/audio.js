@@ -34,12 +34,38 @@ const downloadTxt = (value) => {
     }
 };
 
+// Same integer rule as validate_narration_fit: a start is allowed only when
+// sampleCount * fps <= (totalFrames - startFrame) * sampleRate.
+export function maxNarrationStart(totalFrames, fps, asset) {
+    if (!totalFrames || !fps) return 0;
+    const count = asset?.sampleCount;
+    const rate = asset?.sampleRate;
+    if (Number.isSafeInteger(count) && count > 0 && Number.isSafeInteger(rate) && rate > 0) {
+        return Math.max(0, totalFrames - Math.ceil((count * fps) / rate));
+    }
+    const seconds = Number(asset?.durationSeconds) || 0;
+    if (!(seconds > 0)) return Math.max(0, totalFrames - 1);
+    return Math.max(0, totalFrames - Math.ceil(seconds * fps - 1e-9));
+}
+
+export function narrationFits(startFrame, totalFrames, fps, asset) {
+    if (startFrame < 0 || startFrame >= totalFrames) return false;
+    const count = asset?.sampleCount;
+    const rate = asset?.sampleRate;
+    if (Number.isSafeInteger(count) && count > 0 && Number.isSafeInteger(rate) && rate > 0) {
+        return count * fps <= (totalFrames - startFrame) * rate;
+    }
+    return startFrame <= maxNarrationStart(totalFrames, fps, asset);
+}
+
 // Narration that does not fit after its start point is refused by the server; say so before saving.
 export function narrationProblem(audio, totalUs, fps) {
     const {narration, asset} = audio;
-    if (!narration || !asset || !totalUs) return "";
-    const room = totalUs / 1e6 - narration.startFrame / fps;
-    return asset.durationSeconds > room ? `旁白 ${asset.durationSeconds.toFixed(1)} 秒，起点后只剩 ${Math.max(0, room).toFixed(1)} 秒：请改短文字或提前起点（不会自动截断）` : "";
+    if (!narration || !asset || !totalUs || !fps) return "";
+    const totalFrames = Math.round((totalUs * fps) / 1e6);
+    if (narrationFits(narration.startFrame, totalFrames, fps, asset)) return "";
+    const room = Math.max(0, totalFrames - narration.startFrame) / fps;
+    return `旁白 ${asset.durationSeconds.toFixed(1)} 秒，起点后只剩 ${room.toFixed(1)} 秒：请改短文字或提前起点（不会自动截断）`;
 }
 
 // Keep narration and music in step with the plan player; the source video follows its level.
@@ -80,7 +106,13 @@ export function useAudioPreview(player, audio, fps, video, tracks, identity) {
                 offsetS %= el.duration;
             }
             el.loop = loop;
-            if (el.paused && Math.abs(el.currentTime - offsetS) > 0.015) el.currentTime = offsetS;
+            // Keep bed/narration on the output clock even while playing; pause-only seeks
+            // left looped music free to drift past the 0.12s dissolve assertion (TD030).
+            const drift = Math.abs(el.currentTime - offsetS);
+            const phase = loop && Number.isFinite(el.duration) && el.duration > 0
+                ? Math.min(drift, Math.abs(drift - el.duration))
+                : drift;
+            if (phase > 0.015) el.currentTime = offsetS;
             if (el.paused) void el.play().catch(() => {});
         };
         const out = player.outUs / 1e6;
@@ -460,8 +492,8 @@ export function AudioPanel({commandPreview = false, editing, project, game = "",
             <p class="hint clamp" aria-label="正在使用的旁白文字">${asset.text}</p>
             ${toolButtons(asset.text || "", "已挂接")}
             <div class="pair even">
-                <label class="form-row">起点（成片秒）<input class="input" type="number" min="0" step="0.5" disabled=${paramsLocked} value=${(n.startFrame / fps).toFixed(1)}
-                    onChange=${(e) => editing.ops.narration({...n, startFrame: Math.max(0, Math.round(Number(e.currentTarget.value) * fps))})} /></label>
+                <label class="form-row">起点（成片秒）<input class="input" type="number" min="0" step="0.5" max=${(maxNarrationStart(Math.round((totalUs * fps) / 1e6), fps, asset) / fps).toFixed(1)} disabled=${paramsLocked} value=${(n.startFrame / fps).toFixed(1)}
+                    onChange=${(e) => editing.ops.narration({...n, startFrame: Math.max(0, Math.min(maxNarrationStart(Math.round((totalUs * fps) / 1e6), fps, asset), Math.round(Number(e.currentTarget.value) * fps)))})} /></label>
                 ${gainSelect(n.gainDb, (g) => editing.ops.narration({...n, gainDb: g}), "旁白音量", paramsLocked)}
             </div>
             <label class="check"><input type="checkbox" disabled=${paramsLocked} checked=${n.ducking === "narration-v1"} onChange=${(e) => editing.ops.narration({...n, ducking: e.currentTarget.checked ? "narration-v1" : "off"})} /> 旁白响起时压低原声和音乐</label>

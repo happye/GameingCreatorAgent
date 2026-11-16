@@ -28,13 +28,18 @@ async def execute_make_proxy(project: Path, run_id: str, repository: Path) -> No
             CancellationContext(f"proxy-{run_id}", 6 * 3600),
         )
     except ValueError as error:
-        # e.g. byte budget reached or source bytes changed: say which, not a generic failure.
-        raise AppError("proxy.failed", f"代理预览未生成：{error}", ExitCode.INPUT) from error
+        # Keep an already-clear Chinese reason; hide raw internal English errors.
+        reason = str(error).strip()
+        if not reason or not any("\u4e00" <= ch <= "\u9fff" for ch in reason):
+            reason = "代理预览目前不可用。"
+        raise AppError("proxy.failed", f"代理预览未生成：{reason}", ExitCode.INPUT) from error
+    except PermissionError as error:
+        raise AppError(
+            "proxy.failed", "没有权限读取代理预览所需的原录像。", ExitCode.INPUT
+        ) from error
     except OSError as error:
         raise AppError(
-            "proxy.failed",
-            f"代理预览未生成：读不到登记的原录像（{error}）",
-            ExitCode.INPUT,
+            "proxy.failed", "代理预览未生成：读不到登记的原录像。", ExitCode.INPUT
         ) from error
     sys.stdout.write(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n")
 

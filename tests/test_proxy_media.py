@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -83,6 +84,27 @@ def test_proxy_is_small_verified_and_reused(repository):
     proxy = proxy_directory(repo, sha) / "proxy.mp4"
     proxy.write_bytes(proxy.read_bytes() + b"tamper")
     assert read_proxy(repo, sha) is None
+
+
+def test_same_size_tampered_proxy_is_rejected_and_not_reused(repository):
+    repo, source, sha = repository
+    first = build(repo, source, sha)
+    proxy = proxy_directory(repo, sha) / "proxy.mp4"
+    original = proxy.read_bytes()
+    assert len(original) == first["bytes"]
+    tampered = bytearray(original)
+    tampered[len(tampered) // 2] ^= 0xFF
+    before = proxy.stat()
+    proxy.write_bytes(tampered)
+    os.utime(proxy, ns=(before.st_atime_ns, before.st_mtime_ns))
+    assert proxy.stat().st_size == first["bytes"]
+    assert read_proxy(repo, sha) is None
+    again = build(repo, source, sha)
+    assert again["reused"] is False
+    rebuilt = proxy.read_bytes()
+    assert rebuilt != bytes(tampered)
+    assert hashlib.sha256(rebuilt).hexdigest() == again["proxySha256"]
+    assert read_proxy(repo, sha) is not None
 
 
 def test_budget_breach_keeps_nothing(repository, monkeypatch):

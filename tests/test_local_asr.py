@@ -201,8 +201,26 @@ def test_fake_worker_maps_piecewise_clock_and_records_provenance(fixture, monkey
     assert details["device"] == "cpu" and details["computeType"] == "int8"
     assert details["workerElapsedMs"] == 17
     arguments, payload, limits = capture[0]
-    assert arguments[1:5] == ["-I", "-B", "-m", "gamingcreator.infrastructure.asr_worker"]
+    assert arguments[1:3] == ["-I", "-B"]
+    assert Path(arguments[3]) == local_asr.WORKER_SCRIPT
     assert payload["audioPath"] == str(request.audio_clock.path.resolve())
+    assert "wordTimestamps" not in payload
+    assert set(payload) == {
+        "schema",
+        "audioPath",
+        "modelDirectory",
+        "model",
+        "revision",
+        "nativeDirectory",
+        "nativeFiles",
+        "repository",
+        "computeType",
+        "cpuThreads",
+        "beamSize",
+        "vadFilter",
+        "language",
+        "gameTerms",
+    }
     assert limits["max_stdout_bytes"] == 4 * 1024 * 1024
     assert not Path(arguments[-1]).exists()
 
@@ -511,6 +529,18 @@ def test_fake_model_is_cpu_offline_and_generator_is_fully_materialized(monkeypat
         "local_files_only": True,
     }
     assert calls[1][1]["language"] is None and calls[1][1]["hotwords"] == "Atom"
+    assert "word_timestamps" not in calls[1][1]
+    assert "words" not in result
+    assert set(result) == {
+        "schema",
+        "status",
+        "model",
+        "revision",
+        "language",
+        "elapsedMs",
+        "segments",
+        "nativeLibraries",
+    }
 
 
 def test_fake_lazy_failure_is_sanitized_and_discards_partial_segments(monkeypatch):
@@ -555,3 +585,158 @@ def test_fake_lazy_failure_is_sanitized_and_discards_partial_segments(monkeypatc
         "code": "asr.inference",
     }
     assert "private" not in json.dumps(result)
+
+
+def _worker_request_document(overrides=None):
+    document = {
+        "schema": local_asr.WORKER_SCHEMA,
+        "audioPath": "fake.wav",
+        "modelDirectory": "fake-local",
+        "model": "fake",
+        "revision": "a" * 40,
+        "nativeDirectory": "fake-native",
+        "nativeFiles": [{"name": "msvcp140.dll", "size": 1, "sha256": "b" * 64}],
+        "repository": "fake-repository",
+        "computeType": "int8",
+        "cpuThreads": 2,
+        "beamSize": 5,
+        "vadFilter": True,
+        "language": "auto",
+        "gameTerms": ["Atom"],
+    }
+    if overrides:
+        document.update(overrides)
+    return document
+
+
+def test_worker_request_accepts_optional_word_timestamps_flag(tmp_path):
+    path = tmp_path / "request.json"
+    path.write_text(json.dumps(_worker_request_document()), encoding="utf-8")
+    assert "wordTimestamps" not in asr_worker._read_request(path)
+
+    path.write_text(
+        json.dumps(_worker_request_document({"wordTimestamps": False})), encoding="utf-8"
+    )
+    assert asr_worker._read_request(path)["wordTimestamps"] is False
+
+    path.write_text(
+        json.dumps(_worker_request_document({"wordTimestamps": True})), encoding="utf-8"
+    )
+    assert asr_worker._read_request(path)["wordTimestamps"] is True
+
+    path.write_text(
+        json.dumps(_worker_request_document({"wordTimestamps": "true"})), encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="Request values"):
+        asr_worker._read_request(path)
+
+    path.write_text(json.dumps(_worker_request_document({"extra": 1})), encoding="utf-8")
+    with pytest.raises(ValueError, match="Request schema"):
+        asr_worker._read_request(path)
+
+
+def _install_fake_whisper(monkeypatch, transcribe):
+    monkeypatch.setattr(asr_worker, "verify_native", lambda *args: None)
+    monkeypatch.setattr(asr_worker, "loaded_runtime_libraries", lambda *args: [])
+    monkeypatch.setattr(
+        asr_worker.os, "add_dll_directory", lambda path: nullcontext(), raising=False
+    )
+    monkeypatch.setattr(asr_worker.ctypes, "WinDLL", lambda path: object(), raising=False)
+
+    class FakeModel:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def transcribe(self, *args, **kwargs):
+            return transcribe(*args, **kwargs)
+
+    module = types.ModuleType("faster_whisper")
+    module.WhisperModel = FakeModel
+    monkeypatch.setitem(sys.modules, "faster_whisper", module)
+
+
+def test_word_timestamp_mode_is_explicit_and_does_not_invent_times(monkeypatch):
+    captured = []
+
+    def transcribe(audio, **kwargs):
+        captured.append(kwargs)
+        return (
+            [
+                types.SimpleNamespace(
+                    start=0.1,
+                    end=0.8,
+                    text="hello world",
+                    words=(
+                        types.SimpleNamespace(start=0.10, end=0.30, word="hello"),
+                        types.SimpleNamespace(start=0.31, end=0.80, word="world"),
+                    ),
+                )
+            ],
+            types.SimpleNamespace(language="en"),
+        )
+
+    _install_fake_whisper(monkeypatch, transcribe)
+    request = {
+        "modelDirectory": "fake-local",
+        "audioPath": "fake.wav",
+        "model": "fake",
+        "revision": "a" * 40,
+        "nativeDirectory": "fake-native",
+        "nativeFiles": [],
+        "repository": "fake-repository",
+        "cpuThreads": 2,
+        "beamSize": 5,
+        "vadFilter": True,
+        "language": "en",
+        "gameTerms": [],
+        "wordTimestamps": True,
+    }
+    result = asr_worker._infer(request)
+    assert captured[0]["word_timestamps"] is True
+    assert result["segments"] == [{"start": "0.1", "end": "0.8", "text": "hello world"}]
+    assert result["words"] == [
+        {"start": "0.1", "end": "0.3", "text": "hello"},
+        {"start": "0.31", "end": "0.8", "text": "world"},
+    ]
+    assert "words" in result
+
+
+def test_default_and_false_word_mode_do_not_pass_word_timestamps(monkeypatch):
+    captured = []
+
+    def transcribe(audio, **kwargs):
+        captured.append(kwargs)
+        return (
+            [types.SimpleNamespace(start=0.1, end=0.8, text="one sentence", words=None)],
+            types.SimpleNamespace(language="zh"),
+        )
+
+    _install_fake_whisper(monkeypatch, transcribe)
+    request = {
+        "modelDirectory": "fake-local",
+        "audioPath": "fake.wav",
+        "model": "fake",
+        "revision": "a" * 40,
+        "nativeDirectory": "fake-native",
+        "nativeFiles": [],
+        "repository": "fake-repository",
+        "cpuThreads": 2,
+        "beamSize": 5,
+        "vadFilter": True,
+        "language": "zh",
+        "gameTerms": [],
+    }
+    default_result = asr_worker._infer(dict(request))
+    assert "word_timestamps" not in captured[0]
+    assert "words" not in default_result
+
+    captured.clear()
+    false_result = asr_worker._infer({**request, "wordTimestamps": False})
+    assert "word_timestamps" not in captured[0]
+    assert "words" not in false_result
+
+    captured.clear()
+    empty_result = asr_worker._infer({**request, "wordTimestamps": True})
+    assert captured[0]["word_timestamps"] is True
+    assert empty_result["words"] == []
+    assert empty_result["segments"] == [{"start": "0.1", "end": "0.8", "text": "one sentence"}]

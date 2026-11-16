@@ -28,36 +28,64 @@ export function sameOrigin(value, pathname) {
     } catch { return null; }
 }
 
+// 只用服务端已经核对过的代理地址替换原片预览；没有有效代理就播原片，不会自己拼路径。
+export function choosePreview(videoUrl, offeredProxyUrl, preferProxy = true) {
+    const original = sameOrigin(videoUrl, "/api/media");
+    const proxy = offeredProxyUrl ? sameOrigin(offeredProxyUrl, "/api/media") : null;
+    if (!preferProxy || !original || !proxy) return {url: original, source: original ? "original" : null};
+    try {
+        const wanted = new URL(proxy, location.origin);
+        const base = new URL(original, location.origin);
+        if (wanted.searchParams.get("proxy") !== "1"
+            || wanted.searchParams.get("project") !== base.searchParams.get("project")
+            || wanted.searchParams.get("run") !== base.searchParams.get("run")) {
+            return {url: original, source: "original"};
+        }
+    } catch {
+        return {url: original, source: "original"};
+    }
+    return {url: proxy, source: "proxy"};
+}
+
 // One request id per intent: resubmitting the same payload reuses it, so the server never
 // creates a duplicate job for a double click or a retry.
 const intents = new Map();
 const persisted = (kind, scope) => ["package", "work"].includes(kind) && !!scope;
 const intentSlot = (kind, scope) => `${kind}:${scope}`;
 const storageKey = (slot) => `studio-intent-v1:${slot}`;
+const intentStore = (kind) => kind === "work" ? localStorage : sessionStorage;
+function intentError(kind, action) {
+    const label = kind === "work" ? "作品" : "平台包";
+    const store = kind === "work" ? "本地存储" : "会话存储";
+    if (action === "read") return new ApiError(`无法读取${label}请求身份，请恢复本页${store}后重试；尚未发送新请求。`, "intent.storage");
+    if (action === "save") return new ApiError(`无法保存${label}请求身份，请允许本页${store}后重试。`, "intent.storage");
+    if (action === "update") return new ApiError(`无法更新${label}请求身份，请恢复${store}后重试。`, "intent.storage");
+    return new ApiError(`${label}请求身份与内容不一致，不能创建第二个请求。`, "intent.conflict");
+}
 function intent(kind, scope) {
     const slot = intentSlot(kind, scope);
     if (persisted(kind, scope)) {
         try {
-            const raw = (kind === "work" ? localStorage : sessionStorage).getItem(storageKey(slot));
+            const raw = intentStore(kind).getItem(storageKey(slot));
             const value = raw === null ? null : JSON.parse(raw);
             if (value && (typeof value.key !== "string" || !/^[0-9a-f]{32}$/.test(value.id) || (value.jobId !== undefined && !/^[0-9a-f]{32}$/.test(value.jobId)))) throw new Error("invalid intent");
             return value;
-        } catch { throw new ApiError("无法读取平台包请求身份，请恢复本页会话存储后重试；尚未发送新请求。", "intent.storage"); }
+        } catch (error) { if (error instanceof ApiError) throw error; throw intentError(kind, "read"); }
     }
     return intents.get(slot);
 }
 function saveIntent(kind, scope, value) {
     const slot = intentSlot(kind, scope);
     if (persisted(kind, scope)) {
-        try { (kind === "work" ? localStorage : sessionStorage).setItem(storageKey(slot), JSON.stringify(value)); }
-        catch { throw new ApiError("无法保存平台包请求身份，请允许本页会话存储后重试。", "intent.storage"); }
+        try { intentStore(kind).setItem(storageKey(slot), JSON.stringify(value)); }
+        catch { throw intentError(kind, "save"); }
     }
     intents.set(slot, value);
 }
 export function requestId(kind, payload, scope = "") {
     const key = JSON.stringify(payload), known = intent(kind, scope);
     if (known?.key === key) return known.id;
-    if (known && persisted(kind, scope)) throw new ApiError("平台包请求身份与内容不一致，不能创建第二个请求。", "intent.conflict");
+    if (known && persisted(kind, scope)) throw intentError(kind, "conflict");
     const id = Array.from(crypto.getRandomValues(new Uint8Array(16)), (v) => v.toString(16).padStart(2, "0")).join("");
     saveIntent(kind, scope, {key, id});
     return id;
@@ -65,8 +93,8 @@ export function requestId(kind, payload, scope = "") {
 export function forgetIntent(kind, scope = "") {
     const slot = intentSlot(kind, scope);
     if (persisted(kind, scope)) {
-        try { (kind === "work" ? localStorage : sessionStorage).removeItem(storageKey(slot)); }
-        catch { throw new ApiError("无法更新平台包请求身份，请恢复会话存储后重试。", "intent.storage"); }
+        try { intentStore(kind).removeItem(storageKey(slot)); }
+        catch { throw intentError(kind, "update"); }
     }
     intents.delete(slot);
 }
