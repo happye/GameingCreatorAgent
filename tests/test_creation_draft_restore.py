@@ -164,3 +164,113 @@ def test_parent_overlay_is_inherited_and_never_serialized_as_a_new_binding(selec
     assert set(result) == {"subtitleOverrides", "audioMix", "narration", "narrationAsset"}
     assert files(jobs.repository) == before
     assert jobs.edit(parent, "hook-first")["overlays"] == overlays
+
+
+def v3_request(jobs, root):
+    req = request_for(jobs, root)
+    swap = replacement_request(jobs, root)
+    req.update({k: swap[k] for k in ("clips", "replacements", "candidateManifestSha256")})
+    req["overlays"] = {"schemaVersion": "creation-overlays-v1", "items": []}
+    return req
+
+
+def test_v3_cross_source_projection_and_save_without_candidate_panel(replacements):
+    jobs, root, other = replacements
+    req = v3_request(jobs, root)
+    before = files(jobs.repository)
+    projected = preview(jobs, req)
+    first = projected["clips"][0]
+    assert first["runId"] == "B"
+    assert first["sourceSha256"] == other.run.asset.sha256
+    assert first["sourceClock"] and first["previewUrl"].startswith("/api/creation/jobs/")
+    assert "sourcePath" not in first
+    assert projected["bounds"][first["clipId"]]["endUs"] >= first["endUs"]
+    assert files(jobs.repository) == before
+    save_request = {k: v for k, v in req.items() if k != "projectId"}
+    save_request["requestId"] = "e" * 32
+    child = jobs.submit("revision", save_request)["jobId"]
+    assert finish(jobs, child)["status"] == "completed"
+    saved = jobs.edit(child, "hook-first")
+    assert saved["clips"][0]["runId"] == "B"
+    again = v3_request(jobs, child)
+    before = files(jobs.repository)
+    assert preview(jobs, again)["candidateManifestSha256"] == req["candidateManifestSha256"]
+    assert files(jobs.repository) == before
+
+
+@pytest.mark.parametrize("damage", ["manifest", "candidate", "bounds", "partial_extension", "url"])
+def test_v3_invalid_replacement_rejects_without_writes(replacements, damage):
+    jobs, root, _ = replacements
+    req = v3_request(jobs, root)
+    if damage == "manifest":
+        req["candidateManifestSha256"] = "f" * 64
+    elif damage == "candidate":
+        req["replacements"][0]["candidateId"] = "f" * 64
+    elif damage == "bounds":
+        req["clips"][0]["endUs"] = 10**15
+    elif damage == "partial_extension":
+        del req["overlays"]
+    else:
+        req["overlayAssets"] = [{"imageUrl": "file:///fake"}]
+    before = files(jobs.repository)
+    with pytest.raises(ValueError):
+        preview(jobs, req)
+    assert files(jobs.repository) == before
+
+
+@pytest.mark.parametrize("damage", [None, "receipt", "duration"])
+def test_v3_overlay_projection_revalidates_assets(selected, damage):
+    jobs, root, _, overlays = selected
+    req = request_for(jobs, root)
+    req.update(candidateManifestSha256=None, replacements=[], overlays=copy.deepcopy(overlays))
+    if damage == "receipt":
+        req["overlays"]["items"][0]["assetReceiptSha256"] = "f" * 64
+    elif damage == "duration":
+        req["overlays"]["items"][0]["endFrame"] = 10**9
+    before = files(jobs.repository)
+    if damage:
+        with pytest.raises((ValueError, AppError)):
+            preview(jobs, req)
+    else:
+        projected = preview(jobs, req)
+        assert projected["overlays"] == overlays
+        assert projected["overlayAssets"][0]["imageUrl"].startswith("/api/creation/overlay-assets/")
+    assert files(jobs.repository) == before
+
+
+def test_v3_v4_parent_requires_manifest_even_without_new_swaps(replacements):
+    jobs, root, _ = replacements
+    parent = jobs.submit("revision", replacement_request(jobs, root))["jobId"]
+    assert finish(jobs, parent)["status"] == "completed"
+    req = request_for(jobs, parent)
+    req.update(
+        candidateManifestSha256=jobs.edit(parent, "hook-first")["candidateManifestSha256"],
+        replacements=[],
+        overlays={"schemaVersion": "creation-overlays-v1", "items": []},
+    )
+    before = files(jobs.repository)
+    assert preview(jobs, req)["replacements"] == []
+    req["candidateManifestSha256"] = None
+    with pytest.raises(ValueError):
+        preview(jobs, req)
+    assert files(jobs.repository) == before
+
+
+@pytest.mark.parametrize("text", ["替换后手写字幕", ""])
+def test_v3_replacement_caption_target_maps_for_projection_save_and_replay(replacements, text):
+    jobs, root, _ = replacements
+    req = v3_request(jobs, root)
+    target = req["clips"][0]["clipId"]
+    req["subtitleOverrides"] = [{"clipId": target, "text": text}]
+    before = files(jobs.repository)
+    projected = preview(jobs, req)
+    assert projected["subtitleOverrides"] == req["subtitleOverrides"]
+    assert files(jobs.repository) == before
+    saved_request = {k: v for k, v in req.items() if k != "projectId"}
+    saved_request["requestId"] = "f" * 32
+    child = jobs.submit("revision", saved_request)["jobId"]
+    assert finish(jobs, child)["status"] == "completed"
+    editor = jobs.edit(child, "hook-first")
+    new_id = editor["clips"][0]["clipId"]
+    assert new_id != target
+    assert editor["subtitleOverrides"] == [{"clipId": new_id, "text": text}]

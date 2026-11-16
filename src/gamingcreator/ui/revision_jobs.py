@@ -78,6 +78,7 @@ def resolve_overrides(
 ) -> list[dict[str, str]]:
     """Resolve a complete override snapshot, filtering deleted inherited clips only."""
     ids = {row["clipId"] for row in editable_clips(edl, root_sha)}
+    replacements = replacement_clip_ids(edl)
     if "subtitleOverrides" not in request:
         return [dict(item) for item in inherited if item["clipId"] in ids]
     items = request["subtitleOverrides"]
@@ -89,12 +90,21 @@ def resolve_overrides(
         if not isinstance(item, dict) or set(item) != {"clipId", "text"}:
             raise ValueError("Subtitle overrides accept only clipId and text.")
         clip_id = item["clipId"]
+        if isinstance(clip_id, str):
+            clip_id = replacements.get(clip_id, clip_id)
         if not isinstance(clip_id, str) or clip_id not in ids or clip_id in seen:
             raise ValueError("Subtitle override clip identity is unknown or duplicated.")
         validate_override_text(item["text"])
-        result.append(dict(item))
+        result.append({"clipId": clip_id, "text": item["text"]})
         seen.add(clip_id)
     return result
+
+
+def replacement_clip_ids(edl: dict[str, Any]) -> dict[str, str]:
+    """Use only the v4 operations rebuilt and validated against the real manifest."""
+    if edl.get("schemaVersion") != "edit-decision-revision-v4":
+        return {}
+    return {row["targetClipId"]: row["newClipId"] for row in edl["replacements"]}
 
 
 def _record(

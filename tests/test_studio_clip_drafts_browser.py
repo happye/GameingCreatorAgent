@@ -3,6 +3,7 @@
 import pytest
 
 # ruff: noqa: F811
+from test_clip_replacement_jobs import replacements  # noqa: F401
 from test_creation_jobs import service  # noqa: F401
 from test_narration_jobs import engine  # noqa: F401
 from test_studio_audio_graph_browser import studio_audio  # noqa: F401
@@ -400,6 +401,7 @@ def test_v1_restore_keeps_original_bytes_until_next_edit(studio_plan):
         const p = structuredClone(ce.drafts.payload);
         p.schemaVersion = draftModule.SCHEMA;
         delete p.subtitleOverrides; delete p.audioMix; delete p.narration;
+        delete p.candidateManifestSha256; delete p.replacements; delete p.overlays;
         const raw = JSON.stringify({payload: p, sha256: await draftModule.payloadHash(p)});
         localStorage.setItem(ce.drafts.key, raw); return raw;
     }""")
@@ -413,7 +415,7 @@ def test_v1_restore_keeps_original_bytes_until_next_edit(studio_plan):
     assert s.page.evaluate("localStorage.getItem(ce.drafts.key)") == raw
     assert s.posts == before
     s.page.evaluate("ce.ops.caption(ce.clips[0].clipId, '')")
-    s.page.wait_for_function("() => ce.drafts.payload?.schemaVersion === draftModule.FULL_SCHEMA")
+    s.page.wait_for_function("() => ce.drafts.payload?.schemaVersion === draftModule.V3_SCHEMA")
 
 
 def test_v2_caption_envelope_and_delete_restore_atomically(studio_plan):
@@ -505,3 +507,234 @@ def test_v2_local_narration_music_restores_verified_asset_without_generating(stu
     assert s.page.evaluate("draftModule.fullFields(ce)") == expected
     assert s.page.evaluate("ce.audio.asset.assetJobId") == voice["jobId"]
     assert {p: p.read_bytes() for p in s.service.repository.rglob("*") if p.is_file()} == original
+
+
+@pytest.mark.parametrize("schema", ["SCHEMA", "FULL_SCHEMA"])
+def test_legacy_snapshot_candidate_read_does_not_migrate(studio_plan, schema):
+    s = studio_plan
+    mount(s)
+    backup(s)
+    raw = s.page.evaluate(
+        """async schema => {
+        const p = structuredClone(ce.drafts.payload);
+        p.schemaVersion = draftModule[schema];
+        delete p.candidateManifestSha256; delete p.replacements; delete p.overlays;
+        if (schema === 'SCHEMA') { delete p.subtitleOverrides; delete p.audioMix; delete p.narration; }
+        const raw = JSON.stringify({payload: p, sha256: await draftModule.payloadHash(p)});
+        localStorage.setItem(ce.drafts.key, raw); return raw;
+    }""",
+        schema,
+    )
+    s.page.reload()
+    mount(s)
+    s.page.evaluate("ce.restoreDraft(() => true)")
+    s.page.wait_for_function("() => ce.dirty")
+    s.page.route(
+        "**/api/creation/jobs/*/candidates?*",
+        lambda route: route.fulfill(json={"candidateManifestSha256": "a" * 64, "candidates": []}),
+    )
+    s.page.evaluate("ce.loadCandidates()")
+    s.page.wait_for_timeout(350)
+    assert s.page.evaluate("localStorage.getItem(ce.drafts.key)") == raw
+    s.page.evaluate("ce.ops.caption(ce.clips[0].clipId, '')")
+    s.page.wait_for_function("() => ce.drafts.payload?.schemaVersion === draftModule.V3_SCHEMA")
+
+
+def test_nan_overlay_preserves_last_recoverable_snapshot(studio_plan):
+    s = studio_plan
+    mount(s)
+    backup(s)
+    rows = s.page.evaluate("ce.drafts.payload.rows")
+    s.page.evaluate("""ce.ops.overlays([{overlayId: 'a'.repeat(32), kind: 'image',
+        assetId: 'b'.repeat(32), assetReceiptSha256: 'c'.repeat(64),
+        startFrame: 0, endFrame: 2, x: NaN, y: 0, width: 1000,
+        fadeInFrames: 0, fadeOutFrames: 0}])""")
+    s.page.wait_for_function("() => ce.drafts.payload?.partial")
+    assert s.page.evaluate("ce.drafts.payload.rows") == rows
+    assert s.page.evaluate("Number.isNaN(ce.overlays[0].x)")
+    assert s.page.evaluate("ce.drafts.payload.overlays.items") == []
+
+
+@pytest.fixture
+def studio_replacements(replacements, engine, monkeypatch):
+    import threading
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
+    from gamingcreator.ui import server
+
+    tool = str(Path(".tools/ffmpeg/bin/ffmpeg.exe").resolve())
+    monkeypatch.setattr(OverlayAssetLibrary, "_tool", lambda self: tool)
+    jobs, root, _ = replacements
+    pw = pytest.importorskip("playwright.sync_api")
+    http = server.create_server("127.0.0.1", 0, jobs.repository)
+    thread = threading.Thread(target=http.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with pw.sync_playwright() as runtime:
+            browser = runtime.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto(f"http://127.0.0.1:{http.server_port}/studio")
+            yield SimpleNamespace(page=page, root=root, plan_id="hook-first", service=jobs)
+            browser.close()
+    finally:
+        http.shutdown()
+        http.server_close()
+        thread.join()
+
+
+def v3_media(jobs):
+    import asyncio
+
+    from test_narration_jobs import choice, done
+    from test_overlay_assets import png
+
+    from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
+
+    narration = done(jobs, "旁白")
+    selection = choice(narration, start=0)
+    library = OverlayAssetLibrary(jobs.repository)
+    asset = asyncio.run(library.register_png(png()))
+    overlay = dict(
+        overlayId="a" * 32,
+        kind="image",
+        startFrame=0,
+        endFrame=2,
+        x=0,
+        y=0,
+        width=1000,
+        fadeInFrames=0,
+        fadeOutFrames=0,
+        assetId=asset.asset_id,
+        assetReceiptSha256=asset.receipt_sha256,
+    )
+    from gamingcreator.domain.creation_narration import NarrationSelection
+    from gamingcreator.ui.narration_jobs import asset as narration_asset
+    from gamingcreator.ui.narration_jobs import public as public_narration
+
+    public = public_narration(
+        selection["assetJobId"],
+        narration_asset(
+            jobs, NarrationSelection.from_json(selection), "artifacts/project", read_only=True
+        ),
+    )
+    from gamingcreator.ui.overlay_jobs import public_asset
+
+    return selection, overlay, public, public_asset(asset)
+
+
+def test_v3_cross_source_overlay_narration_refresh_undo_save(studio_replacements, engine):
+    from test_creation_draft_restore import files
+    from test_creation_jobs import finish
+
+    s = studio_replacements
+    jobs, page = s.service, s.page
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        selection, overlay, public, overlay_asset = pool.submit(v3_media, jobs).result()
+    mount(s)
+    page.evaluate("ce.loadCandidates()")
+    page.evaluate(
+        "ce.ops.replace(ce.clips[0].clipId, ce.candidates.candidates.find(c => c.runId === 'B'))"
+    )
+    page.wait_for_function("() => ce.replacements[ce.clips[0].clipId]")
+    page.evaluate("ce.ops.caption(ce.clips[0].clipId, '新替换字幕')")
+    page.evaluate(
+        "ce.ops.trim(ce.clips[0].clipId, 'startUs', (ce.clips[0].startUs + 100000) / 1e6)"
+    )
+    page.evaluate(
+        "({overlay, selection, public, overlayAsset}) => { ce.ops.overlays([overlay], [overlayAsset]); ce.ops.narration(selection, public); }",
+        {
+            "overlay": overlay,
+            "selection": selection,
+            "public": public,
+            "overlayAsset": overlay_asset,
+        },
+    )
+    page.wait_for_function(
+        "() => ce.drafts.payload?.narration && ce.drafts.payload?.overlays.items.length === 1"
+    )
+    expected = page.evaluate("draftModule.clipRows(ce.clips)")
+    page.reload()
+    mount(s)
+    before, synthesized = files(jobs.repository), engine.synthesized
+    page.evaluate("ce.restoreDraft(() => true)")
+    page.wait_for_function("() => ce.dirty")
+    assert page.evaluate("ce.clips[0].runId") == "B"
+    assert page.evaluate("draftModule.clipRows(ce.clips)") == expected
+    assert page.evaluate("ce.candidates") is None
+    assert files(jobs.repository) == before and engine.synthesized == synthesized
+    page.evaluate("ce.ops.undo()")
+    page.wait_for_function("() => !ce.dirty")
+    page.evaluate("ce.ops.redo()")
+    page.wait_for_function("() => ce.dirty && !!ce.candidateManifestSha256")
+    # Real submit; finish through the service to avoid a polling loop in the browser.
+    pending = []
+    page.route("**/api/creation/revisions", lambda route: pending.append(route))
+    page.evaluate("void ce.save(async () => ({status: 'failed'})).catch(() => {})")
+    page.wait_for_timeout(150)
+    request = pending[0].request.post_data_json
+    pending[0].fulfill(status=400, json={"error": {"message": "captured"}})
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        child = pool.submit(jobs.submit, "revision", request).result()["jobId"]
+        assert pool.submit(finish, jobs, child).result()["status"] == "completed"
+        saved = pool.submit(jobs.edit, child, "hook-first").result()
+    assert saved["clips"][0]["runId"] == "B"
+    assert saved["subtitleOverrides"] == [
+        {"clipId": saved["clips"][0]["clipId"], "text": "新替换字幕"}
+    ]
+    assert saved["overlays"]["items"] == [overlay]
+    assert saved["narration"]["receiptSha256"] == selection["receiptSha256"]
+
+
+def test_late_candidate_catalog_cannot_cross_work_scope(studio_plan):
+    s = studio_plan
+    mount(s)
+    pending = []
+    s.page.route("**/api/creation/jobs/*/candidates?*", lambda route: pending.append(route))
+    with s.page.expect_request("**/api/creation/jobs/*/candidates?*"):
+        s.page.evaluate("void ce.loadCandidates()")
+    mount(s, "work-b")
+    pending[0].fulfill(json={"candidateManifestSha256": "a" * 64, "candidates": []})
+    s.page.wait_for_timeout(100)
+    assert s.page.evaluate("ce.candidates") is None
+    assert s.page.evaluate("ce.candidateManifestSha256") is None
+    assert not s.page.evaluate("ce.dirty")
+
+
+@pytest.mark.parametrize("damage", ["end", "shorten"])
+def test_v3_out_of_duration_overlay_keeps_last_valid_snapshot(studio_replacements, damage):
+    from concurrent.futures import ThreadPoolExecutor
+
+    s = studio_replacements
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        _, overlay, _, asset = pool.submit(v3_media, s.service).result()
+    mount(s)
+    # Valid full-duration overlay, backed by a real local registered asset.
+    s.page.evaluate(
+        """async ({overlay, asset}) => {
+        const {editTimeline} = await import('/assets/studio/preview.js');
+        const last = editTimeline(ce.clips, ce.editor.fps).at(-1);
+        ce.ops.overlays([{...overlay, endFrame: last.outStartFrame + last.outFrames}], [asset]);
+    }""",
+        {"overlay": overlay, "asset": asset},
+    )
+    s.page.wait_for_function("() => ce.drafts.payload?.overlays.items.length === 1")
+    original = s.page.evaluate("structuredClone(ce.drafts.payload)")
+    if damage == "end":
+        s.page.evaluate(
+            "ce.ops.overlays([{...ce.overlays[0], endFrame: ce.overlays[0].endFrame + 1}])"
+        )
+    else:
+        s.page.evaluate("ce.ops.remove(ce.clips.at(-1).clipId)")
+    s.page.wait_for_function("() => ce.drafts.payload?.partial")
+    assert s.page.evaluate("ce.drafts.payload.overlays") == original["overlays"]
+    assert s.page.evaluate("ce.drafts.payload.rows") == original["rows"]
+    s.page.reload()
+    mount(s)
+    s.page.evaluate("ce.restoreDraft(() => true)")
+    s.page.wait_for_function("() => ce.dirty")
+    assert s.page.evaluate("ce.overlays") == original["overlays"]["items"]
+    assert s.page.evaluate("draftModule.clipRows(ce.clips)") == original["rows"]

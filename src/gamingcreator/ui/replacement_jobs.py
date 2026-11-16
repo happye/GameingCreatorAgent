@@ -52,26 +52,39 @@ def candidates(jobs: Any, job_id: str, plan_id: str) -> dict[str, Any]:
     chain = load_chain(jobs, job_id, plan_id)
     manifest, timelines = manifest_for_chain(jobs, chain)
     digest = candidate_manifest_sha(manifest)
-    clocks = {t.run.run_id: runtime_clock_document(t.run.asset) for t in timelines}
-    public = []
-    for candidate in manifest["candidates"]:
-        row = {k: v for k, v in candidate.items() if k != "sourcePath"}
-        row["sourceName"] = Path(candidate["sourcePath"]).name
-        row["sourceClock"] = clocks[row["runId"]]
-        row["previewUrl"] = (
-            "/api/creation/jobs/"
-            + job_id
-            + "/candidate-video?"
-            + urlencode(
-                {
-                    "planId": plan_id,
-                    "candidateManifestSha256": digest,
-                    "candidateId": row["candidateId"],
-                }
-            )
+    return {
+        "candidateManifestSha256": digest,
+        "candidates": [
+            public_candidate(c, timelines, job_id, plan_id, digest) for c in manifest["candidates"]
+        ],
+    }
+
+
+def public_candidate(
+    candidate: dict[str, Any],
+    timelines: tuple[StoredTimeline, ...],
+    job_id: str,
+    plan_id: str,
+    digest: str,
+) -> dict[str, Any]:
+    """Project verified footage without exposing a local path."""
+    row = {k: v for k, v in candidate.items() if k != "sourcePath"}
+    asset = next(t.run.asset for t in timelines if t.run.run_id == row["runId"])
+    row["sourceName"] = Path(candidate["sourcePath"]).name
+    row["sourceClock"] = runtime_clock_document(asset)
+    row["previewUrl"] = (
+        "/api/creation/jobs/"
+        + job_id
+        + "/candidate-video?"
+        + urlencode(
+            {
+                "planId": plan_id,
+                "candidateManifestSha256": digest,
+                "candidateId": row["candidateId"],
+            }
         )
-        public.append(row)
-    return {"candidateManifestSha256": digest, "candidates": public}
+    )
+    return row
 
 
 def candidate_video(

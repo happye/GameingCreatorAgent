@@ -1,7 +1,9 @@
 // Browser-local supported editing snapshot; assets are resolved only on explicit restore.
 import {useEffect, useLayoutEffect, useRef, useState} from "../vendor/hooks.module.js";
+import {editTimeline} from "./preview.js";
 export const SCHEMA = "studio-clip-draft-v1";
 export const FULL_SCHEMA = "studio-clip-draft-v2";
+export const V3_SCHEMA = "studio-clip-draft-v3";
 export const draftKey = (project, work, job, plan) => work ? `${SCHEMA}:${encodeURIComponent(JSON.stringify([project, work, job, plan]))}` : null;
 export async function payloadHash(payload) {
     const bytes = new TextEncoder().encode(JSON.stringify(payload));
@@ -11,9 +13,16 @@ export const clipRows = clips => clips.map(c => ({clipId: c.clipId, startUs: c.s
     speed: {numerator: c.speed.numerator, denominator: c.speed.denominator},
     transitionIn: {type: c.transitionIn.type, frames: c.transitionIn.frames}}));
 export function rebuild(payload, editor, speeds, frames, problem) {
-    if (![SCHEMA, FULL_SCHEMA].includes(payload.schemaVersion) || payload.expectedParentReceiptSha256 !== editor.expectedParentReceiptSha256 || typeof payload.partial !== "boolean") throw Error("镜头快照与父版本不一致");
+    if (![SCHEMA, FULL_SCHEMA, V3_SCHEMA].includes(payload.schemaVersion) || payload.expectedParentReceiptSha256 !== editor.expectedParentReceiptSha256 || typeof payload.partial !== "boolean") throw Error("镜头快照与父版本不一致");
     if (payload.schemaVersion === FULL_SCHEMA && !same(Object.keys(payload).sort(),
         ["schemaVersion", "expectedParentReceiptSha256", "rows", "partial", "subtitleOverrides", "audioMix", "narration"].sort())) throw Error("编辑快照字段无效");
+    if (payload.schemaVersion === V3_SCHEMA) {
+        if (!same(Object.keys(payload).sort(), ["schemaVersion", "expectedParentReceiptSha256", "rows", "partial",
+            "subtitleOverrides", "audioMix", "narration", "candidateManifestSha256", "replacements", "overlays"].sort())
+            || !(payload.candidateManifestSha256 === null || /^[0-9a-f]{64}$/.test(payload.candidateManifestSha256))
+            || !Array.isArray(payload.replacements) || !payload.overlays || payload.overlays.schemaVersion !== "creation-overlays-v1"
+            || !Array.isArray(payload.overlays.items)) throw Error("编辑快照字段无效");
+    }
     if (!Array.isArray(payload.rows) || !payload.rows.length) throw Error("镜头快照为空");
     const byId = new Map(editor.clips.map(c => [c.clipId, c])), seen = new Set();
     const clips = payload.rows.map(row => {
@@ -21,7 +30,7 @@ export function rebuild(payload, editor, speeds, frames, problem) {
         if (!parent || seen.has(row.clipId)) throw Error("镜头快照含未知或重复镜头");
         seen.add(row.clipId);
         if (![row.startUs, row.endUs, s?.numerator, s?.denominator, t?.frames].every(Number.isSafeInteger)
-            || row.startUs < parent.startUs || row.endUs > parent.endUs || row.startUs >= row.endUs
+            || (payload.schemaVersion !== V3_SCHEMA && (row.startUs < parent.startUs || row.endUs > parent.endUs)) || row.startUs < 0 || row.startUs >= row.endUs
             || !speeds.some(([n, d]) => s.numerator === n && s.denominator === d)
             || !(t.type === "cut" && t.frames === 0 || t.type === "crossfade" && t.frames > 0)) throw Error("镜头快照字段或范围无效");
         const clip = {...parent, clipId: row.clipId, startUs: row.startUs, endUs: row.endUs,
@@ -29,7 +38,7 @@ export function rebuild(payload, editor, speeds, frames, problem) {
         if (frames(clip, editor.fps) < 1) throw Error("镜头快照含零帧镜头");
         return clip;
     });
-    const reason = problem(clips, editor.fps);
+    const reason = problem(payload.schemaVersion === V3_SCHEMA ? clips.map(({rangeProvenance, ...clip}) => clip) : clips, editor.fps);
     if (reason) throw Error(reason);
     return clips;
 }
@@ -53,9 +62,26 @@ export function fullFields(state) {
         narration: n ? {assetJobId: n.assetJobId, receiptSha256: n.receiptSha256, startFrame: n.startFrame, gainDb: n.gainDb, ducking: n.ducking} : null,
     };
 }
+const overlayFields = item => {
+    const {overlayId, kind, startFrame, endFrame, x, y, width, fadeInFrames, fadeOutFrames, assetId, assetReceiptSha256, text} = item;
+    return {overlayId, kind, startFrame, endFrame, x, y, width, fadeInFrames, fadeOutFrames, assetId, assetReceiptSha256, ...(kind === "text" ? {text} : {})};
+};
+export function replacementFields(state) {
+    const kept = new Set(state.clips.map(c => c.clipId));
+    return {candidateManifestSha256: state.candidateManifestSha256 ?? state.editor.candidateManifestSha256 ?? null,
+        replacements: Object.entries(state.replacements).filter(([id]) => kept.has(id)).map(([targetClipId, candidateId]) => ({targetClipId, candidateId})),
+        overlays: {schemaVersion: "creation-overlays-v1", items: state.overlays.map(overlayFields)}};
+}
 export function supported(state, parentFields) {
-    return !Object.keys(state.replacements).length
-        && same(state.overlays, parentFields.overlays) && same(state.overlayAssets, parentFields.overlayAssets);
+    const last = editTimeline(state.clips, state.editor.fps).at(-1);
+    const totalFrames = last ? last.outStartFrame + last.outFrames : 0;
+    return state.overlays.length <= 16 && new Set(state.overlays.map(i => i.overlayId)).size === state.overlays.length && state.overlays.every(item => /^[0-9a-f]{32}$/.test(item.overlayId) && /^[0-9a-f]{32}$/.test(item.assetId) && /^[0-9a-f]{64}$/.test(item.assetReceiptSha256)
+        && ["image", "text"].includes(item.kind)
+        && [item.startFrame, item.endFrame, item.x, item.y, item.width, item.fadeInFrames, item.fadeOutFrames].every(Number.isSafeInteger)
+        && item.startFrame >= 0 && item.endFrame > item.startFrame && item.endFrame <= totalFrames && item.x >= 0 && item.y >= 0 && item.y <= 10000
+        && item.width > 0 && item.x + item.width <= 10000 && item.fadeInFrames >= 0 && item.fadeOutFrames >= 0
+        && item.fadeInFrames + item.fadeOutFrames <= item.endFrame - item.startFrame)
+        && (!Object.keys(state.replacements).length || !!replacementFields(state).candidateManifestSha256);
 }
 export function useClipDrafts(state, project, workId, parentFields, keptCaptions, checks) {
     const key = state.base && draftKey(project, workId, state.base.jobId, state.base.planId);
@@ -94,7 +120,7 @@ export function useClipDrafts(state, project, workId, parentFields, keptCaptions
                     if (mine === epoch.current) setView(v => ({...v, message: "当前修改无法备份为镜头快照"}));
                     return;
                 }
-                const payload = partial ? {...view.payload, partial: true} : {schemaVersion: FULL_SCHEMA, ...fullFields(state),
+                const payload = partial ? {...view.payload, partial: true} : {schemaVersion: V3_SCHEMA, ...fullFields(state), ...replacementFields(state),
                     expectedParentReceiptSha256: state.editor.expectedParentReceiptSha256, rows: clipRows(state.clips), partial: false};
                 rebuild(payload, state.editor, ...checks);
                 const sha256 = await payloadHash(payload);
