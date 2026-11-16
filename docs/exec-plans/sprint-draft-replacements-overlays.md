@@ -1,6 +1,8 @@
 # 阶段 C：替换镜头与图层本机草稿 v3
 
-基线：1929c88。实施树：`.worktrees/draft-replacements-overlays`。实施与定向验证已完成；唯一关键边界审查由主 Agent 统一收口，未宣称人评/发布验收完成。
+R2 / 阶段C · P032、P040 · 2026-11-17 · 已集成，受影响验证闭合，待本批完整检查。
+
+基线：1929c88。实施树：`.worktrees/draft-replacements-overlays`。实现提交55886b4；唯一task_quality_guard增量审查通过，无未闭合P1/P2。未宣称人评/发布验收完成。
 
 ## 固定范围
 
@@ -27,4 +29,10 @@ Ruff check/format（3 Python 实现 + 2 测试文件）、mypy（3 实现文件�
 - 两处审查修复后原失败与新增受影响节点：`pytest-20261116-203707.log`，8 过；涵盖真实跨源+裁剪+图层+已有本机旁白刷新恢复、无需候选面板保存、undo/redo、手写/空串字幕、超尾/裁短、NaN/partial 和旧响应。
 - 字幕省略继承及坏形状/重复/未知身份：`pytest-20261116-203852.log`，定向通过。保留原始请求字节，省略 overrides 时继承/过滤语义不变；仅显式字幕经已验证 v4 目标→新身份映射，投影反向映射保持本次 target 身份。
 
-未重跑两文件全集或完整 verify、未 Release；不 commit/push，由主 Agent 审查集成。工作树 .venv/.tools 缺失，已按授权建立指向主树的 junction，未安装依赖。最初 env.ps1 回落全局 Python 导致 ruff missing；建立 junction 后相同静态命令通过。无付费、上传、发布。
+工作树 .venv/.tools 缺失，已按授权建立指向主树的 junction，未安装依赖。最初 env.ps1 回落全局 Python 导致 ruff missing；建立 junction 后相同静态命令通过。无付费、上传、发布。
+
+## 主树集成与字幕组合修复
+
+主树15文件受影响检查：257过1失败（test-affected-20261116-204238.log），旧test_v4_replacement_draft_and_stale_manifest仍断言拒绝target字幕，现改验可信映射及未知身份拒绝。另修subtitle_preview的reserved比较，将request target按可信v4映射到新ID，避免开启逐词高亮时隐藏字幕复活；手写字幕同样保留。唯一task_quality_guard增量静态通过，无未闭合P1/P2。
+
+独立树首轮002205仍有上述旧断言失败；修后两文件20过（pytest-20261117-002310.log），Ruff/格式/mypy通过。主树修后原失败及隐藏/手写×sidecar/burn组合5过（pytest-20261117-002420.log）；257项既有通过证据保留。下一步仅本批完整verify一次，未Release；不将历史失败记录改绿。

@@ -813,16 +813,17 @@ window.PROGRESS_DATA = {
     "tests/test_studio_clip_drafts_browser.py",
     "2026-11-15: per-work browser-local clip snapshots with parent receipt and whole-payload hash, explicit cross-refresh restore and real revision save; clip-only backup visibly freezes when unsupported edits occur. Full project operation replay and human usability remain unassessed."
    ],
-   "done": "Studio可调出入点、换镜头、改字幕、换BGM/旁白、变速转场并另存版本重渲染；支持撤销/重做；同作品镜头快照可跨刷新手动恢复，校验父回执与原边界，任务竞态受控",
-   "todo": "v2快照已含字幕、混音与旁白选择；新替换和图层仍提示未备份，完整工程回放与整体易用性未验收",
-   "updated": "2026-11-15",
+   "done": "Studio可调镜头、字幕、配乐/旁白、变速转场并另存重渲染；支持撤销/重做；v3快照跨刷新恢复替换镜头、文字/PNG图层及字幕混音，重验候选与资产，临时无效输入保留旧快照",
+   "todo": "完整工程操作回放与整体易用性未验收；本机快照仍依赖原作品、候选清单与资产可读",
+   "updated": "2026-11-16",
    "sprints": [
     "sprint-creation-editing",
     "sprint-clip-replacements",
     "sprint-studio-caption-editor",
     "sprint-studio-workbench",
     "sprint-clip-draft-recovery",
-    "sprint-full-edit-draft"
+    "sprint-full-edit-draft",
+    "sprint-draft-replacements-overlays"
    ]
   },
   {
@@ -1495,6 +1496,12 @@ window.PROGRESS_DATA = {
      "name": "字幕与声音草稿跨刷新恢复",
      "status": "done",
      "sprint": "sprint-full-edit-draft"
+    },
+    {
+     "id": "R2-draft-replacements-overlays",
+     "name": "替换镜头与文字/PNG图层跨刷新恢复",
+     "status": "done",
+     "sprint": "sprint-draft-replacements-overlays"
     },
     {
      "id": "R2-字幕",
@@ -2274,6 +2281,17 @@ window.PROGRESS_DATA = {
    "bytes": 8380
   },
   {
+   "file": "sprint-draft-replacements-overlays",
+   "title": "阶段 C：替换镜头与图层本机草稿 v3",
+   "ids": [
+    "P032",
+    "P040",
+    "R2"
+   ],
+   "date": "2026-11-16",
+   "bytes": 5152
+  },
+  {
    "file": "sprint-editing-proxy",
    "title": "P011：编辑代理文件",
    "ids": [
@@ -2323,7 +2341,7 @@ window.PROGRESS_DATA = {
     "R2",
     "R3"
    ],
-   "date": "",
+   "date": "2026-11-16",
    "bytes": 2864
   },
   {
