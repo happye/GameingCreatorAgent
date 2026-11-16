@@ -1,6 +1,6 @@
 # 阶段 C：替换镜头与图层本机草稿 v3
 
-R2 / 阶段C · P032、P040 · 2026-11-17 · 已集成，受影响验证闭合，待本批完整检查。
+R2 / 阶段C · P032、P040 · 2026-11-17 · 已集成，受影响验证闭合；完整检查按用户要求中止。
 
 基线：1929c88。实施树：`.worktrees/draft-replacements-overlays`。实现提交55886b4；唯一task_quality_guard增量审查通过，无未闭合P1/P2。未宣称人评/发布验收完成。
 
@@ -35,4 +35,4 @@ Ruff check/format（3 Python 实现 + 2 测试文件）、mypy（3 实现文件�
 
 主树15文件受影响检查：257过1失败（test-affected-20261116-204238.log），旧test_v4_replacement_draft_and_stale_manifest仍断言拒绝target字幕，现改验可信映射及未知身份拒绝。另修subtitle_preview的reserved比较，将request target按可信v4映射到新ID，避免开启逐词高亮时隐藏字幕复活；手写字幕同样保留。唯一task_quality_guard增量静态通过，无未闭合P1/P2。
 
-独立树首轮002205仍有上述旧断言失败；修后两文件20过（pytest-20261117-002310.log），Ruff/格式/mypy通过。主树修后原失败及隐藏/手写×sidecar/burn组合5过（pytest-20261117-002420.log）；257项既有通过证据保留。下一步仅本批完整verify一次，未Release；不将历史失败记录改绿。
+独立树首轮002205仍有上述旧断言失败；修后两文件20过（pytest-20261117-002310.log），Ruff/格式/mypy通过。主树修后原失败及隐藏/手写×sidecar/burn组合5过（pytest-20261117-002420.log）；257项既有通过证据保留。verify-20261117-002506在约九成时按用户要求取消，静态622文件/mypy233源通过，行为曾有失败标记、无终态统计；不改绿，不再主动全量。转真实素材创作闭环，见sprint-live-creation-loop；未Release。

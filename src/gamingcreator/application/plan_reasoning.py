@@ -5,7 +5,7 @@ from gamingcreator.application.creation_reasoning import ReasoningRequest
 from gamingcreator.application.plan_proposals import PlanSnapshot, proposal_version
 
 PROMPT_VERSION = "plan-reasoning-prompt-v1"
-TOPIC_PROMPT_VERSION = "plan-reasoning-prompt-v3"
+TOPIC_PROMPT_VERSION = "plan-reasoning-prompt-v4"
 SYSTEM = """Propose one to three video plans from the provided saved textual observations.
 You have no images or audio. Never claim visual understanding or invent evidence.
 Follow the complete brief: objective, audience, tone, topics, exclusions and duration.
@@ -22,8 +22,21 @@ source times, paths, evidence, or additional candidates. Never imply human accep
 """
 
 
-def plan_reasoning_request(snapshot: PlanSnapshot) -> ReasoningRequest:
+def plan_reasoning_request(
+    snapshot: PlanSnapshot, *, prompt_version: str | None = None
+) -> ReasoningRequest:
     has_knowledge = "knowledge" in snapshot.payload
+    has_topics = "topicMapping" in snapshot.payload
+    current = (
+        TOPIC_PROMPT_VERSION
+        if has_topics
+        else "plan-reasoning-prompt-v2"
+        if has_knowledge
+        else PROMPT_VERSION
+    )
+    version = current if prompt_version is None else prompt_version
+    if version != current and not (has_topics and version == "plan-reasoning-prompt-v3"):
+        raise ValueError("Unsupported planning prompt version.")
     system = SYSTEM
     if has_knowledge:
         system = (
@@ -62,13 +75,16 @@ An exact quote establishes its textual source, not semantic truth. If no observa
 supports a topic, leave it unmapped: missing topics are advice, never an invented claim.
 Keep the user's selected ranges; you cannot expand the candidate pool or fabricate evidence.
 """
+        if version == TOPIC_PROMPT_VERSION:
+            system += """
+Copy observationQuote character for character, including the original punctuation.
+Never append a sentence-ending period, normalize punctuation, or paraphrase the quote.
+For example, if the fact is `Mode banner (3V3)`, quote `Mode banner (3V3)` or `3V3`,
+never `Mode banner (3V3).`. Put your own explanation only in rationale.
+"""
     return ReasoningRequest(
         system,
         canonical({"snapshotFingerprint": snapshot.fingerprint, "snapshot": snapshot.payload}),
-        TOPIC_PROMPT_VERSION
-        if "topicMapping" in snapshot.payload
-        else "plan-reasoning-prompt-v2"
-        if has_knowledge
-        else PROMPT_VERSION,
+        version,
         proposal_version(snapshot),
     )

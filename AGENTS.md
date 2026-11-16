@@ -40,7 +40,7 @@ Design budget:
 ## Testing
 
 1. Default to affected tests (`./scripts/test-affected.ps1`) or explicit failing node IDs/files. With `--lf`, use the original failure cache and `--last-failed-no-failures=none`; an empty/missing cache must never silently run everything.
-2. Full `./scripts/verify.ps1` is for the end of a substantive delivery batch. Never run it per feature, local fix, commit, review or documentation update; do not rename a failure fix as a new batch.
+2. User priority (2026-11-17): deliver and connect all planned capabilities through real footage workflows; do not proactively run full `./scripts/verify.ps1`. Use minimal affected checks only to resolve actual delivery blockers. A full run requires an explicit user request; do not rename a failure fix as a new batch.
 3. If full verification fails, preserve its failing node IDs and passing evidence; repair and rerun only failures plus genuinely affected behavior. Passing targeted checks close that repair; they do not automatically trigger another full run. Test-only sampler/fixture fixes do not invalidate unrelated passing business checks.
 4. A second full run in the same batch requires an explicit user instruction (`verify.ps1` enforces this via `.cache/verify-last.json`: after a failed/interrupted run it refuses until a new `feat:` commit or `-AllowRerun`). Otherwise defer it to the next substantive batch and continue authorized development; do not manufacture an approval request or use “closure / must be all green” to force a rerun.
 5. Run `./scripts/verify.ps1 -Release` before distribution. Report full, targeted and interrupted results separately; never label a failed/stopped full run green because targeted repairs pass.

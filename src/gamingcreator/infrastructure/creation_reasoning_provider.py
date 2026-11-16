@@ -134,6 +134,7 @@ class DeepSeekCreationReasoningProvider:
             (PLAN_PROMPT_VERSION, PLAN_SCHEMA_VERSION),
             ("plan-reasoning-prompt-v2", "plan-proposal-v2"),
             ("plan-reasoning-prompt-v3", "plan-proposal-v3"),
+            ("plan-reasoning-prompt-v4", "plan-proposal-v3"),
             (COPY_PROMPT_VERSION, COPY_SCHEMA_VERSION),
             (BRIEF_PROMPT_VERSION, BRIEF_SCHEMA_VERSION),
             (NARRATION_PROMPT_VERSION, NARRATION_SCHEMA_VERSION),

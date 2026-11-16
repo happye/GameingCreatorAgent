@@ -126,9 +126,9 @@
    ]
   },
   "P019": {
-   "done": "一句话需求支持 DeepSeek 文字理解游戏/时长/类型/平台/全部主题/排除/观众/风格，确认后填入；超预算或模型不可用时标明本机规则兜底；请求身份按项目保留，丢失响应可只读恢复；结构化需求可带入活动规则与本地知识",
+   "done": "一句话需求支持DeepSeek文字理解并确认填入，真实30秒玩法需求已识别并串到导出发布包；预算内按作品调用，响应丢失只读恢复；规则兜底、活动规则与本地知识保留",
    "todo": "AI 按主题选片编排深化；新作品需求与策划共享作品预算，旧草稿保守兼容；真实需求理解与成片质量待用户复测",
-   "updated": "2026-11-12",
+   "updated": "2026-11-17",
    "sprints": [
     "sprint-creation-planner",
     "sprint-creation-workspace",
@@ -583,6 +583,12 @@
      "name": "替换镜头与文字/PNG图层跨刷新恢复",
      "status": "done",
      "sprint": "sprint-draft-replacements-overlays"
+    },
+    {
+     "id": "R2-live-creation-loop",
+     "name": "真实录像一句需求至试听、成片和发布包",
+     "status": "done",
+     "sprint": "sprint-live-creation-loop"
     },
     {
      "id": "R2-字幕",
@@ -1112,12 +1118,12 @@
   }
  ],
  "gate": {
-  "date": "2026-11-16",
-  "scope": "Grok工作树原完整verify（e4e3d22含未提交A-F成果）；主树另有修复定向",
-  "result": "fail",
-  "counts": "5486 过 · 101 跳 · 43 失败 · 1 error（2714秒）",
+  "date": "2026-11-17",
+  "scope": "主树4139a26完整verify，用户明确取消后转真实素材交付",
+  "result": "interrupted",
+  "counts": "约九成时中断，无终态统计；曾出现失败标记",
   "branch": "codex/knowledge-version-compare-20261108",
   "merged": false,
-  "note": "原全量仍记失败，不重跑改绿。主树修复集成99过，原失败44节点全部44过，试听图与受控循环3过、TD030解决；Ruff/格式及mypy通过。未合main、未Release，J1人评不提升。"
+  "note": "verify-20261117-002506保留；静态622文件/mypy233源通过，行为检查非通过。不主动重跑全量。真实UI已完成29秒MP4与B站包下载；历史Grok完整5486过101跳43失败1error不改绿，J1人评不提升。"
  }
 }
