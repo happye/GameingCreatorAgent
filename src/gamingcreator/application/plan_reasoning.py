@@ -27,15 +27,20 @@ def plan_reasoning_request(
 ) -> ReasoningRequest:
     has_knowledge = "knowledge" in snapshot.payload
     has_topics = "topicMapping" in snapshot.payload
+    refs = has_topics and snapshot.payload["topicMapping"]["schemaVersion"] == "plan-topics-v2"
     current = (
-        TOPIC_PROMPT_VERSION
+        "plan-reasoning-prompt-v5"
+        if refs
+        else TOPIC_PROMPT_VERSION
         if has_topics
         else "plan-reasoning-prompt-v2"
         if has_knowledge
         else PROMPT_VERSION
     )
     version = current if prompt_version is None else prompt_version
-    if version != current and not (has_topics and version == "plan-reasoning-prompt-v3"):
+    if version != current and not (
+        has_topics and not refs and version == "plan-reasoning-prompt-v3"
+    ):
         raise ValueError("Unsupported planning prompt version.")
     system = SYSTEM
     if has_knowledge:
@@ -82,9 +87,29 @@ Never append a sentence-ending period, normalize punctuation, or paraphrase the 
 For example, if the fact is `Mode banner (3V3)`, quote `Mode banner (3V3)` or `3V3`,
 never `Mode banner (3V3).`. Put your own explanation only in rationale.
 """
+    if refs:
+        system = _reference_system(system)
     return ReasoningRequest(
         system,
         canonical({"snapshotFingerprint": snapshot.fingerprint, "snapshot": snapshot.payload}),
         version,
         proposal_version(snapshot),
     )
+
+
+def _reference_system(system: str) -> str:
+    system = system[: system.index("Each entry has exactly topic, rationale, observationQuote.")]
+    system = system.replace("plan-proposal-v3", "plan-proposal-v4")
+    system += """
+Each entry has exactly topic, rationale, observationRef. topic must exactly match one
+of snapshot.topicMapping.topics. rationale is nonempty, <=500 characters: explain how
+this observation can help discuss the topic, including weak or indirect support.
+observationRef must be an existing key in this shot candidate's observationRefs table.
+References such as fact:1 and tag:1 are scoped to the shot's candidateId; use only that
+candidate's references. Do not copy, paraphrase or generate an observation quote.
+The backend expands the reference to the full original observation for display.
+A reference establishes its textual source, not semantic truth. If no observation
+supports a topic, leave it unmapped. Never claim you watched the footage.
+Keep the user's selected ranges; never expand candidates or fabricate evidence.
+"""
+    return system

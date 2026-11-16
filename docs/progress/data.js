@@ -486,14 +486,15 @@ window.PROGRESS_DATA = {
     "tests/test_creation_jobs.py",
     "tests/test_creation_workspace_browser.py"
    ],
-   "done": "离线模板与预算内AI动态策划；重叠片段去重，时长随素材篮；有主题的新AI方案逐镜记录主题/理由/原摘要引文，预览及采用后可核对原方案主题安排，缺口不置灰；旧付费v1/v2仍可复用和采用，v3输出上限与费用门绑定",
-   "todo": "主题映射只证明引用来源，语义与方案质量待人评；AI旁白已接入，完整编导闭环仍待实际素材试用；旧草稿保守兼容",
-   "updated": "2026-11-15",
+   "done": "离线模板与预算内AI动态策划；主题方案v4按候选内素材编号选来源，后台还原原文供预览/采用，避免模型抄写引文；旧付费v1/v2/v3按归档版本恢复并核完整hash，时钟和费用门保持",
+   "todo": "新编号合同真实来源离线核对通过，尚无新模型效果验证；主题语义、方案质量与完整编导闭环仍待实际试用，不重发旧失败",
+   "updated": "2026-11-17",
    "sprints": [
     "sprint-creation-planner",
     "sprint-creation-workspace",
     "sprint-j1-creation-usability",
-    "sprint-ai-theme-planning"
+    "sprint-ai-theme-planning",
+    "sprint-planning-observation-refs"
    ]
   },
   {
@@ -1585,6 +1586,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-ai-theme-planning"
     },
     {
+     "id": "R3-planning-observation-refs",
+     "name": "AI选片按候选内素材编号引用来源",
+     "status": "done",
+     "sprint": "sprint-planning-observation-refs"
+    },
+    {
      "id": "R3-work-budget",
      "name": "作品身份与需求/策划预算归属",
      "status": "done",
@@ -2146,6 +2153,13 @@ window.PROGRESS_DATA = {
    "bytes": 2878
   },
   {
+   "file": "sprint-attached-ai-narration",
+   "title": "已挂接旁白 AI 重起草",
+   "ids": [],
+   "date": "",
+   "bytes": 1756
+  },
+  {
    "file": "sprint-cache-reclamation",
    "title": "严重缓存事故：58.29 GiB测试中间文件（2026-10-31）",
    "ids": [],
@@ -2391,7 +2405,7 @@ window.PROGRESS_DATA = {
     "P040",
     "R2"
    ],
-   "date": "",
+   "date": "2026-11-17",
    "bytes": 3520
   },
   {
@@ -2445,6 +2459,17 @@ window.PROGRESS_DATA = {
    "ids": [],
    "date": "2026-11-01",
    "bytes": 5166
+  },
+  {
+   "file": "sprint-planning-observation-refs",
+   "title": "Sprint: planning observation references",
+   "ids": [
+    "P021",
+    "P040",
+    "R3"
+   ],
+   "date": "",
+   "bytes": 2515
   },
   {
    "file": "sprint-platform-packages",

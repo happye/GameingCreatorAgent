@@ -18,6 +18,7 @@ from gamingcreator.application.creative_planner import (
 )
 from gamingcreator.application.material_scoring import score_materials
 from gamingcreator.application.plan_topics import (
+    compiled_topic_uses,
     compiled_topics,
     topic_advisories,
     validate_topic_uses,
@@ -94,14 +95,17 @@ def with_knowledge(snapshot: PlanSnapshot, knowledge: list[dict[str, Any]]) -> P
     if not knowledge:
         return snapshot
     payload = snapshot.payload
-    version = "plan-snapshot-v3" if "topicMapping" in payload else "plan-snapshot-v2"
+    version = payload["schemaVersion"] if "topicMapping" in payload else "plan-snapshot-v2"
     payload.update(schemaVersion=version, knowledge=knowledge)
     return replace(snapshot, payload_json=canonical(payload))
 
 
 def proposal_version(snapshot: PlanSnapshot) -> str:
     if "topicMapping" in snapshot.payload:
-        return "plan-proposal-v3"
+        version = snapshot.payload["topicMapping"]["schemaVersion"]
+        if version not in {"plan-topics-v1", "plan-topics-v2"}:
+            raise ValueError("Unsupported topic mapping version.")
+        return "plan-proposal-v4" if version == "plan-topics-v2" else "plan-proposal-v3"
     return "plan-proposal-v2" if "knowledge" in snapshot.payload else SCHEMA_VERSION
 
 
@@ -302,7 +306,7 @@ def _compile_one(
                 )
             )
             if "topicMapping" in snapshot.payload:
-                segments[-1]["topicUses"] = shot["topicUses"]
+                segments[-1]["topicUses"] = compiled_topic_uses(snapshot, shot)
             position += frames
     topic_notes = topic_advisories(snapshot, segments)
     gaps = []
