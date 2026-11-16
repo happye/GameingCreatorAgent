@@ -105,7 +105,8 @@ def test_execute_render_creation_passes_trusted_word_burn_cues(monkeypatch):
 
     loaded = {"called": False}
 
-    async def fake_load(project, run_id, result_hash):
+    async def fake_load(project, run_id, result_hash, *, strict=False):
+        assert strict
         loaded["called"] = True
         loaded["binding"] = (run_id, result_hash)
         return words
@@ -230,3 +231,84 @@ def test_renderer_burns_word_intervals_and_keeps_segment_srt(tmp_path):
 
     asyncio.run(scenario())
     assert hashlib.sha256(source.read_bytes()).hexdigest() == before
+
+
+@pytest.mark.parametrize("damage", ["hash", "identity", "rows", "empty"])
+def test_render_entry_validates_explicit_sidecar(tmp_path, monkeypatch, damage):
+    import json
+
+    from test_asr_words_cli import MODEL, FakeWords, _seed
+
+    import gamingcreator.cli.creation_render as entry
+    from gamingcreator.infrastructure.asr_words import transcribe_project_words
+    from gamingcreator.infrastructure.asr_words_sidecar import encode_words_receipt
+
+    repository, project, bundle = _seed(tmp_path)
+    summary = asyncio.run(
+        transcribe_project_words(project, "run-1", MODEL, repository, provider=FakeWords())
+    )
+    path = summary.result_directory / "words.json"
+    document = json.loads(path.read_bytes())
+    if damage == "identity":
+        document["sourceSha256"] = "0" * 64
+    if damage == "rows":
+        document["words"][0]["startUs"] = -1
+    if damage == "empty":
+        document["words"] = []
+    payload = json.dumps(document).encode()
+    path.write_bytes(payload)
+    digest = summary.result_hash
+    if damage != "hash":
+        digest = hashlib.sha256(payload).hexdigest()
+        (summary.result_directory / "receipt.json").write_bytes(encode_words_receipt(digest))
+        summary.result_directory.rename(summary.result_directory.parent / digest)
+    plan = RenderPlan(
+        (
+            RenderClip(
+                bundle.asset, SourceRange(0, bundle.asset.duration_us, bundle.asset.duration_us), 10
+            ),
+        ),
+        10,
+    )
+
+    async def timeline(self, run):
+        return SimpleNamespace(run=SimpleNamespace(run_id=run), transcripts=())
+
+    class Renderer:
+        called = False
+
+        async def render(self, *args, **kwargs):
+            self.called = True
+            assert kwargs["burn_cues"] is None
+            return {"ok": True}
+
+    renderer = Renderer()
+    monkeypatch.setattr(
+        entry, "read_creation", lambda _: ({"segments": [{"runId": "run-1"}]}, {}, "hash")
+    )
+    monkeypatch.setattr(entry.SqliteTimelineStore, "load_completed_timeline", timeline)
+    monkeypatch.setattr(entry, "validate_render_plan", lambda *args: plan)
+
+    async def render():
+        return await execute_render_creation(
+            project,
+            project,
+            tmp_path / "out",
+            renderer,
+            320,
+            180,
+            subtitle_mode="burn",
+            word_run_id="run-1",
+            word_result_hash=digest,
+        )
+
+    if damage == "empty":
+        assert asyncio.run(render()) == {"ok": True}
+        assert renderer.called
+    else:
+        with pytest.raises(AppError) as error:
+            asyncio.run(render())
+        assert error.value.code == (
+            "asr.words_not_found" if damage == "identity" else "asr.words_damaged"
+        )
+        assert not renderer.called

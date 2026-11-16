@@ -177,6 +177,7 @@ class AsrWordsJobs:
         try:
             summary = asyncio.run(execute())
             with self._lock:
+                job.context.check_cancelled()
                 job.result = summary.to_json()
                 job.status = "finished"
         except AppError as error:
@@ -194,6 +195,14 @@ class AsrWordsJobs:
                     "code": "asr.cancelled",
                     "message": "逐词识别已取消。",
                     "exitCode": int(ExitCode.CANCELLED),
+                }
+        except Exception as error:
+            with self._lock:
+                job.status = "failed"
+                job.error = {
+                    "code": "asr.task_failed",
+                    "message": f"逐词识别任务异常：{type(error).__name__}: {error}",
+                    "exitCode": int(ExitCode.ENVIRONMENT),
                 }
         finally:
             with self._lock:

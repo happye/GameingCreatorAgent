@@ -112,7 +112,7 @@ def test_preview_toggle_on_maps_trusted_words_and_keeps_handwritten(revisions, m
     )
     seen = []
 
-    async def load(project, run_id, result_hash):
+    async def load(project, run_id, result_hash, *, strict=False):
         seen.append((run_id, result_hash, project))
         return trusted
 
@@ -149,7 +149,7 @@ def test_preview_missing_or_invalid_binding_stays_on_segments(revisions, monkeyp
         jobs, root, wordHighlights=True, asrWords={"runId": "run-1", "resultHash": "c" * 64}
     )
 
-    async def missing(project, run_id, result_hash):
+    async def missing(project, run_id, result_hash, *, strict=False):
         return None
 
     monkeypatch.setattr("gamingcreator.infrastructure.asr_words.load_trusted_asr_words", missing)

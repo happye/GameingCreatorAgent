@@ -230,7 +230,7 @@ def test_cli_returns_result_path_and_word_count_and_leaves_old_transcript(tmp_pa
         )
 
     reused = asyncio.run(second())
-    assert provider.calls == 2
+    assert provider.calls == 1
     assert reused.reused is True
     assert reused.result_hash == summary.result_hash
     assert reused.result_directory == summary.result_directory
@@ -307,3 +307,21 @@ def test_default_worker_request_does_not_enable_word_timestamps(tmp_path):
     assert worded["wordTimestamps"] is True
     worded.pop("wordTimestamps")
     assert worded == default
+
+
+def test_damaged_result_is_not_recomputed(tmp_path):
+    repository, project, _ = _seed(tmp_path)
+    provider = FakeWords()
+    summary = asyncio.run(
+        transcribe_project_words(project, "run-1", MODEL, repository, provider=provider)
+    )
+    path = summary.result_directory / "words.json"
+    damaged = path.read_bytes() + b" "
+    path.write_bytes(damaged)
+    with pytest.raises(AppError) as error:
+        asyncio.run(
+            transcribe_project_words(project, "run-1", MODEL, repository, provider=provider)
+        )
+    assert error.value.code == "asr.words_damaged"
+    assert provider.calls == 1
+    assert path.read_bytes() == damaged

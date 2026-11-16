@@ -117,6 +117,12 @@ async def transcribe_project_words(
                 ExitCode.INPUT,
                 run_id,
             )
+        existing = await _find_existing_words(
+            project, run_id, asset, clock, settings.model_name, settings.model_revision
+        )
+        context.check_cancelled()
+        if existing is not None:
+            return existing
         if provider is None:
             from gamingcreator.infrastructure.local_asr import LocalAsrProvider
 
@@ -138,15 +144,6 @@ async def transcribe_project_words(
             raise AppError(code, "逐词识别失败。", ExitCode.ENVIRONMENT, run_id)
         context.check_cancelled()
         words = stitch_window_words((result.output,))
-        existing = _reuse_if_present(
-            project,
-            run_id=run_id,
-            asset=asset,
-            clock=clock,
-            model=settings.model_name,
-            revision=settings.model_revision,
-            words=words,
-        )
         directory = publish_asr_words_sidecar(
             project,
             run_id=run_id,
@@ -159,6 +156,7 @@ async def transcribe_project_words(
             revision=settings.model_revision,
             words=words,
             metadata=result.metadata,
+            context=context,
         )
         payload = (directory / WORDS_FILENAME).read_bytes()
         return WordTranscriptionSummary(
@@ -167,7 +165,7 @@ async def transcribe_project_words(
             words_payload_sha256(payload),
             directory,
             len(words),
-            existing is not None,
+            False,
             settings.model_name,
             settings.model_revision,
         )
@@ -175,40 +173,47 @@ async def transcribe_project_words(
         raise AppError("asr.cancelled", "逐词识别已取消。", ExitCode.CANCELLED, run_id) from None
 
 
-def _reuse_if_present(
+async def _find_existing_words(
     project: Path,
-    *,
     run_id: str,
     asset: MediaAsset,
     clock: AudioEvidence,
     model: str,
     revision: str,
-    words: tuple[AsrWord, ...],
-) -> Path | None:
-    from gamingcreator.infrastructure.asr_words_sidecar import clock_digest, encode_words_document
+) -> WordTranscriptionSummary | None:
+    from gamingcreator.infrastructure.asr_words_sidecar import asr_words_directory, clock_digest
 
-    payload = encode_words_document(
-        run_id=run_id,
-        media_id=asset.media_id,
-        source_sha256=asset.sha256,
-        audio_sha256=clock.sha256,
-        clock_digest_value=clock_digest(clock, asset),
-        model=model,
-        revision=revision,
-        words=words,
-    )
-    return load_reusable_asr_words_sidecar(
-        project,
-        run_id=run_id,
-        media_id=asset.media_id,
-        source_sha256=asset.sha256,
-        audio_sha256=clock.sha256,
-        clock=clock,
-        asset=asset,
-        model=model,
-        revision=revision,
-        result_hash=words_payload_sha256(payload),
-    )
+    root = asr_words_directory(project, run_id, "0" * 64).parent
+    if not root.exists():
+        return None
+    for directory in sorted(root.iterdir()):
+        if directory.name.startswith("."):
+            continue
+        published_model, published_revision = _published_model_identity(
+            project, run_id, directory.name
+        )
+        if (published_model, published_revision) != (model, revision):
+            continue
+        document = await load_asr_words_projection(project, run_id, directory.name)
+        if (
+            document["mediaId"] != asset.media_id
+            or document["sourceSha256"] != asset.sha256
+            or document["audioSha256"] != clock.sha256
+            or document["clockDigest"] != clock_digest(clock, asset)
+        ):
+            raise _damaged_words(run_id)
+        words = _words_from_document(document, asset.media_id, asset.duration_us)
+        return WordTranscriptionSummary(
+            run_id,
+            asset.media_id,
+            directory.name,
+            directory,
+            len(words or ()),
+            True,
+            model,
+            revision,
+        )
+    return None
 
 
 PROJECTION_SCHEMA_VERSION = "asr-words-http-v1"
@@ -382,12 +387,14 @@ def _words_from_document(
     from gamingcreator.domain.time import SourceRange
 
     rows = document.get("words")
-    if type(rows) is not list or not rows:
+    if type(rows) is not list:
+        raise _damaged_words(str(document.get("runId", "")))
+    if not rows:
         return None
     words = []
     for row in rows:
         if type(row) is not dict:
-            return None
+            raise _damaged_words(str(document.get("runId", "")))
         start, end, text = row.get("startUs"), row.get("endUs"), row.get("text")
         if (
             type(start) is not int
@@ -395,58 +402,43 @@ def _words_from_document(
             or type(text) is not str
             or not text.strip()
         ):
-            return None
+            raise _damaged_words(str(document.get("runId", "")))
         if not 0 <= start < end <= duration_us:
-            return None
+            raise _damaged_words(str(document.get("runId", "")))
         words.append(AsrWord(media_id, SourceRange(start, end, duration_us), text))
     return tuple(words)
 
 
-async def load_trusted_asr_words(
+async def _load_verified_asr_words(
     project: Path, run_id: str, result_hash: str
 ) -> tuple[AsrWord, ...] | None:
-    """只有能核对来源、时钟和 hash 的 sidecar 才返回词列表，否则为 None。"""
+    """Explicit bindings must verify; only a trusted empty result permits fallback."""
+    document = await load_asr_words_projection(project, run_id, result_hash)
     store = await SqliteTimelineStore.open(project, read_only=True)
     try:
-        try:
-            bundle = await store.load_media_bundle(run_id)
-        except AppError:
-            return None
+        bundle = await store.load_media_bundle(run_id)
         asset = bundle.asset
-        clock = bundle.audio
-        if asset is None or clock is None:
-            return None
+        if asset is None:
+            raise _missing_words(run_id)
+        return _words_from_document(document, asset.media_id, asset.duration_us)
     finally:
         await store.close()
+
+
+async def load_trusted_asr_words(
+    project: Path,
+    run_id: str,
+    result_hash: str,
+    *,
+    strict: bool = False,
+) -> tuple[AsrWord, ...] | None:
+    """Preserve optional-reader compatibility; explicit render bindings use strict mode."""
     try:
-        verify_prepared_asr_audio(prepared_asr_audio_request(run_id, bundle))
+        return await _load_verified_asr_words(project, run_id, result_hash)
     except AppError:
+        if strict:
+            raise
         return None
-    try:
-        model, revision = _published_model_identity(project, run_id, result_hash)
-    except AppError:
-        return None
-    directory = load_reusable_asr_words_sidecar(
-        project,
-        run_id=run_id,
-        media_id=asset.media_id,
-        source_sha256=asset.sha256,
-        audio_sha256=clock.sha256,
-        clock=clock,
-        asset=asset,
-        model=model,
-        revision=revision,
-        result_hash=result_hash,
-    )
-    if directory is None:
-        return None
-    try:
-        document = json.loads((directory / WORDS_FILENAME).read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, ValueError):
-        return None
-    if type(document) is not dict:
-        return None
-    return _words_from_document(document, asset.media_id, asset.duration_us)
 
 
 def parse_word_highlight_request(
@@ -490,7 +482,9 @@ async def resolve_word_burn_cues(
     enabled, binding = parse_word_highlight_request(request)
     if not enabled or binding is None:
         return None
-    words = await load_trusted_asr_words(project, binding[0], binding[1])
+    words = await load_trusted_asr_words(project, binding[0], binding[1], strict=True)
+    if words and not any(clip.asset.media_id == words[0].media_id for clip in plan.clips):
+        raise AppError("asr.words_identity", "逐词结果不属于成片素材。", ExitCode.INPUT)
     burned = present_subtitles(
         segment_cues,
         words=words,

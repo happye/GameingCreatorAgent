@@ -189,8 +189,9 @@ def test_failed_publish_leaves_no_visible_partial(tmp_path):
         return real(path, payload)
 
     with patch("gamingcreator.infrastructure.asr_words_sidecar._write_published_file", boom):
-        with pytest.raises(OSError, match="simulated failure"):
+        with pytest.raises(AppError, match="simulated failure") as error:
             _publish(project, asset, clock)
+        assert error.value.code == "asr.words_write"
     root = _asr_words_root(project)
     leftovers = list(root.rglob("*.json")) if root.exists() else []
     assert leftovers == []

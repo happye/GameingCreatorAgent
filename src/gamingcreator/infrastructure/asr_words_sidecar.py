@@ -9,7 +9,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from gamingcreator.application.asr_word_timing import AsrWord
-from gamingcreator.application.providers import InvocationMetadata
+from gamingcreator.application.providers import CancellationContext, InvocationMetadata
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.media import AudioEvidence, MediaAsset
 from gamingcreator.infrastructure.local_files import read_bounded
@@ -294,6 +294,7 @@ def publish_asr_words_sidecar(
     revision: str,
     words: tuple[AsrWord, ...] | list[AsrWord],
     metadata: InvocationMetadata | None = None,
+    context: CancellationContext | None = None,
 ) -> Path:
     if asset.media_id != media_id:
         raise _fail("asr.words_identity", "词级结果里的来源和这条记录不一致。")
@@ -314,11 +315,13 @@ def publish_asr_words_sidecar(
     result_hash = words_payload_sha256(payload)
     directory = asr_words_directory(project, run_id, result_hash)
     parent = directory.parent
-    parent.mkdir(parents=True, exist_ok=True)
     lock = ProjectWriterLock(parent)
     staging: Path | None = None
     published = False
     try:
+        if context is not None:
+            context.check_cancelled()
+        parent.mkdir(parents=True, exist_ok=True)
         lock.acquire()
         reused = _verified_sidecar(
             directory,
@@ -346,11 +349,15 @@ def publish_asr_words_sidecar(
         _write_published_file(
             staging / RECEIPT_FILENAME, encode_words_receipt(result_hash, metadata)
         )
+        if context is not None:
+            context.check_cancelled()
         staging.rename(directory)
         published = True
         return directory
     except FileExistsError:
         raise _fail("asr.words_exists", "词级结果已存在，不会覆盖旧文件。") from None
+    except OSError as error:
+        raise _fail("asr.words_write", f"无法写入逐词结果：{error}") from error
     finally:
         if not published and staging is not None and staging.exists() and staging != directory:
             shutil.rmtree(staging, ignore_errors=True)
@@ -367,4 +374,4 @@ def _write_published_file(path: Path, payload: bytes) -> None:
     except FileExistsError:
         raise
     except OSError as error:
-        raise ValueError("无法写入文件。") from error
+        raise _fail("asr.words_write", f"无法写入逐词结果：{error}") from error

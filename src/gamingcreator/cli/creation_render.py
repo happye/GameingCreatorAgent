@@ -97,10 +97,16 @@ async def execute_render_creation(
             ).cues
         )
         burn_cues = None
+        if subtitle_mode == "burn" and (word_run_id is None) != (word_result_hash is None):
+            raise AppError("asr.words_identity", "逐词结果需要完整的任务和校对码。", ExitCode.INPUT)
         if subtitle_mode == "burn" and word_run_id and word_result_hash:
             from gamingcreator.infrastructure.asr_words import load_trusted_asr_words
 
-            words = await load_trusted_asr_words(project, word_run_id, word_result_hash)
+            words = await load_trusted_asr_words(
+                project, word_run_id, word_result_hash, strict=True
+            )
+            if words and not any(clip.asset.media_id == words[0].media_id for clip in plan.clips):
+                raise AppError("asr.words_identity", "逐词结果不属于成片素材。", ExitCode.INPUT)
             burned = present_subtitles(
                 cues,
                 words=words,

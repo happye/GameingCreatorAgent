@@ -90,6 +90,7 @@ def test_timeout_and_cancel_reap_only_this_worker_and_keep_published_sidecar(tmp
         transcribe_project_words(project, "run-1", MODEL, repository, provider=FakeWords())
     )
     before = (published.result_directory / "words.json").read_bytes()
+    _select_new_revision(monkeypatch)
 
     code = (
         "import os,sys,time;from pathlib import Path;"
@@ -197,6 +198,7 @@ def test_cancelling_one_word_task_does_not_stop_another(tmp_path, monkeypatch):
     )
     before_a = (kept_a.result_directory / "words.json").read_bytes()
     before_b = (kept_b.result_directory / "words.json").read_bytes()
+    _select_new_revision(monkeypatch)
 
     import gamingcreator.infrastructure.local_asr as local_asr
 
@@ -284,3 +286,41 @@ def test_cancelling_one_word_task_does_not_stop_another(tmp_path, monkeypatch):
     assert (kept_b.result_directory / "words.json").read_bytes() == before_b
     assert _staging_leftovers(project_a) == []
     assert _staging_leftovers(project_b) == []
+
+
+def _select_new_revision(monkeypatch):
+    from dataclasses import replace
+
+    from gamingcreator.infrastructure.asr_models import select_installed_asr_settings
+
+    def select(repository, model):
+        return replace(select_installed_asr_settings(repository, model), model_revision="0" * 40)
+
+    # Preserve old results while exercising a worker with a different identity.
+    monkeypatch.setattr(
+        "gamingcreator.infrastructure.asr_words.select_installed_asr_settings", select
+    )
+
+
+def test_cancel_after_staging_write_does_not_publish(tmp_path, monkeypatch):
+    import gamingcreator.infrastructure.asr_words_sidecar as sidecar
+
+    repository, project, _ = _seed(tmp_path)
+    context = CancellationContext("run-1", 5)
+    original = sidecar._write_published_file
+
+    def write_then_cancel(path, payload):
+        original(path, payload)
+        if path.name == "receipt.json":
+            context.cancelled.set()
+
+    monkeypatch.setattr(sidecar, "_write_published_file", write_then_cancel)
+    with pytest.raises(AppError) as error:
+        asyncio.run(
+            transcribe_project_words(
+                project, "run-1", MODEL, repository, provider=FakeWords(), context=context
+            )
+        )
+    assert error.value.code == "asr.cancelled"
+    assert not list(_asr_words_root(project).glob("*/words.json"))
+    assert _staging_leftovers(project) == []

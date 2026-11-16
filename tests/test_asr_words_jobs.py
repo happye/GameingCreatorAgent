@@ -8,6 +8,7 @@ import time
 from pathlib import Path
 from urllib.parse import urlencode
 
+import pytest
 from test_asr_audio import DURATION_US
 from test_asr_models import MODEL
 from test_asr_words_cli import FakeWords, _seed
@@ -261,3 +262,44 @@ def test_http_cancel_stops_this_task_and_keeps_the_other(tmp_path, monkeypatch):
     assert second_done["status"] == "finished"
     assert second_done["result"]["wordCount"] == 1
     assert "第二份" in Path(second_done["result"]["resultPath"]).read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("failure", ["permission", "disk_full", "unexpected"])
+def test_job_write_and_unexpected_errors_are_terminal(tmp_path, monkeypatch, failure):
+    repository, _, _ = _seed(tmp_path)
+    _install_fake(monkeypatch)
+    if failure == "unexpected":
+
+        async def broken(*args, **kwargs):
+            raise RuntimeError("worker crashed")
+
+        monkeypatch.setattr("gamingcreator.ui.asr_words_jobs.transcribe_project_words", broken)
+    else:
+        original_open = Path.open
+
+        def failing_open(path, *args, **kwargs):
+            if path.name == "words.json" and args and args[0] == "xb":
+                if failure == "permission":
+                    raise PermissionError(13, "denied")
+                raise OSError(28, "disk full")
+            return original_open(path, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "open", failing_open)
+    with workspace(repository) as base:
+        status, _, body = post(
+            base,
+            "/api/asr-words",
+            {
+                "projectId": "project",
+                "runId": "run-1",
+                "model": MODEL,
+            },
+        )
+        assert status == 202
+        finished = _wait(base, "project", json.loads(body)["taskId"])
+    assert finished["status"] == "failed"
+    assert finished["result"] is None
+    assert finished["error"]["code"] == (
+        "asr.task_failed" if failure == "unexpected" else "asr.words_write"
+    )
+    assert finished["error"]["message"]
