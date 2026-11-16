@@ -87,3 +87,22 @@ def test_browser_highlight_shows_html_as_text_and_keeps_emoji(tmp_path, monkeypa
             playwright.expect(text).to_contain_text("👨‍👩‍👧")
         finally:
             browser.close()
+
+
+@pytest.mark.parametrize(
+    ("text", "query", "expected"),
+    [
+        ("Straße", "STRASSE", "Straße"),
+        ("STRASSE", "Straße", "STRASSE"),
+        ("ς", "σ", "ς"),
+        ("ı", "I", ""),
+        ("👨‍👩‍👧cafe\u0301", "é", "e\u0301"),
+    ],
+)
+def test_highlight_uses_server_casefold_semantics(text, query, expected):
+    from gamingcreator.application.screen_text_reports import screen_text_key
+
+    parts = _parts(text, query)
+    assert "".join(part["value"] for part in parts) == text
+    assert "".join(part["value"] for part in parts if part["hit"]) == expected
+    assert bool(expected) == (screen_text_key(query) in screen_text_key(text))

@@ -113,7 +113,7 @@ function applyNarration(frame, previewFromStart, narrationMoveRef, maxStart) {
 function bindNarrationDrag(event, ctx) {
     event.preventDefault();
     event.stopPropagation();
-    const {narrationMove, narrationMoveRef, scope, scopeRef, scale, fps, maxStart, setDrag} = ctx;
+    const {narrationMove, narrationMoveRef, scope, scopeRef, scale, fps, maxStart, setDrag, cleanupRef} = ctx;
     narrationMove.onStopPlayer?.();
     const origin = narrationMove.startFrame ?? 0;
     const handle = event.currentTarget;
@@ -125,6 +125,7 @@ function bindNarrationDrag(event, ctx) {
     };
     const move = (e) => {
         if (!narrationGestureMatches(token, narrationMoveRef.current, scopeRef.current)) {
+            cleanup();
             setDrag(null);
             return;
         }
@@ -142,7 +143,11 @@ function bindNarrationDrag(event, ctx) {
     const onKey = (e) => {
         if (e.key === "Escape") { e.preventDefault(); finish(false); }
     };
+    let cleaned = false;
     const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        if (cleanupRef.current === cleanup) cleanupRef.current = null;
         handle.removeEventListener("pointermove", move);
         handle.removeEventListener("pointerup", onUp);
         handle.removeEventListener("pointercancel", onCancel);
@@ -152,6 +157,8 @@ function bindNarrationDrag(event, ctx) {
     };
     const onUp = () => finish(true);
     const onCancel = () => finish(false);
+    cleanupRef.current?.();
+    cleanupRef.current = cleanup;
     handle.addEventListener("pointermove", move);
     handle.addEventListener("pointerup", onUp);
     handle.addEventListener("pointercancel", onCancel);
@@ -162,6 +169,7 @@ function bindNarrationDrag(event, ctx) {
 
 function useNarrationGesture({scope, narrationMove, canDragNarration, scale, fps, totalUs}) {
     const [drag, setDrag] = useState(null);
+    const cleanupRef = useRef(null);
     const dragRef = useRef(null);
     dragRef.current = drag;
     const scopeRef = useRef(scope);
@@ -171,20 +179,22 @@ function useNarrationGesture({scope, narrationMove, canDragNarration, scale, fps
     useEffect(() => {
         setDrag(null);
         return () => {
-            const active = dragRef.current;
-            if (active?.cleanup) active.cleanup();
+            cleanupRef.current?.();
             dragRef.current = null;
         };
     }, [scope]);
     useEffect(() => {
         const active = dragRef.current;
         if (!active || active.frame == null) return;
-        if (!narrationGestureMatches(active, narrationMove, scopeRef.current)) setDrag(null);
+        if (!narrationGestureMatches(active, narrationMove, scopeRef.current)) {
+            cleanupRef.current?.();
+            setDrag(null);
+        }
     }, [narrationMove]);
     const maxStart = () => narrationMaxStart(totalUs, fps, narrationMove);
     const startNarrationDrag = (event) => {
         if (!canDragNarration) return;
-        bindNarrationDrag(event, {narrationMove, narrationMoveRef, scope, scopeRef, scale, fps, maxStart, setDrag});
+        bindNarrationDrag(event, {narrationMove, narrationMoveRef, scope, scopeRef, scale, fps, maxStart, setDrag, cleanupRef});
     };
     const nudgeNarration = (event) => {
         if (!canDragNarration) return;

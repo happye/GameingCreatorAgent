@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 
 from test_inspection_http import workspace
@@ -35,6 +36,9 @@ def _plant_cache(repository, project, run_id, text):
     path = frame_text_cache_path(repository, project, run_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
+    path.with_name(path.name + ".sha256").write_text(
+        hashlib.sha256(path.read_bytes()).hexdigest() + "\n", encoding="ascii"
+    )
     return path, chosen[0]
 
 

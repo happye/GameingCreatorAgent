@@ -294,6 +294,10 @@ def test_cli_reads_text_without_touching_the_project_and_cleans_scratch(tmp_path
     output = tmp_path / "reports" / "ocr.json"
     report = asyncio.run(execute_ocr_frames(project, "run-000", output, frames, engine, scratch))
     assert json.loads(output.read_text(encoding="utf-8")) == report
+    from gamingcreator.application.screen_text_reports import read_screen_text_report
+
+    verified = read_screen_text_report(output)
+    assert verified.ok and verified.report is not None and verified.report.content_verified
     assert report["frames"][0]["timeUs"] == 100_000
     assert report["recurringTexts"][0]["text"] == "游戏科学"
     assert frames.output is not None and not frames.output.exists()
