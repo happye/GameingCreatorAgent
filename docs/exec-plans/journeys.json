@@ -9,7 +9,7 @@
       "agent_run": {
         "date": "2026-11-17",
         "result": "pass",
-        "evidence": "Codex 在 http://127.0.0.1:8766/studio 用真实漫画群星录像完成一句话AI理解→本地方案选择→一句话删镜头→手写旁白免费本机合成14.7秒并预览试听→保存版本→导出29.013秒1280×720 H.264/AAC→标题简介标签/10.43秒封面→保存发布版本→重开后生成并下载B站七文件包。render1f48bf39887c4b4bb62095bc5e9dd51c，package28f5ba19cc374ba3b877e29eb27d7c84。视频/ZIP/截图在.cache/scratch/product-journey-20261117/，详sprint-live-creation-loop。AI理解估算¥0.002462，另一次策划因引用额外句号失败¥0.092816，未采用/重发；不称AI自动编导完成，官方规则/素材权利未核，人评保持原结论。"
+        "evidence": "Codex在8766 Studio用真实漫画群星录像完成一句需求→本地方案→删镜头→旁白保存后AI重起草（54字）→确认填入且保旧轨→本机Huihui合成14.56秒→保存→29.013秒1280×720 H264/AAC→文案封面→B站七文件包并下载。AI文案已生成、人工校改复用到新版。renderfd71a72987424d1ea2663e663421f2b1、packagee2eedd6c423641bda83c02b8c467844b；实际成片播3.95秒、未静音、解码68825音频字节、无media error。视频manga-ai-narration-preview.mp4及bilibili-ai-narration-package.zip在.cache/scratch/product-journey-20261117/，详sprint-attached-ai-narration。AI新旁白¥0.00819112、文案¥0.00456512（均估算）。旧策划引用失败不改不重发，新编号合同只准备未发模型；不称全AI编导完成，内容语义/听感/权利未验，人评保持原结论。"
       },
       "human_check": {
         "date": "2026-11-11",

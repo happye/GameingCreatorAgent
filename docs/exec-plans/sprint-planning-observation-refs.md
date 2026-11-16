@@ -20,3 +20,5 @@
 主树集成：相同真实来源离线重建脚本通过（约2秒），旧请求/新引用投影/绑定及echo兼容保持。唯一task_quality_guard静态通过，无未闭合P1/P2。plan_reasoning_request为73行、refs helper为16行。
 
 限制：新提示尚无付费效果验收；旧失败记录不重标、不重发。未运行pytest或完整检查。
+
+重启主树8766服务后，实际POST prepare_plan返回638e58480516d250009309f5231989dfe58dbbc689b7e422886ad217081af728，plan-snapshot-v4/plan-topics-v2及首个候选fact:1、fact:2已生效；只准备，未调用模型。原文保存在真实操作目录planning-refs-prepared-only.json。

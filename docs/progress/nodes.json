@@ -180,21 +180,23 @@
    ]
   },
   "P025": {
-   "done": "按已保存镜头描述与冻结知识生成AI旁白预览，逐句核对原描述与知识出处后手动填入并用本机声音合成；复用作品预算，丢响应只读恢复；离线模板兜底保留",
-   "todo": "假模型链路通过；真实首稿39字超过33字被拒，短视频提示已改进但未重新付费验证；自然度、语义与听感待人评，不提升J1质量状态",
-   "updated": "2026-11-15",
+   "done": "AI按保存镜头及冻结知识起草，逐句来源可核对；已有旁白也能重起草并确认填入待合成稿，旧音轨保留到显式本机重合成；真实29秒作品已生成54字AI稿并导出，复用原预算与只读恢复",
+   "todo": "真实新稿链路通过，但语义、自然度与听感仍待人评；旧14秒39字超预算失败原件保持且不重发，不提升J1质量状态",
+   "updated": "2026-11-17",
    "sprints": [
     "sprint-narration-script",
-    "sprint-ai-narration"
+    "sprint-ai-narration",
+    "sprint-attached-ai-narration"
    ]
   },
   "P026": {
-   "done": "本机Windows语音合成旁白，可试听、挂接成片时间、调音量/闪避；Studio可编辑并重合成为新版本",
+   "done": "本机语音旁白可试听、调位置/音量/闪避、编辑重合成；AI改稿支持保留旧轨及覆盖确认，fallback优先已有免费声音再中文；真实Huihui新音轨已随视频与发布包交付",
    "todo": "本机声音授权未知；云端配音需付费单独批准；音质未人工评审",
-   "updated": "2026-11-08",
+   "updated": "2026-11-17",
    "sprints": [
     "sprint-local-narration",
-    "sprint-studio-narration-revision"
+    "sprint-studio-narration-revision",
+    "sprint-attached-ai-narration"
    ]
   },
   "P027": {
@@ -683,6 +685,12 @@
      "name": "AI旁白预览与免费本机合成",
      "status": "done",
      "sprint": "sprint-ai-narration"
+    },
+    {
+     "id": "R3-attached-ai-narration",
+     "name": "已有音轨AI重起草、免费重合成与导出",
+     "status": "done",
+     "sprint": "sprint-attached-ai-narration"
     },
     {
      "id": "R3-grok-heavy-development",

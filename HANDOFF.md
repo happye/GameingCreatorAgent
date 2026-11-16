@@ -1,37 +1,33 @@
 # HANDOFF（覆盖快照）
 
-## 最近一次会话（2026-11-17，用户已改变优先级）
+## 最近一次会话（2026-11-17，按用户18%额度要求收尾后暂停）
 
-尽快实现并串联计划内全部功能形成闭环，不主动全量测试，不让用户理解工程参数或依赖PR/AE。原暂停已撤销，goal保持active，不自行complete/pause。分支codex/knowledge-version-compare-20261108；原Grok树、旧树/stash及用户未跟踪文件保持。
+目标仍是实现并串联计划内全部功能；本批两项已闭合，等待用户恢复自主推进，不标全部完成。禁止主动全量测试，优先真实素材闭环，不要求用户理解工程或使用PR/AE。分支codex/knowledge-version-compare-20261108；原Grok工作树、旧树/stash和用户未跟踪设计文件保留。
 
-## 已交付修复
+## 已交付
 
-Grok149文件从e4e3d22三方合入375cc54，保留ecd9570的v2字幕/音轨草稿恢复和Grok手势editEpoch。隔离基线50967b8，ASR365a4a9/6c6d236，UI/OCR67e476e/04070ce，集成后tip6771587。R01–R05、E10和取消发布边界全部闭合，唯一task_quality_guard通过；详sprint-grok-repair-integration.md。
+Grok149文件及R01–R05/E10/取消发布边界修复已集成：逐词坏来源/hash拒绝、任务失败终态、推理前复用、取消不发布、监听清理、OCR全文hash/旧缓存隔离与Unicode高亮。v3替换镜头/图层草稿55886b4、字幕隐藏保护4139a26、旧AI提示归档兼容5b2516e均已推送。历史证据见sprint-grok-repair-integration及sprint-draft-replacements-overlays。
 
-显式坏逐词来源/clock/hash报错，可信空词可段级降级；文件错误/未知异常任务终态failed；推理前验证完整sidecar再筛模型，不重算坏结果；staging后可观察取消不发布。手势失效先清监听。OCR新v2缓存+.sha256，缺回执/正文篡改拒绝且不回退；legacy只看原文、不查询/定位，重扫不动旧字节。Unicode15.1 casefold差异表保原字素。
+本批AI策划来源编号a19917b：新plan-snapshot-v4/topics-v2/prompt-v5/proposal-v4按candidate内fact/tag编号引用，后台展开原文；旧v1/v2/v3及prompt3/4的body/hash逐字兼容，原失败仍拒。真实a471旧源只读重建及新编号编译通过；唯一guard通过。8766运行服务已更新；prepare_plan新638e5848…仅准备未发模型，新合同真实AI效果未验。
 
-## 验证与不要重复的检查
+已有音轨新增AI重新起草，核对出处后确认填入待合成稿，取消保留文字和旧音轨；明确本机重合成后才换轨。恢复scope/预算/不重发保持，迟到隔离、免费声音fallback已审。UI真实操作先发现未就绪声音列表可能退到English David，已改优先当前免费音色再中文；原3.2秒资产保留，最终Huihui14.5596秒。
 
-主树9文件99过（pytest-20261116-200740）；Grok原完整失败清单44节点全部44过（201027）；试听原图与循环/受控0.45秒偏移3过（201436），容差0.12不改，TD030解决。Ruff/格式612文件、mypy233源通过；CLI冒烟随本批记录。无后台pytest。
+## 最新真实产物
 
-Grok原完整verify-20261116-031427仍5486过101跳43失败1error，定向闭合不改全量历史，不在本批再跑完整。主树旧完整18e9e2d同样失败，保留原记录。未Release、未合main，人评不变。工人原失败/修复后日志分列在合同，不把fixture失败称全绿。
+服务http://127.0.0.1:8766/studio，端口状态.cache/workspace/port-8766.json为准。项目artifacts/demo-phase0，漫画群星run f76f5d6495314c04ae04083614d4afd6；作品55f97422dabd6c5a3d87eb323018e45a，原方案137f62e387ee4b89b74e06f3d9bfdeb3。
 
-## 本轮真实交付与续接
+AI旁白54字/91字新请求fc2ceeb6d8464929c32d1cda25fdc138cd753f9951b6e1713c1b6368e7a08b00，估算¥0.00819112；AI文案e4a0bf4ec36f84bf28cdf301f126f086cc13832a539b6435340b868a4b90e267，估算¥0.00456512。均成功，读取不重付。文案夸大处经人工校改，原模型结果不改。
 
-v3草稿55886b4、字幕词级隐藏修复4139a26已推送。受影响检查257过1旧契约失败；修后独立树20过、主树原失败及4组合5过。唯一guard通过，旧v1/v2兼容。
+最终voice74e4ade9002147c8b8075311d24a079c、revision8dc5e5b587cf4eb2a6b2005a97c8d6e5、renderfd71a72987424d1ea2663e663421f2b1、publication3dba2f9f025c41a69f4091ebed2e8b44、packagee2eedd6c423641bda83c02b8c467844b均completed并下载。文件.cache/scratch/product-journey-20261117/manga-ai-narration-preview.mp4（29.013秒1280×720 H264/AAC）及bilibili-ai-narration-package.zip（七文件）。成片实际播3.95秒、未静音且解码68825音频字节。相关JSON、截图、操作脚本同目录；细节见sprint-attached-ai-narration与sprint-live-creation-loop。
 
-真实服务http://127.0.0.1:8766/studio（本轮启动45588，进程以后可能更新）。现有漫画群星run f76f5d6495314c04ae04083614d4afd6，作品55f97422dabd6c5a3d87eb323018e45a、方案137f62e387ee4b89b74e06f3d9bfdeb3。已从一句需求选本地方案、删第3镜头、手写旁白本机合成14.7秒并试听，保存8e710b06394646e8bdfe1e55c09eaf86，导出1f48bf39887c4b4bb62095bc5e9dd51c（29.013秒），发布914953ebfd0f411ebd21c397dac3c68d，B站包28f5ba19cc374ba3b877e29eb27d7c84已实际下载。
+当前选片仍本地方案，不能称全AI编导完成；语义/自然度/听感未经用户判断，J1第五次人评仍未过。不要运行旧resume-ui-journey/resume-real-media合成fixture冒充真实素材。即时方案预览过早自动操作曾重置，未作新稳定性结论。
 
-视频/ZIP/截图与真实操作脚本在.cache/scratch/product-journey-20261117/，详sprint-live-creation-loop。别运行resume-ui-journey/resume-real-media等旧脚本冒充真录像，它们用合成fixture。保存发布提示未被自动化捕获，但重开已保存发布能直接出包；只读定位不足以证实竞态，不据此改业务。
+## 不要重复与下一步
 
-完整verify-20261117-002506在约九成时按用户要求停止；静态622文件/mypy233源通过，曾有失败标记但无行为终态统计，verify-last记interrupted，无测试留跑。绝不因要收口再跑全量，AGENTS已固化最新要求。未Release、未合main、人评不变。
+本批无pytest/完整检查；仅真实UI操作、2秒源重建、受影响静态与唯一guard。原verify-20261117-002506已按用户要求取消，约九成且曾有失败标记，无终态统计，verify-last=interrupted；旧全量Grok5486过101跳43失败1error不改绿。原定向99/44/3及v3修后20/5通过证据保留，未Release、未合main。
 
-下一步继续真实创作闭环和计划功能衔接，优先AI选片/旁白/文案的可靠性与操作阻碍。持久撤销历史暂后置；已有作品/版本链与v3当前快照可重开，不能称全部操作可回放。
+恢复后继续优先AI选片/自然语言修改/旁白/文案连贯性，推进原全部51项；AI替换/插入尚未接入，AI现有删裁重排变速转场已接通，勿重做。持久撤销历史后置。实际平台发布、支付、云配音仍独立授权；无测试留跑，不重新启动完整检查。
 
 ## 保护与费用
 
-真实旁白prepared82f72415旧方案ced944ef只调用过一次，39字超33被拒，估算¥0.004132；原输出/失败/账本保留且不重发。DeepSeek文字月¥30/同作品跨月¥1、视觉仅指定素材月¥50、免费本机声音规则不变；模型/原片/证据/账本/人工标签不删不重标。
-
-本轮AI理解成功估算¥0.002462；策划a4714856400de0c92827b2a44266ee5e5adcc2a4117de625a85da8ff5d3bd3ff因两处引用补句号失败，估算¥0.092816，不重发/修旧输出。未来topic提示v4+provider白名单及旧v3按归档版本重建已修，离线旧正文/hash完全一致，唯一guard通过；原违规输出仍拒，新提示效果未实测。当前成片使用本地方案和手写旁白，不能称AI编导已通过。
-
-原Grok树仍是未提交原交付，当前主树包含后续修复；修复树grok-repairs和grok-ui-fixes是已提交快照。用户的新授权允许主控提交集成，不受旧Grok报告的临时停笔要求限制。推送用git -c http.proxy=http://127.0.0.1:7890 push。
+旧旁白82f72415…39字超33被拒（¥0.004132）；旧策划a4714856…引用补句号失败（¥0.092816），两份原件/账本保留、不改不重发。文字月¥30/同作品跨月¥1，视觉仅指定素材月¥50，免费本机声音不变；原片/模型/分析/账本/标签/用户产物不删不重标。推送用git -c http.proxy=http://127.0.0.1:7890 push。

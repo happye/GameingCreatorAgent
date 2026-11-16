@@ -412,7 +412,7 @@ export function CommandDock({editing, onPreview, onOverlayPreview = () => {}}) {
     const [mode, setMode] = useState("local");
     return html`<div class="assistant-host"><label class="assistant-mode">创作助手模式
         <select class="select" aria-label="创作助手模式" value=${mode} onChange=${(e) => { onPreview(null); onOverlayPreview(null); setMode(e.currentTarget.value); }}>
-            <option value="local">本地指令（免费）</option><option value="ai">AI对话（按次确认）</option>
+            <option value="local">本地指令（免费）</option><option value="ai">AI对话（预算内自动）</option>
         </select></label>
         ${mode === "local" ? html`<${LocalCommandDock} editing=${editing} onPreview=${onPreview} />` : html`<${ReasoningDock} editing=${editing} onPreview=${onPreview} onOverlayPreview=${onOverlayPreview} />`}
     </div>`;

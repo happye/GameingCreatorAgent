@@ -46,7 +46,7 @@ window.PROGRESS_DATA = {
    "agent_run": {
     "date": "2026-11-17",
     "result": "pass",
-    "evidence": "Codex 在 http://127.0.0.1:8766/studio 用真实漫画群星录像完成一句话AI理解→本地方案选择→一句话删镜头→手写旁白免费本机合成14.7秒并预览试听→保存版本→导出29.013秒1280×720 H.264/AAC→标题简介标签/10.43秒封面→保存发布版本→重开后生成并下载B站七文件包。render1f48bf39887c4b4bb62095bc5e9dd51c，package28f5ba19cc374ba3b877e29eb27d7c84。视频/ZIP/截图在.cache/scratch/product-journey-20261117/，详sprint-live-creation-loop。AI理解估算¥0.002462，另一次策划因引用额外句号失败¥0.092816，未采用/重发；不称AI自动编导完成，官方规则/素材权利未核，人评保持原结论。"
+    "evidence": "Codex在8766 Studio用真实漫画群星录像完成一句需求→本地方案→删镜头→旁白保存后AI重起草（54字）→确认填入且保旧轨→本机Huihui合成14.56秒→保存→29.013秒1280×720 H264/AAC→文案封面→B站七文件包并下载。AI文案已生成、人工校改复用到新版。renderfd71a72987424d1ea2663e663421f2b1、packagee2eedd6c423641bda83c02b8c467844b；实际成片播3.95秒、未静音、解码68825音频字节、无media error。视频manga-ai-narration-preview.mp4及bilibili-ai-narration-package.zip在.cache/scratch/product-journey-20261117/，详sprint-attached-ai-narration。AI新旁白¥0.00819112、文案¥0.00456512（均估算）。旧策划引用失败不改不重发，新编号合同只准备未发模型；不称全AI编导完成，内容语义/听感/权利未验，人评保持原结论。"
    },
    "human_check": {
     "date": "2026-11-11",
@@ -572,12 +572,13 @@ window.PROGRESS_DATA = {
     "docs/exec-plans/sprint-ai-narration.md",
     "2026-11-15: saved-revision text-only AI narration with frozen knowledge, source quotes, manual adoption and free local synthesis; revision-v4, work budgets, response-loss read-only recovery and stale UI guards verified with fake transport. Real-model naturalness and human acceptance remain unassessed."
    ],
-   "done": "按已保存镜头描述与冻结知识生成AI旁白预览，逐句核对原描述与知识出处后手动填入并用本机声音合成；复用作品预算，丢响应只读恢复；离线模板兜底保留",
-   "todo": "假模型链路通过；真实首稿39字超过33字被拒，短视频提示已改进但未重新付费验证；自然度、语义与听感待人评，不提升J1质量状态",
-   "updated": "2026-11-15",
+   "done": "AI按保存镜头及冻结知识起草，逐句来源可核对；已有旁白也能重起草并确认填入待合成稿，旧音轨保留到显式本机重合成；真实29秒作品已生成54字AI稿并导出，复用原预算与只读恢复",
+   "todo": "真实新稿链路通过，但语义、自然度与听感仍待人评；旧14秒39字超预算失败原件保持且不重发，不提升J1质量状态",
+   "updated": "2026-11-17",
    "sprints": [
     "sprint-narration-script",
-    "sprint-ai-narration"
+    "sprint-ai-narration",
+    "sprint-attached-ai-narration"
    ]
   },
   {
@@ -596,12 +597,13 @@ window.PROGRESS_DATA = {
     "tests/test_studio_narration_revision_browser.py",
     "2026-11-08: Studio edits attached narration, restores per-asset local drafts and resynthesizes with free local voices into a new revision. Late results and asset-switch draft isolation verified; real WAV/MP4/7-file package chain uses explicit fake voice engine. Voice quality and human acceptance remain unassessed."
    ],
-   "done": "本机Windows语音合成旁白，可试听、挂接成片时间、调音量/闪避；Studio可编辑并重合成为新版本",
+   "done": "本机语音旁白可试听、调位置/音量/闪避、编辑重合成；AI改稿支持保留旧轨及覆盖确认，fallback优先已有免费声音再中文；真实Huihui新音轨已随视频与发布包交付",
    "todo": "本机声音授权未知；云端配音需付费单独批准；音质未人工评审",
-   "updated": "2026-11-08",
+   "updated": "2026-11-17",
    "sprints": [
     "sprint-local-narration",
-    "sprint-studio-narration-revision"
+    "sprint-studio-narration-revision",
+    "sprint-attached-ai-narration"
    ]
   },
   {
@@ -1604,6 +1606,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-ai-narration"
     },
     {
+     "id": "R3-attached-ai-narration",
+     "name": "已有音轨AI重起草、免费重合成与导出",
+     "status": "done",
+     "sprint": "sprint-attached-ai-narration"
+    },
+    {
      "id": "R3-grok-heavy-development",
      "name": "代理、屏幕文字检索、方案对照与逐词字幕（Grok100项）",
      "status": "partial",
@@ -2061,12 +2069,12 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "Grok A01–F16成果与审查修复已集成至主树6771587，原工作树保留。损坏逐词绑定拒绝、异常任务终态、模型前复用、取消不发布、手势清理、OCR全文hash/旧缓存隔离/Unicode高亮均修好，唯一关键边界审查通过。未重新付费、下载或修改原片/账本/旧分析。",
+  "Grok A01–F16及审查修复已集成：逐词绑定、任务终态、推理复用、取消发布、手势监听与OCR完整性问题已闭合，唯一关键边界审查通过；原树/原片/账本/旧分析保留。",
   "Grok修复定向证据保留：核心99过、原失败44节点44过、试听同步3过，TD030解决。历史完整失败记录不改绿；未Release、未合main，J1/J2/J3人评不变。",
   "已接入代理自动预览/只读空间盘点、OCR独立文字查询、规则方案去重/A-B对照、显式本机逐词ASR/烧录及多轨交互。已完成的技术链路不代表内容质量已验收；旧OCR无hash只能查看，显式重扫写独立v2缓存。见sprint-grok-repair-integration及ocr-frames-guide。",
   "v3替换镜头/文字PNG图层草稿恢复已交付55886b4；字幕可信映射与词级隐藏保护4139a26已推送，主树257项通过、旧契约失败修后5项通过，唯一关键审查通过。完整verify-20261117-002506在约九成时按用户要求取消，曾出现失败标记，无最终统计；保留日志，不改绿，不继续跑全量。",
-  "已在http://127.0.0.1:8766/studio用真实漫画群星录像完成“一句需求→选方案→删镜头→本机旁白试听→29秒MP4→封面文案→B站包”并下载，见sprint-live-creation-loop。当前为本地方案与手写旁白，真人质量未验；AI理解成功估算¥0.002462，AI策划因两处引用多句号被拒（¥0.092816），原件不动不重发。未来提示v4及旧v3请求兼容已修，效果未重付验证。",
-  "下一步按用户最新目标实现并串联计划内全部功能，优先AI选片/旁白/发布文案的真实闭环和实际操作阻碍，不要求用户理解工程或借PR/AE；持久撤销历史后置，不主动全量测试。"
+  "真实漫画群星29秒流程已进一步接入AI旁白重起草：确认覆盖/保旧轨→本机中文合成14.56秒→保存→MP4→B站七文件包，实际下载并播放。AI文案也成功生成、校改后保存出包；新旁白估算¥0.00819112、文案¥0.00456512。产物在.cache/scratch/product-journey-20261117/，最新manga-ai-narration-preview.mp4及bilibili-ai-narration-package.zip；自然度和语义仍待人评。",
+  "AI选片新合同按候选fact/tag编号引用，后台还原原文；旧v1/v2/v3付费请求原正文/hash兼容，已付失败不改不重发。运行服务8766已加载新代码，新v4快照/v2映射只准备未发送；效果未新付费验证。用户在18%额度时要求完成手头后收尾，本批已闭合，等待恢复自主推进；全部计划仍未完成，后续优先AI选片/自然语言修改/文案与真实闭环，不主动全量。"
  ],
  "sprints": [
   {
@@ -2155,9 +2163,14 @@ window.PROGRESS_DATA = {
   {
    "file": "sprint-attached-ai-narration",
    "title": "已挂接旁白 AI 重起草",
-   "ids": [],
+   "ids": [
+    "P025",
+    "P026",
+    "P040",
+    "R3"
+   ],
    "date": "",
-   "bytes": 1756
+   "bytes": 3377
   },
   {
    "file": "sprint-cache-reclamation",
@@ -2406,7 +2419,7 @@ window.PROGRESS_DATA = {
     "R2"
    ],
    "date": "2026-11-17",
-   "bytes": 3520
+   "bytes": 4318
   },
   {
    "file": "sprint-local-narration",
@@ -2468,8 +2481,8 @@ window.PROGRESS_DATA = {
     "P040",
     "R3"
    ],
-   "date": "",
-   "bytes": 2515
+   "date": "2026-11-17",
+   "bytes": 2812
   },
   {
    "file": "sprint-platform-packages",

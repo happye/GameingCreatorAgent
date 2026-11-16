@@ -235,6 +235,24 @@ export function AudioPanel({commandPreview = false, editing, project, game = "",
         if (!result.ok) setRevisionNote(result.reason);
     };
 
+    const fillAttachedDraft = (data) => {
+        const loaded = readDraft(localStorage, attachedDraftKey);
+        if (!loaded.ok) { setRevisionNote(loaded.reason); return; }
+        const previous = revisionOpen ? revisionText : loaded.draft?.text || "";
+        if (previous.trim() && previous !== data.text
+            && !confirm("替换当前待合成稿？当前修改将丢失，正在使用的音轨保持原样。")) return;
+        const chosen = voices.find(v => v.voiceId === (revisionOpen ? revisionVoiceId : loaded.draft?.voiceId || voiceId) && !v.paid)
+            || voices.find(v => v.voiceId === audio.asset?.voice?.voiceId && !v.paid)
+            || voices.find(v => !v.paid && (v.language === "804" || /chinese|中文/i.test(v.description)))
+            || voices.find(v => !v.paid);
+        setRevisionText(data.text);
+        setRevisionVoiceId(chosen?.voiceId || "");
+        setRevisionOpen(true);
+        setOriginal({text: data.text, citations: data.citations || []});
+        persistAttachedDraft(data.text, chosen?.voiceId || "");
+        setRevisionNote("已填入待合成稿；请核对来源，再明确点击本机重新合成。旧音轨仍有效。");
+    };
+
     const draft = async () => {
         const editVersion = editGeneration.current.version;
         const token = ++draftEpoch.current;
@@ -243,6 +261,7 @@ export function AudioPanel({commandPreview = false, editing, project, game = "",
             const data = await client.api(`/api/creation/jobs/${encodeURIComponent(editing.base.jobId)}/narration-script`, {planId: editing.base.planId});
             if (draftEpoch.current !== token || !mounted.current) return;
             if (editGeneration.current.version !== editVersion) return;
+            if (audio.narration) { fillAttachedDraft(data); return; }
             const citations = Array.isArray(data.citations) ? data.citations : [];
             setScript(data);
             setText(data.text);
@@ -256,8 +275,10 @@ export function AudioPanel({commandPreview = false, editing, project, game = "",
         }
     };
 
-    const ai = useNarrationAI({editing, commandPreview, working: !!working, project, text, fallback: draft, adopt: (data) => {
+    const ai = useNarrationAI({editing, commandPreview, working: !!working, project,
+        text: audio.narration ? revisionText : text, fallback: draft, adopt: (data) => {
         draftEpoch.current += 1;
+        if (audio.narration) { fillAttachedDraft(data); return; }
         setScript(data); setText(data.text); setDraftMode("ai");
         setOriginal({text: data.text, citations: data.citations || []});
         persistFreeDraft(data.text, voiceId);
@@ -308,6 +329,7 @@ export function AudioPanel({commandPreview = false, editing, project, game = "",
 
     const openRevision = () => {
         if (!audio.narration || !audio.asset) return;
+        setOriginal(null);
         const initial = String(audio.asset.text ?? "");
         const key = draftKey(project, baseJobId, planId, attachedAssetJobId || "");
         const loaded = readDraft(localStorage, key);
@@ -344,6 +366,7 @@ export function AudioPanel({commandPreview = false, editing, project, game = "",
             return;
         }
         setRevisionText(String(audio.asset?.text ?? ""));
+        setOriginal(null);
         setRevisionNote("已清除本机草稿；已保存音轨保持原样。");
     };
 
@@ -499,6 +522,7 @@ export function AudioPanel({commandPreview = false, editing, project, game = "",
             <label class="check"><input type="checkbox" disabled=${paramsLocked} checked=${n.ducking === "narration-v1"} onChange=${(e) => editing.ops.narration({...n, ducking: e.currentTarget.checked ? "narration-v1" : "off"})} /> 旁白响起时压低原声和音乐</label>
             <div class="actions-row">
                 <button type="button" class="btn ghost" disabled=${revising} aria-label="编辑旁白文字" onClick=${openRevision}>编辑旁白文字</button>
+                <button type="button" class="btn ghost" disabled=${!!working || ai.busy || commandPreview || editing.dirty || editing.status !== "ready"} onClick=${ai.start}>AI重新起草旁白</button>
                 <button type="button" class="btn ghost danger" disabled=${paramsLocked} onClick=${() => editing.ops.narration(null)}>移除旁白</button>
             </div>
             ${revisionOpen && html`<div class="rules-result" aria-label="旁白待合成稿区域">
@@ -506,10 +530,13 @@ export function AudioPanel({commandPreview = false, editing, project, game = "",
                 <textarea class="input" rows="6" value=${revisionText} disabled=${revising} aria-label="旁白待合成稿"
                     onInput=${(e) => {
                         const value = e.currentTarget.value;
+                        draftEpoch.current += 1;
                         setRevisionText(value);
                         persistAttachedDraft(value, revisionVoiceId);
                     }}></textarea>
                 <p class="hint" aria-label="待合成稿字符数">${codepoints(revisionText)} 字</p>
+                ${original?.citations?.length > 0 && html`<details aria-label="待合成旁白知识引用"><summary>起草时参考资料（正文修改后请重新核对）</summary>
+                    <ul>${original.citations.map(row => html`<li>${row.text}<div class="hint">${row.citation || row.title || ""}</div></li>`)}</ul></details>`}
                 ${toolButtons(revisionText, "待合成")}
                 <label class="form-row">声音（仅本机）<select class="select" value=${revisionVoiceId} disabled=${revising} aria-label="待合成声音"
                     onChange=${(e) => {
@@ -565,7 +592,7 @@ export function AudioPanel({commandPreview = false, editing, project, game = "",
                 <button type="button" class="btn ghost" disabled=${!!working || ai.busy || commandPreview || editing.dirty || editing.status !== "ready"} onClick=${ai.start}>${working === "script" ? "正在起草…" : "起草旁白稿"}</button>
                 <button type="button" class="btn ghost" disabled=${!!working} aria-label="手写旁白稿" onClick=${startHandwritten}>手写旁白稿</button>
             </div>`}
-        ${!n && ai.view}
+        ${ai.view}
         </div>
         <${KnowledgePanel} key=${`${project}:${String(game || "")}`} project=${project} game=${game || ""} />
         <div class="field audio-panel"><div class="k">配乐与原声</div>
