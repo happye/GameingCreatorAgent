@@ -31,7 +31,11 @@ def preview(jobs: Any, request: dict[str, Any]) -> dict[str, Any]:
         "narration",
     }
     extended = {"candidateManifestSha256", "replacements", "overlays"}
-    if not isinstance(request, dict) or set(request) not in (required, required | extended):
+    if not isinstance(request, dict) or set(request) not in (
+        required,
+        required | extended,
+        required | extended | {"insertions"},
+    ):
         raise ValueError("Expected exact draft restore fields")
     chain = load_chain(jobs, request["parentJobId"], request["planId"], read_only=True)
     if (
@@ -40,12 +44,15 @@ def preview(jobs: Any, request: dict[str, Any]) -> dict[str, Any]:
     ):
         raise ValueError("Draft parent or project changed")
     revision_request = dict(request)
-    is_v3 = set(request) == required | extended
+    is_v3 = extended <= request.keys()
     if is_v3 and not isinstance(request["replacements"], list):
         raise ValueError("Replacement operations must be an array")
     if is_v3 and request["candidateManifestSha256"] is None:
         if request["replacements"] or chain.manifest is not None:
             raise ValueError("Replacement manifest is required")
+        if revision_request.get("insertions"):
+            raise ValueError("Insertion manifest is required")
+        revision_request.pop("insertions", None)
         revision_request.pop("candidateManifestSha256")
         revision_request.pop("replacements")
     if not is_v3 and chain.manifest is not None:
@@ -91,12 +98,21 @@ def project_clips(jobs: Any, request: dict[str, Any], chain: Any, manifest: Any)
     """Rebuild target identities only after authoritative revision validation."""
     timelines = manifest_for_chain(jobs, chain)[1] if manifest else chain.timelines
     parents = {c["clipId"]: c for c in editable_clips(chain.edl, chain.root_sha)}
+    additions = {r["newClipId"]: r for r in request.get("insertions", [])}
     candidates = {c["candidateId"]: c for c in manifest["candidates"]} if manifest else {}
     swaps = {r["targetClipId"]: r["candidateId"] for r in request["replacements"]}
     clips, bounds = [], {}
     for row in request["clips"]:
         identity = row["clipId"]
-        source = parents[identity]
+        source = parents.get(identity)
+        if identity in additions:
+            source = public_candidate(
+                candidates[additions[identity]["candidateId"]],
+                timelines,
+                request["parentJobId"],
+                chain.plan_id,
+                request["candidateManifestSha256"],
+            )
         if identity in swaps:
             source = public_candidate(
                 candidates[swaps[identity]],
@@ -105,10 +121,13 @@ def project_clips(jobs: Any, request: dict[str, Any], chain: Any, manifest: Any)
                 chain.plan_id,
                 request["candidateManifestSha256"],
             )
+        if source is None:
+            raise ValueError("Unknown draft clip identity")
         bounds[identity] = {k: source[k] for k in ("startUs", "endUs")}
         clips.append({**{k: v for k, v in source.items() if k != "sourcePath"}, **row})
     return {
         "clips": clips,
+        **({"insertions": request["insertions"]} if "insertions" in request else {}),
         "bounds": bounds,
         "replacements": request["replacements"],
         "candidateManifestSha256": request["candidateManifestSha256"],

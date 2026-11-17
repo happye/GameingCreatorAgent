@@ -208,6 +208,7 @@ class CreationJobs:
                     "audioMix",
                     "candidateManifestSha256",
                     "replacements",
+                    "insertions",
                     "narration",
                     "overlays",
                 }

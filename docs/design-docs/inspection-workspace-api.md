@@ -198,9 +198,13 @@ GET imageUrl为 `/api/creation/overlay-assets/<id>/image?receipt=<sha>`，只允
 
 Studio检查器的“叠加”页支持登记文字/PNG、调整开始结束/淡入淡出秒（换算输出整数帧）、位置/宽度百分比及图层顺序。修改后“保存版本”保存完整快照，删除最后一层显式清除；撤销恢复当前已保存版本。文字修改需“更新文字”生成对应sprite。画布随导出横竖屏尺寸适配，预览与导出复用同一透明sprite；图层按列表从底到顶、`[startFrame,endFrame)`显示。已有录像中烘焙的logo不能当作独立图层修改。越界或淡化时长非法会显示原因并禁用保存/导出，登记未完成时亦禁用。Studio接入仍在工作分支验证，整批全量/最终审查前不计交付。
 
+## Studio AI单镜头插入
+
+AI插入沿用`POST /api/creation/reasoning`：`action=prepare_insertion`携带jobId/planId/instruction，随后按原预算发送、result只读恢复及validate步骤。返回独立`insertion`结果；可信投影含clips/bounds/insertions/candidateManifestSha256等修订字段。单条insertions为`{afterClipId,candidateId,startUs,endUs,newClipId}`，新ID由服务端根据父回执和候选范围生成，不接受模型源路径。保存调用原`POST /api/creation/revisions`，v5后继普通编辑传insertions空数组；草稿恢复同样条件传入该字段。旧请求省略insertions保持旧合同。参见[插入合同](../exec-plans/sprint-ai-clip-insertion.md)。
+
 ## Studio 草稿字幕预览
 
-`POST /api/creation/subtitle-preview` 的body必填`projectId,parentJobId,planId,expectedParentReceiptSha256,clips,subtitleMode`；可选`subtitleOverrides,candidateManifestSha256,replacements`，其余body字段拒绝。clips沿既有修订格式，v4替换须携带匹配manifest及replacements。模式为`none|sidecar|burn`，返回`{mode,cues:[{startUs,endUs,text,lifted}]}`，时间为成片半开微秒区间。
+`POST /api/creation/subtitle-preview` 的body必填`projectId,parentJobId,planId,expectedParentReceiptSha256,clips,subtitleMode`；可选`subtitleOverrides,candidateManifestSha256,replacements,insertions`，其余body字段拒绝。clips沿既有修订格式，v4替换须携带匹配manifest及replacements；v5插入或其后继还须带insertions（普通后继为空数组）。模式为`none|sidecar|burn`，返回`{mode,cues:[{startUs,endUs,text,lifted}]}`，时间为成片半开微秒区间。
 
 请求核父链、项目、方案、回执及替换身份，复用修订校验与实际导出的转录选择。sidecar按SRT毫秒向下取整，burn再按ASS百分秒分段，重叠时早镜头抬高；字幕安全字符与导出一致。只返回内存结果，不创建任务/修订或写转录/账本；旁白依赖也采用无恢复只读校验，非completed直接拒绝。没有转录则自动字幕为空，none返回空cue。Studio按有效草稿防抖查询并在换项目/父版本/模式时立即隐旧cue，不在播放、拖动或选镜头时发新请求。内容/时机可预览，字体排版以导出为准。
 

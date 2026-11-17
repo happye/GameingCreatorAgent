@@ -8,7 +8,7 @@ import * as client from "./api.js";
 import {clipFrames} from "./preview.js";
 import {ReasoningDock} from "./reasoning.js";
 
-import {useClipDrafts, readSnapshot, rebuild, FULL_SCHEMA, V3_SCHEMA} from "./clip_drafts.js";
+import {useClipDrafts, readSnapshot, rebuild, FULL_SCHEMA, V3_SCHEMA, V4_SCHEMA} from "./clip_drafts.js";
 
 const html = htm.bind(h);
 // The only speeds the server accepts (creation_editing.py).
@@ -53,14 +53,14 @@ const rows = (clips) => clips.map(({clipId, startUs, endUs, speed, transitionIn}
 const overlaysOf = (editor) => ({overlays: editor.overlays?.items || [], overlayAssets: editor.overlayAssets || []});
 
 export function useClipEditor(project, workId = null) {
-    const [state, setState] = useState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), ...captionsOf({}), bounds: {}, replacements: {}, candidateManifestSha256: null, dirty: false});
+    const [state, setState] = useState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), ...captionsOf({}), bounds: {}, replacements: {}, insertions: null, candidateManifestSha256: null, dirty: false});
     const drafts = useClipDrafts(state, project, workId, {audio: audioOf(state.editor || {}), ...overlaysOf(state.editor || {})}, keptCaptions, [SPEEDS, clipFrames, transitionProblem]);
     const current = useRef(state); current.current = state;
     const overlayEpoch = useRef(0), restoreEpoch = useRef(0);
     const editEpoch = useRef(0);
     // Step undo/redo of local edits (not saved versions): snapshots of the editable fields.
     const history = useRef({past: [], future: [], key: null});
-    const snap = (s) => ({clips: s.clips, subtitleOverrides: s.subtitleOverrides, audio: s.audio, overlays: s.overlays, overlayAssets: s.overlayAssets, bounds: s.bounds, replacements: s.replacements, candidateManifestSha256: s.candidateManifestSha256, dirty: s.dirty});
+    const snap = (s) => ({clips: s.clips, subtitleOverrides: s.subtitleOverrides, audio: s.audio, overlays: s.overlays, overlayAssets: s.overlayAssets, bounds: s.bounds, replacements: s.replacements, insertions: s.insertions, candidateManifestSha256: s.candidateManifestSha256, dirty: s.dirty});
     const clearHistory = () => { history.current = {past: [], future: [], key: null}; };
     // Apply an edit and remember the state before it; repeated edits with the same key merge.
     const edit = useCallback((updater, key = null) => { restoreEpoch.current++; return setState((s) => {
@@ -80,7 +80,7 @@ export function useClipEditor(project, workId = null) {
         loading.current += 1;
         overlayEpoch.current += 1;
         editEpoch.current += 1;
-        setState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), ...captionsOf({}), bounds: {}, replacements: {}, candidateManifestSha256: null, dirty: false});
+        setState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), ...captionsOf({}), bounds: {}, replacements: {}, insertions: null, candidateManifestSha256: null, dirty: false});
         setCandidates(null); setSelectedId(""); clearHistory();
         return () => { loading.current += 1; };
     }, [project, workId]);
@@ -97,18 +97,19 @@ export function useClipEditor(project, workId = null) {
             if (editor.parentJobId !== jobId || editor.planId !== planId) throw new Error("剪辑数据与所选方案不一致");
             const clips = normalize(editor);
             setCandidates(null); clearHistory();
-            setState({status: "ready", base: {jobId, planId, kind}, editor, clips, audio: audioOf(editor), ...overlaysOf(editor), ...captionsOf(editor), bounds: Object.fromEntries(clips.map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, candidateManifestSha256: editor.candidateManifestSha256 ?? null, dirty: false});
+            setState({status: "ready", base: {jobId, planId, kind}, editor, clips, audio: audioOf(editor), ...overlaysOf(editor), ...captionsOf(editor), bounds: Object.fromEntries(clips.map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, insertions: editor.insertions ?? null, candidateManifestSha256: editor.candidateManifestSha256 ?? null, dirty: false});
             return editor;
         } catch (error) {
             if (generation !== loading.current) return null;
             // Plans that cannot be edited still preview and export as they are.
-            setState({status: "unavailable", base: {jobId, planId, kind}, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), ...captionsOf({}), bounds: {}, replacements: {}, candidateManifestSha256: null, dirty: false, reason: error.message});
+            setState({status: "unavailable", base: {jobId, planId, kind}, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), ...captionsOf({}), bounds: {}, replacements: {}, insertions: null, candidateManifestSha256: null, dirty: false, reason: error.message});
             return null;
         }
     }, []);
 
     const change = useCallback((mutate, key = null) => edit((s) => {
         if (s.status !== "ready") return s;
+        if (s.insertions?.length) return s;
         const clips = mutate(s.clips.map((c) => ({...c})));
         if (clips[0]) clips[0].transitionIn = {type: "cut", frames: 0};
         return {...s, clips, subtitleOverrides: keptCaptions(s.subtitleOverrides, clips), dirty: true};
@@ -158,7 +159,7 @@ export function useClipEditor(project, workId = null) {
                 return next;
             });
             return {...s, clips, subtitleOverrides: keptCaptions(s.subtitleOverrides, clips).filter((o) => !(proposal.replacements || []).some((r) => r.targetClipId === o.clipId)), overlays: proposal.overlays?.items ?? s.overlays,
-                bounds: proposal.bounds ?? s.bounds, replacements: proposal.replacements ? Object.fromEntries(proposal.replacements.map((r) => [r.targetClipId, r.candidateId])) : s.replacements,
+                insertions: proposal.insertions ?? s.insertions, bounds: proposal.bounds ?? s.bounds, replacements: proposal.replacements ? Object.fromEntries(proposal.replacements.map((r) => [r.targetClipId, r.candidateId])) : s.replacements,
                 candidateManifestSha256: proposal.candidateManifestSha256 ?? s.candidateManifestSha256, dirty: true};
         }),
         mix: (patch) => edit((s) => (s.status === "ready" ? {...s, audio: {...s.audio, mix: {...s.audio.mix, ...patch}}, dirty: true} : s)),
@@ -181,6 +182,7 @@ export function useClipEditor(project, workId = null) {
         // its length stays as close to the old one as the new clip allows.
         replace: (id, candidate) => edit((s) => {
             if (s.status !== "ready") return s;
+            if (s.insertions?.length) return s;
             const clips = s.clips.map((c) => {
                 if (c.clipId !== id) return c;
                 const length = Math.max(1, c.endUs - c.startUs);
@@ -209,7 +211,7 @@ export function useClipEditor(project, workId = null) {
             editEpoch.current += 1;
             return {...s, ...next};
         }); },
-        reset: () => { restoreEpoch.current++; overlayEpoch.current += 1; editEpoch.current += 1; clearHistory(); setState((s) => (s.editor ? {...s, clips: normalize(s.editor), audio: audioOf(s.editor), ...overlaysOf(s.editor), ...captionsOf(s.editor), bounds: Object.fromEntries(normalize(s.editor).map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, candidateManifestSha256: s.editor.candidateManifestSha256 ?? null, dirty: false} : s)); },
+        reset: () => { restoreEpoch.current++; overlayEpoch.current += 1; editEpoch.current += 1; clearHistory(); setState((s) => (s.editor ? {...s, clips: normalize(s.editor), audio: audioOf(s.editor), ...overlaysOf(s.editor), ...captionsOf(s.editor), bounds: Object.fromEntries(normalize(s.editor).map((c) => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, insertions: s.editor.insertions ?? null, candidateManifestSha256: s.editor.candidateManifestSha256 ?? null, dirty: false} : s)); },
     };
 
     const discardDraft = () => { restoreEpoch.current++; return drafts.discard(); };
@@ -227,23 +229,23 @@ export function useClipEditor(project, workId = null) {
             const payload = await readSnapshot(localStorage, key, editor, [SPEEDS, clipFrames, transitionProblem]);
             if (!valid() || !payload) return;
             let clips = rebuild(payload, editor, SPEEDS, clipFrames, transitionProblem);
-            let restored = {...overlaysOf(editor), bounds: Object.fromEntries(normalize(editor).map(c => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, candidateManifestSha256: editor.candidateManifestSha256 ?? null, audio: audioOf(editor), subtitleOverrides: keptCaptions(editor.subtitleOverrides || [], clips)};
-            if ([FULL_SCHEMA, V3_SCHEMA].includes(payload.schemaVersion)) {
+            let restored = {...overlaysOf(editor), bounds: Object.fromEntries(normalize(editor).map(c => [c.clipId, {startUs: c.startUs, endUs: c.endUs}])), replacements: {}, insertions: editor.insertions ?? null, candidateManifestSha256: editor.candidateManifestSha256 ?? null, audio: audioOf(editor), subtitleOverrides: keptCaptions(editor.subtitleOverrides || [], clips)};
+            if ([FULL_SCHEMA, V3_SCHEMA, V4_SCHEMA].includes(payload.schemaVersion)) {
                 const projected = await client.api('/api/creation/draft-restore-preview', {}, {body: {
                     projectId: project, parentJobId: state.base.jobId, planId: state.base.planId,
                     expectedParentReceiptSha256: editor.expectedParentReceiptSha256, clips: rows(clips),
                     subtitleOverrides: payload.subtitleOverrides, audioMix: payload.audioMix, narration: payload.narration,
-                    ...(payload.schemaVersion === V3_SCHEMA ? {candidateManifestSha256: payload.candidateManifestSha256, replacements: payload.replacements, overlays: payload.overlays} : {}),
+                    ...([V3_SCHEMA, V4_SCHEMA].includes(payload.schemaVersion) ? {candidateManifestSha256: payload.candidateManifestSha256, replacements: payload.replacements, overlays: payload.overlays, ...(payload.schemaVersion === V4_SCHEMA ? {insertions: payload.insertions} : {})} : {}),
                 }});
                 if (!valid()) return;
                 restored = {...restored, audio: audioOf(projected), subtitleOverrides: projected.subtitleOverrides};
-                if (payload.schemaVersion === V3_SCHEMA) {
+                if ([V3_SCHEMA, V4_SCHEMA].includes(payload.schemaVersion)) {
                     clips = projected.clips;
                     const reason = transitionProblem(clips, editor.fps);
                     if (reason) throw Error(reason);
                     restored = {...restored, ...overlaysOf(projected), bounds: projected.bounds,
                         replacements: Object.fromEntries(projected.replacements.map(r => [r.targetClipId, r.candidateId])),
-                        candidateManifestSha256: projected.candidateManifestSha256};
+                        candidateManifestSha256: projected.candidateManifestSha256, insertions: projected.insertions?.length || editor.insertions ? projected.insertions ?? [] : null};
                 }
             }
             // The snapshot may have changed while either read-only request was in flight.
@@ -279,6 +281,7 @@ export function useClipEditor(project, workId = null) {
             clips: rows(clips), audioMix: audio.mix, narration: audio.narration, subtitleOverrides: subtitleOverrides.filter((o) => kept.has(o.clipId)),
             overlays: {schemaVersion: "creation-overlays-v1", items: overlays},
             ...(manifest ? {candidateManifestSha256: manifest, replacements: swaps} : {}),
+            ...(state.insertions !== null ? {insertions: state.insertions} : {}),
         });
         const done = await follow(accepted.jobId);
         if (done?.status !== "completed") throw new Error(done ? `保存失败：${done.error?.message || done.status}` : "保存已取消");
@@ -297,22 +300,22 @@ export function ClipInspector({editing, index, onSeek, basket}) {
     const fps = editing.editor.fps, bound = editing.bounds[clip.clipId];
     const frames = clipFrames(clip, fps), seconds = (us) => (us / 1e6).toFixed(2);
     const fade = (s) => Math.round(s * fps);
-    const replacing = !!editing.replacements[clip.clipId];
+    const replacing = !!editing.replacements[clip.clipId], inserting = !!editing.insertions?.length;
     const caption = editing.subtitleOverrides.find((o) => o.clipId === clip.clipId);
-    return html`<div class="field"><div class="k">第 ${index + 1} 个镜头 · 成片 ${(frames / fps).toFixed(2)} 秒</div>
+    return html`${inserting && html`<p class="hint" role="status">请先保存插入版本，再裁剪、移动、删除或替换镜头；旁白和图层保持原时刻。</p>`}<div class="field"><div class="k">第 ${index + 1} 个镜头 · 成片 ${(frames / fps).toFixed(2)} 秒</div>
             <div class="v">${clip.role ? `【${clip.role}】` : ""}${clip.scriptDraft || "无描述"}</div></div>
         <div class="field"><div class="k">取材范围（原片秒，可在 ${seconds(bound.startUs)}–${seconds(bound.endUs)} 内裁短）</div>
             <div class="pair even">
-                <label class="form-row">入点<input class="input" type="number" step="0.1" min=${seconds(bound.startUs)} max=${seconds(bound.endUs)} value=${seconds(clip.startUs)}
+                <label class="form-row">入点<input class="input" type="number" disabled=${inserting} step="0.1" min=${seconds(bound.startUs)} max=${seconds(bound.endUs)} value=${seconds(clip.startUs)}
                     onChange=${(e) => editing.ops.trim(clip.clipId, "startUs", Number(e.currentTarget.value))} /></label>
-                <label class="form-row">出点<input class="input" type="number" step="0.1" min=${seconds(bound.startUs)} max=${seconds(bound.endUs)} value=${seconds(clip.endUs)}
+                <label class="form-row">出点<input class="input" type="number" disabled=${inserting} step="0.1" min=${seconds(bound.startUs)} max=${seconds(bound.endUs)} value=${seconds(clip.endUs)}
                     onChange=${(e) => editing.ops.trim(clip.clipId, "endUs", Number(e.currentTarget.value))} /></label>
             </div></div>
         <div class="field"><div class="pair even">
-            <label class="form-row">速度<select class="select" value=${`${clip.speed.numerator}/${clip.speed.denominator}`}
+            <label class="form-row">速度<select class="select" disabled=${inserting} value=${`${clip.speed.numerator}/${clip.speed.denominator}`}
                 onChange=${(e) => { const [n, d] = e.currentTarget.value.split("/").map(Number); editing.ops.speed(clip.clipId, n, d); }}>
                 ${SPEEDS.map(([n, d, label]) => html`<option value=${`${n}/${d}`}>${label}</option>`)}</select></label>
-            <label class="form-row">进入方式<select class="select" disabled=${index === 0} value=${String(clip.transitionIn.frames)}
+            <label class="form-row">进入方式<select class="select" disabled=${index === 0 || inserting} value=${String(clip.transitionIn.frames)}
                 onChange=${(e) => editing.ops.transition(clip.clipId, Number(e.currentTarget.value))}>
                 <option value="0">直接切换</option><option value=${String(fade(0.25))}>交叉淡化 0.25 秒</option><option value=${String(fade(0.5))}>交叉淡化 0.5 秒</option></select></label>
         </div><p class="hint">即时预览支持交叉淡化；镜头需足够长，才能容纳两侧转场。</p></div>
@@ -418,8 +421,8 @@ export function CommandDock({editing, onPreview, onOverlayPreview = () => {}}) {
     const [mode, setMode] = useState("local");
     return html`<div class="assistant-host"><label class="assistant-mode">创作助手模式
         <select class="select" aria-label="创作助手模式" value=${mode} onChange=${(e) => { onPreview(null); onOverlayPreview(null); setMode(e.currentTarget.value); }}>
-            <option value="local">本地指令（免费）</option><option value="ai">AI对话（预算内自动）</option><option value="ai-replacement">AI换镜头（预算内自动）</option>
+            <option value="local">本地指令（免费）</option><option value="ai">AI对话（预算内自动）</option><option value="ai-replacement">AI换镜头（预算内自动）</option><option value="ai-insertion">AI插入镜头（预算内自动）</option>
         </select></label>
-        ${mode === "local" ? html`<${LocalCommandDock} editing=${editing} onPreview=${onPreview} />` : html`<${ReasoningDock} key=${mode} replacementMode=${mode === "ai-replacement"} editing=${editing} onPreview=${onPreview} onOverlayPreview=${onOverlayPreview} />`}
+        ${mode === "local" ? html`<${LocalCommandDock} editing=${editing} onPreview=${onPreview} />` : html`<${ReasoningDock} key=${mode} replacementMode=${mode === "ai-replacement"} insertionMode=${mode === "ai-insertion"} editing=${editing} onPreview=${onPreview} onOverlayPreview=${onOverlayPreview} />`}
     </div>`;
 }

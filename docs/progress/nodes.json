@@ -331,13 +331,14 @@
    ]
   },
   "P041": {
-   "done": "规则/AI删裁重排变速转场、图层时间调整可预览应用；新增AI按工程候选换一个镜头，真实请求选中1V1画面并保存/重开/导出/出包，其他26段与原旁白保持",
-   "todo": "AI插入及多镜头组合替换未接入；开放式意图与创意质量未人评，不称完整AI编导",
+   "done": "规则/AI删裁重排变速转场、图层调整、单镜头替换已接；AI插入真实红色爆炸1秒，28段30秒，草稿恢复/保存重开/后继裁剪/导出/播放/出包通过，旧27段与旁白保留",
+   "todo": "多镜头组合替换未接入；插入一次一段、需先保存再裁，旁白/图层不自动后移；开放式意图与创意质量未人评，不称完整AI编导",
    "updated": "2026-11-17",
    "sprints": [
     "sprint-timeline-commands",
     "sprint-ai-overlay-timing",
-    "sprint-ai-clip-replacement"
+    "sprint-ai-clip-replacement",
+    "sprint-ai-clip-insertion"
    ]
   },
   "P042": {
@@ -698,6 +699,12 @@
      "name": "一句话AI换镜头并保存、导出及发布包",
      "status": "done",
      "sprint": "sprint-ai-clip-replacement"
+    },
+    {
+     "id": "R3-ai-clip-insertion",
+     "name": "一句话AI插入镜头、恢复草稿与导出发布包",
+     "status": "done",
+     "sprint": "sprint-ai-clip-insertion"
     },
     {
      "id": "R3-grok-heavy-development",

@@ -14,7 +14,7 @@ CLIP_KEYS = {"clipId", "startUs", "endUs", "speed", "transitionIn"}
 
 def editing_parent(edl: dict[str, Any]) -> dict[str, Any]:
     """Compatibility for pure editing math after server load_chain verified v4."""
-    if edl.get("schemaVersion") == "edit-decision-revision-v4":
+    if edl.get("schemaVersion") in ("edit-decision-revision-v4", "edit-decision-revision-v5"):
         return {**edl, "schemaVersion": "edit-decision-revision-v3"}
     return edl
 
@@ -188,6 +188,20 @@ def revision_for_application(
     elif output["kind"] != "edit_proposal":
         raise ValueError("This response has no edit to apply.")
     data = current_snapshot.payload
+    if data["parent_edl"].get("schemaVersion") == "edit-decision-revision-v5":
+        from gamingcreator.application.creation_insertions import build_revision_v5
+
+        if candidate_manifest is None:
+            raise ValueError("A v5 parent requires its verified manifest.")
+        return build_revision_v5(
+            data["parent_edl"],
+            data["rootReceiptSha256"],
+            data["parentReceiptSha256"],
+            output["clips"],
+            [],
+            [],
+            candidate_manifest,
+        )
     if data["parent_edl"].get("schemaVersion") == "edit-decision-revision-v4":
         if candidate_manifest is None:
             raise ValueError("A v4 parent requires its verified candidate manifest.")

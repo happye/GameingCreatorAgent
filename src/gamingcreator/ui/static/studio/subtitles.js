@@ -10,13 +10,14 @@ const html = htm.bind(h);
 export function useSubtitlePreview(project, editing, clips, mode, wordDraft) {
     const kept = new Set((clips || []).map(c => c.clipId));
     const swaps = Object.entries(editing.replacements || {}).filter(([id]) => kept.has(id)).map(([targetClipId, candidateId]) => ({targetClipId, candidateId}));
-    const manifest = editing.editor?.candidateManifestSha256 || (swaps.length ? editing.candidates?.candidateManifestSha256 : null);
+    const manifest = editing.candidateManifestSha256 || editing.editor?.candidateManifestSha256 || (swaps.length ? editing.candidates?.candidateManifestSha256 : null);
     const payload = editing.status === "ready" && clips ? {
         projectId: project, parentJobId: editing.base.jobId, planId: editing.base.planId,
         expectedParentReceiptSha256: editing.editor.expectedParentReceiptSha256, subtitleMode: mode,
         clips: clips.map(({clipId, startUs, endUs, speed, transitionIn}) => ({clipId, startUs, endUs, speed, transitionIn})),
         subtitleOverrides: editing.subtitleOverrides.filter(o => kept.has(o.clipId)),
         ...(manifest ? {candidateManifestSha256: manifest, replacements: swaps} : {}),
+        ...(editing.insertions != null ? {insertions: editing.insertions} : {}),
         ...asrWordsPayload(wordDraft),
     } : null;
     const key = JSON.stringify(payload), sequence = useRef(0);

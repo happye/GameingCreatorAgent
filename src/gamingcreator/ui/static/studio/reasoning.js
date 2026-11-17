@@ -30,10 +30,10 @@ function remember(editing, quote, text) {
     catch { return false; }
 }
 
-function useReasoning(editing, text, onPreview, onOverlayPreview) {
+function useReasoning(editing, text, onPreview, onOverlayPreview, mode) {
     const [state, setState] = useState(empty);
     const [available, setAvailable] = useState(false);
-    const key = JSON.stringify([editing.project, editing.base, editing.editor?.expectedParentReceiptSha256, editing.status, editing.dirty, editing.rows(), editing.subtitleOverrides, editing.overlays, editing.audio, editing.replacements, editing.editEpoch, text]);
+    const key = JSON.stringify([mode, editing.insertions, editing.project, editing.base, editing.editor?.expectedParentReceiptSha256, editing.status, editing.dirty, editing.rows(), editing.subtitleOverrides, editing.overlays, editing.audio, editing.replacements, editing.editEpoch, text]);
     const live = useRef({key, generation: 0, mounted: true});
     if (live.current.key !== key) { live.current.key = key; live.current.generation += 1; }
     const generation = live.current.generation;
@@ -49,18 +49,19 @@ function useReasoning(editing, text, onPreview, onOverlayPreview) {
     return {...state, available, valid, update, key};
 }
 
-function reasoningActions(flow, editing, text, onPreview, onOverlayPreview, replacementMode) {
+function reasoningActions(flow, editing, text, onPreview, onOverlayPreview, replacementMode, insertionMode) {
     const identity = {jobId: editing.base?.jobId, planId: editing.base?.planId};
     const ready = editing.status === "ready" && !editing.dirty;
     const show = async (data) => {
         if (!flow.valid()) return;
-        if (data.replacement) {
+        if (data.replacement || data.insertion) {
+            const selection = data.insertion || data.replacement;
             let projection = null;
-            if (data.status === "completed" && data.replacement.kind === "replacement") {
+            if (data.status === "completed" && ["replacement", "insertion"].includes(selection.kind)) {
                 projection = await post({action: "validate", preparedHash: data.preparedHash, ...identity, expectedParentReceiptSha256: editing.editor.expectedParentReceiptSha256});
                 if (!flow.valid()) return;
             }
-            flow.update({result: data, projection, message: data.replacement.message});
+            flow.update({result: data, projection, message: selection.message});
             onOverlayPreview(null); onPreview(projection?.clips || null); return;
         }
         if (!flow.valid()) return;
@@ -77,7 +78,7 @@ function reasoningActions(flow, editing, text, onPreview, onOverlayPreview, repl
     };
     return {
         prepare: () => ready && text.trim() && run("prepare", async () => {
-            const quote = await post({action: replacementMode ? "prepare_replacement" : "prepare", ...identity, instruction: text.trim()});
+            const quote = await post({action: insertionMode ? "prepare_insertion" : replacementMode ? "prepare_replacement" : "prepare", ...identity, instruction: text.trim()});
             if (!flow.valid()) return;
             flow.update({quote, result: null, confirmed: false, sent: false}); if (flow.valid()) { onPreview(null); onOverlayPreview(null); }
             if (!quote.budget?.eligible || !flow.available) return;
@@ -105,7 +106,7 @@ function reasoningActions(flow, editing, text, onPreview, onOverlayPreview, repl
             flow.update({quote: saved.quote, result: null, sent: true, confirmed: false}); onPreview(null); onOverlayPreview(null);
             await show(await post({action: "result", preparedHash: saved.quote.preparedHash}));
         }),
-        apply: () => ready && (flow.result?.replacement?.kind === "replacement" || ["edit_proposal", "overlay_edit_proposal"].includes(flow.result?.proposal?.response.kind)) && run("validate", async () => {
+        apply: () => ready && (flow.result?.replacement?.kind === "replacement" || flow.result?.insertion?.kind === "insertion" || ["edit_proposal", "overlay_edit_proposal"].includes(flow.result?.proposal?.response.kind)) && run("validate", async () => {
             const data = await post({action: "validate", preparedHash: flow.quote.preparedHash, ...identity, expectedParentReceiptSha256: editing.editor.expectedParentReceiptSha256});
             if (!flow.valid()) return;
             const response = flow.result.proposal?.response || {};
@@ -120,11 +121,11 @@ function reasoningActions(flow, editing, text, onPreview, onOverlayPreview, repl
     };
 }
 
-export function ReasoningDock({editing, onPreview, onOverlayPreview = noop, replacementMode = false}) {
+export function ReasoningDock({editing, onPreview, onOverlayPreview = noop, replacementMode = false, insertionMode = false}) {
     const [text, setText] = useState("");
     const [restoring, setRestoring] = useState(null);
-    const flow = useReasoning(editing, text, onPreview, onOverlayPreview);
-    const actions = reasoningActions(flow, editing, text, onPreview, onOverlayPreview, replacementMode);
+    const flow = useReasoning(editing, text, onPreview, onOverlayPreview, insertionMode ? "insertion" : replacementMode ? "replacement" : "edit");
+    const actions = reasoningActions(flow, editing, text, onPreview, onOverlayPreview, replacementMode, insertionMode);
     const ready = editing.status === "ready" && !editing.dirty;
     const identity = parentKey(editing);
     useEffect(() => {
@@ -141,6 +142,7 @@ export function ReasoningDock({editing, onPreview, onOverlayPreview = noop, repl
             <button class="btn ghost" disabled=${!ready || !text.trim() || !!flow.busy}>${flow.busy === "execute" ? "AI 正在修改…" : "交给 AI"}</button>
         </form>
         <p class="hint">${!ready ? "请先保存当前镜头和声音修改，再请求模型建议。" : "仅发送已保存镜头的文字和时间；模型没有观看画面。旁白仍用免费本机语音。"}
+            ${insertionMode ? " 插入会延长画面；旁白与图层保留原输出时刻，不自动平移。" : ""}
             ${!flow.available ? " 文本模型尚未配置 DEEPSEEK_API_KEY，不能发送；可先查看请求。" : ""}</p>
         ${history.length ? html`<details class="reasoning-history"><summary>已确认请求的结果记录（${history.length}）</summary>
             ${history.map((saved) => html`<div class="actions-row"><span>${saved.at} · ${saved.text.slice(0, 50)}</span>
@@ -161,6 +163,7 @@ export function ReasoningDock({editing, onPreview, onOverlayPreview = noop, repl
             : `${flow.result.metadata?.usage?.cost_status === "confirmed" ? "已确认费用" : "按价目估算费用"} ¥${flow.result.billing.knownCostCny}，以提供方账单为准。`}</p>`}
         ${response?.questions?.length ? html`<ul>${response.questions.map((q) => html`<li>${q}</li>`)}</ul>` : null}
         ${flow.result?.replacement?.kind === "replacement" && flow.projection && html`<div class="actions-row"><span>替换画面已预览，尚未应用；其他镜头、音轨和图层保留。</span><button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI换镜头</button></div>`}
+        ${flow.result?.insertion?.kind === "insertion" && flow.projection && html`<div class="actions-row"><span>插入画面已预览，尚未应用；旁白与图层保留原输出时刻。</span><button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI插入镜头</button></div>`}
         ${response?.kind === "edit_proposal" && html`<div class="actions-row"><span>改动预览：${flow.result.proposal.before_seconds.toFixed(1)} → ${flow.result.proposal.after_seconds.toFixed(1)} 秒；尚未应用。</span>
             <button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI建议</button></div>`}
         ${response?.kind === "overlay_edit_proposal" && html`<div class="actions-row"><span>图层预览：结束 ${(editing.overlays.find((o) => o.overlayId === response.overlayEdit.overlayId)?.endFrame / editing.editor.fps).toFixed(2)} → ${(response.overlayEdit.endFrame / editing.editor.fps).toFixed(2)} 秒；淡出 ${(editing.overlays.find((o) => o.overlayId === response.overlayEdit.overlayId)?.fadeOutFrames / editing.editor.fps).toFixed(2)} → ${(response.overlayEdit.fadeOutFrames / editing.editor.fps).toFixed(2)} 秒；尚未应用。</span>

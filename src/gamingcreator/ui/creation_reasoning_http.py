@@ -45,6 +45,7 @@ def reasoning_post(service: CreationReasoningService, value: Any) -> dict[str, A
         "prepare_copy": {"action", "jobId"},
         "prepare_narration": {"action", "jobId", "planId"},
         "adopt_plan": {"action", "preparedHash"},
+        "prepare_insertion": {"action", "jobId", "planId", "instruction"},
         "prepare_replacement": {"action", "jobId", "planId", "instruction"},
         "prepare": {"action", "jobId", "planId", "instruction"},
         "execute": {"action", "preparedHash", "snapshotFingerprint", "confirmedMaxCny"},
@@ -68,9 +69,13 @@ def reasoning_post(service: CreationReasoningService, value: Any) -> dict[str, A
         return service.prepare_narration(value["jobId"], value["planId"])
     if action == "adopt_plan":
         return service.adopt_plan(value["preparedHash"])
-    if action in ("prepare", "prepare_replacement"):
+    if action in ("prepare", "prepare_replacement", "prepare_insertion"):
         prepare_edit = (
-            service.prepare_replacement if action == "prepare_replacement" else service.prepare
+            service.prepare_insertion
+            if action == "prepare_insertion"
+            else service.prepare_replacement
+            if action == "prepare_replacement"
+            else service.prepare
         )
         return prepare_edit(value["jobId"], value["planId"], value["instruction"])
     if action == "execute_budget":

@@ -131,6 +131,8 @@ class DeepSeekCreationReasoningProvider:
         if (request.prompt_version, request.schema_version) not in {
             (PROMPT_VERSION, SCHEMA_VERSION),
             ("creation-replacement-prompt-v1", "creation-replacement-v1"),
+            ("creation-insertion-prompt-v1", "creation-insertion-v1"),
+            ("creation-insertion-prompt-v2", "creation-insertion-v1"),
             (OVERLAY_PROMPT_VERSION, OVERLAY_SCHEMA_VERSION),
             (PLAN_PROMPT_VERSION, PLAN_SCHEMA_VERSION),
             ("plan-reasoning-prompt-v2", "plan-proposal-v2"),

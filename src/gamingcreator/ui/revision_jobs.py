@@ -14,6 +14,7 @@ from gamingcreator.application.creation_editing import (
 from gamingcreator.application.creation_editing import (
     editable_clips as legacy_editable_clips,
 )
+from gamingcreator.application.creation_insertions import build_revision_v5, validate_revision_v5
 from gamingcreator.application.creation_replacements import (
     build_candidate_manifest,
     build_revision_v4,
@@ -102,7 +103,7 @@ def resolve_overrides(
 
 def replacement_clip_ids(edl: dict[str, Any]) -> dict[str, str]:
     """Use only the v4 operations rebuilt and validated against the real manifest."""
-    if edl.get("schemaVersion") != "edit-decision-revision-v4":
+    if edl.get("schemaVersion") not in ("edit-decision-revision-v4", "edit-decision-revision-v5"):
         return {}
     return {row["targetClipId"]: row["newClipId"] for row in edl["replacements"]}
 
@@ -210,7 +211,11 @@ def load_chain(
         receipt = jobs.read(directory / "result/receipt.json")
         is_v4 = "candidateManifestSha256" in request
         expected_schema = (
-            "creation-revision-receipt-v2" if is_v4 else "creation-revision-receipt-v1"
+            "creation-revision-receipt-v3"
+            if "insertions" in request
+            else "creation-revision-receipt-v2"
+            if is_v4
+            else "creation-revision-receipt-v1"
         )
         expected_files = {"revision.json", "edit-decision.json"}
         if is_v4:
@@ -245,6 +250,8 @@ def load_chain(
                 candidateManifestSha256=request["candidateManifestSha256"],
                 replacements=request["replacements"],
             )
+        if "insertions" in request:
+            expected_metadata["insertions"] = request["insertions"]
         if metadata != expected_metadata:
             raise ValueError("Revision metadata changed")
         revised = jobs.read(directory / "result/edit-decision.json")
@@ -258,13 +265,22 @@ def load_chain(
             ] != candidate_manifest_sha(expected_manifest):
                 raise ValueError("Candidate manifest changed")
             manifest = expected_manifest
-            plan = validate_revision_v4(
+            validator: Any = (
+                validate_revision_v5 if "insertions" in request else validate_revision_v4
+            )
+            if (
+                edl.get("schemaVersion") == "edit-decision-revision-v5"
+                and "insertions" not in request
+            ):
+                raise ValueError("Insertion descendants require v5.")
+            plan = validator(
                 edl,
                 revised,
                 root_sha,
                 parent_sha,
                 request["clips"],
                 request["replacements"],
+                *([request["insertions"]] if "insertions" in request else []),
                 manifest,
                 timelines,
             )
@@ -339,6 +355,11 @@ def editor(chain: Chain, job_id: str) -> dict[str, Any]:
         "targetDuration": chain.report["brief"]["targetDuration"],
         "actualDuration": chain.plan.frames / chain.plan.fps,
         "clips": rows,
+        **(
+            {"insertions": []}
+            if chain.edl.get("schemaVersion") == "edit-decision-revision-v5"
+            else {}
+        ),
         "ancestry": chain.ancestry,
         "subtitleOverrides": [dict(item) for item in chain.subtitle_overrides],
         "audioMix": chain.audio_mix.to_json(),
@@ -389,6 +410,8 @@ def save_revision(jobs: Any, directory: Path, request: dict[str, Any], chain: Ch
             replacements=request["replacements"],
         )
         files["candidates.json"] = manifest
+    if "insertions" in request:
+        metadata["insertions"] = request["insertions"]
     jobs.safe(directory / "result")
     write_creation(
         directory / "result",
@@ -398,7 +421,11 @@ def save_revision(jobs: Any, directory: Path, request: dict[str, Any], chain: Ch
     path = directory / "result/receipt.json"
     receipt = jobs.read(path)
     receipt["schemaVersion"] = (
-        "creation-revision-receipt-v2" if manifest is not None else "creation-revision-receipt-v1"
+        "creation-revision-receipt-v3"
+        if "insertions" in request
+        else "creation-revision-receipt-v2"
+        if manifest is not None
+        else "creation-revision-receipt-v1"
     )
     jobs.save(path, receipt)
 
@@ -460,6 +487,8 @@ def prepare_revision(
     jobs: Any, request: dict[str, Any], chain: Chain
 ) -> tuple[dict[str, Any], dict[str, Any] | None]:
     if "candidateManifestSha256" not in request:
+        if "insertions" in request:
+            raise ValueError("Insertion operations require a candidate manifest")
         if chain.manifest is not None or "replacements" in request:
             raise ValueError("Replacement descendants require v4")
         return build_revision(chain.edl, chain.root_sha, request["clips"]), None
@@ -470,16 +499,28 @@ def prepare_revision(
     manifest, timelines = manifest_for_chain(jobs, chain)
     if request["candidateManifestSha256"] != candidate_manifest_sha(manifest):
         raise ValueError("Candidate manifest changed")
-    revised = build_revision_v4(
-        chain.edl, chain.root_sha, chain.digest, request["clips"], request["replacements"], manifest
+    is_v5 = "insertions" in request
+    if chain.edl.get("schemaVersion") == "edit-decision-revision-v5" and not is_v5:
+        raise ValueError("Insertion descendants require v5.")
+    builder: Any = build_revision_v5 if is_v5 else build_revision_v4
+    validator: Any = validate_revision_v5 if is_v5 else validate_revision_v4
+    revised = builder(
+        chain.edl,
+        chain.root_sha,
+        chain.digest,
+        request["clips"],
+        request["replacements"],
+        *([request["insertions"]] if is_v5 else []),
+        manifest,
     )
-    validate_revision_v4(
+    validator(
         chain.edl,
         revised,
         chain.root_sha,
         chain.digest,
         request["clips"],
         request["replacements"],
+        *([request["insertions"]] if is_v5 else []),
         manifest,
         timelines,
     )
@@ -487,7 +528,7 @@ def prepare_revision(
 
 
 def editable_clips(edl: dict[str, Any], root_sha: str) -> list[dict[str, Any]]:
-    if edl.get("schemaVersion") == "edit-decision-revision-v4":
+    if edl.get("schemaVersion") in ("edit-decision-revision-v4", "edit-decision-revision-v5"):
         edl = {**edl, "schemaVersion": "edit-decision-revision-v3"}
     return legacy_editable_clips(edl, root_sha)
 
