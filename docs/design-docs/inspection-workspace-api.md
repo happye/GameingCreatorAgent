@@ -198,7 +198,9 @@ GET imageUrl为 `/api/creation/overlay-assets/<id>/image?receipt=<sha>`，只允
 
 Studio检查器的“叠加”页支持登记文字/PNG、调整开始结束/淡入淡出秒（换算输出整数帧）、位置/宽度百分比及图层顺序。修改后“保存版本”保存完整快照，删除最后一层显式清除；撤销恢复当前已保存版本。文字修改需“更新文字”生成对应sprite。画布随导出横竖屏尺寸适配，预览与导出复用同一透明sprite；图层按列表从底到顶、`[startFrame,endFrame)`显示。已有录像中烘焙的logo不能当作独立图层修改。越界或淡化时长非法会显示原因并禁用保存/导出，登记未完成时亦禁用。Studio接入仍在工作分支验证，整批全量/最终审查前不计交付。
 
-## Studio AI单镜头插入
+## Studio AI候选换镜头与插入
+
+换镜头入口仍为reasoning的`prepare_replacement`，新请求使用`creation-replacement-v2`结果：`{schemaVersion,kind,selections:[{target,candidate}],message}`，S/C均为冻结别名，kind保持replacement/clarification/unsupported。新prompt-v3提示重复区间关系；旧v1/v2已准备请求按原消息/hash恢复。validate一次返回完整clips和多条replacements，复用原revision保存、草稿恢复接口；整组应用与撤销。参见[多镜头合同](../exec-plans/sprint-ai-multi-replacement.md)。
 
 AI插入沿用`POST /api/creation/reasoning`：`action=prepare_insertion`携带jobId/planId/instruction，随后按原预算发送、result只读恢复及validate步骤。返回独立`insertion`结果；可信投影含clips/bounds/insertions/candidateManifestSha256等修订字段。单条insertions为`{afterClipId,candidateId,startUs,endUs,newClipId}`，新ID由服务端根据父回执和候选范围生成，不接受模型源路径。保存调用原`POST /api/creation/revisions`，v5后继普通编辑传insertions空数组；草稿恢复同样条件传入该字段。旧请求省略insertions保持旧合同。参见[插入合同](../exec-plans/sprint-ai-clip-insertion.md)。
 

@@ -1,10 +1,14 @@
 # HANDOFF（覆盖快照）
 
-## 最近一次会话（2026-11-17，完成当前任务后收尾）
+## 最近一次会话（2026-11-18，继续自主开发）
 
-用户要求额度18%时完成手头任务再收尾。本批AI单镜头插入已完成真实UI闭环，不继续开新任务；全部51项目标未完成，人评不变。分支codex/knowledge-version-compare-20261108。用户未跟踪设计文档、旧Grok工作树/stash、原片/模型/分析/账本/旧成片保留。
+用户重新激活全51项自主开发目标，继续功能落地、少测试。当前分支codex/knowledge-version-compare-20261108；勿按旧额度收尾要求自行暂停。人评不变，旧树/用户未跟踪文档/原片/账本保留。
 
-## 当前真实交付
+## 最新多镜头交付（2026-11-18）
+
+新prompt-v3/schema-v2沿replacement purpose一次selections整组换源；旧v1/v2及insertion字节兼容。只发冲突S别名，不发私有源SHA/时刻。真实S5/C12、S6/C1成功afd3af07…9310e8，¥0.013052；保存f380cf5c023c4903aba1b1e2664ff028，导出ad528df2e25e421e92b86cdfe5464433，发布09763ada5c4e49b38f5f74537a14002e，包572fb129292440debbda184d966f7bcb。28段29.5秒；仅第5/6段换5–6秒/59–60秒，另26段及音频等保持。草稿刷新恢复、整组撤销重做、保存重开/播放/七文件ZIP已验；唯一guard及3Python静态/JS通过，无pytest/全量。产物.cache/scratch/ai-multi-replacement-v3-20261118/，sprint-ai-multi-replacement。首次v2 b991bc…28ace选50–51秒撞未改S19，失败¥0.011158原件保留不重发；不放宽重复保护。
+
+## 上批插入交付
 
 服务http://127.0.0.1:8766/studio，PID与日志以.cache/workspace/port-8766.json为准，运行本批代码。项目artifacts/demo-phase0；漫画群星run f76f5d6495314c04ae04083614d4afd6；作品55f97422dabd6c5a3d87eb323018e45a；原方案137f62e387ee4b89b74e06f3d9bfdeb3，planId=chronological。
 
@@ -12,7 +16,7 @@
 
 预览取消/只读恢复/应用、v4草稿刷新恢复、撤销重做后保存82db5a271878437495765a03195bbda2；重开导出a1399d9c745b474e83d6d78997ba00c0：28段30秒1280×720 H264/AAC。2.1秒帧可见红爆炸；浏览器不静音播放并解码音频。发布82f43f8fc5ac48809792b9e2d1dbba42，B站包317a3b32e9234f63b6551a4edbf74cf3，七文件已下载。另裁新段至48.5秒保存重开24e685643eb449f19af360542c0bd6d6：28段29.5秒，其他内容保持。原30秒成片/包不改。
 
-产物.cache/scratch/ai-clip-insertion-20261117/：ai-inserted-preview.mp4、bilibili-ai-inserted-package.zip、delivery-evidence.json和截图/响应。合同docs/exec-plans/sprint-ai-clip-insertion.md。当前浏览器档案停在29.5秒后继；30秒成片可从发布页打开。
+产物.cache/scratch/ai-clip-insertion-20261117/：ai-inserted-preview.mp4、bilibili-ai-inserted-package.zip、delivery-evidence.json和截图/响应。合同docs/exec-plans/sprint-ai-clip-insertion.md。旧插入档案停在29.5秒后继；最新多换档案独立，成片均可从发布页打开。
 
 ## 实现与接手注意
 
@@ -24,6 +28,6 @@
 
 ## 后续与边界
 
-继续时从STATUS、Dashboard、accelerated-product-roadmap读起。优先多镜头组合修改等真实创作缺口；新规划编号合同仅准备未新调用验效。持久撤销历史后置。J1第五次人评未通过，J2/J3未人评；不拿代理链路改人评或passes。文本月¥30/同作品¥1内自动，指定视觉月¥50，免费本机声音；平台实发/支付/云配音另授权。不运行旧合成fixture冒充真实素材，不主动全量。
+继续时从STATUS、Dashboard、accelerated-product-roadmap读起。优先新规划编号真实验效及混合修改等缺口；新规划编号合同仅准备未新调用验效。持久撤销历史后置。J1第五次人评未通过，J2/J3未人评；不拿代理链路改人评或passes。文本月¥30/同作品¥1内自动，指定视觉月¥50，免费本机声音；平台实发/支付/云配音另授权。不运行旧合成fixture冒充真实素材，不主动全量。
 
 推送git -c http.proxy=http://127.0.0.1:7890 push；不提交媒体/数据库/密钥，不删除旧树或用户文件。

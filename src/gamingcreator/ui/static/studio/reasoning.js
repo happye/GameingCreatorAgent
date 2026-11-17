@@ -142,7 +142,7 @@ export function ReasoningDock({editing, onPreview, onOverlayPreview = noop, repl
             <button class="btn ghost" disabled=${!ready || !text.trim() || !!flow.busy}>${flow.busy === "execute" ? "AI 正在修改…" : "交给 AI"}</button>
         </form>
         <p class="hint">${!ready ? "请先保存当前镜头和声音修改，再请求模型建议。" : "仅发送已保存镜头的文字和时间；模型没有观看画面。旁白仍用免费本机语音。"}
-            ${insertionMode ? " 插入会延长画面；旁白与图层保留原输出时刻，不自动平移。" : ""}
+            ${insertionMode ? " 插入会延长画面；旁白与图层保留原输出时刻，不自动平移。" : replacementMode ? " 可在一句需求里指定多个镜头，整组预览、应用与撤销。" : ""}
             ${!flow.available ? " 文本模型尚未配置 DEEPSEEK_API_KEY，不能发送；可先查看请求。" : ""}</p>
         ${history.length ? html`<details class="reasoning-history"><summary>已确认请求的结果记录（${history.length}）</summary>
             ${history.map((saved) => html`<div class="actions-row"><span>${saved.at} · ${saved.text.slice(0, 50)}</span>
@@ -162,7 +162,13 @@ export function ReasoningDock({editing, onPreview, onOverlayPreview = noop, repl
             ? `实际费用未知，仍保留 ¥${flow.result.billing.reservedCny} 的费用占用；不会自动重试。`
             : `${flow.result.metadata?.usage?.cost_status === "confirmed" ? "已确认费用" : "按价目估算费用"} ¥${flow.result.billing.knownCostCny}，以提供方账单为准。`}</p>`}
         ${response?.questions?.length ? html`<ul>${response.questions.map((q) => html`<li>${q}</li>`)}</ul>` : null}
-        ${flow.result?.replacement?.kind === "replacement" && flow.projection && html`<div class="actions-row"><span>替换画面已预览，尚未应用；其他镜头、音轨和图层保留。</span><button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI换镜头</button></div>`}
+        ${flow.result?.replacement?.kind === "replacement" && flow.projection && html`<div>
+            <p>将替换 ${flow.projection.replacements.length} 个镜头，尚未应用；其他镜头、音轨和图层保留。</p>
+            <ul>${flow.projection.replacements.map(op => {
+                const index = editing.clips.findIndex(c => c.clipId === op.targetClipId);
+                const clip = flow.projection.clips.find(c => c.clipId === op.targetClipId);
+                return html`<li>第 ${index + 1} 段 → 原片 ${(clip.startUs / 1e6).toFixed(2)}–${(clip.endUs / 1e6).toFixed(2)} 秒：${clip.scriptDraft || "无描述"}</li>`;
+            })}</ul><button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI换镜头</button></div>`}
         ${flow.result?.insertion?.kind === "insertion" && flow.projection && html`<div class="actions-row"><span>插入画面已预览，尚未应用；旁白与图层保留原输出时刻。</span><button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI插入镜头</button></div>`}
         ${response?.kind === "edit_proposal" && html`<div class="actions-row"><span>改动预览：${flow.result.proposal.before_seconds.toFixed(1)} → ${flow.result.proposal.after_seconds.toFixed(1)} 秒；尚未应用。</span>
             <button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI建议</button></div>`}

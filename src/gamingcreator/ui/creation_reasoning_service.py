@@ -253,15 +253,24 @@ class CreationReasoningService:
         snapshot, project_id = self._snapshot(job_id, plan_id)
         return self._prepare(snapshot, project_id, job_id, plan_id, instruction)
 
-    def _replacement_snapshot(self, job_id: str, plan_id: str) -> tuple[EditingSnapshot, str]:
-        from gamingcreator.application.creation_replacement_proposals import replacement_snapshot
+    def _replacement_snapshot(
+        self, job_id: str, plan_id: str, *, multi: bool = True, conflict_hints: bool = True
+    ) -> tuple[EditingSnapshot, str]:
+        from gamingcreator.application.creation_replacement_proposals import (
+            multi_replacement_snapshot,
+            replacement_snapshot,
+        )
         from gamingcreator.ui.replacement_jobs import manifest_for_chain
 
         chain = load_chain(self.jobs, job_id, plan_id)
         manifest, _ = manifest_for_chain(self.jobs, chain)
-        return replacement_snapshot(
-            _editing_snapshot(chain, job_id, True), manifest
-        ), chain.project_id
+        parent = _editing_snapshot(chain, job_id, True)
+        snapshot = (
+            multi_replacement_snapshot(parent, manifest, conflict_hints=conflict_hints)
+            if multi
+            else replacement_snapshot(parent, manifest)
+        )
+        return snapshot, chain.project_id
 
     def _insertion_snapshot(
         self, job_id: str, plan_id: str, *, restrict_anchors: bool = True
@@ -450,11 +459,6 @@ class CreationReasoningService:
 
     def _current(self, record: dict[str, Any]) -> Snapshot:
         if record.get("purpose") in ("replacement", "insertion"):
-            snapshot_fn = (
-                self._insertion_snapshot
-                if record["purpose"] == "insertion"
-                else self._replacement_snapshot
-            )
             if record["purpose"] == "insertion":
                 snapshot, project = self._insertion_snapshot(
                     record["jobId"],
@@ -463,7 +467,14 @@ class CreationReasoningService:
                     == "creation-insertion-prompt-v2",
                 )
             else:
-                snapshot, project = snapshot_fn(record["jobId"], record["planId"])
+                snapshot, project = self._replacement_snapshot(
+                    record["jobId"],
+                    record["planId"],
+                    multi=record["request"]["prompt_version"]
+                    in ("creation-replacement-prompt-v2", "creation-replacement-prompt-v3"),
+                    conflict_hints=record["request"]["prompt_version"]
+                    == "creation-replacement-prompt-v3",
+                )
             if (
                 project != record["projectId"]
                 or snapshot.fingerprint != record["snapshotFingerprint"]
@@ -865,7 +876,7 @@ class CreationReasoningService:
         plan_id: str,
         expected_parent: str,
     ) -> dict[str, Any]:
-        from gamingcreator.application.creation_replacement_proposals import replacement_operation
+        from gamingcreator.application.creation_replacement_proposals import replacement_operations
         from gamingcreator.ui.creation_draft_restore import project_clips
         from gamingcreator.ui.replacement_jobs import manifest_for_chain
 
@@ -881,31 +892,14 @@ class CreationReasoningService:
             or result.get("replacement", {}).get("kind") != "replacement"
         ):
             raise ValueError("No usable replacement proposal.")
-        operation = replacement_operation(current, result["replacement"])
+        operations = replacement_operations(current, result["replacement"])
         chain = load_chain(self.jobs, job_id, plan_id)
         manifest, _ = manifest_for_chain(self.jobs, chain)
-        candidate = next(
-            c for c in manifest["candidates"] if c["candidateId"] == operation["candidateId"]
-        )
-        rows = operation["rows"]
-        row = rows[operation["index"]]
-        parent = version_clips(chain.edl, chain.root_sha)[operation["index"]]
-        length = row["endUs"] - row["startUs"]
-        start = candidate["startUs"]
-        end = min(candidate["endUs"], start + length)
-        if (
-            parent["sourceSha256"] == candidate["sourceSha256"]
-            and row["startUs"] == start
-            and row["endUs"] == end
-        ):
-            raise ValueError("Replacement would leave the source interval unchanged.")
-        row.update(startUs=start, endUs=end)
+        rows, replacements = _replacement_rows(chain, manifest, operations)
         request = {
             "parentJobId": job_id,
             "clips": rows,
-            "replacements": [
-                {"targetClipId": row["clipId"], "candidateId": candidate["candidateId"]}
-            ],
+            "replacements": replacements,
             "candidateManifestSha256": candidate_manifest_sha(manifest),
             **(
                 {"insertions": []}
@@ -919,7 +913,10 @@ class CreationReasoningService:
         inherited.validate_duration(frames)
         projection = project_clips(self.jobs, request, chain, manifest)
         for clip in projection["clips"]:
-            if clip["clipId"] == row["clipId"] and "rangeProvenance" not in clip:
+            if (
+                clip["clipId"] in {r["targetClipId"] for r in replacements}
+                and "rangeProvenance" not in clip
+            ):
                 clip["rangeProvenance"] = None
         return {
             **projection,
@@ -1054,6 +1051,12 @@ def _request_for(snapshot: Snapshot, instruction: str) -> ReasoningRequest:
     if isinstance(snapshot, EditingSnapshot) and "replacementSnapshotVersion" in snapshot.payload:
         from gamingcreator.application.creation_replacement_proposals import replacement_request
 
+        if snapshot.payload["replacementSnapshotVersion"] == "creation-replacement-v2":
+            from gamingcreator.application.creation_replacement_proposals import (
+                multi_replacement_request,
+            )
+
+            return multi_replacement_request(snapshot, instruction)
         return replacement_request(snapshot, instruction)
     if isinstance(snapshot, NarrationSnapshot):
         return narration_request(snapshot)
@@ -1080,6 +1083,15 @@ def _validated_output(snapshot: Snapshot, output: Any) -> dict[str, Any]:
                 validate_replacement,
             )
 
+            if snapshot.payload["replacementSnapshotVersion"] == "creation-replacement-v2":
+                from gamingcreator.application.creation_replacement_proposals import (
+                    validate_multi_replacement,
+                )
+
+                return {
+                    "purpose": "replacement",
+                    "replacement": validate_multi_replacement(snapshot, output),
+                }
             return {"purpose": "replacement", "replacement": validate_replacement(snapshot, output)}
         if isinstance(snapshot, NarrationSnapshot):
             return {"purpose": "narration", "script": validate_narration(snapshot, output)}
@@ -1131,3 +1143,29 @@ def _validated_plan_output(snapshot: PlanSnapshot, output: Any) -> dict[str, Any
         "planPreview": {"fps": snapshot.fps, "plans": preview},
         "fingerprintEcho": echo,
     }
+
+
+def _replacement_rows(
+    chain: Any, manifest: dict[str, Any], operations: list[dict[str, Any]]
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    rows = operations[0]["rows"]
+    parents = version_clips(chain.edl, chain.root_sha)
+    candidates = {c["candidateId"]: c for c in manifest["candidates"]}
+    replacements = []
+    for operation in operations:
+        candidate = candidates[operation["candidateId"]]
+        row = rows[operation["index"]]
+        parent = parents[operation["index"]]
+        start = candidate["startUs"]
+        end = min(candidate["endUs"], start + row["endUs"] - row["startUs"])
+        if (
+            parent["sourceSha256"] == candidate["sourceSha256"]
+            and row["startUs"] == start
+            and row["endUs"] == end
+        ):
+            raise ValueError("Replacement would leave the source interval unchanged.")
+        row.update(startUs=start, endUs=end)
+        replacements.append(
+            {"targetClipId": row["clipId"], "candidateId": candidate["candidateId"]}
+        )
+    return rows, replacements

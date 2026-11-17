@@ -44,9 +44,9 @@ window.PROGRESS_DATA = {
    "name": "玩法展示：本地录像 → 约1分钟可发布成片",
    "steps": "导入录像 → 已有分析/检索 → 选玩法展示模板 → 渲染MP4 → 封面文案与B站发布包",
    "agent_run": {
-    "date": "2026-11-17",
+    "date": "2026-11-18",
     "result": "pass",
-    "evidence": "8766 Studio真实漫画群星作品从一句需求、本地选方案、AI旁白/文案/单镜头替换推进到新增镜头：预算内¥0.010482单次选S2/C7，插入红色爆炸1秒；预览关闭/只读恢复/应用、v4草稿刷新恢复、撤销重做、保存82db5a271878437495765a03195bbda2及重开，导出a1399d9c745b474e83d6d78997ba00c0与B站包317a3b32e9234f63b6551a4edbf74cf3并下载。28段30秒1280×720 H264/AAC，实际2.1秒帧见红爆炸；原27段内容与14.56秒Huihui旁白/混音等保持，浏览器不静音播放并实际解码音频。再裁新段至半秒保存重开，28段29.5秒后继24e685643eb449f19af360542c0bd6d6。视频/七文件ZIP/数据对照在.cache/scratch/ai-clip-insertion-20261117/，详sprint-ai-clip-insertion。旧版本/包/付费失败原件保留不重发；总体仍非完整AI编导，语义/听感/权利人评不变。"
+    "evidence": "8766 Studio真实漫画群星流程在既有一句需求/选方案/AI旁白文案/单换插入基础上完成一次多镜头替换：新请求afd3af07…9310e8估算¥0.013052，选S5/C12及S6/C1；预览关闭、只读恢复、整组应用/undo/redo、v4草稿刷新恢复、保存f380cf5c023c4903aba1b1e2664ff028、重开导出ad528df2e25e421e92b86cdfe5464433及B站七文件包572fb129292440debbda184d966f7bcb，实际下载。28段29.5秒1280×720 H264/AAC，仅第5/6段换源，其他26段逐字段及14.56秒Huihui旁白/混音等保持，浏览器不静音播放并解码音频。视频/包/数据对照在.cache/scratch/ai-multi-replacement-v3-20261118/，详sprint-ai-multi-replacement。此前v2失败b991…因选到未改S19同区间，原费用¥0.011158/输出保留不重发；新v3提示重复关系。总体非完整开放式AI编导，人评不变。"
    },
    "human_check": {
     "date": "2026-11-11",
@@ -1040,14 +1040,15 @@ window.PROGRESS_DATA = {
     "tests/test_overlay_reasoning_e2e_browser.py",
     "tests/test_studio_overlay_reasoning_browser.py"
    ],
-   "done": "规则/AI删裁重排变速转场、图层调整、单镜头替换已接；AI插入真实红色爆炸1秒，28段30秒，草稿恢复/保存重开/后继裁剪/导出/播放/出包通过，旧27段与旁白保留",
-   "todo": "多镜头组合替换未接入；插入一次一段、需先保存再裁，旁白/图层不自动后移；开放式意图与创意质量未人评，不称完整AI编导",
-   "updated": "2026-11-17",
+   "done": "规则/AI删裁重排变速转场、图层调整、单镜头替换及插入已接；新增一句话多镜头替换，真实第5/6段整组预览/撤销重做/草稿恢复/保存重开/29.5秒导出/播放/出包通过，其他26段与旁白保留",
+   "todo": "混合插入/替换/删裁组合未接入；插入一次一段、需先保存再裁，旁白/图层不自动后移；开放式意图与创意质量未人评，不称完整AI编导",
+   "updated": "2026-11-18",
    "sprints": [
     "sprint-timeline-commands",
     "sprint-ai-overlay-timing",
     "sprint-ai-clip-replacement",
-    "sprint-ai-clip-insertion"
+    "sprint-ai-clip-insertion",
+    "sprint-ai-multi-replacement"
    ]
   },
   {
@@ -1626,6 +1627,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-ai-clip-insertion"
     },
     {
+     "id": "R3-ai-multi-replacement",
+     "name": "一句话多镜头替换、整组草稿及发布包",
+     "status": "done",
+     "sprint": "sprint-ai-multi-replacement"
+    },
+    {
      "id": "R3-grok-heavy-development",
      "name": "代理、屏幕文字检索、方案对照与逐词字幕（Grok100项）",
      "status": "partial",
@@ -2084,11 +2091,11 @@ window.PROGRESS_DATA = {
  ],
  "now": [
   "Grok A01–F16及审查修复已集成：逐词绑定、任务终态、推理复用、取消发布、手势监听与OCR完整性问题已闭合，唯一关键边界审查通过；原树/原片/账本/旧分析保留。",
-  "Grok修复定向证据保留：核心99过、原失败44节点44过、试听同步3过，TD030解决。历史完整失败记录不改绿；未Release、未合main，J1/J2/J3人评不变。",
+  "Grok修复定向99/44/3通过，TD030解决。历史完整失败不改绿，未Release/合main，人评不变。",
   "已接入代理自动预览/只读空间盘点、OCR独立文字查询、规则方案去重/A-B对照、显式本机逐词ASR/烧录及多轨交互。已完成的技术链路不代表内容质量已验收；旧OCR无hash只能查看，显式重扫写独立v2缓存。见sprint-grok-repair-integration及ocr-frames-guide。",
   "v3替换镜头/文字PNG图层草稿恢复已交付55886b4；字幕可信映射与词级隐藏保护4139a26已推送，主树257项通过、旧契约失败修后5项通过，唯一关键审查通过。完整verify-20261117-002506在约九成时按用户要求取消，曾出现失败标记，无最终统计；保留日志，不改绿，不继续跑全量。",
   "真实漫画群星29秒流程已进一步接入AI旁白重起草：确认覆盖/保旧轨→本机中文合成14.56秒→保存→MP4→B站七文件包，实际下载并播放。AI文案也成功生成、校改后保存出包；新旁白估算¥0.00819112、文案¥0.00456512。产物在.cache/scratch/product-journey-20261117/，最新manga-ai-narration-preview.mp4及bilibili-ai-narration-package.zip；自然度和语义仍待人评。",
-  "本批AI插入镜头真实闭环：S2后加48–49秒红爆炸，28段30秒；预览/取消/恢复、v4草稿刷新恢复、撤销重做、保存重开/播放/导出/B站七文件包通过，估算¥0.010482。原27段与14.56秒旁白保留；新段再裁半秒保存重开通过。产物.cache/scratch/ai-clip-insertion-20261117/，合同sprint-ai-clip-insertion。唯一guard及受影响静态通过，无pytest/全量；人评不变。后续多镜头组合、新规划编号真实验效等仍待做，保留全部51项目标，本轮不再开新任务。"
+  "AI单镜头插入已交付；本批再接一句话多镜头替换：第5/6段整组预览、撤销重做、v4草稿恢复、保存重开、29.5秒MP4/播放及B站七文件包通过，其他26段和14.56秒旁白保留。新成功¥0.013052；前次重复区间失败¥0.011158保留不重发，新prompt-v3提示占用关系。产物.cache/scratch/ai-multi-replacement-v3-20261118/，合同sprint-ai-multi-replacement；唯一guard及受影响静态通过，无pytest/全量，人评不变。后续新规划编号真实验效、混合修改等继续推进，全部51项目标保持。"
  ],
  "sprints": [
   {
@@ -2164,6 +2171,17 @@ window.PROGRESS_DATA = {
    ],
    "date": "2026-11-17",
    "bytes": 2639
+  },
+  {
+   "file": "sprint-ai-multi-replacement",
+   "title": "AI 一次多镜头替换（2026-11-17）",
+   "ids": [
+    "P032",
+    "P041",
+    "R3"
+   ],
+   "date": "2026-11-18",
+   "bytes": 4031
   },
   {
    "file": "sprint-ai-narration",

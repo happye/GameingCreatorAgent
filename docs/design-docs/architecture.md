@@ -139,6 +139,8 @@ AI旁白复用创作reasoning的prepare/execute_budget/result与作品预算，�
 
 AI插入使用独立insertion purpose，模型仅返回冻结S/C别名和整毫秒时长。新prompt-v2列出后继为cut的允许锚点，旧v1请求保持原消息/hash；验证阶段拒绝会改变后继转场的提案。可信manifest解析来源，EDL v5保存稳定新clipId与插入证明，重开沿父链重建；v5后继普通编辑仍须带insertions空数组以保留版本标记。待保存插入先保存再改镜头，旁白/包络/图层保留绝对输出时刻。费用门禁、一次发送及已付结果恢复沿原reasoning流程。
 
+AI换镜头沿同一replacement purpose，v2 schema以selections一次表达多目标，统一manifest投影和一次编辑快照承载整组；未改行、音轨和图层继承。新prompt-v3以目标时长下的冲突S别名提示已用区间，模型可同时换离冲突目标实现合法交换；不发送私有源身份或时刻。验证最终全片区间唯一，拒绝重复目标、无变化及冲突。旧v1/v2请求和插入依赖按原版本重建，不改已付失败记录。见[多镜头合同](../exec-plans/sprint-ai-multi-replacement.md)。
+
 动态准备复用本机 KnowledgeStore 的同游戏当前版本及字面检索，最多三条、每条400字连续原文。命中时以 v2 snapshot/prompt/proposal 将 entryId、出处和原文冻结到实际请求、hash与报价；无命中沿用 v1。确认、采用与恢复从 prepared request 重建冻结资料，不查询新库替换旧请求。模型仅声明已冻结 entryId 与策划原句，编译层核对应关系并从冻结记录补出处；不证明语义真实性。见[知识合同](../exec-plans/sprint-game-knowledge.md)。
 
 本机草稿按项目/job/plan/asset保存在 localStorage，与不可覆盖的知识和任务回执分离。重合成复用既有 narration/revision 流程，只新增免费本机入口；clip/audio 编辑代次隔离迟到返回，资产变化关闭编辑会话并重新按资产键恢复。保存新修订保留旧音轨证据，FFmpeg与发布包继续使用原回执链。操作见[创作指南](../references/creation-guide.md)，证据见[旁白修订合同](../exec-plans/sprint-studio-narration-revision.md)。
