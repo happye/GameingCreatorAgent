@@ -141,6 +141,8 @@ AI插入使用独立insertion purpose，模型仅返回冻结S/C别名和整毫�
 
 AI换镜头沿同一replacement purpose，v2 schema以selections一次表达多目标，统一manifest投影和一次编辑快照承载整组；未改行、音轨和图层继承。新prompt-v3以目标时长下的冲突S别名提示已用区间，模型可同时换离冲突目标实现合法交换；不发送私有源身份或时刻。验证最终全片区间唯一，拒绝重复目标、无变化及冲突。旧v1/v2请求和插入依赖按原版本重建，不改已付失败记录。见[多镜头合同](../exec-plans/sprint-ai-multi-replacement.md)。
 
+AI方案本地补时复用已验证proposal及原候选快照，纯Application保留原段、按同源邻近锚点加入不相交候选，再重算输出位置和coverage；补段topicUses为空。普通plan任务以完整父request及receipt绑定派生身份，保存/重开均重建报告；保留reasoningProvenance并单列localCompletion，不把本地选材冒称AI输出。不改变模型、发送和账本路径，素材不足如实保留gap。UI复用方案登记，读取状态和generation隔离迟到返回。见[补时合同](../exec-plans/sprint-ai-plan-duration.md)。
+
 动态准备复用本机 KnowledgeStore 的同游戏当前版本及字面检索，最多三条、每条400字连续原文。命中时以 v2 snapshot/prompt/proposal 将 entryId、出处和原文冻结到实际请求、hash与报价；无命中沿用 v1。确认、采用与恢复从 prepared request 重建冻结资料，不查询新库替换旧请求。模型仅声明已冻结 entryId 与策划原句，编译层核对应关系并从冻结记录补出处；不证明语义真实性。见[知识合同](../exec-plans/sprint-game-knowledge.md)。
 
 本机草稿按项目/job/plan/asset保存在 localStorage，与不可覆盖的知识和任务回执分离。重合成复用既有 narration/revision 流程，只新增免费本机入口；clip/audio 编辑代次隔离迟到返回，资产变化关闭编辑会话并重新按资产键恢复。保存新修订保留旧音轨证据，FFmpeg与发布包继续使用原回执链。操作见[创作指南](../references/creation-guide.md)，证据见[旁白修订合同](../exec-plans/sprint-studio-narration-revision.md)。

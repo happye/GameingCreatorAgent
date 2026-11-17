@@ -156,7 +156,8 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     useEffect(() => {
         const changedProject = shownProject.current !== null && shownProject.current !== project;
         if (changedProject && open === shownOpen.current) rejectedOpen.current = open;
-        if (open !== rejectedOpen.current && open && ["render", "publication", "package"].includes(open.kind)) void show(open.id, open.kind);
+        const requestedOpen = open !== shownOpen.current || shownProject.current !== project;
+        if (requestedOpen && open !== rejectedOpen.current && open && ["render", "publication", "package"].includes(open.kind)) void show(open.id, open.kind);
         else if ((!renderId || shownProject.current !== project) && renders[0]) void show(renders[0].jobId, "render");
         else if (changedProject) { setPub(null); setPackages([]); setRenderId(""); setBusy(""); setMessage(""); setFieldError({}); }
         shownProject.current = project; shownOpen.current = open;

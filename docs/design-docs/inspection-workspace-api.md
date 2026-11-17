@@ -200,6 +200,8 @@ Studio检查器的“叠加”页支持登记文字/PNG、调整开始结束/淡
 
 ## Studio AI候选换镜头与插入
 
+已采用的原始AI短方案可经reasoning提交`{action:"complete_plan_duration",jobId,planId}`。目标时长从可信brief读取，不接受客户端指定新来源/时长；返回普通plan任务的jobId/kind/status。派生request绑定完整父请求、父job/plan和回执SHA，保存及重开重建对照；原方案/模型结果不改。响应同普通plan，可直接进入后续revision/render。此动作不经过模型execute或费用账本；素材不足保留frameGap，模板/递归补时拒绝。见[补时合同](../exec-plans/sprint-ai-plan-duration.md)。
+
 换镜头入口仍为reasoning的`prepare_replacement`，新请求使用`creation-replacement-v2`结果：`{schemaVersion,kind,selections:[{target,candidate}],message}`，S/C均为冻结别名，kind保持replacement/clarification/unsupported。新prompt-v3提示重复区间关系；旧v1/v2已准备请求按原消息/hash恢复。validate一次返回完整clips和多条replacements，复用原revision保存、草稿恢复接口；整组应用与撤销。参见[多镜头合同](../exec-plans/sprint-ai-multi-replacement.md)。
 
 AI插入沿用`POST /api/creation/reasoning`：`action=prepare_insertion`携带jobId/planId/instruction，随后按原预算发送、result只读恢复及validate步骤。返回独立`insertion`结果；可信投影含clips/bounds/insertions/candidateManifestSha256等修订字段。单条insertions为`{afterClipId,candidateId,startUs,endUs,newClipId}`，新ID由服务端根据父回执和候选范围生成，不接受模型源路径。保存调用原`POST /api/creation/revisions`，v5后继普通编辑传insertions空数组；草稿恢复同样条件传入该字段。旧请求省略insertions保持旧合同。参见[插入合同](../exec-plans/sprint-ai-clip-insertion.md)。

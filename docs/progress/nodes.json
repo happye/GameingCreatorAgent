@@ -144,15 +144,16 @@
    ]
   },
   "P021": {
-   "done": "离线模板与预算内AI动态策划；主题方案v4按候选内素材编号选来源，后台还原原文供预览/采用，避免模型抄写引文；旧付费v1/v2/v3按归档版本恢复并核完整hash，时钟和费用门保持",
-   "todo": "新编号合同真实来源离线核对通过，尚无新模型效果验证；主题语义、方案质量与完整编导闭环仍待实际试用，不重发旧失败",
-   "updated": "2026-11-17",
+   "done": "编号来源AI策划真实生成三案并只读恢复采用；新增显式本地补时，9秒AI方案保留原8段、加入21个不重叠候选达到30秒，新版本重开并接中文旁白、成片和发布包；原方案/付费结果保留",
+   "todo": "主题语义、方案内容及操作成本仍待人评；本地补时只保证时长/来源，不认证创意；不足素材保留差额，不重发旧失败",
+   "updated": "2026-11-18",
    "sprints": [
     "sprint-creation-planner",
     "sprint-creation-workspace",
     "sprint-j1-creation-usability",
     "sprint-ai-theme-planning",
-    "sprint-planning-observation-refs"
+    "sprint-planning-observation-refs",
+    "sprint-ai-plan-duration"
    ]
   },
   "P022": {
@@ -676,6 +677,12 @@
      "name": "AI选片按候选内素材编号引用来源",
      "status": "done",
      "sprint": "sprint-planning-observation-refs"
+    },
+    {
+     "id": "R3-ai-plan-duration",
+     "name": "AI方案采用、本地补足时长及真实出片",
+     "status": "done",
+     "sprint": "sprint-ai-plan-duration"
     },
     {
      "id": "R3-work-budget",

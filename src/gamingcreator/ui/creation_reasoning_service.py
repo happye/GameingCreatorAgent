@@ -292,6 +292,13 @@ class CreationReasoningService:
         snapshot, project_id = self._replacement_snapshot(job_id, plan_id)
         return self._prepare(snapshot, project_id, job_id, plan_id, instruction, "replacement")
 
+    def complete_plan_duration(self, job_id: str, plan_id: str) -> dict[str, Any]:
+        from gamingcreator.ui.plan_reasoning_jobs import completion_request, verified_completion
+
+        request = completion_request(self.jobs, job_id, plan_id)
+        verified_completion(self.jobs, request)
+        return dict(self.jobs.submit("plan", request))
+
     def prepare_plan(self, job_id: str) -> dict[str, Any]:
         from gamingcreator.ui.plan_reasoning_jobs import original_snapshot
 

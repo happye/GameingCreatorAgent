@@ -115,7 +115,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     useEffect(() => { onDirtyChange(!!editing.dirty || commandPreview); }, [editing.dirty, commandPreview]);
     useEffect(() => () => onDirtyChange(false), []);
     // A monotonic edit generation preserves changes even after an A/B/A roundtrip.
-    const adoptionView = [project, planJob?.jobId, planId, editing.clips, editing.subtitleOverrides, editing.audio, editing.replacements, editing.overlays, commandRows, commandOverlays];
+    const adoptionView = [project, workId, planJob?.jobId, planId, editing.clips, editing.subtitleOverrides, editing.audio, editing.replacements, editing.overlays, commandRows, commandOverlays];
     const adoptionGuard = useRef({view: adoptionView, generation: 0});
     if (adoptionView.some((value, index) => value !== adoptionGuard.current.view[index])) {
         adoptionGuard.current = {view: adoptionView, generation: adoptionGuard.current.generation + 1};
@@ -369,8 +369,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         finally { setBusy(""); }
     };
 
-    const adoptPlans = async (jobId) => {
-        const generation = adoptionGuard.current.generation;
+    const adoptPlans = async (jobId, generation = adoptionGuard.current.generation) => {
         setBusy("adopt"); setMessage("正在登记动态方案，不会再次调用模型…"); player.stop();
         try {
             const done = await follow(jobId, () => {});
@@ -382,7 +381,22 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
             if (done?.status !== "completed") throw new Error(done?.error?.message || "动态方案未能登记完成");
             setCommandRows(null); showPlan(done); setMessage("");
         } catch (error) { setMessage(error.message); }
-        finally { setBusy(""); }
+        finally { setBusy(value => value === "adopt" ? "" : value); }
+    };
+
+    const completeDuration = async () => {
+        if (busy || editing.status !== "ready" || editing.dirty || commandPreview || comparePreview || audioBusy || overlayBusy) return;
+        const generation = adoptionGuard.current.generation;
+        setBusy("complete"); player.stop();
+        try {
+            const job = await client.api("/api/creation/reasoning", {}, {body: {
+                action: "complete_plan_duration", jobId: planJob.jobId, planId,
+            }});
+            if (!alive.current) return;
+            if (adoptionGuard.current.generation !== generation) { onWorksChanged(); return; }
+            await adoptPlans(job.jobId, generation);
+        } catch (error) { setMessage(error.message); }
+        finally { setBusy(value => value === "complete" ? "" : value); }
     };
 
     const exportVideo = async () => {
@@ -452,6 +466,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                 ${planJob ? planJob.plans.map((p) => html`<${PlanCard} plan=${p} fps=${fps} active=${p.id === planId} thumb=${thumb} onFind=${onFindMaterial}
                     onPick=${() => { if (overlayBusy || audioBusy || busy) return; if (editing.dirty && !confirmLeave()) return; setComparePreview(null); setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommandRows(null); lastJob(scope, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
                     : html`<p class="note">填好需求后点“生成方案”。方案只是剪辑清单，生成很快；选中后可以直接预览，不用先渲染。</p>`}
+                ${plan && mode === "plan" && plan.id.startsWith("dynamic-") && plan.actualFrames < plan.targetFrames ? html`<p class="note">保留旧方案，使用本地候选补足当前选中方案；不会调用模型。</p><button class="btn" disabled=${!!busy || editing.status !== "ready" || editing.dirty || commandPreview || comparePreview || audioBusy || overlayBusy} onClick=${completeDuration}>补足目标时长（本地）</button>` : null}
                 ${planJob && planJob.plans.length >= 2 ? html`<${PlanCompare} key=${`${scope}:${planJob.jobId}`} plans=${planJob.plans} adoptedId=${planId} fps=${planJob.fps} compareScope=${`${scope}:${planJob.jobId}`} locateBlocked=${locateBlocked} onLocate=${locateComparePreview} onClose=${() => setComparePreview(null)} />` : planJob ? html`<p class="note">至少还要有两套方案才能对照。</p>` : null}
                 ${planJob ? html`<${PlanReasoningPanel} key=${`${project}:${planJob.jobId}`} project=${project} jobId=${planJob.jobId}
                     disabled=${!!busy || editing.dirty || commandPreview || audioBusy || overlayBusy} onAdopt=${adoptPlans}

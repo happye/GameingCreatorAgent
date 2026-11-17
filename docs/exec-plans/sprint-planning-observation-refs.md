@@ -19,6 +19,8 @@
 
 主树集成：相同真实来源离线重建脚本通过（约2秒），旧请求/新引用投影/绑定及echo兼容保持。唯一task_quality_guard静态通过，无未闭合P1/P2。plan_reasoning_request为73行、refs helper为16行。
 
-限制：新提示尚无付费效果验收；旧失败记录不重标、不重发。未运行pytest或完整检查。
+原离线阶段限制：当时尚无新付费效果验收；后续真实证据见下。旧失败记录不重标、不重发。未运行pytest或完整检查。
 
 重启主树8766服务后，实际POST prepare_plan返回638e58480516d250009309f5231989dfe58dbbc689b7e422886ad217081af728，plan-snapshot-v4/plan-topics-v2及首个候选fact:1、fact:2已生效；只准备，未调用模型。原文保存在真实操作目录planning-refs-prepared-only.json。
+
+2026-11-18真实UI新请求2c49c15b0b8279adc5b4ed63812456a67748409cea760ee03dc75d8f42bc4031一次成功，估算¥0.08408，三套方案的编号引用经后台还原原文，刷新只读恢复后采用614ddb57086646da8610aba37dc495e5。实际仅9/8/11秒、未达到需求30秒，未冒称达标；随后新增显式本地补时派生3b96bedeed9b4283a77a7d3c815c37d7达到900帧，旧AI结果不改也不重发。已接新AI旁白、免费中文合成及30秒成片/包，详[sprint-ai-plan-duration](sprint-ai-plan-duration.md)及.cache/scratch/ai-planning-refs-20261118/。语义/创作质量仍待人评。

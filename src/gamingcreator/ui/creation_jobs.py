@@ -215,7 +215,13 @@ class CreationJobs:
                 if kind == "revision"
                 else {"costConfirmationYuan"}
                 if kind == "narration"
-                else {"eventIds", "clipRanges", "reasoningPreparedHash", "workId"}
+                else {
+                    "eventIds",
+                    "clipRanges",
+                    "reasoningPreparedHash",
+                    "workId",
+                    "localCompletion",
+                }
                 if kind == "plan"
                 else set()
             )
@@ -324,9 +330,14 @@ class CreationJobs:
                     except ValueError as error:
                         raise fail("creation.input", str(error)) from error
                 if "reasoningPreparedHash" in request:
-                    from gamingcreator.ui.plan_reasoning_jobs import verified_plan
+                    from gamingcreator.ui.plan_reasoning_jobs import (
+                        verified_completion,
+                        verified_plan,
+                    )
 
-                    verified_plan(self, request)
+                    verified_plan(
+                        self, request
+                    ) if "localCompletion" not in request else verified_completion(self, request)
                 project_id = request["projectId"]
             elif kind == "package":
                 parent_id = identity(request["publicationJobId"])
@@ -491,6 +502,11 @@ class CreationJobs:
         elif state["kind"] == "plan":
             report = self.plan_report(directory)
             request = stored["request"]
+            if "localCompletion" in request:
+                from gamingcreator.ui.plan_reasoning_jobs import verified_completion
+
+                if report != verified_completion(self, request):
+                    raise ValueError("Local completion differs from verified parent.")
             if (
                 report.get("brief") != request["brief"]
                 or report.get("fps") != request["fps"]

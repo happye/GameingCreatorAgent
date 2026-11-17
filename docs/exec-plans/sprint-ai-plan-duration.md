@@ -1,0 +1,15 @@
+# AI 方案本地补足目标时长
+
+R3 · P021 / P040 · 2026-11-18
+
+范围：已保存、已验证的原始 AI 规划任务中，用户选中的短方案。显式动作“补足目标时长（本地）”生成独立普通 plan 任务；父方案、原 proposal、付费回执及账本保持。模板、递归补时、可编辑未保存稿拒绝。
+
+验收：目标从可信 brief 读取；保留原 AI 段源区间、整数帧数、顺序、证据；仅添加未相交可信候选，连续后继优先并分配至同源锚点之后。补段标记“本地补充”，topicUses 空；重排输出位置及重算 coverage。素材不足记录明确帧差，不拉伸。派生 request 绑定父 job/plan/回执 SHA；保存和重开重验父来源并重建报告。
+
+证据（2026-11-18）：独立 ai-plan-duration 工作树导入本树源码，只读重建真实父任务 614ddb57086646da8610aba37dc495e5 / dynamic-1，900/900 帧，gap=0，21 个补段。断言原 AI 段除输出位置外逐字段一致；所有最终源区间无交叠。5 个受影响 Python Ruff/mypy 和 edit.js 语法通过。未跑 pytest、全量、模型调用或付费操作。真实 UI/旁白/导出/包由主控继续验收，当前记录不代替产品人评。
+
+主控真实UI完成：原brief来自漫画群星作品55f97422…的30秒玩法需求，编号引用策划请求2c49c15b…bc4031一次成功（¥0.08408），三套方案9/8/11秒；刷新只读恢复采用614ddb…，选dynamic-1本地补时到3b96bedeed9b4283a77a7d3c815c37d7，29段900帧。旧plans.json和receipt.json的SHA与补时前逐字一致；原8段除outputStartFrame外全部字段相同，21补段来源可信，全部区间互不交叠，reasoningProvenance保留。第一次操作赶在editor读取前导致generation变化未切换；已禁用未ready入口，幂等恢复同一任务后自动切换并刷新重开，未重新发模型。
+
+新AI旁白920bc87ce5185d55639ca25b4d7ad5dfb0da9a7f387243f6d0b4c7713ab13000一次成功（¥0.00803424），51字，预览逐句出处后填入，本机Huihui合成81726723d50648728dbdbb9fb0f69e4c约14.3秒，保存1ff760521fc14e05ad3ae0c9215b297f。导出d5bcfc6af3f949cda9122bd82b2711dc，30秒1280×720 H264/AAC；浏览器不静音播放2.37秒、音频实际解码42456字节，不认证主观听感。
+
+发布598a72a7f4164c3fba2ff8e234081681，B站包0080900c6a5a4af4b17c26d92d1d64be completed。真实下载遇到publish.js在作品数量刷新时重复打开稳定render intent、覆盖刚保存发布/包状态的阻塞；最小修复仅对新open/project显式打开，保留跨项目拒旧intent。由素材区“平台预览包”重新打开同一个已完成包并下载，未重建；ZIP七文件齐全。唯一guard对补时及发布尾修通过，5Python Ruff/format/mypy、2JS语法通过，无pytest/完整检查。产物.cache/scratch/ai-planning-refs-20261118/（ai-planned-preview.mp4、bilibili-ai-planned-package.zip、delivery-evidence.json、响应/截图）。模板/递归补时不支持，素材不足保留gap；语义/创意/听感及平台发布人评不变。

@@ -2,32 +2,28 @@
 
 ## 最近一次会话（2026-11-18，继续自主开发）
 
-用户重新激活全51项自主开发目标，继续功能落地、少测试。当前分支codex/knowledge-version-compare-20261108；勿按旧额度收尾要求自行暂停。人评不变，旧树/用户未跟踪文档/原片/账本保留。
+全51项自主开发目标仍active，优先真实功能闭环、少测试，不按旧额度要求自行暂停。分支codex/knowledge-version-compare-20261108；用户未跟踪设计文件、旧工作树/stash、原片/模型/分析/账本/旧成片保留。
 
-## 最新多镜头交付（2026-11-18）
+## 最新交付：AI方案→本地补时→中文旁白→成片/包
 
-新prompt-v3/schema-v2沿replacement purpose一次selections整组换源；旧v1/v2及insertion字节兼容。只发冲突S别名，不发私有源SHA/时刻。真实S5/C12、S6/C1成功afd3af07…9310e8，¥0.013052；保存f380cf5c023c4903aba1b1e2664ff028，导出ad528df2e25e421e92b86cdfe5464433，发布09763ada5c4e49b38f5f74537a14002e，包572fb129292440debbda184d966f7bcb。28段29.5秒；仅第5/6段换5–6秒/59–60秒，另26段及音频等保持。草稿刷新恢复、整组撤销重做、保存重开/播放/七文件ZIP已验；唯一guard及3Python静态/JS通过，无pytest/全量。产物.cache/scratch/ai-multi-replacement-v3-20261118/，sprint-ai-multi-replacement。首次v2 b991bc…28ace选50–51秒撞未改S19，失败¥0.011158原件保留不重发；不放宽重复保护。
+服务http://127.0.0.1:8766/studio，PID/日志以.cache/workspace/port-8766.json为准。项目artifacts/demo-phase0；漫画群星run f76f5d6495314c04ae04083614d4afd6；作品55f97422dabd6c5a3d87eb323018e45a，原方案137f62e387ee4b89b74e06f3d9bfdeb3。
 
-## 上批插入交付
+新编号引用策划请求2c49c15b0b8279adc5b4ed63812456a67748409cea760ee03dc75d8f42bc4031成功¥0.08408（plan-snapshot-v4/topics-v2/prompt-v5/proposal-v4）。三案实际9/8/11秒，不冒称30秒；只读恢复采用614ddb57086646da8610aba37dc495e5，选dynamic-1显式“补足目标时长（本地）”派生3b96bedeed9b4283a77a7d3c815c37d7，29段900帧。原8段除输出位置外字段不变，新增21段不交叠，父plans/receipt SHA不变；补时0模型调用。
 
-服务http://127.0.0.1:8766/studio，PID与日志以.cache/workspace/port-8766.json为准，运行本批代码。项目artifacts/demo-phase0；漫画群星run f76f5d6495314c04ae04083614d4afd6；作品55f97422dabd6c5a3d87eb323018e45a；原方案137f62e387ee4b89b74e06f3d9bfdeb3，planId=chronological。
+AI旁白920bc87ce5185d55639ca25b4d7ad5dfb0da9a7f387243f6d0b4c7713ab13000一次成功¥0.00803424，51字；Huihui资产81726723d50648728dbdbb9fb0f69e4c约14.3秒。保存1ff760521fc14e05ad3ae0c9215b297f；导出d5bcfc6af3f949cda9122bd82b2711dc：30秒1280×720 H264/AAC，浏览器不静音实际播放并解码音频。发布598a72a7f4164c3fba2ff8e234081681；B站包0080900c6a5a4af4b17c26d92d1d64be已下载七文件ZIP。产物.cache/scratch/ai-planning-refs-20261118/：ai-planned-preview.mp4、bilibili-ai-planned-package.zip、delivery-evidence.json及响应/截图。原版本保留，人评不变。
 
-新请求c04dc48ec81d8d17882d79367db775293fb10cead38a397f1eafe1b149405be9一次成功，估算¥0.010482，S2后插C7（原片48–49秒红色爆炸/伤害数字）。父6f57066755a04d47b05bbd28b1eb2667原27段内容不变，旁白/混音/图层保持绝对输出时刻。
+## 实现与必要边界
 
-预览取消/只读恢复/应用、v4草稿刷新恢复、撤销重做后保存82db5a271878437495765a03195bbda2；重开导出a1399d9c745b474e83d6d78997ba00c0：28段30秒1280×720 H264/AAC。2.1秒帧可见红爆炸；浏览器不静音播放并解码音频。发布82f43f8fc5ac48809792b9e2d1dbba42，B站包317a3b32e9234f63b6551a4edbf74cf3，七文件已下载。另裁新段至48.5秒保存重开24e685643eb449f19af360542c0bd6d6：28段29.5秒，其他内容保持。原30秒成片/包不改。
+新增application/plan_duration_completion.py纯补时；plan_reasoning_jobs完整父request/job/plan/receipt绑定，保存重开重建。新reasoning action complete_plan_duration仅jobId/planId，本机派生普通plan，不进预算/send/ledger。原AI段顺序/源/帧/证据不变，补段标“本地补充”、topicUses空，按同源邻近锚点加入可信不相交候选。素材不足留gap，不拉伸；模板/递归补时/未保存稿拒绝。UI读取ready后可点，generation隔离旧POST与busy。
 
-产物.cache/scratch/ai-clip-insertion-20261117/：ai-inserted-preview.mp4、bilibili-ai-inserted-package.zip、delivery-evidence.json和截图/响应。合同docs/exec-plans/sprint-ai-clip-insertion.md。旧插入档案停在29.5秒后继；最新多换档案独立，成片均可从发布页打开。
+真实发布尾部发现publish.js在renders.length刷新时重复show稳定open render，覆盖刚保存pub/package；只对新open/project显式show修复。从素材区“平台预览包”打开同个completed包成功下载，没有重建/重付。唯一guard对补时及此尾修通过；5Python Ruff/format/mypy、2JS语法及真实源/产物核对通过。无pytest/全量；旧verify-20261117-002506约89%用户取消，曾见失败无最终统计，不改绿。未Release、未合main、未真实上传平台。
 
-## 实现与接手注意
+## 已交付与后续
 
-独立purpose insertion、prepare_insertion、AI模式ai-insertion；新prompt-v2显式限定后继cut锚点，旧v1快照/body/hash原样恢复。模型仅S/C别名/毫秒时长，可信manifest解源；EDL v5父链保存稳定clipId及单条insertions证明。v5后继普通编辑传insertions:[]，旧父省略；新v4草稿读旧v1–v3、不读时迁写。待保存插入先保存再裁/移/删/换，UI明确提示；旁白/图层不自动后移。
+上批多镜头0b59734：prompt-v3/schema-v2，真实S5/S6成片/包见sprint-ai-multi-replacement及.cache/scratch/ai-multi-replacement-v3-20261118/。此前插入fa24099、单换b8a2afc、旁白7a2498e、编号a19917b及Grok修复均保留，不重复实施。当前ai-plan-duration树已集成，原改动留树，子代理结束。
 
-唯一guard通过：根投影身份、旧空[]草稿保存、v5字幕预览、crossfade结果状态问题均闭合。主树10文件Ruff/format/mypy、4JS语法通过；真实UI/数据对照通过。无pytest/全量；旧verify-20261117-002506约89%由用户取消，曾出现失败，无最终统计，不改绿。未Release、未合main、未实际上传平台。
+下一步依STATUS、Dashboard、accelerated-product-roadmap继续混合插入/替换/删裁等缺口，或其它未完成真实产品能力；新编号策划不再是“只准备未验”。不要把29/30秒局部实证当51项全完成。J1第五次人评未通过，J2/J3未做；语义、创意、听感仍未认证，不改passes/人评。
 
-本批两个树ai-clip-insertion、ai-insertion-ui均已集成，原改动留树，代理均已结束；勿重复实施。旧AI替换b8a2afc、规划编号a19917b、旁白重起草7a2498e及Grok修复已交付，证据见对应合同。旧模型失败不重发：策划a4714856…¥0.092816；旁白82f72415…¥0.004132。当前Huihui资产74e4ade9002147c8b8075311d24a079c，14.5596秒。
+## 保护与费用
 
-## 后续与边界
-
-继续时从STATUS、Dashboard、accelerated-product-roadmap读起。优先新规划编号真实验效及混合修改等缺口；新规划编号合同仅准备未新调用验效。持久撤销历史后置。J1第五次人评未通过，J2/J3未人评；不拿代理链路改人评或passes。文本月¥30/同作品¥1内自动，指定视觉月¥50，免费本机声音；平台实发/支付/云配音另授权。不运行旧合成fixture冒充真实素材，不主动全量。
-
-推送git -c http.proxy=http://127.0.0.1:7890 push；不提交媒体/数据库/密钥，不删除旧树或用户文件。
+旧失败不改不重发：策划a4714856…¥0.092816；旁白82f72415…¥0.004132；多换b991bc…28ace撞未改S19，¥0.011158。新文字预算月¥30/同作品¥1，指定视觉月¥50；声音免费本机，平台实发/支付/云配音另授权。不要用旧合成fixture冒充真实素材，不主动全量，不提交媒体/数据库/密钥。推送git -c http.proxy=http://127.0.0.1:7890 push。

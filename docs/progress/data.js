@@ -46,7 +46,7 @@ window.PROGRESS_DATA = {
    "agent_run": {
     "date": "2026-11-18",
     "result": "pass",
-    "evidence": "8766 Studio真实漫画群星流程在既有一句需求/选方案/AI旁白文案/单换插入基础上完成一次多镜头替换：新请求afd3af07…9310e8估算¥0.013052，选S5/C12及S6/C1；预览关闭、只读恢复、整组应用/undo/redo、v4草稿刷新恢复、保存f380cf5c023c4903aba1b1e2664ff028、重开导出ad528df2e25e421e92b86cdfe5464433及B站七文件包572fb129292440debbda184d966f7bcb，实际下载。28段29.5秒1280×720 H264/AAC，仅第5/6段换源，其他26段逐字段及14.56秒Huihui旁白/混音等保持，浏览器不静音播放并解码音频。视频/包/数据对照在.cache/scratch/ai-multi-replacement-v3-20261118/，详sprint-ai-multi-replacement。此前v2失败b991…因选到未改S19同区间，原费用¥0.011158/输出保留不重发；新v3提示重复关系。总体非完整开放式AI编导，人评不变。"
+    "evidence": "真实漫画群星一句需求原作品继续完成编号来源AI策划：2c49c15b…bc4031成功¥0.08408生成三案，恢复采用614ddb…；9秒方案显式本地补时为3b96bedeed9b4283a77a7d3c815c37d7，29段900帧，原8段源/帧/顺序/证据保留，新增21段无源交叠，原父文件SHA不变，补时0模型调用。新AI旁白51字¥0.00803424，Huihui本机合成14.3秒，保存1ff760521fc14e05ad3ae0c9215b297f，导出d5bcfc6af3f949cda9122bd82b2711dc（30秒1280×720 H264/AAC），浏览器不静音播放并解码音频。发布598a72a7f4164c3fba2ff8e234081681，包0080900c6a5a4af4b17c26d92d1d64be；修发布刷新回草稿后从素材区恢复同包下载七文件ZIP，未重建/重付。产物.cache/scratch/ai-planning-refs-20261118/，详sprint-ai-plan-duration。此前单换/插入/多换与失败原件保留；语义/听感/创意人评不变。"
    },
    "human_check": {
     "date": "2026-11-11",
@@ -486,15 +486,16 @@ window.PROGRESS_DATA = {
     "tests/test_creation_jobs.py",
     "tests/test_creation_workspace_browser.py"
    ],
-   "done": "离线模板与预算内AI动态策划；主题方案v4按候选内素材编号选来源，后台还原原文供预览/采用，避免模型抄写引文；旧付费v1/v2/v3按归档版本恢复并核完整hash，时钟和费用门保持",
-   "todo": "新编号合同真实来源离线核对通过，尚无新模型效果验证；主题语义、方案质量与完整编导闭环仍待实际试用，不重发旧失败",
-   "updated": "2026-11-17",
+   "done": "编号来源AI策划真实生成三案并只读恢复采用；新增显式本地补时，9秒AI方案保留原8段、加入21个不重叠候选达到30秒，新版本重开并接中文旁白、成片和发布包；原方案/付费结果保留",
+   "todo": "主题语义、方案内容及操作成本仍待人评；本地补时只保证时长/来源，不认证创意；不足素材保留差额，不重发旧失败",
+   "updated": "2026-11-18",
    "sprints": [
     "sprint-creation-planner",
     "sprint-creation-workspace",
     "sprint-j1-creation-usability",
     "sprint-ai-theme-planning",
-    "sprint-planning-observation-refs"
+    "sprint-planning-observation-refs",
+    "sprint-ai-plan-duration"
    ]
   },
   {
@@ -1597,6 +1598,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-planning-observation-refs"
     },
     {
+     "id": "R3-ai-plan-duration",
+     "name": "AI方案采用、本地补足时长及真实出片",
+     "status": "done",
+     "sprint": "sprint-ai-plan-duration"
+    },
+    {
      "id": "R3-work-budget",
      "name": "作品身份与需求/策划预算归属",
      "status": "done",
@@ -2095,7 +2102,7 @@ window.PROGRESS_DATA = {
   "已接入代理自动预览/只读空间盘点、OCR独立文字查询、规则方案去重/A-B对照、显式本机逐词ASR/烧录及多轨交互。已完成的技术链路不代表内容质量已验收；旧OCR无hash只能查看，显式重扫写独立v2缓存。见sprint-grok-repair-integration及ocr-frames-guide。",
   "v3替换镜头/文字PNG图层草稿恢复已交付55886b4；字幕可信映射与词级隐藏保护4139a26已推送，主树257项通过、旧契约失败修后5项通过，唯一关键审查通过。完整verify-20261117-002506在约九成时按用户要求取消，曾出现失败标记，无最终统计；保留日志，不改绿，不继续跑全量。",
   "真实漫画群星29秒流程已进一步接入AI旁白重起草：确认覆盖/保旧轨→本机中文合成14.56秒→保存→MP4→B站七文件包，实际下载并播放。AI文案也成功生成、校改后保存出包；新旁白估算¥0.00819112、文案¥0.00456512。产物在.cache/scratch/product-journey-20261117/，最新manga-ai-narration-preview.mp4及bilibili-ai-narration-package.zip；自然度和语义仍待人评。",
-  "AI单镜头插入已交付；本批再接一句话多镜头替换：第5/6段整组预览、撤销重做、v4草稿恢复、保存重开、29.5秒MP4/播放及B站七文件包通过，其他26段和14.56秒旁白保留。新成功¥0.013052；前次重复区间失败¥0.011158保留不重发，新prompt-v3提示占用关系。产物.cache/scratch/ai-multi-replacement-v3-20261118/，合同sprint-ai-multi-replacement；唯一guard及受影响静态通过，无pytest/全量，人评不变。后续新规划编号真实验效、混合修改等继续推进，全部51项目标保持。"
+  "已接AI单换/插入/多换；本批编号来源AI策划真实生成三案并采用，9秒方案显式本地补足30秒：29段，原8段保留、21补段不交叠，旧文件SHA不变。新AI旁白51字/中文合成14.3秒，保存重开、30秒MP4试听及B站七文件包已验。策划¥0.08408、旁白¥0.00803424，补时不发模型。修发布列表刷新覆盖草稿/包入口；唯一guard及定向静态通过，无pytest/全量，人评不变。产物.cache/scratch/ai-planning-refs-20261118/，合同sprint-ai-plan-duration。继续混合修改等缺口，完整51项目标保持。"
  ],
  "sprints": [
   {
@@ -2202,6 +2209,17 @@ window.PROGRESS_DATA = {
    ],
    "date": "2026-11-07",
    "bytes": 3296
+  },
+  {
+   "file": "sprint-ai-plan-duration",
+   "title": "AI 方案本地补足目标时长",
+   "ids": [
+    "P021",
+    "P040",
+    "R3"
+   ],
+   "date": "2026-11-18",
+   "bytes": 3100
   },
   {
    "file": "sprint-ai-theme-planning",
@@ -2535,8 +2553,8 @@ window.PROGRESS_DATA = {
     "P040",
     "R3"
    ],
-   "date": "2026-11-17",
-   "bytes": 2812
+   "date": "2026-11-18",
+   "bytes": 3466
   },
   {
    "file": "sprint-platform-packages",
