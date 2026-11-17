@@ -9,7 +9,7 @@
       "agent_run": {
         "date": "2026-11-18",
         "result": "pass",
-        "evidence": "真实漫画群星一句需求原作品继续完成编号来源AI策划：2c49c15b…bc4031成功¥0.08408生成三案，恢复采用614ddb…；9秒方案显式本地补时为3b96bedeed9b4283a77a7d3c815c37d7，29段900帧，原8段源/帧/顺序/证据保留，新增21段无源交叠，原父文件SHA不变，补时0模型调用。新AI旁白51字¥0.00803424，Huihui本机合成14.3秒，保存1ff760521fc14e05ad3ae0c9215b297f，导出d5bcfc6af3f949cda9122bd82b2711dc（30秒1280×720 H264/AAC），浏览器不静音播放并解码音频。发布598a72a7f4164c3fba2ff8e234081681，包0080900c6a5a4af4b17c26d92d1d64be；修发布刷新回草稿后从素材区恢复同包下载七文件ZIP，未重建/重付。产物.cache/scratch/ai-planning-refs-20261118/，详sprint-ai-plan-duration。此前单换/插入/多换与失败原件保留；语义/听感/创意人评不变。"
+        "evidence": "既有真实漫画群星一句需求→AI方案→本地补足30秒→中文旁白→成片流程继续扩展为四平台持久队列。发布598a72a7f4164c3fba2ff8e234081681，e6e0f97ddd5a36c292318459a9895f54一次勾选四平台后关闭浏览器，服务端仍全部completed，重开4/4并下载四份七文件ZIP；逐包ffprobe均30秒H264/AAC且尺寸匹配冻结profile，B站复用旧包且ZIP SHA不变。另存多平台版标题的真实三平台队列75e124109c594dcc8c87c446339a0df6验证cancel只停后续、当前包收尾；resume后中断自有服务，重启不自动再提交，UI显式恢复同batch，前两项ID保持，第三旧中断attempt保留，新attempt2完成，页面3/3。产物.cache/scratch/package-batches-20261118/（bilibili/douyin/kuaishou/xiaohongshu.zip及delivery-evidence.json），详sprint-package-batches。没有模型、支付或真实平台上传，原成片/方案/失败证据保留，人评不变。"
       },
       "human_check": {
         "date": "2026-11-11",

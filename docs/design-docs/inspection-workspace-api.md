@@ -214,6 +214,8 @@ AI插入沿用`POST /api/creation/reasoning`：`action=prepare_insertion`携带j
 
 ## Studio 发布版本的平台包任务
 
+持久批量入口：`POST /api/creation/package-batches` 严格body为`{requestId,projectId,publicationJobId,expectedPublicationReceiptSha256,profiles}`，1–4个不同平台，完整profile冻结。`GET`同路径严格query为projectId/publicationJobId，返回`{batches,errors}`；单批`GET /api/creation/package-batches/{batchId}?projectId=…`。`POST /{batchId}/resume`或`/cancel`仅body`{projectId}`。写操作返回batch快照（batchId/status/items，含profile/jobId/status/attempt/history/error）；相同requestId/内容返回同批，内容冲突拒绝。取消仅停止后续提交，当前包继续收尾。重启后需显式resume；中断子任务保留旧ID并新建attempt，成功包不重建，普通失败不自动重试。沿原单包权限与结果校验，既有API保持。见[持久队列合同](../exec-plans/sprint-package-batches.md)。
+
 `GET /api/creation/jobs/{publicationId}/packages?projectId=…` 返回`{publicationJobId,publicationReceiptSha256,jobs}`。每行含`jobId,status,createdAt,updatedAt,error,parentJobId,parentReceiptSha256,profile,platform`，保留旧失败/中断尝试，不受项目任务目录最近100条截断。核父项目、publication/render完成状态、原request规范摘要与receipt整文件hash；列表不hash所有完成视频，详情/下载继续完整产物核验。匹配未终结任务沿既有get恢复中断；不新提交任务或转码。
 
 Studio批量沿既有单包POST逐项submit/settle，相同profile已完成则保留，运行中先等待；刷新仅恢复已提交任务。作用域绑定项目/pub/回执/profile；scoped package发送前把请求身份放入sessionStorage，网络结果不明及刷新复用原requestId。仅该意图绑定job已确认failed/interrupted才允许新意图；旧失败行不证明新发送已终结。存储不可用提交前报intent.storage，默认unscoped接口兼容。每次提交仍走原OS锁、幂等和套餐权限，不自动更换套餐或发布。

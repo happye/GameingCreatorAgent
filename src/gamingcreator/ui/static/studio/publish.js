@@ -6,6 +6,7 @@ import {useCallback, useEffect, useRef, useState} from "../vendor/hooks.module.j
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
 import {publicationErrorFields, publicationFieldErrors} from "./publication_form.js";
+import {usePackageBatches} from "./package_batches.js";
 
 const html = htm.bind(h);
 const PLATFORMS = {bilibili: "B站", douyin: "抖音", kuaishou: "快手", xiaohongshu: "小红书"};
@@ -295,6 +296,8 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     };
 
     const saved = !!pub?.publicationJobId && !dirty;
+    const queue = usePackageBatches({project, pub, profiles, selected, disabled: !!busy || !saved,
+        onChanged: () => { const generation = epoch.current; if (pub?.publicationJobId) void restore(pub, generation).catch(e => { if (epoch.current === generation) setMessage(e.message); }); }});
     const coverSrc = pub?.publicationJobId && !dirty ? `${jobPath(pub.publicationJobId)}/publication-files/cover.png` : null;
     const limits = profiles.find((p) => p.Platform === platform)?.Fields?.limits || {};
     const cls = `work${layout.bin ? "" : " no-bin"}${layout.insp ? "" : " no-insp"}`;
@@ -322,10 +325,11 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                 <div class="track-area">
                     <div class="actions-row">
                         ${profiles.map((p) => html`<label><input type="checkbox" checked=${selected.includes(p.Platform)} disabled=${!!busy} onChange=${(e) => { setPlatform(p.Platform); setSelected(e.currentTarget.checked ? [...selected, p.Platform] : selected.filter((v) => v !== p.Platform)); }} />${PLATFORMS[p.Platform] || p.Platform}${selected.includes(p.Platform) && !packages.some((r) => r.profile?.Platform === p.Platform) ? " · 尚未提交" : ""}</label>`)}
-                        <button class="btn" disabled=${!saved || !!busy || !selected.length} onClick=${() => buildPackage()}>${busy === "package" ? "正在生成…" : "生成平台包"}</button>
+                        <button class="btn" disabled=${!saved || !!busy || queue.busy || queue.running || !selected.length} onClick=${queue.start}>${queue.busy ? "正在加入队列…" : "生成平台包"}</button>
                         ${saved && !selected.length ? html`<span class="hint" role="status" aria-label="平台包状态">至少勾选一个平台</span>` : null}
                         <span class="hint">${["titleMaxChars", "descriptionMaxChars", "tagMaxCount"].filter((k) => limits[k]).map((k) => `${CHECKS[k]}≤${limits[k]}`).join(" · ")}</span>
                     </div>
+                    ${saved && queue.view}
                     ${packages.map((pkg) => html`<div class="pkg-result">
                         <p>${PLATFORMS[pkg.profile?.Platform] || ""} · ${client.jobStatus(pkg.status)} ${pkg.error?.message || ""}</p>
                         ${["failed", "interrupted"].includes(pkg.status) && html`<button class="btn ghost" disabled=${!!busy || !saved} onClick=${() => buildPackage(pkg)}>重试此平台</button>`}

@@ -280,10 +280,11 @@
    ]
   },
   "P035": {
-   "done": "同一成片可在Studio串行生成多平台独立发布包，可恢复已提交任务并列出各平台结果",
-   "todo": "按平台智能改时长/Hook/CTA的变体未做，无持久批量队列",
-   "updated": "2026-11-08",
+   "done": "Studio一次提交多平台持久队列，关页继续，重启显式恢复同批；成功包复用，中断attempt留存，停止后续不杀当前包。真实四平台七文件ZIP及进程重启恢复通过",
+   "todo": "按平台智能改时长/Hook/CTA的变体未做；真实平台资格与质量仍待验",
+   "updated": "2026-11-18",
    "sprints": [
+    "sprint-package-batches",
     "sprint-studio-multi-platform-packages",
     "sprint-platform-packages"
    ]
@@ -518,6 +519,12 @@
      "name": "镜头编辑、版本与重渲染",
      "status": "done",
      "sprint": "sprint-creation-editing"
+    },
+    {
+     "id": "R2-package-batches",
+     "name": "多平台持久队列、停止后续与重启恢复",
+     "status": "done",
+     "sprint": "sprint-package-batches"
     },
     {
      "id": "R2-B",

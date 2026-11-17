@@ -122,6 +122,10 @@ ASSETS = {
     "/assets/studio/basket.js": ("studio/basket.js", "text/javascript; charset=utf-8"),
     "/assets/studio/recordings.js": ("studio/recordings.js", "text/javascript; charset=utf-8"),
     "/assets/studio/publish.js": ("studio/publish.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/package_batches.js": (
+        "studio/package_batches.js",
+        "text/javascript; charset=utf-8",
+    ),
     "/assets/studio/publication_form.js": (
         "studio/publication_form.js",
         "text/javascript; charset=utf-8",
@@ -584,6 +588,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/revisions",
                 "/api/creation/publications",
                 "/api/creation/packages",
+                "/api/creation/package-batches",
                 "/api/creation/narrations",
                 "/api/creation/narration-cancel",
                 "/api/creation/subtitle-preview",
@@ -615,7 +620,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/knowledge-import",
                 "/api/asr-words",
                 "/api/asr-words-cancel",
-            }:
+            } and not path.startswith("/api/creation/package-batches/"):
                 self._json(404, {"code": "input.route", "message": "没有这个操作。"})
                 return
 
@@ -800,6 +805,25 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 from gamingcreator.ui.subtitle_preview import preview as subtitle_preview
 
                 self._json(200, subtitle_preview(self.creation_jobs, value))
+                return
+            if path == "/api/creation/package-batches":
+                if urlparse(self.path).query:
+                    raise ValueError("Unexpected batch query")
+                self._json(202, self.creation_jobs.package_batches.submit(value))
+                return
+            if path.startswith("/api/creation/package-batches/"):
+                if (
+                    urlparse(self.path).query
+                    or not isinstance(value, dict)
+                    or set(value) != {"projectId"}
+                ):
+                    raise ValueError("Expected project identity")
+                tail = path.removeprefix("/api/creation/package-batches/")
+                batch_id, separator, action = tail.partition("/")
+                if not separator or action not in {"resume", "cancel"}:
+                    raise ValueError("Unknown batch action")
+                operation = getattr(self.creation_jobs.package_batches, action)
+                self._json(200, operation(batch_id, value["projectId"]))
                 return
             if path == "/api/creation/narration-cancel":
                 if not isinstance(value, dict) or set(value) != {"jobId"}:
@@ -1315,6 +1339,26 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 if set(query) != {"projectId"}:
                     raise ValueError("Expected registered project ID")
                 self._json(200, self.creation_jobs.feedback(query["projectId"]))
+                return
+            if path == "/api/creation/package-batches":
+                if set(query) != {"projectId", "publicationJobId"}:
+                    raise ValueError("Expected project and publication identity")
+                self._json(
+                    200,
+                    self.creation_jobs.package_batches.catalog(
+                        query["projectId"], query["publicationJobId"]
+                    ),
+                )
+                return
+            if path.startswith("/api/creation/package-batches/"):
+                if set(query) != {"projectId"}:
+                    raise ValueError("Expected project identity")
+                self._json(
+                    200,
+                    self.creation_jobs.package_batches.get(
+                        path.removeprefix("/api/creation/package-batches/"), query["projectId"]
+                    ),
+                )
                 return
             if path == "/api/creation/jobs":
                 if set(query) != {"projectId"}:

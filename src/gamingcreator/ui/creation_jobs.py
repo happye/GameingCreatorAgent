@@ -102,6 +102,9 @@ class CreationJobs:
         self.narration_cancel_requests: set[str] = set()
         self.narration_lock = threading.Lock()
         self.cache = VerifiedMediaCache()
+        from gamingcreator.ui.package_batches import PackageBatches
+
+        self.package_batches = PackageBatches(self)
 
     def safe(self, path: Path) -> Path:
         resolved = resolve_existing(path)

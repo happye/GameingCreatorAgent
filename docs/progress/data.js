@@ -46,7 +46,7 @@ window.PROGRESS_DATA = {
    "agent_run": {
     "date": "2026-11-18",
     "result": "pass",
-    "evidence": "真实漫画群星一句需求原作品继续完成编号来源AI策划：2c49c15b…bc4031成功¥0.08408生成三案，恢复采用614ddb…；9秒方案显式本地补时为3b96bedeed9b4283a77a7d3c815c37d7，29段900帧，原8段源/帧/顺序/证据保留，新增21段无源交叠，原父文件SHA不变，补时0模型调用。新AI旁白51字¥0.00803424，Huihui本机合成14.3秒，保存1ff760521fc14e05ad3ae0c9215b297f，导出d5bcfc6af3f949cda9122bd82b2711dc（30秒1280×720 H264/AAC），浏览器不静音播放并解码音频。发布598a72a7f4164c3fba2ff8e234081681，包0080900c6a5a4af4b17c26d92d1d64be；修发布刷新回草稿后从素材区恢复同包下载七文件ZIP，未重建/重付。产物.cache/scratch/ai-planning-refs-20261118/，详sprint-ai-plan-duration。此前单换/插入/多换与失败原件保留；语义/听感/创意人评不变。"
+    "evidence": "既有真实漫画群星一句需求→AI方案→本地补足30秒→中文旁白→成片流程继续扩展为四平台持久队列。发布598a72a7f4164c3fba2ff8e234081681，e6e0f97ddd5a36c292318459a9895f54一次勾选四平台后关闭浏览器，服务端仍全部completed，重开4/4并下载四份七文件ZIP；逐包ffprobe均30秒H264/AAC且尺寸匹配冻结profile，B站复用旧包且ZIP SHA不变。另存多平台版标题的真实三平台队列75e124109c594dcc8c87c446339a0df6验证cancel只停后续、当前包收尾；resume后中断自有服务，重启不自动再提交，UI显式恢复同batch，前两项ID保持，第三旧中断attempt保留，新attempt2完成，页面3/3。产物.cache/scratch/package-batches-20261118/（bilibili/douyin/kuaishou/xiaohongshu.zip及delivery-evidence.json），详sprint-package-batches。没有模型、支付或真实平台上传，原成片/方案/失败证据保留，人评不变。"
    },
    "human_check": {
     "date": "2026-11-11",
@@ -897,10 +897,11 @@ window.PROGRESS_DATA = {
     "docs/exec-plans/sprint-studio-multi-platform-packages.md",
     "tests/test_studio_multi_platform.py"
    ],
-   "done": "同一成片可在Studio串行生成多平台独立发布包，可恢复已提交任务并列出各平台结果",
-   "todo": "按平台智能改时长/Hook/CTA的变体未做，无持久批量队列",
-   "updated": "2026-11-08",
+   "done": "Studio一次提交多平台持久队列，关页继续，重启显式恢复同批；成功包复用，中断attempt留存，停止后续不杀当前包。真实四平台七文件ZIP及进程重启恢复通过",
+   "todo": "按平台智能改时长/Hook/CTA的变体未做；真实平台资格与质量仍待验",
+   "updated": "2026-11-18",
    "sprints": [
+    "sprint-package-batches",
     "sprint-studio-multi-platform-packages",
     "sprint-platform-packages"
    ]
@@ -1437,6 +1438,12 @@ window.PROGRESS_DATA = {
      "name": "镜头编辑、版本与重渲染",
      "status": "done",
      "sprint": "sprint-creation-editing"
+    },
+    {
+     "id": "R2-package-batches",
+     "name": "多平台持久队列、停止后续与重启恢复",
+     "status": "done",
+     "sprint": "sprint-package-batches"
     },
     {
      "id": "R2-B",
@@ -2100,9 +2107,9 @@ window.PROGRESS_DATA = {
   "Grok A01–F16及审查修复已集成：逐词绑定、任务终态、推理复用、取消发布、手势监听与OCR完整性问题已闭合，唯一关键边界审查通过；原树/原片/账本/旧分析保留。",
   "Grok修复定向99/44/3通过，TD030解决。历史完整失败不改绿，未Release/合main，人评不变。",
   "已接入代理自动预览/只读空间盘点、OCR独立文字查询、规则方案去重/A-B对照、显式本机逐词ASR/烧录及多轨交互。已完成的技术链路不代表内容质量已验收；旧OCR无hash只能查看，显式重扫写独立v2缓存。见sprint-grok-repair-integration及ocr-frames-guide。",
-  "v3替换镜头/文字PNG图层草稿恢复已交付55886b4；字幕可信映射与词级隐藏保护4139a26已推送，主树257项通过、旧契约失败修后5项通过，唯一关键审查通过。完整verify-20261117-002506在约九成时按用户要求取消，曾出现失败标记，无最终统计；保留日志，不改绿，不继续跑全量。",
+  "v3替换镜头/文字PNG图层草稿恢复已交付55886b4；字幕可信映射与词级隐藏保护4139a26已推送，唯一关键审查通过。完整verify-20261117-002506在约九成时按用户要求取消，曾出现失败标记，无最终统计；保留日志，不改绿，不继续跑全量。",
   "真实漫画群星29秒流程已进一步接入AI旁白重起草：确认覆盖/保旧轨→本机中文合成14.56秒→保存→MP4→B站七文件包，实际下载并播放。AI文案也成功生成、校改后保存出包；新旁白估算¥0.00819112、文案¥0.00456512。产物在.cache/scratch/product-journey-20261117/，最新manga-ai-narration-preview.mp4及bilibili-ai-narration-package.zip；自然度和语义仍待人评。",
-  "已接AI单换/插入/多换；本批编号来源AI策划真实生成三案并采用，9秒方案显式本地补足30秒：29段，原8段保留、21补段不交叠，旧文件SHA不变。新AI旁白51字/中文合成14.3秒，保存重开、30秒MP4试听及B站七文件包已验。策划¥0.08408、旁白¥0.00803424，补时不发模型。修发布列表刷新覆盖草稿/包入口；唯一guard及定向静态通过，无pytest/全量，人评不变。产物.cache/scratch/ai-planning-refs-20261118/，合同sprint-ai-plan-duration。继续混合修改等缺口，完整51项目标保持。"
+  "已交付AI单换/插入/多换、编号策划与本地补足30秒。本批新增多平台持久队列：关浏览器后四平台全完成并下载；逐包30秒/七文件/尺寸已核，旧B站包SHA不变。另真实三平台批次验证停止后续、进程重启不自动运行、页面显式恢复同ID，完成子包复用，中断attempt保留。产物.cache/scratch/package-batches-20261118/，合同sprint-package-batches；唯一guard及定向静态通过，无pytest/全量/模型，人评不变。按用户额度<27%要求，完成本项即收尾停止，未开混合修改等新任务，全部51项目标未完成。"
  ],
  "sprints": [
   {
@@ -2528,6 +2535,17 @@ window.PROGRESS_DATA = {
    "ids": [],
    "date": "2026-11-01",
    "bytes": 5432
+  },
+  {
+   "file": "sprint-package-batches",
+   "title": "持久平台包队列",
+   "ids": [
+    "P035",
+    "P036",
+    "R2"
+   ],
+   "date": "2026-11-18",
+   "bytes": 3352
   },
   {
    "file": "sprint-paid-output-evidence",

@@ -125,6 +125,8 @@ AI图层编辑使用独立prompt/schema配对及显式图层snapshot；Chain.edl
 
 ### Studio多平台包任务
 
+持久批量由UI层PackageBatches串行协调既有package任务，不新增Provider/转码器/账本。不可变request与原子state各以schema和整体SHA256核对；非公开临时目录完整落盘后rename，单个坏批次隔离报告。注册锁、owner及短状态锁独立于creation根锁；同publication的复用查询与submit串行化。childRequestId先落盘，注册成功而jobId未写回时仍找回同job。GET只识别无owner的interrupted，不自动启动；显式resume保留成功/运行子任务，对中断子任务留下history并分配新attempt，普通failed不自动重试。cancel与submit共用短状态锁，返回后不再提交后续，当前FFmpeg自然收尾。见[持久队列合同](../exec-plans/sprint-package-batches.md)。
+
 同一已保存publication通过项目限定的packages投影列出全部匹配尝试，复用原status/request/receipt身份且不在列表hash完成视频。Studio固定发布版本及profile快照后逐项等待终结，刷新恢复已接受任务，不自动补交尚未提交的平台。项目/open/works归属及每次await后的代次核验隔离旧回调；scoped会话意图在POST前保留未知requestId，显式重试仅在对应任务终结后更新。原包任务、OS锁、Free跨publication同render的平台限制及下载完整校验保持。见[多平台批量合同](../exec-plans/sprint-studio-multi-platform-packages.md)。
 
 ### 专业时间线旁白交接
