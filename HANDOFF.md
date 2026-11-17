@@ -1,8 +1,8 @@
 # HANDOFF（覆盖快照）
 
-## 最近一次会话（2026-11-17，按用户18%额度要求收尾后暂停）
+## 最近一次会话（2026-11-17，额度恢复后继续自主开发）
 
-目标仍是实现并串联计划内全部功能；本批两项已闭合，等待用户恢复自主推进，不标全部完成。禁止主动全量测试，优先真实素材闭环，不要求用户理解工程或使用PR/AE。分支codex/knowledge-version-compare-20261108；原Grok工作树、旧树/stash和用户未跟踪设计文件保留。
+用户已恢复自主推进，目标仍是实现并串联计划内全部功能，不标全部完成。禁止主动全量测试，优先真实素材闭环，不要求用户理解工程或使用PR/AE。AI单镜头替换本批已闭合：冻结可信候选、别名选择、预览/应用/保存/重开/导出/发布包，原旁白和其余26段保留。分支codex/knowledge-version-compare-20261108；原Grok工作树、旧树/stash和用户未跟踪设计文件保留。
 
 ## 已交付
 
@@ -18,15 +18,15 @@ Grok149文件及R01–R05/E10/取消发布边界修复已集成：逐词坏来�
 
 AI旁白54字/91字新请求fc2ceeb6d8464929c32d1cda25fdc138cd753f9951b6e1713c1b6368e7a08b00，估算¥0.00819112；AI文案e4a0bf4ec36f84bf28cdf301f126f086cc13832a539b6435340b868a4b90e267，估算¥0.00456512。均成功，读取不重付。文案夸大处经人工校改，原模型结果不改。
 
-最终voice74e4ade9002147c8b8075311d24a079c、revision8dc5e5b587cf4eb2a6b2005a97c8d6e5、renderfd71a72987424d1ea2663e663421f2b1、publication3dba2f9f025c41a69f4091ebed2e8b44、packagee2eedd6c423641bda83c02b8c467844b均completed并下载。文件.cache/scratch/product-journey-20261117/manga-ai-narration-preview.mp4（29.013秒1280×720 H264/AAC）及bilibili-ai-narration-package.zip（七文件）。成片实际播3.95秒、未静音且解码68825音频字节。相关JSON、截图、操作脚本同目录；细节见sprint-attached-ai-narration与sprint-live-creation-loop。
+新AI换镜头请求ed7159cc9602abddcae3bf0499284d521632387f3bfa6e835d26cc9e0040063c一次成功（估算¥0.010276），选S2/C55真实1V1场地。preview关闭、只读恢复、应用/undo/redo后保存6f57066755a04d47b05bbd28b1eb2667，刷新重开并导出0f526cb1e69342edba084fb574c2735b（29秒1280×720 H264/AAC）；第2段1–2秒换2–3秒，其他段/混音/图层和voice74e4ade9002147c8b8075311d24a079c不变。发布8b8e46a8c76e47319a0a9b6cd958df28、B站包fbe3ab9d83d240ac8ae8beadc0a3f695 completed。新产物.cache/scratch/ai-clip-replacement-20261117/ai-replaced-preview.mp4、bilibili-ai-replaced-package.zip；输出1.5秒帧确见武道会1V1。旧AI旁白版/包仍在product-journey-20261117目录，不回收。细节sprint-ai-clip-replacement及delivery-evidence.json。
 
 当前选片仍本地方案，不能称全AI编导完成；语义/自然度/听感未经用户判断，J1第五次人评仍未过。不要运行旧resume-ui-journey/resume-real-media合成fixture冒充真实素材。即时方案预览过早自动操作曾重置，未作新稳定性结论。
 
 ## 不要重复与下一步
 
-本批无pytest/完整检查；仅真实UI操作、2秒源重建、受影响静态与唯一guard。原verify-20261117-002506已按用户要求取消，约九成且曾有失败标记，无终态统计，verify-last=interrupted；旧全量Grok5486过101跳43失败1error不改绿。原定向99/44/3及v3修后20/5通过证据保留，未Release、未合main。
+本批无pytest/完整检查；真实UI+源数据对照、受影响静态及唯一guard通过。旧rangeProvenance残留的P2已修，保证换源预览/保存不沿用旧观察点。旧完整中断/失败记录均保留，不改绿，未Release、未合main。
 
-恢复后继续优先AI选片/自然语言修改/旁白/文案连贯性，推进原全部51项；AI替换/插入尚未接入，AI现有删裁重排变速转场已接通，勿重做。持久撤销历史后置。实际平台发布、支付、云配音仍独立授权；无测试留跑，不重新启动完整检查。
+继续优先AI插入新片段/多镜头组合修改等缺口，推进原全部51项；已有AI单镜头替换及删裁重排变速转场，勿重做。当前新模式ai-replacement、prepare_replacement、purpose replacement；旧已付各purpose/hash保持。持久撤销历史后置。实际平台发布、支付、云配音仍独立授权；无测试留跑，不重新启动完整检查。
 
 ## 保护与费用
 

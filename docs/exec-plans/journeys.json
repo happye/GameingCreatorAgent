@@ -9,7 +9,7 @@
       "agent_run": {
         "date": "2026-11-17",
         "result": "pass",
-        "evidence": "Codex在8766 Studio用真实漫画群星录像完成一句需求→本地方案→删镜头→旁白保存后AI重起草（54字）→确认填入且保旧轨→本机Huihui合成14.56秒→保存→29.013秒1280×720 H264/AAC→文案封面→B站七文件包并下载。AI文案已生成、人工校改复用到新版。renderfd71a72987424d1ea2663e663421f2b1、packagee2eedd6c423641bda83c02b8c467844b；实际成片播3.95秒、未静音、解码68825音频字节、无media error。视频manga-ai-narration-preview.mp4及bilibili-ai-narration-package.zip在.cache/scratch/product-journey-20261117/，详sprint-attached-ai-narration。AI新旁白¥0.00819112、文案¥0.00456512（均估算）。旧策划引用失败不改不重发，新编号合同只准备未发模型；不称全AI编导完成，内容语义/听感/权利未验，人评保持原结论。"
+        "evidence": "8766 Studio真实漫画群星作品从一句需求、本地方案、AI旁白/文案推进到AI单镜头替换：本次预算内¥0.010276调用选中S2/C55武道会1V1场地，关闭预览/只读恢复/应用/undo/redo/保存/刷新重开后导出0f526cb1e69342edba084fb574c2735b及B站包fbe3ab9d83d240ac8ae8beadc0a3f695，实际下载。仅第2段换源，另26段、混音/图层及原14.56秒Huihui旁白不变；输出29秒1280×720 H264/AAC，实际1.5秒帧可见武道会1V1场地。视频和七文件ZIP在.cache/scratch/ai-clip-replacement-20261117/，详sprint-ai-clip-replacement。旧AI旁白版与付费失败原件保留不重发；总体仍非完整AI编导，语义/听感/权利人评不变。"
       },
       "human_check": {
         "date": "2026-11-11",

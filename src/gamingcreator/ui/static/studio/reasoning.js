@@ -19,7 +19,7 @@ export function overlayProposalItems(editing, patch) {
     return editing.overlays.map((row) => row === item ? {...row, endFrame: patch.endFrame, fadeOutFrames: patch.fadeOutFrames} : row);
 }
 const noop = () => {};
-const empty = () => ({quote: null, result: null, busy: "", message: "", confirmed: false, sent: false});
+const empty = () => ({quote: null, result: null, busy: "", message: "", confirmed: false, sent: false, projection: null});
 const post = (body) => client.api("/api/creation/reasoning", {}, {body});
 const STORE = "studio-reasoning-attempts-v1";
 const parentKey = (editing) => JSON.stringify([editing.project, editing.base?.jobId, editing.base?.planId, editing.editor?.expectedParentReceiptSha256]);
@@ -33,7 +33,7 @@ function remember(editing, quote, text) {
 function useReasoning(editing, text, onPreview, onOverlayPreview) {
     const [state, setState] = useState(empty);
     const [available, setAvailable] = useState(false);
-    const key = JSON.stringify([editing.project, editing.base, editing.editor?.expectedParentReceiptSha256, editing.status, editing.dirty, editing.rows(), editing.subtitleOverrides, editing.overlays, editing.audio, editing.replacements, text]);
+    const key = JSON.stringify([editing.project, editing.base, editing.editor?.expectedParentReceiptSha256, editing.status, editing.dirty, editing.rows(), editing.subtitleOverrides, editing.overlays, editing.audio, editing.replacements, editing.editEpoch, text]);
     const live = useRef({key, generation: 0, mounted: true});
     if (live.current.key !== key) { live.current.key = key; live.current.generation += 1; }
     const generation = live.current.generation;
@@ -49,10 +49,20 @@ function useReasoning(editing, text, onPreview, onOverlayPreview) {
     return {...state, available, valid, update, key};
 }
 
-function reasoningActions(flow, editing, text, onPreview, onOverlayPreview) {
+function reasoningActions(flow, editing, text, onPreview, onOverlayPreview, replacementMode) {
     const identity = {jobId: editing.base?.jobId, planId: editing.base?.planId};
     const ready = editing.status === "ready" && !editing.dirty;
-    const show = (data) => {
+    const show = async (data) => {
+        if (!flow.valid()) return;
+        if (data.replacement) {
+            let projection = null;
+            if (data.status === "completed" && data.replacement.kind === "replacement") {
+                projection = await post({action: "validate", preparedHash: data.preparedHash, ...identity, expectedParentReceiptSha256: editing.editor.expectedParentReceiptSha256});
+                if (!flow.valid()) return;
+            }
+            flow.update({result: data, projection, message: data.replacement.message});
+            onOverlayPreview(null); onPreview(projection?.clips || null); return;
+        }
         if (!flow.valid()) return;
         const response = data.proposal?.response;
         const overlays = response?.kind === "overlay_edit_proposal" ? overlayProposalItems(editing, response.overlayEdit) : null;
@@ -67,35 +77,38 @@ function reasoningActions(flow, editing, text, onPreview, onOverlayPreview) {
     };
     return {
         prepare: () => ready && text.trim() && run("prepare", async () => {
-            const quote = await post({action: "prepare", ...identity, instruction: text.trim()});
+            const quote = await post({action: replacementMode ? "prepare_replacement" : "prepare", ...identity, instruction: text.trim()});
+            if (!flow.valid()) return;
             flow.update({quote, result: null, confirmed: false, sent: false}); if (flow.valid()) { onPreview(null); onOverlayPreview(null); }
             if (!quote.budget?.eligible || !flow.available) return;
             if (!remember(editing, quote, text)) throw new Error("无法保存本次结果的恢复入口，已阻止发送。请允许浏览器本地存储后再试");
             flow.update({sent: true, busy: "execute"});
-            try { show(await post({action: "execute_budget", preparedHash: quote.preparedHash, snapshotFingerprint: quote.snapshotFingerprint})); }
+            let result;
+            try { result = await post({action: "execute_budget", preparedHash: quote.preparedHash, snapshotFingerprint: quote.snapshotFingerprint}); }
             catch (error) {
                 // A refusal (4xx) happens before anything is sent: fall back to explicit confirmation.
                 if (error.status >= 400 && error.status < 500) { flow.update({sent: false}); throw new Error(`${error.message}（本次未发送）`); }
                 throw new Error(`${error.message}。结果可能尚未取回，请读取本次结果，不会重复付费。`);
             }
+            await show(result);
         }),
         execute: () => {
             if (!ready || !flow.quote || !flow.confirmed || flow.sent || !flow.available) return;
             if (!remember(editing, flow.quote, text)) return flow.update({message: "无法保存本次结果的恢复入口，已阻止发送。请允许浏览器本地存储后再试"});
             return run("execute", async () => {
                 flow.update({sent: true, confirmed: false});
-                show(await post({action: "execute", preparedHash: flow.quote.preparedHash, snapshotFingerprint: flow.quote.snapshotFingerprint, confirmedMaxCny: flow.quote.maxCostCny}));
+                await show(await post({action: "execute", preparedHash: flow.quote.preparedHash, snapshotFingerprint: flow.quote.snapshotFingerprint, confirmedMaxCny: flow.quote.maxCostCny}));
             });
         },
-        recover: () => flow.quote && run("result", async () => show(await post({action: "result", preparedHash: flow.quote.preparedHash}))),
+        recover: () => flow.quote && run("result", async () => await show(await post({action: "result", preparedHash: flow.quote.preparedHash}))),
         restore: (saved) => ready && saved.parentKey === parentKey(editing) && run("result", async () => {
             flow.update({quote: saved.quote, result: null, sent: true, confirmed: false}); onPreview(null); onOverlayPreview(null);
-            show(await post({action: "result", preparedHash: saved.quote.preparedHash}));
+            await show(await post({action: "result", preparedHash: saved.quote.preparedHash}));
         }),
-        apply: () => ready && ["edit_proposal", "overlay_edit_proposal"].includes(flow.result?.proposal?.response.kind) && run("validate", async () => {
+        apply: () => ready && (flow.result?.replacement?.kind === "replacement" || ["edit_proposal", "overlay_edit_proposal"].includes(flow.result?.proposal?.response.kind)) && run("validate", async () => {
             const data = await post({action: "validate", preparedHash: flow.quote.preparedHash, ...identity, expectedParentReceiptSha256: editing.editor.expectedParentReceiptSha256});
             if (!flow.valid()) return;
-            const response = flow.result.proposal.response;
+            const response = flow.result.proposal?.response || {};
             if (response.kind === "overlay_edit_proposal") {
                 const expected = overlayProposalItems(editing, response.overlayEdit), items = data.overlays?.items;
                 if (!Array.isArray(items) || items.length !== expected.length || expected.some((item, i) =>
@@ -107,11 +120,11 @@ function reasoningActions(flow, editing, text, onPreview, onOverlayPreview) {
     };
 }
 
-export function ReasoningDock({editing, onPreview, onOverlayPreview = noop}) {
+export function ReasoningDock({editing, onPreview, onOverlayPreview = noop, replacementMode = false}) {
     const [text, setText] = useState("");
     const [restoring, setRestoring] = useState(null);
     const flow = useReasoning(editing, text, onPreview, onOverlayPreview);
-    const actions = reasoningActions(flow, editing, text, onPreview, onOverlayPreview);
+    const actions = reasoningActions(flow, editing, text, onPreview, onOverlayPreview, replacementMode);
     const ready = editing.status === "ready" && !editing.dirty;
     const identity = parentKey(editing);
     useEffect(() => {
@@ -147,6 +160,7 @@ export function ReasoningDock({editing, onPreview, onOverlayPreview = noop}) {
             ? `实际费用未知，仍保留 ¥${flow.result.billing.reservedCny} 的费用占用；不会自动重试。`
             : `${flow.result.metadata?.usage?.cost_status === "confirmed" ? "已确认费用" : "按价目估算费用"} ¥${flow.result.billing.knownCostCny}，以提供方账单为准。`}</p>`}
         ${response?.questions?.length ? html`<ul>${response.questions.map((q) => html`<li>${q}</li>`)}</ul>` : null}
+        ${flow.result?.replacement?.kind === "replacement" && flow.projection && html`<div class="actions-row"><span>替换画面已预览，尚未应用；其他镜头、音轨和图层保留。</span><button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI换镜头</button></div>`}
         ${response?.kind === "edit_proposal" && html`<div class="actions-row"><span>改动预览：${flow.result.proposal.before_seconds.toFixed(1)} → ${flow.result.proposal.after_seconds.toFixed(1)} 秒；尚未应用。</span>
             <button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI建议</button></div>`}
         ${response?.kind === "overlay_edit_proposal" && html`<div class="actions-row"><span>图层预览：结束 ${(editing.overlays.find((o) => o.overlayId === response.overlayEdit.overlayId)?.endFrame / editing.editor.fps).toFixed(2)} → ${(response.overlayEdit.endFrame / editing.editor.fps).toFixed(2)} 秒；淡出 ${(editing.overlays.find((o) => o.overlayId === response.overlayEdit.overlayId)?.fadeOutFrames / editing.editor.fps).toFixed(2)} → ${(response.overlayEdit.fadeOutFrames / editing.editor.fps).toFixed(2)} 秒；尚未应用。</span>

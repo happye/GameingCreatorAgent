@@ -46,7 +46,7 @@ window.PROGRESS_DATA = {
    "agent_run": {
     "date": "2026-11-17",
     "result": "pass",
-    "evidence": "Codex在8766 Studio用真实漫画群星录像完成一句需求→本地方案→删镜头→旁白保存后AI重起草（54字）→确认填入且保旧轨→本机Huihui合成14.56秒→保存→29.013秒1280×720 H264/AAC→文案封面→B站七文件包并下载。AI文案已生成、人工校改复用到新版。renderfd71a72987424d1ea2663e663421f2b1、packagee2eedd6c423641bda83c02b8c467844b；实际成片播3.95秒、未静音、解码68825音频字节、无media error。视频manga-ai-narration-preview.mp4及bilibili-ai-narration-package.zip在.cache/scratch/product-journey-20261117/，详sprint-attached-ai-narration。AI新旁白¥0.00819112、文案¥0.00456512（均估算）。旧策划引用失败不改不重发，新编号合同只准备未发模型；不称全AI编导完成，内容语义/听感/权利未验，人评保持原结论。"
+    "evidence": "8766 Studio真实漫画群星作品从一句需求、本地方案、AI旁白/文案推进到AI单镜头替换：本次预算内¥0.010276调用选中S2/C55武道会1V1场地，关闭预览/只读恢复/应用/undo/redo/保存/刷新重开后导出0f526cb1e69342edba084fb574c2735b及B站包fbe3ab9d83d240ac8ae8beadc0a3f695，实际下载。仅第2段换源，另26段、混音/图层及原14.56秒Huihui旁白不变；输出29秒1280×720 H264/AAC，实际1.5秒帧可见武道会1V1场地。视频和七文件ZIP在.cache/scratch/ai-clip-replacement-20261117/，详sprint-ai-clip-replacement。旧AI旁白版与付费失败原件保留不重发；总体仍非完整AI编导，语义/听感/权利人评不变。"
    },
    "human_check": {
     "date": "2026-11-11",
@@ -1040,12 +1040,13 @@ window.PROGRESS_DATA = {
     "tests/test_overlay_reasoning_e2e_browser.py",
     "tests/test_studio_overlay_reasoning_browser.py"
    ],
-   "done": "规则版中文指令改镜头（快慢/删/换序/裁剪/转场）可预览应用保存；确认后的文字模型可调图层时间",
-   "todo": "真实模型语义理解与修改创意质量未验证，开放式说法不支持",
-   "updated": "2026-11-07",
+   "done": "规则/AI删裁重排变速转场、图层时间调整可预览应用；新增AI按工程候选换一个镜头，真实请求选中1V1画面并保存/重开/导出/出包，其他26段与原旁白保持",
+   "todo": "AI插入及多镜头组合替换未接入；开放式意图与创意质量未人评，不称完整AI编导",
+   "updated": "2026-11-17",
    "sprints": [
     "sprint-timeline-commands",
-    "sprint-ai-overlay-timing"
+    "sprint-ai-overlay-timing",
+    "sprint-ai-clip-replacement"
    ]
   },
   {
@@ -1612,6 +1613,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-attached-ai-narration"
     },
     {
+     "id": "R3-ai-clip-replacement",
+     "name": "一句话AI换镜头并保存、导出及发布包",
+     "status": "done",
+     "sprint": "sprint-ai-clip-replacement"
+    },
+    {
      "id": "R3-grok-heavy-development",
      "name": "代理、屏幕文字检索、方案对照与逐词字幕（Grok100项）",
      "status": "partial",
@@ -2074,7 +2081,7 @@ window.PROGRESS_DATA = {
   "已接入代理自动预览/只读空间盘点、OCR独立文字查询、规则方案去重/A-B对照、显式本机逐词ASR/烧录及多轨交互。已完成的技术链路不代表内容质量已验收；旧OCR无hash只能查看，显式重扫写独立v2缓存。见sprint-grok-repair-integration及ocr-frames-guide。",
   "v3替换镜头/文字PNG图层草稿恢复已交付55886b4；字幕可信映射与词级隐藏保护4139a26已推送，主树257项通过、旧契约失败修后5项通过，唯一关键审查通过。完整verify-20261117-002506在约九成时按用户要求取消，曾出现失败标记，无最终统计；保留日志，不改绿，不继续跑全量。",
   "真实漫画群星29秒流程已进一步接入AI旁白重起草：确认覆盖/保旧轨→本机中文合成14.56秒→保存→MP4→B站七文件包，实际下载并播放。AI文案也成功生成、校改后保存出包；新旁白估算¥0.00819112、文案¥0.00456512。产物在.cache/scratch/product-journey-20261117/，最新manga-ai-narration-preview.mp4及bilibili-ai-narration-package.zip；自然度和语义仍待人评。",
-  "AI选片新合同按候选fact/tag编号引用，后台还原原文；旧v1/v2/v3付费请求原正文/hash兼容，已付失败不改不重发。运行服务8766已加载新代码，新v4快照/v2映射只准备未发送；效果未新付费验证。用户在18%额度时要求完成手头后收尾，本批已闭合，等待恢复自主推进；全部计划仍未完成，后续优先AI选片/自然语言修改/文案与真实闭环，不主动全量。"
+  "用户已恢复自主开发。本批AI换镜头已真实选中“武道会1V1”候选并预览/取消/应用/撤销重做/保存重开/导出/出B站包；仅第2段换源，其他26段与14.56秒旁白保持，估算¥0.010276。新产物在.cache/scratch/ai-clip-replacement-20261117/。下一步继续AI插入等缺口，保留原51项完整目标；新规划编号合同尚未新付费验效，旧失败不重发，不主动全量。"
  ],
  "sprints": [
   {
@@ -2130,6 +2137,17 @@ window.PROGRESS_DATA = {
    "bytes": 6874
   },
   {
+   "file": "sprint-ai-clip-replacement",
+   "title": "AI替换既有镜头",
+   "ids": [
+    "P032",
+    "P041",
+    "R3"
+   ],
+   "date": "",
+   "bytes": 2615
+  },
+  {
    "file": "sprint-ai-narration",
    "title": "AI 按已保存镜头写旁白",
    "ids": [
@@ -2169,7 +2187,7 @@ window.PROGRESS_DATA = {
     "P040",
     "R3"
    ],
-   "date": "",
+   "date": "2026-11-17",
    "bytes": 3377
   },
   {

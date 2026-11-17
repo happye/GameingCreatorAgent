@@ -253,6 +253,20 @@ class CreationReasoningService:
         snapshot, project_id = self._snapshot(job_id, plan_id)
         return self._prepare(snapshot, project_id, job_id, plan_id, instruction)
 
+    def _replacement_snapshot(self, job_id: str, plan_id: str) -> tuple[EditingSnapshot, str]:
+        from gamingcreator.application.creation_replacement_proposals import replacement_snapshot
+        from gamingcreator.ui.replacement_jobs import manifest_for_chain
+
+        chain = load_chain(self.jobs, job_id, plan_id)
+        manifest, _ = manifest_for_chain(self.jobs, chain)
+        return replacement_snapshot(
+            _editing_snapshot(chain, job_id, True), manifest
+        ), chain.project_id
+
+    def prepare_replacement(self, job_id: str, plan_id: str, instruction: str) -> dict[str, Any]:
+        snapshot, project_id = self._replacement_snapshot(job_id, plan_id)
+        return self._prepare(snapshot, project_id, job_id, plan_id, instruction, "replacement")
+
     def prepare_plan(self, job_id: str) -> dict[str, Any]:
         from gamingcreator.ui.plan_reasoning_jobs import original_snapshot
 
@@ -419,6 +433,16 @@ class CreationReasoningService:
         return record
 
     def _current(self, record: dict[str, Any]) -> Snapshot:
+        if record.get("purpose") == "replacement":
+            snapshot, project = self._replacement_snapshot(record["jobId"], record["planId"])
+            if (
+                project != record["projectId"]
+                or snapshot.fingerprint != record["snapshotFingerprint"]
+                or _digest(asdict(_request_for(snapshot, record["instruction"])))
+                != record["requestHash"]
+            ):
+                raise ValueError("Saved replacement inputs changed; prepare again.")
+            return snapshot
         if record.get("purpose") == "narration":
             return self._current_narration(record)
         if record.get("purpose", "edit") == "plan":
@@ -796,6 +820,74 @@ class CreationReasoningService:
         _proposal_overlays(self.jobs, chain, current, json.loads(proposal.response_json), revised)
         return revised
 
+    def _replacement_for_editor(
+        self,
+        record: dict[str, Any],
+        prepared_hash: str,
+        job_id: str,
+        plan_id: str,
+        expected_parent: str,
+    ) -> dict[str, Any]:
+        from gamingcreator.application.creation_replacement_proposals import replacement_operation
+        from gamingcreator.ui.creation_draft_restore import project_clips
+        from gamingcreator.ui.replacement_jobs import manifest_for_chain
+
+        if record["jobId"] != job_id or record["planId"] != plan_id:
+            raise ValueError("Replacement editor identity changed.")
+        current = self._current(record)
+        assert isinstance(current, EditingSnapshot)
+        if current.payload["parentReceiptSha256"] != expected_parent:
+            raise ValueError("Replacement parent changed.")
+        result = self.read_result(prepared_hash)
+        if (
+            result["status"] != "completed"
+            or result.get("replacement", {}).get("kind") != "replacement"
+        ):
+            raise ValueError("No usable replacement proposal.")
+        operation = replacement_operation(current, result["replacement"])
+        chain = load_chain(self.jobs, job_id, plan_id)
+        manifest, _ = manifest_for_chain(self.jobs, chain)
+        candidate = next(
+            c for c in manifest["candidates"] if c["candidateId"] == operation["candidateId"]
+        )
+        rows = operation["rows"]
+        row = rows[operation["index"]]
+        parent = version_clips(chain.edl, chain.root_sha)[operation["index"]]
+        length = row["endUs"] - row["startUs"]
+        start = candidate["startUs"]
+        end = min(candidate["endUs"], start + length)
+        if (
+            parent["sourceSha256"] == candidate["sourceSha256"]
+            and row["startUs"] == start
+            and row["endUs"] == end
+        ):
+            raise ValueError("Replacement would leave the source interval unchanged.")
+        row.update(startUs=start, endUs=end)
+        request = {
+            "parentJobId": job_id,
+            "clips": rows,
+            "replacements": [
+                {"targetClipId": row["clipId"], "candidateId": candidate["candidateId"]}
+            ],
+            "candidateManifestSha256": candidate_manifest_sha(manifest),
+        }
+        revised, _ = prepare_revision(self.jobs, request, chain)
+        inherited = chain.overlays
+        frames = max(r["outputStartFrame"] + r["outputFrames"] for r in revised["segments"])
+        inherited.validate_duration(frames)
+        projection = project_clips(self.jobs, request, chain, manifest)
+        for clip in projection["clips"]:
+            if clip["clipId"] == row["clipId"] and "rangeProvenance" not in clip:
+                clip["rangeProvenance"] = None
+        return {
+            **projection,
+            "preparedHash": prepared_hash,
+            "jobId": job_id,
+            "planId": plan_id,
+            "expectedParentReceiptSha256": expected_parent,
+            "overlays": inherited.to_json(),
+        }
+
     def proposal_for_editor(
         self,
         prepared_hash: str,
@@ -804,6 +896,10 @@ class CreationReasoningService:
         expected_parent_receipt_sha256: str,
     ) -> dict[str, Any]:
         record = self._prepared(prepared_hash)
+        if record.get("purpose") == "replacement":
+            return self._replacement_for_editor(
+                record, prepared_hash, job_id, plan_id, expected_parent_receipt_sha256
+            )
         if record["jobId"] != job_id or record["planId"] != plan_id:
             raise ValueError("Prepared job or plan does not match the editor.")
         if record.get("purpose", "edit") != "edit":
@@ -839,6 +935,10 @@ class CreationReasoningService:
 
 
 def _request_for(snapshot: Snapshot, instruction: str) -> ReasoningRequest:
+    if isinstance(snapshot, EditingSnapshot) and "replacementSnapshotVersion" in snapshot.payload:
+        from gamingcreator.application.creation_replacement_proposals import replacement_request
+
+        return replacement_request(snapshot, instruction)
     if isinstance(snapshot, NarrationSnapshot):
         return narration_request(snapshot)
     if isinstance(snapshot, PlanSnapshot):
@@ -852,6 +952,15 @@ def _request_for(snapshot: Snapshot, instruction: str) -> ReasoningRequest:
 
 def _validated_output(snapshot: Snapshot, output: Any) -> dict[str, Any]:
     try:
+        if (
+            isinstance(snapshot, EditingSnapshot)
+            and "replacementSnapshotVersion" in snapshot.payload
+        ):
+            from gamingcreator.application.creation_replacement_proposals import (
+                validate_replacement,
+            )
+
+            return {"purpose": "replacement", "replacement": validate_replacement(snapshot, output)}
         if isinstance(snapshot, NarrationSnapshot):
             return {"purpose": "narration", "script": validate_narration(snapshot, output)}
         if isinstance(snapshot, PlanSnapshot):

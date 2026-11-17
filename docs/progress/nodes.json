@@ -331,12 +331,13 @@
    ]
   },
   "P041": {
-   "done": "规则版中文指令改镜头（快慢/删/换序/裁剪/转场）可预览应用保存；确认后的文字模型可调图层时间",
-   "todo": "真实模型语义理解与修改创意质量未验证，开放式说法不支持",
-   "updated": "2026-11-07",
+   "done": "规则/AI删裁重排变速转场、图层时间调整可预览应用；新增AI按工程候选换一个镜头，真实请求选中1V1画面并保存/重开/导出/出包，其他26段与原旁白保持",
+   "todo": "AI插入及多镜头组合替换未接入；开放式意图与创意质量未人评，不称完整AI编导",
+   "updated": "2026-11-17",
    "sprints": [
     "sprint-timeline-commands",
-    "sprint-ai-overlay-timing"
+    "sprint-ai-overlay-timing",
+    "sprint-ai-clip-replacement"
    ]
   },
   "P042": {
@@ -691,6 +692,12 @@
      "name": "已有音轨AI重起草、免费重合成与导出",
      "status": "done",
      "sprint": "sprint-attached-ai-narration"
+    },
+    {
+     "id": "R3-ai-clip-replacement",
+     "name": "一句话AI换镜头并保存、导出及发布包",
+     "status": "done",
+     "sprint": "sprint-ai-clip-replacement"
     },
     {
      "id": "R3-grok-heavy-development",
