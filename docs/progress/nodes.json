@@ -280,10 +280,11 @@
    ]
   },
   "P035": {
-   "done": "Studio支持多平台持久队列，成功包复用，中断记录保留。发布页可按平台填写短版时长；实测同批复用全长B站包并生成抖音15秒七文件ZIP，音画对齐，刷新可恢复",
-   "todo": "按内容智能重剪、画面内Hook/CTA仍待做；真实平台资格与质量仍待验",
-   "updated": "2026-11-18",
+   "done": "Studio可按平台选短版时长、填写画面内开场和结尾文案，并直接播放或下载该平台成片。实测队列重开恢复，B站旧包复用，抖音15秒音画对齐且首尾真实烧录",
+   "todo": "按内容智能重剪与自动生成画面文案仍待做；真实平台资格与质量仍待验",
+   "updated": "2026-11-19",
    "sprints": [
+    "sprint-platform-video-copy",
     "sprint-platform-short-pack",
     "sprint-package-batches",
     "sprint-studio-multi-platform-packages",
@@ -533,6 +534,12 @@
      "name": "同一发布版本按平台选时长并打包",
      "status": "done",
      "sprint": "sprint-platform-short-pack"
+    },
+    {
+     "id": "R2-platform-video-copy",
+     "name": "平台版烧录开场和结尾文案，生成后可试听",
+     "status": "done",
+     "sprint": "sprint-platform-video-copy"
     },
     {
      "id": "R2-B",

@@ -18,6 +18,44 @@ def transform(value: dict[str, Any]) -> str:
     return f"scale={w}:{h}:force_original_aspect_ratio=decrease,pad={w}:{h}:(ow-iw)/2:(oh-ih)/2,setsar=1"
 
 
+def _publication_text_ass(
+    text: dict[str, str], width: int, height: int, frames: int, fps: Fraction
+) -> str:
+    window = min(int(2 * fps), frames // 2 if len(text) == 2 else frames)
+    if window < 1:
+        raise ValueError("Platform video text requires a valid output frame window")
+
+    def clock(frame: int) -> str:
+        # Match the doubled PTS used for ASS so centiseconds distinguish adjacent frames.
+        seconds, cs = divmod(int(200 * frame / fps), 100)
+        minutes, sec = divmod(seconds, 60)
+        hours, minute = divmod(minutes, 60)
+        return f"{hours}:{minute:02d}:{sec:02d}.{cs:02d}"
+
+    size = max(1, min(width // 27, height // 16))
+    padding = max(1, size // 5)
+    margin = height // 8
+    style = f"Arial,{size},&H00FFFFFF,&H00FFFFFF,&H20000000,&H20000000,1,0,0,0,100,100,0,0,3,{padding},0"
+    events = {
+        "opening": (0, window, "Opening"),
+        "closing": (frames - window, frames, "Closing"),
+    }
+    return (
+        f"[Script Info]\nScriptType: v4.00+\nPlayResX: {width}\nPlayResY: {height}\n"
+        "[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, "
+        "OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, "
+        "Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
+        f"Style: Opening,{style},8,0,0,{margin},1\n"
+        f"Style: Closing,{style},2,0,0,{margin},1\n"
+        "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
+        + "".join(
+            f"Dialogue: 0,{clock(start)},{clock(end)},{name},,0,0,0,,{text[key]}\n"
+            for key, (start, end, name) in events.items()
+            if key in text
+        )
+    )
+
+
 async def encode(
     repository: Path,
     video: Path,
@@ -26,11 +64,14 @@ async def encode(
     profile: dict[str, Any],
     watermark: str | None = None,
     duration: Fraction | None = None,
+    *,
+    output_clock: tuple[int, Fraction] | None = None,
 ) -> dict[str, Any]:
     """``watermark`` is redrawn after cropping/padding, so a package never loses the mark."""
     tools = repository / ".tools/ffmpeg/bin"
     fields = profile["Fields"]
-    video_filter = transform(fields["video"])
+    field = fields["video"]
+    video_filter = transform(field)
     trim_args = []
     if variant := fields.get("variant"):
         if duration is None or duration <= 0:
@@ -38,19 +79,32 @@ async def encode(
         video_filter = f"trim=end_frame={variant['durationFrames']},{video_filter}"
         trim_args = ["-af", f"atrim=duration={float(duration):.12f}", "-movie_timescale", "48000"]
     mark = target / "watermark.ass"
-    if watermark is not None:
-        field = profile["Fields"]["video"]
-        mark.write_text(
-            _watermark_ass(
-                watermark, field["width"], field["height"], duration or Fraction(359999)
-            ),
-            encoding="utf-8",
-        )
-        video_filter += f",ass=filename={_filter_path(mark)}"
+    text_path = target / "publication-text.ass"
+    publication_text = fields.get("publicationText")
     try:
+        if publication_text is not None:
+            if output_clock is None:
+                raise ValueError("Platform video text requires a verified output clock")
+            text_path.write_text(
+                _publication_text_ass(
+                    publication_text, field["width"], field["height"], *output_clock
+                ),
+                encoding="utf-8",
+            )
+            video_filter += f",setpts=PTS*2,ass=filename={_filter_path(text_path)},setpts=PTS/2"
+        if watermark is not None:
+            mark.write_text(
+                _watermark_ass(
+                    watermark, field["width"], field["height"], duration or Fraction(359999)
+                ),
+                encoding="utf-8",
+            )
+            video_filter += f",ass=filename={_filter_path(mark)}"
         return await _encode(tools, video, cover, target, profile, video_filter, trim_args)
     finally:
         mark.unlink(missing_ok=True)
+        if publication_text is not None:
+            text_path.unlink(missing_ok=True)
 
 
 async def _encode(

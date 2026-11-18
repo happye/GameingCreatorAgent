@@ -15,17 +15,34 @@ const STATUS = {pass: "通过", fail: "未通过", unknown: "未知", not_config
 const jobPath = (id) => `/api/creation/jobs/${encodeURIComponent(id)}`;
 const when = (iso) => new Date(iso).toLocaleString("zh-CN", {hour12: false});
 const tagList = (text) => [...new Set(text.split(/[,，\n]/).map((t) => t.trim()).filter(Boolean))];
-function configuredProfiles(profiles, selected, durations, fps, totalFrames) {
+function configuredProfiles(profiles, selected, drafts, fps, totalFrames) {
     let error = "";
     const chosen = profiles.filter(p => selected.includes(p.Platform)).map(profile => {
-        const text = durations[profile.Platform];
-        if (!text) return profile;
-        const frames = Math.round(Number(text) * fps);
-        if (!/^\d+(?:\.\d+)?$/.test(text) || !Number.isSafeInteger(frames) || frames < 1 || frames >= totalFrames) {
-            error = `${PLATFORMS[profile.Platform]}请输入短于原成片的秒数，例如 15 或 12.5；留空保留全片。`;
-            return profile;
+        const {duration = "", opening = "", closing = ""} = drafts[profile.Platform] || {};
+        const fields = {...profile.Fields};
+        let frames = totalFrames;
+        if (duration) {
+            frames = Math.round(Number(duration) * fps);
+            if (!/^\d+(?:\.\d+)?$/.test(duration) || !Number.isSafeInteger(frames) || frames < 1 || frames >= totalFrames) {
+                error ||= `${PLATFORMS[profile.Platform]}请输入短于原成片的秒数，例如 15 或 12.5；留空保留全片。`;
+            } else {
+                fields.variant = {durationFrames: frames};
+            }
         }
-        return {...profile, Fields: {...profile.Fields, variant: {durationFrames: frames}}};
+        const publicationText = {};
+        for (const [key, raw] of Object.entries({opening, closing})) {
+            const text = raw.trim();
+            if ([...text].length > 24 || /[{}\\<>\p{C}\u2028\u2029]/u.test(raw)) {
+                error ||= `${PLATFORMS[profile.Platform]}的开场文案和结尾提示各限 24 字，请使用单行纯文本。`;
+            } else if (text) {
+                publicationText[key] = text;
+            }
+        }
+        if (publicationText.opening && publicationText.closing && frames < 2) {
+            error ||= `${PLATFORMS[profile.Platform]}时长太短，无法同时显示开场文案和结尾提示。`;
+        }
+        if (Object.keys(publicationText).length) fields.publicationText = publicationText;
+        return {...profile, Fields: fields};
     });
     return {chosen, error};
 }
@@ -150,7 +167,8 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     const [platform, setPlatform] = useState("");
     const [packages, setPackages] = useState([]);
     const [selected, setSelected] = useState([]);
-    const [durationDraft, setDurationDraft] = useState({key: null, values: {}});
+    const [platformDraft, setPlatformDraft] = useState({key: null, values: {}});
+    const [previewPackage, setPreviewPackage] = useState("");
     const epoch = useRef(0);
     const polling = useRef(new AbortController());
     const activeProject = useRef(project);
@@ -183,7 +201,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
         polling.current.abort(); polling.current = new AbortController();
         const generation = ++epoch.current;
         const current = () => generation === epoch.current;
-        setMessage(""); setFieldError({}); setPackages([]); setPub(null); setBusy(""); setCoverPreview("");
+        setMessage(""); setFieldError({}); setPackages([]); setPub(null); setBusy(""); setCoverPreview(""); setPreviewPackage("");
         try {
             let publicationId = id;
             if (kind === "package") { const data = await client.api(`${jobPath(id)}/package`); if (!current()) return; publicationId = data.publicationJobId; }
@@ -311,10 +329,14 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     };
 
     const saved = !!pub?.publicationJobId && !dirty;
-    const durationKey = JSON.stringify([project, pub?.publicationJobId, pub?.publicationReceiptSha256]);
-    const durations = durationDraft.key === durationKey ? durationDraft.values : {};
-    const {chosen, error: durationError} = configuredProfiles(profiles, selected, durations, fps, pub?.frames || 0);
-    const queue = usePackageBatches({project, pub, profiles: chosen, selected, disabled: !!busy || !saved, startBlocked: !!durationError,
+    const draftKey = JSON.stringify([project, pub?.publicationJobId, pub?.publicationReceiptSha256]);
+    const drafts = platformDraft.key === draftKey ? platformDraft.values : {};
+    const updateDraft = (platformId, field, value) => setPlatformDraft(previous => {
+        const values = previous.key === draftKey ? previous.values : {};
+        return {key: draftKey, values: {...values, [platformId]: {...values[platformId], [field]: value}}};
+    });
+    const {chosen, error: variantError} = configuredProfiles(profiles, selected, drafts, fps, pub?.frames || 0);
+    const queue = usePackageBatches({project, pub, profiles: chosen, selected, disabled: !!busy || !saved, startBlocked: !!variantError,
         onChanged: () => { const generation = epoch.current; if (pub?.publicationJobId) void restore(pub, generation).catch(e => { if (epoch.current === generation) setMessage(e.message); }); }});
     const coverSrc = pub?.publicationJobId && !dirty ? `${jobPath(pub.publicationJobId)}/publication-files/cover.png` : null;
     const limits = profiles.find((p) => p.Platform === platform)?.Fields?.limits || {};
@@ -343,28 +365,38 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                 <div class="track-area">
                     <div class="actions-row">
                         ${profiles.map((p) => html`<label><input type="checkbox" checked=${selected.includes(p.Platform)} disabled=${!!busy} onChange=${(e) => { setPlatform(p.Platform); setSelected(e.currentTarget.checked ? [...selected, p.Platform] : selected.filter((v) => v !== p.Platform)); }} />${PLATFORMS[p.Platform] || p.Platform}${selected.includes(p.Platform) && !packages.some((r) => r.profile?.Platform === p.Platform) ? " · 尚未提交" : ""}</label>`)}
-                        <button class="btn" disabled=${!saved || !!busy || queue.busy || queue.running || !selected.length || !!durationError} onClick=${queue.start}>${queue.busy ? "正在加入队列…" : "生成平台包"}</button>
+                        <button class="btn" disabled=${!saved || !!busy || queue.busy || queue.running || !selected.length || !!variantError} onClick=${queue.start}>${queue.busy ? "正在加入队列…" : "生成平台包"}</button>
                         ${saved && !selected.length ? html`<span class="hint" role="status" aria-label="平台包状态">至少勾选一个平台</span>` : null}
                         <span class="hint">${["titleMaxChars", "descriptionMaxChars", "tagMaxCount"].filter((k) => limits[k]).map((k) => `${CHECKS[k]}≤${limits[k]}`).join(" · ")}</span>
                     </div>
                     ${saved && selected.length > 0 && html`<details>
-                        <summary>调整各平台时长（可选）</summary>
-                        <p class="hint">从成片开头保留指定时长，画面与声音一起截短。已保存的文案和封面沿用，留空保留全片。</p>
-                        <div class="actions-row">${chosen.map(p => html`<label>${PLATFORMS[p.Platform]} 时长（秒）
-                            <input class="input" inputmode="decimal" placeholder="保留全片" value=${durations[p.Platform] || ""}
-                                disabled=${!!busy || queue.busy || queue.running} onInput=${e => setDurationDraft({key: durationKey, values: {...durations, [p.Platform]: e.currentTarget.value}})} />
-                        </label>`)}</div>
-                        ${durationError && html`<p class="hint warn" role="status">${durationError}</p>`}
+                        <summary>调整各平台时长和画面文案（可选）</summary>
+                        <p class="hint">时长留空保留全片。开场文案、结尾提示各显示最多 2 秒，直接写入视频画面；标题、简介和封面沿用。</p>
+                        ${chosen.map(({Platform: id}) => html`<div class="actions-row" key=${id}>
+                            <label>${PLATFORMS[id]} 时长（秒）
+                                <input class="input" inputmode="decimal" placeholder="保留全片" value=${drafts[id]?.duration || ""}
+                                    disabled=${!!busy || queue.busy || queue.running} onInput=${e => updateDraft(id, "duration", e.currentTarget.value)} />
+                            </label>
+                            ${[["opening", "开场文案"], ["closing", "结尾提示"]].map(([field, label]) => html`<label key=${field}>${PLATFORMS[id]} ${label}
+                                <input class="input" placeholder="可留空" value=${drafts[id]?.[field] || ""}
+                                    disabled=${!!busy || queue.busy || queue.running} onInput=${e => updateDraft(id, field, e.currentTarget.value)} />
+                            </label>`)}
+                        </div>`)}
                     </details>`}
+                    ${variantError && html`<p class="hint warn" role="status">${variantError}</p>`}
                     ${saved && queue.view}
                     ${packages.map((pkg) => html`<div class="pkg-result">
                         <p>${PLATFORMS[pkg.profile?.Platform] || ""}${pkg.profile?.Fields?.variant ? ` · 短版 ${(pkg.profile.Fields.variant.durationFrames / fps).toFixed(2)} 秒` : ""} · ${client.jobStatus(pkg.status)} ${pkg.error?.message || ""}</p>
+                        ${pkg.profile?.Fields?.publicationText?.opening && html`<p class="hint">开场：${pkg.profile.Fields.publicationText.opening}</p>`}
+                        ${pkg.profile?.Fields?.publicationText?.closing && html`<p class="hint">结尾：${pkg.profile.Fields.publicationText.closing}</p>`}
                         ${["failed", "interrupted"].includes(pkg.status) && html`<button class="btn ghost" disabled=${!!busy || !saved} onClick=${() => buildPackage(pkg)}>重试此平台</button>`}
                         ${pkg.generationStatus === "completed" && !pkg.error && html`<div>
                         <p class="v">${PLATFORMS[pkg.profile?.Platform] || ""}：${pkg.generationStatus === "completed" ? "已生成" : "未完成"}；本地检查${STATUS[pkg.localChecks] || "未知"}${pkg.publicationEligibility === "blocked" ? "；发布受阻（含仅供测试的音乐等）" : ""}${pkg.watermark ? "；含水印" : ""}。平台官方规则、素材权利尚未核实。</p>
                         <p class="hint">${Object.entries(pkg.validation?.checks || {}).map(([k, s]) => `${CHECKS[k] || k}：${STATUS[s] || "未知"}`).join("　")}</p>
                         <div class="actions-row"><a class="btn" href=${`${jobPath(pkg.jobId)}/package-files/package.zip?download=1`} download="package.zip">下载平台包（zip）</a>
-                            <a class="btn ghost" href=${`${jobPath(pkg.jobId)}/package-files/video.mp4?download=1`} download="video.mp4">只下载视频</a></div>
+                            <a class="btn ghost" href=${`${jobPath(pkg.jobId)}/package-files/video.mp4?download=1`} download="video.mp4">只下载视频</a>
+                            <button class="btn ghost" aria-expanded=${previewPackage === pkg.jobId} onClick=${() => setPreviewPackage(id => id === pkg.jobId ? "" : pkg.jobId)}>${previewPackage === pkg.jobId ? "收起预览" : `预览${PLATFORMS[pkg.profile?.Platform] || "平台"}成片`}</button></div>
+                        ${previewPackage === pkg.jobId && html`<video class="package-video" aria-label="平台成片预览" src=${`${jobPath(pkg.jobId)}/package-files/video.mp4`} controls playsinline preload="metadata"></video>`}
                     </div>`}
                     </div>`)}
                 </div>

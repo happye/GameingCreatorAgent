@@ -68,7 +68,12 @@ function BatchRecords({batches, error, disabled, onCommand, fps}) {
         ${error && html`<p role="status">${error}</p>`}
         ${batches.map(batch => html`<div class="pkg-result" data-batch-id=${batch.batchId}>
             <p>平台队列 · ${names[batch.status] || batch.status} · ${batch.items.filter(i => i.status === "completed").length}/${batch.items.length}</p>
-            <ul>${batch.items.map(item => html`<li>${platforms[item.profile.Platform] || item.profile.Platform}${item.profile.Fields.variant ? ` · 短版 ${(item.profile.Fields.variant.durationFrames / fps).toFixed(2)} 秒` : ""} · ${names[item.status] || item.status}${item.error?.message ? `：${item.error.message}` : ""}</li>`)}</ul>
+            <ul>${batch.items.map(item => {
+                const {variant, publicationText} = item.profile.Fields;
+                return html`<li>${platforms[item.profile.Platform] || item.profile.Platform}${variant ? ` · 短版 ${(variant.durationFrames / fps).toFixed(2)} 秒` : ""} · ${names[item.status] || item.status}${item.error?.message ? `：${item.error.message}` : ""}
+                    ${publicationText?.opening && html`<span> · 开场：${publicationText.opening}</span>`}
+                    ${publicationText?.closing && html`<span> · 结尾：${publicationText.closing}</span>`}</li>`;
+            })}</ul>
             ${["interrupted", "cancelled"].includes(batch.status) && html`<button class="btn ghost" disabled=${disabled} onClick=${() => onCommand(batch.batchId, "resume")}>继续未完成队列</button>`}
             ${active(batch) && html`<button class="btn ghost" disabled=${disabled} onClick=${() => onCommand(batch.batchId, "cancel")}>停止后续平台</button>`}
         </div>`)}

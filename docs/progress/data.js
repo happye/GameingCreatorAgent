@@ -44,9 +44,9 @@ window.PROGRESS_DATA = {
    "name": "玩法展示：本地录像 → 约1分钟可发布成片",
    "steps": "导入录像 → 已有分析/检索 → 选玩法展示模板 → 渲染MP4 → 封面文案与B站发布包",
    "agent_run": {
-    "date": "2026-11-18",
+    "date": "2026-11-19",
     "result": "pass",
-    "evidence": "既有真实漫画群星一句需求→AI方案→本地补足30秒→中文旁白→成片流程继续扩展为四平台持久队列。发布598a72a7f4164c3fba2ff8e234081681，e6e0f97ddd5a36c292318459a9895f54一次勾选四平台后关闭浏览器，服务端仍全部completed，重开4/4并下载四份七文件ZIP；逐包ffprobe均30秒H264/AAC且尺寸匹配冻结profile，B站复用旧包且ZIP SHA不变。另存多平台版标题的真实三平台队列75e124109c594dcc8c87c446339a0df6验证cancel只停后续、当前包收尾；resume后中断自有服务，重启不自动再提交，UI显式恢复同batch，前两项ID保持，第三旧中断attempt保留，新attempt2完成，页面3/3。产物.cache/scratch/package-batches-20261118/（bilibili/douyin/kuaishou/xiaohongshu.zip及delivery-evidence.json），详sprint-package-batches。本批另实测同一草稿混合 AI 插入、裁剪、删除和手动替换，刷新恢复后试听并导出 27.5 秒成片。发布 5462eed2c820468eb4beb5c1c5ac94d1 下的队列 f62b4943015cfab48822711116c2e921 重开恢复 2/2，B 站全长 ZIP 复用，抖音 15.000 秒、450 帧且音画同端点，均为七文件。证据与视频在 .cache/scratch/mixed-timeline-20261118/，详 sprint-mixed-timeline 和 sprint-platform-short-pack。没有模型、支付或真实平台上传，原成片/方案/失败证据保留，人评不变。"
+    "evidence": "既有真实漫画群星一句需求→AI方案→本地补足30秒→中文旁白→成片流程继续扩展为四平台持久队列。发布598a72a7f4164c3fba2ff8e234081681，e6e0f97ddd5a36c292318459a9895f54一次勾选四平台后关闭浏览器，服务端仍全部completed，重开4/4并下载四份七文件ZIP；逐包ffprobe均30秒H264/AAC且尺寸匹配冻结profile，B站复用旧包且ZIP SHA不变。另存多平台版标题的真实三平台队列75e124109c594dcc8c87c446339a0df6验证cancel只停后续、当前包收尾；resume后中断自有服务，重启不自动再提交，UI显式恢复同batch，前两项ID保持，第三旧中断attempt保留，新attempt2完成，页面3/3。产物.cache/scratch/package-batches-20261118/（bilibili/douyin/kuaishou/xiaohongshu.zip及delivery-evidence.json），详sprint-package-batches。本批另实测同一草稿混合 AI 插入、裁剪、删除和手动替换，刷新恢复后试听并导出 27.5 秒成片。发布 5462eed2c820468eb4beb5c1c5ac94d1 下的队列 f62b4943015cfab48822711116c2e921 重开恢复 2/2，B 站全长 ZIP 复用，抖音 15.000 秒、450 帧且音画同端点，均为七文件。证据与视频在 .cache/scratch/mixed-timeline-20261118/，详 sprint-mixed-timeline 和 sprint-platform-short-pack。随后在原发布下新增按平台的画面文案，队列 f1e517f6615987d13500c8f7874fb293 重开 2/2。抖音首尾各两秒文案烧录，450 帧／15 秒，工作台实际试听及七文件 ZIP 下载通过；详 sprint-platform-video-copy 与 .cache/scratch/platform-video-copy-20261119/。没有模型、支付或真实平台上传，原成片/方案/失败证据保留，人评不变。"
    },
    "human_check": {
     "date": "2026-11-11",
@@ -897,10 +897,11 @@ window.PROGRESS_DATA = {
     "docs/exec-plans/sprint-studio-multi-platform-packages.md",
     "tests/test_studio_multi_platform.py"
    ],
-   "done": "Studio支持多平台持久队列，成功包复用，中断记录保留。发布页可按平台填写短版时长；实测同批复用全长B站包并生成抖音15秒七文件ZIP，音画对齐，刷新可恢复",
-   "todo": "按内容智能重剪、画面内Hook/CTA仍待做；真实平台资格与质量仍待验",
-   "updated": "2026-11-18",
+   "done": "Studio可按平台选短版时长、填写画面内开场和结尾文案，并直接播放或下载该平台成片。实测队列重开恢复，B站旧包复用，抖音15秒音画对齐且首尾真实烧录",
+   "todo": "按内容智能重剪与自动生成画面文案仍待做；真实平台资格与质量仍待验",
+   "updated": "2026-11-19",
    "sprints": [
+    "sprint-platform-video-copy",
     "sprint-platform-short-pack",
     "sprint-package-batches",
     "sprint-studio-multi-platform-packages",
@@ -1452,6 +1453,12 @@ window.PROGRESS_DATA = {
      "name": "同一发布版本按平台选时长并打包",
      "status": "done",
      "sprint": "sprint-platform-short-pack"
+    },
+    {
+     "id": "R2-platform-video-copy",
+     "name": "平台版烧录开场和结尾文案，生成后可试听",
+     "status": "done",
+     "sprint": "sprint-platform-video-copy"
     },
     {
      "id": "R2-B",
@@ -2123,7 +2130,7 @@ window.PROGRESS_DATA = {
   "v3替换镜头/文字PNG图层草稿恢复已交付55886b4；字幕可信映射与词级隐藏保护4139a26已推送，唯一关键审查通过。完整verify-20261117-002506在约九成时按用户要求取消，曾出现失败标记，无最终统计；保留日志，不改绿，不继续跑全量。",
   "真实漫画群星29秒流程已进一步接入AI旁白重起草：确认覆盖/保旧轨→本机中文合成14.56秒→保存→MP4→B站七文件包，实际下载并播放。AI文案也成功生成、校改后保存出包；新旁白估算¥0.00819112、文案¥0.00456512。产物在.cache/scratch/product-journey-20261117/，最新manga-ai-narration-preview.mp4及bilibili-ai-narration-package.zip；自然度和语义仍待人评。",
   "已交付AI单换/插入/多换、编号策划与本地补足30秒。多平台持久队列已实测关页出完四平台七文件包、停止后续、进程重启后显式恢复。产物 `.cache/scratch/package-batches-20261118/`，见 [sprint-package-batches](docs/exec-plans/sprint-package-batches.md)。",
-  "已实测在一个草稿混合 AI 插入、裁剪、局部删除和手动替换，刷新后恢复、试听、导出并生成发布包；同一发布批可保留全长 B 站并生成 15 秒抖音短版。产物 `.cache/scratch/mixed-timeline-20261118/`，见 [混合剪辑](docs/exec-plans/sprint-mixed-timeline.md) 和[平台短版](docs/exec-plans/sprint-platform-short-pack.md)。下一步接入平台版画面内开场文案和行动提示（Hook/CTA），再接按内容剪选及一句话发起混合修改。本批无新模型调用、全量测试或真人质量验收；51 项仍未全部交付。"
+  "[混合剪辑](docs/exec-plans/sprint-mixed-timeline.md)实测同一草稿混合插入、裁剪、删除和替换，刷新后恢复、试听和出包。[平台短版](docs/exec-plans/sprint-platform-short-pack.md)实测同一批保留全长 B 站并输出 15 秒抖音。[画面文案](docs/exec-plans/sprint-platform-video-copy.md)再接入各平台开场和结尾文字、成片试听及下载。下一步做按内容剪选和一句话混合修改。无新模型调用或真人质量验收，51 项仍未全部交付。"
  ],
  "sprints": [
   {
@@ -2606,7 +2613,7 @@ window.PROGRESS_DATA = {
     "P034",
     "R2-E"
    ],
-   "date": "2026-11-01",
+   "date": "2026-11-18",
    "bytes": 5753
   },
   {
@@ -2618,8 +2625,18 @@ window.PROGRESS_DATA = {
     "P037",
     "R2"
    ],
+   "date": "2026-11-18",
+   "bytes": 1863
+  },
+  {
+   "file": "sprint-platform-video-copy",
+   "title": "各平台成片的开场文案和结尾提示",
+   "ids": [
+    "P035",
+    "R2"
+   ],
    "date": "",
-   "bytes": 1686
+   "bytes": 1690
   },
   {
    "file": "sprint-premiere-narration-track",
