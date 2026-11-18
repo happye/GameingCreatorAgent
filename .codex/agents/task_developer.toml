@@ -1,6 +1,6 @@
 name = "task_developer"
-description = "落实已确认方案、修明确问题、做必要验证；用GPT-6.1 Sol，明确文件归属。"
-model = "gpt-6.1-sol"
+description = "落实已确认方案、修明确问题、做必要验证；用GPT-6.2 Sol，明确文件归属。"
+model = "gpt-6.2-sol"
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
 developer_instructions = """

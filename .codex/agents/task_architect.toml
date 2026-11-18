@@ -1,6 +1,6 @@
 name = "task_architect"
-description = "复杂跨模块设计、依赖与方案权衡；GPT-6 Astra low，仅在确需设计时使用。"
-model = "gpt-6-astra"
+description = "复杂跨模块设计、依赖与方案权衡；GPT-6.2 Astra low，仅在确需设计时使用。"
+model = "gpt-6.2-astra"
 model_reasoning_effort = "low"
 sandbox_mode = "read-only"
 developer_instructions = """

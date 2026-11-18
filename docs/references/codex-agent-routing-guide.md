@@ -4,12 +4,12 @@
 
 | 任务 | 角色 | 模型／推理 | 边界 |
 | --- | --- | --- | --- |
-| 查文件、入口、调用链 | task_explorer | gpt-6-luna／high | 只读，返回短结论和文件位置 |
-| 看长任务进度 | task_progress_monitor | gpt-6-luna／low | 只读日志和句柄，不重启 |
-| 落实已确认的方案 | task_developer | gpt-6.1-sol／medium | 写明文件归属，只跑相关测试 |
-| 一般代码审查 | task_reviewer | gpt-6.1-sol／medium | 只读，有证据才报问题 |
-| 费用、持久化、并发等关键审查 | task_quality_guard | gpt-6.1-sol／high | 和一般审查二选一 |
-| 跨模块设计 | task_architect | gpt-6-astra／low | 只读，已有方案不重新设计 |
+| 查文件、入口、调用链 | task_explorer | gpt-6.1-terra／high | 只读，返回短结论和文件位置 |
+| 看长任务进度 | task_progress_monitor | gpt-6.1-terra／low | 只读日志和句柄，不重启 |
+| 落实已确认的方案 | task_developer | gpt-6.2-sol／medium | 写明文件归属，只跑相关测试 |
+| 一般代码审查 | task_reviewer | gpt-6.2-sol／medium | 只读，有证据才报问题 |
+| 费用、持久化、并发等关键审查 | task_quality_guard | gpt-6.2-sol／high | 和一般审查二选一 |
+| 跨模块设计 | task_architect | gpt-6.2-astra／low | 只读，已有方案不重新设计 |
 | 里程碑合同、实施、评估 | harness_planner／generator／evaluator | gpt-6.1-sol／medium | 只用于里程碑（`development-agent-pipeline.md`） |
 
 规则：

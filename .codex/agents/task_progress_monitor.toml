@@ -1,6 +1,6 @@
 name = "task_progress_monitor"
-description = "检查指定进程、任务句柄和日志的进度；GPT-6 Luna low，只读、不重启任务。"
-model = "gpt-6-luna"
+description = "检查指定进程、任务句柄和日志的进度；GPT-6.1 Terra low，只读、不重启任务。"
+model = "gpt-6.1-terra"
 model_reasoning_effort = "low"
 sandbox_mode = "read-only"
 developer_instructions = """
