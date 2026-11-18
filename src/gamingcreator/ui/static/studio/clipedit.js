@@ -60,6 +60,42 @@ function composedInsertions(state, clips) {
         ? [{...op, editMode: "composed-v1"}] : state.editor.insertions ?? null;
 }
 
+function revisionFields(state) {
+    const {editor, base, clips, audio, replacements, overlays, subtitleOverrides} = state;
+    const kept = new Set(clips.map((c) => c.clipId));
+    const swaps = Object.entries(replacements).filter(([id]) => kept.has(id))
+        .map(([targetClipId, candidateId]) => ({targetClipId, candidateId}));
+    const manifest = state.candidateManifestSha256 || editor.candidateManifestSha256;
+    return {
+        parentJobId: base.jobId, planId: base.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256,
+        clips: rows(clips), audioMix: audio.mix, narration: audio.narration,
+        subtitleOverrides: subtitleOverrides.filter((o) => kept.has(o.clipId)),
+        overlays: {schemaVersion: "creation-overlays-v1", items: overlays},
+        ...(manifest ? {candidateManifestSha256: manifest, replacements: swaps} : {}),
+        ...(state.insertions !== null ? {insertions: state.insertions} : {}),
+    };
+}
+
+function replaceClip(state, id, candidate, manifest) {
+    if (state.status !== "ready" || isPendingInsertion(state, id)) return state;
+    const clips = state.clips.map((clip) => {
+        if (clip.clipId !== id) return clip;
+        const length = Math.max(1, clip.endUs - clip.startUs);
+        const next = {...clip, ...candidate, clipId: id, startUs: candidate.startUs,
+            endUs: Math.min(candidate.endUs, candidate.startUs + length),
+            speed: {numerator: 1, denominator: 1}, transitionIn: {type: "cut", frames: 0}};
+        delete next.sourcePath;
+        if (!candidate.rangeProvenance) delete next.rangeProvenance;
+        return next;
+    });
+    const at = clips.findIndex((c) => c.clipId === id);
+    if (clips[at + 1]) clips[at + 1] = {...clips[at + 1], transitionIn: {type: "cut", frames: 0}};
+    return {...state, clips, candidateManifestSha256: state.candidateManifestSha256 ?? state.editor.candidateManifestSha256 ?? manifest,
+        insertions: composedInsertions(state, clips), subtitleOverrides: state.subtitleOverrides.filter((o) => o.clipId !== id),
+        bounds: {...state.bounds, [id]: {startUs: candidate.startUs, endUs: candidate.endUs}},
+        replacements: {...state.replacements, [id]: candidate.candidateId}, dirty: true};
+}
+
 export function useClipEditor(project, workId = null) {
     const [state, setState] = useState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), ...captionsOf({}), bounds: {}, replacements: {}, insertions: null, candidateManifestSha256: null, dirty: false});
     const drafts = useClipDrafts(state, project, workId, {audio: audioOf(state.editor || {}), ...overlaysOf(state.editor || {})}, keptCaptions, [SPEEDS, clipFrames, transitionProblem]);
@@ -163,16 +199,16 @@ export function useClipEditor(project, workId = null) {
             const byId = new Map(clips.map((c) => [c.clipId, c]));
             return newRows.map((row) => ({...byId.get(row.clipId), ...row}));
         }, null, expectedEpoch),
-        applyProposal: (proposal) => edit((s) => {
-            if (s.status !== "ready") return s;
+        applyProposal: (proposal, expectedEpoch = null) => edit((s) => {
+            if (s.status !== "ready" || (expectedEpoch !== null && editEpoch.current !== expectedEpoch)) return s;
             const byId = new Map(s.clips.map((c) => [c.clipId, c]));
             const clips = proposal.clips.map((row) => {
                 const next = {...byId.get(row.clipId), ...row};
                 if ((proposal.replacements || []).some((r) => r.targetClipId === row.clipId) && !row.rangeProvenance) delete next.rangeProvenance;
                 return next;
             });
-            return {...s, clips, subtitleOverrides: keptCaptions(s.subtitleOverrides, clips).filter((o) => !(proposal.replacements || []).some((r) => r.targetClipId === o.clipId)), overlays: proposal.overlays?.items ?? s.overlays,
-                insertions: proposal.insertions ?? s.insertions, bounds: proposal.bounds ?? s.bounds, replacements: proposal.replacements ? Object.fromEntries(proposal.replacements.map((r) => [r.targetClipId, r.candidateId])) : s.replacements,
+            return {...s, clips, subtitleOverrides: proposal.subtitleOverrides ?? keptCaptions(s.subtitleOverrides, clips).filter((o) => !(proposal.replacements || []).some((r) => r.targetClipId === o.clipId)), overlays: proposal.overlays?.items ?? s.overlays,
+                insertions: Object.hasOwn(proposal, "insertions") ? proposal.insertions : s.insertions, bounds: proposal.bounds ?? s.bounds, replacements: proposal.replacements ? Object.fromEntries(proposal.replacements.map((r) => [r.targetClipId, r.candidateId])) : s.replacements,
                 candidateManifestSha256: proposal.candidateManifestSha256 ?? s.candidateManifestSha256, dirty: true};
         }),
         mix: (patch) => edit((s) => (s.status === "ready" ? {...s, audio: {...s.audio, mix: {...s.audio.mix, ...patch}}, dirty: true} : s)),
@@ -193,23 +229,7 @@ export function useClipEditor(project, workId = null) {
         }),
         // Swap a clip's footage for another analysed clip of the same recordings (1x, cut in);
         // its length stays as close to the old one as the new clip allows.
-        replace: (id, candidate) => edit((s) => {
-            if (s.status !== "ready") return s;
-            if (isPendingInsertion(s, id)) return s;
-            const clips = s.clips.map((c) => {
-                if (c.clipId !== id) return c;
-                const length = Math.max(1, c.endUs - c.startUs);
-                const next = {...c, ...candidate, clipId: c.clipId,
-                    startUs: candidate.startUs, endUs: Math.min(candidate.endUs, candidate.startUs + length), speed: {numerator: 1, denominator: 1}, transitionIn: {type: "cut", frames: 0}};
-                // Source paths are private; the server reconstructs them from its manifest.
-                delete next.sourcePath;
-                if (!candidate.rangeProvenance) delete next.rangeProvenance;
-                return next;
-            });
-            const at = clips.findIndex((c) => c.clipId === id);
-            if (clips[at + 1]) clips[at + 1] = {...clips[at + 1], transitionIn: {type: "cut", frames: 0}};
-            return {...s, candidateManifestSha256: s.candidateManifestSha256 ?? s.editor.candidateManifestSha256 ?? candidates?.candidateManifestSha256 ?? null, clips, insertions: composedInsertions(s, clips), subtitleOverrides: s.subtitleOverrides.filter((o) => o.clipId !== id), bounds: {...s.bounds, [id]: {startUs: candidate.startUs, endUs: candidate.endUs}}, replacements: {...s.replacements, [id]: candidate.candidateId}, dirty: true};
-        }),
+        replace: (id, candidate) => edit((s) => replaceClip(s, id, candidate, candidates?.candidateManifestSha256 ?? null)),
         undo: () => { restoreEpoch.current++; setState((s) => {
             const h = history.current, previous = h.past.at(-1);
             if (!previous || s.status !== "ready") return s;
@@ -283,22 +303,12 @@ export function useClipEditor(project, workId = null) {
     // Save the local edit as a new version; returns the version's job id.
     const save = useCallback(async (follow) => {
         if (saving.current) throw Error("正在保存版本");
-        const {editor, base, clips, audio, replacements, overlays, subtitleOverrides} = state;
+        const {base, subtitleOverrides} = state;
         const problem = captionProblem(subtitleOverrides);
         if (problem) throw new Error(problem);
-        const kept = new Set(clips.map((c) => c.clipId));
-        // A version with replaced footage (or descended from one) carries the candidate manifest.
-        const swaps = Object.entries(replacements).filter(([id]) => kept.has(id)).map(([targetClipId, candidateId]) => ({targetClipId, candidateId}));
-        const manifest = state.candidateManifestSha256 || editor.candidateManifestSha256 || (swaps.length ? candidates?.candidateManifestSha256 : null);
         saving.current = true;
         try {
-            const accepted = await client.submit("revision", {
-                parentJobId: base.jobId, planId: base.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256,
-                clips: rows(clips), audioMix: audio.mix, narration: audio.narration, subtitleOverrides: subtitleOverrides.filter((o) => kept.has(o.clipId)),
-                overlays: {schemaVersion: "creation-overlays-v1", items: overlays},
-                ...(manifest ? {candidateManifestSha256: manifest, replacements: swaps} : {}),
-                ...(state.insertions !== null ? {insertions: state.insertions} : {}),
-            });
+            const accepted = await client.submit("revision", revisionFields(state));
             const done = await follow(accepted.jobId);
             if (done?.status !== "completed") throw new Error(done ? `保存失败：${done.error?.message || done.status}` : "保存已取消");
             drafts.discard();
@@ -306,7 +316,7 @@ export function useClipEditor(project, workId = null) {
             await load(done.jobId, base.planId, "revision");
             return done.jobId;
         } finally { saving.current = false; }
-    }, [state, load, candidates]);
+    }, [state, load]);
 
     return {...state, drafts: {...drafts, discard: discardDraft}, restoreDraft, project, overlayEpoch: overlayEpoch.current, editEpoch: editEpoch.current, selectedId, setSelectedId, load, ops, save, candidates, loadCandidates, rows: () => rows(state.clips),
         canUndo: history.current.past.length > 0, canRedo: history.current.future.length > 0};
@@ -375,7 +385,7 @@ function ReplacePicker({editing, clip, basket}) {
         ${error ? html`<p class="hint warn">${error}</p>` : !editing.candidates ? html`<p class="note">正在读取可替换的片段…</p>` : html`
             <input class="input" type="search" value=${query} onInput=${(e) => setQuery(e.currentTarget.value)} placeholder="按描述筛选" aria-label="筛选替换片段" />
             <div class="hits">${shown.slice(0, 40).map((c) => html`<div class="hit">
-                <span class="hit-text"><span class="meta">${inBasket(c) ? "片段篮 · " : ""}${(c.sourceName || "").slice(0, 12)} · ${(c.startUs / 1e6).toFixed(1)} 秒起 · 长 ${((c.endUs - c.startUs) / 1e6).toFixed(1)} 秒</span>${c.scriptDraft}</span>
+                <span class="hit-text"><span class="meta">候选${list.indexOf(c) + 1} · ${inBasket(c) ? "片段篮 · " : ""}${(c.sourceName || "").slice(0, 12)} · ${(c.startUs / 1e6).toFixed(1)} 秒起 · 长 ${((c.endUs - c.startUs) / 1e6).toFixed(1)} 秒</span>${c.scriptDraft}</span>
                 <button class="btn ghost" onClick=${() => { editing.ops.replace(clip.clipId, c); setOpen(false); }}>换成这段</button></div>`)}
                 ${!shown.length && html`<p class="hint">没有可用的片段。</p>`}</div>`}
         <div class="actions-row"><button class="btn ghost" onClick=${() => setOpen(false)}>收起</button></div>
@@ -394,8 +404,10 @@ function useTimelinePreview(editing, qualifier, onPreview) {
         return () => { active.current = null; if (scope.showing) onPreview(null); };
     }, [key]);
     const preview = (data, detail) => {
-        if (Object.keys(editing.replacements).length && data.clips.some((row, index) => {
-            const replacements = editing.replacements;
+        const replacements = data.proposal
+            ? Object.fromEntries(data.proposal.replacements.map((r) => [r.targetClipId, r.candidateId]))
+            : editing.replacements;
+        if (Object.keys(replacements).length && data.clips.some((row, index) => {
             return (forcedCut(data.clips, index, replacements) && row.transitionIn.frames > 0)
                 || (replacements[row.clipId] && row.speed.numerator !== row.speed.denominator);
         })) throw Error("替换镜头需保持原速，前后须直接切换。请调整指令或先保存版本。");
@@ -409,6 +421,36 @@ function useTimelinePreview(editing, qualifier, onPreview) {
     return {result, message, setMessage, active, preview, clear};
 }
 
+async function commandPreview(text, editing) {
+    const mixed = /^(?:请|帮我|把|将)*第([1-9]\d*)(?:个)?镜头(?:换成|替换为)候选([1-9]\d*)\s*(?:[，,；;]\s*(?:然后|再)?|然后|再)\s*(.+)$/s.exec(text);
+    const fps = editing.editor.fps;
+    const run = (instruction, clips) => client.api("/api/creation/timeline-commands", {}, {body: {text: instruction, fps, clips}});
+    if (!mixed) return run(text, editing.rows());
+    if ([...text].length > 500) throw Error("请输入1–500字的修改要求。");
+    const [, shotNumber, candidateNumber, remainder] = mixed;
+    const target = editing.clips[Number(shotNumber) - 1];
+    if (!target) throw Error(`找不到第${shotNumber}个镜头。`);
+    if (isPendingInsertion(editing, target.clipId)) throw Error("请先保存新插入的镜头，再替换它。");
+    const available = await editing.loadCandidates();
+    const candidate = available?.candidates[Number(candidateNumber) - 1];
+    if (!candidate || candidate.eventId === target.eventId || candidate.endUs - candidate.startUs < 500000) {
+        throw Error(`候选${candidateNumber}不可用于替换该镜头。请核对「替换这段画面」中的编号。`);
+    }
+    const draft = replaceClip(editing, target.clipId, candidate, available.candidateManifestSha256);
+    const result = await run(remainder, rows(draft.clips));
+    if (!result.clips.some((row) => row.clipId === target.clipId)) throw Error("后续指令删掉了刚替换的镜头，请调整指令。");
+    const finalClips = result.clips;
+    const insertions = composedInsertions(draft, finalClips);
+    const proposal = await client.api("/api/creation/draft-restore-preview", {}, {body: {
+        projectId: editing.project,
+        ...revisionFields({...draft, clips: finalClips, insertions}),
+    }});
+    const beforeSeconds = editing.clips.reduce((count, clip) => count + clipFrames(clip, fps) - clip.transitionIn.frames, 0) / fps;
+    const clips = proposal.clips.map((clip) => ({...clip, rangeProvenance: clip.rangeProvenance ?? null}));
+    return {...result, beforeSeconds, clips, proposal: {...proposal, insertions},
+        changes: [`第${shotNumber}个镜头换成候选${candidateNumber}`, ...result.changes]};
+}
+
 // One-line edits in the assistant dock: preview the change on the timeline, then apply or discard.
 function LocalCommandDock({editing, onPreview, blocked}) {
     const [text, setText] = useState("");
@@ -419,12 +461,19 @@ function LocalCommandDock({editing, onPreview, blocked}) {
         if (!ready || !text.trim()) return;
         const scope = draft.active.current;
         try {
-            const data = await client.api("/api/creation/timeline-commands", {}, {body: {text: text.trim(), fps: editing.editor.fps, clips: editing.rows()}});
+            const data = await commandPreview(text.trim(), editing);
             if (draft.active.current !== scope) return;
             draft.preview(data, `将会：${data.changes.join("；")}（${data.beforeSeconds.toFixed(1)} → ${data.afterSeconds.toFixed(1)} 秒）`);
         } catch (error) { if (draft.active.current === scope) draft.clear(`没有改动：${error.message}`); }
     };
-    const apply = () => { if (!ready) return; editing.ops.apply(draft.result.data.clips, draft.result.epoch); draft.clear("已应用，可以预览检查，满意后导出或保存版本。"); setText(""); };
+    const apply = () => {
+        if (!ready || !draft.result) return;
+        const {data, epoch} = draft.result;
+        if (data.proposal) editing.ops.applyProposal(data.proposal, epoch);
+        else editing.ops.apply(data.clips, epoch);
+        draft.clear("已应用，可以预览检查，满意后导出或保存版本。");
+        setText("");
+    };
     const cancel = () => draft.clear("已取消，时间轴没有变化。");
     return html`<form class="dock assistant" onSubmit=${preview}>
         <strong>创作助手</strong>
@@ -433,6 +482,7 @@ function LocalCommandDock({editing, onPreview, blocked}) {
         ${draft.result ? html`<button type="button" class="btn" onClick=${apply}>应用</button><button type="button" class="btn ghost" onClick=${cancel}>取消</button>`
             : html`<button class="btn ghost" disabled=${!ready || !text.trim()}>预览改动</button>`}
         <span class="dock-msg" role="status">${draft.message}</span>
+        <p class="hint">可组合指令，例如「第2个镜头换成候选8，然后删掉第3个镜头」。候选编号在「替换这段画面」里查看。</p>
     </form>`;
 }
 

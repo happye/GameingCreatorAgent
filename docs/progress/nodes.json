@@ -336,10 +336,11 @@
    ]
   },
   "P041": {
-   "done": "规则/AI镜头及图层编辑、一句话多镜头替换已接；同一草稿可混合插入、裁剪、删除及替换，真实刷新恢复、撤销重做、一次保存、27.5秒播放与发布包通过",
-   "todo": "AI一句话生成混合动作尚未接入；一次插入一段，旁白/图层不自动后移；开放式意图与创意质量待人评",
-   "updated": "2026-11-18",
+   "done": "同一草稿可混合插入、裁剪、删除及替换。本地一句话可按编号换镜并继续删裁等操作，已实测原子应用、撤销/重做、刷新恢复、27秒成片和B站包",
+   "todo": "开放式AI一句话生成混合动作待接入；一次插入一段，旁白/图层不自动后移；创意质量待人评",
+   "updated": "2026-11-19",
    "sprints": [
+    "sprint-one-line-mixed-replacement",
     "sprint-timeline-commands",
     "sprint-ai-overlay-timing",
     "sprint-ai-clip-replacement",
@@ -790,6 +791,12 @@
      "name": "一句话改镜头（规则版）",
      "status": "done",
      "sprint": "sprint-timeline-commands"
+    },
+    {
+     "id": "P041-mixed-local",
+     "name": "一句话换镜并执行后续指令",
+     "status": "done",
+     "sprint": "sprint-one-line-mixed-replacement"
     },
     {
      "id": "P041-b",
