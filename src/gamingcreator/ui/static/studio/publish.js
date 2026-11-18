@@ -15,6 +15,26 @@ const STATUS = {pass: "通过", fail: "未通过", unknown: "未知", not_config
 const jobPath = (id) => `/api/creation/jobs/${encodeURIComponent(id)}`;
 const when = (iso) => new Date(iso).toLocaleString("zh-CN", {hour12: false});
 const tagList = (text) => [...new Set(text.split(/[,，\n]/).map((t) => t.trim()).filter(Boolean))];
+const COPY_CLOSING = {
+    bilibili: "弹幕聊聊，你最想回看哪一幕？",
+    douyin: "这一段，你最记得哪个画面？",
+    kuaishou: "评论区说说你看到的亮点",
+    xiaohongshu: "先收藏，下次回来对照看",
+};
+const frameLine = (line) => [...line.replace(/[{}\\<>\p{C}\u2028\u2029]/gu, " ").replace(/\s+/g, " ").trim()].slice(0, 24).join("").trimEnd();
+
+function draftPlatformCopy(pub, profile, keyword) {
+    const variant = profile.Fields.variant;
+    const start = variant?.startFrame || 0;
+    const end = start + (variant?.durationFrames || pub.frames);
+    const observation = pub.contentShots?.find(shot => shot.startFrame >= start && shot.endFrame <= end)?.description;
+    const theme = keyword.trim() || (!variant ? pub.title : observation?.split(/[；。]/, 1)[0]) || "实机剪辑";
+    return {
+        opening: frameLine(`${profile.Platform === "bilibili" ? "本期看点" : "实机看点"}｜${theme}`),
+        closing: COPY_CLOSING[profile.Platform],
+    };
+}
+
 function configuredProfiles(profiles, selected, drafts, fps, totalFrames, shots) {
     let error = "";
     const matches = {};
@@ -61,13 +81,14 @@ function configuredProfiles(profiles, selected, drafts, fps, totalFrames, shots)
     return {chosen, error, matches};
 }
 
-function stopAtShortEnd(video, range, time = video.currentTime) {
-    const end = range.current?.end;
-    if (end !== undefined && time >= end) {
-        range.current = null;
-        video.pause();
-        video.currentTime = Math.max(0, end - 0.001);
-    }
+function previewCaption(range, fps, time) {
+    if (!range?.text) return null;
+    const frames = range.endFrame - range.startFrame;
+    const relative = Math.floor(time * fps + 1e-6) - range.startFrame;
+    const window = Math.min(Math.floor(2 * fps), Object.keys(range.text).length === 2 ? Math.floor(frames / 2) : frames);
+    if (relative >= 0 && relative < window && range.text.opening) return {position: "opening", text: range.text.opening};
+    if (relative >= frames - window && relative < frames && range.text.closing) return {position: "closing", text: range.text.closing};
+    return null;
 }
 
 // J1 2026-11-11: the cover is chosen before saving. Candidates are grabbed in the browser from a
@@ -205,6 +226,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     const [fieldError, setFieldError] = useState({});
     const video = useRef(null);
     const shortEnd = useRef(null);
+    const [frameCopy, setFrameCopy] = useState(null);
     const [coverPreview, setCoverPreview] = useState("");
 
     useEffect(() => {
@@ -355,27 +377,60 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     const saved = !!pub?.publicationJobId && !dirty;
     const draftKey = JSON.stringify([project, pub?.publicationJobId, pub?.publicationReceiptSha256]);
     const drafts = platformDraft.key === draftKey ? platformDraft.values : {};
-    const updateDraft = (platformId, field, value) => setPlatformDraft(previous => {
-        const values = previous.key === draftKey ? previous.values : {};
-        return {key: draftKey, values: {...values, [platformId]: {...values[platformId], [field]: value}}};
-    });
+    const resetPlatformPreview = () => {
+        shortEnd.current = null;
+        setFrameCopy(null);
+    };
+    const updateDraft = (platformId, patch) => {
+        if (shortEnd.current) {
+            video.current?.pause();
+            resetPlatformPreview();
+        }
+        setPlatformDraft(previous => {
+            const values = previous.key === draftKey ? previous.values : {};
+            return {key: draftKey, values: {...values, [platformId]: {...values[platformId], ...patch}}};
+        });
+    };
     const {chosen, error: variantError, matches} = configuredProfiles(profiles, selected, drafts, fps, pub?.frames || 0, pub?.contentShots || []);
-    const previewShort = ({startFrame, endFrame}) => {
+    const updatePreview = (player, time) => {
+        const range = shortEnd.current;
+        if (!range) return;
+        if (time >= range.endFrame / fps) {
+            resetPlatformPreview();
+            player.pause();
+            player.currentTime = Math.max(0, range.endFrame / fps - 0.001);
+            return;
+        }
+        const caption = previewCaption(range, fps, time);
+        setFrameCopy(old => old?.position === caption?.position && old?.text === caption?.text ? old : caption);
+    };
+    const previewShort = (fields) => {
         const player = video.current;
         if (!player) return;
-        const range = {end: endFrame / fps};
+        const startFrame = fields.variant?.startFrame || 0;
+        const range = {startFrame, endFrame: startFrame + (fields.variant?.durationFrames || pub.frames), text: fields.publicationText};
         shortEnd.current = range;
+        setFrameCopy(previewCaption(range, fps, startFrame / fps));
         const watchFrame = (_now, frame) => {
             if (shortEnd.current !== range || video.current !== player) return;
-            stopAtShortEnd(player, shortEnd, frame.mediaTime + 1e-6);
+            if (!player.seeking) updatePreview(player, frame.mediaTime + 1e-6);
             if (shortEnd.current === range) player.requestVideoFrameCallback(watchFrame);
         };
         player.currentTime = startFrame / fps;
         player.requestVideoFrameCallback?.(watchFrame);
         void player.play().catch(error => {
             if (shortEnd.current !== range) return;
-            shortEnd.current = null;
+            resetPlatformPreview();
             setMessage(error.message);
+        });
+    };
+    const suggestCopy = (profile) => {
+        const id = profile.Platform;
+        const draft = drafts[id] || {};
+        const copy = draftPlatformCopy(pub, profile, draft.content || "");
+        updateDraft(id, {
+            opening: draft.opening?.trim() ? draft.opening : copy.opening,
+            closing: draft.closing?.trim() ? draft.closing : copy.closing,
         });
     };
     const queue = usePackageBatches({project, pub, profiles: chosen, selected, disabled: !!busy || !saved, startBlocked: !!variantError,
@@ -395,8 +450,9 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
         <div class="center">
             <section class="viewer" aria-label="成片预览">
                 <div class="stage">${pub ? html`<video ref=${video} src=${videoSrc} controls playsinline preload="metadata"
-                    onLoadStart=${() => { shortEnd.current = null; }} onEnded=${() => { shortEnd.current = null; }}
-                    onTimeUpdate=${e => stopAtShortEnd(e.currentTarget, shortEnd)}></video>` : html`<div class="empty">在左侧选一个成片</div>`}</div>
+                    onLoadStart=${resetPlatformPreview} onEnded=${resetPlatformPreview}
+                    onTimeUpdate=${e => updatePreview(e.currentTarget, e.currentTarget.currentTime)}></video>
+                    ${frameCopy && html`<span class=${`platform-frame-copy ${frameCopy.position}`}>${frameCopy.text}</span>`}` : html`<div class="empty">在左侧选一个成片</div>`}</div>
                 <div class="transport">
                     <button class="btn ghost" disabled=${!pub} onClick=${useFrame}>用当前画面做封面</button>
                     <span class="tc">封面：第 ${form.coverFrame} 帧（${(form.coverFrame / fps).toFixed(2)} 秒）</span>
@@ -416,24 +472,32 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                     ${saved && selected.length > 0 && html`<details>
                         <summary>调整各平台时长和画面文案（可选）</summary>
                         <p class="hint">时长留空保留全片。开场文案、结尾提示各显示最多 2 秒，直接写入视频画面；标题、简介和封面沿用。</p>
-                        ${chosen.map(({Platform: id}) => html`<div class="actions-row" key=${id}>
+                        ${chosen.map(profile => {
+                            const {Platform: id, Fields: fields} = profile;
+                            const canDraft = !variantError && !busy && !queue.busy && !queue.running
+                                && (fields.variant?.durationFrames || pub.frames) >= 2
+                                && (!drafts[id]?.opening?.trim() || !drafts[id]?.closing?.trim());
+                            return html`<div class="actions-row" key=${id}>
                             <label>${PLATFORMS[id]} 时长（秒）
                                 <input class="input" inputmode="decimal" placeholder="保留全片" value=${drafts[id]?.duration || ""}
-                                    disabled=${!!busy || queue.busy || queue.running} onInput=${e => updateDraft(id, "duration", e.currentTarget.value)} />
+                                    disabled=${!!busy || queue.busy || queue.running} onInput=${e => updateDraft(id, {duration: e.currentTarget.value})} />
                             </label>
                             ${!!pub?.contentShots?.length && html`<label>${PLATFORMS[id]} 内容关键词
                                 <input class="input" placeholder="留空从片头开始" maxlength="60" value=${drafts[id]?.content || ""}
-                                    disabled=${!!busy || queue.busy || queue.running} onInput=${e => updateDraft(id, "content", e.currentTarget.value)} />
+                                    disabled=${!!busy || queue.busy || queue.running} onInput=${e => updateDraft(id, {content: e.currentTarget.value})} />
                             </label>`}
                             ${matches[id] && html`<div>
                                 <span class="hint">${(matches[id].startFrame / fps).toFixed(2)}–${(matches[id].endFrame / fps).toFixed(2)} 秒 · ${matches[id].label}</span>
-                                <button class="btn ghost" onClick=${() => previewShort(matches[id])}>预览${PLATFORMS[id]}所选区间</button>
+                                <button class="btn ghost" disabled=${!!variantError} onClick=${() => previewShort(fields)}>预览${PLATFORMS[id]}所选区间</button>
                             </div>`}
                             ${[["opening", "开场文案"], ["closing", "结尾提示"]].map(([field, label]) => html`<label key=${field}>${PLATFORMS[id]} ${label}
                                 <input class="input" placeholder="可留空" value=${drafts[id]?.[field] || ""}
-                                    disabled=${!!busy || queue.busy || queue.running} onInput=${e => updateDraft(id, field, e.currentTarget.value)} />
+                                    disabled=${!!busy || queue.busy || queue.running} onInput=${e => updateDraft(id, {[field]: e.currentTarget.value})} />
                             </label>`)}
-                        </div>`)}
+                            <button type="button" class="btn ghost" disabled=${!canDraft} onClick=${() => suggestCopy(profile)}>起草${PLATFORMS[id]}画面文案</button>
+                            ${!matches[id] && fields.publicationText && html`<button type="button" class="btn ghost" disabled=${!!variantError}
+                                onClick=${() => previewShort(fields)}>试听${PLATFORMS[id]}画面文案</button>`}
+                        </div>`;})}
                     </details>`}
                     ${variantError && html`<p class="hint warn" role="status">${variantError}</p>`}
                     ${saved && queue.view}

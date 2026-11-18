@@ -126,6 +126,8 @@ details.group[open] > summary::before { content: "▾ "; }
 .work.edit { --bin-w: 300px; }
 .viewer .stage { position: relative; display: grid; min-height: 0; background: #000; }
 .viewer .stage > * { grid-area: 1 / 1; min-height: 0; }
+.platform-frame-copy { z-index: 1; align-self: start; justify-self: center; max-width: 90%; margin: 6% 0; padding: .3em .6em; background: #000d; color: #fff; font-weight: 700; pointer-events: none; text-align: center; }
+.platform-frame-copy.closing { align-self: end; margin-bottom: 3rem; }
 .viewer .program-frame { position: relative; align-self: center; justify-self: center; overflow: hidden; background: #000; }
 .viewer .program-frame > video { position: absolute; inset: 0; }
 .overlay-scale { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }

@@ -897,10 +897,11 @@ window.PROGRESS_DATA = {
     "docs/exec-plans/sprint-studio-multi-platform-packages.md",
     "tests/test_studio_multi_platform.py"
    ],
-   "done": "Studio可按平台用关键词选连续短版区间、预览、填写开场和结尾文案并排队出包。真实抖音中段音画裁切与全长B站同批恢复",
-   "todo": "跨镜头的语义重剪与自动生成画面文案待做；真实平台资格与质量待验",
+   "done": "Studio可按平台用关键词选短版区间，按内容起草并试听开场和结尾文案，再排队出包。真实抖音短版与全长B站同批恢复",
+   "todo": "跨镜头的语义重剪待做；真实平台资格与质量待验",
    "updated": "2026-11-19",
    "sprints": [
+    "sprint-platform-copy-draft",
     "sprint-platform-content-cut",
     "sprint-platform-video-copy",
     "sprint-platform-short-pack",
@@ -1594,6 +1595,12 @@ window.PROGRESS_DATA = {
      "name": "按成片内容选平台短版",
      "status": "done",
      "sprint": "sprint-platform-content-cut"
+    },
+    {
+     "id": "P035-copy-draft",
+     "name": "本机起草并试听平台画面文案",
+     "status": "done",
+     "sprint": "sprint-platform-copy-draft"
     }
    ]
   },
@@ -2236,7 +2243,7 @@ window.PROGRESS_DATA = {
     "P041",
     "R3"
    ],
-   "date": "",
+   "date": "2026-11-19",
    "bytes": 1595
   },
   {
@@ -2657,6 +2664,16 @@ window.PROGRESS_DATA = {
    ],
    "date": "2026-11-19",
    "bytes": 1375
+  },
+  {
+   "file": "sprint-platform-copy-draft",
+   "title": "本机起草并试听平台画面文案",
+   "ids": [
+    "P035",
+    "R2"
+   ],
+   "date": "",
+   "bytes": 1033
   },
   {
    "file": "sprint-platform-packages",
