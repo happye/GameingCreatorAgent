@@ -44,6 +44,11 @@ def parent(
         raise ValueError("Publication receipt changed")
     publication = state["publication"]
     _, render, _ = publication_jobs.render_parent(jobs, publication["renderJobId"])
+    profiles = request["profiles"] if "profiles" in request else [request["profile"]]
+    for profile in profiles:
+        variant = profile["Fields"].get("variant")
+        if variant is not None and variant["durationFrames"] >= render["frames"]:
+            raise ValueError("短版帧数必须少于原成片帧数。")
     return state, publication, render
 
 
@@ -54,14 +59,18 @@ def prepare(jobs: Any, request: dict[str, Any]) -> tuple[str, str]:
 
 
 async def save_package(jobs: Any, directory: Path, request: dict[str, Any]) -> None:
+    profile = validate_profile(request["profile"])
     state, publication, render = await asyncio.to_thread(parent, jobs, request)
     target = jobs.safe(directory / "result")
     target.mkdir()
-    profile = validate_profile(request["profile"])
     source = jobs.directory(request["publicationJobId"]) / "result"
     video = jobs.safe(jobs.directory(publication["renderJobId"]) / "result/video.mp4")
     watermark = render.get("watermark")
     duration = Fraction(int(render["frames"]), int(render.get("fpsNumerator", 1)))
+    if variant := profile["Fields"].get("variant"):
+        duration = Fraction(
+            variant["durationFrames"] * render["fpsDenominator"], render["fpsNumerator"]
+        )
     facts = await encode(
         jobs.repository,
         video,
@@ -71,12 +80,12 @@ async def save_package(jobs: Any, directory: Path, request: dict[str, Any]) -> N
         watermark,
         duration,
     )
+    validation = _validate_output(profile, facts, publication, render)
     for name in ("title.txt", "description.txt", "tags.json"):
         jobs.safe(target / name).write_bytes(jobs.safe(source / name).read_bytes())
     jobs.save(
         target / "platform.json", {"profile": profile, "profileSha256": profile_digest(profile)}
     )
-    validation = validate_package(profile, facts, publication, render)
     jobs.save(target / "validation.json", validation)
     with zipfile.ZipFile(jobs.safe(target / "package.zip"), "x", zipfile.ZIP_DEFLATED) as archive:
         for name in FILES:
@@ -108,8 +117,8 @@ def verify(
     receipt: dict[str, Any],
 ) -> None:
     request = stored["request"]
-    parent_state, publication, render = parent(jobs, request)
     profile = validate_profile(request["profile"])
+    parent_state, publication, render = parent(jobs, request)
     if (
         state["parentJobId"] != request["publicationJobId"]
         or state["projectId"] != parent_state["projectId"]
@@ -137,7 +146,7 @@ def verify(
         "profileSha256": profile_digest(profile),
     }:
         raise ValueError("Profile changed")
-    validation = validate_package(profile, receipt["facts"], publication, render)
+    validation = _validate_output(profile, receipt["facts"], publication, render)
     if jobs.read(target / "validation.json") != validation:
         raise ValueError("Validation changed")
     state["package"] = {
@@ -158,6 +167,19 @@ def verify(
             for name in DOWNLOADS
         },
     }
+
+
+def _validate_output(
+    profile: dict[str, Any],
+    facts: dict[str, Any],
+    publication: dict[str, Any],
+    render: dict[str, Any],
+) -> dict[str, Any]:
+    validation = validate_package(profile, facts, publication, render)
+    checks = validation["checks"]
+    if "variant" in profile["Fields"] and (checks["frames"], checks["fps"]) != ("pass", "pass"):
+        raise ValueError("短版实测帧数或帧率与原成片时钟不符。")
+    return validation
 
 
 def resource(jobs: Any, job_id: str, name: str) -> MediaResource:

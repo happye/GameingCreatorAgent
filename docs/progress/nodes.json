@@ -280,10 +280,11 @@
    ]
   },
   "P035": {
-   "done": "Studio一次提交多平台持久队列，关页继续，重启显式恢复同批；成功包复用，中断attempt留存，停止后续不杀当前包。真实四平台七文件ZIP及进程重启恢复通过",
-   "todo": "按平台智能改时长/Hook/CTA的变体未做；真实平台资格与质量仍待验",
+   "done": "Studio支持多平台持久队列，成功包复用，中断记录保留。发布页可按平台填写短版时长；实测同批复用全长B站包并生成抖音15秒七文件ZIP，音画对齐，刷新可恢复",
+   "todo": "按内容智能重剪、画面内Hook/CTA仍待做；真实平台资格与质量仍待验",
    "updated": "2026-11-18",
    "sprints": [
+    "sprint-platform-short-pack",
     "sprint-package-batches",
     "sprint-studio-multi-platform-packages",
     "sprint-platform-packages"
@@ -526,6 +527,12 @@
      "name": "多平台持久队列、停止后续与重启恢复",
      "status": "done",
      "sprint": "sprint-package-batches"
+    },
+    {
+     "id": "R2-platform-short-pack",
+     "name": "同一发布版本按平台选时长并打包",
+     "status": "done",
+     "sprint": "sprint-platform-short-pack"
     },
     {
      "id": "R2-B",

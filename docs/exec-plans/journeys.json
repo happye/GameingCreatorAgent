@@ -9,7 +9,7 @@
       "agent_run": {
         "date": "2026-11-18",
         "result": "pass",
-        "evidence": "既有真实漫画群星一句需求→AI方案→本地补足30秒→中文旁白→成片流程继续扩展为四平台持久队列。发布598a72a7f4164c3fba2ff8e234081681，e6e0f97ddd5a36c292318459a9895f54一次勾选四平台后关闭浏览器，服务端仍全部completed，重开4/4并下载四份七文件ZIP；逐包ffprobe均30秒H264/AAC且尺寸匹配冻结profile，B站复用旧包且ZIP SHA不变。另存多平台版标题的真实三平台队列75e124109c594dcc8c87c446339a0df6验证cancel只停后续、当前包收尾；resume后中断自有服务，重启不自动再提交，UI显式恢复同batch，前两项ID保持，第三旧中断attempt保留，新attempt2完成，页面3/3。产物.cache/scratch/package-batches-20261118/（bilibili/douyin/kuaishou/xiaohongshu.zip及delivery-evidence.json），详sprint-package-batches。没有模型、支付或真实平台上传，原成片/方案/失败证据保留，人评不变。"
+        "evidence": "既有真实漫画群星一句需求→AI方案→本地补足30秒→中文旁白→成片流程继续扩展为四平台持久队列。发布598a72a7f4164c3fba2ff8e234081681，e6e0f97ddd5a36c292318459a9895f54一次勾选四平台后关闭浏览器，服务端仍全部completed，重开4/4并下载四份七文件ZIP；逐包ffprobe均30秒H264/AAC且尺寸匹配冻结profile，B站复用旧包且ZIP SHA不变。另存多平台版标题的真实三平台队列75e124109c594dcc8c87c446339a0df6验证cancel只停后续、当前包收尾；resume后中断自有服务，重启不自动再提交，UI显式恢复同batch，前两项ID保持，第三旧中断attempt保留，新attempt2完成，页面3/3。产物.cache/scratch/package-batches-20261118/（bilibili/douyin/kuaishou/xiaohongshu.zip及delivery-evidence.json），详sprint-package-batches。本批另实测同一草稿混合 AI 插入、裁剪、删除和手动替换，刷新恢复后试听并导出 27.5 秒成片。发布 5462eed2c820468eb4beb5c1c5ac94d1 下的队列 f62b4943015cfab48822711116c2e921 重开恢复 2/2，B 站全长 ZIP 复用，抖音 15.000 秒、450 帧且音画同端点，均为七文件。证据与视频在 .cache/scratch/mixed-timeline-20261118/，详 sprint-mixed-timeline 和 sprint-platform-short-pack。没有模型、支付或真实平台上传，原成片/方案/失败证据保留，人评不变。"
       },
       "human_check": {
         "date": "2026-11-11",

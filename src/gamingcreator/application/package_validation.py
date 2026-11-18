@@ -11,7 +11,9 @@ def validate_package(
         key: ("pass" if facts[key] == video[key] else "fail")
         for key in ("width", "height", "codec", "pixelFormat")
     }
-    checks["frames"] = "pass" if facts["frames"] == parent["frames"] else "fail"
+    variant = profile["Fields"].get("variant")
+    expected_frames = parent["frames"] if variant is None else variant["durationFrames"]
+    checks["frames"] = "pass" if facts["frames"] == expected_frames else "fail"
     fps = facts["fps"]
     checks["fps"] = (
         "pass"

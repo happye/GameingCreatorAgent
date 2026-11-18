@@ -1,31 +1,18 @@
 # HANDOFF（覆盖快照）
 
-## 最近一次会话（2026-11-18，完成持久队列后收尾停止）
+## 最近一次会话（2026-11-18）
 
-用户在本轮要求额度不足27%时完成手头任务后停止。本批持久平台包队列已交付，不再开新功能；全部51项目标未完成，人评不变。分支codex/knowledge-version-compare-20261108。用户未跟踪设计文档、旧工作树/stash、原片/模型/分析/账本/旧成片均保留。
+分支 `codex/knowledge-version-compare-20261108`。先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。本批完成两个切片：P041 在一个草稿里混合 AI 插入、裁剪、局部删除、手动替换，刷新恢复后可试听和导出；P035 同一发布版本可按平台独立填写短版时长，空白用全长，刷新后恢复队列。不要重做多平台持久队列、AI 单换／多换／插入、编号策划、本地补足 30 秒或 Grok A01–F16 修复。
 
-## 最新交付与产物
+## 实证与接手入口
 
-服务http://127.0.0.1:8766/studio保留可用，PID/日志以.cache/workspace/port-8766.json为准。项目artifacts/demo-phase0，漫画群星run f76f5d6495314c04ae04083614d4afd6；作品55f97422dabd6c5a3d87eb323018e45a。
+- 项目 `artifacts/demo-phase0`，真实漫画群星 run `f76f5d6495314c04ae04083614d4afd6`，作品 `55f97422dabd6c5a3d87eb323018e45a`。新代码验证服务 `http://127.0.0.1:8767/studio`，所有权与日志见 `.cache/workspace/port-8767.json`；此前 8766 未动。两个验证队列已终态。
+- [混合剪辑](docs/exec-plans/sprint-mixed-timeline.md)：父 `6f57066755a04d47b05bbd28b1eb2667` 使用原已付费插入建议；保留 `48–48.5s` 插入，删另一原段、手换一段，同一草稿撤销/重做、刷新和保存；新版本 `27e135f8feb54512a5666a1cf065481e` → 渲染 `d26767ce66bd425a99408c6d8c6bcc9f`（825 帧 / 27.5 秒），浏览器已解码并播放。发布 `5462eed2c820468eb4beb5c1c5ac94d1` → B 站 `616395e711434a39a3d383ded9057b1d` 七文件。`composed-v1` 保存可信插入锚点，允许删锚后保留插入；旧 v5 恢复保持，替换段两侧固定硬切，编辑后旧预览不可套用。
+- [平台短版](docs/exec-plans/sprint-platform-short-pack.md)：同一发布批 `f62b4943015cfab48822711116c2e921` 恢复 2/2，B 站全长 ZIP 原 SHA 不变，抖音 `8d38b8a136c346fb861627e892fa0024` 720×1280、450 帧 / 15.000 秒，音画终点相同。`Fields.variant.durationFrames` 随队列冻结，单包和批量入口校验父收据与帧数；旧全长不变。
+- 可用产物 `.cache/scratch/mixed-timeline-20261118/`：`mixed-timeline.mp4`、`bilibili-duration-variant.zip`、`douyin-duration-variant.zip`，以及 `playback.json`、`variants-final.json`。此前四平台与三平台中断恢复实证仍在 `.cache/scratch/package-batches-20261118/`，[原合同](docs/exec-plans/sprint-package-batches.md)。
 
-原真实30秒成片d5bcfc6af3f949cda9122bd82b2711dc，发布598a72a7f4164c3fba2ff8e234081681。新四平台队列e6e0f97ddd5a36c292318459a9895f54，经页面一次提交并关闭浏览器，B站/抖音/快手/小红书均completed；重开4/4，下载四份不同平台七文件ZIP，各30秒H264/AAC且尺寸匹配profile。B站复用旧0080900c6a5a4af4b17c26d92d1d64be，ZIP SHA保持。
+## 下一优先级与约束
 
-另保存“多平台版”标题的三平台队列75e124109c594dcc8c87c446339a0df6：cancel后当前项收尾、第三项无job；resume启动第三项时停止已核身份服务。重启GET显示interrupted且无自动新attempt；真实页面显式resume同batch，前两项7286f92f29774d9794a9aa45a94c4cea、b1d0a60fc91d46428de5758bfaae43dd保持，旧第三项bb3558c6482c48da9c66cd4cadc02e30留history(interrupted)，新attempt2/job28a574f29720482b8cbba0008e055d31完成，重开3/3。两个队列当前均completed，无队列继续跑。
+下一步 P035 画面内 Hook/CTA：沿用发布版本与冻结的平台配置，优先接手填的开场文案和结尾提示到实际短版视频，再推内容驱动选段。随后 P041 一句话发起混合修改，复用现有操作和本地试听。每个切片沿真实素材闭环并更新看板。原 `.codex/agents/` 用户更新、未跟踪设计文档、工作树及 stash 保留。
 
-产物.cache/scratch/package-batches-20261118/：bilibili.zip、douyin.zip、kuaishou.zip、xiaohongshu.zip、delivery-evidence.json、四平台/取消/重启前后快照和截图。合同docs/exec-plans/sprint-package-batches.md。不要重建已完成包，不删除旧中断产物。
-
-## 接手实现
-
-新ui/package_batches.py由CreationJobs构造挂载，独立creations/batches目录。POST /api/creation/package-batches冻结requestId/project/pub/receipt/有序profiles（1–4不同平台），GET列表/单批；/<batchId>/resume、/cancel仅projectId。原单包API/权限/费用不变。request与state各schema+整体SHA；临时pending目录完整写好后rename，坏批隔离errors[]，不改坏证据。注册/owner/state/同发布注册锁分离，childRequestId先保存再submit，丢jobId窗口沿相同意图找回。
-
-GET/启动不会执行旧批。显式resume复用成功/运行项；中断项保留旧尝试再建attempt；普通failed不自动重试。cancel只停止后续提交，当前FFmpeg自然完成；取消成功返回后不再提交下一项。前端package_batches.js从服务器恢复/轮询，无需localStorage；publish.js生成改用队列，旧单包显式retry保留。新模块静态asset已挂白名单。
-
-唯一guard通过：状态完整性、初始化公开窗口、坏记录隔离、锁序、取消边界、权限及history。主树3Python Ruff/format/mypy及2JS语法通过，真实关闭浏览器/四平台文件/取消/自有服务重启/显式恢复通过。无pytest/全量/模型/真实平台发布。本批代码来自package-batches树，已集成，子代理结束；原改动留树。
-
-## 前批与下一步
-
-此前6a14629已接编号AI方案→本地补足30秒→51字AI旁白/Huihui14.3秒→成片/包；产物.cache/scratch/ai-planning-refs-20261118/。AI策划2c49c15b…bc4031¥0.08408，旁白920bc87c…b13000¥0.00803424，旧方案/引用保持。多换0b59734、插入fa24099、单换b8a2afc及Grok修复保留，勿重复实施。
-
-用户恢复后再从STATUS/Dashboard/accelerated-product-roadmap继续。仍缺P041混合插入/替换/删裁，P035按平台改时长/Hook/CTA等；持久队列已完成，不再列缺口。J1第五次人评未过，J2/J3未人评，不能因工程实证改passes/质量结论。旧完整verify-20261117-002506约89%按用户要求取消，曾见失败无最终统计，不改绿，不主动全量；未Release、未合main。
-
-保护：旧失败a4714856…、82f72415…、b991bc…原件/费用不改不重发。文字月¥30/同作品¥1，指定视觉月¥50；声音免费本机，平台实发/支付/云配音另授权。不提交密钥/数据库/媒体，不删用户文件。推送git -c http.proxy=http://127.0.0.1:7890 push。
+本批只有必要的小范围静态、浏览器和下载文件验证；无 pytest/全量/Release、无付费模型或上传、未合 main。旧完整 `verify-20261117-002506` 按用户要求中断，曾见失败，不标绿。J1 第五次人评未过，J2/J3 未人评，不因工程实证改 `passes` 或质量。更新和推送遵循 `AGENTS.md`；原录像、旧分析、收据和账本保留，已有失败/付费请求不重发。文字月 ¥30/单条 ¥1、指定视觉月 ¥50，继续走费用门禁；声音免费本机，真实平台发布或支付须另授权。

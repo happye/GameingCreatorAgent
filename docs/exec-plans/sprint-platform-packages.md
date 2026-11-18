@@ -8,6 +8,8 @@ GET /api/creation/platform-profiles返回四份本地可编辑preset。POST /api
 
 profile exact `{Platform,RuleVersion,UpdatedAt,Source,Fields}`，Source=`{kind:'local_preset',label:'用户可编辑本地导出配置，非官方规则'}`。Fields=`{video:{width,height,fit:'pad'|'crop',codec:'h264',pixelFormat:'yuv420p'},cover:{width,height,fit:'pad'|'crop'},limits:{maxBytes:null|int,minDurationMs:null|int,maxDurationMs:null|int,titleMaxChars:null|int,descriptionMaxChars:null|int,tagMaxCount:null|int,requiredTags:string[]}}`。帧率/总帧数继承父成片，不自动改Hook/CTA/时长；尺寸限制是本地导出选择，不冒称官方规则。
 
+2026-11-18 扩展：[各平台可选短版](sprint-platform-short-pack.md)允许 `Fields.variant.durationFrames` 冻结一个比父成片短的前缀；省略仍走原全长合同。不会自动改写画面内 Hook/CTA。
+
 ## 产物与真实性
 
 七文件video.mp4、cover.png、title.txt、description.txt、tags.json、platform.json、validation.json；ZIP只含七文件，不含源视频/源路径/许可附件/内部报告。receipt放ZIP外，绑定七文件、ZIP、配置canonical SHA、publication/render父身份和文件SHA，最后原子发布。父验证在异步编码中通过to_thread等合适边界，避免复现nested asyncio。

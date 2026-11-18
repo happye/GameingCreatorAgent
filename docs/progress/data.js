@@ -46,7 +46,7 @@ window.PROGRESS_DATA = {
    "agent_run": {
     "date": "2026-11-18",
     "result": "pass",
-    "evidence": "既有真实漫画群星一句需求→AI方案→本地补足30秒→中文旁白→成片流程继续扩展为四平台持久队列。发布598a72a7f4164c3fba2ff8e234081681，e6e0f97ddd5a36c292318459a9895f54一次勾选四平台后关闭浏览器，服务端仍全部completed，重开4/4并下载四份七文件ZIP；逐包ffprobe均30秒H264/AAC且尺寸匹配冻结profile，B站复用旧包且ZIP SHA不变。另存多平台版标题的真实三平台队列75e124109c594dcc8c87c446339a0df6验证cancel只停后续、当前包收尾；resume后中断自有服务，重启不自动再提交，UI显式恢复同batch，前两项ID保持，第三旧中断attempt保留，新attempt2完成，页面3/3。产物.cache/scratch/package-batches-20261118/（bilibili/douyin/kuaishou/xiaohongshu.zip及delivery-evidence.json），详sprint-package-batches。没有模型、支付或真实平台上传，原成片/方案/失败证据保留，人评不变。"
+    "evidence": "既有真实漫画群星一句需求→AI方案→本地补足30秒→中文旁白→成片流程继续扩展为四平台持久队列。发布598a72a7f4164c3fba2ff8e234081681，e6e0f97ddd5a36c292318459a9895f54一次勾选四平台后关闭浏览器，服务端仍全部completed，重开4/4并下载四份七文件ZIP；逐包ffprobe均30秒H264/AAC且尺寸匹配冻结profile，B站复用旧包且ZIP SHA不变。另存多平台版标题的真实三平台队列75e124109c594dcc8c87c446339a0df6验证cancel只停后续、当前包收尾；resume后中断自有服务，重启不自动再提交，UI显式恢复同batch，前两项ID保持，第三旧中断attempt保留，新attempt2完成，页面3/3。产物.cache/scratch/package-batches-20261118/（bilibili/douyin/kuaishou/xiaohongshu.zip及delivery-evidence.json），详sprint-package-batches。本批另实测同一草稿混合 AI 插入、裁剪、删除和手动替换，刷新恢复后试听并导出 27.5 秒成片。发布 5462eed2c820468eb4beb5c1c5ac94d1 下的队列 f62b4943015cfab48822711116c2e921 重开恢复 2/2，B 站全长 ZIP 复用，抖音 15.000 秒、450 帧且音画同端点，均为七文件。证据与视频在 .cache/scratch/mixed-timeline-20261118/，详 sprint-mixed-timeline 和 sprint-platform-short-pack。没有模型、支付或真实平台上传，原成片/方案/失败证据保留，人评不变。"
    },
    "human_check": {
     "date": "2026-11-11",
@@ -897,10 +897,11 @@ window.PROGRESS_DATA = {
     "docs/exec-plans/sprint-studio-multi-platform-packages.md",
     "tests/test_studio_multi_platform.py"
    ],
-   "done": "Studio一次提交多平台持久队列，关页继续，重启显式恢复同批；成功包复用，中断attempt留存，停止后续不杀当前包。真实四平台七文件ZIP及进程重启恢复通过",
-   "todo": "按平台智能改时长/Hook/CTA的变体未做；真实平台资格与质量仍待验",
+   "done": "Studio支持多平台持久队列，成功包复用，中断记录保留。发布页可按平台填写短版时长；实测同批复用全长B站包并生成抖音15秒七文件ZIP，音画对齐，刷新可恢复",
+   "todo": "按内容智能重剪、画面内Hook/CTA仍待做；真实平台资格与质量仍待验",
    "updated": "2026-11-18",
    "sprints": [
+    "sprint-platform-short-pack",
     "sprint-package-batches",
     "sprint-studio-multi-platform-packages",
     "sprint-platform-packages"
@@ -1445,6 +1446,12 @@ window.PROGRESS_DATA = {
      "name": "多平台持久队列、停止后续与重启恢复",
      "status": "done",
      "sprint": "sprint-package-batches"
+    },
+    {
+     "id": "R2-platform-short-pack",
+     "name": "同一发布版本按平台选时长并打包",
+     "status": "done",
+     "sprint": "sprint-platform-short-pack"
     },
     {
      "id": "R2-B",
@@ -2111,12 +2118,12 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "Grok A01–F16及审查修复已集成：逐词绑定、任务终态、推理复用、取消发布、手势监听与OCR完整性问题已闭合，唯一关键边界审查通过；原树/原片/账本/旧分析保留。",
-  "Grok修复定向99/44/3通过，TD030解决。历史完整失败不改绿，未Release/合main，人评不变。",
-  "已接入代理自动预览/只读空间盘点、OCR独立文字查询、规则方案去重/A-B对照、显式本机逐词ASR/烧录及多轨交互。已完成的技术链路不代表内容质量已验收；旧OCR无hash只能查看，显式重扫写独立v2缓存。见sprint-grok-repair-integration及ocr-frames-guide。",
+  "Grok A01–F16及修复已集成，定向99/44/3通过，TD030解决。原树/原片/账本/旧分析保留，未Release或合main。",
+  "已接入代理自动预览、空间盘点、OCR、方案对照、本机逐词字幕及多轨。旧OCR只能查看，显式重扫写v2缓存。见sprint-grok-repair-integration及ocr-frames-guide。",
   "v3替换镜头/文字PNG图层草稿恢复已交付55886b4；字幕可信映射与词级隐藏保护4139a26已推送，唯一关键审查通过。完整verify-20261117-002506在约九成时按用户要求取消，曾出现失败标记，无最终统计；保留日志，不改绿，不继续跑全量。",
   "真实漫画群星29秒流程已进一步接入AI旁白重起草：确认覆盖/保旧轨→本机中文合成14.56秒→保存→MP4→B站七文件包，实际下载并播放。AI文案也成功生成、校改后保存出包；新旁白估算¥0.00819112、文案¥0.00456512。产物在.cache/scratch/product-journey-20261117/，最新manga-ai-narration-preview.mp4及bilibili-ai-narration-package.zip；自然度和语义仍待人评。",
-  "已交付AI单换/插入/多换、编号策划与本地补足30秒。本批新增多平台持久队列：关浏览器后四平台全完成并下载；逐包30秒/七文件/尺寸已核，旧B站包SHA不变。另真实三平台批次验证停止后续、进程重启不自动运行、页面显式恢复同ID，完成子包复用，中断attempt保留。产物.cache/scratch/package-batches-20261118/，合同sprint-package-batches；唯一guard及定向静态通过，无pytest/全量/模型，人评不变。按用户额度<27%要求，完成本项即收尾停止，未开混合修改等新任务，全部51项目标未完成。"
+  "已交付AI单换/插入/多换、编号策划与本地补足30秒。多平台持久队列已实测关页出完四平台七文件包、停止后续、进程重启后显式恢复。产物 `.cache/scratch/package-batches-20261118/`，见 [sprint-package-batches](docs/exec-plans/sprint-package-batches.md)。",
+  "已实测在一个草稿混合 AI 插入、裁剪、局部删除和手动替换，刷新后恢复、试听、导出并生成发布包；同一发布批可保留全长 B 站并生成 15 秒抖音短版。产物 `.cache/scratch/mixed-timeline-20261118/`，见 [混合剪辑](docs/exec-plans/sprint-mixed-timeline.md) 和[平台短版](docs/exec-plans/sprint-platform-short-pack.md)。下一步接入平台版画面内开场文案和行动提示（Hook/CTA），再接按内容剪选及一句话发起混合修改。本批无新模型调用、全量测试或真人质量验收；51 项仍未全部交付。"
  ],
  "sprints": [
   {
@@ -2179,7 +2186,7 @@ window.PROGRESS_DATA = {
     "P041",
     "R3"
    ],
-   "date": "2026-11-17",
+   "date": "2026-11-18",
    "bytes": 3374
   },
   {
@@ -2535,7 +2542,7 @@ window.PROGRESS_DATA = {
     "P041",
     "R3"
    ],
-   "date": "",
+   "date": "2026-11-18",
    "bytes": 2085
   },
   {
@@ -2600,7 +2607,7 @@ window.PROGRESS_DATA = {
     "R2-E"
    ],
    "date": "2026-11-01",
-   "bytes": 5530
+   "bytes": 5753
   },
   {
    "file": "sprint-platform-short-pack",
@@ -2612,7 +2619,7 @@ window.PROGRESS_DATA = {
     "R2"
    ],
    "date": "",
-   "bytes": 791
+   "bytes": 1686
   },
   {
    "file": "sprint-premiere-narration-track",

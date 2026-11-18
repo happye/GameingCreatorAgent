@@ -22,8 +22,10 @@ def validate_profile(profile: Any) -> dict[str, Any]:
     ] != {"kind": "local_preset", "label": "用户可编辑本地导出配置，非官方规则"}:
         raise ValueError("Unsupported local profile")
     fields = profile["Fields"]
-    if not isinstance(fields, dict) or set(fields) != {"video", "cover", "limits"}:
+    if not isinstance(fields, dict) or set(fields) - {"variant"} != {"video", "cover", "limits"}:
         raise ValueError("Invalid profile fields")
+    if "variant" in fields:
+        _validate_variant(fields["variant"])
     for kind in ("video", "cover"):
         value = fields[kind]
         expected = {"width", "height", "fit"} | (
@@ -71,6 +73,16 @@ def validate_profile(profile: Any) -> dict[str, Any]:
     ):
         raise ValueError("Inverted duration limits")
     return profile
+
+
+def _validate_variant(variant: Any) -> None:
+    if (
+        not isinstance(variant, dict)
+        or set(variant) != {"durationFrames"}
+        or type(variant["durationFrames"]) is not int
+        or variant["durationFrames"] < 1
+    ):
+        raise ValueError("Invalid short package frame count")
 
 
 def profile_digest(profile: dict[str, Any]) -> str:

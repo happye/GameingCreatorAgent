@@ -15,6 +15,20 @@ const STATUS = {pass: "通过", fail: "未通过", unknown: "未知", not_config
 const jobPath = (id) => `/api/creation/jobs/${encodeURIComponent(id)}`;
 const when = (iso) => new Date(iso).toLocaleString("zh-CN", {hour12: false});
 const tagList = (text) => [...new Set(text.split(/[,，\n]/).map((t) => t.trim()).filter(Boolean))];
+function configuredProfiles(profiles, selected, durations, fps, totalFrames) {
+    let error = "";
+    const chosen = profiles.filter(p => selected.includes(p.Platform)).map(profile => {
+        const text = durations[profile.Platform];
+        if (!text) return profile;
+        const frames = Math.round(Number(text) * fps);
+        if (!/^\d+(?:\.\d+)?$/.test(text) || !Number.isSafeInteger(frames) || frames < 1 || frames >= totalFrames) {
+            error = `${PLATFORMS[profile.Platform]}请输入短于原成片的秒数，例如 15 或 12.5；留空保留全片。`;
+            return profile;
+        }
+        return {...profile, Fields: {...profile.Fields, variant: {durationFrames: frames}}};
+    });
+    return {chosen, error};
+}
 
 // J1 2026-11-11: the cover is chosen before saving. Candidates are grabbed in the browser from a
 // hidden copy of the video (preview only); saving still extracts the cover with FFmpeg.
@@ -136,6 +150,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     const [platform, setPlatform] = useState("");
     const [packages, setPackages] = useState([]);
     const [selected, setSelected] = useState([]);
+    const [durationDraft, setDurationDraft] = useState({key: null, values: {}});
     const epoch = useRef(0);
     const polling = useRef(new AbortController());
     const activeProject = useRef(project);
@@ -243,7 +258,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
         if (!pub?.publicationJobId) return;
         const generation = epoch.current, snapshot = pub;
         const current = () => generation === epoch.current;
-        const chosen = profiles.filter((p) => retry ? JSON.stringify(p) === JSON.stringify(retry.profile) : selected.includes(p.Platform));
+        const chosen = retry ? [retry.profile] : profiles.filter((p) => selected.includes(p.Platform));
         setBusy("package"); setMessage("");
         try {
             const existing = await restore(snapshot, generation);
@@ -296,7 +311,10 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     };
 
     const saved = !!pub?.publicationJobId && !dirty;
-    const queue = usePackageBatches({project, pub, profiles, selected, disabled: !!busy || !saved,
+    const durationKey = JSON.stringify([project, pub?.publicationJobId, pub?.publicationReceiptSha256]);
+    const durations = durationDraft.key === durationKey ? durationDraft.values : {};
+    const {chosen, error: durationError} = configuredProfiles(profiles, selected, durations, fps, pub?.frames || 0);
+    const queue = usePackageBatches({project, pub, profiles: chosen, selected, disabled: !!busy || !saved, startBlocked: !!durationError,
         onChanged: () => { const generation = epoch.current; if (pub?.publicationJobId) void restore(pub, generation).catch(e => { if (epoch.current === generation) setMessage(e.message); }); }});
     const coverSrc = pub?.publicationJobId && !dirty ? `${jobPath(pub.publicationJobId)}/publication-files/cover.png` : null;
     const limits = profiles.find((p) => p.Platform === platform)?.Fields?.limits || {};
@@ -325,13 +343,22 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                 <div class="track-area">
                     <div class="actions-row">
                         ${profiles.map((p) => html`<label><input type="checkbox" checked=${selected.includes(p.Platform)} disabled=${!!busy} onChange=${(e) => { setPlatform(p.Platform); setSelected(e.currentTarget.checked ? [...selected, p.Platform] : selected.filter((v) => v !== p.Platform)); }} />${PLATFORMS[p.Platform] || p.Platform}${selected.includes(p.Platform) && !packages.some((r) => r.profile?.Platform === p.Platform) ? " · 尚未提交" : ""}</label>`)}
-                        <button class="btn" disabled=${!saved || !!busy || queue.busy || queue.running || !selected.length} onClick=${queue.start}>${queue.busy ? "正在加入队列…" : "生成平台包"}</button>
+                        <button class="btn" disabled=${!saved || !!busy || queue.busy || queue.running || !selected.length || !!durationError} onClick=${queue.start}>${queue.busy ? "正在加入队列…" : "生成平台包"}</button>
                         ${saved && !selected.length ? html`<span class="hint" role="status" aria-label="平台包状态">至少勾选一个平台</span>` : null}
                         <span class="hint">${["titleMaxChars", "descriptionMaxChars", "tagMaxCount"].filter((k) => limits[k]).map((k) => `${CHECKS[k]}≤${limits[k]}`).join(" · ")}</span>
                     </div>
+                    ${saved && selected.length > 0 && html`<details>
+                        <summary>调整各平台时长（可选）</summary>
+                        <p class="hint">从成片开头保留指定时长，画面与声音一起截短。已保存的文案和封面沿用，留空保留全片。</p>
+                        <div class="actions-row">${chosen.map(p => html`<label>${PLATFORMS[p.Platform]} 时长（秒）
+                            <input class="input" inputmode="decimal" placeholder="保留全片" value=${durations[p.Platform] || ""}
+                                disabled=${!!busy || queue.busy || queue.running} onInput=${e => setDurationDraft({key: durationKey, values: {...durations, [p.Platform]: e.currentTarget.value}})} />
+                        </label>`)}</div>
+                        ${durationError && html`<p class="hint warn" role="status">${durationError}</p>`}
+                    </details>`}
                     ${saved && queue.view}
                     ${packages.map((pkg) => html`<div class="pkg-result">
-                        <p>${PLATFORMS[pkg.profile?.Platform] || ""} · ${client.jobStatus(pkg.status)} ${pkg.error?.message || ""}</p>
+                        <p>${PLATFORMS[pkg.profile?.Platform] || ""}${pkg.profile?.Fields?.variant ? ` · 短版 ${(pkg.profile.Fields.variant.durationFrames / fps).toFixed(2)} 秒` : ""} · ${client.jobStatus(pkg.status)} ${pkg.error?.message || ""}</p>
                         ${["failed", "interrupted"].includes(pkg.status) && html`<button class="btn ghost" disabled=${!!busy || !saved} onClick=${() => buildPackage(pkg)}>重试此平台</button>`}
                         ${pkg.generationStatus === "completed" && !pkg.error && html`<div>
                         <p class="v">${PLATFORMS[pkg.profile?.Platform] || ""}：${pkg.generationStatus === "completed" ? "已生成" : "未完成"}；本地检查${STATUS[pkg.localChecks] || "未知"}${pkg.publicationEligibility === "blocked" ? "；发布受阻（含仅供测试的音乐等）" : ""}${pkg.watermark ? "；含水印" : ""}。平台官方规则、素材权利尚未核实。</p>

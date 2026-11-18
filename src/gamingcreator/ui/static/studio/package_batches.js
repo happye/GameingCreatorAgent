@@ -14,11 +14,11 @@ async function requestId(body) {
     return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
 }
 
-export function usePackageBatches({project, pub, profiles, selected, disabled, onChanged}) {
+export function usePackageBatches({project, pub, profiles, selected, disabled, startBlocked, onChanged}) {
     const key = JSON.stringify([project, pub?.publicationJobId, pub?.publicationReceiptSha256]);
     const [state, setState] = useState({key, batches: [], busy: false, error: ""});
     const latest = useRef(null), refresh = useRef(null), signature = useRef("");
-    latest.current = {key, disabled, onChanged};
+    latest.current = {key, disabled, startBlocked, onChanged};
     useLayoutEffect(() => { signature.current = ""; setState({key, batches: [], busy: false, error: ""}); }, [key]);
     useEffect(() => {
         if (!pub?.publicationJobId) return;
@@ -40,7 +40,7 @@ export function usePackageBatches({project, pub, profiles, selected, disabled, o
         return () => { stopped = true; clearTimeout(timer); controller.abort(); refresh.current = null; };
     }, [key]);
     const run = async (url, body) => {
-        if (latest.current.key !== key || latest.current.disabled || state.busy) return;
+        if (latest.current.key !== key || latest.current.disabled || state.busy || (url === path && latest.current.startBlocked)) return;
         setState(s => ({...s, busy: true, error: ""}));
         try {
             await api(url, {}, {body});
@@ -58,17 +58,17 @@ export function usePackageBatches({project, pub, profiles, selected, disabled, o
     };
     const command = (id, action) => run(`${path}/${encodeURIComponent(id)}/${action}`, {projectId: project});
     return {start, busy: state.key === key && state.busy, running: batches.some(active),
-        view: html`<${BatchRecords} batches=${batches} error=${state.key === key ? state.error : ""}
+        view: html`<${BatchRecords} batches=${batches} error=${state.key === key ? state.error : ""} fps=${pub?.fps?.numerator / pub?.fps?.denominator}
             disabled=${disabled || state.busy} onCommand=${command} />`};
 }
 
-function BatchRecords({batches, error, disabled, onCommand}) {
+function BatchRecords({batches, error, disabled, onCommand, fps}) {
     return html`<section aria-label="持久平台队列">
         <p class="hint">选定平台后一次加入本机队列。关闭页面会继续生成；重启工作台后可继续未完成队列。停止只影响后续平台，当前包会收尾。</p>
         ${error && html`<p role="status">${error}</p>`}
         ${batches.map(batch => html`<div class="pkg-result" data-batch-id=${batch.batchId}>
             <p>平台队列 · ${names[batch.status] || batch.status} · ${batch.items.filter(i => i.status === "completed").length}/${batch.items.length}</p>
-            <ul>${batch.items.map(item => html`<li>${platforms[item.profile.Platform] || item.profile.Platform} · ${names[item.status] || item.status}${item.error?.message ? `：${item.error.message}` : ""}</li>`)}</ul>
+            <ul>${batch.items.map(item => html`<li>${platforms[item.profile.Platform] || item.profile.Platform}${item.profile.Fields.variant ? ` · 短版 ${(item.profile.Fields.variant.durationFrames / fps).toFixed(2)} 秒` : ""} · ${names[item.status] || item.status}${item.error?.message ? `：${item.error.message}` : ""}</li>`)}</ul>
             ${["interrupted", "cancelled"].includes(batch.status) && html`<button class="btn ghost" disabled=${disabled} onClick=${() => onCommand(batch.batchId, "resume")}>继续未完成队列</button>`}
             ${active(batch) && html`<button class="btn ghost" disabled=${disabled} onClick=${() => onCommand(batch.batchId, "cancel")}>停止后续平台</button>`}
         </div>`)}
