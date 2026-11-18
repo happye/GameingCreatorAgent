@@ -32,3 +32,7 @@ Studio首次加载多模块时，默认Python 3.13监听队列仅5；延迟accep
 ## 2026-11-12 quiet子进程模块路径
 
 Start-Process继承Codex PowerShell7模块路径，Utility加载后Get-FileHash缺失，verify三次setup-failed。预导入Utility无效；改quiet子进程先把PSHOME/Modules置首，原工具链检查保持，完整verify通过。监控子任务后续Bad Request后由主控跟进现有exec会话，未重启验证。收尾长内联写入命令被自动审批拒绝，改编辑器创建scratch脚本后执行；apply_patch不支持同一patch删除并新增相同路径，应直接更新。
+
+## 2026-11-18 Windows 补丁参数与换行
+
+`apply_patch.bat` 需要一个 UTF-8 参数，不能管道送补丁。含引号/换行的补丁用 `Get-Command codex.exe` 定位程序，`ProcessStartInfo.ArgumentList` 传 `--codex-run-as-apply-patch` 和单引号 here-string。跨工作树 diff 用 `git diff --output=<path>`，避免 PowerShell 文本管道把补丁改成 CRLF 导致上下文匹配失败。

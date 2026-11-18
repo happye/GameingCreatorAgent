@@ -57,8 +57,40 @@ def build_revision_v5(
     if insertions:
         _add_insertion(projected, parent_sha, clips, replacements, insertions[0], manifest)
     result = build_revision_v4(projected, root_sha, parent_sha, clips, replacements, manifest)
+    if (
+        replacements
+        and insertions
+        and insertions[0].get("editMode") == "composed-v1"
+        and any(
+            _canonical(edit["transitionIn"]) != _canonical(saved["transitionIn"])
+            for edit, saved in zip(clips, result["segments"], strict=True)
+        )
+    ):
+        raise ValueError("Replacement clips and their following clips must use cut transitions.")
     result.update(schemaVersion=REVISION_SCHEMA_V5, insertions=deepcopy(insertions))
     return result
+
+
+def _validate_insertion_operation(operation: dict[str, Any]) -> bool:
+    fields = {
+        "afterClipId",
+        "candidateId",
+        "startUs",
+        "endUs",
+        "newClipId",
+    }
+    if not isinstance(operation, dict) or set(operation) not in (fields, fields | {"editMode"}):
+        raise ValueError("Invalid insertion operation fields.")
+    composed = "editMode" in operation
+    if composed and operation["editMode"] != "composed-v1":
+        raise ValueError("Invalid insertion edit mode.")
+    if not all(
+        isinstance(operation[key], str) for key in ("afterClipId", "candidateId", "newClipId")
+    ):
+        raise ValueError("Invalid insertion identity fields.")
+    if type(operation["startUs"]) is not int or type(operation["endUs"]) is not int:
+        raise ValueError("Unknown insertion candidate or source clock.")
+    return composed
 
 
 def _add_insertion(
@@ -70,23 +102,16 @@ def _add_insertion(
     manifest: dict[str, Any],
 ) -> None:
     expected_ids = [r["clipId"] for r in projected["segments"]]
-    if not isinstance(operation, dict) or set(operation) != {
-        "afterClipId",
-        "candidateId",
-        "startUs",
-        "endUs",
-        "newClipId",
-    }:
-        raise ValueError("Invalid insertion operation fields.")
-    if replacements:
+    composed = _validate_insertion_operation(operation)
+    if not composed and replacements:
         raise ValueError("Insertion cannot also replace footage.")
+    start, end = operation["startUs"], operation["endUs"]
     identity = insertion_id(parent_sha, operation)
     if operation["newClipId"] != identity or identity in expected_ids:
         raise ValueError("Insertion identity differs from trusted operation.")
     candidates = {r["candidateId"]: r for r in manifest["candidates"]}
     candidate = candidates.get(operation["candidateId"])
-    start, end = operation["startUs"], operation["endUs"]
-    if candidate is None or type(start) is not int or type(end) is not int:
+    if candidate is None:
         raise ValueError("Unknown insertion candidate or source clock.")
     fps = projected["fpsNumerator"]
     if start != candidate["startUs"] or not start < end <= candidate["endUs"]:
@@ -110,6 +135,16 @@ def _add_insertion(
         transitionIn={"type": "cut", "frames": 0},
     )
     rows.insert(index, row)
+    if composed:
+        if not isinstance(clips, list) or not any(
+            isinstance(edit, dict) and edit.get("clipId") == identity for edit in clips
+        ):
+            raise ValueError("Composed insertion must retain the inserted clip.")
+        if isinstance(replacements, list) and any(
+            isinstance(edit, dict) and edit.get("targetClipId") == identity for edit in replacements
+        ):
+            raise ValueError("Save the inserted clip before replacing it.")
+        return
     expected_ids.insert(index, identity)
     if [r["clipId"] for r in clips] != expected_ids:
         raise ValueError("Insertion must retain all parent clips in order.")

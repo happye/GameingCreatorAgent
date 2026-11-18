@@ -19,3 +19,5 @@ R3 · P041、P032 · 2026-11-17 · 已完成真实UI及导出发布包，创意�
 发布82f43f8fc5ac48809792b9e2d1dbba42及B站包317a3b32e9234f63b6551a4edbf74cf3 completed并下载；ZIP七文件完整。原30秒MP4浏览器实际不静音播放2.19秒，音频解码40455字节；不据此判断主观听感。另经UI裁新第3段至48.5秒，保存后继24e685643eb449f19af360542c0bd6d6并刷新重开：28段29.5秒，稳定clipId、其他27段/音频等保留，原30秒成片/包不改。
 
 产物位于.cache/scratch/ai-clip-insertion-20261117/：ai-inserted-preview.mp4、bilibili-ai-inserted-package.zip、delivery-evidence.json、草稿/响应及截图。自动脚本早期等待不足的观察失败不重发模型，后续按validate响应等待已完成闭环。唯一task_quality_guard通过：根投影身份、旧空草稿标记、v5字幕请求、crossfade锚点结果状态问题均修。新prompt-v2列允许锚点，旧v1请求按原hash恢复。不上传真实平台，不改人评状态。
+
+2026-11-18 起，一次插入的原证明可与删裁及替换一起保存；旧纯插入读回和费用记录仍使用本合同。见[混合修改镜头](sprint-mixed-timeline.md)。

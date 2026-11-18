@@ -1042,15 +1042,16 @@ window.PROGRESS_DATA = {
     "tests/test_overlay_reasoning_e2e_browser.py",
     "tests/test_studio_overlay_reasoning_browser.py"
    ],
-   "done": "规则/AI删裁重排变速转场、图层调整、单镜头替换及插入已接；新增一句话多镜头替换，真实第5/6段整组预览/撤销重做/草稿恢复/保存重开/29.5秒导出/播放/出包通过，其他26段与旁白保留",
-   "todo": "混合插入/替换/删裁组合未接入；插入一次一段、需先保存再裁，旁白/图层不自动后移；开放式意图与创意质量未人评，不称完整AI编导",
+   "done": "规则/AI镜头及图层编辑、一句话多镜头替换已接；同一草稿可混合插入、裁剪、删除及替换，真实刷新恢复、撤销重做、一次保存、27.5秒播放与发布包通过",
+   "todo": "AI一句话生成混合动作尚未接入；一次插入一段，旁白/图层不自动后移；开放式意图与创意质量待人评",
    "updated": "2026-11-18",
    "sprints": [
     "sprint-timeline-commands",
     "sprint-ai-overlay-timing",
     "sprint-ai-clip-replacement",
     "sprint-ai-clip-insertion",
-    "sprint-ai-multi-replacement"
+    "sprint-ai-multi-replacement",
+    "sprint-mixed-timeline"
    ]
   },
   {
@@ -1647,6 +1648,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-ai-multi-replacement"
     },
     {
+     "id": "R3-mixed-timeline",
+     "name": "同一草稿混合插入、换源与删裁并出片",
+     "status": "done",
+     "sprint": "sprint-mixed-timeline"
+    },
+    {
      "id": "R3-grok-heavy-development",
      "name": "代理、屏幕文字检索、方案对照与逐词字幕（Grok100项）",
      "status": "partial",
@@ -2173,7 +2180,7 @@ window.PROGRESS_DATA = {
     "R3"
    ],
    "date": "2026-11-17",
-   "bytes": 3189
+   "bytes": 3374
   },
   {
    "file": "sprint-ai-clip-replacement",
@@ -2521,6 +2528,17 @@ window.PROGRESS_DATA = {
    "bytes": 2065
   },
   {
+   "file": "sprint-mixed-timeline",
+   "title": "同一草稿混合修改镜头",
+   "ids": [
+    "P032",
+    "P041",
+    "R3"
+   ],
+   "date": "",
+   "bytes": 2085
+  },
+  {
    "file": "sprint-narration-script",
    "title": "P025：解说模板草稿（单Agent）",
    "ids": [
@@ -2583,6 +2601,18 @@ window.PROGRESS_DATA = {
    ],
    "date": "2026-11-01",
    "bytes": 5530
+  },
+  {
+   "file": "sprint-platform-short-pack",
+   "title": "发布页各平台独立时长",
+   "ids": [
+    "P035",
+    "P036",
+    "P037",
+    "R2"
+   ],
+   "date": "",
+   "bytes": 791
   },
   {
    "file": "sprint-premiere-narration-track",

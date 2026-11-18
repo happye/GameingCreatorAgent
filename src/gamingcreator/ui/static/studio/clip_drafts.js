@@ -51,15 +51,17 @@ function insertionPlaceholders(payload, parents) {
     if (payload.schemaVersion !== V4_SCHEMA) return inserted;
     if (!Array.isArray(payload.insertions) || payload.insertions.length > 1) throw Error("插入快照字段无效");
     for (const op of payload.insertions) {
-        if (!op || !same(Object.keys(op).sort(), ["afterClipId", "candidateId", "startUs", "endUs", "newClipId"].sort())
+        const composed = op?.editMode === "composed-v1";
+        if (!op || !same(Object.keys(op).sort(), ["afterClipId", "candidateId", "startUs", "endUs", "newClipId", ...(composed ? ["editMode"] : [])].sort())
             || !parents.has(op.afterClipId) || typeof op.candidateId !== "string" || !op.candidateId
             || typeof op.newClipId !== "string" || !op.newClipId || parents.has(op.newClipId)
             || !Number.isSafeInteger(op.startUs) || !Number.isSafeInteger(op.endUs)
             || op.startUs < 0 || op.endUs <= op.startUs || !payload.candidateManifestSha256) throw Error("插入快照字段无效");
         const index = payload.rows?.findIndex(row => row?.clipId === op.newClipId);
         const row = payload.rows?.[index];
-        if (!(index > 0) || payload.rows[index - 1].clipId !== op.afterClipId
-            || row.startUs !== op.startUs || row.endUs !== op.endUs) throw Error("插入快照位置或范围无效");
+        if (!row || (composed ? row.startUs < op.startUs || row.endUs > op.endUs
+            : index === 0 || payload.rows[index - 1]?.clipId !== op.afterClipId
+                || row.startUs !== op.startUs || row.endUs !== op.endUs)) throw Error("插入快照位置或范围无效");
         inserted.set(op.newClipId, {clipId: op.newClipId});
     }
     return inserted;
@@ -143,7 +145,7 @@ export function useClipDrafts(state, project, workId, parentFields, keptCaptions
                     return;
                 }
                 const payload = partial ? {...view.payload, partial: true} : {schemaVersion: V4_SCHEMA, ...fullFields(state), ...replacementFields(state),
-                    insertions: (state.insertions || []).map(({afterClipId, candidateId, startUs, endUs, newClipId}) => ({afterClipId, candidateId, startUs, endUs, newClipId})),
+                    insertions: (state.insertions || []).map(({afterClipId, candidateId, startUs, endUs, newClipId, editMode}) => ({afterClipId, candidateId, startUs, endUs, newClipId, ...(editMode ? {editMode} : {})})),
                     expectedParentReceiptSha256: state.editor.expectedParentReceiptSha256, rows: clipRows(state.clips), partial: false};
                 rebuild(payload, state.editor, ...checks);
                 const sha256 = await payloadHash(payload);

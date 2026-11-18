@@ -105,14 +105,16 @@ def project_clips(jobs: Any, request: dict[str, Any], chain: Any, manifest: Any)
     for row in request["clips"]:
         identity = row["clipId"]
         source = parents.get(identity)
-        if identity in additions:
+        insertion = additions.get(identity)
+        if insertion is not None:
             source = public_candidate(
-                candidates[additions[identity]["candidateId"]],
+                candidates[insertion["candidateId"]],
                 timelines,
                 request["parentJobId"],
                 chain.plan_id,
                 request["candidateManifestSha256"],
             )
+            source.update(startUs=insertion["startUs"], endUs=insertion["endUs"])
         if identity in swaps:
             source = public_candidate(
                 candidates[swaps[identity]],

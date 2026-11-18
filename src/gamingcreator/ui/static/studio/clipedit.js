@@ -2,7 +2,7 @@
 // saved version, edit it locally (trim, order, delete, speed, transition, one-line commands),
 // and save it as a new version that names its parent's receipt hash.
 import {h} from "../vendor/preact.module.js";
-import {useCallback, useEffect, useLayoutEffect, useRef, useState} from "../vendor/hooks.module.js";
+import {useCallback, useLayoutEffect, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
 import {clipFrames} from "./preview.js";
@@ -51,6 +51,14 @@ const audioOf = (editor) => ({mix: editor.audioMix || {bgm: null, sourceGainDb: 
 
 const rows = (clips) => clips.map(({clipId, startUs, endUs, speed, transitionIn}) => ({clipId, startUs, endUs, speed, transitionIn}));
 const overlaysOf = (editor) => ({overlays: editor.overlays?.items || [], overlayAssets: editor.overlayAssets || []});
+const isPendingInsertion = (editing, id) => editing.insertions?.some((op) => op.newClipId === id);
+const forcedCut = (clips, index, replacements) => replacements[clips[index].clipId] || replacements[clips[index - 1]?.clipId];
+function composedInsertions(state, clips) {
+    if (!state.insertions?.length) return state.insertions;
+    const [op] = state.insertions;
+    return clips.some((clip) => clip.clipId === op.newClipId)
+        ? [{...op, editMode: "composed-v1"}] : state.editor.insertions ?? null;
+}
 
 export function useClipEditor(project, workId = null) {
     const [state, setState] = useState({status: "idle", base: null, editor: null, clips: [], audio: audioOf({}), ...overlaysOf({}), ...captionsOf({}), bounds: {}, replacements: {}, insertions: null, candidateManifestSha256: null, dirty: false});
@@ -58,12 +66,14 @@ export function useClipEditor(project, workId = null) {
     const current = useRef(state); current.current = state;
     const overlayEpoch = useRef(0), restoreEpoch = useRef(0);
     const editEpoch = useRef(0);
+    const saving = useRef(false);
     // Step undo/redo of local edits (not saved versions): snapshots of the editable fields.
     const history = useRef({past: [], future: [], key: null});
     const snap = (s) => ({clips: s.clips, subtitleOverrides: s.subtitleOverrides, audio: s.audio, overlays: s.overlays, overlayAssets: s.overlayAssets, bounds: s.bounds, replacements: s.replacements, insertions: s.insertions, candidateManifestSha256: s.candidateManifestSha256, dirty: s.dirty});
     const clearHistory = () => { history.current = {past: [], future: [], key: null}; };
     // Apply an edit and remember the state before it; repeated edits with the same key merge.
     const edit = useCallback((updater, key = null) => { restoreEpoch.current++; return setState((s) => {
+        if (saving.current) return s;
         const next = updater(s);
         if (next === s || s.status !== "ready") return next;
         editEpoch.current += 1;
@@ -107,12 +117,15 @@ export function useClipEditor(project, workId = null) {
         }
     }, []);
 
-    const change = useCallback((mutate, key = null) => edit((s) => {
+    const change = useCallback((mutate, key = null, expectedEpoch = null) => edit((s) => {
+        if (expectedEpoch !== null && editEpoch.current !== expectedEpoch) return s;
         if (s.status !== "ready") return s;
-        if (s.insertions?.length) return s;
         const clips = mutate(s.clips.map((c) => ({...c})));
         if (clips[0]) clips[0].transitionIn = {type: "cut", frames: 0};
-        return {...s, clips, subtitleOverrides: keptCaptions(s.subtitleOverrides, clips), dirty: true};
+        if (Object.keys(s.replacements).length) clips.forEach((clip, index) => {
+            if (forcedCut(clips, index, s.replacements)) clip.transitionIn = {type: "cut", frames: 0};
+        });
+        return {...s, clips, insertions: composedInsertions(s, clips), subtitleOverrides: keptCaptions(s.subtitleOverrides, clips), dirty: true};
     }, key), [edit]);
 
     const ops = {
@@ -146,10 +159,10 @@ export function useClipEditor(project, workId = null) {
             setSelectedId((currentId) => currentId === id ? (remaining[Math.min(Math.max(index, 0), remaining.length - 1)]?.clipId || "") : currentId);
         },
         // A previewed one-line command: take its clip rows, keep everything else we know about each clip.
-        apply: (newRows) => change((clips) => {
+        apply: (newRows, expectedEpoch) => change((clips) => {
             const byId = new Map(clips.map((c) => [c.clipId, c]));
             return newRows.map((row) => ({...byId.get(row.clipId), ...row}));
-        }),
+        }, null, expectedEpoch),
         applyProposal: (proposal) => edit((s) => {
             if (s.status !== "ready") return s;
             const byId = new Map(s.clips.map((c) => [c.clipId, c]));
@@ -182,7 +195,7 @@ export function useClipEditor(project, workId = null) {
         // its length stays as close to the old one as the new clip allows.
         replace: (id, candidate) => edit((s) => {
             if (s.status !== "ready") return s;
-            if (s.insertions?.length) return s;
+            if (isPendingInsertion(s, id)) return s;
             const clips = s.clips.map((c) => {
                 if (c.clipId !== id) return c;
                 const length = Math.max(1, c.endUs - c.startUs);
@@ -195,7 +208,7 @@ export function useClipEditor(project, workId = null) {
             });
             const at = clips.findIndex((c) => c.clipId === id);
             if (clips[at + 1]) clips[at + 1] = {...clips[at + 1], transitionIn: {type: "cut", frames: 0}};
-            return {...s, candidateManifestSha256: s.candidateManifestSha256 ?? s.editor.candidateManifestSha256 ?? candidates?.candidateManifestSha256 ?? null, clips, subtitleOverrides: s.subtitleOverrides.filter((o) => o.clipId !== id), bounds: {...s.bounds, [id]: {startUs: candidate.startUs, endUs: candidate.endUs}}, replacements: {...s.replacements, [id]: candidate.candidateId}, dirty: true};
+            return {...s, candidateManifestSha256: s.candidateManifestSha256 ?? s.editor.candidateManifestSha256 ?? candidates?.candidateManifestSha256 ?? null, clips, insertions: composedInsertions(s, clips), subtitleOverrides: s.subtitleOverrides.filter((o) => o.clipId !== id), bounds: {...s.bounds, [id]: {startUs: candidate.startUs, endUs: candidate.endUs}}, replacements: {...s.replacements, [id]: candidate.candidateId}, dirty: true};
         }),
         undo: () => { restoreEpoch.current++; setState((s) => {
             const h = history.current, previous = h.past.at(-1);
@@ -269,6 +282,7 @@ export function useClipEditor(project, workId = null) {
 
     // Save the local edit as a new version; returns the version's job id.
     const save = useCallback(async (follow) => {
+        if (saving.current) throw Error("正在保存版本");
         const {editor, base, clips, audio, replacements, overlays, subtitleOverrides} = state;
         const problem = captionProblem(subtitleOverrides);
         if (problem) throw new Error(problem);
@@ -276,19 +290,22 @@ export function useClipEditor(project, workId = null) {
         // A version with replaced footage (or descended from one) carries the candidate manifest.
         const swaps = Object.entries(replacements).filter(([id]) => kept.has(id)).map(([targetClipId, candidateId]) => ({targetClipId, candidateId}));
         const manifest = state.candidateManifestSha256 || editor.candidateManifestSha256 || (swaps.length ? candidates?.candidateManifestSha256 : null);
-        const accepted = await client.submit("revision", {
-            parentJobId: base.jobId, planId: base.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256,
-            clips: rows(clips), audioMix: audio.mix, narration: audio.narration, subtitleOverrides: subtitleOverrides.filter((o) => kept.has(o.clipId)),
-            overlays: {schemaVersion: "creation-overlays-v1", items: overlays},
-            ...(manifest ? {candidateManifestSha256: manifest, replacements: swaps} : {}),
-            ...(state.insertions !== null ? {insertions: state.insertions} : {}),
-        });
-        const done = await follow(accepted.jobId);
-        if (done?.status !== "completed") throw new Error(done ? `保存失败：${done.error?.message || done.status}` : "保存已取消");
-        drafts.discard();
-        client.forgetIntent("revision");
-        await load(done.jobId, base.planId, "revision");
-        return done.jobId;
+        saving.current = true;
+        try {
+            const accepted = await client.submit("revision", {
+                parentJobId: base.jobId, planId: base.planId, expectedParentReceiptSha256: editor.expectedParentReceiptSha256,
+                clips: rows(clips), audioMix: audio.mix, narration: audio.narration, subtitleOverrides: subtitleOverrides.filter((o) => kept.has(o.clipId)),
+                overlays: {schemaVersion: "creation-overlays-v1", items: overlays},
+                ...(manifest ? {candidateManifestSha256: manifest, replacements: swaps} : {}),
+                ...(state.insertions !== null ? {insertions: state.insertions} : {}),
+            });
+            const done = await follow(accepted.jobId);
+            if (done?.status !== "completed") throw new Error(done ? `保存失败：${done.error?.message || done.status}` : "保存已取消");
+            drafts.discard();
+            client.forgetIntent("revision");
+            await load(done.jobId, base.planId, "revision");
+            return done.jobId;
+        } finally { saving.current = false; }
     }, [state, load, candidates]);
 
     return {...state, drafts: {...drafts, discard: discardDraft}, restoreDraft, project, overlayEpoch: overlayEpoch.current, editEpoch: editEpoch.current, selectedId, setSelectedId, load, ops, save, candidates, loadCandidates, rows: () => rows(state.clips),
@@ -300,25 +317,26 @@ export function ClipInspector({editing, index, onSeek, basket}) {
     const fps = editing.editor.fps, bound = editing.bounds[clip.clipId];
     const frames = clipFrames(clip, fps), seconds = (us) => (us / 1e6).toFixed(2);
     const fade = (s) => Math.round(s * fps);
-    const replacing = !!editing.replacements[clip.clipId], inserting = !!editing.insertions?.length;
+    const replacing = !!editing.replacements[clip.clipId], inserted = isPendingInsertion(editing, clip.clipId);
+    const mustCut = !!forcedCut(editing.clips, index, editing.replacements);
     const caption = editing.subtitleOverrides.find((o) => o.clipId === clip.clipId);
-    return html`${inserting && html`<p class="hint" role="status">请先保存插入版本，再裁剪、移动、删除或替换镜头；旁白和图层保持原时刻。</p>`}<div class="field"><div class="k">第 ${index + 1} 个镜头 · 成片 ${(frames / fps).toFixed(2)} 秒</div>
+    return html`${editing.insertions?.length ? html`<p class="hint">插入、裁剪、删除和其他镜头的替换可一起保存；旁白和图层保持原时刻。</p>` : null}<div class="field"><div class="k">第 ${index + 1} 个镜头 · 成片 ${(frames / fps).toFixed(2)} 秒</div>
             <div class="v">${clip.role ? `【${clip.role}】` : ""}${clip.scriptDraft || "无描述"}</div></div>
         <div class="field"><div class="k">取材范围（原片秒，可在 ${seconds(bound.startUs)}–${seconds(bound.endUs)} 内裁短）</div>
             <div class="pair even">
-                <label class="form-row">入点<input class="input" type="number" disabled=${inserting} step="0.1" min=${seconds(bound.startUs)} max=${seconds(bound.endUs)} value=${seconds(clip.startUs)}
+                <label class="form-row">入点<input class="input" type="number" step="0.1" min=${seconds(bound.startUs)} max=${seconds(bound.endUs)} value=${seconds(clip.startUs)}
                     onChange=${(e) => editing.ops.trim(clip.clipId, "startUs", Number(e.currentTarget.value))} /></label>
-                <label class="form-row">出点<input class="input" type="number" disabled=${inserting} step="0.1" min=${seconds(bound.startUs)} max=${seconds(bound.endUs)} value=${seconds(clip.endUs)}
+                <label class="form-row">出点<input class="input" type="number" step="0.1" min=${seconds(bound.startUs)} max=${seconds(bound.endUs)} value=${seconds(clip.endUs)}
                     onChange=${(e) => editing.ops.trim(clip.clipId, "endUs", Number(e.currentTarget.value))} /></label>
             </div></div>
         <div class="field"><div class="pair even">
-            <label class="form-row">速度<select class="select" disabled=${inserting} value=${`${clip.speed.numerator}/${clip.speed.denominator}`}
+            <label class="form-row">速度<select class="select" disabled=${replacing} value=${`${clip.speed.numerator}/${clip.speed.denominator}`}
                 onChange=${(e) => { const [n, d] = e.currentTarget.value.split("/").map(Number); editing.ops.speed(clip.clipId, n, d); }}>
                 ${SPEEDS.map(([n, d, label]) => html`<option value=${`${n}/${d}`}>${label}</option>`)}</select></label>
-            <label class="form-row">进入方式<select class="select" disabled=${index === 0 || inserting} value=${String(clip.transitionIn.frames)}
+            <label class="form-row">进入方式<select class="select" disabled=${index === 0 || mustCut} value=${String(clip.transitionIn.frames)}
                 onChange=${(e) => editing.ops.transition(clip.clipId, Number(e.currentTarget.value))}>
                 <option value="0">直接切换</option><option value=${String(fade(0.25))}>交叉淡化 0.25 秒</option><option value=${String(fade(0.5))}>交叉淡化 0.5 秒</option></select></label>
-        </div><p class="hint">即时预览支持交叉淡化；镜头需足够长，才能容纳两侧转场。</p></div>
+        </div><p class="hint">${mustCut ? "替换镜头及其下一段使用直接切换。" : "即时预览支持交叉淡化；镜头需足够长，才能容纳两侧转场。"}</p></div>
         <div class="field">
             <label class="form-row">镜头字幕<textarea class="input" rows="3" disabled=${replacing} value=${caption?.text ?? ""}
                 onInput=${(e) => editing.ops.caption(clip.clipId, e.currentTarget.value)} /></label>
@@ -334,7 +352,7 @@ export function ClipInspector({editing, index, onSeek, basket}) {
             <button class="btn ghost" disabled=${index === editing.clips.length - 1} onClick=${() => editing.ops.move(clip.clipId, 1)}>后移</button>
             <button class="btn ghost danger" disabled=${editing.clips.length <= 1} onClick=${() => editing.ops.remove(clip.clipId)}>删除这段</button>
         </div>
-        <${ReplacePicker} key=${clip.clipId} editing=${editing} clip=${clip} basket=${basket} />`;
+        ${inserted ? html`<p class="hint">新插入的镜头如需换画面，请先保存版本。</p>` : html`<${ReplacePicker} key=${clip.clipId} editing=${editing} clip=${clip} basket=${basket} />`}`;
 }
 
 // Replace this clip's footage: basket clips of the same recordings first, then any analysed clip.
@@ -364,65 +382,93 @@ function ReplacePicker({editing, clip, basket}) {
     </div>`;
 }
 
+function useTimelinePreview(editing, qualifier, onPreview) {
+    const [result, setResult] = useState(null), [message, setMessage] = useState("");
+    const key = JSON.stringify([editing.base, editing.editEpoch, editing.status, qualifier]);
+    const active = useRef(null);
+    useLayoutEffect(() => {
+        const scope = {showing: false};
+        active.current = scope;
+        setResult(null);
+        setMessage((old) => old.includes("将会：") ? "" : old);
+        return () => { active.current = null; if (scope.showing) onPreview(null); };
+    }, [key]);
+    const preview = (data, detail) => {
+        if (Object.keys(editing.replacements).length && data.clips.some((row, index) => {
+            const replacements = editing.replacements;
+            return (forcedCut(data.clips, index, replacements) && row.transitionIn.frames > 0)
+                || (replacements[row.clipId] && row.speed.numerator !== row.speed.denominator);
+        })) throw Error("替换镜头需保持原速，前后须直接切换。请调整指令或先保存版本。");
+        active.current.showing = true;
+        setResult({data, epoch: editing.editEpoch}); onPreview(data.clips); setMessage(detail);
+    };
+    const clear = (detail) => {
+        active.current.showing = false;
+        setResult(null); onPreview(null); setMessage(detail);
+    };
+    return {result, message, setMessage, active, preview, clear};
+}
+
 // One-line edits in the assistant dock: preview the change on the timeline, then apply or discard.
-function LocalCommandDock({editing, onPreview}) {
+function LocalCommandDock({editing, onPreview, blocked}) {
     const [text, setText] = useState("");
-    const [result, setResult] = useState(null);
-    const [message, setMessage] = useState("");
-    const ready = editing.status === "ready";
-    useEffect(() => { setResult(null); setMessage(""); onPreview(null); }, [editing.base?.jobId, editing.base?.planId]);
+    const ready = editing.status === "ready" && !blocked;
+    const draft = useTimelinePreview(editing, [text, blocked], onPreview);
     const preview = async (event) => {
         event.preventDefault();
         if (!ready || !text.trim()) return;
+        const scope = draft.active.current;
         try {
             const data = await client.api("/api/creation/timeline-commands", {}, {body: {text: text.trim(), fps: editing.editor.fps, clips: editing.rows()}});
-            setResult(data); onPreview(data.clips);
-            setMessage(`将会：${data.changes.join("；")}（${data.beforeSeconds.toFixed(1)} → ${data.afterSeconds.toFixed(1)} 秒）`);
-        } catch (error) { setResult(null); onPreview(null); setMessage(`没有改动：${error.message}`); }
+            if (draft.active.current !== scope) return;
+            draft.preview(data, `将会：${data.changes.join("；")}（${data.beforeSeconds.toFixed(1)} → ${data.afterSeconds.toFixed(1)} 秒）`);
+        } catch (error) { if (draft.active.current === scope) draft.clear(`没有改动：${error.message}`); }
     };
-    const apply = () => { editing.ops.apply(result.clips); setResult(null); onPreview(null); setText(""); setMessage("已应用，可以预览检查，满意后导出或保存版本。"); };
-    const cancel = () => { setResult(null); onPreview(null); setMessage("已取消，时间轴没有变化。"); };
+    const apply = () => { if (!ready) return; editing.ops.apply(draft.result.data.clips, draft.result.epoch); draft.clear("已应用，可以预览检查，满意后导出或保存版本。"); setText(""); };
+    const cancel = () => draft.clear("已取消，时间轴没有变化。");
     return html`<form class="dock assistant" onSubmit=${preview}>
         <strong>创作助手</strong>
         <input class="input" value=${text} disabled=${!ready} onInput=${(e) => setText(e.currentTarget.value)}
             placeholder=${ready ? "一句话修改，例如：删掉第3个镜头、第2个镜头慢放、前5秒太慢" : "选中方案后可以用一句话修改镜头"} aria-label="一句话修改镜头" />
-        ${result ? html`<button type="button" class="btn" onClick=${apply}>应用</button><button type="button" class="btn ghost" onClick=${cancel}>取消</button>`
+        ${draft.result ? html`<button type="button" class="btn" onClick=${apply}>应用</button><button type="button" class="btn ghost" onClick=${cancel}>取消</button>`
             : html`<button class="btn ghost" disabled=${!ready || !text.trim()}>预览改动</button>`}
-        <span class="dock-msg" role="status">${message}</span>
+        <span class="dock-msg" role="status">${draft.message}</span>
     </form>`;
 }
 
 // P030: shorten shots so cuts land on the selected BGM's local beat estimate; preview first.
-export function BeatSnap({editing, onPreview}) {
-    const [result, setResult] = useState(null), [message, setMessage] = useState(""), [busy, setBusy] = useState(false);
+export function BeatSnap({editing, onPreview, blocked}) {
+    const [busy, setBusy] = useState(false);
     const bgm = editing.audio?.mix?.bgm;
-    useEffect(() => { setResult(null); setMessage(""); onPreview(null); }, [editing.base?.jobId, editing.base?.planId, bgm?.trackId]);
+    const draft = useTimelinePreview(editing, [bgm?.trackId, bgm?.trackReceiptSha256, blocked], onPreview);
     if (!bgm || editing.status !== "ready") return null;
     const preview = async () => {
-        setBusy(true); setMessage("正在本机分析配乐节拍…");
+        if (blocked) return;
+        const scope = draft.active.current;
+        setBusy(true); draft.setMessage("正在本机分析配乐节拍…");
         try {
             const data = await client.api("/api/creation/beat-snap", {}, {body: {fps: editing.editor.fps, clips: editing.rows(), sources: editing.clips.map((c) => c.runId || ""), trackId: bgm.trackId, trackReceiptSha256: bgm.trackReceiptSha256}});
-            setResult(data); onPreview(data.clips);
-            setMessage(`约 ${data.bpm} BPM（本机估计，置信度 ${data.confidence}）。将会：${data.changes.join("；")}（${data.beforeSeconds.toFixed(1)} → ${data.afterSeconds.toFixed(1)} 秒）`);
-        } catch (error) { setResult(null); onPreview(null); setMessage(`没有改动：${error.message}`); }
+            if (draft.active.current !== scope) return;
+            draft.preview(data, `约 ${data.bpm} BPM（本机估计，置信度 ${data.confidence}）。将会：${data.changes.join("；")}（${data.beforeSeconds.toFixed(1)} → ${data.afterSeconds.toFixed(1)} 秒）`);
+        } catch (error) { if (draft.active.current === scope) draft.clear(`没有改动：${error.message}`); }
         finally { setBusy(false); }
     };
-    const apply = () => { editing.ops.apply(result.clips); setResult(null); onPreview(null); setMessage("已应用：镜头只缩短不加长；预览检查后保存版本。"); };
-    const cancel = () => { setResult(null); onPreview(null); setMessage("已取消，时间轴没有变化。"); };
+    const apply = () => { if (blocked) return; editing.ops.apply(draft.result.data.clips, draft.result.epoch); draft.clear("已应用：镜头只缩短不加长；预览检查后保存版本。"); };
+    const cancel = () => draft.clear("已取消，时间轴没有变化。");
     return html`<div class="field beat-snap"><div class="k">按配乐节拍对齐剪辑点（本机，免费）</div>
         <p class="hint">只缩短镜头，让每次切换落在它之前最近的拍点（0.7 秒内）。节拍是本机估计，未人工核对。</p>
-        <div class="actions-row">${result ? html`<button type="button" class="btn" onClick=${apply}>应用</button><button type="button" class="btn ghost" onClick=${cancel}>取消</button>`
-            : html`<button type="button" class="btn ghost" disabled=${busy} onClick=${preview}>${busy ? "分析中…" : "预览对齐节拍"}</button>`}</div>
-        <p class="hint" role="status" aria-label="节拍对齐状态">${message}</p>
+        <div class="actions-row">${draft.result ? html`<button type="button" class="btn" onClick=${apply}>应用</button><button type="button" class="btn ghost" onClick=${cancel}>取消</button>`
+            : html`<button type="button" class="btn ghost" disabled=${busy || blocked} onClick=${preview}>${busy ? "分析中…" : "预览对齐节拍"}</button>`}</div>
+        <p class="hint" role="status" aria-label="节拍对齐状态">${draft.message}</p>
     </div>`;
 }
 
-export function CommandDock({editing, onPreview, onOverlayPreview = () => {}}) {
+export function CommandDock({editing, onPreview, blocked, onOverlayPreview = () => {}}) {
     const [mode, setMode] = useState("local");
     return html`<div class="assistant-host"><label class="assistant-mode">创作助手模式
         <select class="select" aria-label="创作助手模式" value=${mode} onChange=${(e) => { onPreview(null); onOverlayPreview(null); setMode(e.currentTarget.value); }}>
             <option value="local">本地指令（免费）</option><option value="ai">AI对话（预算内自动）</option><option value="ai-replacement">AI换镜头（预算内自动）</option><option value="ai-insertion">AI插入镜头（预算内自动）</option>
         </select></label>
-        ${mode === "local" ? html`<${LocalCommandDock} editing=${editing} onPreview=${onPreview} />` : html`<${ReasoningDock} key=${mode} replacementMode=${mode === "ai-replacement"} insertionMode=${mode === "ai-insertion"} editing=${editing} onPreview=${onPreview} onOverlayPreview=${onOverlayPreview} />`}
+        ${mode === "local" ? html`<${LocalCommandDock} editing=${editing} blocked=${blocked} onPreview=${onPreview} />` : html`<${ReasoningDock} key=${mode} replacementMode=${mode === "ai-replacement"} insertionMode=${mode === "ai-insertion"} editing=${editing} onPreview=${onPreview} onOverlayPreview=${onOverlayPreview} />`}
     </div>`;
 }
