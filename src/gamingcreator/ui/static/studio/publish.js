@@ -35,23 +35,59 @@ function draftPlatformCopy(pub, profile, keyword) {
     };
 }
 
+const spanLabel = ({startFrame, endFrame}, fps) => `${(startFrame / fps).toFixed(2)}–${(endFrame / fps).toFixed(2)} 秒`;
+
+function joinedKeywordRanges(terms, shots, cap) {
+    if (terms.length > 8) return {error: "最多可输入 8 个关键词。"};
+    const picked = terms.map(term => shots.find(shot => shot.description.toLowerCase().includes(term)));
+    const missing = terms.find((term, index) => !picked[index]);
+    if (missing) return {error: `没有找到「${missing}」的镜头，请更换关键词。`};
+    const ranges = [];
+    for (const shot of picked.sort((a, b) => a.startFrame - b.startFrame)) {
+        const last = ranges.at(-1);
+        if (last && shot.startFrame <= last.endFrame) last.endFrame = Math.max(last.endFrame, shot.endFrame);
+        else ranges.push({startFrame: shot.startFrame, endFrame: shot.endFrame});
+    }
+    const durationFrames = ranges.reduce((total, span) => total + span.endFrame - span.startFrame, 0);
+    if (durationFrames > cap) return {error: "匹配镜头总时长超过上限，请增加时长或减少关键词。"};
+    return {ranges, durationFrames};
+}
+
 function configuredProfiles(profiles, selected, drafts, fps, totalFrames, shots) {
     let error = "";
     const matches = {};
     const chosen = profiles.filter(p => selected.includes(p.Platform)).map(profile => {
         const {duration = "", content = "", opening = "", closing = ""} = drafts[profile.Platform] || {};
         const fields = {...profile.Fields};
+        const terms = [...new Set(content.toLowerCase().split(/[、，,]/).map(term => term.trim()).filter(Boolean))];
+        const joined = terms.length > 1;
         let frames = totalFrames;
         if (duration) {
-            frames = Math.round(Number(duration) * fps);
-            if (!/^\d+(?:\.\d+)?$/.test(duration) || !Number.isSafeInteger(frames) || frames < 1 || frames >= totalFrames) {
-                error ||= `${PLATFORMS[profile.Platform]}请输入短于原成片的秒数，例如 15 或 12.5；留空保留全片。`;
-            } else {
+            const requested = Number(duration) * fps;
+            frames = joined ? Math.floor(requested) : Math.round(requested);
+            if (!/^\d+(?:\.\d+)?$/.test(duration) || !Number.isSafeInteger(frames) || frames < 1 || (!joined && frames >= totalFrames)) {
+                error ||= joined
+                    ? `${PLATFORMS[profile.Platform]}请输入至少一帧的时长上限，或留空。`
+                    : `${PLATFORMS[profile.Platform]}请输入短于原成片的秒数，例如 15 或 12.5；留空保留全片。`;
+            } else if (!joined) {
                 fields.variant = {durationFrames: frames};
             }
         }
-        const keyword = content.trim().toLowerCase();
-        if (keyword) {
+        const keyword = terms[0];
+        if (joined) {
+            const cut = joinedKeywordRanges(terms, shots, frames);
+            if (cut.error) error ||= `${PLATFORMS[profile.Platform]}${cut.error}`;
+            else if (cut.durationFrames >= totalFrames) error ||= `${PLATFORMS[profile.Platform]}所选区间覆盖全片，请减少关键词或清空保留全片。`;
+            else {
+                frames = cut.durationFrames;
+                if (cut.ranges.length > 1) fields.variant = {durationFrames: frames, ranges: cut.ranges};
+                else {
+                    const [{startFrame}] = cut.ranges;
+                    fields.variant = {durationFrames: frames, ...(startFrame ? {startFrame} : {})};
+                }
+                matches[profile.Platform] = {...cut, label: terms.join("、")};
+            }
+        } else if (keyword) {
             const matching = shots.filter(shot => shot.description.toLowerCase().includes(keyword));
             const match = matching.find(shot => shot.endFrame - shot.startFrame <= frames);
             if (!fields.variant) error ||= `${PLATFORMS[profile.Platform]}先填写短版时长，再按内容选段。`;
@@ -81,13 +117,11 @@ function configuredProfiles(profiles, selected, drafts, fps, totalFrames, shots)
     return {chosen, error, matches};
 }
 
-function previewCaption(range, fps, time) {
-    if (!range?.text) return null;
-    const frames = range.endFrame - range.startFrame;
-    const relative = Math.floor(time * fps + 1e-6) - range.startFrame;
-    const window = Math.min(Math.floor(2 * fps), Object.keys(range.text).length === 2 ? Math.floor(frames / 2) : frames);
-    if (relative >= 0 && relative < window && range.text.opening) return {position: "opening", text: range.text.opening};
-    if (relative >= frames - window && relative < frames && range.text.closing) return {position: "closing", text: range.text.closing};
+function previewCaption({text, frames}, fps, relative) {
+    if (!text) return null;
+    const window = Math.min(Math.floor(2 * fps), Object.keys(text).length === 2 ? Math.floor(frames / 2) : frames);
+    if (relative >= 0 && relative < window && text.opening) return {position: "opening", text: text.opening};
+    if (relative >= frames - window && relative < frames && text.closing) return {position: "closing", text: text.closing};
     return null;
 }
 
@@ -394,29 +428,48 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     const {chosen, error: variantError, matches} = configuredProfiles(profiles, selected, drafts, fps, pub?.frames || 0, pub?.contentShots || []);
     const updatePreview = (player, time) => {
         const range = shortEnd.current;
-        if (!range) return;
-        if (time >= range.endFrame / fps) {
-            resetPlatformPreview();
-            player.pause();
-            player.currentTime = Math.max(0, range.endFrame / fps - 0.001);
-            return;
+        if (!range || player.seeking) return;
+        const span = range.spans[range.index];
+        if (time >= span.endFrame / fps) {
+            const next = range.spans[range.index + 1];
+            if (!next) {
+                resetPlatformPreview();
+                player.pause();
+                player.currentTime = Math.max(0, span.endFrame / fps - 0.001);
+                return;
+            }
+            range.elapsed += span.endFrame - span.startFrame;
+            range.index++;
+            player.currentTime = next.startFrame / fps;
+            setFrameCopy(previewCaption(range, fps, range.elapsed));
+        } else if (time >= span.startFrame / fps) {
+            const outputFrame = range.elapsed + Math.floor(time * fps + 1e-6) - span.startFrame;
+            const caption = previewCaption(range, fps, outputFrame);
+            setFrameCopy(old => old?.position === caption?.position && old?.text === caption?.text ? old : caption);
         }
-        const caption = previewCaption(range, fps, time);
-        setFrameCopy(old => old?.position === caption?.position && old?.text === caption?.text ? old : caption);
+    };
+    const seekPlatformPreview = (player) => {
+        const range = shortEnd.current;
+        if (!range) return;
+        const start = range.spans[range.index].startFrame / fps;
+        if (player.currentTime < start - 0.001) player.currentTime = start;
+        else updatePreview(player, player.currentTime);
     };
     const previewShort = (fields) => {
         const player = video.current;
         if (!player) return;
         const startFrame = fields.variant?.startFrame || 0;
-        const range = {startFrame, endFrame: startFrame + (fields.variant?.durationFrames || pub.frames), text: fields.publicationText};
+        const frames = fields.variant?.durationFrames || pub.frames;
+        const spans = fields.variant?.ranges || [{startFrame, endFrame: startFrame + frames}];
+        const range = {spans, frames, index: 0, elapsed: 0, text: fields.publicationText};
         shortEnd.current = range;
-        setFrameCopy(previewCaption(range, fps, startFrame / fps));
+        setFrameCopy(previewCaption(range, fps, 0));
         const watchFrame = (_now, frame) => {
             if (shortEnd.current !== range || video.current !== player) return;
             if (!player.seeking) updatePreview(player, frame.mediaTime + 1e-6);
             if (shortEnd.current === range) player.requestVideoFrameCallback(watchFrame);
         };
-        player.currentTime = startFrame / fps;
+        player.currentTime = spans[0].startFrame / fps;
         player.requestVideoFrameCallback?.(watchFrame);
         void player.play().catch(error => {
             if (shortEnd.current !== range) return;
@@ -451,6 +504,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
             <section class="viewer" aria-label="成片预览">
                 <div class="stage">${pub ? html`<video ref=${video} src=${videoSrc} controls playsinline preload="metadata"
                     onLoadStart=${resetPlatformPreview} onEnded=${resetPlatformPreview}
+                    onSeeked=${e => seekPlatformPreview(e.currentTarget)}
                     onTimeUpdate=${e => updatePreview(e.currentTarget, e.currentTarget.currentTime)}></video>
                     ${frameCopy && html`<span class=${`platform-frame-copy ${frameCopy.position}`}>${frameCopy.text}</span>`}` : html`<div class="empty">在左侧选一个成片</div>`}</div>
                 <div class="transport">
@@ -471,7 +525,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                     </div>
                     ${saved && selected.length > 0 && html`<details>
                         <summary>调整各平台时长和画面文案（可选）</summary>
-                        <p class="hint">时长留空保留全片。开场文案、结尾提示各显示最多 2 秒，直接写入视频画面；标题、简介和封面沿用。</p>
+                        <p class="hint">用顿号分隔多个关键词可拼接对应镜头，时长设为上限，留空采用匹配镜头总时长。开场和结尾各最多显示 2 秒。</p>
                         ${chosen.map(profile => {
                             const {Platform: id, Fields: fields} = profile;
                             const canDraft = !variantError && !busy && !queue.busy && !queue.running
@@ -483,11 +537,11 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                                     disabled=${!!busy || queue.busy || queue.running} onInput=${e => updateDraft(id, {duration: e.currentTarget.value})} />
                             </label>
                             ${!!pub?.contentShots?.length && html`<label>${PLATFORMS[id]} 内容关键词
-                                <input class="input" placeholder="留空从片头开始" maxlength="60" value=${drafts[id]?.content || ""}
+                                <input class="input" placeholder="可留空或用顿号分隔" maxlength="60" value=${drafts[id]?.content || ""}
                                     disabled=${!!busy || queue.busy || queue.running} onInput=${e => updateDraft(id, {content: e.currentTarget.value})} />
                             </label>`}
                             ${matches[id] && html`<div>
-                                <span class="hint">${(matches[id].startFrame / fps).toFixed(2)}–${(matches[id].endFrame / fps).toFixed(2)} 秒 · ${matches[id].label}</span>
+                                <span class="hint">${(matches[id].ranges || [matches[id]]).map(span => spanLabel(span, fps)).join(" ＋ ")} · ${matches[id].label}</span>
                                 <button class="btn ghost" disabled=${!!variantError} onClick=${() => previewShort(fields)}>预览${PLATFORMS[id]}所选区间</button>
                             </div>`}
                             ${[["opening", "开场文案"], ["closing", "结尾提示"]].map(([field, label]) => html`<label key=${field}>${PLATFORMS[id]} ${label}
@@ -504,6 +558,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                     ${packages.map((pkg) => html`<div class="pkg-result">
                         <p>${PLATFORMS[pkg.profile?.Platform] || ""}${pkg.profile?.Fields?.variant ? ` · 短版 ${(pkg.profile.Fields.variant.durationFrames / fps).toFixed(2)} 秒` : ""} · ${client.jobStatus(pkg.status)} ${pkg.error?.message || ""}</p>
                         ${pkg.profile?.Fields?.variant?.startFrame && html`<p class="hint">原成片区间 ${(pkg.profile.Fields.variant.startFrame / fps).toFixed(2)}–${((pkg.profile.Fields.variant.startFrame + pkg.profile.Fields.variant.durationFrames) / fps).toFixed(2)} 秒</p>`}
+                        ${pkg.profile?.Fields?.variant?.ranges && html`<p class="hint">原成片区间 ${pkg.profile.Fields.variant.ranges.map(span => spanLabel(span, fps)).join(" ＋ ")}</p>`}
                         ${pkg.profile?.Fields?.publicationText?.opening && html`<p class="hint">开场：${pkg.profile.Fields.publicationText.opening}</p>`}
                         ${pkg.profile?.Fields?.publicationText?.closing && html`<p class="hint">结尾：${pkg.profile.Fields.publicationText.closing}</p>`}
                         ${["failed", "interrupted"].includes(pkg.status) && html`<button class="btn ghost" disabled=${!!busy || !saved} onClick=${() => buildPackage(pkg)}>重试此平台</button>`}

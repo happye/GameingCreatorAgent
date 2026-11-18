@@ -86,7 +86,12 @@ def validate_profile(profile: Any) -> dict[str, Any]:
 def _validate_variant(variant: Any) -> None:
     if (
         not isinstance(variant, dict)
-        or set(variant) not in ({"durationFrames"}, {"durationFrames", "startFrame"})
+        or set(variant)
+        not in (
+            {"durationFrames"},
+            {"durationFrames", "startFrame"},
+            {"durationFrames", "ranges"},
+        )
         or type(variant["durationFrames"]) is not int
         or variant["durationFrames"] < 1
         or (
@@ -95,6 +100,29 @@ def _validate_variant(variant: Any) -> None:
         )
     ):
         raise ValueError("Invalid short package frame range")
+    if "ranges" in variant:
+        _validate_ranges(variant["ranges"], variant["durationFrames"])
+
+
+def _validate_ranges(ranges: Any, duration: int) -> None:
+    if not isinstance(ranges, list) or not 2 <= len(ranges) <= 8:
+        raise ValueError("拼接短版需要 2–8 个分开的区间。")
+    previous_end, frames = -1, 0
+    for span in ranges:
+        if not isinstance(span, dict) or set(span) != {"startFrame", "endFrame"}:
+            raise ValueError("Invalid short package range fields")
+        start, end = span["startFrame"], span["endFrame"]
+        if (
+            type(start) is not int
+            or type(end) is not int
+            or not 0 <= start < end
+            or start <= previous_end
+        ):
+            raise ValueError("短版区间必须按成片顺序排列，且不可相交或相邻。")
+        frames += end - start
+        previous_end = end
+    if frames != duration:
+        raise ValueError("短版拼接区间总帧数不符。")
 
 
 def _validate_publication_text(value: Any) -> None:

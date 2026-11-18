@@ -280,10 +280,11 @@
    ]
   },
   "P035": {
-   "done": "Studio可按平台用关键词选短版区间，按内容起草并试听开场和结尾文案，再排队出包。真实抖音短版与全长B站同批恢复",
-   "todo": "跨镜头的语义重剪待做；真实平台资格与质量待验",
+   "done": "Studio可按多个关键词拼接平台短版，按所选内容起草并试听首尾文案，再排队出包。真实抖音多段音画对齐，与全长B站同批恢复",
+   "todo": "开放语义排序、真人创作质量与真实平台资格待验",
    "updated": "2026-11-19",
    "sprints": [
+    "sprint-platform-joined-cut",
     "sprint-platform-copy-draft",
     "sprint-platform-content-cut",
     "sprint-platform-video-copy",
@@ -682,6 +683,12 @@
      "name": "本机起草并试听平台画面文案",
      "status": "done",
      "sprint": "sprint-platform-copy-draft"
+    },
+    {
+     "id": "P035-joined-cut",
+     "name": "多关键词拼接平台短版",
+     "status": "done",
+     "sprint": "sprint-platform-joined-cut"
     }
    ]
   },

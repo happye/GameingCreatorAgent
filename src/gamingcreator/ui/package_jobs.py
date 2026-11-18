@@ -51,8 +51,11 @@ def parent(
         frames = render["frames"] if variant is None else variant["durationFrames"]
         if variant is not None and frames >= render["frames"]:
             raise ValueError("短版帧数必须少于原成片帧数。")
-        if variant is not None and variant.get("startFrame", 0) + frames > render["frames"]:
-            raise ValueError("短版区间超出原成片。")
+        if variant is not None:
+            ranges = variant.get("ranges")
+            end = ranges[-1]["endFrame"] if ranges else variant.get("startFrame", 0) + frames
+            if end > render["frames"]:
+                raise ValueError("短版区间超出原成片。")
         if frames < 2 and len(fields.get("publicationText", {})) == 2:
             raise ValueError("成片至少需要两帧才能同时显示开场和结尾。")
     return state, publication, render

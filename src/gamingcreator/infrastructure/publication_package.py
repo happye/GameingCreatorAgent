@@ -72,8 +72,10 @@ async def encode(
     fields = profile["Fields"]
     field = fields["video"]
     video_filter = transform(field)
+    variant = fields.get("variant")
+    ranges = variant.get("ranges") if variant else None
     trim_args = []
-    if variant := fields.get("variant"):
+    if variant and not ranges:
         if duration is None or duration <= 0:
             raise ValueError("Short package requires a valid output duration")
         video_filter = f"trim=end_frame={variant['durationFrames']},{video_filter}"
@@ -113,11 +115,77 @@ async def encode(
                 encoding="utf-8",
             )
             video_filter += f",ass=filename={_filter_path(mark)}"
-        return await _encode(tools, video, cover, target, profile, video_filter, trim_args)
+        if ranges:
+            if output_clock is None:
+                raise ValueError("Joined package requires a verified output clock")
+            media_args = _range_media_args(
+                ranges, video_filter, *output_clock, await _has_audio(tools, video)
+            )
+        else:
+            media_args = ["-map", "0:v:0", "-map", "0:a?", "-vf", video_filter, *trim_args]
+        return await _encode(tools, video, cover, target, profile, media_args)
     finally:
         mark.unlink(missing_ok=True)
         if publication_text is not None:
             text_path.unlink(missing_ok=True)
+
+
+async def _has_audio(tools: Path, video: Path) -> bool:
+    result = await run_media_process(
+        [
+            str(tools / "ffprobe.exe"),
+            "-v",
+            "error",
+            "-protocol_whitelist",
+            "file,pipe",
+            "-select_streams",
+            "a",
+            "-show_entries",
+            "stream=index",
+            "-of",
+            "json",
+            str(video),
+        ],
+        CancellationContext("platform-package-audio", 15),
+    )
+    return bool(json.loads(result.stdout)["streams"])
+
+
+def _range_media_args(
+    ranges: list[dict[str, int]], video_filter: str, frames: int, fps: Fraction, audio: bool
+) -> list[str]:
+    parts, video_pads, audio_pads = [], [], []
+    for i, span in enumerate(ranges):
+        start, end = span["startFrame"], span["endFrame"]
+        video_pads.append(f"[v{i}]")
+        parts.append(f"[0:v:0]trim=start_frame={start}:end_frame={end},setpts=PTS-STARTPTS[v{i}]")
+        if audio:
+            audio_pads.append(f"[a{i}]")
+            first, last = round(start * 48_000 / fps), round(end * 48_000 / fps)
+            parts.append(
+                f"[0:a:0]aresample=48000,atrim=start_sample={first}:end_sample={last},"
+                f"asetpts=N/SR/TB[a{i}]"
+            )
+    count = len(ranges)
+    parts.append(
+        f"{''.join(video_pads)}concat=n={count}:v=1:a=0,"
+        f"settb=1/{fps.numerator},setpts=N*{fps.denominator},{video_filter}[joined_video]"
+    )
+    if audio:
+        samples = round(frames * 48_000 / fps)
+        parts.append(
+            f"{''.join(audio_pads)}concat=n={count}:v=0:a=1,"
+            f"apad=whole_len={samples},atrim=end_sample={samples},asetpts=N/SR/TB[joined_audio]"
+        )
+    return [
+        "-filter_complex",
+        ";".join(parts),
+        "-map",
+        "[joined_video]",
+        *(["-map", "[joined_audio]"] if audio else []),
+        "-movie_timescale",
+        "48000",
+    ]
 
 
 async def _encode(
@@ -126,8 +194,7 @@ async def _encode(
     cover: Path,
     target: Path,
     profile: dict[str, Any],
-    video_filter: str,
-    trim_args: list[str],
+    media_args: list[str],
 ) -> dict[str, Any]:
     context = CancellationContext("platform-package", 1800)
     base = [
@@ -144,13 +211,7 @@ async def _encode(
             *base,
             "-i",
             str(video),
-            "-map",
-            "0:v:0",
-            "-map",
-            "0:a?",
-            "-vf",
-            video_filter,
-            *trim_args,
+            *media_args,
             "-c:v",
             "libx264",
             "-pix_fmt",
