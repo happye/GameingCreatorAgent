@@ -48,6 +48,7 @@ def reasoning_post(service: CreationReasoningService, value: Any) -> dict[str, A
         "adopt_plan": {"action", "preparedHash"},
         "prepare_insertion": {"action", "jobId", "planId", "instruction"},
         "prepare_replacement": {"action", "jobId", "planId", "instruction"},
+        "prepare_mixed": {"action", "jobId", "planId", "instruction"},
         "prepare": {"action", "jobId", "planId", "instruction"},
         "execute": {"action", "preparedHash", "snapshotFingerprint", "confirmedMaxCny"},
         "execute_budget": {"action", "preparedHash", "snapshotFingerprint"},
@@ -74,14 +75,8 @@ def reasoning_post(service: CreationReasoningService, value: Any) -> dict[str, A
         return method(value["jobId"], value["planId"])
     if action == "adopt_plan":
         return service.adopt_plan(value["preparedHash"])
-    if action in ("prepare", "prepare_replacement", "prepare_insertion"):
-        prepare_edit = (
-            service.prepare_insertion
-            if action == "prepare_insertion"
-            else service.prepare_replacement
-            if action == "prepare_replacement"
-            else service.prepare
-        )
+    if action in ("prepare", "prepare_replacement", "prepare_insertion", "prepare_mixed"):
+        prepare_edit = getattr(service, action)
         return prepare_edit(value["jobId"], value["planId"], value["instruction"])
     if action == "execute_budget":
         return asyncio.run(

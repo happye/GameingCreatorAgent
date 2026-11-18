@@ -19,6 +19,13 @@ from gamingcreator.application.brief_reasoning import (
     validate_brief,
 )
 from gamingcreator.application.budget import BudgetLedger
+from gamingcreator.application.creation_mixed_proposals import (
+    mixed_followup,
+    mixed_replacement,
+    mixed_request,
+    mixed_snapshot,
+    validate_mixed,
+)
 from gamingcreator.application.creation_overlay_proposals import (
     PROMPT_VERSION as OVERLAY_PROMPT_VERSION,
 )
@@ -292,6 +299,12 @@ class CreationReasoningService:
         snapshot, project_id = self._replacement_snapshot(job_id, plan_id)
         return self._prepare(snapshot, project_id, job_id, plan_id, instruction, "replacement")
 
+    def prepare_mixed(self, job_id: str, plan_id: str, instruction: str) -> dict[str, Any]:
+        snapshot, project_id = self._replacement_snapshot(job_id, plan_id)
+        return self._prepare(
+            mixed_snapshot(snapshot), project_id, job_id, plan_id, instruction, "mixed"
+        )
+
     def complete_plan_duration(self, job_id: str, plan_id: str) -> dict[str, Any]:
         from gamingcreator.ui.plan_reasoning_jobs import completion_request, verified_completion
 
@@ -465,7 +478,7 @@ class CreationReasoningService:
         return record
 
     def _current(self, record: dict[str, Any]) -> Snapshot:
-        if record.get("purpose") in ("replacement", "insertion"):
+        if record.get("purpose") in ("replacement", "insertion", "mixed"):
             if record["purpose"] == "insertion":
                 snapshot, project = self._insertion_snapshot(
                     record["jobId"],
@@ -473,6 +486,9 @@ class CreationReasoningService:
                     restrict_anchors=record["request"]["prompt_version"]
                     == "creation-insertion-prompt-v2",
                 )
+            elif record["purpose"] == "mixed":
+                replacement, project = self._replacement_snapshot(record["jobId"], record["planId"])
+                snapshot = mixed_snapshot(replacement)
             else:
                 snapshot, project = self._replacement_snapshot(
                     record["jobId"],
@@ -488,7 +504,7 @@ class CreationReasoningService:
                 or _digest(asdict(_request_for(snapshot, record["instruction"])))
                 != record["requestHash"]
             ):
-                raise ValueError("Saved replacement inputs changed; prepare again.")
+                raise ValueError("Saved footage-edit inputs changed; prepare again.")
             return snapshot
         if record.get("purpose") == "narration":
             return self._current_narration(record)
@@ -883,8 +899,7 @@ class CreationReasoningService:
         plan_id: str,
         expected_parent: str,
     ) -> dict[str, Any]:
-        from gamingcreator.application.creation_replacement_proposals import replacement_operations
-        from gamingcreator.ui.creation_draft_restore import project_clips
+        from gamingcreator.ui.creation_draft_restore import project_clips, project_narration
         from gamingcreator.ui.replacement_jobs import manifest_for_chain
 
         if record["jobId"] != job_id or record["planId"] != plan_id:
@@ -894,15 +909,16 @@ class CreationReasoningService:
         if current.payload["parentReceiptSha256"] != expected_parent:
             raise ValueError("Replacement parent changed.")
         result = self.read_result(prepared_hash)
-        if (
-            result["status"] != "completed"
-            or result.get("replacement", {}).get("kind") != "replacement"
-        ):
-            raise ValueError("No usable replacement proposal.")
-        operations = replacement_operations(current, result["replacement"])
+        proposal, operations = _footage_operations(current, result)
         chain = load_chain(self.jobs, job_id, plan_id)
         manifest, _ = manifest_for_chain(self.jobs, chain)
         rows, replacements = _replacement_rows(chain, manifest, operations)
+        if proposal is not None:
+            rows = mixed_followup(current, rows, proposal["edit"])
+            target = replacements[0]["targetClipId"]
+            index = next(i for i, row in enumerate(rows) if row["clipId"] == target)
+            for row in rows[index : index + 2]:
+                row["transitionIn"] = {"type": "cut", "frames": 0}
         request = {
             "parentJobId": job_id,
             "clips": rows,
@@ -918,6 +934,8 @@ class CreationReasoningService:
         inherited = chain.overlays
         frames = max(r["outputStartFrame"] + r["outputFrames"] for r in revised["segments"])
         inherited.validate_duration(frames)
+        if proposal is not None:
+            project_narration(self.jobs, request, chain, frames)
         projection = project_clips(self.jobs, request, chain, manifest)
         for clip in projection["clips"]:
             if (
@@ -1012,7 +1030,7 @@ class CreationReasoningService:
             return self._insertion_for_editor(
                 record, prepared_hash, job_id, plan_id, expected_parent_receipt_sha256
             )
-        if record.get("purpose") == "replacement":
+        if record.get("purpose") in ("replacement", "mixed"):
             return self._replacement_for_editor(
                 record, prepared_hash, job_id, plan_id, expected_parent_receipt_sha256
             )
@@ -1051,6 +1069,8 @@ class CreationReasoningService:
 
 
 def _request_for(snapshot: Snapshot, instruction: str) -> ReasoningRequest:
+    if isinstance(snapshot, EditingSnapshot) and "mixedSnapshotVersion" in snapshot.payload:
+        return mixed_request(snapshot, instruction)
     if isinstance(snapshot, EditingSnapshot) and "insertionSnapshotVersion" in snapshot.payload:
         from gamingcreator.application.creation_replacement_proposals import insertion_request
 
@@ -1078,6 +1098,8 @@ def _request_for(snapshot: Snapshot, instruction: str) -> ReasoningRequest:
 
 def _validated_output(snapshot: Snapshot, output: Any) -> dict[str, Any]:
     try:
+        if isinstance(snapshot, EditingSnapshot) and "mixedSnapshotVersion" in snapshot.payload:
+            return {"purpose": "mixed", "mixed": validate_mixed(snapshot, output)}
         if isinstance(snapshot, EditingSnapshot) and "insertionSnapshotVersion" in snapshot.payload:
             from gamingcreator.application.creation_replacement_proposals import validate_insertion
 
@@ -1150,6 +1172,21 @@ def _validated_plan_output(snapshot: PlanSnapshot, output: Any) -> dict[str, Any
         "planPreview": {"fps": snapshot.fps, "plans": preview},
         "fingerprintEcho": echo,
     }
+
+
+def _footage_operations(
+    snapshot: EditingSnapshot, result: dict[str, Any]
+) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+    from gamingcreator.application.creation_replacement_proposals import replacement_operations
+
+    if result["status"] == "completed":
+        if "mixedSnapshotVersion" in snapshot.payload:
+            proposal = validate_mixed(snapshot, result.get("mixed"))
+            if proposal["kind"] == "mixed_edit":
+                return proposal, mixed_replacement(snapshot, proposal)
+        elif result.get("replacement", {}).get("kind") == "replacement":
+            return None, replacement_operations(snapshot, result["replacement"])
+    raise ValueError("No usable replacement proposal.")
 
 
 def _replacement_rows(

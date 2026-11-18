@@ -26,7 +26,7 @@
 5. 真实漫画群星29秒流程已进一步接入AI旁白重起草：确认覆盖/保旧轨→本机中文合成14.56秒→保存→MP4→B站七文件包，实际下载并播放。AI文案也成功生成、校改后保存出包；新旁白估算¥0.00819112、文案¥0.00456512。产物在.cache/scratch/product-journey-20261117/，最新manga-ai-narration-preview.mp4及bilibili-ai-narration-package.zip；自然度和语义仍待人评。
 6. 已交付AI单换/插入/多换、编号策划与本地补足30秒。多平台持久队列已实测关页出完四平台七文件包、停止后续、进程重启后显式恢复。产物 `.cache/scratch/package-batches-20261118/`，见 [sprint-package-batches](docs/exec-plans/sprint-package-batches.md)。
 7. [平台按内容短版](docs/exec-plans/sprint-platform-content-cut.md)在漫画群星实测按「蓝色火焰」选原成片 7.50–22.50 秒，同队列恢复全长 B 站和 15 秒抖音。抖音音画来源、帧数、播放与下载已核对。[本地一句话混合剪辑](docs/exec-plans/sprint-one-line-mixed-replacement.md)实测编号换镜并删末镜，单次撤销/重做、刷新恢复、保存、27 秒试听和 B 站包贯通。
-8. 下一步把明确编号的换镜组合扩展到开放式混合指令，复用已有模型报价、账本和候选校验；平台短版待跨镜头选段和按内容起草画面文案。本批无新增模型调用，创作、发布与 J1 人评的未验状态继续记录。
+8. [AI 组合剪辑](docs/exec-plans/sprint-ai-mixed-timeline.md)一次文本提案可按描述换一镜并删裁另一镜。真实漫画群星调用一次（估算 ¥0.013006），重开取回、应用，导出 27 秒试听和 B 站包。下一步 P035 按内容起草画面文案并串联预览和出包，再推进跨镜头选择及 P041 更多组合动作。创作体验与 J1 人评仍待验证。
 
 ## 费用与授权
 
