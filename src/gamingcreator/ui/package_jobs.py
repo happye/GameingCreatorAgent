@@ -51,6 +51,8 @@ def parent(
         frames = render["frames"] if variant is None else variant["durationFrames"]
         if variant is not None and frames >= render["frames"]:
             raise ValueError("短版帧数必须少于原成片帧数。")
+        if variant is not None and variant.get("startFrame", 0) + frames > render["frames"]:
+            raise ValueError("短版区间超出原成片。")
         if frames < 2 and len(fields.get("publicationText", {})) == 2:
             raise ValueError("成片至少需要两帧才能同时显示开场和结尾。")
     return state, publication, render
@@ -75,10 +77,10 @@ async def save_package(jobs: Any, directory: Path, request: dict[str, Any]) -> N
     publication_text = "publicationText" in fields
     frames = render["frames"] if variant is None else variant["durationFrames"]
     fps = Fraction(render["fpsNumerator"], render["fpsDenominator"])
-    duration = Fraction(int(render["frames"]), int(render.get("fpsNumerator", 1)))
-    if variant is not None or publication_text:
-        duration = frames / fps
-    encode_options = {"output_clock": (frames, fps)} if publication_text else {}
+    duration = frames / fps
+    encode_options = (
+        {"output_clock": (frames, fps)} if variant is not None or publication_text else {}
+    )
     facts = await encode(
         jobs.repository,
         video,

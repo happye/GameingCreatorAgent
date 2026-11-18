@@ -10,8 +10,10 @@ from gamingcreator.application.creation_modes import MODE_LABELS
 from gamingcreator.cli.creation_render import read_creation
 from gamingcreator.domain.publication import user_input_message as user_input_message  # noqa: F401
 from gamingcreator.domain.publication import validate_metadata
+from gamingcreator.domain.time import SourceInstant, SourceRange
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.infrastructure.publication_assets import extract_cover, validate_png
+from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 from gamingcreator.ui.media import MediaResource
 
 FILES = {
@@ -59,10 +61,17 @@ def snapshot(jobs: Any, job_id: str) -> dict[str, Any]:
         if state["status"] != "completed":
             raise ValueError("Publication is not complete")
         verified = jobs.verify(directory, state)
+        publication = verified["publication"]
+        render_dir = jobs.directory(publication["renderJobId"])
+        receipt = jobs.read(render_dir / "result/receipt.json")
+        edl, _, digest = read_creation(jobs.safe(render_dir / "selection"))
+        if digest != receipt["creationReceiptSha256"]:
+            raise ValueError("Render selection changed")
         return {
-            **verified["publication"],
+            **publication,
             "publicationJobId": job_id,
             "publicationReceiptSha256": verified["resultReceiptSha256"],
+            "contentShots": asyncio.run(content_shots(jobs.project(state["projectId"]), edl)),
         }
     _, receipt, digest = render_parent(jobs, job_id)
     edl, report, _ = read_creation(jobs.safe(directory / "selection"))
@@ -84,6 +93,48 @@ def snapshot(jobs: Any, job_id: str) -> dict[str, Any]:
         "metadataOrigin": "brief_template",
         "qualityStatus": "unreviewed",
     }
+
+
+def _within(source: SourceInstant | SourceRange, start: int, end: int) -> bool:
+    if isinstance(source, SourceInstant):
+        return start <= source.time_us < end
+    return start <= source.start_us and source.end_us <= end
+
+
+async def content_shots(project: Path, edl: dict[str, Any]) -> list[dict[str, Any]]:
+    """Project only descriptions whose evidence still lies inside the rendered shot."""
+    rows = edl["segments"]
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    try:
+        timelines = [
+            await store.load_completed_timeline(run)
+            for run in dict.fromkeys(row["runId"] for row in rows)
+        ]
+    finally:
+        await store.close()
+    evidence = {item.evidence_id: item.source_time for t in timelines for item in t.evidence}
+    events = {event.event_id: event for t in timelines for event in t.events}
+    shots = []
+    for row in rows:
+        event = events.get(row["eventId"])
+        if (
+            event is None
+            or not event.evidence_ids
+            or not all(
+                key in evidence and _within(evidence[key], row["startUs"], row["endUs"])
+                for key in event.evidence_ids
+            )
+        ):
+            continue
+        start = row["outputStartFrame"]
+        shots.append(
+            {
+                "startFrame": start,
+                "endFrame": start + row["outputFrames"],
+                "description": _clean("；".join(event.observable_facts), 300),
+            }
+        )
+    return shots
 
 
 HIGHLIGHT_LIMIT = 6

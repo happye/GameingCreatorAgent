@@ -86,11 +86,15 @@ def validate_profile(profile: Any) -> dict[str, Any]:
 def _validate_variant(variant: Any) -> None:
     if (
         not isinstance(variant, dict)
-        or set(variant) != {"durationFrames"}
+        or set(variant) not in ({"durationFrames"}, {"durationFrames", "startFrame"})
         or type(variant["durationFrames"]) is not int
         or variant["durationFrames"] < 1
+        or (
+            "startFrame" in variant
+            and (type(variant["startFrame"]) is not int or variant["startFrame"] < 1)
+        )
     ):
-        raise ValueError("Invalid short package frame count")
+        raise ValueError("Invalid short package frame range")
 
 
 def _validate_publication_text(value: Any) -> None:

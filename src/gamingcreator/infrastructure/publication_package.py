@@ -77,7 +77,20 @@ async def encode(
         if duration is None or duration <= 0:
             raise ValueError("Short package requires a valid output duration")
         video_filter = f"trim=end_frame={variant['durationFrames']},{video_filter}"
-        trim_args = ["-af", f"atrim=duration={float(duration):.12f}", "-movie_timescale", "48000"]
+        audio_filter = f"atrim=duration={float(duration):.12f}"
+        if start := variant.get("startFrame"):
+            if output_clock is None:
+                raise ValueError("Offset package requires a verified output clock")
+            frames, fps = output_clock
+            end = start + frames
+            video_filter = (
+                f"trim=start_frame={start}:end_frame={end},setpts=PTS-STARTPTS,{transform(field)}"
+            )
+            audio_filter = (
+                f"atrim=start={float(start / fps):.12f}:end={float(end / fps):.12f},"
+                "asetpts=PTS-STARTPTS"
+            )
+        trim_args = ["-af", audio_filter, "-movie_timescale", "48000"]
     mark = target / "watermark.ass"
     text_path = target / "publication-text.ass"
     publication_text = fields.get("publicationText")

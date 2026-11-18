@@ -15,10 +15,11 @@ const STATUS = {pass: "通过", fail: "未通过", unknown: "未知", not_config
 const jobPath = (id) => `/api/creation/jobs/${encodeURIComponent(id)}`;
 const when = (iso) => new Date(iso).toLocaleString("zh-CN", {hour12: false});
 const tagList = (text) => [...new Set(text.split(/[,，\n]/).map((t) => t.trim()).filter(Boolean))];
-function configuredProfiles(profiles, selected, drafts, fps, totalFrames) {
+function configuredProfiles(profiles, selected, drafts, fps, totalFrames, shots) {
     let error = "";
+    const matches = {};
     const chosen = profiles.filter(p => selected.includes(p.Platform)).map(profile => {
-        const {duration = "", opening = "", closing = ""} = drafts[profile.Platform] || {};
+        const {duration = "", content = "", opening = "", closing = ""} = drafts[profile.Platform] || {};
         const fields = {...profile.Fields};
         let frames = totalFrames;
         if (duration) {
@@ -27,6 +28,19 @@ function configuredProfiles(profiles, selected, drafts, fps, totalFrames) {
                 error ||= `${PLATFORMS[profile.Platform]}请输入短于原成片的秒数，例如 15 或 12.5；留空保留全片。`;
             } else {
                 fields.variant = {durationFrames: frames};
+            }
+        }
+        const keyword = content.trim().toLowerCase();
+        if (keyword) {
+            const matching = shots.filter(shot => shot.description.toLowerCase().includes(keyword));
+            const match = matching.find(shot => shot.endFrame - shot.startFrame <= frames);
+            if (!fields.variant) error ||= `${PLATFORMS[profile.Platform]}先填写短版时长，再按内容选段。`;
+            else if (matching.length && !match) error ||= `${PLATFORMS[profile.Platform]}时长不足以保留匹配镜头，请增加时长。`;
+            else if (!match) error ||= `${PLATFORMS[profile.Platform]}的成片镜头里找不到「${content.trim()}」，请换个关键词。`;
+            else {
+                const startFrame = Math.min(match.startFrame, totalFrames - frames);
+                if (startFrame > 0) fields.variant.startFrame = startFrame;
+                matches[profile.Platform] = {startFrame, endFrame: startFrame + frames, label: match.description};
             }
         }
         const publicationText = {};
@@ -44,7 +58,16 @@ function configuredProfiles(profiles, selected, drafts, fps, totalFrames) {
         if (Object.keys(publicationText).length) fields.publicationText = publicationText;
         return {...profile, Fields: fields};
     });
-    return {chosen, error};
+    return {chosen, error, matches};
+}
+
+function stopAtShortEnd(video, range, time = video.currentTime) {
+    const end = range.current?.end;
+    if (end !== undefined && time >= end) {
+        range.current = null;
+        video.pause();
+        video.currentTime = Math.max(0, end - 0.001);
+    }
 }
 
 // J1 2026-11-11: the cover is chosen before saving. Candidates are grabbed in the browser from a
@@ -181,6 +204,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     const [message, setMessage] = useState("");
     const [fieldError, setFieldError] = useState({});
     const video = useRef(null);
+    const shortEnd = useRef(null);
     const [coverPreview, setCoverPreview] = useState("");
 
     useEffect(() => {
@@ -335,7 +359,25 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
         const values = previous.key === draftKey ? previous.values : {};
         return {key: draftKey, values: {...values, [platformId]: {...values[platformId], [field]: value}}};
     });
-    const {chosen, error: variantError} = configuredProfiles(profiles, selected, drafts, fps, pub?.frames || 0);
+    const {chosen, error: variantError, matches} = configuredProfiles(profiles, selected, drafts, fps, pub?.frames || 0, pub?.contentShots || []);
+    const previewShort = ({startFrame, endFrame}) => {
+        const player = video.current;
+        if (!player) return;
+        const range = {end: endFrame / fps};
+        shortEnd.current = range;
+        const watchFrame = (_now, frame) => {
+            if (shortEnd.current !== range || video.current !== player) return;
+            stopAtShortEnd(player, shortEnd, frame.mediaTime + 1e-6);
+            if (shortEnd.current === range) player.requestVideoFrameCallback(watchFrame);
+        };
+        player.currentTime = startFrame / fps;
+        player.requestVideoFrameCallback?.(watchFrame);
+        void player.play().catch(error => {
+            if (shortEnd.current !== range) return;
+            shortEnd.current = null;
+            setMessage(error.message);
+        });
+    };
     const queue = usePackageBatches({project, pub, profiles: chosen, selected, disabled: !!busy || !saved, startBlocked: !!variantError,
         onChanged: () => { const generation = epoch.current; if (pub?.publicationJobId) void restore(pub, generation).catch(e => { if (epoch.current === generation) setMessage(e.message); }); }});
     const coverSrc = pub?.publicationJobId && !dirty ? `${jobPath(pub.publicationJobId)}/publication-files/cover.png` : null;
@@ -352,7 +394,9 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
         </aside>
         <div class="center">
             <section class="viewer" aria-label="成片预览">
-                <div class="stage">${pub ? html`<video ref=${video} src=${videoSrc} controls playsinline preload="metadata"></video>` : html`<div class="empty">在左侧选一个成片</div>`}</div>
+                <div class="stage">${pub ? html`<video ref=${video} src=${videoSrc} controls playsinline preload="metadata"
+                    onLoadStart=${() => { shortEnd.current = null; }} onEnded=${() => { shortEnd.current = null; }}
+                    onTimeUpdate=${e => stopAtShortEnd(e.currentTarget, shortEnd)}></video>` : html`<div class="empty">在左侧选一个成片</div>`}</div>
                 <div class="transport">
                     <button class="btn ghost" disabled=${!pub} onClick=${useFrame}>用当前画面做封面</button>
                     <span class="tc">封面：第 ${form.coverFrame} 帧（${(form.coverFrame / fps).toFixed(2)} 秒）</span>
@@ -377,6 +421,14 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                                 <input class="input" inputmode="decimal" placeholder="保留全片" value=${drafts[id]?.duration || ""}
                                     disabled=${!!busy || queue.busy || queue.running} onInput=${e => updateDraft(id, "duration", e.currentTarget.value)} />
                             </label>
+                            ${!!pub?.contentShots?.length && html`<label>${PLATFORMS[id]} 内容关键词
+                                <input class="input" placeholder="留空从片头开始" maxlength="60" value=${drafts[id]?.content || ""}
+                                    disabled=${!!busy || queue.busy || queue.running} onInput=${e => updateDraft(id, "content", e.currentTarget.value)} />
+                            </label>`}
+                            ${matches[id] && html`<div>
+                                <span class="hint">${(matches[id].startFrame / fps).toFixed(2)}–${(matches[id].endFrame / fps).toFixed(2)} 秒 · ${matches[id].label}</span>
+                                <button class="btn ghost" onClick=${() => previewShort(matches[id])}>预览${PLATFORMS[id]}所选区间</button>
+                            </div>`}
                             ${[["opening", "开场文案"], ["closing", "结尾提示"]].map(([field, label]) => html`<label key=${field}>${PLATFORMS[id]} ${label}
                                 <input class="input" placeholder="可留空" value=${drafts[id]?.[field] || ""}
                                     disabled=${!!busy || queue.busy || queue.running} onInput=${e => updateDraft(id, field, e.currentTarget.value)} />
@@ -387,6 +439,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                     ${saved && queue.view}
                     ${packages.map((pkg) => html`<div class="pkg-result">
                         <p>${PLATFORMS[pkg.profile?.Platform] || ""}${pkg.profile?.Fields?.variant ? ` · 短版 ${(pkg.profile.Fields.variant.durationFrames / fps).toFixed(2)} 秒` : ""} · ${client.jobStatus(pkg.status)} ${pkg.error?.message || ""}</p>
+                        ${pkg.profile?.Fields?.variant?.startFrame && html`<p class="hint">原成片区间 ${(pkg.profile.Fields.variant.startFrame / fps).toFixed(2)}–${((pkg.profile.Fields.variant.startFrame + pkg.profile.Fields.variant.durationFrames) / fps).toFixed(2)} 秒</p>`}
                         ${pkg.profile?.Fields?.publicationText?.opening && html`<p class="hint">开场：${pkg.profile.Fields.publicationText.opening}</p>`}
                         ${pkg.profile?.Fields?.publicationText?.closing && html`<p class="hint">结尾：${pkg.profile.Fields.publicationText.closing}</p>`}
                         ${["failed", "interrupted"].includes(pkg.status) && html`<button class="btn ghost" disabled=${!!busy || !saved} onClick=${() => buildPackage(pkg)}>重试此平台</button>`}

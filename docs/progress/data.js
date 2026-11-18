@@ -897,10 +897,11 @@ window.PROGRESS_DATA = {
     "docs/exec-plans/sprint-studio-multi-platform-packages.md",
     "tests/test_studio_multi_platform.py"
    ],
-   "done": "Studio可按平台选短版时长、填写画面内开场和结尾文案，并直接播放或下载该平台成片。实测队列重开恢复，B站旧包复用，抖音15秒音画对齐且首尾真实烧录",
-   "todo": "按内容智能重剪与自动生成画面文案仍待做；真实平台资格与质量仍待验",
+   "done": "Studio可按平台用关键词选连续短版区间、预览、填写开场和结尾文案并排队出包。真实抖音中段音画裁切与全长B站同批恢复",
+   "todo": "跨镜头的语义重剪与自动生成画面文案待做；真实平台资格与质量待验",
    "updated": "2026-11-19",
    "sprints": [
+    "sprint-platform-content-cut",
     "sprint-platform-video-copy",
     "sprint-platform-short-pack",
     "sprint-package-batches",
@@ -1585,6 +1586,12 @@ window.PROGRESS_DATA = {
      "name": "Studio同版本多平台包",
      "status": "done",
      "sprint": "sprint-studio-multi-platform-packages"
+    },
+    {
+     "id": "P035-content",
+     "name": "按成片内容选平台短版",
+     "status": "done",
+     "sprint": "sprint-platform-content-cut"
     }
    ]
   },
@@ -2607,6 +2614,16 @@ window.PROGRESS_DATA = {
    "bytes": 3466
   },
   {
+   "file": "sprint-platform-content-cut",
+   "title": "按成片内容选平台短版",
+   "ids": [
+    "P035",
+    "R2"
+   ],
+   "date": "",
+   "bytes": 1375
+  },
+  {
    "file": "sprint-platform-packages",
    "title": "R2-E：配置驱动四平台变体与七文件预览包",
    "ids": [
@@ -2625,8 +2642,8 @@ window.PROGRESS_DATA = {
     "P037",
     "R2"
    ],
-   "date": "2026-11-18",
-   "bytes": 1863
+   "date": "2026-11-19",
+   "bytes": 1927
   },
   {
    "file": "sprint-platform-video-copy",
@@ -2635,7 +2652,7 @@ window.PROGRESS_DATA = {
     "P035",
     "R2"
    ],
-   "date": "",
+   "date": "2026-11-19",
    "bytes": 1690
   },
   {

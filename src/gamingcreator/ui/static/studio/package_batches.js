@@ -71,6 +71,7 @@ function BatchRecords({batches, error, disabled, onCommand, fps}) {
             <ul>${batch.items.map(item => {
                 const {variant, publicationText} = item.profile.Fields;
                 return html`<li>${platforms[item.profile.Platform] || item.profile.Platform}${variant ? ` · 短版 ${(variant.durationFrames / fps).toFixed(2)} 秒` : ""} · ${names[item.status] || item.status}${item.error?.message ? `：${item.error.message}` : ""}
+                    ${variant?.startFrame && html`<span> · 原成片 ${(variant.startFrame / fps).toFixed(2)}–${((variant.startFrame + variant.durationFrames) / fps).toFixed(2)} 秒</span>`}
                     ${publicationText?.opening && html`<span> · 开场：${publicationText.opening}</span>`}
                     ${publicationText?.closing && html`<span> · 结尾：${publicationText.closing}</span>`}</li>`;
             })}</ul>
