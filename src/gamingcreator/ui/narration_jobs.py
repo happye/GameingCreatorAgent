@@ -145,6 +145,10 @@ def public(job_id: str, artifact: NarrationArtifact) -> dict[str, Any]:
         "sampleRate": artifact.sample_rate,
         "sampleCount": artifact.sample_count,
         "durationSeconds": artifact.duration_seconds,
+        "captionCueCount": sum(
+            span.end_sample > span.start_sample and bool(span.text.strip())
+            for span in artifact.caption_spans
+        ),
         "text": artifact.text_path.read_text(encoding="utf-8"),
         "audioUrl": prefix + "narration.wav",
         "textUrl": prefix + "narration.txt",

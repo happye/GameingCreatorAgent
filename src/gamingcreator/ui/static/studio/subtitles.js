@@ -15,11 +15,14 @@ export function useSubtitlePreview(project, editing, clips, mode, wordDraft, pro
     const insertions = projection && Object.hasOwn(projection, "insertions") ? projection.insertions : editing.insertions;
     const overrides = projection?.subtitleOverrides ?? editing.subtitleOverrides.filter(o =>
         !projection?.replacements?.some(swap => swap.targetClipId === o.clipId));
+    const narration = projection && Object.hasOwn(projection, "narration")
+        ? projection.narration : editing.audio?.narration;
     const payload = editing.status === "ready" && clips ? {
         projectId: project, parentJobId: editing.base.jobId, planId: editing.base.planId,
         expectedParentReceiptSha256: editing.editor.expectedParentReceiptSha256, subtitleMode: mode,
         clips: clips.map(({clipId, startUs, endUs, speed, transitionIn}) => ({clipId, startUs, endUs, speed, transitionIn})),
         subtitleOverrides: overrides.filter(o => kept.has(o.clipId)),
+        ...(narration !== undefined ? {narration} : {}),
         ...(manifest ? {candidateManifestSha256: manifest, replacements: swaps} : {}),
         ...(insertions != null ? {insertions} : {}),
         ...asrWordsPayload(wordDraft),
@@ -53,6 +56,6 @@ const CUE_STYLES = {
 export function SubtitlePreview({cues, outUs, styleName = "standard", wordHighlights = false, subtitleSource = "segment"}) {
     const look = CUE_STYLES[styleName] || CUE_STYLES.standard;
     return html`<div aria-label="字幕预览" data-subtitle-style=${styleName} data-word-highlights=${wordHighlights ? "true" : "false"} data-subtitle-source=${subtitleSource} style=${{position: "absolute", inset: 0, pointerEvents: "none", zIndex: 4}}>
-        ${cues.filter(c => c.startUs <= outUs && outUs < c.endUs).map(c => html`<div style=${{position: "absolute", bottom: c.lifted ? "12.5%" : "1%", width: "100%", textAlign: "center", whiteSpace: "pre-line", color: "white"}}><span style=${{...look, display: "inline-block"}}>${c.text}</span></div>`)}
+        ${cues.filter(c => c.startUs <= outUs && outUs < c.endUs).map(c => html`<div style=${{position: "absolute", bottom: c.lifted ? (12.5 * (c.lane || 1)) + "%" : "1%", width: "100%", textAlign: "center", whiteSpace: "pre-line", color: "white"}}><span style=${{...look, display: "inline-block"}}>${c.text}</span></div>`)}
     </div>`;
 }

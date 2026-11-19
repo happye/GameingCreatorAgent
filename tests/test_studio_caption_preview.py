@@ -5,6 +5,7 @@ import asyncio
 # ruff: noqa: F811
 import json
 import threading
+import wave
 from dataclasses import replace
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -20,6 +21,7 @@ from gamingcreator.application.creation_editing import validate_revision
 from gamingcreator.application.edit_decision import select_edit_decision
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.domain.creation_subtitles import parse_srt
+from gamingcreator.infrastructure import sapi_narration
 from gamingcreator.infrastructure.ffmpeg_media import FfmpegMediaProcessor
 from gamingcreator.infrastructure.ffmpeg_render import FfmpegCreationRenderer
 from gamingcreator.ui.revision_jobs import (
@@ -392,6 +394,53 @@ def test_narration_dependency_does_not_recover_on_preview(revisions, engine, sta
     with pytest.raises(ValueError, match="completed"):
         preview(jobs, request)
     assert before == {str(p): p.read_bytes() for p in jobs.repository.rglob("*") if p.is_file()}
+
+
+def test_narration_caption_samples_follow_draft_placement_and_export(
+    revisions, engine, monkeypatch
+):
+    from test_narration_jobs import choice, done, revise
+
+    async def timed_engine(mode, request_path, context):
+        response = await engine.invoke(mode, request_path, context)
+        if mode == "synthesize":
+            request = json.loads(request_path.read_text(encoding="utf-8"))
+            assert request["captionParts"] == ["开场。", "收尾。"]
+            with wave.open(request["wavPath"], "rb") as audio:
+                return json.dumps({"chunkEndBytes": [4410, audio.getnframes() * 2]}).encode()
+        return response
+
+    monkeypatch.setattr(sapi_narration, "_invoke", timed_engine)
+    jobs, root, _ = revisions
+    voice = done(jobs, "开场。收尾。")
+    assert voice["narrationAsset"]["captionCueCount"] == 2
+    editor = jobs.edit(root, "hook-first")
+    request = {k: editor[k] for k in ("parentJobId", "planId", "expectedParentReceiptSha256")}
+    request.update(
+        projectId=voice["projectId"],
+        subtitleMode="burn",
+        clips=[{k: c[k] for k in ("clipId", "startUs", "outputFrames")} for c in editor["clips"]],
+        subtitleOverrides=[{"clipId": editor["clips"][0]["clipId"], "text": "手写字幕"}],
+        narration=choice(voice, start=3),
+    )
+    result = preview(jobs, request)["cues"]
+    assert [(row["startUs"], row["text"]) for row in result if "clipId" not in row] == [
+        (100_000, "开场。"),
+        (200_000, "收尾。"),
+    ]
+    assert all(row["source"] == "narration" for row in result if "clipId" not in row)
+    assert any(row["text"] == "手写字幕" and row["lifted"] for row in result)
+    assert all("clipId" in row for row in preview(jobs, {**request, "narration": None})["cues"])
+    with pytest.raises(ValueError, match="SHA256"):
+        preview(jobs, {**request, "narration": {**request["narration"], "receiptSha256": "0" * 64}})
+    revised = revise(jobs, root, "e", narration=request["narration"])
+    chain = load_chain(jobs, revised["jobId"], "hook-first")
+    assert [cue.text for cue in revision_subtitles(chain, "sidecar") if cue.clip_index is None] == [
+        "开场。",
+        "收尾。",
+    ]
+    exported, _, _ = jobs.timeline_export(revised["jobId"], "hook-first", "fcpxml")
+    assert all(text.encode() in exported for text in ("开场。", "收尾。"))
 
 
 def test_repeated_run_reorder_automatic_and_deleted_inherited_overrides(replacements):

@@ -1,10 +1,12 @@
 """Map saved ASR source intervals onto the ordered render output clock."""
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from fractions import Fraction
 
+from gamingcreator.application.narration import NarrationArtifact
 from gamingcreator.application.rendering import RenderPlan
+from gamingcreator.domain.creation_narration import NarrationSelection
 from gamingcreator.domain.creation_subtitles import SubtitleCue
 from gamingcreator.domain.models import TranscriptSegment
 
@@ -60,6 +62,51 @@ def build_subtitles(
                 )
         cues.extend(sorted(clip_cues, key=lambda cue: (cue.start, cue.end)))
     return tuple(sorted(cues, key=lambda cue: (cue.start, cue.end)))
+
+
+def build_narration_subtitles(
+    plan: RenderPlan, selection: NarrationSelection, artifact: NarrationArtifact
+) -> tuple[SubtitleCue, ...]:
+    """Project measured WAV sample intervals onto the independently positioned audio track."""
+    origin = Fraction(selection.start_frame, plan.fps)
+    limit = Fraction(plan.frames, plan.fps)
+    cues = []
+    for span in artifact.caption_spans:
+        start = origin + Fraction(span.start_sample, artifact.sample_rate)
+        end = min(limit, origin + Fraction(span.end_sample, artifact.sample_rate))
+        if start < end and span.text.strip():
+            cues.append(SubtitleCue(start, end, span.text.replace("-->", "→"), "narration"))
+    return tuple(cues)
+
+
+def subtitle_layout(
+    cues: tuple[SubtitleCue, ...], clock_scale: int
+) -> Iterator[tuple[Fraction, Fraction, SubtitleCue, int]]:
+    """Stack active tracks, keeping the narration below source clips at overlaps."""
+    for cue in cues:
+        others = [
+            other
+            for other in cues
+            if other.clip_index != cue.clip_index
+            and other.start < cue.end
+            and cue.start < other.end
+        ]
+        edges = {cue.start, cue.end}
+        for other in others:
+            edges.update((max(cue.start, other.start), min(cue.end, other.end)))
+        boundaries = sorted(edges)
+        for start, end in zip(boundaries, boundaries[1:], strict=False):
+            if int(start * clock_scale) == int(end * clock_scale):
+                continue
+            higher = {
+                other.clip_index
+                for other in others
+                if other.start < end
+                and start < other.end
+                and cue.clip_index is not None
+                and (other.clip_index is None or cue.clip_index < other.clip_index)
+            }
+            yield start, end, cue, len(higher)
 
 
 def validate_override_text(text: str) -> None:

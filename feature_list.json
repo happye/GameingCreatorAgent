@@ -738,7 +738,8 @@
                 "2026-10-31 R2-I: local Windows SAPI narration asset jobs, preview, output-frame attachment with gain/ducking, inherit/remove/ancestor restore, three-way mix render; 165 targeted tests (.cache/narration-main.xml), real Huihui 5.688s voice located at 3.000s in a 360-frame MP4 (.cache/narration-real-render.json), Bilibili seven-file package from the narrated render; code-quality-guard PASS; voice license unknown",
                 "docs/exec-plans/sprint-studio-narration-revision.md",
                 "tests/test_studio_narration_revision_browser.py",
-                "2026-11-08: Studio edits attached narration, restores per-asset local drafts and resynthesizes with free local voices into a new revision. Late results and asset-switch draft isolation verified; real WAV/MP4/7-file package chain uses explicit fake voice engine. Voice quality and human acceptance remain unassessed."
+                "2026-11-08: Studio edits attached narration, restores per-asset local drafts and resynthesizes with free local voices into a new revision. Late results and asset-switch draft isolation verified; real WAV/MP4/7-file package chain uses explicit fake voice engine. Voice quality and human acceptance remain unassessed.",
+                "2026-11-20: Windows synthesis captures sample offsets for each spoken sentence in an optional verified receipt field. Existing narration can be reopened and locally re-synthesized. See sprint-narration-captions."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"
@@ -837,7 +838,8 @@
                 "tests/test_studio_caption_editor_browser.py",
                 "docs/exec-plans/sprint-studio-caption-preview.md",
                 "tests/test_studio_caption_preview.py",
-                "tests/test_studio_caption_preview_browser.py"
+                "tests/test_studio_caption_preview_browser.py",
+                "2026-11-20: verified narration intervals follow draft and saved audio placement in Studio, SRT, FFmpeg burn-in and FCPXML. Four real narration captions exported on a 60-second Comic Stars video and carried into the local Bilibili package. See sprint-narration-captions."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released",

@@ -526,7 +526,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                 envelope=${editable && !commandPreview && !busy ? {points: editing.audio.mix.sourceEnvelope || [], fps, totalFrames: Math.round(player.totalUs * fps / 1e6), onChange: editing.ops.envelope} : null}
                 fps=${fps} cues=${captionPreview.cues} captionStatus=${captionPreview.status}
                 onSeek=${(us) => void player.seek(us, false)}
-                onOpenCaption=${(clipId) => { setInspTab("shot"); setMode("plan"); if (clipId) editing.setSelectedId(clipId); }}
+                onOpenCaption=${(clipId, source) => { setInspTab(source === "narration" ? "sound" : "shot"); setMode("plan"); if (clipId) editing.setSelectedId(clipId); }}
                 narrationMove=${editable && !commandPreview && !busy && editing.status === "ready" && editing.audio?.narration && editing.audio?.asset ? {startFrame: editing.audio.narration.startFrame, durationSeconds: editing.audio.asset.durationSeconds, sampleCount: editing.audio.asset.sampleCount, sampleRate: editing.audio.asset.sampleRate, problem: narrationProblem(editing.audio, player.totalUs, fps), onMove: (frame) => editing.ops.narrationStart(frame), onStopPlayer: () => player.stop(), onCommitPreview: (frame) => void player.seek((frame / fps) * 1e6, true), editEpoch: editing.editEpoch, assetJobId: editing.audio.asset.assetJobId, receiptSha256: editing.audio.asset.receiptSha256, status: editing.status} : null}
                 scope=${`${project}:${editing.base?.jobId}:${editing.base?.planId}`} />
 

@@ -94,3 +94,20 @@ def test_same_source_transition_keeps_two_cues_on_existing_clock():
         (Fraction(4, 5), Fraction(1), "同一句", False),
         (Fraction(1), Fraction(9, 5), "同一句", False),
     ]
+
+
+def test_narration_and_two_crossfaded_sources_have_distinct_lanes():
+    cues = (
+        SubtitleCue(Fraction(0), Fraction(2), "原声一", clip_index=0),
+        SubtitleCue(Fraction(1), Fraction(3), "原声二", clip_index=1),
+        SubtitleCue(Fraction(1), Fraction(2), "旁白"),
+    )
+    overlapping = {
+        text: lane for start, end, text, lane in burn_events(cues) if (start, end) == (1, 2)
+    }
+    assert overlapping == {"原声一": 2, "原声二": 1, "旁白": 0}
+    output = _burn_ass(cues, 640, 480)
+    assert all(
+        f",0,0,{margin},,{text}" in output
+        for text, margin in (("原声一", 120), ("原声二", 60), ("旁白", 4))
+    )

@@ -512,6 +512,8 @@ export function AudioPanel({commandPreview = false, editing, project, game = "",
     return html`<div class="field audio-panel"><div class="k">旁白</div>
         ${n && asset ? html`
             <div class="v">${asset.voice?.description || "本机语音"} · ${asset.durationSeconds.toFixed(1)} 秒</div>
+            ${asset.captionCueCount > 0 ? html`<p class="hint">${asset.captionCueCount} 段旁白字幕随音轨移动，在导出设置开启字幕即可查看。</p>`
+                : asset.captionCueCount === 0 ? html`<p class="hint">可在「编辑旁白文字」中用本机重新合成，生成旁白字幕。</p>` : null}
             <p class="hint clamp" aria-label="正在使用的旁白文字">${asset.text}</p>
             ${toolButtons(asset.text || "", "已挂接")}
             <div class="pair even">

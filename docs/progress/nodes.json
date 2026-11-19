@@ -192,10 +192,11 @@
    ]
   },
   "P026": {
-   "done": "本机语音旁白可试听、调位置/音量/闪避、编辑重合成；AI改稿支持保留旧轨及覆盖确认，fallback优先已有免费声音再中文；真实Huihui新音轨已随视频与发布包交付",
+   "done": "本机语音旁白可试听、调位置/音量/闪避、编辑重合成；Windows 实测记录四句 PCM 时序，字幕在 Studio 预览和导出中随旁白移动",
    "todo": "本机声音授权未知；云端配音需付费单独批准；音质未人工评审",
-   "updated": "2026-11-17",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-narration-captions",
     "sprint-local-narration",
     "sprint-studio-narration-revision",
     "sprint-attached-ai-narration"
@@ -223,10 +224,11 @@
    ]
   },
   "P029": {
-   "done": "镜头字幕编辑/即时预览及三种烧入样式；可信逐词结果映射/预览/烧录，显式坏绑定拒绝而不静默降级",
+   "done": "镜头字幕编辑、逐词高亮和三种烧入样式；本机旁白句级时序接入 Studio、SRT、烧录、FCPXML，漫画群星 60 秒成片及 B 站包实测",
    "todo": "字体/颜色自定义与字幕质量未人评",
-   "updated": "2026-11-16",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-narration-captions",
     "sprint-creation-subtitles",
     "sprint-creation-caption-editing",
     "sprint-studio-caption-editor",
@@ -647,6 +649,12 @@
      "name": "源语音映射成片字幕",
      "status": "done",
      "sprint": "sprint-creation-subtitles"
+    },
+    {
+     "id": "P029-narration-captions",
+     "name": "本机旁白句级字幕随音轨移动",
+     "status": "done",
+     "sprint": "sprint-narration-captions"
     },
     {
      "id": "P025",

@@ -5,6 +5,7 @@ from collections.abc import Iterator
 from fractions import Fraction
 from pathlib import Path
 
+from gamingcreator.application.creation_subtitles import subtitle_layout
 from gamingcreator.application.narration import NarrationArtifact
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.rendering import RenderClip, RenderPlan
@@ -168,39 +169,20 @@ def _burn_ass(
         hours, minute = divmod(minutes, 60)
         return f"{hours}:{minute:02d}:{sec:02d}.{cs:02d}"
 
-    for start, end, content, lifted in burn_events(cues):
-        margin = max(24, height // 8) if lifted else 4
+    for start, end, content, lane in burn_events(cues):
+        margin = max(24, height // 8) * lane if lane else 4
         text = content.replace("\n", r"\N")
         header += f"Dialogue: 0,{clock(start)},{clock(end)},Default,,0,0,{margin},,{text}\n"
     return header
 
 
-def burn_events(cues: tuple[SubtitleCue, ...]) -> Iterator[tuple[Fraction, Fraction, str, bool]]:
-    # Split only at overlap edges. Earlier clips lift above later clips while
-    # both are visible; outside those intervals every cue uses the bottom lane.
-    for cue in cues:
-        edges = {cue.start, cue.end}
-        others = [
-            other
-            for other in cues
-            if other is not cue
-            and other.clip_index != cue.clip_index
-            and other.start < cue.end
-            and cue.start < other.end
-        ]
-        for other in others:
-            edges.update((max(cue.start, other.start), min(cue.end, other.end)))
-        boundaries = sorted(edges)
-        for start, end in zip(boundaries, boundaries[1:], strict=False):
-            if (start * 100).__floor__() == (end * 100).__floor__():
-                continue
-            lifted = any(
-                other.start < end
-                and start < other.end
-                and (cue.clip_index or 0) < (other.clip_index or 0)
-                for other in others
-            )
-            yield start, end, cue.text.translate(str.maketrans("\\{}", "＼｛｝")), lifted
+def burn_events(cues: tuple[SubtitleCue, ...]) -> Iterator[tuple[Fraction, Fraction, str, int]]:
+    for start, end, cue, lane in subtitle_layout(cues, 100):
+        yield start, end, escape_ass_text(cue.text), lane
+
+
+def escape_ass_text(text: str) -> str:
+    return text.translate(str.maketrans("\\{}", "＼｛｝"))
 
 
 def _filter_path(path: Path) -> str:

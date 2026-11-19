@@ -68,6 +68,7 @@ function rulerMarks(totalUs, scale, width) {
 // Without a trusted clipId, only a unique output-range match may be selected.
 // An overlap or an unknown id seeks only and does not retarget the inspector.
 export function clipForCue(items, cue) {
+    if (cue?.source === "narration") return null;
     if (cue?.clipId) return items.find((item) => item.clipId === cue.clipId) || null;
     const matches = items.filter((item) => cue.startUs >= item.outStartUs && cue.startUs < item.outStartUs + item.outDurUs);
     return matches.length === 1 ? matches[0] : null;
@@ -308,7 +309,7 @@ function CaptionTrack({cues, captionStatus, items, scale, totalUs, fps, onSeek, 
                         e.stopPropagation();
                         onSeek?.(clampOut(cue.startUs, totalUs, fps));
                         const clip = clipForCue(items, cue);
-                        onOpenCaption?.(clip?.clipId || null);
+                        onOpenCaption?.(clip?.clipId || null, cue.source);
                     }}>${shortCue(cue.text)}</button>`)
                     : html`<span class="lane-empty">${captionStatus || "当前没有字幕"}</span>`}
             </div>

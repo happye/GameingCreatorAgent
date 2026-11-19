@@ -23,14 +23,18 @@ for ($i = 0; $i -lt $tokens.Count; $i++) {
 if ($null -eq $selected) { throw 'Requested voice is no longer installed.' }
 $speaker.Voice = $selected
 $stream = New-Object -ComObject SAPI.SpFileStream
+$chunkEndBytes = @()
 try {
     # SAFT22kHz16BitMono. Read the actual resulting PCM format in Python.
     $stream.Format.Type = 22
     $stream.Open([string]$request.wavPath, 3, $false)
     $speaker.AudioOutputStream = $stream
-    # SVSFIsNotXML explicitly treats XML-looking user input as plain text.
-    [void]$speaker.Speak([string]$request.text, 16)
+    foreach ($part in $request.captionParts) {
+        # SVSFIsNotXML explicitly treats XML-looking user input as plain text.
+        [void]$speaker.Speak([string]$part, 16)
+        $chunkEndBytes += [long]$stream.Seek(0, 1)
+    }
 } finally {
     $stream.Close()
 }
-ConvertTo-Json -InputObject @{voiceId=$selected.Id} -Compress
+ConvertTo-Json -InputObject @{voiceId=$selected.Id; chunkEndBytes=$chunkEndBytes} -Compress

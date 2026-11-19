@@ -4,13 +4,19 @@ import asyncio
 import hashlib
 import json
 import os
+import re
 import sys
 import tempfile
 import wave
 from contextlib import suppress
 from pathlib import Path
 
-from gamingcreator.application.narration import LocalVoice, NarrationArtifact, NarrationRequest
+from gamingcreator.application.narration import (
+    LocalVoice,
+    NarrationArtifact,
+    NarrationCaptionSpan,
+    NarrationRequest,
+)
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.infrastructure.app_paths import scripts_directory
 from gamingcreator.infrastructure.local_paths import is_link
@@ -19,6 +25,7 @@ from gamingcreator.infrastructure.media_process import run_media_process
 _HELPER = scripts_directory() / "sapi-narration.ps1"
 # Local Windows voices, and the paid cloud voices whose ids start with "cosyvoice:".
 ENGINES = ("windows-sapi", "cosyvoice-v3-flash")
+_CAPTION_BREAK = re.compile(r"(?:[。！？!?；;\n]+|\.(?=[\s”’」』）)】]|$))[”’」』）)】]*")
 
 
 def _sha(path: Path) -> str:
@@ -95,6 +102,29 @@ def _pcm(path: Path) -> tuple[int, int, int, int]:
     return rate, channels, width, count
 
 
+def _caption_parts(text: str) -> list[str]:
+    edges = [0, *(match.end() for match in _CAPTION_BREAK.finditer(text)), len(text)]
+    return [text[start:end] for start, end in zip(edges, edges[1:], strict=False) if end > start]
+
+
+def _caption_spans(rows: object, text: str, sample_count: int) -> tuple[NarrationCaptionSpan, ...]:
+    if not isinstance(rows, list) or not rows or len(rows) > len(text):
+        raise ValueError("Invalid narration caption records.")
+    spans = []
+    start = 0
+    for row in rows:
+        if not isinstance(row, dict) or row.keys() != {"endSample", "text"}:
+            raise ValueError("Invalid narration caption record.")
+        end, part = row["endSample"], row["text"]
+        if type(end) is not int or not start <= end <= sample_count or not isinstance(part, str):
+            raise ValueError("Narration caption extent differs from WAV.")
+        spans.append(NarrationCaptionSpan(start, end, part))
+        start = end
+    if start != sample_count or "".join(span.text for span in spans) != text:
+        raise ValueError("Narration captions differ from WAV or saved text.")
+    return tuple(spans)
+
+
 def read_narration_artifact(
     directory: Path, expected_receipt_sha256: str | None = None
 ) -> NarrationArtifact:
@@ -142,6 +172,11 @@ def read_narration_artifact(
     wav_sha, text_sha = _sha(wav_path), _sha(text_path)
     if receipt["wavSha256"] != wav_sha or receipt["textSha256"] != text_sha:
         raise ValueError("Narration asset content differs from receipt.")
+    spans = (
+        _caption_spans(receipt["captionSpans"], request.text, count)
+        if "captionSpans" in receipt
+        else ()
+    )
     return NarrationArtifact(
         directory,
         wav_path,
@@ -155,6 +190,7 @@ def read_narration_artifact(
         count,
         wav_sha,
         text_sha,
+        spans,
     )
 
 
@@ -173,17 +209,24 @@ async def synthesize_local_narration(
     directory.mkdir(parents=False, exist_ok=False)
     request_path = directory / "request.json"
     wav_path = directory / "narration.wav"
+    parts = _caption_parts(request.text)
     try:
         request_path.write_text(
             json.dumps(
-                {"text": request.text, "voiceId": voice.voice_id, "wavPath": str(wav_path)},
+                {
+                    "text": request.text,
+                    "voiceId": voice.voice_id,
+                    "wavPath": str(wav_path),
+                    "captionParts": parts,
+                },
                 ensure_ascii=False,
             ),
             encoding="utf-8",
         )
-        await _invoke("synthesize", request_path, context)
+        response = await _invoke("synthesize", request_path, context)
+        offsets = json.loads(response.decode("utf-8-sig")).get("chunkEndBytes")
         request_path.unlink()
-        return _seal(directory, request, voice, "windows-sapi", context)
+        return _seal(directory, request, voice, "windows-sapi", context, parts, offsets)
     except BaseException:
         _discard(directory)
         raise
@@ -229,6 +272,8 @@ def _seal(
     voice: LocalVoice,
     engine: str,
     context: CancellationContext,
+    caption_parts: list[str] | None = None,
+    byte_offsets: list[int] | None = None,
 ) -> NarrationArtifact:
     """Write the text and receipt next to a finished WAV, then read the asset back strictly."""
     wav_path, text_path, receipt_path = (
@@ -240,7 +285,7 @@ def _seal(
     rate, channels, width, count = _pcm(wav_path)
     with text_path.open("xb") as stream:
         stream.write(request.text.encode("utf-8"))
-    receipt = {
+    receipt: dict[str, object] = {
         "schemaVersion": "creation-narration-receipt-v1",
         "jobId": context.run_id,
         "requestId": request.request_id,
@@ -262,6 +307,18 @@ def _seal(
         "wavSha256": _sha(wav_path),
         "textSha256": _sha(text_path),
     }
+    if byte_offsets is not None and caption_parts is not None:
+        block_align = channels * width
+        if len(byte_offsets) != len(caption_parts) or any(
+            type(offset) is not int or offset % block_align for offset in byte_offsets
+        ):
+            raise ValueError("Narration caption boundaries must follow the PCM sample clock.")
+        spans = [
+            {"endSample": offset // block_align, "text": part}
+            for offset, part in zip(byte_offsets, caption_parts, strict=True)
+        ]
+        _caption_spans(spans, request.text, count)
+        receipt["captionSpans"] = spans
     context.check_cancelled()
     with receipt_path.open("x", encoding="utf-8", newline="\n") as stream:
         stream.write(json.dumps(receipt, ensure_ascii=False, sort_keys=True, indent=2) + "\n")

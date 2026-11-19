@@ -51,6 +51,7 @@ from gamingcreator.ui.revision_jobs import (
     render_revision,
     resolve_audio,
     resolve_overrides,
+    revision_subtitles,
     save_revision,
 )
 
@@ -1499,7 +1500,6 @@ class CreationJobs:
     ) -> tuple[bytes, str, str]:
         import wave
 
-        from gamingcreator.application.creation_subtitles import build_subtitles, present_subtitles
         from gamingcreator.application.timeline_export import (
             ExportCaption,
             ExportNarration,
@@ -1522,19 +1522,7 @@ class CreationJobs:
         # Best-effort AV extras; Final Cut / Resolve / Premiere import remains unverified.
         captions: tuple[ExportCaption, ...] = ()
         try:
-            runs = {timeline.run.run_id: timeline for timeline in chain.timelines}
-            overrides = {item["clipId"]: item["text"] for item in chain.subtitle_overrides}
-            cues = present_subtitles(
-                build_subtitles(
-                    chain.plan,
-                    (),
-                    per_clip=(runs[row["runId"]].transcripts for row in chain.edl["segments"]),
-                    overrides=(
-                        overrides.get(row["clipId"])
-                        for row in version_clips(chain.edl, chain.root_sha)
-                    ),
-                )
-            ).cues
+            cues = revision_subtitles(chain, "sidecar")
             captions = captions_from_cues(cues, int(chain.edl["fpsNumerator"]))
         except Exception:
             captions = ()

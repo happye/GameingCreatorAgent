@@ -38,6 +38,13 @@ class NarrationRequest:
 
 
 @dataclass(frozen=True, slots=True)
+class NarrationCaptionSpan:
+    start_sample: int
+    end_sample: int
+    text: str
+
+
+@dataclass(frozen=True, slots=True)
 class NarrationArtifact:
     directory: Path
     wav_path: Path
@@ -51,6 +58,7 @@ class NarrationArtifact:
     sample_count: int
     wav_sha256: str
     text_sha256: str
+    caption_spans: tuple[NarrationCaptionSpan, ...] = ()
 
     @property
     def duration_seconds(self) -> float:

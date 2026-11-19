@@ -5,10 +5,12 @@ from typing import Any
 
 from gamingcreator.application.creation_editing import validate_revision
 from gamingcreator.application.creation_replacements import validate_revision_v4
-from gamingcreator.application.creation_subtitles import present_subtitles
+from gamingcreator.application.creation_subtitles import present_subtitles, subtitle_layout
 from gamingcreator.application.edit_decision import select_edit_decision
+from gamingcreator.domain.creation_narration import NarrationSelection
 from gamingcreator.domain.creation_subtitles import quantize_srt
-from gamingcreator.infrastructure.ffmpeg_render import burn_events
+from gamingcreator.infrastructure.ffmpeg_render import escape_ass_text
+from gamingcreator.ui import narration_jobs
 from gamingcreator.ui.revision_jobs import (
     load_chain,
     prepare_revision,
@@ -29,6 +31,7 @@ def preview(jobs: Any, request: dict[str, Any]) -> dict[str, Any]:
     }
     allowed = required | {
         "subtitleOverrides",
+        "narration",
         "candidateManifestSha256",
         "replacements",
         "insertions",
@@ -89,8 +92,26 @@ def preview(jobs: Any, request: dict[str, Any]) -> dict[str, Any]:
             chain.root_sha,
         )
     overrides = resolve_overrides(request, chain.subtitle_overrides, revised, chain.root_sha)
+    narration, artifact = chain.narration, chain.narration_asset
+    if "narration" in request:
+        proposed = request["narration"]
+        narration = None if proposed is None else NarrationSelection.from_json(proposed)
+        if narration != chain.narration:
+            artifact = (
+                None
+                if narration is None
+                else narration_jobs.asset(jobs, narration, chain.project_id, read_only=True)
+            )
     cues = revision_subtitles(
-        replace(chain, edl=revised, plan=plan, timelines=timelines, subtitle_overrides=overrides),
+        replace(
+            chain,
+            edl=revised,
+            plan=plan,
+            timelines=timelines,
+            subtitle_overrides=overrides,
+            narration=narration,
+            narration_asset=artifact,
+        ),
         mode,
     )
     replacements = replacement_clip_ids(revised)
@@ -129,30 +150,22 @@ def preview(jobs: Any, request: dict[str, Any]) -> dict[str, Any]:
             return {}
         return {"clipId": clip_ids[index]}
 
-    if mode == "burn":
-        escaped = str.maketrans("\\{}", "＼｛｝")
-        events = []
-        for start, end, text, lifted in burn_events(saved):
-            owners = [
-                cue
-                for cue in saved
-                if cue.start <= start and end <= cue.end and cue.text.translate(escaped) == text
-            ]
-            events.append(
-                (start, end, text, lifted, owners[0].clip_index if len(owners) == 1 else None)
-            )
-    else:
-        events = [(cue.start, cue.end, cue.text, False, cue.clip_index) for cue in saved]
     scale = 100 if mode == "burn" else 1000
+    events = (
+        subtitle_layout(saved, scale)
+        if mode == "burn" or any(cue.clip_index is None for cue in saved)
+        else ((cue.start, cue.end, cue, 0) for cue in saved)
+    )
     result = [
         {
             "startUs": int(start * scale) * (1000000 // scale),
             "endUs": int(end * scale) * (1000000 // scale),
-            "text": text,
-            "lifted": lifted,
-            **clip_id(index),
+            "text": escape_ass_text(cue.text) if mode == "burn" else cue.text,
+            "lifted": bool(lane),
+            **({"lane": lane} if lane > 1 else {}),
+            **({"source": "narration"} if cue.clip_index is None else clip_id(cue.clip_index)),
         }
-        for start, end, text, lifted, index in events
+        for start, end, cue, lane in events
     ]
     return {
         "cues": result,

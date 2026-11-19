@@ -61,6 +61,11 @@ def test_roundtrip_plain_text_and_tamper(tmp_path, fake_engine):
         sapi.read_narration_artifact(artifact.directory)
 
 
+def test_caption_parts_preserve_closing_quotes_and_decimal_points():
+    original = "别急？！‘继续。’画面速度 1.5 倍。"
+    assert sapi._caption_parts(original) == ["别急？！", "‘继续。’", "画面速度 1.5 倍。"]
+
+
 def test_fake_voice_and_output_conflict(tmp_path, fake_engine):
     request = NarrationRequest("r", "p", "中文", "missing")
     with pytest.raises(ValueError, match="not installed"):
