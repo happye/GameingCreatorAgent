@@ -36,3 +36,7 @@ Start-Process继承Codex PowerShell7模块路径，Utility加载后Get-FileHash�
 ## 2026-11-18 Windows 补丁参数与换行
 
 `apply_patch.bat` 需要一个 UTF-8 参数，不能管道送补丁。含引号/换行的补丁用 `Get-Command codex.exe` 定位程序，`ProcessStartInfo.ArgumentList` 传 `--codex-run-as-apply-patch` 和单引号 here-string。跨工作树 diff 用 `git diff --output=<path>`，避免 PowerShell 文本管道把补丁改成 CRLF 导致上下文匹配失败。
+
+## 2026-11-19 Studio 新模块加载
+
+新 ES 模块通过 `node --check` 仍可能在 Studio 启动时返回 404。工作台停在加载页时，先核对浏览器模块请求和 `ui/server.py` 的静态路由表。新增路由需载入新服务进程后验证。补登记后原定向用例通过。

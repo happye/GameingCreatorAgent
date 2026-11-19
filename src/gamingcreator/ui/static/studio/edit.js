@@ -280,6 +280,9 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     }, [project, runs, playable]);
     const player = usePlanPlayer(planVideo, items, urlFor, planVideoNext, previewProblem);
     const captionPreview = useSubtitlePreview(project, editing, shownClips, subtitles, wordHighlight, command?.projection);
+    const previewNarration = command?.projection?.narration;
+    const previewAudio = useMemo(() => previewNarration ? {...editing.audio, narration: previewNarration} : editing.audio,
+        [editing.audio, previewNarration]);
     const music = useMusicCatalog();
     const [audioBusy, setAudioBusy] = useState(false);
     const draftRestoreAllowed = useRef(false);
@@ -289,7 +292,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         : problem || (!editing.dirty ? "修改镜头、声音或叠加后可保存新版本" : "");
     // The inspector has three pages so sound and export stay reachable while a clip is selected.
     const [inspTab, setInspTab] = useState("shot");
-    const sound = useAudioPreview(player, comparePlan && comparePlan.id !== planId ? {} : editing.audio, fps, planVideo, music.tracks, `${project}:${editing.base?.jobId}:${editing.base?.planId}`);
+    const sound = useAudioPreview(player, comparePlan && comparePlan.id !== planId ? {} : previewAudio, fps, planVideo, music.tracks, `${project}:${editing.base?.jobId}:${editing.base?.planId}`);
     const thumb = useCallback((item) => (item?.evidenceIds?.[0] ? client.evidenceUrl(project, item.runId, item.evidenceIds[0]) : null), [project]);
 
 
@@ -483,7 +486,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     <video ref=${planVideo} hidden=${mode !== "plan" || !items.length} playsinline preload="metadata" onClick=${() => { if (!previewProblem) player.toggle(); }}></video><video ref=${planVideoNext} hidden=${mode !== "plan" || !items.length} playsinline preload="auto" onClick=${() => { if (!previewProblem) player.toggle(); }}></video>${sound}
                     ${editable ? html`<div class="overlay-scale" style=${{position: "absolute", pointerEvents: "none", left: 0, top: 0, width: `${canvasWidth}px`, height: `${canvasHeight}px`, transform: `scale(${canvas.scale})`}}>
                         <${SubtitlePreview} cues=${captionPreview.cues} outUs=${player.outUs} styleName=${subtitles === "burn" ? subtitleStyle : "standard"} wordHighlights=${captionPreview.wordHighlights} subtitleSource=${captionPreview.subtitleSource} />
-                        <${OverlayPreview} items=${commandOverlays ?? editing.overlays} assets=${editing.overlayAssets} outUs=${player.outUs} fps=${fps} width=${canvasWidth} height=${canvasHeight} />
+                        <${OverlayPreview} items=${commandOverlays ?? command?.projection?.overlays?.items ?? editing.overlays} assets=${editing.overlayAssets} outUs=${player.outUs} fps=${fps} width=${canvasWidth} height=${canvasHeight} />
                     </div>` : null}
                     </div>
                     ${mode === "plan" && (previewProblem || player.error) ? html`<div class="empty">${previewProblem || player.error}</div>` : null}
@@ -505,7 +508,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     <button class="btn" disabled=${!plan?.ready || !!busy || audioBusy || overlayBusy || !!problem || commandPreview} title=${exportBlocker || (editing.dirty ? "先保存为新版本，再渲染 MP4" : "按当前内容渲染 MP4")} onClick=${exportVideo}>${busy === "render" ? "正在生成…" : busy === "save" ? "正在保存…" : "导出成片"}</button>
                 </div>
             </section>
-            <${ProgramTrack} items=${items} totalUs=${player.totalUs} outUs=${player.outUs} thumb=${thumb} selectedId=${editing.selectedId} changed=${changed} preview=${!!commandRows} lanes=${editable ? audioLanes(editing.audio, music.tracks, fps, player.totalUs) : []}
+            <${ProgramTrack} items=${items} totalUs=${player.totalUs} outUs=${player.outUs} thumb=${thumb} selectedId=${editing.selectedId} changed=${changed} preview=${!!commandRows} lanes=${editable ? audioLanes(previewAudio, music.tracks, fps, player.totalUs) : []}
                 onLane=${() => setInspTab("sound")}
                 onPick=${(item) => { editing.setSelectedId(item.clipId || ""); setInspTab("shot"); setMode("plan"); void player.seek(item.outStartUs, false); }}
                 onTrim=${editable && !commandPreview && !busy ? (id, field, seconds) => editing.ops.trim(id, field, seconds) : null}
@@ -572,7 +575,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
             </div>
         </aside>
     </div>
-    <${CommandDock} editing=${editing} blocked=${!!busy} onPreview=${setCommandRows} onOverlayPreview=${setCommandOverlays} />`;
+    <${CommandDock} editing=${editing} blocked=${!!busy} showingPreview=${commandPreview} onPreview=${setCommandRows} onOverlayPreview=${setCommandOverlays} />`;
 }
 
 function audioLanes(audio, tracks, fps, totalUs) {

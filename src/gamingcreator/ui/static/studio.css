@@ -177,11 +177,13 @@ details.group[open] > summary::before { content: "▾ "; }
 .actions-row .btn { padding: 4px 10px; margin: 0; }
 .btn.danger { color: var(--bad); }
 .hint.warn { color: var(--warn); }
-.dock.assistant { gap: var(--s-2); height: 44px; }
+.dock.assistant { gap: var(--s-2); height: auto; min-height: 44px; flex-wrap: wrap; padding-block: var(--s-2); }
 .dock.assistant .input { flex: 1; max-width: 560px; }
 .dock.assistant .btn { padding: 4px 12px; }
-.dock-msg { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); }
+.dock-msg, .dock.assistant .hint { flex-basis: 100%; margin: 0; }
+.dock-msg { color: var(--ink-2); }
 .assistant-host { display: grid; grid-template-columns: 180px minmax(0, 1fr); background: var(--bg-1); }
+.assistant-follow { grid-column: 1 / -1; padding: 4px 8px; }
 .assistant-mode { padding: 4px 8px; font-size: var(--t-xs); }
 .assistant-mode select { width: 100%; }
 .dock.reasoning { display: block; height: auto; max-height: 40vh; overflow: auto; padding: 8px 12px; }

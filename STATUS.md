@@ -20,18 +20,11 @@
 
 ## 当前交付与下一步（2026-11-19）
 
-1. Grok A01–F16及修复已集成，定向99/44/3通过，TD030解决。原树/原片/账本/旧分析保留，未Release或合main。
-2. 已接入代理自动预览、空间盘点、OCR、方案对照、本机逐词字幕及多轨。旧OCR只能查看，显式重扫写v2缓存。见sprint-grok-repair-integration及ocr-frames-guide。
-4. v3替换镜头/文字PNG图层草稿恢复已交付55886b4；字幕可信映射与词级隐藏保护4139a26已推送，唯一关键审查通过。完整verify-20261117-002506在约九成时按用户要求取消，曾出现失败标记，无最终统计；保留日志，不改绿，不继续跑全量。
-5. 真实漫画群星29秒流程已进一步接入AI旁白重起草：确认覆盖/保旧轨→本机中文合成14.56秒→保存→MP4→B站七文件包，实际下载并播放。AI文案也成功生成、校改后保存出包；新旁白估算¥0.00819112、文案¥0.00456512。产物在.cache/scratch/product-journey-20261117/，最新manga-ai-narration-preview.mp4及bilibili-ai-narration-package.zip；自然度和语义仍待人评。
-6. 已交付AI单换/插入/多换、编号策划与本地补足30秒。多平台持久队列已实测关页出完四平台七文件包、停止后续、进程重启后显式恢复。产物 `.cache/scratch/package-batches-20261118/`，见 [sprint-package-batches](docs/exec-plans/sprint-package-batches.md)。
-7. [平台按内容短版](docs/exec-plans/sprint-platform-content-cut.md)在漫画群星实测按「蓝色火焰」选原成片 7.50–22.50 秒，同队列恢复全长 B 站和 15 秒抖音。抖音音画来源、帧数、播放与下载已核对。[本地一句话混合剪辑](docs/exec-plans/sprint-one-line-mixed-replacement.md)实测编号换镜并删末镜，单次撤销/重做、刷新恢复、保存、27 秒试听和 B 站包贯通。
-8. [AI 组合剪辑](docs/exec-plans/sprint-ai-mixed-timeline.md)一次文本提案可按描述换一镜并删裁另一镜。真实漫画群星调用一次（估算 ¥0.013006），重开取回、应用，导出 27 秒试听和 B 站包。
-9. [平台文案起草](docs/exec-plans/sprint-platform-copy-draft.md)在漫画群星抖音 15 秒版实测关键词起草、保留手写结尾、试听和出包。[多关键词拼接](docs/exec-plans/sprint-platform-joined-cut.md)按两处不连续镜头生成 2 秒版，音画逐段对齐，队列重开后同批恢复全长 B 站。
-10. [AI 组合动作](docs/exec-plans/sprint-ai-combined-actions.md)按原镜编号列 2–8 个插入、换镜、删除或裁尾动作。漫画群星已有插入版本再实测删首镜、插「6880」及裁第 4 镜，恢复后保存，导出 27 秒有声成片和 B 站包。一次文字调用估算 ¥0.013668。
-11. [主题选段](docs/exec-plans/sprint-platform-theme-ranking.md)从所选发布的证据镜头用本机 E5 排序，用户确认后用原短版流程试听出包。漫画群星两段实测，抖音 1.5 秒版与全长 B 站重开恢复。本机无模型费用。
-12. [组合变速和换序](docs/exec-plans/sprint-ai-combined-speed-order.md)已实测同镜前移并 0.5× 慢放，同时删除首镜。回读及刷新恢复后输出 26.5 秒有声 MP4 与 B 站包，单次文字调用估算 ¥0.01371。
-13. [多段插入](docs/exec-plans/sprint-ai-multiple-insertions.md)实测一句 AI 指令在两处原锚点加入三段，保留同锚点顺序。字幕预览、删一段并撤销、刷新恢复后保存，实际播放 29.5 秒成片及下载 B 站包。单次估算 ¥0.013962。下一步让用户按镜头迁移旁白或图层时刻，真人质量仍待验。
+1. Grok A01–F16 已集成，定向 99/44/3 通过，TD030 解决。代理预览、空间盘点、OCR、方案对照、逐词字幕和多轨已接入。见 [Grok 集成](docs/exec-plans/sprint-grok-repair-integration.md)。
+2. 真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。
+3. 抖音短版已接入[关键词](docs/exec-plans/sprint-platform-content-cut.md)、[多段拼接](docs/exec-plans/sprint-platform-joined-cut.md)、[画面文案](docs/exec-plans/sprint-platform-copy-draft.md)和[本机主题选段](docs/exec-plans/sprint-platform-theme-ranking.md)。实测出片、试听、队列恢复与 B 站全长包复用。
+4. 创作助手已实测换镜、删裁、变速、换序及[多段插入](docs/exec-plans/sprint-ai-multiple-insertions.md)。本批[旁白和图层随原镜移动](docs/exec-plans/sprint-shot-companion-timing.md)在漫画群星素材把两者起点由第 30 帧迁移至第 0 帧，恢复保存后实测 28.5 秒成片和 B 站包。下一步接通 AI 缩短时间线时先迁移再核时长。
+5. 完整 verify-20261117-002506 按用户要求取消，曾见失败并保留日志。本批 AI 确认、校验、保存和重开定向用例通过，真人质量待验。
 
 ## 费用与授权
 

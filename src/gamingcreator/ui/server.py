@@ -116,6 +116,10 @@ ASSETS = {
     "/assets/studio/multitrack.js": ("studio/multitrack.js", "text/javascript; charset=utf-8"),
     "/assets/studio/clip_drafts.js": ("studio/clip_drafts.js", "text/javascript; charset=utf-8"),
     "/assets/studio/clipedit.js": ("studio/clipedit.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/timeline_companions.js": (
+        "studio/timeline_companions.js",
+        "text/javascript; charset=utf-8",
+    ),
     "/assets/studio/overlays.js": ("studio/overlays.js", "text/javascript; charset=utf-8"),
     "/assets/studio/narration_ai.js": ("studio/narration_ai.js", "text/javascript; charset=utf-8"),
     "/assets/studio/audio.js": ("studio/audio.js", "text/javascript; charset=utf-8"),
