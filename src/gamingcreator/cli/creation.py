@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 
+from gamingcreator.application.creation_feedback import CreatorStructureChoice
 from gamingcreator.application.creative_planner import candidates, plan_creation
 from gamingcreator.application.edit_decision import select_edit_decision
 from gamingcreator.domain.creation import CreativeBrief
@@ -22,6 +23,7 @@ async def execute_plan_creation(
     preferences: dict[str, int] | None = None,
     edit_kinds: dict[str, int] | None = None,
     clip_ranges: object = None,
+    creator_feedback: CreatorStructureChoice | None = None,
 ) -> dict[str, object]:
     try:
         if not runs or len(runs) != len(set(runs)):
@@ -36,7 +38,12 @@ async def execute_plan_creation(
         finally:
             await store.close()
         report = plan_creation(
-            brief, candidates(timelines, tuple(events), clip_ranges), fps, preferences, edit_kinds
+            brief,
+            candidates(timelines, tuple(events), clip_ranges),
+            fps,
+            preferences,
+            edit_kinds,
+            creator_feedback,
         )
         report["brief"] = raw
         documents: dict[str, object] = {"plans.json": report}

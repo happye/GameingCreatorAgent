@@ -359,10 +359,11 @@
    ]
   },
   "P042": {
-   "done": "本机统计推荐采用率、常见修改与成片→发布包漏斗；常用结构前移，频繁裁剪时自动缩短片段并记录依据",
-   "todo": "采用数据多来自Agent测试而非真人；更深权重学习未做",
-   "updated": "2026-11-01",
+   "done": "本机统计采用和修改；工作台可记录显式结构偏好，下次按来源收据验证并调整同作品同类型的推荐",
+   "todo": "真实平台 CTR、3 秒留存和完播率反馈待接入，真人质量待验",
+   "updated": "2026-11-19",
    "sprints": [
+    "sprint-creator-structure-feedback",
     "sprint-creation-feedback",
     "sprint-j1-feedback-iteration"
    ]
@@ -872,6 +873,12 @@
      "name": "用户修改反馈闭环",
      "status": "done",
      "sprint": "sprint-creation-feedback"
+    },
+    {
+     "id": "P042-structure-choice",
+     "name": "显式方案结构偏好用于下次推荐",
+     "status": "done",
+     "sprint": "sprint-creator-structure-feedback"
     },
     {
      "id": "P023/P024",

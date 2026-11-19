@@ -2,7 +2,7 @@
 
 ## 最近一次会话（2026-11-19）
 
-继续在原分支 `codex/knowledge-version-compare-20261108` 开发，先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。本批 P041 接通 AI 缩短成片后迁移旁白和图层再校验。六个 Codex 角色的模型更新与两份 Markdown 路由说明已推送。验证服务 `http://127.0.0.1:8770/studio`，启动信息见 `.cache/workspace/port-8770.json`。
+继续在原分支 `codex/knowledge-version-compare-20261108` 开发，先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。本批 P042 接通显式结构偏好与下一次方案排序。六个 Codex 角色的模型更新与两份 Markdown 路由说明已推送。验证服务 `http://127.0.0.1:8771/studio`，启动信息见 `.cache/workspace/port-8771.json`。
 
 ## 实证与接手入口
 
@@ -16,8 +16,10 @@
 
 - [AI 随镜时长校验](docs/exec-plans/sprint-ai-companion-fit.md)：基线 d605fd9f17ef4bc7add6aeeb62829286 中两项素材的原时刻分别越界，随镜后旁白第 360 帧开始，图层第 795–825 帧。回读和恢复后保存 6c5680e4cb34459c9aee4af9bea3066e，27.5 秒成片 5ac93d7613884faab6d86f86974aa1a5，B 站包 6655f859c76c4106971a14a359a3b152。一次文字请求，估算 ¥0.01302736，证据 .cache/scratch/ai-companion-fit-20261119/。
 
+- [P042 方案结构偏好](docs/exec-plans/sprint-creator-structure-feedback.md)：独立测试作品 458ed39e51b6f469e90bf8bf78d2e62d。基线 cd1403c3a8464be59cbee6ebcf030218 首推玩法展示，记录偏好刷新后 a06a5e6b997f4a0eac148c526bd711b8 首推倒序，30 秒成片 b0ed34e8925c44d6a83e3b002e38004a，B 站包 918ebaca8e1e4069a7f42b2c61c21157；跨标签清除后恢复默认。产物 .cache/scratch/creator-structure-20261119/，零模型调用。
+
 ## 下一优先级与约束
 
-下一步 P042。检查现有创作反馈统计、习惯排序和方案证据，优先接通显式创作者反馈与下一次推荐。保留脚本和真人数据的区别，按真实素材验收操作到方案变化。
+P042 下一步接通发布成效反馈。以既有本地发布或平台包身份归档创作者录入的 CTR、3 秒留存和完播率，区分未知、脚本实测与真实平台证据。验证关联发布版本和反馈读回。真实上传、账号接入及付费行为保留各自授权。
 
 本批使用定向回归、真实浏览器和产物验证，无全量、Release、支付或上传。旧完整 verify-20261117-002506 按用户要求中断，曾见失败。J1 第五次人评未过，J2/J3 待人评，工程实证不改质量和 passes。文字月 ¥30/单条 ¥1、指定视觉月 ¥50，现有费用门禁保留。本机声音，真实平台发布或支付须另授权。

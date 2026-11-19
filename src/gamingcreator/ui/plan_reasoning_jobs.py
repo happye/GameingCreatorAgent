@@ -93,7 +93,7 @@ def adoption_request(original: dict[str, Any], prepared_hash: str) -> dict[str, 
     request = {
         key: value
         for key, value in original.items()
-        if key not in {"requestId", "reasoningPreparedHash"}
+        if key not in {"requestId", "reasoningPreparedHash", "creatorFeedback"}
     }
     request.update(
         requestId=sha256(("adopt-plan:" + prepared_hash).encode()).hexdigest()[:32],

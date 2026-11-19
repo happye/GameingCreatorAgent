@@ -9,6 +9,7 @@ from typing import Any
 
 from gamingcreator.application.creation_feedback import (
     TRIM_TIP,
+    CreatorStructureChoice,
     normalize_edit_kinds,
     trim_suggestion,
 )
@@ -75,6 +76,19 @@ def unique_rule_plans(plans: Sequence[dict[str, object]]) -> list[dict[str, obje
         seen.add(signature)
         kept.append(plan)
     return kept
+
+
+def _prefer_structure(
+    plans: list[dict[str, object]], feedback: CreatorStructureChoice | None
+) -> bool:
+    if feedback is None:
+        return False
+    for index, plan in enumerate(plans):
+        if plan["id"] == feedback.source_plan_id and plan["ready"]:
+            plan["rankedByCreatorFeedback"] = True
+            plans.insert(0, plans.pop(index))
+            return True
+    return False
 
 
 def distinct_source_intervals(clips: Sequence[Any]) -> int:
@@ -342,9 +356,11 @@ def plan_creation(
     fps: int,
     preferences: dict[str, int] | None = None,
     edit_kinds: dict[str, int] | None = None,
+    creator_feedback: CreatorStructureChoice | None = None,
 ) -> dict[str, object]:
     """Template plans; ``preferences`` (finished videos per plan structure on this machine)
-    only reorders the generic structures. The content-mode template stays recommended first.
+    only reorders the generic structures. An explicit creator choice can recommend any ready
+    structure. Otherwise the content-mode template stays recommended first.
 
     ``edit_kinds`` (frozen at plan registration) may cap segment length when trimming is common;
     the decision is always written into ``ordering.editHabits`` when provided.
@@ -507,6 +523,7 @@ def plan_creation(
                 ),
             }
         )
+    applied_feedback = _prefer_structure(plans, creator_feedback)
     kept = unique_rule_plans(plans)
     reason = candidate_count_reason(kept, distinct_source_intervals(eligible))
     return {
@@ -516,8 +533,17 @@ def plan_creation(
         **({"modeHonesty": MODE_HONESTY_SHORT} if mode is not None else {}),
         "scoring": scoring_legend(),
         "ordering": {
-            "basis": "local-render-history" if moved else "template",
+            "basis": "creator-feedback"
+            if applied_feedback
+            else "local-render-history"
+            if moved
+            else "template",
             "renderedByPlan": habits,
+            **(
+                {"creatorFeedback": {**creator_feedback.to_json(), "applied": applied_feedback}}
+                if creator_feedback is not None
+                else {}
+            ),
             **(
                 {
                     "editHabits": {

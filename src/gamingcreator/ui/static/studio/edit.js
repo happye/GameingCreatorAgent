@@ -66,6 +66,29 @@ function writeDraft(project, draft) {
     try { const all = JSON.parse(localStorage.getItem(DRAFT) || "{}"); all[project] = draft; localStorage.setItem(DRAFT, JSON.stringify(all)); return true; } catch { return false; }
 }
 
+function readStructureFeedback(key) {
+    try { return JSON.parse(localStorage.getItem(key) || "null"); } catch { return null; }
+}
+
+function useStructureFeedback(scope) {
+    const key = `studio-structure-feedback-v1:${scope}`;
+    const [saved, setSaved] = useState(() => ({key, value: readStructureFeedback(key)}));
+    useEffect(() => {
+        const sync = () => setSaved({key, value: readStructureFeedback(key)});
+        const changed = (event) => { if (event.key === key || event.key === null) sync(); };
+        sync();
+        window.addEventListener("storage", changed);
+        return () => window.removeEventListener("storage", changed);
+    }, [key]);
+    return {saved: saved.key === key ? saved.value : null, read: () => readStructureFeedback(key), write: (value) => {
+        try {
+            if (value === null) localStorage.removeItem(key);
+            else localStorage.setItem(key, JSON.stringify(value));
+            setSaved({key, value}); return true;
+        } catch { return false; }
+    }};
+}
+
 // Fit the entire output canvas in the viewer, including portrait exports.
 function useOutputCanvas(stage, width, height) {
     const [bounds, setBounds] = useState({width: 0, height: 0});
@@ -86,6 +109,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     const alive = useRef(true);
     useEffect(() => () => { alive.current = false; work.current?.abort(); }, []);
     const [draft, setDraft] = useState(() => readDraft(scope));
+    const structureFeedback = useStructureFeedback(scope);
     const [saved, setSaved] = useState("");
     const [planJob, setPlanJob] = useState(null);
     // Stage B (2026-11-11): after "生成方案" the AI plans once more within the monthly budget.
@@ -199,7 +223,9 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
             objective: draft.objective, audience: draft.audience, tone: draft.tone, mandatoryTopics: list(draft.mandatoryTopics), exclude: list(draft.exclude)};
         setBusy("plan"); setMessage("正在生成方案…");
         try {
-            const accepted = await client.submit("plan", {projectId: project, ...(workId ? {workId} : {}), runIds, brief, fps: Number(draft.fps), ...(eventIds ? {eventIds,
+            const preferred = structureFeedback.read();
+            const accepted = await client.submit("plan", {projectId: project, ...(workId ? {workId} : {}), runIds, brief, fps: Number(draft.fps),
+                ...(preferred?.contentType === draft.contentType ? {creatorFeedback: preferred.source} : {}), ...(eventIds ? {eventIds,
                 clipRanges: basket.items.map(({runId, eventId, startUs, endUs}) => ({runId, eventId, startUs, endUs}))} : {})});
             if (!alive.current) return;
             const done = await follow(accepted.jobId, () => {});
@@ -472,8 +498,11 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                 <div class="section-label">方案${planJob ? `（${planJob.plans.length}）` : ""}</div>
                 ${planJob && planJob.candidateCountReason ? html`<p class="note">${planJob.candidateCountReason}</p>` : null}
                 ${planJob ? planJob.plans.map((p) => html`<${PlanCard} plan=${p} fps=${fps} active=${p.id === planId} thumb=${thumb} onFind=${onFindMaterial}
+                    recommended=${planJob.creatorFeedback?.applied ? p.rankedByCreatorFeedback : p.mode}
                     onPick=${() => { if (overlayBusy || audioBusy || busy) return; if (editing.dirty && !confirmLeave()) return; setComparePreview(null); setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommand(null); lastJob(scope, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
                     : html`<p class="note">填好需求后点“生成方案”。方案只是剪辑清单，生成很快；选中后可以直接预览，不用先渲染。</p>`}
+                <${StructureFeedback} contentType=${draft.contentType} saved=${structureFeedback.saved} plan=${plan} job=${planJob} disabled=${!!busy}
+                    update=${value => setSaved(structureFeedback.write(value) ? value ? "结构偏好已保存" : "结构偏好已清除" : "浏览器不允许保存结构偏好")} />
                 ${plan && mode === "plan" && plan.id.startsWith("dynamic-") && plan.actualFrames < plan.targetFrames ? html`<p class="note">保留旧方案，使用本地候选补足当前选中方案；不会调用模型。</p><button class="btn" disabled=${!!busy || editing.status !== "ready" || editing.dirty || commandPreview || comparePreview || audioBusy || overlayBusy} onClick=${completeDuration}>补足目标时长（本地）</button>` : null}
                 ${planJob && planJob.plans.length >= 2 ? html`<${PlanCompare} key=${`${scope}:${planJob.jobId}`} plans=${planJob.plans} adoptedId=${planId} fps=${planJob.fps} compareScope=${`${scope}:${planJob.jobId}`} locateBlocked=${locateBlocked} onLocate=${locateComparePreview} onClose=${() => setComparePreview(null)} />` : planJob ? html`<p class="note">至少还要有两套方案才能对照。</p>` : null}
                 ${planJob ? html`<${PlanReasoningPanel} key=${`${project}:${planJob.jobId}`} project=${project} jobId=${planJob.jobId}
@@ -633,16 +662,31 @@ function Brief({project, runs, draft, update, busy, onGenerate, basket}) {
 // P024: a topic the footage lacks gets a one-click search in the Assets workspace.
 const gapTopics = (notes = []) => notes.map((g) => /^(?:主题(?:缺少|未在)[^：]*|缺少主题映射)：([^（]+)/.exec(g)?.[1]?.trim()).filter(Boolean);
 
-function PlanCard({plan, fps, active, thumb, onPick, onFind = () => {}}) {
+function PlanCard({plan, fps, active, thumb, recommended, onPick, onFind = () => {}}) {
     const items = timeline(plan.segments || [], fps), groups = shots(items);
     const topics = gapTopics([...(plan.gaps || []), ...(plan.advisories || [])]);
     const total = items.length ? items.at(-1).outStartUs + items.at(-1).outDurUs : 0;
     return html`<button class="plan" aria-current=${active} disabled=${!plan.ready} onClick=${onPick} title=${plan.ready ? "选中后在预览窗播放" : "方案有缺口，不能选择"}>
-        <span class="plan-title">${plan.mode ? html`<span class="badge rec">推荐</span>` : null}${plan.title || plan.structure}</span>
+        <span class="plan-title">${recommended ? html`<span class="badge rec">${plan.rankedByCreatorFeedback ? "按你的偏好推荐" : "推荐"}</span>` : null}${plan.title || plan.structure}</span>
         <span class="plan-meta">${secondsText(total)} · ${groups.length} 个镜头${groups.length !== items.length ? `（${items.length} 段）` : ""} · 平均 ${(total / 1e6 / Math.max(1, groups.length)).toFixed(1)} 秒</span>
         <span class="strip">${groups.slice(0, 8).map((g) => { const src = thumb(g.items[0]); return html`<span style=${{backgroundImage: src ? `url("${src}")` : "none"}}></span>`; })}</span>
         ${!plan.ready && html`<span class="plan-gap">缺口：${(plan.gaps || []).join("；")}</span>`}
     </button>${topics.length ? html`<div class="actions-row gap-find">${topics.map((t) => html`<button type="button" class="btn ghost" onClick=${() => onFind(t)}>在素材里找「${t}」</button>`)}</div>` : null}`;
+}
+
+function StructureFeedback({contentType, saved, plan, job, disabled, update}) {
+    const canRecord = job?.feedbackReceiptSha256 && plan?.ready && job.brief?.contentType === contentType;
+    const remember = () => update({
+        contentType,
+        label: plan.title || plan.structure,
+        source: {sourceJobId: job.jobId, sourcePlanId: plan.id, sourceReceiptSha256: job.feedbackReceiptSha256},
+    });
+    return html`${canRecord || saved ? html`<div class="actions-row" role="group" aria-label="方案结构反馈">
+        ${canRecord && html`<button class="btn ghost" type="button" disabled=${disabled} onClick=${remember}>下次优先用此结构</button>`}
+        ${saved && html`<button class="btn ghost" type="button" disabled=${disabled} onClick=${() => update(null)}>清除结构偏好</button>`}
+    </div>` : null}
+    ${saved && html`<p class="hint" role="status">${saved.contentType === contentType ? "本作品同类型方案优先" : "其他内容类型的偏好"}：${saved.label}</p>`}
+    ${job?.creatorFeedback && !job.creatorFeedback.applied && html`<p class="hint" role="status">本次素材无法使用偏好结构，已按原顺序推荐。</p>`}`;
 }
 
 // J1 2026-11-11: drag the selected shot's edges to trim it, as in PR/AE. Dragging moves the

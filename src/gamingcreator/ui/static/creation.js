@@ -1544,6 +1544,7 @@
                     node("p", `生成方案 ${data.plansGenerated} 次；选用方案 ${data.chains} 个，其中提供推荐的 ${data.recommendationOffered} 个里采用推荐 ${data.recommendationAdopted} 个。`),
                     node("p", `平均每个方案保存修改版本 ${data.averageRevisions ?? 0} 次；常见修改：${edits}。`),
                     node("p", `选用 ${f.chosen} → 出成片 ${f.rendered} → 封面文案 ${f.published} → 发布包 ${f.packaged}。`));
+                if (data.structureFeedback?.requested) result.append(node("p", `显式结构偏好请求 ${data.structureFeedback.requested} 次，排序生效 ${data.structureFeedback.applied} 次。`));
             } catch (error) { result.textContent = `统计失败：${error.message}`; }
             finally { show.disabled = false; }
         });

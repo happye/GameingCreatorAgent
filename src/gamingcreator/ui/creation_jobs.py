@@ -17,6 +17,7 @@ from typing import Any
 from uuid import uuid4
 
 from gamingcreator.application.creation_feedback import (
+    CreatorStructureChoice,
     normalize_edit_kinds,
     plan_preferences,
     summarize_feedback,
@@ -34,6 +35,7 @@ from gamingcreator.infrastructure.creation_files import write_creation
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.infrastructure.ffmpeg_render import FfmpegCreationRenderer
 from gamingcreator.infrastructure.file_sharing import retry_file_sharing
+from gamingcreator.infrastructure.local_files import read_bounded
 from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
 from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
@@ -55,6 +57,26 @@ from gamingcreator.ui.revision_jobs import (
 
 def fail(code: str, message: str, conflict: bool = False) -> AppError:
     return AppError(code, message, ExitCode.STORAGE if conflict else ExitCode.INPUT)
+
+
+def _verified_feedback_projection(
+    report: dict[str, Any], request: dict[str, Any]
+) -> dict[str, Any]:
+    selection = request["creatorFeedback"]
+    applied = [
+        index for index, plan in enumerate(report["plans"]) if plan.get("rankedByCreatorFeedback")
+    ]
+    evidence = report.get("ordering", {}).get("creatorFeedback")
+    if evidence != {**selection, "applied": bool(applied)} or (
+        applied
+        and (
+            applied != [0]
+            or report["plans"][0]["id"] != selection["sourcePlanId"]
+            or not report["plans"][0]["ready"]
+        )
+    ):
+        raise ValueError("Plan feedback differs from the verified request")
+    return dict(evidence)
 
 
 def expected_presentation_receipt(request: dict[str, Any], burned: bool) -> dict[str, Any] | None:
@@ -224,6 +246,7 @@ class CreationJobs:
                     "reasoningPreparedHash",
                     "workId",
                     "localCompletion",
+                    "creatorFeedback",
                 }
                 if kind == "plan"
                 else set()
@@ -341,6 +364,8 @@ class CreationJobs:
                     verified_plan(
                         self, request
                     ) if "localCompletion" not in request else verified_completion(self, request)
+                if "creatorFeedback" in request:
+                    self._verify_creator_feedback(request)
                 project_id = request["projectId"]
             elif kind == "package":
                 parent_id = identity(request["publicationJobId"])
@@ -465,6 +490,30 @@ class CreationJobs:
         finally:
             root_lock.close()
 
+    def _verify_creator_feedback(self, request: dict[str, Any]) -> None:
+        try:
+            if "reasoningPreparedHash" in request or "localCompletion" in request:
+                raise ValueError("Derived jobs cannot consume structure feedback")
+            choice = CreatorStructureChoice.from_json(request["creatorFeedback"])
+            source = self.directory(choice.source_job_id)
+            state = self.read(source / "status.json")
+            stored = self.read(source / "request.json")["request"]
+            if (
+                state["kind"] != "plan"
+                or state["status"] != "completed"
+                or stored["projectId"] != request["projectId"]
+                or stored.get("workId") != request.get("workId")
+                or stored["brief"]["contentType"] != request["brief"]["contentType"]
+            ):
+                raise ValueError("Structure feedback belongs to another planning scope")
+            verified = self.verify(source, state)
+            if verified.get("feedbackReceiptSha256") != choice.source_receipt_sha256 or not any(
+                plan["id"] == choice.source_plan_id and plan["ready"] for plan in verified["plans"]
+            ):
+                raise ValueError("Structure feedback requires a verified ready template")
+        except (AppError, OSError, ValueError, KeyError, TypeError) as error:
+            raise fail("creation.input", "方案反馈来源已失效，请清除偏好后重新选择。") from error
+
     def plan_report(self, directory: Path) -> dict[str, Any]:
         receipt = self.read(directory / "result/receipt.json")
         if receipt.get("schemaVersion") != "creation-receipt-v1" or set(
@@ -472,9 +521,13 @@ class CreationJobs:
         ) != {"plans.json"}:
             raise ValueError("Invalid plan receipt")
         path = self.safe(directory / "result/plans.json")
-        if hash_file(path) != receipt["files"]["plans.json"]:
+        raw = read_bounded(path, 32_000_000)
+        if hashlib.sha256(raw).hexdigest() != receipt["files"]["plans.json"]:
             raise ValueError("Invalid plan hash")
-        return self.read(path)
+        report = json.loads(raw)
+        if not isinstance(report, dict):
+            raise ValueError("Invalid plan document")
+        return report
 
     def verify(self, directory: Path, state: dict[str, Any]) -> dict[str, Any]:
         receipt_path = self.safe(directory / "result/receipt.json")
@@ -521,6 +574,10 @@ class CreationJobs:
             ):
                 raise ValueError("Result does not match the persisted request")
             state.update({key: report[key] for key in ("plans", "brief", "fps")})
+            if report.get("planner") == "offline-template-v1":
+                state["feedbackReceiptSha256"] = digest
+            if "creatorFeedback" in request:
+                state["creatorFeedback"] = _verified_feedback_projection(report, request)
             if report.get("candidateCountReason"):
                 state["candidateCountReason"] = report["candidateCountReason"]
             # Do not alter the immutable original report.
@@ -725,6 +782,15 @@ class CreationJobs:
                         None,
                         preferences=self._preferences(directory),
                         edit_kinds=self._edit_habits(directory),
+                        **(
+                            {
+                                "creator_feedback": CreatorStructureChoice.from_json(
+                                    request["creatorFeedback"]
+                                )
+                            }
+                            if "creatorFeedback" in request
+                            else {}
+                        ),
                         **(
                             {"clip_ranges": request["clipRanges"]}
                             if "clipRanges" in request
@@ -1377,6 +1443,17 @@ class CreationJobs:
             plans_document = json.loads(plans_bytes.decode("utf-8"))
             if not isinstance(plans_document, dict):
                 raise ValueError("Invalid job document")
+            if "creatorFeedback" in record["request"] or plans_document.get("ordering", {}).get(
+                "creatorFeedback"
+            ):
+                self.verify(directory, dict(state))
+                receipt_bytes = read_bounded(self.safe(directory / "result/receipt.json"))
+                receipt = json.loads(receipt_bytes)
+                if hashlib.sha256(receipt_bytes).hexdigest() != state.get(
+                    "resultReceiptSha256"
+                ) or (receipt["files"]["plans.json"] != hashlib.sha256(plans_bytes).hexdigest()):
+                    raise ValueError("Feedback report changed during scan")
+                parts.extend([b"result/receipt.json", receipt_bytes])
             parts.extend([b"result/plans.json", plans_bytes])
             record["plans"] = plans_document.get("plans", [])
         elif record["kind"] == "revision":

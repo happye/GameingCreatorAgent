@@ -549,6 +549,67 @@ def test_plan_registration_freezes_edit_habits(service, monkeypatch):
     assert captured["preferences"] == {"reverse": 1}
 
 
+def test_explicit_structure_feedback_uses_frozen_same_work_plan_receipt(service, monkeypatch):
+    from test_creation_modes import material
+
+    from gamingcreator.application.creative_planner import plan_creation
+    from gamingcreator.domain.creation import CreativeBrief
+    from gamingcreator.infrastructure.creation_files import write_creation
+    from gamingcreator.infrastructure.creation_work_store import CreationWorkStore
+    from gamingcreator.ui import creation_jobs as implementation
+
+    async def planner(project, runs, brief, output, events, fps, selection, **options):
+        raw = json.loads(brief.read_text(encoding="utf-8"))
+        clips = material([[f"招式 {i}"] for i in range(6)])
+        report = plan_creation(CreativeBrief.from_json(raw), clips, fps, **options)
+        return write_creation(output, {"plans.json": {**report, "brief": raw}}, ())
+
+    monkeypatch.setattr(implementation, "execute_plan_creation", planner)
+    works = CreationWorkStore(service.root / "works")
+    root_request = {**request(), "workId": "1" * 32}
+    works.create(root_request["projectId"], root_request["workId"])
+    works.create(root_request["projectId"], "2" * 32)
+    source = service.submit("plan", root_request)["jobId"]
+    before = finish(service, source)
+    assert before["plans"][0]["id"] != "reverse"
+    feedback = {
+        "sourceJobId": source,
+        "sourcePlanId": "reverse",
+        "sourceReceiptSha256": before["feedbackReceiptSha256"],
+    }
+    followup = {**root_request, "requestId": "b" * 32, "creatorFeedback": feedback}
+    for invalid in (
+        {**followup, "workId": "2" * 32},
+        {**followup, "creatorFeedback": {**feedback, "sourceReceiptSha256": "0" * 64}},
+        {**followup, "brief": {**followup["brief"], "contentType": "feature_showcase"}},
+    ):
+        with pytest.raises(AppError, match="反馈来源已失效"):
+            service.submit("plan", invalid)
+    child = service.submit("plan", followup)["jobId"]
+    after = finish(service, child)
+    assert after["status"] == "completed", after
+    assert after["plans"][0]["id"] == "reverse" and after["plans"][0]["rankedByCreatorFeedback"]
+    assert after["creatorFeedback"] == {**feedback, "applied": True}
+    assert service.feedback(followup["projectId"])["structureFeedback"] == {
+        "requested": 1,
+        "applied": 1,
+    }
+    assert (
+        CreationJobs(service.repository).get(child)["creatorFeedback"] == after["creatorFeedback"]
+    )
+    assert service.submit("plan", followup)["jobId"] == child
+    assert service.get(source)["plans"] == before["plans"]
+    result_path = service.directory(child) / "result/plans.json"
+    tampered = service.read(result_path)
+    del tampered["plans"][0]["rankedByCreatorFeedback"]
+    service.save(result_path, tampered)
+    assert service.get(child)["status"] == "failed"
+    assert service.feedback(followup["projectId"])["structureFeedback"] == {
+        "requested": 0,
+        "applied": 0,
+    }
+
+
 def test_plan_from_clip_basket_passes_only_those_events(service, monkeypatch):
     import gamingcreator.ui.creation_jobs as implementation
 

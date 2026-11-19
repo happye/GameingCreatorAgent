@@ -1,11 +1,13 @@
 """Recommendation → choice → edits → output feedback, derived from saved creation jobs.
 
-Pure: the caller loads job records. Nothing is uploaded or sent anywhere; the numbers describe
-how this user actually used the recommendations on this machine.
+Pure: the caller loads job records. Usage statistics include automated jobs, while explicit
+structure choices are recorded separately on the plan request that consumes them.
 """
 
 import hashlib
+import re
 from collections import Counter
+from dataclasses import dataclass
 from typing import Any
 
 EDIT_KINDS = ("删镜头", "换顺序", "裁剪", "变速", "转场", "替换镜头", "字幕", "配乐", "旁白")
@@ -15,6 +17,40 @@ TRIM_TIP = "你常裁短，已建议更短片段"
 TRIM_RULE = "max-output-seconds-per-segment=1"
 MIN_TRIM_EDITS = 3
 MIN_TRIM_SHARE = 0.5
+
+
+@dataclass(frozen=True)
+class CreatorStructureChoice:
+    source_job_id: str
+    source_plan_id: str
+    source_receipt_sha256: str
+
+    @classmethod
+    def from_json(cls, value: Any) -> "CreatorStructureChoice":
+        if not isinstance(value, dict) or set(value) != {
+            "sourceJobId",
+            "sourcePlanId",
+            "sourceReceiptSha256",
+        }:
+            raise ValueError("方案结构反馈格式无效。")
+        job, plan, receipt = (
+            value[k] for k in ("sourceJobId", "sourcePlanId", "sourceReceiptSha256")
+        )
+        if (
+            not all(isinstance(part, str) for part in (job, plan, receipt))
+            or not re.fullmatch(r"[a-f0-9]{32}", job)
+            or not re.fullmatch(r"[a-z][a-z0-9-]{0,47}", plan)
+            or not re.fullmatch(r"[a-f0-9]{64}", receipt)
+        ):
+            raise ValueError("方案结构反馈来源无效。")
+        return cls(job, plan, receipt)
+
+    def to_json(self) -> dict[str, str]:
+        return {
+            "sourceJobId": self.source_job_id,
+            "sourcePlanId": self.source_plan_id,
+            "sourceReceiptSha256": self.source_receipt_sha256,
+        }
 
 
 def normalize_edit_kinds(raw: object) -> dict[str, int]:
@@ -134,6 +170,9 @@ def summarize_feedback(jobs: list[dict[str, Any]]) -> dict[str, object]:
     """jobs: {jobId, kind, status, request, plans?, segments?, root?} for completed jobs only."""
     done = {job["jobId"]: job for job in jobs if job.get("status") == "completed"}
     plans = {key: job for key, job in done.items() if job.get("kind") == "plan"}
+    explicit_choices = [
+        job for job in plans.values() if job.get("request", {}).get("creatorFeedback")
+    ]
     chains: dict[tuple[str, str], dict[str, Any]] = {}
 
     def chain(root: str, plan_id: str) -> dict[str, Any] | None:
@@ -141,7 +180,11 @@ def summarize_feedback(jobs: list[dict[str, Any]]) -> dict[str, object]:
         if plan_job is None:
             return None
         listed = plan_job.get("plans") or []
-        recommended = listed[0]["id"] if listed and listed[0].get("mode") else None
+        recommended = (
+            listed[0]["id"]
+            if listed and (listed[0].get("mode") or listed[0].get("rankedByCreatorFeedback"))
+            else None
+        )
         return chains.setdefault(
             (root, plan_id),
             {
@@ -225,6 +268,13 @@ def summarize_feedback(jobs: list[dict[str, Any]]) -> dict[str, object]:
         "schemaVersion": "creation-feedback-v1",
         "basis": "本机已保存的创作任务记录（只读统计，未上传）",
         "plansGenerated": len(plans),
+        "structureFeedback": {
+            "requested": len(explicit_choices),
+            "applied": sum(
+                any(plan.get("rankedByCreatorFeedback") for plan in job.get("plans", []))
+                for job in explicit_choices
+            ),
+        },
         "chains": len(rows),
         "recommendationOffered": len(offered),
         "recommendationAdopted": sum(row["adopted"] for row in offered),

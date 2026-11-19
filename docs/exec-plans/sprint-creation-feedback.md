@@ -18,4 +18,8 @@
 
 ## 追加：T9 编辑习惯（裁剪→更短片段）
 
-见 sprint-t9-feedback-edit-habits.md：裁剪占比触发 1s 上限与提醒；写入 ordering.editHabits；input/edit-habits.json 冻结。仍未做：按其他修改类型调权重、跨项目统计。
+裁剪占比触发 1s 上限与提醒，写入 `ordering.editHabits`，由 `input/edit-habits.json` 冻结。
+
+## 追加：创作者选择结构
+
+内容模式默认排首位。2026-11-19 起，用户可针对同一作品和内容类型指定一个历史方案结构，使其优先于内容模式模板，详见 [方案结构偏好](sprint-creator-structure-feedback.md)。
