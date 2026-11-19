@@ -29,7 +29,8 @@
 8. [AI 组合剪辑](docs/exec-plans/sprint-ai-mixed-timeline.md)一次文本提案可按描述换一镜并删裁另一镜。真实漫画群星调用一次（估算 ¥0.013006），重开取回、应用，导出 27 秒试听和 B 站包。
 9. [平台文案起草](docs/exec-plans/sprint-platform-copy-draft.md)在漫画群星抖音 15 秒版实测关键词起草、保留手写结尾、试听和出包。[多关键词拼接](docs/exec-plans/sprint-platform-joined-cut.md)按两处不连续镜头生成 2 秒版，音画逐段对齐，队列重开后同批恢复全长 B 站。
 10. [AI 组合动作](docs/exec-plans/sprint-ai-combined-actions.md)按原镜编号列 2–8 个插入、换镜、删除或裁尾动作。漫画群星已有插入版本再实测删首镜、插「6880」及裁第 4 镜，恢复后保存，导出 27 秒有声成片和 B 站包。一次文字调用估算 ¥0.013668。
-11. [主题选段](docs/exec-plans/sprint-platform-theme-ranking.md)从所选发布的证据镜头用本机 E5 排序，用户确认后用原短版流程试听出包。漫画群星两段实测，抖音 1.5 秒版与全长 B 站重开恢复。本机无模型费用。下一步 P041 接入组合变速和换序，真人质量仍待验。
+11. [主题选段](docs/exec-plans/sprint-platform-theme-ranking.md)从所选发布的证据镜头用本机 E5 排序，用户确认后用原短版流程试听出包。漫画群星两段实测，抖音 1.5 秒版与全长 B 站重开恢复。本机无模型费用。
+12. [组合变速和换序](docs/exec-plans/sprint-ai-combined-speed-order.md)已实测同镜前移并 0.5× 慢放，同时删除首镜。回读及刷新恢复后输出 26.5 秒有声 MP4 与 B 站包，单次文字调用估算 ¥0.01371。下一步完成组合多段插入，真人质量仍待验。
 
 ## 费用与授权
 

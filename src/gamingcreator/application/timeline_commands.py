@@ -415,11 +415,14 @@ def guard_transitions(rows: list[dict[str, Any]], fps: int) -> list[str]:
     return changes
 
 
-def apply_timeline_command(text: object, clips: object, fps: object) -> dict[str, object]:
+def apply_timeline_command(
+    text: object, clips: object, fps: object, *, keep_original_fade_pairs: bool = False
+) -> dict[str, object]:
     if not isinstance(text, str) or not text.strip() or len(text) > 500:
         raise CommandError("请输入1–500字的修改要求。")
     rows = _check(clips, fps)
     assert isinstance(fps, int)
+    original_ids = [row["clipId"] for row in rows] if keep_original_fade_pairs else []
     before = max(s + _frames(r, fps) for s, r in zip(_starts(rows, fps), rows, strict=True))
     changes: list[str] = []
     # Clauses run in order; clip numbers always refer to the order after the previous clause.
@@ -430,6 +433,18 @@ def apply_timeline_command(text: object, clips: object, fps: object) -> dict[str
             changes += _clause(clause, rows, fps)
     if not changes:
         raise CommandError("没有可执行的修改。")
+    if original_ids:
+        previous = dict(zip(original_ids, [None, *original_ids[:-1]], strict=True))
+        for index, row in enumerate(rows):
+            predecessor = rows[index - 1]["clipId"] if index else None
+            frames = row["transitionIn"]["frames"]
+            if frames and (
+                index == 0
+                or predecessor != previous[row["clipId"]]
+                or frames >= min(_frames(row, fps), _frames(rows[index - 1], fps))
+            ):
+                row["transitionIn"] = {"type": "cut", "frames": 0}
+                changes.append(f"第{index + 1}个镜头的连接或时长已改变，入场改为直接切换")
     changes += guard_transitions(rows, fps)
     starts = _starts(rows, fps)
     after = max(s + _frames(r, fps) for s, r in zip(starts, rows, strict=True))

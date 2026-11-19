@@ -7,6 +7,7 @@ from test_creation_reasoning_service import Transport
 
 from gamingcreator.application.creation_mixed_actions import SCHEMA as ACTIONS_SCHEMA
 from gamingcreator.application.creation_mixed_actions import (
+    SCHEMA_V3,
     actions_snapshot,
     edit_original_rows,
     validate_actions,
@@ -105,7 +106,8 @@ def test_combined_actions_bind_to_original_shots_after_an_earlier_delete(replace
     reasoning = CreationReasoningService(
         jobs, price_snapshot=DEEPSEEK_FLASH_20261004, transport=outbound
     )
-    snapshot = actions_snapshot(reasoning._replacement_snapshot(job_id, plan)[0])
+    replacement_snapshot, project_id = reasoning._replacement_snapshot(job_id, plan)
+    snapshot = actions_snapshot(replacement_snapshot)
     prototype = clip_rows(snapshot)[0]
     fade = {"type": "crossfade", "frames": 5}
     fades = [
@@ -163,9 +165,8 @@ def test_combined_actions_bind_to_original_shots_after_an_earlier_delete(replace
             snapshot, {**outbound.content, "actions": [steps[0], {**steps[1], "after": "S1"}]}
         )
     identity = {"jobId": job_id, "planId": plan}
-    quote = reasoning_post(
-        reasoning,
-        {"action": "prepare_mixed", **identity, "instruction": "删第一镜，插第二镜后并剪短第二镜"},
+    quote = reasoning._prepare(
+        snapshot, project_id, job_id, plan, "删第一镜，插第二镜后并剪短第二镜", "mixed"
     )
     result = reasoning_post(
         reasoning,
@@ -194,3 +195,104 @@ def test_combined_actions_bind_to_original_shots_after_an_earlier_delete(replace
     assert proposal["insertions"][0]["newClipId"] == inserted["clipId"]
     assert [row["clipId"] for row in rest] == [row["clipId"] for row in before["clips"][2:]]
     assert len(outbound.calls) == 1
+
+
+def test_combined_speed_and_move_use_the_same_original_shot(replacements, monkeypatch):  # noqa: F811
+    jobs, job_id, _ = replacements
+    plan = "hook-first"
+    before = jobs.edit(job_id, plan)
+    steps = [
+        {"action": "move_before", "target": "S2", "anchor": "S1"},
+        {"action": "set_speed", "target": "S2", "speed": "0.5x"},
+    ]
+    output = {
+        "schemaVersion": SCHEMA_V3,
+        "kind": "mixed_edit",
+        "actions": steps,
+        "message": "移镜并慢放",
+    }
+    outbound = Transport(output)
+    reasoning = CreationReasoningService(
+        jobs, price_snapshot=DEEPSEEK_FLASH_20261004, transport=outbound
+    )
+    snapshot = actions_snapshot(reasoning._replacement_snapshot(job_id, plan)[0], version=SCHEMA_V3)
+    with pytest.raises(ValueError, match="move anchor must stay"):
+        validate_actions(
+            snapshot, {**output, "actions": [*steps, {"action": "delete", "target": "S1"}]}
+        )
+    prototype = clip_rows(snapshot)[0]
+    fade = {"type": "crossfade", "frames": 5}
+    fades = [
+        {**prototype, "clipId": label, "transitionIn": fade if i else {"type": "cut", "frames": 0}}
+        for i, label in enumerate(("a", "b", "c", "d"))
+    ]
+    moved = edit_original_rows(
+        snapshot, fades, [{"action": "move_before", "clipId": "a", "anchorClipId": "d"}]
+    )
+    assert [row["clipId"] for row in moved] == ["b", "c", "a", "d"]
+    assert moved[1]["transitionIn"] == fade
+    assert moved[-1]["transitionIn"]["type"] == "cut"
+    fades[1].update(endUs=fades[1]["startUs"] + 600_000, transitionIn={**fade, "frames": 4})
+    fades[2]["transitionIn"] = {**fade, "frames": 10}
+    faster = edit_original_rows(
+        snapshot, fades, [{"action": "set_speed", "clipId": "b", "speed": "2x"}]
+    )
+    assert faster[1]["transitionIn"]["frames"] == 4
+    assert faster[2]["transitionIn"]["type"] == "cut"
+    identity = {"jobId": job_id, "planId": plan}
+    quote = reasoning_post(
+        reasoning,
+        {"action": "prepare_mixed", **identity, "instruction": "第二镜移到第一镜前并慢放"},
+    )
+    assert quote["schemaVersion"] == SCHEMA_V3
+    token = {"preparedHash": quote["preparedHash"]}
+    assert (
+        reasoning_post(
+            reasoning,
+            {
+                "action": "execute",
+                **token,
+                "snapshotFingerprint": quote["snapshotFingerprint"],
+                "confirmedMaxCny": quote["maxCostCny"],
+            },
+        )["status"]
+        == "completed"
+    )
+    preview = reasoning_post(
+        reasoning,
+        {
+            "action": "validate",
+            **identity,
+            **token,
+            "expectedParentReceiptSha256": before["expectedParentReceiptSha256"],
+        },
+    )
+    assert [clip["clipId"] for clip in preview["clips"][:2]] == [
+        before["clips"][1]["clipId"],
+        before["clips"][0]["clipId"],
+    ]
+    assert preview["clips"][0]["speed"] == {"numerator": 1, "denominator": 2}
+    assert len(outbound.calls) == 1
+
+    def obstructed(*_args):
+        raise ValueError("Inherited layer is beyond the shortened timeline")
+
+    monkeypatch.setattr(reasoning, "_combined_editor", obstructed)
+    blocked = reasoning_post(
+        reasoning, {"action": "prepare_mixed", **identity, "instruction": "再次慢放样本"}
+    )
+    refused = reasoning_post(
+        reasoning,
+        {
+            "action": "execute",
+            "preparedHash": blocked["preparedHash"],
+            "snapshotFingerprint": blocked["snapshotFingerprint"],
+            "confirmedMaxCny": blocked["maxCostCny"],
+        },
+    )
+    assert refused["status"] == "failed" and refused["failureStage"] == "validate_timeline"
+    assert refused["providerOutputSha256"] and refused["billing"]
+    assert (
+        reasoning_post(reasoning, {"action": "result", "preparedHash": blocked["preparedHash"]})
+        == refused
+    )

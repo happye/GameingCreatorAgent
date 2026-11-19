@@ -56,7 +56,10 @@ function reasoningActions(flow, editing, text, onPreview, onOverlayPreview, mode
         if (!flow.valid()) return;
         const selection = data.mixed || data.insertion || data.replacement;
         if (selection) {
-            flow.update({result: data, projection: null, message: selection.message});
+            const message = data.failureStage === "validate_timeline"
+                ? "组合建议未通过时间线校验。请检查变速后的旁白、图层时长和镜头范围。"
+                : selection.message;
+            flow.update({result: data, projection: null, message});
             onOverlayPreview(null); onPreview(null);
             let projection = null;
             if (data.status === "completed" && ["mixed_edit", "replacement", "insertion"].includes(selection.kind)) {
@@ -124,7 +127,7 @@ function reasoningActions(flow, editing, text, onPreview, onOverlayPreview, mode
     };
 }
 
-function mixedActionLabels(proposal, projection, original) {
+function mixedActionLabels(proposal, projection, original, fps) {
     const steps = proposal.actions || [{action: "replace", ...proposal.replacement}, proposal.edit];
     return steps.map(step => {
         if (step.action === "insert_after") {
@@ -132,11 +135,19 @@ function mixedActionLabels(proposal, projection, original) {
             return `在原第 ${step.after.slice(1)} 镜之后插入 ${step.durationMs / 1000} 秒：${clip?.scriptDraft || "候选镜头"}`;
         }
         const shot = Number(step.target.slice(1));
+        if (step.action === "set_speed") return `原第 ${shot} 镜设为 ${step.speed} 播放`;
+        if (step.action === "move_before" || step.action === "move_after") {
+            return `将原第 ${shot} 镜移到原第 ${step.anchor.slice(1)} 镜${step.action === "move_after" ? "之后" : "之前"}`;
+        }
         if (step.action === "replace") {
             const clip = projection.clips.find(c => c.clipId === original[shot - 1]?.clipId);
             return `替换原第 ${shot} 镜：${clip?.scriptDraft || "候选镜头"}`;
         }
         if (step.action === "delete") return `删除原第 ${shot} 镜`;
+        if (proposal.schemaVersion === "creation-mixed-edit-v3") {
+            const clip = projection.clips.find(c => c.clipId === original[shot - 1]?.clipId);
+            if (clip) return `裁短原第 ${shot} 镜，最终时长 ${(clipFrames(clip, fps) / fps).toFixed(2)} 秒`;
+        }
         return `原第 ${shot} 镜保留开头 ${step.keepMs / 1000} 秒`;
     });
 }
@@ -163,7 +174,7 @@ export function ReasoningDock({editing, onPreview, onOverlayPreview = noop, mode
             <button class="btn ghost" disabled=${!ready || !text.trim() || !!flow.busy}>${flow.busy === "execute" ? "AI 正在修改…" : "交给 AI"}</button>
         </form>
         <p class="hint">${!ready ? "请先保存当前镜头和声音修改，再请求模型建议。" : "仅发送已保存镜头的文字和时间；模型没有观看画面。旁白仍用免费本机语音。"}
-            ${mode === "insertion" ? " 插入会延长画面；旁白与图层保留原输出时刻。" : mode === "replacement" ? " 可在一句需求里指定多个镜头，整组预览、应用与撤销。" : mode === "mixed" ? " 可组合换镜、插入、删除和裁尾，镜头编号按改动前的顺序。" : ""}
+            ${mode === "insertion" ? " 插入会延长画面；旁白与图层保留原输出时刻。" : mode === "replacement" ? " 可在一句需求里指定多个镜头，整组预览、应用与撤销。" : mode === "mixed" ? " 可组合变速、换序、换镜、插入和删裁。镜头编号按改动前的顺序。" : ""}
             ${!flow.available ? " 文本模型尚未配置 DEEPSEEK_API_KEY，不能发送；可先查看请求。" : ""}</p>
         ${history.length ? html`<details class="reasoning-history"><summary>已确认请求的结果记录（${history.length}）</summary>
             ${history.map((saved) => html`<div class="actions-row"><span>${saved.at} · ${saved.text.slice(0, 50)}</span>
@@ -184,7 +195,7 @@ export function ReasoningDock({editing, onPreview, onOverlayPreview = noop, mode
             : `${flow.result.metadata?.usage?.cost_status === "confirmed" ? "已确认费用" : "按价目估算费用"} ¥${flow.result.billing.knownCostCny}，以提供方账单为准。`}</p>`}
         ${response?.questions?.length ? html`<ul>${response.questions.map((q) => html`<li>${q}</li>`)}</ul>` : null}
         ${mixed?.kind === "mixed_edit" && flow.projection && html`<div>
-            <ul>${mixedActionLabels(mixed, flow.projection, editing.clips).map(label => html`<li>${label}</li>`)}</ul>
+            <ul>${mixedActionLabels(mixed, flow.projection, editing.clips, editing.editor.fps).map(label => html`<li>${label}</li>`)}</ul>
             <button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI组合剪辑</button>
         </div>`}
         ${flow.result?.replacement?.kind === "replacement" && flow.projection && html`<div>

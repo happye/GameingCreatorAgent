@@ -339,10 +339,11 @@
    ]
   },
   "P041": {
-   "done": "AI一次文字提案可按原镜编号组合插入、换镜和删裁；漫画群星在已有插入的版本上实测三动作、恢复、成片及B站包",
-   "todo": "组合变速、换序、多段插入及旁白/图层自动重排待做，创意质量待人评",
+   "done": "AI一次提案可按原镜编号组合变速、换序、插入、换镜及删裁；真实漫画群星同镜换序慢放并删首镜，已保存、试听和出包",
+   "todo": "同次多段插入与旁白或图层自动重排待做，创意质量待人评",
    "updated": "2026-11-19",
    "sprints": [
+    "sprint-ai-combined-speed-order",
     "sprint-ai-combined-actions",
     "sprint-ai-mixed-timeline",
     "sprint-one-line-mixed-replacement",
@@ -832,6 +833,12 @@
      "name": "AI 组合插入、换镜和删裁",
      "status": "done",
      "sprint": "sprint-ai-combined-actions"
+    },
+    {
+     "id": "P041-speed-order",
+     "name": "AI 组合变速和换序",
+     "status": "done",
+     "sprint": "sprint-ai-combined-speed-order"
     },
     {
      "id": "P041-b",

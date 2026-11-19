@@ -19,15 +19,18 @@ from gamingcreator.application.brief_reasoning import (
     validate_brief,
 )
 from gamingcreator.application.budget import BudgetLedger
-from gamingcreator.application.creation_mixed_actions import PROMPT as MIXED_ACTIONS_PROMPT
-from gamingcreator.application.creation_mixed_actions import SCHEMA as MIXED_ACTIONS_SCHEMA
 from gamingcreator.application.creation_mixed_actions import (
+    ACTION_SCHEMAS,
     action_operations,
     actions_request,
     actions_snapshot,
     edit_original_rows,
     validate_actions,
 )
+from gamingcreator.application.creation_mixed_actions import PROMPT as MIXED_ACTIONS_PROMPT
+from gamingcreator.application.creation_mixed_actions import PROMPT_V3 as MIXED_ACTIONS_PROMPT_V3
+from gamingcreator.application.creation_mixed_actions import SCHEMA as MIXED_ACTIONS_SCHEMA
+from gamingcreator.application.creation_mixed_actions import SCHEMA_V3 as MIXED_ACTIONS_SCHEMA_V3
 from gamingcreator.application.creation_mixed_proposals import (
     mixed_followup,
     mixed_replacement,
@@ -311,7 +314,12 @@ class CreationReasoningService:
     def prepare_mixed(self, job_id: str, plan_id: str, instruction: str) -> dict[str, Any]:
         snapshot, project_id = self._replacement_snapshot(job_id, plan_id)
         return self._prepare(
-            actions_snapshot(snapshot), project_id, job_id, plan_id, instruction, "mixed"
+            actions_snapshot(snapshot, version=MIXED_ACTIONS_SCHEMA_V3),
+            project_id,
+            job_id,
+            plan_id,
+            instruction,
+            "mixed",
         )
 
     def complete_plan_duration(self, job_id: str, plan_id: str) -> dict[str, Any]:
@@ -497,9 +505,13 @@ class CreationReasoningService:
                 )
             elif record["purpose"] == "mixed":
                 replacement, project = self._replacement_snapshot(record["jobId"], record["planId"])
+                version = {
+                    MIXED_ACTIONS_PROMPT: MIXED_ACTIONS_SCHEMA,
+                    MIXED_ACTIONS_PROMPT_V3: MIXED_ACTIONS_SCHEMA_V3,
+                }.get(record["request"]["prompt_version"])
                 snapshot = (
-                    actions_snapshot(replacement)
-                    if record["request"]["prompt_version"] == MIXED_ACTIONS_PROMPT
+                    actions_snapshot(replacement, version=version)
+                    if version
                     else mixed_snapshot(replacement)
                 )
             else:
@@ -847,6 +859,18 @@ class CreationReasoningService:
                     attempt, prepared_hash, response.output
                 )
                 result.update(_validated_output(snapshot, response.output))
+                if (
+                    request.schema_version == MIXED_ACTIONS_SCHEMA_V3
+                    and isinstance(snapshot, EditingSnapshot)
+                    and result.get("mixed", {}).get("kind") == "mixed_edit"
+                ):
+                    stage = "validate_timeline"
+                    await asyncio.to_thread(
+                        self._combined_editor,
+                        snapshot,
+                        result,
+                        snapshot.payload["parentReceiptSha256"],
+                    )
         except asyncio.CancelledError:
             result.update(status="cancelled", errorCode="reasoning.cancelled")
         except _OutputValidationError as error:
@@ -922,7 +946,7 @@ class CreationReasoningService:
         if current.payload["parentReceiptSha256"] != expected_parent:
             raise ValueError("Replacement parent changed.")
         result = self.read_result(prepared_hash)
-        if current.payload.get("mixedSnapshotVersion") == MIXED_ACTIONS_SCHEMA:
+        if current.payload.get("mixedSnapshotVersion") in ACTION_SCHEMAS:
             return self._combined_editor(current, result, expected_parent)
         proposal, operations = _footage_operations(current, result)
         chain = load_chain(self.jobs, job_id, plan_id)
@@ -1148,7 +1172,7 @@ def _request_for(snapshot: Snapshot, instruction: str) -> ReasoningRequest:
     if isinstance(snapshot, EditingSnapshot) and "mixedSnapshotVersion" in snapshot.payload:
         return (
             actions_request(snapshot, instruction)
-            if snapshot.payload["mixedSnapshotVersion"] == MIXED_ACTIONS_SCHEMA
+            if snapshot.payload["mixedSnapshotVersion"] in ACTION_SCHEMAS
             else mixed_request(snapshot, instruction)
         )
     if isinstance(snapshot, EditingSnapshot) and "insertionSnapshotVersion" in snapshot.payload:
@@ -1181,7 +1205,7 @@ def _validated_output(snapshot: Snapshot, output: Any) -> dict[str, Any]:
         if isinstance(snapshot, EditingSnapshot) and "mixedSnapshotVersion" in snapshot.payload:
             proposal = (
                 validate_actions(snapshot, output)
-                if snapshot.payload["mixedSnapshotVersion"] == MIXED_ACTIONS_SCHEMA
+                if snapshot.payload["mixedSnapshotVersion"] in ACTION_SCHEMAS
                 else validate_mixed(snapshot, output)
             )
             return {"purpose": "mixed", "mixed": proposal}
