@@ -5,6 +5,11 @@ from fractions import Fraction
 from typing import Any
 
 from gamingcreator.application.knowledge import query_words
+from gamingcreator.application.showcase_topics import (
+    mentions_gameplay,
+    same_topic_label,
+    topic_matches,
+)
 from gamingcreator.domain.creation import CreativeBrief
 
 # Measured on local Huihui: 21 characters took 5.688 seconds. Budget below that and keep a margin.
@@ -80,12 +85,67 @@ def _sentence(description: object) -> str:
     return ""
 
 
+def _showcase_sentence(clip: dict[str, Any], topic: str) -> str:
+    """Use the current segment's matched label or brief description."""
+    for use in clip.get("topicUses", []):
+        if use.get("topic") != topic:
+            continue
+        quote = use.get("observationQuote")
+        if not isinstance(quote, str):
+            continue
+        if use["evidenceKind"] == "tag" and same_topic_label(quote, topic):
+            clauses = re.split(r"[，,；;。！？!?\n]", clip["scriptDraft"])
+            detail = next(
+                (text for part in clauses if mentions_gameplay(text := _sentence(part))), ""
+            )
+            return (
+                f"{quote}，{detail}"
+                if detail and not topic_matches(detail, topic)
+                else detail or quote
+            )
+        if (
+            use["evidenceKind"] != "fact"
+            or quote not in clip["scriptDraft"]
+            or not topic_matches(quote, topic)
+        ):
+            continue
+        title = next(
+            (label for label in re.findall(r"“([^”]+)”", quote) if topic_matches(label, topic)),
+            "",
+        )
+        if title and len(title) <= MAX_CLIP_CHARS:
+            return title
+        sentence = _sentence(quote)
+        return sentence if topic_matches(sentence, topic) else topic
+    return ""
+
+
+def _showcase_lines(
+    topics: tuple[str, ...], clips: list[dict[str, Any]], room: int
+) -> list[tuple[dict[str, Any], str]]:
+    """Pick one line per requested topic and restore the current cut's order."""
+    chosen: dict[int, str] = {}
+    for topic in dict.fromkeys(topics):
+        for index, clip in enumerate(clips):
+            if index in chosen:
+                continue
+            text = _showcase_sentence(clip, topic)
+            cost = len(text) + len("最后看。")
+            if text and cost <= room:
+                chosen[index] = text
+                room -= cost
+                break
+    return [(clips[index], text) for index, text in sorted(chosen.items())]
+
+
 def build_narration_script(
     brief: CreativeBrief,
     clips: list[dict[str, Any]],
     output_frames: int,
     fps: int,
     knowledge: list[dict[str, Any]] | None = None,
+    *,
+    prefer_showcase_topics: bool = False,
 ) -> dict[str, object]:
     if any(type(n) is not int or n <= 0 for n in (output_frames, fps)):
         raise ValueError("Narration script needs a positive output clock.")
@@ -98,11 +158,17 @@ def build_narration_script(
         used += len(closing) + 1
     else:
         closing = ""
+    theme_lines = (
+        _showcase_lines(brief.mandatory_topics, clips, budget - used)
+        if prefer_showcase_topics
+        else []
+    )
     candidates: list[tuple[dict[str, Any], str]] = []
-    for clip in clips:
-        sentence = _sentence(clip.get("scriptDraft"))
-        if sentence and (not candidates or candidates[-1][1] != sentence):
-            candidates.append((clip, sentence))
+    if not theme_lines:
+        for clip in clips:
+            sentence = _sentence(clip.get("scriptDraft"))
+            if sentence and (not candidates or candidates[-1][1] != sentence):
+                candidates.append((clip, sentence))
     # Guide steps are numbered by their position in this draft, so edits never leave gaps.
     steps = brief.content_type == "guide"
 
@@ -115,11 +181,13 @@ def build_narration_script(
         """What is read aloud: with two or more clips, order words carry the viewer along."""
         if steps or count < 2:
             return text
+        if theme_lines:
+            return ("先看" if index == 0 else "最后看" if index == count - 1 else "再看") + text
         word = _FIRST if index == 0 else _LAST if index == count - 1 else _MIDDLE[index % 2]
         return word + text
 
     # One narration spans the whole video, so sample clips evenly over output time.
-    chosen: list[tuple[dict[str, Any], str]] = []
+    chosen = theme_lines
     for count in range(len(candidates), 0, -1):
         picks = sorted({round(i * (len(candidates) - 1) / max(1, count - 1)) for i in range(count)})
         trial = spoken([candidates[i] for i in picks])
@@ -152,7 +220,7 @@ def build_narration_script(
     text = "。".join(parts) + "。" if parts else ""
     return {
         "schemaVersion": "creation-narration-script-v1",
-        "generator": "offline-template-v2",
+        "generator": "offline-showcase-topics-v1" if theme_lines else "offline-template-v2",
         "status": "template-draft-human-review-required",
         "text": text,
         "lines": lines,

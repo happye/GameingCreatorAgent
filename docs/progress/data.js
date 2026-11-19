@@ -44,9 +44,9 @@ window.PROGRESS_DATA = {
    "name": "玩法展示：本地录像 → 约1分钟可发布成片",
    "steps": "导入录像 → 已有分析/检索 → 选玩法展示模板 → 渲染MP4 → 封面文案与B站发布包",
    "agent_run": {
-    "date": "2026-11-19",
+    "date": "2026-11-20",
     "result": "pass",
-    "evidence": "既有真实漫画群星一句需求→AI方案→本地补足30秒→中文旁白→成片流程继续扩展为四平台持久队列。发布598a72a7f4164c3fba2ff8e234081681，e6e0f97ddd5a36c292318459a9895f54一次勾选四平台后关闭浏览器，服务端仍全部completed，重开4/4并下载四份七文件ZIP；逐包ffprobe均30秒H264/AAC且尺寸匹配冻结profile，B站复用旧包且ZIP SHA不变。另存多平台版标题的真实三平台队列75e124109c594dcc8c87c446339a0df6验证cancel只停后续、当前包收尾；resume后中断自有服务，重启不自动再提交，UI显式恢复同batch，前两项ID保持，第三旧中断attempt保留，新attempt2完成，页面3/3。产物.cache/scratch/package-batches-20261118/（bilibili/douyin/kuaishou/xiaohongshu.zip及delivery-evidence.json），详sprint-package-batches。本批另实测同一草稿混合 AI 插入、裁剪、删除和手动替换，刷新恢复后试听并导出 27.5 秒成片。发布 5462eed2c820468eb4beb5c1c5ac94d1 下的队列 f62b4943015cfab48822711116c2e921 重开恢复 2/2，B 站全长 ZIP 复用，抖音 15.000 秒、450 帧且音画同端点，均为七文件。证据与视频在 .cache/scratch/mixed-timeline-20261118/，详 sprint-mixed-timeline 和 sprint-platform-short-pack。随后在原发布下新增按平台的画面文案，队列 f1e517f6615987d13500c8f7874fb293 重开 2/2。抖音首尾各两秒文案烧录，450 帧／15 秒，工作台实际试听及七文件 ZIP 下载通过；详 sprint-platform-video-copy 与 .cache/scratch/platform-video-copy-20261119/。随后从同一成片按「蓝色火焰」选 7.50–22.50 秒，抖音 15 秒音画与原区间实测对应，关页重开可下载；又在本地一句话换镜并删末镜，保存新版本后试听 27 秒成片并下载 B 站七文件包。详 sprint-platform-content-cut、sprint-one-line-mixed-replacement。同一真实项目随后用一次 AI 文字提案按描述换镜并删末镜，重开从回执读回、应用并保存，27 秒成片 a23a5d2191734b178920af0c6a627bba 试听和 B 站七文件包 d49e0570d1d24bf9be6165259e13786d 下载通过。文字调用估算 ¥0.013006，详 sprint-ai-mixed-timeline。同一发布随后实测本机起草抖音画面开场并保留手写结尾；多关键词拼接按成片区间 4–5、7–8 秒输出 2 秒抖音短版，逐段音画对应，同队列恢复并复用全长 B 站。详 sprint-platform-copy-draft、sprint-platform-joined-cut。另以已插入版本实测一次 AI 提案删首镜、插「6880」技能镜头并裁短原第4镜，回读并恢复草稿、保存后试听 27 秒 MP4，下载 B 站七文件包 bb926109ad804720af2c73c53aa81bb4。文字调用一次，估算 ¥0.013668，详 sprint-ai-combined-actions。随后同一成片以「想看打出高额伤害的几招」通过本机 E5 推荐镜头，确认 2.50–3、10–11 秒两段，试听并生成 1.5 秒抖音包 c6085532b48445c28195ca36185a4585。重开队列复用全长 B 站包，无模型费用，详 sprint-platform-theme-ranking。再按一句 AI 指令删首镜、将原第4镜前移并 0.5× 慢放，回读恢复和保存，实际试听 26.5 秒成片与下载 B 站包 76e354d57c08489293861041b859bc73。一次文字调用估算 ¥0.01371，详 sprint-ai-combined-speed-order。再用一次文字提案在两处原镜后插入三段，浏览器应用前预览字幕，删除一段并撤销，刷新恢复保存后实测播放 29.5 秒 MP4 和下载 B 站包 fbbf0aee6ef441ca9d2e060cc80f22ab。估算 ¥0.013962，详 sprint-ai-multiple-insertions。随后用本地指令删首镜，按原镜迁移旁白与文字图层，第 30 帧移至第 0 帧，恢复后保存并播放 28.5 秒成片 e7aa502dfbe7485499413f2bda98c26a，下载 B 站七文件包 cba5bbf0e51d4581ac922fa16e26ca73。详 sprint-shot-companion-timing。继续实测 AI 删原第1、2镜后，默认旁白及图层分别越界，随原镜迁移并恢复保存后播放 27.5 秒成片 5ac93d7613884faab6d86f86974aa1a5，下载 B 站七文件包 6655f859c76c4106971a14a359a3b152。一次文字调用估算 ¥0.01302736，详 sprint-ai-companion-fit。另在独立漫画群星作品用显式结构偏好把倒序从备选升至首推并选中。刷新后应用，实测 30 秒成片 b0ed34e8925c44d6a83e3b002e38004a 有声播放和 B 站七文件包 918ebaca8e1e4069a7f42b2c61c21157，另一标签页清除后恢复默认。详 sprint-creator-structure-feedback。2026-11-20 在该 B 站包上追加两条测试成效，覆盖 CTR 零值、未知指标、两位小数、重开、幂等及版本隔离，详 sprint-publication-outcome-feedback。随后隔离库用两个漫画群星 B 站实拍素材包和模拟数据跑通同平台对比，显式选择倒序参考，下一次方案 1946675176534f6c91de7f83b7fd5496 冻结指标出处。详 sprint-outcome-structure-reference。2026-11-20 从同一漫画群星录像生成主题保留版 702be335f834438289915e23ac2acaf5，补入旧版遗漏的 1V1，保留 3V3 和技能释放，结算提示素材缺口。浏览器播放 30 秒成片 4af8a0a0166a43ba97a699e8ce4d3f4d，下载七文件 B 站包 fedc05d197f647d594d23b0c455ffe34。零模型调用，详 sprint-showcase-topic-coverage。无支付或真实平台上传，原成片/方案/失败证据保留，人评不变。"
+    "evidence": "既有真实漫画群星一句需求→AI方案→本地补足30秒→中文旁白→成片流程继续扩展为四平台持久队列。发布598a72a7f4164c3fba2ff8e234081681，e6e0f97ddd5a36c292318459a9895f54一次勾选四平台后关闭浏览器，服务端仍全部completed，重开4/4并下载四份七文件ZIP；逐包ffprobe均30秒H264/AAC且尺寸匹配冻结profile，B站复用旧包且ZIP SHA不变。另存多平台版标题的真实三平台队列75e124109c594dcc8c87c446339a0df6验证cancel只停后续、当前包收尾；resume后中断自有服务，重启不自动再提交，UI显式恢复同batch，前两项ID保持，第三旧中断attempt保留，新attempt2完成，页面3/3。产物.cache/scratch/package-batches-20261118/（bilibili/douyin/kuaishou/xiaohongshu.zip及delivery-evidence.json），详sprint-package-batches。本批另实测同一草稿混合 AI 插入、裁剪、删除和手动替换，刷新恢复后试听并导出 27.5 秒成片。发布 5462eed2c820468eb4beb5c1c5ac94d1 下的队列 f62b4943015cfab48822711116c2e921 重开恢复 2/2，B 站全长 ZIP 复用，抖音 15.000 秒、450 帧且音画同端点，均为七文件。证据与视频在 .cache/scratch/mixed-timeline-20261118/，详 sprint-mixed-timeline 和 sprint-platform-short-pack。随后在原发布下新增按平台的画面文案，队列 f1e517f6615987d13500c8f7874fb293 重开 2/2。抖音首尾各两秒文案烧录，450 帧／15 秒，工作台实际试听及七文件 ZIP 下载通过；详 sprint-platform-video-copy 与 .cache/scratch/platform-video-copy-20261119/。随后从同一成片按「蓝色火焰」选 7.50–22.50 秒，抖音 15 秒音画与原区间实测对应，关页重开可下载；又在本地一句话换镜并删末镜，保存新版本后试听 27 秒成片并下载 B 站七文件包。详 sprint-platform-content-cut、sprint-one-line-mixed-replacement。同一真实项目随后用一次 AI 文字提案按描述换镜并删末镜，重开从回执读回、应用并保存，27 秒成片 a23a5d2191734b178920af0c6a627bba 试听和 B 站七文件包 d49e0570d1d24bf9be6165259e13786d 下载通过。文字调用估算 ¥0.013006，详 sprint-ai-mixed-timeline。同一发布随后实测本机起草抖音画面开场并保留手写结尾；多关键词拼接按成片区间 4–5、7–8 秒输出 2 秒抖音短版，逐段音画对应，同队列恢复并复用全长 B 站。详 sprint-platform-copy-draft、sprint-platform-joined-cut。另以已插入版本实测一次 AI 提案删首镜、插「6880」技能镜头并裁短原第4镜，回读并恢复草稿、保存后试听 27 秒 MP4，下载 B 站七文件包 bb926109ad804720af2c73c53aa81bb4。文字调用一次，估算 ¥0.013668，详 sprint-ai-combined-actions。随后同一成片以「想看打出高额伤害的几招」通过本机 E5 推荐镜头，确认 2.50–3、10–11 秒两段，试听并生成 1.5 秒抖音包 c6085532b48445c28195ca36185a4585。重开队列复用全长 B 站包，无模型费用，详 sprint-platform-theme-ranking。再按一句 AI 指令删首镜、将原第4镜前移并 0.5× 慢放，回读恢复和保存，实际试听 26.5 秒成片与下载 B 站包 76e354d57c08489293861041b859bc73。一次文字调用估算 ¥0.01371，详 sprint-ai-combined-speed-order。再用一次文字提案在两处原镜后插入三段，浏览器应用前预览字幕，删除一段并撤销，刷新恢复保存后实测播放 29.5 秒 MP4 和下载 B 站包 fbbf0aee6ef441ca9d2e060cc80f22ab。估算 ¥0.013962，详 sprint-ai-multiple-insertions。随后用本地指令删首镜，按原镜迁移旁白与文字图层，第 30 帧移至第 0 帧，恢复后保存并播放 28.5 秒成片 e7aa502dfbe7485499413f2bda98c26a，下载 B 站七文件包 cba5bbf0e51d4581ac922fa16e26ca73。详 sprint-shot-companion-timing。继续实测 AI 删原第1、2镜后，默认旁白及图层分别越界，随原镜迁移并恢复保存后播放 27.5 秒成片 5ac93d7613884faab6d86f86974aa1a5，下载 B 站七文件包 6655f859c76c4106971a14a359a3b152。一次文字调用估算 ¥0.01302736，详 sprint-ai-companion-fit。另在独立漫画群星作品用显式结构偏好把倒序从备选升至首推并选中。刷新后应用，实测 30 秒成片 b0ed34e8925c44d6a83e3b002e38004a 有声播放和 B 站七文件包 918ebaca8e1e4069a7f42b2c61c21157，另一标签页清除后恢复默认。详 sprint-creator-structure-feedback。2026-11-20 在该 B 站包上追加两条测试成效，覆盖 CTR 零值、未知指标、两位小数、重开、幂等及版本隔离，详 sprint-publication-outcome-feedback。随后隔离库用两个漫画群星 B 站实拍素材包和模拟数据跑通同平台对比，显式选择倒序参考，下一次方案 1946675176534f6c91de7f83b7fd5496 冻结指标出处。详 sprint-outcome-structure-reference。2026-11-20 从同一漫画群星录像生成主题保留版 702be335f834438289915e23ac2acaf5，补入旧版遗漏的 1V1，保留 3V3 和技能释放，结算提示素材缺口。浏览器播放 30 秒成片 4af8a0a0166a43ba97a699e8ce4d3f4d，下载七文件 B 站包 fedc05d197f647d594d23b0c455ffe34。零模型调用，详 sprint-showcase-topic-coverage。随后同录像生成 60 秒玩法展示 acf92d1296a24efaa7519347ac0fc956，从保留主题起草并合成本机 Huihui 旁白，保存 200c0207a3a64eb1b474a38c4f3c3417，播放 1800 帧成片 a440b9b8995945029fbcbeb41a8c4bf4 并下载 B 站包 7c04b5bb0b534dfdbd6eea68d84663f1。源语音 SRT 无条目，零模型调用，详 sprint-showcase-narration。无支付或真实平台上传，原成片/方案/失败证据保留，人评不变。"
    },
    "human_check": {
     "date": "2026-11-11",
@@ -571,12 +571,14 @@ window.PROGRESS_DATA = {
    "evidence": [
     "2026-10-31: offline template narration draft from saved revision clip descriptions sized to the output clock (3.5 chars/s budget, evenly sampled clips, honest omitted count), GET narration-script API and workspace button feeding local narration; 11 new tests plus 113 related (.cache/narration-script.xml); real 12s plan produced a 36-character draft spanning first and last clips; quality not human-reviewed",
     "docs/exec-plans/sprint-ai-narration.md",
-    "2026-11-15: saved-revision text-only AI narration with frozen knowledge, source quotes, manual adoption and free local synthesis; revision-v4, work budgets, response-loss read-only recovery and stale UI guards verified with fake transport. Real-model naturalness and human acceptance remain unassessed."
+    "2026-11-15: saved-revision text-only AI narration with frozen knowledge, source quotes, manual adoption and free local synthesis; revision-v4, work budgets, response-loss read-only recovery and stale UI guards verified with fake transport. Real-model naturalness and human acceptance remain unassessed.",
+    "2026-11-20: Studio can draft local showcase narration from themes retained by the saved timeline, then use local Huihui synthesis and export. Real Comic Stars footage produced a 60-second H.264/AAC video and a seven-file Bilibili package. See sprint-showcase-narration."
    ],
-   "done": "AI按保存镜头及冻结知识起草，逐句来源可核对；已有旁白也能重起草并确认填入待合成稿，旧音轨保留到显式本机重合成；真实29秒作品已生成54字AI稿并导出，复用原预算与只读恢复",
+   "done": "AI按保存镜头与知识起草，可核对逐句引用并合成本机语音；玩法展示的本机稿按当前片段顺序优先讲必讲主题，漫画群星 60 秒成片及 B 站包已验证",
    "todo": "真实新稿链路通过，但语义、自然度与听感仍待人评；旧14秒39字超预算失败原件保持且不重发，不提升J1质量状态",
-   "updated": "2026-11-17",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-showcase-narration",
     "sprint-narration-script",
     "sprint-ai-narration",
     "sprint-attached-ai-narration"
@@ -1109,12 +1111,14 @@ window.PROGRESS_DATA = {
    "evidence": [
     "2026-11-01: feature showcase mode (richest-description opening hook, ordered showcase, closing) real instance demo-phase0 -> 10-shot MP4 373 frames -> cover/text -> Bilibili package, all configured checks pass (.cache/content-modes-e2e.json); hook chosen by description detail, not visual understanding",
     "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md",
-    "2026-11-20: local showcase reserves matching required topics, prioritizes observed gameplay feedback at the opening and reports source gaps. Real Comic Stars footage produced a 900-frame video and seven-file Bilibili package. See sprint-showcase-topic-coverage."
+    "2026-11-20: local showcase reserves matching required topics, prioritizes observed gameplay feedback at the opening and reports source gaps. Real Comic Stars footage produced a 900-frame video and seven-file Bilibili package. See sprint-showcase-topic-coverage.",
+    "2026-11-20: retained 1V1, 3V3 and skill topics were used in the local narration of a 60-second real footage showcase and exported with its Bilibili package. See sprint-showcase-narration."
    ],
-   "done": "玩法展示按操作和反馈记录选开场，优先保留必讲主题并列出素材缺口；漫画群星 1V1、3V3 和技能释放已走通 30 秒成片及 B 站包",
+   "done": "玩法展示按操作和反馈记录选开场，保留必讲主题并在本机稿按保存顺序讲解；漫画群星 1V1、3V3、技能释放已走通 60 秒带旁白成片及 B 站包",
    "todo": "J1 第五次试看全流程未通过；画面、解说和叙事质量待人评",
    "updated": "2026-11-20",
    "sprints": [
+    "sprint-showcase-narration",
     "sprint-showcase-topic-coverage",
     "sprint-content-modes",
     "sprint-j1-creation-usability"
@@ -1574,6 +1578,12 @@ window.PROGRESS_DATA = {
      "name": "解说模板草稿",
      "status": "done",
      "sprint": "sprint-narration-script"
+    },
+    {
+     "id": "P025-showcase-narration",
+     "name": "玩法展示按保留主题起草本机旁白",
+     "status": "done",
+     "sprint": "sprint-showcase-narration"
     },
     {
      "id": "P028",
@@ -2240,8 +2250,8 @@ window.PROGRESS_DATA = {
   "创作助手已实测换镜、删裁、变速、换序及[多段插入](docs/exec-plans/sprint-ai-multiple-insertions.md)。[AI 随镜时长校验](docs/exec-plans/sprint-ai-companion-fit.md)实测先迁移旁白和图层，恢复保存、播放 27.5 秒成片并出 B 站包。",
   "[P042 方案结构偏好](docs/exec-plans/sprint-creator-structure-feedback.md)接入工作台。漫画群星刷新后从玩法展示首推改为倒序首推，实测 30 秒成片和 B 站包。另一标签页清除后，生成恢复默认首推。",
   "[P042 发布成效](docs/exec-plans/sprint-publication-outcome-feedback.md)已按平台包手录 CTR、3 秒留存和完播率。漫画群星 B 站包上用两条测试数据验证重开读回、重复提交和多包隔离。[成效对比与结构参考](docs/exec-plans/sprint-outcome-structure-reference.md)用隔离示例从两个实拍来源 B 站包选中倒序，下次方案首推并显示指标依据。真实平台数据待录入。",
-  "[P043 玩法主题安排](docs/exec-plans/sprint-showcase-topic-coverage.md)已实测漫画群星 30 秒成片与 B 站包，保留 1V1、3V3 和技能释放，提示结算缺口。下一步处理 J1 的分段讲解和叙事。",
-  "内容模式 14 项定向回归通过。旧 verify-20261117-002506 已按用户要求取消，失败记录保留。"
+  "[P025/P043 主题旁白](docs/exec-plans/sprint-showcase-narration.md)根据保留片段讲 1V1、3V3 和技能释放。漫画群星 60 秒本机配音及 B 站包已实测，旁白逐句对齐与字幕仍待完善。",
+  "本批 21 项定向回归通过。旧 verify-20261117-002506 已按用户要求取消，失败记录保留。"
  ],
  "sprints": [
   {
@@ -2924,13 +2934,24 @@ window.PROGRESS_DATA = {
    "bytes": 1369
   },
   {
+   "file": "sprint-showcase-narration",
+   "title": "玩法展示从主题片段起草本机旁白",
+   "ids": [
+    "P025",
+    "P043",
+    "R2"
+   ],
+   "date": "",
+   "bytes": 1684
+  },
+  {
    "file": "sprint-showcase-topic-coverage",
    "title": "玩法展示优先保留必讲主题",
    "ids": [
     "P043",
     "R1"
    ],
-   "date": "",
+   "date": "2026-11-20",
    "bytes": 1528
   },
   {

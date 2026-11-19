@@ -1597,6 +1597,7 @@ class CreationJobs:
             chain.plan.frames,
             chain.plan.fps,
             knowledge,
+            prefer_showcase_topics=chain.plan_id == "showcase",
         )
 
     def catalog(self, project_id: str) -> dict[str, object]:

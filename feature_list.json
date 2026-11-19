@@ -722,7 +722,8 @@
             "implementation_evidence": [
                 "2026-10-31: offline template narration draft from saved revision clip descriptions sized to the output clock (3.5 chars/s budget, evenly sampled clips, honest omitted count), GET narration-script API and workspace button feeding local narration; 11 new tests plus 113 related (.cache/narration-script.xml); real 12s plan produced a 36-character draft spanning first and last clips; quality not human-reviewed",
                 "docs/exec-plans/sprint-ai-narration.md",
-                "2026-11-15: saved-revision text-only AI narration with frozen knowledge, source quotes, manual adoption and free local synthesis; revision-v4, work budgets, response-loss read-only recovery and stale UI guards verified with fake transport. Real-model naturalness and human acceptance remain unassessed."
+                "2026-11-15: saved-revision text-only AI narration with frozen knowledge, source quotes, manual adoption and free local synthesis; revision-v4, work budgets, response-loss read-only recovery and stale UI guards verified with fake transport. Real-model naturalness and human acceptance remain unassessed.",
+                "2026-11-20: Studio can draft local showcase narration from themes retained by the saved timeline, then use local Huihui synthesis and export. Real Comic Stars footage produced a 60-second H.264/AAC video and a seven-file Bilibili package. See sprint-showcase-narration."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"
@@ -1082,7 +1083,8 @@
             "implementation_evidence": [
                 "2026-11-01: feature showcase mode (richest-description opening hook, ordered showcase, closing) real instance demo-phase0 -> 10-shot MP4 373 frames -> cover/text -> Bilibili package, all configured checks pass (.cache/content-modes-e2e.json); hook chosen by description detail, not visual understanding",
                 "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md",
-                "2026-11-20: local showcase reserves matching required topics, prioritizes observed gameplay feedback at the opening and reports source gaps. Real Comic Stars footage produced a 900-frame video and seven-file Bilibili package. See sprint-showcase-topic-coverage."
+                "2026-11-20: local showcase reserves matching required topics, prioritizes observed gameplay feedback at the opening and reports source gaps. Real Comic Stars footage produced a 900-frame video and seven-file Bilibili package. See sprint-showcase-topic-coverage.",
+                "2026-11-20: retained 1V1, 3V3 and skill topics were used in the local narration of a 60-second real footage showcase and exported with its Bilibili package. See sprint-showcase-narration."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

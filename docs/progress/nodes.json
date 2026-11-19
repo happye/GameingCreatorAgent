@@ -181,10 +181,11 @@
    ]
   },
   "P025": {
-   "done": "AI按保存镜头及冻结知识起草，逐句来源可核对；已有旁白也能重起草并确认填入待合成稿，旧音轨保留到显式本机重合成；真实29秒作品已生成54字AI稿并导出，复用原预算与只读恢复",
+   "done": "AI按保存镜头与知识起草，可核对逐句引用并合成本机语音；玩法展示的本机稿按当前片段顺序优先讲必讲主题，漫画群星 60 秒成片及 B 站包已验证",
    "todo": "真实新稿链路通过，但语义、自然度与听感仍待人评；旧14秒39字超预算失败原件保持且不重发，不提升J1质量状态",
-   "updated": "2026-11-17",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-showcase-narration",
     "sprint-narration-script",
     "sprint-ai-narration",
     "sprint-attached-ai-narration"
@@ -371,10 +372,11 @@
    ]
   },
   "P043": {
-   "done": "玩法展示按操作和反馈记录选开场，优先保留必讲主题并列出素材缺口；漫画群星 1V1、3V3 和技能释放已走通 30 秒成片及 B 站包",
+   "done": "玩法展示按操作和反馈记录选开场，保留必讲主题并在本机稿按保存顺序讲解；漫画群星 1V1、3V3、技能释放已走通 60 秒带旁白成片及 B 站包",
    "todo": "J1 第五次试看全流程未通过；画面、解说和叙事质量待人评",
    "updated": "2026-11-20",
    "sprints": [
+    "sprint-showcase-narration",
     "sprint-showcase-topic-coverage",
     "sprint-content-modes",
     "sprint-j1-creation-usability"
@@ -651,6 +653,12 @@
      "name": "解说模板草稿",
      "status": "done",
      "sprint": "sprint-narration-script"
+    },
+    {
+     "id": "P025-showcase-narration",
+     "name": "玩法展示按保留主题起草本机旁白",
+     "status": "done",
+     "sprint": "sprint-showcase-narration"
     },
     {
      "id": "P028",

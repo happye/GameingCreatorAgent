@@ -124,3 +124,32 @@ def test_a_cut_never_leaves_a_quotation_open():
     result = build_narration_script(CreativeBrief.from_json(BRIEF), clips, 900, 30)
     spoken = result["lines"][0]["text"]
     assert spoken.count("“") == spoken.count("”")
+
+
+def test_showcase_narration_uses_retained_topics_in_current_clip_order():
+    brief = CreativeBrief.from_json(
+        {**BRIEF, "mandatoryTopics": ["1V1", "3V3", "技能释放", "结算"]}
+    )
+    clips = [
+        clip(0, "游戏标志与英文字幕", 0),
+        clip(1, "画面切换；中央出现白色标题“积分争夺（3V3）”", 30),
+        clip(2, "角色交战并出现伤害数字", 60),
+        clip(3, "中央出现白色标题“武道会(1V1)”", 90),
+    ]
+    for index, topic, kind, quote in (
+        (1, "3V3", "fact", "中央出现白色标题“积分争夺（3V3）”"),
+        (2, "技能释放", "tag", "技能释放"),
+        (3, "1V1", "fact", clips[3]["scriptDraft"]),
+    ):
+        clips[index]["topicUses"] = [
+            {"topic": topic, "evidenceKind": kind, "observationQuote": quote}
+        ]
+    draft = build_narration_script(brief, clips, 900, 30, prefer_showcase_topics=True)
+    assert draft["generator"] == "offline-showcase-topics-v1"
+    assert draft["text"] == (
+        "代号Atom玩法速览。先看积分争夺（3V3）。再看技能释放，角色交战并出现伤害数字。最后看武道会(1V1)。"
+    )
+    assert [line["outputStartFrame"] for line in draft["lines"]] == [30, 60, 90]
+    assert len(draft["text"]) <= draft["budgetCharacters"]
+    trimmed = build_narration_script(brief, clips[:3], 900, 30, prefer_showcase_topics=True)
+    assert "1V1" not in trimmed["text"] and "结算" not in trimmed["text"]

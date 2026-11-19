@@ -8,12 +8,22 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from gamingcreator.application.creative_planner import CreationClip
 
+_GAMEPLAY_MARKERS = (
+    "技能释放",
+    "技能特效",
+    "伤害数字",
+    "驾驶操作",
+    "零件切换",
+    "参数变化",
+    "释放技能",
+)
+
 
 def _normalize(value: str) -> str:
     return unicodedata.normalize("NFKC", value).casefold()
 
 
-def _topic_match(text: str, topic: str) -> bool:
+def topic_matches(text: str, topic: str) -> bool:
     wanted = _normalize(topic).strip()
     source = _normalize(text)
     if re.fullmatch(r"[a-z0-9]+", wanted):
@@ -21,19 +31,23 @@ def _topic_match(text: str, topic: str) -> bool:
     return bool(wanted and wanted in source)
 
 
+def same_topic_label(text: str, topic: str) -> bool:
+    return _normalize(text).strip() == _normalize(topic).strip()
+
+
+def mentions_gameplay(text: str) -> bool:
+    return any(marker in text for marker in _GAMEPLAY_MARKERS)
+
+
 def _evidence(clip: "CreationClip", topic: str) -> tuple[str, str] | None:
     event = clip.event
     if event.modality == "audio":
         return None
-    fact = next((text for text in event.observable_facts if _topic_match(text, topic)), None)
+    fact = next((text for text in event.observable_facts if topic_matches(text, topic)), None)
     if fact is not None:
         return "fact", fact
     tag = next(
-        (
-            tag
-            for tag in event.mechanic_tags
-            if _normalize(tag).strip() == _normalize(topic).strip()
-        ),
+        (tag for tag in event.mechanic_tags if same_topic_label(tag, topic)),
         None,
     )
     if tag is not None:
@@ -45,12 +59,7 @@ def gameplay_opening(clip: "CreationClip") -> bool:
     event = clip.event
     if event.modality == "audio" or event.uncertainty:
         return False
-    markers = ("技能释放", "技能特效", "伤害数字", "驾驶操作", "零件切换", "参数变化", "释放技能")
-    return any(
-        marker in text
-        for text in (*event.mechanic_tags, *event.observable_facts)
-        for marker in markers
-    )
+    return any(mentions_gameplay(text) for text in (*event.mechanic_tags, *event.observable_facts))
 
 
 def reserve_topics(

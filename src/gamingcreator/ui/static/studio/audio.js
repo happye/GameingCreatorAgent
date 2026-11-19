@@ -523,6 +523,7 @@ export function AudioPanel({commandPreview = false, editing, project, game = "",
             <div class="actions-row">
                 <button type="button" class="btn ghost" disabled=${revising} aria-label="编辑旁白文字" onClick=${openRevision}>编辑旁白文字</button>
                 <button type="button" class="btn ghost" disabled=${!!working || ai.busy || commandPreview || editing.dirty || editing.status !== "ready"} onClick=${ai.start}>AI重新起草旁白</button>
+                <button type="button" class="btn ghost" disabled=${!!working || ai.busy || commandPreview || editing.dirty || editing.status !== "ready"} onClick=${draft}>用本机起草</button>
                 <button type="button" class="btn ghost danger" disabled=${paramsLocked} onClick=${() => editing.ops.narration(null)}>移除旁白</button>
             </div>
             ${revisionOpen && html`<div class="rules-result" aria-label="旁白待合成稿区域">
@@ -590,6 +591,7 @@ export function AudioPanel({commandPreview = false, editing, project, game = "",
                 <div class="actions-row"><button type="button" class="btn" disabled=${!!working || !text.trim() || !voiceId} onClick=${synthesize}>${working === "voice" ? "正在合成…" : paid ? `确认付费合成（约 ￥${cost.toFixed(4)}）` : "合成旁白"}</button></div>`
             : html`<div class="actions-row">
                 <button type="button" class="btn ghost" disabled=${!!working || ai.busy || commandPreview || editing.dirty || editing.status !== "ready"} onClick=${ai.start}>${working === "script" ? "正在起草…" : "起草旁白稿"}</button>
+                <button type="button" class="btn ghost" disabled=${!!working || ai.busy || commandPreview || editing.dirty || editing.status !== "ready"} onClick=${draft}>用本机起草</button>
                 <button type="button" class="btn ghost" disabled=${!!working} aria-label="手写旁白稿" onClick=${startHandwritten}>手写旁白稿</button>
             </div>`}
         ${ai.view}
