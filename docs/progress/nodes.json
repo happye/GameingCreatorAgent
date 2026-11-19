@@ -339,10 +339,11 @@
    ]
   },
   "P041": {
-   "done": "AI可组合变速、换序、多段插入、换镜及删裁。漫画群星实测本地指令按原镜迁移旁白和图层，预览、撤销、恢复、出片和B站包贯通",
-   "todo": "AI缩短时间线时按选择先迁移再验时长，真人创作质量待验",
+   "done": "AI可组合变速、换序、多段插入、换镜及删裁。漫画群星实测删两镜后迁移旁白与图层，校验、预览、草稿恢复、成片和B站包贯通",
+   "todo": "真人创作质量待验",
    "updated": "2026-11-19",
    "sprints": [
+    "sprint-ai-companion-fit",
     "sprint-shot-companion-timing",
     "sprint-ai-multiple-insertions",
     "sprint-ai-combined-speed-order",
@@ -859,6 +860,12 @@
      "name": "本地指令可选旁白和图层随原镜移动",
      "status": "done",
      "sprint": "sprint-shot-companion-timing"
+    },
+    {
+     "id": "P041-ai-companion-fit",
+     "name": "AI 缩短成片时迁移旁白和图层",
+     "status": "done",
+     "sprint": "sprint-ai-companion-fit"
     },
     {
      "id": "P042",

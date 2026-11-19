@@ -183,13 +183,18 @@ def _write(directory: Path, name: str, document: dict[str, Any]) -> None:
     write_creation(directory, {name: document}, ())
 
 
-def _read(directory: Path, name: str, schema: str) -> dict[str, Any]:
+def _read(
+    directory: Path, name: str, schema: str, *, expected_sha256: str | None = None
+) -> dict[str, Any]:
     receipt = json.loads(read_bounded(directory / "receipt.json"))
     raw = read_bounded(directory / name)
+    digest = sha256(raw).hexdigest()
     if receipt.get("schemaVersion") != "creation-receipt-v1" or receipt.get("files") != {
-        name: sha256(raw).hexdigest()
+        name: digest
     }:
         raise ValueError("Reasoning record hash mismatch.")
+    if expected_sha256 is not None and digest != expected_sha256:
+        raise ValueError("Provider output identity or result reference mismatch.")
     document = json.loads(raw)
     if not isinstance(document, dict) or document.get("schemaVersion") != schema:
         raise ValueError("Unsupported reasoning record schema.")
@@ -644,11 +649,8 @@ class CreationReasoningService:
         """Read local evidence, including an interrupted attempt; never apply or resend it."""
         self._prepared(prepared_hash)
         directory = self.jobs.safe(self._directory(prepared_hash) / "attempt/provider-output")
-        document = _read(directory, "output.json", OUTPUT_SCHEMA)
-        if document.get("preparedHash") != prepared_hash or (
-            expected_sha256 is not None
-            and sha256(read_bounded(directory / "output.json")).hexdigest() != expected_sha256
-        ):
+        document = _read(directory, "output.json", OUTPUT_SCHEMA, expected_sha256=expected_sha256)
+        if document.get("preparedHash") != prepared_hash:
             raise ValueError("Provider output identity or result reference mismatch.")
         return document
 
@@ -874,6 +876,7 @@ class CreationReasoningService:
                         snapshot,
                         result,
                         snapshot.payload["parentReceiptSha256"],
+                        layout_only=True,
                     )
         except asyncio.CancelledError:
             result.update(status="cancelled", errorCode="reasoning.cancelled")
@@ -894,19 +897,31 @@ class CreationReasoningService:
         if record.get("purpose", "edit") != "edit":
             raise ValueError("Plan results cannot edit a timeline.")
         result = self.read_result(prepared_hash)
-        if result["status"] != "completed" or result["proposal"] is None:
-            raise ValueError("No successful edit proposal is available.")
-        saved = dict(result["proposal"])
-        saved.pop("response")
-        saved["changes"] = tuple(saved["changes"])
-        proposal = CreationProposal(**saved)
+        proposal = _stored_edit(result)
         current = self._current(record)
         assert isinstance(current, EditingSnapshot)
         chain = load_chain(self.jobs, record["jobId"], record["planId"])
         verified = _editing_snapshot(chain, record["jobId"], _overlay_mode(record))
         if verified.fingerprint != current.fingerprint:
             raise ValueError("Saved parent changed before application.")
-        revised = revision_for_application(proposal, current, candidate_manifest=chain.manifest)
+        revised = self._build_edit_revision(proposal, current, chain)
+        _proposal_overlays(self.jobs, chain, current, json.loads(proposal.response_json), revised)
+        return revised
+
+    def _build_edit_revision(
+        self,
+        proposal: CreationProposal,
+        current: EditingSnapshot,
+        chain: Any,
+        *,
+        defer_timing: bool = False,
+    ) -> dict[str, Any]:
+        revised = revision_for_application(
+            proposal,
+            current,
+            candidate_manifest=chain.manifest,
+            defer_inherited_overlay_timing=defer_timing,
+        )
         if chain.edl.get("schemaVersion") in (
             "edit-decision-revision-v4",
             "edit-decision-revision-v5",
@@ -929,8 +944,25 @@ class CreationReasoningService:
                 },
                 chain,
             )
-        _proposal_overlays(self.jobs, chain, current, json.loads(proposal.response_json), revised)
         return revised
+
+    def _editor_result(
+        self, prepared_hash: str, current: EditingSnapshot, follow: frozenset[str]
+    ) -> dict[str, Any]:
+        result = self.read_result(prepared_hash)
+        reference = result.get("providerOutputSha256")
+        stage = result.get("failureStage")
+        eligible = (stage == "validate_timeline" and result.get("purpose") == "mixed") or (
+            stage == "validate_proposal"
+            and "overlays" in follow
+            and "overlaySnapshotVersion" in current.payload
+        )
+        if follow and result["status"] == "failed" and reference and eligible:
+            # Derive a read-only projection from retained, hash-checked evidence. A
+            # failed receipt remains failed and cannot enter the paid execution path.
+            output = self.read_provider_output(prepared_hash, reference)["output"]
+            result = {**result, **_validated_output(current, output), "status": "completed"}
+        return result
 
     def _replacement_for_editor(
         self,
@@ -939,8 +971,9 @@ class CreationReasoningService:
         job_id: str,
         plan_id: str,
         expected_parent: str,
+        follow: frozenset[str],
     ) -> dict[str, Any]:
-        from gamingcreator.ui.creation_draft_restore import project_clips, project_narration
+        from gamingcreator.ui.creation_draft_restore import project_clips, project_timing
         from gamingcreator.ui.replacement_jobs import manifest_for_chain
 
         if record["jobId"] != job_id or record["planId"] != plan_id:
@@ -949,9 +982,9 @@ class CreationReasoningService:
         assert isinstance(current, EditingSnapshot)
         if current.payload["parentReceiptSha256"] != expected_parent:
             raise ValueError("Replacement parent changed.")
-        result = self.read_result(prepared_hash)
+        result = self._editor_result(prepared_hash, current, follow)
         if current.payload.get("mixedSnapshotVersion") in ACTION_SCHEMAS:
-            return self._combined_editor(current, result, expected_parent)
+            return self._combined_editor(current, result, expected_parent, follow=follow)
         proposal, operations = _footage_operations(current, result)
         chain = load_chain(self.jobs, job_id, plan_id)
         manifest, _ = manifest_for_chain(self.jobs, chain)
@@ -974,11 +1007,6 @@ class CreationReasoningService:
             ),
         }
         revised, _ = prepare_revision(self.jobs, request, chain)
-        inherited = chain.overlays
-        frames = max(r["outputStartFrame"] + r["outputFrames"] for r in revised["segments"])
-        inherited.validate_duration(frames)
-        if proposal is not None:
-            project_narration(self.jobs, request, chain, frames)
         projection = project_clips(self.jobs, request, chain, manifest)
         for clip in projection["clips"]:
             if (
@@ -992,11 +1020,17 @@ class CreationReasoningService:
             "jobId": job_id,
             "planId": plan_id,
             "expectedParentReceiptSha256": expected_parent,
-            "overlays": inherited.to_json(),
+            **project_timing(self.jobs, chain, revised, {}, follow),
         }
 
     def _combined_editor(
-        self, snapshot: EditingSnapshot, result: dict[str, Any], parent_sha: str
+        self,
+        snapshot: EditingSnapshot,
+        result: dict[str, Any],
+        parent_sha: str,
+        *,
+        follow: frozenset[str] = frozenset(),
+        layout_only: bool = False,
     ) -> dict[str, Any]:
         from gamingcreator.ui.creation_draft_restore import preview as preview_draft
         from gamingcreator.ui.replacement_jobs import manifest_for_chain
@@ -1044,7 +1078,7 @@ class CreationReasoningService:
         }
         if insertions or chain.edl.get("schemaVersion") == "edit-decision-revision-v5":
             request["insertions"] = insertions
-        projection = preview_draft(self.jobs, request)
+        projection = preview_draft(self.jobs, request, follow_shots=follow, layout_only=layout_only)
         for row in projection["clips"]:
             if row["clipId"] in swapped:
                 row.setdefault("rangeProvenance", None)
@@ -1063,10 +1097,11 @@ class CreationReasoningService:
         job_id: str,
         plan_id: str,
         expected_parent: str,
+        follow: frozenset[str],
     ) -> dict[str, Any]:
         from gamingcreator.application.creation_insertions import insertion_id
         from gamingcreator.application.creation_replacement_proposals import insertion_operation
-        from gamingcreator.ui.creation_draft_restore import project_clips
+        from gamingcreator.ui.creation_draft_restore import project_clips, project_timing
         from gamingcreator.ui.replacement_jobs import manifest_for_chain
 
         if record["jobId"] != job_id or record["planId"] != plan_id:
@@ -1112,14 +1147,14 @@ class CreationReasoningService:
             "insertions": [insertion],
             "candidateManifestSha256": candidate_manifest_sha(manifest),
         }
-        prepare_revision(self.jobs, request, chain)
+        revised, _ = prepare_revision(self.jobs, request, chain)
         return {
             **project_clips(self.jobs, request, chain, manifest),
             "preparedHash": prepared_hash,
             "jobId": job_id,
             "planId": plan_id,
             "expectedParentReceiptSha256": expected_parent,
-            "overlays": chain.overlays.to_json(),
+            **project_timing(self.jobs, chain, revised, {}, follow),
         }
 
     def proposal_for_editor(
@@ -1128,15 +1163,19 @@ class CreationReasoningService:
         job_id: str,
         plan_id: str,
         expected_parent_receipt_sha256: str,
+        *,
+        follow: frozenset[str] = frozenset(),
     ) -> dict[str, Any]:
+        from gamingcreator.ui.creation_draft_restore import project_timing
+
         record = self._prepared(prepared_hash)
         if record.get("purpose") == "insertion":
             return self._insertion_for_editor(
-                record, prepared_hash, job_id, plan_id, expected_parent_receipt_sha256
+                record, prepared_hash, job_id, plan_id, expected_parent_receipt_sha256, follow
             )
         if record.get("purpose") in ("replacement", "mixed"):
             return self._replacement_for_editor(
-                record, prepared_hash, job_id, plan_id, expected_parent_receipt_sha256
+                record, prepared_hash, job_id, plan_id, expected_parent_receipt_sha256, follow
             )
         if record["jobId"] != job_id or record["planId"] != plan_id:
             raise ValueError("Prepared job or plan does not match the editor.")
@@ -1146,7 +1185,18 @@ class CreationReasoningService:
         assert isinstance(current, EditingSnapshot)
         if current.payload["parentReceiptSha256"] != expected_parent_receipt_sha256:
             raise ValueError("Saved parent changed; prepare again.")
-        revised = self.revision_for_application(prepared_hash)
+        chain = load_chain(self.jobs, job_id, plan_id, read_only=True)
+        verified = _editing_snapshot(chain, job_id, _overlay_mode(record))
+        if verified.fingerprint != current.fingerprint:
+            raise ValueError("Saved parent changed before editor preview.")
+        saved = self._editor_result(prepared_hash, current, follow)
+        proposal = _stored_edit(saved)
+        revised = self._build_edit_revision(proposal, current, chain, defer_timing=True)
+        response = saved["proposal"]["response"]
+        overlay_only = response["kind"] == "overlay_edit_proposal"
+        request = (
+            {"overlays": overlay_selection(current, response).to_json()} if overlay_only else {}
+        )
         snapshot = create_snapshot(
             job_id,
             plan_id,
@@ -1154,22 +1204,22 @@ class CreationReasoningService:
             current.payload["rootReceiptSha256"],
             revised,
         )
-        result: dict[str, Any] = {
+        timing = project_timing(
+            self.jobs, chain, revised, request, frozenset() if overlay_only else follow
+        )
+        return {
+            **timing,
             "clips": clip_rows(snapshot),
+            **(
+                {"insertions": []}
+                if revised.get("schemaVersion") == "edit-decision-revision-v5"
+                else {}
+            ),
             "preparedHash": prepared_hash,
             "jobId": job_id,
             "planId": plan_id,
             "expectedParentReceiptSha256": expected_parent_receipt_sha256,
         }
-        chain = load_chain(self.jobs, job_id, plan_id)
-        verified = _editing_snapshot(chain, job_id, _overlay_mode(record))
-        if verified.fingerprint != current.fingerprint:
-            raise ValueError("Saved parent changed before editor preview.")
-        response = self.read_result(prepared_hash)["proposal"]["response"]
-        selected = _proposal_overlays(self.jobs, chain, current, response, revised)
-        if _overlay_mode(record) or selected.items:
-            result["overlays"] = selected.to_json()
-        return result
 
 
 def _request_for(snapshot: Snapshot, instruction: str) -> ReasoningRequest:
@@ -1202,6 +1252,15 @@ def _request_for(snapshot: Snapshot, instruction: str) -> ReasoningRequest:
     if isinstance(snapshot, BriefSnapshot):
         return brief_request(snapshot)
     return reasoning_request(snapshot, instruction)
+
+
+def _stored_edit(result: dict[str, Any]) -> CreationProposal:
+    if result["status"] != "completed" or result["proposal"] is None:
+        raise ValueError("No successful edit proposal is available.")
+    saved = dict(result["proposal"])
+    saved.pop("response")
+    saved["changes"] = tuple(saved["changes"])
+    return CreationProposal(**saved)
 
 
 def _validated_output(snapshot: Snapshot, output: Any) -> dict[str, Any]:
@@ -1243,7 +1302,7 @@ def _validated_output(snapshot: Snapshot, output: Any) -> dict[str, Any]:
             return {"purpose": "copy", "copy": validate_copy(snapshot, output)}
         if isinstance(snapshot, BriefSnapshot):
             return {"purpose": "brief", "brief": validate_brief(snapshot, output)}
-        edit = validate_proposal(snapshot, output)
+        edit = validate_proposal(snapshot, output, defer_inherited_overlay_timing=True)
         return {
             "purpose": "edit",
             "proposal": _jsonable({**asdict(edit), "response": edit.response}),

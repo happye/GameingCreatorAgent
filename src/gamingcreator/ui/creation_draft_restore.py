@@ -2,12 +2,17 @@
 
 from typing import Any
 
+from gamingcreator.application.creation_companion_timing import (
+    CompanionTimingError,
+    move_start_frame,
+)
 from gamingcreator.application.creation_editing import validate_revision
 from gamingcreator.application.creation_replacements import candidate_manifest_sha
 from gamingcreator.application.edit_decision import select_edit_decision
+from gamingcreator.domain.creation_overlays import CreationOverlays
 from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
 from gamingcreator.ui import narration_jobs
-from gamingcreator.ui.overlay_jobs import public_asset, resolve_assets, resolve_selection
+from gamingcreator.ui.overlay_jobs import public_asset, resolve_assets
 from gamingcreator.ui.replacement_jobs import manifest_for_chain, public_candidate
 from gamingcreator.ui.revision_jobs import (
     editable_clips,
@@ -19,7 +24,13 @@ from gamingcreator.ui.revision_jobs import (
 )
 
 
-def preview(jobs: Any, request: dict[str, Any]) -> dict[str, Any]:
+def preview(
+    jobs: Any,
+    request: dict[str, Any],
+    *,
+    follow_shots: frozenset[str] = frozenset(),
+    layout_only: bool = False,
+) -> dict[str, Any]:
     required = {
         "projectId",
         "parentJobId",
@@ -74,24 +85,68 @@ def preview(jobs: Any, request: dict[str, Any]) -> dict[str, Any]:
     overrides = [
         {**item, "clipId": public_ids.get(item["clipId"], item["clipId"])} for item in overrides
     ]
-    mix = resolve_audio(jobs, request, chain.audio_mix)
-    last = revised["segments"][-1]
-    frames = last["outputStartFrame"] + last["outputFrames"]
-    library = OverlayAssetLibrary(jobs.repository)
-    overlays = resolve_selection(library, request if is_v3 else {}, chain.overlays, frames)
     result = {
         "subtitleOverrides": overrides,
-        "audioMix": mix.to_json(),
-        **project_narration(jobs, request, chain, frames),
+        "audioMix": resolve_audio(jobs, request, chain.audio_mix).to_json(),
     }
-
+    if not layout_only:
+        timing = project_timing(jobs, chain, revised, request, follow_shots)
+        result.update(timing if is_v3 else {k: timing[k] for k in ("narration", "narrationAsset")})
     if is_v3:
         result.update(project_clips(jobs, request, chain, manifest))
-        result.update(
-            overlays=overlays.to_json(),
-            overlayAssets=[public_asset(a) for a in resolve_assets(library, overlays)],
-        )
     return result
+
+
+def project_timing(
+    jobs: Any, chain: Any, revised: dict[str, Any], request: dict[str, Any], follow: frozenset[str]
+) -> dict[str, Any]:
+    """Reposition inherited assets before validating bounds against the new program."""
+    rows = revised["segments"]
+    frames = rows[-1]["outputStartFrame"] + rows[-1]["outputFrames"]
+    if follow:
+        request = _move_inherited(chain, revised, request, follow)
+    library = OverlayAssetLibrary(jobs.repository)
+    layers = (
+        CreationOverlays.from_json(request["overlays"]) if "overlays" in request else chain.overlays
+    )
+    try:
+        layers.validate_duration(frames)
+    except ValueError as error:
+        raise CompanionTimingError(
+            "图层超出修改后的成片时长。请启用随原镜移动、调整图层时长或修改指令。"
+        ) from error
+    return {
+        **project_narration(jobs, request, chain, frames),
+        "overlays": layers.to_json(),
+        "overlayAssets": [public_asset(asset) for asset in resolve_assets(library, layers)],
+    }
+
+
+def _move_inherited(
+    chain: Any, revised: dict[str, Any], request: dict[str, Any], follow: frozenset[str]
+) -> dict[str, Any]:
+    before = editable_clips(chain.edl, chain.root_sha)
+    swapped = replacement_clip_ids(revised)
+    after = {
+        row["clipId"]: row for row in revised["segments"] if row["clipId"] not in swapped.values()
+    }
+
+    def move(frame: int, label: str) -> int:
+        return move_start_frame(frame, before, after, chain.plan.fps, label)
+
+    selection = dict(request)
+    if "narration" in follow and chain.narration is not None:
+        narration = chain.narration.to_json()
+        narration["startFrame"] = move(narration["startFrame"], "旁白")
+        selection["narration"] = narration
+    if "overlays" in follow:
+        layers = chain.overlays.to_json()
+        for index, item in enumerate(layers["items"], 1):
+            start = move(item["startFrame"], f"第 {index} 个图层")
+            item["endFrame"] += start - item["startFrame"]
+            item["startFrame"] = start
+        selection["overlays"] = layers
+    return selection
 
 
 def project_clips(jobs: Any, request: dict[str, Any], chain: Any, manifest: Any) -> dict[str, Any]:

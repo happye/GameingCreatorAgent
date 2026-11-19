@@ -110,7 +110,10 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     const editing = useClipEditor(project, workId);
     const [command, setCommand] = useState(null);
     const commandRows = command?.rows;
-    const setCommandRows = useCallback((rows, projection = null) => setCommand(rows ? {rows, projection} : null), []);
+    const setCommandRows = useCallback((rows, projection = null) => setCommand(current => rows
+        ? {rows, projection, owner: "assistant"} : current?.owner === "assistant" ? null : current), []);
+    const setBeatRows = useCallback((rows, projection = null) => setCommand(current => current?.owner === "assistant"
+        ? current : rows ? {rows, projection, owner: "beat"} : null), []);
     const [commandOverlays, setCommandOverlays] = useState(null);
     const commandPreview = !!commandRows || !!commandOverlays;
     // Tell the shell about unsaved work so leaving this workspace asks first.
@@ -384,7 +387,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                 setMessage("动态方案已登记到作品，当前编辑已保留，可稍后打开。"); return;
             }
             if (done?.status !== "completed") throw new Error(done?.error?.message || "动态方案未能登记完成");
-            setCommandRows(null); showPlan(done); setMessage("");
+            setCommand(null); showPlan(done); setMessage("");
         } catch (error) { setMessage(error.message); }
         finally { setBusy(value => value === "adopt" ? "" : value); }
     };
@@ -469,7 +472,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                 <div class="section-label">方案${planJob ? `（${planJob.plans.length}）` : ""}</div>
                 ${planJob && planJob.candidateCountReason ? html`<p class="note">${planJob.candidateCountReason}</p>` : null}
                 ${planJob ? planJob.plans.map((p) => html`<${PlanCard} plan=${p} fps=${fps} active=${p.id === planId} thumb=${thumb} onFind=${onFindMaterial}
-                    onPick=${() => { if (overlayBusy || audioBusy || busy) return; if (editing.dirty && !confirmLeave()) return; setComparePreview(null); setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommandRows(null); lastJob(scope, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
+                    onPick=${() => { if (overlayBusy || audioBusy || busy) return; if (editing.dirty && !confirmLeave()) return; setComparePreview(null); setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommand(null); lastJob(scope, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
                     : html`<p class="note">填好需求后点“生成方案”。方案只是剪辑清单，生成很快；选中后可以直接预览，不用先渲染。</p>`}
                 ${plan && mode === "plan" && plan.id.startsWith("dynamic-") && plan.actualFrames < plan.targetFrames ? html`<p class="note">保留旧方案，使用本地候选补足当前选中方案；不会调用模型。</p><button class="btn" disabled=${!!busy || editing.status !== "ready" || editing.dirty || commandPreview || comparePreview || audioBusy || overlayBusy} onClick=${completeDuration}>补足目标时长（本地）</button>` : null}
                 ${planJob && planJob.plans.length >= 2 ? html`<${PlanCompare} key=${`${scope}:${planJob.jobId}`} plans=${planJob.plans} adoptedId=${planId} fps=${planJob.fps} compareScope=${`${scope}:${planJob.jobId}`} locateBlocked=${locateBlocked} onLocate=${locateComparePreview} onClose=${() => setComparePreview(null)} />` : planJob ? html`<p class="note">至少还要有两套方案才能对照。</p>` : null}
@@ -565,7 +568,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     : plan ? html`<p class="hint">点时间轴上的一个镜头，可以裁短、调速、换顺序或替换画面。</p><${PlanInspector} plan=${plan} groups=${groups} count=${items.length} totalUs=${player.totalUs} shot=${null} />` : html`<p class="note">选中方案后，这里显示它的时长、镜头和缺口。</p>`}
                 </div>
                 <div hidden=${inspTab !== "sound"}>
-                ${editable ? html`<${AudioPanel} commandPreview=${commandPreview} editing=${editing} project=${project} game=${planJob?.brief?.game || ""} fps=${fps} totalUs=${player.totalUs} music=${music} onBusy=${setAudioBusy} /><${BeatSnap} editing=${editing} blocked=${!!busy} onPreview=${setCommandRows} />`
+                ${editable ? html`<${AudioPanel} commandPreview=${commandPreview} editing=${editing} project=${project} game=${planJob?.brief?.game || ""} fps=${fps} totalUs=${player.totalUs} music=${music} onBusy=${setAudioBusy} /><${BeatSnap} editing=${editing} blocked=${!!busy || command?.owner === "assistant" || !!commandOverlays} onPreview=${setBeatRows} />`
                     : html`<p class="note">${plan ? "这个方案还不能编辑声音（正在读取或只能导出）。" : "先在左侧选一个方案，再在这里加旁白和配乐。"}</p>`}
                 </div>
                 <div hidden=${inspTab !== "overlay"}>

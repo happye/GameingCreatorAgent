@@ -21,11 +21,14 @@ from gamingcreator.application.creation_overlay_proposals import (
 )
 from gamingcreator.application.creation_proposals import (
     canonical,
+    clip_rows,
     create_snapshot,
     validate_proposal,
 )
 from gamingcreator.application.creation_reasoning import reasoning_request
 from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
+from gamingcreator.domain.errors import AppError
+from gamingcreator.ui.creation_reasoning_http import reasoning_post
 from gamingcreator.ui.creation_reasoning_service import CreationReasoningService
 from gamingcreator.ui.revision_jobs import load_chain
 
@@ -150,6 +153,71 @@ def test_fake_proposal_validates_and_saves_without_changing_clips(overlay_contex
     assert service.read_result(prepared["preparedHash"]) == result and len(transport.calls) == 1
 
 
+def test_shortening_projects_layer_before_duration_check_and_reads_prior_receipt(
+    selected, monkeypatch
+):
+    from gamingcreator.ui import creation_reasoning_service as module
+
+    jobs, root, _, layers = selected
+    order, _ = save(jobs, root, "b")
+    frames = sum(row["outputFrames"] for row in jobs.edit(order, "hook-first")["clips"])
+    layer = layers["items"][0]
+    layer.update(startFrame=frames - 2, endFrame=frames, fadeInFrames=1)
+    parent, _ = save(jobs, order, "c", layers)
+    chain = load_chain(jobs, parent, "hook-first")
+    base = create_snapshot(parent, chain.plan_id, chain.digest, chain.root_sha, chain.edl)
+    response = {**output(base), "schemaVersion": SCHEMA_VERSION, "overlayEdit": None}
+    response["clips"] = clip_rows(base)[-1:]
+    transport = Transport(response)
+    reasoning = CreationReasoningService(
+        jobs, price_snapshot=DEEPSEEK_FLASH_20261004, transport=transport
+    )
+
+    def invoke(instruction):
+        prepared = reasoning.prepare(parent, chain.plan_id, instruction)
+        result = asyncio.run(
+            reasoning.execute(
+                prepared["preparedHash"],
+                prepared["snapshotFingerprint"],
+                Decimal(prepared["maxCostCny"]),
+            )
+        )
+        scope = {
+            "action": "validate",
+            "preparedHash": prepared["preparedHash"],
+            "jobId": parent,
+            "planId": chain.plan_id,
+            "expectedParentReceiptSha256": chain.digest,
+        }
+        return result, scope
+
+    def previous_validation(snapshot, document):
+        with pytest.raises(ValueError, match="[Oo]verlay"):
+            validate_proposal(snapshot, document)
+        raise module._OutputValidationError("validate_proposal")
+
+    with monkeypatch.context() as prior:
+        prior.setattr(module, "_validated_output", previous_validation)
+        failed, old_scope = invoke("只保留最后一镜，旧请求")
+    assert failed["status"] == "failed" and failed["failureStage"] == "validate_proposal"
+    result_path = reasoning._directory(old_scope["preparedHash"]) / "attempt/result/result.json"
+    before = result_path.read_bytes()
+    current, scope = invoke("只保留最后一镜")
+    assert current["status"] == "completed"
+    with pytest.raises(AppError, match="图层超出修改后的成片时长"):
+        reasoning_post(reasoning, scope)
+    for request in (old_scope, scope):
+        preview = reasoning_post(reasoning, {**request, "followShots": ["overlays"]})
+        assert preview["clips"] == response["clips"]
+        kept_frames = chain.edl["segments"][-1]["outputFrames"]
+        assert preview["overlays"]["items"] == [
+            {**layer, "startFrame": kept_frames - 2, "endFrame": kept_frames}
+        ]
+    assert result_path.read_bytes() == before
+    assert reasoning.read_result(old_scope["preparedHash"]) == failed
+    assert len(transport.calls) == 2
+
+
 def test_legacy_prepared_request_with_layer_parent_recovers_without_upgrade(overlay_context):
     _, parent, chain, transport, service = overlay_context
     old = create_snapshot(parent, chain.plan_id, chain.digest, chain.root_sha, chain.edl)
@@ -189,7 +257,7 @@ def test_overlay_v4_preserves_manifest_and_original_clips(overlay_context, monke
         "replacements": [],
     }
     current = replace(chain, edl=edl, manifest=manifest)
-    monkeypatch.setattr(module, "load_chain", lambda *_args: current)
+    monkeypatch.setattr(module, "load_chain", lambda *_args, **_kwargs: current)
     prepared = service.prepare(parent, "hook-first", "让这个独立图层慢慢消失")
     result = asyncio.run(
         service.execute(

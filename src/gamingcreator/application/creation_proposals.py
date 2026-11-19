@@ -144,13 +144,20 @@ def _seconds(edl: dict[str, Any]) -> float:
     return float(max(r["outputStartFrame"] + r["outputFrames"] for r in rows) / edl["fpsNumerator"])
 
 
-def validate_proposal(snapshot: EditingSnapshot, output: dict[str, Any]) -> CreationProposal:
+def validate_proposal(
+    snapshot: EditingSnapshot,
+    output: dict[str, Any],
+    *,
+    defer_inherited_overlay_timing: bool = False,
+) -> CreationProposal:
     if not isinstance(output, dict) or len(canonical(output)) > 200_000:
         raise ValueError("Invalid or oversized model output.")
     if "overlaySnapshotVersion" in snapshot.payload:
         from gamingcreator.application.creation_overlay_proposals import validate_overlay_proposal
 
-        return validate_overlay_proposal(snapshot, output)
+        return validate_overlay_proposal(
+            snapshot, output, defer_inherited_overlay_timing=defer_inherited_overlay_timing
+        )
     rows = clip_rows(snapshot)
     changes = _response(output, rows)
     data = snapshot.payload
@@ -173,6 +180,7 @@ def revision_for_application(
     current_snapshot: EditingSnapshot,
     *,
     candidate_manifest: dict[str, Any] | None = None,
+    defer_inherited_overlay_timing: bool = False,
 ) -> dict[str, Any]:
     """Reload the trusted chain before calling; caller owns manual consent and persistence."""
     if (
@@ -182,7 +190,9 @@ def revision_for_application(
         raise ValueError("Stale proposal; request a new preview.")
     output = json.loads(proposal.response_json)
     # Revalidate on application even when an adapter reconstructed this object.
-    validate_proposal(current_snapshot, output)
+    validate_proposal(
+        current_snapshot, output, defer_inherited_overlay_timing=defer_inherited_overlay_timing
+    )
     if output["kind"] == "overlay_edit_proposal":
         output = {**output, "clips": clip_rows(current_snapshot)}
     elif output["kind"] != "edit_proposal":

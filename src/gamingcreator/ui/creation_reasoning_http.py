@@ -5,6 +5,8 @@ import os
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from gamingcreator.application.creation_companion_timing import CompanionTimingError
+from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.creation_reasoning_provider import MODEL
 from gamingcreator.ui.creation_reasoning_service import CreationReasoningService
 
@@ -15,6 +17,42 @@ def reasoning_config() -> dict[str, Any]:
         "provider": "deepseek",
         "requestedModel": MODEL,
     }
+
+
+def _follow_selection(value: Any) -> tuple[Any, frozenset[str]]:
+    if (
+        not isinstance(value, dict)
+        or value.get("action") != "validate"
+        or "followShots" not in value
+    ):
+        return value, frozenset()
+    request = dict(value)
+    selection = request.pop("followShots")
+    if (
+        not isinstance(selection, list)
+        or len(selection) > 2
+        or any(entry not in ("narration", "overlays") for entry in selection)
+    ):
+        raise ValueError("Invalid follow-shot selection.")
+    follow = frozenset(selection)
+    if len(follow) != len(selection):
+        raise ValueError("Duplicate follow-shot selection.")
+    return request, follow
+
+
+def _validate_editor(
+    service: CreationReasoningService, value: dict[str, Any], follow: frozenset[str]
+) -> dict[str, Any]:
+    try:
+        return service.proposal_for_editor(
+            value["preparedHash"],
+            value["jobId"],
+            value["planId"],
+            value["expectedParentReceiptSha256"],
+            follow=follow,
+        )
+    except CompanionTimingError as error:
+        raise AppError("creation.companion_timing", str(error), ExitCode.INPUT) from error
 
 
 def reasoning_post(service: CreationReasoningService, value: Any) -> dict[str, Any]:
@@ -55,6 +93,7 @@ def reasoning_post(service: CreationReasoningService, value: Any) -> dict[str, A
         "validate": {"action", "preparedHash", "jobId", "planId", "expectedParentReceiptSha256"},
         "result": {"action", "preparedHash"},
     }
+    value, follow = _follow_selection(value)
     if (
         not isinstance(value, dict)
         or not isinstance(value.get("action"), str)
@@ -76,7 +115,12 @@ def reasoning_post(service: CreationReasoningService, value: Any) -> dict[str, A
     if action == "adopt_plan":
         return service.adopt_plan(value["preparedHash"])
     if action in ("prepare", "prepare_replacement", "prepare_insertion", "prepare_mixed"):
-        prepare_edit = getattr(service, action)
+        prepare_edit = {
+            "prepare": service.prepare,
+            "prepare_replacement": service.prepare_replacement,
+            "prepare_insertion": service.prepare_insertion,
+            "prepare_mixed": service.prepare_mixed,
+        }[action]
         return prepare_edit(value["jobId"], value["planId"], value["instruction"])
     if action == "execute_budget":
         return asyncio.run(
@@ -85,12 +129,7 @@ def reasoning_post(service: CreationReasoningService, value: Any) -> dict[str, A
     if action == "result":
         return service.read_result(value["preparedHash"])
     if action == "validate":
-        return service.proposal_for_editor(
-            value["preparedHash"],
-            value["jobId"],
-            value["planId"],
-            value["expectedParentReceiptSha256"],
-        )
+        return _validate_editor(service, value, follow)
     try:
         amount = Decimal(value["confirmedMaxCny"])
     except InvalidOperation as error:

@@ -2,7 +2,7 @@
 
 ## 最近一次会话（2026-11-19）
 
-继续在原分支 `codex/knowledge-version-compare-20261108` 开发，先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。本批 P041 接通旁白和图层随原镜移动。六个 Codex 角色的模型更新与两份 Markdown 路由说明已推送。验证服务 `http://127.0.0.1:8769/studio`，启动信息见 `.cache/workspace/port-8769.json`。
+继续在原分支 `codex/knowledge-version-compare-20261108` 开发，先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。本批 P041 接通 AI 缩短成片后迁移旁白和图层再校验。六个 Codex 角色的模型更新与两份 Markdown 路由说明已推送。验证服务 `http://127.0.0.1:8770/studio`，启动信息见 `.cache/workspace/port-8770.json`。
 
 ## 实证与接手入口
 
@@ -14,8 +14,10 @@
 
 - [随原镜移动](docs/exec-plans/sprint-shot-companion-timing.md)：基线 9dd89d1c1682437cbfa61f3ab1fe187e 中旁白与图层均从第 30 帧开始，删首镜后选择随镜则均移动至第 0 帧。恢复保存 b45858e8625448cea4f30b35f56f7b87，成片 e7aa502dfbe7485499413f2bda98c26a，B 站包 cba5bbf0e51d4581ac922fa16e26ca73。实证 .cache/scratch/shot-companions-20261119/，本次零模型调用。
 
+- [AI 随镜时长校验](docs/exec-plans/sprint-ai-companion-fit.md)：基线 d605fd9f17ef4bc7add6aeeb62829286 中两项素材的原时刻分别越界，随镜后旁白第 360 帧开始，图层第 795–825 帧。回读和恢复后保存 6c5680e4cb34459c9aee4af9bea3066e，27.5 秒成片 5ac93d7613884faab6d86f86974aa1a5，B 站包 6655f859c76c4106971a14a359a3b152。一次文字请求，估算 ¥0.01302736，证据 .cache/scratch/ai-companion-fit-20261119/。
+
 ## 下一优先级与约束
 
-P041 接着处理 AI 建议缩短成片时的校验顺序。先复用现有物料与修订校验，独立投影用户选择，再做时长和证据校验。重点看 creation_reasoning_service.py 的 _combined_editor 和付费结果校验，以及 creation_overlay_proposals.py 的 validate_duration。旧回执与预算门禁保留，用本地模拟输出回归验证后再决定是否需要新文字请求。
+下一步 P042。检查现有创作反馈统计、习惯排序和方案证据，优先接通显式创作者反馈与下一次推荐。保留脚本和真人数据的区别，按真实素材验收操作到方案变化。
 
-本批使用单项定向测试、真实浏览器和产物验证，无全量、Release、支付或上传。旧完整 verify-20261117-002506 按用户要求中断，曾见失败。J1 第五次人评未过，J2/J3 待人评，工程实证不改质量和 passes。文字月 ¥30/单条 ¥1、指定视觉月 ¥50，现有费用门禁保留。本机声音，真实平台发布或支付须另授权。
+本批使用定向回归、真实浏览器和产物验证，无全量、Release、支付或上传。旧完整 verify-20261117-002506 按用户要求中断，曾见失败。J1 第五次人评未过，J2/J3 待人评，工程实证不改质量和 passes。文字月 ¥30/单条 ¥1、指定视觉月 ¥50，现有费用门禁保留。本机声音，真实平台发布或支付须另授权。

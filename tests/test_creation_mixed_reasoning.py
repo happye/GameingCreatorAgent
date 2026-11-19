@@ -275,8 +275,11 @@ def test_combined_speed_and_move_use_the_same_original_shot(replacements, monkey
     assert preview["clips"][0]["speed"] == {"numerator": 1, "denominator": 2}
     assert len(outbound.calls) == 1
 
-    def obstructed(*_args):
-        raise ValueError("Inherited layer is beyond the shortened timeline")
+    layout_checks = []
+
+    def obstructed(*_args, **kwargs):
+        layout_checks.append(kwargs)
+        raise ValueError("Invalid reconstructed clip layout")
 
     monkeypatch.setattr(reasoning, "_combined_editor", obstructed)
     blocked = reasoning._prepare(snapshot, project_id, job_id, plan, "再次慢放样本", "mixed")
@@ -290,6 +293,7 @@ def test_combined_speed_and_move_use_the_same_original_shot(replacements, monkey
         },
     )
     assert refused["status"] == "failed" and refused["failureStage"] == "validate_timeline"
+    assert layout_checks == [{"layout_only": True}]
     assert refused["providerOutputSha256"] and refused["billing"]
     assert (
         reasoning_post(reasoning, {"action": "result", "preparedHash": blocked["preparedHash"]})

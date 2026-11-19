@@ -1,12 +1,11 @@
 // Text-model proposals: prepared locally, sent within the monthly AI budget (2026-11-11) or
 // explicitly confirmed past it, previewed, then validated.
 import {h} from "../vendor/preact.module.js";
-import {useEffect, useLayoutEffect, useMemo, useRef, useState} from "../vendor/hooks.module.js";
+import {useEffect, useLayoutEffect, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
 
 import {clipFrames} from "./preview.js";
-import {projectCompanions} from "./timeline_companions.js";
 
 const html = htm.bind(h);
 export function overlayProposalItems(editing, patch) {
@@ -20,7 +19,7 @@ export function overlayProposalItems(editing, patch) {
     return editing.overlays.map((row) => row === item ? {...row, endFrame: patch.endFrame, fadeOutFrames: patch.fadeOutFrames} : row);
 }
 const noop = () => {};
-const empty = () => ({quote: null, result: null, busy: "", message: "", confirmed: false, sent: false, projection: null});
+const empty = () => ({quote: null, result: null, busy: "", message: "", confirmed: false, sent: false});
 const post = (body) => client.api("/api/creation/reasoning", {}, {body});
 const STORE = "studio-reasoning-attempts-v1";
 const parentKey = (editing) => JSON.stringify([editing.project, editing.base?.jobId, editing.base?.planId, editing.editor?.expectedParentReceiptSha256]);
@@ -50,35 +49,56 @@ function useReasoning(editing, text, onPreview, onOverlayPreview, mode) {
     return {...state, available, valid, update, key};
 }
 
-function withCompanions(editing, projection, follow) {
-    const replaced = projection.replacements?.map(row => row.targetClipId);
-    return {...projection, ...projectCompanions(editing, projection.clips, follow, replaced)};
+function useReasoningPreview(editing, flow, follow, onPreview, onOverlayPreview) {
+    const [snapshot, setSnapshot] = useState(null);
+    const result = flow.result, response = result?.proposal?.response;
+    const kind = (result?.mixed || result?.insertion || result?.replacement || response)?.kind;
+    const placement = ["narration", "overlays"].filter(key => follow?.[key]);
+    const recoverable = result?.status === "failed" && result.providerOutputSha256 && (
+        (placement.length && result.failureStage === "validate_timeline" && kind === "mixed_edit")
+        || (placement.includes("overlays") && result.failureStage === "validate_proposal" && result.purpose === "edit"));
+    const usable = recoverable || (result?.status === "completed"
+        && ["mixed_edit", "insertion", "replacement", "edit_proposal", "overlay_edit_proposal"].includes(kind));
+    const key = JSON.stringify([flow.key, placement]);
+    const current = snapshot && snapshot.result === result && snapshot.key === key ? snapshot : null;
+    const validate = async () => {
+        const data = await post({action: "validate", preparedHash: result.preparedHash,
+            jobId: editing.base.jobId, planId: editing.base.planId,
+            expectedParentReceiptSha256: editing.editor.expectedParentReceiptSha256,
+            ...(placement.length ? {followShots: placement} : {})});
+        if (kind === "overlay_edit_proposal") {
+            const expected = overlayProposalItems(editing, response.overlayEdit), items = data.overlays?.items;
+            if (!Array.isArray(items) || items.length !== expected.length || expected.some((item, i) =>
+                Object.keys(item).length !== Object.keys(items[i]).length || Object.entries(item).some(([k, v]) => items[i][k] !== v))) throw new Error("图层验证结果与预览不一致");
+        }
+        return data;
+    };
+    useEffect(() => {
+        if (!usable || editing.status !== "ready" || editing.dirty) return;
+        let live = true;
+        const keep = (value) => { if (live && flow.valid()) setSnapshot({key, result, ...value}); };
+        void validate().then(data => keep({data})).catch(error => keep({problem: error.message}));
+        return () => { live = false; };
+    }, [key, result, !!usable]);
+    const projection = current?.data;
+    useLayoutEffect(() => {
+        onPreview(kind === "overlay_edit_proposal" ? null : projection?.clips || null, projection);
+        onOverlayPreview(kind === "overlay_edit_proposal" ? projection?.overlays?.items || null : null);
+    }, [kind, projection, onPreview, onOverlayPreview]);
+    return {projection, problem: current?.problem, validate};
 }
 
-function reasoningActions(flow, editing, text, onPreview, onOverlayPreview, mode, follow) {
+function reasoningActions(flow, editing, text, onPreview, onOverlayPreview, mode, preview) {
     const identity = {jobId: editing.base?.jobId, planId: editing.base?.planId};
     const ready = editing.status === "ready" && !editing.dirty;
-    const show = async (data) => {
+    const show = (data) => {
         if (!flow.valid()) return;
         const selection = data.mixed || data.insertion || data.replacement;
-        if (selection) {
-            const message = data.failureStage === "validate_timeline"
-                ? "组合建议未通过时间线校验。请检查变速后的旁白、图层时长和镜头范围。"
-                : selection.message;
-            flow.update({result: data, projection: null, message});
-            onOverlayPreview(null); onPreview(null);
-            let projection = null;
-            if (data.status === "completed" && ["mixed_edit", "replacement", "insertion"].includes(selection.kind)) {
-                projection = await post({action: "validate", preparedHash: data.preparedHash, ...identity, expectedParentReceiptSha256: editing.editor.expectedParentReceiptSha256});
-                if (!flow.valid()) return;
-            }
-            flow.update({projection}); return;
-        }
-        if (!flow.valid()) return;
         const response = data.proposal?.response;
-        const overlays = response?.kind === "overlay_edit_proposal" ? overlayProposalItems(editing, response.overlayEdit) : null;
-        onOverlayPreview(overlays);
-        flow.update({result: data, projection: null, message: response?.message || "调用未产生可用建议；失败或未知费用不会自动重试。"});
+        const message = data.failureStage === "validate_timeline"
+            ? "先前建议未通过时间线校验，可尝试启用随原镜移动。"
+            : selection?.message || response?.message || "调用未产生可用建议；失败或未知费用不会自动重试。";
+        flow.update({result: data, message});
     };
     const run = async (kind, task) => {
         flow.update({busy: kind, message: ""});
@@ -90,7 +110,7 @@ function reasoningActions(flow, editing, text, onPreview, onOverlayPreview, mode
             const action = {mixed: "prepare_mixed", insertion: "prepare_insertion", replacement: "prepare_replacement"}[mode] || "prepare";
             const quote = await post({action, ...identity, instruction: text.trim()});
             if (!flow.valid()) return;
-            flow.update({quote, result: null, projection: null, confirmed: false, sent: false}); if (flow.valid()) { onPreview(null); onOverlayPreview(null); }
+            flow.update({quote, result: null, confirmed: false, sent: false});
             if (!quote.budget?.eligible || !flow.available) return;
             if (!remember(editing, quote, text)) throw new Error("无法保存本次结果的恢复入口，已阻止发送。请允许浏览器本地存储后再试");
             flow.update({sent: true, busy: "execute"});
@@ -101,32 +121,25 @@ function reasoningActions(flow, editing, text, onPreview, onOverlayPreview, mode
                 if (error.status >= 400 && error.status < 500) { flow.update({sent: false}); throw new Error(`${error.message}（本次未发送）`); }
                 throw new Error(`${error.message}。结果可能尚未取回，请读取本次结果，不会重复付费。`);
             }
-            await show(result);
+            show(result);
         }),
         execute: () => {
             if (!ready || !flow.quote || !flow.confirmed || flow.sent || !flow.available) return;
             if (!remember(editing, flow.quote, text)) return flow.update({message: "无法保存本次结果的恢复入口，已阻止发送。请允许浏览器本地存储后再试"});
             return run("execute", async () => {
                 flow.update({sent: true, confirmed: false});
-                await show(await post({action: "execute", preparedHash: flow.quote.preparedHash, snapshotFingerprint: flow.quote.snapshotFingerprint, confirmedMaxCny: flow.quote.maxCostCny}));
+                show(await post({action: "execute", preparedHash: flow.quote.preparedHash, snapshotFingerprint: flow.quote.snapshotFingerprint, confirmedMaxCny: flow.quote.maxCostCny}));
             });
         },
-        recover: () => flow.quote && run("result", async () => await show(await post({action: "result", preparedHash: flow.quote.preparedHash}))),
+        recover: () => flow.quote && run("result", async () => show(await post({action: "result", preparedHash: flow.quote.preparedHash}))),
         restore: (saved) => ready && saved.parentKey === parentKey(editing) && run("result", async () => {
-            flow.update({quote: saved.quote, result: null, projection: null, sent: true, confirmed: false}); onPreview(null); onOverlayPreview(null);
-            await show(await post({action: "result", preparedHash: saved.quote.preparedHash}));
+            flow.update({quote: saved.quote, result: null, sent: true, confirmed: false});
+            show(await post({action: "result", preparedHash: saved.quote.preparedHash}));
         }),
-        apply: () => ready && (flow.result?.mixed?.kind === "mixed_edit" || flow.result?.replacement?.kind === "replacement" || flow.result?.insertion?.kind === "insertion" || ["edit_proposal", "overlay_edit_proposal"].includes(flow.result?.proposal?.response.kind)) && run("validate", async () => {
-            const data = await post({action: "validate", preparedHash: flow.quote.preparedHash, ...identity, expectedParentReceiptSha256: editing.editor.expectedParentReceiptSha256});
+        apply: () => ready && preview.projection && run("validate", async () => {
+            const data = await preview.validate();
             if (!flow.valid()) return;
-            const response = flow.result.proposal?.response || {};
-            if (response.kind === "overlay_edit_proposal") {
-                const expected = overlayProposalItems(editing, response.overlayEdit), items = data.overlays?.items;
-                if (!Array.isArray(items) || items.length !== expected.length || expected.some((item, i) =>
-                    Object.keys(item).length !== Object.keys(items[i]).length || Object.entries(item).some(([k, v]) => items[i][k] !== v))) throw new Error("图层验证结果与预览不一致");
-            }
-            const proposal = response.kind === "overlay_edit_proposal" ? data : withCompanions(editing, data, follow);
-            onPreview(null); onOverlayPreview(null); editing.ops.applyProposal(proposal, editing.editEpoch);
+            onPreview(null); onOverlayPreview(null); editing.ops.applyProposal(data, editing.editEpoch);
         }),
         discard: () => { flow.update(empty()); onPreview(null); onOverlayPreview(null); },
     };
@@ -163,7 +176,8 @@ export function ReasoningDock({editing, onPreview, onOverlayPreview = noop, mode
     const [text, setText] = useState("");
     const [restoring, setRestoring] = useState(null);
     const flow = useReasoning(editing, text, onPreview, onOverlayPreview, mode);
-    const actions = reasoningActions(flow, editing, text, onPreview, onOverlayPreview, mode, follow);
+    const preview = useReasoningPreview(editing, flow, follow, onPreview, onOverlayPreview);
+    const actions = reasoningActions(flow, editing, text, onPreview, onOverlayPreview, mode, preview);
     const ready = editing.status === "ready" && !editing.dirty;
     const identity = parentKey(editing);
     useEffect(() => {
@@ -174,12 +188,7 @@ export function ReasoningDock({editing, onPreview, onOverlayPreview = noop, mode
     const history = attempts().filter((a) => a.parentKey === identity);
     const response = flow.result?.proposal?.response;
     const mixed = flow.result?.mixed;
-    const preview = useMemo(() => {
-        const projection = flow.projection ?? (response?.kind === "edit_proposal" ? {clips: response.clips} : null);
-        try { return projection ? {projection: withCompanions(editing, projection, follow)} : {}; }
-        catch (error) { return {problem: error.message}; }
-    }, [flow.projection, response, editing.editEpoch, follow]);
-    useLayoutEffect(() => onPreview(preview.projection?.clips || null, preview.projection), [preview, onPreview]);
+    const projection = preview.projection;
     return html`<section class="dock reasoning" aria-label="AI创作对话">
         <form class="reasoning-input" onSubmit=${(e) => { e.preventDefault(); if (!flow.busy) void actions.prepare(); }}>
             <strong>AI创作对话</strong><input class="input" aria-label="创作对话需求" value=${text} disabled=${!ready || !!flow.busy}
@@ -202,28 +211,29 @@ export function ReasoningDock({editing, onPreview, onOverlayPreview = noop, mode
                 <button type="button" class="btn" disabled=${!ready || !flow.confirmed || !flow.available || !!flow.busy} onClick=${actions.execute}>确认本次调用（最高 ¥${flow.quote.maxCostCny}）</button>`}
             ${flow.sent && !flow.result && html`<button type="button" class="btn ghost" disabled=${!!flow.busy} onClick=${actions.recover}>读取本次结果（不重新调用）</button>`}
         </div>`}
-        ${flow.message && html`<p class="reasoning-message" role="status">${flow.message}</p>`}
+        ${flow.message && (flow.result?.status !== "failed" || !projection) && html`<p class="reasoning-message" role="status">${flow.message}</p>`}
         ${preview.problem && html`<p class="reasoning-message" role="status">${preview.problem}</p>`}
         ${flow.result?.billing && html`<p class="hint" aria-label="本次文本模型费用">${flow.result.billing.unresolvedAttempts || flow.result.billing.knownCostCny === null
             ? `实际费用未知，仍保留 ¥${flow.result.billing.reservedCny} 的费用占用；不会自动重试。`
             : `${flow.result.metadata?.usage?.cost_status === "confirmed" ? "已确认费用" : "按价目估算费用"} ¥${flow.result.billing.knownCostCny}，以提供方账单为准。`}</p>`}
         ${response?.questions?.length ? html`<ul>${response.questions.map((q) => html`<li>${q}</li>`)}</ul>` : null}
-        ${mixed?.kind === "mixed_edit" && flow.projection && html`<div>
-            <ul>${mixedActionLabels(mixed, flow.projection, editing.clips, editing.editor.fps).map(label => html`<li>${label}</li>`)}</ul>
-            <button type="button" class="btn" disabled=${!ready || !!flow.busy || !!preview.problem} onClick=${actions.apply}>应用AI组合剪辑</button>
+        ${mixed?.kind === "mixed_edit" && projection && html`<div>
+            <ul>${mixedActionLabels(mixed, projection, editing.clips, editing.editor.fps).map(label => html`<li>${label}</li>`)}</ul>
+            <button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI组合剪辑</button>
         </div>`}
-        ${flow.result?.replacement?.kind === "replacement" && flow.projection && html`<div>
-            <p>将替换 ${flow.projection.replacements.length} 个镜头，尚未应用。</p>
-            <ul>${flow.projection.replacements.map(op => {
+        ${flow.result?.replacement?.kind === "replacement" && projection && html`<div>
+            <p>将替换 ${projection.replacements.length} 个镜头，尚未应用。</p>
+            <ul>${projection.replacements.map(op => {
                 const index = editing.clips.findIndex(c => c.clipId === op.targetClipId);
-                const clip = flow.projection.clips.find(c => c.clipId === op.targetClipId);
+                const clip = projection.clips.find(c => c.clipId === op.targetClipId);
                 return html`<li>第 ${index + 1} 段 → 原片 ${(clip.startUs / 1e6).toFixed(2)}–${(clip.endUs / 1e6).toFixed(2)} 秒：${clip.scriptDraft || "无描述"}</li>`;
-            })}</ul><button type="button" class="btn" disabled=${!ready || !!flow.busy || !!preview.problem} onClick=${actions.apply}>应用AI换镜头</button></div>`}
-        ${flow.result?.insertion?.kind === "insertion" && flow.projection && html`<div class="actions-row"><span>插入画面建议尚未应用。</span><button type="button" class="btn" disabled=${!ready || !!flow.busy || !!preview.problem} onClick=${actions.apply}>应用AI插入镜头</button></div>`}
-        ${response?.kind === "edit_proposal" && html`<div class="actions-row"><span>改动预览：${flow.result.proposal.before_seconds.toFixed(1)} → ${flow.result.proposal.after_seconds.toFixed(1)} 秒；尚未应用。</span>
-            <button type="button" class="btn" disabled=${!ready || !!flow.busy || !!preview.problem} onClick=${actions.apply}>应用AI建议</button></div>`}
-        ${response?.kind === "overlay_edit_proposal" && html`<div class="actions-row"><span>图层预览：结束 ${(editing.overlays.find((o) => o.overlayId === response.overlayEdit.overlayId)?.endFrame / editing.editor.fps).toFixed(2)} → ${(response.overlayEdit.endFrame / editing.editor.fps).toFixed(2)} 秒；淡出 ${(editing.overlays.find((o) => o.overlayId === response.overlayEdit.overlayId)?.fadeOutFrames / editing.editor.fps).toFixed(2)} → ${(response.overlayEdit.fadeOutFrames / editing.editor.fps).toFixed(2)} 秒；尚未应用。</span>
+            })}</ul><button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI换镜头</button></div>`}
+        ${flow.result?.insertion?.kind === "insertion" && projection && html`<div class="actions-row"><span>插入画面建议尚未应用。</span><button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI插入镜头</button></div>`}
+        ${response?.kind === "edit_proposal" && projection && html`<div class="actions-row"><span>改动预览：${flow.result.proposal.before_seconds.toFixed(1)} → ${flow.result.proposal.after_seconds.toFixed(1)} 秒；尚未应用。</span>
             <button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI建议</button></div>`}
+        ${response?.kind === "overlay_edit_proposal" && projection && html`<div class="actions-row"><span>图层预览：结束 ${(editing.overlays.find((o) => o.overlayId === response.overlayEdit.overlayId)?.endFrame / editing.editor.fps).toFixed(2)} → ${(response.overlayEdit.endFrame / editing.editor.fps).toFixed(2)} 秒；淡出 ${(editing.overlays.find((o) => o.overlayId === response.overlayEdit.overlayId)?.fadeOutFrames / editing.editor.fps).toFixed(2)} → ${(response.overlayEdit.fadeOutFrames / editing.editor.fps).toFixed(2)} 秒；尚未应用。</span>
+            <button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI建议</button></div>`}
+        ${!response && flow.result?.purpose === "edit" && projection && html`<div class="actions-row"><span>已按随原镜移动重新校验，尚未应用。</span><button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI建议</button></div>`}
         ${flow.quote && html`<button type="button" class="btn ghost" disabled=${!!flow.busy} onClick=${actions.discard}>关闭本次建议</button>`}
     </section>`;
 }

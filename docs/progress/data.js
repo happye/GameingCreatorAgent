@@ -46,7 +46,7 @@ window.PROGRESS_DATA = {
    "agent_run": {
     "date": "2026-11-19",
     "result": "pass",
-    "evidence": "既有真实漫画群星一句需求→AI方案→本地补足30秒→中文旁白→成片流程继续扩展为四平台持久队列。发布598a72a7f4164c3fba2ff8e234081681，e6e0f97ddd5a36c292318459a9895f54一次勾选四平台后关闭浏览器，服务端仍全部completed，重开4/4并下载四份七文件ZIP；逐包ffprobe均30秒H264/AAC且尺寸匹配冻结profile，B站复用旧包且ZIP SHA不变。另存多平台版标题的真实三平台队列75e124109c594dcc8c87c446339a0df6验证cancel只停后续、当前包收尾；resume后中断自有服务，重启不自动再提交，UI显式恢复同batch，前两项ID保持，第三旧中断attempt保留，新attempt2完成，页面3/3。产物.cache/scratch/package-batches-20261118/（bilibili/douyin/kuaishou/xiaohongshu.zip及delivery-evidence.json），详sprint-package-batches。本批另实测同一草稿混合 AI 插入、裁剪、删除和手动替换，刷新恢复后试听并导出 27.5 秒成片。发布 5462eed2c820468eb4beb5c1c5ac94d1 下的队列 f62b4943015cfab48822711116c2e921 重开恢复 2/2，B 站全长 ZIP 复用，抖音 15.000 秒、450 帧且音画同端点，均为七文件。证据与视频在 .cache/scratch/mixed-timeline-20261118/，详 sprint-mixed-timeline 和 sprint-platform-short-pack。随后在原发布下新增按平台的画面文案，队列 f1e517f6615987d13500c8f7874fb293 重开 2/2。抖音首尾各两秒文案烧录，450 帧／15 秒，工作台实际试听及七文件 ZIP 下载通过；详 sprint-platform-video-copy 与 .cache/scratch/platform-video-copy-20261119/。随后从同一成片按「蓝色火焰」选 7.50–22.50 秒，抖音 15 秒音画与原区间实测对应，关页重开可下载；又在本地一句话换镜并删末镜，保存新版本后试听 27 秒成片并下载 B 站七文件包。详 sprint-platform-content-cut、sprint-one-line-mixed-replacement。同一真实项目随后用一次 AI 文字提案按描述换镜并删末镜，重开从回执读回、应用并保存，27 秒成片 a23a5d2191734b178920af0c6a627bba 试听和 B 站七文件包 d49e0570d1d24bf9be6165259e13786d 下载通过。文字调用估算 ¥0.013006，详 sprint-ai-mixed-timeline。同一发布随后实测本机起草抖音画面开场并保留手写结尾；多关键词拼接按成片区间 4–5、7–8 秒输出 2 秒抖音短版，逐段音画对应，同队列恢复并复用全长 B 站。详 sprint-platform-copy-draft、sprint-platform-joined-cut。另以已插入版本实测一次 AI 提案删首镜、插「6880」技能镜头并裁短原第4镜，回读并恢复草稿、保存后试听 27 秒 MP4，下载 B 站七文件包 bb926109ad804720af2c73c53aa81bb4。文字调用一次，估算 ¥0.013668，详 sprint-ai-combined-actions。随后同一成片以「想看打出高额伤害的几招」通过本机 E5 推荐镜头，确认 2.50–3、10–11 秒两段，试听并生成 1.5 秒抖音包 c6085532b48445c28195ca36185a4585。重开队列复用全长 B 站包，无模型费用，详 sprint-platform-theme-ranking。再按一句 AI 指令删首镜、将原第4镜前移并 0.5× 慢放，回读恢复和保存，实际试听 26.5 秒成片与下载 B 站包 76e354d57c08489293861041b859bc73。一次文字调用估算 ¥0.01371，详 sprint-ai-combined-speed-order。再用一次文字提案在两处原镜后插入三段，浏览器应用前预览字幕，删除一段并撤销，刷新恢复保存后实测播放 29.5 秒 MP4 和下载 B 站包 fbbf0aee6ef441ca9d2e060cc80f22ab。估算 ¥0.013962，详 sprint-ai-multiple-insertions。随后用本地指令删首镜，按原镜迁移旁白与文字图层，第 30 帧移至第 0 帧，恢复后保存并播放 28.5 秒成片 e7aa502dfbe7485499413f2bda98c26a，下载 B 站七文件包 cba5bbf0e51d4581ac922fa16e26ca73。详 sprint-shot-companion-timing。无支付或真实平台上传，原成片/方案/失败证据保留，人评不变。"
+    "evidence": "既有真实漫画群星一句需求→AI方案→本地补足30秒→中文旁白→成片流程继续扩展为四平台持久队列。发布598a72a7f4164c3fba2ff8e234081681，e6e0f97ddd5a36c292318459a9895f54一次勾选四平台后关闭浏览器，服务端仍全部completed，重开4/4并下载四份七文件ZIP；逐包ffprobe均30秒H264/AAC且尺寸匹配冻结profile，B站复用旧包且ZIP SHA不变。另存多平台版标题的真实三平台队列75e124109c594dcc8c87c446339a0df6验证cancel只停后续、当前包收尾；resume后中断自有服务，重启不自动再提交，UI显式恢复同batch，前两项ID保持，第三旧中断attempt保留，新attempt2完成，页面3/3。产物.cache/scratch/package-batches-20261118/（bilibili/douyin/kuaishou/xiaohongshu.zip及delivery-evidence.json），详sprint-package-batches。本批另实测同一草稿混合 AI 插入、裁剪、删除和手动替换，刷新恢复后试听并导出 27.5 秒成片。发布 5462eed2c820468eb4beb5c1c5ac94d1 下的队列 f62b4943015cfab48822711116c2e921 重开恢复 2/2，B 站全长 ZIP 复用，抖音 15.000 秒、450 帧且音画同端点，均为七文件。证据与视频在 .cache/scratch/mixed-timeline-20261118/，详 sprint-mixed-timeline 和 sprint-platform-short-pack。随后在原发布下新增按平台的画面文案，队列 f1e517f6615987d13500c8f7874fb293 重开 2/2。抖音首尾各两秒文案烧录，450 帧／15 秒，工作台实际试听及七文件 ZIP 下载通过；详 sprint-platform-video-copy 与 .cache/scratch/platform-video-copy-20261119/。随后从同一成片按「蓝色火焰」选 7.50–22.50 秒，抖音 15 秒音画与原区间实测对应，关页重开可下载；又在本地一句话换镜并删末镜，保存新版本后试听 27 秒成片并下载 B 站七文件包。详 sprint-platform-content-cut、sprint-one-line-mixed-replacement。同一真实项目随后用一次 AI 文字提案按描述换镜并删末镜，重开从回执读回、应用并保存，27 秒成片 a23a5d2191734b178920af0c6a627bba 试听和 B 站七文件包 d49e0570d1d24bf9be6165259e13786d 下载通过。文字调用估算 ¥0.013006，详 sprint-ai-mixed-timeline。同一发布随后实测本机起草抖音画面开场并保留手写结尾；多关键词拼接按成片区间 4–5、7–8 秒输出 2 秒抖音短版，逐段音画对应，同队列恢复并复用全长 B 站。详 sprint-platform-copy-draft、sprint-platform-joined-cut。另以已插入版本实测一次 AI 提案删首镜、插「6880」技能镜头并裁短原第4镜，回读并恢复草稿、保存后试听 27 秒 MP4，下载 B 站七文件包 bb926109ad804720af2c73c53aa81bb4。文字调用一次，估算 ¥0.013668，详 sprint-ai-combined-actions。随后同一成片以「想看打出高额伤害的几招」通过本机 E5 推荐镜头，确认 2.50–3、10–11 秒两段，试听并生成 1.5 秒抖音包 c6085532b48445c28195ca36185a4585。重开队列复用全长 B 站包，无模型费用，详 sprint-platform-theme-ranking。再按一句 AI 指令删首镜、将原第4镜前移并 0.5× 慢放，回读恢复和保存，实际试听 26.5 秒成片与下载 B 站包 76e354d57c08489293861041b859bc73。一次文字调用估算 ¥0.01371，详 sprint-ai-combined-speed-order。再用一次文字提案在两处原镜后插入三段，浏览器应用前预览字幕，删除一段并撤销，刷新恢复保存后实测播放 29.5 秒 MP4 和下载 B 站包 fbbf0aee6ef441ca9d2e060cc80f22ab。估算 ¥0.013962，详 sprint-ai-multiple-insertions。随后用本地指令删首镜，按原镜迁移旁白与文字图层，第 30 帧移至第 0 帧，恢复后保存并播放 28.5 秒成片 e7aa502dfbe7485499413f2bda98c26a，下载 B 站七文件包 cba5bbf0e51d4581ac922fa16e26ca73。详 sprint-shot-companion-timing。继续实测 AI 删原第1、2镜后，默认旁白及图层分别越界，随原镜迁移并恢复保存后播放 27.5 秒成片 5ac93d7613884faab6d86f86974aa1a5，下载 B 站七文件包 6655f859c76c4106971a14a359a3b152。一次文字调用估算 ¥0.01302736，详 sprint-ai-companion-fit。无支付或真实平台上传，原成片/方案/失败证据保留，人评不变。"
    },
    "human_check": {
     "date": "2026-11-11",
@@ -1048,10 +1048,11 @@ window.PROGRESS_DATA = {
     "tests/test_overlay_reasoning_e2e_browser.py",
     "tests/test_studio_overlay_reasoning_browser.py"
    ],
-   "done": "AI可组合变速、换序、多段插入、换镜及删裁。漫画群星实测本地指令按原镜迁移旁白和图层，预览、撤销、恢复、出片和B站包贯通",
-   "todo": "AI缩短时间线时按选择先迁移再验时长，真人创作质量待验",
+   "done": "AI可组合变速、换序、多段插入、换镜及删裁。漫画群星实测删两镜后迁移旁白与图层，校验、预览、草稿恢复、成片和B站包贯通",
+   "todo": "真人创作质量待验",
    "updated": "2026-11-19",
    "sprints": [
+    "sprint-ai-companion-fit",
     "sprint-shot-companion-timing",
     "sprint-ai-multiple-insertions",
     "sprint-ai-combined-speed-order",
@@ -1780,6 +1781,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-shot-companion-timing"
     },
     {
+     "id": "P041-ai-companion-fit",
+     "name": "AI 缩短成片时迁移旁白和图层",
+     "status": "done",
+     "sprint": "sprint-ai-companion-fit"
+    },
+    {
      "id": "P042",
      "name": "用户修改反馈闭环",
      "status": "done",
@@ -2198,8 +2205,8 @@ window.PROGRESS_DATA = {
   "Grok A01–F16 已集成，定向 99/44/3 通过，TD030 解决。代理预览、空间盘点、OCR、方案对照、逐词字幕和多轨已接入。见 [Grok 集成](docs/exec-plans/sprint-grok-repair-integration.md)。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "抖音短版已接入[关键词](docs/exec-plans/sprint-platform-content-cut.md)、[多段拼接](docs/exec-plans/sprint-platform-joined-cut.md)、[画面文案](docs/exec-plans/sprint-platform-copy-draft.md)和[本机主题选段](docs/exec-plans/sprint-platform-theme-ranking.md)。实测出片、试听、队列恢复与 B 站全长包复用。",
-  "创作助手已实测换镜、删裁、变速、换序及[多段插入](docs/exec-plans/sprint-ai-multiple-insertions.md)。本批[旁白和图层随原镜移动](docs/exec-plans/sprint-shot-companion-timing.md)在漫画群星素材把两者起点由第 30 帧迁移至第 0 帧，恢复保存后实测 28.5 秒成片和 B 站包。下一步接通 AI 缩短时间线时先迁移再核时长。",
-  "完整 verify-20261117-002506 按用户要求取消，曾见失败并保留日志。本批 AI 确认、校验、保存和重开定向用例通过，真人质量待验。"
+  "创作助手已实测换镜、删裁、变速、换序及[多段插入](docs/exec-plans/sprint-ai-multiple-insertions.md)。本批[旁白和图层随原镜移动](docs/exec-plans/sprint-shot-companion-timing.md)在漫画群星素材把两者起点由第 30 帧迁移至第 0 帧，恢复保存后实测 28.5 秒成片和 B 站包。[AI 随镜时长校验](docs/exec-plans/sprint-ai-companion-fit.md)实测删两镜后先迁移旁白和图层，恢复保存、播放 27.5 秒成片并出 B 站包。下一步接通 P042 显式创作者反馈与推荐。",
+  "完整 verify-20261117-002506 按用户要求取消，曾见失败并保留日志。本批 AI 预览、证据回读和兼容定向用例通过，真人质量待验。"
  ],
  "sprints": [
   {
@@ -2294,7 +2301,17 @@ window.PROGRESS_DATA = {
     "R3"
    ],
    "date": "2026-11-19",
-   "bytes": 1401
+   "bytes": 1411
+  },
+  {
+   "file": "sprint-ai-companion-fit",
+   "title": "AI 缩短成片时的随镜时长校验",
+   "ids": [
+    "P041",
+    "R3"
+   ],
+   "date": "",
+   "bytes": 1382
   },
   {
    "file": "sprint-ai-mixed-timeline",
@@ -2838,8 +2855,8 @@ window.PROGRESS_DATA = {
     "P041",
     "R3"
    ],
-   "date": "",
-   "bytes": 1418
+   "date": "2026-11-19",
+   "bytes": 1369
   },
   {
    "file": "sprint-studio-caption-editor",

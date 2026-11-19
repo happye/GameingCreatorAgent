@@ -103,7 +103,10 @@ def overlay_selection(snapshot: EditingSnapshot, response: dict[str, Any]) -> Cr
 
 
 def validate_overlay_proposal(
-    snapshot: EditingSnapshot, response: dict[str, Any]
+    snapshot: EditingSnapshot,
+    response: dict[str, Any],
+    *,
+    defer_inherited_overlay_timing: bool = False,
 ) -> CreationProposal:
     from gamingcreator.application.creation_proposals import validate_proposal
 
@@ -124,7 +127,7 @@ def validate_overlay_proposal(
         old["schemaVersion"] = "creation-reasoning-v1"
         result = validate_proposal(parent, old)
         # Clip edits must not silently truncate inherited layers.
-        if response["kind"] == "edit_proposal":
+        if response["kind"] == "edit_proposal" and not defer_inherited_overlay_timing:
             from gamingcreator.application.creation_editing import build_revision
             from gamingcreator.application.creation_proposals import editing_parent
 

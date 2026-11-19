@@ -51,6 +51,8 @@ def _exercise_proposal(page, editors, expect):
             data = dict(clips=original["clips"], overlays=expected)
         else:
             data = {
+                "status": "completed",
+                "preparedHash": "a" * 64,
                 "proposal": {
                     "response": dict(
                         kind="overlay_edit_proposal",
@@ -59,7 +61,7 @@ def _exercise_proposal(page, editors, expect):
                         clips=[],
                         questions=[],
                     )
-                }
+                },
             }
         route.fulfill(json=data)
 
@@ -98,7 +100,7 @@ def _exercise_proposal(page, editors, expect):
     page.get_by_role("tab", name="叠加", exact=True).click()
     expect(page.get_by_label("结束秒", exact=True)).to_have_value("3")
     assert editors[-1]["overlays"] == expected
-    assert calls == ["prepare", "execute", "prepare", "execute", "validate"]
+    assert calls == ["prepare", "execute", "validate", "prepare", "execute", "validate", "validate"]
 
 
 HARNESS = """<script type="module">
@@ -192,13 +194,15 @@ def _harness_route(route, editor, saved):
         data = dict(clips=editor["clips"], overlays=items)
     else:
         data = dict(
+            status="completed",
+            preparedHash="e" * 64,
             proposal=dict(
                 response=dict(
                     kind="overlay_edit_proposal",
                     message="延长并淡出",
                     overlayEdit=dict(overlayId="a" * 32, endFrame=90, fadeOutFrames=15),
                 )
-            )
+            ),
         )
     return route.fulfill(json=data)
 

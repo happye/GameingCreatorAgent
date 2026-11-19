@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from gamingcreator.application.creation_companion_timing import CompanionTimingError
 from gamingcreator.application.narration import NarrationArtifact, NarrationRequest
 from gamingcreator.domain.creation_narration import NarrationSelection, validate_narration_fit
 from gamingcreator.infrastructure import cosyvoice_tts
@@ -208,7 +209,7 @@ def resolve(
         try:
             validate_narration_fit(selection, source.sample_count, source.sample_rate, frames, fps)
         except ValueError as error:
-            raise ValueError(
+            raise CompanionTimingError(
                 f"旁白长 {source.duration_seconds:.3f} 秒，起点后只剩 "
                 f"{max(0, frames - selection.start_frame) / fps:.3f} 秒；"
                 "请改短文字、调整起点或移除旁白，不会自动截断。"
