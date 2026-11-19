@@ -21,6 +21,7 @@ from gamingcreator.application.brief_reasoning import (
 from gamingcreator.application.budget import BudgetLedger
 from gamingcreator.application.creation_mixed_actions import (
     ACTION_SCHEMAS,
+    ORDERED_ACTION_SCHEMAS,
     action_operations,
     actions_request,
     actions_snapshot,
@@ -29,8 +30,10 @@ from gamingcreator.application.creation_mixed_actions import (
 )
 from gamingcreator.application.creation_mixed_actions import PROMPT as MIXED_ACTIONS_PROMPT
 from gamingcreator.application.creation_mixed_actions import PROMPT_V3 as MIXED_ACTIONS_PROMPT_V3
+from gamingcreator.application.creation_mixed_actions import PROMPT_V4 as MIXED_ACTIONS_PROMPT_V4
 from gamingcreator.application.creation_mixed_actions import SCHEMA as MIXED_ACTIONS_SCHEMA
 from gamingcreator.application.creation_mixed_actions import SCHEMA_V3 as MIXED_ACTIONS_SCHEMA_V3
+from gamingcreator.application.creation_mixed_actions import SCHEMA_V4 as MIXED_ACTIONS_SCHEMA_V4
 from gamingcreator.application.creation_mixed_proposals import (
     mixed_followup,
     mixed_replacement,
@@ -314,7 +317,7 @@ class CreationReasoningService:
     def prepare_mixed(self, job_id: str, plan_id: str, instruction: str) -> dict[str, Any]:
         snapshot, project_id = self._replacement_snapshot(job_id, plan_id)
         return self._prepare(
-            actions_snapshot(snapshot, version=MIXED_ACTIONS_SCHEMA_V3),
+            actions_snapshot(snapshot, version=MIXED_ACTIONS_SCHEMA_V4),
             project_id,
             job_id,
             plan_id,
@@ -508,6 +511,7 @@ class CreationReasoningService:
                 version = {
                     MIXED_ACTIONS_PROMPT: MIXED_ACTIONS_SCHEMA,
                     MIXED_ACTIONS_PROMPT_V3: MIXED_ACTIONS_SCHEMA_V3,
+                    MIXED_ACTIONS_PROMPT_V4: MIXED_ACTIONS_SCHEMA_V4,
                 }.get(record["request"]["prompt_version"])
                 snapshot = (
                     actions_snapshot(replacement, version=version)
@@ -860,7 +864,7 @@ class CreationReasoningService:
                 )
                 result.update(_validated_output(snapshot, response.output))
                 if (
-                    request.schema_version == MIXED_ACTIONS_SCHEMA_V3
+                    request.schema_version in ORDERED_ACTION_SCHEMAS
                     and isinstance(snapshot, EditingSnapshot)
                     and result.get("mixed", {}).get("kind") == "mixed_edit"
                 ):
@@ -1009,11 +1013,11 @@ class CreationReasoningService:
         if operations.replacements:
             rows, swaps = _replacement_rows(chain, manifest, operations.replacements)
         rows = edit_original_rows(snapshot, rows, operations.original_edits)
-        insertions = (
-            [_insert_combined_row(rows, manifest, parent_sha, operations.insertion)]
-            if operations.insertion is not None
-            else []
-        )
+        insertions = [
+            _insert_combined_row(rows, manifest, parent_sha, operation)
+            for operation in reversed(operations.insertions)
+        ]
+        insertions.reverse()
         swapped = {item["targetClipId"] for item in swaps}
         previous = None
         for row in rows:

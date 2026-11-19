@@ -55,9 +55,10 @@ const isPendingInsertion = (editing, id) => editing.insertions?.some((op) => op.
 const forcedCut = (clips, index, replacements) => replacements[clips[index].clipId] || replacements[clips[index - 1]?.clipId];
 function composedInsertions(state, clips) {
     if (!state.insertions?.length) return state.insertions;
-    const [op] = state.insertions;
-    return clips.some((clip) => clip.clipId === op.newClipId)
-        ? [{...op, editMode: "composed-v1"}] : state.editor.insertions ?? null;
+    const kept = new Set(clips.map(clip => clip.clipId));
+    const operations = state.insertions.filter(op => kept.has(op.newClipId))
+        .map(op => ({...op, editMode: "composed-v1"}));
+    return operations.length ? operations : state.editor.insertions ?? null;
 }
 
 function revisionFields(state) {
@@ -412,7 +413,9 @@ function useTimelinePreview(editing, qualifier, onPreview) {
                 || (replacements[row.clipId] && row.speed.numerator !== row.speed.denominator);
         })) throw Error("替换镜头需保持原速，前后须直接切换。请调整指令或先保存版本。");
         active.current.showing = true;
-        setResult({data, epoch: editing.editEpoch}); onPreview(data.clips, data.proposal); setMessage(detail);
+        const projection = data.proposal ?? (editing.insertions?.length
+            ? {insertions: composedInsertions(editing, data.clips)} : undefined);
+        setResult({data, epoch: editing.editEpoch}); onPreview(data.clips, projection); setMessage(detail);
     };
     const clear = (detail) => {
         active.current.showing = false;

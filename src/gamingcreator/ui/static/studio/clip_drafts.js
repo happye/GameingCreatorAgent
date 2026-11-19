@@ -49,12 +49,13 @@ export function rebuild(payload, editor, speeds, frames, problem) {
 function insertionPlaceholders(payload, parents) {
     const inserted = new Map();
     if (payload.schemaVersion !== V4_SCHEMA) return inserted;
-    if (!Array.isArray(payload.insertions) || payload.insertions.length > 1) throw Error("插入快照字段无效");
+    if (!Array.isArray(payload.insertions) || payload.insertions.length > 8) throw Error("插入快照字段无效");
     for (const op of payload.insertions) {
         const composed = op?.editMode === "composed-v1";
-        if (!op || !same(Object.keys(op).sort(), ["afterClipId", "candidateId", "startUs", "endUs", "newClipId", ...(composed ? ["editMode"] : [])].sort())
+        if (!op || (!composed && payload.insertions.length > 1)
+            || !same(Object.keys(op).sort(), ["afterClipId", "candidateId", "startUs", "endUs", "newClipId", ...(composed ? ["editMode"] : [])].sort())
             || !parents.has(op.afterClipId) || typeof op.candidateId !== "string" || !op.candidateId
-            || typeof op.newClipId !== "string" || !op.newClipId || parents.has(op.newClipId)
+            || typeof op.newClipId !== "string" || !op.newClipId || parents.has(op.newClipId) || inserted.has(op.newClipId)
             || !Number.isSafeInteger(op.startUs) || !Number.isSafeInteger(op.endUs)
             || op.startUs < 0 || op.endUs <= op.startUs || !payload.candidateManifestSha256) throw Error("插入快照字段无效");
         const index = payload.rows?.findIndex(row => row?.clipId === op.newClipId);

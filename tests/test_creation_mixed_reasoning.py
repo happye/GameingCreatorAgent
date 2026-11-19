@@ -8,6 +8,7 @@ from test_creation_reasoning_service import Transport
 from gamingcreator.application.creation_mixed_actions import SCHEMA as ACTIONS_SCHEMA
 from gamingcreator.application.creation_mixed_actions import (
     SCHEMA_V3,
+    SCHEMA_V4,
     actions_snapshot,
     edit_original_rows,
     validate_actions,
@@ -215,7 +216,8 @@ def test_combined_speed_and_move_use_the_same_original_shot(replacements, monkey
     reasoning = CreationReasoningService(
         jobs, price_snapshot=DEEPSEEK_FLASH_20261004, transport=outbound
     )
-    snapshot = actions_snapshot(reasoning._replacement_snapshot(job_id, plan)[0], version=SCHEMA_V3)
+    original_snapshot, project_id = reasoning._replacement_snapshot(job_id, plan)
+    snapshot = actions_snapshot(original_snapshot, version=SCHEMA_V3)
     with pytest.raises(ValueError, match="move anchor must stay"):
         validate_actions(
             snapshot, {**output, "actions": [*steps, {"action": "delete", "target": "S1"}]}
@@ -240,9 +242,8 @@ def test_combined_speed_and_move_use_the_same_original_shot(replacements, monkey
     assert faster[1]["transitionIn"]["frames"] == 4
     assert faster[2]["transitionIn"]["type"] == "cut"
     identity = {"jobId": job_id, "planId": plan}
-    quote = reasoning_post(
-        reasoning,
-        {"action": "prepare_mixed", **identity, "instruction": "第二镜移到第一镜前并慢放"},
+    quote = reasoning._prepare(
+        snapshot, project_id, job_id, plan, "第二镜移到第一镜前并慢放", "mixed"
     )
     assert quote["schemaVersion"] == SCHEMA_V3
     token = {"preparedHash": quote["preparedHash"]}
@@ -278,9 +279,7 @@ def test_combined_speed_and_move_use_the_same_original_shot(replacements, monkey
         raise ValueError("Inherited layer is beyond the shortened timeline")
 
     monkeypatch.setattr(reasoning, "_combined_editor", obstructed)
-    blocked = reasoning_post(
-        reasoning, {"action": "prepare_mixed", **identity, "instruction": "再次慢放样本"}
-    )
+    blocked = reasoning._prepare(snapshot, project_id, job_id, plan, "再次慢放样本", "mixed")
     refused = reasoning_post(
         reasoning,
         {
@@ -296,3 +295,73 @@ def test_combined_speed_and_move_use_the_same_original_shot(replacements, monkey
         reasoning_post(reasoning, {"action": "result", "preparedHash": blocked["preparedHash"]})
         == refused
     )
+
+
+def test_multiple_insertions_follow_moved_original_anchors_in_proposal_order(replacements):  # noqa: F811
+    jobs, job_id, _ = replacements
+    plan = "hook-first"
+    before = jobs.edit(job_id, plan)
+    outbound = Transport(None)
+    reasoning = CreationReasoningService(
+        jobs, price_snapshot=DEEPSEEK_FLASH_20261004, transport=outbound
+    )
+    snapshot = actions_snapshot(reasoning._replacement_snapshot(job_id, plan)[0], version=SCHEMA_V4)
+    catalog = candidates(jobs, job_id, plan)["candidates"]
+    source_b = {c["candidateId"] for c in catalog if c["runId"] == "B"}
+    selected = [
+        c for c in snapshot.payload["replacementCandidates"] if c["candidateId"] in source_b
+    ][:3]
+    steps = [
+        {
+            "action": "insert_after",
+            "after": anchor,
+            "candidate": candidate["alias"],
+            "durationMs": 500,
+        }
+        for anchor, candidate in zip(("S2", "S2", "S1"), selected, strict=True)
+    ]
+    outbound.content = {
+        "schemaVersion": SCHEMA_V4,
+        "kind": "mixed_edit",
+        "message": "按原锚点插入三个镜头",
+        "actions": [*steps, {"action": "move_before", "target": "S2", "anchor": "S1"}],
+    }
+    with pytest.raises(ValueError, match="Duplicate source interval"):
+        validate_actions(snapshot, {**outbound.content, "actions": [steps[0], steps[0]]})
+    identity = {"jobId": job_id, "planId": plan}
+    quote = reasoning_post(
+        reasoning,
+        {"action": "prepare_mixed", **identity, "instruction": "连续插入两个镜头，再加另一个"},
+    )
+    assert quote["schemaVersion"] == SCHEMA_V4
+    token = {"preparedHash": quote["preparedHash"]}
+    result = reasoning_post(
+        reasoning,
+        {
+            "action": "execute",
+            **token,
+            "snapshotFingerprint": quote["snapshotFingerprint"],
+            "confirmedMaxCny": quote["maxCostCny"],
+        },
+    )
+    assert result["status"] == "completed", result
+    projection = reasoning_post(
+        reasoning,
+        {
+            "action": "validate",
+            **identity,
+            **token,
+            "expectedParentReceiptSha256": before["expectedParentReceiptSha256"],
+        },
+    )
+    additions = projection["insertions"]
+    assert [row["candidateId"] for row in additions] == [row["candidateId"] for row in selected]
+    first, second = (row["clipId"] for row in before["clips"][:2])
+    assert [row["clipId"] for row in projection["clips"][:5]] == [
+        second,
+        additions[0]["newClipId"],
+        additions[1]["newClipId"],
+        first,
+        additions[2]["newClipId"],
+    ]
+    assert len(outbound.calls) == 1

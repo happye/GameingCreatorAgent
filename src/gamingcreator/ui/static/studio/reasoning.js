@@ -129,9 +129,11 @@ function reasoningActions(flow, editing, text, onPreview, onOverlayPreview, mode
 
 function mixedActionLabels(proposal, projection, original, fps) {
     const steps = proposal.actions || [{action: "replace", ...proposal.replacement}, proposal.edit];
+    let insertionIndex = 0;
     return steps.map(step => {
         if (step.action === "insert_after") {
-            const clip = projection.clips.find(c => c.clipId === projection.insertions?.[0]?.newClipId);
+            const identity = projection.insertions?.[insertionIndex++]?.newClipId;
+            const clip = projection.clips.find(c => c.clipId === identity);
             return `在原第 ${step.after.slice(1)} 镜之后插入 ${step.durationMs / 1000} 秒：${clip?.scriptDraft || "候选镜头"}`;
         }
         const shot = Number(step.target.slice(1));
@@ -144,7 +146,7 @@ function mixedActionLabels(proposal, projection, original, fps) {
             return `替换原第 ${shot} 镜：${clip?.scriptDraft || "候选镜头"}`;
         }
         if (step.action === "delete") return `删除原第 ${shot} 镜`;
-        if (proposal.schemaVersion === "creation-mixed-edit-v3") {
+        if (["creation-mixed-edit-v3", "creation-mixed-edit-v4"].includes(proposal.schemaVersion)) {
             const clip = projection.clips.find(c => c.clipId === original[shot - 1]?.clipId);
             if (clip) return `裁短原第 ${shot} 镜，最终时长 ${(clipFrames(clip, fps) / fps).toFixed(2)} 秒`;
         }

@@ -15,8 +15,10 @@ from gamingcreator.application.brief_reasoning import SCHEMA_VERSION as BRIEF_SC
 from gamingcreator.application.budget import BudgetLedger, InvocationRecorder
 from gamingcreator.application.creation_mixed_actions import PROMPT as MIXED_ACTIONS_PROMPT
 from gamingcreator.application.creation_mixed_actions import PROMPT_V3 as MIXED_ACTIONS_PROMPT_V3
+from gamingcreator.application.creation_mixed_actions import PROMPT_V4 as MIXED_ACTIONS_PROMPT_V4
 from gamingcreator.application.creation_mixed_actions import SCHEMA as MIXED_ACTIONS_SCHEMA
 from gamingcreator.application.creation_mixed_actions import SCHEMA_V3 as MIXED_ACTIONS_SCHEMA_V3
+from gamingcreator.application.creation_mixed_actions import SCHEMA_V4 as MIXED_ACTIONS_SCHEMA_V4
 from gamingcreator.application.creation_mixed_proposals import PROMPT as MIXED_PROMPT_VERSION
 from gamingcreator.application.creation_mixed_proposals import SCHEMA as MIXED_SCHEMA_VERSION
 from gamingcreator.application.creation_overlay_proposals import (
@@ -142,6 +144,7 @@ class DeepSeekCreationReasoningProvider:
             (MIXED_PROMPT_VERSION, MIXED_SCHEMA_VERSION),
             (MIXED_ACTIONS_PROMPT, MIXED_ACTIONS_SCHEMA),
             (MIXED_ACTIONS_PROMPT_V3, MIXED_ACTIONS_SCHEMA_V3),
+            (MIXED_ACTIONS_PROMPT_V4, MIXED_ACTIONS_SCHEMA_V4),
             ("creation-insertion-prompt-v1", "creation-insertion-v1"),
             ("creation-insertion-prompt-v2", "creation-insertion-v1"),
             (OVERLAY_PROMPT_VERSION, OVERLAY_SCHEMA_VERSION),

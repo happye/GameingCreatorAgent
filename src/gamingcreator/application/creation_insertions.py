@@ -11,6 +11,7 @@ from gamingcreator.application.creation_replacements import (
 )
 
 REVISION_SCHEMA_V5 = "edit-decision-revision-v5"
+MAX_INSERTIONS = 8
 
 
 def insertion_id(parent_sha: str, operation: dict[str, Any]) -> str:
@@ -35,9 +36,13 @@ def build_revision_v5(
     insertions: list[dict[str, Any]],
     manifest: dict[str, Any],
 ) -> dict[str, Any]:
-    """Add one proven candidate row, or edit a verified v5 parent without adding rows."""
-    if not isinstance(insertions, list) or len(insertions) > 1:
-        raise ValueError("At most one insertion is supported.")
+    """Add proven candidate rows, or edit a verified v5 parent without adding rows."""
+    if not isinstance(insertions, list) or len(insertions) > MAX_INSERTIONS:
+        raise ValueError("Invalid insertion count.")
+    if len(insertions) > 1 and any(
+        not isinstance(op, dict) or op.get("editMode") != "composed-v1" for op in insertions
+    ):
+        raise ValueError("Multiple insertions must all be composed operations.")
     from gamingcreator.application.creation_editing import editable_clips
 
     projected = deepcopy(parent)
@@ -54,8 +59,12 @@ def build_revision_v5(
         row.setdefault("transitionIn", {"type": "cut", "frames": 0})
     if projected.get("schemaVersion") != "edit-decision-revision-v4":
         projected.update(schemaVersion="edit-decision-revision-v3", rootReceiptSha256=root_sha)
-    if insertions:
-        _add_insertion(projected, parent_sha, clips, replacements, insertions[0], manifest)
+    parent_ids = {row["clipId"] for row in projected["segments"]}
+    # Insert at the first position after each original anchor, in reverse proposal order.
+    for operation in reversed(insertions):
+        _add_insertion(
+            projected, parent_sha, clips, replacements, operation, manifest, parent_ids=parent_ids
+        )
     result = build_revision_v4(projected, root_sha, parent_sha, clips, replacements, manifest)
     if (
         replacements
@@ -100,6 +109,8 @@ def _add_insertion(
     replacements: list[dict[str, Any]],
     operation: dict[str, Any],
     manifest: dict[str, Any],
+    *,
+    parent_ids: set[str],
 ) -> None:
     expected_ids = [r["clipId"] for r in projected["segments"]]
     composed = _validate_insertion_operation(operation)
@@ -118,7 +129,7 @@ def _add_insertion(
         raise ValueError("Insertion must start at the trusted candidate start.")
     if (end - start) * fps < 1_000_000:
         raise ValueError("Insertion must contain an output frame.")
-    if operation["afterClipId"] not in expected_ids:
+    if operation["afterClipId"] not in parent_ids:
         raise ValueError("Unknown insertion anchor.")
     index = expected_ids.index(operation["afterClipId"]) + 1
     rows = projected["segments"]
