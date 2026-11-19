@@ -108,7 +108,9 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     const canvas = useOutputCanvas(stage, canvasWidth, canvasHeight);
     const planVideo = useRef(null), planVideoNext = useRef(null), resultVideo = useRef(null), work = useRef(null), restoring = useRef(null);
     const editing = useClipEditor(project, workId);
-    const [commandRows, setCommandRows] = useState(null);
+    const [command, setCommand] = useState(null);
+    const commandRows = command?.rows;
+    const setCommandRows = useCallback((rows, projection = null) => setCommand(rows ? {rows, projection} : null), []);
     const [commandOverlays, setCommandOverlays] = useState(null);
     const commandPreview = !!commandRows || !!commandOverlays;
     // Tell the shell about unsaved work so leaving this workspace asks first.
@@ -277,7 +279,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         return client.choosePreview(run?.videoUrl || client.mediaUrl(project, runId), null).url;
     }, [project, runs, playable]);
     const player = usePlanPlayer(planVideo, items, urlFor, planVideoNext, previewProblem);
-    const captionPreview = useSubtitlePreview(project, editing, shownClips, subtitles, wordHighlight);
+    const captionPreview = useSubtitlePreview(project, editing, shownClips, subtitles, wordHighlight, command?.projection);
     const music = useMusicCatalog();
     const [audioBusy, setAudioBusy] = useState(false);
     const draftRestoreAllowed = useRef(false);

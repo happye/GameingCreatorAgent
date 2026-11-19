@@ -7,17 +7,21 @@ import {asrWordsPayload} from "./word_highlights.js";
 export {WordHighlightSwitch, wordHighlightDraft, setWordHighlightDraft, asrWordsPayload} from "./word_highlights.js";
 const html = htm.bind(h);
 
-export function useSubtitlePreview(project, editing, clips, mode, wordDraft) {
+export function useSubtitlePreview(project, editing, clips, mode, wordDraft, projection) {
     const kept = new Set((clips || []).map(c => c.clipId));
-    const swaps = Object.entries(editing.replacements || {}).filter(([id]) => kept.has(id)).map(([targetClipId, candidateId]) => ({targetClipId, candidateId}));
-    const manifest = editing.candidateManifestSha256 || editing.editor?.candidateManifestSha256 || (swaps.length ? editing.candidates?.candidateManifestSha256 : null);
+    const swaps = (projection?.replacements || Object.entries(editing.replacements || {}).map(([targetClipId, candidateId]) => ({targetClipId, candidateId})))
+        .filter(r => kept.has(r.targetClipId));
+    const manifest = projection?.candidateManifestSha256 || editing.candidateManifestSha256 || editing.editor?.candidateManifestSha256 || (swaps.length ? editing.candidates?.candidateManifestSha256 : null);
+    const insertions = projection && Object.hasOwn(projection, "insertions") ? projection.insertions : editing.insertions;
+    const overrides = projection?.subtitleOverrides ?? editing.subtitleOverrides.filter(o =>
+        !projection?.replacements?.some(swap => swap.targetClipId === o.clipId));
     const payload = editing.status === "ready" && clips ? {
         projectId: project, parentJobId: editing.base.jobId, planId: editing.base.planId,
         expectedParentReceiptSha256: editing.editor.expectedParentReceiptSha256, subtitleMode: mode,
         clips: clips.map(({clipId, startUs, endUs, speed, transitionIn}) => ({clipId, startUs, endUs, speed, transitionIn})),
-        subtitleOverrides: editing.subtitleOverrides.filter(o => kept.has(o.clipId)),
+        subtitleOverrides: overrides.filter(o => kept.has(o.clipId)),
         ...(manifest ? {candidateManifestSha256: manifest, replacements: swaps} : {}),
-        ...(editing.insertions != null ? {insertions: editing.insertions} : {}),
+        ...(insertions != null ? {insertions} : {}),
         ...asrWordsPayload(wordDraft),
     } : null;
     const key = JSON.stringify(payload), sequence = useRef(0);

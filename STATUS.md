@@ -27,7 +27,8 @@
 6. 已交付AI单换/插入/多换、编号策划与本地补足30秒。多平台持久队列已实测关页出完四平台七文件包、停止后续、进程重启后显式恢复。产物 `.cache/scratch/package-batches-20261118/`，见 [sprint-package-batches](docs/exec-plans/sprint-package-batches.md)。
 7. [平台按内容短版](docs/exec-plans/sprint-platform-content-cut.md)在漫画群星实测按「蓝色火焰」选原成片 7.50–22.50 秒，同队列恢复全长 B 站和 15 秒抖音。抖音音画来源、帧数、播放与下载已核对。[本地一句话混合剪辑](docs/exec-plans/sprint-one-line-mixed-replacement.md)实测编号换镜并删末镜，单次撤销/重做、刷新恢复、保存、27 秒试听和 B 站包贯通。
 8. [AI 组合剪辑](docs/exec-plans/sprint-ai-mixed-timeline.md)一次文本提案可按描述换一镜并删裁另一镜。真实漫画群星调用一次（估算 ¥0.013006），重开取回、应用，导出 27 秒试听和 B 站包。
-9. [平台文案起草](docs/exec-plans/sprint-platform-copy-draft.md)在漫画群星抖音 15 秒版实测关键词起草、保留手写结尾、试听和出包。[多关键词拼接](docs/exec-plans/sprint-platform-joined-cut.md)按两处不连续镜头生成 2 秒版，音画逐段对齐，队列重开后同批恢复全长 B 站。本批无模型费用。下一步 P041 扩展一次提案组合插入及其他剪辑，创作质量仍待人评。
+9. [平台文案起草](docs/exec-plans/sprint-platform-copy-draft.md)在漫画群星抖音 15 秒版实测关键词起草、保留手写结尾、试听和出包。[多关键词拼接](docs/exec-plans/sprint-platform-joined-cut.md)按两处不连续镜头生成 2 秒版，音画逐段对齐，队列重开后同批恢复全长 B 站。
+10. [AI 组合动作](docs/exec-plans/sprint-ai-combined-actions.md)按原镜编号列 2–8 个插入、换镜、删除或裁尾动作。漫画群星已有插入版本再实测删首镜、插「6880」及裁第 4 镜，恢复后保存，导出 27 秒有声成片和 B 站包。一次文字调用估算 ¥0.013668。下一步推进 P035 按主题排序选段，创作质量仍待人评。
 
 ## 费用与授权
 

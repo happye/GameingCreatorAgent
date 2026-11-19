@@ -64,7 +64,7 @@ function reasoningActions(flow, editing, text, onPreview, onOverlayPreview, mode
                 if (!flow.valid()) return;
             }
             flow.update({projection});
-            onPreview(projection?.clips || null); return;
+            onPreview(projection?.clips || null, projection); return;
         }
         if (!flow.valid()) return;
         const response = data.proposal?.response;
@@ -124,6 +124,23 @@ function reasoningActions(flow, editing, text, onPreview, onOverlayPreview, mode
     };
 }
 
+function mixedActionLabels(proposal, projection, original) {
+    const steps = proposal.actions || [{action: "replace", ...proposal.replacement}, proposal.edit];
+    return steps.map(step => {
+        if (step.action === "insert_after") {
+            const clip = projection.clips.find(c => c.clipId === projection.insertions?.[0]?.newClipId);
+            return `在原第 ${step.after.slice(1)} 镜之后插入 ${step.durationMs / 1000} 秒：${clip?.scriptDraft || "候选镜头"}`;
+        }
+        const shot = Number(step.target.slice(1));
+        if (step.action === "replace") {
+            const clip = projection.clips.find(c => c.clipId === original[shot - 1]?.clipId);
+            return `替换原第 ${shot} 镜：${clip?.scriptDraft || "候选镜头"}`;
+        }
+        if (step.action === "delete") return `删除原第 ${shot} 镜`;
+        return `原第 ${shot} 镜保留开头 ${step.keepMs / 1000} 秒`;
+    });
+}
+
 export function ReasoningDock({editing, onPreview, onOverlayPreview = noop, mode = "edit"}) {
     const [text, setText] = useState("");
     const [restoring, setRestoring] = useState(null);
@@ -146,7 +163,7 @@ export function ReasoningDock({editing, onPreview, onOverlayPreview = noop, mode
             <button class="btn ghost" disabled=${!ready || !text.trim() || !!flow.busy}>${flow.busy === "execute" ? "AI 正在修改…" : "交给 AI"}</button>
         </form>
         <p class="hint">${!ready ? "请先保存当前镜头和声音修改，再请求模型建议。" : "仅发送已保存镜头的文字和时间；模型没有观看画面。旁白仍用免费本机语音。"}
-            ${mode === "insertion" ? " 插入会延长画面；旁白与图层保留原输出时刻。" : mode === "replacement" ? " 可在一句需求里指定多个镜头，整组预览、应用与撤销。" : mode === "mixed" ? " 描述要换成什么画面，并指出另一个要删除或裁短的镜头。" : ""}
+            ${mode === "insertion" ? " 插入会延长画面；旁白与图层保留原输出时刻。" : mode === "replacement" ? " 可在一句需求里指定多个镜头，整组预览、应用与撤销。" : mode === "mixed" ? " 可组合换镜、插入、删除和裁尾，镜头编号按改动前的顺序。" : ""}
             ${!flow.available ? " 文本模型尚未配置 DEEPSEEK_API_KEY，不能发送；可先查看请求。" : ""}</p>
         ${history.length ? html`<details class="reasoning-history"><summary>已确认请求的结果记录（${history.length}）</summary>
             ${history.map((saved) => html`<div class="actions-row"><span>${saved.at} · ${saved.text.slice(0, 50)}</span>
@@ -167,10 +184,7 @@ export function ReasoningDock({editing, onPreview, onOverlayPreview = noop, mode
             : `${flow.result.metadata?.usage?.cost_status === "confirmed" ? "已确认费用" : "按价目估算费用"} ¥${flow.result.billing.knownCostCny}，以提供方账单为准。`}</p>`}
         ${response?.questions?.length ? html`<ul>${response.questions.map((q) => html`<li>${q}</li>`)}</ul>` : null}
         ${mixed?.kind === "mixed_edit" && flow.projection && html`<div>
-            <ul>
-                <li>替换第 ${mixed.replacement.target.slice(1)} 镜：${flow.projection.clips.find(c => c.clipId === flow.projection.replacements[0].targetClipId)?.scriptDraft}</li>
-                <li>${mixed.edit.action === "delete" ? `删除第 ${mixed.edit.target.slice(1)} 镜` : `第 ${mixed.edit.target.slice(1)} 镜保留开头 ${mixed.edit.keepMs / 1000} 秒`}</li>
-            </ul>
+            <ul>${mixedActionLabels(mixed, flow.projection, editing.clips).map(label => html`<li>${label}</li>`)}</ul>
             <button type="button" class="btn" disabled=${!ready || !!flow.busy} onClick=${actions.apply}>应用AI组合剪辑</button>
         </div>`}
         ${flow.result?.replacement?.kind === "replacement" && flow.projection && html`<div>

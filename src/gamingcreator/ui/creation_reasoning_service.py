@@ -19,6 +19,15 @@ from gamingcreator.application.brief_reasoning import (
     validate_brief,
 )
 from gamingcreator.application.budget import BudgetLedger
+from gamingcreator.application.creation_mixed_actions import PROMPT as MIXED_ACTIONS_PROMPT
+from gamingcreator.application.creation_mixed_actions import SCHEMA as MIXED_ACTIONS_SCHEMA
+from gamingcreator.application.creation_mixed_actions import (
+    action_operations,
+    actions_request,
+    actions_snapshot,
+    edit_original_rows,
+    validate_actions,
+)
 from gamingcreator.application.creation_mixed_proposals import (
     mixed_followup,
     mixed_replacement,
@@ -302,7 +311,7 @@ class CreationReasoningService:
     def prepare_mixed(self, job_id: str, plan_id: str, instruction: str) -> dict[str, Any]:
         snapshot, project_id = self._replacement_snapshot(job_id, plan_id)
         return self._prepare(
-            mixed_snapshot(snapshot), project_id, job_id, plan_id, instruction, "mixed"
+            actions_snapshot(snapshot), project_id, job_id, plan_id, instruction, "mixed"
         )
 
     def complete_plan_duration(self, job_id: str, plan_id: str) -> dict[str, Any]:
@@ -488,7 +497,11 @@ class CreationReasoningService:
                 )
             elif record["purpose"] == "mixed":
                 replacement, project = self._replacement_snapshot(record["jobId"], record["planId"])
-                snapshot = mixed_snapshot(replacement)
+                snapshot = (
+                    actions_snapshot(replacement)
+                    if record["request"]["prompt_version"] == MIXED_ACTIONS_PROMPT
+                    else mixed_snapshot(replacement)
+                )
             else:
                 snapshot, project = self._replacement_snapshot(
                     record["jobId"],
@@ -909,6 +922,8 @@ class CreationReasoningService:
         if current.payload["parentReceiptSha256"] != expected_parent:
             raise ValueError("Replacement parent changed.")
         result = self.read_result(prepared_hash)
+        if current.payload.get("mixedSnapshotVersion") == MIXED_ACTIONS_SCHEMA:
+            return self._combined_editor(current, result, expected_parent)
         proposal, operations = _footage_operations(current, result)
         chain = load_chain(self.jobs, job_id, plan_id)
         manifest, _ = manifest_for_chain(self.jobs, chain)
@@ -950,6 +965,67 @@ class CreationReasoningService:
             "planId": plan_id,
             "expectedParentReceiptSha256": expected_parent,
             "overlays": inherited.to_json(),
+        }
+
+    def _combined_editor(
+        self, snapshot: EditingSnapshot, result: dict[str, Any], parent_sha: str
+    ) -> dict[str, Any]:
+        from gamingcreator.ui.creation_draft_restore import preview as preview_draft
+        from gamingcreator.ui.replacement_jobs import manifest_for_chain
+
+        proposal = result.get("mixed")
+        if result["status"] != "completed" or not proposal or proposal["kind"] != "mixed_edit":
+            raise ValueError("No usable combined proposal.")
+        job_id, plan_id = snapshot.payload["jobId"], snapshot.payload["planId"]
+        chain = load_chain(self.jobs, job_id, plan_id, read_only=True)
+        manifest, _ = manifest_for_chain(self.jobs, chain)
+        operations = action_operations(snapshot, validate_actions(snapshot, proposal))
+        swaps: list[dict[str, Any]] = []
+        rows = clip_rows(snapshot)
+        if operations.replacements:
+            rows, swaps = _replacement_rows(chain, manifest, operations.replacements)
+        rows = edit_original_rows(snapshot, rows, operations.original_edits)
+        insertions = (
+            [_insert_combined_row(rows, manifest, parent_sha, operations.insertion)]
+            if operations.insertion is not None
+            else []
+        )
+        swapped = {item["targetClipId"] for item in swaps}
+        previous = None
+        for row in rows:
+            identity = row["clipId"]
+            if identity in swapped or previous in swapped:
+                row["transitionIn"] = {"type": "cut", "frames": 0}
+            previous = identity
+
+        preserved = {r["clipId"] for r in rows} - swapped
+        request = {
+            "projectId": chain.project_id,
+            "parentJobId": job_id,
+            "planId": plan_id,
+            "expectedParentReceiptSha256": parent_sha,
+            "clips": rows,
+            "subtitleOverrides": [
+                row for row in chain.subtitle_overrides if row["clipId"] in preserved
+            ],
+            "audioMix": chain.audio_mix.to_json(),
+            "narration": chain.narration.to_json() if chain.narration is not None else None,
+            "overlays": chain.overlays.to_json(),
+            "replacements": swaps,
+            "candidateManifestSha256": candidate_manifest_sha(manifest),
+        }
+        if insertions or chain.edl.get("schemaVersion") == "edit-decision-revision-v5":
+            request["insertions"] = insertions
+        projection = preview_draft(self.jobs, request)
+        for row in projection["clips"]:
+            if row["clipId"] in swapped:
+                row.setdefault("rangeProvenance", None)
+        return {
+            **projection,
+            "preparedHash": result["preparedHash"],
+            "jobId": job_id,
+            "planId": plan_id,
+            "expectedParentReceiptSha256": parent_sha,
         }
 
     def _insertion_for_editor(
@@ -1070,7 +1146,11 @@ class CreationReasoningService:
 
 def _request_for(snapshot: Snapshot, instruction: str) -> ReasoningRequest:
     if isinstance(snapshot, EditingSnapshot) and "mixedSnapshotVersion" in snapshot.payload:
-        return mixed_request(snapshot, instruction)
+        return (
+            actions_request(snapshot, instruction)
+            if snapshot.payload["mixedSnapshotVersion"] == MIXED_ACTIONS_SCHEMA
+            else mixed_request(snapshot, instruction)
+        )
     if isinstance(snapshot, EditingSnapshot) and "insertionSnapshotVersion" in snapshot.payload:
         from gamingcreator.application.creation_replacement_proposals import insertion_request
 
@@ -1099,7 +1179,12 @@ def _request_for(snapshot: Snapshot, instruction: str) -> ReasoningRequest:
 def _validated_output(snapshot: Snapshot, output: Any) -> dict[str, Any]:
     try:
         if isinstance(snapshot, EditingSnapshot) and "mixedSnapshotVersion" in snapshot.payload:
-            return {"purpose": "mixed", "mixed": validate_mixed(snapshot, output)}
+            proposal = (
+                validate_actions(snapshot, output)
+                if snapshot.payload["mixedSnapshotVersion"] == MIXED_ACTIONS_SCHEMA
+                else validate_mixed(snapshot, output)
+            )
+            return {"purpose": "mixed", "mixed": proposal}
         if isinstance(snapshot, EditingSnapshot) and "insertionSnapshotVersion" in snapshot.payload:
             from gamingcreator.application.creation_replacement_proposals import validate_insertion
 
@@ -1172,6 +1257,40 @@ def _validated_plan_output(snapshot: PlanSnapshot, output: Any) -> dict[str, Any
         "planPreview": {"fps": snapshot.fps, "plans": preview},
         "fingerprintEcho": echo,
     }
+
+
+def _insert_combined_row(
+    rows: list[dict[str, Any]],
+    manifest: dict[str, Any],
+    parent_sha: str,
+    operation: dict[str, Any],
+) -> dict[str, Any]:
+    from gamingcreator.application.creation_insertions import insertion_id
+
+    candidate = next(
+        c for c in manifest["candidates"] if c["candidateId"] == operation["candidateId"]
+    )
+    start = candidate["startUs"]
+    insertion = {
+        "afterClipId": operation["afterClipId"],
+        "candidateId": candidate["candidateId"],
+        "startUs": start,
+        "endUs": start + operation["durationUs"],
+        "editMode": "composed-v1",
+    }
+    insertion["newClipId"] = insertion_id(parent_sha, insertion)
+    index = next(i + 1 for i, row in enumerate(rows) if row["clipId"] == operation["afterClipId"])
+    rows.insert(
+        index,
+        {
+            "clipId": insertion["newClipId"],
+            "startUs": insertion["startUs"],
+            "endUs": insertion["endUs"],
+            "speed": {"numerator": 1, "denominator": 1},
+            "transitionIn": {"type": "cut", "frames": 0},
+        },
+    )
+    return insertion
 
 
 def _footage_operations(

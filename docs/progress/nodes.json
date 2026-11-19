@@ -338,10 +338,11 @@
    ]
   },
   "P041": {
-   "done": "本地一句话按编号换镜并继续剪辑。AI一次文字提案可按内容换一镜并删裁另一镜，真实漫画群星已从回执恢复、应用、出成片与B站包",
-   "todo": "开放组合仍限换一镜加一次删裁；多动作、插入及旁白/图层自动重排待做，创意质量待人评",
+   "done": "AI一次文字提案可按原镜编号组合插入、换镜和删裁；漫画群星在已有插入的版本上实测三动作、恢复、成片及B站包",
+   "todo": "组合变速、换序、多段插入及旁白/图层自动重排待做，创意质量待人评",
    "updated": "2026-11-19",
    "sprints": [
+    "sprint-ai-combined-actions",
     "sprint-ai-mixed-timeline",
     "sprint-one-line-mixed-replacement",
     "sprint-timeline-commands",
@@ -818,6 +819,12 @@
      "name": "AI 一次提案换镜并删裁另一镜",
      "status": "done",
      "sprint": "sprint-ai-mixed-timeline"
+    },
+    {
+     "id": "P041-combined-actions",
+     "name": "AI 组合插入、换镜和删裁",
+     "status": "done",
+     "sprint": "sprint-ai-combined-actions"
     },
     {
      "id": "P041-b",

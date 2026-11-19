@@ -13,6 +13,8 @@ from typing import Any
 from gamingcreator.application.brief_reasoning import PROMPT_VERSION as BRIEF_PROMPT_VERSION
 from gamingcreator.application.brief_reasoning import SCHEMA_VERSION as BRIEF_SCHEMA_VERSION
 from gamingcreator.application.budget import BudgetLedger, InvocationRecorder
+from gamingcreator.application.creation_mixed_actions import PROMPT as MIXED_ACTIONS_PROMPT
+from gamingcreator.application.creation_mixed_actions import SCHEMA as MIXED_ACTIONS_SCHEMA
 from gamingcreator.application.creation_mixed_proposals import PROMPT as MIXED_PROMPT_VERSION
 from gamingcreator.application.creation_mixed_proposals import SCHEMA as MIXED_SCHEMA_VERSION
 from gamingcreator.application.creation_overlay_proposals import (
@@ -136,6 +138,7 @@ class DeepSeekCreationReasoningProvider:
             ("creation-replacement-prompt-v2", "creation-replacement-v2"),
             ("creation-replacement-prompt-v3", "creation-replacement-v2"),
             (MIXED_PROMPT_VERSION, MIXED_SCHEMA_VERSION),
+            (MIXED_ACTIONS_PROMPT, MIXED_ACTIONS_SCHEMA),
             ("creation-insertion-prompt-v1", "creation-insertion-v1"),
             ("creation-insertion-prompt-v2", "creation-insertion-v1"),
             (OVERLAY_PROMPT_VERSION, OVERLAY_SCHEMA_VERSION),

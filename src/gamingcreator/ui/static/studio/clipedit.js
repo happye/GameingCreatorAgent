@@ -412,7 +412,7 @@ function useTimelinePreview(editing, qualifier, onPreview) {
                 || (replacements[row.clipId] && row.speed.numerator !== row.speed.denominator);
         })) throw Error("替换镜头需保持原速，前后须直接切换。请调整指令或先保存版本。");
         active.current.showing = true;
-        setResult({data, epoch: editing.editEpoch}); onPreview(data.clips); setMessage(detail);
+        setResult({data, epoch: editing.editEpoch}); onPreview(data.clips, data.proposal); setMessage(detail);
     };
     const clear = (detail) => {
         active.current.showing = false;
