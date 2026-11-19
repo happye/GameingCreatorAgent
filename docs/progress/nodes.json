@@ -359,10 +359,11 @@
    ]
   },
   "P042": {
-   "done": "本机统计采用和修改；工作台可记录显式结构偏好，下次按来源收据验证并调整同作品同类型的推荐",
-   "todo": "真实平台 CTR、3 秒留存和完播率反馈待接入，真人质量待验",
-   "updated": "2026-11-19",
+   "done": "工作台支持显式结构偏好和下一次推荐；发布页可按平台包手录 CTR、3 秒留存和完播率，重开按原版本回读",
+   "todo": "真实平台数据待录入，成效对比与回到推荐待接入，真人质量待验",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-publication-outcome-feedback",
     "sprint-creator-structure-feedback",
     "sprint-creation-feedback",
     "sprint-j1-feedback-iteration"
@@ -879,6 +880,12 @@
      "name": "显式方案结构偏好用于下次推荐",
      "status": "done",
      "sprint": "sprint-creator-structure-feedback"
+    },
+    {
+     "id": "P042-publication-outcomes",
+     "name": "工作台按平台包归档发布成效",
+     "status": "done",
+     "sprint": "sprint-publication-outcome-feedback"
     },
     {
      "id": "P023/P024",

@@ -175,6 +175,11 @@ details.group[open] > summary::before { content: "▾ "; }
 .clip.changed { outline: 2px solid var(--warn); outline-offset: -1px; z-index: 1; }
 .actions-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .actions-row .btn { padding: 4px 10px; margin: 0; }
+.feedback-url { overflow-wrap: anywhere; }
+.feedback-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.feedback-form > .hint { grid-column: 1 / -1; }
+.feedback-form input { min-width: 0; }
+@media (max-width: 1000px) { .feedback-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .btn.danger { color: var(--bad); }
 .hint.warn { color: var(--warn); }
 .dock.assistant { gap: var(--s-2); height: auto; min-height: 44px; flex-wrap: wrap; padding-block: var(--s-2); }

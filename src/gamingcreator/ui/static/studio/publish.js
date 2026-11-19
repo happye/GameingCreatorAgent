@@ -6,6 +6,7 @@ import {useCallback, useEffect, useRef, useState} from "../vendor/hooks.module.j
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
 import {publicationErrorFields, publicationFieldErrors} from "./publication_form.js";
+import {PublicationFeedback} from "./publication_feedback.js";
 import {usePackageBatches} from "./package_batches.js";
 
 const html = htm.bind(h);
@@ -385,7 +386,14 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     const restore = async (snapshot, generation) => {
         const data = await client.api(`${jobPath(snapshot.publicationJobId)}/packages`, {projectId: project});
         if (generation !== epoch.current) return [];
-        setPackages(data.jobs);
+        setPackages(current => {
+            const loaded = new Map(current.filter(row => row.generationStatus === "completed").map(row => [row.jobId, row]));
+            return data.jobs.map(row => {
+                const old = loaded.get(row.jobId);
+                return old && row.status === "completed" && row.parentReceiptSha256
+                    && row.parentReceiptSha256 === old.parentReceiptSha256 ? {...old, ...row} : row;
+            });
+        });
         for (const row of data.jobs) {
             if (generation !== epoch.current) return data.jobs;
             if (["pending", "running"].includes(row.status)) {
@@ -614,7 +622,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                     </details>`}
                     ${variantError && html`<p class="hint warn" role="status">${variantError}</p>`}
                     ${saved && queue.view}
-                    ${packages.map((pkg) => html`<div class="pkg-result">
+                    ${packages.map((pkg) => html`<div class="pkg-result" key=${pkg.jobId}>
                         <p>${PLATFORMS[pkg.profile?.Platform] || ""}${pkg.profile?.Fields?.variant ? ` · 短版 ${(pkg.profile.Fields.variant.durationFrames / fps).toFixed(2)} 秒` : ""} · ${client.jobStatus(pkg.status)} ${pkg.error?.message || ""}</p>
                         ${pkg.profile?.Fields?.variant?.startFrame && html`<p class="hint">原成片区间 ${(pkg.profile.Fields.variant.startFrame / fps).toFixed(2)}–${((pkg.profile.Fields.variant.startFrame + pkg.profile.Fields.variant.durationFrames) / fps).toFixed(2)} 秒</p>`}
                         ${pkg.profile?.Fields?.variant?.ranges && html`<p class="hint">原成片区间 ${pkg.profile.Fields.variant.ranges.map(span => spanLabel(span, fps)).join(" ＋ ")}</p>`}
@@ -628,6 +636,9 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                             <a class="btn ghost" href=${`${jobPath(pkg.jobId)}/package-files/video.mp4?download=1`} download="video.mp4">只下载视频</a>
                             <button class="btn ghost" aria-expanded=${previewPackage === pkg.jobId} onClick=${() => setPreviewPackage(id => id === pkg.jobId ? "" : pkg.jobId)}>${previewPackage === pkg.jobId ? "收起预览" : `预览${PLATFORMS[pkg.profile?.Platform] || "平台"}成片`}</button></div>
                         ${previewPackage === pkg.jobId && html`<video class="package-video" aria-label="平台成片预览" src=${`${jobPath(pkg.jobId)}/package-files/video.mp4`} controls playsinline preload="metadata"></video>`}
+                        ${pkg.artifacts?.["video.mp4"]?.sha256 && html`<${PublicationFeedback}
+                            key=${`${project}:${pub.publicationJobId}:${pkg.artifacts["video.mp4"].sha256}`}
+                            project=${project} publicationId=${pub.publicationJobId} packageId=${pkg.jobId} videoSha256=${pkg.artifacts["video.mp4"].sha256} />`}
                     </div>`}
                     </div>`)}
                 </div>

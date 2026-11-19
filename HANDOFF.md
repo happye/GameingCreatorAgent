@@ -1,8 +1,8 @@
 # HANDOFF（覆盖快照）
 
-## 最近一次会话（2026-11-19）
+## 最近一次会话（2026-11-20）
 
-继续在原分支 `codex/knowledge-version-compare-20261108` 开发，先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。本批 P042 接通显式结构偏好与下一次方案排序。六个 Codex 角色的模型更新与两份 Markdown 路由说明已推送。验证服务 `http://127.0.0.1:8771/studio`，启动信息见 `.cache/workspace/port-8771.json`。
+继续在原分支 `codex/knowledge-version-compare-20261108` 开发，先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。本批 P042 接通平台包的本机成效记录。六个 Codex 角色的模型更新与两份 Markdown 路由说明已推送。验证服务 `http://127.0.0.1:8772/studio`，启动信息见 `.cache/workspace/port-8772.json`。
 
 ## 实证与接手入口
 
@@ -18,8 +18,10 @@
 
 - [P042 方案结构偏好](docs/exec-plans/sprint-creator-structure-feedback.md)：独立测试作品 458ed39e51b6f469e90bf8bf78d2e62d。基线 cd1403c3a8464be59cbee6ebcf030218 首推玩法展示，记录偏好刷新后 a06a5e6b997f4a0eac148c526bd711b8 首推倒序，30 秒成片 b0ed34e8925c44d6a83e3b002e38004a，B 站包 918ebaca8e1e4069a7f42b2c61c21157；跨标签清除后恢复默认。产物 .cache/scratch/creator-structure-20261119/，零模型调用。
 
+- [P042 发布成效](docs/exec-plans/sprint-publication-outcome-feedback.md)：在发布 42f0de2b00554505a885b3349961f319 的真实 B 站包 918ebaca8e1e4069a7f42b2c61c21157 浏览器登记 1d350c288d521f620d18f5d0bb719280 和 0e0e3260eda831ce292374dbed6cdb1e 两条测试示例。重开读回、幂等重试与不同包隔离通过。证据 .cache/scratch/publication-feedback-20261120/，零模型调用。
+
 ## 下一优先级与约束
 
-P042 下一步接通发布成效反馈。以既有本地发布或平台包身份归档创作者录入的 CTR、3 秒留存和完播率，区分未知、脚本实测与真实平台证据。验证关联发布版本和反馈读回。真实上传、账号接入及付费行为保留各自授权。
+P042 下一步用已记录成效比较同平台的实际版本，让创作者能选择一个表现较好的方案结构作为下一次参考。展示指标、观察时间、来源和未知值，测试示例不参与真实成效建议。需要真实数据才能验收推荐值。真实上传、账号接入及付费行为保留各自授权。
 
 本批使用定向回归、真实浏览器和产物验证，无全量、Release、支付或上传。旧完整 verify-20261117-002506 按用户要求中断，曾见失败。J1 第五次人评未过，J2/J3 待人评，工程实证不改质量和 passes。文字月 ¥30/单条 ¥1、指定视觉月 ¥50，现有费用门禁保留。本机声音，真实平台发布或支付须另授权。

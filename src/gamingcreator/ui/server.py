@@ -134,6 +134,10 @@ ASSETS = {
         "studio/publication_form.js",
         "text/javascript; charset=utf-8",
     ),
+    "/assets/studio/publication_feedback.js": (
+        "studio/publication_feedback.js",
+        "text/javascript; charset=utf-8",
+    ),
     "/assets/studio/preview.js": ("studio/preview.js", "text/javascript; charset=utf-8"),
     "/assets/vendor/preact.module.js": (
         "vendor/preact.module.js",
@@ -592,6 +596,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/revisions",
                 "/api/creation/publications",
                 "/api/creation/publication-shot-recommendations",
+                "/api/creation/publication-feedback",
                 "/api/creation/packages",
                 "/api/creation/package-batches",
                 "/api/creation/narrations",
@@ -666,6 +671,13 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 if urlparse(self.path).query:
                     raise ValueError("Unexpected query.")
                 self._json(200, reasoning_post(self.creation_reasoning, value))
+                return
+            if path == "/api/creation/publication-feedback":
+                from gamingcreator.ui import publication_feedback
+
+                if urlparse(self.path).query:
+                    raise ValueError("Unexpected query.")
+                self._json(200, publication_feedback.record(self.creation_jobs, value))
                 return
             if path == "/api/creation/job-name":
                 if not isinstance(value, dict) or set(value) != {"jobId", "name"}:
@@ -1349,6 +1361,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 if set(query) != {"projectId"}:
                     raise ValueError("Expected registered project ID")
                 self._json(200, self.creation_jobs.feedback(query["projectId"]))
+                return
+            if path == "/api/creation/publication-feedback":
+                from gamingcreator.ui import publication_feedback
+
+                self._json(200, publication_feedback.history(self.creation_jobs, query))
                 return
             if path == "/api/creation/package-batches":
                 if set(query) != {"projectId", "publicationJobId"}:
