@@ -280,10 +280,11 @@
    ]
   },
   "P035": {
-   "done": "Studio可按多个关键词拼接平台短版，按所选内容起草并试听首尾文案，再排队出包。真实抖音多段音画对齐，与全长B站同批恢复",
-   "todo": "开放语义排序、真人创作质量与真实平台资格待验",
+   "done": "Studio可按主题在成片证据内本机排序，人工勾选、按原时序拼接、试听并出包。真实抖音主题短版与全长B站同批恢复",
+   "todo": "主题排序召回及真人创作质量、真实平台资格待验",
    "updated": "2026-11-19",
    "sprints": [
+    "sprint-platform-theme-ranking",
     "sprint-platform-joined-cut",
     "sprint-platform-copy-draft",
     "sprint-platform-content-cut",
@@ -690,6 +691,12 @@
      "name": "多关键词拼接平台短版",
      "status": "done",
      "sprint": "sprint-platform-joined-cut"
+    },
+    {
+     "id": "P035-theme-ranking",
+     "name": "发布页按主题推荐成片镜头",
+     "status": "done",
+     "sprint": "sprint-platform-theme-ranking"
     }
    ]
   },

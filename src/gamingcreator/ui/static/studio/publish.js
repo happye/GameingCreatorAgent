@@ -37,30 +37,33 @@ function draftPlatformCopy(pub, profile, keyword) {
 
 const spanLabel = ({startFrame, endFrame}, fps) => `${(startFrame / fps).toFixed(2)}–${(endFrame / fps).toFixed(2)} 秒`;
 
-function joinedKeywordRanges(terms, shots, cap) {
-    if (terms.length > 8) return {error: "最多可输入 8 个关键词。"};
-    const picked = terms.map(term => shots.find(shot => shot.description.toLowerCase().includes(term)));
-    const missing = terms.find((term, index) => !picked[index]);
-    if (missing) return {error: `没有找到「${missing}」的镜头，请更换关键词。`};
+function mergeShotRanges(picked, cap) {
     const ranges = [];
-    for (const shot of picked.sort((a, b) => a.startFrame - b.startFrame)) {
+    for (const shot of [...picked].sort((a, b) => a.startFrame - b.startFrame)) {
         const last = ranges.at(-1);
         if (last && shot.startFrame <= last.endFrame) last.endFrame = Math.max(last.endFrame, shot.endFrame);
         else ranges.push({startFrame: shot.startFrame, endFrame: shot.endFrame});
     }
     const durationFrames = ranges.reduce((total, span) => total + span.endFrame - span.startFrame, 0);
-    if (durationFrames > cap) return {error: "匹配镜头总时长超过上限，请增加时长或减少关键词。"};
+    if (durationFrames > cap) return {error: "选段总时长超过上限，请增加时长或减少选择。"};
     return {ranges, durationFrames};
+}
+
+function joinedKeywordRanges(terms, shots, cap) {
+    if (terms.length > 8) return {error: "最多可输入 8 个关键词。"};
+    const picked = terms.map(term => shots.find(shot => shot.description.toLowerCase().includes(term)));
+    const missing = terms.find((term, index) => !picked[index]);
+    return missing ? {error: `没有找到「${missing}」的镜头，请更换关键词。`} : mergeShotRanges(picked, cap);
 }
 
 function configuredProfiles(profiles, selected, drafts, fps, totalFrames, shots) {
     let error = "";
     const matches = {};
     const chosen = profiles.filter(p => selected.includes(p.Platform)).map(profile => {
-        const {duration = "", content = "", opening = "", closing = ""} = drafts[profile.Platform] || {};
+        const {duration = "", content = "", opening = "", closing = "", themeCut} = drafts[profile.Platform] || {};
         const fields = {...profile.Fields};
         const terms = [...new Set(content.toLowerCase().split(/[、，,]/).map(term => term.trim()).filter(Boolean))];
-        const joined = terms.length > 1;
+        const joined = terms.length > 1 || !!themeCut;
         let frames = totalFrames;
         if (duration) {
             const requested = Number(duration) * fps;
@@ -75,7 +78,7 @@ function configuredProfiles(profiles, selected, drafts, fps, totalFrames, shots)
         }
         const keyword = terms[0];
         if (joined) {
-            const cut = joinedKeywordRanges(terms, shots, frames);
+            const cut = themeCut ? mergeShotRanges(themeCut.shots, frames) : joinedKeywordRanges(terms, shots, frames);
             if (cut.error) error ||= `${PLATFORMS[profile.Platform]}${cut.error}`;
             else if (cut.durationFrames >= totalFrames) error ||= `${PLATFORMS[profile.Platform]}所选区间覆盖全片，请减少关键词或清空保留全片。`;
             else {
@@ -85,7 +88,7 @@ function configuredProfiles(profiles, selected, drafts, fps, totalFrames, shots)
                     const [{startFrame}] = cut.ranges;
                     fields.variant = {durationFrames: frames, ...(startFrame ? {startFrame} : {})};
                 }
-                matches[profile.Platform] = {...cut, label: terms.join("、")};
+                matches[profile.Platform] = {...cut, label: themeCut?.theme || terms.join("、")};
             }
         } else if (keyword) {
             const matching = shots.filter(shot => shot.description.toLowerCase().includes(keyword));
@@ -115,6 +118,59 @@ function configuredProfiles(profiles, selected, drafts, fps, totalFrames, shots)
         return {...profile, Fields: fields};
     });
     return {chosen, error, matches};
+}
+
+function ThemeRecommendations({pub, platform, fps, disabled, applied, onApply}) {
+    const [theme, setTheme] = useState("");
+    const [shots, setShots] = useState([]);
+    const [picked, setPicked] = useState([]);
+    const [status, setStatus] = useState("");
+    const [busy, setBusy] = useState(false);
+    const active = useRef(null);
+    useEffect(() => () => active.current?.abort(), []);
+    const search = async () => {
+        if (disabled || busy || !theme.trim()) return;
+        const controller = new AbortController();
+        active.current = controller;
+        setShots([]); setPicked([]); setStatus(""); setBusy(true);
+        try {
+            const result = await client.api("/api/creation/publication-shot-recommendations", {}, {
+                signal: controller.signal,
+                body: {publicationJobId: pub.publicationJobId, expectedPublicationReceiptSha256: pub.publicationReceiptSha256, theme: theme.trim()},
+            });
+            if (controller.signal.aborted) return;
+            if (result.publicationJobId !== pub.publicationJobId || result.publicationReceiptSha256 !== pub.publicationReceiptSha256) {
+                throw Error("发布版本已更改，请重新推荐。");
+            }
+            setShots(result.shots);
+            if (!result.shots.length) setStatus("当前成片没有可用于主题推荐的镜头描述。");
+        } catch (error) {
+            if (!controller.signal.aborted) setStatus(error.message);
+        } finally {
+            if (!controller.signal.aborted) setBusy(false);
+        }
+    };
+    return html`<details class="field">
+        <summary>${platform}按主题选段</summary>
+        <div class="actions-row">
+            <label>${platform}主题<input class="input" value=${theme} maxlength="160" disabled=${disabled || busy}
+                placeholder="例如：有哪些招式打出了伤害？" onInput=${e => {
+                    setTheme(e.currentTarget.value); setShots([]); setPicked([]); setStatus("");
+                }} /></label>
+            <button type="button" class="btn ghost" disabled=${disabled || busy || !theme.trim()} onClick=${search}>${busy ? "本机排序中…" : `推荐${platform}镜头`}</button>
+        </div>
+        ${status && html`<p class="hint" role="status">${status}</p>`}
+        ${!!shots.length && html`<ol>${shots.map((shot, index) => html`<li key=${index}>
+            <label><input type="checkbox" disabled=${disabled} checked=${picked.includes(index)} onChange=${e => {
+                const checked = e.currentTarget.checked;
+                setPicked(previous => checked ? [...previous, index] : previous.filter(i => i !== index));
+            }} />
+                ${spanLabel(shot, fps)} · ${shot.description}</label>
+        </li>`)}</ol>
+            <button type="button" class="btn ghost" disabled=${disabled || !picked.length}
+                onClick=${() => onApply({theme: theme.trim(), shots: picked.map(i => shots[i])})}>使用选中镜头</button>`}
+        ${applied && html`<button type="button" class="btn ghost" disabled=${disabled} onClick=${() => onApply(null)}>清除主题选段</button>`}
+    </details>`;
 }
 
 function previewCaption({text, frames}, fps, relative) {
@@ -480,7 +536,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     const suggestCopy = (profile) => {
         const id = profile.Platform;
         const draft = drafts[id] || {};
-        const copy = draftPlatformCopy(pub, profile, draft.content || "");
+        const copy = draftPlatformCopy(pub, profile, draft.themeCut?.theme || draft.content || "");
         updateDraft(id, {
             opening: draft.opening?.trim() ? draft.opening : copy.opening,
             closing: draft.closing?.trim() ? draft.closing : copy.closing,
@@ -538,8 +594,11 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                             </label>
                             ${!!pub?.contentShots?.length && html`<label>${PLATFORMS[id]} 内容关键词
                                 <input class="input" placeholder="可留空或用顿号分隔" maxlength="60" value=${drafts[id]?.content || ""}
-                                    disabled=${!!busy || queue.busy || queue.running} onInput=${e => updateDraft(id, {content: e.currentTarget.value})} />
-                            </label>`}
+                                    disabled=${!!busy || queue.busy || queue.running} onInput=${e => updateDraft(id, {content: e.currentTarget.value, themeCut: null})} />
+                            </label>
+                            <${ThemeRecommendations} key=${draftKey + id} pub=${pub} platform=${PLATFORMS[id]} fps=${fps}
+                                disabled=${!!busy || queue.busy || queue.running} applied=${!!drafts[id]?.themeCut}
+                                onApply=${themeCut => updateDraft(id, {themeCut, content: ""})} />`}
                             ${matches[id] && html`<div>
                                 <span class="hint">${(matches[id].ranges || [matches[id]]).map(span => spanLabel(span, fps)).join(" ＋ ")} · ${matches[id].label}</span>
                                 <button class="btn ghost" disabled=${!!variantError} onClick=${() => previewShort(fields)}>预览${PLATFORMS[id]}所选区间</button>

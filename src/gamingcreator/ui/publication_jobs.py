@@ -101,6 +101,44 @@ def _within(source: SourceInstant | SourceRange, start: int, end: int) -> bool:
     return start <= source.start_us and source.end_us <= end
 
 
+def recommend_shots(jobs: Any, request: Any) -> dict[str, Any]:
+    from gamingcreator.application.publication_shot_ranking import rank_shots
+    from gamingcreator.infrastructure.local_embeddings import LocalEmbeddingProvider
+
+    if (
+        not isinstance(request, dict)
+        or set(request) != {"publicationJobId", "expectedPublicationReceiptSha256", "theme"}
+        or not all(isinstance(value, str) for value in request.values())
+        or not 0 < len(request["theme"].strip()) <= 160
+    ):
+        raise ValueError("请输入 1–160 字主题，并选择已保存的发布版本。")
+    job_id = request["publicationJobId"]
+    saved = snapshot(jobs, job_id)
+    if (
+        saved["publicationJobId"] != job_id
+        or saved["publicationReceiptSha256"] != request["expectedPublicationReceiptSha256"]
+    ):
+        raise ValueError("发布版本已更改，请重新打开。")
+    shots = [row for row in saved["contentShots"] if row["description"]]
+    ranked = (
+        asyncio.run(
+            rank_shots(
+                LocalEmbeddingProvider.from_manifest(jobs.repository),
+                job_id,
+                request["theme"].strip(),
+                shots,
+            )
+        )
+        if shots
+        else []
+    )
+    return {
+        "publicationJobId": job_id,
+        "publicationReceiptSha256": saved["publicationReceiptSha256"],
+        "shots": ranked,
+    }
+
+
 async def content_shots(project: Path, edl: dict[str, Any]) -> list[dict[str, Any]]:
     """Project only descriptions whose evidence still lies inside the rendered shot."""
     rows = edl["segments"]

@@ -587,6 +587,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/renders",
                 "/api/creation/revisions",
                 "/api/creation/publications",
+                "/api/creation/publication-shot-recommendations",
                 "/api/creation/packages",
                 "/api/creation/package-batches",
                 "/api/creation/narrations",
@@ -805,6 +806,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 from gamingcreator.ui.subtitle_preview import preview as subtitle_preview
 
                 self._json(200, subtitle_preview(self.creation_jobs, value))
+                return
+            if path == "/api/creation/publication-shot-recommendations":
+                from gamingcreator.ui.publication_jobs import recommend_shots
+
+                self._json(200, recommend_shots(self.creation_jobs, value))
                 return
             if path == "/api/creation/package-batches":
                 if urlparse(self.path).query:
