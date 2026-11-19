@@ -179,6 +179,11 @@ details.group[open] > summary::before { content: "▾ "; }
 .feedback-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .feedback-form > .hint { grid-column: 1 / -1; }
 .feedback-form input { min-width: 0; }
+.feedback-comparison { overflow-x: auto; }
+.feedback-comparison table { width: 100%; border-collapse: collapse; }
+.feedback-comparison th, .feedback-comparison td { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; }
+.feedback-comparison td:nth-child(2), .feedback-comparison thead th { white-space: nowrap; }
+.feedback-plan-label { display: inline-block; max-width: 16ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
 @media (max-width: 1000px) { .feedback-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .btn.danger { color: var(--bad); }
 .hint.warn { color: var(--warn); }

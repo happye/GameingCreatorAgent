@@ -23,10 +23,10 @@
 1. Grok A01–F16 已集成，定向 99/44/3 通过，TD030 解决。代理预览、空间盘点、OCR、方案对照、逐词字幕和多轨已接入。见 [Grok 集成](docs/exec-plans/sprint-grok-repair-integration.md)。
 2. 真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。
 3. 抖音短版已接入[关键词](docs/exec-plans/sprint-platform-content-cut.md)、[多段拼接](docs/exec-plans/sprint-platform-joined-cut.md)、[画面文案](docs/exec-plans/sprint-platform-copy-draft.md)和[本机主题选段](docs/exec-plans/sprint-platform-theme-ranking.md)。实测出片、试听、队列恢复与 B 站全长包复用。
-4. 创作助手已实测换镜、删裁、变速、换序及[多段插入](docs/exec-plans/sprint-ai-multiple-insertions.md)。本批[旁白和图层随原镜移动](docs/exec-plans/sprint-shot-companion-timing.md)在漫画群星素材把两者起点由第 30 帧迁移至第 0 帧，恢复保存后实测 28.5 秒成片和 B 站包。[AI 随镜时长校验](docs/exec-plans/sprint-ai-companion-fit.md)实测删两镜后先迁移旁白和图层，恢复保存、播放 27.5 秒成片并出 B 站包。
+4. 创作助手已实测换镜、删裁、变速、换序及[多段插入](docs/exec-plans/sprint-ai-multiple-insertions.md)。[AI 随镜时长校验](docs/exec-plans/sprint-ai-companion-fit.md)实测先迁移旁白和图层，恢复保存、播放 27.5 秒成片并出 B 站包。
 5. [P042 方案结构偏好](docs/exec-plans/sprint-creator-structure-feedback.md)接入工作台。漫画群星刷新后从玩法展示首推改为倒序首推，实测 30 秒成片和 B 站包。另一标签页清除后，生成恢复默认首推。
-6. [P042 发布成效](docs/exec-plans/sprint-publication-outcome-feedback.md)已按平台包手录 CTR、3 秒留存和完播率。漫画群星 B 站包上用两条测试数据验证重开读回、重复提交和多包隔离。真实平台数据待录入。
-7. 完整 verify-20261117-002506 按用户要求取消，曾见失败并保留日志。本批成效记录、归属与证据校验定向用例通过，真人质量待验。
+6. [P042 发布成效](docs/exec-plans/sprint-publication-outcome-feedback.md)已按平台包手录 CTR、3 秒留存和完播率。漫画群星 B 站包上用两条测试数据验证重开读回、重复提交和多包隔离。[成效对比与结构参考](docs/exec-plans/sprint-outcome-structure-reference.md)用隔离示例从两个实拍来源 B 站包选中倒序，下次方案首推并显示指标依据。真实平台数据待录入。
+7. 完整 verify-20261117-002506 按用户要求取消，曾见失败并保留日志。本批同平台成效、结构参考与证据校验定向用例通过，真人质量待验。
 
 ## 费用与授权
 

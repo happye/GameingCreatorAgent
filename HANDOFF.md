@@ -2,7 +2,7 @@
 
 ## 最近一次会话（2026-11-20）
 
-继续在原分支 `codex/knowledge-version-compare-20261108` 开发，先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。本批 P042 接通平台包的本机成效记录。六个 Codex 角色的模型更新与两份 Markdown 路由说明已推送。验证服务 `http://127.0.0.1:8772/studio`，启动信息见 `.cache/workspace/port-8772.json`。
+继续在原分支 `codex/knowledge-version-compare-20261108` 开发，先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。本批 P042 接通同平台版本成效对比和下一次结构参考。六个 Codex 角色的模型更新与两份 Markdown 路由说明已推送。验证服务 `http://127.0.0.1:8772/studio`，启动信息见 `.cache/workspace/port-8772.json`。
 
 ## 实证与接手入口
 
@@ -20,8 +20,10 @@
 
 - [P042 发布成效](docs/exec-plans/sprint-publication-outcome-feedback.md)：在发布 42f0de2b00554505a885b3349961f319 的真实 B 站包 918ebaca8e1e4069a7f42b2c61c21157 浏览器登记 1d350c288d521f620d18f5d0bb719280 和 0e0e3260eda831ce292374dbed6cdb1e 两条测试示例。重开读回、幂等重试与不同包隔离通过。证据 .cache/scratch/publication-feedback-20261120/，零模型调用。
 
+- [P042 成效对比和结构参考](docs/exec-plans/sprint-outcome-structure-reference.md)：隔离库用 B 站真实素材包 918ebaca8e1e4069a7f42b2c61c21157 与 a572a837b3dc4422bda2d4030d3a6c34 对比模拟结果，选择倒序后 1946675176534f6c91de7f83b7fd5496 首推并保留日期与指标。证据 .cache/scratch/outcome-reference-20261120/，原库摘要一致。
+
 ## 下一优先级与约束
 
-P042 下一步用已记录成效比较同平台的实际版本，让创作者能选择一个表现较好的方案结构作为下一次参考。展示指标、观察时间、来源和未知值，测试示例不参与真实成效建议。需要真实数据才能验收推荐值。真实上传、账号接入及付费行为保留各自授权。
+P042 已接通手录、对比和参考，真人与平台成效待验。接着按路线推进未完成节点，优先 P043 玩法展示。以 J1 第五次试用问题和现有真实录像为依据，补成片结构与镜头选择的交付缺口。真实上传、账号接入及付费行为保留各自授权。
 
 本批使用定向回归、真实浏览器和产物验证，无全量、Release、支付或上传。旧完整 verify-20261117-002506 按用户要求中断，曾见失败。J1 第五次人评未过，J2/J3 待人评，工程实证不改质量和 passes。文字月 ¥30/单条 ¥1、指定视觉月 ¥50，现有费用门禁保留。本机声音，真实平台发布或支付须另授权。

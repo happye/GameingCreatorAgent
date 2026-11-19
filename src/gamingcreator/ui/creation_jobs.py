@@ -511,6 +511,10 @@ class CreationJobs:
                 plan["id"] == choice.source_plan_id and plan["ready"] for plan in verified["plans"]
             ):
                 raise ValueError("Structure feedback requires a verified ready template")
+            if choice.outcome is not None:
+                from gamingcreator.ui.publication_feedback import verify_reference
+
+                verify_reference(self, request, choice)
         except (AppError, OSError, ValueError, KeyError, TypeError) as error:
             raise fail("creation.input", "方案反馈来源已失效，请清除偏好后重新选择。") from error
 

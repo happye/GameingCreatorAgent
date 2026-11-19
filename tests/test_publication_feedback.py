@@ -1,5 +1,6 @@
 import pytest
 
+from gamingcreator.application.creation_feedback import CreatorStructureChoice
 from gamingcreator.domain.errors import AppError
 from gamingcreator.ui import publication_feedback
 from gamingcreator.ui.creation_jobs import CreationJobs
@@ -93,3 +94,62 @@ def test_feedback_rejects_foreign_identity_invalid_fields_and_altered_history(ta
     jobs.save(path, {**saved, "source": "creator"})
     with pytest.raises(AppError, match="成效记录校验失败"):
         publication_feedback.history(jobs, scope)
+
+
+def test_only_known_creator_outcomes_bind_the_next_plan_reference(target, monkeypatch):
+    jobs, scope, sample = target
+    lineage = {
+        "title": "已发布版本",
+        "workId": "a" * 32,
+        "contentType": "guide",
+        "label": "倒序",
+        "sourceJobId": "d" * 32,
+        "sourcePlanId": "reverse",
+        "sourceReceiptSha256": "0" * 64,
+    }
+    monkeypatch.setattr(publication_feedback, "_lineage", lambda *_: lineage)
+    monkeypatch.setattr(
+        publication_feedback,
+        "_receipt_target",
+        lambda service, identity: (
+            publication_feedback._package_target(service, identity),
+            {"Fields": {}},
+        ),
+    )
+    test = publication_feedback.record(jobs, sample)
+    entered = publication_feedback.record(jobs, {**sample, "source": "creator"})
+    compared = publication_feedback.compare(jobs, {**scope, "metric": "ctrBps"})
+    assert [row["source"] for row in compared["rows"]] == ["creator", "test"]
+    assert compared["rows"][1]["choice"] is None
+    choice = compared["rows"][0]["choice"]
+    assert (
+        choice["outcome"]["valueBps"] == 0
+        and choice["outcome"]["observationId"] == entered["observationId"]
+    )
+    query = {
+        "projectId": scope["projectId"],
+        "workId": lineage["workId"],
+        "brief": {"contentType": "guide", "platforms": ["bilibili"]},
+    }
+    publication_feedback.verify_reference(jobs, query, CreatorStructureChoice.from_json(choice))
+    with pytest.raises(ValueError, match="no longer matches"):
+        publication_feedback.verify_reference(
+            jobs, {**query, "workId": "b" * 32}, CreatorStructureChoice.from_json(choice)
+        )
+    with pytest.raises(ValueError, match="no longer matches"):
+        publication_feedback.verify_reference(
+            jobs,
+            query,
+            CreatorStructureChoice.from_json(
+                {
+                    **choice,
+                    "outcome": {
+                        **choice["outcome"],
+                        "observationId": test["observationId"],
+                        "documentSha256": test["documentSha256"],
+                    },
+                }
+            ),
+        )
+    for row in publication_feedback.compare(jobs, {**scope, "metric": "retention3sBps"})["rows"]:
+        assert row["metrics"]["retention3sBps"] is None and row["choice"] is None

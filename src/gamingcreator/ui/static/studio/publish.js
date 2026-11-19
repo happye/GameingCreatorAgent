@@ -293,7 +293,7 @@ function CoverField({savedSrc, preview, thumbs, coverFrame, fps, onPick}) {
         <p class="hint">好封面：人物或技能特写、画面清晰不糊、没有转场残影；横版 16:9，留出放标题的位置。</p></div>`;
 }
 
-export function PublishWorkspace({project, works, open, onWorksChanged, layout, onDirtyChange = () => {}}) {
+export function PublishWorkspace({project, works, open, onWorksChanged, layout, onDirtyChange = () => {}, onOpenReference = () => {}}) {
     const renders = works.filter((j) => j.kind === "render" && j.status === "completed");
     const [renderId, setRenderId] = useState("");
     const [pub, setPub] = useState(null); // the snapshot shown: a draft from the render or a saved publication
@@ -638,7 +638,8 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                         ${previewPackage === pkg.jobId && html`<video class="package-video" aria-label="平台成片预览" src=${`${jobPath(pkg.jobId)}/package-files/video.mp4`} controls playsinline preload="metadata"></video>`}
                         ${pkg.artifacts?.["video.mp4"]?.sha256 && html`<${PublicationFeedback}
                             key=${`${project}:${pub.publicationJobId}:${pkg.artifacts["video.mp4"].sha256}`}
-                            project=${project} publicationId=${pub.publicationJobId} packageId=${pkg.jobId} videoSha256=${pkg.artifacts["video.mp4"].sha256} />`}
+                            project=${project} publicationId=${pub.publicationJobId} packageId=${pkg.jobId} videoSha256=${pkg.artifacts["video.mp4"].sha256}
+                            onOpenReference=${onOpenReference} />`}
                     </div>`}
                     </div>`)}
                 </div>

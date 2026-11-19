@@ -112,6 +112,10 @@ ASSETS = {
         "text/javascript; charset=utf-8",
     ),
     "/assets/studio/edit.js": ("studio/edit.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/structure_feedback.js": (
+        "studio/structure_feedback.js",
+        "text/javascript; charset=utf-8",
+    ),
     "/assets/studio/compare.js": ("studio/compare.js", "text/javascript; charset=utf-8"),
     "/assets/studio/multitrack.js": ("studio/multitrack.js", "text/javascript; charset=utf-8"),
     "/assets/studio/clip_drafts.js": ("studio/clip_drafts.js", "text/javascript; charset=utf-8"),
@@ -1366,6 +1370,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 from gamingcreator.ui import publication_feedback
 
                 self._json(200, publication_feedback.history(self.creation_jobs, query))
+                return
+            if path == "/api/creation/publication-feedback/compare":
+                from gamingcreator.ui import publication_feedback
+
+                self._json(200, publication_feedback.compare(self.creation_jobs, query))
                 return
             if path == "/api/creation/package-batches":
                 if set(query) != {"projectId", "publicationJobId"}:

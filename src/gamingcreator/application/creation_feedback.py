@@ -8,6 +8,7 @@ import hashlib
 import re
 from collections import Counter
 from dataclasses import dataclass
+from datetime import date
 from typing import Any
 
 EDIT_KINDS = ("删镜头", "换顺序", "裁剪", "变速", "转场", "替换镜头", "字幕", "配乐", "旁白")
@@ -17,6 +18,56 @@ TRIM_TIP = "你常裁短，已建议更短片段"
 TRIM_RULE = "max-output-seconds-per-segment=1"
 MIN_TRIM_EDITS = 3
 MIN_TRIM_SHARE = 0.5
+OUTCOME_METRICS = frozenset({"ctrBps", "retention3sBps", "completionBps"})
+
+
+@dataclass(frozen=True)
+class OutcomeReference:
+    package_job_id: str
+    observation_id: str
+    document_sha256: str
+    platform: str
+    observed_on: str
+    metric: str
+    value_bps: int
+
+    @classmethod
+    def from_json(cls, value: Any) -> "OutcomeReference":
+        fields = (
+            "packageJobId",
+            "observationId",
+            "documentSha256",
+            "platform",
+            "observedOn",
+            "metric",
+            "valueBps",
+        )
+        if not isinstance(value, dict) or set(value) != set(fields):
+            raise ValueError("无效的成效参考。")
+        job, row, digest, platform, day, metric, score = (value[key] for key in fields)
+        if (
+            not all(isinstance(part, str) for part in (job, row, digest, platform, day, metric))
+            or not re.fullmatch(r"[a-f0-9]{32}", job)
+            or not re.fullmatch(r"[a-f0-9]{32}", row)
+            or not re.fullmatch(r"[a-f0-9]{64}", digest)
+            or metric not in OUTCOME_METRICS
+            or type(score) is not int
+            or not 0 <= score <= 10_000
+            or date.fromisoformat(day).isoformat() != day
+        ):
+            raise ValueError("无效的成效参考。")
+        return cls(job, row, digest, platform, day, metric, score)
+
+    def to_json(self) -> dict[str, Any]:
+        return {
+            "packageJobId": self.package_job_id,
+            "observationId": self.observation_id,
+            "documentSha256": self.document_sha256,
+            "platform": self.platform,
+            "observedOn": self.observed_on,
+            "metric": self.metric,
+            "valueBps": self.value_bps,
+        }
 
 
 @dataclass(frozen=True)
@@ -24,14 +75,12 @@ class CreatorStructureChoice:
     source_job_id: str
     source_plan_id: str
     source_receipt_sha256: str
+    outcome: OutcomeReference | None = None
 
     @classmethod
     def from_json(cls, value: Any) -> "CreatorStructureChoice":
-        if not isinstance(value, dict) or set(value) != {
-            "sourceJobId",
-            "sourcePlanId",
-            "sourceReceiptSha256",
-        }:
+        required = {"sourceJobId", "sourcePlanId", "sourceReceiptSha256"}
+        if not isinstance(value, dict) or set(value) not in (required, required | {"outcome"}):
             raise ValueError("方案结构反馈格式无效。")
         job, plan, receipt = (
             value[k] for k in ("sourceJobId", "sourcePlanId", "sourceReceiptSha256")
@@ -43,13 +92,19 @@ class CreatorStructureChoice:
             or not re.fullmatch(r"[a-f0-9]{64}", receipt)
         ):
             raise ValueError("方案结构反馈来源无效。")
-        return cls(job, plan, receipt)
+        return cls(
+            job,
+            plan,
+            receipt,
+            OutcomeReference.from_json(value["outcome"]) if "outcome" in value else None,
+        )
 
-    def to_json(self) -> dict[str, str]:
+    def to_json(self) -> dict[str, Any]:
         return {
             "sourceJobId": self.source_job_id,
             "sourcePlanId": self.source_plan_id,
             "sourceReceiptSha256": self.source_receipt_sha256,
+            **({"outcome": self.outcome.to_json()} if self.outcome is not None else {}),
         }
 
 

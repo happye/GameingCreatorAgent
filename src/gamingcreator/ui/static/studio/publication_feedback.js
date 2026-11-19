@@ -2,10 +2,11 @@ import {h} from "../vendor/preact.module.js";
 import {useEffect, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
+import {OUTCOME_LABELS, writeStructureFeedback} from "./structure_feedback.js";
 
 const html = htm.bind(h);
 const PATH = "/api/creation/publication-feedback";
-const METRICS = [["ctrBps", "点击率（CTR）"], ["retention3sBps", "3 秒留存"], ["completionBps", "完播率"]];
+const METRICS = Object.entries(OUTCOME_LABELS);
 const emptyForm = () => ({ctrBps: "", retention3sBps: "", completionBps: "", postUrl: "", source: "creator",
     observedOn: new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10)});
 const percent = (value) => value === null ? "未知" : `${(value / 100).toFixed(2)}%`;
@@ -19,7 +20,61 @@ function FeedbackHistory({records}) {
     </li>`)}</ul>`;
 }
 
-export function PublicationFeedback({project, publicationId, packageId, videoSha256}) {
+function OutcomeComparison({scope, observationCount, onOpenReference}) {
+    const [open, setOpen] = useState(false);
+    const [showTests, setShowTests] = useState(false);
+    const [metric, setMetric] = useState("completionBps");
+    const [result, setResult] = useState(null);
+    const [message, setMessage] = useState("");
+    const [picked, setPicked] = useState(null);
+    const [refresh, setRefresh] = useState(0);
+    const key = JSON.stringify([scope, metric, observationCount, refresh]);
+    useEffect(() => {
+        if (!open) return;
+        const controller = new AbortController();
+        setResult(null); setMessage(""); setPicked(null);
+        client.api(`${PATH}/compare`, {...scope, metric}, {signal: controller.signal}).then(data => {
+            if (!controller.signal.aborted) setResult({key, data});
+        }).catch(error => { if (!controller.signal.aborted) setMessage(error.message); });
+        return () => controller.abort();
+    }, [open, key]);
+    const data = result?.key === key ? result.data : null;
+    const rows = data?.rows.filter(row => row.source !== "test" || showTests) || [];
+    const remember = (row) => {
+        const storageScope = data.workId ? `${scope.projectId}:work:${data.workId}` : scope.projectId;
+        const saved = writeStructureFeedback(storageScope, {contentType: data.contentType, label: row.planLabel, source: row.choice});
+        setMessage(saved ? "已设为该作品同平台、同类型的下次结构参考。" : "浏览器不允许保存结构参考。");
+        setPicked(saved ? row.choice : null);
+    };
+    return html`<details class="group" onToggle=${event => setOpen(event.currentTarget.open)}>
+        <summary>对比同平台版本</summary>
+        ${open && html`<div class="feedback-comparison">
+            <div class="actions-row">
+                <label>排序指标 <select class="select" value=${metric} onChange=${event => setMetric(event.currentTarget.value)}>
+                    ${METRICS.map(([key, label]) => html`<option value=${key}>${label}</option>`)}</select></label>
+                <label class="check"><input type="checkbox" checked=${showTests} onChange=${e => setShowTests(e.currentTarget.checked)} />显示测试示例</label>
+                <button type="button" class="btn ghost" onClick=${() => setRefresh(value => value + 1)}>刷新对比</button>
+            </div>
+            <p class="hint">同作品、同内容类型的各平台包，按各自最近一次观察比较。</p>
+            ${!data && !message && html`<p class="hint" role="status">正在核对版本与成效…</p>`}
+            ${data?.skipped > 0 && html`<p class="hint">有 ${data.skipped} 个版本无法核对。</p>`}
+            ${data && !rows.length && html`<p class="hint">暂无可比较的${showTests ? "成效" : "手录成效"}。</p>`}
+            ${rows.length ? html`<table aria-label="同平台版本成效">
+                <thead><tr>${["发布版本", "日期与来源", ...METRICS.map(([, label]) => label), "结构参考"].map(label => html`<th scope="col">${label}</th>`)}</tr></thead>
+                <tbody>${rows.map(row => html`<tr key=${`${row.packageJobId}:${row.source}`}>
+                    <th scope="row">${row.title} <small>${row.packageJobId.slice(0, 8)}${row.shortVersion ? " · 短版" : ""}</small></th>
+                    <td><time datetime=${row.observedOn}>${row.observedOn}</time><br />${row.source === "test" ? "测试示例" : "创作者手录"}</td>
+                    ${METRICS.map(([key]) => html`<td>${percent(row.metrics[key])}</td>`)}
+                    <td>${row.choice ? html`<span class="feedback-plan-label" title=${row.planLabel}>${row.planLabel}</span> <button type="button" class="btn ghost" onClick=${() => remember(row)}>参考原方案结构</button>` : "—"}</td>
+                </tr>`)}</tbody>
+            </table>` : null}
+            ${message && html`<p class="hint" role="status">${message}</p>`}
+            ${picked && html`<button type="button" class="btn ghost" onClick=${() => onOpenReference(picked)}>前往该作品剪辑</button>`}
+        </div>`}
+    </details>`;
+}
+
+export function PublicationFeedback({project, publicationId, packageId, videoSha256, onOpenReference}) {
     const [open, setOpen] = useState(false);
     const [records, setRecords] = useState(null);
     const [form, setForm] = useState(emptyForm);
@@ -63,6 +118,7 @@ export function PublicationFeedback({project, publicationId, packageId, videoSha
     return html`<details class="group publication-feedback" onToggle=${event => setOpen(event.currentTarget.open)}>
         <summary>发布成效</summary>
         ${open && records !== null && html`<${FeedbackHistory} records=${records} />`}
+        ${open && html`<${OutcomeComparison} scope=${scope} observationCount=${records?.length} onOpenReference=${onOpenReference} />`}
         ${open && records === null && !message && html`<p class="hint" role="status">正在读取成效记录…</p>`}
         ${open && html`<form class="brief feedback-form" onSubmit=${save}>
             <p class="hint">从平台后台手录数据，空白为未知。手录记录由创作者提供，测试示例单独标记。</p>

@@ -216,7 +216,7 @@ function App() {
     const publishRender = useCallback((jobId) => { leave(() => { reloadWorks(); setOpen({id: jobId, kind: "render", project, at: Date.now()}); setWorkspace("deliver"); }); }, [project, reloadWorks, leave]);
     const openWork = useCallback((job) => {
         if (!["plan", "revision", "render", "publication", "package"].includes(job.kind) || job.status !== "completed") return;
-        leave(() => { setOpen({id: job.jobId, kind: job.kind, project, at: Date.now()}); setWorkspace(["publication", "package"].includes(job.kind) ? "deliver" : "edit"); });
+        leave(() => { setOpen({id: job.jobId, kind: job.kind, planId: job.planId, project, at: Date.now()}); setWorkspace(["publication", "package"].includes(job.kind) ? "deliver" : "edit"); });
     }, [project, leave]);
 
     const seek = useCallback((us, play = false) => {
@@ -281,8 +281,9 @@ function App() {
                 <${Inspector} view=${view} selected=${selected} run=${currentRun} hidden=${!layout.insp} inBasket=${!!selected && basket.ids.has(selected.eventId)} onBasket=${() => toggleBasket(selected)} onRange=${changeRange} />
             </div>`
             : workspace === "edit"
-                ? html`<${WorksWorkspace} key=${project} leave=${leave} project=${project} runs=${runs} open=${open?.project === project ? open : null} isOpenConsumed=${intent => consumedOpen.current.has(intent)} onOpenConsumed=${intent => { if (intent) consumedOpen.current.add(intent); }} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} onFindMaterial=${findMaterial} onPublish=${publishRender} onDirtyChange=${onDirtyChange} renderSecondsPerSecond=${secondsPerSecond} />`
-                : html`<${PublishWorkspace} project=${project} works=${worksProject === project ? works : []} open=${open?.project === project ? open : null} onWorksChanged=${reloadWorks} layout=${layout} onDirtyChange=${onDirtyChange} />`}
+                ? html`<${WorksWorkspace} key=${project} leave=${leave} project=${project} runs=${runs} open=${open?.project === project && ["plan", "revision", "render"].includes(open.kind) ? open : null} isOpenConsumed=${intent => consumedOpen.current.has(intent)} onOpenConsumed=${intent => { if (intent) consumedOpen.current.add(intent); }} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} onFindMaterial=${findMaterial} onPublish=${publishRender} onDirtyChange=${onDirtyChange} renderSecondsPerSecond=${secondsPerSecond} />`
+                : html`<${PublishWorkspace} project=${project} works=${worksProject === project ? works : []} open=${open?.project === project ? open : null} onWorksChanged=${reloadWorks} layout=${layout} onDirtyChange=${onDirtyChange}
+                    onOpenReference=${choice => openWork({jobId: choice.sourceJobId, planId: choice.sourcePlanId, status: "completed", kind: "plan"})} />`}
         ${workspace === "assets" && html`<div class="dock"><strong>提示</strong><span>左上角“搜索片段”按描述找画面，“+”或 B 键加入片段篮，再点“用片段篮生成方案”。一句话修改镜头在剪辑区底部。</span></div>`}
     </div>`;
 }
