@@ -20,6 +20,7 @@ from gamingcreator.application.creation_modes import (
     sample_clips,
 )
 from gamingcreator.application.material_scoring import advisories, score_materials, scoring_legend
+from gamingcreator.application.showcase_topics import showcase_coverage
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.creation import CreativeBrief
 from gamingcreator.domain.media import MediaAsset
@@ -89,6 +90,30 @@ def _prefer_structure(
             plans.insert(0, plans.pop(index))
             return True
     return False
+
+
+def _plan_topic_details(
+    brief: CreativeBrief,
+    identity: str,
+    eligible: list["CreationClip"],
+    segments: list[dict[str, Any]],
+) -> tuple[list[str], dict[str, object]]:
+    if identity == "showcase" and brief.mandatory_topics:
+        coverage = showcase_coverage(brief.mandatory_topics, eligible, segments)
+        notes = [
+            f"缺少主题映射：{row['topic']}（素材记录中未找到，请补充画面或在旁白说明）"
+            if row["status"] == "missing"
+            else f"缺少主题映射：{row['topic']}（素材中已有描述，本版未排入，请加镜头或延长时长）"
+            for row in coverage
+            if row["status"] != "source-matched"
+        ]
+        return notes, {"topicCoverage": coverage, "topicCoverageBasis": "source-matched"}
+    text = " ".join(str(segment["scriptDraft"]) for segment in segments).casefold()
+    return [
+        f"主题未在画面摘要中找到：{topic}（可在旁白或字幕里讲，或补充画面）"
+        for topic in brief.mandatory_topics
+        if topic.casefold() not in text
+    ], {}
 
 
 def distinct_source_intervals(clips: Sequence[Any]) -> int:
@@ -286,6 +311,74 @@ def _budgets(capacities: list[int], weights: list[Fraction], target: int) -> lis
     return budgets
 
 
+def _fill_showcase_duration(
+    shots: list[list[CreationClip]],
+    capacities: list[int],
+    eligible: list[CreationClip],
+    missing_frames: int,
+    fps: int,
+    cap: int,
+) -> tuple[list[list[CreationClip]], list[int]]:
+    """Fill remaining time with unused footage while keeping the opening and topic seeds."""
+    used = {id(clip) for shot in shots for clip in shot}
+    order = {id(clip): index for index, clip in enumerate(eligible)}
+    available = sorted(
+        (clip for clip in eligible if id(clip) not in used),
+        key=lambda clip: min(cap, _event_frames(clip, fps)),
+        reverse=True,
+    )
+    middle = list(zip(shots[1:], capacities[1:], strict=True))
+    for clip in available:
+        capacity = min(cap, _event_frames(clip, fps))
+        middle.append(([clip], capacity))
+        missing_frames -= capacity
+        if missing_frames <= 0:
+            break
+    middle.sort(key=lambda item: order[id(item[0][0])])
+    return [shots[0], *(shot for shot, _ in middle)], [capacities[0], *(n for _, n in middle)]
+
+
+def _allocate_structure(
+    ordered: list[CreationClip],
+    eligible: list[CreationClip],
+    roles: tuple[str, ...] | None,
+    weights: tuple[Fraction, ...] | None,
+    fps: int,
+    target_frames: int,
+    *,
+    trim_applied: bool,
+    fill_duration: bool,
+) -> tuple[list[list[CreationClip]], tuple[str, ...] | None, list[int]]:
+    if trim_applied or not ordered:
+        # Trimming habits keep one-second segments, one event each.
+        shots = [[clip] for clip in ordered]
+    else:
+        # Chains reach the longest allowed shot; budgets below decide how much plays.
+        shots = _shots(ordered, eligible, MAX_SHOT_SECONDS * 1_000_000)
+    # One second of output when trimming is common: see ordering.editHabits.
+    cap = fps if trim_applied else MAX_SHOT_SECONDS * fps
+    capacities = [
+        min(
+            sum(_event_frames(clip, fps) for clip in shot),
+            MAX_OPENING_SECONDS * fps if index == 0 and weights and not trim_applied else cap,
+        )
+        for index, shot in enumerate(shots)
+    ]
+    missing_frames = target_frames - sum(capacities)
+    if fill_duration and shots and missing_frames > 0:
+        shots, capacities = _fill_showcase_duration(
+            shots, capacities, eligible, missing_frames, fps, cap
+        )
+        middle_count = len(shots) - 1
+        weights = (max(Fraction(1), Fraction(middle_count, 3)), *[Fraction(1)] * middle_count)
+        if middle_count >= 2:
+            roles = ("开场高光", *["玩法展示"] * (middle_count - 1), "收尾")
+        elif middle_count == 1:
+            roles = ("开场高光", "玩法展示")
+    budgets = _budgets(capacities, list(weights or [Fraction(1)] * len(shots)), target_frames)
+    return shots, roles, budgets
+
+
 def eligible_clips(
     brief: CreativeBrief, clips: tuple[CreationClip, ...], fps: int
 ) -> list[CreationClip]:
@@ -398,7 +491,8 @@ def plan_creation(
     }
     suggestion = trim_suggestion(edit_kinds) if edit_kinds is not None else None
     trim_applied = bool(suggestion and suggestion["applied"])
-    mode = mode_structure(brief, eligible, total)
+    target_frames = brief.target_duration * fps
+    mode = mode_structure(brief, eligible, total, target_frames=target_frames)
     structures = generic
     if mode is not None:
         # The content mode's own template is recommended first; generic orders stay available.
@@ -407,24 +501,17 @@ def plan_creation(
             *generic,
         ]
     plans: list[dict[str, object]] = []
-    target_frames = brief.target_duration * fps
     for identity, description, ordered, roles, weights in structures:
-        if trim_applied or not ordered:
-            # Trimming habits keep one-second segments, one event each.
-            shots = [[clip] for clip in ordered]
-        else:
-            # Chains reach the longest allowed shot; budgets below decide how much plays.
-            shots = _shots(ordered, eligible, MAX_SHOT_SECONDS * 1_000_000)
-        # One second of output when trimming is common: see ordering.editHabits.
-        cap = fps if trim_applied else MAX_SHOT_SECONDS * fps
-        capacities = [
-            min(
-                sum(_event_frames(clip, fps) for clip in shot),
-                MAX_OPENING_SECONDS * fps if index == 0 and weights and not trim_applied else cap,
-            )
-            for index, shot in enumerate(shots)
-        ]
-        budgets = _budgets(capacities, list(weights or [Fraction(1)] * len(shots)), target_frames)
+        shots, roles, budgets = _allocate_structure(
+            ordered,
+            eligible,
+            roles,
+            weights,
+            fps,
+            target_frames,
+            trim_applied=trim_applied,
+            fill_duration=identity == "showcase" and bool(brief.mandatory_topics),
+        )
         segments: list[dict[str, object]] = []
         segment_shots: list[int] = []
         used_intervals: set[tuple[str, int, int]] = set()
@@ -482,14 +569,7 @@ def plan_creation(
             numbers = {shot_no: n for n, shot_no in enumerate(dict.fromkeys(segment_shots), 1)}
             for segment, shot_no in zip(segments, segment_shots, strict=True):
                 segment["role"] = f"第{numbers[shot_no]}步"
-        text = " ".join(str(segment["scriptDraft"]) for segment in segments).casefold()
-        # Topics are content goals, not filters: an editorial topic ("角色介绍") rarely appears
-        # verbatim in a visual description, so a miss is advice and never blocks the plan.
-        topic_notes = [
-            f"主题未在画面摘要中找到：{topic}（可在旁白或字幕里讲，或补充画面）"
-            for topic in brief.mandatory_topics
-            if topic.casefold() not in text
-        ]
+        topic_notes, topic_fields = _plan_topic_details(brief, identity, eligible, segments)
         gaps = []
         if len(segments) < 3:
             gaps.append("不足三个不同源区间，不能形成完整的三段结构")
@@ -501,6 +581,7 @@ def plan_creation(
                 "contentSignature": plan_content_signature(segments),
                 "gaps": gaps,
                 "ready": not gaps,
+                **topic_fields,
                 "advisories": [
                     *topic_notes,
                     *([TRIM_TIP] if trim_applied else []),

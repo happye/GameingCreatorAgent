@@ -134,11 +134,15 @@ export function KnowledgeUses({uses}) {
 
 export function TopicCoverage({plan}) {
     if (!plan?.topicCoverage?.length) return null;
-    return html`<details class="topic-coverage" aria-label="方案主题安排"><summary>方案主题安排（AI 建议，需预览核对）</summary>
-        <p class="hint">以下对应原方案镜头编号；手动改镜头后请重新核对。引用的是已保存的画面描述，不代表已经确认画面能讲清这个主题。</p>
+    const local = plan.topicCoverageBasis === "source-matched";
+    return html`<details class="topic-coverage" aria-label="方案主题安排"><summary>方案主题安排（${local ? "本地素材匹配" : "AI 建议，需预览核对"}）</summary>
+        <p class="hint">${local ? "编号对应原方案片段。引用来自素材分析区间，请预览核对裁剪后实际保留的画面。" : "以下对应原方案镜头编号。引用来自已保存的素材记录，修改镜头后请在预览中重新核对。"}</p>
         ${plan.topicCoverage.map(row => html`<div class="field"><div class="k">${row.topic}</div>
-            <p>${row.status === "missing" ? "缺少对应画面，可补素材或调整表达" : `建议使用镜头 ${row.shotIndexes.join("、")}`}</p>
-            ${row.shotIndexes.map(index => html`<div>${(plan.segments[index - 1]?.topicUses || []).filter(use => use.topic === row.topic).map(use => html`<p>镜头 ${index}：${use.rationale}</p><blockquote>摘要原文：${use.observationQuote}</blockquote>`)}</div>`)}
+            <p>${row.status === "missing" ? local ? "素材记录中未匹配，可补素材或调整表达" : "缺少对应画面，可补素材或调整表达" : row.status === "available" ? "素材已有记录，本版暂未排入" : `${local ? "关联原方案片段" : "建议使用镜头"} ${row.shotIndexes.join("、")}`}</p>
+            ${row.shotIndexes.map(index => {
+                const segment = plan.segments[index - 1];
+                return html`<div>${(segment?.topicUses || []).filter(use => use.topic === row.topic).map(use => html`<p>${local ? "片段" : "镜头"} ${index}：${use.rationale}</p><blockquote>${use.evidenceKind === "tag" ? "玩法标签" : "摘要原文"}：${use.observationQuote}</blockquote>${local && segment.uncertainty ? html`<p class="hint">素材分析备注：${segment.uncertainty}</p>` : null}`)}</div>`;
+            })}
         </div>`)}
     </details>`;
 }

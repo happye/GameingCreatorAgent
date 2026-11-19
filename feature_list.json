@@ -1081,7 +1081,8 @@
             "delivery_status": "partial",
             "implementation_evidence": [
                 "2026-11-01: feature showcase mode (richest-description opening hook, ordered showcase, closing) real instance demo-phase0 -> 10-shot MP4 373 frames -> cover/text -> Bilibili package, all configured checks pass (.cache/content-modes-e2e.json); hook chosen by description detail, not visual understanding",
-                "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md"
+                "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md",
+                "2026-11-20: local showcase reserves matching required topics, prioritizes observed gameplay feedback at the opening and reports source gaps. Real Comic Stars footage produced a 900-frame video and seven-file Bilibili package. See sprint-showcase-topic-coverage."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

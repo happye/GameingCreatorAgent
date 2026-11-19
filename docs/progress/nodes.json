@@ -371,10 +371,11 @@
    ]
   },
   "P043": {
-   "done": "玩法展示模板：开场高光→顺序展示→收尾，真实录像→MP4→B站包已走通，即J1主路径",
-   "todo": "J1第四次试看全流程未通过；高光靠描述而非画面理解",
-   "updated": "2026-11-08",
+   "done": "玩法展示按操作和反馈记录选开场，优先保留必讲主题并列出素材缺口；漫画群星 1V1、3V3 和技能释放已走通 30 秒成片及 B 站包",
+   "todo": "J1 第五次试看全流程未通过；画面、解说和叙事质量待人评",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-showcase-topic-coverage",
     "sprint-content-modes",
     "sprint-j1-creation-usability"
    ]
@@ -452,7 +453,7 @@
    "goal": "需求+素材→可选方案→真实可解码MP4",
    "status": "partial",
    "done": "结构化需求、三种离线模板方案、素材缺口与EDL已通；EDL真实渲染MP4、工作台持久任务与/studio创作页可用",
-   "todo": "J1人评第四次仍未通过；任意自然语言理解与创作质量人评未做",
+   "todo": "J1人评第五次仍未通过；任意自然语言理解与创作质量人评未做",
    "features": [
     "P019",
     "P021",
@@ -506,6 +507,12 @@
      "name": "J1第四次反馈迭代",
      "status": "partial",
      "sprint": "sprint-j1-feedback-iteration"
+    },
+    {
+     "id": "P043-topic-coverage",
+     "name": "玩法展示按素材保留必讲主题",
+     "status": "done",
+     "sprint": "sprint-showcase-topic-coverage"
     }
    ]
   },

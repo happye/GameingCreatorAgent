@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 from typing import TYPE_CHECKING
 
+from gamingcreator.application.showcase_topics import gameplay_opening, reserve_topics
 from gamingcreator.domain.creation import CreativeBrief
 
 if TYPE_CHECKING:
@@ -104,23 +105,12 @@ def sample_clips(clips: Sequence["CreationClip"], count: int, score: Score) -> l
 
 
 def mode_structure(
-    brief: CreativeBrief, eligible: Sequence["CreationClip"], score: Score = lambda clip: 0.0
+    brief: CreativeBrief, eligible: Sequence["CreationClip"], score: Score, *, target_frames: int
 ) -> ModeStructure | None:
     if not eligible:
         return None
     if brief.content_type == "feature_showcase":
-        opening = _richest(eligible, score)
-        middle = sample_clips(
-            [clip for clip in eligible if clip is not opening], _cap(brief) - 1, score
-        )
-        ordered, roles, weights = _framed(opening, middle, "开场高光", "玩法展示")
-        return ModeStructure(
-            "showcase",
-            "玩法展示模板：描述最丰富的片段作开场高光，其余按录像顺序展示玩法，最后一段收尾",
-            ordered,
-            roles,
-            weights,
-        )
+        return _showcase(brief, eligible, score, target_frames)
     if brief.content_type == "guide":
         picked = sample_clips(eligible, _cap(brief), score)
         seconds = brief.target_duration / len(picked)
@@ -237,3 +227,28 @@ def mode_structure(
             (hook_weight, *[Fraction(1)] * (len(ordered_clips) - 1)),
         )
     return None
+
+
+def _showcase(
+    brief: CreativeBrief, eligible: Sequence["CreationClip"], score: Score, target_frames: int
+) -> ModeStructure:
+    gameplay = [clip for clip in eligible if gameplay_opening(clip)]
+    opening = _richest(gameplay or eligible, score)
+    remaining = [clip for clip in eligible if clip is not opening]
+    limit = min(_cap(brief), target_frames) - 1
+    anchors = (
+        reserve_topics(brief.mandatory_topics, remaining, opening, limit, score)
+        if brief.mandatory_topics
+        else []
+    )
+    reserved = {id(clip) for clip in anchors}
+    sampled = sample_clips(
+        [clip for clip in remaining if id(clip) not in reserved], limit - len(anchors), score
+    )
+    selected = reserved | {id(clip) for clip in sampled}
+    middle = [clip for clip in remaining if id(clip) in selected]
+    ordered, roles, weights = _framed(opening, middle, "开场高光", "玩法展示")
+    description = "玩法展示模板：优先用有操作或反馈依据的画面开场，其余按录像顺序展示"
+    if anchors:
+        description += "，优先保留已匹配的必讲主题"
+    return ModeStructure("showcase", description, ordered, roles, weights)

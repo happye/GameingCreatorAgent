@@ -1,5 +1,6 @@
 """Content-mode templates: recommended first, honest roles, render-valid frame layout."""
 
+from dataclasses import replace
 from fractions import Fraction
 from pathlib import Path
 from types import SimpleNamespace
@@ -80,6 +81,60 @@ def test_showcase_hook_first_with_more_time_and_generic_plans_kept():
     chronological = plan(report, "chronological")["segments"]
     assert all("role" not in s for s in chronological)
     assert [s["outputFrames"] for s in chronological] == [72] * 5
+
+
+def test_showcase_reserves_supported_topics_and_reports_only_rendered_evidence():
+    clips = list(
+        material(
+            [
+                ["标题画面", "显眼的白色边框", "两段文字", "光效"],
+                ["显示武道会（１Ｖ１）"],
+                ["画面中央出现蓝色环形效果"],
+                ["场地背景"],
+                ["显示交流会（3V3）"],
+                ["结束宣传语"],
+                ["标题中显示11V1"],
+            ]
+        )
+    )
+    clips[2] = replace(
+        clips[2], event=replace(clips[2].event, mechanic_tags=("技能释放", "伤害数字"))
+    )
+    clips[-1] = replace(clips[-1], event=replace(clips[-1].event, mechanic_tags=("伤害结算",)))
+    request = brief("feature_showcase", duration=9, topics=("1V1", "3V3", "技能释放", "结算"))
+    showcase = plan(plan_creation(request, tuple(clips), 30), "showcase")
+    assert showcase["segments"][0]["eventId"] == "e2"
+    assert showcase["topicCoverageBasis"] == "source-matched" and showcase["ready"]
+    expected = {"1V1": "e1", "3V3": "e4", "技能释放": "e2"}
+    for item in showcase["topicCoverage"]:
+        topic = item["topic"]
+        if topic == "结算":
+            assert item == {"topic": topic, "status": "missing", "shotIndexes": []}
+            continue
+        assert item["status"] == "source-matched"
+        assert [showcase["segments"][i - 1]["eventId"] for i in item["shotIndexes"]] == [
+            expected[topic]
+        ]
+    assert showcase["segments"][0]["topicUses"][0]["evidenceKind"] == "tag"
+    assert sum(row["outputFrames"] for row in showcase["segments"]) == 270
+
+
+def test_showcase_fills_duration_from_unused_footage_without_losing_topic():
+    clips = material([["技能释放"], ["场景"], ["武道会(1V1)"], ["角色移动"], ["结束"]])
+    lengths = (1_500_000, 1_500_000, 100_000, 3_000_000, 1_500_000)
+    adjusted = tuple(
+        replace(
+            clip,
+            event=replace(
+                clip.event,
+                source_range=SourceRange(i * 4_000_000, i * 4_000_000 + duration, 120_000_000),
+            ),
+        )
+        for i, (clip, duration) in enumerate(zip(clips, lengths, strict=True))
+    )
+    showcase = plan(plan_creation(brief("feature_showcase", 6, ("1V1",)), adjusted, 30), "showcase")
+    assert showcase["topicCoverage"][0]["status"] == "source-matched"
+    assert sum(row["outputFrames"] for row in showcase["segments"]) == 180
 
 
 def test_guide_steps_sample_the_whole_recording_with_contiguous_numbers():

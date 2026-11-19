@@ -26,7 +26,8 @@
 4. 创作助手已实测换镜、删裁、变速、换序及[多段插入](docs/exec-plans/sprint-ai-multiple-insertions.md)。[AI 随镜时长校验](docs/exec-plans/sprint-ai-companion-fit.md)实测先迁移旁白和图层，恢复保存、播放 27.5 秒成片并出 B 站包。
 5. [P042 方案结构偏好](docs/exec-plans/sprint-creator-structure-feedback.md)接入工作台。漫画群星刷新后从玩法展示首推改为倒序首推，实测 30 秒成片和 B 站包。另一标签页清除后，生成恢复默认首推。
 6. [P042 发布成效](docs/exec-plans/sprint-publication-outcome-feedback.md)已按平台包手录 CTR、3 秒留存和完播率。漫画群星 B 站包上用两条测试数据验证重开读回、重复提交和多包隔离。[成效对比与结构参考](docs/exec-plans/sprint-outcome-structure-reference.md)用隔离示例从两个实拍来源 B 站包选中倒序，下次方案首推并显示指标依据。真实平台数据待录入。
-7. 完整 verify-20261117-002506 按用户要求取消，曾见失败并保留日志。本批同平台成效、结构参考与证据校验定向用例通过，真人质量待验。
+7. [P043 玩法主题安排](docs/exec-plans/sprint-showcase-topic-coverage.md)已实测漫画群星 30 秒成片与 B 站包，保留 1V1、3V3 和技能释放，提示结算缺口。下一步处理 J1 的分段讲解和叙事。
+8. 内容模式 14 项定向回归通过。旧 verify-20261117-002506 已按用户要求取消，失败记录保留。
 
 ## 费用与授权
 
