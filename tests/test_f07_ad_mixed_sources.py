@@ -247,19 +247,20 @@ def test_ad_mixed_source_safe_area_badge_and_watermark(tmp_path):
         assert report["modeHonesty"] == "描述代理评分、非画面理解／未做人评／投放未验证"
         for name in UNKNOWN_PARTS:
             assert report["scoring"]["basis"][name] == UNKNOWN
-        ad = next(item for item in plan["plans"] if item["id"] == "ad-hook")
+        ad = next(item for item in plan["plans"] if item["id"] == "ad-evidence-demo")
         assert ad["mode"] == "ad"
         assert ad["modeLabel"] == "广告/买量"
         segments = ad["segments"]
         assert len(segments) >= 3
         roles = [segment["role"] for segment in segments]
         assert roles[0] == "开场钩子"
-        assert roles[-1] == "行动号召"
-        assert all(role == "卖点" for role in roles[1:-1])
+        assert roles[-1] == "号召背景"
+        assert roles[1] == "卖点"
+        assert all(role == "展示画面" for role in roles[2:-1])
         hook = by_event[segments[0]["eventId"]]
-        assert hook["color"] == "green"
-        selling = [by_event[segment["eventId"]]["color"] for segment in segments[1:-1]]
-        assert selling[0] == "yellow"
+        assert hook["color"] == "red"
+        assert by_event[segments[1]["eventId"]]["color"] == "green"
+        assert segments[1]["topicUses"][0]["topic"] == TOPIC
         for segment in segments:
             for name in UNKNOWN_PARTS:
                 assert segment["score"]["parts"][name] is None
@@ -277,7 +278,7 @@ def test_ad_mixed_source_safe_area_badge_and_watermark(tmp_path):
             {
                 "requestId": uuid4().hex,
                 "planJobId": plan["jobId"],
-                "planId": "ad-hook",
+                "planId": ad["id"],
                 "width": WIDTH,
                 "height": HEIGHT,
                 "safeAreaMarginPercent": SAFE_MARGIN,
@@ -436,7 +437,7 @@ def test_ad_mixed_source_safe_area_badge_and_watermark(tmp_path):
 
         summary = {
             "mode": "广告/买量",
-            "planId": "ad-hook",
+            "planId": ad["id"],
             "understandingVerified": report["understandingVerified"],
             "modeHonesty": report["modeHonesty"],
             "unknownScoreParts": {name: report["scoring"]["basis"][name] for name in UNKNOWN_PARTS},

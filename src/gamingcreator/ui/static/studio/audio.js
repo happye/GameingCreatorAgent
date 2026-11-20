@@ -129,11 +129,28 @@ export function useMusicCatalog() {
     return {tracks, reload};
 }
 
+function AdMusicSuggestions({tracks, durationUs, selectedId, disabled, onSelect}) {
+    if (durationUs <= 0) return null;
+    const eligible = tracks.filter((track) => track.licenseStatus === "user_declared");
+    const covering = eligible.filter((track) => track.durationUs >= durationUs).sort((a, b) => a.durationUs - b.durationUs);
+    const looping = eligible.filter((track) => track.durationUs < durationUs).sort((a, b) => b.durationUs - a.durationUs);
+    const suggestions = [...covering, ...looping].slice(0, 3);
+    return html`<div class="field">
+        <div class="k">广告配乐建议</div>
+        ${suggestions.length ? html`<p class="hint">按当前 ${(durationUs / 1e6).toFixed(1)} 秒成片匹配时长，优先选一次播完即可覆盖的音乐。选用后可随画面试听。</p>
+            <ul>${suggestions.map((track) => html`<li key=${track.trackId}>
+                <button class="btn ghost" type="button" style="max-width:100%;overflow-wrap:anywhere" disabled=${disabled || selectedId === track.trackId}
+                    onClick=${() => onSelect(track)}>${selectedId === track.trackId ? "已选用" : "选用"} ${track.title}</button>
+                <span class="hint"> ${track.durationUs >= durationUs ? "单次覆盖" : "需要循环"} · ${(track.durationUs / 1e6).toFixed(1)} 秒</span>
+            </li>`)}</ul>` : html`<p class="hint">上传音乐并声明有权使用后，可按成片时长获得建议。</p>`}
+    </div>`;
+}
+
 // Same upper bound as the server's fee gate: CJK characters count twice.
 const billedCharacters = (text) => [...text].reduce((n, c) => n + ((c >= "\u2e80" && c <= "\u9fff") || (c >= "\uf900" && c <= "\uffef") ? 2 : 1), 0);
 const costOf = (text, voice) => (voice?.paid ? Math.round(billedCharacters(text) * voice.yuanPer10kCharacters) / 10000 : 0);
 
-export function AudioPanel({commandPreview = false, editing, project, game = "", fps, totalUs, music, onBusy}) {
+export function AudioPanel({commandPreview = false, adMusicDurationUs = 0, musicSuggestionsDisabled = false, editing, project, game = "", fps, totalUs, music, onBusy}) {
     const {audio} = editing;
     const [voices, setVoices] = useState([]);
     const [billing, setBilling] = useState({spent: 0, cap: 0});
@@ -487,6 +504,9 @@ export function AudioPanel({commandPreview = false, editing, project, game = "",
     };
 
     const n = audio.narration, asset = audio.asset, bgm = audio.mix.bgm;
+    const selectMusic = (track) => editing.ops.mix({bgm: track ? {
+        trackId: track.trackId, trackReceiptSha256: track.trackReceiptSha256, gainDb: bgm?.gainDb ?? -12,
+    } : null});
     const selected = voices.find((v) => v.voiceId === voiceId), paid = !!selected?.paid, cost = costOf(text.trim(), selected);
     const revisionVoice = voices.find((v) => v.voiceId === revisionVoiceId);
     const estimate = text.trim() ? text.trim().length / (script?.charactersPerSecond || 3.5) : 0;
@@ -602,9 +622,10 @@ export function AudioPanel({commandPreview = false, editing, project, game = "",
         </div>
         <${KnowledgePanel} key=${`${project}:${String(game || "")}`} project=${project} game=${game || ""} />
         <div class="field audio-panel"><div class="k">配乐与原声</div>
+            <${AdMusicSuggestions} tracks=${music.tracks} durationUs=${adMusicDurationUs} selectedId=${bgm?.trackId}
+                disabled=${!!working || musicSuggestionsDisabled} onSelect=${selectMusic} />
             <label class="form-row">配乐<select class="select" value=${bgm?.trackId || ""} onChange=${(e) => {
-                const t = music.tracks.find((x) => x.trackId === e.currentTarget.value);
-                editing.ops.mix({bgm: t ? {trackId: t.trackId, trackReceiptSha256: t.trackReceiptSha256, gainDb: bgm?.gainDb ?? -12} : null});
+                selectMusic(music.tracks.find((track) => track.trackId === e.currentTarget.value));
             }}><option value="">不加配乐</option>${music.tracks.map((t) => html`<option value=${t.trackId}>${t.title}（${(t.durationUs / 1e6).toFixed(0)} 秒）</option>`)}</select></label>
             <div class="pair even">
                 ${bgm ? gainSelect(bgm.gainDb, (g) => editing.ops.mix({bgm: {...bgm, gainDb: g}}), "配乐音量") : null}

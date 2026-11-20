@@ -23,6 +23,7 @@ const LAST = "studio-last-job-v1";
 const TYPES = [["feature_showcase", "玩法展示"], ["guide", "攻略"], ["campaign", "活动投稿"], ["commentary", "游戏解说"], ["live_cut", "实况精剪"], ["highlight", "高光"], ["ad", "广告/买量"]];
 const PLATFORMS = [["bilibili", "B站"], ["douyin", "抖音"], ["kuaishou", "快手"], ["xiaohongshu", "小红书"]];
 const DEFAULTS = {runIds: [], game: "", contentType: "feature_showcase", targetDuration: "60", platform: "bilibili", objective: "整理已有素材中的玩法片段", audience: "新玩家", tone: "清楚简洁", mandatoryTopics: "", exclude: "", fps: "30"};
+const SOURCE_ONLY_AUDIO = {mix: {bgm: null, sourceGainDb: 0, ducking: "off"}};
 
 const list = (text) => [...new Set(text.split(/[,，\n]/).map((s) => s.trim()).filter(Boolean))];
 const secondsText = (us) => `${(us / 1e6).toFixed(1)} 秒`;
@@ -260,6 +261,8 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     }, [commandRows, editing.clips]);
     const previewProblem = (shownClips ? transitionProblem(shownClips, fps) : "") || (items.some(item => !SourceClock.clockCandidates({sourceClock: item.sourceClock}).length) ? "素材源时钟不支持即时预览，请导出成片后观看" : "");
     const totalFrames = items.length ? items.at(-1).outStartFrame + items.at(-1).outFrames : 0;
+    const adMusicDurationUs = planJob?.brief?.contentType === "ad" && !commandPreview && !comparePlan && fps
+        ? totalFrames * 1e6 / fps : 0;
     const problem = editable ? captionProblem(editing.subtitleOverrides) || transitionProblem(editing.clips, fps) || narrationProblem(editing.audio, items.length ? items.at(-1).outStartUs + items.at(-1).outDurUs : 0, fps)
         || overlayProblem(editing.overlays, editing.overlayAssets, totalFrames, canvasWidth, canvasHeight) : "";
     const groups = useMemo(() => shots(items), [items]);
@@ -313,7 +316,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         : problem || (!editing.dirty ? "修改镜头、声音或叠加后可保存新版本" : "");
     // The inspector has three pages so sound and export stay reachable while a clip is selected.
     const [inspTab, setInspTab] = useState("shot");
-    const sound = useAudioPreview(player, comparePlan && comparePlan.id !== planId ? {} : previewAudio, fps, planVideo, music.tracks, `${project}:${editing.base?.jobId}:${editing.base?.planId}`);
+    const sound = useAudioPreview(player, comparePlan && comparePlan.id !== planId ? SOURCE_ONLY_AUDIO : previewAudio, fps, planVideo, music.tracks, `${project}:${editing.base?.jobId}:${editing.base?.planId}`);
     const thumb = useCallback((item) => (item?.evidenceIds?.[0] ? client.evidenceUrl(project, item.runId, item.evidenceIds[0]) : null), [project]);
 
 
@@ -593,7 +596,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     : plan ? html`<p class="hint">点时间轴上的一个镜头，可以裁短、调速、换顺序或替换画面。</p><${PlanInspector} plan=${plan} groups=${groups} count=${items.length} totalUs=${player.totalUs} shot=${null} />` : html`<p class="note">选中方案后，这里显示它的时长、镜头和缺口。</p>`}
                 </div>
                 <div hidden=${inspTab !== "sound"}>
-                ${editable ? html`<${AudioPanel} commandPreview=${commandPreview} editing=${editing} project=${project} game=${planJob?.brief?.game || ""} fps=${fps} totalUs=${player.totalUs} music=${music} onBusy=${setAudioBusy} /><${BeatSnap} editing=${editing} blocked=${!!busy || command?.owner === "assistant" || !!commandOverlays} onPreview=${setBeatRows} />`
+                ${editable ? html`<${AudioPanel} commandPreview=${commandPreview} adMusicDurationUs=${adMusicDurationUs} musicSuggestionsDisabled=${!!busy} editing=${editing} project=${project} game=${planJob?.brief?.game || ""} fps=${fps} totalUs=${player.totalUs} music=${music} onBusy=${setAudioBusy} /><${BeatSnap} editing=${editing} blocked=${!!busy || command?.owner === "assistant" || !!commandOverlays} onPreview=${setBeatRows} />`
                     : html`<p class="note">${plan ? "这个方案还不能编辑声音（正在读取或只能导出）。" : "先在左侧选一个方案，再在这里加旁白和配乐。"}</p>`}
                 </div>
                 <div hidden=${inspTab !== "overlay"}>

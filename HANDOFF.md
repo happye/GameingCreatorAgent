@@ -2,7 +2,7 @@
 
 ## 最近一次会话（2026-11-20）
 
-继续在原分支 `codex/knowledge-version-compare-20261108` 开发，先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。本批接通 Studio 团队审核与本机模拟发布。六个 Codex 角色的模型更新与两份 Markdown 路由说明已推送。验证服务 `http://127.0.0.1:8772/studio`，启动信息见 `.cache/workspace/port-8772.json`。
+当前开发分支为 `main`。先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。本批接通 P049 广告配乐建议，在隔离项目实测《代号 Atom》8 秒竖屏成片与抖音包。版本 `716785d0b62a431bbbe8bdafeb2f7ccc`，包 `ee6cd1d3bb9d4a708661b8a64b45b473`。见 [P049 交付记录](docs/exec-plans/sprint-ad-evidence.md)。
 
 ## 实证与接手入口
 
@@ -28,6 +28,6 @@
 
 ## 下一优先级与约束
 
-[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)用户确认通过。漫画群星和代号 Atom 实测通过本机命名出包，浏览器原失败未复现。后续轮换游戏验证创作流程。P042、P044–P049 待人评。
+[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)用户确认通过。漫画群星和代号 Atom 实测通过本机命名出包，浏览器原失败未复现。下一切片是广告版本批量组合，继续轮换游戏。P042、P044–P049 待人评。
 
 本批使用定向回归、真实浏览器和产物验证，无全量、Release、支付或上传。旧完整 verify-20261117-002506 按用户要求中断，曾见失败。J2/J3 待人评，J1 通过以第六次用户答复为证。文字月 ¥30/单条 ¥1、指定视觉月 ¥50，现有费用门禁保留。本机声音，真实平台发布或支付须另授权。
