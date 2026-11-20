@@ -127,6 +127,8 @@ class PackageBatches:
                 if self.request(directory) != value:
                     raise ValueError("Batch request ID already has different content")
             else:
+                target = directory
+                directory = self.jobs.safe(self.root / ("pending-" + uuid4().hex))
                 directory.mkdir()
                 for name in ("owner", "state-lock"):
                     (directory / name).mkdir()
@@ -166,6 +168,8 @@ class PackageBatches:
                     ],
                 }
                 self.save(directory, state)
+                directory.rename(target)
+                directory = target
                 created = True
         if created:
             self.start(directory)
@@ -194,17 +198,21 @@ class PackageBatches:
         self.jobs.project(project_id)
         identity(publication_id)
         rows = []
+        errors = []
         for directory in sorted(self.root.iterdir()):
             if len(directory.name) != 32 or not directory.is_dir():
                 continue
-            state = (
-                self.get(directory.name, project_id)
-                if self.read(directory)["projectId"] == project_id
-                else None
-            )
-            if state and state["publicationJobId"] == publication_id:
-                rows.append(state)
-        return {"batches": rows}
+            try:
+                state = (
+                    self.get(directory.name, project_id)
+                    if self.read(directory)["projectId"] == project_id
+                    else None
+                )
+                if state and state["publicationJobId"] == publication_id:
+                    rows.append(state)
+            except (ValueError, OSError, KeyError, TypeError, AppError) as error:
+                errors.append({"batchId": directory.name, "message": str(error)})
+        return {"batches": rows, "errors": errors}
 
     def cancel(self, batch_id: str, project_id: str) -> dict[str, Any]:
         self.get(batch_id, project_id)
