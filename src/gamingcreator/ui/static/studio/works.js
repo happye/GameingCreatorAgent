@@ -19,7 +19,7 @@ function remember(project, work, job) {
 }
 
 // Selection is only a hint until the server has verified its project membership.
-export function WorksWorkspace({project, open, leave, isOpenConsumed = () => false, onOpenConsumed = () => {}, ...props}) {
+export function WorksWorkspace({project, open, leave, isOpenConsumed = () => false, onOpenConsumed = () => {}, onCatalogChanged = () => {}, ...props}) {
     const [items, setItems] = useState([]), [current, setCurrent] = useState(null);
     const [ready, setReady] = useState(false), [busy, setBusy] = useState(false), [message, setMessage] = useState("");
     const [target, setTarget] = useState(null);
@@ -88,6 +88,7 @@ export function WorksWorkspace({project, open, leave, isOpenConsumed = () => fal
             if (mine !== generation.current) return;
             activate(work); setItems(old => old.some(item => item.workId === id) ? old : [...old, work]);
             forgetIntent("work", project);
+            onCatalogChanged();
         })().catch(error => { if (mine === generation.current) setMessage(`${error.message}。可重试新建以恢复本次作品。`); })
             .finally(() => { if (mine === generation.current) setBusy(false); });
     });
@@ -109,6 +110,7 @@ export function WorksWorkspace({project, open, leave, isOpenConsumed = () => fal
             setCurrent(old => ({...old, workName: work.workName}));
             setItems(old => old.map(item => item.workId === workId ? {...item, workName: work.workName} : item));
             setName(work.workName); setNameMessage("作品名称已保存。");
+            onCatalogChanged();
         } catch (error) { if (active()) setNameMessage(error.message); }
         finally { if (active()) setNaming(false); }
     };
@@ -125,6 +127,6 @@ export function WorksWorkspace({project, open, leave, isOpenConsumed = () => fal
     const mine = generation.current;
     const guarded = Object.fromEntries(Object.entries(props).map(([key, value]) => [key,
         typeof value === "function" ? (...args) => { if (mine === generation.current && externalOpen.current === open) return value(...args); } : value]));
-    return ready ? html`<${EditWorkspace} key=${`${project}:${current?.workId || "legacy"}`} ...${guarded} project=${project} workId=${current?.workId || null} open=${target} workControls=${controls} />`
+    return ready ? html`<${EditWorkspace} key=${`${project}:${current?.workId || "legacy"}`} ...${guarded} onPublish=${jobId => guarded.onPublish?.(jobId, current?.workId || null)} project=${project} workId=${current?.workId || null} open=${target} workControls=${controls} />`
         : html`<div class="panel-body">${controls}<p role="status">${message || "正在恢复作品…"}</p></div>`;
 }

@@ -80,6 +80,40 @@ function App() {
     const [view, setView] = useState(null);
     const [works, setWorks] = useState([]);
     const [worksProject, setWorksProject] = useState("");
+    const [worksStatus, setWorksStatus] = useState({project: "", text: ""});
+    const [workSelections, setWorkSelections] = useState({});
+    const workId = workSelections[project] || "";
+    const scope = JSON.stringify([project, workId]);
+    const [workCatalog, setWorkCatalog] = useState({project: "", works: []});
+    const [filtered, setFiltered] = useState({scope: "", jobs: [], status: ""});
+    const [refreshAt, setRefreshAt] = useState(0);
+    const [catalogAt, setCatalogAt] = useState(0);
+    const refreshCatalog = useCallback(() => setCatalogAt(n => n + 1), []);
+    const visibleJobs = workId ? (filtered.scope === scope ? filtered.jobs : []) : (worksProject === project ? works : []);
+    const filterStatus = workId ? (filtered.scope === scope ? filtered.status : "正在读取作品…")
+        : (worksStatus.project === project ? worksStatus.text : "正在读取作品任务…");
+    useEffect(() => {
+        const controller = new AbortController();
+        if (!project) return () => controller.abort();
+        setWorkCatalog(old => ({project, works: old.project === project ? old.works : [], status: "正在读取作品目录…"}));
+        client.creationWorks(project, controller.signal).then(data => {
+            if (!controller.signal.aborted) setWorkCatalog({project, works: data.works || [], status: ""});
+        }).catch(error => {
+            if (!controller.signal.aborted) setWorkCatalog({project, works: [], status: `作品目录读取失败：${error.message}`});
+        });
+        return () => controller.abort();
+    }, [project, catalogAt]);
+    useEffect(() => {
+        const controller = new AbortController();
+        if (!project || !workId) return () => controller.abort();
+        setFiltered(old => ({scope, jobs: old.scope === scope ? old.jobs : [], status: "正在读取作品任务…"}));
+        client.creationJobs(project, controller.signal, workId).then(data => {
+            if (!controller.signal.aborted) setFiltered({scope, jobs: data.jobs, status: data.truncated ? "仅显示最近的作品任务。" : ""});
+        }).catch(error => {
+            if (!controller.signal.aborted) setFiltered({scope, jobs: [], status: `作品任务读取失败：${error.message}`});
+        });
+        return () => controller.abort();
+    }, [project, workId, refreshAt]);
     const [selected, setSelected] = useState(null);
     const [status, setStatus] = useState("正在读取项目…");
     const [time, setTime] = useState(0);
@@ -259,10 +293,18 @@ function App() {
     // A number, not the list: passing the list re-rendered the edit page on every list refresh.
     const secondsPerSecond = useMemo(() => (worksProject === project ? renderRate(works) : null), [works, worksProject, project]);
     const reloadWorks = useCallback(() => {
-        if (project) latestWorks((signal) => client.creationJobs(project, signal)).then((result) => { if (result.ok) { setWorksProject(project); setWorks(result.value.jobs); } });
+        setRefreshAt(n => n + 1);
+        setWorksStatus({project, text: "正在读取作品任务…"});
+        if (project) latestWorks((signal) => client.creationJobs(project, signal)).then((result) => {
+            if (result.aborted) return;
+            if (result.ok) {
+                setWorksProject(project); setWorks(result.value.jobs);
+                setWorksStatus({project, text: result.value.truncated ? "仅显示最近的作品任务。" : ""});
+            } else setWorksStatus({project, text: `作品任务读取失败：${result.error.message}`});
+        });
     }, [project]);
     // After export, open exactly that render in Publish (not just the newest one).
-    const publishRender = useCallback((jobId) => { leave(() => { reloadWorks(); setOpen({id: jobId, kind: "render", project, at: Date.now()}); setWorkspace("deliver"); }); }, [project, reloadWorks, leave]);
+    const publishRender = useCallback((jobId, selectedWorkId) => { leave(() => { setWorkSelections(old => ({...old, [project]: selectedWorkId || ""})); reloadWorks(); setOpen({id: jobId, kind: "render", project, at: Date.now()}); setWorkspace("deliver"); }); }, [project, reloadWorks, leave]);
     const openWork = useCallback((job) => {
         if (canOpenWork(job)) leave(() => applyOpen(job, project));
     }, [project, leave, applyOpen]);
@@ -315,11 +357,23 @@ function App() {
     }, [view, selected, workspace, selectEvent, basket, currentRun, clock, seek]);
 
     const work = `work${layout.bin ? "" : " no-bin"}${layout.insp ? "" : " no-insp"}`;
+    const catalog = workCatalog.project === project ? workCatalog.works : [];
+    const filterControls = html`<label class="field form-row">按作品查看
+        <select class="select" aria-label="按作品查看" value=${workId} disabled=${!project} onChange=${e => {
+            const next = e.currentTarget.value;
+            if (next === workId) return;
+            if (!leave(() => { setOpen(null); setWorkSelections(old => ({...old, [project]: next})); })) e.currentTarget.value = workId;
+        }}>
+            <option value="">全部作品</option>
+            ${workId && !catalog.some(item => item.workId === workId) ? html`<option value=${workId}>作品 ${workId.slice(0, 8)}</option>` : null}
+            ${catalog.map(item => html`<option key=${item.workId} value=${item.workId}>${item.workName || `未命名作品 ${item.workId.slice(0, 8)}`}</option>`)}
+        </select></label>
+        <p class="hint" role="status">${filterStatus || (workCatalog.project === project ? workCatalog.status : "正在读取作品目录…")}</p>`;
     return html`<div class="shell">
         <${TopBar} ...${{workspace, setWorkspace: (w) => w !== workspace && leave(() => setWorkspace(w)), projects, project, setProject: (p) => p === project || leave(() => setProject(p)), layout, setLayout, status: linkStatus || status}} />
         ${workspace === "assets"
             ? html`<div class=${work}>
-                <${Bin} runs=${runs} runsLoaded=${runsLoaded} runId=${runId} setRunId=${setRunId} works=${worksProject === project ? works : []} onOpen=${openWork} hidden=${!layout.bin}
+                <${Bin} runs=${runs} runsLoaded=${runsLoaded} runId=${runId} setRunId=${setRunId} works=${visibleJobs} onOpen=${openWork} hidden=${!layout.bin} filterControls=${filterControls}
                     top=${html`<${ClipSearch} project=${project} runs=${runs} runId=${runId} basket=${basket} seed=${searchSeed} onShow=${(run, event) => showEvent(run.id, event.eventId)} />
                         <${BasketList} basket=${basket} onShow=${(item) => showEvent(item.runId, item.eventId, item)} onUse=${() => { setBasketAt(Date.now()); setWorkspace("edit"); }} />`} />
                 <div class="center">
@@ -329,8 +383,8 @@ function App() {
                 <${Inspector} view=${view} selected=${selected} run=${currentRun} hidden=${!layout.insp} inBasket=${!!selected && basket.ids.has(selected.eventId)} onBasket=${() => toggleBasket(selected)} onRange=${changeRange} />
             </div>`
             : workspace === "edit"
-                ? html`<${WorksWorkspace} key=${project} leave=${leave} project=${project} runs=${runs} open=${open?.project === project && ["plan", "revision", "render"].includes(open.kind) ? open : null} isOpenConsumed=${intent => consumedOpen.current.has(intent)} onOpenConsumed=${intent => { if (intent) consumedOpen.current.add(intent); }} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} onFindMaterial=${findMaterial} onPublish=${publishRender} onDirtyChange=${onDirtyChange} renderSecondsPerSecond=${secondsPerSecond} />`
-                : html`<${PublishWorkspace} project=${project} works=${worksProject === project ? works : []} open=${open?.project === project ? open : null} onWorksChanged=${reloadWorks} layout=${layout} onDirtyChange=${onDirtyChange}
+                ? html`<${WorksWorkspace} key=${project} onCatalogChanged=${refreshCatalog} leave=${leave} project=${project} runs=${runs} open=${open?.project === project && ["plan", "revision", "render"].includes(open.kind) ? open : null} isOpenConsumed=${intent => consumedOpen.current.has(intent)} onOpenConsumed=${intent => { if (intent) consumedOpen.current.add(intent); }} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} onFindMaterial=${findMaterial} onPublish=${publishRender} onDirtyChange=${onDirtyChange} renderSecondsPerSecond=${secondsPerSecond} />`
+                : html`<${PublishWorkspace} key=${scope} project=${project} workId=${workId} works=${visibleJobs} open=${open?.project === project ? open : null} leave=${leave} onWorksChanged=${reloadWorks} layout=${layout} onDirtyChange=${onDirtyChange} filterControls=${filterControls}
                     onOpenReference=${choice => openWork({jobId: choice.sourceJobId, planId: choice.sourcePlanId, status: "completed", kind: "plan"})} />`}
         ${workspace === "assets" && html`<div class="dock"><strong>提示</strong><span>左上角“搜索片段”按描述找画面，“+”或 B 键加入片段篮，再点“用片段篮生成方案”。一句话修改镜头在剪辑区底部。</span></div>`}
     </div>`;
@@ -423,7 +477,7 @@ function videoFacts({width, height, durationSeconds, sizeBytes}) {
     return [`${shape} ${width}×${height}`, clock, sizeBytes ? `${(sizeBytes / 1048576).toFixed(1)} MB` : null].filter(Boolean).join(" · ");
 }
 
-function Bin({runs, runsLoaded = false, runId, setRunId, works, onOpen, hidden, top}) {
+function Bin({runs, runsLoaded = false, runId, setRunId, works, onOpen, hidden, top, filterControls}) {
     const groups = Object.keys(KIND).map((kind) => [kind, works.filter((job) => job.kind === kind)]).filter(([, list]) => list.length);
     return html`<aside class="panel" hidden=${hidden} aria-label="素材箱">
         <div class="panel-head">素材箱</div>
@@ -437,6 +491,7 @@ function Bin({runs, runsLoaded = false, runId, setRunId, works, onOpen, hidden, 
                 <li>回到这里，在左上角“搜索片段”挑画面放进片段篮。</li><li>到“剪辑”填需求、生成方案，再导出成片和发布包。</li></ol>
             </div>` : html`<p class="note">这里会列出项目里的录像。</p>`)}
             <div class="section-label">我的作品</div>
+            ${filterControls}
             ${groups.map(([kind, list]) => html`<details class="group" open=${kind === "render"}>
                 <summary>${KIND[kind]}（${list.length}）</summary>
                 ${list.slice(0, 20).map((job) => {

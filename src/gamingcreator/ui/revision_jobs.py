@@ -144,6 +144,14 @@ def _record(
     return state, stored, digest
 
 
+def revision_receipt_schema(request: dict[str, Any]) -> str:
+    if "insertions" in request:
+        return "creation-revision-receipt-v3"
+    if "candidateManifestSha256" in request:
+        return "creation-revision-receipt-v2"
+    return "creation-revision-receipt-v1"
+
+
 def load_chain(
     jobs: Any,
     job_id: str,
@@ -222,13 +230,7 @@ def load_chain(
         directory = jobs.directory(current_id)
         receipt = jobs.read(directory / "result/receipt.json")
         is_v4 = "candidateManifestSha256" in request
-        expected_schema = (
-            "creation-revision-receipt-v3"
-            if "insertions" in request
-            else "creation-revision-receipt-v2"
-            if is_v4
-            else "creation-revision-receipt-v1"
-        )
+        expected_schema = revision_receipt_schema(request)
         expected_files = {"revision.json", "edit-decision.json"}
         if is_v4:
             expected_files.add("candidates.json")

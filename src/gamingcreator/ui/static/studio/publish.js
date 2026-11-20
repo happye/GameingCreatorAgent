@@ -2,7 +2,7 @@
 // cover from candidate frames before saving, save that as a publication version, then build a platform package to
 // download. Nothing is posted to any platform from here.
 import {h} from "../vendor/preact.module.js";
-import {useCallback, useEffect, useRef, useState} from "../vendor/hooks.module.js";
+import {useCallback, useEffect, useLayoutEffect, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
 import {CampaignChecks, campaignTags} from "./activity.js";
@@ -295,8 +295,10 @@ function CoverField({savedSrc, preview, thumbs, coverFrame, fps, onPick}) {
         <p class="hint">好封面：人物或技能特写、画面清晰不糊、没有转场残影；横版 16:9，留出放标题的位置。</p></div>`;
 }
 
-export function PublishWorkspace({project, works, open, onWorksChanged, layout, onDirtyChange = () => {}, onOpenReference = () => {}}) {
+export function PublishWorkspace({project, workId, works, open, leave, onWorksChanged, layout, filterControls = null, onDirtyChange = () => {}, onOpenReference = () => {}}) {
     const renders = works.filter((j) => j.kind === "render" && j.status === "completed");
+    const savedPublications = workId ? works.filter(job => job.kind === "publication" && job.status === "completed") : [];
+    const savedPackages = workId ? works.filter(job => job.kind === "package" && job.status === "completed") : [];
     const [renderId, setRenderId] = useState("");
     const [pub, setPub] = useState(null); // the snapshot shown: a draft from the render or a saved publication
     const [form, setForm] = useState({title: "", description: "", tags: "", coverFrame: 0});
@@ -368,8 +370,8 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
 
     const fps = pub ? pub.fps.numerator / pub.fps.denominator : 30;
     const dirty = pub && (form.title !== pub.title || form.description !== pub.description || tagList(form.tags).join("|") !== pub.tags.join("|") || form.coverFrame !== pub.coverFrame);
-    useEffect(() => { onDirtyChange(!!dirty); }, [dirty]);
-    useEffect(() => () => onDirtyChange(false), []);
+    useLayoutEffect(() => { onDirtyChange(!!dirty); }, [dirty, onDirtyChange]);
+    useLayoutEffect(() => () => onDirtyChange(false), [onDirtyChange]);
     const useFrame = () => {
         const el = video.current; if (!el || !pub) return;
         setForm({...form, coverFrame: Math.max(0, Math.min(pub.frames - 1, Math.floor(el.currentTime * fps)))});
@@ -575,13 +577,25 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     const coverSrc = pub?.publicationJobId && !dirty ? `${jobPath(pub.publicationJobId)}/publication-files/cover.png` : null;
     const limits = profiles.find((p) => p.Platform === platform)?.Fields?.limits || {};
     const cls = `work${layout.bin ? "" : " no-bin"}${layout.insp ? "" : " no-insp"}`;
+    const chooseJob = (job) => leave(() => { void show(job.jobId, job.kind); });
+    const historyRows = (rows, rowLabel, isCurrent, renderOf) => rows.map(job => {
+        const source = renders.find(render => render.jobId === renderOf(job));
+        return html`<button key=${job.jobId} type="button" class="row" aria-current=${isCurrent(job)} onClick=${() => chooseJob(job)}>
+            <span class="dot ok"></span><span class="name" title=${source?.name || ""}>${source?.name || when(job.createdAt)}</span><span class="meta">${rowLabel(job)}</span></button>`;
+    });
     return html`<div class=${cls}>
         <aside class="panel" hidden=${!layout.bin} aria-label="成片列表">
             <div class="panel-head">成片</div>
             <div class="panel-body">
-                ${renders.map((job) => html`<button class="row" aria-current=${job.jobId === renderId} onClick=${() => show(job.jobId, "render")}>
+                ${filterControls}
+                ${renders.map((job) => html`<button class="row" aria-current=${job.jobId === renderId} onClick=${() => chooseJob(job)}>
                     <span class="dot ok"></span><span class="name">${job.name || when(job.createdAt)}</span><span class="meta">成片</span></button>`)}
                 ${!renders.length && html`<p class="note">还没有成片。先在剪辑区导出一个视频。</p>`}
+                ${savedPublications.length > 0 && html`<details class="group"><summary>已保存发布信息（${savedPublications.length}）</summary>
+                    ${historyRows(savedPublications, () => "发布信息", job => job.jobId === pub?.publicationJobId, job => job.parentJobId)}</details>`}
+                ${savedPackages.length > 0 && html`<details class="group" open><summary>已生成平台包（${savedPackages.length}）</summary>
+                    ${historyRows(savedPackages, job => PLATFORMS[job.platform] || "平台包", job => job.jobId === previewPackage,
+                        job => savedPublications.find(publication => publication.jobId === job.parentJobId)?.parentJobId)}</details>`}
             </div>
         </aside>
         <div class="center">

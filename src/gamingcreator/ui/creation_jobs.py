@@ -41,6 +41,7 @@ from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
 from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
 from gamingcreator.ui import narration_jobs, package_jobs, publication_jobs
+from gamingcreator.ui.creation_work_catalog import jobs_in_work
 from gamingcreator.ui.media import MediaResource, VerifiedMediaCache
 from gamingcreator.ui.revision_jobs import (
     editable_clips as version_clips,
@@ -53,6 +54,7 @@ from gamingcreator.ui.revision_jobs import (
     render_revision,
     resolve_audio,
     resolve_overrides,
+    revision_receipt_schema,
     revision_subtitles,
     save_revision,
 )
@@ -985,14 +987,17 @@ class CreationJobs:
         if state["status"] == "completed":
             path = self.safe(directory / "result/receipt.json")
             receipt = self.read(path)
-            schema = f"creation-{state['kind']}-receipt-v1"
+            kind = state["kind"]
+            schema = "creation-receipt-v1" if kind == "plan" else f"creation-{kind}-receipt-v1"
+            if kind == "revision":
+                schema = revision_receipt_schema(stored["request"])
             parent_field = {
                 "publication": "parentRenderReceiptSha256",
                 "package": "parentPublicationReceiptSha256",
-            }.get(state["kind"])
+            }.get(kind)
             if (
                 receipt.get("schemaVersion") != schema
-                or receipt.get("status") != "completed"
+                or (kind not in {"plan", "revision"} and receipt.get("status") != "completed")
                 or (parent_field and receipt.get(parent_field) != stored["parentReceiptSha256"])
             ):
                 raise ValueError("Receipt parent identity changed")
@@ -1637,8 +1642,8 @@ class CreationJobs:
             ad_plan=chain.plan_id,
         )
 
-    def catalog(self, project_id: str) -> dict[str, object]:
-        """List jobs from their status files only.
+    def catalog(self, project_id: str, work_id: str | None = None) -> dict[str, object]:
+        """List jobs from local metadata, optionally following ancestry to a single work.
 
         Opening a job still runs the full artifact check in ``get``; hashing every saved video
         here made the list take 30-50 seconds once a project had a few dozen renders.
@@ -1651,12 +1656,28 @@ class CreationJobs:
             state = self.read(path / "status.json")
             if state.get("projectId") != project_id:
                 continue
-            if state["status"] in {"pending", "running"}:
-                # Unfinished jobs may need crash recovery, which get() performs.
+            if work_id is None and state["status"] in {"pending", "running"}:
                 state = self.get(path.name)
-            states.append(state)
+            if work_id is None or state.get("jobId") == path.name:
+                states.append(state)
+        if work_id is not None:
+            states = jobs_in_work(self, project_id, work_id, states)
+            states = [
+                self.get(state["jobId"]) if state["status"] in {"pending", "running"} else state
+                for state in states
+            ]
         states.sort(key=lambda state: state["createdAt"], reverse=True)
-        summary = ("jobId", "kind", "status", "createdAt", "updatedAt", "projectId", "error")
+        summary: tuple[str, ...] = (
+            "jobId",
+            "kind",
+            "status",
+            "createdAt",
+            "updatedAt",
+            "projectId",
+            "error",
+        )
+        if work_id is not None:
+            summary += ("parentJobId", "platform")
         jobs = [
             {key: state[key] for key in summary if key in state}
             | self._video_facts(state)

@@ -28,6 +28,6 @@
 
 ## 下一优先级与约束
 
-[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)可直达已存剪辑和 B 站包。实拍[作品命名](docs/exec-plans/sprint-studio-work-names.md)后可原样重开。下一步接入按作品查看方案、成片和发布包。P042、P044–P049 待人评。
+[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)可直达剪辑和 B 站包。[按作品查看](docs/exec-plans/sprint-studio-work-names.md)已实测找回九个方案至平台包任务。下一步复核 60 秒样片的主题缺口和镜头节奏。P042、P044–P049 待人评。
 
 本批使用定向回归、真实浏览器和产物验证，无全量、Release、支付或上传。旧完整 verify-20261117-002506 按用户要求中断，曾见失败。J1 第五次人评未过，J2/J3 待人评，工程实证不改质量和 passes。文字月 ¥30/单条 ¥1、指定视觉月 ¥50，现有费用门禁保留。本机声音，真实平台发布或支付须另授权。

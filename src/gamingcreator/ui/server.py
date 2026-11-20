@@ -1417,9 +1417,9 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 )
                 return
             if path == "/api/creation/jobs":
-                if set(query) != {"projectId"}:
+                if set(query) not in ({"projectId"}, {"projectId", "workId"}):
                     raise ValueError("Expected registered project ID")
-                self._json(200, self.creation_jobs.catalog(query["projectId"]))
+                self._json(200, self.creation_jobs.catalog(query["projectId"], query.get("workId")))
                 return
             if path.startswith("/api/creation/jobs/"):
                 tail = path.removeprefix("/api/creation/jobs/")
