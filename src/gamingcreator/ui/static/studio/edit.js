@@ -579,6 +579,10 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                         <button class="btn ghost" disabled=${!!busy || audioBusy || overlayBusy} onClick=${() => { if (busy || audioBusy || overlayBusy) return; editing.drafts.discard(); }}>丢弃镜头快照</button></div>`}`}
                     ${problem && html`<p class="hint warn">${problem}</p>`}
                     ${editable && html`<p class="hint" role="status" aria-label="版本保存状态">${saveReason || "修改已就绪，可以保存新版本"}</p><div class="actions-row"><button class="btn ghost" disabled=${!!saveReason} title=${saveReason || "保存新版本"} onClick=${saveVersion}>保存版本</button>
+                        ${editing.base?.kind === "revision" && html`<button type="button" class="btn ghost" onClick=${() => {
+                            const link = client.studioJobLink(project, editing.base.jobId);
+                            void client.copyText(link, () => setMessage("已复制剪辑版本链接。"), () => setMessage(link));
+                        }}>复制已保存版本的链接</button>`}
                         <button class="btn ghost" disabled=${!editing.canUndo || !!busy || commandPreview} title="Ctrl+Z" onClick=${() => editing.ops.undo()}>撤销一步</button>
                         <button class="btn ghost" disabled=${!editing.canRedo || !!busy || commandPreview} title="Ctrl+Shift+Z" onClick=${() => editing.ops.redo()}>重做</button>
                         <button class="btn ghost" disabled=${!editing.dirty || !!busy} onClick=${() => editing.ops.reset()}>撤销修改</button></div>`}</div>`}

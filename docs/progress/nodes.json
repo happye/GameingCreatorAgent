@@ -508,6 +508,12 @@
      "sprint": "sprint-j1-creation-usability"
     },
     {
+     "id": "R1-j1-trial-reopen",
+     "name": "按链接打开指定剪辑版本和平台包",
+     "status": "done",
+     "sprint": "sprint-j1-trial-reopen"
+    },
+    {
      "id": "R1-6",
      "name": "创作工作台 /studio",
      "status": "partial",
@@ -1314,9 +1320,10 @@
    },
    {
     "id": "J1-8",
-    "name": "邀请你复测 J1",
-    "status": "todo",
-    "note": "开发验证通过后再邀请；当前不要求操作"
+    "name": "J1 第六次试用",
+    "status": "partial",
+    "note": "指定剪辑版本与 B 站包可直接打开，真实浏览器验证约 60 秒预览和七文件 ZIP 下载，待人工判断可发布性",
+    "ref": "docs/exec-plans/sprint-j1-trial-reopen.md"
    }
   ]
  },

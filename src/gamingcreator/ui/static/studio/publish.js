@@ -340,7 +340,9 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
         const changedProject = shownProject.current !== null && shownProject.current !== project;
         if (changedProject && open === shownOpen.current) rejectedOpen.current = open;
         const requestedOpen = open !== shownOpen.current || shownProject.current !== project;
-        if (requestedOpen && open !== rejectedOpen.current && open && ["render", "publication", "package"].includes(open.kind)) void show(open.id, open.kind);
+        if (open !== rejectedOpen.current && open && ["render", "publication", "package"].includes(open.kind)) {
+            if (requestedOpen) void show(open.id, open.kind);
+        }
         else if ((!renderId || shownProject.current !== project) && renders[0]) void show(renders[0].jobId, "render");
         else if (changedProject) { setPub(null); setPackages([]); setRenderId(""); setBusy(""); setMessage(""); setFieldError({}); }
         shownProject.current = project; shownOpen.current = open;
@@ -352,13 +354,14 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
         const current = () => generation === epoch.current;
         setMessage(""); setFieldError({}); setPackages([]); setPub(null); setBusy(""); setCoverPreview(""); setPreviewPackage("");
         try {
-            let publicationId = id;
-            if (kind === "package") { const data = await client.api(`${jobPath(id)}/package`); if (!current()) return; publicationId = data.publicationJobId; }
+            const detail = kind === "package" ? await client.api(`${jobPath(id)}/package`) : null;
+            if (!current()) return;
+            const publicationId = detail?.publicationJobId || id;
             const data = await client.api(`${jobPath(publicationId)}/publication`);
             if (!current()) return;
             setRenderId(data.renderJobId); setPub(data);
             setForm({title: data.title, description: data.description, tags: data.tags.join("，"), coverFrame: data.coverFrame});
-            if (data.publicationJobId) await restore(data, generation);
+            if (data.publicationJobId) await restore(data, generation, detail ? {id, detail} : null);
             return generation;
         } catch (error) { if (current()) setMessage(error.message); }
     }, [project]);
@@ -395,12 +398,17 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
             const shown = await show(done.jobId, "publication"); if (epoch.current !== shown) return; setMessage("已保存。可以生成平台包了。");
         } catch (error) { if (current()) { const shown = publicationErrorFields(error.message); setFieldError(shown.fields); setMessage(shown.message); } } finally { if (current()) setBusy(""); }
     };
-    const restore = async (snapshot, generation) => {
+    const restore = async (snapshot, generation, opened = null) => {
         const data = await client.api(`${jobPath(snapshot.publicationJobId)}/packages`, {projectId: project});
         if (generation !== epoch.current) return [];
+        const selected = opened && data.jobs.find(row => row.jobId === opened.id && row.status === "completed"
+            && row.parentReceiptSha256 === opened.detail.expectedPublicationReceiptSha256);
+        if (opened && !selected) setMessage("链接中的平台包目前不可用。");
+        if (selected) setPreviewPackage(selected.jobId);
         setPackages(current => {
             const loaded = new Map(current.filter(row => row.generationStatus === "completed").map(row => [row.jobId, row]));
             return data.jobs.map(row => {
+                if (row === selected) return {...row, ...opened.detail, error: undefined};
                 const old = loaded.get(row.jobId);
                 return old && row.status === "completed" && row.parentReceiptSha256
                     && row.parentReceiptSha256 === old.parentReceiptSha256 ? {...old, ...row} : row;
@@ -412,7 +420,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                 void client.settle(row.jobId, polling.current.signal, (state) => {
                     if (generation === epoch.current) setPackages((rows) => rows.map((r) => r.jobId === row.jobId ? {...r, ...state} : r));
                 }).then(() => loadDetail(row, generation)).catch((error) => { if (generation === epoch.current) setMessage(error.message); });
-            } else if (row.status === "completed") void loadDetail(row, generation).catch((error) => { if (generation === epoch.current) setMessage(error.message); });
+            } else if (row.status === "completed" && row !== selected) void loadDetail(row, generation).catch((error) => { if (generation === epoch.current) setMessage(error.message); });
         }
         return data.jobs;
     };
@@ -647,6 +655,10 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                         <${CampaignChecks} rules=${pub.campaignRules} media=${pkg.validation?.facts} tags=${pub.tags} platforms=${[pkg.profile?.Platform]} platformNames=${PLATFORMS} title="平台包活动要求" />
                         <div class="actions-row"><a class="btn" href=${`${jobPath(pkg.jobId)}/package-files/package.zip?download=1`} download="package.zip">下载平台包（zip）</a>
                             <a class="btn ghost" href=${`${jobPath(pkg.jobId)}/package-files/video.mp4?download=1`} download="video.mp4">只下载视频</a>
+                            <button type="button" class="btn ghost" onClick=${() => {
+                                const link = client.studioJobLink(project, pkg.jobId);
+                                void client.copyText(link, () => setMessage("已复制平台包链接。"), () => setMessage(link));
+                            }}>复制平台包链接</button>
                             <button class="btn ghost" aria-expanded=${previewPackage === pkg.jobId} onClick=${() => setPreviewPackage(id => id === pkg.jobId ? "" : pkg.jobId)}>${previewPackage === pkg.jobId ? "收起预览" : `预览${PLATFORMS[pkg.profile?.Platform] || "平台"}成片`}</button></div>
                         ${previewPackage === pkg.jobId && html`<video class="package-video" aria-label="平台成片预览" src=${`${jobPath(pkg.jobId)}/package-files/video.mp4`} controls playsinline preload="metadata"></video>`}
                         <${PackageReview} key=${`${project}:${pkg.jobId}`} project=${project} pkg=${pkg} teamVersion=${teamVersion} />

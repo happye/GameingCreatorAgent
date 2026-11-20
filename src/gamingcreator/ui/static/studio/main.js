@@ -16,6 +16,15 @@ const html = htm.bind(h);
 const STORE = "studio-v1";
 const WORKSPACES = [["assets", "素材"], ["edit", "剪辑"], ["deliver", "发布"]];
 const KIND = {render: "成片", plan: "方案", revision: "剪辑版本", publication: "封面与文案", package: "平台预览包", narration: "旁白"};
+const canOpenWork = (job) => job.status === "completed" && ["plan", "revision", "render", "publication", "package"].includes(job.kind);
+
+function readJobLink() {
+    const params = new URLSearchParams(location.search);
+    if (!params.has("job")) return null;
+    const project = params.get("project"), id = params.get("job");
+    return params.getAll("project").length === 1 && project && params.getAll("job").length === 1 && /^[a-f0-9]{32}$/.test(id)
+        ? {project, id} : {};
+}
 
 function loadPrefs() { try { return JSON.parse(localStorage.getItem(STORE) || "{}") || {}; } catch { return {}; } }
 function savePrefs(value) { try { localStorage.setItem(STORE, JSON.stringify(value)); } catch { /* Storage may be disabled. */ } }
@@ -41,12 +50,22 @@ function useLatest() {
 function App() {
     const consumedOpen = useRef(new WeakSet());
     const prefs = useMemo(loadPrefs, []);
-    const [workspace, setWorkspace] = useState(prefs.workspace || "assets");
+    const initialLink = useMemo(readJobLink, []);
+    const pendingLink = useRef(initialLink);
+    const [linkStatus, setLinkStatus] = useState(initialLink ? "正在打开指定作品…" : "");
+    const [workspace, setWorkspace] = useState(initialLink ? "assets" : prefs.workspace || "assets");
     const [searchSeed, setSearchSeed] = useState(null);
     // Unsaved edit/publish work: leaving the workspace or project asks first (J1 data loss).
     const dirtyRef = useRef(false);
     const onDirtyChange = useCallback((value) => { dirtyRef.current = value; }, []);
-    const leave = useCallback((fn) => { if (dirtyRef.current && !confirmLeave()) return false; dirtyRef.current = false; fn(); return true; }, []);
+    const leave = useCallback((fn) => {
+        if (dirtyRef.current && !confirmLeave()) return false;
+        dirtyRef.current = false;
+        pendingLink.current = null;
+        setLinkStatus("");
+        fn();
+        return true;
+    }, []);
     useEffect(() => {
         const warn = (event) => { if (dirtyRef.current) { event.preventDefault(); event.returnValue = ""; } };
         window.addEventListener("beforeunload", warn);
@@ -65,6 +84,10 @@ function App() {
     const [status, setStatus] = useState("正在读取项目…");
     const [time, setTime] = useState(0);
     const [open, setOpen] = useState(null);
+    const applyOpen = useCallback((job, projectId) => {
+        setOpen({id: job.jobId, kind: job.kind, planId: job.planId || job.editor?.planId, project: projectId, at: Date.now()});
+        setWorkspace(["publication", "package"].includes(job.kind) ? "deliver" : "edit");
+    }, []);
     const [pendingEvent, setPendingEvent] = useState(null);
     const [basketAt, setBasketAt] = useState(0);
     const basket = useBasket(project);
@@ -155,16 +178,42 @@ function App() {
     useEffect(() => { savePrefs({project, runId, workspace, bin: layout.bin, insp: layout.insp}); }, [project, runId, workspace, layout]);
 
     useEffect(() => {
-        client.projects().then((data) => {
-            setProjects(data.projects);
-            const keep = data.projects.some((p) => p.path === prefs.project) ? prefs.project : data.projects[0]?.path || "";
-            setProject(keep);
-            if (!data.projects.length) { setStatus("还没有项目：先在旧版素材工作台准备素材。"); setRunsLoaded(true); }
-        }).catch((error) => setStatus(`无法读取项目：${error.message}`));
+        const controller = new AbortController();
+        const fail = (message) => {
+            pendingLink.current = null;
+            setLinkStatus(message);
+        };
+        client.projects(controller.signal).then(async ({projects: list}) => {
+            setProjects(list);
+            const link = pendingLink.current;
+            const linkedProject = list.find((item) => item.path === link?.project);
+            const keep = linkedProject || list.find((item) => item.path === prefs.project) || list[0];
+            setProject(keep?.path || "");
+            if (!list.length) { setStatus("还没有项目：先在旧版素材工作台准备素材。"); setRunsLoaded(true); }
+            if (!link) return;
+            if (!link.id) return fail("作品链接无效。");
+            if (!linkedProject) return fail("作品链接的项目在本机不可用。");
+            try {
+                const job = await client.job(link.id, controller.signal);
+                if (pendingLink.current !== link || controller.signal.aborted) return;
+                if (job.jobId !== link.id || job.projectId !== link.project || !canOpenWork(job)) return fail("指定作品在这个项目中不可用。");
+                pendingLink.current = null;
+                setLinkStatus("");
+                applyOpen(job, link.project);
+            } catch {
+                if (pendingLink.current === link && !controller.signal.aborted) fail("无法读取链接中的指定作品。");
+            }
+        }).catch((error) => {
+            if (controller.signal.aborted) return;
+            if (pendingLink.current) fail("无法读取作品链接的项目。");
+            setStatus(`无法读取项目：${error.message}`);
+        });
+        return () => controller.abort();
     }, []);
 
     useEffect(() => {
-        setRuns([]); setRunsLoaded(false); setView(null); setSelected(null); setWorks([]); setOpen(null);
+        setRuns([]); setRunsLoaded(false); setView(null); setSelected(null); setWorks([]);
+        setOpen(current => current?.project === project ? current : null);
         if (!project) return;
         setStatus("正在读取录像…");
         latestRuns((signal) => client.runs(project, signal)).then((result) => {
@@ -215,9 +264,8 @@ function App() {
     // After export, open exactly that render in Publish (not just the newest one).
     const publishRender = useCallback((jobId) => { leave(() => { reloadWorks(); setOpen({id: jobId, kind: "render", project, at: Date.now()}); setWorkspace("deliver"); }); }, [project, reloadWorks, leave]);
     const openWork = useCallback((job) => {
-        if (!["plan", "revision", "render", "publication", "package"].includes(job.kind) || job.status !== "completed") return;
-        leave(() => { setOpen({id: job.jobId, kind: job.kind, planId: job.planId, project, at: Date.now()}); setWorkspace(["publication", "package"].includes(job.kind) ? "deliver" : "edit"); });
-    }, [project, leave]);
+        if (canOpenWork(job)) leave(() => applyOpen(job, project));
+    }, [project, leave, applyOpen]);
 
     const seek = useCallback((us, play = false) => {
         const el = video.current, target = SourceClock.sourceUsToPlayerSeconds(clock, us);
@@ -268,7 +316,7 @@ function App() {
 
     const work = `work${layout.bin ? "" : " no-bin"}${layout.insp ? "" : " no-insp"}`;
     return html`<div class="shell">
-        <${TopBar} ...${{workspace, setWorkspace: (w) => w !== workspace && leave(() => setWorkspace(w)), projects, project, setProject: (p) => p === project || leave(() => setProject(p)), layout, setLayout, status}} />
+        <${TopBar} ...${{workspace, setWorkspace: (w) => w !== workspace && leave(() => setWorkspace(w)), projects, project, setProject: (p) => p === project || leave(() => setProject(p)), layout, setLayout, status: linkStatus || status}} />
         ${workspace === "assets"
             ? html`<div class=${work}>
                 <${Bin} runs=${runs} runsLoaded=${runsLoaded} runId=${runId} setRunId=${setRunId} works=${worksProject === project ? works : []} onOpen=${openWork} hidden=${!layout.bin}
@@ -392,7 +440,7 @@ function Bin({runs, runsLoaded = false, runId, setRunId, works, onOpen, hidden, 
             ${groups.map(([kind, list]) => html`<details class="group" open=${kind === "render"}>
                 <summary>${KIND[kind]}（${list.length}）</summary>
                 ${list.slice(0, 20).map((job) => {
-                    const openable = ["plan", "revision", "render", "publication", "package"].includes(job.kind) && job.status === "completed";
+                    const openable = canOpenWork(job);
                     const newest = openable && job === list.find((j) => j.status === "completed");
                     const reason = job.error?.message || "";
                     const meta = job.status === "completed" ? (openable ? (newest ? "最新 · 打开" : "打开") : "") : client.jobStatus(job.status) + (reason ? `：${reason}` : "");

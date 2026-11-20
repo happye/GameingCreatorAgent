@@ -128,6 +128,11 @@ export const copyText = async (value, onOk, onFail) => {
     }
 };
 export const job = (id, signal) => api(`/api/creation/jobs/${encodeURIComponent(id)}`, {}, {signal});
+export function studioJobLink(project, jobId) {
+    const url = new URL("/studio", location.origin);
+    url.search = new URLSearchParams({project, job: jobId});
+    return url.href;
+}
 
 // Poll a creation job until it settles; the server recovers crashed jobs as "interrupted".
 export async function settle(id, signal, onUpdate = () => {}) {

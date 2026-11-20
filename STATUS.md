@@ -29,7 +29,7 @@
 7. 漫画群星 60 秒[主题旁白](docs/exec-plans/sprint-showcase-narration.md)已补齐[句级字幕](docs/exec-plans/sprint-narration-captions.md)，试听、移动音轨、SRT 和 B 站烧入版实测通过。
 8. P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。
 9. [P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。
-10. [P050 套餐](docs/exec-plans/sprint-creator-plans.md)已接通 Studio 用量，[P051 审核](docs/exec-plans/sprint-enterprise-basics.md)已实测本机发布流程。下一步复核 J1 试用入口。
+10. [J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)可直达 60 秒样片及 B 站包。待人评，继续补作品命名。
 
 ## 费用与授权
 

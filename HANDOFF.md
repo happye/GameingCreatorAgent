@@ -28,6 +28,6 @@
 
 ## 下一优先级与约束
 
-[P049 广告](docs/exec-plans/sprint-ad-evidence.md)两版竖屏已实测出包。[P050 套餐](docs/exec-plans/sprint-creator-plans.md)已实测 Studio 用量。[P051 审核](docs/exec-plans/sprint-enterprise-basics.md)证据在 `.cache/scratch/enterprise-studio-20261120/`。下一步逐项复核 J1 第五次试用反馈，准备可直接复测的工作台、成片和发布包。P042 平台成效及 P044–P049 真人质量待验。
+[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)已准备。8765 工作台直达已存剪辑和 B 站包，空白浏览器通过预览、下载和项目校验。下一步补作品命名。P042 平台成效及 P044–P049 真人质量待验。
 
 本批使用定向回归、真实浏览器和产物验证，无全量、Release、支付或上传。旧完整 verify-20261117-002506 按用户要求中断，曾见失败。J1 第五次人评未过，J2/J3 待人评，工程实证不改质量和 passes。文字月 ¥30/单条 ¥1、指定视觉月 ¥50，现有费用门禁保留。本机声音，真实平台发布或支付须另授权。
