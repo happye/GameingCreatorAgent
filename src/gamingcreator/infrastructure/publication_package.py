@@ -29,7 +29,15 @@ async def encode(
 ) -> dict[str, Any]:
     """``watermark`` is redrawn after cropping/padding, so a package never loses the mark."""
     tools = repository / ".tools/ffmpeg/bin"
-    video_filter = transform(profile["Fields"]["video"])
+    fields = profile["Fields"]
+    video_filter = transform(fields["video"])
+    trim_args = []
+    if variant := fields.get("variant"):
+        if duration is None or duration <= 0:
+            raise ValueError("Short package requires a valid output duration")
+        video_filter = f"trim=end_frame={variant['durationFrames']},{video_filter}"
+        # The render uses 48 kHz audio. Avoid rounding its endpoint to milliseconds in MP4.
+        trim_args = ["-af", f"atrim=duration={float(duration):.12f}", "-movie_timescale", "48000"]
     mark = target / "watermark.ass"
     if watermark is not None:
         field = profile["Fields"]["video"]
@@ -41,7 +49,7 @@ async def encode(
         )
         video_filter += f",ass=filename={_filter_path(mark)}"
     try:
-        return await _encode(tools, video, cover, target, profile, video_filter)
+        return await _encode(tools, video, cover, target, profile, video_filter, trim_args)
     finally:
         mark.unlink(missing_ok=True)
 
@@ -53,6 +61,7 @@ async def _encode(
     target: Path,
     profile: dict[str, Any],
     video_filter: str,
+    trim_args: list[str],
 ) -> dict[str, Any]:
     context = CancellationContext("platform-package", 1800)
     base = [
@@ -75,6 +84,7 @@ async def _encode(
             "0:a?",
             "-vf",
             video_filter,
+            *trim_args,
             "-c:v",
             "libx264",
             "-pix_fmt",
