@@ -28,7 +28,8 @@
 6. P042 已接通发布成效登记、同平台对比与下一份方案参考，用隔离示例和实拍素材包验证。真实平台数据待录入。见[交付记录](docs/exec-plans/sprint-outcome-structure-reference.md)。
 7. 漫画群星 60 秒[主题旁白](docs/exec-plans/sprint-showcase-narration.md)已补齐[句级字幕](docs/exec-plans/sprint-narration-captions.md)，试听、移动音轨、SRT 和 B 站烧入版实测通过。
 8. P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。
-9. P045 已用真实漫画群星录像验证步骤引用、删改换序后重编号、本机旁白及 B 站包。见[攻略步骤](docs/exec-plans/sprint-guide-evidence.md)。旧 verify-20261117-002506 已中断，原日志保留。
+9. [P045 攻略](docs/exec-plans/sprint-guide-evidence.md)实测步骤引用、重编号、配音及 B 站包。旧 verify-20261117-002506 已中断。
+10. [P046 解说](docs/exec-plans/sprint-commentary-evidence.md)实测同镜多主题、27 秒配音成片与发布包。下一步推进 P047 实况精剪。
 
 ## 费用与授权
 

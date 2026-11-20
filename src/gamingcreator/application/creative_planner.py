@@ -20,7 +20,7 @@ from gamingcreator.application.creation_modes import (
     sample_clips,
 )
 from gamingcreator.application.material_scoring import advisories, score_materials, scoring_legend
-from gamingcreator.application.showcase_topics import guide_topic_count, showcase_coverage
+from gamingcreator.application.showcase_topics import showcase_coverage, visual_topic_count
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.creation import CreativeBrief
 from gamingcreator.domain.media import MediaAsset
@@ -100,15 +100,23 @@ def _plan_topic_details(
     *,
     step_seeds: set[tuple[str, str]] | None = None,
 ) -> tuple[list[str], dict[str, object]]:
-    if identity in ("showcase", "guide-evidence") and brief.mandatory_topics:
+    if identity in ("showcase", "guide-evidence", "commentary-evidence") and brief.mandatory_topics:
         coverage = showcase_coverage(
-            brief.mandatory_topics, eligible, segments, step_seeds=step_seeds
+            brief.mandatory_topics,
+            eligible,
+            segments,
+            step_seeds=step_seeds,
+            facts_only=identity != "showcase",
         )
         if step_seeds is not None:
             steps = (row for row in segments if row.get("topicUses"))
             for number, row in enumerate(steps, 1):
                 row["guideStep"] = "、".join(use["topic"] for use in row["topicUses"])
                 row["role"] = f"第{number}步"
+        if identity == "commentary-evidence":
+            for row in segments:
+                if row.get("topicUses"):
+                    row["role"] = "解说 · " + "、".join(use["topic"] for use in row["topicUses"])
         notes = [
             f"缺少主题映射：{row['topic']}（素材记录中未找到，请补充画面或在旁白说明）"
             if row["status"] == "missing"
@@ -412,10 +420,10 @@ def eligible_clips(
         key = (clip.asset.sha256, clip.framing.start_us, clip.framing.end_us)
         previous = unique.setdefault(key, clip)
         if (
-            brief.content_type == "guide"
+            brief.content_type in ("guide", "commentary")
             and previous is not clip
-            and guide_topic_count(clip, brief.mandatory_topics)
-            > guide_topic_count(previous, brief.mandatory_topics)
+            and visual_topic_count(clip, brief.mandatory_topics)
+            > visual_topic_count(previous, brief.mandatory_topics)
         ):
             unique[key] = clip
     eligible = sorted(

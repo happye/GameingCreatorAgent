@@ -405,10 +405,11 @@
    ]
   },
   "P046": {
-   "done": "游戏解说模板约3秒/段顺序取材并留解说时间，真实出片＋B站包已走通；已解冻",
-   "todo": "解说文案与成片质量未经人评",
-   "updated": "2026-11-01",
+   "done": "优先保留有录像原文的解说主题，同镜多主题进入本机旁白。剪辑后重建章节，实测 27 秒本机配音及 B 站发布包",
+   "todo": "创作者观点、逐句声画配合和成片质量待人评",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-commentary-evidence",
     "sprint-content-modes"
    ]
   },
@@ -841,6 +842,12 @@
      "name": "攻略步骤引用与剪辑后编号",
      "status": "done",
      "sprint": "sprint-guide-evidence"
+    },
+    {
+     "id": "P046-commentary-evidence",
+     "name": "游戏解说画面引用与发布章节",
+     "status": "done",
+     "sprint": "sprint-commentary-evidence"
     },
     {
      "id": "P018",

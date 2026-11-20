@@ -64,7 +64,7 @@ def gameplay_opening(clip: "CreationClip") -> bool:
     return any(mentions_gameplay(text) for text in (*event.mechanic_tags, *event.observable_facts))
 
 
-def guide_topic_count(clip: "CreationClip", topics: Sequence[str]) -> int:
+def visual_topic_count(clip: "CreationClip", topics: Sequence[str]) -> int:
     return sum(_evidence(clip, topic, True) is not None for topic in topics)
 
 
@@ -111,6 +111,7 @@ def showcase_coverage(
     segments: list[dict[str, Any]],
     *,
     step_seeds: set[tuple[str, str]] | None = None,
+    facts_only: bool = False,
 ) -> list[dict[str, Any]]:
     by_event = {(clip.event.run_id, clip.event.event_id): clip for clip in candidates}
     coverage: list[dict[str, Any]] = []
@@ -120,7 +121,7 @@ def showcase_coverage(
             key = (segment["runId"], segment["eventId"])
             if step_seeds is not None and key not in step_seeds:
                 continue
-            match = _evidence(by_event[key], topic, step_seeds is not None)
+            match = _evidence(by_event[key], topic, facts_only)
             if match is not None:
                 kind, quote = match
                 indexes.append(index)
@@ -129,18 +130,18 @@ def showcase_coverage(
                         "topic": topic,
                         "evidenceKind": kind,
                         "observationQuote": quote,
-                        "rationale": "原录像摘要包含此攻略主题。"
-                        if step_seeds is not None
+                        "rationale": "原录像摘要包含此主题。"
+                        if facts_only
                         else "原分析区间的摘要或标签与主题匹配。",
                     }
                 )
-                if step_seeds is not None:
+                if facts_only:
                     break
         status = (
             "source-matched"
             if indexes
             else "available"
-            if any(_evidence(clip, topic, step_seeds is not None) for clip in candidates)
+            if any(_evidence(clip, topic, facts_only) for clip in candidates)
             else "missing"
         )
         coverage.append({"topic": topic, "status": status, "shotIndexes": indexes})

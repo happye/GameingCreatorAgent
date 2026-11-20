@@ -94,7 +94,9 @@ function replaceClip(state, id, candidate, manifest) {
             speed: {numerator: 1, denominator: 1}, transitionIn: {type: "cut", frames: 0}};
         delete next.sourcePath;
         if (!candidate.rangeProvenance) delete next.rangeProvenance;
-        if (clip.guideStep) { delete next.guideStep; delete next.role; delete next.topicUses; }
+        delete next.guideStep;
+        delete next.role;
+        delete next.topicUses;
         return next;
     });
     const at = clips.findIndex((c) => c.clipId === id);
@@ -215,7 +217,9 @@ export function useClipEditor(project, workId = null) {
                 const next = {...byId.get(row.clipId), ...row};
                 if ((proposal.replacements || []).some((r) => r.targetClipId === row.clipId)) {
                     if (!row.rangeProvenance) delete next.rangeProvenance;
-                    if (next.guideStep) { delete next.guideStep; delete next.role; delete next.topicUses; }
+                    delete next.guideStep;
+                    delete next.role;
+                    delete next.topicUses;
                 }
                 return next;
             });

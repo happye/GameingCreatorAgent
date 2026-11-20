@@ -1595,6 +1595,7 @@ class CreationJobs:
             knowledge,
             prefer_showcase_topics=chain.plan_id == "showcase",
             evidenced_guide=chain.plan_id == "guide-evidence",
+            evidenced_commentary=chain.plan_id == "commentary-evidence",
         )
 
     def catalog(self, project_id: str) -> dict[str, object]:

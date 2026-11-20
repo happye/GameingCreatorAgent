@@ -140,6 +140,35 @@ def _guide(
     )
 
 
+def _commentary(
+    brief: CreativeBrief, eligible: Sequence["CreationClip"], score: Score, target_frames: int
+) -> ModeStructure:
+    count = min(max(3, brief.target_duration // COMMENTARY_SECONDS), target_frames)
+    anchors = reserve_topics(brief.mandatory_topics, eligible, None, count, score, facts_only=True)
+    chosen = set(map(id, anchors))
+    context = [clip for clip in eligible if id(clip) not in chosen]
+    chosen.update(map(id, sample_clips(context, count - len(anchors), score)))
+    picked = tuple(clip for clip in eligible if id(clip) in chosen)
+    roles = ["解说画面"] * len(picked)
+    roles[0] = "开场"
+    if len(roles) > 1:
+        roles[-1] = "结尾"
+    if not brief.mandatory_topics:
+        roles[1:-1] = [f"解说段{i}" for i in range(1, len(picked) - 1)]
+    description = (
+        "游戏解说模板：先保留主题画面，再按录像顺序补齐背景"
+        if brief.mandatory_topics
+        else f"游戏解说模板：按录像顺序取{len(picked)}段较长镜头，给解说留出说话时间"
+    )
+    return ModeStructure(
+        "commentary-evidence" if brief.mandatory_topics else "commentary-segments",
+        description,
+        picked,
+        tuple(roles),
+        (Fraction(1),) * len(picked),
+    )
+
+
 def mode_structure(
     brief: CreativeBrief, eligible: Sequence["CreationClip"], score: Score, *, target_frames: int
 ) -> ModeStructure | None:
@@ -184,21 +213,7 @@ def mode_structure(
             weights,
         )
     if brief.content_type == "commentary":
-        # Longer shots leave room for spoken commentary over each segment.
-        count = max(3, int(brief.target_duration / COMMENTARY_SECONDS))
-        picked = sample_clips(eligible, count, score)
-        segment_roles = ["开场", *[f"解说段{i}" for i in range(1, len(picked) - 1)], "结尾"][
-            : len(picked)
-        ]
-        if len(picked) == 2:
-            segment_roles = ["开场", "结尾"]
-        return ModeStructure(
-            "commentary-segments",
-            f"游戏解说模板：按录像顺序取{len(picked)}段较长镜头（约{COMMENTARY_SECONDS}秒/段），给解说留出说话时间",
-            tuple(picked),
-            tuple(segment_roles),
-            tuple(Fraction(1) for _ in picked),
-        )
+        return _commentary(brief, eligible, score, target_frames)
     if brief.content_type == "live_cut":
         picked = sample_clips(eligible, _cap(brief), score)
         return ModeStructure(

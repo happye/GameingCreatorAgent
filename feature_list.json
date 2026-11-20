@@ -1128,7 +1128,8 @@
             "delivery_status": "partial",
             "implementation_evidence": [
                 "2026-11-01: commentary mode template (ordered ~3s segments, opening/commentary/ending roles, closing line) real demo-phase0 instance -> 315-frame MP4 -> Bilibili package passing configured checks (.cache/content-modes-e2e-r3.json)",
-                "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md"
+                "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md",
+                "2026-11-20: commentary topics link to saved visual observations, including two topics in one shot. Current edit supplies local narration and publication chapters. Real Comic Stars footage -> 27s narrated video -> Bilibili package. See sprint-commentary-evidence."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

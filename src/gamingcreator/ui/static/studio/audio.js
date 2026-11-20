@@ -570,6 +570,8 @@ export function AudioPanel({commandPreview = false, editing, project, game = "",
                 <p class="hint" aria-label="旁白字符数">${charCount} 字</p>
                 ${toolButtons(text, "草稿")}
                 ${["drafted", "ai"].includes(draftMode) && editedAway && html`<p class="note warn" role="status">起草时参考资料，正文已编辑，请核对</p>`}
+                ${draftMode === "drafted" && script?.generator === "offline-commentary-evidence-v1" && script.lines.length > 0 && html`<details class="group"><summary>解说对应画面（${script.lines.length}）</summary>
+                    <ul class="facts">${script.lines.map(line => html`<li>${(line.outputStartFrame / fps).toFixed(2)} 秒 · ${line.topic}<div class="hint">${line.observationQuote}</div></li>`)}</ul></details>`}
                 ${["drafted", "ai"].includes(draftMode) && citations.length > 0 && html`<details class="group" aria-label="旁白知识引用"><summary>起草时参考资料（${citations.length}）</summary>
                     <ul class="facts">${citations.map((row) => html`<li key=${row.entryId}>
                         <div>${row.text}</div>

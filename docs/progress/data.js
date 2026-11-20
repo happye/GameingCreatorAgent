@@ -1189,12 +1189,14 @@ window.PROGRESS_DATA = {
    "remaining": null,
    "evidence": [
     "2026-11-01: commentary mode template (ordered ~3s segments, opening/commentary/ending roles, closing line) real demo-phase0 instance -> 315-frame MP4 -> Bilibili package passing configured checks (.cache/content-modes-e2e-r3.json)",
-    "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md"
+    "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md",
+    "2026-11-20: commentary topics link to saved visual observations, including two topics in one shot. Current edit supplies local narration and publication chapters. Real Comic Stars footage -> 27s narrated video -> Bilibili package. See sprint-commentary-evidence."
    ],
-   "done": "游戏解说模板约3秒/段顺序取材并留解说时间，真实出片＋B站包已走通；已解冻",
-   "todo": "解说文案与成片质量未经人评",
-   "updated": "2026-11-01",
+   "done": "优先保留有录像原文的解说主题，同镜多主题进入本机旁白。剪辑后重建章节，实测 27 秒本机配音及 B 站发布包",
+   "todo": "创作者观点、逐句声画配合和成片质量待人评",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-commentary-evidence",
     "sprint-content-modes"
    ]
   },
@@ -1773,6 +1775,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-guide-evidence"
     },
     {
+     "id": "P046-commentary-evidence",
+     "name": "游戏解说画面引用与发布章节",
+     "status": "done",
+     "sprint": "sprint-commentary-evidence"
+    },
+    {
      "id": "P018",
      "name": "游戏知识层（本机）",
      "status": "done",
@@ -2280,7 +2288,8 @@ window.PROGRESS_DATA = {
   "P042 已接通发布成效登记、同平台对比与下一份方案参考，用隔离示例和实拍素材包验证。真实平台数据待录入。见[交付记录](docs/exec-plans/sprint-outcome-structure-reference.md)。",
   "漫画群星 60 秒[主题旁白](docs/exec-plans/sprint-showcase-narration.md)已补齐[句级字幕](docs/exec-plans/sprint-narration-captions.md)，试听、移动音轨、SRT 和 B 站烧入版实测通过。",
   "P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。",
-  "P045 已用真实漫画群星录像验证步骤引用、删改换序后重编号、本机旁白及 B 站包。见[攻略步骤](docs/exec-plans/sprint-guide-evidence.md)。旧 verify-20261117-002506 已中断，原日志保留。"
+  "P045 已用真实漫画群星录像验证步骤引用、删改换序后重编号、本机旁白及 B 站包。见[攻略步骤](docs/exec-plans/sprint-guide-evidence.md)。旧 verify-20261117-002506 已中断，原日志保留。",
+  "P046 已用漫画群星验证同镜多主题、缺口提示、本机配音 27 秒成片和 B 站包。下一步推进 P047 实况精剪的保留事件和跳过空镜策略。见[游戏解说](docs/exec-plans/sprint-commentary-evidence.md)。"
  ],
  "sprints": [
   {
@@ -2530,6 +2539,15 @@ window.PROGRESS_DATA = {
    "bytes": 9362
   },
   {
+   "file": "sprint-commentary-evidence",
+   "title": "游戏解说画面引用与发布章节",
+   "ids": [
+    "P046"
+   ],
+   "date": "",
+   "bytes": 1768
+  },
+  {
    "file": "sprint-content-modes",
    "title": "P022 + P043/P044/P045：首产品三种内容模式（离线模板）",
    "ids": [
@@ -2705,7 +2723,7 @@ window.PROGRESS_DATA = {
    "ids": [
     "P045"
    ],
-   "date": "",
+   "date": "2026-11-20",
    "bytes": 1613
   },
   {

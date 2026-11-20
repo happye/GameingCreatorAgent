@@ -85,6 +85,7 @@ def snapshot(jobs: Any, job_id: str) -> dict[str, Any]:
         edl.get("segments") or [],
         fps,
         evidenced_guide=edl.get("selectedPlan") == "guide-evidence",
+        evidenced_commentary=edl.get("selectedPlan") == "commentary-evidence",
     )
     campaign = _campaign_context(report)
     if campaign:
@@ -213,12 +214,17 @@ def _timestamp(seconds: float) -> str:
     return f"{whole // 60:02d}:{whole % 60:02d}"
 
 
+def _commentary_topics(row: dict[str, Any]) -> list[str]:
+    return [use["topic"] for use in row.get("topicUses", []) if use.get("evidenceKind") == "fact"]
+
+
 def draft_copy(
     brief: dict[str, Any],
     segments: list[Any],
     fps: float | None = None,
     *,
     evidenced_guide: bool = False,
+    evidenced_commentary: bool = False,
 ) -> dict[str, Any]:
     """Editable local template from the structured brief and the rendered shots.
 
@@ -235,6 +241,15 @@ def draft_copy(
                 _clean(row["guideStep"], 50).strip()
                 for row in segments
                 if isinstance(row, dict) and row.get("guideStep")
+            )
+        )
+    if evidenced_commentary:
+        topics = list(
+            dict.fromkeys(
+                _clean(topic, 50).strip()
+                for row in segments
+                if isinstance(row, dict)
+                for topic in _commentary_topics(row)
             )
         )
     audience = _clean(brief.get("audience"), 20).strip()
@@ -256,6 +271,9 @@ def draft_copy(
         if evidenced_guide:
             topic = _clean(row.get("guideStep"), 100).strip()
             name = f"第{len(chapters) + 1}步 {topic}" if topic else ""
+        if evidenced_commentary:
+            name = _clean("、".join(_commentary_topics(row)), 60).strip()
+        if evidenced_guide or evidenced_commentary:
             if fps and type(row.get("outputStartFrame")) is int:
                 stamp = _timestamp(row["outputStartFrame"] / fps) + " "
         if name and not any(line.endswith(" " + name) or line == name for line in chapters):

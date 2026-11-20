@@ -151,6 +151,50 @@ def _guide_lines(clips: list[dict[str, Any]], room: int) -> list[tuple[dict[str,
     return chosen
 
 
+def _commentary_lines(clips: list[dict[str, Any]], room: int) -> list[tuple[dict[str, Any], str]]:
+    chosen: list[tuple[dict[str, Any], str]] = []
+    for clip in clips:
+        phrases: list[str] = []
+        topics: list[str] = []
+        quotes: list[str] = []
+        for use in clip.get("topicUses", []):
+            quote, topic = use.get("observationQuote"), use.get("topic")
+            if (
+                use.get("evidenceKind") != "fact"
+                or not isinstance(quote, str)
+                or not isinstance(topic, str)
+                or not quote
+                or quote not in clip.get("scriptDraft", "")
+                or not topic_matches(quote, topic)
+            ):
+                continue
+            phrase = next(
+                (
+                    text
+                    for part in re.split(r"[，,；;]", quote)
+                    if topic_matches(
+                        text := _sentence(part.replace("“", "").replace("”", "")), topic
+                    )
+                ),
+                topic,
+            )
+            next_phrases = list(dict.fromkeys([*phrases, phrase]))
+            if len("，".join(next_phrases)) + len("最后看。") <= room:
+                phrases = next_phrases
+                topics.append(topic)
+                quotes.append(quote)
+        if phrases:
+            sentence = "，".join(phrases)
+            evidence = {
+                **clip,
+                "observationQuote": "\n".join(dict.fromkeys(quotes)),
+                "commentaryTopic": "、".join(topics),
+            }
+            chosen.append((evidence, sentence))
+            room -= len(sentence) + len("最后看。")
+    return chosen
+
+
 def build_narration_script(
     brief: CreativeBrief,
     clips: list[dict[str, Any]],
@@ -160,6 +204,7 @@ def build_narration_script(
     *,
     prefer_showcase_topics: bool = False,
     evidenced_guide: bool = False,
+    evidenced_commentary: bool = False,
 ) -> dict[str, object]:
     if any(type(n) is not int or n <= 0 for n in (output_frames, fps)):
         raise ValueError("Narration script needs a positive output clock.")
@@ -173,12 +218,14 @@ def build_narration_script(
     else:
         closing = ""
     theme_lines = (
-        _showcase_lines(brief.mandatory_topics, clips, budget - used)
+        _commentary_lines(clips, budget - used)
+        if evidenced_commentary
+        else _showcase_lines(brief.mandatory_topics, clips, budget - used)
         if prefer_showcase_topics
         else []
     )
     candidates: list[tuple[dict[str, Any], str]] = []
-    if not theme_lines and not evidenced_guide:
+    if not theme_lines and not evidenced_guide and not evidenced_commentary:
         for clip in clips:
             sentence = _sentence(clip.get("scriptDraft"))
             if sentence and (not candidates or candidates[-1][1] != sentence):
@@ -230,14 +277,27 @@ def build_narration_script(
         + ([closing] if closing else [])
     )
     lines: list[dict[str, object]] = [
-        {"clipId": clip["clipId"], "outputStartFrame": clip.get("outputStartFrame"), "text": text}
+        {
+            "clipId": clip["clipId"],
+            "outputStartFrame": clip.get("outputStartFrame"),
+            "text": text,
+            **(
+                {"topic": clip["commentaryTopic"], "observationQuote": clip["observationQuote"]}
+                if evidenced_commentary
+                else {}
+            ),
+        }
         for clip, text in chosen
     ]
     omitted = len(clips) - len(chosen)
     text = "。".join(parts) + "。" if parts else ""
     return {
         "schemaVersion": "creation-narration-script-v1",
-        "generator": "offline-showcase-topics-v1" if theme_lines else "offline-template-v2",
+        "generator": "offline-commentary-evidence-v1"
+        if evidenced_commentary
+        else "offline-showcase-topics-v1"
+        if theme_lines
+        else "offline-template-v2",
         "status": "template-draft-human-review-required",
         "text": text,
         "lines": lines,

@@ -180,6 +180,34 @@ def test_guide_explicit_steps_use_observations_and_current_order():
     assert "拾取钥匙" not in copy["description"] and "通关" not in copy["title"]
 
 
+def test_commentary_keeps_shared_visual_evidence_and_rebuilds_copy_after_edits():
+    from gamingcreator.ui.publication_jobs import draft_copy
+
+    topics = ("环形技能", "6880", "比分条", "结算奖励")
+    req = brief("commentary", duration=24, topics=topics)
+    facts = [["开场环境"], ["释放环形技能，出现伤害数字“6880”。"], ["顶部出现比分条"], ["片尾"]]
+    clips = list(material(facts))
+    clips[-1] = replace(clips[-1], event=replace(clips[-1].event, mechanic_tags=(topics[-1],)))
+    selected = plan_creation(req, tuple(clips), 30)["plans"][0]
+    assert selected["id"] == "commentary-evidence" and selected["ready"]
+    assert [item["status"] for item in selected["topicCoverage"]] == ["source-matched"] * 3 + [
+        "missing"
+    ]
+    effect, score = [
+        dict(row, clipId=row["eventId"]) for row in selected["segments"] if row.get("topicUses")
+    ]
+    script = build_narration_script(req, [effect, score], 720, 30, evidenced_commentary=True)
+    assert [line["topic"] for line in script["lines"]] == ["环形技能、6880", "比分条"]
+    assert script["lines"][0]["observationQuote"] == facts[1][0]
+    assert "伤害数字6880" in script["text"] and "结算奖励" not in script["text"]
+    metadata = {"game": req.game, "contentType": "commentary", "mandatoryTopics": list(topics)}
+    current = [dict(score, outputStartFrame=0), dict(effect, outputStartFrame=141)]
+    copy = draft_copy(metadata, current, 30, evidenced_commentary=True)
+    assert "00:00 比分条\n00:04 环形技能、6880" in copy["description"]
+    copy = draft_copy(metadata, current[:1], 30, evidenced_commentary=True)
+    assert copy["tags"] == [req.game, "游戏解说", "比分条"]
+
+
 def test_campaign_topics_follow_opening_and_missing_topic_is_advised():
     facts = [["角色奔跑"], ["新英雄登场", "技能展示"], ["限时活动入口"], ["结算"]]
     report = plan_creation(brief("campaign", topics=("限时活动",)), material(facts), 30)

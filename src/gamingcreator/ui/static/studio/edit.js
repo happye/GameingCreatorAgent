@@ -234,7 +234,11 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         const replaced = new Set(command?.projection?.replacements?.map(row => row.targetClipId));
         return commandRows.map((row) => {
             const clip = {...byId.get(row.clipId), ...row};
-            if (clip.guideStep && replaced.has(row.clipId)) { delete clip.guideStep; delete clip.role; delete clip.topicUses; }
+            if (replaced.has(row.clipId)) {
+                delete clip.guideStep;
+                delete clip.role;
+                delete clip.topicUses;
+            }
             return clip;
         });
     }, [commandRows, command?.projection, editable, editing.clips]);
