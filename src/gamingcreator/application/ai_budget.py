@@ -67,7 +67,14 @@ def decide(spends: Iterable[Spend], job_id: str, month: str, ceiling: Decimal) -
         (
             r.cny
             for r in rows
-            if job_id.startswith("brief-") or r.job_id == job_id or r.job_id.startswith("brief-")
+            if (
+                r.job_id in {job_id, "?"}
+                if job_id.startswith("work:")
+                else job_id.startswith("brief-")
+                or r.job_id == job_id
+                or r.job_id.startswith("brief-")
+                or r.job_id == "?"
+            )
         ),
         Decimal(0),
     )

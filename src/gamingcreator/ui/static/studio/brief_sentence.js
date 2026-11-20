@@ -27,8 +27,8 @@ const billingText = (billing) => !billing ? "" : billing.unresolvedAttempts || b
     ? `AI 实际费用未知，仍按 ¥${billing.reservedCny} 计入预算；不会自动重试。`
     : `AI 本次约 ¥${Number(billing.knownCostCny).toFixed(4)}（按价目估算，以提供方账单为准）。`;
 
-export function BriefSentence({draft, update, runs = [], project = ""}) {
-    const pendingKey = `${PENDING_KEY}:${project}`;
+export function BriefSentence({draft, update, runs = [], project = "", workId = null}) {
+    const pendingKey = `${PENDING_KEY}:${project}${workId ? `:work:${workId}` : ""}`;
     const [text, setText] = useState(() => savedPending(pendingKey)?.sentence || ""), [result, setResult] = useState(null), [message, setMessage] = useState("");
     const [busy, setBusy] = useState(false), [available, setAvailable] = useState(false), [pending, setPending] = useState(() => savedPending(pendingKey));
     const [localOnly, setLocalOnly] = useState(() => savedPending(pendingKey)?.localOnly === true);
@@ -57,7 +57,7 @@ export function BriefSentence({draft, update, runs = [], project = ""}) {
         try {
             let reason = localOnly ? "本次使用本机规则，旧 AI 请求仍可读取" : available ? "" : "文本模型未配置";
             if (available && !localOnly) {
-                const quote = await reasoning({action: "prepare_brief", text: text.trim(), games: gameNames(runs)});
+                const quote = await reasoning({action: "prepare_brief", text: text.trim(), games: gameNames(runs), ...(workId ? {projectId: project, workId} : {})});
                 if (!current()) return;
                 if (!quote.budget?.eligible) reason = `${quote.budget?.reason || "超出 AI 预算"}，未调用 AI`;
                 else {
