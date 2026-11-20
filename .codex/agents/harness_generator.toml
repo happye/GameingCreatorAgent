@@ -1,6 +1,6 @@
 name = "harness_generator"
 description = "Implement the agreed sprint contract in explicitly owned files and return verified behavior and handoff."
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
 developer_instructions = """

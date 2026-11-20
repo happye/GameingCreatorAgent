@@ -1,6 +1,6 @@
 # Codex 子 Agent 分工
 
-项目配置：`.codex/config.toml`（最多 3 个并行子 Agent，未指定时用 Luna／medium）和 `.codex/agents/*.toml`（每个角色一份，只有这一套）。在其他机器上，用 `./scripts/install-codex-agents.ps1` 安装到个人目录；目标已有不一致的配置时，脚本拒绝覆盖。
+项目配置：`.codex/config.toml`（最多 3 个并行子 Agent，未指定时用 Terra／medium）和 `.codex/agents/*.toml`（每个角色一份，只有这一套）。使用现有 Codex 角色文件，排除 `muyun-` 开头的文件。
 
 | 任务 | 角色 | 模型／推理 | 边界 |
 | --- | --- | --- | --- |
@@ -10,7 +10,7 @@
 | 一般代码审查 | task_reviewer | gpt-6.2-sol／medium | 只读，有证据才报问题 |
 | 费用、持久化、并发等关键审查 | task_quality_guard | gpt-6.2-sol／high | 和一般审查二选一 |
 | 跨模块设计 | task_architect | gpt-6.2-astra／low | 只读，已有方案不重新设计 |
-| 里程碑合同、实施、评估 | harness_planner／generator／evaluator | gpt-6.1-sol／medium | 只用于里程碑（`development-agent-pipeline.md`） |
+| 里程碑合同、实施、评估 | harness_planner／generator／evaluator | gpt-6.2-sol／medium | 只用于里程碑（`development-agent-pipeline.md`） |
 
 规则：
 - 简单的一步操作由主 Agent 自己做；多开 Agent 会多花 token，不要为了并行而拆任务。
