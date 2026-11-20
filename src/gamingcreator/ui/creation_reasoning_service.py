@@ -449,10 +449,13 @@ class CreationReasoningService:
         snapshot = with_knowledge(snapshot, frozen.get("knowledge", []))
         if "topicMapping" in frozen:
             snapshot = with_topics(snapshot)
+        request = plan_reasoning_request(
+            snapshot, prompt_version=record["request"]["prompt_version"]
+        )
         if (
             original["projectId"] != record["projectId"]
             or snapshot.fingerprint != record["snapshotFingerprint"]
-            or _digest(asdict(plan_reasoning_request(snapshot))) != record["requestHash"]
+            or _digest(asdict(request)) != record["requestHash"]
         ):
             raise ValueError("Saved planning inputs changed; prepare again.")
         return snapshot
