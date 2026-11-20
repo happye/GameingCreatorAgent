@@ -1262,10 +1262,11 @@ window.PROGRESS_DATA = {
     "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md",
     "2026-11-20: evidence-bound ad editions have distinct openings and calls to action, with stale voice feedback after evidence edits. Two Comic Stars vertical renders, local narration, two subtitle styles and Douyin packages verified. See sprint-ad-evidence.",
     "2026-11-20: Studio suggests declared local music by actual ad edit duration. An Atom footage edit was previewed, saved and reopened, rendered and packaged for Douyin with the selected track confirmed in both audio streams. Music character and ad effectiveness are unassessed. See sprint-ad-evidence.",
-    "2026-11-21: Studio durably queues ad structures and subtitle styles into separate renders, local publication drafts and platform packages. Four Comic Stars combinations completed after tab close, reopened and downloaded with verified first frames, ending subtitle differences and seven-file ZIPs. See sprint-ad-variant-batches."
+    "2026-11-21: Studio durably queues ad structures and subtitle styles into separate renders, local publication drafts and platform packages. Four Comic Stars combinations completed after tab close, reopened and downloaded with verified first frames, ending subtitle differences and seven-file ZIPs. See sprint-ad-variant-batches.",
+    "2026-11-21: A single Studio batch can select different saved edits per advertising plan. Two Comic Stars packages retained their own narration, a music bed for the 20-second edit and a half-speed opening for the 21-second edit. Stale revision selection blocked submission. See sprint-ad-variant-batches."
    ],
-   "done": "广告两套开场与字幕样式可批量生成成片、文案及平台包，按实际时长推荐本机配乐",
-   "todo": "为各方案独立选取已存配乐和节奏版本，节拍与情绪匹配、投放效果和真人质量待验",
+   "done": "广告双开场可分别选用已保存的配乐和变速剪辑；同批实测 20 秒及 21 秒竖屏成片和抖音包",
+   "todo": "配乐节拍及情绪匹配待实现，投放效果和成片质量待人评",
    "updated": "2026-11-21",
    "sprints": [
     "sprint-ad-variant-batches",
@@ -2351,7 +2352,7 @@ window.PROGRESS_DATA = {
   "P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。",
   "[P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。",
   "[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)已通过，平台包可用命名路径保存到项目 `exports`。",
-  "[P049 广告批量](docs/exec-plans/sprint-ad-variant-batches.md)组合开场与字幕出片、出包。[广告配乐](docs/exec-plans/sprint-ad-evidence.md)实测《代号 Atom》。下一步补各方案独立选取配乐和节奏版本。"
+  "[P049 广告批量](docs/exec-plans/sprint-ad-variant-batches.md)同批使用两套保存剪辑，实测 20 秒配乐版和 21 秒慢放版。下一步补配乐节拍与情绪匹配。"
  ],
  "sprints": [
   {
@@ -2412,7 +2413,7 @@ window.PROGRESS_DATA = {
    "ids": [
     "P049"
    ],
-   "date": "2026-11-20",
+   "date": "2026-11-21",
    "bytes": 3595
   },
   {
@@ -2422,8 +2423,8 @@ window.PROGRESS_DATA = {
     "P049",
     "R3"
    ],
-   "date": "",
-   "bytes": 3179
+   "date": "2026-11-21",
+   "bytes": 4363
   },
   {
    "file": "sprint-ai-clip-insertion",

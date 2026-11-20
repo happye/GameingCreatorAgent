@@ -16,7 +16,7 @@ import {ProgramTrack} from "./multitrack.js";
 import {SubtitlePreview, useSubtitlePreview, WordHighlightSwitch, wordHighlightDraft, asrWordsPayload} from "./subtitles.js";
 import {OverlayPanel, OverlayPreview, overlayProblem} from "./overlays.js";
 import {matchesStructureFeedback, OUTCOME_LABELS, useStructureFeedback} from "./structure_feedback.js";
-import {AdBatches, adBatchPlan, adBatchRevision} from "./ad_batches.js";
+import {AdBatches, adBatchPlan} from "./ad_batches.js";
 
 const html = htm.bind(h);
 const DRAFT = "studio-brief-v1";
@@ -498,7 +498,8 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     onPick=${() => { if (overlayBusy || audioBusy || busy) return; if (editing.dirty && !confirmLeave()) return; setComparePreview(null); setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommand(null); lastJob(scope, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
                     : html`<p class="note">填好需求后点“生成方案”。方案只是剪辑清单，生成很快；选中后可以直接预览，不用先渲染。</p>`}
                 ${adBatchPlan(planJob, project) && html`<${AdBatches} key=${JSON.stringify([scope, planJob.jobId, planJob.resultReceiptSha256])}
-                    project=${project} planJob=${planJob} selectedPlanId=${planId} revision=${adBatchRevision(editing, planJob, planId)}
+                    project=${project} planJob=${planJob} selectedPlanId=${planId}
+                    revisionRefreshId=${editing.base?.kind === "revision" ? editing.base.jobId : ""}
                     dirty=${editing.dirty || commandPreview} disabled=${!!busy || overlayBusy || audioBusy} onChanged=${onWorksChanged} />`}
                 <${StructureFeedback} contentType=${draft.contentType} platform=${draft.platform} saved=${structureFeedback.saved} plan=${plan} job=${planJob} disabled=${!!busy}
                     update=${value => setSaved(structureFeedback.write(value) ? value ? "结构偏好已保存" : "结构偏好已清除" : "浏览器不允许保存结构偏好")} />

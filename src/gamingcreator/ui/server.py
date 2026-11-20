@@ -1427,6 +1427,16 @@ class InspectionHandler(BaseHTTPRequestHandler):
 
                 self._json(200, publication_feedback.compare(self.creation_jobs, query))
                 return
+            if path == "/api/creation/ad-batch-revisions":
+                if set(query) != {"projectId", "planJobId", "expectedPlanReceiptSha256"}:
+                    raise ValueError("Expected project, ad plan and receipt")
+                self._json(
+                    200,
+                    self.creation_jobs.ad_batches.revisions(
+                        query["projectId"], query["planJobId"], query["expectedPlanReceiptSha256"]
+                    ),
+                )
+                return
             if (batch_route := _batch_route(path)) is not None:
                 name, batch_id = batch_route
                 service = getattr(self.creation_jobs, name)

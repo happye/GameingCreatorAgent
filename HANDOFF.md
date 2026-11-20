@@ -2,7 +2,7 @@
 
 ## 最近一次会话（2026-11-21）
 
-当前开发分支为 `main`。先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。本批接通 [P049 广告批量](docs/exec-plans/sprint-ad-variant-batches.md)，从已选方案生成实际成片、文案和平台包。前批《代号 Atom》8 秒配乐实证仍见 [广告交付记录](docs/exec-plans/sprint-ad-evidence.md)。
+当前开发分支为 `main`。先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。[P049 广告批量](docs/exec-plans/sprint-ad-variant-batches.md)实测从同一根方案选两套已保存剪辑，关页后完成批次 `1e4582a400305b475cc7659ff07e9918`，成片分别为 20 秒配乐版和 21 秒慢放版。
 
 ## 实证与接手入口
 
@@ -28,6 +28,6 @@
 
 ## 下一优先级与约束
 
-[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)用户确认通过。漫画群星和代号 Atom 实测通过本机命名出包，浏览器原失败未复现。下一切片让广告批量分别选择各个方案已存的配乐和节奏版本，继续轮换游戏。P042、P044–P049 待人评。
+[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)用户确认通过。漫画群星和代号 Atom 实测通过本机命名出包，浏览器原失败未复现。下一切片推进广告配乐节拍和情绪匹配，继续轮换游戏。P042、P044–P049 待人评。
 
 本批使用定向回归、真实浏览器和产物验证，无全量、Release、支付或上传。旧完整 verify-20261117-002506 按用户要求中断，曾见失败。J2/J3 待人评，J1 通过以第六次用户答复为证。文字月 ¥30/单条 ¥1、指定视觉月 ¥50，现有费用门禁保留。本机声音，真实平台发布或支付须另授权。

@@ -9,6 +9,7 @@ from gamingcreator.application.ad_cut import AD_ACTIONS
 from gamingcreator.domain.creation_presentation import SUBTITLE_STYLES
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.platform_profile import validate_profile
+from gamingcreator.ui.ad_revision_catalog import revisions_for_plan
 from gamingcreator.ui.creation_budget_scope import request_digest
 from gamingcreator.ui.package_batches import PackageBatches, identity, locked
 from gamingcreator.ui.revision_jobs import Chain, load_chain, revision_subtitles
@@ -34,6 +35,49 @@ class AdBatches(PackageBatches):
     scope_key = "planJobId"
     retry_failed_items = True
 
+    def ad_plan(
+        self, project: str, plan_id: str, receipt_sha: str, *, metadata_only: bool = False
+    ) -> tuple[dict[str, Any], set[str]]:
+        self.jobs.project(project)
+        root_id = identity(plan_id)
+        directory = self.jobs.directory(root_id)
+        state = self.jobs.read(directory / "status.json")
+        if (
+            state["kind"],
+            state["status"],
+            state["projectId"],
+            state.get("resultReceiptSha256"),
+        ) != (
+            "plan",
+            "completed",
+            project,
+            receipt_sha,
+        ):
+            raise ValueError("广告方案与项目或已保存回执不匹配。")
+        request = self.jobs._projection_identity(directory, state)["request"]
+        if request["projectId"] != project:
+            raise ValueError("广告方案的登记项目不匹配。")
+        if metadata_only:
+            report = self.jobs.plan_report(directory)
+            plan = {**state, **{key: report[key] for key in ("brief", "fps", "plans")}}
+        else:
+            plan = self.jobs.get(root_id)
+        if (
+            plan["status"] != "completed"
+            or plan["projectId"] != project
+            or plan["brief"]["contentType"] != "ad"
+            or plan["resultReceiptSha256"] != receipt_sha
+            or plan["brief"] != request["brief"]
+            or plan["fps"] != request["fps"]
+        ):
+            raise ValueError("广告方案与项目或已保存回执不匹配。")
+        ready = {p["id"] for p in plan["plans"] if p["ready"] and p["id"] in AD_ACTIONS}
+        return plan, ready
+
+    def revisions(self, project: str, plan_id: str, receipt_sha: str) -> dict[str, Any]:
+        plan, ready = self.ad_plan(project, plan_id, receipt_sha, metadata_only=True)
+        return revisions_for_plan(self.jobs, plan, ready)
+
     def validate(self, value: dict[str, Any]) -> None:
         if not isinstance(value, dict) or set(value) != {
             "requestId",
@@ -46,22 +90,12 @@ class AdBatches(PackageBatches):
             raise ValueError("请提供广告方案、成片选项和本机平台配置。")
         identity(value["requestId"])
         root_id = identity(value["planJobId"])
-        self.jobs.project(value["projectId"])
         profile = validate_profile(value["profile"])
         if profile["Fields"].keys() & {"variant", "publicationText"}:
             raise ValueError("广告批量使用完整成片的平台配置。")
         if profile["Fields"]["video"]["fit"] != "pad":
             raise ValueError("广告批量的平台画幅需要保留原画比例并补边。")
-        plan = self.jobs.get(root_id)
-        if (
-            plan["kind"] != "plan"
-            or plan["status"] != "completed"
-            or plan["projectId"] != value["projectId"]
-            or plan["brief"]["contentType"] != "ad"
-            or plan["resultReceiptSha256"] != value["expectedPlanReceiptSha256"]
-        ):
-            raise ValueError("广告方案与项目或已保存回执不匹配。")
-        ready = {p["id"] for p in plan["plans"] if p["ready"] and p["id"] in AD_ACTIONS}
+        _, ready = self.ad_plan(value["projectId"], root_id, value["expectedPlanReceiptSha256"])
         variants = value["variants"]
         if not isinstance(variants, list) or not 1 <= len(variants) <= 6:
             raise ValueError("请选择一到六个广告版本。")

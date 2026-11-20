@@ -19,12 +19,25 @@ export function adBatchPlan(job, project) {
         && job.brief?.contentType === "ad" && receipt(job.resultReceiptSha256);
 }
 
-export function adBatchRevision(editing, planJob, planId) {
-    const {base, editor, status, dirty} = editing;
-    if (status !== "ready" || dirty || base?.kind !== "revision" || base.planId !== planId
-        || editor?.rootReceiptSha256 !== planJob.resultReceiptSha256 || !receipt(editor.expectedParentReceiptSha256)
-        || !editor.ancestry?.some(parent => parent.kind === "plan" && parent.jobId === planJob.jobId)) return null;
-    return {planId, revisionJobId: base.jobId, revisionReceiptSha256: editor.expectedParentReceiptSha256};
+function useRevisions(projectId, planJobId, expectedPlanReceiptSha256, revisionRefreshId) {
+    const [refresh, setRefresh] = useState(0);
+    const key = JSON.stringify([projectId, planJobId, expectedPlanReceiptSha256, revisionRefreshId, refresh]);
+    const [state, setState] = useState(null);
+    useEffect(() => {
+        const controller = new AbortController();
+        api("/api/creation/ad-batch-revisions", {projectId, planJobId, expectedPlanReceiptSha256}, {signal: controller.signal})
+            .then(({revisions, unavailable}) => {
+                if (!controller.signal.aborted) setState({key, revisions, unavailable, error: ""});
+            }).catch(error => {
+                if (!controller.signal.aborted) setState({key, revisions: [], unavailable: 0, error: error.message});
+            });
+        return () => controller.abort();
+    }, [key]);
+    const loading = state?.key !== key;
+    return {
+        ...(loading ? {revisions: [], unavailable: 0, error: ""} : state),
+        loading, reload: () => setRefresh(n => n + 1),
+    };
 }
 
 function useProfiles(preferred) {
@@ -113,28 +126,58 @@ function useQueueActions(queue, payload, blocked) {
 }
 
 const toggle = (rows, value, checked) => checked ? [...rows, value] : rows.filter(row => row !== value);
+const revisionValue = row => `${row.revisionJobId}:${row.revisionReceiptSha256}`;
 
-export function AdBatches({project, planJob, selectedPlanId, revision, dirty, disabled, onChanged}) {
+function RevisionPicker({planId, rows, value, revision, list, busy, onSelect}) {
+    const stale = !!value && !revision;
+    const invalid = stale && !list.loading && !list.error;
+    const label = row => {
+        const date = new Date(row.createdAt).toLocaleString("zh-CN", {hour12: false});
+        return `${row.name || "已保存版本"} · ${date} · ${row.revisionJobId.slice(0, 8)}`;
+    };
+    return html`<div>
+        <label class="form-row">${planLabels[planId]}画面版本
+            <select class="select" value=${value} disabled=${busy} aria-invalid=${invalid}
+                onChange=${event => onSelect(event.currentTarget.value)}>
+                <option value="">原方案</option>
+                ${stale && html`<option value=${value} disabled>已选版本 ${value.slice(0, 8)}</option>`}
+                ${rows.map(row => html`<option key=${revisionValue(row)} value=${revisionValue(row)}>${label(row)}</option>`)}
+            </select>
+        </label>
+        ${invalid && html`<p class="note" role="status">已选版本无法核实或回执已变化。请选择其他已保存版本，或手动选回原方案。</p>`}
+        ${revision && html`<p class="note">${revisionFacts(revision)}</p>`}
+    </div>`;
+}
+
+function revisionFacts(row) {
+    const fps = typeof row.fps === "number" ? row.fps : row.fps.numerator / row.fps.denominator;
+    const speeds = row.speeds.filter(speed => speed.numerator !== speed.denominator)
+        .map(speed => `${Number((speed.numerator / speed.denominator).toFixed(2))}×`);
+    return [`${(row.frames / fps).toFixed(2)} 秒`, row.hasMusic ? "有配乐" : "无配乐",
+        row.hasNarration ? "有旁白" : "无旁白", speeds.length ? `变速 ${speeds.join("、")}` : "原速"].join(" · ");
+}
+
+export function AdBatches({project, planJob, selectedPlanId, revisionRefreshId, dirty, disabled, onChanged}) {
     const plans = planJob.plans.filter(p => p.ready && Object.hasOwn(planLabels, p.id));
     const [planIds, setPlanIds] = useState(() => [plans.find(p => p.id === selectedPlanId)?.id || plans[0]?.id].filter(Boolean));
     const [styleIds, setStyleIds] = useState(["standard"]);
     const [platform, setPlatform] = useState("");
-    const revisionKey = revision ? JSON.stringify(revision) : "";
-    const [useRevision, setUseRevision] = useState("");
-    useLayoutEffect(() => { setUseRevision(""); }, [revisionKey]);
+    const [revisionChoices, setRevisionChoices] = useState({});
+    const list = useRevisions(project, planJob.jobId, planJob.resultReceiptSha256, revisionRefreshId);
     const local = useProfiles(planJob.brief.platforms?.[0]);
     const profile = local.profiles.find(p => p.Platform === (platform || local.selected));
-    const variants = plans.filter(p => planIds.includes(p.id)).flatMap(({id}) =>
-        Object.keys(styles).filter(style => styleIds.includes(style)).map(subtitleStyle => {
-            const variant = {planId: id, subtitleStyle};
-            if (revision?.planId === id && useRevision === revisionKey) {
-                variant.revisionJobId = revision.revisionJobId;
-                variant.revisionReceiptSha256 = revision.revisionReceiptSha256;
-            }
-            return variant;
-        }));
+    const selected = plans.filter(plan => planIds.includes(plan.id)).map(({id}) => {
+        const rows = list.revisions.filter(row => row.planId === id);
+        const value = revisionChoices[id] || "";
+        return {id, rows, value, revision: rows.find(row => revisionValue(row) === value)};
+    });
+    const variants = selected.flatMap(({id, revision}) =>
+        Object.keys(styles).filter(style => styleIds.includes(style)).map(subtitleStyle => ({
+            planId: id, subtitleStyle, ...(revision ? {revisionJobId: revision.revisionJobId, revisionReceiptSha256: revision.revisionReceiptSha256} : {}),
+        })));
     const queue = useQueue(project, planJob.jobId, onChanged);
-    const blocked = disabled || dirty || !profile || !variants.length || variants.length > maxVariants;
+    const blocked = disabled || dirty || !profile || !variants.length || variants.length > maxVariants
+        || selected.some(({value, revision}) => value && !revision);
     const actions = useQueueActions(queue, {
         projectId: project, planJobId: planJob.jobId, expectedPlanReceiptSha256: planJob.resultReceiptSha256, profile, variants,
     }, blocked);
@@ -147,11 +190,15 @@ export function AdBatches({project, planJob, selectedPlanId, revision, dirty, di
                     onChange=${event => setPlanIds(toggle(planIds, plan.id, event.currentTarget.checked))} />${planLabels[plan.id]}
             </label>`) : html`<p class="note">当前没有可批量导出的广告方案。</p>`}
         </div>
-        ${revision && planIds.includes(revision.planId) && Object.hasOwn(planLabels, revision.planId) && html`<label class="check">
-            <input type="checkbox" checked=${useRevision === revisionKey} disabled=${actions.busy}
-                onChange=${event => setUseRevision(event.currentTarget.checked ? revisionKey : "")} />
-            ${planLabels[revision.planId]}使用当前已保存的剪辑版本
-        </label>`}
+        ${selected.length > 0 && html`<div role="group" aria-label="画面版本">
+            ${selected.map(({id, rows, value, revision}) => html`<${RevisionPicker} key=${id} planId=${id} rows=${rows}
+                value=${value} revision=${revision} list=${list} busy=${actions.busy}
+                onSelect=${choice => setRevisionChoices(current => ({...current, [id]: choice}))} />`)}
+            ${list.loading && html`<p class="note" role="status">正在核对已保存版本…</p>`}
+            ${list.error && html`<p class="note" role="status">无法获取已保存版本：${list.error}</p>`}
+            ${list.unavailable > 0 && html`<p class="note" role="status">有 ${list.unavailable} 个版本无法核实。</p>`}
+            <button class="btn ghost" disabled=${list.loading || actions.busy} onClick=${list.reload}>${list.error ? "重试读取已保存版本" : "刷新已保存版本"}</button>
+        </div>`}
         <div role="group" aria-label="字幕样式">
             ${Object.entries(styles).map(([id, label]) => html`<label class="check" key=${id}>
                 <input type="checkbox" checked=${styleIds.includes(id)} disabled=${actions.busy}
@@ -190,7 +237,7 @@ function BatchItem({item, project}) {
     const render = item.stages.render;
     const pkg = item.stages.package;
     return html`<li>
-        <div>${planLabels[item.planId]} · ${styles[item.subtitleStyle]}${item.revisionJobId ? " · 已保存剪辑" : ""} · ${labels[item.status] || item.status}</div>
+        <div>${planLabels[item.planId]} · ${styles[item.subtitleStyle]}${item.revisionJobId ? ` · 已保存剪辑 ${item.revisionJobId.slice(0, 8)}` : ""} · ${labels[item.status] || item.status}</div>
         <div class="note">${Object.entries(stages).map(([kind, label]) => {
             const status = item.stages[kind]?.status;
             return `${label} ${labels[status] || status || "待开始"}`;

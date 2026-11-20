@@ -1,3 +1,4 @@
+import hashlib
 from pathlib import Path
 from threading import Event
 from uuid import uuid4
@@ -18,7 +19,21 @@ def batch_jobs(tmp_path, monkeypatch):
     project.mkdir(parents=True)
     monkeypatch.setattr(jobs, "project", lambda key: project)
     root = "a" * 32
-    receipt = "b" * 64
+    root_dir = jobs.jobs / root
+    (root_dir / "result").mkdir(parents=True)
+    root_request = {"projectId": PROJECT, "brief": {"contentType": "ad"}, "fps": 30}
+    root_digest = request_digest("plan", root_request)
+    jobs.save(root_dir / "request.json", {"request": root_request, "digest": root_digest})
+    root_receipt = root_dir / "result/receipt.json"
+    jobs.save(
+        root_receipt,
+        {
+            "schemaVersion": "creation-receipt-v1",
+            "jobId": root,
+            "requestDigest": root_digest,
+        },
+    )
+    receipt = hashlib.sha256(root_receipt.read_bytes()).hexdigest()
     rows = {
         root: {
             "jobId": root,
@@ -26,6 +41,7 @@ def batch_jobs(tmp_path, monkeypatch):
             "status": "completed",
             "kind": "plan",
             "brief": {"contentType": "ad"},
+            "fps": 30,
             "resultReceiptSha256": receipt,
             "plans": [
                 {"id": "ad-evidence-hook", "ready": True},
@@ -33,6 +49,7 @@ def batch_jobs(tmp_path, monkeypatch):
             ],
         }
     }
+    jobs.save(root_dir / "status.json", rows[root])
     submitted = []
     first = Event()
 
@@ -74,6 +91,7 @@ def batch_jobs(tmp_path, monkeypatch):
         return get(job_id)
 
     monkeypatch.setattr(jobs, "get", get)
+    monkeypatch.setattr(jobs, "plan_report", lambda directory: rows[directory.name])
     monkeypatch.setattr(jobs, "submit", submit)
     monkeypatch.setattr(
         jobs,
@@ -209,3 +227,128 @@ def test_continuing_a_cancelled_batch_does_not_retry_failed_variants(batch_jobs,
     assert joined(jobs, request)["status"] == "completed"
     assert submitted[3][1]["planId"] == "ad-evidence-hook"
     assert len(submitted) == 6
+
+
+def add_saved_revision(jobs, parent, parent_sha, plan, *, project=PROJECT, **edits):
+    job_id = uuid4().hex
+    directory = jobs.jobs / job_id
+    result = directory / "result"
+    result.mkdir(parents=True)
+    request = {
+        "requestId": uuid4().hex,
+        "parentJobId": parent,
+        "expectedParentReceiptSha256": parent_sha,
+        "planId": plan,
+        **edits,
+    }
+    digest = request_digest("revision", request)
+    jobs.save(
+        directory / "request.json",
+        {
+            "request": request,
+            "digest": digest,
+            "parentReceiptSha256": parent_sha,
+        },
+    )
+    decision = result / "edit-decision.json"
+    jobs.save(
+        decision,
+        {
+            "selectedPlan": plan,
+            "segments": [
+                {
+                    "outputStartFrame": 0,
+                    "outputFrames": 60,
+                    "speed": {"numerator": 1, "denominator": 2},
+                }
+            ],
+        },
+    )
+    receipt = result / "receipt.json"
+    metadata = result / "revision.json"
+    jobs.save(metadata, {"parentJobId": parent, "rootPlanId": plan, "edits": []})
+    jobs.save(
+        receipt,
+        {
+            "schemaVersion": "creation-revision-receipt-v1",
+            "jobId": job_id,
+            "requestDigest": digest,
+            "files": {
+                p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in (decision, metadata)
+            },
+        },
+    )
+    receipt_sha = hashlib.sha256(receipt.read_bytes()).hexdigest()
+    jobs.save(
+        directory / "status.json",
+        {
+            "jobId": job_id,
+            "kind": "revision",
+            "status": "completed",
+            "projectId": project,
+            "createdAt": "2026-11-21T00:00:00+00:00",
+            "parentJobId": parent,
+            "resultReceiptSha256": receipt_sha,
+        },
+    )
+    return job_id, receipt_sha
+
+
+def test_ad_revision_catalog_keeps_only_verified_descendants_with_inherited_audio(
+    batch_jobs, monkeypatch
+):
+    jobs, request, _, _, _ = batch_jobs
+    root, receipt = request["planJobId"], request["expectedPlanReceiptSha256"]
+    hook, hook_sha = add_saved_revision(
+        jobs,
+        root,
+        receipt,
+        "ad-evidence-hook",
+        audioMix={"bgm": {"trackId": "music"}},
+        narration={},
+    )
+    revised, revised_sha = add_saved_revision(
+        jobs, hook, hook_sha, "ad-evidence-hook", narration=None
+    )
+    demo, demo_sha = add_saved_revision(jobs, root, receipt, "ad-evidence-demo")
+    add_saved_revision(jobs, "c" * 32, receipt, "ad-evidence-hook")
+    add_saved_revision(jobs, root, receipt, "ad-evidence-demo", project="artifacts/another")
+    add_saved_revision(jobs, hook, hook_sha, "ad-evidence-demo")
+    tampered, _ = add_saved_revision(jobs, root, receipt, "ad-evidence-demo")
+    jobs.save(jobs.directory(tampered) / "result/edit-decision.json", {"segments": []})
+    missing, _ = add_saved_revision(jobs, root, receipt, "ad-evidence-demo")
+    (jobs.directory(missing) / "result/revision.json").unlink()
+
+    monkeypatch.setattr(jobs, "get", lambda *_: pytest.fail("Unexpected full plan verification"))
+    result = jobs.ad_batches.revisions(PROJECT, root, receipt)
+    assert result["unavailable"] == 3
+    rows = {row["revisionJobId"]: row for row in result["revisions"]}
+    assert {job_id: row["revisionReceiptSha256"] for job_id, row in rows.items()} == {
+        hook: hook_sha,
+        revised: revised_sha,
+        demo: demo_sha,
+    }
+    assert rows[revised]["planId"] == "ad-evidence-hook"
+    assert rows[revised]["hasMusic"] and not rows[revised]["hasNarration"]
+    assert rows[revised]["speeds"] == [{"numerator": 1, "denominator": 2}]
+    assert (rows[revised]["frames"], rows[revised]["fps"]) == (60, 30)
+    with pytest.raises(ValueError, match="回执"):
+        jobs.ad_batches.revisions(PROJECT, root, "wrong")
+
+
+def test_ad_revision_catalog_checks_project_in_the_root_request(batch_jobs):
+    jobs, request, rows, _, _ = batch_jobs
+    root = request["planJobId"]
+    rows[root]["projectId"] = "artifacts/another"
+    jobs.save(jobs.directory(root) / "status.json", rows[root])
+    with pytest.raises(ValueError, match="登记项目"):
+        jobs.ad_batches.revisions("artifacts/another", root, request["expectedPlanReceiptSha256"])
+
+
+def test_ad_revision_catalog_rejects_a_render_before_verifying_it(batch_jobs, monkeypatch):
+    jobs, request, rows, _, _ = batch_jobs
+    root = request["planJobId"]
+    jobs.save(jobs.directory(root) / "status.json", {**rows[root], "kind": "render"})
+    monkeypatch.setattr(jobs, "get", lambda *_: pytest.fail("Unexpected media inspection"))
+    with pytest.raises(ValueError, match="广告方案"):
+        jobs.ad_batches.revisions(PROJECT, root, request["expectedPlanReceiptSha256"])
