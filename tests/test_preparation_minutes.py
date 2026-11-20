@@ -14,9 +14,7 @@ from gamingcreator.application.entitlements import (
 )
 from gamingcreator.domain.errors import AppError
 from gamingcreator.infrastructure import entitlement_usage as usage
-from gamingcreator.ui.media_preparation import (
-    _preparation_quota_or_none,
-)
+from gamingcreator.ui.media_preparation import MediaPreparationJobs
 
 
 def test_summary_includes_preparation_minutes():
@@ -72,7 +70,7 @@ def test_failed_batch_policy_counts_at_accept(tmp_path: Path):
     assert usage.has_preparation_entry(root, key, now="2026-11-15T00:00:00+00:00")
 
 
-def test_quota_gate_rejects_over_limit_without_recording(tmp_path: Path, monkeypatch):
+def test_submit_checks_quota_after_probe_at_utc_rollover(tmp_path: Path, monkeypatch):
     repo = tmp_path / "repo"
     creations = repo / ".cache" / "workspace" / "creations"
     creations.mkdir(parents=True)
@@ -80,48 +78,69 @@ def test_quota_gate_rejects_over_limit_without_recording(tmp_path: Path, monkeyp
         json.dumps({"plan": "free", "billing": "none-local-evaluation"}),
         encoding="utf-8",
     )
-    # Already used 55 minutes
-    usage.record_preparation_if_new(
-        creations, key="prior", seconds=55 * 60, now="2026-11-01T00:00:00+00:00"
-    )
+    november = "2026-11-30T23:59:59+00:00"
+    december = "2026-12-01T00:00:00+00:00"
+    usage.record_preparation_if_new(creations, key="prior", seconds=55 * 60, now=november)
     project = repo / "artifacts" / "p"
     project.mkdir(parents=True)
     video = tmp_path / "clip.mp4"
     video.write_bytes(b"fake")
+    (repo / "config.example.json").write_bytes(
+        (Path(__file__).resolve().parents[1] / "config.example.json").read_bytes()
+    )
+    stamp = november
+    rolls_over = False
 
-    def fake_probe(repository: Path, media: Path) -> float:
-        return 10 * 60  # 10 more minutes would exceed 60
+    def fake_probe(_repository: Path, _media: Path) -> float:
+        nonlocal stamp
+        if rolls_over:
+            stamp = december
+        return 600.0
 
     monkeypatch.setattr("gamingcreator.ui.media_preparation.probe_duration_seconds", fake_probe)
-    with pytest.raises(AppError) as denied:
-        _preparation_quota_or_none(repo, project, [video])
-    assert denied.value.code == "entitlement.denied"
-    assert usage.preparation_minutes_this_month(creations, now="2026-11-01T00:00:00+00:00") == 55.0
+    monkeypatch.setattr("gamingcreator.ui.media_preparation._clock", lambda: stamp)
+    monkeypatch.setattr(MediaPreparationJobs, "_run", lambda _self, _job: None)
+    jobs = MediaPreparationJobs(repo)
+    request = {
+        "project": "artifacts/p",
+        "paths": [str(video)],
+        "profile": "frames",
+        "maxCostCny": "1",
+        "timeoutSeconds": 30,
+    }
+    try:
+        with pytest.raises(AppError) as denied:
+            jobs.submit(request)
+        assert denied.value.code == "entitlement.denied"
+        rolls_over = True
+        assert jobs.submit(request)["jobId"]
+    finally:
+        jobs.close()
+    assert usage.preparation_minutes_this_month(creations, november) == 55
+    assert usage.preparation_minutes_this_month(creations, december) == 10
 
 
-def test_quota_gate_under_limit_returns_pending_record(tmp_path: Path, monkeypatch):
-    repo = tmp_path / "repo"
-    creations = repo / ".cache" / "workspace" / "creations"
-    creations.mkdir(parents=True)
-    (creations / "entitlement.json").write_text(json.dumps({"plan": "free"}), encoding="utf-8")
-    project = repo / "artifacts" / "p"
-    project.mkdir(parents=True)
-    video = tmp_path / "clip.mp4"
-    video.write_bytes(b"fake")
-    monkeypatch.setattr(
-        "gamingcreator.ui.media_preparation.probe_duration_seconds",
-        lambda repository, media: 30.0,
-    )
-    pending = _preparation_quota_or_none(repo, project, [video])
-    assert pending is not None
-    key, seconds = pending
-    assert seconds == 30.0
+def test_reservation_checks_latest_total_and_keeps_duplicate_and_month_semantics(tmp_path: Path):
+    november = "2026-11-30T23:59:59+00:00"
+    december = "2026-12-01T00:00:00+00:00"
+    selection = {"plan": "free"}
+    assert usage.record_preparation_if_new(tmp_path, key="prior", seconds=55 * 60, now=november)
     assert usage.record_preparation_if_new(
-        creations, key=key, seconds=seconds, now="2026-11-01T05:00:00+00:00"
+        tmp_path, key="first", seconds=300, selection=selection, now=november
     )
-    assert usage.preparation_minutes_this_month(creations, now="2026-11-01T05:00:00+00:00") == 0.5
-    # Same paths again: no pending charge
-    assert _preparation_quota_or_none(repo, project, [video]) is None
+    with pytest.raises(EntitlementError):
+        usage.record_preparation_if_new(
+            tmp_path, key="second", seconds=300, selection=selection, now=november
+        )
+    assert not usage.record_preparation_if_new(
+        tmp_path, key="first", seconds=300, selection=selection, now=november
+    )
+    assert usage.preparation_minutes_this_month(tmp_path, november) == 60
+    assert not usage.has_preparation_entry(tmp_path, "second", november)
+    assert usage.record_preparation_if_new(
+        tmp_path, key="first", seconds=300, selection=selection, now=december
+    )
+    assert usage.preparation_minutes_this_month(tmp_path, december) == 5
 
 
 def test_creation_jobs_summary_reads_ledger(tmp_path: Path):
@@ -131,9 +150,7 @@ def test_creation_jobs_summary_reads_ledger(tmp_path: Path):
     repo.mkdir()
     service = CreationJobs(repo)
     service.select_plan("free")
-    usage.record_preparation_if_new(
-        service.root, key="k", seconds=180.0, now="2026-11-01T06:00:00+00:00"
-    )
+    usage.record_preparation_if_new(service.root, key="k", seconds=180.0)
     data = service.entitlement_summary()
     assert data["plan"] == "free"
     assert data["monthlyPreparationMinutes"] == 60

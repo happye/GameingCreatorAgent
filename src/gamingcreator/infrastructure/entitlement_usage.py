@@ -15,7 +15,7 @@ from fractions import Fraction
 from pathlib import Path
 from typing import BinaryIO
 
-from gamingcreator.application.entitlements import month_key
+from gamingcreator.application.entitlements import month_key, require_preparation_minutes
 from gamingcreator.domain.errors import AppError, ExitCode
 
 SCHEMA = "entitlement-usage-v1"
@@ -214,12 +214,14 @@ def record_preparation_if_new(
     *,
     key: str,
     seconds: float,
+    selection: dict[str, object] | None = None,
     now: str | None = None,
 ) -> bool:
     """Record preparation seconds once per key this calendar month.
 
     Policy: minutes are reserved when a new prepare submit is accepted (before the
-    batch runs). Failed batches still count. Resume with the same key does not add.
+    batch runs). Check the cap under the same lock as the append. Failed batches still
+    count. Resume with the same key does not add.
     Returns True when a new entry was written.
     """
     if seconds <= 0:
@@ -240,6 +242,8 @@ def record_preparation_if_new(
             raise AppError("storage.entitlement_usage", "套餐用量账本格式无效。", ExitCode.STORAGE)
         if any(type(item) is dict and item.get("key") == key for item in entries):
             return False
+        total = float(row.get("preparationSeconds") or 0)
+        require_preparation_minutes(selection, total / 60.0, seconds / 60.0)
         entries.append(
             {
                 "key": key,
@@ -247,7 +251,6 @@ def record_preparation_if_new(
                 "recordedAt": stamp,
             }
         )
-        total = float(row.get("preparationSeconds") or 0) + float(seconds)
-        row["preparationSeconds"] = total
+        row["preparationSeconds"] = total + float(seconds)
         _write_unlocked(path, document)
         return True

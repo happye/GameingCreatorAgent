@@ -208,6 +208,14 @@ def _candidates(document: dict[str, object], duration_us: int) -> tuple[Candidat
     return tuple(clips)
 
 
+async def project_completed_usage(project: Path, month: str) -> dict[str, int | float]:
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    try:
+        return await store.completed_vision_usage(month)
+    finally:
+        await store.close()
+
+
 async def list_project_runs(project: Path) -> tuple[tuple[str, str], ...]:
     store = await SqliteTimelineStore.open(project, read_only=True)
     try:

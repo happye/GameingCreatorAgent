@@ -52,6 +52,19 @@ button:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focu
 .link { color: var(--ink-2); font-size: var(--t-sm); text-decoration: none; }
 .link:hover { color: var(--ink-1); }
 
+.entitlement-panel {
+  position: fixed; z-index: 20; top: 49px; right: var(--s-3);
+  width: min(420px, calc(100vw - 24px)); max-height: calc(100vh - 61px); overflow: auto;
+  padding: var(--s-4); background: var(--bg-1); border: 1px solid var(--line);
+  border-radius: var(--r-3); box-shadow: 0 12px 32px #0008;
+}
+.entitlement-head { display: flex; align-items: center; margin-bottom: var(--s-3); }
+.entitlement-head h2 { margin: 0; font-size: var(--t-lg); }
+.entitlement-usage h3 { margin: var(--s-4) 0 var(--s-1); font-size: var(--t-md); }
+.entitlement-usage dl { display: grid; grid-template-columns: auto 1fr; gap: var(--s-1) var(--s-3); margin: 0; }
+.entitlement-usage dd { margin: 0; }
+.entitlement-usage dt { color: var(--ink-2); }
+
 .work { display: grid; grid-template-columns: var(--bin-w) minmax(0, 1fr) var(--insp-w); min-height: 0; }
 .work.no-bin { grid-template-columns: 0 minmax(0, 1fr) var(--insp-w); }
 .work.no-insp { grid-template-columns: var(--bin-w) minmax(0, 1fr) 0; }

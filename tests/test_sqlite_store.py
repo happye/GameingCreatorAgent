@@ -124,6 +124,7 @@ def test_completed_timeline_and_immutable_configuration(tmp_path):
         store = await SqliteTimelineStore.open(tmp_path / "project")
         try:
             await media_ready(store, bundle)
+            assert (await store.completed_vision_usage("0001-01"))["completedRunsTotal"] == 0
             with pytest.raises(AppError, match="项目存储") as incomplete:
                 await store.load_completed_timeline("run-1")
             assert incomplete.value.code == "storage.run_incomplete"
@@ -158,6 +159,12 @@ def test_completed_timeline_and_immutable_configuration(tmp_path):
             reader = await SqliteTimelineStore.open(tmp_path / "project", read_only=True)
             try:
                 reloaded = await reader.load_completed_timeline("run-1")
+                assert await reader.completed_vision_usage("0001-01") == {
+                    "completedRunsThisMonth": 0,
+                    "completedRunsTotal": 1,
+                    "sourceMinutesThisMonth": 0.0,
+                    "sourceMinutesTotal": round(bundle.asset.duration_us / 60_000_000, 2),
+                }
                 assert reloaded.events == (event,)
                 assert reloaded.transcripts == (segment,)
                 with pytest.raises(AppError) as read_only:

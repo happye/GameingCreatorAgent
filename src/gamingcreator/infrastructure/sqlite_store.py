@@ -424,6 +424,32 @@ class SqliteTimelineStore:
 
         return await self._call(load)
 
+    async def completed_vision_usage(self, month: str) -> dict[str, int | float]:
+        """Sum source lengths by completed vision run, including prior months."""
+
+        def load() -> dict[str, int | float]:
+            total, minutes, current, current_minutes = self._db.execute(
+                """
+                SELECT COUNT(*), TOTAL(m.duration_us / 60000000.0),
+                       COUNT(CASE WHEN substr(r.updated_at, 1, 7) = ? THEN 1 END),
+                       TOTAL(CASE WHEN substr(r.updated_at, 1, 7) = ?
+                                  THEN m.duration_us / 60000000.0 END)
+                  FROM analysis_runs AS r
+                  JOIN media_assets AS m ON m.media_id = r.media_id
+                  JOIN stage_checkpoints AS s ON s.run_id = r.run_id AND s.stage_id = 'vision'
+                 WHERE r.status = 'completed' AND s.status = 'completed'
+                """,
+                (month, month),
+            ).fetchone()
+            return {
+                "completedRunsThisMonth": int(current),
+                "sourceMinutesThisMonth": round(float(current_minutes), 2),
+                "completedRunsTotal": int(total),
+                "sourceMinutesTotal": round(float(minutes), 2),
+            }
+
+        return await self._call(load)
+
     async def load_task_page(
         self, *, limit: int = 100, offset: int = 0, run_id: str | None = None
     ) -> StoredTaskPage:

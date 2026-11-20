@@ -14,10 +14,7 @@ from pathlib import Path
 from typing import cast
 from uuid import uuid4
 
-from gamingcreator.application.entitlements import (
-    EntitlementError,
-    require_preparation_minutes,
-)
+from gamingcreator.application.entitlements import EntitlementError
 from gamingcreator.application.media_batch import MediaBatchPlan
 from gamingcreator.cli.main import (
     _media_preparation_config,
@@ -26,9 +23,7 @@ from gamingcreator.cli.main import (
 )
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.entitlement_usage import (
-    has_preparation_entry,
     preparation_key,
-    preparation_minutes_this_month,
     probe_duration_seconds,
     record_preparation_if_new,
 )
@@ -57,32 +52,6 @@ def _entitlement_selection(repository: Path) -> dict[str, object] | None:
     except (OSError, UnicodeError, json.JSONDecodeError):
         return None
     return raw if type(raw) is dict else None
-
-
-def _preparation_quota_or_none(
-    repository: Path, project: Path, video_paths: list[Path]
-) -> tuple[str, float] | None:
-    """Probe durations and refuse Free over-cap; return (key, seconds) to record on accept.
-
-    Policy: minutes are reserved when a new prepare submit is accepted (before the batch
-    runs). Failed batches still count. Resume must not call this. Same project+paths
-    already recorded this month returns None (no extra charge).
-    """
-    creations = _creations_root(repository)
-    key = preparation_key(project, video_paths)
-    if has_preparation_entry(creations, key):
-        return None
-    seconds = 0.0
-    for media in video_paths:
-        seconds += probe_duration_seconds(repository, media)
-    minutes = seconds / 60.0
-    used = preparation_minutes_this_month(creations)
-    selection = _entitlement_selection(repository)
-    try:
-        require_preparation_minutes(selection, used, minutes)
-    except EntitlementError as error:
-        raise AppError("entitlement.denied", str(error), ExitCode.INPUT) from error
-    return key, seconds
 
 
 def _invalid(message: str = "请填写有效的项目、录像路径和准备参数。") -> AppError:
@@ -260,10 +229,10 @@ class MediaPreparationJobs:
                 {"schemaVersion": "media-batch-input-v1", "items": items}, ensure_ascii=False
             ).encode()
             arguments["max_cost_cny"] = budget
-            pending_meter = _preparation_quota_or_none(
-                self.repository,
-                project,
-                [Path(row["path"]) for row in items],
+            videos = [Path(row["path"]) for row in items]
+            pending_meter = (
+                preparation_key(project, videos),
+                sum(probe_duration_seconds(self.repository, video) for video in videos),
             )
         with self._lock:
             if self._closed or any(
@@ -276,9 +245,16 @@ class MediaPreparationJobs:
                 )
             if pending_meter is not None:
                 key, seconds = pending_meter
-                record_preparation_if_new(
-                    _creations_root(self.repository), key=key, seconds=seconds
-                )
+                try:
+                    record_preparation_if_new(
+                        _creations_root(self.repository),
+                        key=key,
+                        seconds=seconds,
+                        now=_clock(),
+                        selection=_entitlement_selection(self.repository),
+                    )
+                except EntitlementError as error:
+                    raise AppError("entitlement.denied", str(error), ExitCode.INPUT) from error
             if len(self._jobs) >= 100:
                 oldest = next(iter(self._jobs))
                 del self._jobs[oldest]

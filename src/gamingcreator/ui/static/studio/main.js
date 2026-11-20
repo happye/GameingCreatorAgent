@@ -289,6 +289,7 @@ function App() {
 }
 
 function TopBar({workspace, setWorkspace, projects, project, setProject, layout, setLayout, status}) {
+    const [usageOpen, setUsageOpen] = useState(false);
     return html`<header class="topbar">
         <div class="brand">Gaming Creator<small>工作台预览版</small></div>
         <div class="tabs" role="tablist" aria-label="工作区">
@@ -301,12 +302,70 @@ function TopBar({workspace, setWorkspace, projects, project, setProject, layout,
         <span class="status" role="status" aria-live="polite">${status}</span>
         <span class="spacer"></span>
         <div class="topbar-actions">
+            <button class="icon-btn" aria-expanded=${usageOpen} onClick=${() => setUsageOpen(!usageOpen)}>套餐与用量</button>
             <button class="icon-btn" aria-pressed=${layout.bin} title="显示或隐藏素材箱" onClick=${() => setLayout({...layout, bin: !layout.bin})}>素材箱</button>
             <button class="icon-btn" aria-pressed=${layout.insp} title="显示或隐藏检查器" onClick=${() => setLayout({...layout, insp: !layout.insp})}>检查器</button>
             <a class="link" href="/">旧版素材工作台</a>
             <a class="link" href="/creation">旧版创作页</a>
         </div>
+        ${usageOpen && html`<${EntitlementPanel} key=${project} project=${project} onClose=${() => setUsageOpen(false)} />`}
     </header>`;
+}
+
+function EntitlementPanel({project, onClose}) {
+    const [data, setData] = useState(null);
+    const [busy, setBusy] = useState(true);
+    const [error, setError] = useState("");
+    const active = useRef(null);
+    const load = async (signal, plan) => {
+        setBusy(true); setError("");
+        try {
+            if (plan) {
+                const selected = await client.api("/api/entitlement", {}, {signal, body: {plan}});
+                if (!signal.aborted) setData(selected);
+            }
+            const next = await client.api("/api/entitlement", {projectId: project || undefined}, {signal});
+            if (!signal.aborted) setData(next);
+        } catch (reason) {
+            if (!signal.aborted) setError(reason.message);
+        } finally {
+            if (!signal.aborted) setBusy(false);
+        }
+    };
+    useEffect(() => {
+        const controller = new AbortController();
+        active.current = controller;
+        void load(controller.signal);
+        return () => controller.abort();
+    }, []);
+    const analysis = data?.analysisUsage;
+    const quota = (used, limit, unit) => limit == null
+        ? `${used} ${unit}（不限）` : `${used} / ${limit} ${unit}`;
+    return html`<section class="entitlement-panel" aria-label="套餐与用量">
+        <div class="entitlement-head"><h2>套餐与用量</h2><span class="spacer"></span>
+            <button class="btn ghost" aria-label="关闭套餐与用量" onClick=${onClose}>关闭</button></div>
+        ${data && html`<label class="form-row">本地评估套餐
+            <select class="select" aria-label="本地评估套餐" value=${data.plan} disabled=${busy}
+                onChange=${e => void load(active.current.signal, e.currentTarget.value)}>
+                ${Object.entries(data.plans).map(([id, label]) => html`<option value=${id}>${label}</option>`)}
+            </select></label>
+            <div class="entitlement-usage">
+                <h3>本机用量 · ${data.usageMonth} UTC</h3>
+                <dl><dt>成片</dt><dd>${quota(data.rendersThisMonth, data.monthlyRenders, "次")}</dd>
+                    <dt>准备录像</dt><dd>${quota(data.preparationMinutesThisMonth, data.monthlyPreparationMinutes, "分钟")}</dd></dl>
+                ${analysis && html`<h3>当前项目 · 已完成视频分析</h3>
+                    <dl><dt>本月</dt><dd>${analysis.completedRunsThisMonth} 个版本 · ${analysis.sourceMinutesThisMonth} 分钟</dd>
+                        <dt>累计</dt><dd>${analysis.completedRunsTotal} 个版本 · ${analysis.sourceMinutesTotal} 分钟</dd></dl>
+                    <p class="hint">按已完成版本的原片时长统计。</p>`}
+                ${data.analysisUsageUnavailable && html`<p class="hint">当前项目的分析统计暂不可用。</p>`}
+                <p class="hint">${Object.entries(data.features).map(([key, enabled]) =>
+                    `${data.featureLabels[key]} ${enabled ? "可用" : "未包含"}`).join(" · ")}</p>
+                ${data.watermark && html`<p class="hint">新成片带 ${data.watermark} 水印。</p>`}
+            </div>`}
+        ${busy && html`<p role="status">正在读取用量…</p>`}
+        ${error && html`<p role="alert">${error}</p>`}
+        <button class="btn ghost" disabled=${busy} onClick=${() => void load(active.current.signal)}>刷新用量</button>
+    </section>`;
 }
 
 // "横屏 1280×720 · 0:32 · 15.2 MB" so finished videos can be told apart in the list.

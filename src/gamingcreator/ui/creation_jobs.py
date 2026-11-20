@@ -1321,19 +1321,31 @@ class CreationJobs:
                     continue
         return states
 
-    def entitlement_summary(self) -> dict[str, Any]:
-        from gamingcreator.application.entitlements import renders_this_month, summary
+    def entitlement_summary(self, project_id: str | None = None) -> dict[str, Any]:
+        from gamingcreator.application.entitlements import month_key, renders_this_month, summary
         from gamingcreator.infrastructure.entitlement_usage import (
             preparation_minutes_this_month,
         )
 
-        used = renders_this_month(self._statuses(), datetime.now(UTC).isoformat())
-        preparation = preparation_minutes_this_month(self.root)
-        return summary(
+        now = datetime.now(UTC).isoformat()
+        month = month_key(now)
+        used = renders_this_month(self._statuses(), now)
+        preparation = preparation_minutes_this_month(self.root, now)
+        result = summary(
             self.entitlement_selection(),
             used,
             preparation_minutes_used=preparation,
         )
+        result["usageMonth"] = month
+        if project_id is not None:
+            from gamingcreator.ui.service import project_completed_usage
+
+            project = self.project(project_id)
+            try:
+                result["analysisUsage"] = asyncio.run(project_completed_usage(project, month))
+            except AppError:
+                result["analysisUsageUnavailable"] = True
+        return result
 
     def check_entitlement(self, kind: str, request: dict[str, Any]) -> None:
         from gamingcreator.application.entitlements import (

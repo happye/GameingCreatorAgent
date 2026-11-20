@@ -1281,11 +1281,12 @@ window.PROGRESS_DATA = {
    "remaining": null,
    "evidence": [
     "2026-11-01: local creator-plan entitlement model (founder default unlimited, Free/Creator/Pro) enforced at real entry points: monthly render quota metered from saved jobs, one platform package per publication on Free, activity-rule parsing, timeline export and sandbox publish gates; plan selection marked local evaluation; no payment, subscription, signed license or watermark",
-    "2026-11-01: Free renders burn a top-right semi-transparent 'GamingCreator Free' mark via ASS; decided at registration and stored on the job, recorded in the render receipt and checked on verify; founder/creator/pro unmarked; real FFmpeg pixel test and job-level test; analysis-minute metering and payments still absent"
+    "2026-11-01: Free renders burn a top-right semi-transparent 'GamingCreator Free' mark via ASS; decided at registration and stored on the job, recorded in the render receipt and checked on verify; founder/creator/pro unmarked; real FFmpeg pixel test and job-level test; analysis-minute metering and payments still absent",
+    "2026-11-20: Studio exposes local evaluation plan switching, render and preparation usage, and current-project completed source minutes. Preparation quota check and reservation share one lock at acceptance. Verified real Studio and isolated plan changes; analysis quota and billing remain pending."
    ],
-   "done": "本地Free/Creator/Pro套餐模型：月渲染配额、Free包数限制与水印、功能门槛已生效（本地评估）",
-   "todo": "无支付、订阅、签名许可证；分析分钟计量未做",
-   "updated": "2026-11-01",
+   "done": "Studio 可切换本地评估套餐，查看成片、准备额度和项目已完成分析的原片分钟。准备额度按受理月核对",
+   "todo": "实际分析额度、支付、订阅和签名许可证待交付",
+   "updated": "2026-11-20",
    "sprints": [
     "sprint-creator-plans"
    ]
@@ -1985,6 +1986,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-creator-plans"
     },
     {
+     "id": "P050-studio-usage",
+     "name": "Studio 套餐与用量及受理月额度",
+     "status": "done",
+     "sprint": "sprint-creator-plans"
+    },
+    {
      "id": "P051",
      "name": "企业版基础（本机团队）",
      "status": "done",
@@ -2313,7 +2320,7 @@ window.PROGRESS_DATA = {
   "漫画群星 60 秒[主题旁白](docs/exec-plans/sprint-showcase-narration.md)已补齐[句级字幕](docs/exec-plans/sprint-narration-captions.md)，试听、移动音轨、SRT 和 B 站烧入版实测通过。",
   "P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。",
   "[P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。",
-  "已实测[P047 实况](docs/exec-plans/sprint-live-cut-continuity.md)、[P048 高光](docs/exec-plans/sprint-highlight-evidence.md)和[P049 广告双版](docs/exec-plans/sprint-ad-evidence.md)。下一步推进 P050。"
+  "[P049 广告双版](docs/exec-plans/sprint-ad-evidence.md)已实测竖屏出包。[P050 套餐](docs/exec-plans/sprint-creator-plans.md)已接通 Studio 用量，下一步推进 P051。"
  ],
  "sprints": [
   {
@@ -2374,7 +2381,7 @@ window.PROGRESS_DATA = {
    "ids": [
     "P049"
    ],
-   "date": "",
+   "date": "2026-11-20",
    "bytes": 1882
   },
   {
@@ -2665,7 +2672,7 @@ window.PROGRESS_DATA = {
     "P050"
    ],
    "date": "2026-11-01",
-   "bytes": 2631
+   "bytes": 3874
   },
   {
    "file": "sprint-creator-structure-feedback",

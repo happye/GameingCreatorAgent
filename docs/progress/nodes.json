@@ -441,9 +441,9 @@
    ]
   },
   "P050": {
-   "done": "本地Free/Creator/Pro套餐模型：月渲染配额、Free包数限制与水印、功能门槛已生效（本地评估）",
-   "todo": "无支付、订阅、签名许可证；分析分钟计量未做",
-   "updated": "2026-11-01",
+   "done": "Studio 可切换本地评估套餐，查看成片、准备额度和项目已完成分析的原片分钟。准备额度按受理月核对",
+   "todo": "实际分析额度、支付、订阅和签名许可证待交付",
+   "updated": "2026-11-20",
    "sprints": [
     "sprint-creator-plans"
    ]
@@ -1047,6 +1047,12 @@
     {
      "id": "P050",
      "name": "创作者套餐（本地授权）",
+     "status": "done",
+     "sprint": "sprint-creator-plans"
+    },
+    {
+     "id": "P050-studio-usage",
+     "name": "Studio 套餐与用量及受理月额度",
      "status": "done",
      "sprint": "sprint-creator-plans"
     },

@@ -1357,9 +1357,9 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     self.wfile.write(audit_bytes)
                 return
             if path == "/api/entitlement":
-                if query:
+                if set(query) - {"projectId"}:
                     raise ValueError("Unexpected entitlement query")
-                self._json(200, self.creation_jobs.entitlement_summary())
+                self._json(200, self.creation_jobs.entitlement_summary(query.get("projectId")))
                 return
             if path == "/api/creation/feedback":
                 if set(query) != {"projectId"}:
