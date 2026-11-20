@@ -35,6 +35,22 @@ def same_topic_label(text: str, topic: str) -> bool:
     return _normalize(text).strip() == _normalize(topic).strip()
 
 
+def retained_source_uses(row: dict[str, Any]) -> list[dict[str, Any]]:
+    """Original claims that still have their full saved source span."""
+    start, end = row.get("startUs"), row.get("endUs")
+    if type(start) is not int or type(end) is not int:
+        return []
+    return [
+        use
+        for use in row.get("topicUses", [])
+        if (use.get("sourceStartUs"), use.get("sourceEndUs")) == (start, end)
+    ]
+
+
+def retained_source_topics(row: dict[str, Any]) -> list[str]:
+    return [use["topic"] for use in retained_source_uses(row)]
+
+
 def mentions_gameplay(text: str) -> bool:
     return any(marker in text for marker in _GAMEPLAY_MARKERS)
 

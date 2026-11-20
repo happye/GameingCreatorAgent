@@ -307,12 +307,45 @@ def test_remaining_modes_are_recommended_with_their_own_structures():
         and highlight["segments"][-1]["role"] == "候选片段"
     )
     ad = plan_creation(brief("ad", duration=15, topics=("新英雄",)), clips, 30)["plans"][0]
-    assert ad["id"] == "ad-hook" and ad["modeLabel"] == "广告/买量"
-    assert [s["role"] for s in ad["segments"]][:2] == ["开场钩子", "卖点"]
-    # The topic clip scores highest (brief match), so it becomes the hook.
-    assert ad["segments"][0]["eventId"] == "e12" and ad["segments"][1]["eventId"] == "e3"
-    assert ad["segments"][-1]["role"] == "行动号召"
-    assert ad["segments"][0]["outputFrames"] > ad["segments"][1]["outputFrames"]
+    assert ad["id"] == "ad-evidence-hook" and ad["modeLabel"] == "广告/买量"
+    assert ad["segments"][0]["role"] == "开场钩子"
+    assert ad["segments"][0]["eventId"] == "e12"
+    assert ad["segments"][-1]["role"] == "号召背景"
+
+
+def test_ad_variants_use_different_footage_order_and_only_current_selling_points():
+    from gamingcreator.application.ad_cut import stale_spoken_selling_points
+    from gamingcreator.ui.publication_jobs import draft_copy
+
+    topics = ("武道会", "积分争夺", "完全破坏", "自动掉宝")
+    req = brief("ad", duration=20, topics=topics)
+    clips = material([["武道会1V1"], ["积分争夺3V3"], ["未见建筑完全破坏"], ["环形技能"], ["片尾"]])
+    report = plan_creation(req, clips, 30)
+    direct, demo = report["plans"][:2]
+    assert [direct["id"], demo["id"]] == ["ad-evidence-hook", "ad-evidence-demo"]
+    assert direct["contentSignature"] != demo["contentSignature"]
+    assert [variant["segments"][0]["eventId"] for variant in (direct, demo)] == ["e0", "e1"]
+    assert all(row["status"] == "missing" for row in direct["topicCoverage"][2:])
+    rows = [dict(row, clipId=row["eventId"]) for row in demo["segments"]]
+    args = {"ad_plan": demo["id"]}
+    script = build_narration_script(req, rows, 600, 30, **args)
+    assert script["text"].endswith("打开游戏，试试这些玩法。")
+    assert [line["topic"] for line in script["lines"]] == ["积分争夺", "武道会"]
+    after = [dict(rows[0], endUs=5_000_000), *rows[1:]]
+    assert stale_spoken_selling_points(script["text"], rows, after) == ("积分争夺",)
+    script = build_narration_script(req, after, 600, 30, **args)
+    assert "积分争夺" not in script["text"]
+    copy = draft_copy(
+        {"game": req.game, "contentType": "ad", "mandatoryTopics": list(topics)}, after, 30, **args
+    )
+    assert copy["tags"] == [req.game, "广告/买量", "武道会"]
+    assert "打开游戏，试试这些玩法" in copy["description"]
+    short = replace(
+        clips[0],
+        event=replace(clips[0].event, source_range=SourceRange(0, 3_990_000, ASSET.duration_us)),
+    )
+    narrow = plan_creation(req, (short, *clips[1:]), 30)["plans"][0]
+    assert narrow["topicCoverage"][0]["status"] == "missing"
 
 
 def test_highlight_keeps_observation_with_context_and_removes_trimmed_claims():

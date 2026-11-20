@@ -432,10 +432,11 @@
    ]
   },
   "P049": {
-   "done": "广告/买量模板：钩子＋最多3卖点＋行动号召，真实出片＋B站包已走通；已解冻",
-   "todo": "投放效果未知，质量未经人评",
-   "updated": "2026-11-01",
+   "done": "有画面依据的卖点驱动两种开场与 CTA，删裁后核对已有旁白。实测漫画群星两版竖屏成片和抖音包",
+   "todo": "批量组合和自动配乐建议待实现，投放效果与成片质量待验",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-ad-evidence",
     "sprint-content-modes"
    ]
   },
@@ -862,6 +863,12 @@
      "name": "高光事件引用与前后画面",
      "status": "done",
      "sprint": "sprint-highlight-evidence"
+    },
+    {
+     "id": "P049-ad-evidence",
+     "name": "广告双版本、卖点和行动号召",
+     "status": "done",
+     "sprint": "sprint-ad-evidence"
     },
     {
      "id": "P018",

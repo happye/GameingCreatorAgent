@@ -294,6 +294,8 @@ def _parser() -> CliParser:
             "highlight-climax",
             "highlight-evidence",
             "ad-hook",
+            "ad-evidence-hook",
+            "ad-evidence-demo",
             "chronological",
             "hook-first",
             "reverse",

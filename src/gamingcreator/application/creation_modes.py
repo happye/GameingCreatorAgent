@@ -261,11 +261,11 @@ def mode_structure(
         points = (selling + others)[:3]
         closing = [clip for clip in others if clip not in points][:1]
         ordered_clips = (hook, *points, *closing)
-        ad_roles = ["开场钩子", *["卖点"] * len(points), *["行动号召"] * len(closing)]
+        ad_roles = ["开场候选", *["展示画面"] * len(points), *["号召背景"] * len(closing)]
         hook_weight = max(Fraction(1), Fraction(len(ordered_clips) - 1, 3))
         return ModeStructure(
             "ad-hook",
-            "广告/买量模板：最高分片段作开场钩子，接最多3个卖点（优先命中必须主题），最后一段行动号召",
+            "广告候选：按素材评分取画面，卖点需补充可核对的画面依据",
             ordered_clips,
             tuple(ad_roles),
             (hook_weight, *[Fraction(1)] * (len(ordered_clips) - 1)),

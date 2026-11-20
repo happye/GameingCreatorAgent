@@ -1258,12 +1258,14 @@ window.PROGRESS_DATA = {
    "remaining": null,
    "evidence": [
     "2026-11-01: ad/UA mode template (hook, up to three selling points preferring mandatory topics, call to action) real instance -> 270-frame MP4 -> Bilibili package; ad performance unknown",
-    "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md"
+    "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md",
+    "2026-11-20: evidence-bound ad editions have distinct openings and calls to action, with stale voice feedback after evidence edits. Two Comic Stars vertical renders, local narration, two subtitle styles and Douyin packages verified. See sprint-ad-evidence."
    ],
-   "done": "广告/买量模板：钩子＋最多3卖点＋行动号召，真实出片＋B站包已走通；已解冻",
-   "todo": "投放效果未知，质量未经人评",
-   "updated": "2026-11-01",
+   "done": "有画面依据的卖点驱动两种开场与 CTA，删裁后核对已有旁白。实测漫画群星两版竖屏成片和抖音包",
+   "todo": "批量组合和自动配乐建议待实现，投放效果与成片质量待验",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-ad-evidence",
     "sprint-content-modes"
    ]
   },
@@ -1797,6 +1799,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-highlight-evidence"
     },
     {
+     "id": "P049-ad-evidence",
+     "name": "广告双版本、卖点和行动号召",
+     "status": "done",
+     "sprint": "sprint-ad-evidence"
+    },
+    {
      "id": "P018",
      "name": "游戏知识层（本机）",
      "status": "done",
@@ -2305,7 +2313,7 @@ window.PROGRESS_DATA = {
   "漫画群星 60 秒[主题旁白](docs/exec-plans/sprint-showcase-narration.md)已补齐[句级字幕](docs/exec-plans/sprint-narration-captions.md)，试听、移动音轨、SRT 和 B 站烧入版实测通过。",
   "P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。",
   "[P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。",
-  "《代号 Atom》实测[P047 实况](docs/exec-plans/sprint-live-cut-continuity.md)连续取材、[P048 高光](docs/exec-plans/sprint-highlight-evidence.md)事件引用及出包。下一步推进 P049。"
+  "已实测[P047 实况](docs/exec-plans/sprint-live-cut-continuity.md)、[P048 高光](docs/exec-plans/sprint-highlight-evidence.md)和[P049 广告双版](docs/exec-plans/sprint-ad-evidence.md)。下一步推进 P050。"
  ],
  "sprints": [
   {
@@ -2359,6 +2367,15 @@ window.PROGRESS_DATA = {
    ],
    "date": "2026-11-01",
    "bytes": 6874
+  },
+  {
+   "file": "sprint-ad-evidence",
+   "title": "广告双版本、卖点和行动号召",
+   "ids": [
+    "P049"
+   ],
+   "date": "",
+   "bytes": 1882
   },
   {
    "file": "sprint-ai-clip-insertion",
@@ -2748,7 +2765,7 @@ window.PROGRESS_DATA = {
    "ids": [
     "P048"
    ],
-   "date": "",
+   "date": "2026-11-20",
    "bytes": 1618
   },
   {

@@ -48,6 +48,7 @@ from gamingcreator.ui.revision_jobs import (
 from gamingcreator.ui.revision_jobs import (
     editor,
     load_chain,
+    missing_ad_voice_evidence,
     prepare_revision,
     render_revision,
     resolve_audio,
@@ -413,6 +414,13 @@ class CreationJobs:
                     )
                 elif self.read(self.directory(parent_id) / "status.json")["kind"] != "revision":
                     raise fail("creation.conflict", "请选择已完成编辑版本。", True)
+                elif missing_topics := missing_ad_voice_evidence(chain):
+                    raise fail(
+                        "creation.input",
+                        "旁白仍提到已删改画面的卖点「"
+                        + "、".join(missing_topics)
+                        + "」。请在声音页更新旁白并保存，再导出。",
+                    )
                 project_id = chain.project_id
                 project = self.project(project_id)
                 parent_digest = chain.digest
@@ -1596,6 +1604,7 @@ class CreationJobs:
             prefer_showcase_topics=chain.plan_id == "showcase",
             evidenced_guide=chain.plan_id == "guide-evidence",
             evidenced_commentary=chain.plan_id == "commentary-evidence",
+            ad_plan=chain.plan_id,
         )
 
     def catalog(self, project_id: str) -> dict[str, object]:

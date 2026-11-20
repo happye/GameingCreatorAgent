@@ -6,8 +6,9 @@ import unicodedata
 from pathlib import Path
 from typing import Any
 
+from gamingcreator.application.ad_cut import AD_ACTIONS
 from gamingcreator.application.creation_modes import MODE_LABELS
-from gamingcreator.application.highlight_cut import retained_highlights
+from gamingcreator.application.showcase_topics import retained_source_topics
 from gamingcreator.cli.creation_render import read_creation
 from gamingcreator.domain.publication import user_input_message as user_input_message  # noqa: F401
 from gamingcreator.domain.publication import validate_metadata
@@ -88,6 +89,7 @@ def snapshot(jobs: Any, job_id: str) -> dict[str, Any]:
         evidenced_guide=edl.get("selectedPlan") == "guide-evidence",
         evidenced_commentary=edl.get("selectedPlan") == "commentary-evidence",
         evidenced_highlight=brief.get("contentType") == "highlight",
+        ad_plan=edl.get("selectedPlan", ""),
     )
     campaign = _campaign_context(report)
     if campaign:
@@ -228,6 +230,7 @@ def draft_copy(
     evidenced_guide: bool = False,
     evidenced_commentary: bool = False,
     evidenced_highlight: bool = False,
+    ad_plan: str = "",
 ) -> dict[str, Any]:
     """Editable local template from the structured brief and the rendered shots.
 
@@ -246,8 +249,11 @@ def draft_copy(
                 if isinstance(row, dict) and row.get("guideStep")
             )
         )
-    scene_topics = retained_highlights if evidenced_highlight else _commentary_topics
-    if evidenced_commentary or evidenced_highlight:
+    is_ad = brief.get("contentType") == "ad"
+    source_bound = evidenced_highlight or is_ad
+    evidenced_scenes = evidenced_commentary or source_bound
+    scene_topics = retained_source_topics if source_bound else _commentary_topics
+    if evidenced_scenes:
         topics = list(
             dict.fromkeys(
                 _clean(topic, 50).strip()
@@ -264,6 +270,8 @@ def draft_copy(
         f"这期{('给' + audience) if audience else ''}带来{f'《{game}》的' if game else ''}{label}"
     )
     intro += f"，重点讲{'、'.join(topics)}。" if topics else "。"
+    if is_ad:
+        intro += f"\n{AD_ACTIONS.get(ad_plan, '现在就来体验')}。"
     chapters: list[str] = []
     elapsed = 0.0
     for segment in segments:
@@ -275,9 +283,9 @@ def draft_copy(
         if evidenced_guide:
             topic = _clean(row.get("guideStep"), 100).strip()
             name = f"第{len(chapters) + 1}步 {topic}" if topic else ""
-        if evidenced_commentary or evidenced_highlight:
+        if evidenced_scenes:
             name = _clean("、".join(scene_topics(row)), 60).strip()
-        if evidenced_guide or evidenced_commentary or evidenced_highlight:
+        if evidenced_guide or evidenced_scenes:
             if fps and type(row.get("outputStartFrame")) is int:
                 stamp = _timestamp(row["outputStartFrame"] / fps) + " "
         chapter = stamp + name

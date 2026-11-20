@@ -4,9 +4,11 @@ import re
 from fractions import Fraction
 from typing import Any
 
+from gamingcreator.application.ad_cut import AD_ACTIONS
 from gamingcreator.application.knowledge import query_words
 from gamingcreator.application.showcase_topics import (
     mentions_gameplay,
+    retained_source_uses,
     same_topic_label,
     topic_matches,
 )
@@ -151,7 +153,9 @@ def _guide_lines(clips: list[dict[str, Any]], room: int) -> list[tuple[dict[str,
     return chosen
 
 
-def _commentary_lines(clips: list[dict[str, Any]], room: int) -> list[tuple[dict[str, Any], str]]:
+def _commentary_lines(
+    clips: list[dict[str, Any]], room: int, *, concise: bool = False
+) -> list[tuple[dict[str, Any], str]]:
     chosen: list[tuple[dict[str, Any], str]] = []
     for clip in clips:
         phrases: list[str] = []
@@ -168,16 +172,26 @@ def _commentary_lines(clips: list[dict[str, Any]], room: int) -> list[tuple[dict
                 or not topic_matches(quote, topic)
             ):
                 continue
-            phrase = next(
-                (
-                    text
-                    for part in re.split(r"[，,；;]", quote)
-                    if topic_matches(
-                        text := _sentence(part.replace("“", "").replace("”", "")), topic
-                    )
-                ),
-                topic,
-            )
+            if concise:
+                phrase = next(
+                    (
+                        name
+                        for name in re.findall(r"“([^”]+)”", quote)
+                        if len(name) <= MAX_CLIP_CHARS and topic_matches(name, topic)
+                    ),
+                    topic,
+                )
+            else:
+                phrase = next(
+                    (
+                        text
+                        for part in re.split(r"[，,；;]", quote)
+                        if topic_matches(
+                            text := _sentence(part.replace("“", "").replace("”", "")), topic
+                        )
+                    ),
+                    topic,
+                )
             next_phrases = list(dict.fromkeys([*phrases, phrase]))
             if len("，".join(next_phrases)) + len("最后看。") <= room:
                 phrases = next_phrases
@@ -205,27 +219,34 @@ def build_narration_script(
     prefer_showcase_topics: bool = False,
     evidenced_guide: bool = False,
     evidenced_commentary: bool = False,
+    ad_plan: str = "",
 ) -> dict[str, object]:
     if any(type(n) is not int or n <= 0 for n in (output_frames, fps)):
         raise ValueError("Narration script needs a positive output clock.")
     budget = int(Fraction(output_frames, fps) * CHARS_PER_SECOND * FILL_RATIO)
     opening = _OPENINGS.get(brief.content_type, "{game}实机片段").format(game=brief.game.strip())
-    parts = [opening] if not evidenced_guide and len(opening) + 1 <= budget else []
+    action = AD_ACTIONS.get(ad_plan, "")
+    evidenced_story = evidenced_commentary or bool(action)
+    opening_room = budget - (len(action) + 1 if action else 0)
+    parts = [opening] if not evidenced_guide and len(opening) + 1 <= opening_room else []
     used = sum(len(part) + 1 for part in parts)
-    closing = _CLOSINGS.get(brief.content_type, "")
+    closing = action or _CLOSINGS.get(brief.content_type, "")
     if closing and used + len(closing) + 1 <= budget:
         used += len(closing) + 1
     else:
         closing = ""
+    sources = (
+        [{**clip, "topicUses": retained_source_uses(clip)} for clip in clips] if action else clips
+    )
     theme_lines = (
-        _commentary_lines(clips, budget - used)
-        if evidenced_commentary
+        _commentary_lines(sources, budget - used, concise=bool(action))
+        if evidenced_story
         else _showcase_lines(brief.mandatory_topics, clips, budget - used)
         if prefer_showcase_topics
         else []
     )
     candidates: list[tuple[dict[str, Any], str]] = []
-    if not theme_lines and not evidenced_guide and not evidenced_commentary:
+    if not theme_lines and not evidenced_guide and not evidenced_story:
         for clip in clips:
             sentence = _sentence(clip.get("scriptDraft"))
             if sentence and (not candidates or candidates[-1][1] != sentence):
@@ -263,7 +284,7 @@ def build_narration_script(
     citations: list[dict[str, str]] = []
     knowledge_sentence = ""
     words = query_words(knowledge_query(brief))
-    for entry in knowledge or []:
+    for entry in () if action else knowledge or ():
         candidate = _knowledge_clause(entry.get("text"), words)
         if candidate and used + len(candidate) + 1 <= budget:
             knowledge_sentence = candidate
@@ -283,7 +304,7 @@ def build_narration_script(
             "text": text,
             **(
                 {"topic": clip["commentaryTopic"], "observationQuote": clip["observationQuote"]}
-                if evidenced_commentary
+                if evidenced_story
                 else {}
             ),
         }
@@ -293,7 +314,9 @@ def build_narration_script(
     text = "。".join(parts) + "。" if parts else ""
     return {
         "schemaVersion": "creation-narration-script-v1",
-        "generator": "offline-commentary-evidence-v1"
+        "generator": "offline-ad-evidence-v1"
+        if action
+        else "offline-commentary-evidence-v1"
         if evidenced_commentary
         else "offline-showcase-topics-v1"
         if theme_lines

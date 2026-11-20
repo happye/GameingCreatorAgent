@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from gamingcreator.application.ad_cut import AD_ACTIONS, stale_spoken_selling_points
 from gamingcreator.application.creation_editing import (
     build_revision,
     validate_revision,
@@ -65,6 +66,17 @@ class Chain:
     narration_asset: NarrationArtifact | None = None
     overlays: CreationOverlays = field(default_factory=lambda: CreationOverlays(()))
     overlay_assets: tuple[OverlayAsset, ...] = ()
+
+
+def missing_ad_voice_evidence(chain: Chain) -> tuple[str, ...]:
+    if chain.plan_id not in AD_ACTIONS or chain.narration_asset is None:
+        return ()
+    original: dict[str, Any] = select_edit_decision(chain.report, chain.plan_id)
+    return stale_spoken_selling_points(
+        chain.narration_asset.text_path.read_text(encoding="utf-8"),
+        original["segments"],
+        chain.edl["segments"],
+    )
 
 
 def resolve_audio(jobs: Any, request: dict[str, Any], inherited: AudioMix) -> AudioMix:

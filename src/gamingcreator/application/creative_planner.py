@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 from typing import Any
 
+from gamingcreator.application.ad_cut import AdTrial, ad_coverage, ad_trials
 from gamingcreator.application.creation_feedback import (
     TRIM_TIP,
     CreatorStructureChoice,
@@ -16,6 +17,8 @@ from gamingcreator.application.creation_feedback import (
 from gamingcreator.application.creation_modes import (
     MODE_HONESTY_SHORT,
     MODE_LABELS,
+    Score,
+    StructureAllocation,
     mode_structure,
     sample_clips,
 )
@@ -102,7 +105,10 @@ def _plan_topic_details(
     *,
     step_seeds: set[tuple[str, str]] | None = None,
     highlight: HighlightCut | None = None,
+    ad_trial: AdTrial | None = None,
 ) -> tuple[list[str], dict[str, object]]:
+    if ad_trial is not None:
+        return ad_coverage(ad_trial, brief.mandatory_topics, segments)
     if identity in ("showcase", "guide-evidence", "commentary-evidence") and brief.mandatory_topics:
         coverage = showcase_coverage(
             brief.mandatory_topics,
@@ -493,6 +499,50 @@ def _material_gaps(segment_count: int, allocated: bool) -> list[str]:
     return ["不足三个不同源区间，不能形成完整的三段结构"] if segment_count < 3 else []
 
 
+def _recommendations(
+    brief: CreativeBrief,
+    eligible: list[CreationClip],
+    highlight_candidates: list[CreationClip],
+    transcripts: Mapping[str, tuple[TranscriptSegment, ...]],
+    fps: int,
+    score: Score,
+) -> tuple[
+    list[PlanTemplate], dict[str, StructureAllocation], HighlightCut | None, dict[str, AdTrial]
+]:
+    if brief.content_type == "live_cut" and eligible:
+        layout = live_cut(brief, eligible, transcripts, fps, score)
+        layouts = {layout.identity: layout}
+        return [(layout.identity, layout.description, [], None, None)], layouts, None, {}
+    if brief.content_type == "ad" and eligible:
+        trials = {trial.layout.identity: trial for trial in ad_trials(brief, eligible, fps, score)}
+        if trials:
+            layouts = {name: trial.layout for name, trial in trials.items()}
+            return (
+                [(name, layout.description, [], None, None) for name, layout in layouts.items()],
+                layouts,
+                None,
+                trials,
+            )
+    highlight = (
+        highlight_cut(brief, highlight_candidates, fps, score) if highlight_candidates else None
+    )
+    if highlight is not None:
+        layout = highlight.allocation
+        return (
+            [(layout.identity, layout.description, [], None, None)],
+            {layout.identity: layout},
+            highlight,
+            {},
+        )
+    mode = mode_structure(brief, eligible, score, target_frames=brief.target_duration * fps)
+    recommended: list[PlanTemplate] = (
+        []
+        if mode is None
+        else [(mode.identity, mode.description, list(mode.ordered), mode.roles, mode.weights)]
+    )
+    return recommended, {}, None, {}
+
+
 def plan_creation(
     brief: CreativeBrief,
     clips: tuple[CreationClip, ...],
@@ -545,27 +595,12 @@ def plan_creation(
     suggestion = trim_suggestion(edit_kinds) if edit_kinds is not None else None
     trim_applied = bool(suggestion and suggestion["applied"])
     target_frames = brief.target_duration * fps
-    mode = mode_structure(brief, eligible, total, target_frames=target_frames)
-    special = (
-        live_cut(brief, eligible, transcripts or {}, fps, total)
-        if brief.content_type == "live_cut" and eligible
-        else None
-    )
-    highlight = (
-        highlight_cut(brief, highlight_candidates, fps, total) if highlight_candidates else None
-    )
-    allocated = highlight.allocation if highlight is not None else special
-    # The content mode's own template is recommended first; generic orders stay available.
-    recommended: list[PlanTemplate] = (
-        [(allocated.identity, allocated.description, [], None, None)]
-        if allocated is not None
-        else [(mode.identity, mode.description, list(mode.ordered), mode.roles, mode.weights)]
-        if mode is not None
-        else []
+    recommended, layouts, highlight, trials = _recommendations(
+        brief, eligible, highlight_candidates, transcripts or {}, fps, total
     )
     plans: list[dict[str, object]] = []
     for identity, description, ordered, roles, weights in [*recommended, *generic]:
-        layout = allocated if allocated is not None and identity == allocated.identity else None
+        layout = layouts.get(identity)
         if layout is not None:
             shots, roles, budgets = layout.shots, layout.roles, layout.budgets
         else:
@@ -648,6 +683,7 @@ def plan_creation(
             segments,
             step_seeds=step_seeds,
             highlight=highlight if identity == "highlight-evidence" else None,
+            ad_trial=trials.get(identity),
         )
         gaps = _material_gaps(len(segments), layout is not None)
         plans.append(
@@ -688,9 +724,7 @@ def plan_creation(
         "schemaVersion": "creation-plan-v1",
         "planner": "offline-template-v1",
         "understandingVerified": False,
-        **(
-            {"modeHonesty": MODE_HONESTY_SHORT} if mode is not None or allocated is not None else {}
-        ),
+        **({"modeHonesty": MODE_HONESTY_SHORT} if recommended else {}),
         "scoring": scoring_legend(),
         "ordering": {
             "basis": "creator-feedback"

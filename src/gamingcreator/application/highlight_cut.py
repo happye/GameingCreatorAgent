@@ -235,12 +235,3 @@ def highlight_coverage(
             for label, indexes in coverage.items()
         ],
     }
-
-
-def retained_highlights(row: dict[str, Any]) -> list[str]:
-    """A trimmed or replaced highlight no longer supports its original category label."""
-    return [
-        use["topic"]
-        for use in row.get("topicUses", [])
-        if (use.get("sourceStartUs"), use.get("sourceEndUs")) == (row["startUs"], row["endUs"])
-    ]
