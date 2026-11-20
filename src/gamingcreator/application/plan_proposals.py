@@ -1,7 +1,7 @@
 """Frozen text-only planning proposals compiled against trusted local candidates."""
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from fractions import Fraction
 from hashlib import sha256
 from typing import Any
@@ -85,6 +85,47 @@ def create_plan_snapshot(
     return PlanSnapshot(canonical(payload), clips, brief, fps)
 
 
+def with_knowledge(snapshot: PlanSnapshot, knowledge: list[dict[str, Any]]) -> PlanSnapshot:
+    if not knowledge:
+        return snapshot
+    payload = snapshot.payload
+    payload.update(schemaVersion="plan-snapshot-v2", knowledge=knowledge)
+    return replace(snapshot, payload_json=canonical(payload))
+
+
+def proposal_version(snapshot: PlanSnapshot) -> str:
+    return "plan-proposal-v2" if "knowledge" in snapshot.payload else SCHEMA_VERSION
+
+
+def _validate_knowledge_uses(snapshot: PlanSnapshot, plan: dict[str, Any]) -> None:
+    uses = plan["knowledgeUses"]
+    allowed = {entry["entryId"] for entry in snapshot.payload["knowledge"]}
+    if not isinstance(uses, list) or len(uses) > 30:
+        raise ValueError("Invalid knowledge references.")
+    seen = set()
+    for use in uses:
+        if not isinstance(use, dict) or set(use) != {"entryId", "structureQuote"}:
+            raise ValueError("Invalid knowledge reference fields.")
+        _text(use["entryId"], 64)
+        _text(use["structureQuote"], 2000)
+        pair = (use["entryId"], use["structureQuote"])
+        if pair[0] not in allowed or pair[1] not in plan["structure"] or pair in seen:
+            raise ValueError("Unknown, repeated or nonverbatim knowledge reference.")
+        seen.add(pair)
+
+
+def _compiled_knowledge(snapshot: PlanSnapshot, row: dict[str, Any]) -> dict[str, Any]:
+    if "knowledge" not in snapshot.payload:
+        return {}
+    entries = {entry["entryId"]: entry for entry in snapshot.payload["knowledge"]}
+    return {
+        "knowledgeUses": [
+            {**entries[use["entryId"]], "structureQuote": use["structureQuote"]}
+            for use in row["knowledgeUses"]
+        ]
+    }
+
+
 @dataclass(frozen=True)
 class PlanProposal:
     snapshot_fingerprint: str
@@ -105,7 +146,7 @@ def validate_plan_proposal(snapshot: PlanSnapshot, value: dict[str, Any]) -> Pla
         raise ValueError("Invalid or oversized proposal.")
     if set(value) != {"schemaVersion", "snapshotFingerprint", "kind", "questions", "plans"}:
         raise ValueError("Unexpected proposal fields.")
-    if value["schemaVersion"] != SCHEMA_VERSION:
+    if value["schemaVersion"] != proposal_version(snapshot):
         raise ValueError("Unsupported proposal schema.")
     if value["snapshotFingerprint"] != snapshot.fingerprint:
         raise ValueError("Snapshot fingerprint changed.")
@@ -130,10 +171,15 @@ def _validate_plans(snapshot: PlanSnapshot, plans: list[Any]) -> None:
     allowed = {r["candidateId"] for r in snapshot.payload["candidates"]}
     selections = set()
     for plan in plans:
-        if not isinstance(plan, dict) or set(plan) != {"title", "structure", "shots"}:
+        fields = {"title", "structure", "shots"}
+        if "knowledge" in snapshot.payload:
+            fields.add("knowledgeUses")
+        if not isinstance(plan, dict) or set(plan) != fields:
             raise ValueError("Unexpected plan fields.")
         _text(plan["title"], 200)
         _text(plan["structure"], 2000)
+        if "knowledge" in snapshot.payload:
+            _validate_knowledge_uses(snapshot, plan)
         shots = plan["shots"]
         if not isinstance(shots, list) or not 1 <= len(shots) <= min(200, len(allowed)):
             raise ValueError("Invalid shots.")
@@ -198,7 +244,7 @@ def compile_plan_proposal(snapshot: PlanSnapshot, proposal: PlanProposal) -> dic
     ]
     return {
         "schemaVersion": "creation-plan-v1",
-        "planner": SCHEMA_VERSION,
+        "planner": proposal_version(snapshot),
         "understandingVerified": False,
         "snapshotFingerprint": snapshot.fingerprint,
         "fps": snapshot.fps,
@@ -261,6 +307,7 @@ def _compile_one(
         "id": f"dynamic-{index}",
         "title": row["title"],
         "structure": row["structure"],
+        **_compiled_knowledge(snapshot, row),
         "segments": segments,
         "gaps": gaps,
         "ready": not gaps,

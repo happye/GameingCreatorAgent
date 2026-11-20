@@ -288,3 +288,31 @@ def test_store_uses_bounded_read_and_exclusive_create(tmp_path, monkeypatch):
     target = next(store.root.glob("*.json"))
     with pytest.raises(FileExistsError):
         module.write_exclusive_text(target, "{}" + chr(10))
+
+
+def test_planning_knowledge_current_literal_bounded_and_stable():
+    from gamingcreator.application.knowledge import planning_knowledge
+
+    old = entry("needle", "old needle")
+    latest = entry("needle", "x" * 900 + "needle" + "y" * 900, replaces=old["entryId"])
+    others = [entry("needle", f"needle {i}") for i in range(4)]
+    values = [
+        old,
+        latest,
+        *others,
+        entry("needle", "needle", game="foreign"),
+        entry("unrelated", "irrelevant"),
+    ]
+    picked = planning_knowledge(values, "代号Atom", ("needle",), "")
+    assert picked == planning_knowledge(list(reversed(values)), "代号Atom", ("needle",), "")
+    assert len(picked) == 3
+    long_fragment = planning_knowledge([latest], "代号Atom", ("needle",), "")[0]["text"]
+    assert len(long_fragment) == 400 and "needle" in long_fragment
+    assert long_fragment in latest["text"]
+    originals = {e["entryId"]: e for e in values}
+    assert old["entryId"] not in [e["entryId"] for e in picked]
+    for e in picked:
+        assert len(e["text"]) <= 400 and e["text"] in originals[e["entryId"]]["text"]
+        assert "needle" in e["text"]
+    assert planning_knowledge(values, "代号Atom", (), "") == []
+    assert planning_knowledge(values, "代号Atom", (), "missing") == []

@@ -37,10 +37,12 @@ from gamingcreator.application.creation_reasoning import (
     reasoning_request,
 )
 from gamingcreator.application.creation_replacements import candidate_manifest_sha
+from gamingcreator.application.knowledge import planning_knowledge
 from gamingcreator.application.plan_proposals import (
     PlanSnapshot,
     compile_plan_proposal,
     validate_plan_proposal,
+    with_knowledge,
 )
 from gamingcreator.application.plan_reasoning import plan_reasoning_request
 from gamingcreator.application.pricing import PriceSnapshot
@@ -58,6 +60,7 @@ from gamingcreator.infrastructure.creation_reasoning_provider import (
     trusted_price_snapshot,
 )
 from gamingcreator.infrastructure.http_transport import VisionTransport
+from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
 from gamingcreator.infrastructure.local_files import read_bounded
 from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
@@ -218,7 +221,17 @@ class CreationReasoningService:
         from gamingcreator.ui.plan_reasoning_jobs import original_snapshot
 
         snapshot, original = original_snapshot(self.jobs, job_id)
+        snapshot = with_knowledge(
+            snapshot,
+            planning_knowledge(
+                KnowledgeStore(self.jobs.repository).entries(),
+                snapshot.brief.game,
+                snapshot.brief.mandatory_topics,
+                snapshot.brief.objective,
+            ),
+        )
         result = self._prepare(snapshot, original["projectId"], job_id, "", "", "plan")
+        result["knowledge"] = snapshot.payload.get("knowledge", [])
         result["originalRequest"] = {
             key: original[key]
             for key in ("brief", "fps", "runIds", "eventIds", "clipRanges")
@@ -312,6 +325,8 @@ class CreationReasoningService:
         from gamingcreator.ui.plan_reasoning_jobs import original_snapshot
 
         snapshot, original = original_snapshot(self.jobs, record["jobId"])
+        frozen = json.loads(record["request"]["user"])["snapshot"]
+        snapshot = with_knowledge(snapshot, frozen.get("knowledge", []))
         if (
             original["projectId"] != record["projectId"]
             or snapshot.fingerprint != record["snapshotFingerprint"]

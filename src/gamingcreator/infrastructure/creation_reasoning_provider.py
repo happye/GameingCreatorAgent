@@ -123,6 +123,7 @@ class DeepSeekCreationReasoningProvider:
             (PROMPT_VERSION, SCHEMA_VERSION),
             (OVERLAY_PROMPT_VERSION, OVERLAY_SCHEMA_VERSION),
             (PLAN_PROMPT_VERSION, PLAN_SCHEMA_VERSION),
+            ("plan-reasoning-prompt-v2", "plan-proposal-v2"),
         }:
             raise ValueError("Unsupported reasoning request version.")
         if any(not isinstance(s, str) or not s.strip() for s in (request.system, request.user)):

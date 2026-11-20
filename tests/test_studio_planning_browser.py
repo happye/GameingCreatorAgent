@@ -341,3 +341,41 @@ def test_edits_during_adoption_are_preserved(studio, activity):
     last = page.evaluate("JSON.parse(localStorage.getItem('studio-last-job-v1'))")
     assert last["artifacts/project"]["id"] == studio.ctx.root
     assert len(studio.ctx.transport.calls) == 1
+
+
+def test_registered_knowledge_quote_preview_adopt_reopen(studio):
+    from test_plan_reasoning_jobs import knowledge_context, knowledge_output, prepared
+
+    ctx, page, expect = studio.ctx, studio.page, studio.expect
+    from concurrent.futures import ThreadPoolExecutor
+
+    def register():
+        _, _, entry = knowledge_context(ctx)
+        prep = prepared(ctx)
+        knowledge_output(ctx, prep, entry)
+        return entry
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        entry = executor.submit(register).result()
+    prepare(studio)
+    page.get_by_text("本次登记知识（1 条）", exact=True).click()
+    expect(page.locator(".dynamic-planning")).to_contain_text(entry["text"])
+    confirm(studio)
+    preview = page.get_by_label("动态方案预览")
+    expect(preview).to_be_visible()
+    preview.locator(".knowledge-uses > summary").click()
+    expect(preview).to_contain_text(entry["text"])
+    expect(preview).to_contain_text(entry["source"]["label"])
+    artifacts = Path(__file__).resolve().parents[1] / ".cache/scratch"
+    artifacts.mkdir(parents=True, exist_ok=True)
+    preview.scroll_into_view_if_needed()
+    page.screenshot(path=str(artifacts / "knowledge-planning-preview.png"), full_page=True)
+    page.get_by_role("button", name="采用这些方案（不再调用模型）").click()
+    expect(page.locator(".dynamic-plan-preview")).to_have_count(0)
+    expect(page.locator(".knowledge-uses > summary")).to_have_count(1)
+    page.reload()
+    expect(page.locator(".knowledge-uses > summary")).to_have_count(1)
+    page.locator(".knowledge-uses > summary").click()
+    expect(page.locator(".knowledge-uses")).to_contain_text(entry["text"])
+    page.screenshot(path=str(artifacts / "knowledge-planning-reopened.png"), full_page=True)
+    assert len(ctx.transport.calls) == 1

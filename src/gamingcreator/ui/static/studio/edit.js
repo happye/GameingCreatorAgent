@@ -7,7 +7,7 @@ import {recordingRuns} from "./recordings.js";
 import {editTimeline, shots, timeline, usePlanPlayer} from "./preview.js";
 import {ClipInspector, CommandDock, captionProblem, transitionProblem, useClipEditor} from "./clipedit.js";
 import {AudioPanel, narrationProblem, useAudioPreview, useMusicCatalog} from "./audio.js";
-import {PlanReasoningPanel} from "./planning.js";
+import {KnowledgeUses, PlanReasoningPanel} from "./planning.js";
 import {SubtitlePreview, useSubtitlePreview} from "./subtitles.js";
 import {OverlayPanel, OverlayPreview, overlayProblem} from "./overlays.js";
 
@@ -463,6 +463,7 @@ function ProgramTrack({items, totalUs, outUs, thumb, selectedId, changed, previe
 function PlanInspector({plan, groups, count, totalUs, shot}) {
     return html`
         <div class="field"><div class="k">方案</div><div class="v">${plan.structure}</div></div>
+        <${KnowledgeUses} uses=${plan.knowledgeUses} />
         <div class="field"><div class="k">时长与镜头</div><div class="v num">${secondsText(totalUs)} · ${count ?? groups.length} 个镜头</div></div>
         ${(plan.advisories || []).length ? html`<div class="field"><div class="k">提醒</div><ul class="facts">${plan.advisories.map((a) => html`<li>${a}</li>`)}</ul></div>` : null}
         ${shot ? html`<div class="field"><div class="k">选中镜头 · 成片 ${timecode(shot.outStartUs)} 起 ${(shot.outDurUs / 1e6).toFixed(1)} 秒</div>
