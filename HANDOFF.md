@@ -2,7 +2,7 @@
 
 ## 最近一次会话（2026-11-20）
 
-继续在原分支 `codex/knowledge-version-compare-20261108` 开发，先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。本批接通实况连续选段、跳过低信息片段和原声导出。六个 Codex 角色的模型更新与两份 Markdown 路由说明已推送。验证服务 `http://127.0.0.1:8772/studio`，启动信息见 `.cache/workspace/port-8772.json`。
+继续在原分支 `codex/knowledge-version-compare-20261108` 开发，先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。本批接通高光识别、证据引用、前后画面和发布标签。六个 Codex 角色的模型更新与两份 Markdown 路由说明已推送。验证服务 `http://127.0.0.1:8772/studio`，启动信息见 `.cache/workspace/port-8772.json`。
 
 ## 实证与接手入口
 
@@ -28,6 +28,6 @@
 
 ## 下一优先级与约束
 
-[P045 攻略](docs/exec-plans/sprint-guide-evidence.md)、[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)和[P047 实况](docs/exec-plans/sprint-live-cut-continuity.md)均有真实成片和本地 B 站包。P047 证据在 `.cache/scratch/live-cut-20261120/final/`。下一步推进 P048，按真实高光描述和事件反馈选段，补齐铺垫、过程和结果。P042 平台成效和 P044–P047 真人质量待验。
+[P045 攻略](docs/exec-plans/sprint-guide-evidence.md)、[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)、[P047 实况](docs/exec-plans/sprint-live-cut-continuity.md)和[P048 高光](docs/exec-plans/sprint-highlight-evidence.md)均有真实成片和本地 B 站包。P048 证据在 `.cache/scratch/highlight-20261120/`。下一步推进 P049，把有素材支撑的广告卖点串到开场和发布核对。P042 平台成效和 P044–P048 真人质量待验。
 
 本批使用定向回归、真实浏览器和产物验证，无全量、Release、支付或上传。旧完整 verify-20261117-002506 按用户要求中断，曾见失败。J1 第五次人评未过，J2/J3 待人评，工程实证不改质量和 passes。文字月 ¥30/单条 ¥1、指定视觉月 ¥50，现有费用门禁保留。本机声音，真实平台发布或支付须另授权。

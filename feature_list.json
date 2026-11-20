@@ -1156,7 +1156,8 @@
             "delivery_status": "partial",
             "implementation_evidence": [
                 "2026-11-01: highlight mode template (top-scored clips in recording order, best last as climax) real instance -> 445-frame MP4 -> Bilibili package; scores are description proxies, not visual understanding",
-                "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md"
+                "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md",
+                "2026-11-20: explicit event evidence selects full highlight spans and same-run context. Current untrimmed anchors drive publication labels. Real Atom Boss attack and subsequent dodge -> MP4 -> Bilibili package. See sprint-highlight-evidence."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

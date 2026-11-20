@@ -41,6 +41,16 @@ class ModeStructure:
     weights: tuple[Fraction, ...]
 
 
+@dataclass(slots=True)
+class StructureAllocation:
+    identity: str
+    description: str
+    shots: list[list["CreationClip"]]
+    budgets: list[int]
+    roles: tuple[str, ...]
+    notes: list[str]
+
+
 def _richness(clip: "CreationClip") -> tuple[int, int]:
     """Saved-description detail only; it does not prove visual importance."""
     event = clip.event
@@ -224,9 +234,9 @@ def mode_structure(
         ordered_clips = (*rest, climax)
         return ModeStructure(
             "highlight-climax",
-            f"高光模板：取评分最高的{len(ordered_clips)}段，按录像顺序播放，最高分片段放在最后作高潮",
+            f"高光候选：素材摘要缺少可确认的高光区间，按素材评分选取{len(ordered_clips)}段供预览",
             ordered_clips,
-            tuple([*[f"高光{i + 1}" for i in range(len(rest))], "高潮"]),
+            ("候选片段",) * len(ordered_clips),
             tuple([*[Fraction(1)] * len(rest), Fraction(3, 2)]),
         )
     if brief.content_type == "ad":

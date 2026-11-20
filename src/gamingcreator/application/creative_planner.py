@@ -19,6 +19,7 @@ from gamingcreator.application.creation_modes import (
     mode_structure,
     sample_clips,
 )
+from gamingcreator.application.highlight_cut import HighlightCut, highlight_coverage, highlight_cut
 from gamingcreator.application.live_cut import live_cut
 from gamingcreator.application.material_scoring import advisories, score_materials, scoring_legend
 from gamingcreator.application.showcase_topics import showcase_coverage, visual_topic_count
@@ -100,6 +101,7 @@ def _plan_topic_details(
     segments: list[dict[str, Any]],
     *,
     step_seeds: set[tuple[str, str]] | None = None,
+    highlight: HighlightCut | None = None,
 ) -> tuple[list[str], dict[str, object]]:
     if identity in ("showcase", "guide-evidence", "commentary-evidence") and brief.mandatory_topics:
         coverage = showcase_coverage(
@@ -126,12 +128,16 @@ def _plan_topic_details(
             if row["status"] != "source-matched"
         ]
         return notes, {"topicCoverage": coverage, "topicCoverageBasis": "source-matched"}
-    text = " ".join(str(segment["scriptDraft"]) for segment in segments).casefold()
+    fields = highlight_coverage(highlight, segments) if highlight is not None else {}
+    text = " ".join(
+        " ".join([segment["scriptDraft"], *(use["topic"] for use in segment.get("topicUses", []))])
+        for segment in segments
+    ).casefold()
     return [
         f"主题未在画面摘要中找到：{topic}（可在旁白或字幕里讲，或补充画面）"
         for topic in brief.mandatory_topics
         if topic.casefold() not in text
-    ], {}
+    ], fields
 
 
 def distinct_source_intervals(clips: Sequence[Any]) -> int:
@@ -165,6 +171,11 @@ class CreationClip:
     @property
     def framing(self) -> SourceRange:
         return self.source_range or self.event.source_range
+
+
+PlanTemplate = tuple[
+    str, str, list[CreationClip], tuple[str, ...] | None, tuple[Fraction, ...] | None
+]
 
 
 def candidates(
@@ -397,11 +408,10 @@ def _allocate_structure(
     return shots, roles, budgets
 
 
-def eligible_clips(
+def _sized_clips(
     brief: CreativeBrief, clips: tuple[CreationClip, ...], fps: int
 ) -> list[CreationClip]:
-    """Shared exclusion, source deduplication and minimum-frame policy."""
-    eligible = [
+    return [
         clip
         for clip in clips
         if not any(
@@ -412,6 +422,13 @@ def eligible_clips(
         and clip.event.observable_facts
         and (clip.framing.end_us - clip.framing.start_us) * fps >= 1_000_000
     ]
+
+
+def eligible_clips(
+    brief: CreativeBrief, clips: tuple[CreationClip, ...], fps: int
+) -> list[CreationClip]:
+    """Shared exclusion, source deduplication and minimum-frame policy."""
+    eligible = _sized_clips(brief, clips, fps)
     # A different analysis version is not another shot of the same source interval.
     unique: dict[tuple[str, int, int], CreationClip] = {}
     source_order = {
@@ -468,12 +485,10 @@ def _without_overlaps(clips: list[CreationClip]) -> list[CreationClip]:
     return [kept[i] for i in sorted(kept)]
 
 
-def _material_gaps(segment_count: int, is_live: bool) -> list[str]:
-    if is_live:
+def _material_gaps(segment_count: int, allocated: bool) -> list[str]:
+    if allocated:
         return (
-            []
-            if segment_count
-            else ["目标时长内没有可连续保留的实况片段，请预览其他方案或调整时长。"]
+            [] if segment_count else ["目标时长内没有可完整保留的片段，请预览其他方案或调整时长。"]
         )
     return ["不足三个不同源区间，不能形成完整的三段结构"] if segment_count < 3 else []
 
@@ -498,7 +513,10 @@ def plan_creation(
     if type(fps) is not int or not 1 <= fps <= 120:
         raise ValueError("Output fps must be an integer in 1..120.")
     eligible = eligible_clips(brief, clips, fps)
-    scores = score_materials(brief, eligible)
+    highlight_candidates = (
+        _sized_clips(brief, clips, fps) if brief.content_type == "highlight" else []
+    )
+    scores = score_materials(brief, highlight_candidates or eligible)
 
     def total(clip: CreationClip) -> float:
         value = scores[(clip.event.run_id, clip.event.event_id)]["total"]
@@ -506,9 +524,7 @@ def plan_creation(
 
     # Across sources retain the explicit input run order; within each source use source time.
     picked = sample_clips(eligible, max(3, brief.target_duration // GENERIC_SHOT_SECONDS), total)
-    generic: list[
-        tuple[str, str, list[CreationClip], tuple[str, ...] | None, tuple[Fraction, ...] | None]
-    ] = [
+    generic: list[PlanTemplate] = [
         ("chronological", "按来源顺序展开", picked, None, None),
         ("hook-first", "最后一条先作开场，再回溯", picked[-1:] + picked[:-1], None, None),
         ("reverse", "倒序逐条回顾", list(reversed(picked)), None, None),
@@ -530,28 +546,28 @@ def plan_creation(
     trim_applied = bool(suggestion and suggestion["applied"])
     target_frames = brief.target_duration * fps
     mode = mode_structure(brief, eligible, total, target_frames=target_frames)
-    live = (
+    special = (
         live_cut(brief, eligible, transcripts or {}, fps, total)
         if brief.content_type == "live_cut" and eligible
         else None
     )
-    structures = generic
-    if live is not None:
-        structures = [
-            ("live-cut", "实况精剪：优先保留连续事件与原声，略去有明确依据的空段", [], None, None),
-            *generic,
-        ]
-    elif mode is not None:
-        # The content mode's own template is recommended first; generic orders stay available.
-        structures = [
-            (mode.identity, mode.description, list(mode.ordered), mode.roles, mode.weights),
-            *generic,
-        ]
+    highlight = (
+        highlight_cut(brief, highlight_candidates, fps, total) if highlight_candidates else None
+    )
+    allocated = highlight.allocation if highlight is not None else special
+    # The content mode's own template is recommended first; generic orders stay available.
+    recommended: list[PlanTemplate] = (
+        [(allocated.identity, allocated.description, [], None, None)]
+        if allocated is not None
+        else [(mode.identity, mode.description, list(mode.ordered), mode.roles, mode.weights)]
+        if mode is not None
+        else []
+    )
     plans: list[dict[str, object]] = []
-    for identity, description, ordered, roles, weights in structures:
-        live_plan = live if identity == "live-cut" else None
-        if live_plan is not None:
-            shots, roles, budgets = live_plan.shots, live_plan.roles, live_plan.budgets
+    for identity, description, ordered, roles, weights in [*recommended, *generic]:
+        layout = allocated if allocated is not None and identity == allocated.identity else None
+        if layout is not None:
+            shots, roles, budgets = layout.shots, layout.roles, layout.budgets
         else:
             shots, roles, budgets = _allocate_structure(
                 ordered,
@@ -605,7 +621,7 @@ def plan_creation(
                                     "endUs": clip.framing.end_us,
                                 }
                             }
-                            if clip.source_range is not None
+                            if clip.source_range is not None and identity != "highlight-evidence"
                             else {}
                         ),
                         "score": scores[(event.run_id, event.event_id)],
@@ -626,9 +642,14 @@ def plan_creation(
             else None
         )
         topic_notes, topic_fields = _plan_topic_details(
-            brief, identity, eligible, segments, step_seeds=step_seeds
+            brief,
+            identity,
+            eligible,
+            segments,
+            step_seeds=step_seeds,
+            highlight=highlight if identity == "highlight-evidence" else None,
         )
-        gaps = _material_gaps(len(segments), live_plan is not None)
+        gaps = _material_gaps(len(segments), layout is not None)
         plans.append(
             {
                 "id": identity,
@@ -640,13 +661,7 @@ def plan_creation(
                 **topic_fields,
                 "advisories": [
                     *topic_notes,
-                    *(
-                        live_plan.notes
-                        if live_plan is not None
-                        else [TRIM_TIP]
-                        if trim_applied
-                        else []
-                    ),
+                    *(layout.notes if layout is not None else [TRIM_TIP] if trim_applied else []),
                     *advisories(brief, eligible, segments, fps),
                 ],
                 "scriptStatus": "saved-descriptions-draft-human-review-required",
@@ -673,7 +688,9 @@ def plan_creation(
         "schemaVersion": "creation-plan-v1",
         "planner": "offline-template-v1",
         "understandingVerified": False,
-        **({"modeHonesty": MODE_HONESTY_SHORT} if mode is not None or live is not None else {}),
+        **(
+            {"modeHonesty": MODE_HONESTY_SHORT} if mode is not None or allocated is not None else {}
+        ),
         "scoring": scoring_legend(),
         "ordering": {
             "basis": "creator-feedback"

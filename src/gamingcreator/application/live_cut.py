@@ -6,6 +6,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from gamingcreator.application.creation_modes import StructureAllocation
 from gamingcreator.application.showcase_topics import topic_matches
 from gamingcreator.domain.creation import CreativeBrief
 from gamingcreator.domain.models import TranscriptSegment
@@ -43,14 +44,6 @@ class Moment:
     dialogue: bool
     utterances: frozenset[int]
     key: bool
-
-
-@dataclass(slots=True)
-class LiveCut:
-    shots: list[list["CreationClip"]]
-    budgets: list[int]
-    roles: tuple[str, ...]
-    notes: list[str]
 
 
 def _idle_reason(text: str) -> str:
@@ -198,7 +191,7 @@ def live_cut(
     transcripts: Mapping[str, tuple[TranscriptSegment, ...]],
     fps: int,
     score: "Score",
-) -> LiveCut:
+) -> StructureAllocation:
     blocks, omitted = _blocks(clips, brief.mandatory_topics, transcripts, fps)
     selected = _allocate(blocks, brief.target_duration * fps, score)
     indexes = sorted(selected)
@@ -222,7 +215,9 @@ def live_cut(
         notes.append("部分转写跨出可用取材区间，预览时可核对这部分原声。")
     if sum(selected.values()) < brief.target_duration * fps:
         notes.append("实况精剪按连续片段取材，当前成片短于目标时长。")
-    return LiveCut(
+    return StructureAllocation(
+        "live-cut",
+        "实况精剪：优先保留连续事件与原声，略去有明确依据的空段",
         [[item.clip for item in block] for block in chosen],
         [selected[i] for i in indexes],
         tuple(

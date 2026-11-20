@@ -303,7 +303,8 @@ def test_remaining_modes_are_recommended_with_their_own_structures():
     highlight = plan_creation(brief("highlight", duration=6), clips, 30)["plans"][0]
     assert highlight["id"] == "highlight-climax"
     assert (
-        highlight["segments"][-1]["eventId"] == "e3" and highlight["segments"][-1]["role"] == "高潮"
+        highlight["segments"][-1]["eventId"] == "e3"
+        and highlight["segments"][-1]["role"] == "候选片段"
     )
     ad = plan_creation(brief("ad", duration=15, topics=("新英雄",)), clips, 30)["plans"][0]
     assert ad["id"] == "ad-hook" and ad["modeLabel"] == "广告/买量"
@@ -312,6 +313,48 @@ def test_remaining_modes_are_recommended_with_their_own_structures():
     assert ad["segments"][0]["eventId"] == "e12" and ad["segments"][1]["eventId"] == "e3"
     assert ad["segments"][-1]["role"] == "行动号召"
     assert ad["segments"][0]["outputFrames"] > ad["segments"][1]["outputFrames"]
+
+
+def test_highlight_keeps_observation_with_context_and_removes_trimmed_claims():
+    from gamingcreator.ui.publication_jobs import draft_copy
+
+    facts = [
+        ["未出现反杀提示"],
+        ["角色接近对手"],
+        ["敌人被击中后倒地"],
+        ["角色收刀站立"],
+        ["蓝色球体从平台掉落"],
+    ]
+    clips = material(facts)
+    req = brief("highlight", 8, ("反杀",))
+    report = plan_creation(req, clips, 30)
+    report["brief"] = {"targetDuration": 8}
+    selected = plan(report, "highlight-evidence")
+    rows = selected["segments"]
+    assert [(row["eventId"], row["startUs"], row["endUs"]) for row in rows] == [
+        ("e1", 6_000_000, 8_000_000),
+        ("e2", 8_000_000, 12_000_000),
+        ("e3", 12_000_000, 14_000_000),
+    ]
+    assert rows[1]["topicUses"][0]["observationQuote"] == facts[2][0]
+    assert rows[1]["evidenceIds"] == ["evidence2"]
+    assert not any("rangeProvenance" in row for row in rows)
+    edl = select_edit_decision(report, "highlight-evidence")
+    timeline = SimpleNamespace(
+        run=SimpleNamespace(run_id="run", asset=ASSET), events=tuple(clip.event for clip in clips)
+    )
+    assert validate_render_plan(edl, report, (timeline,)).frames == 240
+    metadata = {"game": req.game, "contentType": "highlight", "mandatoryTopics": ["反杀"]}
+    copy = draft_copy(metadata, rows, 30, evidenced_highlight=True)
+    assert copy["tags"] == [req.game, "高光", "击倒"] and "00:02 击倒" in copy["description"]
+    revised = draft_copy(metadata, [dict(rows[1], startUs=9_000_000)], 30, evidenced_highlight=True)
+    assert revised["tags"] == [req.game, "高光"]
+    cropped = replace(clips[2], source_range=SourceRange(9_000_000, 12_000_000, 120_000_000))
+    assert plan_creation(req, (*clips[:2], cropped, *clips[3:]), 30)["plans"][0]["id"] == (
+        "highlight-climax"
+    )
+    negative = material([["敌人未被击杀，随后继续移动"], ["击杀数为0"], ["并非反杀"]])
+    assert plan_creation(req, negative, 30)["plans"][0]["id"] == "highlight-climax"
 
 
 def test_live_cut_keeps_contiguous_speech_and_skips_observed_idle():

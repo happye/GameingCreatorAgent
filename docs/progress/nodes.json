@@ -423,10 +423,11 @@
    ]
   },
   "P048": {
-   "done": "高光模板取评分最高片段按顺序、最高分作收尾，真实出片＋B站包已走通；已解冻",
-   "todo": "评分是描述代理而非画面理解，质量未经人评",
-   "updated": "2026-11-01",
+   "done": "按已保存的高光事件证据取材，保留可用前后画面，发布文案引用未裁短的高光。实测《代号 Atom》Boss 攻击、后续闪避和 B 站包",
+   "todo": "多类实拍高光、瞬时观察及剪辑质量待验",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-highlight-evidence",
     "sprint-content-modes"
    ]
   },
@@ -855,6 +856,12 @@
      "name": "实况精剪保留连续事件与原声",
      "status": "done",
      "sprint": "sprint-live-cut-continuity"
+    },
+    {
+     "id": "P048-highlight-evidence",
+     "name": "高光事件引用与前后画面",
+     "status": "done",
+     "sprint": "sprint-highlight-evidence"
     },
     {
      "id": "P018",

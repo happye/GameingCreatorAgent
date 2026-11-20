@@ -346,7 +346,11 @@ export function ClipInspector({editing, index, onSeek, basket}) {
     const replacing = !!editing.replacements[clip.clipId], inserted = isPendingInsertion(editing, clip.clipId);
     const mustCut = !!forcedCut(editing.clips, index, editing.replacements);
     const caption = editing.subtitleOverrides.find((o) => o.clipId === clip.clipId);
-    const role = clip.guideStep ? `第${editing.clips.slice(0, index + 1).filter(row => row.guideStep).length}步 · ${clip.guideStep}` : clip.role;
+    const trimmedHighlight = clip.role?.startsWith("高光 · ") && !clip.topicUses?.some(
+        use => use.sourceStartUs === clip.startUs && use.sourceEndUs === clip.endUs
+    );
+    const role = clip.guideStep ? `第${editing.clips.slice(0, index + 1).filter(row => row.guideStep).length}步 · ${clip.guideStep}`
+        : trimmedHighlight ? "已裁短，核对高光" : clip.role;
     return html`${editing.insertions?.length ? html`<p class="hint">插入、裁剪、删除和其他镜头的替换可一起保存。</p>` : null}<div class="field"><div class="k">第 ${index + 1} 个镜头 · 成片 ${(frames / fps).toFixed(2)} 秒</div>
             <div class="v">${role ? `【${role}】` : ""}${clip.scriptDraft || "无描述"}</div></div>
         <div class="field"><div class="k">取材范围（原片秒，可在 ${seconds(bound.startUs)}–${seconds(bound.endUs)} 内裁短）</div>

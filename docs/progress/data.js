@@ -1235,12 +1235,14 @@ window.PROGRESS_DATA = {
    "remaining": null,
    "evidence": [
     "2026-11-01: highlight mode template (top-scored clips in recording order, best last as climax) real instance -> 445-frame MP4 -> Bilibili package; scores are description proxies, not visual understanding",
-    "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md"
+    "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md",
+    "2026-11-20: explicit event evidence selects full highlight spans and same-run context. Current untrimmed anchors drive publication labels. Real Atom Boss attack and subsequent dodge -> MP4 -> Bilibili package. See sprint-highlight-evidence."
    ],
-   "done": "高光模板取评分最高片段按顺序、最高分作收尾，真实出片＋B站包已走通；已解冻",
-   "todo": "评分是描述代理而非画面理解，质量未经人评",
-   "updated": "2026-11-01",
+   "done": "按已保存的高光事件证据取材，保留可用前后画面，发布文案引用未裁短的高光。实测《代号 Atom》Boss 攻击、后续闪避和 B 站包",
+   "todo": "多类实拍高光、瞬时观察及剪辑质量待验",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-highlight-evidence",
     "sprint-content-modes"
    ]
   },
@@ -1789,6 +1791,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-live-cut-continuity"
     },
     {
+     "id": "P048-highlight-evidence",
+     "name": "高光事件引用与前后画面",
+     "status": "done",
+     "sprint": "sprint-highlight-evidence"
+    },
+    {
      "id": "P018",
      "name": "游戏知识层（本机）",
      "status": "done",
@@ -2297,7 +2305,7 @@ window.PROGRESS_DATA = {
   "漫画群星 60 秒[主题旁白](docs/exec-plans/sprint-showcase-narration.md)已补齐[句级字幕](docs/exec-plans/sprint-narration-captions.md)，试听、移动音轨、SRT 和 B 站烧入版实测通过。",
   "P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。",
   "[P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。",
-  "[P047 实况](docs/exec-plans/sprint-live-cut-continuity.md)用《代号 Atom》验证连续取材、原声和出包。下一步推进 P048 高光。"
+  "《代号 Atom》实测[P047 实况](docs/exec-plans/sprint-live-cut-continuity.md)连续取材、[P048 高光](docs/exec-plans/sprint-highlight-evidence.md)事件引用及出包。下一步推进 P049。"
  ],
  "sprints": [
   {
@@ -2735,6 +2743,15 @@ window.PROGRESS_DATA = {
    "bytes": 1613
   },
   {
+   "file": "sprint-highlight-evidence",
+   "title": "高光事件引用与前后画面",
+   "ids": [
+    "P048"
+   ],
+   "date": "",
+   "bytes": 1618
+  },
+  {
    "file": "sprint-j1-creation-usability",
    "title": "Sprint：J1 可用（创作页重做）",
    "ids": [
@@ -2783,7 +2800,7 @@ window.PROGRESS_DATA = {
    "ids": [
     "P047"
    ],
-   "date": "",
+   "date": "2026-11-20",
    "bytes": 1708
   },
   {

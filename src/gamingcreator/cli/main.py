@@ -292,6 +292,7 @@ def _parser() -> CliParser:
             "commentary-segments",
             "live-cut",
             "highlight-climax",
+            "highlight-evidence",
             "ad-hook",
             "chronological",
             "hook-first",
