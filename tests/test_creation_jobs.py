@@ -32,7 +32,9 @@ def service(tmp_path, monkeypatch):
                     "ready": True,
                     "gaps": [],
                     "scriptStatus": "draft",
-                    "segments": [{"sourcePath": "private", "startUs": 0, "runId": "run"}],
+                    "segments": [
+                        {"sourcePath": "private", "startUs": 0, "runId": "run", "eventId": "event"}
+                    ],
                 }
             ],
         }
@@ -82,8 +84,13 @@ def service(tmp_path, monkeypatch):
     async def close():
         pass
 
+    async def load_completed_timeline(run_id):
+        return SimpleNamespace(evidence=(), events=())
+
     async def open_store(*args, **kwargs):
-        return SimpleNamespace(load_run=load_run, close=close)
+        return SimpleNamespace(
+            load_run=load_run, load_completed_timeline=load_completed_timeline, close=close
+        )
 
     monkeypatch.setattr(SqliteTimelineStore, "open", open_store)
     return CreationJobs(tmp_path)

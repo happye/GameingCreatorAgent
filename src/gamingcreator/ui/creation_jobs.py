@@ -1245,6 +1245,24 @@ class CreationJobs:
         path = self.root / "reviews" / f"{identity(package_job_id)}.json"
         return self.read(path) if path.is_file() else None
 
+    def package_review_context(self, project_id: str, package_job_id: str) -> dict[str, Any]:
+        from gamingcreator.application.enterprise import check_brand, publish_blockers
+
+        team = self.team(project_id)
+        state = self.read(self.directory(package_job_id) / "status.json")
+        if state["projectId"] != project_id or state["kind"] != "package":
+            raise fail("creation.not_found", "当前项目找不到这个发布包。")
+        if state["status"] != "completed":
+            raise fail("enterprise.input", "发布包尚未完成。")
+        record = self.review_state(package_job_id)
+        issues = check_brand(team, self._package_texts(package_job_id)) if team else []
+        return {
+            "team": team,
+            "review": record,
+            "brandIssues": issues,
+            "blockers": publish_blockers(team, record, issues),
+        }
+
     def _append_audit(self, project_id: str, row: dict[str, Any]) -> None:
         path = self._audit_path(project_id)
         path.parent.mkdir(parents=True, exist_ok=True)

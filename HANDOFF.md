@@ -2,7 +2,7 @@
 
 ## 最近一次会话（2026-11-20）
 
-继续在原分支 `codex/knowledge-version-compare-20261108` 开发，先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。本批接通 Studio 套餐与用量。六个 Codex 角色的模型更新与两份 Markdown 路由说明已推送。验证服务 `http://127.0.0.1:8772/studio`，启动信息见 `.cache/workspace/port-8772.json`。
+继续在原分支 `codex/knowledge-version-compare-20261108` 开发，先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。本批接通 Studio 团队审核与本机模拟发布。六个 Codex 角色的模型更新与两份 Markdown 路由说明已推送。验证服务 `http://127.0.0.1:8772/studio`，启动信息见 `.cache/workspace/port-8772.json`。
 
 ## 实证与接手入口
 
@@ -28,6 +28,6 @@
 
 ## 下一优先级与约束
 
-[P049 广告](docs/exec-plans/sprint-ad-evidence.md)两版产物在 `.cache/scratch/ad-evidence-20261120/`，一版使用测试配乐。[P050 套餐](docs/exec-plans/sprint-creator-plans.md)已实测用量和跨月准备额度，证据在 `.cache/scratch/creator-usage-20261120/`。下一步推进 P051，接通 Studio 团队、品牌核对和发布审核。P042 平台成效和 P044–P049 真人质量待验。
+[P049 广告](docs/exec-plans/sprint-ad-evidence.md)两版竖屏已实测出包。[P050 套餐](docs/exec-plans/sprint-creator-plans.md)已实测 Studio 用量。[P051 审核](docs/exec-plans/sprint-enterprise-basics.md)证据在 `.cache/scratch/enterprise-studio-20261120/`。下一步逐项复核 J1 第五次试用反馈，准备可直接复测的工作台、成片和发布包。P042 平台成效及 P044–P049 真人质量待验。
 
 本批使用定向回归、真实浏览器和产物验证，无全量、Release、支付或上传。旧完整 verify-20261117-002506 按用户要求中断，曾见失败。J1 第五次人评未过，J2/J3 待人评，工程实证不改质量和 passes。文字月 ¥30/单条 ¥1、指定视觉月 ¥50，现有费用门禁保留。本机声音，真实平台发布或支付须另授权。

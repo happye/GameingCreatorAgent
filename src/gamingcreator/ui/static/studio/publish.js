@@ -9,6 +9,7 @@ import {CampaignChecks, campaignTags} from "./activity.js";
 import {publicationErrorFields, publicationFieldErrors} from "./publication_form.js";
 import {PublicationFeedback} from "./publication_feedback.js";
 import {usePackageBatches} from "./package_batches.js";
+import {EnterpriseTeam, PackageReview} from "./enterprise.js";
 
 const html = htm.bind(h);
 const PLATFORMS = {bilibili: "B站", douyin: "抖音", kuaishou: "快手", xiaohongshu: "小红书"};
@@ -306,6 +307,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     const defaultedRender = useRef("");
     const [platformDraft, setPlatformDraft] = useState({key: null, values: {}});
     const [previewPackage, setPreviewPackage] = useState("");
+    const [teamVersion, setTeamVersion] = useState(0);
     const epoch = useRef(0);
     const polling = useRef(new AbortController());
     const activeProject = useRef(project);
@@ -647,6 +649,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                             <a class="btn ghost" href=${`${jobPath(pkg.jobId)}/package-files/video.mp4?download=1`} download="video.mp4">只下载视频</a>
                             <button class="btn ghost" aria-expanded=${previewPackage === pkg.jobId} onClick=${() => setPreviewPackage(id => id === pkg.jobId ? "" : pkg.jobId)}>${previewPackage === pkg.jobId ? "收起预览" : `预览${PLATFORMS[pkg.profile?.Platform] || "平台"}成片`}</button></div>
                         ${previewPackage === pkg.jobId && html`<video class="package-video" aria-label="平台成片预览" src=${`${jobPath(pkg.jobId)}/package-files/video.mp4`} controls playsinline preload="metadata"></video>`}
+                        <${PackageReview} key=${`${project}:${pkg.jobId}`} project=${project} pkg=${pkg} teamVersion=${teamVersion} />
                         ${pkg.artifacts?.["video.mp4"]?.sha256 && html`<${PublicationFeedback}
                             key=${`${project}:${pub.publicationJobId}:${pkg.artifacts["video.mp4"].sha256}`}
                             project=${project} publicationId=${pub.publicationJobId} packageId=${pkg.jobId} videoSha256=${pkg.artifacts["video.mp4"].sha256}
@@ -659,6 +662,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
         <aside class="panel" hidden=${!layout.insp} aria-label="发布信息">
             <div class="panel-head">发布信息</div>
             <div class="panel-body">
+                ${project && html`<${EnterpriseTeam} key=${project} project=${project} onSaved=${() => setTeamVersion(n => n + 1)} />`}
                 ${message && html`<p class="note" role="status">${message}</p>`}
                 ${pub ? html`
                     <p class="hint">${pub.publicationJobId ? (dirty ? "有未保存的修改" : "已保存的版本") : "按需求自动起草的模板，请改一遍再保存。"}</p>

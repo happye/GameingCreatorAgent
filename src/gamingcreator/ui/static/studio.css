@@ -248,6 +248,11 @@ details.group[open] > summary::before { content: "▾ "; }
 /* Publish workspace. */
 .publish-pkg .track-area { padding: 8px 12px; overflow: auto; }
 .pkg-result { margin-top: 8px; }
+.enterprise-form { margin: var(--s-2) 0; }
+.enterprise-fields { border: 0; margin: 0; padding: 0; min-width: 0; }
+.enterprise-fields > .btn { margin-top: var(--s-2); }
+.enterprise-member { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: var(--s-1); margin: var(--s-1) 0; }
+.enterprise-member .select, .enterprise-member .btn { padding: 4px 6px; }
 .package-video { display: block; max-width: 100%; max-height: 360px; margin-top: 8px; background: #000; }
 .panel-body img.cover { width: 100%; border-radius: var(--r-1); border: 1px solid var(--line); }
 .cover-picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; margin-top: 6px; }

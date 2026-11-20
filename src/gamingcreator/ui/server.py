@@ -142,6 +142,7 @@ ASSETS = {
         "studio/publication_feedback.js",
         "text/javascript; charset=utf-8",
     ),
+    "/assets/studio/enterprise.js": ("studio/enterprise.js", "text/javascript; charset=utf-8"),
     "/assets/studio/preview.js": ("studio/preview.js", "text/javascript; charset=utf-8"),
     "/assets/vendor/preact.module.js": (
         "vendor/preact.module.js",
@@ -729,17 +730,20 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 if not isinstance(value, dict) or set(value) != {"packageJobId", "target"}:
                     raise ValueError("Expected package job and publish target")
                 self._require("sandboxPublish")
-                blockers = self.creation_jobs.publish_blockers(str(value["packageJobId"]))
-                if blockers:
-                    raise AppError("publish.review_required", " ".join(blockers), ExitCode.INPUT)
-                # Re-verifies the package files and receipts before anything is recorded.
-                package = self.creation_jobs.package(str(value["packageJobId"]))
-                try:
-                    record = SandboxPublisher(self.repository).submit(
-                        str(value["packageJobId"]), package, str(value["target"])
-                    )
-                except (PermissionError, ValueError) as error:
-                    raise AppError("publish.refused", str(error), ExitCode.INPUT) from error
+                with self.creation_jobs.root_writer():
+                    blockers = self.creation_jobs.publish_blockers(str(value["packageJobId"]))
+                    if blockers:
+                        raise AppError(
+                            "publish.review_required", " ".join(blockers), ExitCode.INPUT
+                        )
+                    # Team and review changes share this lock with sandbox acceptance.
+                    package = self.creation_jobs.package(str(value["packageJobId"]))
+                    try:
+                        record = SandboxPublisher(self.repository).submit(
+                            str(value["packageJobId"]), package, str(value["target"])
+                        )
+                    except (PermissionError, ValueError) as error:
+                        raise AppError("publish.refused", str(error), ExitCode.INPUT) from error
                 self._json(200, record)
                 return
             if path == "/api/knowledge":
@@ -1327,7 +1331,9 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     else:
                         if query:
                             raise ValueError("Unexpected publish status query")
-                        self._json(200, publisher.status(path.rsplit("/", 1)[1]))
+                        with self.creation_jobs.root_writer():
+                            record = publisher.status(path.rsplit("/", 1)[1])
+                        self._json(200, record)
                 except (OSError, ValueError) as error:
                     raise AppError(
                         "publish.status", "找不到这条发布记录。", ExitCode.INPUT
@@ -1339,6 +1345,14 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(200, {"team": self.creation_jobs.team(query["projectId"])})
                 return
             if path == "/api/enterprise/review":
+                if set(query) == {"projectId", "packageJobId"}:
+                    self._json(
+                        200,
+                        self.creation_jobs.package_review_context(
+                            query["projectId"], query["packageJobId"]
+                        ),
+                    )
+                    return
                 if set(query) != {"packageJobId"}:
                     raise ValueError("Expected package job ID")
                 self._json(200, {"review": self.creation_jobs.review_state(query["packageJobId"])})

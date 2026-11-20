@@ -122,6 +122,9 @@ def make_package(jobs, render, monkeypatch, title, index=0):
 def test_real_package_review_gates_sandbox_publish(rendered, monkeypatch):
     jobs, render = rendered
     good = make_package(jobs, render, monkeypatch, "代号Atom 新版本")
+    other_project = jobs.repository / "artifacts" / "other-team"
+    other_project.mkdir()
+    (other_project / "timeline.sqlite3").touch()
     from gamingcreator.ui.server import create_server
 
     server = create_server("127.0.0.1", 0, jobs.repository)
@@ -161,6 +164,18 @@ def test_real_package_review_gates_sandbox_publish(rendered, monkeypatch):
         ) as response:
             assert json.loads(response.read())["review"]["state"] == "approved"
         with urllib.request.urlopen(
+            f"{base}/api/enterprise/review?packageJobId={good}&projectId={PROJECT}"
+        ) as response:
+            context = json.loads(response.read())
+            assert context["review"]["state"] == "approved"
+            assert context["team"]["reviewRequired"]
+            assert context["brandIssues"] == context["blockers"] == []
+        with pytest.raises(urllib.error.HTTPError) as wrong_project:
+            urllib.request.urlopen(
+                f"{base}/api/enterprise/review?packageJobId={good}&projectId=artifacts/other-team"
+            )
+        assert wrong_project.value.code == 404
+        with urllib.request.urlopen(
             f"{base}/api/enterprise/audit?projectId={PROJECT}&format=json"
         ) as response:
             audit = json.loads(response.read())
@@ -170,6 +185,13 @@ def test_real_package_review_gates_sandbox_publish(rendered, monkeypatch):
         # A glossary change after approval makes the old approval insufficient.
         stricter = {**TEAM, "brandTerms": {"required": ["代号Atom"], "forbidden": ["新版本"]}}
         post("/api/enterprise/team", {"projectId": PROJECT, "team": stricter, "actor": "老板"})
+        with urllib.request.urlopen(
+            f"{base}/api/enterprise/review?packageJobId={good}&projectId={PROJECT}"
+        ) as response:
+            context = json.loads(response.read())
+            assert context["review"]["state"] == "approved"
+            assert any("新版本" in issue for issue in context["brandIssues"])
+            assert context["blockers"]
         with pytest.raises(urllib.error.HTTPError) as stale:
             post("/api/creation/publish", {"packageJobId": good, "target": "sandbox"})
         assert "品牌词" in json.loads(stale.value.read())["message"]
