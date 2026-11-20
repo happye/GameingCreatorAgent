@@ -7,6 +7,7 @@ from fractions import Fraction
 
 import pytest
 from test_asr_word_timing import clip
+from test_clip_replacement_jobs import replacements  # noqa: F401
 from test_creation_jobs import service  # noqa: F401
 from test_creation_revision_jobs import revisions  # noqa: F401
 
@@ -168,3 +169,71 @@ def test_preview_missing_or_invalid_binding_stays_on_segments(revisions, monkeyp
     unbound = preview(jobs, {k: v for k, v in payload.items() if k != "asrWords"})
     assert unbound["subtitleSource"] == "segment"
     assert unbound["wordHighlights"] is False
+
+
+@pytest.mark.parametrize("text", ["", "替换后手写台词"])
+@pytest.mark.parametrize("mode", ["sidecar", "burn"])
+def test_replacement_override_stays_reserved_with_trusted_words(
+    replacements, monkeypatch, text, mode
+):
+    from test_clip_replacement_jobs import replacement_request
+
+    from gamingcreator.application.creation_replacements import validate_revision_v4
+    from gamingcreator.ui.replacement_jobs import manifest_for_chain
+    from gamingcreator.ui.revision_jobs import load_chain, prepare_revision
+
+    jobs, root, _ = replacements
+    payload = replacement_request(jobs, root)
+    payload.pop("requestId")
+    target = payload["clips"][0]["clipId"]
+    payload.update(
+        projectId="artifacts/project",
+        subtitleMode=mode,
+        wordHighlights=True,
+        asrWords={"runId": "bound-run", "resultHash": "b" * 64},
+        subtitleOverrides=[{"clipId": target, "text": text}],
+    )
+    chain = load_chain(jobs, root, payload["planId"], read_only=True)
+    revised, manifest = prepare_revision(jobs, payload, chain)
+    _, timelines = manifest_for_chain(jobs, chain)
+    plan = validate_revision_v4(
+        chain.edl,
+        revised,
+        chain.root_sha,
+        chain.digest,
+        payload["clips"],
+        payload["replacements"],
+        manifest,
+        timelines,
+    )
+    trusted = tuple(
+        AsrWord(
+            c.asset.media_id,
+            SourceRange(c.source_range.start_us, c.source_range.end_us, c.asset.duration_us),
+            f"自动词{i}",
+        )
+        for i, c in enumerate(plan.clips)
+    )
+    calls = []
+
+    async def load(project, run_id, result_hash):
+        calls.append((project, run_id, result_hash))
+        return trusted
+
+    monkeypatch.setattr("gamingcreator.infrastructure.asr_words.load_trusted_asr_words", load)
+    before = {str(p): p.read_bytes() for p in jobs.repository.rglob("*") if p.is_file()}
+    automatic = preview(jobs, {**payload, "subtitleOverrides": []})
+    assert any(cue["clipId"] == target and cue["text"] == "自动词0" for cue in automatic["cues"])
+    result = preview(jobs, payload)
+    assert result["wordHighlights"] is True
+    assert [cue["text"] for cue in result["cues"] if cue.get("clipId") == target] == (
+        [text] if text else []
+    )
+    assert any(cue["text"].startswith("自动词") for cue in result["cues"])
+    assert calls == [(jobs.project(payload["projectId"]), "bound-run", "b" * 64)] * 2
+    with pytest.raises(ValueError, match="identity is unknown"):
+        preview(jobs, {**payload, "subtitleOverrides": [{"clipId": "unknown", "text": text}]})
+    with pytest.raises(ValueError, match="manifest changed"):
+        preview(jobs, {**payload, "candidateManifestSha256": "f" * 64})
+    assert len(calls) == 2
+    assert before == {str(p): p.read_bytes() for p in jobs.repository.rglob("*") if p.is_file()}

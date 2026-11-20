@@ -12,6 +12,7 @@ from gamingcreator.infrastructure.ffmpeg_render import burn_events
 from gamingcreator.ui.revision_jobs import (
     load_chain,
     prepare_revision,
+    replacement_clip_ids,
     resolve_overrides,
     revision_subtitles,
 )
@@ -87,10 +88,13 @@ def preview(jobs: Any, request: dict[str, Any]) -> dict[str, Any]:
         replace(chain, edl=revised, plan=plan, timelines=timelines, subtitle_overrides=overrides),
         mode,
     )
+    replacements = replacement_clip_ids(revised)
     reserved = [
         index
         for index, clip in enumerate(request["clips"])
-        if any(item["clipId"] == clip["clipId"] for item in overrides)
+        if any(
+            item["clipId"] == replacements.get(clip["clipId"], clip["clipId"]) for item in overrides
+        )
     ]
     words = None
     sidecar_available = False

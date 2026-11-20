@@ -126,14 +126,15 @@ def test_v4_replacement_draft_and_stale_manifest(replacements):
     )
     before = {str(p): p.read_bytes() for p in jobs.repository.rglob("*") if p.is_file()}
     assert preview(jobs, payload)["cues"] == []
-    with pytest.raises(ValueError):
-        preview(
-            jobs,
-            {
-                **payload,
-                "subtitleOverrides": [{"clipId": payload["clips"][0]["clipId"], "text": "旧身份"}],
-            },
-        )
+    target = payload["clips"][0]["clipId"]
+    projected = preview(
+        jobs, {**payload, "subtitleOverrides": [{"clipId": target, "text": "替换字幕"}]}
+    )
+    assert projected["cues"] and all(
+        cue["text"] == "替换字幕" and cue["clipId"] == target for cue in projected["cues"]
+    )
+    with pytest.raises(ValueError, match="identity is unknown"):
+        preview(jobs, {**payload, "subtitleOverrides": [{"clipId": "unknown", "text": "拒绝"}]})
     with pytest.raises(ValueError, match="manifest changed"):
         preview(jobs, {**payload, "candidateManifestSha256": "0" * 64})
     assert before == {str(p): p.read_bytes() for p in jobs.repository.rglob("*") if p.is_file()}
