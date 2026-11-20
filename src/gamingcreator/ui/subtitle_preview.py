@@ -31,6 +31,7 @@ def preview(jobs: Any, request: dict[str, Any]) -> dict[str, Any]:
         "subtitleOverrides",
         "candidateManifestSha256",
         "replacements",
+        "insertions",
         "wordHighlights",
         "asrWords",
     }
@@ -64,13 +65,17 @@ def preview(jobs: Any, request: dict[str, Any]) -> dict[str, Any]:
         from gamingcreator.ui.replacement_jobs import manifest_for_chain
 
         _, timelines = manifest_for_chain(jobs, chain)
-        plan = validate_revision_v4(
+        from gamingcreator.application.creation_insertions import validate_revision_v5
+
+        validator: Any = validate_revision_v5 if "insertions" in request else validate_revision_v4
+        plan = validator(
             chain.edl,
             revised,
             chain.root_sha,
             chain.digest,
             request["clips"],
             request["replacements"],
+            *([request["insertions"]] if "insertions" in request else []),
             manifest,
             timelines,
         )
