@@ -20,3 +20,10 @@ v1 snapshot/request/system/body/hash 保持原函数及字段不变；恢复按�
 ## 集成待办
 
 主控负责 UI 多镜头说明、真实模型与浏览器应用/保存/导出链路，以及关键边界独立审查。当前证据为真实数据本地投影，未宣称人评通过。
+
+
+## Prompt v3 冲突提示（2026-11-18）
+
+新 prepare 使用 prompt-v3/schema-v2，snapshot 仅新请求加 source-interval-aliases-v1 策略标记。请求候选按目标时长输出 conflictsByDurationUs：只列最终区间已被哪些 S 别名占用，不发送源 SHA 或源时刻。冲突镜头可以同时换离，保留合法交换组合；最终 validator 仍验证全片区间唯一。旧 prompt-v2、v1 与插入快照重建路径保持。
+
+已付请求 b991bc…28ace 的失败原样保留，未重发；只读重建其原 fingerprint/requestHash 通过。该输出 S1/C74 与未改 S19 同为原片50–51秒，实际为候选冲突。新 v3 离线核对 C74.conflictsByDurationUs[1000000] 包含 S19，候选字段无源身份；Ruff/format/mypy 通过。真实新调用及链路由主控另行推进，不回放该失败。
