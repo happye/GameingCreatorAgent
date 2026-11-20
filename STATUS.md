@@ -10,7 +10,7 @@
 
 | 流程 | agent 离线跑通 | 你亲自试过 |
 | --- | --- | --- |
-| J1 玩法展示：录像 → 约 1 分钟成片 + 发布包 | 是（2026-11-20） | **全流程未通过**（2026-11-11 第五次；第三次仅初稿过得去） |
+| J1 玩法展示：录像 → 约 1 分钟成片 + 发布包 | 是（2026-11-20） | **通过**（第六次，用户确认样片可发；平台包下载故障单独跟踪） |
 | J2 一句话找片段：前 10 名可用 ≥70% | 是（工具就绪） | 未做（F006 仍 false） |
 | J3 安装便携包并启动工作台 | 是（2026-11-01） | 未做 |
 
@@ -29,7 +29,7 @@
 7. 漫画群星 60 秒[主题旁白](docs/exec-plans/sprint-showcase-narration.md)已补齐[句级字幕](docs/exec-plans/sprint-narration-captions.md)，试听、移动音轨、SRT 和 B 站烧入版实测通过。
 8. P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。
 9. [P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。
-10. [J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)可直达样片及 B 站包。[按作品找回剪辑和出包](docs/exec-plans/sprint-studio-work-names.md)已实测，待人评。
+10. [J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)已通过。优先处理本机平台包交付，后续轮换游戏素材。
 
 ## 费用与授权
 

@@ -1,15 +1,24 @@
 """Immutable single-platform packages of seven public files and a ZIP."""
 
 import asyncio
+import ntpath
+import os
+import shutil
+import unicodedata
 import zipfile
+from dataclasses import dataclass
 from fractions import Fraction
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
+from gamingcreator.application.creation_modes import MODE_LABELS
 from gamingcreator.application.package_validation import validate_package
+from gamingcreator.cli.creation_render import read_creation
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.platform_profile import profile_digest, validate_profile
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
+from gamingcreator.infrastructure.local_paths import is_link, resolve_existing
 from gamingcreator.infrastructure.publication_package import encode
 from gamingcreator.ui import publication_jobs
 from gamingcreator.ui.media import MediaResource
@@ -24,6 +33,18 @@ FILES = {
     "validation.json": "application/json",
 }
 DOWNLOADS = {**FILES, "package.zip": "application/zip"}
+PLATFORM_LABELS = {"bilibili": "B站", "douyin": "抖音", "kuaishou": "快手", "xiaohongshu": "小红书"}
+
+
+def _download_name(title: str, platform: str, content_type: str, job_id: str) -> str:
+    label = MODE_LABELS.get(content_type, "创作视频").replace("/", "-")
+    clean = "".join(
+        " " if char in '<>:"/\\|?*' or unicodedata.category(char).startswith("C") else char
+        for char in title
+    )
+    title = " ".join(clean.split())[:40].strip(". ") or "创作视频"
+    filename = f"{title} - {PLATFORM_LABELS[platform]} - {label} - {job_id[:12]}.zip"
+    return f"_{filename}" if ntpath.isreserved(filename) else filename
 
 
 def profiles() -> dict[str, Any]:
@@ -163,6 +184,10 @@ def verify(
     validation = _validate_output(profile, receipt["facts"], publication, render)
     if jobs.read(target / "validation.json") != validation:
         raise ValueError("Validation changed")
+    selection = jobs.directory(publication["renderJobId"]) / "selection"
+    _, report, selection_digest = read_creation(jobs.safe(selection))
+    if selection_digest != render["creationReceiptSha256"]:
+        raise ValueError("Render selection changed")
     state["package"] = {
         "publicationJobId": request["publicationJobId"],
         "expectedPublicationReceiptSha256": request["expectedPublicationReceiptSha256"],
@@ -172,6 +197,13 @@ def verify(
         "publicationEligibility": validation["publicationEligibility"],
         "validation": validation,
         "watermark": receipt.get("watermark"),
+        "localPath": str(jobs.safe(target / "package.zip")),
+        "downloadName": _download_name(
+            publication["title"],
+            profile["Platform"],
+            report["brief"]["contentType"],
+            directory.name,
+        ),
         "artifacts": {
             name: {
                 "url": f"/api/creation/jobs/{directory.name}/package-files/{name}",
@@ -199,10 +231,8 @@ def _validate_output(
     return validation
 
 
-def resource(jobs: Any, job_id: str, name: str) -> MediaResource:
-    if name not in DOWNLOADS:
-        raise ValueError("Unknown package file")
-    state = jobs.get(job_id)
+def _completed(jobs: Any, job_id: str) -> dict[str, Any]:
+    state: dict[str, Any] = jobs.get(job_id)
     if state["kind"] != "package" or state["status"] != "completed":
         error = state.get("error") or {}
         if error.get("code") == "creation.artifact_invalid":
@@ -212,8 +242,82 @@ def resource(jobs: Any, job_id: str, name: str) -> MediaResource:
                 ExitCode.STORAGE,
             )
         raise ValueError("Package unavailable")
-    return MediaResource(
+    return state
+
+
+@dataclass(frozen=True, slots=True)
+class PackageResource(MediaResource):
+    download_name: str
+
+
+def resource(jobs: Any, job_id: str, name: str) -> PackageResource:
+    if name not in DOWNLOADS:
+        raise ValueError("Unknown package file")
+    package = _completed(jobs, job_id)["package"]
+    return PackageResource(
         jobs.safe(jobs.directory(job_id) / "result" / name),
-        state["package"]["artifacts"][name]["sha256"],
+        package["artifacts"][name]["sha256"],
         DOWNLOADS[name],
+        package["downloadName"] if name == "package.zip" else name,
     )
+
+
+def _export_path(path: Path, repository: Path) -> Path:
+    if resolve_existing(path) != path or any(
+        is_link(entry) for entry in (path, *path.parents) if entry.is_relative_to(repository)
+    ):
+        raise AppError("creation.package_export", "导出位置不能使用链接。", ExitCode.STORAGE)
+    return path
+
+
+def export(jobs: Any, project_id: str, job_id: str) -> dict[str, object]:
+    project = jobs.project(project_id)
+    state = _completed(jobs, job_id)
+    if state["projectId"] != project_id:
+        raise AppError("creation.not_found", "找不到此项目的平台包。", ExitCode.INPUT)
+    package = state["package"]
+    directory = jobs.repository / project_id / "exports"
+    if directory.parent != project:
+        raise AppError("creation.package_export", "导出项目位置已更改。", ExitCode.STORAGE)
+    filename = package["downloadName"]
+    target = directory / filename
+    digest = package["artifacts"]["package.zip"]["sha256"]
+    result = {"filename": filename, "path": str(target), "directory": str(directory)}
+    try:
+        directory = _export_path(directory, jobs.repository)
+        directory.mkdir(exist_ok=True)
+        temporary = directory / f".{uuid4().hex}.tmp"
+        _export_path(target, jobs.repository)
+        if not target.exists():
+            source = jobs.safe(Path(package["localPath"]))
+            try:
+                with temporary.open("xb") as output, source.open("rb") as original:
+                    shutil.copyfileobj(original, output, length=1024 * 1024)
+                if hash_file(temporary) != digest:
+                    raise AppError(
+                        "creation.artifact_invalid",
+                        "平台包文件 package.zip 已损坏。",
+                        ExitCode.STORAGE,
+                    )
+                _export_path(target, jobs.repository)
+                try:
+                    # Windows rename fails if the target exists. POSIX rename replaces it.
+                    if os.name == "nt":
+                        temporary.rename(target)
+                    else:
+                        os.link(temporary, target)
+                except FileExistsError:
+                    pass
+            finally:
+                _export_path(temporary, jobs.repository).unlink(missing_ok=True)
+        if not _export_path(target, jobs.repository).is_file() or hash_file(target) != digest:
+            raise AppError(
+                "creation.package_export",
+                "导出目录已有同名文件，内容与平台包不同。",
+                ExitCode.STORAGE,
+            )
+    except OSError as error:
+        raise AppError(
+            "creation.package_export", "无法写入项目的 exports 文件夹。", ExitCode.STORAGE
+        ) from error
+    return result

@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import ClassVar
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, quote, urlparse
 
 from gamingcreator.application.detail_query_draft import draft_detail_query
 from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
@@ -25,6 +25,7 @@ from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
 from gamingcreator.infrastructure.proxy_inventory import proxy_space_csv, proxy_space_document
 from gamingcreator.infrastructure.windows_ocr import WindowsOcrEngine
+from gamingcreator.ui import package_jobs
 from gamingcreator.ui.asr_words_jobs import AsrWordsJobs
 from gamingcreator.ui.benchmark_workflow import BenchmarkWorkflows
 from gamingcreator.ui.creation_budget_scope import resolve_budget_key
@@ -535,7 +536,12 @@ class InspectionHandler(BaseHTTPRequestHandler):
             self._headers(206 if partial else 200, length, resource.content_type)
             self.send_header("Accept-Ranges", "bytes")
             if download:
-                self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+                disposition = f'attachment; filename="{filename}"'
+                if isinstance(resource, package_jobs.PackageResource) and not filename.isascii():
+                    disposition = (
+                        f"attachment; filename=\"package.zip\"; filename*=UTF-8''{quote(filename)}"
+                    )
+                self.send_header("Content-Disposition", disposition)
             if partial:
                 self.send_header("Content-Range", f"bytes {offset}-{offset + length - 1}/{size}")
             self.end_headers()
@@ -604,6 +610,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/publication-shot-recommendations",
                 "/api/creation/publication-feedback",
                 "/api/creation/packages",
+                "/api/creation/package-export",
                 "/api/creation/package-batches",
                 "/api/creation/narrations",
                 "/api/creation/narration-cancel",
@@ -846,6 +853,18 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 if urlparse(self.path).query:
                     raise ValueError("Unexpected batch query")
                 self._json(202, self.creation_jobs.package_batches.submit(value))
+                return
+            if path == "/api/creation/package-export":
+                if (
+                    urlparse(self.path).query
+                    or type(value) is not dict
+                    or set(value) != {"projectId", "jobId"}
+                    or any(type(field) is not str or not field for field in value.values())
+                ):
+                    raise ValueError("Expected project and package job IDs.")
+                self._json(
+                    200, package_jobs.export(self.creation_jobs, value["projectId"], value["jobId"])
+                )
                 return
             if path.startswith("/api/creation/package-batches/"):
                 if (
@@ -1456,10 +1475,13 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     job_id, name = tail.split("/package-files/", 1)
                     if query not in ({}, {"download": "1"}):
                         raise ValueError("Invalid package query")
+                    resource = self.creation_jobs.package_file(job_id, name)
                     self._serve_media(
-                        self.creation_jobs.package_file(job_id, name),
+                        resource,
                         query.get("download") == "1" or name not in ("video.mp4", "cover.png"),
-                        name,
+                        resource.download_name
+                        if isinstance(resource, package_jobs.PackageResource)
+                        else name,
                     )
                 elif tail.endswith("/package"):
                     if query:

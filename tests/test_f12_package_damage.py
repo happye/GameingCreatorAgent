@@ -9,7 +9,10 @@ from __future__ import annotations
 
 import json
 import threading
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from urllib.error import HTTPError
+from urllib.parse import unquote
 from urllib.request import Request, urlopen
 from uuid import uuid4
 
@@ -25,7 +28,9 @@ from gamingcreator.ui.server import create_server
 
 def _build_package(rendered, monkeypatch):
     jobs, render = rendered
-    pub_id = jobs.submit("publication", payload(jobs, render))["jobId"]
+    publication = payload(jobs, render)
+    publication["title"] = 'CON.漫画群星: "玩法" / 本机'
+    pub_id = jobs.submit("publication", publication)["jobId"]
     assert finish(jobs, pub_id)["status"] == "completed"
     snap = jobs.publication(pub_id)
     profile = package_jobs.profiles()["profiles"][0]
@@ -68,9 +73,9 @@ def _assert_records_kept(jobs: CreationJobs, job: str, before: dict[str, bytes])
     assert "resultReceiptSha256" in status
 
 
-def _http_error(base: str, path: str) -> tuple[int, dict]:
+def _http_error(base: str, path: str, **kwargs) -> tuple[int, dict]:
     try:
-        with urlopen(Request(base + path), timeout=30) as response:
+        with urlopen(Request(base + path, **kwargs), timeout=30) as response:
             raise AssertionError(f"应当拒绝下载或读取，却返回了 {response.status}")
     except HTTPError as error:
         body = error.read()
@@ -111,6 +116,18 @@ def test_missing_or_damaged_package_file_is_not_a_successful_download(rendered, 
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     base = f"http://127.0.0.1:{server.server_port}"
+    export_route = "/api/creation/package-export"
+    project_id = state["projectId"]
+    headers = {"Content-Type": "application/json"}
+    export_body = {"projectId": project_id, "jobId": job}
+
+    def export() -> dict:
+        request = Request(
+            base + export_route, data=json.dumps(export_body).encode(), headers=headers
+        )
+        with urlopen(request, timeout=30) as response:
+            return json.load(response)
+
     try:
         for path in (
             f"/api/creation/jobs/{job}/package",
@@ -133,6 +150,47 @@ def test_missing_or_damaged_package_file_is_not_a_successful_download(rendered, 
         assert jobs.package_file(job, "package.zip").path.is_file()
         _assert_records_kept(jobs, job, before)
 
+        package = restored["package"]
+        source = Path(package["localPath"])
+        name = package["downloadName"]
+        assert source == jobs.package_file(job, "package.zip").path
+        assert name.startswith("_CON.漫画群星 玩法 本机") and name.endswith(f" - {job[:12]}.zip")
+        with urlopen(base + package["artifacts"]["package.zip"]["url"], timeout=30) as response:
+            disposition = response.headers["Content-Disposition"]
+            assert unquote(disposition.split("filename*=UTF-8''", 1)[1]) == name
+            assert response.read() == source.read_bytes()
+
+        unrelated = jobs.repository / "artifacts/unrelated"
+        unrelated.mkdir()
+        (unrelated / "timeline.sqlite3").touch()
+        wrong_project_body = {**export_body, "projectId": "artifacts/unrelated"}
+        assert (
+            _http_error(
+                base, export_route, data=json.dumps(wrong_project_body).encode(), headers=headers
+            )[0]
+            == 404
+        )
+        assert not (unrelated / "exports").exists()
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first, second = pool.map(lambda _: export(), range(2))
+        target = jobs.project(project_id) / "exports" / name
+        assert (
+            first
+            == second
+            == {"filename": name, "path": str(target), "directory": str(target.parent)}
+        )
+        assert list(target.parent.iterdir()) == [target]
+        assert target.read_bytes() == source.read_bytes()
+        target.write_bytes(b"unrelated content")
+        assert (
+            _http_error(base, export_route, data=json.dumps(export_body).encode(), headers=headers)[
+                0
+            ]
+            == 409
+        )
+        assert target.read_bytes() == b"unrelated content"
+        _assert_records_kept(jobs, job, before)
+
         title.write_text("tampered", encoding="utf-8")
         damaged = jobs.get(job)
         assert damaged["status"] == "failed"
@@ -153,6 +211,10 @@ def test_missing_or_damaged_package_file_is_not_a_successful_download(rendered, 
         assert "损坏" in body["message"]
         status, body = _http_error(base, f"/api/creation/jobs/{job}/package")
         assert status == 409 and "title.txt" in body["message"]
+        status, body = _http_error(
+            base, export_route, data=json.dumps(export_body).encode(), headers=headers
+        )
+        assert status == 409 and body["code"] == "creation.artifact_invalid"
         _assert_records_kept(jobs, job, before)
     finally:
         server.shutdown()

@@ -295,6 +295,29 @@ function CoverField({savedSrc, preview, thumbs, coverFrame, fps, onPick}) {
         <p class="hint">好封面：人物或技能特写、画面清晰不糊、没有转场残影；横版 16:9，留出放标题的位置。</p></div>`;
 }
 
+function LocalPackageFiles({project, pkg}) {
+    const [saved, setSaved] = useState(null), [busy, setBusy] = useState(false), [message, setMessage] = useState("");
+    const path = saved?.path || pkg.localPath;
+    const save = async () => {
+        setBusy(true); setMessage("");
+        try {
+            setSaved(await client.api("/api/creation/package-export", {}, {body: {projectId: project, jobId: pkg.jobId}}));
+            setMessage("已保存到本机导出目录。");
+        } catch (error) { setMessage(error.message); }
+        finally { setBusy(false); }
+    };
+    return html`<div class="field">
+        ${path && html`<p class="hint" style=${{overflowWrap: "anywhere"}}>${saved ? "导出文件" : "本机生成文件"} ${path}</p>`}
+        <div class="actions-row">
+            <button type="button" class="btn" disabled=${busy} onClick=${save}>${busy ? "正在保存…" : "保存到本机导出目录"}</button>
+            ${path && html`<button type="button" class="btn ghost" onClick=${() => void client.copyText(
+                saved?.directory || path, () => setMessage("已复制本机路径。"), () => setMessage(saved?.directory || path)
+            )}>${saved ? "复制导出目录" : "复制文件路径"}</button>`}
+        </div>
+        ${message && html`<p class="hint" role="status">${message}</p>`}
+    </div>`;
+}
+
 export function PublishWorkspace({project, workId, works, open, leave, onWorksChanged, layout, filterControls = null, onDirtyChange = () => {}, onOpenReference = () => {}}) {
     const renders = works.filter((j) => j.kind === "render" && j.status === "completed");
     const savedPublications = workId ? works.filter(job => job.kind === "publication" && job.status === "completed") : [];
@@ -667,7 +690,8 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
                         <p class="v">${PLATFORMS[pkg.profile?.Platform] || ""}：${pkg.generationStatus === "completed" ? "已生成" : "未完成"}；本地检查${STATUS[pkg.localChecks] || "未知"}${pkg.publicationEligibility === "blocked" ? "；发布受阻（含仅供测试的音乐等）" : ""}${pkg.watermark ? "；含水印" : ""}。平台官方规则、素材权利尚未核实。</p>
                         <p class="hint">${Object.entries(pkg.validation?.checks || {}).map(([k, s]) => `${CHECKS[k] || k}：${STATUS[s] || "未知"}`).join("　")}</p>
                         <${CampaignChecks} rules=${pub.campaignRules} media=${pkg.validation?.facts} tags=${pub.tags} platforms=${[pkg.profile?.Platform]} platformNames=${PLATFORMS} title="平台包活动要求" />
-                        <div class="actions-row"><a class="btn" href=${`${jobPath(pkg.jobId)}/package-files/package.zip?download=1`} download="package.zip">下载平台包（zip）</a>
+                        <${LocalPackageFiles} key=${pkg.jobId} project=${project} pkg=${pkg} />
+                        <div class="actions-row"><a class="btn ghost" href=${`${jobPath(pkg.jobId)}/package-files/package.zip?download=1`} download=${pkg.downloadName || "package.zip"}>下载平台包（zip）</a>
                             <a class="btn ghost" href=${`${jobPath(pkg.jobId)}/package-files/video.mp4?download=1`} download="video.mp4">只下载视频</a>
                             <button type="button" class="btn ghost" onClick=${() => {
                                 const link = client.studioJobLink(project, pkg.jobId);
