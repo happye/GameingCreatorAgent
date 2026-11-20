@@ -549,6 +549,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/creation/narrations",
                 "/api/creation/narration-cancel",
                 "/api/creation/subtitle-preview",
+                "/api/creation/draft-restore-preview",
                 "/api/creation/timeline-commands",
                 "/api/creation/beat-snap",
                 "/api/creation/brief-sentence",
@@ -735,6 +736,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 except CommandError as error:
                     raise AppError("creation.command", str(error), ExitCode.INPUT) from error
                 self._json(200, preview)
+                return
+            if path == "/api/creation/draft-restore-preview":
+                from gamingcreator.ui.creation_draft_restore import preview as restore_preview
+
+                self._json(200, restore_preview(self.creation_jobs, value))
                 return
             if path == "/api/creation/subtitle-preview":
                 from gamingcreator.ui.subtitle_preview import preview as subtitle_preview

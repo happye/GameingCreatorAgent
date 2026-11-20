@@ -17,6 +17,7 @@ def mount(studio, work="work-a"):
         const {h, render} = await import('/assets/vendor/preact.module.js');
         const {useClipEditor} = await import('/assets/studio/clipedit.js');
         window.draftModule = await import('/assets/studio/clip_drafts.js');
+        if (window.draftHost) render(null, window.draftHost);
         window.draftHost?.remove();
         window.draftHost = document.body.appendChild(document.createElement('div'));
         function Harness() { window.ce = useClipEditor('artifacts/project', work); return h('span'); }
@@ -48,7 +49,9 @@ def test_refresh_manual_restore_five_fields_and_work_isolation(studio_plan):
     assert s.page.evaluate("draftModule.clipRows(ce.clips)") == rows
     mount(s, "work-b")
     assert s.page.evaluate("ce.drafts.payload") is None
-    assert s.posts == before
+    assert all(
+        url.endswith("/api/creation/draft-restore-preview") for url in s.posts[len(before) :]
+    )
 
 
 @pytest.mark.parametrize(
@@ -88,7 +91,7 @@ def test_unsupported_edits_freeze_snapshot_and_dirty_cancel(studio_plan):
     mount(s)
     backup(s)
     original = s.page.evaluate("ce.drafts.payload.rows")
-    s.page.evaluate("ce.ops.mix({sourceGainDb: -8})")
+    s.page.evaluate("ce.ops.overlays([{kind: 'text'}])")
     s.page.wait_for_function("() => ce.drafts.payload?.partial")
     assert s.page.evaluate("ce.drafts.payload.rows") == original
     before = s.page.evaluate(
@@ -160,7 +163,9 @@ def test_new_replacement_freezes_even_with_same_clip_coordinates(studio_plan):
     studio_plan.page.wait_for_function("() => ce.drafts.payload?.partial")
     studio_plan.page.reload()
     mount(studio_plan)
-    assert studio_plan.page.evaluate("ce.drafts.message") == "上次镜头快照；之后的修改未备份"
+    assert (
+        studio_plan.page.evaluate("ce.drafts.message") == "上次编辑快照；之后的替换或图层修改未备份"
+    )
 
 
 def test_without_work_identity_never_writes(studio_plan):
@@ -193,12 +198,12 @@ def test_restore_is_one_undo_and_explicit_discard_only_current_key(studio_plan):
     mount(studio_plan)
     backup(studio_plan)
     page = studio_plan.page
-    page.evaluate("ce.ops.mix({sourceGainDb: -9})")
+    page.evaluate("ce.ops.overlays([{kind: 'text'}])")
     page.wait_for_function("() => ce.drafts.payload?.partial")
     page.evaluate("ce.restoreDraft(() => true)")
-    page.wait_for_function("() => ce.audio.mix.sourceGainDb !== -9")
+    page.wait_for_function("() => ce.overlays.length === 0")
     page.evaluate("ce.ops.undo()")
-    page.wait_for_function("() => ce.audio.mix.sourceGainDb === -9")
+    page.wait_for_function("() => ce.overlays.length === 1")
     page.evaluate("localStorage.setItem('unrelated-draft', 'keep'); ce.drafts.discard()")
     assert page.evaluate("localStorage.getItem(ce.drafts.key)") is None
     assert page.evaluate("localStorage.getItem('unrelated-draft')") == "keep"
@@ -226,7 +231,7 @@ def test_real_work_ui_refresh_restore_then_explicit_save(studio_plan):
     page.locator(".timeline .clip").first.click()
     assert page.get_by_label("镜头编辑", exact=True).count(), page.locator("aside").inner_text()
     page.get_by_label("速度", exact=False).select_option("1/2")
-    expect(page.get_by_label("镜头快照状态")).to_contain_text("最近镜头快照")
+    expect(page.get_by_label("镜头快照状态")).to_contain_text("最近编辑快照")
     import json
 
     remembered = page.evaluate("localStorage.getItem('studio-last-job-v1')")
@@ -314,10 +319,10 @@ def test_real_saved_parent_audio_binding_survives_recovery(studio_audio):
     original_audio = page.evaluate("ce.audio")
     assert original_audio["narration"] and original_audio["mix"]["bgm"]
     backup(fixture)
-    page.evaluate("ce.ops.mix({sourceGainDb: -3})")
+    page.evaluate("ce.ops.overlays([{kind: 'text'}])")
     page.wait_for_function("() => ce.drafts.payload?.partial")
     page.evaluate("ce.restoreDraft(() => true)")
-    page.wait_for_function("() => ce.audio.mix.sourceGainDb !== -3")
+    page.wait_for_function("() => ce.overlays.length === 0 && ce.dirty")
     assert page.evaluate("ce.audio") == original_audio
 
 
@@ -343,7 +348,7 @@ def test_restore_pending_get_cannot_land_after_local_synthesis_starts(studio_pla
     page.locator(".timeline .clip").first.click()
     assert page.get_by_label("镜头编辑", exact=True).count(), page.locator("aside").inner_text()
     page.get_by_label("速度", exact=False).select_option("1/2")
-    expect(page.get_by_label("镜头快照状态")).to_contain_text("最近镜头快照")
+    expect(page.get_by_label("镜头快照状态")).to_contain_text("最近编辑快照")
     import json
 
     remembered = page.evaluate("localStorage.getItem('studio-last-job-v1')")
@@ -385,3 +390,118 @@ def test_restore_pending_get_cannot_land_after_local_synthesis_starts(studio_pla
     page.get_by_role("button", name="恢复镜头快照", exact=True).click()
     page.locator(".timeline .clip").first.click()
     expect(page.get_by_label("速度", exact=False)).to_have_value("1/2")
+
+
+def test_v1_restore_keeps_original_bytes_until_next_edit(studio_plan):
+    s = studio_plan
+    mount(s)
+    backup(s)
+    raw = s.page.evaluate("""async () => {
+        const p = structuredClone(ce.drafts.payload);
+        p.schemaVersion = draftModule.SCHEMA;
+        delete p.subtitleOverrides; delete p.audioMix; delete p.narration;
+        const raw = JSON.stringify({payload: p, sha256: await draftModule.payloadHash(p)});
+        localStorage.setItem(ce.drafts.key, raw); return raw;
+    }""")
+    s.page.reload()
+    mount(s)
+    before = list(s.posts)
+    assert s.page.evaluate("localStorage.getItem(ce.drafts.key)") == raw
+    s.page.evaluate("ce.restoreDraft(() => true)")
+    s.page.wait_for_function("() => ce.dirty")
+    s.page.wait_for_timeout(350)
+    assert s.page.evaluate("localStorage.getItem(ce.drafts.key)") == raw
+    assert s.posts == before
+    s.page.evaluate("ce.ops.caption(ce.clips[0].clipId, '')")
+    s.page.wait_for_function("() => ce.drafts.payload?.schemaVersion === draftModule.FULL_SCHEMA")
+
+
+def test_v2_caption_envelope_and_delete_restore_atomically(studio_plan):
+    s = studio_plan
+    mount(s)
+    s.page.evaluate("""() => {
+        ce.ops.remove(ce.clips.at(-1).clipId);
+        ce.ops.caption(ce.clips[0].clipId, '');
+        ce.ops.mix({sourceGainDb: -12});
+        ce.ops.envelope([{frame: 0, gainDb: -3}, {frame: 10, gainDb: -20}]);
+    }""")
+    s.page.wait_for_function("() => ce.drafts.payload?.audioMix?.sourceEnvelope?.length === 2")
+    expected = s.page.evaluate("draftModule.fullFields(ce)")
+    clips = s.page.evaluate("draftModule.clipRows(ce.clips)")
+    s.page.reload()
+    mount(s)
+    s.page.evaluate("ce.restoreDraft(() => true)")
+    s.page.wait_for_function("() => ce.dirty")
+    assert s.page.evaluate("draftModule.fullFields(ce)") == expected
+    assert s.page.evaluate("draftModule.clipRows(ce.clips)") == clips
+    s.page.evaluate("ce.ops.undo()")
+    s.page.wait_for_function("() => !ce.dirty")
+
+
+@pytest.mark.parametrize("action", ["edit", "discard", "scope"])
+def test_slow_projection_cannot_land_after_new_intent(studio_plan, action):
+    s = studio_plan
+    mount(s)
+    backup(s)
+    s.page.reload()
+    mount(s)
+    pending = []
+    s.page.route("**/api/creation/draft-restore-preview", lambda route: pending.append(route))
+    s.page.evaluate("void ce.restoreDraft(() => true)")
+    s.page.wait_for_timeout(150)
+    assert pending
+    if action == "edit":
+        s.page.evaluate("ce.ops.caption(ce.clips[0].clipId, 'new edit')")
+    elif action == "discard":
+        s.page.evaluate("ce.drafts.discard()")
+    else:
+        mount(s, "work-b")
+    before = s.page.evaluate(
+        "JSON.stringify({clips: ce.clips, audio: ce.audio, captions: ce.subtitleOverrides, dirty: ce.dirty})"
+    )
+    pending[0].fulfill(
+        json={
+            "subtitleOverrides": [],
+            "audioMix": {"bgm": None, "sourceGainDb": -40, "ducking": "off"},
+            "narration": None,
+            "narrationAsset": None,
+        }
+    )
+    s.page.wait_for_timeout(100)
+    assert (
+        s.page.evaluate(
+            "JSON.stringify({clips: ce.clips, audio: ce.audio, captions: ce.subtitleOverrides, dirty: ce.dirty})"
+        )
+        == before
+    )
+
+
+def test_v2_local_narration_music_restores_verified_asset_without_generating(studio_plan):
+    from concurrent.futures import ThreadPoolExecutor
+
+    from test_narration_jobs import choice, done
+
+    s = studio_plan
+    with ThreadPoolExecutor(max_workers=1) as worker:
+        voice = worker.submit(done, s.service, "旁白").result()
+    mount(s)
+    selection = choice(voice, start=2, gain=-18)
+    s.page.evaluate(
+        """async ({selection, asset}) => {
+        const tracks = await (await fetch('/api/creation/music')).json();
+        const track = tracks.tracks[0];
+        ce.ops.mix({bgm: {trackId: track.trackId, trackReceiptSha256: track.trackReceiptSha256, gainDb: -20}, ducking: 'source-v1'});
+        ce.ops.narration(selection, asset);
+    }""",
+        {"selection": selection, "asset": voice["narrationAsset"]},
+    )
+    s.page.wait_for_function("() => ce.drafts.payload?.narration?.startFrame === 2")
+    expected = s.page.evaluate("draftModule.fullFields(ce)")
+    original = {p: p.read_bytes() for p in s.service.repository.rglob("*") if p.is_file()}
+    s.page.reload()
+    mount(s)
+    s.page.evaluate("ce.restoreDraft(() => true)")
+    s.page.wait_for_function("() => ce.dirty")
+    assert s.page.evaluate("draftModule.fullFields(ce)") == expected
+    assert s.page.evaluate("ce.audio.asset.assetJobId") == voice["jobId"]
+    assert {p: p.read_bytes() for p in s.service.repository.rglob("*") if p.is_file()} == original

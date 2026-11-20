@@ -1,6 +1,7 @@
-// Browser-local recent clip snapshot; never a complete project or operation replay.
+// Browser-local supported editing snapshot; assets are resolved only on explicit restore.
 import {useEffect, useLayoutEffect, useRef, useState} from "../vendor/hooks.module.js";
 export const SCHEMA = "studio-clip-draft-v1";
+export const FULL_SCHEMA = "studio-clip-draft-v2";
 export const draftKey = (project, work, job, plan) => work ? `${SCHEMA}:${encodeURIComponent(JSON.stringify([project, work, job, plan]))}` : null;
 export async function payloadHash(payload) {
     const bytes = new TextEncoder().encode(JSON.stringify(payload));
@@ -10,7 +11,9 @@ export const clipRows = clips => clips.map(c => ({clipId: c.clipId, startUs: c.s
     speed: {numerator: c.speed.numerator, denominator: c.speed.denominator},
     transitionIn: {type: c.transitionIn.type, frames: c.transitionIn.frames}}));
 export function rebuild(payload, editor, speeds, frames, problem) {
-    if (payload.schemaVersion !== SCHEMA || payload.expectedParentReceiptSha256 !== editor.expectedParentReceiptSha256 || typeof payload.partial !== "boolean") throw Error("镜头快照与父版本不一致");
+    if (![SCHEMA, FULL_SCHEMA].includes(payload.schemaVersion) || payload.expectedParentReceiptSha256 !== editor.expectedParentReceiptSha256 || typeof payload.partial !== "boolean") throw Error("镜头快照与父版本不一致");
+    if (payload.schemaVersion === FULL_SCHEMA && !same(Object.keys(payload).sort(),
+        ["schemaVersion", "expectedParentReceiptSha256", "rows", "partial", "subtitleOverrides", "audioMix", "narration"].sort())) throw Error("编辑快照字段无效");
     if (!Array.isArray(payload.rows) || !payload.rows.length) throw Error("镜头快照为空");
     const byId = new Map(editor.clips.map(c => [c.clipId, c])), seen = new Set();
     const clips = payload.rows.map(row => {
@@ -39,14 +42,25 @@ export async function readSnapshot(storage, key, editor, checks) {
     return payload;
 }
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-export function supported(state, parentFields, keptCaptions) {
-    return !Object.keys(state.replacements).length && same(state.audio, parentFields.audio)
-        && same(state.overlays, parentFields.overlays) && same(state.overlayAssets, parentFields.overlayAssets)
-        && same(state.subtitleOverrides, keptCaptions(state.editor.subtitleOverrides || [], state.clips));
+// Persist selections, never the public playback asset or a caller-supplied path.
+export function fullFields(state) {
+    const mix = state.audio.mix, bgm = mix.bgm, n = state.audio.narration;
+    return {
+        subtitleOverrides: state.subtitleOverrides.map(({clipId, text}) => ({clipId, text})),
+        audioMix: {bgm: bgm ? {trackId: bgm.trackId, trackReceiptSha256: bgm.trackReceiptSha256, gainDb: bgm.gainDb} : null,
+            sourceGainDb: mix.sourceGainDb, ducking: mix.ducking,
+            ...(mix.sourceEnvelope ? {sourceEnvelope: mix.sourceEnvelope.map(({frame, gainDb}) => ({frame, gainDb}))} : {})},
+        narration: n ? {assetJobId: n.assetJobId, receiptSha256: n.receiptSha256, startFrame: n.startFrame, gainDb: n.gainDb, ducking: n.ducking} : null,
+    };
+}
+export function supported(state, parentFields) {
+    return !Object.keys(state.replacements).length
+        && same(state.overlays, parentFields.overlays) && same(state.overlayAssets, parentFields.overlayAssets);
 }
 export function useClipDrafts(state, project, workId, parentFields, keptCaptions, checks) {
     const key = state.base && draftKey(project, workId, state.base.jobId, state.base.planId);
     const [view, setView] = useState({key: null, payload: null, message: "", ready: false});
+    const restored = useRef(null);
     const epoch = useRef(0), latest = useRef(null), previous = useRef({key: null, dirty: false}); latest.current = key;
     useLayoutEffect(() => {
         const mine = ++epoch.current;
@@ -70,6 +84,7 @@ export function useClipDrafts(state, project, workId, parentFields, keptCaptions
             catch { setView(v => ({...v, message: "无法清除镜头快照；保留原存储"})); }
             return;
         }
+        if (restored.current === state) return;
         if (state.status !== "ready" || !key || !view.ready || view.key !== key || !state.dirty) return;
         const mine = ++epoch.current;
         const timer = setTimeout(async () => {
@@ -79,7 +94,7 @@ export function useClipDrafts(state, project, workId, parentFields, keptCaptions
                     if (mine === epoch.current) setView(v => ({...v, message: "当前修改无法备份为镜头快照"}));
                     return;
                 }
-                const payload = partial ? {...view.payload, partial: true} : {schemaVersion: SCHEMA,
+                const payload = partial ? {...view.payload, partial: true} : {schemaVersion: FULL_SCHEMA, ...fullFields(state),
                     expectedParentReceiptSha256: state.editor.expectedParentReceiptSha256, rows: clipRows(state.clips), partial: false};
                 rebuild(payload, state.editor, ...checks);
                 const sha256 = await payloadHash(payload);
@@ -99,6 +114,7 @@ export function useClipDrafts(state, project, workId, parentFields, keptCaptions
         catch { setView(v => ({...v, message: "无法清除镜头快照；保留原存储"})); return false; }
     };
     return {...view, payload: view.key === key ? view.payload : null, discard,
+        markRestored: next => { restored.current = next; },
         invalidate: () => { epoch.current++; },
-        message: view.key === key ? view.message || (view.payload?.partial ? "上次镜头快照；之后的修改未备份" : view.payload ? "有最近镜头快照，可手动恢复（仅镜头）" : "") : ""};
+        message: view.key === key ? view.message || (view.payload?.partial ? "上次编辑快照；之后的替换或图层修改未备份" : view.payload ? "有最近编辑快照，可手动恢复" : "") : ""};
 }
