@@ -113,7 +113,54 @@ def adopt(service: Any, prepared_hash: str) -> dict[str, Any]:
 
 
 def save_plan(jobs: Any, directory: Any, request: dict[str, Any]) -> None:
-    report = verified_plan(jobs, request)
+    report = (
+        verified_completion(jobs, request)
+        if "localCompletion" in request
+        else verified_plan(jobs, request)
+    )
     write_creation(
         directory / "result", {"plans.json": report}, (jobs.project(request["projectId"]),)
+    )
+
+
+def completion_request(jobs: Any, job_id: str, plan_id: str) -> dict[str, Any]:
+    directory = jobs.directory(job_id)
+    state = jobs.read(directory / "status.json")
+    if state["kind"] != "plan" or state["status"] != "completed":
+        raise ValueError("仅支持已保存的 AI 规划任务。")
+    jobs.verify(directory, state)
+    original = jobs.read(directory / "request.json")["request"]
+    if "reasoningPreparedHash" not in original or "localCompletion" in original:
+        raise ValueError("仅支持原始 AI 方案，不支持模板或递归补时。")
+    identity = {
+        "version": "plan-duration-completion-v1",
+        "parentJobId": job_id,
+        "parentPlanId": plan_id,
+        "parentReceiptSha256": hash_file(directory / "result/receipt.json"),
+    }
+    request = {**original, "localCompletion": identity}
+    request["requestId"] = sha256(canonical(identity).encode()).hexdigest()[:32]
+    return request
+
+
+def verified_completion(jobs: Any, request: dict[str, Any]) -> dict[str, Any]:
+    from gamingcreator.application.plan_duration_completion import complete_duration
+
+    identity = request["localCompletion"]
+    expected = completion_request(jobs, identity["parentJobId"], identity["parentPlanId"])
+    if request != expected:
+        raise ValueError("Local completion parent identity changed.")
+    directory = jobs.directory(identity["parentJobId"])
+    parent_request = jobs.read(directory / "request.json")["request"]
+    report = verified_plan(jobs, parent_request)
+    if report != jobs.plan_report(directory):
+        raise ValueError("Saved AI plan differs from verified proposal.")
+    service = service_for(jobs)
+    snapshot = service._current(service._prepared(request["reasoningPreparedHash"]))
+    return complete_duration(
+        snapshot,
+        report,
+        identity["parentPlanId"],
+        identity["parentJobId"],
+        identity["parentReceiptSha256"],
     )

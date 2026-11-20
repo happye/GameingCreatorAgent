@@ -41,6 +41,7 @@ def reasoning_post(service: CreationReasoningService, value: Any) -> dict[str, A
             return service.prepare_brief(value["text"], games, value["projectId"], value["workId"])
         return service.prepare_brief(value["text"], games)
     fields = {
+        "complete_plan_duration": {"action", "jobId", "planId"},
         "prepare_plan": {"action", "jobId"},
         "prepare_copy": {"action", "jobId"},
         "prepare_narration": {"action", "jobId", "planId"},
@@ -65,8 +66,12 @@ def reasoning_post(service: CreationReasoningService, value: Any) -> dict[str, A
     if action in ("prepare_plan", "prepare_copy"):
         prepare = {"prepare_plan": service.prepare_plan, "prepare_copy": service.prepare_copy}
         return prepare[action](value["jobId"])
-    if action == "prepare_narration":
-        return service.prepare_narration(value["jobId"], value["planId"])
+    if action in ("complete_plan_duration", "prepare_narration"):
+        method = {
+            "complete_plan_duration": service.complete_plan_duration,
+            "prepare_narration": service.prepare_narration,
+        }[action]
+        return method(value["jobId"], value["planId"])
     if action == "adopt_plan":
         return service.adopt_plan(value["preparedHash"])
     if action in ("prepare", "prepare_replacement", "prepare_insertion"):
