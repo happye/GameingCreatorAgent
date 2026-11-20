@@ -1212,12 +1212,14 @@ window.PROGRESS_DATA = {
    "remaining": null,
    "evidence": [
     "2026-11-01: live-cut mode template (ordered ~1.5s segments, best-scored clip near each slot) real instance -> 445-frame MP4 -> Bilibili package passing configured checks",
-    "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md"
+    "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md",
+    "2026-11-20: live-cut keeps chronological event runs, skips evidenced idle, and prioritizes saved utterances. Verified real Atom footage, original audio and a local Bilibili package. See sprint-live-cut-continuity."
    ],
-   "done": "实况精剪模板约1.5秒/段按顺序紧凑取材，真实出片＋B站包已走通；已解冻",
-   "todo": "剪辑节奏与成片质量未经人评",
-   "updated": "2026-11-01",
+   "done": "按原片顺序保留连续事件，跳过有依据的低信息画面，按已存转写保护对话。实测《代号 Atom》27 秒原声成片与 B 站包",
+   "todo": "带转写的真实对话、主播情绪和剪辑节奏待人评",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-live-cut-continuity",
     "sprint-content-modes"
    ]
   },
@@ -1781,6 +1783,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-commentary-evidence"
     },
     {
+     "id": "P047-live-continuity",
+     "name": "实况精剪保留连续事件与原声",
+     "status": "done",
+     "sprint": "sprint-live-cut-continuity"
+    },
+    {
      "id": "P018",
      "name": "游戏知识层（本机）",
      "status": "done",
@@ -2288,8 +2296,8 @@ window.PROGRESS_DATA = {
   "P042 已接通发布成效登记、同平台对比与下一份方案参考，用隔离示例和实拍素材包验证。真实平台数据待录入。见[交付记录](docs/exec-plans/sprint-outcome-structure-reference.md)。",
   "漫画群星 60 秒[主题旁白](docs/exec-plans/sprint-showcase-narration.md)已补齐[句级字幕](docs/exec-plans/sprint-narration-captions.md)，试听、移动音轨、SRT 和 B 站烧入版实测通过。",
   "P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。",
-  "P045 已用真实漫画群星录像验证步骤引用、删改换序后重编号、本机旁白及 B 站包。见[攻略步骤](docs/exec-plans/sprint-guide-evidence.md)。旧 verify-20261117-002506 已中断，原日志保留。",
-  "P046 已用漫画群星验证同镜多主题、缺口提示、本机配音 27 秒成片和 B 站包。下一步推进 P047 实况精剪的保留事件和跳过空镜策略。见[游戏解说](docs/exec-plans/sprint-commentary-evidence.md)。"
+  "[P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。",
+  "[P047 实况](docs/exec-plans/sprint-live-cut-continuity.md)用《代号 Atom》验证连续取材、原声和出包。下一步推进 P048 高光。"
  ],
  "sprints": [
   {
@@ -2544,7 +2552,7 @@ window.PROGRESS_DATA = {
    "ids": [
     "P046"
    ],
-   "date": "",
+   "date": "2026-11-20",
    "bytes": 1768
   },
   {
@@ -2768,6 +2776,15 @@ window.PROGRESS_DATA = {
    ],
    "date": "2026-11-17",
    "bytes": 4318
+  },
+  {
+   "file": "sprint-live-cut-continuity",
+   "title": "实况精剪保留连续事件与原声",
+   "ids": [
+    "P047"
+   ],
+   "date": "",
+   "bytes": 1708
   },
   {
    "file": "sprint-local-narration",

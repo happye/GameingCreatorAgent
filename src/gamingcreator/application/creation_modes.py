@@ -214,15 +214,6 @@ def mode_structure(
         )
     if brief.content_type == "commentary":
         return _commentary(brief, eligible, score, target_frames)
-    if brief.content_type == "live_cut":
-        picked = sample_clips(eligible, _cap(brief), score)
-        return ModeStructure(
-            "live-cut",
-            f"实况精剪模板：保持录像先后顺序，紧凑取{len(picked)}段（约1.5秒/段），每段取附近评分最高的片段",
-            tuple(picked),
-            tuple(f"实况{i + 1}" for i in range(len(picked))),
-            tuple(Fraction(1) for _ in picked),
-        )
     if brief.content_type == "highlight":
         # Best-scored clips, shown in recording order, with the single best saved for last.
         best = sorted(eligible, key=lambda clip: (-score(clip), eligible.index(clip)))[

@@ -414,10 +414,11 @@
    ]
   },
   "P047": {
-   "done": "实况精剪模板约1.5秒/段按顺序紧凑取材，真实出片＋B站包已走通；已解冻",
-   "todo": "剪辑节奏与成片质量未经人评",
-   "updated": "2026-11-01",
+   "done": "按原片顺序保留连续事件，跳过有依据的低信息画面，按已存转写保护对话。实测《代号 Atom》27 秒原声成片与 B 站包",
+   "todo": "带转写的真实对话、主播情绪和剪辑节奏待人评",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-live-cut-continuity",
     "sprint-content-modes"
    ]
   },
@@ -848,6 +849,12 @@
      "name": "游戏解说画面引用与发布章节",
      "status": "done",
      "sprint": "sprint-commentary-evidence"
+    },
+    {
+     "id": "P047-live-continuity",
+     "name": "实况精剪保留连续事件与原声",
+     "status": "done",
+     "sprint": "sprint-live-cut-continuity"
     },
     {
      "id": "P018",

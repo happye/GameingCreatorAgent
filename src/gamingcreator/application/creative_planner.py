@@ -2,7 +2,7 @@
 
 import hashlib
 import json
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from fractions import Fraction
 from typing import Any
@@ -19,12 +19,13 @@ from gamingcreator.application.creation_modes import (
     mode_structure,
     sample_clips,
 )
+from gamingcreator.application.live_cut import live_cut
 from gamingcreator.application.material_scoring import advisories, score_materials, scoring_legend
 from gamingcreator.application.showcase_topics import showcase_coverage, visual_topic_count
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.creation import CreativeBrief
 from gamingcreator.domain.media import MediaAsset
-from gamingcreator.domain.models import SemanticEvent
+from gamingcreator.domain.models import SemanticEvent, TranscriptSegment
 from gamingcreator.domain.time import SourceRange
 
 # Generic structures keep shots at two seconds or longer instead of slicing every event.
@@ -467,6 +468,16 @@ def _without_overlaps(clips: list[CreationClip]) -> list[CreationClip]:
     return [kept[i] for i in sorted(kept)]
 
 
+def _material_gaps(segment_count: int, is_live: bool) -> list[str]:
+    if is_live:
+        return (
+            []
+            if segment_count
+            else ["目标时长内没有可连续保留的实况片段，请预览其他方案或调整时长。"]
+        )
+    return ["不足三个不同源区间，不能形成完整的三段结构"] if segment_count < 3 else []
+
+
 def plan_creation(
     brief: CreativeBrief,
     clips: tuple[CreationClip, ...],
@@ -474,6 +485,8 @@ def plan_creation(
     preferences: dict[str, int] | None = None,
     edit_kinds: dict[str, int] | None = None,
     creator_feedback: CreatorStructureChoice | None = None,
+    *,
+    transcripts: Mapping[str, tuple[TranscriptSegment, ...]] | None = None,
 ) -> dict[str, object]:
     """Template plans; ``preferences`` (finished videos per plan structure on this machine)
     only reorders the generic structures. An explicit creator choice can recommend any ready
@@ -517,8 +530,18 @@ def plan_creation(
     trim_applied = bool(suggestion and suggestion["applied"])
     target_frames = brief.target_duration * fps
     mode = mode_structure(brief, eligible, total, target_frames=target_frames)
+    live = (
+        live_cut(brief, eligible, transcripts or {}, fps, total)
+        if brief.content_type == "live_cut" and eligible
+        else None
+    )
     structures = generic
-    if mode is not None:
+    if live is not None:
+        structures = [
+            ("live-cut", "实况精剪：优先保留连续事件与原声，略去有明确依据的空段", [], None, None),
+            *generic,
+        ]
+    elif mode is not None:
         # The content mode's own template is recommended first; generic orders stay available.
         structures = [
             (mode.identity, mode.description, list(mode.ordered), mode.roles, mode.weights),
@@ -526,16 +549,20 @@ def plan_creation(
         ]
     plans: list[dict[str, object]] = []
     for identity, description, ordered, roles, weights in structures:
-        shots, roles, budgets = _allocate_structure(
-            ordered,
-            eligible,
-            roles,
-            weights,
-            fps,
-            target_frames,
-            trim_applied=trim_applied,
-            fill_duration=identity == "showcase" and bool(brief.mandatory_topics),
-        )
+        live_plan = live if identity == "live-cut" else None
+        if live_plan is not None:
+            shots, roles, budgets = live_plan.shots, live_plan.roles, live_plan.budgets
+        else:
+            shots, roles, budgets = _allocate_structure(
+                ordered,
+                eligible,
+                roles,
+                weights,
+                fps,
+                target_frames,
+                trim_applied=trim_applied,
+                fill_duration=identity == "showcase" and bool(brief.mandatory_topics),
+            )
         segments: list[dict[str, object]] = []
         segment_shots: list[int] = []
         used_intervals: set[tuple[str, int, int]] = set()
@@ -601,9 +628,7 @@ def plan_creation(
         topic_notes, topic_fields = _plan_topic_details(
             brief, identity, eligible, segments, step_seeds=step_seeds
         )
-        gaps = []
-        if len(segments) < 3:
-            gaps.append("不足三个不同源区间，不能形成完整的三段结构")
+        gaps = _material_gaps(len(segments), live_plan is not None)
         plans.append(
             {
                 "id": identity,
@@ -615,7 +640,13 @@ def plan_creation(
                 **topic_fields,
                 "advisories": [
                     *topic_notes,
-                    *([TRIM_TIP] if trim_applied else []),
+                    *(
+                        live_plan.notes
+                        if live_plan is not None
+                        else [TRIM_TIP]
+                        if trim_applied
+                        else []
+                    ),
                     *advisories(brief, eligible, segments, fps),
                 ],
                 "scriptStatus": "saved-descriptions-draft-human-review-required",
@@ -642,7 +673,7 @@ def plan_creation(
         "schemaVersion": "creation-plan-v1",
         "planner": "offline-template-v1",
         "understandingVerified": False,
-        **({"modeHonesty": MODE_HONESTY_SHORT} if mode is not None else {}),
+        **({"modeHonesty": MODE_HONESTY_SHORT} if mode is not None or live is not None else {}),
         "scoring": scoring_legend(),
         "ordering": {
             "basis": "creator-feedback"

@@ -11,7 +11,7 @@ from gamingcreator.application.narration_script import build_narration_script
 from gamingcreator.application.rendering import validate_render_plan
 from gamingcreator.domain.creation import CreativeBrief
 from gamingcreator.domain.media import MediaAsset, MediaStream
-from gamingcreator.domain.models import SemanticEvent
+from gamingcreator.domain.models import SemanticEvent, TranscriptSegment
 from gamingcreator.domain.time import SourceRange
 
 ASSET = MediaAsset(
@@ -295,9 +295,11 @@ def test_remaining_modes_are_recommended_with_their_own_structures():
     roles = [s["role"] for s in commentary["segments"]]
     assert roles[0] == "开场" and roles[-1] == "结尾" and len(roles) == 5
     live = plan_creation(brief("live_cut", duration=15), clips, 30)["plans"][0]
-    assert live["id"] == "live-cut" and len(live["segments"]) == 10
-    events = [s["eventId"] for s in live["segments"]]
+    assert live["id"] == "live-cut" and live["ready"]
+    assert sum(row["outputFrames"] for row in live["segments"]) <= 450
+    events = [row["eventId"] for row in live["segments"]]
     assert events == sorted(events, key=lambda e: int(e[1:]))
+    assert live["segments"][0]["endUs"] == live["segments"][1]["startUs"]
     highlight = plan_creation(brief("highlight", duration=6), clips, 30)["plans"][0]
     assert highlight["id"] == "highlight-climax"
     assert (
@@ -310,6 +312,52 @@ def test_remaining_modes_are_recommended_with_their_own_structures():
     assert ad["segments"][0]["eventId"] == "e12" and ad["segments"][1]["eventId"] == "e3"
     assert ad["segments"][-1]["role"] == "行动号召"
     assert ad["segments"][0]["outputFrames"] > ad["segments"][1]["outputFrames"]
+
+
+def test_live_cut_keeps_contiguous_speech_and_skips_observed_idle():
+    facts = [
+        ["画面切换到加载界面"],
+        ["角色沿着红毯向前奔跑"],
+        ["角色继续沿着红毯奔跑"],
+        ["多人对战时出现伤害数字"],
+        ["等待复活"],
+        ["主播欢呼"],
+        ["黑屏"],
+        ["等待匹配"],
+    ]
+    clips = material(facts)
+    speech = TranscriptSegment("media", SourceRange(15_000_000, 22_000_000, 120_000_000), "解说")
+    req = brief("live_cut", duration=16)
+    report = plan_creation(req, clips, 30, transcripts={"run": (speech,)})
+    report["brief"] = {"targetDuration": 16}
+    live = plan(report, "live-cut")
+    assert [row["eventId"] for row in live["segments"]] == ["e1", "e3", "e4", "e5"]
+    assert all(row["outputFrames"] == 120 for row in live["segments"])
+    assert any("重复移动 1 段" in note and "等待 1 段" in note for note in live["advisories"])
+    edl = select_edit_decision(report, "live-cut")
+    timeline = SimpleNamespace(
+        run=SimpleNamespace(run_id="run", asset=ASSET), events=tuple(clip.event for clip in clips)
+    )
+    assert validate_render_plan(edl, report, (timeline,)).frames == 480
+    short = plan(
+        plan_creation(replace(req, target_duration=8), clips, 30, transcripts={"run": (speech,)}),
+        "live-cut",
+    )
+    assert [row["eventId"] for row in short["segments"]] == ["e1"]
+    assert any("整段对话" in note for note in short["advisories"])
+    framed = replace(clips[4], source_range=SourceRange(17_500_000, 20_000_000, 120_000_000))
+    with_gap = (*clips[:4], framed, *clips[5:])
+    short = plan(
+        plan_creation(
+            replace(req, target_duration=8), with_gap, 30, transcripts={"run": (speech,)}
+        ),
+        "live-cut",
+    )
+    assert [row["eventId"] for row in short["segments"]] == ["e1"]
+    long = plan(plan_creation(req, with_gap, 30, transcripts={"run": (speech,)}), "live-cut")
+    assert [row["eventId"] for row in long["segments"]] == ["e1", "e3", "e4", "e5"]
+    assert long["segments"][2]["startUs"] == 17_500_000
+    assert any("转写跨出可用取材区间" in note for note in long["advisories"])
 
 
 def test_new_mode_scripts_open_and_close_in_their_own_words():

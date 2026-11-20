@@ -45,6 +45,9 @@ async def execute_plan_creation(
             preferences,
             edit_kinds,
             creator_feedback,
+            transcripts={timeline.run.run_id: timeline.transcripts for timeline in timelines}
+            if brief.content_type == "live_cut"
+            else None,
         )
         report["brief"] = raw
         if campaign_rules is not None:
