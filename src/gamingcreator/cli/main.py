@@ -37,7 +37,7 @@ from gamingcreator.application.analysis_reuse import (
     reuse_report,
     stored_identity,
 )
-from gamingcreator.application.asr import LocalAsrSettings, ModelFile
+from gamingcreator.application.asr import LocalAsrSettings
 from gamingcreator.application.benchmark import (
     BenchmarkHit,
     BenchmarkMedia,
@@ -119,7 +119,8 @@ from gamingcreator.cli.static_observations import (
 )
 from gamingcreator.domain.creation_presentation import PresentationOptions
 from gamingcreator.domain.errors import AppError, ExitCode, invalid_config
-from gamingcreator.infrastructure.app_paths import model_directory
+from gamingcreator.infrastructure.asr_models import load_pinned_asr_settings
+from gamingcreator.infrastructure.asr_words import transcribe_project_words
 from gamingcreator.infrastructure.benchmark_preparation_files import (
     read_bounded,
     read_freeze,
@@ -352,6 +353,13 @@ def _parser() -> CliParser:
         default=list(DEFAULT_LANGUAGES),
         help="识别语言标签，只用本机已有的（默认 zh-Hans-CN en-US）",
     )
+    words = commands.add_parser(
+        "transcribe-words",
+        help="对已有任务做本机逐词识别，写出独立结果，不改旧转录",
+    )
+    words.add_argument("--project", type=Path, required=True)
+    words.add_argument("--run", required=True)
+    words.add_argument("--model", required=True, help="本机已安装的识别模型名称")
     freeze = commands.add_parser("freeze-benchmark", help="本地登记原素材并冻结验收查询，不分析")
     freeze.add_argument("--input", type=Path, required=True)
     freeze.add_argument("--output", type=Path, required=True)
@@ -1080,52 +1088,16 @@ def _require_space(project: Path) -> None:
         raise AppError("environment.disk", "项目所在磁盘没有可用空间。", ExitCode.ENVIRONMENT)
 
 
+async def _execute_transcribe_words(
+    project: Path, run_id: str, model: str, repository: Path
+) -> dict[str, object]:
+    summary = await transcribe_project_words(project, run_id, model, repository)
+    return summary.to_json()
+
+
 def _pinned_asr_settings(repository: Path) -> LocalAsrSettings:
-    repository = repository.resolve()
     try:
-        pin_raw: object = json.loads(
-            (repository / "docs/references/asr-models.json").read_text(encoding="utf-8")
-        )
-        native_raw: object = json.loads(
-            (repository / "docs/references/asr-native-toolchain.json").read_text(encoding="utf-8")
-        )
-        if not isinstance(pin_raw, dict) or not isinstance(native_raw, dict):
-            raise ValueError
-        pin = cast(dict[str, object], pin_raw)
-        native = cast(dict[str, object], native_raw)
-        file_rows, library_rows = pin["files"], native["files"]
-        version, model, revision = native["version"], pin["model"], pin["revision"]
-        if (
-            not isinstance(file_rows, list)
-            or not isinstance(library_rows, dict)
-            or not isinstance(version, str)
-            or not isinstance(model, str)
-            or not isinstance(revision, str)
-        ):
-            raise ValueError
-        model_files: list[ModelFile] = []
-        for item in file_rows:
-            if not isinstance(item, dict):
-                raise ValueError
-            row = cast(dict[str, object], item)
-            name, size, digest = row["name"], row["size"], row["sha256"]
-            if not isinstance(name, str) or type(size) is not int or not isinstance(digest, str):
-                raise ValueError
-            model_files.append(ModelFile(name, size, digest))
-        native_directory = repository / ".tools" / "native" / "msvc" / version
-        libraries: list[ModelFile] = []
-        for name, digest in cast(dict[object, object], library_rows).items():
-            if not isinstance(name, str) or not isinstance(digest, str):
-                raise ValueError
-            libraries.append(ModelFile(name, (native_directory / name).stat().st_size, digest))
-        return LocalAsrSettings(
-            model_directory(repository, "faster-whisper", "tiny", revision),
-            model,
-            revision,
-            tuple(model_files),
-            native_directory,
-            native_library_files=tuple(libraries),
-        )
+        return load_pinned_asr_settings(repository)
     except (OSError, ValueError, KeyError, TypeError):
         raise AppError(
             "environment.asr", "本地 ASR 模型清单不可用。", ExitCode.ENVIRONMENT
@@ -1835,6 +1807,10 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
             )
         )
         return None
+    if args.command == "transcribe-words":
+        return asyncio.run(
+            _execute_transcribe_words(args.project.resolve(), args.run, args.model, Path.cwd())
+        )
     if args.command == "ocr-frames":
         asyncio.run(
             execute_ocr_frames(

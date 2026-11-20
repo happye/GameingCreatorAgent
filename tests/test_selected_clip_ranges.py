@@ -73,7 +73,10 @@ def test_selected_ranges_saved_render_edited_render(tmp_path, zero):
                 segment["score"]["parts"]["platformFit"] == 1.0 for segment in plan["segments"]
             )
         report["brief"] = {"targetDuration": 6}
-        edl = select_edit_decision(report, "chronological")
+        identity = next(
+            plan["id"] for plan in report["plans"] if plan["id"] in {"chronological", "guide-steps"}
+        )
+        edl = select_edit_decision(report, identity)
         assert len(edl["segments"]) == 3
         directory = tmp_path / "plan"
         write_creation(directory, {"plans.json": report, "edit-decision.json": edl}, ())
@@ -89,9 +92,9 @@ def test_selected_ranges_saved_render_edited_render(tmp_path, zero):
         result = await renderer.render(revised, tmp_path / "revised", (source,), context, 64, 48)
         assert result["frames"] == 30
         forged = deepcopy(plans)
-        next(p for p in forged["plans"] if p["id"] == "chronological")["segments"][0][
-            "rangeProvenance"
-        ]["analysisStartUs"] += 1
+        next(p for p in forged["plans"] if p["id"] == identity)["segments"][0]["rangeProvenance"][
+            "analysisStartUs"
+        ] += 1
         with pytest.raises(ValueError):
             validate_render_plan(loaded, forged, (saved,))
 
@@ -160,13 +163,16 @@ def test_cropped_context_keeps_observation_and_refuses_forged_plan_or_revision(z
     material = candidates((saved,), ("0", "1", "2"), selected)
     report = plan_creation(brief(), material, 10)
     report["brief"] = {"targetDuration": 6}
-    plan = next(p for p in report["plans"] if p["id"] == "chronological")
+    identity = next(
+        plan["id"] for plan in report["plans"] if plan["id"] in {"chronological", "guide-steps"}
+    )
+    plan = next(p for p in report["plans"] if p["id"] == identity)
     assert len(plan["segments"]) == 3 and plan["ready"]
     assert all(
         s["startUs"] <= saved.events[int(s["eventId"])].source_range.start_us < s["endUs"]
         for s in plan["segments"]
     )
-    edl = select_edit_decision(report, "chronological")
+    edl = select_edit_decision(report, identity)
     validate_render_plan(edl, report, (saved,))
     rows = editable_clips(edl, "a" * 64)
     with pytest.raises(ValueError, match="原观察"):
@@ -176,8 +182,8 @@ def test_cropped_context_keeps_observation_and_refuses_forged_plan_or_revision(z
             [{"clipId": rows[0]["clipId"], "startUs": rows[0]["startUs"], "outputFrames": 1}],
         )
     forged = deepcopy(report)
-    bad = next(p for p in forged["plans"] if p["id"] == "chronological")["segments"][0]
+    bad = next(p for p in forged["plans"] if p["id"] == identity)["segments"][0]
     length = bad["endUs"] - bad["startUs"]
     bad["startUs"], bad["endUs"] = 0, length
     with pytest.raises(ValueError, match="intersect"):
-        validate_render_plan(select_edit_decision(forged, "chronological"), forged, (saved,))
+        validate_render_plan(select_edit_decision(forged, identity), forged, (saved,))

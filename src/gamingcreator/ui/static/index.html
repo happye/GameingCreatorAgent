@@ -6,6 +6,9 @@
     <meta name="color-scheme" content="dark">
     <title>游戏创作工作台 · Gaming Creator Agent</title>
     <link rel="stylesheet" href="/assets/style.css">
+    <script src="/assets/source-clock.js" defer></script>
+    <script src="/assets/preview-preference.js" defer></script>
+    <script src="/assets/screen-text-highlight.js" defer></script>
     <script src="/assets/app.js" defer></script>
 </head>
 <body>
@@ -13,7 +16,7 @@
         <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 8h18v16H7zM7 13h18M12 8v5"/><path class="brand-play" d="m14 16 6 3-6 3z"/></svg></div>
         <div class="brand-copy"><h1>游戏创作工作台</h1><p>GAMING CREATOR AGENT</p></div>
         <nav class="workflow-nav" aria-label="创作流程"><span class="workflow-step current" aria-current="step"><span>01</span>素材检索</span><span class="workflow-step forthcoming"><span>02</span>智能编排<small>待开放</small></span><span class="workflow-step forthcoming"><span>03</span>成片导出<small>待开放</small></span></nav>
-        <a id="open-creation" class="button secondary compact" href="/creation" hidden>创作视频</a><a class="button secondary compact" href="/studio">新工作台（预览）</a><div class="header-meta"><span class="local-badge">本地工作台</span></div>
+        <a id="open-creation" class="button secondary compact" href="/creation" hidden>创作视频</a><a class="button secondary compact" href="/studio">新工作台（预览）</a><a class="button secondary compact" href="/proxy-space">代理空间清单</a><div class="header-meta"><span class="local-badge">本地工作台</span></div>
         <button id="refresh-view" class="button secondary compact" disabled><span aria-hidden="true">↻</span>刷新时间轴</button>
     </header>
     <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
@@ -62,12 +65,13 @@
         <aside class="panel search-panel" aria-label="自然语言片段检索">
             <div class="search-scope"><button id="open-search-sources" class="text-button" type="button" disabled>选择多段录像</button><button id="single-search-source" class="text-button" type="button" hidden>只搜当前录像</button><button id="open-project-detail-query" class="text-button" type="button" hidden disabled>核对复合条件 ↗</button><span id="search-scope-label" class="muted small">搜索当前录像</span></div>
             <div class="panel-heading"><div><span class="eyebrow">CREATOR ASSISTANT</span><h2>描述你想找的片段</h2></div><span class="assistant-mark" aria-hidden="true">✦</span></div>
-            <form id="search-form"><label class="sr-only" for="query">自然语言查询</label><textarea id="query" rows="2" maxlength="4096" placeholder="例如：寻找角色打斗和攻击的片段" disabled></textarea><div class="search-options"><div><div class="search-mode-heading"><label class="field-label" for="mode">检索方式</label><label id="saved-details-control" class="detail-search-toggle" hidden title="联合搜索时加入左侧所选准确版本的已有细节；不启动精分析"><input id="include-saved-details" type="checkbox" disabled>含已有细节</label></div><select id="mode" disabled><option value="hybrid">混合检索</option><option value="lexical">词法检索</option><option value="semantic">语义检索</option></select></div><div><label class="field-label" for="top">候选条数</label><input id="top" type="number" min="1" max="100" value="10" disabled></div></div><button id="search-button" class="button primary" type="submit" disabled>查找片段 <span aria-hidden="true">↗</span></button></form>
+            <form id="search-form"><label class="sr-only" for="query">自然语言查询</label><textarea id="query" rows="2" maxlength="4096" placeholder="例如：寻找角色打斗和攻击的片段" disabled></textarea><div class="search-options"><div><div class="search-mode-heading"><label class="field-label" for="mode">检索方式</label><label id="saved-details-control" class="detail-search-toggle" hidden title="联合搜索时加入左侧所选准确版本的已有细节；不启动精分析"><input id="include-saved-details" type="checkbox" disabled>含已有细节</label><label id="screen-text-control" class="screen-text-toggle" title="用已有的屏幕文字报告做字面查询；不会开始新的识别任务"><input id="include-screen-text" type="checkbox" disabled>含屏幕文字</label></div><select id="mode" disabled><option value="hybrid">混合检索</option><option value="lexical">词法检索</option><option value="semantic">语义检索</option></select></div><div><label class="field-label" for="top">候选条数</label><input id="top" type="number" min="1" max="100" value="10" disabled></div></div><button id="search-button" class="button primary" type="submit" disabled>查找片段 <span aria-hidden="true">↗</span></button><button id="cancel-search" class="text-button" type="button" hidden disabled>取消查询</button></form>
             <div class="results-heading"><h3>检索候选 <span id="candidate-count" class="count">0</span></h3><span class="muted small">按相关性排名</span></div>
             <p id="search-context" class="muted small">打开已完成的运行后即可查询。</p>
             <button id="open-retrieval-diagnostics" class="text-button diagnostics-open" type="button" disabled>查看检索诊断 · 前十位</button>
-            <div class="search-result-actions"><button id="download-project-search" class="text-button" type="button" hidden disabled>下载这次多录像搜索结果</button><button id="open-search-detail-query" class="text-button" type="button" hidden disabled>核对候选条件 ↗</button></div>
+            <div class="search-result-actions"><button id="download-project-search" class="text-button" type="button" hidden disabled>下载这次多录像搜索结果</button><button id="download-project-search-csv" class="text-button" type="button" hidden disabled>下载 CSV</button><button id="open-search-detail-query" class="text-button" type="button" hidden disabled>核对候选条件 ↗</button></div>
             <div id="candidate-list" class="candidate-list" aria-live="polite"><p class="empty-state">描述动作、玩法或画面，<br>从已有素材中发现可用片段。</p></div>
+            <section id="screen-text-results" class="screen-text-results" hidden aria-label="屏幕文字结果"><div class="results-heading"><h3>屏幕文字 <span id="screen-text-count" class="count">0</span></h3><span class="muted small">本机识别出的文字，不是事实，也不是人工验收结果</span></div><p id="screen-text-notice" class="muted small"></p><ul id="screen-text-diagnostics" class="screen-text-diagnostics" hidden></ul><div id="screen-text-list" class="screen-text-list"></div></section>
         </aside>
         <section class="panel timeline-panel" aria-label="源视频语义时间轴">
             <div class="panel-heading"><div class="heading-inline"><span class="section-symbol" aria-hidden="true">≡</span><h2>语义时间轴 <span id="timeline-count" class="count">0</span></h2></div><div class="timeline-filters"><label class="sr-only" for="timeline-filter">筛选事件事实</label><input id="timeline-filter" type="search" placeholder="筛选画面描述…" disabled><label class="muted small"><input id="timeline-include-text" type="checkbox"> 含画面文字</label><label class="sr-only" for="tag-filter">筛选玩法标签</label><select id="tag-filter" disabled><option value="">全部玩法标签</option></select></div></div>

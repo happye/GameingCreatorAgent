@@ -4,27 +4,46 @@ import unicodedata
 from typing import Any
 
 
-def validate_metadata(value: dict[str, Any], frames: int) -> None:
-    def text(item: object, minimum: int, maximum: int, multiline: bool = False) -> bool:
-        return (
-            isinstance(item, str)
-            and minimum <= len(item) <= maximum
-            and (not minimum or bool(item.strip()))
-            and not any(
-                unicodedata.category(char) == "Cc" and not (multiline and char in "\r\n\t")
-                for char in item
-            )
-        )
-
-    tags = value.get("tags")
-    if (
-        type(value.get("coverFrame")) is not int
-        or not 0 <= value["coverFrame"] < frames
-        or not text(value.get("title"), 1, 200)
-        or not text(value.get("description"), 0, 5000, multiline=True)
-        or not isinstance(tags, list)
-        or len(tags) > 20
-        or any(not text(tag, 1, 50) for tag in tags)
-        or len(tags) != len(set(tags))
+def _text_problem(item: object, minimum: int, maximum: int, multiline: bool = False) -> str:
+    if not isinstance(item, str):
+        return "格式无效"
+    if len(item) > maximum:
+        return f"不能超过 {maximum} 字"
+    if minimum and (len(item) < minimum or not item.strip()):
+        return "不能为空"
+    if any(
+        unicodedata.category(char) == "Cc" and not (multiline and char in "\r\n\t") for char in item
     ):
-        raise ValueError("Invalid local publication metadata or output frame.")
+        return "包含无效字符"
+    return ""
+
+
+def validate_metadata(value: dict[str, Any], frames: int) -> None:
+    problem = _text_problem(value.get("title"), 1, 200)
+    if problem:
+        raise ValueError(f"标题{problem}。")
+    problem = _text_problem(value.get("description"), 0, 5000, multiline=True)
+    if problem:
+        raise ValueError(f"简介{problem}。")
+    tags = value.get("tags")
+    if not isinstance(tags, list):
+        raise ValueError("标签格式无效。")
+    if len(tags) > 20:
+        raise ValueError("标签不能超过 20 个。")
+    for tag in tags:
+        problem = _text_problem(tag, 1, 50)
+        if problem:
+            raise ValueError(
+                "单个标签不能超过 50 字。" if problem == "不能超过 50 字" else f"标签{problem}。"
+            )
+    if len(tags) != len(set(tags)):
+        raise ValueError("标签不能重复。")
+    if type(value.get("coverFrame")) is not int or not 0 <= value["coverFrame"] < frames:
+        raise ValueError("封面帧超出成片范围。")
+
+
+def user_input_message(error: BaseException) -> str:
+    text = str(error).strip()
+    if text.startswith(("标题", "简介", "标签", "封面帧")):
+        return text
+    return "无法保存发布信息。"

@@ -19,6 +19,7 @@ from test_sqlite_store import CONFIG, bundle_fixture, event_fixture
 from gamingcreator.application.providers import CostStatus, InvocationMetadata, ProviderUsage
 from gamingcreator.application.storage import InvocationStatus, StoredInvocation
 from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.infrastructure.proxy_media import SETTINGS, proxy_directory
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 from gamingcreator.ui.media import MediaResource, VerifiedMediaCache, byte_range
 from gamingcreator.ui.runtime_identity import runtime_identity
@@ -182,6 +183,56 @@ def test_registered_media_range_head_and_evidence(tmp_path):
         bundle.asset.source_path.write_bytes(b"changed source")
         status, _, body = get(base, "/api/media?" + query)
         assert status == 409 and json.loads(body)["code"] == "storage.integrity"
+
+
+def test_same_size_tampered_proxy_is_rejected_on_media_send(tmp_path):
+    project, bundle = stored_project(tmp_path)
+    original = bundle.asset.source_path.read_bytes()
+    directory = proxy_directory(tmp_path, bundle.asset.sha256)
+    directory.mkdir(parents=True, exist_ok=True)
+    proxy = directory / "proxy.mp4"
+    proxy.write_bytes(original)
+    digest = hashlib.sha256(original).hexdigest()
+    (directory / "receipt.json").write_text(
+        json.dumps(
+            {
+                "schemaVersion": "editing-proxy-receipt-v1",
+                "sourceSha256": bundle.asset.sha256,
+                "sourceDurationUs": bundle.asset.duration_us,
+                "settings": SETTINGS,
+                "bytes": len(original),
+                "budgetBytes": len(original) + 1,
+                "durationUs": bundle.asset.duration_us,
+                "proxySha256": digest,
+                "use": "preview-only; renders read the original source",
+            }
+        ),
+        encoding="utf-8",
+    )
+    proxy_query = urlencode({"project": str(project), "run": "run-1", "proxy": "1"})
+    original_query = urlencode({"project": str(project), "run": "run-1"})
+    inspect_query = urlencode(
+        {"project": str(project), "run": "run-1", "query": "", "mode": "lexical"}
+    )
+    with workspace(tmp_path) as base:
+        status, _, body = get(base, "/api/media?" + proxy_query)
+        assert status == 200 and body == original
+        status, _, inspect_body = get(base, "/api/inspect?" + inspect_query)
+        payload = json.loads(inspect_body)
+        assert payload["media"]["proxyUrl"] and "proxy=1" in payload["media"]["proxyUrl"]
+        before = proxy.stat()
+        tampered = bytearray(original)
+        tampered[0] ^= 0xFF
+        proxy.write_bytes(tampered)
+        os.utime(proxy, ns=(before.st_atime_ns, before.st_mtime_ns))
+        assert proxy.stat().st_size == len(original)
+        status, _, body = get(base, "/api/media?" + proxy_query)
+        assert status == 409 and json.loads(body)["code"] == "storage.integrity"
+        status, _, inspect_body = get(base, "/api/inspect?" + inspect_query)
+        payload = json.loads(inspect_body)
+        assert payload["media"]["proxyUrl"] is None
+        status, _, body = get(base, "/api/media?" + original_query)
+        assert status == 200 and body == bundle.asset.source_path.read_bytes()
 
 
 def test_inspect_empty_query_is_a_read_with_metadata(tmp_path):

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>代理空间清单 · 只读盘点</title>
+    <link rel="stylesheet" href="/assets/style.css">
+    <link rel="stylesheet" href="/assets/proxy-space.css">
+    <script src="/assets/proxy-space.js" defer></script>
+</head>
+<body class="proxy-space-page">
+    <header class="app-header">
+        <div class="brand-copy"><h1>代理空间清单</h1><p>只读盘点，未删除。</p></div>
+        <a class="button secondary compact" href="/">返回工作台</a>
+    </header>
+    <main class="proxy-space-main">
+        <p id="inventory-notice" class="proxy-space-notice">只读盘点，未删除。</p>
+        <p>这份清单只统计本仓库官方代理目录里的编辑代理，不会扫描原片、模型或用户成片，也不会删除任何文件。活动构建不会当成可清理项。</p>
+        <p>共 <strong id="total-count">—</strong> 条，合计 <strong id="total-bytes">—</strong> 字节。有效 <span id="count-valid">—</span>，缺件 <span id="count-missing">—</span>，坏回执 <span id="count-bad_receipt">—</span>，活动构建 <span id="count-building">—</span>。</p>
+        <p class="proxy-space-downloads">
+            <a href="/api/proxy-space.json">下载 JSON</a>
+            <a href="/api/proxy-space.csv">下载 CSV</a>
+        </p>
+        <p id="inventory-error" class="notice" hidden></p>
+        <table id="inventory-table">
+            <thead>
+                <tr>
+                    <th>来源哈希</th>
+                    <th>字节</th>
+                    <th>状态</th>
+                    <th>原因</th>
+                    <th>可清理标记</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </main>
+</body>
+</html>

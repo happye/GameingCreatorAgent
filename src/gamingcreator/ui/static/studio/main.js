@@ -5,6 +5,7 @@ import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
 import "../source-clock.js";
+import "../preview-preference.js";
 import {BasketList, ClipSearch, useBasket} from "./basket.js";
 import {PublishWorkspace} from "./publish.js";
 import {confirmLeave, renderRate} from "./edit.js";
@@ -70,14 +71,85 @@ function App() {
     const video = useRef(null);
     const pendingSeek = useRef(null);
     const [clock, setClock] = useState(null);
+    const [preview, setPreview] = useState({url: null, source: null, reason: null});
+    const [previewPreferAt, setPreviewPreferAt] = useState(0);
+    const httpFailed = useRef(new Set());
+    const proxyFailReason = useRef(null);
+    const [httpFailAt, setHttpFailAt] = useState(0);
+    const preferProxy = (previewPreferAt >= 0) && (httpFailAt >= 0)
+        && !httpFailed.current.has(view?.media?.id)
+        && ((globalThis.PreviewPreference?.get(view?.media?.id) ?? true));
+    const proxyHttpFailed = Boolean(view?.media?.id && httpFailed.current.has(view.media.id));
+    const timeRef = useRef(0);
+    const wantPlay = useRef(false);
+    timeRef.current = time;
     useEffect(() => {
         let active = true; setClock(null);
+        if (video.current) {
+            wantPlay.current = !video.current.paused;
+            const source = clock ? SourceClock.playerToSourceUs(clock, video.current.currentTime) : null;
+            if (source !== null) { timeRef.current = source; setTime(source); }
+        }
         const media = view?.media;
-        const url = media && client.sameOrigin(media.videoUrl, "/api/media");
-        if (url) SourceClock.establish(SourceClock.clockCandidates(media), new URL(url, location.href).href)
-            .then(result => { if (active) setClock(result.established ? result.clock : null); });
+        const original = media && client.sameOrigin(media.videoUrl, "/api/media");
+        const offered = media ? client.choosePreview(media.videoUrl, media.proxyUrl, preferProxy) : {url: null, source: null};
+        const attempted = offered.source === "proxy";
+        if (!original) {
+            setPreview({url: null, source: null, reason: null});
+            return () => { active = false; pendingSeek.current?.(); };
+        }
+        const abs = (url) => new URL(url, location.href).href;
+        SourceClock.alignPreview(
+            SourceClock.clockCandidates(media),
+            abs(original),
+            attempted ? abs(offered.url) : null,
+            attempted,
+        ).then((result) => {
+            if (!active) return;
+            if (attempted && (result.reason === "proxy_http_failed" || result.reason === "proxy_decode_failed") && media?.id && !httpFailed.current.has(media.id)) {
+                httpFailed.current.add(media.id);
+                proxyFailReason.current = result.reason;
+                setHttpFailAt((n) => n + 1);
+            }
+            setClock(result.established ? result.clock : null);
+            setPreview({
+                url: result.url,
+                source: result.source,
+                reason: attempted && result.source === "original" ? result.reason : null,
+            });
+        });
         return () => { active = false; pendingSeek.current?.(); };
-    }, [view]);
+    }, [view, preferProxy]);
+    useEffect(() => {
+        const el = video.current;
+        if (!el || !clock || !preview.url) return;
+        const target = SourceClock.sourceUsToPlayerSeconds(clock, timeRef.current);
+        if (target === null) return;
+        let active = true;
+        const matches = () => {
+            try {
+                const now = el.currentSrc || el.getAttribute("src") || "";
+                return new URL(now, location.href).href === new URL(preview.url, location.href).href;
+            } catch { return false; }
+        };
+        pendingSeek.current?.();
+        const onReady = () => {
+            if (!active || !matches()) return;
+            void SourceClock.settleExact(el, target, {
+                toleranceSeconds: clock.axisToleranceUs / 1e6,
+                isCurrent: () => active && video.current === el && matches(),
+            }).then((actual) => {
+                if (!active || actual === null || video.current !== el || !matches()) return;
+                const source = SourceClock.playerToSourceUs(clock, actual);
+                if (source !== null) setTime(source);
+                if (wantPlay.current) void el.play().catch(() => {});
+                else el.pause();
+            });
+        };
+        pendingSeek.current = () => { active = false; el.removeEventListener("loadedmetadata", onReady); };
+        if (matches() && el.readyState >= 1) onReady();
+        else el.addEventListener("loadedmetadata", onReady);
+    }, [preview.url, clock]);
     const latestRuns = useLatest(), latestView = useLatest(), latestWorks = useLatest();
 
     useEffect(() => { savePrefs({project, runId, workspace, bin: layout.bin, insp: layout.insp}); }, [project, runId, workspace, layout]);
@@ -203,7 +275,7 @@ function App() {
                     top=${html`<${ClipSearch} project=${project} runs=${runs} runId=${runId} basket=${basket} seed=${searchSeed} onShow=${(run, event) => showEvent(run.id, event.eventId)} />
                         <${BasketList} basket=${basket} onShow=${(item) => showEvent(item.runId, item.eventId, item)} onUse=${() => { setBasketAt(Date.now()); setWorkspace("edit"); }} />`} />
                 <div class="center">
-                    <${Viewer} onClockInvalid=${() => setClock(null)} clock=${clock} media=${view?.media} videoRef=${video} time=${time} setTime=${setTime} selected=${selected} onFullSource=${() => setSelected(null)} />
+                    <${Viewer} onClockInvalid=${() => setClock(null)} clock=${clock} media=${view?.media} preview=${preview} preferProxy=${preferProxy} proxyHttpFailed=${proxyHttpFailed} proxyFailReason=${proxyFailReason.current} onPreferPreview=${(checked) => { if (view?.media?.id) { PreviewPreference.set(view.media.id, checked); if (checked) { httpFailed.current.delete(view.media.id); proxyFailReason.current = null; } } setPreviewPreferAt((n) => n + 1); }} onProxyHttpError=${(el) => { const id = view?.media?.id; if (!id || httpFailed.current.has(id)) return; httpFailed.current.add(id); proxyFailReason.current = (SourceClock.proxyLoadReason && SourceClock.proxyLoadReason(el)) || "proxy_http_failed"; setHttpFailAt((n) => n + 1); }} videoRef=${video} time=${time} setTime=${setTime} selected=${selected} onFullSource=${() => setSelected(null)} />
                     <${Timeline} view=${view} time=${time} selected=${selected} onSelect=${selectEvent} inBasket=${basket.ids} />
                 </div>
                 <${Inspector} view=${view} selected=${selected} run=${currentRun} hidden=${!layout.insp} inBasket=${!!selected && basket.ids.has(selected.eventId)} onBasket=${() => toggleBasket(selected)} onRange=${changeRange} />
@@ -221,15 +293,18 @@ function TopBar({workspace, setWorkspace, projects, project, setProject, layout,
         <div class="tabs" role="tablist" aria-label="工作区">
             ${WORKSPACES.map(([id, label]) => html`<button role="tab" aria-selected=${workspace === id} onClick=${() => setWorkspace(id)}>${label}</button>`)}
         </div>
-        <select class="select" aria-label="项目" value=${project} onChange=${(e) => { if (!setProject(e.currentTarget.value)) e.currentTarget.value = project; }}>
-            ${projects.map((p) => html`<option value=${p.path}>${p.name || p.path}</option>`)}
+        <select class="select" aria-label="项目" title=${(projects.find((p) => p.path === project)?.name) || project}
+            value=${project} onChange=${(e) => { if (!setProject(e.currentTarget.value)) e.currentTarget.value = project; }}>
+            ${projects.map((p) => html`<option value=${p.path} title=${p.name || p.path}>${p.name || p.path}</option>`)}
         </select>
         <span class="status" role="status" aria-live="polite">${status}</span>
         <span class="spacer"></span>
-        <button class="icon-btn" aria-pressed=${layout.bin} title="显示或隐藏素材箱" onClick=${() => setLayout({...layout, bin: !layout.bin})}>素材箱</button>
-        <button class="icon-btn" aria-pressed=${layout.insp} title="显示或隐藏检查器" onClick=${() => setLayout({...layout, insp: !layout.insp})}>检查器</button>
-        <a class="link" href="/">旧版素材工作台</a>
-        <a class="link" href="/creation">旧版创作页</a>
+        <div class="topbar-actions">
+            <button class="icon-btn" aria-pressed=${layout.bin} title="显示或隐藏素材箱" onClick=${() => setLayout({...layout, bin: !layout.bin})}>素材箱</button>
+            <button class="icon-btn" aria-pressed=${layout.insp} title="显示或隐藏检查器" onClick=${() => setLayout({...layout, insp: !layout.insp})}>检查器</button>
+            <a class="link" href="/">旧版素材工作台</a>
+            <a class="link" href="/creation">旧版创作页</a>
+        </div>
     </header>`;
 }
 
@@ -282,9 +357,11 @@ function Recording({group, runId, onSelect}) {
     </div>`;
 }
 
-function Viewer({onClockInvalid, clock, media, videoRef, time, setTime, selected, onFullSource}) {
-    const src = media ? client.sameOrigin(media.videoUrl, "/api/media") : null;
+function Viewer({onClockInvalid, clock, media, preview, preferProxy, proxyHttpFailed, proxyFailReason, onPreferPreview, onProxyHttpError, videoRef, time, setTime, selected, onFullSource}) {
+    const src = preview?.url || null;
     const [playing, setPlaying] = useState(false);
+    const [originalError, setOriginalError] = useState("");
+    useEffect(() => { setOriginalError(""); }, [src]);
     const bounded = selected && clock && selected.startUs < selected.endUs
         && SourceClock.sourceUsToPlayerSeconds(clock, selected.startUs) !== null
         && SourceClock.sourceUsToPlayerSeconds(clock, selected.endUs) !== null;
@@ -319,11 +396,24 @@ function Viewer({onClockInvalid, clock, media, videoRef, time, setTime, selected
             ? html`<video ref=${videoRef} src=${src} preload="metadata" playsinline
                 onTimeUpdate=${(e) => { const source = SourceClock.playerToSourceUs(clock, e.currentTarget.currentTime); if (source !== null) setTime(source); }}
                 onDurationChange=${e => { if (clock && SourceClock.durationChangeVerdict(clock, e.currentTarget.duration, true)) onClockInvalid(); }}
+                onError=${(e) => {
+                    const el = e.currentTarget;
+                    const src = el.currentSrc || el.getAttribute("src") || "";
+                    const assigned = preview?.url || "";
+                    if (!assigned || !src) return;
+                    try { if (new URL(src, location.href).href !== new URL(assigned, location.href).href) return; } catch { return; }
+                    if (preview?.source === "proxy") onProxyHttpError?.(el);
+                    else setOriginalError(SourceClock.playbackErrorText(el.error));
+                }}
                 onPlay=${() => setPlaying(true)} onPause=${() => setPlaying(false)} onClick=${(e) => (e.currentTarget.paused ? void e.currentTarget.play().catch(() => {}) : e.currentTarget.pause())}></video>`
             : html`<div class="empty">从左侧素材箱选择一段已分析的录像</div>`}
         <div class="transport">
             <button class="icon-btn" disabled=${!src} onClick=${() => { const el = videoRef.current; if (el) el.paused ? void el.play().catch(() => {}) : el.pause(); }}>${playing ? "暂停" : "播放"}</button>
             <span class="tc">${clock ? timecode(time) : "源时间未校准"} / ${media ? timecode(media.durationUs) : "00:00.000"}</span>
+            ${src ? html`<span class="preview-source" data-preview-source=${preview.source}>${preview.source === "proxy" ? "编辑代理（非原片）" : "原始素材"}</span>` : null}
+            ${media?.sourceHasAudio === false ? html`<span class="hint" data-audio-status="silent">这段录像没有声音</span>` : null}
+            ${src && media?.proxyUrl ? html`<label id="proxy-toggle"><input type="checkbox" id="proxy-toggle-input" checked=${preferProxy !== false} onChange=${(e) => onPreferPreview(e.currentTarget.checked)} /> 使用编辑代理预览（360p，仅用于流畅浏览）</label>` : null}
+            ${originalError ? html`<span class="hint" data-original-playback-error>${originalError}</span>` : proxyHttpFailed ? html`<span class="hint" data-preview-clock-reason=${proxyFailReason || "proxy_http_failed"}>${SourceClock.previewClockReason(proxyFailReason || "proxy_http_failed")}</span>` : preview?.reason ? html`<span class="hint" data-preview-clock-reason=${preview.reason}>${SourceClock.previewClockReason(preview.reason)}</span>` : null}
             <span class="spacer"></span>
             ${!clock && src ? html`<span class="hint">无法精确定位片段，可观看整段录像</span>` : null}
             ${bounded && !hasPicture ? html`<span class="hint">选段内没有可播放画面，不能预览；取景范围已保留</span>`

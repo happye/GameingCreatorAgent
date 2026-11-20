@@ -41,10 +41,20 @@
         const step = state.job && $("artifact").childElementCount ? 4 : state.selected ? 4 : planned ? 3 : checked ? 2 : 1;
         for (const link of document.querySelectorAll("#stepper a")) { const n = Number(link.dataset.step); link.classList.toggle("current", n === step); link.classList.toggle("done", n < step); }
     }
-    function clearView() { closeReplacement(); $("package-form").hidden = true; $("package-result").hidden = true; $("package-downloads").replaceChildren(); $("package-preview").replaceChildren(); state.publication = null; $("publication-form").hidden = true; $("publication-cover").hidden = true; $("publication-cover").removeAttribute("src"); $("publication-downloads").replaceChildren(); state.selected = null; state.editor = null; $("audio-controls")?.remove(); $("narration-controls")?.remove(); $("command-controls")?.remove(); state.command = null; state.dirty = false; state.editing = false; $("editor-rows").replaceChildren(); $("ancestry").replaceChildren(); $("editor-summary").textContent = "选择方案或剪辑版本后可编辑镜头。"; $("plans").replaceChildren(); $("artifact").replaceChildren(); $("job-status").textContent = "尚未选择任务"; controls(); }
+    function clearView() { closeReplacement(); $("package-form").hidden = true; $("package-result").hidden = true; $("package-downloads").replaceChildren(); $("package-preview").replaceChildren(); state.publication = null; $("publication-form").hidden = true; $("publication-cover").hidden = true; $("publication-cover").removeAttribute("src"); $("publication-downloads").replaceChildren(); state.selected = null; state.editor = null; $("audio-controls")?.remove(); $("narration-controls")?.remove(); $("command-controls")?.remove(); state.command = null; state.dirty = false; state.editing = false; $("editor-rows").replaceChildren(); $("ancestry").replaceChildren(); $("editor-summary").textContent = "选择方案或剪辑版本后可编辑镜头。"; $("plans").replaceChildren(); $("plan-compare")?.replaceChildren(); $("artifact").replaceChildren(); $("job-status").textContent = "尚未选择任务"; controls(); }
     function showPlans(job) {
         $("plans").replaceChildren(); state.selected = null;
-        for (const plan of job.plans || []) {
+        const plans = job.plans || [];
+        if (plans.length) {
+            const count = document.createElement("p");
+            count.id = "plans-count";
+            count.className = "hint";
+            count.textContent = job.candidateCountReason
+                ? `当前共 ${plans.length} 套方案。${job.candidateCountReason}`
+                : `当前共 ${plans.length} 套方案。`;
+            $("plans").append(count);
+        }
+        for (const plan of plans) {
             const card = node("article", ""); card.className = "plan-card";
             if (plan.mode) {
                 card.classList.add("recommended");
@@ -81,7 +91,568 @@
             for (const note of plan.advisories || []) { const item = node("p", `提醒：${note}`); item.className = "plan-advisory"; card.append(item); }
             $("plans").append(card);
         }
+        fillCompare(job);
         controls();
+    }
+
+    const COMPARISON_EXPORT_NOTE = "只包含这次对照的差异和来源，不会写回报告、证据或偏好。";
+    function exportSide(plan, metrics, reasons) {
+        const side = {
+            planId: plan && typeof plan.id === "string" && plan.id ? plan.id : null,
+            metrics: metrics == null ? null : JSON.parse(JSON.stringify(metrics)),
+            themeReasons: reasons == null ? null : JSON.parse(JSON.stringify(reasons)),
+        };
+        if (plan && typeof plan.contentSignature === "string" && plan.contentSignature) side.contentSignature = plan.contentSignature;
+        return side;
+    }
+    function listComparisonSources(alignment, changes) {
+        const sources = [];
+        const seen = new Set();
+        const add = (runId, sourceSha256, startUs, endUs) => {
+            if (runId == null && sourceSha256 == null && startUs == null && endUs == null) return;
+            const key = `${runId ?? ""}\0${sourceSha256 ?? ""}\0${startUs ?? ""}\0${endUs ?? ""}`;
+            if (seen.has(key)) return;
+            seen.add(key);
+            const item = {};
+            if (runId != null) item.runId = runId;
+            if (sourceSha256 != null) item.sourceSha256 = sourceSha256;
+            if (startUs != null) item.startUs = startUs;
+            if (endUs != null) item.endUs = endUs;
+            sources.push(item);
+        };
+        if (Array.isArray(changes)) {
+            for (const row of changes) {
+                if (!row || typeof row !== "object") continue;
+                add(row.runId, row.sourceSha256, row.startUs, row.endUs);
+            }
+        }
+        if (Array.isArray(alignment)) {
+            for (const row of alignment) {
+                if (!row || typeof row !== "object") continue;
+                if (sources.some((item) => item.runId === row.runId && item.sourceSha256 === row.sourceSha256)) continue;
+                add(row.runId, row.sourceSha256);
+            }
+        }
+        return sources;
+    }
+    function comparisonExportDocument(pair) {
+        if (!pair || typeof pair !== "object" || pair.readonly !== true || !("left" in pair) || !("right" in pair)) {
+            throw new Error("只能下载已经打开的只读对照。");
+        }
+        const document = {
+            schemaVersion: "plan-comparison-export-v1",
+            readonly: true,
+            note: COMPARISON_EXPORT_NOTE,
+            left: exportSide(pair.left, pair.leftMetrics, pair.leftThemeReasons),
+            right: exportSide(pair.right, pair.rightMetrics, pair.rightThemeReasons),
+            sources: listComparisonSources(pair.sourceAlignment, pair.shotChanges),
+            sourceAlignment: pair.sourceAlignment == null ? pair.sourceAlignment : JSON.parse(JSON.stringify(pair.sourceAlignment)),
+            shotChanges: pair.shotChanges == null ? pair.shotChanges : JSON.parse(JSON.stringify(pair.shotChanges)),
+        };
+        if ("fps" in pair) document.fps = pair.fps;
+        return document;
+    }
+    function comparisonExportFilename(pair) {
+        const token = (value, fallback) => {
+            const text = typeof value === "string" && value ? value : fallback;
+            const cleaned = text.replace(/[^A-Za-z0-9._-]/g, "_");
+            return cleaned || fallback;
+        };
+        return `plan-comparison-${token(pair && pair.left && pair.left.id, "left")}-${token(pair && pair.right && pair.right.id, "right")}.json`;
+    }
+    function downloadPlanComparison(pair) {
+        const exported = comparisonExportDocument(pair);
+        const url = URL.createObjectURL(new Blob([JSON.stringify(exported, null, 2) + "\n"], {type: "application/json;charset=utf-8"}));
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = comparisonExportFilename(pair);
+        link.rel = "noopener";
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        return true;
+    }
+
+    function fillCompare(job) {
+        const root = $("plan-compare");
+        if (!root) return;
+        root.replaceChildren();
+        root.dataset.compareJob = job && job.jobId ? job.jobId : "";
+        const plans = job.plans || [];
+        if (plans.length < 2) {
+            if (plans.length) root.append(node("p", "至少还要有两套方案才能对照。"));
+            return;
+        }
+        const hint = node("p", "对照两个已生成方案，只看差异，不会改当前已采用的方案，也不会评分或调用模型。");
+        hint.className = "hint";
+        const left = document.createElement("select"); left.id = "plan-compare-left";
+        const right = document.createElement("select"); right.id = "plan-compare-right";
+        for (const box of [left, right]) {
+            box.append(new Option("请选择", ""));
+            for (const plan of plans) box.append(new Option(plan.structure || plan.id, plan.id));
+        }
+        const open = node("button", "开始对照"); open.type = "button"; open.id = "plan-compare-open"; open.disabled = true;
+        const view = document.createElement("div"); view.id = "plan-compare-view"; view.hidden = true;
+        const refresh = () => { open.disabled = !left.value || !right.value || left.value === right.value; };
+        left.addEventListener("change", refresh); right.addEventListener("change", refresh);
+        open.addEventListener("click", () => {
+            const adopted = state.selected;
+            const a = plans.find((p) => p.id === left.value), b = plans.find((p) => p.id === right.value);
+            if (!a || !b || a.id === b.id) return;
+            view.hidden = false;
+            view.dataset.readonly = "true";
+            view.dataset.adopted = adopted || "";
+            view.replaceChildren();
+            const title = node("p", `当前已采用方案：${adopted || "尚未采用"}（对照不会改它）`);
+            const colA = document.createElement("section"); colA.setAttribute("aria-label", "方案 A");
+            colA.append(node("h3", a.structure || a.id), node("p", `${a.ready ? "可生成视频" : "有缺口"} · ${a.id}`));
+            fillMetrics(colA, compareMetrics(a, job.fps));
+            const colB = document.createElement("section"); colB.setAttribute("aria-label", "方案 B");
+            colB.append(node("h3", b.structure || b.id), node("p", `${b.ready ? "可生成视频" : "有缺口"} · ${b.id}`));
+            fillMetrics(colB, compareMetrics(b, job.fps));
+            const close = node("button", "关闭对照"); close.type = "button"; close.id = "plan-compare-close";
+            close.addEventListener("click", () => {
+                const selected = state.selected;
+                const dirty = state.dirty;
+                view.hidden = true;
+                view.replaceChildren();
+                state.selected = selected;
+                state.dirty = dirty;
+            });
+            view.append(title, colA, colB, close);
+            const locateStatus = document.createElement("p");
+            locateStatus.id = "plan-compare-locate-status";
+            locateStatus.className = "note";
+            view.insertBefore(locateStatus, close);
+            fillAlignment(view, a, b, job.fps);
+            fillShotChanges(view, a, b, job.fps);
+            fillThemeReasons(view, a, b);
+            const download = node("button", "下载对照 JSON");
+            download.type = "button";
+            download.id = "plan-compare-download";
+            download.addEventListener("click", () => {
+                const selected = state.selected;
+                const dirty = state.dirty;
+                const pair = {
+                    schemaVersion: "plan-comparison-v1",
+                    readonly: true,
+                    left: a,
+                    right: b,
+                    leftMetrics: compareMetrics(a, job.fps),
+                    rightMetrics: compareMetrics(b, job.fps),
+                    sourceAlignment: alignSourceShots(a.segments, b.segments, job.fps),
+                    shotChanges: classifyShotChanges(a.segments, b.segments, job.fps),
+                    leftThemeReasons: listThemeReasons(a),
+                    rightThemeReasons: listThemeReasons(b),
+                };
+                if (typeof job.fps === "number" && Number.isInteger(job.fps) && job.fps > 0) pair.fps = job.fps;
+                downloadPlanComparison(pair);
+                state.selected = selected;
+                state.dirty = dirty;
+            });
+            view.insertBefore(download, close);
+        });
+        root.append(hint, left, right, open, view);
+    }
+
+
+
+
+    function gcd(a, b) {
+        a = Math.abs(a); b = Math.abs(b);
+        while (b) { const next = a % b; a = b; b = next; }
+        return a || 1;
+    }
+    function formatExactUs(us) {
+        const g = gcd(us, 1000000), n = us / g, d = 1000000 / g;
+        return d === 1 ? `${us} 微秒（${n} 秒）` : `${us} 微秒（${n}/${d} 秒）`;
+    }
+    function formatExactSpeed(sourceUs, outputFrames, fps) {
+        if (!(sourceUs > 0) || !(outputFrames > 0) || typeof fps !== "number" || !Number.isInteger(fps) || fps <= 0) return null;
+        const numerator = sourceUs * fps, denominator = outputFrames * 1000000, g = gcd(numerator, denominator);
+        const n = numerator / g, d = denominator / g;
+        return d === 1 ? String(n) : `${n}/${d}`;
+    }
+    function trimSpeedMetrics(startUs, endUs, outputFrames, fps) {
+        const sourceUs = startUs == null || endUs == null ? null : endUs - startUs;
+        let outputUs = null;
+        if (outputFrames != null && typeof fps === "number" && Number.isInteger(fps) && fps > 0) {
+            const numerator = outputFrames * 1000000, g = gcd(numerator, fps), n = numerator / g, d = fps / g;
+            outputUs = d === 1 ? n : `${n}/${d}`;
+        }
+        return {startUs, endUs, sourceUs, outputFrames, outputUs, speed: sourceUs == null || outputFrames == null ? null : formatExactSpeed(sourceUs, outputFrames, fps)};
+    }
+    function formatTrim(trim, side) {
+        if (!trim) return `${side}：没有这段，无法比较裁剪和速度`;
+        const source = (trim.startUs == null || trim.endUs == null) ? "原片起止未知" : `原片 ${formatExactUs(trim.startUs)} 到 ${formatExactUs(trim.endUs)}`;
+        let output = "成片时长未知";
+        if (trim.outputFrames != null) output = trim.outputUs == null ? `成片 ${trim.outputFrames} 帧` : `成片 ${trim.outputFrames} 帧（${typeof trim.outputUs === "number" ? formatExactUs(trim.outputUs) : trim.outputUs + " 微秒"}）`;
+        const speed = trim.speed == null ? "速度未知" : `速度 ${trim.speed}（原片时长÷成片时长）`;
+        return `${side}：${source} · ${output} · ${speed}`;
+    }
+    function classifyShotChanges(leftSegments, rightSegments, fps) {
+        const list = (segments) => {
+            if (!Array.isArray(segments)) return null;
+            const shots = [];
+            let cursor = 0;
+            for (const segment of segments) {
+                if (!segment || typeof segment !== "object") return null;
+                const frames = (segment.outputFrames == null || !Number.isFinite(Number(segment.outputFrames))) ? null : Math.trunc(Number(segment.outputFrames));
+                const sha = typeof segment.sourceSha256 === "string" && segment.sourceSha256 ? segment.sourceSha256 : null;
+                const startUs = Number.isFinite(Number(segment.startUs)) ? Math.trunc(Number(segment.startUs)) : null;
+                const endUs = Number.isFinite(Number(segment.endUs)) ? Math.trunc(Number(segment.endUs)) : null;
+                const runId = segment.runId == null ? null : String(segment.runId);
+                const identity = (sha && startUs != null && endUs != null) ? `${runId ?? ""}|${sha}|${startUs}|${endUs}` : null;
+                const start = cursor;
+                const end = (cursor == null || frames == null) ? null : cursor + frames;
+                shots.push({identity, sha, runId, startUs, endUs, outputFrames: frames, shotIndex: shots.length + 1, startFrame: start, endFrame: end});
+                if (frames == null) cursor = null;
+                else if (cursor != null) cursor += frames;
+            }
+            return shots;
+        };
+        const leftShots = list(leftSegments), rightShots = list(rightSegments);
+        if (leftShots == null || rightShots == null) return null;
+        const rate = typeof fps === "number" && Number.isFinite(fps) && fps > 0 ? fps : null;
+        const pos = (shot) => ({
+            shotIndex: shot.shotIndex, startFrame: shot.startFrame, endFrame: shot.endFrame,
+            startSeconds: shot.startFrame == null || rate == null ? null : shot.startFrame / rate,
+            endSeconds: shot.endFrame == null || rate == null ? null : shot.endFrame / rate,
+        });
+        const statusFor = (identity, left, right) => {
+            if (!identity || (!left && !right)) return "unknown";
+            if (!left) return "added";
+            if (!right) return "missing";
+            if (left.shotIndex !== right.shotIndex) return "reordered";
+            return "same";
+        };
+        const rowFor = (shot, left, right, status, rawLeft, rawRight) => ({
+            runId: shot ? shot.runId : null, sourceSha256: shot ? shot.sha : null,
+            startUs: shot ? shot.startUs : null, endUs: shot ? shot.endUs : null,
+            status, left, right,
+            leftTrim: rawLeft ? trimSpeedMetrics(rawLeft.startUs, rawLeft.endUs, rawLeft.outputFrames, fps) : null,
+            rightTrim: rawRight ? trimSpeedMetrics(rawRight.startUs, rawRight.endUs, rawRight.outputFrames, fps) : null,
+        });
+        const used = new Set(), rows = [];
+        for (const left of leftShots) {
+            let match = -1;
+            if (left.identity) match = rightShots.findIndex((right, index) => !used.has(index) && right.identity === left.identity);
+            if (match >= 0) used.add(match);
+            const right = match >= 0 ? rightShots[match] : null;
+            rows.push(rowFor(left, pos(left), right ? pos(right) : null, statusFor(left.identity, left, right), left, right));
+        }
+        rightShots.forEach((right, index) => {
+            if (!used.has(index)) rows.push(rowFor(right, null, pos(right), statusFor(right.identity, null, right), null, right));
+        });
+        return rows;
+    }
+    function changeLabel(status) {
+        if (status === "added") return "方案 B 新增";
+        if (status === "missing") return "方案 B 缺少";
+        if (status === "reordered") return "换序";
+        if (status === "unknown") return "无法判断增减，来源区间不完整";
+        return "两边都有，顺序一致";
+    }
+
+    function listThemeReasons(plan) {
+        const uses = [];
+        const segments = plan && Array.isArray(plan.segments) ? plan.segments : [];
+        segments.forEach((segment, index) => {
+            if (!segment || !Array.isArray(segment.topicUses)) return;
+            segment.topicUses.forEach((item) => {
+                if (!item || typeof item !== "object") return;
+                const topic = typeof item.topic === "string" && item.topic.trim() ? item.topic : null;
+                const rationale = typeof item.rationale === "string" && item.rationale.trim() ? item.rationale : null;
+                const observationQuote = typeof item.observationQuote === "string" && item.observationQuote.trim() ? item.observationQuote : null;
+                if (!topic && !rationale && !observationQuote) return;
+                uses.push({shotIndex: index + 1, topic, rationale, observationQuote});
+            });
+        });
+        return {provided: uses.length > 0, uses};
+    }
+    function reasonField(label, value, missing) {
+        return value ? label + "：" + value : label + "：" + missing;
+    }
+
+    function locatePreviewTarget(plan, position, fps) {
+        if (!plan || typeof plan.id !== "string" || !plan.id || !position) return null;
+        if (position.startFrame != null && typeof fps === "number" && fps > 0) {
+            return {planId: plan.id, outStartUs: Math.round((position.startFrame / fps) * 1e6), startFrame: position.startFrame};
+        }
+        if (position.startSeconds != null && isFinite(position.startSeconds)) {
+            return {planId: plan.id, outStartUs: Math.round(position.startSeconds * 1e6)};
+        }
+        return null;
+    }
+    function locateComparePreview(plan, position, fps) {
+        const status = document.getElementById("plan-compare-locate-status");
+        const write = (text) => { if (status) status.textContent = text; };
+        if (state.busy || state.editing) {
+            write("任务正在处理，完成后可定位预览");
+            return;
+        }
+        const selected = state.selected;
+        const dirty = state.dirty;
+        const target = locatePreviewTarget(plan, position, fps);
+        if (!target) {
+            write("这一侧没有可定位的成片位置");
+            return;
+        }
+        const video = $("artifact") && $("artifact").querySelector("video");
+        const adoptedPlanId = selected && selected.planId;
+        if (video && adoptedPlanId === plan.id && target.outStartUs != null) {
+            video.currentTime = target.outStartUs / 1e6;
+        }
+        write("已定位到 " + (plan.structure || plan.id) + " 成片 " + (target.startFrame != null ? target.startFrame + " 帧" : target.outStartUs + " 微秒") + "。没有改当前已采用的方案，也没有改未保存的编辑。");
+        if (state.selected !== selected || state.dirty !== dirty) {
+            state.selected = selected;
+            state.dirty = dirty;
+        }
+    }
+    function appendLocateButtons(item, leftPlan, rightPlan, row, fps) {
+        if (row.left) {
+            const left = document.createElement("button");
+            left.type = "button";
+            left.className = "plan-compare-locate";
+            left.dataset.side = "left";
+            left.textContent = "定位方案 A 预览";
+            left.disabled = !!(state.busy || state.editing);
+            left.title = left.disabled ? "任务正在处理，完成后可定位预览" : left.textContent;
+            left.addEventListener("click", () => locateComparePreview(leftPlan, row.left, fps));
+            item.append(left);
+        }
+        if (row.right) {
+            const right = document.createElement("button");
+            right.type = "button";
+            right.className = "plan-compare-locate";
+            right.dataset.side = "right";
+            right.textContent = "定位方案 B 预览";
+            right.disabled = !!(state.busy || state.editing);
+            right.title = right.disabled ? "任务正在处理，完成后可定位预览" : right.textContent;
+            right.addEventListener("click", () => locateComparePreview(rightPlan, row.right, fps));
+            item.append(right);
+        }
+    }
+
+    function fillThemeReasons(view, leftPlan, rightPlan) {
+        const existing = view.querySelector("#plan-compare-reasons");
+        if (existing) existing.remove();
+        const box = document.createElement("div");
+        box.id = "plan-compare-reasons";
+        const note = document.createElement("p");
+        note.className = "note";
+        note.textContent = "主题理由和引用的原始说明只展示方案里已经记下的内容。没有记录就标明未提供，不会按模板或规则补写成解释。";
+        box.append(note);
+        for (const pair of [["方案 A", listThemeReasons(leftPlan)], ["方案 B", listThemeReasons(rightPlan)]]) {
+            const label = pair[0];
+            const reasons = pair[1];
+            const section = document.createElement("section");
+            section.setAttribute("aria-label", "主题理由与原始说明（" + (label === "方案 A" ? "左侧" : "右侧") + "）");
+            const heading = document.createElement("h3");
+            heading.textContent = label;
+            section.append(heading);
+            if (!reasons.provided || !reasons.uses.length) {
+                const missing = document.createElement("p");
+                missing.className = "plan-compare-reason";
+                missing.textContent = "未提供主题理由与原始说明";
+                section.append(missing);
+            } else {
+                const list = document.createElement("ol");
+                list.className = "plan-compare-reasons";
+                for (const use of reasons.uses) {
+                    const item = document.createElement("li");
+                    item.className = "plan-compare-reason";
+                    const head = document.createElement("p");
+                    head.textContent = "镜头 " + use.shotIndex + (use.topic ? " · 主题 " + use.topic : " · 主题未提供");
+                    const rationale = document.createElement("p");
+                    rationale.textContent = reasonField("主题理由", use.rationale, "未提供");
+                    const quote = document.createElement("blockquote");
+                    quote.textContent = reasonField("引用的原始说明", use.observationQuote, "未提供");
+                    item.append(head, rationale, quote);
+                    list.append(item);
+                }
+                section.append(list);
+            }
+            box.append(section);
+        }
+        const close = view.querySelector("#plan-compare-close");
+        if (close) view.insertBefore(box, close);
+        else view.append(box);
+    }
+
+    function fillShotChanges(view, leftPlan, rightPlan, fps) {
+        const existing = view.querySelector("#plan-compare-changes");
+        if (existing) existing.remove();
+        const rows = classifyShotChanges(leftPlan.segments, rightPlan.segments, fps);
+        const box = document.createElement("div");
+        box.id = "plan-compare-changes";
+        if (rows == null) box.append(node("p", "两侧片段不完整，增减和换序未知。"));
+        else if (!rows.length) box.append(node("p", "两侧都还没有镜头，没有可比较的增减。"));
+        else {
+            box.append(node("p", "新增、缺少和换序按素材的真实来源区间比较。相同素材的不同截取会分开看，不会把重复的镜头编号当成同一段。"));
+            const list = document.createElement("ol");
+            list.className = "plan-compare-changes";
+            for (const row of rows) {
+                const item = document.createElement("li");
+                item.dataset.change = row.status;
+                item.className = "plan-compare-change plan-compare-change-" + row.status;
+                const interval = (!row.sourceSha256 || row.startUs == null || row.endUs == null)
+                    ? "来源区间未知"
+                    : `${row.runId ? `来源 ${row.sourceSha256}（分析 ${row.runId}）` : `来源 ${row.sourceSha256}`} · 原片 ${(row.startUs / 1e6).toFixed(1)}–${(row.endUs / 1e6).toFixed(1)} 秒`;
+                item.append(node("strong", changeLabel(row.status)), node("p", interval), node("p", formatComparePosition("方案 A", row.left)), node("p", formatComparePosition("方案 B", row.right)), node("p", formatTrim(row.leftTrim, "方案 A")), node("p", formatTrim(row.rightTrim, "方案 B")));
+                appendLocateButtons(item, leftPlan, rightPlan, row, fps);
+                list.append(item);
+            }
+            box.append(list);
+        }
+        const close = view.querySelector("#plan-compare-close");
+        view.insertBefore(box, close || null);
+    }
+    function alignSourceShots(leftSegments, rightSegments, fps) {
+        const list = (segments) => {
+            if (!Array.isArray(segments)) return null;
+            const shots = [];
+            let current = null, cursor = 0;
+            for (const segment of segments) {
+                if (!segment || typeof segment !== "object") return null;
+                const frames = (segment.outputFrames == null || !Number.isFinite(Number(segment.outputFrames))) ? null : Math.trunc(Number(segment.outputFrames));
+                const sha = typeof segment.sourceSha256 === "string" && segment.sourceSha256 ? segment.sourceSha256 : null;
+                const runId = segment.runId == null ? null : String(segment.runId);
+                const identity = sha ? (runId == null ? ":" + sha : runId + ":" + sha) : null;
+                const startUs = Number(segment.startUs), prevEnd = current ? Number(current.last.endUs) : null;
+                const contiguous = current && identity && identity === current.identity
+                    && Number.isFinite(startUs) && Number.isFinite(prevEnd)
+                    && startUs >= prevEnd && startUs - prevEnd <= 250000;
+                if (!contiguous) {
+                    current = {identity, sha, runId, startFrame: cursor, endFrame: (cursor == null || frames == null) ? null : cursor + frames, frames, last: segment};
+                    shots.push(current);
+                } else {
+                    if (current.frames == null || frames == null) { current.frames = null; current.endFrame = null; }
+                    else { current.frames += frames; if (current.endFrame != null) current.endFrame += frames; }
+                    current.last = segment;
+                }
+                if (frames == null) cursor = null;
+                else if (cursor != null) cursor += frames;
+            }
+            return shots.map((shot, index) => ({identity: shot.identity, sha: shot.sha, runId: shot.runId, shotIndex: index + 1, startFrame: shot.startFrame, endFrame: shot.endFrame}));
+        };
+        const leftShots = list(leftSegments), rightShots = list(rightSegments);
+        if (leftShots == null || rightShots == null) return null;
+        const rate = typeof fps === "number" && Number.isFinite(fps) && fps > 0 ? fps : null;
+        const pos = (shot) => ({
+            shotIndex: shot.shotIndex, startFrame: shot.startFrame, endFrame: shot.endFrame,
+            startSeconds: shot.startFrame == null || rate == null ? null : shot.startFrame / rate,
+            endSeconds: shot.endFrame == null || rate == null ? null : shot.endFrame / rate,
+        });
+        const rowFor = (shot, left, right, reason) => {
+            const row = {runId: shot ? shot.runId : null, sourceSha256: shot ? shot.sha : null, left, right};
+            if (reason) row.reason = reason;
+            return row;
+        };
+        const group = (shots) => {
+            const map = new Map();
+            for (const shot of shots) {
+                if (!shot.identity) continue;
+                const bucket = map.get(shot.identity) || [];
+                bucket.push(shot);
+                map.set(shot.identity, bucket);
+            }
+            return map;
+        };
+        const leftGroups = group(leftShots), rightGroups = group(rightShots), seen = new Set(), rows = [];
+        for (const left of leftShots) {
+            if (!left.identity) { rows.push(rowFor(left, pos(left), null)); continue; }
+            if (seen.has(left.identity)) continue;
+            seen.add(left.identity);
+            const leftGroup = leftGroups.get(left.identity) || [];
+            const rightGroup = rightGroups.get(left.identity) || [];
+            if (leftGroup.length && rightGroup.length && leftGroup.length !== rightGroup.length) {
+                for (const shot of leftGroup) rows.push(rowFor(shot, pos(shot), null, "split"));
+                for (const shot of rightGroup) rows.push(rowFor(shot, null, pos(shot), "split"));
+            } else if (rightGroup.length) {
+                leftGroup.forEach((shot, index) => rows.push(rowFor(shot, pos(shot), pos(rightGroup[index]))));
+            } else {
+                for (const shot of leftGroup) rows.push(rowFor(shot, pos(shot), null));
+            }
+        }
+        for (const right of rightShots) {
+            if (!right.identity) { rows.push(rowFor(right, null, pos(right))); continue; }
+            if (seen.has(right.identity)) continue;
+            seen.add(right.identity);
+            for (const shot of (rightGroups.get(right.identity) || [right])) rows.push(rowFor(shot, null, pos(shot)));
+        }
+        return rows;
+    }
+    function formatComparePosition(side, position, reason) {
+        if (!position) {
+            if (reason === "split") return `${side}：同一来源在这一侧的切分不同，不是缺少这趟素材`;
+            return `${side}：这一侧没有这个来源`;
+        }
+        const shot = `第 ${position.shotIndex} 镜`;
+        if (position.startSeconds == null || position.endSeconds == null) {
+            if (position.startFrame == null || position.endFrame == null) return `${side}：${shot} · 成片位置未知`;
+            return `${side}：${shot} · 成片 ${position.startFrame}–${position.endFrame} 帧`;
+        }
+        return `${side}：${shot} · 成片 ${position.startSeconds.toFixed(1)}–${position.endSeconds.toFixed(1)} 秒（${position.startFrame}–${position.endFrame} 帧）`;
+    }
+    function fillAlignment(view, leftPlan, rightPlan, fps) {
+        const existing = view.querySelector("#plan-compare-alignment");
+        if (existing) existing.remove();
+        const rows = alignSourceShots(leftPlan.segments, rightPlan.segments, fps);
+        const box = document.createElement("div");
+        box.id = "plan-compare-alignment";
+        if (rows == null) box.append(node("p", "两侧片段不完整，来源对齐未知。"));
+        else if (!rows.length) box.append(node("p", "两侧都还没有镜头，没有可对齐的来源。"));
+        else {
+            box.append(node("p", "按真实素材身份对齐相同来源，并标出各自在成片里的位置。不对角色或说明文字做猜测。"));
+            const list = document.createElement("ol");
+            list.className = "plan-compare-alignment";
+            for (const row of rows) {
+                const item = document.createElement("li");
+                const title = node("strong", row.sourceSha256 ? (row.runId ? `来源 ${row.sourceSha256}（分析 ${row.runId}）` : `来源 ${row.sourceSha256}`) : "来源未知，无法按素材身份对齐");
+                item.append(title, node("p", formatComparePosition("方案 A", row.left, row.reason)), node("p", formatComparePosition("方案 B", row.right, row.reason)));
+                appendLocateButtons(item, leftPlan, rightPlan, row, fps);
+                list.append(item);
+            }
+            box.append(list);
+        }
+        const close = view.querySelector("#plan-compare-close");
+        view.insertBefore(box, close || null);
+    }
+    function compareMetrics(plan, fps) {
+        if (!plan || !Array.isArray(plan.segments)) {
+            const gaps = plan && Array.isArray(plan.gaps) ? plan.gaps.slice() : null;
+            return {totalFrames: null, durationSeconds: null, shotCount: null, gaps};
+        }
+        let totalFrames = 0;
+        for (const segment of plan.segments) {
+            if (!segment || typeof segment !== "object" || segment.outputFrames == null || !Number.isFinite(Number(segment.outputFrames))) {
+                totalFrames = null;
+                break;
+            }
+            totalFrames += Math.trunc(Number(segment.outputFrames));
+        }
+        const rate = typeof fps === "number" && Number.isFinite(fps) && fps > 0 ? fps : null;
+        return {
+            totalFrames,
+            durationSeconds: totalFrames == null || rate == null ? null : totalFrames / rate,
+            shotCount: shotCount(plan.segments),
+            gaps: Array.isArray(plan.gaps) ? plan.gaps.slice() : null,
+        };
+    }
+    function fillMetrics(section, metrics) {
+        const list = document.createElement("ul");
+        list.className = "plan-compare-metrics";
+        const items = [];
+        if (metrics.durationSeconds == null) items.push(metrics.totalFrames == null ? "总长未知" : `总长未知（${metrics.totalFrames} 帧，缺帧率）`);
+        else items.push(`总长 ${metrics.durationSeconds.toFixed(1)} 秒（${metrics.totalFrames} 帧）`);
+        items.push(metrics.shotCount == null ? "镜头数未知" : `镜头数 ${metrics.shotCount}`);
+        if (metrics.gaps == null) items.push("缺口未知");
+        else if (!metrics.gaps.length) items.push("没有缺口");
+        else for (const gap of metrics.gaps) items.push(`缺口：${gap}`);
+        for (const item of items) list.append(node("li", item));
+        section.append(list);
     }
     // Back-to-back segments of one source play as a single continuous shot.
     function shotCount(segments) {

@@ -99,6 +99,8 @@ def narrated(revisions, engine, monkeypatch):
         narration_artifact=None,
         watermark=None,
         presentation=None,
+        overlays=None,
+        burn_cues=None,
     ):
         from gamingcreator.infrastructure.narration_mix import narration_receipt, verify_narration
 

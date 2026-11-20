@@ -190,6 +190,10 @@ def studio_audio(service, engine, monkeypatch):  # noqa: F811
         }
 
     monkeypatch.setattr(server, "project_runs_payload", runs)
+    # A second empty project lets A08 switch mid-gesture without changing the default session.
+    other = service.repository / "artifacts/other"
+    other.mkdir(exist_ok=True)
+    (other / "timeline.sqlite3").touch()
     http = server.create_server("127.0.0.1", 0, service.repository)
     thread = threading.Thread(target=http.serve_forever, daemon=True)
     thread.start()
@@ -239,7 +243,6 @@ CAPTURE = """async (seconds) => {
 }"""
 
 
-@pytest.mark.xfail(strict=False, reason="TD030")
 def test_real_studio_dissolve_audio_clock_ducking_and_pause(studio_audio):
     page = studio_audio
     page.get_by_role("button", name="预览方案", exact=True).click()

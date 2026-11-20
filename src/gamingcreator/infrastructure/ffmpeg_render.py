@@ -29,6 +29,7 @@ from gamingcreator.infrastructure.narration_mix import (
 )
 from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary, resolve_overlay_assets
 from gamingcreator.infrastructure.overlay_render import overlay_filters
+from gamingcreator.infrastructure.proxy_media import reject_editing_proxy_source
 from gamingcreator.infrastructure.render_limits import render_output_limit
 
 
@@ -300,6 +301,7 @@ class FfmpegCreationRenderer:
         watermark: str | None = None,
         presentation: PresentationOptions | None = None,
         overlays: CreationOverlays | None = None,
+        burn_cues: tuple[SubtitleCue, ...] | None = None,
     ) -> dict[str, object]:
         overlays = (
             CreationOverlays.from_json(overlays.to_json()) if overlays else CreationOverlays(())
@@ -334,11 +336,18 @@ class FfmpegCreationRenderer:
                 plan.fps,
             )
             protected = (*protected, narration_artifact.directory)
+        for clip in plan.clips:
+            reject_editing_proxy_source(clip.asset.source_path)
         if subtitle_mode not in ("none", "sidecar", "burn"):
             raise ValueError("Unknown subtitle mode.")
         subtitle_text = serialize_srt(cues) if subtitle_mode != "none" else ""
         saved_cues = quantize_srt(cues) if subtitle_mode != "none" else ()
-        if any(cue.end > Fraction(plan.frames, plan.fps) for cue in saved_cues):
+        burned = (
+            quantize_srt(burn_cues)
+            if subtitle_mode == "burn" and burn_cues is not None
+            else saved_cues
+        )
+        if any(cue.end > Fraction(plan.frames, plan.fps) for cue in (*saved_cues, *burned)):
             raise ValueError("Subtitle extends beyond render output.")
         if any(
             type(value) is not int or not 16 <= value <= 3840 or value % 2
@@ -384,9 +393,9 @@ class FfmpegCreationRenderer:
         if subtitle_mode != "none":
             with subtitle_path.open("x", encoding="utf-8", newline="\n") as handle:
                 handle.write(subtitle_text)
-        if subtitle_mode == "burn" and saved_cues:
+        if subtitle_mode == "burn" and burned:
             ass_path.write_text(
-                _burn_ass(saved_cues, width, height, presentation.subtitle_style),
+                _burn_ass(burned, width, height, presentation.subtitle_style),
                 encoding="utf-8",
             )
             video_filter += f",ass=filename={_filter_path(ass_path)}"

@@ -192,7 +192,15 @@ class CreationJobs:
                 "profile",
             }
         optional = (
-            {"subtitleMode", "safeAreaMarginPercent", "badgeText", "badgeCorner", "subtitleStyle"}
+            {
+                "subtitleMode",
+                "safeAreaMarginPercent",
+                "badgeText",
+                "badgeCorner",
+                "subtitleStyle",
+                "wordHighlights",
+                "asrWords",
+            }
             if kind == "render"
             else (
                 {
@@ -226,6 +234,12 @@ class CreationJobs:
         ):
             raise fail("creation.input", "字幕样式只用于烧入字幕。")
         if kind == "render":
+            try:
+                from gamingcreator.infrastructure.asr_words import parse_word_highlight_request
+
+                parse_word_highlight_request(request)
+            except ValueError as error:
+                raise fail("creation.input", "请填写已核对的词级结果。") from error
             try:
                 from gamingcreator.domain.creation_presentation import PresentationOptions
 
@@ -319,7 +333,12 @@ class CreationJobs:
                 project = self.project(project_id)
             elif kind == "publication":
                 parent_id = identity(request["renderJobId"])
-                project_id, parent_digest = publication_jobs.prepare(self, request)
+                try:
+                    project_id, parent_digest = publication_jobs.prepare(self, request)
+                except ValueError as error:
+                    raise fail(
+                        "creation.input", publication_jobs.user_input_message(error)
+                    ) from error
                 project = self.project(project_id)
             elif kind == "revision" or "revisionJobId" in request:
                 parent_id = identity(
@@ -482,6 +501,8 @@ class CreationJobs:
             ):
                 raise ValueError("Result does not match the persisted request")
             state.update({key: report[key] for key in ("plans", "brief", "fps")})
+            if report.get("candidateCountReason"):
+                state["candidateCountReason"] = report["candidateCountReason"]
             # Do not alter the immutable original report.
             state = json.loads(json.dumps(state))
             for plan in state["plans"]:
@@ -731,6 +752,15 @@ class CreationJobs:
                         subtitle_mode=request.get("subtitleMode", "none"),
                         watermark=state.get("watermark"),
                         presentation=PresentationOptions.from_request(request),
+                        **(
+                            {
+                                "word_run_id": request["asrWords"]["runId"],
+                                "word_result_hash": request["asrWords"]["resultHash"],
+                            }
+                            if request.get("wordHighlights") is True
+                            and isinstance(request.get("asrWords"), dict)
+                            else {}
+                        ),
                     )
                 )
             receipt_path = directory / "result/receipt.json"
@@ -815,11 +845,15 @@ class CreationJobs:
         if state["status"] == "completed":
             try:
                 state = self.verify(directory, state)
-            except Exception:
+            except Exception as error:
                 state["status"] = "failed"
+                message = "任务产物已更改，不能预览或下载。"
+                detail = str(error)
+                if "平台包文件" in detail:
+                    message = f"任务产物已更改，不能预览或下载：{detail}"
                 state["error"] = {
                     "code": "creation.artifact_invalid",
-                    "message": "任务产物已更改，不能预览或下载。",
+                    "message": message,
                 }
                 state.pop("artifact", None)
                 state.pop("editor", None)
@@ -930,6 +964,13 @@ class CreationJobs:
     def package(self, job_id: str) -> dict[str, Any]:
         state = self.get(job_id)
         if state["kind"] != "package" or state["status"] != "completed":
+            error = state.get("error") or {}
+            if error.get("code") == "creation.artifact_invalid":
+                raise fail(
+                    "creation.artifact_invalid",
+                    str(error.get("message") or "任务产物已更改，不能预览或下载。"),
+                    True,
+                )
             raise ValueError("Package unavailable")
         return dict(state["package"])
 
@@ -1357,7 +1398,7 @@ class CreationJobs:
     ) -> tuple[bytes, str, str]:
         import wave
 
-        from gamingcreator.application.creation_subtitles import build_subtitles
+        from gamingcreator.application.creation_subtitles import build_subtitles, present_subtitles
         from gamingcreator.application.timeline_export import (
             ExportCaption,
             ExportNarration,
@@ -1382,14 +1423,17 @@ class CreationJobs:
         try:
             runs = {timeline.run.run_id: timeline for timeline in chain.timelines}
             overrides = {item["clipId"]: item["text"] for item in chain.subtitle_overrides}
-            cues = build_subtitles(
-                chain.plan,
-                (),
-                per_clip=(runs[row["runId"]].transcripts for row in chain.edl["segments"]),
-                overrides=(
-                    overrides.get(row["clipId"]) for row in version_clips(chain.edl, chain.root_sha)
-                ),
-            )
+            cues = present_subtitles(
+                build_subtitles(
+                    chain.plan,
+                    (),
+                    per_clip=(runs[row["runId"]].transcripts for row in chain.edl["segments"]),
+                    overrides=(
+                        overrides.get(row["clipId"])
+                        for row in version_clips(chain.edl, chain.root_sha)
+                    ),
+                )
+            ).cues
             captions = captions_from_cues(cues, int(chain.edl["fpsNumerator"]))
         except Exception:
             captions = ()

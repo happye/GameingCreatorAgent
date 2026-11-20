@@ -48,11 +48,10 @@ def clips():
 
 def test_three_structures_and_source_frame_clocks():
     report = plan_creation(brief(), clips(), 30)
-    decisions = [
-        select_edit_decision(report, name) for name in ("chronological", "hook-first", "reverse")
-    ]
+    names = [plan["id"] for plan in report["plans"] if plan["ready"]]
+    decisions = [select_edit_decision(report, name) for name in names]
     orders = [tuple(s["eventId"] for s in d["segments"]) for d in decisions]
-    assert len(set(orders)) == 3
+    assert len(set(orders)) == len(orders) >= 3
     for decision in decisions:
         segments = decision["segments"]
         assert sum(s["outputFrames"] for s in segments) <= 180
@@ -64,12 +63,12 @@ def test_three_structures_and_source_frame_clocks():
 def test_missing_material_is_not_ready_but_topic_misses_only_advise():
     report = plan_creation(brief(), clips()[:1], 30)
     with pytest.raises(ValueError, match="gaps"):
-        select_edit_decision(report, "chronological")
+        select_edit_decision(report, report["plans"][0]["id"])
     # J1 2026-11-11: editorial topics rarely appear verbatim in visual facts; never grey out.
     report = plan_creation(replace(brief(), mandatory_topics=("unseen",)), clips(), 30)
-    plan = next(p for p in report["plans"] if p["id"] == "chronological")
+    plan = next(p for p in report["plans"] if p["ready"])
     assert plan["ready"] and any("unseen" in note for note in plan["advisories"])
-    select_edit_decision(report, "chronological")
+    select_edit_decision(report, plan["id"])
 
 
 def test_overlapping_picks_of_one_recording_play_each_second_once():
@@ -202,7 +201,10 @@ def test_chronological_sorts_source_time_despite_reverse_event_selection():
     )
     selected = tuple(clip.event.event_id for clip in reversed(first + second))
     report = plan_creation(brief(), candidates(timelines, selected), 30)
-    segments = select_edit_decision(report, "chronological")["segments"]
+    identity = next(
+        plan["id"] for plan in report["plans"] if plan["id"] in {"chronological", "guide-steps"}
+    )
+    segments = select_edit_decision(report, identity)["segments"]
     order = [(segment["sourceSha256"], segment["startUs"]) for segment in segments]
     # Input run order across sources (B first), source time within a source.
     rank = {"b" * 64: 0, "a" * 64: 1}
@@ -221,9 +223,8 @@ def test_subframe_candidate_cannot_collapse_ready_template_orders():
         ),
     )
     report = plan_creation(brief(), material + (tiny,), 30)
-    decisions = [
-        select_edit_decision(report, name) for name in ("chronological", "hook-first", "reverse")
-    ]
+    names = [plan["id"] for plan in report["plans"] if plan["ready"]]
+    decisions = [select_edit_decision(report, name) for name in names]
     orders = [
         tuple(segment["eventId"] for segment in decision["segments"]) for decision in decisions
     ]

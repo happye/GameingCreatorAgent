@@ -20,7 +20,7 @@
   --font-ui: "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
   --font-num: "Cascadia Mono", "Consolas", ui-monospace, monospace;
   --t-xs: 11px; --t-sm: 12px; --t-md: 13px; --t-lg: 15px;
-  --bin-w: 264px; --insp-w: 300px; --tl-h: 196px;
+  --bin-w: 264px; --insp-w: 300px; --tl-h: 252px; /* 多轨后要放下画面、原声、旁白、配乐、字幕和刻度，196px 不够会裁到助手栏下面 */
 }
 * { box-sizing: border-box; }
 html, body, #studio { height: 100%; margin: 0; }
@@ -34,13 +34,17 @@ button:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focu
 /* Shell */
 .shell { display: grid; grid-template-rows: 44px minmax(0, 1fr) auto; height: 100%; }
 .topbar { display: flex; align-items: center; gap: var(--s-3); padding: 0 var(--s-3); background: var(--bg-1); border-bottom: 1px solid var(--line); min-width: 0; }
+.brand, .tabs, .topbar-actions { flex: none; }
 .brand { font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
 .brand small { color: var(--ink-3); font-weight: 400; margin-left: 6px; }
 .tabs { display: flex; gap: 2px; background: var(--bg-0); padding: 3px; border-radius: var(--r-2); }
 .tabs button { border: 0; background: none; color: var(--ink-2); padding: 4px 14px; border-radius: var(--r-1); }
 .tabs button[aria-selected="true"] { background: var(--bg-3); color: var(--ink-1); }
-.spacer { flex: 1; }
+.spacer { flex: 1 1 auto; min-width: var(--s-2); }
 .select { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-1); padding: 4px 8px; max-width: 240px; }
+.topbar .select { flex: 0 1 240px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.topbar .status { flex: 0 1 32ch; min-width: 0; }
+.topbar-actions { display: flex; align-items: center; gap: var(--s-3); white-space: nowrap; }
 .icon-btn { background: none; border: 1px solid transparent; color: var(--ink-2); border-radius: var(--r-1); padding: 4px 8px; }
 .icon-btn:hover { background: var(--bg-2); color: var(--ink-1); }
 .icon-btn[aria-pressed="true"] { color: var(--accent); }
@@ -83,10 +87,11 @@ details.group[open] > summary::before { content: "▾ "; }
 .ruler { position: relative; height: 16px; color: var(--ink-3); font: var(--t-xs) var(--font-num); }
 .ruler span { position: absolute; top: 0; transform: translateX(-50%); }
 .track { position: relative; height: 72px; margin-top: 4px; border-radius: var(--r-1); background: var(--bg-0); }
-.clip { position: absolute; top: 2px; bottom: 2px; border-radius: 3px; background: var(--clip) center/cover no-repeat; border: 1px solid #0006; overflow: hidden; padding: 0; }
+.clip { position: absolute; top: 2px; bottom: 2px; border-radius: 3px; background: var(--clip) center/cover no-repeat; border: 1px solid #0006; overflow: hidden; padding: 0; box-sizing: border-box; }
 .clip:hover { filter: brightness(1.15); }
 .clip[aria-current="true"] { outline: 2px solid var(--clip-on); outline-offset: -1px; z-index: 1; }
 .trim-handle { position: absolute; top: 0; bottom: 0; width: 10px; margin-left: -5px; z-index: 3; cursor: ew-resize; touch-action: none; }
+.trim-handle.out { margin-left: -10px; } /* keep the last clip out-handle inside the track, not under the inspector */
 .trim-handle::after { content: ""; position: absolute; top: 4px; bottom: 4px; left: 3px; width: 4px; border-radius: 2px; background: var(--clip-on); }
 .trim-handle.in::after { left: 4px; } .trim-handle.out::after { left: 2px; }
 .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #ff5d5d; pointer-events: none; z-index: 2; }
@@ -155,6 +160,7 @@ details.group[open] > summary::before { content: "▾ "; }
 .field .btn { margin-top: var(--s-2); }
 .field .form-row { margin-top: var(--s-2); }
 .transport { min-height: 40px; flex-wrap: nowrap; }
+.transport .preview-source { color: var(--ink-3); font-size: var(--t-sm); white-space: nowrap; }
 .transport .btn { padding: 4px 14px; white-space: nowrap; }
 .transport .btn.ghost { padding: 4px 10px; }
 .pair.even { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
@@ -230,3 +236,23 @@ details.group[open] > summary::before { content: "▾ "; }
 .wave-lane svg.envelope { position: absolute; left: 0; top: 1px; overflow: visible; cursor: copy; }
 .wave-lane svg.envelope polyline { fill: none; stroke: var(--clip-on); stroke-width: 1.5; }
 .wave-lane svg.envelope circle { fill: var(--clip-on); stroke: var(--bg-0); cursor: grab; }
+
+/* Multi-track zoom, shared ruler, named lanes (G01-G07). */
+.zoom-controls { margin-left: auto; display: flex; gap: 4px; flex-wrap: wrap; }
+.zoom-controls .btn { padding: 0 8px; min-height: 24px; font-size: var(--t-xs); }
+.zoom-controls .btn[aria-pressed="true"] { background: var(--bg-2, var(--line)); }
+.track-scroll { position: relative; }
+.track-row { position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: start; }
+.track-row .track-name { font-size: 10px; line-height: 16px; color: var(--ink-3); padding: 2px 4px 0 0; user-select: none; }
+.track-row .playhead { top: 0; bottom: 0; }
+.lane-slot { position: relative; min-width: 0; }
+.lane-slot .track-note { margin: 0; padding: 0; }
+.track-row > .ruler { min-width: 0; }
+.caption-lane { position: relative; height: 20px; margin-top: 3px; border-radius: var(--r-1); background: var(--bg-0); }
+.caption-block { position: absolute; top: 0; bottom: 0; border: 0; padding: 0 4px; border-radius: var(--r-1); background: color-mix(in srgb, var(--warn, #c9a227) 35%, transparent); color: var(--ink-1); font-size: 10px; line-height: 20px; overflow: hidden; white-space: nowrap; text-align: left; cursor: pointer; }
+.lane .bar.movable { cursor: ew-resize; touch-action: none; }
+.track-note { grid-column: 2; margin: 0; font-size: 10px; }
+#plan-compare-changes li[data-change="added"] { background: #e8f6e8; }
+#plan-compare-changes li[data-change="missing"] { background: #f8ecec; }
+#plan-compare-changes li[data-change="reordered"] { background: #f7f0d9; }
+#plan-compare-changes li[data-change="unknown"] { background: #f0f0f0; }

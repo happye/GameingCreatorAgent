@@ -255,7 +255,7 @@
                 if (video.currentSrc !== url) return;
                 finish(null);
             };
-            const failed = () => finish(new Error("media_error"));
+            const failed = () => finish(new Error(loadFailureKind(video)));
             video.addEventListener("loadedmetadata", ready);
             video.addEventListener("error", failed);
             timer = setTimeout(() => finish(new Error("metadata_timeout")), 15000);
@@ -263,7 +263,7 @@
                 video.src = url;
                 video.load();
             } catch (error) {
-                finish(new Error("media_error"));
+                finish(new Error(loadFailureKind(video)));
             }
         });
     }
@@ -308,19 +308,82 @@
             try {
                 await prepare(element, url);
                 const observation = await observe(element, seekTimeoutMs);
+                if (element.error && element.error.code === 3) {
+                    reason = "media_decode_error";
+                    break;
+                }
                 for (const clock of candidates) {
                     const verdict = validate(clock, observation);
                     if (verdict.established) return {established: true, clock, reason: null};
                     if (reason === null) reason = verdict.reason;
                 }
             } catch (error) {
-                if (reason === null) reason = "media_unavailable";
+                const kind = error && error.message;
+                if (reason === null) reason = (kind === "media_decode_error" || kind === "media_http_error") ? kind : "media_unavailable";
+                break;
             } finally {
                 element.removeAttribute("src");
                 element.load();
             }
         }
         return {established: false, clock: null, reason: reason || "axis_unavailable"};
+    }
+
+    function previewClockReason(reason) {
+        if (!reason) return null;
+        if (reason === "axis_mismatch") return "代理起点与原片对不齐，已改用原片";
+        if (reason === "duration_mismatch") return "代理时长与原片对不齐，已改用原片";
+        if (reason === "proxy_http_failed") return "代理无法加载，已改用原片";
+        if (reason === "proxy_decode_failed") return "代理解码失败，已改用原片";
+        return "代理时钟不可信，已改用原片";
+    }
+
+    function loadFailureKind(video) {
+        const code = video && video.error && video.error.code;
+        if (code === 3) return "media_decode_error";
+        if (code === 2 || code === 4) return "media_http_error";
+        return "media_error";
+    }
+
+    function proxyLoadReason(video) {
+        return loadFailureKind(video) === "media_decode_error" ? "proxy_decode_failed" : "proxy_http_failed";
+    }
+
+    function playbackErrorText(error) {
+        if (!error) return "原视频暂时无法播放";
+        if (error.code === 1) return "原片播放被中止，请重试";
+        if (error.code === 2) return "原片加载失败，暂时无法播放";
+        if (error.code === 3) return "原片解码失败，暂时无法播放";
+        if (error.code === 4) return "浏览器无法播放该原片";
+        if (typeof error.message === "string" && error.message.trim()) return `原视频暂时无法播放（${error.message}）`;
+        return "原视频暂时无法播放";
+    }
+
+    async function alignPreview(candidates, originalUrl, proxyUrl, preferProxy = true, seekTimeoutMs = 3000) {
+        const original = typeof originalUrl === "string" && originalUrl ? originalUrl : null;
+        const proxy = typeof proxyUrl === "string" && proxyUrl ? proxyUrl : null;
+        const fallback = async (reason) => {
+            if (!original) {
+                return {url: null, source: null, clock: null, established: false, reason: reason || "clock_unavailable"};
+            }
+            const result = await establish(candidates, original, seekTimeoutMs);
+            return {
+                url: original,
+                source: "original",
+                clock: result.established ? result.clock : null,
+                established: result.established,
+                reason: reason || result.reason,
+            };
+        };
+        if (!preferProxy || !proxy) return fallback(null);
+        const probed = await establish(candidates, proxy, seekTimeoutMs);
+        if (probed.established) {
+            return {url: proxy, source: "proxy", clock: probed.clock, established: true, reason: null};
+        }
+        const reason = probed.reason === "media_decode_error" ? "proxy_decode_failed"
+            : (probed.reason === "media_unavailable" || probed.reason === "media_http_error") ? "proxy_http_failed"
+            : (probed.reason || "axis_mismatch");
+        return fallback(reason);
     }
 
     globalThis.SourceClock = Object.freeze({
@@ -337,5 +400,9 @@
         prepare,
         observe,
         establish,
+        previewClockReason,
+        alignPreview,
+        proxyLoadReason,
+        playbackErrorText,
     });
 })();

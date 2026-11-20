@@ -13,6 +13,7 @@ from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.media import MediaAsset
 from gamingcreator.infrastructure.ffmpeg_media import VisualLogParser
 from gamingcreator.infrastructure.media_process import run_media_process
+from gamingcreator.infrastructure.proxy_media import reject_editing_proxy_source
 
 
 def selection_filter(interval_seconds: Fraction) -> str:
@@ -37,6 +38,7 @@ class FfmpegFullResolutionFrames:
         video = next((item for item in asset.streams if item.kind == "video"), None)
         if video is None or count <= 0:
             raise AppError("media.frame_mapping", "素材没有可取的视频帧。", ExitCode.INPUT)
+        reject_editing_proxy_source(asset.source_path)
         if output.exists():
             raise AppError("input.media_output", "原分辨率帧须使用新的独立目录。", ExitCode.INPUT)
         output.mkdir(parents=True)

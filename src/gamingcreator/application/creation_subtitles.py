@@ -1,6 +1,7 @@
 """Map saved ASR source intervals onto the ordered render output clock."""
 
 from collections.abc import Iterable
+from dataclasses import dataclass
 from fractions import Fraction
 
 from gamingcreator.application.rendering import RenderPlan
@@ -69,3 +70,75 @@ def validate_override_text(text: str) -> None:
         raise ValueError("Subtitle override text contains control characters.")
     if text:
         SubtitleCue(Fraction(0), Fraction(1), text, "user-written")
+
+
+@dataclass(frozen=True, slots=True)
+class SubtitlePresentation:
+    cues: tuple[SubtitleCue, ...]
+    source: str
+    word_highlights: bool
+
+
+def present_subtitles(
+    segment_cues: Iterable[SubtitleCue],
+    words: Iterable[object] | None = None,
+    *,
+    sidecar_available: bool = False,
+    plan: RenderPlan | None = None,
+    per_clip: Iterable[Iterable[object]] | None = None,
+    reserved_clip_indexes: Iterable[int] | None = None,
+) -> SubtitlePresentation:
+    """只有核对过的词级结果才进入已有剪辑映射；手写或留空的镜头保持原样。"""
+    cues = tuple(segment_cues)
+    fallback = SubtitlePresentation(cues=cues, source="segment", word_highlights=False)
+    if not sidecar_available or words is None or plan is None:
+        return fallback
+    word_list = tuple(words)
+    if not word_list:
+        return fallback
+    from gamingcreator.application.asr_word_timing import AsrWord, map_words_to_edit_timeline
+
+    if any(type(word) is not AsrWord for word in word_list):
+        return fallback
+    typed_words = tuple(word for word in word_list if type(word) is AsrWord)
+    typed_clips = (
+        None
+        if per_clip is None
+        else tuple(tuple(word for word in clip if type(word) is AsrWord) for clip in per_clip)
+    )
+    mapped = map_words_to_edit_timeline(plan, typed_words, per_clip=typed_clips)
+    reserved = {index for index in (reserved_clip_indexes or ()) if type(index) is int}
+    reserved |= {
+        cue.clip_index
+        for cue in cues
+        if cue.uncertainty == "user-written" and type(cue.clip_index) is int
+    }
+    word_cues = tuple(cue for cue in mapped if cue.clip_index not in reserved)
+    if not word_cues:
+        return fallback
+    used = {cue.clip_index for cue in word_cues}
+    kept = tuple(cue for cue in cues if cue.clip_index in reserved or cue.clip_index not in used)
+    combined = tuple(sorted((*kept, *word_cues), key=lambda cue: (cue.start, cue.end)))
+    return SubtitlePresentation(cues=combined, source="words", word_highlights=True)
+
+
+def export_subtitle_tracks(
+    segment_cues: Iterable[SubtitleCue],
+    words: Iterable[object] | None = None,
+    *,
+    sidecar_available: bool = False,
+    plan: RenderPlan | None = None,
+    per_clip: Iterable[Iterable[object]] | None = None,
+    reserved_clip_indexes: Iterable[int] | None = None,
+) -> tuple[tuple[SubtitleCue, ...], tuple[SubtitleCue, ...] | None]:
+    """SRT 始终用段级字幕；只有核对过的词级结果才进入烧录。"""
+    sidecar = present_subtitles(segment_cues)
+    burned = present_subtitles(
+        segment_cues,
+        words,
+        sidecar_available=sidecar_available,
+        plan=plan,
+        per_clip=per_clip,
+        reserved_clip_indexes=reserved_clip_indexes,
+    )
+    return sidecar.cues, (burned.cues if burned.word_highlights else None)
