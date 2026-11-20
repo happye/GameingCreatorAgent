@@ -447,7 +447,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     : plan ? html`<p class="hint">点时间轴上的一个镜头，可以裁短、调速、换顺序或替换画面。</p><${PlanInspector} plan=${plan} groups=${groups} count=${items.length} totalUs=${player.totalUs} shot=${null} />` : html`<p class="note">选中方案后，这里显示它的时长、镜头和缺口。</p>`}
                 </div>
                 <div hidden=${inspTab !== "sound"}>
-                ${editable ? html`<${AudioPanel} editing=${editing} project=${project} game=${planJob?.brief?.game || ""} fps=${fps} totalUs=${player.totalUs} music=${music} onBusy=${setAudioBusy} /><${BeatSnap} editing=${editing} onPreview=${setCommandRows} />`
+                ${editable ? html`<${AudioPanel} commandPreview=${commandPreview} editing=${editing} project=${project} game=${planJob?.brief?.game || ""} fps=${fps} totalUs=${player.totalUs} music=${music} onBusy=${setAudioBusy} /><${BeatSnap} editing=${editing} onPreview=${setCommandRows} />`
                     : html`<p class="note">${plan ? "这个方案还不能编辑声音（正在读取或只能导出）。" : "先在左侧选一个方案，再在这里加旁白和配乐。"}</p>`}
                 </div>
                 <div hidden=${inspTab !== "overlay"}>

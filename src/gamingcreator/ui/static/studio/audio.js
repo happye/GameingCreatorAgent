@@ -101,7 +101,7 @@ export function useMusicCatalog() {
 const billedCharacters = (text) => [...text].reduce((n, c) => n + ((c >= "\u2e80" && c <= "\u9fff") || (c >= "\uf900" && c <= "\uffef") ? 2 : 1), 0);
 const costOf = (text, voice) => (voice?.paid ? Math.round(billedCharacters(text) * voice.yuanPer10kCharacters) / 10000 : 0);
 
-export function AudioPanel({editing, project, game = "", fps, totalUs, music, onBusy}) {
+export function AudioPanel({commandPreview = false, editing, project, game = "", fps, totalUs, music, onBusy}) {
     const {audio} = editing;
     const [voices, setVoices] = useState([]);
     const [billing, setBilling] = useState({spent: 0, cap: 0});
@@ -117,6 +117,7 @@ export function AudioPanel({editing, project, game = "", fps, totalUs, music, on
     const [revisionText, setRevisionText] = useState("");
     const [revisionVoiceId, setRevisionVoiceId] = useState("");
     const [revisionNote, setRevisionNote] = useState("");
+    const busyEpoch = useRef(0);
     const draftEpoch = useRef(0);
     const synthEpoch = useRef(0);
     const revisionEpoch = useRef(0);
@@ -137,6 +138,7 @@ export function AudioPanel({editing, project, game = "", fps, totalUs, music, on
         mounted.current = true;
         return () => {
             mounted.current = false;
+            busyEpoch.current += 1;
             draftEpoch.current += 1;
             synthEpoch.current += 1;
             revisionEpoch.current += 1;
@@ -159,6 +161,7 @@ export function AudioPanel({editing, project, game = "", fps, totalUs, music, on
         synthEpoch.current += 1;
         revisionEpoch.current += 1;
         scopeRef.current = {project, jobId: baseJobId, planId, assetJobId: attachedAssetJobId};
+        busyEpoch.current += 1;
         setScript(null);
         setText("");
         setNote("");
@@ -186,7 +189,7 @@ export function AudioPanel({editing, project, game = "", fps, totalUs, music, on
         scopeRef.current = {project, jobId: baseJobId, planId, assetJobId: attachedAssetJobId};
     }, [project, baseJobId, planId, attachedAssetJobId]);
 
-    const busy = (value) => { setWorking(value); onBusy(!!value); };
+    const busy = (value) => { setWorking(value); onBusy(!!value); return ++busyEpoch.current; };
 
     const persistFreeDraft = (nextText, nextVoice) => {
         const key = draftKey(project, baseJobId, planId, "");
@@ -203,7 +206,7 @@ export function AudioPanel({editing, project, game = "", fps, totalUs, music, on
     const draft = async () => {
         const editVersion = editGeneration.current.version;
         const token = ++draftEpoch.current;
-        busy("script"); setNote("");
+        const task = busy("script"); setNote("");
         try {
             const data = await client.api(`/api/creation/jobs/${encodeURIComponent(editing.base.jobId)}/narration-script`, {planId: editing.base.planId});
             if (draftEpoch.current !== token || !mounted.current) return;
@@ -217,11 +220,11 @@ export function AudioPanel({editing, project, game = "", fps, totalUs, music, on
         } catch (error) {
             if (draftEpoch.current === token && mounted.current) setNote(error.message);
         } finally {
-            if (draftEpoch.current === token && mounted.current) busy("");
+            if (busyEpoch.current === task && mounted.current) busy("");
         }
     };
 
-    const ai = useNarrationAI({editing, project, text, fallback: draft, adopt: (data) => {
+    const ai = useNarrationAI({editing, commandPreview, working: !!working, project, text, fallback: draft, adopt: (data) => {
         draftEpoch.current += 1;
         setScript(data); setText(data.text); setDraftMode("ai");
         setOriginal({text: data.text, citations: data.citations || []});
@@ -433,8 +436,8 @@ export function AudioPanel({editing, project, game = "", fps, totalUs, music, on
     const revisionVoice = voices.find((v) => v.voiceId === revisionVoiceId);
     const estimate = text.trim() ? text.trim().length / (script?.charactersPerSecond || 3.5) : 0;
     const charCount = codepoints(text);
-    const citations = draftMode === "drafted" ? (original?.citations || script?.citations || []) : [];
-    const editedAway = draftMode === "drafted" && original && text !== original.text;
+    const citations = ["drafted", "ai"].includes(draftMode) ? (original?.citations || script?.citations || []) : [];
+    const editedAway = ["drafted", "ai"].includes(draftMode) && original && text !== original.text;
     const showEditor = !n && !!draftMode;
     const revising = working === "revise";
     const paramsLocked = revising;
@@ -504,8 +507,8 @@ export function AudioPanel({editing, project, game = "", fps, totalUs, music, on
                 }} aria-label="旁白稿"></textarea>
                 <p class="hint" aria-label="旁白字符数">${charCount} 字</p>
                 ${toolButtons(text, "草稿")}
-                ${draftMode === "drafted" && editedAway && html`<p class="note warn" role="status">起草时参考资料，正文已编辑，请核对</p>`}
-                ${draftMode === "drafted" && citations.length > 0 && html`<details class="group" aria-label="旁白知识引用"><summary>起草时参考资料（${citations.length}）</summary>
+                ${["drafted", "ai"].includes(draftMode) && editedAway && html`<p class="note warn" role="status">起草时参考资料，正文已编辑，请核对</p>`}
+                ${["drafted", "ai"].includes(draftMode) && citations.length > 0 && html`<details class="group" aria-label="旁白知识引用"><summary>起草时参考资料（${citations.length}）</summary>
                     <ul class="facts">${citations.map((row) => html`<li key=${row.entryId}>
                         <div>${row.text}</div>
                         <div class="hint">${row.citation || ""}</div>
@@ -527,7 +530,7 @@ export function AudioPanel({editing, project, game = "", fps, totalUs, music, on
                     : html`<p class="hint">本机 Windows 语音，免费离线，听感偏机械。${voices.some((v) => v.paid && !v.available) ? "云端音色需在启动工作台的终端里设置 DASHSCOPE_API_KEY 后重启。" : ""}</p>`}
                 <div class="actions-row"><button type="button" class="btn" disabled=${!!working || !text.trim() || !voiceId} onClick=${synthesize}>${working === "voice" ? "正在合成…" : paid ? `确认付费合成（约 ￥${cost.toFixed(4)}）` : "合成旁白"}</button></div>`
             : html`<div class="actions-row">
-                <button type="button" class="btn ghost" disabled=${!!working || ai.busy || editing.dirty || editing.status !== "ready"} onClick=${ai.start}>${working === "script" ? "正在起草…" : "起草旁白稿"}</button>
+                <button type="button" class="btn ghost" disabled=${!!working || ai.busy || commandPreview || editing.dirty || editing.status !== "ready"} onClick=${ai.start}>${working === "script" ? "正在起草…" : "起草旁白稿"}</button>
                 <button type="button" class="btn ghost" disabled=${!!working} aria-label="手写旁白稿" onClick=${startHandwritten}>手写旁白稿</button>
             </div>`}
         ${!n && ai.view}

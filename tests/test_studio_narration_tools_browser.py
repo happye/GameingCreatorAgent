@@ -168,6 +168,7 @@ def test_draft_citations_edit_restore_and_late_isolation(studio_plan):
     }"""
     )
     page.get_by_role("button", name="起草旁白稿", exact=True).click()
+    page.wait_for_function("() => window.pendingDrafts?.length === 1")
     page.evaluate(
         """(payload) => {
         pendingDrafts[0].resolve(new Response(JSON.stringify(payload), {
@@ -207,6 +208,7 @@ def test_draft_citations_edit_restore_and_late_isolation(studio_plan):
     }"""
     )
     page.get_by_role("button", name="起草旁白稿", exact=True).click()
+    page.wait_for_function("() => window.pendingDrafts?.length === 1")
     page.get_by_role("tab", name="素材", exact=True).click()
     page.evaluate(
         """(payload) => {

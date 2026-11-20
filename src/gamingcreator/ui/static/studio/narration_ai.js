@@ -12,9 +12,9 @@ function remember(scope, quote) {
     catch { throw new Error("无法保存 AI 恢复入口，已阻止发送；仍可使用本机草稿。"); }
 }
 
-export function useNarrationAI({editing, project, text, fallback, adopt}) {
+export function useNarrationAI({editing, commandPreview = false, working = false, project, text, fallback, adopt}) {
     const scope = JSON.stringify([project, editing.base?.jobId, editing.base?.planId, editing.editor?.expectedParentReceiptSha256]);
-    const key = JSON.stringify([scope, editing.dirty, editing.status, editing.clips, text]);
+    const key = JSON.stringify([scope, commandPreview, editing.dirty, editing.status, editing.clips, text]);
     const live = useRef({key, epoch: 0, mounted: true});
     if (live.current.key !== key) { live.current.key = key; live.current.epoch++; }
     const epoch = live.current.epoch;
@@ -23,7 +23,7 @@ export function useNarrationAI({editing, project, text, fallback, adopt}) {
     const patch = (value) => { if (valid()) setState(s => ({...s, ...value})); };
     useEffect(() => { setState(initial()); }, [key]);
     useEffect(() => () => { live.current.mounted = false; }, []);
-    const ready = editing.status === "ready" && !editing.dirty;
+    const ready = editing.status === "ready" && !editing.dirty && !commandPreview;
     const take = (data) => {
         if (!valid()) return;
         const script = data.status === "completed" && data.purpose === "narration" ? data.script : null;
@@ -66,12 +66,12 @@ export function useNarrationAI({editing, project, text, fallback, adopt}) {
         ${state.quote && !state.quote.budget?.eligible && !state.sent && html`<button class="btn ghost" disabled=${!ready || state.busy} onClick=${() => {
             if (confirm(`确认本次 AI 文字调用最多 ¥${state.quote.maxCostCny}？`)) void run(() => send(state.quote, true));
         }}>确认费用上限 ¥${state.quote.maxCostCny} 并起草</button>`}
-        ${(saved || state.quote || state.message) && html`<button class="btn ghost" disabled=${state.busy} onClick=${fallback}>使用规则模板旁白</button>`}
+        ${(saved || state.quote || state.message) && html`<button class="btn ghost" disabled=${state.busy || working} onClick=${() => { if (!working) fallback(); }}>使用规则模板旁白</button>`}
         ${state.script?.text && html`<div class="rules-result"><p>AI 草稿待预览核对</p><p>${state.script.text}</p>
             <p>${[...state.script.text].length} 字 / 上限 ${state.script.budgetCharacters} 字 · 约 ${Number(state.script.estimatedSeconds).toFixed(1)} 秒</p>
             <ul>${(state.script.lines || []).map(line => html`<li>${line.text}<blockquote>镜头原描述：${line.observationQuote}</blockquote>
-                ${(line.knowledgeUses || []).map(use => html`<p>知识引文：${use.quote}（${state.script.citations?.find(c => c.entryId === use.entryId)?.title || "登记资料"}）</p>`)}</li>`)}</ul>
-            <button class="btn" disabled=${!ready || state.busy} onClick=${() => { if (valid()) adopt(state.script); }}>填入旁白稿</button></div>`}
+                ${(line.knowledgeUses || []).map(use => html`<p>知识引文：${use.quote}（${state.script.citations?.find(c => c.entryId === use.entryId)?.citation || state.script.citations?.find(c => c.entryId === use.entryId)?.title || "登记资料"}）</p>`)}</li>`)}</ul>
+            <button class="btn" disabled=${!ready || state.busy} onClick=${() => { if (ready && valid()) adopt(state.script); }}>填入旁白稿</button></div>`}
     </div>`;
     return {start, view, busy: state.busy};
 }

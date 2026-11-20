@@ -19,7 +19,6 @@ from gamingcreator.application.brief_reasoning import (
     validate_brief,
 )
 from gamingcreator.application.budget import BudgetLedger
-from gamingcreator.application.creation_editing import editable_clips as version_clips
 from gamingcreator.application.creation_overlay_proposals import (
     PROMPT_VERSION as OVERLAY_PROMPT_VERSION,
 )
@@ -91,6 +90,7 @@ from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
 from gamingcreator.infrastructure.writer_lock import ProjectWriterLock
 from gamingcreator.ui.creation_budget_scope import resolve_budget_key
 from gamingcreator.ui.overlay_jobs import resolve_selection
+from gamingcreator.ui.revision_jobs import editable_clips as version_clips
 from gamingcreator.ui.revision_jobs import load_chain, prepare_revision
 
 if TYPE_CHECKING:

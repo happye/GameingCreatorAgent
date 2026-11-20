@@ -5,7 +5,8 @@ import json
 from types import SimpleNamespace
 
 import pytest
-from test_creation_jobs import service  # noqa: F401
+from test_clip_replacement_jobs import replacement_request, replacements  # noqa: F401
+from test_creation_jobs import finish, service  # noqa: F401
 from test_creation_reasoning_service import Transport
 from test_creation_revision_jobs import revisions  # noqa: F401
 
@@ -124,7 +125,7 @@ def test_prepared_knowledge_is_frozen_even_if_catalog_changes(context):
 
 
 def test_changed_saved_source_rejected_before_send(context):
-    source = context.jobs.directory(context.root) / "plans.json"
+    source = context.jobs.directory(context.root) / "result/plans.json"
     source.write_text("{}", encoding="utf-8")
     with pytest.raises((ValueError, AppError)):
         execute(context)
@@ -174,3 +175,39 @@ def test_prepare_http_rejects_unagreed_fields(context, extra):
             context.service,
             {"action": "prepare_narration", "jobId": context.root, "planId": "hook-first", **extra},
         )
+
+
+def test_replaced_v4_saved_version_prepare_and_execute(replacements):  # noqa: F811
+    jobs, root, _ = replacements
+    request = replacement_request(jobs, root)
+    revision = jobs.submit("revision", request)["jobId"]
+    assert finish(jobs, revision)["status"] == "completed"
+    editor = jobs.edit(revision, "hook-first")
+    assert editor["clips"][0]["runId"] == "B"
+    transport = Transport({})
+    reasoning = CreationReasoningService(
+        jobs, price_snapshot=DEEPSEEK_FLASH_20261004, transport=transport
+    )
+    prepared = reasoning.prepare_narration(revision, "hook-first")
+    snapshot = json.loads(prepared["payloadPreview"]["user"])["snapshot"]
+    clip = snapshot["clips"][0]
+    assert clip["clipId"] == editor["clips"][0]["clipId"]
+    assert clip["clipId"] != request["clips"][0]["clipId"]
+    transport.content = {
+        "schemaVersion": "narration-understanding-v1",
+        "snapshotFingerprint": prepared["snapshotFingerprint"],
+        "lines": [
+            {
+                "clipId": clip["clipId"],
+                "text": "出发",
+                "observationQuote": clip["scriptDraft"][:20],
+                "knowledgeUses": [],
+            }
+        ],
+    }
+    result = asyncio.run(
+        reasoning.execute_within_budget(prepared["preparedHash"], prepared["snapshotFingerprint"])
+    )
+    assert result["status"] == "completed", result
+    assert result["script"]["lines"][0]["clipId"] == clip["clipId"]
+    assert len(transport.calls) == 1
