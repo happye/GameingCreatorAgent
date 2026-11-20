@@ -1,0 +1,537 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>GamingCreator 协作复盘</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: single reading column (~72ch) with a sticky section index on wide screens; ledger-like tables for evidence */
+:root{
+  --bg:#f6f7f5; --panel:#ffffff; --ink:#1c2321; --muted:#5d6864; --line:#d9dfdc;
+  --accent:#0e6b5c; --accent-soft:#e3f1ed;
+  --crit:#b3261e; --crit-soft:#fbe9e7; --warn:#a15c00; --warn-soft:#fdf1df; --ok:#2e7d32; --ok-soft:#e6f3e7;
+  --bar:#0e6b5c; --bar2:#c9a227;
+  --f-display:"Noto Serif SC","Songti SC","SimSun",serif;
+  --f-body:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121715; --panel:#1a211f; --ink:#e6ece9; --muted:#9aa8a3; --line:#2c3633;
+  --accent:#4fc3a8; --accent-soft:#163029; --crit:#ff8a80; --crit-soft:#3a1d1b; --warn:#f0b35a; --warn-soft:#352813; --ok:#81c784; --ok-soft:#1b2e1d;
+  --bar:#4fc3a8; --bar2:#e0c060; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121715; --panel:#1a211f; --ink:#e6ece9; --muted:#9aa8a3; --line:#2c3633;
+  --accent:#4fc3a8; --accent-soft:#163029; --crit:#ff8a80; --crit-soft:#3a1d1b; --warn:#f0b35a; --warn-soft:#352813; --ok:#81c784; --ok-soft:#1b2e1d;
+  --bar:#4fc3a8; --bar2:#e0c060; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15.5px;line-height:1.75;margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-block:40px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:200px minmax(0,1fr);gap:48px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;font-size:13px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 0 3px 10px;border-left:2px solid var(--line)}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--accent);border-left-color:var(--accent)}
+main{min-width:0;max-width:760px}
+h1{font-family:var(--f-display);font-size:34px;line-height:1.3;margin:0 0 8px;text-wrap:balance}
+h2{font-family:var(--f-display);font-size:24px;margin:56px 0 12px;padding-top:12px;border-top:1px solid var(--line);text-wrap:balance}
+h3{font-size:17px;margin:28px 0 6px}
+p{margin:10px 0}
+.lede{color:var(--muted);font-size:14px}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--accent);font-weight:700}
+code,.mono{font-family:var(--f-mono);font-size:.86em}
+code{background:var(--accent-soft);padding:1px 5px;border-radius:4px;word-break:break-all}
+a{color:var(--accent)}
+.verdict{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px 22px;margin:22px 0}
+.verdict .grade{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 12px}
+.pill{display:inline-block;font-size:12.5px;font-weight:700;padding:2px 10px;border-radius:999px}
+.p-crit{background:var(--crit-soft);color:var(--crit)}.p-warn{background:var(--warn-soft);color:var(--warn)}.p-ok{background:var(--ok-soft);color:var(--ok)}.p-acc{background:var(--accent-soft);color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:18px 0}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.stat b{display:block;font-family:var(--f-mono);font-size:22px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.stat span{font-size:12.5px;color:var(--muted);line-height:1.5;display:block}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{font-size:12.5px;color:var(--muted);font-weight:700;letter-spacing:.03em}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.finding{border-left:3px solid var(--line);padding:4px 0 4px 16px;margin:20px 0}
+.finding.crit{border-left-color:var(--crit)}.finding.warn{border-left-color:var(--warn)}
+.finding h3{margin:0 0 4px}
+.finding .ev{font-size:13.5px;color:var(--muted)}
+.finding .fix{margin-top:6px}
+.finding .fix::before{content:"改法　";font-weight:700;color:var(--accent)}
+.finding .why::before{content:"根因　";font-weight:700;color:var(--ink)}
+.callout{background:var(--accent-soft);border-radius:8px;padding:14px 18px;margin:18px 0}
+.callout.warn{background:var(--warn-soft)}
+.chart{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin:18px 0}
+.chart h4{margin:0 0 10px;font-size:14px}
+.row{display:grid;grid-template-columns:64px minmax(0,1fr) 44px;gap:8px;align-items:center;font-size:12.5px;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.row .track{height:12px;background:var(--line);border-radius:3px;overflow:hidden}
+.row .fill{height:100%;background:var(--bar)}
+.row .fill.hot{background:var(--bar2)}
+.legend{font-size:12px;color:var(--muted);margin-top:8px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.split > div{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;min-width:0}
+.split h4{margin:0 0 6px;font-size:14px}
+ol.steps,ul.tight{padding-left:22px;margin:8px 0}
+ol.steps li,ul.tight li{margin:6px 0}
+.keep{font-size:14px}
+footer{margin-top:60px;font-size:12.5px;color:var(--muted)}
+@media (max-width:860px){.wrap{grid-template-columns:minmax(0,1fr);gap:0}nav.toc{display:none}.split{grid-template-columns:1fr}h1{font-size:27px}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="目录">
+  <a href="#verdict">总体结论</a>
+  <a href="#numbers">关键数字</a>
+  <a href="#roots">四个根因</a>
+  <a href="#named">你点名的问题</a>
+  <a href="#new">新发现的问题</a>
+  <a href="#q1">问题一：70% 换会话</a>
+  <a href="#q2">问题二：总方案细节</a>
+  <a href="#q3">双视角建议</a>
+  <a href="#landed">已落地情况</a>
+  <a href="#round2">第二轮复查</a>
+  <a href="#plan">剩余方案</a>
+  <a href="#keep">必须保留的保护</a>
+  <a href="#decide">需要你拍板</a>
+  <a href="#method">方法与可信度</a>
+</nav>
+
+<main>
+<div class="eyebrow">项目复盘 · 2026-10-03 至 2026-11-01 · 29 天 · 526 次提交</div>
+<h1>GamingCreator 人机协作复盘</h1>
+<p class="lede">数据来自 8 个方向的只读审计（规则、文档与交接、Git、测试、缓存、代码、记忆、人机流程），每个方向的结论都由另一个 Agent 重新取数、反驳和修正，最后再做一次查漏。文中数字已采用修正后的值。审计期间仓库里另一个 Agent 仍在提交，所以个别计数会小幅变动。</p>
+
+<section id="verdict">
+<div class="verdict">
+<strong>总体结论：产品做出来了，但协作流程本身变成了最大的工作量。</strong>
+<div class="grade">
+  <span class="pill p-crit">高效：不达标</span>
+  <span class="pill p-crit">整洁：不达标</span>
+  <span class="pill p-warn">可复用：部分达标</span>
+</div>
+<p>这 29 天里 Agent 写了约 5 万行源码、6.5 万行测试，做出了分析、检索、渲染、字幕、发布包、桌面 EXE 和安装包。但同一时期：</p>
+<ul class="tight">
+<li>44% 的提交一行代码都没改，只在更新记录文档；</li>
+<li><code>HANDOFF.md</code> 被 78% 的提交改过，几份记录文档累计改动的文字量约为源码的 40%；</li>
+<li>新会话按规则要先读约 74 KB 才能开工，加上按需读的部分可达 184 KB；</li>
+<li>约 78% 的源码写于第一个"创作"功能之前，都在为一道还没人去做的人工验收关口添砖加瓦。</li>
+</ul>
+<p>问题不在于你用了 Agent，也不在于某一条规则。主要原因是：<strong>每次不满意就追加一条"永久规则"，规则只写成文字、没有工具去执行，所有东西都只增不删，而你主要通过 Agent 的汇报来判断进度。</strong>这四点叠在一起，Agent 就会把"遵守流程、记录流程、证明自己没越界"当成主要任务。</p>
+<p>值得保留的部分也很明确：不碰素材和密钥、付费调用前要授权、保留原始证据，这些边界一直守住了；把"实现完成、质量验收、商用发布"分开记录的思路是对的；仓库从未提交过视频或数据库，打包后只有 2.9 MiB。</p>
+</div>
+</section>
+
+<section id="numbers">
+<h2>关键数字</h2>
+<div class="stats">
+  <div class="stat"><b>526</b><span>次提交 / 29 天；10-22 一天 164 次，凌晨 4 小时里中位间隔 54 秒</span></div>
+  <div class="stat"><b>44%</b><span>的提交不改任何代码（230 次）</span></div>
+  <div class="stat"><b>156</b><span>次 "docs: record …" 补记提交，其中约 100 次只是把上一次提交的哈希填进文档</span></div>
+  <div class="stat"><b>252</b><span>个 sprint 文件平铺在一个目录；10-22 一天新建 81 个，139 个从未被引用</span></div>
+  <div class="stat"><b>1,494</b><span>个 .cache 顶层条目：174 个一次性 _*.py 脚本、186 个测试 GUID 目录、210 个 XML、296 个日志</span></div>
+  <div class="stat"><b>24 分钟</b><span>一次全量 verify；测试数涨 4.3 倍，耗时涨 15.8 倍；约 125 次 verify 调用</span></div>
+  <div class="stat"><b>74–184 KB</b><span>新会话必读或按需读的文档；4 个入口各自规定"先读什么"</span></div>
+  <div class="stat"><b>516</b><span>处"不宣称／不代表／未人评"式免责句；"计数不变"写了 81 次</span></div>
+  <div class="stat"><b>¥1.49</b><span>真实 API 花费总额；对应约 1,950 行费用和账本代码、217 份提到费用的文档</span></div>
+  <div class="stat"><b>0 / 22</b><span>"第一个可用产品"中已交付的项；看板从 32% 涨到 60%，主要因为"未开始"被改成了"部分"</span></div>
+</div>
+
+<div class="chart" role="img" aria-label="每日提交数柱状图，10月22日164次最高">
+<h4>每日提交数（金色为单日超过 50 次）</h4>
+<div class="row"><span>10-03</span><div class="track"><div class="fill" style="width:4.3%"></div></div><span>7</span></div>
+<div class="row"><span>10-04</span><div class="track"><div class="fill" style="width:18.9%"></div></div><span>31</span></div>
+<div class="row"><span>10-05</span><div class="track"><div class="fill" style="width:17.1%"></div></div><span>28</span></div>
+<div class="row"><span>10-06</span><div class="track"><div class="fill hot" style="width:31.1%"></div></div><span>51</span></div>
+<div class="row"><span>10-07</span><div class="track"><div class="fill" style="width:15.2%"></div></div><span>25</span></div>
+<div class="row"><span>10-08</span><div class="track"><div class="fill" style="width:4.9%"></div></div><span>8</span></div>
+<div class="row"><span>10-11</span><div class="track"><div class="fill" style="width:9.8%"></div></div><span>16</span></div>
+<div class="row"><span>10-12</span><div class="track"><div class="fill" style="width:1.8%"></div></div><span>3</span></div>
+<div class="row"><span>10-21</span><div class="track"><div class="fill" style="width:6.1%"></div></div><span>10</span></div>
+<div class="row"><span>10-22</span><div class="track"><div class="fill hot" style="width:100%"></div></div><span>164</span></div>
+<div class="row"><span>10-24</span><div class="track"><div class="fill" style="width:12.8%"></div></div><span>21</span></div>
+<div class="row"><span>10-25</span><div class="track"><div class="fill" style="width:25.6%"></div></div><span>42</span></div>
+<div class="row"><span>10-26～28</span><div class="track"><div class="fill" style="width:7.3%"></div></div><span>12</span></div>
+<div class="row"><span>10-29</span><div class="track"><div class="fill" style="width:7.9%"></div></div><span>13</span></div>
+<div class="row"><span>10-30</span><div class="track"><div class="fill" style="width:4.9%"></div></div><span>8</span></div>
+<div class="row"><span>10-31</span><div class="track"><div class="fill" style="width:5.5%"></div></div><span>9</span></div>
+<div class="row"><span>11-01</span><div class="track"><div class="fill hot" style="width:46%"></div></div><span>75+</span></div>
+<p class="legend">10-23 有 2 次，已并入相邻行；11-01 还在增加。10-22 和 11-01 两天产生了全部 174 个一次性脚本。</p>
+</div>
+</section>
+
+<section id="roots">
+<h2>四个根因</h2>
+<p>下面这些表面问题很多，但几乎都能归到四个原因上。先治这四个，大部分表面问题会自己消失。</p>
+
+<div class="finding crit">
+<h3>根因 1：没有"唯一事实源"，却要求手工同步 7 份文档</h3>
+<p><code>AGENTS.md</code> 的"Persistent progress board"和"progress alignment"两节规定：每次"重大改动"后，要在同一次提交里同步看板、HANDOFF、sprint、progress、assignments、human-inputs、tech-debt。规则没有定义什么才算"重大"，Agent 就每次都照做。另一条要求"记录推送状态和提交号"，而一次提交不可能包含自己的哈希，于是每次代码提交后必然跟一次补记提交。</p>
+<p class="ev">直接后果：提交数翻倍、44% 的提交只改文档、174 个脚本里有 47 个专门改这些文档。7 份文件里的数字已经互相打架：<code>current-status.md</code> 写 38%，看板写 60%，<code>grok-task-list.md</code> 写技术债 12/4/5，看板写 14/2/5。</p>
+</div>
+
+<div class="finding crit">
+<h3>根因 2：规则靠"出一次问题加一段话"堆起来，只有文字，没有机制</h3>
+<p><code>AGENTS.md</code> 后半部分是 6 段"Persistent …"，每段都以"用户于 10-xx 明确要求"开头。汇报规则在 6 个文件里重复出现，看板规则在 7 个文件里重复出现。规则从来只加不删，也几乎没有变成脚本、钩子或测试，Agent 只能每次读一遍、自己理解、自己证明遵守了。</p>
+<p class="ev">直接后果：每个会话自动加载 19 KB 规则，再读 50 KB 以上交接文档；文档里 516 处免责句；提交信息里塞满"0 费用""不宣称 F006"。</p>
+</div>
+
+<div class="finding crit">
+<h3>根因 3：所有东西都只增不删</h3>
+<p><code>.learnings</code> 累计新增 689 行、删除 2 行；测试新增 6.67 万行、删除 881 行；进度日志、sprint、报告、分支（88 个）、prompt 版本（6 版 vision prompt 都还能执行）、缓存目录也都在累积。没有任何规则规定"什么时候删""试点结束后谁胜出"。另一方面，保护用户数据的规则又写得很宽（"永远不要回收证据"），而证据和垃圾混放在 <code>.cache</code> 里，Agent 最安全的选择就是什么都不删。</p>
+</div>
+
+<div class="finding crit">
+<h3>根因 4：你看到的是汇报，不是产品；人工关口没有时限</h3>
+<p>你的工作方式是"给目标，看最终汇报，再给下一个目标"。规则要求每次关键改动后都写一份详细的通俗汇报，并附上看板数字，于是 Agent 把力气放在让汇报显得完整、让数字上涨。Phase 0 的"Top-10 可用率 ≥70%"需要你亲自评，但这个关口没有截止时间，Agent 拿不到你的评分，就在它能推进的方向上不断加码：做了 8 步验收工具（登记、冻结、绑定、复核、评分……），实际执行次数却是 0/8。10-30 取消全局关口之后，又直接把 51 项全部铺开，三天里 41 项变成了"部分完成"，但没有一项通过验收。</p>
+</div>
+</section>
+
+<section id="named">
+<h2>你点名的问题：核实结果</h2>
+
+<div class="finding crit">
+<h3>.cache 里上千个"小版本备份"目录</h3>
+<p><strong>属实，但大多数不是备份，而是三类垃圾混在一起：</strong></p>
+<ul class="tight">
+<li><strong>测试临时目录</strong>：<code>verify.ps1</code> 第 15 行每次运行都新建 <code>.cache/pytest-runs/&lt;GUID&gt;</code>，脚本里没有删除逻辑。10-31 补的清理钩子判断条件写错了，对 verify 的目录永远不生效。已经有 186 个，最新一个里面残留 2,084 个子目录。还有 66 个 <code>pytest-*</code>、35 个 <code>td015-*</code>、23 个 pytest 缓存变体，都是 Agent 每次临时起的新名字。</li>
+<li><strong>一次性改文件脚本</strong>：174 个 <code>_*.py</code>，再加约 80 个 <code>patch_*</code>、<code>record_*</code>、<code>write_*</code> 脚本，全部产生在 10-22 和 11-01 两天。它们大多是用 Python 去替换文档里的提交号、追加 sprint 记录、修改测试，绕开 Windows PowerShell 下编辑中文多行文本时的引号和编码问题。</li>
+<li><strong>被锁住的目录</strong>：38 个顶层目录当前用户没有读取权限，推测是 Codex 沙箱用另一个 Windows 账户创建的。最早换新目录名，就是为了绕开这个锁（<code>.learnings/ERRORS.md</code> 389–423 行）。</li>
+</ul>
+<p class="why">为了绕开 Windows 文件锁，选了"每次换新名字"而不是修锁；同时 <code>.cache</code> 里还混放着用户作品（<code>workspace/creations</code> 409 MB）、模型和验收证据（受 Git 管理的文档引用了 304 个 <code>.cache</code> 路径），Agent 不敢动。</p>
+<p class="fix">规定 <code>.cache</code> 里的内容随时可以整体删除；用户作品、模型和证据摘要先迁走。verify 改用固定目录，并在结束时清理。一次性脚本只能放在 <code>.cache/scratch/</code>，会话结束时删除。被锁目录由你用管理员权限单独处理（只处理那 38 个，不要对整个 <code>.cache</code> 重置权限）。</p>
+</div>
+
+<div class="finding crit">
+<h3>提交过于频繁</h3>
+<p><strong>属实，而且主要由规则造成，不是 Agent 的习惯。</strong>今天 15:03 到 16:01 的一小时里完成了 T15 到 T28 共 14 个"任务"，每个间隔 3 到 8 分钟，每个都同时改 7 份记录文件，前几个还各跟一条补记提交。紧接着另一个 Agent 又以每 8 分钟一次的节奏提交 TD004 别名词表微调。</p>
+<p class="why">上面说的"同提交同步 7 份文档 + 记录自己的提交号"，加上"每个实现/验证节点更新 sprint"（<code>agent-workflow.md:71</code>），就会产生"一个小改动 = 一个任务卡 = 一次提交 = 一次推送 = 一次补记"的循环。推送有 219 次，但仓库没有 CI，推送并不会触发任何验证。</p>
+<p class="fix">一次提交对应一个用户能感知的能力或一个缺陷修复；记录写在提交信息里，<code>git log</code> 就是变更日志。禁止"记录本次提交号"这种补记提交。状态文档只在里程碑结束或会话结束时更新一次。推送时机改为里程碑完成、会话结束、长任务开始前。</p>
+</div>
+
+<div class="finding crit">
+<h3>不管改了什么都跑全量测试</h3>
+<p><strong>基本属实，但要说准确：</strong>10-22 那种 54 秒一次的提交不可能每次都跑 24 分钟的全量。实际情况是：没有"改动对应哪些测试"的机制，Agent 要么手写一串文件名凭感觉挑，要么在每个交付节点跑一次全量来"自证"。有记录的 verify 调用约 125 次，按每次 15 到 24 分钟算，合计远超几十个小时。</p>
+<ul class="tight">
+<li>自定义标记只有一个 <code>media</code>，只用在 1 个文件上；而 42 个文件、12,130 行测试会启动真实 Chromium，49 个文件调用 FFmpeg。</li>
+<li>verify 每次还会对 3,309 个 Python 运行时文件逐一算哈希，并做两次 wheel 可复现构建。这是发布前该做的检查，被放进了日常验证。</li>
+<li>pytest 缓存每次都换新目录或直接禁用，所以 <code>--lf</code>（只重跑上次失败的）一直用不了，失败后只能重跑整套。</li>
+<li><code>testing-guide.md</code> 的前 33 行是历次运行记录，真正讲怎么跑测试的内容从第 35 行才开始。</li>
+</ul>
+<p class="fix">测试分三层。迭代时只跑受影响的文件，并排除浏览器和真实数据测试，目标 1 分钟以内。合并或里程碑时跑全量，用 pytest-xdist 按文件并行，预计 6 到 8 分钟。CI 在 push 时跑离线子集。在 <code>conftest.py</code> 里按 import 自动打 <code>browser</code>、<code>media</code>、<code>local_data</code> 标记；已知失败用带技术债编号的 <code>xfail</code> 隔离，不必每次再人工比对"是不是还是那几个旧失败"。</p>
+</div>
+
+<div class="finding crit">
+<h3>文档臃肿、层级混乱，新会话要花大量上下文回顾</h3>
+<p><strong>属实。不过问题不在目录太深（最深只有 3 层），而在文件太多、入口太多、同一件事写了太多遍。</strong></p>
+<ul class="tight">
+<li><code>docs/exec-plans</code> 一个目录下平铺了 333 个文件：252 个 sprint、53 个报告、9 个历史文件。</li>
+<li><code>HANDOFF.md</code> 本该是"覆盖式快照"，现在顶部是 35 条按日期追加的流水，其中 31 条写着"计数不变"，真正的现状段落在第 79 行。</li>
+<li>CLAUDE、AGENTS、agent-workflow、grok-task-list 各自规定了一套"先读什么"。Claude 会话的硬性必读约 74 KB，再加 <code>feature_list.json</code>（67 KB，单个 F010 条目就有 74 条证据）和总方案，要 120 到 184 KB。</li>
+<li><code>README.md</code> 是 28 KB 的英文功能流水账，最后更新于 10-30，完全没有提到 11-01 交付的 EXE 和安装包。它还把读者引向数据已经过时的 <code>current-status.md</code>。</li>
+</ul>
+<p class="fix">必读预算定为 15 KB：AGENTS.md 不超过 6 KB，STATUS.md 不超过 5 KB 且只覆盖写，当前任务卡不超过 3 KB，各工具入口只保留差异部分。看板数字由脚本生成。<code>feature_list.json</code> 改为按编号查询，不再整份读。历史类文件全部移入 <code>docs/archive/</code>，并从默认搜索中排除。</p>
+</div>
+
+<div class="finding crit">
+<h3>长周期下的代码堆积与过度设计</h3>
+<p><strong>属实，最明显的在 10-22。</strong>那天 <code>retrieval.py</code> 被提交 45 次，从 911 行涨到 2,436 行，其中 27 次是"加固"（deepen、gate、contract）。最长的函数 <code>assert_project_search_document_contract</code> 有 487 行。<code>retrieval.py</code> 约 37%、<code>detail_query.py</code> 约 61% 的代码是合同断言，用来防"本地自己生成的 JSON 被篡改"。</p>
+<ul class="tight">
+<li>版本泛滥：166 个 <code>-vN</code> 标识、13 种回执格式，6 版 vision prompt 都还能执行。</li>
+<li>多条方案并行、没有收口：主体细节检索留下 5 套实现，没有一套通过 F010。</li>
+<li>重复造轮子：19 个文件各写一套严格 JSON 读取，20 个文件里有 32 个私有的错误构造函数。</li>
+<li>巨型分派函数：CLI 的 <code>_dispatch</code> 306 行，HTTP 服务的 <code>do_POST</code> 470 行。</li>
+</ul>
+<p class="why">"保留身份、来源、费用"这些原则没有写明"做到哪一步为止"；评审 Agent 每找出一个新的边界情况，就会变成一次加固提交。没有复杂度上限，也没有"试点结束后删除落选方案"的规则。</p>
+<p class="fix">加一条设计预算规则：本地自产数据只校验格式版本加一个整体哈希，只有付费调用、费用账本和原始证据绑定才做深度校验；单个合同函数不超过 80 行；同一文件一天内有 5 次以上加固提交，就停下来写技术债。ruff 打开 C901 和 PLR0915 两个复杂度检查，旧文件先豁免。每个试点结束时写一页 ADR 宣布胜出方案，落选方案在同一个改动里删除。</p>
+</div>
+</section>
+
+<section id="new">
+<h2>新发现的问题</h2>
+
+<div class="finding warn">
+<h3>进度看板在测量"动作"，不是"交付"</h3>
+<p>看板的公式是"已交付 = 1、部分 = 0.5"，给任何一项加一点实现，它就从"未开始"变成"部分"。10-29 是 27%，10-30 是 32%，现在是 60%，但已交付一直是 10 项，第一个可用产品是 0/22。从 T1 到 T27，HANDOFF 里一直写着同样的数字"10/41/0"。看板第 1 节里"正式 Windows EXE"仍是未完成，而 EXE 和安装包已经交付；第 6 节的"刚完成"还停在 T7。</p>
+<p class="fix">主指标改成 3 到 5 条端到端用户流程，例如"导入录像 → 得到一条可发布的 1 分钟玩法展示视频"：是否跑通、耗时多久、要人工干预几次、最近一次实际演示的日期。功能清单改为附表，状态分成骨架、可用、已验收三级，全部由脚本生成。</p>
+</div>
+
+<div class="finding warn">
+<h3>费用防护和实际花费严重不成比例</h3>
+<p>到目前为止实际花了 ¥1.49，记录过的最高单次任务上限是 ¥5。围绕费用建了账本、预留额度、人工零扣费确认、回执校验等多层机制，代码约 1,950 行；一笔"¥4.065536"（两次未扣费的 HTTP 400）在 67 个文件里出现了 122 次。</p>
+<p class="fix">费用保护要保留（见"必须保留的保护"），但可以由你决定改成"周期预授权"：例如每月 ¥20 以内、只分析 <code>GameVideos/</code> 里你自己的素材，超额再逐次申请。金额只记在一个账本文件里，交接文档只引用总额。</p>
+</div>
+
+<div class="finding warn">
+<h3>自己给自己加的环境限制：pyc 回执校验和"一律 -B"</h3>
+<p>工具链校验把 3,309 个 Python 运行时文件全部算哈希，连 <code>.pyc</code> 也算在内。但 <code>.pyc</code> 是 Python 正常运行时会自动重写的缓存，于是"正常运行"被判成"被篡改"，同样的事故发生了 4 次。之后的补救不是修改校验范围，而是给所有 Agent 加一条"Python 一律带 -B"的纪律，这条纪律写进了 15 份指南和 Claude 记忆，Codex 和 Grok 的子 Agent 仍会漏掉。</p>
+<p class="fix">校验排除 <code>__pycache__</code>，或者只校验 exe、dll 和安装归档；日常 verify 不做这项检查，只在 setup 和 build-app 时做。修好后删除"一律 -B"这条规则。</p>
+</div>
+
+<div class="finding warn">
+<h3>学习记录只写不读</h3>
+<p><code>.learnings</code> 有 72 KB，但 AGENTS、CLAUDE、CODEX、grok 的入口规则都没有引用它，引用它的地方全是"要往里写"的义务。同类错误反复出现：pyc 漂移 4 次，猜路径或猜锚点 18 次。另外装了两个功能重叠的自我改进技能，触发条件都是"命令失败就记录"，琐碎失误也会被写进去。</p>
+<p class="fix">同一类问题出现第二次，就必须改成脚本、测试或检查规则；做不到的，只在 AGENTS.md 的"已知坑"里留一行（总数不超过 10 行）。已解决的条目移入归档。两个自我改进技能只保留一个。</p>
+</div>
+
+<div class="finding warn">
+<h3>分支和工作树残留</h3>
+<p>本地有 88 个分支，其中 43 个是 10-31 退役工作树时留的快照分支，40 个与 main 内容不同。整个历史没有一次合并提交，git 已经无法判断哪些分支已经集成。<code>.worktrees</code> 下还有 8 个没有 <code>.git</code> 的源码副本。</p>
+<p class="fix">先用 <code>git bundle</code> 把这些快照分支打包到仓库外并验证，再删除分支。写一个退役工作树的脚本，按"检查未提交改动 → 删除 junction → git worktree remove → 删除分支"的顺序执行，取代现在的文字说明。</p>
+</div>
+
+<div class="finding warn">
+<h3>多工具协同成本高，收益低</h3>
+<p>实际协作几乎是"额度用完就换工具"的顺序接力，并没有真正并行，但仓库为此维护了 9 个 Claude 角色、18 个 Codex 角色配置（其中 9 个尚未提交，命名还和已有的 9 个不同）、3 份路由指南、30 个提到 DSH 的文件，还有"另一个工具在写时不能动主树"之类的协调规则。现在就有一个例子：本次审计期间，另一个 Agent 在主树上留下了未提交的 <code>retrieval.py</code> 改动，并且一直在提交。</p>
+<p class="fix">明确协作模式是"同一时刻只有一个写者的顺序接力"。角色只保留探索、实现、审查 3 个，所有工具共用一份定义。交接只靠 STATUS.md 加任务卡。</p>
+</div>
+
+<div class="finding warn">
+<h3>没有 CI，"测试通过"全靠 Agent 自己说</h3>
+<p><code>.github/workflows</code> 只有一个空的 <code>.gitkeep</code>，也没有 git hook。"测试全绿"的唯一依据是 Agent 自己的会话输出，所以又衍生出"原始日志保留""不得称全绿"等大量措辞规则，文档里还引用着已被 Git 忽略的 <code>.cache/*.xml</code> 作为证据。</p>
+<p class="fix">在 GitHub Actions 加一个 windows-latest 工作流，push 时跑 lint、mypy 和离线测试，不放付费 API 密钥，不访问素材。之后交接里只需写"CI 第 N 次运行通过"。</p>
+</div>
+
+<div class="finding warn">
+<h3>需要你做的事太重，也太分散</h3>
+<p>人工验收被设计成 8 步流程（每个主查询至少 10 个事件，前 10 名逐项打 0 到 3 分并写理由），但事先没有估算你要花多少时间。像 TD005（4 线程哈希）这样的技术取舍也被推给你决定。第三方许可证缺口（FFmpeg GPL、模型权重能否分发）写在 <code>human-inputs.md</code> 第 3 行的段落里，却没有进入待办计数，看板和 HANDOFF 都写着"现在必须做的 0 项"。</p>
+<p class="fix">每个人工请求只写一行：做什么、预计几分钟、入口在哪、什么时候要。总量超过 60 分钟就先缩小范围。技术取舍由 Agent 自己决定并记录。许可证缺口应补成正式待办行（阻断分发和商用，不阻断开发）。</p>
+</div>
+</section>
+
+<section id="q1">
+<h2>问题一：上下文到 70% 就收尾开新会话，对吗？</h2>
+<p><strong>方向是对的，但在这个项目里，你为此付出的代价被规则放大了好几倍。</strong></p>
+<p>对的地方：上下文越长，模型对前面细节的注意力越弱；自动压缩也会丢掉细节。在一个阶段性的节点主动换会话，比等它被动压缩更可控。</p>
+<p>代价被放大的地方：</p>
+<ul class="tight">
+<li><strong>收尾很贵。</strong>规则要求收尾时同步 7 份文档、写详细汇报、附看板数字，一次收尾就要消耗不少上下文和时间。</li>
+<li><strong>开头也很贵。</strong>新会话按规则先读 74 到 184 KB，粗略估算 3 万到 7 万 token。对 20 万 token 的窗口来说，相当于一开局就用掉 15% 到 35%，到 70% 时又要收尾，真正干活的空间只剩一半左右。</li>
+<li><strong>按比例切，而不是按任务切。</strong>到 70% 时任务往往做了一半，于是要写"中途状态"，新会话再花力气重建上下文。</li>
+</ul>
+<div class="callout">
+<strong>建议的做法</strong>
+<ol class="steps">
+<li><strong>先把交接做轻</strong>：必读不超过 15 KB，交接时只覆盖写一份不超过 5 KB 的 STATUS.md。交接便宜了，换会话才划算。</li>
+<li><strong>按任务边界换会话，而不是按百分比</strong>：一个会话做完一个能演示的切片就结束，哪怕只用了 40%。如果任务进行到一半时到了 70%，在 Claude Code 里可以手动执行 <code>/compact 保留：当前任务目标、已改文件、下一步</code>，在原会话里继续，不必写交接。</li>
+<li><strong>中途状态放进 git，不放进文档</strong>：未完成的工作提交到本地 WIP 分支，任务卡写一行"继续 X"，新会话执行 <code>git log -5</code> 和 <code>git diff main</code> 就能接上。</li>
+<li><strong>大范围阅读交给子 Agent</strong>：让子 Agent 去读文件、跑测试，只把结论带回主会话，主会话的上下文就涨得慢。项目里已经有 gc-explorer 和 gc-runner 这类角色，用对场景即可。</li>
+<li><strong>禁止新会话"回顾历史"</strong>：明确告诉 Agent 不要读 progress.md 和历史文件，现状以 STATUS.md 和 git log 为准。</li>
+</ol>
+</div>
+</section>
+
+<section id="q2">
+<h2>问题二：总方案里的技术细节是否限制了 AI？</h2>
+<p><strong>总方案本身写得相当克制，问题主要不是"细节太多"，而是"原则没有写代价和边界"，以及"关口没有写时限"。</strong></p>
+<p>总方案里有很多值得肯定的地方：第 57 节列出了"V0.1 不应该开发的东西"，第 58 节说第一版甚至不需要 GUI，第 8 节说"第一阶段绝对不要同时做全部模式"，第 70 节要求 Agent 先做反向审查。本地优先、FFmpeg 负责执行、AI 只输出结构化决策，这些架构原则后来也被证明是对的。</p>
+<p>真正让 Agent 做了大量无用功的，是下面三点：</p>
+<div class="split">
+<div>
+<h4>1. 原则写成"必须"，但没写"做到什么程度为止"</h4>
+<p>第 69 节写了"Prompt 必须版本化""模型成本必须可观测""平台规则不得硬编码""用户修改行为必须被记录"。Agent 会把每一条都做到极致：166 个版本号、13 种回执、为 ¥1.49 的花费写了约 1,950 行账本代码。</p>
+</div>
+<div>
+<h4>2. 关口需要你亲自评，却没有时限</h4>
+<p>第 59 节和第 71 节规定，"Top-10 可用率 ≥70%"通过之前不进入下一阶段，而且这一项必须由你评。你没时间评的那 25 天里，Agent 没法推进主线，只能在关口周围加码。约 78% 的源码写于第一个创作功能之前。</p>
+</div>
+<div>
+<h4>3. 大分母被拿来当进度</h4>
+<p>总方案描述的是最终形态（72 节、7 种模式、商业化分级）。10-30 之后，它被翻译成"51 项全部推进"，并作为看板分母，结果 3 天里 41 项变成了"部分完成"。这正好违背了总方案自己写的"第一阶段绝对不要同时做全部模式"。</p>
+</div>
+<div>
+<h4>4. 有没有堵住更好的方向？</h4>
+<p>有一处比较明显：总方案说 Phase 0 只要 CLI 加检索，但没有说"先用最便宜的办法看效果"。结果在花钱验证之前，就先搭好了冻结、绑定、复核等完整的验收流水线。更好的路径是：先花 30 分钟拿 1 个查询看前 10 名，再决定要不要投入工具。</p>
+</div>
+</div>
+<div class="callout">
+<strong>下一份方案可以这样写</strong>
+<ul class="tight">
+<li><strong>第一层：不可变的目标和边界（不超过 1 页）</strong>：给谁用、解决什么问题、哪些事绝对不做、费用和素材红线。</li>
+<li><strong>第二层：验收方式和时间盒</strong>：每个阶段用什么判断成败、谁来判断、最晚什么时候判断；超过时限怎么办（例如降级为并行质量线，继续往下做）。</li>
+<li><strong>第三层：技术建议，明确标注"可推翻"</strong>：Agent 可以提出更好的方案，写一页 ADR 说明理由即可替换。</li>
+<li><strong>每条原则都写上"够用的标准"</strong>，例如"成本可观测＝每次调用记录模型、token 和估算金额，写进一个账本文件即可"。</li>
+<li><strong>写一个复杂度预算</strong>，例如"Phase 0 源码不超过 1 万行；超过就要停下来复盘"。</li>
+</ul>
+</div>
+</section>
+
+<section id="q3">
+<h2>双视角建议</h2>
+<div class="split">
+<div>
+<h4>站在 Agent 的角度：什么让它高效</h4>
+<ul class="tight">
+<li><strong>开局轻</strong>：自动加载的规则越短越好，一句话说清"现在做什么、做完的标准是什么"。</li>
+<li><strong>只有一个事实源</strong>：遇到两份互相矛盾的文档，Agent 会花大量 token 交叉核对，甚至重做已完成的工作。</li>
+<li><strong>规则能被执行，而不是只能被理解</strong>：钩子、脚本、lint、CI 比一段话可靠得多，Agent 也不需要每次自证。</li>
+<li><strong>明确允许删除</strong>：说清楚哪些东西可以随时删，否则谨慎的 Agent 一定选择保留。</li>
+<li><strong>有清楚的"完成"定义和停止条件</strong>：没有终点的任务，会被各种加固、诊断和补充测试填满。</li>
+<li><strong>反馈要快</strong>：1 分钟出结果的定向测试，比 24 分钟的全量更能让它小步走对。</li>
+</ul>
+</div>
+<div>
+<h4>站在你的角度：你的时间花在哪里最值</h4>
+<ul class="tight">
+<li><strong>看产品，不看汇报</strong>：每个里程碑让 Agent 给你一个能打开、能播放的东西，再加 3 行说明，你花 10 分钟实际用一下。</li>
+<li><strong>人工关口要早做、做小、限时</strong>：第一次只评 1 个查询的前 10 名，30 分钟以内；Agent 要事先告诉你需要多少分钟。</li>
+<li><strong>先改工具，再加规则</strong>：想加一条规则时，先问"能不能用脚本或检查实现"。规则总数设上限，加一条就要合并或删除一条（安全类规则除外）。</li>
+<li><strong>每周 30 分钟整理</strong>：删除过时规则、归档文档、清理缓存和分支，相当于定期还技术债。</li>
+<li><strong>少换工具</strong>：每换一次工具都要重新付一次交接成本，而且多一套适配配置。尽量固定一个主工具，其他工具只做独立的旁路任务。</li>
+<li><strong>汇报要短</strong>：每个里程碑一段 150 字以内，写"现在能做什么、下一步是什么"，中途不必汇报。</li>
+</ul>
+</div>
+</div>
+</section>
+
+<section id="landed">
+<h2>已经落地了多少（11-01 18:31 复查）</h2>
+<p>这份报告的草稿出来后，另一个 Agent 在 17:12 到 18:31 之间用 5 次提交完成了"止血"和部分"瘦身"。复查结果如下：</p>
+<div class="tbl"><table>
+<thead><tr><th>建议</th><th>状态</th><th>复查结果</th></tr></thead>
+<tbody>
+<tr><td>只保留一个状态源，HANDOFF 改为覆盖写</td><td><span class="pill p-ok">已完成</span></td><td><code>STATUS.md</code> 3.4 KB，<code>HANDOFF.md</code> 从 24 KB 降到 0.9 KB</td></tr>
+<tr><td>取消每次同步 7 份文档、取消补记提交号</td><td><span class="pill p-ok">已完成</span></td><td>AGENTS、CLAUDE、grok 规则都已改写；之后再没有出现 docs: record 提交</td></tr>
+<tr><td>AGENTS.md 不超过 6 KB</td><td><span class="pill p-ok">已完成</span></td><td>从 14.6 KB 降到 5.8 KB；agent-workflow 从 13.7 KB 降到 4.4 KB；新会话必读约 15 KB</td></tr>
+<tr><td>看板数字由脚本生成</td><td><span class="pill p-ok">已完成</span></td><td>新增 <code>scripts/status.py</code></td></tr>
+<tr><td>分支打包备份后删除，清理孤立工作树</td><td><span class="pill p-warn">有风险</span></td><td>本地分支从 88 个降到 1 个。但备份包和 8 个工作树副本都放进了 <code>.cache/scratch/</code>，而新规则说这个目录"随时可删"（见下）</td></tr>
+<tr><td>verify 结束时清理临时目录</td><td><span class="pill p-ok">已完成</span></td><td>已加删除逻辑；.cache 顶层从 1,494 降到 1,152 项，GUID 目录还剩 65 个</td></tr>
+<tr><td>费用周期预授权、冻结 P046–P051/P038</td><td><span class="pill p-ok">你已拍板</span></td><td>每月 ¥50，只用于你指定的素材；解冻条件是"玩法展示"完成人评</td></tr>
+<tr><td>主指标改为端到端流程</td><td><span class="pill p-warn">名不副实</span></td><td>名字改成了"e2e 主指标"，内容仍是 51/22 的功能计数，没有"导入录像到成片"这条流程本身的通过与否、耗时、人工干预次数</td></tr>
+<tr><td>CI</td><td><span class="pill p-warn">只查文件大小</span></td><td>目前只检查 STATUS 和 AGENTS 的字节数，再跑一次 status.py；没有 lint、类型检查或测试</td></tr>
+<tr><td>测试分层、自动打标、testing-guide 重写</td><td><span class="pill p-crit">未开始</span></td><td>标记仍然只有 media；testing-guide 前 33 行仍是运行流水；verify 每次仍会哈希工具链并构建两次 wheel</td></tr>
+<tr><td>sprint 归档、README 重写</td><td><span class="pill p-crit">未开始</span></td><td>只归档了报告和历史文件，sprint 仍有 258 个平铺；README 仍是 28 KB 英文</td></tr>
+<tr><td>.learnings 精简、pyc 校验范围修正</td><td><span class="pill p-crit">未开始</span></td><td>.learnings 仍是 72 KB；"一律 -B"的规则仍然存在</td></tr>
+<tr><td>设计预算、复杂度检查、方案收口</td><td><span class="pill p-crit">未开始</span></td><td>ruff 没有打开 C901 和 PLR0915；细节检索的 5 套方案还都在</td></tr>
+</tbody></table></div>
+
+<div class="finding crit">
+<h3>需要马上处理：唯一的分支备份放在"随时可删"的目录里</h3>
+<p>有 40 个快照分支的内容和 main 不同，它们现在只存在于 <code>.cache/scratch/step2-local-branches-20261101-171840.bundle</code>（3.9 MB）这一个备份包里。8 个孤立工作树副本也在 <code>.cache/scratch/orphan-wt-*</code>。可新的 <code>AGENTS.md</code> 第 45 行写的是 <code>.cache/scratch/</code> "safe to delete"，cache 指南也写着"会话结束即可删除"。下一个按规则清理 scratch 的 Agent 会把这些备份一起删掉。</p>
+<p class="fix">把备份包和 <code>orphan-wt-*</code> 移到仓库外的归档目录，例如 <code>G:\Tools\ChatGPTRepo\GameingCreatorAgent-archive\</code>，同时更新 <code>docs/archive/step2-branch-bundle-inventory.md</code> 里记录的路径。</p>
+</div>
+
+<div class="finding warn">
+<h3>新规则下可能出现的两个副作用</h3>
+<p><strong>汇报可能长期没有。</strong>新规则是"只有主指标变化才汇报"，而主指标仍是功能计数。从 T1 到 T27，这组数字一直没变过，照这个规则你会长时间收不到任何消息。主指标换成端到端流程（每次实际演示都会更新日期和结果），才能让汇报和真实进展挂钩。</p>
+<p><strong>矛盾被"谁优先"掩盖了，没有被删除。</strong>CLAUDE.md 写着"STATUS.md 和 AGENTS.md 冲突时优先于 agent-workflow.md"，说明旧文件里仍留着互相冲突的内容，Agent 每次还得读、还得裁决。更干净的做法是直接删掉冲突的句子。</p>
+<p class="ev">本次复查还同步修正了 3 条 Claude 本地记忆，它们原本仍要求"每次重大改动同步多份文档""每次都起新的 basetemp 目录"，会把旧行为带回来。</p>
+</div>
+</section>
+
+<section id="round2">
+<h2>第二轮：Claude 接手后的复查与修复（11-01 晚）</h2>
+<p>这份报告在额度用完前已经写完并发布。Grok 接手时看到的是更早的草稿，所以它的落地没有覆盖"已落地情况"这一节列出的问题。第二轮先派 4 个只读审查员复查 Grok 的 5 次提交，再由我修复。结果如下：</p>
+<div class="tbl"><table>
+<thead><tr><th>Grok 做的事</th><th>判断</th><th>处理</th></tr></thead>
+<tbody>
+<tr><td>STATUS 作为唯一状态源，停止七份文档同步，AGENTS 瘦身</td><td><span class="pill p-ok">方向正确</span></td><td>保留，继续压缩：AGENTS.md 4.7 KB，三个工具入口只写各自差异</td></tr>
+<tr><td>用 PowerShell 改写 agent-workflow.md</td><td><span class="pill p-crit">写坏了</span></td><td>反引号被当作转义符，文件里混入了控制字符，82 个反引号全部丢失。排查发现同类损坏还有 11 个文件。已全部修复，并在 <code>status.py --check</code>（CI 会跑）里加了控制字符检查</td></tr>
+<tr><td>status.py 和"e2e 主指标"</td><td><span class="pill p-warn">名不副实</span></td><td>原脚本的数字是从手写看板里用正则抄的；Windows 上直接运行会崩溃；首产品的分母一有进展就会算错。已重写：数字从源文件计算，主指标改为 <code>journeys.json</code> 里的三条端到端流程</td></tr>
+<tr><td>verify.ps1 清理临时目录</td><td><span class="pill p-warn">有缺陷</span></td><td>失败时现场也会被删掉。已改为：通过才删除，失败保留，旧目录一天后清理；删除改用不跟随 junction 的方式</td></tr>
+<tr><td>文档归档</td><td><span class="pill p-warn">断链</span></td><td>搬迁后断了 237 处链接。已写脚本按新旧位置重算全部链接。归档范围也扩大到 256 份历史文件，现在断链为 0</td></tr>
+<tr><td>CODEX.md、9 个角色文件、路由指南</td><td><span class="pill p-crit">漏改</span></td><td>这些文件仍要求"每次详细汇报"和"每次刷看板"。已由一个子 Agent 按新规则改写</td></tr>
+<tr><td>分支备份放在 <code>.cache/scratch</code></td><td><span class="pill p-crit">有风险</span></td><td>已移到仓库外的 <code>GameingCreatorAgent-archive</code>，并验证备份可用</td></tr>
+</tbody></table></div>
+
+<div class="finding crit">
+<h3>最大的新发现：main 上原有 51 个失败测试</h3>
+<p>在新规则下跑的第一次全量测试结果是 4,612 个通过、30 个失败、22 个错误。我在一个干净的 HEAD worktree 里重跑了同一批测试，确认这些失败在我的改动之前就存在，都是当天那批一分钟一次的小提交带进来的，它们从来没跑过受影响的测试。具体是：</p>
+<ul class="tight">
+<li><strong>37 个渲染相关测试</strong>：T23 给渲染器加了一个参数，但测试里的 5 个假渲染器没有跟着改，产品代码本身没问题。已修复（TD022）。如果按"测试替身过期"来查，这个问题不到 10 分钟就能定位。</li>
+<li><strong>4 个检索否定用例回归</strong>：发生在 TD004 那串别名补丁之后。已隔离并登记为 TD024，修好之前不再追加别名补丁。</li>
+<li><strong>2 处分层违规</strong>：knowledge_import 放错了层，已移到 infrastructure。analysis 里的缓存违规按名字放行，登记为 TD023，名单只能缩小。</li>
+<li><strong>27 个文件未格式化、6 个类型错误</strong>，加上 1 个测试漏关 socket，全部已修。</li>
+</ul>
+<p>这验证了报告最核心的判断：<strong>"提交得快"不等于"进展快"</strong>。没有分层测试，也没有 CI，主干可能连续几个小时处于红色状态，却没有人发现。</p>
+</div>
+
+<div class="finding warn">
+<h3>本轮新增的机制（取代原来的文字规则）</h3>
+<ul class="tight">
+<li><code>scripts/test-affected.ps1</code> 只跑受影响的测试，一般是 10 到 40 个文件、1 到 2 分钟；全量测试大约 4,600 个、40 分钟。测试会被自动标记为 browser（42 个文件）、local_data（3 个）、ffmpeg（55 个）三类。</li>
+<li>工具链检查不再对 <code>__pycache__</code> 计算哈希，"一律加 -B"的根因因此消除。</li>
+<li>ruff 对新代码执行复杂度上限（函数 60 条语句、复杂度 15）。现有超标的 38 个文件列入名单，名单只减不增。</li>
+<li>CI 现在会检查四项：状态数字与源文件是否一致、文档体积预算、控制字符、ruff。</li>
+<li><code>.learnings</code> 从 72 KB 的流水账缩减为 13 条仍然有效的坑，每条都写明靠什么机制预防。</li>
+</ul>
+</div>
+</section>
+
+<section id="plan">
+<h2>剩余的落地方案</h2>
+<p>第一步已基本完成。下面保留完整清单，标"✓"的是已经完成的项。</p>
+
+<h3>第一步：止血（约半天，不碰产品代码）</h3>
+<ol class="steps">
+<li>✓ 删除"记录本次提交号和推送状态"的要求，以及"每次重大改动同步 7 份文档"的要求，改为"里程碑结束或会话结束时更新一次 STATUS.md"。</li>
+<li>✓ <code>HANDOFF.md</code> 改成覆盖式模板，不超过 5 KB，顶部 35 条日期流水直接删除（git 历史里都有）。</li>
+<li>✓ <code>verify.ps1</code> 结束时清理本次的临时目录；修正 <code>conftest.py</code> 的清理条件；一次性脚本统一写到 <code>.cache/scratch/</code>，会话结束删除。</li>
+<li>部分完成：按清单清理 <code>.cache</code>（1,494 降到 1,152 项）。一次性脚本、GUID 测试目录、<code>td015-*</code>、<code>pytest-*</code>、mypy 临时目录可以直接删，目前还剩 65 个 GUID 目录、21 个 pytest 或 td015 目录、37 个顶层 .py；被文档引用的 XML 先确认；用户作品、模型、付费证据不动。<strong>新增一项：备份包移出 scratch。</strong></li>
+</ol>
+
+<h3>第二步：瘦身 harness（约 1 到 2 天）</h3>
+<ol class="steps">
+<li>✓ 把 <code>AGENTS.md</code> 重写为不超过 6 KB。还没做完的部分：各工具入口仍有重复，CLAUDE.md 3.1 KB、CODEX.md 3.6 KB，目标是每份不超过 1 KB；agent-workflow 里互相冲突的句子要直接删除，而不是靠"谁优先"来裁决。</li>
+<li>✓ 写 <code>scripts/status.py</code>。还没做：把主指标换成端到端流程（是否跑通、耗时、人工干预次数、最近一次演示日期）。</li>
+<li>部分完成：报告和历史文件已进入 <code>docs/archive/</code>。还没做：258 个 sprint 归档、progress 和 assignments 冻结、README 重写为 4 KB 的中文入口。</li>
+<li>未开始：测试分层。自动打标、默认排除浏览器和真实数据测试、引入 pytest-xdist、恢复 <code>--lf</code>；toolchain 哈希检查从日常 verify 中移出；testing-guide 改写为不超过 40 行的策略文档。<strong>这是剩余项里收益最大的一项。</strong></li>
+<li>部分完成：CI 已存在，但只检查文件大小。要补上 ruff、mypy 和离线测试子集，再加一个运行 ruff 的 pre-commit 钩子。</li>
+<li>✓ 分支打包后删除。还没做：写退役工作树脚本；<code>.learnings</code> 精简为不超过 15 条；修正 pyc 校验范围后删除"一律 -B"的规则。</li>
+</ol>
+
+<h3>第三步：回到产品主线（之后持续执行）</h3>
+<ol class="steps">
+<li>选一条端到端流程作为唯一主线，例如"玩法展示 1 分钟视频"，做到你看过、觉得能用。</li>
+<li>做一次 30 分钟的最小人工评估：1 个查询，看前 10 名。</li>
+<li>主体细节检索在 5 套方案里选出 1 套，其余删除（已付费的结果保持只读可查）。</li>
+<li>再做一次代码瘦身里程碑：统一 JSON 读取工具、拆分巨型分派函数、合并同质测试。</li>
+</ol>
+</section>
+
+<section id="keep">
+<h2>必须保留的保护</h2>
+<p>复核时，每条建议都检查过会不会拆掉真正的安全边界。下面这些要原样保留，精简规则时也不能被"顺手去重"掉：</p>
+<div class="tbl"><table>
+<thead><tr><th>保护</th><th>为什么保留</th><th>精简时要注意</th></tr></thead>
+<tbody>
+<tr><td>不提交素材、密钥、数据库</td><td>隐私和安全</td><td>CI 也不能上传素材，不能配置付费 API 密钥</td></tr>
+<tr><td>新的付费调用需要你对具体提案授权</td><td>防止误发付费请求</td><td>改成周期预授权必须由你本人决定，并且保留硬上限和发送闸门</td></tr>
+<tr><td>原始证据、费用账本和"未知费用"保持不变</td><td>已付费的结果要能追溯</td><td>旧 prompt 文本和指纹函数不能删，删了历史哈希就验不了</td></tr>
+<tr><td>"实现完成 / 质量验收 / 商用发布"分开记录</td><td>防止把"工具就绪"写成"验收通过"</td><td>删掉免责句之后，必须用强制的状态等级来表达这个区别</td></tr>
+<tr><td>"不要重复付费、不要重做已有标注"这类提示</td><td>防止新会话重复花钱</td><td>STATUS.md 模板里要固定保留这一节</td></tr>
+<tr><td>工具链完整性校验</td><td>供应链防护</td><td>可以收窄范围或移到 setup 时做，但不要整个去掉</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="decide">
+<h2>需要你拍板的事</h2>
+<p>下面这些改动会改变你之前明确提出的要求，Agent 不应该自己决定：</p>
+<div class="tbl"><table>
+<thead><tr><th>事项</th><th>状态</th><th>建议</th></tr></thead>
+<tbody>
+<tr><td>费用授权方式</td><td><span class="pill p-ok">已定</span></td><td>每月 ¥50，只用于你指定的素材，超出逐次申请</td></tr>
+<tr><td>P046–P051 和 P038</td><td><span class="pill p-ok">已定</span></td><td>冻结，等"玩法展示"完成人评后再解冻</td></tr>
+<tr><td>汇报规则</td><td><span class="pill p-ok">已定</span></td><td>150 字以内，加一个可以打开的产物，只在主指标变化时汇报</td></tr>
+<tr><td>多出来的 9 个 Codex 角色配置</td><td><span class="pill p-ok">已处理</span></td><td>现在 git 里只有原来那 9 个 task_* 和 harness_* 角色</td></tr>
+<tr><td>主指标的内容</td><td><span class="pill p-warn">待定</span></td><td>从功能计数改成 1 到 3 条端到端流程；不改的话，"只在变化时汇报"会让你长期收不到消息</td></tr>
+<tr><td>分支备份包和工作树副本的存放位置</td><td><span class="pill p-crit">待定</span></td><td>移到仓库外的归档目录，不要留在"随时可删"的 scratch 里</td></tr>
+<tr><td>38 个被锁住的 .cache 目录</td><td><span class="pill p-warn">待定</span></td><td>需要你用管理员权限处理；只处理这 38 个，不要对整个 .cache 重置权限</td></tr>
+<tr><td>"玩法展示"的第一次人工评估</td><td><span class="pill p-warn">待定</span></td><td>约一个 30 分钟的时间：看 1 条成片，评 1 个查询的前 10 名。这是解冻和推进主线的前提</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="method">
+<h2>方法与可信度</h2>
+<p>8 个审计 Agent 各负责一个方向，全程只读：不改文件、不跑测试、不扫描大目录。共提出 77 条结论，每条都由另一个 Agent 重新取数并尝试反驳，标记为"属实 / 已修正 / 夸大 / 不成立"，同时检查建议本身有没有拆掉安全保护的风险。最后由一个查漏 Agent 找遗漏和交叉原因。几个需要说明的地方：</p>
+<ul class="tight">
+<li>"记录文档改动量是源码的 69%"是按字节算的，中文字节数偏大；按字符算约为 40%，本报告采用 40%。</li>
+<li>"每次提交都跑 15 分钟全量"被复核否定，本报告改为"没有改动和测试的对应关系，交付节点习惯跑全量"。</li>
+<li>"看起来像小版本备份"的 .cache 目录，复核后确认主要是测试临时目录和一次性脚本，不是代码备份。</li>
+<li>token 数是按文件字节估算的，没有实测。</li>
+<li>.cache 总体积没测出来：文件太多，<code>du</code> 超时。</li>
+</ul>
+<footer>审计日期 2026-11-01，HEAD 约在 455ea7a 前后；落地情况在 211e7dd（18:31）复查。审计全程只读，没有修改仓库里的任何文件；只修正了 3 条 Claude 本地记忆。</footer>
+</section>
+</main>
+</div>
+
+</body></html>

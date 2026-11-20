@@ -1,5 +1,10 @@
 # Repository Guidelines
 
+## User-owned roles and Git branches
+
+- The nine existing files in `.codex/agents/` are user-owned. Treat them as read-only in this and future chats. Never edit, replace, generate, copy, rename, or delete them. Exclude `muyun-` roles. Read existing role definitions when dispatching.
+- Work on the branch already checked out. Never create a branch, switch branches, or create a worktree to circumvent this rule. Branch cleanup requires the user to specify the branch to retain and which local or remote references to remove. Preserve unmerged commits and worktree changes.
+
 ## Project and state
 
 Gaming Creator Agent turns local game footage and a brief into content. Scope: `游戏内容创作与商业化产品总方案 V1.0.txt`, `docs/product-specs/phase-0.md`, `feature_list.json`; route: `docs/exec-plans/accelerated-product-roadmap.md` and ADR-003 (all 51 items may be built; implementation, quality and release statuses stay separate; never mark stubs as delivered).
