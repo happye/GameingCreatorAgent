@@ -18,7 +18,7 @@ def _canonical(document: dict[str, object]) -> str:
     return json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
-def _digest(document: dict[str, object]) -> str:
+def work_document_digest(document: dict[str, object]) -> str:
     return hashlib.sha256(_canonical(document).encode("utf-8")).hexdigest()
 
 
@@ -58,7 +58,7 @@ class CreationWorkStore:
                 "projectId": project_id,
                 "createdAt": datetime.now(UTC).isoformat(),
             }
-            document["documentSha256"] = _digest(document)
+            document["documentSha256"] = work_document_digest(document)
             write_exclusive_text(path, _canonical(document) + "\n")
             return document
         finally:
@@ -76,7 +76,7 @@ class CreationWorkStore:
         payload = {key: value for key, value in document.items() if key != "documentSha256"}
         if (
             document.get("schemaVersion") != "creation-work-v1"
-            or document.get("documentSha256") != _digest(payload)
+            or document.get("documentSha256") != work_document_digest(payload)
             or document.get("workId") != work_id
             or (project_id is not None and document.get("projectId") != project_id)
         ):

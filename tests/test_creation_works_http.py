@@ -7,7 +7,7 @@ from test_creation_jobs import service  # noqa: F401
 
 from gamingcreator.domain.errors import AppError
 from gamingcreator.ui.creation_jobs import CreationJobs
-from gamingcreator.ui.creation_works_http import works_get, works_post
+from gamingcreator.ui.creation_works_http import work_name_post, works_get, works_post
 
 PROJECT = "artifacts/project"
 WORK_ID = "a" * 32
@@ -46,6 +46,36 @@ def test_cross_project_read_and_recreate_are_refused(service: CreationJobs) -> N
         works_get(service, other, WORK_ID)
     with pytest.raises(ValueError):
         works_post(service, {"projectId": other, "requestId": WORK_ID})
+
+
+def test_display_name_is_persistent_and_scoped_to_existing_work(service: CreationJobs) -> None:
+    request = {"projectId": PROJECT, "requestId": WORK_ID}
+    original = works_post(service, request)
+    path = service.root / "works" / f"{WORK_ID}.json"
+    identity_bytes = path.read_bytes()
+    rename = {"projectId": PROJECT, "workId": WORK_ID, "name": "  赛事复盘 🎮  "}
+    named = work_name_post(service, rename)
+    assert named == {"work": {**original["work"], "workName": "赛事复盘 🎮"}}
+    assert works_get(service, PROJECT, WORK_ID) == named
+    assert works_get(service, PROJECT) == {"works": [named["work"]]}
+    assert works_post(service, request) == original
+
+    with pytest.raises(ValueError):
+        work_name_post(service, {**rename, "projectId": _other_project(service)})
+    with pytest.raises(ValueError):
+        work_name_post(service, {**rename, "workId": "b" * 32})
+    with pytest.raises(AppError, match="单行作品名称"):
+        work_name_post(service, {**rename, "name": "跨\n行"})
+    assert works_get(service, PROJECT, WORK_ID) == named
+    assert path.read_bytes() == identity_bytes
+
+    sidecar = path.with_suffix(".name.json")
+    sidecar.write_text(
+        sidecar.read_text(encoding="utf-8").replace("赛事复盘", "更改名称"), encoding="utf-8"
+    )
+    assert works_get(service, PROJECT, WORK_ID) == original
+    sidecar.write_text("[" * 1500 + "]" * 1500, encoding="utf-8")
+    assert works_get(service, PROJECT) == {"works": [original["work"]]}
 
 
 @pytest.mark.parametrize(

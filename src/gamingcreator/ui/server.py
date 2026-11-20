@@ -31,7 +31,7 @@ from gamingcreator.ui.creation_budget_scope import resolve_budget_key
 from gamingcreator.ui.creation_jobs import CreationJobs
 from gamingcreator.ui.creation_reasoning_http import reasoning_config, reasoning_post
 from gamingcreator.ui.creation_reasoning_service import CreationReasoningService
-from gamingcreator.ui.creation_works_http import works_get, works_post
+from gamingcreator.ui.creation_works_http import work_name_post, works_get, works_post
 from gamingcreator.ui.frame_text import (
     DENSITIES,
     cached_frame_text_payload,
@@ -595,6 +595,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
             path = urlparse(self.path).path
             if path not in {
                 "/api/creation/works",
+                "/api/creation/work-name",
                 "/api/creation/reasoning",
                 "/api/creation/plans",
                 "/api/creation/renders",
@@ -666,6 +667,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 if urlparse(self.path).query:
                     raise ValueError("Unexpected query.")
                 self._json(200, works_post(self.creation_jobs, value))
+                return
+            if path == "/api/creation/work-name":
+                if urlparse(self.path).query:
+                    raise ValueError("Unexpected query.")
+                self._json(200, work_name_post(self.creation_jobs, value))
                 return
             if path == "/api/creation/overlay-assets":
                 if urlparse(self.path).query:

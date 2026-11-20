@@ -253,10 +253,11 @@
    ]
   },
   "P032": {
-   "done": "Studio可调镜头、字幕、配乐/旁白、变速转场并另存重渲染；支持撤销/重做；v3快照跨刷新恢复替换镜头、文字/PNG图层及字幕混音，重验候选与资产，临时无效输入保留旧快照",
+   "done": "Studio可调镜头、字幕、配乐/旁白、变速转场并另存重渲染；支持撤销/重做和快照恢复；命名作品后可重开原剪辑，保存名称时保留编辑中的镜头修改",
    "todo": "完整工程操作回放与整体易用性未验收；本机快照仍依赖原作品、候选清单与资产可读",
-   "updated": "2026-11-16",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-studio-work-names",
     "sprint-creation-editing",
     "sprint-clip-replacements",
     "sprint-studio-caption-editor",
@@ -512,6 +513,12 @@
      "name": "按链接打开指定剪辑版本和平台包",
      "status": "done",
      "sprint": "sprint-j1-trial-reopen"
+    },
+    {
+     "id": "R1-studio-work-names",
+     "name": "剪辑区创建后命名及改名",
+     "status": "done",
+     "sprint": "sprint-studio-work-names"
     },
     {
      "id": "R1-6",
@@ -1322,7 +1329,7 @@
     "id": "J1-8",
     "name": "J1 第六次试用",
     "status": "partial",
-    "note": "指定剪辑版本与 B 站包可直接打开，真实浏览器验证约 60 秒预览和七文件 ZIP 下载，待人工判断可发布性",
+    "note": "指定命名作品、剪辑版本与 B 站包可直接打开，真实浏览器验证约 60 秒预览和七文件 ZIP 下载，待人工判断可发布性",
     "ref": "docs/exec-plans/sprint-j1-trial-reopen.md"
    }
   ]

@@ -46,7 +46,7 @@ window.PROGRESS_DATA = {
    "agent_run": {
     "date": "2026-11-20",
     "result": "pass",
-    "evidence": "既有真实漫画群星一句需求→AI方案→本地补足30秒→中文旁白→成片流程继续扩展为四平台持久队列。发布598a72a7f4164c3fba2ff8e234081681，e6e0f97ddd5a36c292318459a9895f54一次勾选四平台后关闭浏览器，服务端仍全部completed，重开4/4并下载四份七文件ZIP；逐包ffprobe均30秒H264/AAC且尺寸匹配冻结profile，B站复用旧包且ZIP SHA不变。另存多平台版标题的真实三平台队列75e124109c594dcc8c87c446339a0df6验证cancel只停后续、当前包收尾；resume后中断自有服务，重启不自动再提交，UI显式恢复同batch，前两项ID保持，第三旧中断attempt保留，新attempt2完成，页面3/3。产物.cache/scratch/package-batches-20261118/（bilibili/douyin/kuaishou/xiaohongshu.zip及delivery-evidence.json），详sprint-package-batches。本批另实测同一草稿混合 AI 插入、裁剪、删除和手动替换，刷新恢复后试听并导出 27.5 秒成片。发布 5462eed2c820468eb4beb5c1c5ac94d1 下的队列 f62b4943015cfab48822711116c2e921 重开恢复 2/2，B 站全长 ZIP 复用，抖音 15.000 秒、450 帧且音画同端点，均为七文件。证据与视频在 .cache/scratch/mixed-timeline-20261118/，详 sprint-mixed-timeline 和 sprint-platform-short-pack。随后在原发布下新增按平台的画面文案，队列 f1e517f6615987d13500c8f7874fb293 重开 2/2。抖音首尾各两秒文案烧录，450 帧／15 秒，工作台实际试听及七文件 ZIP 下载通过；详 sprint-platform-video-copy 与 .cache/scratch/platform-video-copy-20261119/。随后从同一成片按「蓝色火焰」选 7.50–22.50 秒，抖音 15 秒音画与原区间实测对应，关页重开可下载；又在本地一句话换镜并删末镜，保存新版本后试听 27 秒成片并下载 B 站七文件包。详 sprint-platform-content-cut、sprint-one-line-mixed-replacement。同一真实项目随后用一次 AI 文字提案按描述换镜并删末镜，重开从回执读回、应用并保存，27 秒成片 a23a5d2191734b178920af0c6a627bba 试听和 B 站七文件包 d49e0570d1d24bf9be6165259e13786d 下载通过。文字调用估算 ¥0.013006，详 sprint-ai-mixed-timeline。同一发布随后实测本机起草抖音画面开场并保留手写结尾；多关键词拼接按成片区间 4–5、7–8 秒输出 2 秒抖音短版，逐段音画对应，同队列恢复并复用全长 B 站。详 sprint-platform-copy-draft、sprint-platform-joined-cut。另以已插入版本实测一次 AI 提案删首镜、插「6880」技能镜头并裁短原第4镜，回读并恢复草稿、保存后试听 27 秒 MP4，下载 B 站七文件包 bb926109ad804720af2c73c53aa81bb4。文字调用一次，估算 ¥0.013668，详 sprint-ai-combined-actions。随后同一成片以「想看打出高额伤害的几招」通过本机 E5 推荐镜头，确认 2.50–3、10–11 秒两段，试听并生成 1.5 秒抖音包 c6085532b48445c28195ca36185a4585。重开队列复用全长 B 站包，无模型费用，详 sprint-platform-theme-ranking。再按一句 AI 指令删首镜、将原第4镜前移并 0.5× 慢放，回读恢复和保存，实际试听 26.5 秒成片与下载 B 站包 76e354d57c08489293861041b859bc73。一次文字调用估算 ¥0.01371，详 sprint-ai-combined-speed-order。再用一次文字提案在两处原镜后插入三段，浏览器应用前预览字幕，删除一段并撤销，刷新恢复保存后实测播放 29.5 秒 MP4 和下载 B 站包 fbbf0aee6ef441ca9d2e060cc80f22ab。估算 ¥0.013962，详 sprint-ai-multiple-insertions。随后用本地指令删首镜，按原镜迁移旁白与文字图层，第 30 帧移至第 0 帧，恢复后保存并播放 28.5 秒成片 e7aa502dfbe7485499413f2bda98c26a，下载 B 站七文件包 cba5bbf0e51d4581ac922fa16e26ca73。详 sprint-shot-companion-timing。继续实测 AI 删原第1、2镜后，默认旁白及图层分别越界，随原镜迁移并恢复保存后播放 27.5 秒成片 5ac93d7613884faab6d86f86974aa1a5，下载 B 站七文件包 6655f859c76c4106971a14a359a3b152。一次文字调用估算 ¥0.01302736，详 sprint-ai-companion-fit。另在独立漫画群星作品用显式结构偏好把倒序从备选升至首推并选中。刷新后应用，实测 30 秒成片 b0ed34e8925c44d6a83e3b002e38004a 有声播放和 B 站七文件包 918ebaca8e1e4069a7f42b2c61c21157，另一标签页清除后恢复默认。详 sprint-creator-structure-feedback。2026-11-20 在该 B 站包上追加两条测试成效，覆盖 CTR 零值、未知指标、两位小数、重开、幂等及版本隔离，详 sprint-publication-outcome-feedback。随后隔离库用两个漫画群星 B 站实拍素材包和模拟数据跑通同平台对比，显式选择倒序参考，下一次方案 1946675176534f6c91de7f83b7fd5496 冻结指标出处。详 sprint-outcome-structure-reference。2026-11-20 从同一漫画群星录像生成主题保留版 702be335f834438289915e23ac2acaf5，补入旧版遗漏的 1V1，保留 3V3 和技能释放，结算提示素材缺口。浏览器播放 30 秒成片 4af8a0a0166a43ba97a699e8ce4d3f4d，下载七文件 B 站包 fedc05d197f647d594d23b0c455ffe34。零模型调用，详 sprint-showcase-topic-coverage。随后同录像生成 60 秒玩法展示 acf92d1296a24efaa7519347ac0fc956，从保留主题起草并合成本机 Huihui 旁白，保存 200c0207a3a64eb1b474a38c4f3c3417，播放 1800 帧成片 a440b9b8995945029fbcbeb41a8c4bf4 并下载 B 站包 7c04b5bb0b534dfdbd6eea68d84663f1。源语音 SRT 无条目，零模型调用，详 sprint-showcase-narration。随后以相同 60 秒方案重合成本机语音 fd9686dbebe14b40b0f511cc66d9cdef，四句字幕随音轨后移 2.5 秒，保存修订 d4ed99deee984284b7178ee20b240085，播放 1800 帧烧录成片 fed21c0e8c9a48d4a770047fcc41dc21，读回独立 SRT/FCPXML 及 B 站包 49799e7b3c8148eeb8b5acfb7337a8ac 的烧入画面。详 sprint-narration-captions。无支付或真实平台上传，原成片/方案/失败证据保留，人评不变。 2026-11-20 第六次试用入口已备好：空白浏览器用工作台链接打开指定已保存剪辑与 B 站包，加载 60 秒预览、下载 ZIP 并比对 SHA-256，跨项目与不存在的任务均提示；纯 GET 复用已存成果。见 docs/exec-plans/sprint-j1-trial-reopen.md。"
+    "evidence": "既有真实漫画群星一句需求→AI方案→本地补足30秒→中文旁白→成片流程继续扩展为四平台持久队列。发布598a72a7f4164c3fba2ff8e234081681，e6e0f97ddd5a36c292318459a9895f54一次勾选四平台后关闭浏览器，服务端仍全部completed，重开4/4并下载四份七文件ZIP；逐包ffprobe均30秒H264/AAC且尺寸匹配冻结profile，B站复用旧包且ZIP SHA不变。另存多平台版标题的真实三平台队列75e124109c594dcc8c87c446339a0df6验证cancel只停后续、当前包收尾；resume后中断自有服务，重启不自动再提交，UI显式恢复同batch，前两项ID保持，第三旧中断attempt保留，新attempt2完成，页面3/3。产物.cache/scratch/package-batches-20261118/（bilibili/douyin/kuaishou/xiaohongshu.zip及delivery-evidence.json），详sprint-package-batches。本批另实测同一草稿混合 AI 插入、裁剪、删除和手动替换，刷新恢复后试听并导出 27.5 秒成片。发布 5462eed2c820468eb4beb5c1c5ac94d1 下的队列 f62b4943015cfab48822711116c2e921 重开恢复 2/2，B 站全长 ZIP 复用，抖音 15.000 秒、450 帧且音画同端点，均为七文件。证据与视频在 .cache/scratch/mixed-timeline-20261118/，详 sprint-mixed-timeline 和 sprint-platform-short-pack。随后在原发布下新增按平台的画面文案，队列 f1e517f6615987d13500c8f7874fb293 重开 2/2。抖音首尾各两秒文案烧录，450 帧／15 秒，工作台实际试听及七文件 ZIP 下载通过；详 sprint-platform-video-copy 与 .cache/scratch/platform-video-copy-20261119/。随后从同一成片按「蓝色火焰」选 7.50–22.50 秒，抖音 15 秒音画与原区间实测对应，关页重开可下载；又在本地一句话换镜并删末镜，保存新版本后试听 27 秒成片并下载 B 站七文件包。详 sprint-platform-content-cut、sprint-one-line-mixed-replacement。同一真实项目随后用一次 AI 文字提案按描述换镜并删末镜，重开从回执读回、应用并保存，27 秒成片 a23a5d2191734b178920af0c6a627bba 试听和 B 站七文件包 d49e0570d1d24bf9be6165259e13786d 下载通过。文字调用估算 ¥0.013006，详 sprint-ai-mixed-timeline。同一发布随后实测本机起草抖音画面开场并保留手写结尾；多关键词拼接按成片区间 4–5、7–8 秒输出 2 秒抖音短版，逐段音画对应，同队列恢复并复用全长 B 站。详 sprint-platform-copy-draft、sprint-platform-joined-cut。另以已插入版本实测一次 AI 提案删首镜、插「6880」技能镜头并裁短原第4镜，回读并恢复草稿、保存后试听 27 秒 MP4，下载 B 站七文件包 bb926109ad804720af2c73c53aa81bb4。文字调用一次，估算 ¥0.013668，详 sprint-ai-combined-actions。随后同一成片以「想看打出高额伤害的几招」通过本机 E5 推荐镜头，确认 2.50–3、10–11 秒两段，试听并生成 1.5 秒抖音包 c6085532b48445c28195ca36185a4585。重开队列复用全长 B 站包，无模型费用，详 sprint-platform-theme-ranking。再按一句 AI 指令删首镜、将原第4镜前移并 0.5× 慢放，回读恢复和保存，实际试听 26.5 秒成片与下载 B 站包 76e354d57c08489293861041b859bc73。一次文字调用估算 ¥0.01371，详 sprint-ai-combined-speed-order。再用一次文字提案在两处原镜后插入三段，浏览器应用前预览字幕，删除一段并撤销，刷新恢复保存后实测播放 29.5 秒 MP4 和下载 B 站包 fbbf0aee6ef441ca9d2e060cc80f22ab。估算 ¥0.013962，详 sprint-ai-multiple-insertions。随后用本地指令删首镜，按原镜迁移旁白与文字图层，第 30 帧移至第 0 帧，恢复后保存并播放 28.5 秒成片 e7aa502dfbe7485499413f2bda98c26a，下载 B 站七文件包 cba5bbf0e51d4581ac922fa16e26ca73。详 sprint-shot-companion-timing。继续实测 AI 删原第1、2镜后，默认旁白及图层分别越界，随原镜迁移并恢复保存后播放 27.5 秒成片 5ac93d7613884faab6d86f86974aa1a5，下载 B 站七文件包 6655f859c76c4106971a14a359a3b152。一次文字调用估算 ¥0.01302736，详 sprint-ai-companion-fit。另在独立漫画群星作品用显式结构偏好把倒序从备选升至首推并选中。刷新后应用，实测 30 秒成片 b0ed34e8925c44d6a83e3b002e38004a 有声播放和 B 站七文件包 918ebaca8e1e4069a7f42b2c61c21157，另一标签页清除后恢复默认。详 sprint-creator-structure-feedback。2026-11-20 在该 B 站包上追加两条测试成效，覆盖 CTR 零值、未知指标、两位小数、重开、幂等及版本隔离，详 sprint-publication-outcome-feedback。随后隔离库用两个漫画群星 B 站实拍素材包和模拟数据跑通同平台对比，显式选择倒序参考，下一次方案 1946675176534f6c91de7f83b7fd5496 冻结指标出处。详 sprint-outcome-structure-reference。2026-11-20 从同一漫画群星录像生成主题保留版 702be335f834438289915e23ac2acaf5，补入旧版遗漏的 1V1，保留 3V3 和技能释放，结算提示素材缺口。浏览器播放 30 秒成片 4af8a0a0166a43ba97a699e8ce4d3f4d，下载七文件 B 站包 fedc05d197f647d594d23b0c455ffe34。零模型调用，详 sprint-showcase-topic-coverage。随后同录像生成 60 秒玩法展示 acf92d1296a24efaa7519347ac0fc956，从保留主题起草并合成本机 Huihui 旁白，保存 200c0207a3a64eb1b474a38c4f3c3417，播放 1800 帧成片 a440b9b8995945029fbcbeb41a8c4bf4 并下载 B 站包 7c04b5bb0b534dfdbd6eea68d84663f1。源语音 SRT 无条目，零模型调用，详 sprint-showcase-narration。随后以相同 60 秒方案重合成本机语音 fd9686dbebe14b40b0f511cc66d9cdef，四句字幕随音轨后移 2.5 秒，保存修订 d4ed99deee984284b7178ee20b240085，播放 1800 帧烧录成片 fed21c0e8c9a48d4a770047fcc41dc21，读回独立 SRT/FCPXML 及 B 站包 49799e7b3c8148eeb8b5acfb7337a8ac 的烧入画面。详 sprint-narration-captions。无支付或真实平台上传，原成片/方案/失败证据保留，人评不变。 2026-11-20 第六次试用入口已备好：空白浏览器用工作台链接打开指定已保存剪辑与 B 站包，加载 60 秒预览、下载 ZIP 并比对 SHA-256，跨项目与不存在的任务均提示；纯 GET 复用已存成果。见 docs/exec-plans/sprint-j1-trial-reopen.md。 2026-11-20 真实样片对应作品已在剪辑区命名，改名保留未保存调速，空白浏览器原版本恢复并读到名称，作品与剪辑回执哈希一致。见 docs/exec-plans/sprint-studio-work-names.md。"
    },
    "human_check": {
     "date": "2026-11-11",
@@ -825,10 +825,11 @@ window.PROGRESS_DATA = {
     "tests/test_studio_clip_drafts_browser.py",
     "2026-11-15: per-work browser-local clip snapshots with parent receipt and whole-payload hash, explicit cross-refresh restore and real revision save; clip-only backup visibly freezes when unsupported edits occur. Full project operation replay and human usability remain unassessed."
    ],
-   "done": "Studio可调镜头、字幕、配乐/旁白、变速转场并另存重渲染；支持撤销/重做；v3快照跨刷新恢复替换镜头、文字/PNG图层及字幕混音，重验候选与资产，临时无效输入保留旧快照",
+   "done": "Studio可调镜头、字幕、配乐/旁白、变速转场并另存重渲染；支持撤销/重做和快照恢复；命名作品后可重开原剪辑，保存名称时保留编辑中的镜头修改",
    "todo": "完整工程操作回放与整体易用性未验收；本机快照仍依赖原作品、候选清单与资产可读",
-   "updated": "2026-11-16",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-studio-work-names",
     "sprint-creation-editing",
     "sprint-clip-replacements",
     "sprint-studio-caption-editor",
@@ -1448,6 +1449,12 @@ window.PROGRESS_DATA = {
      "name": "按链接打开指定剪辑版本和平台包",
      "status": "done",
      "sprint": "sprint-j1-trial-reopen"
+    },
+    {
+     "id": "R1-studio-work-names",
+     "name": "剪辑区创建后命名及改名",
+     "status": "done",
+     "sprint": "sprint-studio-work-names"
     },
     {
      "id": "R1-6",
@@ -2258,7 +2265,7 @@ window.PROGRESS_DATA = {
     "id": "J1-8",
     "name": "J1 第六次试用",
     "status": "partial",
-    "note": "指定剪辑版本与 B 站包可直接打开，真实浏览器验证约 60 秒预览和七文件 ZIP 下载，待人工判断可发布性",
+    "note": "指定命名作品、剪辑版本与 B 站包可直接打开，真实浏览器验证约 60 秒预览和七文件 ZIP 下载，待人工判断可发布性",
     "ref": "docs/exec-plans/sprint-j1-trial-reopen.md"
    }
   ]
@@ -2334,7 +2341,7 @@ window.PROGRESS_DATA = {
   "漫画群星 60 秒[主题旁白](docs/exec-plans/sprint-showcase-narration.md)已补齐[句级字幕](docs/exec-plans/sprint-narration-captions.md)，试听、移动音轨、SRT 和 B 站烧入版实测通过。",
   "P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。",
   "[P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。",
-  "[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)可直达 60 秒样片及 B 站包。待人评，继续补作品命名。"
+  "[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)可直达样片及 B 站包。[作品命名](docs/exec-plans/sprint-studio-work-names.md)已实测，待人评。"
  ],
  "sprints": [
   {
@@ -2816,8 +2823,8 @@ window.PROGRESS_DATA = {
    "ids": [
     "J1"
    ],
-   "date": "",
-   "bytes": 2709
+   "date": "2026-11-20",
+   "bytes": 2801
   },
   {
    "file": "sprint-knowledge-version-compare",
@@ -3148,6 +3155,17 @@ window.PROGRESS_DATA = {
    ],
    "date": "2026-11-08",
    "bytes": 7513
+  },
+  {
+   "file": "sprint-studio-work-names",
+   "title": "Studio 作品命名",
+   "ids": [
+    "J1",
+    "P032",
+    "P039"
+   ],
+   "date": "",
+   "bytes": 1322
   },
   {
    "file": "sprint-studio-workbench",

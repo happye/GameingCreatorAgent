@@ -23,8 +23,13 @@ export function WorksWorkspace({project, open, leave, isOpenConsumed = () => fal
     const [items, setItems] = useState([]), [current, setCurrent] = useState(null);
     const [ready, setReady] = useState(false), [busy, setBusy] = useState(false), [message, setMessage] = useState("");
     const [target, setTarget] = useState(null);
+    const [name, setName] = useState(""), [naming, setNaming] = useState(false), [nameMessage, setNameMessage] = useState("");
     const generation = useRef(0);
+    const nameScope = useRef(null); nameScope.current = `${project}:${current?.workId || ""}`;
     const externalOpen = useRef(open); externalOpen.current = open;
+    useEffect(() => {
+        setName(""); setNameMessage(""); setNaming(false);
+    }, [project, open]);
     const verify = async (workId) => {
         if (!workId) return null;
         const {work} = await api(`/api/creation/works/${workId}`, {projectId: project});
@@ -34,6 +39,7 @@ export function WorksWorkspace({project, open, leave, isOpenConsumed = () => fal
     const activate = (work, job = null) => {
         remember(project, work, job);
         setCurrent(work); setTarget(job); setReady(true); setMessage("");
+        setName(work?.workName || ""); setNameMessage(""); setNaming(false);
         onOpenConsumed(open);
     };
     useEffect(() => {
@@ -85,10 +91,36 @@ export function WorksWorkspace({project, open, leave, isOpenConsumed = () => fal
         })().catch(error => { if (mine === generation.current) setMessage(`${error.message}。可重试新建以恢复本次作品。`); })
             .finally(() => { if (mine === generation.current) setBusy(false); });
     });
+    const rename = async () => {
+        const workId = current?.workId, trimmed = name.trim();
+        if (!workId || !ready || busy || naming) return;
+        if (!trimmed || [...trimmed].length > 100 || /[\u0000-\u001f\u007f-\u009f]/u.test(name)) {
+            setNameMessage("请输入 1–100 个字符的作品名称，且不能包含控制字符。"); return;
+        }
+        const mine = generation.current, scope = nameScope.current;
+        const active = () => mine === generation.current && scope === nameScope.current && externalOpen.current === open;
+        setNaming(true); setNameMessage("");
+        try {
+            const {work} = await api("/api/creation/work-name", {}, {body: {projectId: project, workId, name: trimmed}});
+            if (!active()) return;
+            if (work?.workId !== workId || work?.projectId !== project || work?.workName !== trimmed) {
+                throw new Error("作品名称保存结果无法核对，请重试。");
+            }
+            setCurrent(old => ({...old, workName: work.workName}));
+            setItems(old => old.map(item => item.workId === workId ? {...item, workName: work.workName} : item));
+            setName(work.workName); setNameMessage("作品名称已保存。");
+        } catch (error) { if (active()) setNameMessage(error.message); }
+        finally { if (active()) setNaming(false); }
+    };
     const controls = html`<div class="field"><label class="form-row">当前作品
         <select class="select" aria-label="当前作品" disabled=${busy} value=${current?.workId || ""} onChange=${e => { if (!choose(e.currentTarget.value)) e.currentTarget.value = current?.workId || ""; }}>
             <option value="">原有草稿</option>${items.map(work => html`<option value=${work.workId}>${work.workName || `作品 ${new Date(work.createdAt).toLocaleString("zh-CN", {hour12: false})}`}</option>`)}
         </select></label><button class="btn ghost" disabled=${busy} onClick=${create}>新建作品</button>
+        ${current ? html`<label class="form-row">作品名称
+            <input class="input" aria-label="作品名称" value=${name} disabled=${!ready || naming || busy}
+                onInput=${e => setName(e.currentTarget.value)} />
+            </label><button type="button" class="btn ghost" disabled=${!ready || naming || busy} onClick=${rename}>${naming ? "正在保存名称…" : "保存作品名称"}</button>
+            ${nameMessage ? html`<p role="status">${nameMessage}</p>` : null}` : null}
         ${message ? html`<p role="status">${message}</p>` : null}</div>`;
     const mine = generation.current;
     const guarded = Object.fromEntries(Object.entries(props).map(([key, value]) => [key,
