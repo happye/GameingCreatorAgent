@@ -3,7 +3,7 @@
 // step with the plan player. Everything here becomes part of the next saved version.
 import {h} from "../vendor/preact.module.js";
 import {envelopeDb} from "./waveform.js";
-import {useEffect, useRef, useState} from "../vendor/hooks.module.js";
+import {useEffect, useLayoutEffect, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
 import {AudioPreviewGraph} from "./audio-preview-graph.js";
@@ -129,19 +129,82 @@ export function useMusicCatalog() {
     return {tracks, reload};
 }
 
-function AdMusicSuggestions({tracks, durationUs, selectedId, disabled, onSelect}) {
-    if (durationUs <= 0) return null;
+const MUSIC_PACES = {cuts: "按剪辑节拍", calm: "舒缓", lively: "动感", intense: "强烈"};
+
+function useMusicMatches(body, timeline, scope, tracks, disabled) {
+    const [state, setState] = useState(null);
+    const inputs = [JSON.stringify(body), timeline, scope, JSON.stringify(tracks.map(t => [t.trackId, t.trackReceiptSha256])), disabled];
+    const view = useRef({inputs, generation: 0}), request = useRef(null);
+    if (inputs.some((input, i) => input !== view.current.inputs[i])) {
+        view.current = {inputs, generation: view.current.generation + 1};
+    }
+    const {generation} = view.current;
+    useLayoutEffect(() => () => {
+        request.current?.abort();
+        request.current = null;
+    }, [generation]);
+    const analyze = async () => {
+        if (disabled || view.current.generation !== generation || request.current || !body.tracks.length) return;
+        const controller = new AbortController();
+        request.current = controller;
+        const current = () => request.current === controller && !controller.signal.aborted && view.current.generation === generation;
+        setState({generation, busy: true});
+        try {
+            const data = await client.api("/api/creation/ad-music-matches", {}, {body, signal: controller.signal});
+            if (current()) setState({generation, suggestions: data.pace === body.pace ? data.suggestions : []});
+        } catch (error) {
+            if (current()) setState({generation, error: error.message});
+        } finally {
+            if (request.current === controller) request.current = null;
+        }
+    };
+    return {...(state?.generation === generation ? state : {}), analyze};
+}
+
+function musicMatchText({bpm, nearCuts, checkedCuts, totalCuts}) {
+    if (!Number.isFinite(bpm)) return "节拍可信度不足";
+    const comparison = !totalCuts ? "无剪辑切换点"
+        : !checkedCuts ? `未覆盖任何切换点（共 ${totalCuts} 个）`
+        : `近拍点 ${nearCuts}/${checkedCuts} 个切换${checkedCuts < totalCuts ? `（共 ${totalCuts} 个）` : ""}`;
+    return `约 ${Math.round(bpm)} BPM · ${comparison}`;
+}
+
+function AdMusicSuggestions({tracks, durationUs, cutUs, timeline, scope, selectedId, disabled, onSelect}) {
+    const [pace, setPace] = useState("cuts");
     const eligible = tracks.filter((track) => track.licenseStatus === "user_declared");
     const covering = eligible.filter((track) => track.durationUs >= durationUs).sort((a, b) => a.durationUs - b.durationUs);
     const looping = eligible.filter((track) => track.durationUs < durationUs).sort((a, b) => b.durationUs - a.durationUs);
-    const suggestions = [...covering, ...looping].slice(0, 3);
+    const candidates = [...covering, ...looping].slice(0, 6);
+    const match = useMusicMatches({
+        durationUs, cutUs, pace,
+        tracks: candidates.map(({trackId, trackReceiptSha256}) => ({trackId, trackReceiptSha256})),
+    }, timeline, scope, tracks, disabled || durationUs <= 0);
+    if (durationUs <= 0) return null;
+    const ranked = (match.suggestions || []).flatMap(result => {
+        const track = candidates.find(t => t.trackId === result.trackId && t.trackReceiptSha256 === result.trackReceiptSha256);
+        return track ? [{track, result}] : [];
+    });
+    const confident = ranked.some(({result}) => Number.isFinite(result.bpm));
+    const suggestions = confident ? ranked : candidates.slice(0, 3).map(track => ({track}));
+    const select = track => { if (!disabled) onSelect(track); };
     return html`<div class="field">
         <div class="k">广告配乐建议</div>
-        ${suggestions.length ? html`<p class="hint">按当前 ${(durationUs / 1e6).toFixed(1)} 秒成片匹配时长，优先选一次播完即可覆盖的音乐。选用后可随画面试听。</p>
-            <ul>${suggestions.map((track) => html`<li key=${track.trackId}>
+        ${suggestions.length ? html`
+            <p class="hint">${confident ? "按节奏偏好及与剪辑的匹配排序。" : `按当前 ${(durationUs / 1e6).toFixed(1)} 秒成片匹配时长，优先选一次播完即可覆盖的音乐。`}选用后可随画面试听。</p>
+            <label class="form-row">节奏偏好<select class="select" value=${pace} disabled=${disabled}
+                onChange=${event => setPace(event.currentTarget.value)}>
+                ${Object.entries(MUSIC_PACES).map(([value, label]) => html`<option key=${value} value=${value}>${label}</option>`)}
+            </select></label>
+            <p class="hint">按时长选最多 6 首已声明使用权的音乐做本机分析。舒缓、动感和强烈按节拍速度匹配。</p>
+            <button class="btn ghost" type="button" disabled=${disabled || match.busy} onClick=${match.analyze}>分析本机配乐节拍</button>
+            ${match.busy && html`<p class="note" role="status">正在分析本机配乐节拍…</p>`}
+            ${match.suggestions && !confident && html`<p class="note" role="status">没有测出可信节拍，仍按时长推荐。你也可以手工选用曲目。</p>`}
+            ${match.error && html`<p class="note" role="status">节拍分析失败，仍按时长推荐。${match.error}</p>`}
+            <ul>${suggestions.map(({track, result}) => html`<li key=${track.trackId}>
                 <button class="btn ghost" type="button" style="max-width:100%;overflow-wrap:anywhere" disabled=${disabled || selectedId === track.trackId}
-                    onClick=${() => onSelect(track)}>${selectedId === track.trackId ? "已选用" : "选用"} ${track.title}</button>
+                    onClick=${() => select(track)}>${selectedId === track.trackId ? "已选用" : "选用"} ${track.title}</button>
                 <span class="hint"> ${track.durationUs >= durationUs ? "单次覆盖" : "需要循环"} · ${(track.durationUs / 1e6).toFixed(1)} 秒</span>
+                ${result && html`<span class="hint"> · ${musicMatchText(result)}</span>`}
             </li>`)}</ul>` : html`<p class="hint">上传音乐并声明有权使用后，可按成片时长获得建议。</p>`}
     </div>`;
 }
@@ -150,7 +213,8 @@ function AdMusicSuggestions({tracks, durationUs, selectedId, disabled, onSelect}
 const billedCharacters = (text) => [...text].reduce((n, c) => n + ((c >= "\u2e80" && c <= "\u9fff") || (c >= "\uf900" && c <= "\uffef") ? 2 : 1), 0);
 const costOf = (text, voice) => (voice?.paid ? Math.round(billedCharacters(text) * voice.yuanPer10kCharacters) / 10000 : 0);
 
-export function AudioPanel({commandPreview = false, adMusicDurationUs = 0, musicSuggestionsDisabled = false, editing, project, game = "", fps, totalUs, music, onBusy}) {
+export function AudioPanel({commandPreview = false, adMusicDurationUs = 0, adMusicCutsUs = [], adMusicTimeline, adMusicScope, musicSuggestionsDisabled = false,
+    editing, project, game = "", fps, totalUs, music, onBusy}) {
     const {audio} = editing;
     const [voices, setVoices] = useState([]);
     const [billing, setBilling] = useState({spent: 0, cap: 0});
@@ -622,7 +686,8 @@ export function AudioPanel({commandPreview = false, adMusicDurationUs = 0, music
         </div>
         <${KnowledgePanel} key=${`${project}:${String(game || "")}`} project=${project} game=${game || ""} />
         <div class="field audio-panel"><div class="k">配乐与原声</div>
-            <${AdMusicSuggestions} tracks=${music.tracks} durationUs=${adMusicDurationUs} selectedId=${bgm?.trackId}
+            <${AdMusicSuggestions} tracks=${music.tracks} durationUs=${adMusicDurationUs} cutUs=${adMusicCutsUs}
+                timeline=${adMusicTimeline} scope=${adMusicScope} selectedId=${bgm?.trackId}
                 disabled=${!!working || musicSuggestionsDisabled} onSelect=${selectMusic} />
             <label class="form-row">配乐<select class="select" value=${bgm?.trackId || ""} onChange=${(e) => {
                 selectMusic(music.tracks.find((track) => track.trackId === e.currentTarget.value));

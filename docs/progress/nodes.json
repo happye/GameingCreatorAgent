@@ -238,10 +238,11 @@
   },
   "P030": {
    "done": "本地曲库登记/手选、音量/闪避与真实混音；本机估计配乐节拍（BPM+拍点），Studio一键预览把剪辑点对齐到拍点（只缩短镜头）；时间轴下方显示每段镜头的原声波形（随裁剪/变速/原声音量更新）；波形上可打原声音量关键帧（点线加点、拖动、双击删除，可撤销），试听与成片按同一曲线",
-   "todo": "AI选曲与情绪匹配未做；节拍为本机估计未人工核对；曲目授权与响度质量未核",
-   "updated": "2026-11-11",
+   "todo": "广告可按节拍推荐；配乐情绪、高潮和响度质量待完善，人评和曲目授权待核",
+   "updated": "2026-11-21",
    "sprints": [
-    "sprint-creation-audio-mix"
+    "sprint-creation-audio-mix",
+    "sprint-ad-rhythm-matching"
    ]
   },
   "P031": {
@@ -433,10 +434,11 @@
    ]
   },
   "P049": {
-   "done": "广告双开场可分别选用已保存的配乐和变速剪辑；同批实测 20 秒及 21 秒竖屏成片和抖音包",
-   "todo": "配乐节拍及情绪匹配待实现，投放效果和成片质量待人评",
+   "done": "广告可按实际切换点和节奏偏好推荐配乐，也可批量导出各方案的已存混音、变速和字幕版本",
+   "todo": "曲目情绪标签与高潮点匹配待完善，投放效果和成片质量待人评",
    "updated": "2026-11-21",
    "sprints": [
+    "sprint-ad-rhythm-matching",
     "sprint-ad-variant-batches",
     "sprint-ad-evidence",
     "sprint-content-modes"
@@ -889,6 +891,12 @@
      "name": "广告画面与字幕组合批量导出",
      "status": "done",
      "sprint": "sprint-ad-variant-batches"
+    },
+    {
+     "id": "P049-ad-rhythm-matching",
+     "name": "广告配乐节拍匹配",
+     "status": "done",
+     "sprint": "sprint-ad-rhythm-matching"
     },
     {
      "id": "P018",

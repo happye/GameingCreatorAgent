@@ -631,6 +631,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     "/api/creation/draft-restore-preview",
                     "/api/creation/timeline-commands",
                     "/api/creation/beat-snap",
+                    "/api/creation/ad-music-matches",
                     "/api/creation/brief-sentence",
                     "/api/creation/job-name",
                     "/api/creation/music",
@@ -834,6 +835,11 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/creation/beat-snap":
                 self._json(200, self._beat_snap(value))
+                return
+            if path == "/api/creation/ad-music-matches":
+                from gamingcreator.ui.ad_music_matches import ad_music_matches
+
+                self._json(200, asyncio.run(ad_music_matches(self.repository, value)))
                 return
             if path == "/api/creation/timeline-commands":
                 from gamingcreator.application.timeline_commands import (
