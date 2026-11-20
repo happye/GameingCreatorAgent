@@ -344,7 +344,7 @@
             if (!current()) return;
             if (!result.established || !SourceClock.intervalReplayable(result.clock, c.startUs, endUs)) { $("replacement-status").textContent = description + "原片预览不可用；仍可明确选择并在成片中复核。"; return; }
             await SourceClock.prepare(video, url.href); if (!current()) return;
-            const position = await SourceClock.settle(video, SourceClock.sourceUsToPlayerSeconds(result.clock, c.startUs), 10000);
+            const position = await SourceClock.settleExact(video, SourceClock.sourceUsToPlayerSeconds(result.clock, c.startUs), {timeoutMs: 10000, toleranceSeconds: result.clock.axisToleranceUs / 1e6, isCurrent: current});
             if (!current()) return;
             if (position === null) throw new Error("原片预览定位失败；可选择后复核成片。");
             const end = SourceClock.sourceUsToPlayerSeconds(result.clock, endUs);
