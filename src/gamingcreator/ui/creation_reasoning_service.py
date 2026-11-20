@@ -266,7 +266,7 @@ class CreationReasoningService:
                 snapshot.brief.objective,
             ),
         )
-        snapshot = with_topics(snapshot)
+        snapshot = with_topics(snapshot, mapping_version="plan-topics-v2")
         result = self._prepare(snapshot, original["projectId"], job_id, "", "", "plan")
         result["knowledge"] = snapshot.payload.get("knowledge", [])
         result["originalRequest"] = {
@@ -354,7 +354,8 @@ class CreationReasoningService:
         request = _request_for(snapshot, instruction)
         output_tokens = (
             8192
-            if request.schema_version in ("plan-proposal-v3", "narration-understanding-v1")
+            if request.schema_version
+            in ("plan-proposal-v3", "plan-proposal-v4", "narration-understanding-v1")
             else 2048
         )
         quote = self.price.reservation_cny(self.price.context_limit_tokens, output_tokens)
@@ -448,7 +449,9 @@ class CreationReasoningService:
         frozen = json.loads(record["request"]["user"])["snapshot"]
         snapshot = with_knowledge(snapshot, frozen.get("knowledge", []))
         if "topicMapping" in frozen:
-            snapshot = with_topics(snapshot)
+            snapshot = with_topics(
+                snapshot, mapping_version=frozen["topicMapping"]["schemaVersion"]
+            )
         request = plan_reasoning_request(
             snapshot, prompt_version=record["request"]["prompt_version"]
         )
