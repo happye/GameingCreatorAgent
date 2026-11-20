@@ -459,12 +459,14 @@ window.PROGRESS_DATA = {
     "docs/exec-plans/sprint-activity-rules.md",
     "tests/test_studio_activity_rules_browser.py",
     "2026-11-08: Studio local activity-rule panel reuses the existing extraction API; citations, explicit application to the current brief, source/project/unmount stale-result isolation, and text-input topic round-trip verified by 12 real HTTP browser cases. No cloud calls, remote URL fetching or large editor dependency; existing OCR/PDF evidence reused, creative quality unreviewed.",
-    "2026-11-01: offline activity-rule extraction (name, period, platforms, min/max duration, orientation, required topics, forbidden items) with exact source-line citations from pasted text or local txt/md/html, screenshots via Windows OCR and PDFs via Windows.Data.Pdf page rendering + OCR; one-click brief filling; real Windows screenshot/PDF tests pass; no network fetching or model understanding"
+    "2026-11-01: offline activity-rule extraction (name, period, platforms, min/max duration, orientation, required topics, forbidden items) with exact source-line citations from pasted text or local txt/md/html, screenshots via Windows OCR and PDFs via Windows.Data.Pdf page rendering + OCR; one-click brief filling; real Windows screenshot/PDF tests pass; no network fetching or model understanding",
+    "2026-11-20: user-applied campaign requirements and line citations carry through saved plans and into the publishing checklist. See sprint-campaign-submission."
    ],
-   "done": "粘贴文字、填写活动网页地址（只读该页一次，记录网址/时间/SHA-256）或本地txt/md/html/截图/PDF，离线提取规则带逐行出处；Studio确认后填入需求",
+   "done": "可从粘贴文字、网页、本地文件或 OCR 提取逐行出处；Studio 确认后随新方案保存投稿平台、画幅、时长和标签，并在发布页核对",
    "todo": "需登录或脚本渲染的网页读不到正文；规则提取与创意质量未人工评审",
-   "updated": "2026-11-09",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-campaign-submission",
     "sprint-activity-rules"
    ]
   },
@@ -1140,12 +1142,14 @@ window.PROGRESS_DATA = {
    "remaining": null,
    "evidence": [
     "2026-11-01: campaign mode (opening, mandatory-topic clips in topic order, highlights, closing; missing topic stays a gap) real instance with topic 贝多芬 -> MP4 390 frames -> Bilibili package passing configured checks; activity rule parsing (P020) not done",
-    "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md"
+    "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md",
+    "2026-11-20: sample campaign rules and original Comic Stars footage reached a checked 720x1280 Douyin package with its required hashtag. See sprint-campaign-submission."
    ],
-   "done": "活动投稿模板按必须主题取片、缺主题报缺口；Studio可引用本地活动规则生成简报",
-   "todo": "成片质量与真实投稿未经人评，平台活动规则仍需手动录入",
-   "updated": "2026-11-08",
+   "done": "活动投稿按必讲主题选片，活动标签进入发布表单。示例规则与真实漫画群星录像实测竖屏、时长、标签核对与抖音包",
+   "todo": "成片创意质量、实际活动资格和正式投稿待核验",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-campaign-submission",
     "sprint-content-modes",
     "sprint-activity-rules"
    ]
@@ -1755,6 +1759,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-activity-rules"
     },
     {
+     "id": "P044-campaign-submission",
+     "name": "活动要求从剪辑方案进入发布核对",
+     "status": "done",
+     "sprint": "sprint-campaign-submission"
+    },
+    {
      "id": "P018",
      "name": "游戏知识层（本机）",
      "status": "done",
@@ -2259,9 +2269,9 @@ window.PROGRESS_DATA = {
   "抖音短版已接入[关键词](docs/exec-plans/sprint-platform-content-cut.md)、[多段拼接](docs/exec-plans/sprint-platform-joined-cut.md)、[画面文案](docs/exec-plans/sprint-platform-copy-draft.md)和[本机主题选段](docs/exec-plans/sprint-platform-theme-ranking.md)。实测出片、试听、队列恢复与 B 站全长包复用。",
   "创作助手已实测换镜、删裁、变速、换序及[多段插入](docs/exec-plans/sprint-ai-multiple-insertions.md)。[AI 随镜时长校验](docs/exec-plans/sprint-ai-companion-fit.md)实测先迁移旁白和图层，恢复保存、播放 27.5 秒成片并出 B 站包。",
   "[P042 方案结构偏好](docs/exec-plans/sprint-creator-structure-feedback.md)接入工作台。漫画群星刷新后从玩法展示首推改为倒序首推，实测 30 秒成片和 B 站包。另一标签页清除后，生成恢复默认首推。",
-  "[P042 发布成效](docs/exec-plans/sprint-publication-outcome-feedback.md)已按平台包手录 CTR、3 秒留存和完播率。漫画群星 B 站包上用两条测试数据验证重开读回、重复提交和多包隔离。[成效对比与结构参考](docs/exec-plans/sprint-outcome-structure-reference.md)用隔离示例从两个实拍来源 B 站包选中倒序，下次方案首推并显示指标依据。真实平台数据待录入。",
+  "P042 已接通发布成效登记、同平台对比与下一份方案参考，用隔离示例和实拍素材包验证。真实平台数据待录入。见[交付记录](docs/exec-plans/sprint-outcome-structure-reference.md)。",
   "漫画群星 60 秒[主题旁白](docs/exec-plans/sprint-showcase-narration.md)已补齐[句级字幕](docs/exec-plans/sprint-narration-captions.md)，试听、移动音轨、SRT 和 B 站烧入版实测通过。",
-  "本批 17 项定向回归通过。旧 verify-20261117-002506 已按用户要求取消，失败记录保留。"
+  "P020/P044 已把示例活动规则接到真实录像的竖屏成片、发布核对和抖音包。18 项定向回归通过。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。旧 verify-20261117-002506 已中断，原日志保留。"
  ],
  "sprints": [
   {
@@ -2459,6 +2469,17 @@ window.PROGRESS_DATA = {
    "ids": [],
    "date": "2026-10-31",
    "bytes": 7637
+  },
+  {
+   "file": "sprint-campaign-submission",
+   "title": "活动投稿要求随方案进入发布",
+   "ids": [
+    "P020",
+    "P044",
+    "R3"
+   ],
+   "date": "",
+   "bytes": 1677
   },
   {
    "file": "sprint-clip-draft-recovery",
@@ -2751,7 +2772,7 @@ window.PROGRESS_DATA = {
     "P029",
     "R2"
    ],
-   "date": "",
+   "date": "2026-11-20",
    "bytes": 1562
   },
   {

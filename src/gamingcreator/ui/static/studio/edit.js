@@ -203,6 +203,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         try {
             const preferred = structureFeedback.read();
             const accepted = await client.submit("plan", {projectId: project, ...(workId ? {workId} : {}), runIds, brief, fps: Number(draft.fps),
+                ...(brief.contentType === "campaign" && draft.campaignRules ? {campaignRules: draft.campaignRules} : {}),
                 ...(matchesStructureFeedback(preferred, draft.contentType, draft.platform) ? {creatorFeedback: preferred.source} : {}), ...(eventIds ? {eventIds,
                 clipRanges: basket.items.map(({runId, eventId, startUs, endUs}) => ({runId, eventId, startUs, endUs}))} : {})});
             if (!alive.current) return;
@@ -216,6 +217,10 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
 
     const plan = planJob?.plans?.find((p) => p.id === planId) || null;
     const fps = planJob?.fps || 30;
+    useEffect(() => {
+        const orientation = planJob?.campaignRules?.fields?.orientation?.value;
+        if (orientation) setSize(orientation === "vertical" ? "720,1280" : "1280,720");
+    }, [planJob?.jobId]);
     // Choosing a plan loads its editable clips (unless a saved version of it was just reopened).
     useEffect(() => {
         if (!planJob || !planId) return;
@@ -472,7 +477,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
             <div class="panel-body">
                 ${workControls}
                 <${BriefSentence} key=${scope} project=${project} workId=${workId} draft=${draft} update=${update} runs=${runs} />
-                <${Brief} project=${project} runs=${runs} draft=${draft} update=${update} busy=${busy} onGenerate=${generate} basket=${basket} />
+                <${Brief} scope=${scope} runs=${runs} draft=${draft} update=${update} busy=${busy} onGenerate=${generate} basket=${basket} />
                 <div class="section-label">方案${planJob ? `（${planJob.plans.length}）` : ""}</div>
                 ${planJob && planJob.candidateCountReason ? html`<p class="note">${planJob.candidateCountReason}</p>` : null}
                 ${planJob ? planJob.plans.map((p) => html`<${PlanCard} plan=${p} fps=${fps} active=${p.id === planId} thumb=${thumb} onFind=${onFindMaterial}
@@ -606,7 +611,7 @@ export function confirmLeave() {
 
 const distinctSeconds = (basket) => Math.max(1, Math.round(basket.uniqueUs / 1e6));
 
-function Brief({project, runs, draft, update, busy, onGenerate, basket}) {
+function Brief({scope, runs, draft, update, busy, onGenerate, basket}) {
     const usable = recordingRuns(runs, draft.runIds), basketSeconds = distinctSeconds(basket);
     const field = (name, label, props = {}) => html`<label class="form-row">${label}<input class="input" value=${draft[name]} onInput=${(e) => update({[name]: e.currentTarget.value})} ...${props} /></label>`;
     return html`<form class="brief" onSubmit=${(e) => { e.preventDefault(); void onGenerate(); }}>
@@ -625,7 +630,7 @@ function Brief({project, runs, draft, update, busy, onGenerate, basket}) {
             ${field("targetDuration", "秒数", {type: "number", min: 1, max: 86400})}
         </div>
         <label class="form-row">平台<select class="select" value=${draft.platform} onChange=${(e) => update({platform: e.currentTarget.value})}>${PLATFORMS.map(([v, l]) => html`<option value=${v}>${l}</option>`)}</select></label>
-        <${ActivityRules} key=${project} draft=${draft} update=${update} />
+        <${ActivityRules} key=${scope} draft=${draft} update=${update} />
         <details class="group"><summary>高级选项（可不填）</summary>
             ${field("objective", "创作目标")}${field("audience", "目标观众")}${field("tone", "表达语气")}
             ${field("mandatoryTopics", "必须包含的主题（逗号分隔）")}${field("exclude", "排除这些词的片段（如：加载, 菜单）")}

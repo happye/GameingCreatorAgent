@@ -653,7 +653,8 @@
                 "docs/exec-plans/sprint-activity-rules.md",
                 "tests/test_studio_activity_rules_browser.py",
                 "2026-11-08: Studio local activity-rule panel reuses the existing extraction API; citations, explicit application to the current brief, source/project/unmount stale-result isolation, and text-input topic round-trip verified by 12 real HTTP browser cases. No cloud calls, remote URL fetching or large editor dependency; existing OCR/PDF evidence reused, creative quality unreviewed.",
-                "2026-11-01: offline activity-rule extraction (name, period, platforms, min/max duration, orientation, required topics, forbidden items) with exact source-line citations from pasted text or local txt/md/html, screenshots via Windows OCR and PDFs via Windows.Data.Pdf page rendering + OCR; one-click brief filling; real Windows screenshot/PDF tests pass; no network fetching or model understanding"
+                "2026-11-01: offline activity-rule extraction (name, period, platforms, min/max duration, orientation, required topics, forbidden items) with exact source-line citations from pasted text or local txt/md/html, screenshots via Windows OCR and PDFs via Windows.Data.Pdf page rendering + OCR; one-click brief filling; real Windows screenshot/PDF tests pass; no network fetching or model understanding",
+                "2026-11-20: user-applied campaign requirements and line citations carry through saved plans and into the publishing checklist. See sprint-campaign-submission."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"
@@ -1099,7 +1100,8 @@
             "delivery_status": "partial",
             "implementation_evidence": [
                 "2026-11-01: campaign mode (opening, mandatory-topic clips in topic order, highlights, closing; missing topic stays a gap) real instance with topic 贝多芬 -> MP4 390 frames -> Bilibili package passing configured checks; activity rule parsing (P020) not done",
-                "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md"
+                "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md",
+                "2026-11-20: sample campaign rules and original Comic Stars footage reached a checked 720x1280 Douyin package with its required hashtag. See sprint-campaign-submission."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

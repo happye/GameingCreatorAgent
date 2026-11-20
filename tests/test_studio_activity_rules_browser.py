@@ -135,7 +135,7 @@ def test_extract_apply_and_real_plan(studio, source):
     expect(page.get_by_label("秒数", exact=True)).to_have_value("180")
     expect(page.get_by_label("创作目标", exact=True)).to_have_value("保留我的目标")
     topics = page.get_by_label("必须包含的主题", exact=False)
-    expect(topics).to_have_value("已有主题, 代号Atom新版本, 星际奔跑")
+    expect(topics).to_have_value("已有主题,代号Atom新版本")
     topics.fill(topics.input_value() + ", 新增话题")
     with page.expect_response(
         lambda r: r.request.method == "POST" and r.url.endswith("/api/creation/plans")
@@ -152,7 +152,15 @@ def test_extract_apply_and_real_plan(studio, source):
     assert brief["targetDuration"] == 180
     assert brief["platforms"] == ["douyin"]
     assert brief["contentType"] == "campaign"
-    assert brief["mandatoryTopics"] == ["已有主题", "代号Atom新版本", "星际奔跑", "新增话题"]
+    assert brief["mandatoryTopics"] == ["已有主题", "代号Atom新版本", "新增话题"]
+    applied = report["campaignRules"]
+    assert applied["fields"]["orientation"]["value"] == "vertical"
+    assert [row["value"] for row in applied["fields"]["requiredTopics"]] == [
+        "代号Atom新版本",
+        "星际奔跑",
+    ]
+    page.get_by_role("tab", name="导出", exact=True).click()
+    expect(page.get_by_role("combobox", name="尺寸", exact=True)).to_have_value("720,1280")
     folder = Path(".cache/scratch/studio-activity-rules")
     folder.mkdir(parents=True, exist_ok=True)
     expect(page.locator(".plan").first).to_be_visible()

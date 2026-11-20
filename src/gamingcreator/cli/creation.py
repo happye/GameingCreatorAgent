@@ -24,6 +24,7 @@ async def execute_plan_creation(
     edit_kinds: dict[str, int] | None = None,
     clip_ranges: object = None,
     creator_feedback: CreatorStructureChoice | None = None,
+    campaign_rules: dict[str, object] | None = None,
 ) -> dict[str, object]:
     try:
         if not runs or len(runs) != len(set(runs)):
@@ -46,6 +47,8 @@ async def execute_plan_creation(
             creator_feedback,
         )
         report["brief"] = raw
+        if campaign_rules is not None:
+            report["campaignRules"] = campaign_rules
         documents: dict[str, object] = {"plans.json": report}
         if selection is not None:
             documents["edit-decision.json"] = select_edit_decision(report, selection)

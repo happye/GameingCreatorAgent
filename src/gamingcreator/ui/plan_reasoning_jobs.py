@@ -78,6 +78,8 @@ def verified_plan(jobs: Any, request: dict[str, Any], service: Any = None) -> di
         raise ValueError("Adopted brief or basket identity changed.")
     proposal = validate_plan_proposal(snapshot, result["proposal"]["response"])
     report = compile_plan_proposal(snapshot, proposal)
+    if "campaignRules" in request:
+        report["campaignRules"] = request["campaignRules"]
     report["reasoningProvenance"] = {
         "preparedHash": prepared_hash,
         "resultHash": sha256(canonical(result).encode()).hexdigest(),
@@ -157,10 +159,13 @@ def verified_completion(jobs: Any, request: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("Saved AI plan differs from verified proposal.")
     service = service_for(jobs)
     snapshot = service._current(service._prepared(request["reasoningPreparedHash"]))
-    return complete_duration(
+    completed = complete_duration(
         snapshot,
         report,
         identity["parentPlanId"],
         identity["parentJobId"],
         identity["parentReceiptSha256"],
     )
+    if "campaignRules" in request:
+        completed["campaignRules"] = request["campaignRules"]
+    return completed

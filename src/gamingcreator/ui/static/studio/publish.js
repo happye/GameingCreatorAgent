@@ -5,6 +5,7 @@ import {h} from "../vendor/preact.module.js";
 import {useCallback, useEffect, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
+import {CampaignChecks, campaignTags} from "./activity.js";
 import {publicationErrorFields, publicationFieldErrors} from "./publication_form.js";
 import {PublicationFeedback} from "./publication_feedback.js";
 import {usePackageBatches} from "./package_batches.js";
@@ -302,6 +303,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     const [platform, setPlatform] = useState("");
     const [packages, setPackages] = useState([]);
     const [selected, setSelected] = useState([]);
+    const defaultedRender = useRef("");
     const [platformDraft, setPlatformDraft] = useState({key: null, values: {}});
     const [previewPackage, setPreviewPackage] = useState("");
     const epoch = useRef(0);
@@ -323,6 +325,14 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
     useEffect(() => {
         client.api("/api/creation/platform-profiles").then((data) => { setProfiles(data.profiles || []); setPlatform(data.profiles?.[0]?.Platform || ""); setSelected([data.profiles?.[0]?.Platform].filter(Boolean)); }).catch(() => setProfiles([]));
     }, []);
+    useEffect(() => {
+        if (!pub || !profiles.length || defaultedRender.current === renderId) return;
+        defaultedRender.current = renderId;
+        if (!pub.campaignRules) return;
+        const allowed = pub.campaignRules.fields.platforms?.map(item => item.value) || [];
+        const preferred = [pub.campaignPlatform, ...allowed].find(key => (!allowed.length || allowed.includes(key)) && profiles.some(p => p.Platform === key));
+        if (preferred) { setPlatform(preferred); setSelected([preferred]); }
+    }, [renderId, profiles, pub]);
     // Open what was asked for (a video, publication or package from the bin), else the newest video.
     useEffect(() => {
         const changedProject = shownProject.current !== null && shownProject.current !== project;
@@ -632,6 +642,7 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                         ${pkg.generationStatus === "completed" && !pkg.error && html`<div>
                         <p class="v">${PLATFORMS[pkg.profile?.Platform] || ""}：${pkg.generationStatus === "completed" ? "已生成" : "未完成"}；本地检查${STATUS[pkg.localChecks] || "未知"}${pkg.publicationEligibility === "blocked" ? "；发布受阻（含仅供测试的音乐等）" : ""}${pkg.watermark ? "；含水印" : ""}。平台官方规则、素材权利尚未核实。</p>
                         <p class="hint">${Object.entries(pkg.validation?.checks || {}).map(([k, s]) => `${CHECKS[k] || k}：${STATUS[s] || "未知"}`).join("　")}</p>
+                        <${CampaignChecks} rules=${pub.campaignRules} media=${pkg.validation?.facts} tags=${pub.tags} platforms=${[pkg.profile?.Platform]} platformNames=${PLATFORMS} title="平台包活动要求" />
                         <div class="actions-row"><a class="btn" href=${`${jobPath(pkg.jobId)}/package-files/package.zip?download=1`} download="package.zip">下载平台包（zip）</a>
                             <a class="btn ghost" href=${`${jobPath(pkg.jobId)}/package-files/video.mp4?download=1`} download="video.mp4">只下载视频</a>
                             <button class="btn ghost" aria-expanded=${previewPackage === pkg.jobId} onClick=${() => setPreviewPackage(id => id === pkg.jobId ? "" : pkg.jobId)}>${previewPackage === pkg.jobId ? "收起预览" : `预览${PLATFORMS[pkg.profile?.Platform] || "平台"}成片`}</button></div>
@@ -652,10 +663,11 @@ export function PublishWorkspace({project, works, open, onWorksChanged, layout, 
                 ${pub ? html`
                     <p class="hint">${pub.publicationJobId ? (dirty ? "有未保存的修改" : "已保存的版本") : "按需求自动起草的模板，请改一遍再保存。"}</p>
                     <${AiCopy} key=${pub.renderJobId} renderJobId=${pub.renderJobId} disabled=${!!busy}
-                        onCopy=${(copy) => setForm((f) => ({...f, title: copy.title, description: copy.description, tags: copy.tags.join("，")}))} />
+                        onCopy=${(copy) => setForm((f) => ({...f, title: copy.title, description: copy.description, tags: campaignTags(pub.campaignRules, copy.tags).join("，")}))} />
                     <label class="form-row">标题（${form.title.length} 字）<input class="input" value=${form.title} maxLength="200" onInput=${(e) => { setForm({...form, title: e.currentTarget.value}); setFieldError((cur) => ({...cur, title: ""})); }} />${fieldError.title ? html`<p class="hint" data-field="title">${fieldError.title}</p>` : null}</label>
                     <label class="form-row">简介（${form.description.length} 字）<textarea class="input" rows="6" value=${form.description} onInput=${(e) => { setForm({...form, description: e.currentTarget.value}); setFieldError((cur) => ({...cur, description: ""})); }}></textarea>${fieldError.description ? html`<p class="hint" data-field="description">${fieldError.description}</p>` : null}</label>
                     <label class="form-row">标签（逗号分隔，${tagList(form.tags).length} 个）<input class="input" value=${form.tags} onInput=${(e) => { setForm({...form, tags: e.currentTarget.value}); setFieldError((cur) => ({...cur, tags: ""})); }} />${fieldError.tags ? html`<p class="hint" data-field="tags">${fieldError.tags}</p>` : null}</label>
+                    <${CampaignChecks} rules=${pub.campaignRules} media=${pub} tags=${tagList(form.tags)} platforms=${selected} platformNames=${PLATFORMS} title="活动要求核对" />
                     <p class="hint">简介里可以补一句作者的话和相关链接（官网、下载、活动页）。</p>
                     <${CoverField} savedSrc=${coverSrc} preview=${coverPreview} thumbs=${thumbs} coverFrame=${form.coverFrame} fps=${fps}
                         onPick=${(frame, url) => { setForm({...form, coverFrame: frame}); setCoverPreview(url); }} />

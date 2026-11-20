@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from gamingcreator.application.activity_rules import validate_campaign_rules
 from gamingcreator.application.creation_feedback import (
     CreatorStructureChoice,
     normalize_edit_kinds,
@@ -248,6 +249,7 @@ class CreationJobs:
                     "workId",
                     "localCompletion",
                     "creatorFeedback",
+                    "campaignRules",
                 }
                 if kind == "plan"
                 else set()
@@ -325,7 +327,11 @@ class CreationJobs:
                     CreationWorkStore(self.safe(self.root / "works")).read(
                         request["workId"], request["projectId"]
                     )
-                CreativeBrief.from_json(request["brief"])
+                brief = CreativeBrief.from_json(request["brief"])
+                if "campaignRules" in request:
+                    if brief.content_type != "campaign":
+                        raise ValueError("活动要求只能用于活动投稿方案。")
+                    validate_campaign_rules(request["campaignRules"])
                 runs = request["runIds"]
                 if (
                     not isinstance(runs, list)
@@ -571,6 +577,7 @@ class CreationJobs:
             if (
                 report.get("brief") != request["brief"]
                 or report.get("fps") != request["fps"]
+                or report.get("campaignRules") != request.get("campaignRules")
                 or any(
                     segment.get("runId") not in request["runIds"]
                     for plan in report["plans"]
@@ -579,6 +586,8 @@ class CreationJobs:
             ):
                 raise ValueError("Result does not match the persisted request")
             state.update({key: report[key] for key in ("plans", "brief", "fps")})
+            if "campaignRules" in request:
+                state["campaignRules"] = report["campaignRules"]
             if report.get("planner") == "offline-template-v1":
                 state["feedbackReceiptSha256"] = digest
             if "creatorFeedback" in request:
@@ -776,6 +785,18 @@ class CreationJobs:
 
                 save_plan(self, directory, request)
             elif state["kind"] == "plan":
+                plan_inputs: dict[str, Any] = {
+                    target: request[source]
+                    for source, target in (
+                        ("clipRanges", "clip_ranges"),
+                        ("campaignRules", "campaign_rules"),
+                    )
+                    if source in request
+                }
+                if "creatorFeedback" in request:
+                    plan_inputs["creator_feedback"] = CreatorStructureChoice.from_json(
+                        request["creatorFeedback"]
+                    )
                 asyncio.run(
                     execute_plan_creation(
                         project,
@@ -787,20 +808,7 @@ class CreationJobs:
                         None,
                         preferences=self._preferences(directory),
                         edit_kinds=self._edit_habits(directory),
-                        **(
-                            {
-                                "creator_feedback": CreatorStructureChoice.from_json(
-                                    request["creatorFeedback"]
-                                )
-                            }
-                            if "creatorFeedback" in request
-                            else {}
-                        ),
-                        **(
-                            {"clip_ranges": request["clipRanges"]}
-                            if "clipRanges" in request
-                            else {}
-                        ),
+                        **plan_inputs,
                     )
                 )
             elif state["kind"] == "package":

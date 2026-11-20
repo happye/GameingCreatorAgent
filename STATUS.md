@@ -25,9 +25,9 @@
 3. 抖音短版已接入[关键词](docs/exec-plans/sprint-platform-content-cut.md)、[多段拼接](docs/exec-plans/sprint-platform-joined-cut.md)、[画面文案](docs/exec-plans/sprint-platform-copy-draft.md)和[本机主题选段](docs/exec-plans/sprint-platform-theme-ranking.md)。实测出片、试听、队列恢复与 B 站全长包复用。
 4. 创作助手已实测换镜、删裁、变速、换序及[多段插入](docs/exec-plans/sprint-ai-multiple-insertions.md)。[AI 随镜时长校验](docs/exec-plans/sprint-ai-companion-fit.md)实测先迁移旁白和图层，恢复保存、播放 27.5 秒成片并出 B 站包。
 5. [P042 方案结构偏好](docs/exec-plans/sprint-creator-structure-feedback.md)接入工作台。漫画群星刷新后从玩法展示首推改为倒序首推，实测 30 秒成片和 B 站包。另一标签页清除后，生成恢复默认首推。
-6. [P042 发布成效](docs/exec-plans/sprint-publication-outcome-feedback.md)已按平台包手录 CTR、3 秒留存和完播率。漫画群星 B 站包上用两条测试数据验证重开读回、重复提交和多包隔离。[成效对比与结构参考](docs/exec-plans/sprint-outcome-structure-reference.md)用隔离示例从两个实拍来源 B 站包选中倒序，下次方案首推并显示指标依据。真实平台数据待录入。
+6. P042 已接通发布成效登记、同平台对比与下一份方案参考，用隔离示例和实拍素材包验证。真实平台数据待录入。见[交付记录](docs/exec-plans/sprint-outcome-structure-reference.md)。
 7. 漫画群星 60 秒[主题旁白](docs/exec-plans/sprint-showcase-narration.md)已补齐[句级字幕](docs/exec-plans/sprint-narration-captions.md)，试听、移动音轨、SRT 和 B 站烧入版实测通过。
-8. 本批 17 项定向回归通过。旧 verify-20261117-002506 已按用户要求取消，失败记录保留。
+8. P020/P044 已把示例活动规则接到真实录像的竖屏成片、发布核对和抖音包。18 项定向回归通过。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。旧 verify-20261117-002506 已中断，原日志保留。
 
 ## 费用与授权
 

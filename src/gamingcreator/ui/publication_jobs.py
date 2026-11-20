@@ -64,7 +64,7 @@ def snapshot(jobs: Any, job_id: str) -> dict[str, Any]:
         publication = verified["publication"]
         render_dir = jobs.directory(publication["renderJobId"])
         receipt = jobs.read(render_dir / "result/receipt.json")
-        edl, _, digest = read_creation(jobs.safe(render_dir / "selection"))
+        edl, report, digest = read_creation(jobs.safe(render_dir / "selection"))
         if digest != receipt["creationReceiptSha256"]:
             raise ValueError("Render selection changed")
         return {
@@ -72,12 +72,19 @@ def snapshot(jobs: Any, job_id: str) -> dict[str, Any]:
             "publicationJobId": job_id,
             "publicationReceiptSha256": verified["resultReceiptSha256"],
             "contentShots": asyncio.run(content_shots(jobs.project(state["projectId"]), edl)),
+            **_campaign_context(report),
         }
     _, receipt, digest = render_parent(jobs, job_id)
-    edl, report, _ = read_creation(jobs.safe(directory / "selection"))
+    edl, report, selection_digest = read_creation(jobs.safe(directory / "selection"))
+    if selection_digest != receipt["creationReceiptSha256"]:
+        raise ValueError("Render selection changed")
     brief = report["brief"]
     fps = receipt["fpsNumerator"] / receipt["fpsDenominator"]
     copy = draft_copy(brief, edl.get("segments") or [], fps)
+    campaign = _campaign_context(report)
+    if campaign:
+        tags = campaign["campaignRules"]["fields"].get("requiredTopics", [])
+        copy["tags"] = list(dict.fromkeys([*(row["value"] for row in tags), *copy["tags"]]))[:20]
     return {
         "publicationJobId": None,
         "publicationReceiptSha256": None,
@@ -85,6 +92,7 @@ def snapshot(jobs: Any, job_id: str) -> dict[str, Any]:
         "expectedRenderReceiptSha256": digest,
         "coverFrame": 0,
         **copy,
+        **campaign,
         **clock(receipt),
         "videoUrl": "/api/creation/jobs/" + job_id + "/video",
         "draftStatus": "editable-template-not-ai",
@@ -92,6 +100,15 @@ def snapshot(jobs: Any, job_id: str) -> dict[str, Any]:
         "draft": True,
         "metadataOrigin": "brief_template",
         "qualityStatus": "unreviewed",
+    }
+
+
+def _campaign_context(report: dict[str, Any]) -> dict[str, Any]:
+    if "campaignRules" not in report:
+        return {}
+    return {
+        "campaignRules": report["campaignRules"],
+        "campaignPlatform": report["brief"]["platforms"][0],
     }
 
 

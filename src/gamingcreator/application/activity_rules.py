@@ -5,6 +5,7 @@ Anything ambiguous (negated, excluded, conflicting, several candidates, out of r
 unit or subject) stays None: a cited wrong value is worse than an empty field.
 """
 
+import math
 import re
 from datetime import date
 from typing import Any
@@ -303,3 +304,53 @@ def extract_activity_rules(text: object) -> dict[str, object]:
         "totalFields": len(fields),
         "status": "extracted-human-check-required",
     }
+
+
+def validate_campaign_rules(value: object) -> None:
+    """Validate the cited, user-applied rule fields carried beside a campaign brief."""
+    fields = {
+        "orientation",
+        "minDurationSeconds",
+        "maxDurationSeconds",
+        "platforms",
+        "requiredTopics",
+    }
+    if (
+        not isinstance(value, dict)
+        or value.keys() != {"schemaVersion", "fields"}
+        or value["schemaVersion"] != "campaign-submission-rules-v1"
+        or not isinstance(value["fields"], dict)
+        or not value["fields"]
+        or value["fields"].keys() - fields
+    ):
+        raise ValueError("活动要求无效，请重新解析并应用。")
+    for key, rows in value["fields"].items():
+        if key not in ("platforms", "requiredTopics"):
+            rows = [rows]
+        if not isinstance(rows, list) or not 1 <= len(rows) <= 200:
+            raise ValueError("活动要求项数量无效。")
+        for row in rows:
+            _validate_campaign_fact(key, row)
+
+
+def _validate_campaign_fact(key: str, fact: object) -> None:
+    if (
+        not isinstance(fact, dict)
+        or fact.keys() != {"value", "line", "text"}
+        or type(fact["line"]) is not int
+        or fact["line"] < 1
+        or not isinstance(fact["text"], str)
+        or not 1 <= len(fact["text"]) <= 300
+    ):
+        raise ValueError("活动要求缺少原文行号或引用。")
+    raw = fact["value"]
+    if key.endswith("Seconds"):
+        valid = type(raw) in (int, float) and 0 < raw <= 1_000_000_000 and math.isfinite(raw)
+    elif key == "orientation":
+        valid = raw in ("horizontal", "vertical")
+    elif key == "platforms":
+        valid = isinstance(raw, str) and raw in PLATFORMS
+    else:
+        valid = isinstance(raw, str) and 1 <= len(raw.strip()) <= 30
+    if not valid:
+        raise ValueError("活动要求值无效。")

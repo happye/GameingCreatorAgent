@@ -15,6 +15,7 @@ from test_plan_proposals import output, timelines
 from gamingcreator.application.edit_decision import select_edit_decision
 from gamingcreator.application.pricing import DEEPSEEK_FLASH_20261004
 from gamingcreator.application.rendering import validate_render_plan
+from gamingcreator.cli.creation import execute_plan_creation
 from gamingcreator.domain.errors import AppError
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 from gamingcreator.ui.creation_reasoning_http import reasoning_post
@@ -106,6 +107,33 @@ def test_prepare_confirm_adopt_real_jobs_and_render_validation(planning):
         select_edit_decision(report, "dynamic-1"), report, (ctx.timeline,)
     )
     assert render.frames == 180
+
+
+def test_campaign_rule_citations_survive_adoption(planning, monkeypatch):
+    from gamingcreator.ui import creation_jobs
+
+    ctx = planning
+    monkeypatch.setattr(creation_jobs, "execute_plan_creation", execute_plan_creation)
+    rule = {
+        "schemaVersion": "campaign-submission-rules-v1",
+        "fields": {"orientation": {"value": "vertical", "line": 1, "text": "投稿要求竖屏"}},
+    }
+    req = request()
+    req.update(requestId="b" * 32, campaignRules=rule)
+    req["brief"].update(targetDuration=6, contentType="campaign")
+    ctx.root = ctx.jobs.submit("plan", req)["jobId"]
+    assert finish(ctx.jobs, ctx.root)["campaignRules"] == rule
+    snapshot, _ = original_snapshot(ctx.jobs, ctx.root)
+    ctx.transport.content = output(snapshot, ((3, 1),))
+    prep = prepared(ctx)
+    assert execute(ctx, prep)["status"] == "completed"
+    forged = adoption_request(req, prep["preparedHash"])
+    forged.pop("campaignRules")
+    with pytest.raises((ValueError, AppError)):
+        ctx.jobs.submit("plan", forged)
+    adopted = ctx.reasoning.adopt_plan(prep["preparedHash"])
+    assert finish(ctx.jobs, adopted["jobId"])["campaignRules"] == rule
+    assert len(ctx.transport.calls) == 1
 
 
 @pytest.mark.parametrize("fault", ["brief", "events", "ranges", "source", "saved-request"])

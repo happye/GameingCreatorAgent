@@ -136,10 +136,11 @@
    ]
   },
   "P020": {
-   "done": "粘贴文字、填写活动网页地址（只读该页一次，记录网址/时间/SHA-256）或本地txt/md/html/截图/PDF，离线提取规则带逐行出处；Studio确认后填入需求",
+   "done": "可从粘贴文字、网页、本地文件或 OCR 提取逐行出处；Studio 确认后随新方案保存投稿平台、画幅、时长和标签，并在发布页核对",
    "todo": "需登录或脚本渲染的网页读不到正文；规则提取与创意质量未人工评审",
-   "updated": "2026-11-09",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-campaign-submission",
     "sprint-activity-rules"
    ]
   },
@@ -385,10 +386,11 @@
    ]
   },
   "P044": {
-   "done": "活动投稿模板按必须主题取片、缺主题报缺口；Studio可引用本地活动规则生成简报",
-   "todo": "成片质量与真实投稿未经人评，平台活动规则仍需手动录入",
-   "updated": "2026-11-08",
+   "done": "活动投稿按必讲主题选片，活动标签进入发布表单。示例规则与真实漫画群星录像实测竖屏、时长、标签核对与抖音包",
+   "todo": "成片创意质量、实际活动资格和正式投稿待核验",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-campaign-submission",
     "sprint-content-modes",
     "sprint-activity-rules"
    ]
@@ -826,6 +828,12 @@
      "name": "活动规则解析（离线）",
      "status": "done",
      "sprint": "sprint-activity-rules"
+    },
+    {
+     "id": "P044-campaign-submission",
+     "name": "活动要求从剪辑方案进入发布核对",
+     "status": "done",
+     "sprint": "sprint-campaign-submission"
     },
     {
      "id": "P018",
