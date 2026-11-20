@@ -14,7 +14,9 @@ function remember(scope, quote) {
 
 export function useNarrationAI({editing, commandPreview = false, working = false, project, text, fallback, adopt}) {
     const scope = JSON.stringify([project, editing.base?.jobId, editing.base?.planId, editing.editor?.expectedParentReceiptSha256]);
-    const key = JSON.stringify([scope, commandPreview, editing.dirty, editing.status, editing.clips, text]);
+    // Keep the paid recovery scope stable; these only invalidate late UI responses.
+    const key = JSON.stringify([scope, commandPreview, working, editing.dirty, editing.status,
+        editing.editEpoch, editing.clips, editing.audio, text]);
     const live = useRef({key, epoch: 0, mounted: true});
     if (live.current.key !== key) { live.current.key = key; live.current.epoch++; }
     const epoch = live.current.epoch;
@@ -23,14 +25,14 @@ export function useNarrationAI({editing, commandPreview = false, working = false
     const patch = (value) => { if (valid()) setState(s => ({...s, ...value})); };
     useEffect(() => { setState(initial()); }, [key]);
     useEffect(() => () => { live.current.mounted = false; }, []);
-    const ready = editing.status === "ready" && !editing.dirty && !commandPreview;
+    const ready = editing.status === "ready" && !editing.dirty && !commandPreview && !working;
     const take = (data) => {
         if (!valid()) return;
         const script = data.status === "completed" && data.purpose === "narration" ? data.script : null;
         patch({script, message: script?.text ? "AI 草稿待预览核对；引文只证明来源，请核对语义。" : "没有有效 AI 输出，可用规则模板继续；本次不会自动重试。"});
     };
     const send = async (quote, explicit = false) => {
-        if (!ready || !valid() || state.sent) return;
+        if (!ready || !valid() || state.sent || records()[scope]) return;
         remember(scope, quote);
         patch({sent: true});
         take(await post({action: explicit ? "execute" : "execute_budget", preparedHash: quote.preparedHash, snapshotFingerprint: quote.snapshotFingerprint,
@@ -42,7 +44,7 @@ export function useNarrationAI({editing, commandPreview = false, working = false
         catch (error) { patch({message: `${error.message}。若已发送，仅可读取结果，不会自动重复付费；也可继续本机草稿。`}); }
         finally { patch({busy: false}); }
     };
-    const start = () => ready && !state.busy && run(async () => {
+    const start = () => ready && valid() && !state.busy && run(async () => {
         if (records()[scope]) return patch({sent: true, message: "已有 AI 调用恢复入口，请先只读恢复；可继续使用规则模板。"});
         const config = await api("/api/creation/reasoning/config");
         if (!valid()) return;
@@ -54,7 +56,7 @@ export function useNarrationAI({editing, commandPreview = false, working = false
         else patch({message: "超出自动 AI 预算，可使用规则模板，或明确确认本次费用上限后发送。"});
     });
     const saved = records()[scope];
-    const recover = () => run(async () => {
+    const recover = () => valid() && !working && !state.busy && saved && run(async () => {
         patch({sent: true, quote: saved.quote});
         take(await post({action: "result", preparedHash: saved.quote.preparedHash}));
     });
@@ -62,7 +64,7 @@ export function useNarrationAI({editing, commandPreview = false, working = false
         ${!ready && html`<p class="hint">请先保存镜头版本，再起草或填入 AI 旁白。</p>`}
         ${state.message && html`<p role="status">${state.message}</p>`}
         ${state.quote && html`<p class="hint">${budgetText(state.quote.budget)}</p>`}
-        ${saved && html`<button class="btn ghost" disabled=${state.busy} onClick=${recover}>读取上次 AI 旁白结果（不重新调用）</button>`}
+        ${saved && html`<button class="btn ghost" disabled=${state.busy || working} onClick=${recover}>读取上次 AI 旁白结果（不重新调用）</button>`}
         ${state.quote && !state.quote.budget?.eligible && !state.sent && html`<button class="btn ghost" disabled=${!ready || state.busy} onClick=${() => {
             if (confirm(`确认本次 AI 文字调用最多 ¥${state.quote.maxCostCny}？`)) void run(() => send(state.quote, true));
         }}>确认费用上限 ¥${state.quote.maxCostCny} 并起草</button>`}
