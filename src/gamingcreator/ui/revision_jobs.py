@@ -23,6 +23,7 @@ from gamingcreator.application.creation_replacements import (
     validate_revision_v4,
 )
 from gamingcreator.application.creation_subtitles import (
+    ad_caption_fallback,
     build_narration_subtitles,
     build_subtitles,
     validate_override_text,
@@ -455,7 +456,7 @@ async def render_revision(
         (project,),
     )
     mode = request.get("subtitleMode", "none")
-    cues = revision_subtitles(chain, mode)
+    cues = revision_subtitles(chain, mode, ad_fallback=request.get("adCaptionFallback") is True)
     reserved = [
         index
         for index, row in enumerate(editable_clips(chain.edl, chain.root_sha))
@@ -547,7 +548,9 @@ def editable_clips(edl: dict[str, Any], root_sha: str) -> list[dict[str, Any]]:
     return legacy_editable_clips(edl, root_sha)
 
 
-def revision_subtitles(chain: Chain, mode: str) -> tuple[SubtitleCue, ...]:
+def revision_subtitles(
+    chain: Chain, mode: str, *, ad_fallback: bool = False
+) -> tuple[SubtitleCue, ...]:
     if mode == "none":
         return ()
     runs = {timeline.run.run_id: timeline for timeline in chain.timelines}
@@ -562,5 +565,9 @@ def revision_subtitles(chain: Chain, mode: str) -> tuple[SubtitleCue, ...]:
     )
     if chain.narration is not None and chain.narration_asset is not None:
         speech = build_narration_subtitles(chain.plan, chain.narration, chain.narration_asset)
-        return tuple(sorted((*cues, *speech), key=lambda cue: (cue.start, cue.end)))
+        cues = tuple(sorted((*cues, *speech), key=lambda cue: (cue.start, cue.end)))
+    if ad_fallback and not cues:
+        if chain.subtitle_overrides:
+            raise ValueError("该剪辑版本已主动清空字幕，请选择无字幕或使用原方案。")
+        return ad_caption_fallback(chain.plan, chain.edl, cues)
     return cues

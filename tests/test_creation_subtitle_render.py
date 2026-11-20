@@ -11,6 +11,7 @@ from gamingcreator.application.creation_subtitles import build_subtitles
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.rendering import RenderClip, RenderPlan
 from gamingcreator.cli.creation_render import execute_render_creation
+from gamingcreator.domain.creation_presentation import PresentationOptions
 from gamingcreator.domain.creation_subtitles import SubtitleCue
 from gamingcreator.domain.time import SourceRange
 from gamingcreator.infrastructure.ffmpeg_media import FfmpegMediaProcessor
@@ -63,7 +64,7 @@ def test_ass_control_text_is_literal():
     assert "｛＼p1｝" in result
 
 
-@pytest.mark.parametrize("mode", ["none", "sidecar", "burn", "empty"])
+@pytest.mark.parametrize("mode", ["none", "sidecar", "burn", "boxed", "empty"])
 def test_real_subtitle_render(tmp_path, mode):
     source = tmp_path / "source.mp4"
     run_tool(
@@ -93,7 +94,8 @@ def test_real_subtitle_render(tmp_path, mode):
             180,
             "",
             cues,
-            "burn" if mode == "empty" else mode,
+            "burn" if mode in {"empty", "boxed"} else mode,
+            presentation=PresentationOptions(subtitle_style="boxed") if mode == "boxed" else None,
         )
         assert result["subtitles"]["cueCount"] == (0 if mode in ("none", "empty") else 1)
         if mode != "none":
@@ -110,10 +112,12 @@ def test_real_subtitle_render(tmp_path, mode):
         )
         frame = 320 * 180
         bright = [sum(v > 100 for v in pixels[i * frame : (i + 1) * frame]) for i in range(20)]
-        if mode == "burn":
+        if mode in {"burn", "boxed"}:
             assert max(bright[:2]) == 0
             assert min(bright[3:6]) > 30
             assert max(bright[9:]) == 0
+            if mode == "boxed":
+                assert sum(12 < value < 60 for value in pixels[4 * frame : 5 * frame]) > 250
         else:
             assert max(bright) == 0
 

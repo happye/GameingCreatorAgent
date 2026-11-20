@@ -5,7 +5,11 @@ import json
 from pathlib import Path
 from typing import Any
 
-from gamingcreator.application.creation_subtitles import build_subtitles, present_subtitles
+from gamingcreator.application.creation_subtitles import (
+    ad_caption_fallback,
+    build_subtitles,
+    present_subtitles,
+)
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.rendering import validate_render_plan
 from gamingcreator.domain.creation_presentation import PresentationOptions
@@ -63,6 +67,7 @@ async def execute_render_creation(
     presentation: PresentationOptions | None = None,
     word_run_id: str | None = None,
     word_result_hash: str | None = None,
+    use_ad_caption_fallback: bool = False,
 ) -> dict[str, object]:
     try:
         if subtitle_mode not in ("none", "sidecar", "burn"):
@@ -96,6 +101,8 @@ async def execute_render_creation(
                 build_subtitles(plan, (), per_clip=(runs[row["runId"]].transcripts for row in rows))
             ).cues
         )
+        if use_ad_caption_fallback and subtitle_mode == "burn":
+            cues = ad_caption_fallback(plan, edl, cues)
         burn_cues = None
         if subtitle_mode == "burn" and (word_run_id is None) != (word_result_hash is None):
             raise AppError("asr.words_identity", "逐词结果需要完整的任务和校对码。", ExitCode.INPUT)

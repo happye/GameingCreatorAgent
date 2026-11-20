@@ -143,8 +143,8 @@ def _subtitle_style_line(style: str, height: int) -> str:
         # Bigger bold text with a thicker outline, readable on a phone screen.
         size, rest = max(14, height // 13), "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,1"
     elif style == "boxed":
-        # BorderStyle 3 draws a box in OutlineColour; alpha 0x60 keeps it see-through.
-        size, rest = max(12, height // 18), "&H60000000,&H60000000,0,0,0,0,100,100,0,0,3,6,0"
+        # A dark grey box remains visible when subtitles land on black padding.
+        size, rest = max(12, height // 18), "&H60323232,&H60323232,0,0,0,0,100,100,0,0,3,6,0"
     else:
         size, rest = max(12, height // 18), "&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,1,0"
     return f"Style: Default,Arial,{size},&H00FFFFFF,&H00FFFFFF,{rest},2,4,4,4,1\n"

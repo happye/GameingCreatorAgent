@@ -50,7 +50,7 @@ export function useSubtitlePreview(project, editing, clips, mode, wordDraft, pro
 const CUE_STYLES = {
     standard: {textShadow: "0 1px 3px black, 1px 0 2px black", fontSize: "1.25rem"},
     large: {textShadow: "0 0 3px black, 0 0 3px black, 1px 1px 2px black", fontSize: "1.75rem", fontWeight: 700},
-    boxed: {fontSize: "1.25rem", background: "rgba(0, 0, 0, 0.62)", padding: "0.1em 0.45em", borderRadius: "2px"},
+    boxed: {fontSize: "1.25rem", background: "rgba(50, 50, 50, 0.62)", padding: "0.1em 0.45em", borderRadius: "2px"},
 };
 
 export function SubtitlePreview({cues, outUs, styleName = "standard", wordHighlights = false, subtitleSource = "segment"}) {

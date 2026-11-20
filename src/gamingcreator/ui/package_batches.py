@@ -52,9 +52,14 @@ def locked(directory: Path) -> Iterator[None]:
 
 
 class PackageBatches:
+    schema = SCHEMA
+    root_name = "batches"
+    scope_key = "publicationJobId"
+    retry_failed_items = False
+
     def __init__(self, jobs: Any) -> None:
         self.jobs = jobs
-        self.root = jobs.safe(jobs.root / "batches")
+        self.root = jobs.safe(jobs.root / self.root_name)
         self.root.mkdir(exist_ok=True)
         self.registration = jobs.safe(self.root / "registration")
         self.registration.mkdir(exist_ok=True)
@@ -67,7 +72,7 @@ class PackageBatches:
 
     def request(self, directory: Path) -> dict[str, Any]:
         stored = json.loads(read_bounded(self.jobs.safe(directory / "request.json")))
-        if stored["schemaVersion"] != SCHEMA or digest(stored["request"]) != stored["sha256"]:
+        if stored["schemaVersion"] != self.schema or digest(stored["request"]) != stored["sha256"]:
             raise ValueError("Package batch request changed")
         return dict(stored["request"])
 
@@ -80,7 +85,7 @@ class PackageBatches:
         ):
             raise ValueError("Package batch state changed")
         state = stored["state"]
-        if state["schemaVersion"] != SCHEMA or state["requestSha256"] != digest(request):
+        if state["schemaVersion"] != self.schema or state["requestSha256"] != digest(request):
             raise ValueError("Package batch state identity changed")
         if state["batchId"] != directory.name:
             raise ValueError("Package batch identity changed")
@@ -117,6 +122,25 @@ class PackageBatches:
         if parent["projectId"] != value["projectId"]:
             raise ValueError("Publication belongs to another project")
 
+    def initial_state(self, value: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "publicationJobId": value["publicationJobId"],
+            "expectedPublicationReceiptSha256": value["expectedPublicationReceiptSha256"],
+            "items": [
+                {
+                    "profile": profile,
+                    "profileSha256": profile_digest(profile),
+                    "jobId": None,
+                    "status": "pending",
+                    "error": None,
+                    "attempt": 1,
+                    "childRequestId": uuid4().hex,
+                    "history": [],
+                }
+                for profile in value["profiles"]
+            ],
+        }
+
     def submit(self, value: dict[str, Any]) -> dict[str, Any]:
         self.validate(value)
         batch_id = identity(value["requestId"])
@@ -135,37 +159,18 @@ class PackageBatches:
                 write_exclusive_text(
                     directory / "request.json",
                     json.dumps(
-                        {"schemaVersion": SCHEMA, "request": value, "sha256": digest(value)},
+                        {"schemaVersion": self.schema, "request": value, "sha256": digest(value)},
                         ensure_ascii=False,
                     ),
                 )
                 state = {
-                    "schemaVersion": SCHEMA,
+                    "schemaVersion": self.schema,
                     "requestSha256": digest(value),
                     "batchId": batch_id,
-                    **{
-                        k: value[k]
-                        for k in (
-                            "projectId",
-                            "publicationJobId",
-                            "expectedPublicationReceiptSha256",
-                        )
-                    },
+                    "projectId": value["projectId"],
                     "status": "pending",
                     "cancelRequested": False,
-                    "items": [
-                        {
-                            "profile": p,
-                            "profileSha256": profile_digest(p),
-                            "jobId": None,
-                            "status": "pending",
-                            "error": None,
-                            "attempt": 1,
-                            "childRequestId": uuid4().hex,
-                            "history": [],
-                        }
-                        for p in value["profiles"]
-                    ],
+                    **self.initial_state(value),
                 }
                 self.save(directory, state)
                 directory.rename(target)
@@ -194,9 +199,9 @@ class PackageBatches:
                     state["status"] = "interrupted"
             return state
 
-    def catalog(self, project_id: str, publication_id: str) -> dict[str, Any]:
+    def catalog(self, project_id: str, scope_id: str) -> dict[str, Any]:
         self.jobs.project(project_id)
-        identity(publication_id)
+        identity(scope_id)
         rows = []
         errors = []
         for directory in sorted(self.root.iterdir()):
@@ -208,7 +213,7 @@ class PackageBatches:
                     if self.read(directory)["projectId"] == project_id
                     else None
                 )
-                if state and state["publicationJobId"] == publication_id:
+                if state and state[self.scope_key] == scope_id:
                     rows.append(state)
             except (ValueError, OSError, KeyError, TypeError, AppError) as error:
                 errors.append({"batchId": directory.name, "message": str(error)})
@@ -226,14 +231,17 @@ class PackageBatches:
 
     def resume(self, batch_id: str, project_id: str) -> dict[str, Any]:
         snapshot = self.get(batch_id, project_id)
-        if snapshot["status"] not in {"interrupted", "cancelled"}:
+        can_resume = {"interrupted", "cancelled"}
+        if self.retry_failed_items:
+            can_resume.add("failed")
+        if snapshot["status"] not in can_resume:
             return snapshot
         directory = self.directory(batch_id)
         self.validate(self.request(directory))
-        self.start(directory, resume=True)
+        self.start(directory, resume_from=snapshot["updatedAt"])
         return self.get(batch_id, project_id)
 
-    def start(self, directory: Path, resume: bool = False) -> None:
+    def start(self, directory: Path, resume_from: float | None = None) -> None:
         owner = ProjectWriterLock(directory / "owner")
         try:
             owner.acquire()
@@ -244,8 +252,20 @@ class PackageBatches:
         try:
             with locked(directory / "state-lock"):
                 state = self.read(directory)
-                if resume:
+                if (
+                    state["status"] != "pending"
+                    if resume_from is None
+                    else state["updatedAt"] != resume_from
+                ):
+                    owner.close()
+                    return
+                if resume_from is not None:
                     state["cancelRequested"] = False
+                    state.pop("error", None)
+                    if self.retry_failed_items and state["status"] == "failed":
+                        for item in state["items"]:
+                            if item["status"] == "failed":
+                                item.update(status="pending", error=None)
                 state["status"] = "running"
                 self.save(directory, state)
             thread = threading.Thread(target=self.run, args=(directory, owner), daemon=True)
@@ -340,9 +360,17 @@ class PackageBatches:
                 return
             time.sleep(0.25)
 
+    def run_item(self, directory: Path, index: int) -> bool:
+        job_id = self.bind(directory, index)
+        if job_id is None:
+            return False
+        self.wait_child(directory, index, job_id)
+        return True
+
     def run(self, directory: Path, owner: ProjectWriterLock) -> None:
         try:
-            count = len(self.request(directory)["profiles"])
+            with locked(directory / "state-lock"):
+                count = len(self.read(directory)["items"])
             for index in range(count):
                 with locked(directory / "state-lock"):
                     state = self.read(directory)
@@ -351,10 +379,8 @@ class PackageBatches:
                     item = state["items"][index]
                     if item["status"] == "failed":
                         continue
-                job_id = self.bind(directory, index)
-                if job_id is None:
+                if not self.run_item(directory, index):
                     return
-                self.wait_child(directory, index, job_id)
             with locked(directory / "state-lock"):
                 state = self.read(directory)
                 if not state["cancelRequested"]:

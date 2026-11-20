@@ -16,6 +16,7 @@ import {ProgramTrack} from "./multitrack.js";
 import {SubtitlePreview, useSubtitlePreview, WordHighlightSwitch, wordHighlightDraft, asrWordsPayload} from "./subtitles.js";
 import {OverlayPanel, OverlayPreview, overlayProblem} from "./overlays.js";
 import {matchesStructureFeedback, OUTCOME_LABELS, useStructureFeedback} from "./structure_feedback.js";
+import {AdBatches, adBatchPlan, adBatchRevision} from "./ad_batches.js";
 
 const html = htm.bind(h);
 const DRAFT = "studio-brief-v1";
@@ -496,6 +497,9 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     recommended=${planJob.creatorFeedback?.applied ? p.rankedByCreatorFeedback : p.mode}
                     onPick=${() => { if (overlayBusy || audioBusy || busy) return; if (editing.dirty && !confirmLeave()) return; setComparePreview(null); setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommand(null); lastJob(scope, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
                     : html`<p class="note">填好需求后点“生成方案”。方案只是剪辑清单，生成很快；选中后可以直接预览，不用先渲染。</p>`}
+                ${adBatchPlan(planJob, project) && html`<${AdBatches} key=${JSON.stringify([scope, planJob.jobId, planJob.resultReceiptSha256])}
+                    project=${project} planJob=${planJob} selectedPlanId=${planId} revision=${adBatchRevision(editing, planJob, planId)}
+                    dirty=${editing.dirty || commandPreview} disabled=${!!busy || overlayBusy || audioBusy} onChanged=${onWorksChanged} />`}
                 <${StructureFeedback} contentType=${draft.contentType} platform=${draft.platform} saved=${structureFeedback.saved} plan=${plan} job=${planJob} disabled=${!!busy}
                     update=${value => setSaved(structureFeedback.write(value) ? value ? "结构偏好已保存" : "结构偏好已清除" : "浏览器不允许保存结构偏好")} />
                 ${plan && mode === "plan" && plan.id.startsWith("dynamic-") && plan.actualFrames < plan.targetFrames ? html`<p class="note">保留旧方案，使用本地候选补足当前选中方案；不会调用模型。</p><button class="btn" disabled=${!!busy || editing.status !== "ready" || editing.dirty || commandPreview || comparePreview || audioBusy || overlayBusy} onClick=${completeDuration}>补足目标时长（本地）</button>` : null}

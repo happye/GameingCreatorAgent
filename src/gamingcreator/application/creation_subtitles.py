@@ -3,12 +3,38 @@
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from fractions import Fraction
+from typing import Any
 
+from gamingcreator.application.ad_cut import AD_ACTIONS
 from gamingcreator.application.narration import NarrationArtifact
 from gamingcreator.application.rendering import RenderPlan
+from gamingcreator.application.showcase_topics import retained_source_topics
 from gamingcreator.domain.creation_narration import NarrationSelection
 from gamingcreator.domain.creation_subtitles import SubtitleCue
 from gamingcreator.domain.models import TranscriptSegment
+
+
+def ad_caption_fallback(
+    plan: RenderPlan, edit: dict[str, Any], cues: tuple[SubtitleCue, ...]
+) -> tuple[SubtitleCue, ...]:
+    """For a silent ad, label retained selling points and the selected call to action."""
+    action = AD_ACTIONS.get(edit["selectedPlan"])
+    if cues or not action:
+        return cues
+    starts = plan.start_frames
+    action_start = max(starts[-1], plan.frames - 2 * plan.fps)
+    labels = []
+    for index, (row, start) in enumerate(zip(edit["segments"], starts, strict=True)):
+        topics = retained_source_topics(row)[:2]
+        text = "、".join(topics).replace("-->", "→").replace("\x00", "").strip()[:80]
+        next_start = starts[index + 1] if index + 1 < len(starts) else plan.frames
+        end = min(next_start, action_start, start + 2 * plan.fps)
+        if text and start < end:
+            labels.append(SubtitleCue(Fraction(start, plan.fps), Fraction(end, plan.fps), text))
+    return (
+        *labels,
+        SubtitleCue(Fraction(action_start, plan.fps), Fraction(plan.frames, plan.fps), action),
+    )
 
 
 def build_subtitles(

@@ -10,7 +10,7 @@ from gamingcreator.domain.errors import AppError
 from gamingcreator.infrastructure.creation_files import write_creation
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.ui.creation_jobs import CreationJobs
-from gamingcreator.ui.revision_jobs import load_chain
+from gamingcreator.ui.revision_jobs import load_chain, revision_subtitles
 
 
 @pytest.fixture
@@ -122,6 +122,18 @@ def payload(jobs, parent, token="b"):
             for row in reversed(snapshot["clips"])
         ],
     }
+
+
+def test_ad_caption_batch_respects_explicitly_cleared_saved_subtitles(revisions):
+    jobs, root, _ = revisions
+    value = payload(jobs, root)
+    value["subtitleOverrides"] = [{"clipId": value["clips"][0]["clipId"], "text": ""}]
+    child = jobs.submit("revision", value)["jobId"]
+    assert finish(jobs, child)["status"] == "completed"
+    chain = load_chain(jobs, child)
+    assert not revision_subtitles(chain, "burn")
+    with pytest.raises(ValueError, match="主动清空字幕"):
+        revision_subtitles(chain, "burn", ad_fallback=True)
 
 
 def test_revision_trim_order_restore_restart_and_source_immutability(revisions):

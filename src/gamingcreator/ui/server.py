@@ -135,6 +135,7 @@ ASSETS = {
         "studio/package_batches.js",
         "text/javascript; charset=utf-8",
     ),
+    "/assets/studio/ad_batches.js": ("studio/ad_batches.js", "text/javascript; charset=utf-8"),
     "/assets/studio/publication_form.js": (
         "studio/publication_form.js",
         "text/javascript; charset=utf-8",
@@ -152,6 +153,16 @@ ASSETS = {
     "/assets/vendor/hooks.module.js": ("vendor/hooks.module.js", "text/javascript; charset=utf-8"),
     "/assets/vendor/htm.module.js": ("vendor/htm.module.js", "text/javascript; charset=utf-8"),
 }
+
+
+def _batch_route(path: str) -> tuple[str, str | None] | None:
+    prefix = "/api/creation/"
+    if not path.startswith(prefix):
+        return None
+    route, separator, tail = path[len(prefix) :].partition("/")
+    if route in {"package-batches", "ad-batches"}:
+        return route.replace("-", "_"), tail if separator else None
+    return None
 
 
 def _query(path: str) -> dict[str, str]:
@@ -599,51 +610,55 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(403, {"code": "input.origin", "message": "请从本机工作台访问。"})
                 return
             path = urlparse(self.path).path
-            if path not in {
-                "/api/creation/works",
-                "/api/creation/work-name",
-                "/api/creation/reasoning",
-                "/api/creation/plans",
-                "/api/creation/renders",
-                "/api/creation/revisions",
-                "/api/creation/publications",
-                "/api/creation/publication-shot-recommendations",
-                "/api/creation/publication-feedback",
-                "/api/creation/packages",
-                "/api/creation/package-export",
-                "/api/creation/package-batches",
-                "/api/creation/narrations",
-                "/api/creation/narration-cancel",
-                "/api/creation/subtitle-preview",
-                "/api/creation/draft-restore-preview",
-                "/api/creation/timeline-commands",
-                "/api/creation/beat-snap",
-                "/api/creation/brief-sentence",
-                "/api/creation/job-name",
-                "/api/creation/music",
-                "/api/creation/overlay-assets",
-                "/api/creation/activity-rules",
-                "/api/knowledge",
-                "/api/creation/publish",
-                "/api/entitlement",
-                "/api/enterprise/team",
-                "/api/enterprise/review",
-                "/api/match-details",
-                "/api/draft-detail-query",
-                "/api/search-project",
-                "/api/match-project-details",
-                "/api/match-search-details",
-                "/api/prepare-media-batch",
-                "/api/cancel-media-preparation",
-                "/api/benchmark-workflows",
-                "/api/benchmark-step",
-                "/api/detect-shots",
-                "/api/ocr-frames",
-                "/api/make-proxy-batch",
-                "/api/knowledge-import",
-                "/api/asr-words",
-                "/api/asr-words-cancel",
-            } and not path.startswith("/api/creation/package-batches/"):
+            batch_route = _batch_route(path)
+            if (
+                path
+                not in {
+                    "/api/creation/works",
+                    "/api/creation/work-name",
+                    "/api/creation/reasoning",
+                    "/api/creation/plans",
+                    "/api/creation/renders",
+                    "/api/creation/revisions",
+                    "/api/creation/publications",
+                    "/api/creation/publication-shot-recommendations",
+                    "/api/creation/publication-feedback",
+                    "/api/creation/packages",
+                    "/api/creation/package-export",
+                    "/api/creation/narrations",
+                    "/api/creation/narration-cancel",
+                    "/api/creation/subtitle-preview",
+                    "/api/creation/draft-restore-preview",
+                    "/api/creation/timeline-commands",
+                    "/api/creation/beat-snap",
+                    "/api/creation/brief-sentence",
+                    "/api/creation/job-name",
+                    "/api/creation/music",
+                    "/api/creation/overlay-assets",
+                    "/api/creation/activity-rules",
+                    "/api/knowledge",
+                    "/api/creation/publish",
+                    "/api/entitlement",
+                    "/api/enterprise/team",
+                    "/api/enterprise/review",
+                    "/api/match-details",
+                    "/api/draft-detail-query",
+                    "/api/search-project",
+                    "/api/match-project-details",
+                    "/api/match-search-details",
+                    "/api/prepare-media-batch",
+                    "/api/cancel-media-preparation",
+                    "/api/benchmark-workflows",
+                    "/api/benchmark-step",
+                    "/api/detect-shots",
+                    "/api/ocr-frames",
+                    "/api/make-proxy-batch",
+                    "/api/knowledge-import",
+                    "/api/asr-words",
+                    "/api/asr-words-cancel",
+                }
+                and batch_route is None
+            ):
                 self._json(404, {"code": "input.route", "message": "没有这个操作。"})
                 return
 
@@ -849,11 +864,6 @@ class InspectionHandler(BaseHTTPRequestHandler):
 
                 self._json(200, recommend_shots(self.creation_jobs, value))
                 return
-            if path == "/api/creation/package-batches":
-                if urlparse(self.path).query:
-                    raise ValueError("Unexpected batch query")
-                self._json(202, self.creation_jobs.package_batches.submit(value))
-                return
             if path == "/api/creation/package-export":
                 if (
                     urlparse(self.path).query
@@ -866,18 +876,20 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     200, package_jobs.export(self.creation_jobs, value["projectId"], value["jobId"])
                 )
                 return
-            if path.startswith("/api/creation/package-batches/"):
-                if (
-                    urlparse(self.path).query
-                    or not isinstance(value, dict)
-                    or set(value) != {"projectId"}
-                ):
+            if batch_route is not None:
+                if urlparse(self.path).query:
+                    raise ValueError("Unexpected batch query")
+                name, tail = batch_route
+                service = getattr(self.creation_jobs, name)
+                if tail is None:
+                    self._json(202, service.submit(value))
+                    return
+                if not isinstance(value, dict) or set(value) != {"projectId"}:
                     raise ValueError("Expected project identity")
-                tail = path.removeprefix("/api/creation/package-batches/")
                 batch_id, separator, action = tail.partition("/")
                 if not separator or action not in {"resume", "cancel"}:
                     raise ValueError("Unknown batch action")
-                operation = getattr(self.creation_jobs.package_batches, action)
+                operation = getattr(service, action)
                 self._json(200, operation(batch_id, value["projectId"]))
                 return
             if path == "/api/creation/narration-cancel":
@@ -1415,25 +1427,17 @@ class InspectionHandler(BaseHTTPRequestHandler):
 
                 self._json(200, publication_feedback.compare(self.creation_jobs, query))
                 return
-            if path == "/api/creation/package-batches":
-                if set(query) != {"projectId", "publicationJobId"}:
-                    raise ValueError("Expected project and publication identity")
-                self._json(
-                    200,
-                    self.creation_jobs.package_batches.catalog(
-                        query["projectId"], query["publicationJobId"]
-                    ),
-                )
-                return
-            if path.startswith("/api/creation/package-batches/"):
-                if set(query) != {"projectId"}:
-                    raise ValueError("Expected project identity")
-                self._json(
-                    200,
-                    self.creation_jobs.package_batches.get(
-                        path.removeprefix("/api/creation/package-batches/"), query["projectId"]
-                    ),
-                )
+            if (batch_route := _batch_route(path)) is not None:
+                name, batch_id = batch_route
+                service = getattr(self.creation_jobs, name)
+                if batch_id is None:
+                    if set(query) != {"projectId", service.scope_key}:
+                        raise ValueError("Expected project and source job IDs")
+                    self._json(200, service.catalog(query["projectId"], query[service.scope_key]))
+                else:
+                    if set(query) != {"projectId"}:
+                        raise ValueError("Expected project identity")
+                    self._json(200, service.get(batch_id, query["projectId"]))
                 return
             if path == "/api/creation/jobs":
                 if set(query) not in ({"projectId"}, {"projectId", "workId"}):

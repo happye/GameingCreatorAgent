@@ -129,9 +129,11 @@ class CreationJobs:
         self.narration_cancel_requests: set[str] = set()
         self.narration_lock = threading.Lock()
         self.cache = VerifiedMediaCache()
+        from gamingcreator.ui.ad_batches import AdBatches
         from gamingcreator.ui.package_batches import PackageBatches
 
         self.package_batches = PackageBatches(self)
+        self.ad_batches = AdBatches(self)
 
     def safe(self, path: Path) -> Path:
         resolved = resolve_existing(path)
@@ -230,6 +232,8 @@ class CreationJobs:
                 "subtitleStyle",
                 "wordHighlights",
                 "asrWords",
+                "expectedParentReceiptSha256",
+                "adCaptionFallback",
             }
             if kind == "render"
             else (
@@ -273,6 +277,10 @@ class CreationJobs:
         ):
             raise fail("creation.input", "字幕样式只用于烧入字幕。")
         if kind == "render":
+            if "adCaptionFallback" in request and (
+                request["adCaptionFallback"] is not True or request.get("subtitleMode") != "burn"
+            ):
+                raise fail("creation.input", "广告字幕补充需要烧入字幕。")
             try:
                 from gamingcreator.infrastructure.asr_words import parse_word_highlight_request
 
@@ -437,6 +445,11 @@ class CreationJobs:
                 project = self.project(project_id)
                 parent_digest = hash_file(self.directory(parent_id) / "result/receipt.json")
             if kind == "render":
+                if (
+                    "expectedParentReceiptSha256" in request
+                    and request["expectedParentReceiptSha256"] != parent_digest
+                ):
+                    raise fail("creation.conflict", "待导出的剪辑回执已变化。", True)
                 for key in ("width", "height"):
                     if (
                         type(request[key]) is not int
@@ -708,6 +721,8 @@ class CreationJobs:
                     or subtitles["cueCount"] < 0
                 ):
                     raise ValueError("Invalid subtitle receipt")
+            if request.get("adCaptionFallback") is True and not burned:
+                raise ValueError("Ad batch render must include captions")
             video = self.safe(directory / "result/video.mp4")
             if (
                 receipt.get("schemaVersion") != "creation-render-receipt-v1"
@@ -850,6 +865,16 @@ class CreationJobs:
                 )
                 from gamingcreator.domain.creation_presentation import PresentationOptions
 
+                render_options: dict[str, Any] = {}
+                if request.get("adCaptionFallback"):
+                    render_options["use_ad_caption_fallback"] = True
+                if request.get("wordHighlights") is True and isinstance(
+                    request.get("asrWords"), dict
+                ):
+                    render_options.update(
+                        word_run_id=request["asrWords"]["runId"],
+                        word_result_hash=request["asrWords"]["resultHash"],
+                    )
                 asyncio.run(
                     execute_render_creation(
                         project,
@@ -861,15 +886,7 @@ class CreationJobs:
                         subtitle_mode=request.get("subtitleMode", "none"),
                         watermark=state.get("watermark"),
                         presentation=PresentationOptions.from_request(request),
-                        **(
-                            {
-                                "word_run_id": request["asrWords"]["runId"],
-                                "word_result_hash": request["asrWords"]["resultHash"],
-                            }
-                            if request.get("wordHighlights") is True
-                            and isinstance(request.get("asrWords"), dict)
-                            else {}
-                        ),
+                        **render_options,
                     )
                 )
             receipt_path = directory / "result/receipt.json"
@@ -921,7 +938,7 @@ class CreationJobs:
             finally:
                 owner.close()
 
-    def get(self, job_id: str) -> dict[str, Any]:
+    def get(self, job_id: str, *, include_receipt: bool = False) -> dict[str, Any]:
         directory = self.directory(job_id)
         state = self.read(directory / "status.json")
         if state["status"] in {"pending", "running"}:
@@ -969,6 +986,10 @@ class CreationJobs:
                 state.pop("package", None)
                 state.pop("publication", None)
                 state.pop("publicationArtifacts", None)
+        if state["status"] == "completed" and (
+            include_receipt or (state["kind"] == "plan" and state["brief"]["contentType"] == "ad")
+        ):
+            return state
         return {key: value for key, value in state.items() if key != "resultReceiptSha256"}
 
     def _projection_identity(self, directory: Path, state: dict[str, Any]) -> dict[str, Any]:
@@ -1344,6 +1365,21 @@ class CreationJobs:
                     continue
         return states
 
+    def _quota_statuses(self) -> list[dict[str, Any]]:
+        states = self._statuses()
+        for state in states:
+            if state.get("status") != "pending" or state.get("kind") not in {"render", "package"}:
+                continue
+            try:
+                request = self.read(state["directory"] / "request.json")["request"]
+                registration = self.safe(self.root / (identity(request["requestId"]) + ".json"))
+                if not registration.exists():
+                    # Registration precedes worker startup. Let get reconcile a crash before it.
+                    state["status"] = self.get(state["jobId"])["status"]
+            except (OSError, ValueError, KeyError, TypeError, AppError):
+                continue
+        return states
+
     def entitlement_summary(self, project_id: str | None = None) -> dict[str, Any]:
         from gamingcreator.application.entitlements import month_key, renders_this_month, summary
         from gamingcreator.infrastructure.entitlement_usage import (
@@ -1381,14 +1417,14 @@ class CreationJobs:
         selection = self.entitlement_selection()
         try:
             if kind == "render":
-                used = renders_this_month(self._statuses(), datetime.now(UTC).isoformat())
+                used = renders_this_month(self._quota_statuses(), datetime.now(UTC).isoformat())
                 require_render(selection, used)
             elif kind == "package":
                 profile = request.get("profile")
                 if not isinstance(profile, dict):
                     raise fail("creation.input", "平台设置无效。")
                 # One finished video, many copy versions: platforms count per render.
-                states = self._statuses()
+                states = self._quota_statuses()
                 render_of = {
                     s["directory"].name: s.get("parentJobId")
                     for s in states
