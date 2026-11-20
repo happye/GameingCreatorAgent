@@ -152,8 +152,14 @@ export function useClipEditor(project, workId = null) {
         applyProposal: (proposal) => edit((s) => {
             if (s.status !== "ready") return s;
             const byId = new Map(s.clips.map((c) => [c.clipId, c]));
-            const clips = proposal.clips.map((row) => ({...byId.get(row.clipId), ...row}));
-            return {...s, clips, subtitleOverrides: keptCaptions(s.subtitleOverrides, clips), overlays: proposal.overlays?.items ?? s.overlays, dirty: true};
+            const clips = proposal.clips.map((row) => {
+                const next = {...byId.get(row.clipId), ...row};
+                if ((proposal.replacements || []).some((r) => r.targetClipId === row.clipId) && !row.rangeProvenance) delete next.rangeProvenance;
+                return next;
+            });
+            return {...s, clips, subtitleOverrides: keptCaptions(s.subtitleOverrides, clips).filter((o) => !(proposal.replacements || []).some((r) => r.targetClipId === o.clipId)), overlays: proposal.overlays?.items ?? s.overlays,
+                bounds: proposal.bounds ?? s.bounds, replacements: proposal.replacements ? Object.fromEntries(proposal.replacements.map((r) => [r.targetClipId, r.candidateId])) : s.replacements,
+                candidateManifestSha256: proposal.candidateManifestSha256 ?? s.candidateManifestSha256, dirty: true};
         }),
         mix: (patch) => edit((s) => (s.status === "ready" ? {...s, audio: {...s.audio, mix: {...s.audio.mix, ...patch}}, dirty: true} : s)),
         // Stage C keyframes; an empty envelope drops the key so saved JSON stays as before.
@@ -412,8 +418,8 @@ export function CommandDock({editing, onPreview, onOverlayPreview = () => {}}) {
     const [mode, setMode] = useState("local");
     return html`<div class="assistant-host"><label class="assistant-mode">创作助手模式
         <select class="select" aria-label="创作助手模式" value=${mode} onChange=${(e) => { onPreview(null); onOverlayPreview(null); setMode(e.currentTarget.value); }}>
-            <option value="local">本地指令（免费）</option><option value="ai">AI对话（预算内自动）</option>
+            <option value="local">本地指令（免费）</option><option value="ai">AI对话（预算内自动）</option><option value="ai-replacement">AI换镜头（预算内自动）</option>
         </select></label>
-        ${mode === "local" ? html`<${LocalCommandDock} editing=${editing} onPreview=${onPreview} />` : html`<${ReasoningDock} editing=${editing} onPreview=${onPreview} onOverlayPreview=${onOverlayPreview} />`}
+        ${mode === "local" ? html`<${LocalCommandDock} editing=${editing} onPreview=${onPreview} />` : html`<${ReasoningDock} key=${mode} replacementMode=${mode === "ai-replacement"} editing=${editing} onPreview=${onPreview} onOverlayPreview=${onOverlayPreview} />`}
     </div>`;
 }
