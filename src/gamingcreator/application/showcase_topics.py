@@ -39,13 +39,15 @@ def mentions_gameplay(text: str) -> bool:
     return any(marker in text for marker in _GAMEPLAY_MARKERS)
 
 
-def _evidence(clip: "CreationClip", topic: str) -> tuple[str, str] | None:
+def _evidence(clip: "CreationClip", topic: str, facts_only: bool) -> tuple[str, str] | None:
     event = clip.event
     if event.modality == "audio":
         return None
     fact = next((text for text in event.observable_facts if topic_matches(text, topic)), None)
     if fact is not None:
         return "fact", fact
+    if facts_only:
+        return None
     tag = next(
         (tag for tag in event.mechanic_tags if same_topic_label(tag, topic)),
         None,
@@ -62,16 +64,26 @@ def gameplay_opening(clip: "CreationClip") -> bool:
     return any(mentions_gameplay(text) for text in (*event.mechanic_tags, *event.observable_facts))
 
 
+def guide_topic_count(clip: "CreationClip", topics: Sequence[str]) -> int:
+    return sum(_evidence(clip, topic, True) is not None for topic in topics)
+
+
 def reserve_topics(
     topics: Sequence[str],
     clips: Sequence["CreationClip"],
-    opening: "CreationClip",
+    opening: "CreationClip | None",
     limit: int,
     score: Callable[["CreationClip"], float],
+    *,
+    facts_only: bool = False,
 ) -> list["CreationClip"]:
-    remaining = [topic for topic in topics if _evidence(opening, topic) is None]
+    remaining = [
+        topic
+        for topic in topics
+        if opening is None or _evidence(opening, topic, facts_only) is None
+    ]
     available = {
-        id(clip): {topic for topic in remaining if _evidence(clip, topic) is not None}
+        id(clip): {topic for topic in remaining if _evidence(clip, topic, facts_only) is not None}
         for clip in clips
         if clip is not opening
     }
@@ -94,15 +106,21 @@ def reserve_topics(
 
 
 def showcase_coverage(
-    topics: Sequence[str], candidates: Sequence["CreationClip"], segments: list[dict[str, Any]]
+    topics: Sequence[str],
+    candidates: Sequence["CreationClip"],
+    segments: list[dict[str, Any]],
+    *,
+    step_seeds: set[tuple[str, str]] | None = None,
 ) -> list[dict[str, Any]]:
     by_event = {(clip.event.run_id, clip.event.event_id): clip for clip in candidates}
     coverage: list[dict[str, Any]] = []
     for topic in topics:
         indexes = []
         for index, segment in enumerate(segments, 1):
-            clip = by_event[(segment["runId"], segment["eventId"])]
-            match = _evidence(clip, topic)
+            key = (segment["runId"], segment["eventId"])
+            if step_seeds is not None and key not in step_seeds:
+                continue
+            match = _evidence(by_event[key], topic, step_seeds is not None)
             if match is not None:
                 kind, quote = match
                 indexes.append(index)
@@ -111,14 +129,18 @@ def showcase_coverage(
                         "topic": topic,
                         "evidenceKind": kind,
                         "observationQuote": quote,
-                        "rationale": "原分析区间的摘要或标签与主题匹配。",
+                        "rationale": "原录像摘要包含此攻略主题。"
+                        if step_seeds is not None
+                        else "原分析区间的摘要或标签与主题匹配。",
                     }
                 )
+                if step_seeds is not None:
+                    break
         status = (
             "source-matched"
             if indexes
             else "available"
-            if any(_evidence(clip, topic) for clip in candidates)
+            if any(_evidence(clip, topic, step_seeds is not None) for clip in candidates)
             else "missing"
         )
         coverage.append({"topic": topic, "status": status, "shotIndexes": indexes})

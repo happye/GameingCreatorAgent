@@ -231,8 +231,13 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     const shownClips = useMemo(() => {
         if (!commandRows || !editable) return editable ? editing.clips : null;
         const byId = new Map(editing.clips.map((c) => [c.clipId, c]));
-        return commandRows.map((row) => ({...byId.get(row.clipId), ...row}));
-    }, [commandRows, editable, editing.clips]);
+        const replaced = new Set(command?.projection?.replacements?.map(row => row.targetClipId));
+        return commandRows.map((row) => {
+            const clip = {...byId.get(row.clipId), ...row};
+            if (clip.guideStep && replaced.has(row.clipId)) { delete clip.guideStep; delete clip.role; delete clip.topicUses; }
+            return clip;
+        });
+    }, [commandRows, command?.projection, editable, editing.clips]);
     const comparePlan = comparePreview ? planJob?.plans?.find((item) => item.id === comparePreview.planId) || null : null;
     const items = useMemo(() => {
         const sourceClips = comparePlan ? null : shownClips;

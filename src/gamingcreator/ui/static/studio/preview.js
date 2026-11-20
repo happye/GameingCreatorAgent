@@ -23,12 +23,13 @@ export function clipFrames(clip, fps) {
 
 // Editor clips → playback items on the integer export frame clock.
 export function editTimeline(clips, fps) {
-    let out = 0;
+    let out = 0, step = 0;
     return clips.map((clip) => {
         const frames = clipFrames(clip, fps);
         const duration = frames * 1e6 / fps;
         out -= clip.transitionIn?.frames || 0;
         const item = {...clip, rate: clip.speed.numerator / clip.speed.denominator, outStartFrame: out, outFrames: frames, transitionFrames: clip.transitionIn?.frames || 0, fps, outStartUs: out * 1e6 / fps, outDurUs: duration};
+        if (clip.guideStep) item.role = `第${++step}步 · ${clip.guideStep}`;
         out += frames;
         return item;
     });

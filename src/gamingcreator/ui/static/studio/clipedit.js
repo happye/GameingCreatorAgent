@@ -94,6 +94,7 @@ function replaceClip(state, id, candidate, manifest) {
             speed: {numerator: 1, denominator: 1}, transitionIn: {type: "cut", frames: 0}};
         delete next.sourcePath;
         if (!candidate.rangeProvenance) delete next.rangeProvenance;
+        if (clip.guideStep) { delete next.guideStep; delete next.role; delete next.topicUses; }
         return next;
     });
     const at = clips.findIndex((c) => c.clipId === id);
@@ -212,7 +213,10 @@ export function useClipEditor(project, workId = null) {
             const byId = new Map(s.clips.map((c) => [c.clipId, c]));
             const clips = proposal.clips.map((row) => {
                 const next = {...byId.get(row.clipId), ...row};
-                if ((proposal.replacements || []).some((r) => r.targetClipId === row.clipId) && !row.rangeProvenance) delete next.rangeProvenance;
+                if ((proposal.replacements || []).some((r) => r.targetClipId === row.clipId)) {
+                    if (!row.rangeProvenance) delete next.rangeProvenance;
+                    if (next.guideStep) { delete next.guideStep; delete next.role; delete next.topicUses; }
+                }
                 return next;
             });
             return {...s, ...companionFields(s, proposal), clips, subtitleOverrides: proposal.subtitleOverrides ?? keptCaptions(s.subtitleOverrides, clips).filter((o) => !(proposal.replacements || []).some((r) => r.targetClipId === o.clipId)),
@@ -338,8 +342,9 @@ export function ClipInspector({editing, index, onSeek, basket}) {
     const replacing = !!editing.replacements[clip.clipId], inserted = isPendingInsertion(editing, clip.clipId);
     const mustCut = !!forcedCut(editing.clips, index, editing.replacements);
     const caption = editing.subtitleOverrides.find((o) => o.clipId === clip.clipId);
+    const role = clip.guideStep ? `第${editing.clips.slice(0, index + 1).filter(row => row.guideStep).length}步 · ${clip.guideStep}` : clip.role;
     return html`${editing.insertions?.length ? html`<p class="hint">插入、裁剪、删除和其他镜头的替换可一起保存。</p>` : null}<div class="field"><div class="k">第 ${index + 1} 个镜头 · 成片 ${(frames / fps).toFixed(2)} 秒</div>
-            <div class="v">${clip.role ? `【${clip.role}】` : ""}${clip.scriptDraft || "无描述"}</div></div>
+            <div class="v">${role ? `【${role}】` : ""}${clip.scriptDraft || "无描述"}</div></div>
         <div class="field"><div class="k">取材范围（原片秒，可在 ${seconds(bound.startUs)}–${seconds(bound.endUs)} 内裁短）</div>
             <div class="pair even">
                 <label class="form-row">入点<input class="input" type="number" step="0.1" min=${seconds(bound.startUs)} max=${seconds(bound.endUs)} value=${seconds(clip.startUs)}

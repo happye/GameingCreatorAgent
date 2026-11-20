@@ -1114,7 +1114,8 @@
             "delivery_status": "partial",
             "implementation_evidence": [
                 "2026-11-01: guide mode (evenly spaced numbered steps, spoken step numbers follow current order) real instance -> MP4 372 frames -> Bilibili package passing configured checks; real guide correctness not human-reviewed",
-                "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md"
+                "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md",
+                "2026-11-20: requested guide steps reference saved visual observations and follow current edit order in draft narration and chapters. Verified on a real narrated Comic Stars video and Bilibili package. See sprint-guide-evidence."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

@@ -138,6 +138,19 @@ def _showcase_lines(
     return [(clips[index], text) for index, text in sorted(chosen.items())]
 
 
+def _guide_lines(clips: list[dict[str, Any]], room: int) -> list[tuple[dict[str, Any], str]]:
+    chosen: list[tuple[dict[str, Any], str]] = []
+    for clip in clips:
+        if not clip.get("guideStep"):
+            continue
+        label = f"第{len(chosen) + 1}步，{clip['guideStep']}"
+        if len(label) + 1 > room:
+            break
+        chosen.append((clip, label))
+        room -= len(label) + 1
+    return chosen
+
+
 def build_narration_script(
     brief: CreativeBrief,
     clips: list[dict[str, Any]],
@@ -146,12 +159,13 @@ def build_narration_script(
     knowledge: list[dict[str, Any]] | None = None,
     *,
     prefer_showcase_topics: bool = False,
+    evidenced_guide: bool = False,
 ) -> dict[str, object]:
     if any(type(n) is not int or n <= 0 for n in (output_frames, fps)):
         raise ValueError("Narration script needs a positive output clock.")
     budget = int(Fraction(output_frames, fps) * CHARS_PER_SECOND * FILL_RATIO)
     opening = _OPENINGS.get(brief.content_type, "{game}实机片段").format(game=brief.game.strip())
-    parts = [opening] if len(opening) + 1 <= budget else []
+    parts = [opening] if not evidenced_guide and len(opening) + 1 <= budget else []
     used = sum(len(part) + 1 for part in parts)
     closing = _CLOSINGS.get(brief.content_type, "")
     if closing and used + len(closing) + 1 <= budget:
@@ -164,7 +178,7 @@ def build_narration_script(
         else []
     )
     candidates: list[tuple[dict[str, Any], str]] = []
-    if not theme_lines:
+    if not theme_lines and not evidenced_guide:
         for clip in clips:
             sentence = _sentence(clip.get("scriptDraft"))
             if sentence and (not candidates or candidates[-1][1] != sentence):
@@ -187,7 +201,7 @@ def build_narration_script(
         return word + text
 
     # One narration spans the whole video, so sample clips evenly over output time.
-    chosen = theme_lines
+    chosen = _guide_lines(clips, budget - used) if evidenced_guide else theme_lines
     for count in range(len(candidates), 0, -1):
         picks = sorted({round(i * (len(candidates) - 1) / max(1, count - 1)) for i in range(count)})
         trial = spoken([candidates[i] for i in picks])
@@ -195,6 +209,9 @@ def build_narration_script(
             chosen = trial
             break
     used += sum(len(said(i, len(chosen), s)) + 1 for i, (_, s) in enumerate(chosen))
+    if evidenced_guide and used + len(opening) + 1 <= budget:
+        parts.append(opening)
+        used += len(opening) + 1
     # One matching knowledge sentence if it still fits; its source is shown, not spoken.
     citations: list[dict[str, str]] = []
     knowledge_sentence = ""

@@ -20,7 +20,7 @@ from gamingcreator.application.creation_modes import (
     sample_clips,
 )
 from gamingcreator.application.material_scoring import advisories, score_materials, scoring_legend
-from gamingcreator.application.showcase_topics import showcase_coverage
+from gamingcreator.application.showcase_topics import guide_topic_count, showcase_coverage
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.creation import CreativeBrief
 from gamingcreator.domain.media import MediaAsset
@@ -97,9 +97,18 @@ def _plan_topic_details(
     identity: str,
     eligible: list["CreationClip"],
     segments: list[dict[str, Any]],
+    *,
+    step_seeds: set[tuple[str, str]] | None = None,
 ) -> tuple[list[str], dict[str, object]]:
-    if identity == "showcase" and brief.mandatory_topics:
-        coverage = showcase_coverage(brief.mandatory_topics, eligible, segments)
+    if identity in ("showcase", "guide-evidence") and brief.mandatory_topics:
+        coverage = showcase_coverage(
+            brief.mandatory_topics, eligible, segments, step_seeds=step_seeds
+        )
+        if step_seeds is not None:
+            steps = (row for row in segments if row.get("topicUses"))
+            for number, row in enumerate(steps, 1):
+                row["guideStep"] = "、".join(use["topic"] for use in row["topicUses"])
+                row["role"] = f"第{number}步"
         notes = [
             f"缺少主题映射：{row['topic']}（素材记录中未找到，请补充画面或在旁白说明）"
             if row["status"] == "missing"
@@ -401,7 +410,14 @@ def eligible_clips(
     }
     for clip in eligible:
         key = (clip.asset.sha256, clip.framing.start_us, clip.framing.end_us)
-        unique.setdefault(key, clip)
+        previous = unique.setdefault(key, clip)
+        if (
+            brief.content_type == "guide"
+            and previous is not clip
+            and guide_topic_count(clip, brief.mandatory_topics)
+            > guide_topic_count(previous, brief.mandatory_topics)
+        ):
+            unique[key] = clip
     eligible = sorted(
         unique.values(),
         key=lambda clip: (
@@ -569,7 +585,14 @@ def plan_creation(
             numbers = {shot_no: n for n, shot_no in enumerate(dict.fromkeys(segment_shots), 1)}
             for segment, shot_no in zip(segments, segment_shots, strict=True):
                 segment["role"] = f"第{numbers[shot_no]}步"
-        topic_notes, topic_fields = _plan_topic_details(brief, identity, eligible, segments)
+        step_seeds = (
+            {(clip.event.run_id, clip.event.event_id) for clip in ordered}
+            if identity == "guide-evidence"
+            else None
+        )
+        topic_notes, topic_fields = _plan_topic_details(
+            brief, identity, eligible, segments, step_seeds=step_seeds
+        )
         gaps = []
         if len(segments) < 3:
             gaps.append("不足三个不同源区间，不能形成完整的三段结构")

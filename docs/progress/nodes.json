@@ -396,10 +396,11 @@
    ]
   },
   "P045": {
-   "done": "攻略模板按录像均匀取第N步并读步号，真实录像→MP4→B站包已走通",
-   "todo": "攻略逻辑与正确性未经人工评审",
-   "updated": "2026-11-01",
+   "done": "根据所填主题匹配画面原文，保留原录像顺序。剪辑调整后，Studio、旁白稿和发布章节跟随当前顺序编号，实测本机配音、成片和 B 站包",
+   "todo": "操作因果、知识正确性和正式攻略质量待人评",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-guide-evidence",
     "sprint-content-modes"
    ]
   },
@@ -834,6 +835,12 @@
      "name": "活动要求从剪辑方案进入发布核对",
      "status": "done",
      "sprint": "sprint-campaign-submission"
+    },
+    {
+     "id": "P045-guide-evidence",
+     "name": "攻略步骤引用与剪辑后编号",
+     "status": "done",
+     "sprint": "sprint-guide-evidence"
     },
     {
      "id": "P018",

@@ -149,6 +149,37 @@ def test_guide_steps_sample_the_whole_recording_with_contiguous_numbers():
     assert all(s["outputFrames"] >= 45 for s in segments)
 
 
+def test_guide_explicit_steps_use_observations_and_current_order():
+    from gamingcreator.ui.publication_jobs import draft_copy
+
+    req = brief("guide", duration=30, topics=("开门", "拾取钥匙", "进入地牢", "通关"))
+    clips = material([["标题"], ["画面显示开门"], ["角色拾取钥匙"], ["角色进入地牢"], ["片尾"]])
+    same_range = CreationClip(
+        ASSET, replace(clips[3].event, event_id="e3-context", observable_facts=("地牢前通道",))
+    )
+    plan = plan_creation(req, (same_range, *clips), 30)["plans"][0]
+    assert plan["id"] == "guide-evidence" and plan["ready"]
+    assert [row["guideStep"] for row in plan["segments"]] == ["开门", "拾取钥匙", "进入地牢"]
+    assert [item["status"] for item in plan["topicCoverage"]] == ["source-matched"] * 3 + [
+        "missing"
+    ]
+    last, first = [
+        dict(plan["segments"][i], clipId=str(i), outputStartFrame=start)
+        for i, start in ((2, 0), (0, 90))
+    ]
+    rows = [last, first]
+    script = build_narration_script(req, rows, 900, 30, evidenced_guide=True)
+    assert [line["text"] for line in script["lines"]] == ["第1步，进入地牢", "第2步，开门"]
+    copy = draft_copy(
+        {"game": "示例", "contentType": "guide", "mandatoryTopics": list(req.mandatory_topics)},
+        rows,
+        30,
+        evidenced_guide=True,
+    )
+    assert "00:00 第1步 进入地牢\n00:03 第2步 开门" in copy["description"]
+    assert "拾取钥匙" not in copy["description"] and "通关" not in copy["title"]
+
+
 def test_campaign_topics_follow_opening_and_missing_topic_is_advised():
     facts = [["角色奔跑"], ["新英雄登场", "技能展示"], ["限时活动入口"], ["结算"]]
     report = plan_creation(brief("campaign", topics=("限时活动",)), material(facts), 30)

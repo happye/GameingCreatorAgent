@@ -104,6 +104,42 @@ def sample_clips(clips: Sequence["CreationClip"], count: int, score: Score) -> l
     return [clips[i] for i in picked]
 
 
+def _guide(
+    brief: CreativeBrief, eligible: Sequence["CreationClip"], score: Score, target_frames: int
+) -> ModeStructure:
+    if brief.mandatory_topics:
+        matched = {
+            id(clip)
+            for clip in reserve_topics(
+                brief.mandatory_topics,
+                eligible,
+                None,
+                min(_cap(brief), target_frames),
+                score,
+                facts_only=True,
+            )
+        }
+        picked = [clip for clip in eligible if id(clip) in matched]
+        if not picked:
+            picked = sample_clips(eligible, min(_cap(brief), target_frames), score)
+        return ModeStructure(
+            "guide-evidence",
+            "攻略模板：按录像顺序展示有素材引用的步骤",
+            tuple(picked),
+            ("示范片段",) * len(picked),
+            (Fraction(1),) * len(picked),
+        )
+    picked = sample_clips(eligible, _cap(brief), score)
+    seconds = brief.target_duration / len(picked)
+    return ModeStructure(
+        "guide-steps",
+        f"攻略模板：均匀取{len(picked)}段供核对，每段目标约{seconds:.1f}秒",
+        tuple(picked),
+        tuple(f"第{i + 1}步" for i in range(len(picked))),
+        tuple(Fraction(1) for _ in picked),
+    )
+
+
 def mode_structure(
     brief: CreativeBrief, eligible: Sequence["CreationClip"], score: Score, *, target_frames: int
 ) -> ModeStructure | None:
@@ -112,15 +148,7 @@ def mode_structure(
     if brief.content_type == "feature_showcase":
         return _showcase(brief, eligible, score, target_frames)
     if brief.content_type == "guide":
-        picked = sample_clips(eligible, _cap(brief), score)
-        seconds = brief.target_duration / len(picked)
-        return ModeStructure(
-            "guide-steps",
-            f"攻略模板：按录像先后均匀取{len(picked)}步，每步目标约{seconds:.1f}秒",
-            tuple(picked),
-            tuple(f"第{i + 1}步" for i in range(len(picked))),
-            tuple(Fraction(1) for _ in picked),
-        )
+        return _guide(brief, eligible, score, target_frames)
     if brief.content_type == "campaign":
         used: list[CreationClip] = []
         topic_roles: list[str] = []

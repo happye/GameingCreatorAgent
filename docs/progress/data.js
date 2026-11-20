@@ -1166,12 +1166,14 @@ window.PROGRESS_DATA = {
    "remaining": null,
    "evidence": [
     "2026-11-01: guide mode (evenly spaced numbered steps, spoken step numbers follow current order) real instance -> MP4 372 frames -> Bilibili package passing configured checks; real guide correctness not human-reviewed",
-    "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md"
+    "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md",
+    "2026-11-20: requested guide steps reference saved visual observations and follow current edit order in draft narration and chapters. Verified on a real narrated Comic Stars video and Bilibili package. See sprint-guide-evidence."
    ],
-   "done": "攻略模板按录像均匀取第N步并读步号，真实录像→MP4→B站包已走通",
-   "todo": "攻略逻辑与正确性未经人工评审",
-   "updated": "2026-11-01",
+   "done": "根据所填主题匹配画面原文，保留原录像顺序。剪辑调整后，Studio、旁白稿和发布章节跟随当前顺序编号，实测本机配音、成片和 B 站包",
+   "todo": "操作因果、知识正确性和正式攻略质量待人评",
+   "updated": "2026-11-20",
    "sprints": [
+    "sprint-guide-evidence",
     "sprint-content-modes"
    ]
   },
@@ -1765,6 +1767,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-campaign-submission"
     },
     {
+     "id": "P045-guide-evidence",
+     "name": "攻略步骤引用与剪辑后编号",
+     "status": "done",
+     "sprint": "sprint-guide-evidence"
+    },
+    {
      "id": "P018",
      "name": "游戏知识层（本机）",
      "status": "done",
@@ -2266,12 +2274,13 @@ window.PROGRESS_DATA = {
  "now": [
   "Grok A01–F16 已集成，定向 99/44/3 通过，TD030 解决。代理预览、空间盘点、OCR、方案对照、逐词字幕和多轨已接入。见 [Grok 集成](docs/exec-plans/sprint-grok-repair-integration.md)。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
-  "抖音短版已接入[关键词](docs/exec-plans/sprint-platform-content-cut.md)、[多段拼接](docs/exec-plans/sprint-platform-joined-cut.md)、[画面文案](docs/exec-plans/sprint-platform-copy-draft.md)和[本机主题选段](docs/exec-plans/sprint-platform-theme-ranking.md)。实测出片、试听、队列恢复与 B 站全长包复用。",
+  "抖音短版已接入关键词、多段拼接、画面文案和本机主题选段。实测出片、试听、队列恢复与 B 站全长包复用。见[交付记录](docs/exec-plans/sprint-platform-theme-ranking.md)。",
   "创作助手已实测换镜、删裁、变速、换序及[多段插入](docs/exec-plans/sprint-ai-multiple-insertions.md)。[AI 随镜时长校验](docs/exec-plans/sprint-ai-companion-fit.md)实测先迁移旁白和图层，恢复保存、播放 27.5 秒成片并出 B 站包。",
   "[P042 方案结构偏好](docs/exec-plans/sprint-creator-structure-feedback.md)接入工作台。漫画群星刷新后从玩法展示首推改为倒序首推，实测 30 秒成片和 B 站包。另一标签页清除后，生成恢复默认首推。",
   "P042 已接通发布成效登记、同平台对比与下一份方案参考，用隔离示例和实拍素材包验证。真实平台数据待录入。见[交付记录](docs/exec-plans/sprint-outcome-structure-reference.md)。",
   "漫画群星 60 秒[主题旁白](docs/exec-plans/sprint-showcase-narration.md)已补齐[句级字幕](docs/exec-plans/sprint-narration-captions.md)，试听、移动音轨、SRT 和 B 站烧入版实测通过。",
-  "P020/P044 已把示例活动规则接到真实录像的竖屏成片、发布核对和抖音包。18 项定向回归通过。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。旧 verify-20261117-002506 已中断，原日志保留。"
+  "P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。",
+  "P045 已用真实漫画群星录像验证步骤引用、删改换序后重编号、本机旁白及 B 站包。见[攻略步骤](docs/exec-plans/sprint-guide-evidence.md)。旧 verify-20261117-002506 已中断，原日志保留。"
  ],
  "sprints": [
   {
@@ -2478,7 +2487,7 @@ window.PROGRESS_DATA = {
     "P044",
     "R3"
    ],
-   "date": "",
+   "date": "2026-11-20",
    "bytes": 1677
   },
   {
@@ -2689,6 +2698,15 @@ window.PROGRESS_DATA = {
    ],
    "date": "2026-11-16",
    "bytes": 2864
+  },
+  {
+   "file": "sprint-guide-evidence",
+   "title": "攻略步骤引用与剪辑后编号",
+   "ids": [
+    "P045"
+   ],
+   "date": "",
+   "bytes": 1613
   },
   {
    "file": "sprint-j1-creation-usability",

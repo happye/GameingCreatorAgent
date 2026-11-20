@@ -80,7 +80,12 @@ def snapshot(jobs: Any, job_id: str) -> dict[str, Any]:
         raise ValueError("Render selection changed")
     brief = report["brief"]
     fps = receipt["fpsNumerator"] / receipt["fpsDenominator"]
-    copy = draft_copy(brief, edl.get("segments") or [], fps)
+    copy = draft_copy(
+        brief,
+        edl.get("segments") or [],
+        fps,
+        evidenced_guide=edl.get("selectedPlan") == "guide-evidence",
+    )
     campaign = _campaign_context(report)
     if campaign:
         tags = campaign["campaignRules"]["fields"].get("requiredTopics", [])
@@ -209,7 +214,11 @@ def _timestamp(seconds: float) -> str:
 
 
 def draft_copy(
-    brief: dict[str, Any], segments: list[Any], fps: float | None = None
+    brief: dict[str, Any],
+    segments: list[Any],
+    fps: float | None = None,
+    *,
+    evidenced_guide: bool = False,
 ) -> dict[str, Any]:
     """Editable local template from the structured brief and the rendered shots.
 
@@ -220,6 +229,14 @@ def draft_copy(
     game = _clean(brief["game"], 100).strip()
     label = MODE_LABELS.get(brief["contentType"], brief["contentType"])
     topics = [t for t in (_clean(x, 50).strip() for x in brief.get("mandatoryTopics") or []) if t]
+    if evidenced_guide:
+        topics = list(
+            dict.fromkeys(
+                _clean(row["guideStep"], 50).strip()
+                for row in segments
+                if isinstance(row, dict) and row.get("guideStep")
+            )
+        )
     audience = _clean(brief.get("audience"), 20).strip()
     title = f"{game}｜{label}" + (f"：{'、'.join(topics[:3])}" if topics else "")
     if audience in NEWCOMER:
@@ -236,6 +253,11 @@ def draft_copy(
         fact = _clean(row.get("scriptDraft"), 400).split("；")[0].strip().rstrip("。")[:40]
         name = role if role and role != "镜头" else fact
         stamp = _timestamp(elapsed) + " " if fps else ""
+        if evidenced_guide:
+            topic = _clean(row.get("guideStep"), 100).strip()
+            name = f"第{len(chapters) + 1}步 {topic}" if topic else ""
+            if fps and type(row.get("outputStartFrame")) is int:
+                stamp = _timestamp(row["outputStartFrame"] / fps) + " "
         if name and not any(line.endswith(" " + name) or line == name for line in chapters):
             chapters.append(stamp + name)
         frames = row.get("outputFrames")
