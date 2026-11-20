@@ -4,6 +4,8 @@ import hashlib
 import json
 from typing import Any
 
+from gamingcreator.domain.creation_overlays import validate_overlay_text
+
 
 def validate_profile(profile: Any) -> dict[str, Any]:
     if not isinstance(profile, dict) or set(profile) != {
@@ -22,10 +24,16 @@ def validate_profile(profile: Any) -> dict[str, Any]:
     ] != {"kind": "local_preset", "label": "用户可编辑本地导出配置，非官方规则"}:
         raise ValueError("Unsupported local profile")
     fields = profile["Fields"]
-    if not isinstance(fields, dict) or set(fields) - {"variant"} != {"video", "cover", "limits"}:
+    if not isinstance(fields, dict) or set(fields) - {"variant", "publicationText"} != {
+        "video",
+        "cover",
+        "limits",
+    }:
         raise ValueError("Invalid profile fields")
     if "variant" in fields:
         _validate_variant(fields["variant"])
+    if "publicationText" in fields:
+        _validate_publication_text(fields["publicationText"])
     for kind in ("video", "cover"):
         value = fields[kind]
         expected = {"width", "height", "fit"} | (
@@ -83,6 +91,18 @@ def _validate_variant(variant: Any) -> None:
         or variant["durationFrames"] < 1
     ):
         raise ValueError("Invalid short package frame count")
+
+
+def _validate_publication_text(value: Any) -> None:
+    if not isinstance(value, dict) or not value or set(value) - {"opening", "closing"}:
+        raise ValueError("发布画面文案只能包含开场或结尾。")
+    for text in value.values():
+        try:
+            text = validate_overlay_text(text)
+            if text != text.strip() or len(text) > 24:
+                raise ValueError
+        except ValueError:
+            raise ValueError("开场和结尾文案须为 1–24 个无首尾空白的单行纯文本字符。") from None
 
 
 def profile_digest(profile: dict[str, Any]) -> str:

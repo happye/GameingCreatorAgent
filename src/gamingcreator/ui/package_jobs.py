@@ -46,9 +46,13 @@ def parent(
     _, render, _ = publication_jobs.render_parent(jobs, publication["renderJobId"])
     profiles = request["profiles"] if "profiles" in request else [request["profile"]]
     for profile in profiles:
-        variant = profile["Fields"].get("variant")
-        if variant is not None and variant["durationFrames"] >= render["frames"]:
+        fields = profile["Fields"]
+        variant = fields.get("variant")
+        frames = render["frames"] if variant is None else variant["durationFrames"]
+        if variant is not None and frames >= render["frames"]:
             raise ValueError("短版帧数必须少于原成片帧数。")
+        if frames < 2 and len(fields.get("publicationText", {})) == 2:
+            raise ValueError("成片至少需要两帧才能同时显示开场和结尾。")
     return state, publication, render
 
 
@@ -66,11 +70,15 @@ async def save_package(jobs: Any, directory: Path, request: dict[str, Any]) -> N
     source = jobs.directory(request["publicationJobId"]) / "result"
     video = jobs.safe(jobs.directory(publication["renderJobId"]) / "result/video.mp4")
     watermark = render.get("watermark")
+    fields = profile["Fields"]
+    variant = fields.get("variant")
+    publication_text = "publicationText" in fields
+    frames = render["frames"] if variant is None else variant["durationFrames"]
+    fps = Fraction(render["fpsNumerator"], render["fpsDenominator"])
     duration = Fraction(int(render["frames"]), int(render.get("fpsNumerator", 1)))
-    if variant := profile["Fields"].get("variant"):
-        duration = Fraction(
-            variant["durationFrames"] * render["fpsDenominator"], render["fpsNumerator"]
-        )
+    if variant is not None or publication_text:
+        duration = frames / fps
+    encode_options = {"output_clock": (frames, fps)} if publication_text else {}
     facts = await encode(
         jobs.repository,
         video,
@@ -79,6 +87,7 @@ async def save_package(jobs: Any, directory: Path, request: dict[str, Any]) -> N
         profile,
         watermark,
         duration,
+        **encode_options,
     )
     validation = _validate_output(profile, facts, publication, render)
     for name in ("title.txt", "description.txt", "tags.json"):
@@ -177,8 +186,11 @@ def _validate_output(
 ) -> dict[str, Any]:
     validation = validate_package(profile, facts, publication, render)
     checks = validation["checks"]
-    if "variant" in profile["Fields"] and (checks["frames"], checks["fps"]) != ("pass", "pass"):
-        raise ValueError("短版实测帧数或帧率与原成片时钟不符。")
+    if (checks["frames"], checks["fps"]) != ("pass", "pass"):
+        if "variant" in profile["Fields"]:
+            raise ValueError("短版实测帧数或帧率与原成片时钟不符。")
+        if "publicationText" in profile["Fields"]:
+            raise ValueError("平台包实测帧数或帧率与预期输出时钟不符。")
     return validation
 
 
