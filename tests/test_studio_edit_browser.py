@@ -37,7 +37,17 @@ def test_brief_to_exported_video(service, monkeypatch):  # noqa: F811
         }
 
     async def planner(
-        project, runs_, brief, output, events, fps, selection, preferences=None, edit_kinds=None
+        project,
+        runs_,
+        brief,
+        output,
+        events,
+        fps,
+        selection,
+        preferences=None,
+        edit_kinds=None,
+        *,
+        repository=None,
     ):
         segment = {
             "runId": "run",
@@ -566,6 +576,8 @@ def test_clip_basket_search_add_and_plan_uses_only_basket(service, monkeypatch):
         preferences=None,
         edit_kinds=None,
         clip_ranges=None,
+        *,
+        repository=None,
     ):
         seen.append(list(events))
         assert clip_ranges and len(clip_ranges) == len(events)

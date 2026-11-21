@@ -2,7 +2,7 @@
 
 ## 最近一次会话（2026-11-21）
 
-当前分支 `main`。先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。[P018 游戏知识](docs/exec-plans/sprint-game-knowledge.md)已实测公开网页摘录、跳转出处及版本历史。[广告配乐](docs/exec-plans/sprint-ad-rhythm-matching.md)已实测 Atom 广告重开、混音和抖音包。[广告批量](docs/exec-plans/sprint-ad-variant-batches.md)可混用已存修订。
+当前分支 `main`。先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。[P023 取帧评分](docs/exec-plans/sprint-material-scoring.md)实测 Atom 30 秒高光跳过近白段并出片。[P018](docs/exec-plans/sprint-game-knowledge.md)实测网页摘录和版本历史。[广告批量](docs/exec-plans/sprint-ad-variant-batches.md)可混用已存修订。
 
 [P051 项目品牌资源](docs/exec-plans/sprint-enterprise-basics.md)已实测文案、视觉模板和项目配乐库。配乐移出后，Atom 旧修订重开仍输出原音轨，抖音包 `a3104f45bc9f4410a1e9e4634aff4d6d`。
 

@@ -5,7 +5,8 @@ is excluded from the total; the result states how much of the weight was actuall
 """
 
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from fractions import Fraction
 from typing import TYPE_CHECKING, Any
 
@@ -26,6 +27,7 @@ WEIGHTS = {
 }
 BASIS = {
     "briefMatch": "已保存描述命中必须主题的比例",
+    "visualQuality": "代理：候选区间内分析取帧的亮度跨度，取第90与第10百分位之差",
     "gameplayClarity": "代理：可观察事实与玩法标签数量",
     "novelty": "代理：候选中已保存描述的独特程度",
     "platformFit": "代理：可用时长（≥1.5秒为满分），未核对平台规格",
@@ -35,12 +37,21 @@ UNKNOWN = "暂无离线依据，保持未知"
 FULL_SECONDS = Fraction(3, 2)
 
 
+@dataclass(frozen=True, slots=True)
+class VisualSample:
+    time_us: int
+    sha256: str
+    luma_spread: int
+
+
 def _text(clip: "CreationClip") -> str:
     return " ".join(clip.event.observable_facts + clip.event.mechanic_tags).casefold()
 
 
 def score_materials(
-    brief: CreativeBrief, clips: Sequence["CreationClip"]
+    brief: CreativeBrief,
+    clips: Sequence["CreationClip"],
+    visual_samples: Mapping[tuple[str, str], VisualSample] | None = None,
 ) -> dict[tuple[str, str], dict[str, Any]]:
     """Scores keyed by (runId, eventId); identical for every plan built from these clips."""
     descriptions = Counter("；".join(clip.event.observable_facts) for clip in clips)
@@ -60,11 +71,21 @@ def score_materials(
         parts["novelty"] = Fraction(1, descriptions["；".join(event.observable_facts)])
         parts["platformFit"] = min(Fraction(1), seconds / FULL_SECONDS)
         parts["technicalQuality"] = Fraction(1, 2) if event.uncertainty else Fraction(1)
+        samples = {}
+        if visual_samples:
+            for identity in event.evidence_ids:
+                sample = visual_samples.get((event.run_id, identity))
+                if sample and clip.framing.start_us <= sample.time_us < clip.framing.end_us:
+                    samples[identity] = sample
+        if samples:
+            parts["visualQuality"] = Fraction(
+                sum(sample.luma_spread for sample in samples.values()), 255 * len(samples)
+            )
         known = {name: value for name, value in parts.items() if value is not None}
         coverage = sum((WEIGHTS[name] for name in known), Fraction(0))
         total = sum((WEIGHTS[name] * value for name, value in known.items()), Fraction(0))
         scores[(event.run_id, event.event_id)] = {
-            "version": "material-score-v1",
+            "version": "material-score-v2" if samples else "material-score-v1",
             "total": round(float(total / coverage), 3) if coverage else None,
             "coverage": round(float(coverage), 2),
             "parts": {
@@ -72,15 +93,34 @@ def score_materials(
                 for name, value in parts.items()
             },
         }
+        if samples:
+            score = scores[(event.run_id, event.event_id)]
+            score["visualRange"] = {
+                "startUs": clip.framing.start_us,
+                "endUs": clip.framing.end_us,
+            }
+            score["visualSamples"] = [
+                {
+                    "evidenceId": identity,
+                    "timeUs": sample.time_us,
+                    "sha256": sample.sha256,
+                    "lumaSpread": sample.luma_spread,
+                }
+                for identity, sample in samples.items()
+            ]
     return scores
 
 
-def scoring_legend() -> dict[str, Any]:
+def scoring_legend(visual_measured: bool = False) -> dict[str, Any]:
+    basis = {name: BASIS.get(name, UNKNOWN) for name in WEIGHTS}
+    if not visual_measured:
+        basis["visualQuality"] = UNKNOWN
     return {
-        "version": "material-score-v1",
+        "version": "material-score-v2" if visual_measured else "material-score-v1",
         "weights": {name: float(weight) for name, weight in WEIGHTS.items()},
-        "basis": {name: BASIS.get(name, UNKNOWN) for name in WEIGHTS},
-        "note": "权重为总方案V0.1人工权重；未知维度不计入总分，coverage为已测维度权重之和。",
+        "basis": basis,
+        "note": "权重为总方案V0.1人工权重；未知维度不计入总分，coverage为已测维度权重之和。"
+        + ("亮度对比限于可用取帧，每次规划最多抽样256帧。" if visual_measured else ""),
     }
 
 

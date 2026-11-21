@@ -4,11 +4,12 @@ import json
 from pathlib import Path
 
 from gamingcreator.application.creation_feedback import CreatorStructureChoice
-from gamingcreator.application.creative_planner import candidates, plan_creation
+from gamingcreator.application.creative_planner import candidates, plan_creation, scoring_candidates
 from gamingcreator.application.edit_decision import select_edit_decision
 from gamingcreator.domain.creation import CreativeBrief
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.creation_files import write_creation
+from gamingcreator.infrastructure.ffmpeg_material_scoring import measure_visual_samples
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 
 
@@ -25,6 +26,8 @@ async def execute_plan_creation(
     clip_ranges: object = None,
     creator_feedback: CreatorStructureChoice | None = None,
     campaign_rules: dict[str, object] | None = None,
+    *,
+    repository: Path | None = None,
 ) -> dict[str, object]:
     try:
         if not runs or len(runs) != len(set(runs)):
@@ -38,9 +41,17 @@ async def execute_plan_creation(
             timelines = tuple([await store.load_completed_timeline(run) for run in runs])
         finally:
             await store.close()
+        clips = candidates(timelines, tuple(events), clip_ranges)
+        visual_samples = (
+            await measure_visual_samples(
+                project, repository, timelines, scoring_candidates(brief, clips, fps)
+            )
+            if repository is not None
+            else None
+        )
         report = plan_creation(
             brief,
-            candidates(timelines, tuple(events), clip_ranges),
+            clips,
             fps,
             preferences,
             edit_kinds,
@@ -48,6 +59,7 @@ async def execute_plan_creation(
             transcripts={timeline.run.run_id: timeline.transcripts for timeline in timelines}
             if brief.content_type == "live_cut"
             else None,
+            visual_samples=visual_samples,
         )
         report["brief"] = raw
         if campaign_rules is not None:

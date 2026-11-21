@@ -24,7 +24,12 @@ from gamingcreator.application.creation_modes import (
 )
 from gamingcreator.application.highlight_cut import HighlightCut, highlight_coverage, highlight_cut
 from gamingcreator.application.live_cut import live_cut
-from gamingcreator.application.material_scoring import advisories, score_materials, scoring_legend
+from gamingcreator.application.material_scoring import (
+    VisualSample,
+    advisories,
+    score_materials,
+    scoring_legend,
+)
 from gamingcreator.application.showcase_topics import showcase_coverage, visual_topic_count
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.creation import CreativeBrief
@@ -461,6 +466,15 @@ def eligible_clips(
     return _without_overlaps(eligible)
 
 
+def scoring_candidates(
+    brief: CreativeBrief, clips: tuple[CreationClip, ...], fps: int
+) -> list[CreationClip]:
+    """Scope local visual measurement to footage eligible for a recommendation."""
+    if brief.content_type == "highlight":
+        return _sized_clips(brief, clips, fps)
+    return eligible_clips(brief, clips, fps)
+
+
 MIN_REMNANT_US = 1_000_000
 
 
@@ -552,6 +566,7 @@ def plan_creation(
     creator_feedback: CreatorStructureChoice | None = None,
     *,
     transcripts: Mapping[str, tuple[TranscriptSegment, ...]] | None = None,
+    visual_samples: Mapping[tuple[str, str], VisualSample] | None = None,
 ) -> dict[str, object]:
     """Template plans; ``preferences`` (finished videos per plan structure on this machine)
     only reorders the generic structures. An explicit creator choice can recommend any ready
@@ -564,16 +579,31 @@ def plan_creation(
         raise ValueError("Output fps must be an integer in 1..120.")
     eligible = eligible_clips(brief, clips, fps)
     highlight_candidates = (
-        _sized_clips(brief, clips, fps) if brief.content_type == "highlight" else []
+        scoring_candidates(brief, clips, fps) if brief.content_type == "highlight" else []
     )
-    scores = score_materials(brief, highlight_candidates or eligible)
+    scores = score_materials(brief, highlight_candidates or eligible, visual_samples)
+    visual_measured = any(score.get("visualSamples") for score in scores.values())
+    mode_honesty = (
+        MODE_HONESTY_SHORT + "。可用取帧补充亮度对比。" if visual_measured else MODE_HONESTY_SHORT
+    )
+    generic_scores = (
+        score_materials(brief, eligible, visual_samples)
+        if highlight_candidates and visual_samples
+        else scores
+    )
 
     def total(clip: CreationClip) -> float:
         value = scores[(clip.event.run_id, clip.event.event_id)]["total"]
         return float(value) if value is not None else 0.0
 
     # Across sources retain the explicit input run order; within each source use source time.
-    picked = sample_clips(eligible, max(3, brief.target_duration // GENERIC_SHOT_SECONDS), total)
+    picked = sample_clips(
+        eligible,
+        max(3, brief.target_duration // GENERIC_SHOT_SECONDS),
+        lambda clip: float(
+            generic_scores[(clip.event.run_id, clip.event.event_id)]["total"] or 0.0
+        ),
+    )
     generic: list[PlanTemplate] = [
         ("chronological", "按来源顺序展开", picked, None, None),
         ("hook-first", "最后一条先作开场，再回溯", picked[-1:] + picked[:-1], None, None),
@@ -600,6 +630,7 @@ def plan_creation(
     )
     plans: list[dict[str, object]] = []
     for identity, description, ordered, roles, weights in [*recommended, *generic]:
+        plan_scores = generic_scores if identity in template_order else scores
         layout = layouts.get(identity)
         if layout is not None:
             shots, roles, budgets = layout.shots, layout.roles, layout.budgets
@@ -659,7 +690,7 @@ def plan_creation(
                             if clip.source_range is not None and identity != "highlight-evidence"
                             else {}
                         ),
-                        "score": scores[(event.run_id, event.event_id)],
+                        "score": plan_scores[(event.run_id, event.event_id)],
                         **({"role": roles[index]} if roles is not None else {}),
                     }
                 )
@@ -710,7 +741,7 @@ def plan_creation(
                     {
                         "mode": brief.content_type,
                         "modeLabel": MODE_LABELS[brief.content_type],
-                        "honesty": MODE_HONESTY_SHORT,
+                        "honesty": mode_honesty,
                     }
                     if roles is not None
                     else {}
@@ -724,8 +755,8 @@ def plan_creation(
         "schemaVersion": "creation-plan-v1",
         "planner": "offline-template-v1",
         "understandingVerified": False,
-        **({"modeHonesty": MODE_HONESTY_SHORT} if recommended else {}),
-        "scoring": scoring_legend(),
+        **({"modeHonesty": mode_honesty} if recommended else {}),
+        "scoring": scoring_legend(visual_measured),
         "ordering": {
             "basis": "creator-feedback"
             if applied_feedback

@@ -19,7 +19,17 @@ def service(tmp_path, monkeypatch):
     (tmp_path / "artifacts/project/timeline.sqlite3").touch()
 
     async def planner(
-        project, runs, brief, output, events, fps, selection, preferences=None, edit_kinds=None
+        project,
+        runs,
+        brief,
+        output,
+        events,
+        fps,
+        selection,
+        preferences=None,
+        edit_kinds=None,
+        *,
+        repository=None,
     ):
         report = {
             "schemaVersion": "creation-plan-v1",
@@ -506,7 +516,17 @@ def test_plan_registration_freezes_edit_habits(service, monkeypatch):
     captured = {}
 
     async def planner(
-        project, runs, brief, output, events, fps, selection, preferences=None, edit_kinds=None
+        project,
+        runs,
+        brief,
+        output,
+        events,
+        fps,
+        selection,
+        preferences=None,
+        edit_kinds=None,
+        *,
+        repository=None,
     ):
         import json
 
@@ -565,7 +585,9 @@ def test_explicit_structure_feedback_uses_frozen_same_work_plan_receipt(service,
     from gamingcreator.infrastructure.creation_work_store import CreationWorkStore
     from gamingcreator.ui import creation_jobs as implementation
 
-    async def planner(project, runs, brief, output, events, fps, selection, **options):
+    async def planner(
+        project, runs, brief, output, events, fps, selection, *, repository=None, **options
+    ):
         raw = json.loads(brief.read_text(encoding="utf-8"))
         clips = material([[f"招式 {i}"] for i in range(6)])
         report = plan_creation(CreativeBrief.from_json(raw), clips, fps, **options)

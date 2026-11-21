@@ -107,6 +107,17 @@ async def _read_consumed_lines(
     return bytes(diagnostics)
 
 
+async def _feed_input(writer: asyncio.StreamWriter, data: bytes | bytearray) -> None:
+    try:
+        with suppress(BrokenPipeError, ConnectionResetError):
+            view = memoryview(data)
+            for index in range(0, len(view), 65536):
+                writer.write(view[index : index + 65536])
+                await writer.drain()
+    finally:
+        writer.close()
+
+
 async def run_media_process(
     arguments: list[str],
     context: CancellationContext,
@@ -116,6 +127,7 @@ async def run_media_process(
     stderr_line_consumer: Callable[[str], bool] | None = None,
     stdout_line_consumer: Callable[[str], bool] | None = None,
     output_limit: MediaOutputLimit | None = None,
+    input_data: bytes | bytearray | None = None,
 ) -> ProcessOutput:
     context.check_cancelled()
     if output_limit is not None:
@@ -130,7 +142,7 @@ async def run_media_process(
             job = WindowsProcessJob()
         process = await asyncio.create_subprocess_exec(
             *arguments,
-            stdin=asyncio.subprocess.DEVNULL,
+            stdin=asyncio.subprocess.DEVNULL if input_data is None else asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             creationflags=(subprocess.CREATE_NO_WINDOW | 0x00000004) if job is not None else 0,
@@ -162,13 +174,16 @@ async def run_media_process(
         else _read_consumed_lines(process.stderr, max_stderr_bytes, overflow, stderr_line_consumer)
     )
     wait_task = asyncio.create_task(process.wait())
+    input_tasks = (
+        (asyncio.create_task(_feed_input(process.stdin, input_data)),)
+        if process.stdin is not None and input_data is not None
+        else ()
+    )
 
     async def collect() -> ProcessOutput:
-        stdout, stderr, exit_code = await asyncio.gather(
-            stdout_task,
-            stderr_task,
-            wait_task,
-        )
+        stdout, stderr, exit_code = await asyncio.gather(stdout_task, stderr_task, wait_task)
+        if input_tasks:
+            await input_tasks[0]
         if exit_code != 0:
             raise AppError("input.media_decode", "媒体文件无法解码。", ExitCode.INPUT)
         if output_limit is not None and (problem := output_limit.check()):
@@ -232,6 +247,7 @@ async def run_media_process(
                 stdout_task,
                 stderr_task,
                 wait_task,
+                *input_tasks,
                 *([file_limit] if file_limit else []),
             ):
                 task.cancel()
@@ -242,6 +258,7 @@ async def run_media_process(
                 stdout_task,
                 stderr_task,
                 wait_task,
+                *input_tasks,
                 *([file_limit] if file_limit else []),
                 return_exceptions=True,
             )

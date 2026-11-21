@@ -62,7 +62,17 @@ def replacements(service, monkeypatch):  # noqa: F811
             row.update(sourcePath=str(source), sourceSha256=a.run.asset.sha256)
 
     async def planner(
-        project, runs, brief, output, events, fps, selection, preferences=None, edit_kinds=None
+        project,
+        runs,
+        brief,
+        output,
+        events,
+        fps,
+        selection,
+        preferences=None,
+        edit_kinds=None,
+        *,
+        repository=None,
     ):
         report["brief"] = json.loads(brief.read_text())
         write_creation(output, {"plans.json": report}, ())
@@ -127,7 +137,17 @@ def framed_replacements(replacements, monkeypatch):
     report = plan_creation(brief(), material, 30)
 
     async def planner(
-        project, runs, brief, output, events, fps, selection, preferences=None, edit_kinds=None
+        project,
+        runs,
+        brief,
+        output,
+        events,
+        fps,
+        selection,
+        preferences=None,
+        edit_kinds=None,
+        *,
+        repository=None,
     ):
         report["brief"] = json.loads(brief.read_text())
         write_creation(output, {"plans.json": report}, ())

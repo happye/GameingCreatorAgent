@@ -532,11 +532,12 @@ window.PROGRESS_DATA = {
    "release": "not_released",
    "remaining": null,
    "evidence": [
-    "2026-11-01: explicit master-plan 8-dimension material score per candidate; only offline-measurable dimensions scored (topic match, fact/tag detail proxy, description novelty, usable length, uncertainty proxy) with coverage reported, visual/emotional/narrative unknown; modes pick by score; 164 related tests; real demo-phase0 plans scored 0.58-0.94"
+    "2026-11-01: explicit master-plan 8-dimension material score per candidate; only offline-measurable dimensions scored (topic match, fact/tag detail proxy, description novelty, usable length, uncertainty proxy) with coverage reported, visual/emotional/narrative unknown; modes pick by score; 164 related tests; real demo-phase0 plans scored 0.58-0.94",
+    "2026-11-21: offline Studio and CLI plan ordering uses the luma spread of hash-verified saved frames inside each candidate interval. Real Atom highlight omitted the near-white frame interval and rendered a 30-second MP4. See docs/exec-plans/sprint-material-scoring.md."
    ],
-   "done": "按总方案八维权重给候选素材打分，仅离线可测维度计分并报告覆盖率，方案按分数选片",
-   "todo": "画面质量/情绪/叙事维度仍未知；评分准确性未人工评估",
-   "updated": "2026-11-05",
+   "done": "按八维权重和已测覆盖率选片；已存取帧的亮度对比参与规则版排序，Atom 高光实测略过近白段并出片",
+   "todo": "画面清晰度、情绪和叙事质量待评估；整体排序仍待人评",
+   "updated": "2026-11-21",
    "sprints": [
     "sprint-material-scoring"
    ]
@@ -1743,7 +1744,7 @@ window.PROGRESS_DATA = {
    "goal": "自然语言改片、规则/知识引用、七种视频模式",
    "status": "active",
    "done": "规则版一句话改镜头；活动规则离线提取并填需求；知识出处进入策划与旁白，支持版本对比和公开网页摘录；七模式均有真实出片和包",
-   "todo": "开放语义理解、八维评分画面维度、脚本渲染网页与实际引用质量待验证",
+   "todo": "开放语义理解、画面清晰度及情绪叙事评分、脚本渲染网页与实际引用质量待验证",
    "features": [
     "P018",
     "P020",
@@ -1981,6 +1982,12 @@ window.PROGRESS_DATA = {
     {
      "id": "P023/P024",
      "name": "素材评分与缺口",
+     "status": "done",
+     "sprint": "sprint-material-scoring"
+    },
+    {
+     "id": "P023-visual",
+     "name": "按已存取帧亮度对比选片",
      "status": "done",
      "sprint": "sprint-material-scoring"
     },
@@ -2425,7 +2432,7 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "[P018 游戏知识](docs/exec-plans/sprint-game-knowledge.md)实测公开网页摘录、出处与历史版本。[Grok A01–F16](docs/exec-plans/sprint-grok-repair-integration.md)已集成，TD030 解决。",
+  "[P023 取帧评分](docs/exec-plans/sprint-material-scoring.md)实测 Atom 高光跳过近白画面。[P018](docs/exec-plans/sprint-game-knowledge.md)实测网页摘录与版本历史。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "[抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。",
   "创作助手已实测换镜、删裁、变速、换序和[多段插入](docs/exec-plans/sprint-ai-multiple-insertions.md)。[旁白和图层随镜迁移](docs/exec-plans/sprint-ai-companion-fit.md)实测重开、成片和 B 站包。",
@@ -2876,7 +2883,7 @@ window.PROGRESS_DATA = {
    "ids": [
     "P018"
    ],
-   "date": "2026-11-08",
+   "date": "2026-11-21",
    "bytes": 8078
   },
   {
@@ -2991,7 +2998,7 @@ window.PROGRESS_DATA = {
     "P024"
    ],
    "date": "2026-11-01",
-   "bytes": 2065
+   "bytes": 3501
   },
   {
    "file": "sprint-mixed-timeline",

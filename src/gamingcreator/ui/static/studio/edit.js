@@ -514,6 +514,9 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
 
     const cls = `work edit${layout.bin ? "" : " no-bin"}${layout.insp ? "" : " no-insp"}`;
     const selectedIndex = editable ? editing.clips.findIndex((c) => c.clipId === editing.selectedId) : -1;
+    const selectedClip = editing.clips[selectedIndex];
+    const selectedScore = selectedClip && matchesAdoptedEditor && !comparePlan && !editing.replacements[selectedClip.clipId]
+        ? selectedClip.score : null;
     const seekClip = (clipId) => { const item = items.find((i) => i.clipId === clipId); if (item) { setMode("plan"); void player.seek(item.outStartUs, true); } };
     return html`<div class=${cls}>
         <aside class="panel" hidden=${!layout.bin} aria-label="需求与方案">
@@ -633,6 +636,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                 <div hidden=${inspTab !== "shot"}>
                 <${TopicCoverage} plan=${plan} />
                 ${selectedIndex >= 0 && !commandPreview ? html`<fieldset aria-label="镜头编辑" disabled=${busy === "save" || busy === "render"} style=${{border: 0, padding: 0, margin: 0, minWidth: 0}}>
+                    <${CandidateVisualScore} score=${selectedScore} />
                     <${ClipInspector} editing=${editing} index=${selectedIndex} onSeek=${seekClip} basket=${basket} /></fieldset>`
                     : plan ? html`<p class="hint">点时间轴上的一个镜头，可以裁短、调速、换顺序或替换画面。</p><${PlanInspector} plan=${plan} groups=${groups} count=${items.length} totalUs=${player.totalUs} shot=${null} />` : html`<p class="note">选中方案后，这里显示它的时长、镜头和缺口。</p>`}
                 </div>
@@ -735,6 +739,16 @@ function StructureFeedback({contentType, platform, saved, plan, job, disabled, u
     ${job?.creatorFeedback && !job.creatorFeedback.applied && html`<p class="hint" role="status">本次素材无法使用偏好结构，已按原顺序推荐。</p>`}`;
 }
 
+function CandidateVisualScore({score}) {
+    const contrast = score?.parts?.visualQuality;
+    if (!Number.isFinite(contrast) || !score.visualSamples?.length || !score.visualRange) return null;
+    const {startUs, endUs} = score.visualRange;
+    return html`<div class="field"><div class="k">原候选区间评分</div>
+        <div class="v">画面亮度对比分 ${contrast.toFixed(2)} · ${score.visualSamples.length} 个已存取帧</div>
+        <p class="hint">按原片 ${(startUs / 1e6).toFixed(2)}–${(endUs / 1e6).toFixed(2)} 秒的已存画面估算亮度对比</p>
+        <p class="hint">总分 ${score.total.toFixed(2)} · 已测维度占权重 ${Math.round(score.coverage * 100)}%</p></div>`;
+}
+
 // J1 2026-11-11: drag the selected shot's edges to trim it, as in PR/AE. Dragging moves the
 // source in/out point; the trim operation clamps to the shot's source bounds and one drag is
 // one undo step.
@@ -747,5 +761,5 @@ function PlanInspector({plan, groups, count, totalUs, shot}) {
         ${shot ? html`<div class="field"><div class="k">选中镜头 · 成片 ${timecode(shot.outStartUs)} 起 ${(shot.outDurUs / 1e6).toFixed(1)} 秒</div>
             <ul class="facts">${shot.items.map((i) => html`<li>${i.role ? `【${i.role}】` : ""}原片 ${(i.startUs / 1e6).toFixed(1)} 秒：${i.scriptDraft || "无描述"}</li>`)}</ul></div>`
         : html`<p class="note">点下方时间轴上的镜头，查看它取自原片哪里、描述是什么。</p>`}
-        <p class="note">描述代理评分、非画面理解／未做人评／投放未验证：方案按分析时保存的文字挑片，预览一遍再导出。</p>`;
+        <p class="note">方案由已存描述和可用取帧辅助排序。创作质量和投放效果待验证，导出前请预览。</p>`;
 }

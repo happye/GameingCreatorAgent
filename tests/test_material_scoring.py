@@ -1,12 +1,18 @@
 """Material scores follow the master-plan weights and never invent unmeasured dimensions."""
 
+from dataclasses import replace
 from fractions import Fraction
 from pathlib import Path
 
 import pytest
 
 from gamingcreator.application.creative_planner import CreationClip, plan_creation
-from gamingcreator.application.material_scoring import WEIGHTS, advisories, score_materials
+from gamingcreator.application.material_scoring import (
+    WEIGHTS,
+    VisualSample,
+    advisories,
+    score_materials,
+)
 from gamingcreator.domain.creation import CreativeBrief
 from gamingcreator.domain.media import MediaAsset, MediaStream
 from gamingcreator.domain.models import SemanticEvent
@@ -82,6 +88,56 @@ def test_brief_match_counts_mandatory_topics():
     assert scores[("run", "e0")]["parts"]["briefMatch"] == 0.5
     assert scores[("run", "e1")]["parts"]["briefMatch"] == 1.0
     assert scores[("run", "e0")]["coverage"] == 0.65
+
+
+def test_visual_score_uses_only_own_frames_inside_selected_candidate():
+    original = clip(0, ["场景变化"])
+    framed = replace(
+        original,
+        event=replace(original.event, evidence_ids=("before", "inside", "end", "other-run")),
+        source_range=SourceRange(1_000_000, 3_000_000, original.asset.duration_us),
+    )
+    samples = {
+        ("run", "before"): VisualSample(999_999, "a" * 64, 255),
+        ("run", "inside"): VisualSample(1_000_000, "b" * 64, 0),
+        ("run", "end"): VisualSample(3_000_000, "c" * 64, 255),
+        ("other", "other-run"): VisualSample(2_000_000, "d" * 64, 255),
+    }
+    score = score_materials(brief(), [framed], samples)[("run", "e0")]
+    assert score["version"] == "material-score-v2"
+    assert score["parts"]["visualQuality"] == 0 and score["coverage"] == 0.55
+    assert score["visualRange"] == {"startUs": 1_000_000, "endUs": 3_000_000}
+    assert score["visualSamples"] == [
+        {"evidenceId": "inside", "timeUs": 1_000_000, "sha256": "b" * 64, "lumaSpread": 0}
+    ]
+
+
+def test_visual_score_can_change_the_showcase_opening():
+    clips = tuple(clip(i, [f"片段{i}"]) for i in range(10))
+    samples = {
+        ("run", f"evidence{i}"): VisualSample(i * 4_000_000, "a" * 64, 255 if i == 7 else 0)
+        for i in range(10)
+    }
+    base = plan_creation(brief(), clips, 30)
+    ranked = plan_creation(brief(), clips, 30, visual_samples=samples)
+    assert base["plans"][0]["segments"][0]["eventId"] != "e7"
+    opening = ranked["plans"][0]["segments"][0]
+    assert opening["eventId"] == "e7" and opening["score"]["parts"]["visualQuality"] == 1
+    assert ranked["scoring"]["version"] == "material-score-v2"
+
+
+def test_highlight_generic_plan_does_not_score_a_frame_trimmed_by_overlap():
+    lead = clip(0, ["开场"], seconds=6)
+    overlap = clip(1, ["接续"], seconds=5)
+    tail = clip(3, ["结束"])
+    highlight = replace(brief(duration=12), content_type="highlight")
+    samples = {("run", "evidence1"): VisualSample(5_000_000, "a" * 64, 250)}
+    report = plan_creation(highlight, (lead, overlap, tail), 30, visual_samples=samples)
+    generic = next(plan for plan in report["plans"] if plan["id"] == "chronological")
+    segment = next(row for row in generic["segments"] if row["eventId"] == "e1")
+    assert segment["startUs"] == 6_000_000
+    assert segment["score"]["parts"]["visualQuality"] is None
+    assert "visualRange" not in segment["score"]
 
 
 def test_plan_carries_scores_legend_and_advisories():

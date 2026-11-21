@@ -698,7 +698,8 @@
             "first_product": true,
             "delivery_status": "partial",
             "implementation_evidence": [
-                "2026-11-01: explicit master-plan 8-dimension material score per candidate; only offline-measurable dimensions scored (topic match, fact/tag detail proxy, description novelty, usable length, uncertainty proxy) with coverage reported, visual/emotional/narrative unknown; modes pick by score; 164 related tests; real demo-phase0 plans scored 0.58-0.94"
+                "2026-11-01: explicit master-plan 8-dimension material score per candidate; only offline-measurable dimensions scored (topic match, fact/tag detail proxy, description novelty, usable length, uncertainty proxy) with coverage reported, visual/emotional/narrative unknown; modes pick by score; 164 related tests; real demo-phase0 plans scored 0.58-0.94",
+                "2026-11-21: offline Studio and CLI plan ordering uses the luma spread of hash-verified saved frames inside each candidate interval. Real Atom highlight omitted the near-white frame interval and rendered a 30-second MP4. See docs/exec-plans/sprint-material-scoring.md."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

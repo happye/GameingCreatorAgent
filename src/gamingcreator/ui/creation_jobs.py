@@ -834,6 +834,7 @@ class CreationJobs:
                         None,
                         preferences=self._preferences(directory),
                         edit_kinds=self._edit_habits(directory),
+                        repository=self.repository,
                         **plan_inputs,
                     )
                 )

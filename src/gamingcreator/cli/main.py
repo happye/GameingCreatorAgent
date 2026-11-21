@@ -1866,7 +1866,14 @@ def _dispatch(args: argparse.Namespace) -> AnalyzeOutcome | dict[str, object] | 
     if args.command == "plan-creation":
         return asyncio.run(
             execute_plan_creation(
-                args.project, args.run, args.brief, args.output, args.event, args.fps, args.select
+                args.project,
+                args.run,
+                args.brief,
+                args.output,
+                args.event,
+                args.fps,
+                args.select,
+                repository=Path.cwd(),
             )
         )
     if args.command == "make-proxy":
