@@ -139,6 +139,7 @@ from gamingcreator.infrastructure.detail_query_sidecar import (
     read_saved_detail_corpus,
     refinement_identity_for_profile,
 )
+from gamingcreator.infrastructure.entitlement_usage import admit_workspace_analysis
 from gamingcreator.infrastructure.ffmpeg_fullres import FfmpegFullResolutionFrames
 from gamingcreator.infrastructure.ffmpeg_media import FfmpegMediaProcessor
 from gamingcreator.infrastructure.ffmpeg_render import FfmpegCreationRenderer
@@ -1191,6 +1192,9 @@ async def execute_analyze(
                     store,
                     asr_provider.describe_request,
                     _segment_cache(project),
+                    admit=lambda run_id, asset: admit_workspace_analysis(
+                        repository, project, run_id, asset
+                    ),
                 )
             return await resume_analysis(prepared, store, project, ports)
         finally:
@@ -1219,6 +1223,9 @@ async def execute_analyze(
             store,
             asr_provider.describe_request,
             _segment_cache(project),
+            admit=lambda run_id, asset: admit_workspace_analysis(
+                repository, project, run_id, asset
+            ),
         )
         return await run_new_analysis(prepared, ports, asset, project, run_id=uuid4().hex)
     finally:

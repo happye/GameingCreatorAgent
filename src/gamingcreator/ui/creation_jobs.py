@@ -1383,6 +1383,7 @@ class CreationJobs:
     def entitlement_summary(self, project_id: str | None = None) -> dict[str, Any]:
         from gamingcreator.application.entitlements import month_key, renders_this_month, summary
         from gamingcreator.infrastructure.entitlement_usage import (
+            analysis_usage_this_month,
             preparation_minutes_this_month,
         )
 
@@ -1396,6 +1397,12 @@ class CreationJobs:
             preparation_minutes_used=preparation,
         )
         result["usageMonth"] = month
+        try:
+            analysis_us, analysis_count = analysis_usage_this_month(self.root, now)
+            result["analysisMinutesThisMonth"] = round(analysis_us / 60_000_000, 2)
+            result["analysisRunsThisMonth"] = analysis_count
+        except AppError:
+            result["analysisQuotaUnavailable"] = True
         if project_id is not None:
             from gamingcreator.ui.service import project_completed_usage
 

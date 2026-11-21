@@ -1292,11 +1292,12 @@ window.PROGRESS_DATA = {
    "evidence": [
     "2026-11-01: local creator-plan entitlement model (founder default unlimited, Free/Creator/Pro) enforced at real entry points: monthly render quota metered from saved jobs, one platform package per publication on Free, activity-rule parsing, timeline export and sandbox publish gates; plan selection marked local evaluation; no payment, subscription, signed license or watermark",
     "2026-11-01: Free renders burn a top-right semi-transparent 'GamingCreator Free' mark via ASS; decided at registration and stored on the job, recorded in the render receipt and checked on verify; founder/creator/pro unmarked; real FFmpeg pixel test and job-level test; analysis-minute metering and payments still absent",
-    "2026-11-20: Studio exposes local evaluation plan switching, render and preparation usage, and current-project completed source minutes. Preparation quota check and reservation share one lock at acceptance. Verified real Studio and isolated plan changes; analysis quota and billing remain pending."
+    "2026-11-20: Studio exposes local evaluation plan switching, render and preparation usage, and current-project completed source minutes. Preparation quota check and reservation share one lock at acceptance. Verified real Studio and isolated plan changes; analysis quota and billing remain pending.",
+    "2026-11-21: Free local evaluation enforces 60 source minutes per UTC month at base analysis admission. Real Atom footage was prepared locally, then both a new analysis and a resume were blocked at capacity with zero provider invocations. Studio displays admitted usage separately from project completion and preparation."
    ],
-   "done": "Studio 可切换本地评估套餐，查看成片、准备额度和项目已完成分析的原片分钟。准备额度按受理月核对",
-   "todo": "实际分析额度、支付、订阅和签名许可证待交付",
-   "updated": "2026-11-20",
+   "done": "本机套餐显示成片、准备和分析用量；Free 的分析额度已用代号 Atom 新分析及续跑验证，单项目完成统计可单独查看",
+   "todo": "支付、订阅和签名许可证待交付",
+   "updated": "2026-11-21",
    "sprints": [
     "sprint-creator-plans"
    ]
@@ -2030,6 +2031,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-creator-plans"
     },
     {
+     "id": "P050-analysis-quota",
+     "name": "本机分析分钟计量与准入",
+     "status": "done",
+     "sprint": "sprint-creator-plans"
+    },
+    {
      "id": "P051",
      "name": "企业版基础（本机团队）",
      "status": "done",
@@ -2384,7 +2391,8 @@ window.PROGRESS_DATA = {
   "P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。",
   "[P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。",
   "[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)已通过，平台包可用命名路径保存到项目 `exports`。",
-  "[广告配乐](docs/exec-plans/sprint-ad-rhythm-matching.md)、[团队品牌模板和配乐库](docs/exec-plans/sprint-enterprise-basics.md)已实拍出包。"
+  "[广告配乐](docs/exec-plans/sprint-ad-rhythm-matching.md)、[团队品牌模板和配乐库](docs/exec-plans/sprint-enterprise-basics.md)已实拍出包。",
+  "[本机分析额度](docs/exec-plans/sprint-creator-plans.md)实测新分析及续跑拦截。"
  ],
  "sprints": [
   {
@@ -2757,7 +2765,7 @@ window.PROGRESS_DATA = {
     "P050"
    ],
    "date": "2026-11-20",
-   "bytes": 3874
+   "bytes": 5213
   },
   {
    "file": "sprint-creator-structure-feedback",

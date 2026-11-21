@@ -1191,7 +1191,8 @@
             "implementation_evidence": [
                 "2026-11-01: local creator-plan entitlement model (founder default unlimited, Free/Creator/Pro) enforced at real entry points: monthly render quota metered from saved jobs, one platform package per publication on Free, activity-rule parsing, timeline export and sandbox publish gates; plan selection marked local evaluation; no payment, subscription, signed license or watermark",
                 "2026-11-01: Free renders burn a top-right semi-transparent 'GamingCreator Free' mark via ASS; decided at registration and stored on the job, recorded in the render receipt and checked on verify; founder/creator/pro unmarked; real FFmpeg pixel test and job-level test; analysis-minute metering and payments still absent",
-                "2026-11-20: Studio exposes local evaluation plan switching, render and preparation usage, and current-project completed source minutes. Preparation quota check and reservation share one lock at acceptance. Verified real Studio and isolated plan changes; analysis quota and billing remain pending."
+                "2026-11-20: Studio exposes local evaluation plan switching, render and preparation usage, and current-project completed source minutes. Preparation quota check and reservation share one lock at acceptance. Verified real Studio and isolated plan changes; analysis quota and billing remain pending.",
+                "2026-11-21: Free local evaluation enforces 60 source minutes per UTC month at base analysis admission. Real Atom footage was prepared locally, then both a new analysis and a resume were blocked at capacity with zero provider invocations. Studio displays admitted usage separately from project completion and preparation."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

@@ -1,4 +1,4 @@
-"""Exclusive monthly entitlement usage ledger for local media preparation minutes."""
+"""Exclusive local entitlement usage ledger for preparation and analysis minutes."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import errno
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 from collections.abc import Iterator
@@ -13,14 +14,32 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 from fractions import Fraction
 from pathlib import Path
-from typing import BinaryIO
+from typing import BinaryIO, TypedDict, cast
 
-from gamingcreator.application.entitlements import month_key, require_preparation_minutes
+from gamingcreator.application.entitlements import (
+    PLANS,
+    EntitlementError,
+    month_key,
+    require_analysis_minutes,
+    require_preparation_minutes,
+)
 from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.domain.media import MediaAsset
+from gamingcreator.infrastructure.local_files import read_bounded
 
 SCHEMA = "entitlement-usage-v1"
 USAGE_NAME = "entitlement-usage.json"
 LOCK_NAME = "entitlement-usage.lock"
+_RUN_ID_PATTERN = r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}"
+_RUN_ID = re.compile(_RUN_ID_PATTERN)
+_SHA = re.compile(r"[0-9a-f]{64}")
+_ANALYSIS_KEY = re.compile(rf"[0-9a-f]{{64}}:{_RUN_ID_PATTERN}")
+
+
+class _AnalysisEntry(TypedDict):
+    recordedAt: str
+    sourceSha256: str
+    durationUs: int
 
 
 class _UsageLock:
@@ -254,3 +273,105 @@ def record_preparation_if_new(
         row["preparationSeconds"] = total + float(seconds)
         _write_unlocked(path, document)
         return True
+
+
+def _analysis_entries(document: dict[str, object]) -> dict[str, _AnalysisEntry]:
+    entries = document.setdefault("analysisRuns", {})
+    try:
+        if not isinstance(entries, dict):
+            raise ValueError
+        for run_id, row in entries.items():
+            if (
+                not isinstance(run_id, str)
+                or _ANALYSIS_KEY.fullmatch(run_id) is None
+                or not isinstance(row, dict)
+                or set(row) != {"recordedAt", "sourceSha256", "durationUs"}
+                or not isinstance(row["sourceSha256"], str)
+                or _SHA.fullmatch(row["sourceSha256"]) is None
+                or type(row["durationUs"]) is not int
+                or row["durationUs"] <= 0
+                or not isinstance(row["recordedAt"], str)
+                or datetime.fromisoformat(row["recordedAt"]).utcoffset() != UTC.utcoffset(None)
+            ):
+                raise ValueError
+    except (ValueError, OverflowError) as error:
+        raise AppError(
+            "storage.analysis_usage", "本机分析用量账本损坏。", ExitCode.STORAGE
+        ) from error
+    return cast(dict[str, _AnalysisEntry], entries)
+
+
+def _analysis_usage(entries: dict[str, _AnalysisEntry], month: str) -> tuple[int, int]:
+    matching = [
+        item["durationUs"] for item in entries.values() if month_key(item["recordedAt"]) == month
+    ]
+    return sum(matching), len(matching)
+
+
+def analysis_usage_this_month(creations_root: Path, now: str) -> tuple[int, int]:
+    """Return admitted source microseconds and count for this UTC month."""
+    with _locked(creations_root):
+        document = _load_unlocked(usage_path(creations_root))
+        return _analysis_usage(_analysis_entries(document), month_key(now))
+
+
+def _analysis_plan(creations_root: Path) -> str:
+    path = creations_root / "entitlement.json"
+    if not path.exists():
+        return "founder"
+    try:
+        selection = json.loads(read_bounded(path, 16_384))
+        plan = selection.get("plan") if isinstance(selection, dict) else None
+        if not isinstance(plan, str) or plan not in PLANS:
+            raise ValueError
+        return plan
+    except (ValueError, RecursionError) as error:
+        raise AppError(
+            "storage.entitlement_usage", "本机套餐记录无法核对。", ExitCode.STORAGE
+        ) from error
+
+
+def admit_workspace_analysis(
+    repository: Path, project: Path, run_id: str, asset: MediaAsset
+) -> None:
+    """Reserve source duration once per project and run, across months and retries."""
+    repository, project = repository.resolve(), project.resolve()
+    creations = repository / ".cache/workspace/creations"
+    if (
+        _RUN_ID.fullmatch(run_id) is None
+        or _SHA.fullmatch(asset.sha256) is None
+        or asset.duration_us <= 0
+    ):
+        raise AppError("input.analysis_usage", "分析任务身份无法核对。", ExitCode.INPUT, run_id)
+    if project.is_relative_to(repository):
+        scope = f"workspace:{os.path.normcase(str(project.relative_to(repository)))}"
+    else:
+        scope = f"external:{os.path.normcase(str(project))}"
+    key = f"{hashlib.sha256(scope.encode()).hexdigest()}:{run_id}"
+    with _locked(creations):
+        path = usage_path(creations)
+        document = _load_unlocked(path)
+        entries = _analysis_entries(document)
+        if (entry := entries.get(key)) is not None:
+            if (entry["sourceSha256"], entry["durationUs"]) != (asset.sha256, asset.duration_us):
+                raise AppError(
+                    "storage.analysis_usage",
+                    "已受理任务的原片身份不一致。",
+                    ExitCode.STORAGE,
+                    run_id,
+                )
+            return
+        stamp = datetime.now(UTC).isoformat()
+        used, _ = _analysis_usage(entries, month_key(stamp))
+        try:
+            require_analysis_minutes(_analysis_plan(creations), used, asset.duration_us)
+        except EntitlementError as error:
+            raise AppError(
+                "entitlement.analysis_minutes", str(error), ExitCode.BUDGET, run_id
+            ) from error
+        entries[key] = {
+            "recordedAt": stamp,
+            "sourceSha256": asset.sha256,
+            "durationUs": asset.duration_us,
+        }
+        _write_unlocked(path, document)

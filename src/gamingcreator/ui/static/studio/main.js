@@ -441,6 +441,9 @@ function EntitlementPanel({project, onClose}) {
         return () => controller.abort();
     }, []);
     const analysis = data?.analysisUsage;
+    const analysisQuotaAvailable = data && data.analysisQuotaUnavailable !== true
+        && (data.monthlyAnalysisMinutes === null || Number.isFinite(data.monthlyAnalysisMinutes))
+        && Number.isFinite(data.analysisMinutesThisMonth) && Number.isInteger(data.analysisRunsThisMonth);
     const quota = (used, limit, unit) => limit == null
         ? `${used} ${unit}（不限）` : `${used} / ${limit} ${unit}`;
     return html`<section class="entitlement-panel" aria-label="套餐与用量">
@@ -454,7 +457,11 @@ function EntitlementPanel({project, onClose}) {
             <div class="entitlement-usage">
                 <h3>本机用量 · ${data.usageMonth} UTC</h3>
                 <dl><dt>成片</dt><dd>${quota(data.rendersThisMonth, data.monthlyRenders, "次")}</dd>
-                    <dt>准备录像</dt><dd>${quota(data.preparationMinutesThisMonth, data.monthlyPreparationMinutes, "分钟")}</dd></dl>
+                    <dt>准备录像</dt><dd>${quota(data.preparationMinutesThisMonth, data.monthlyPreparationMinutes, "分钟")}</dd>
+                    <dt>视频分析原片时长</dt><dd>${analysisQuotaAvailable
+                        ? `${quota(data.analysisMinutesThisMonth.toFixed(2), data.monthlyAnalysisMinutes, "分钟")} · 已受理 ${data.analysisRunsThisMonth} 次`
+                        : "本机分析用量暂不可用"}</dd></dl>
+                <p class="hint">按本机受理的视频分析运行计入原片时长，同一项目的同一运行续跑只计一次。准备录像单独统计，实际付款以账单为准。</p>
                 ${analysis && html`<h3>当前项目 · 已完成视频分析</h3>
                     <dl><dt>本月</dt><dd>${analysis.completedRunsThisMonth} 个版本 · ${analysis.sourceMinutesThisMonth} 分钟</dd>
                         <dt>累计</dt><dd>${analysis.completedRunsTotal} 个版本 · ${analysis.sourceMinutesTotal} 分钟</dd></dl>

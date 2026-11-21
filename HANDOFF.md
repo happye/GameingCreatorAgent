@@ -6,6 +6,8 @@
 
 [P051 项目品牌资源](docs/exec-plans/sprint-enterprise-basics.md)已实测文案、视觉模板和项目配乐库。配乐移出后，Atom 旧修订重开仍输出原音轨，抖音包 `a3104f45bc9f4410a1e9e4634aff4d6d`。
 
+[P050 本机分析额度](docs/exec-plans/sprint-creator-plans.md)用 Atom 实测新分析及续跑超额拦截，零模型调用。
+
 ## 实证与接手入口
 
 - 真实项目 `artifacts/demo-phase0`，漫画群星 run `f76f5d6495314c04ae04083614d4afd6`，作品 `55f97422dabd6c5a3d87eb323018e45a`。

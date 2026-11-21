@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
+from fractions import Fraction
 from pathlib import Path
 
 import pytest
@@ -13,6 +15,7 @@ from gamingcreator.application.entitlements import (
     summary,
 )
 from gamingcreator.domain.errors import AppError
+from gamingcreator.domain.media import MediaAsset, MediaStream
 from gamingcreator.infrastructure import entitlement_usage as usage
 from gamingcreator.ui.media_preparation import MediaPreparationJobs
 
@@ -55,6 +58,54 @@ def test_ledger_records_once_and_resume_key_does_not_double(tmp_path: Path):
     document = json.loads((root / usage.USAGE_NAME).read_text(encoding="utf-8"))
     assert document["schemaVersion"] == usage.SCHEMA
     assert len(document["months"]["2026-11"]["entries"]) == 1
+
+
+def test_analysis_minutes_separate_from_preparation_and_never_double_on_rollover(
+    tmp_path, monkeypatch
+):
+    root = tmp_path / ".cache/workspace/creations"
+    root.mkdir(parents=True)
+    (root / "entitlement.json").write_text('{"plan":"free"}', encoding="utf-8")
+
+    def source(duration_us):
+        stream = MediaStream(0, "video", Fraction(1, 1_000_000), 0, duration_us)
+        return MediaAsset(
+            "fixture",
+            tmp_path / "clip.mp4",
+            "a" * 64,
+            (stream,),
+            Fraction(0),
+            duration_us,
+            "fixture",
+        )
+
+    full = source(60 * 60_000_000)
+    extra = source(1)
+    november, december = "2026-11-30T23:59:59+00:00", "2026-12-01T00:00:00+00:00"
+    stamp = november
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls.fromisoformat(stamp)
+
+    monkeypatch.setattr(usage, "datetime", Clock)
+    assert usage.record_preparation_if_new(root, key="media", seconds=120, now=november)
+    usage.admit_workspace_analysis(tmp_path, tmp_path / "project", "a" * 32, full)
+    assert usage.analysis_usage_this_month(root, november) == (full.duration_us, 1)
+    assert usage.preparation_minutes_this_month(root, november) == 2
+    with pytest.raises(AppError, match="本月分析额度不足"):
+        usage.admit_workspace_analysis(tmp_path, tmp_path / "copied-project", "a" * 32, full)
+    with pytest.raises(AppError, match="本月分析额度不足") as denied:
+        usage.admit_workspace_analysis(tmp_path, tmp_path / "project", "b" * 32, extra)
+    assert denied.value.code == "entitlement.analysis_minutes"
+    stamp = december
+    usage.admit_workspace_analysis(tmp_path, tmp_path / "project", "a" * 32, full)
+    assert usage.analysis_usage_this_month(root, december) == (0, 0)
+    with pytest.raises(AppError, match="原片身份不一致"):
+        usage.admit_workspace_analysis(tmp_path, tmp_path / "project", "a" * 32, extra)
+    usage.admit_workspace_analysis(tmp_path, tmp_path / "project", "b" * 32, extra)
+    assert usage.analysis_usage_this_month(root, december) == (1, 1)
 
 
 def test_failed_batch_policy_counts_at_accept(tmp_path: Path):

@@ -14,12 +14,14 @@ PLANS: dict[str, dict[str, Any]] = {
         "features": {"activityRules", "multiPlatform", "timelineExport", "sandboxPublish"},
         "monthlyRenders": None,
         "monthlyPreparationMinutes": None,
+        "monthlyAnalysisMinutes": None,
     },
     "free": {
         "label": "Free",
         "features": set(),
         "monthlyRenders": 10,
         "monthlyPreparationMinutes": 60,
+        "monthlyAnalysisMinutes": 60,
         "watermark": "GamingCreator Free",
     },
     "creator": {
@@ -27,12 +29,14 @@ PLANS: dict[str, dict[str, Any]] = {
         "features": {"activityRules", "multiPlatform", "sandboxPublish"},
         "monthlyRenders": 100,
         "monthlyPreparationMinutes": None,
+        "monthlyAnalysisMinutes": None,
     },
     "pro": {
         "label": "Creator Pro",
         "features": {"activityRules", "multiPlatform", "timelineExport", "sandboxPublish"},
         "monthlyRenders": 1000,
         "monthlyPreparationMinutes": None,
+        "monthlyAnalysisMinutes": None,
     },
 }
 FEATURE_LABELS = {
@@ -124,6 +128,17 @@ def require_package_platform(
     require(selection, "multiPlatform")
 
 
+def require_analysis_minutes(plan: str, used_us: int, additional_us: int) -> None:
+    limit = PLANS[plan]["monthlyAnalysisMinutes"]
+    minute_us = 60_000_000
+    if limit is not None and used_us + additional_us > limit * minute_us:
+        raise EntitlementError(
+            f"当前套餐“{PLANS[plan]['label']}”本月分析额度不足"
+            f"（已用 {used_us / minute_us:.2f} 分钟，本次 {additional_us / minute_us:.2f} 分钟，"
+            f"上限 {limit} 分钟）。可在“套餐与用量”查看本机评估套餐。"
+        )
+
+
 def summary(
     selection: dict[str, Any] | None,
     used_renders: int,
@@ -141,6 +156,7 @@ def summary(
         "monthlyRenders": definition["monthlyRenders"],
         "rendersThisMonth": used_renders,
         "monthlyPreparationMinutes": definition.get("monthlyPreparationMinutes"),
+        "monthlyAnalysisMinutes": definition["monthlyAnalysisMinutes"],
         "preparationMinutesThisMonth": round(float(preparation_minutes_used), 2),
         "watermark": watermark_for(selection),
         "plans": {name: value["label"] for name, value in PLANS.items()},

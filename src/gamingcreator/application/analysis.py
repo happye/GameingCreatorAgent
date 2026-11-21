@@ -85,6 +85,7 @@ class AnalysisPorts:
     asr_metadata: Callable[[AsrRequest], InvocationMetadata] | None = None
     # Reuse of identical vision windows (T17); None disables it.
     segment_cache: SegmentCache | None = None
+    admit: Callable[[str, MediaAsset], None] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -880,6 +881,8 @@ async def run_new_analysis(
     configuration = _run_configuration(prepared)
     config = configuration.analysis
     await ports.store.create_run(run_id, asset, configuration)
+    if ports.admit is not None:
+        ports.admit(run_id, asset)
     return await _run_pipeline(
         prepared,
         ports,
@@ -1014,6 +1017,9 @@ async def resume_analysis(
             raise AppError(
                 "storage.run_incomplete", "阶段检查点顺序无效。", ExitCode.STORAGE, run_id
             )
+    if ports.admit is not None:
+        ports.admit(run_id, stored.asset)
+    if window_pipeline:
         await store.prepare_resume(run_id)
         if prepared.window_failure_policy == POLICY and POLICY_STAGE not in completed_stages:
             identity = policy_hash(stored)

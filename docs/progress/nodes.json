@@ -445,9 +445,9 @@
    ]
   },
   "P050": {
-   "done": "Studio 可切换本地评估套餐，查看成片、准备额度和项目已完成分析的原片分钟。准备额度按受理月核对",
-   "todo": "实际分析额度、支付、订阅和签名许可证待交付",
-   "updated": "2026-11-20",
+   "done": "本机套餐显示成片、准备和分析用量；Free 的分析额度已用代号 Atom 新分析及续跑验证，单项目完成统计可单独查看",
+   "todo": "支付、订阅和签名许可证待交付",
+   "updated": "2026-11-21",
    "sprints": [
     "sprint-creator-plans"
    ]
@@ -1081,6 +1081,12 @@
     {
      "id": "P050-studio-usage",
      "name": "Studio 套餐与用量及受理月额度",
+     "status": "done",
+     "sprint": "sprint-creator-plans"
+    },
+    {
+     "id": "P050-analysis-quota",
+     "name": "本机分析分钟计量与准入",
      "status": "done",
      "sprint": "sprint-creator-plans"
     },

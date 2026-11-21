@@ -2,18 +2,29 @@
 
 import asyncio
 from dataclasses import replace
+from datetime import UTC, datetime
 from decimal import Decimal
+from functools import partial
 
 import pytest
 from test_analyze import RUN_ID, ScriptedAsr, asr_metadata, asr_result, build_bundle
 from test_analyze_v2 import CONFIG, WindowMedia, WindowVision, window_bundle
 
-from gamingcreator.application.analysis import AnalysisPorts, prepare_media, resume_analysis
+from gamingcreator.application.analysis import (
+    AnalysisPorts,
+    prepare_media,
+    resume_analysis,
+    run_new_analysis,
+)
 from gamingcreator.application.inputs import PreparedAnalyze
 from gamingcreator.application.providers import ProviderStatus
 from gamingcreator.application.storage import RunStatus, StageStatus
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.deepseek_vision import vision_prompt_fingerprint
+from gamingcreator.infrastructure.entitlement_usage import (
+    admit_workspace_analysis,
+    analysis_usage_this_month,
+)
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 
 
@@ -56,15 +67,85 @@ def test_preparation_is_pending_and_explicit_analysis_reuses_media_after_reopeni
         store = await SqliteTimelineStore.open(project)
         asr, vision = ScriptedAsr(asr_result(ProviderStatus.NO_AUDIO)), WindowVision()
         try:
+
+            def refuse(run_id, asset):
+                assert run_id == RUN_ID and asset == bundle.asset
+                raise AppError(
+                    "entitlement.analysis_minutes", "本月分析用量已满", ExitCode.BUDGET, run_id
+                )
+
+            with pytest.raises(AppError, match="分析用量"):
+                await resume_analysis(
+                    prepared(source, project, resume=True),
+                    store,
+                    project,
+                    AnalysisPorts(media, asr, vision, store, admit=refuse),
+                )
+            assert (await store.load_run(RUN_ID)).status == RunStatus.PENDING
+            assert await store.load_invocations(RUN_ID) == ()
+            assert await store.load_checkpoints(RUN_ID) == checkpoints
+            assert asr.calls == 0 and not vision.stages
             result = await resume_analysis(
                 prepared(source, project, resume=True),
                 store,
                 project,
-                AnalysisPorts(media, asr, vision, store, lambda request: asr_metadata()),
+                AnalysisPorts(
+                    media,
+                    asr,
+                    vision,
+                    store,
+                    lambda request: asr_metadata(),
+                    admit=partial(admit_workspace_analysis, tmp_path, project),
+                ),
             )
             assert result.event_count == 3 and media.calls == asr.calls == 1
             assert len(vision.stages) == 3
             assert (await store.load_run(RUN_ID)).status == RunStatus.COMPLETED
+            assert analysis_usage_this_month(
+                tmp_path / ".cache/workspace/creations", datetime.now(UTC).isoformat()
+            ) == (bundle.asset.duration_us, 1)
+            assert (
+                await resume_analysis(
+                    prepared(source, project, resume=True),
+                    store,
+                    project,
+                    AnalysisPorts(media, asr, vision, store, admit=refuse),
+                )
+                == result
+            )
+        finally:
+            await store.close()
+
+    asyncio.run(scenario())
+
+
+def test_new_analysis_denied_after_registration_keeps_pending_for_explicit_retry(tmp_path):
+    async def scenario():
+        bundle, project, source = window_bundle(tmp_path)
+        media = WindowMedia(bundle)
+        asr, vision = ScriptedAsr(asr_result(ProviderStatus.NO_AUDIO)), WindowVision()
+
+        def refuse(run_id, asset):
+            raise AppError(
+                "entitlement.analysis_minutes", "本月分析用量已满", ExitCode.BUDGET, run_id
+            )
+
+        store = await SqliteTimelineStore.open(project)
+        try:
+            with pytest.raises(AppError) as denied:
+                await run_new_analysis(
+                    prepared(source, project),
+                    AnalysisPorts(media, asr, vision, store, admit=refuse),
+                    bundle.asset,
+                    project,
+                    run_id=RUN_ID,
+                )
+            assert denied.value.run_id == RUN_ID
+            assert (await store.load_run(RUN_ID)).status == RunStatus.PENDING
+            assert (
+                await store.load_checkpoints(RUN_ID) == await store.load_invocations(RUN_ID) == ()
+            )
+            assert media.calls == asr.calls == 0 and not vision.stages
         finally:
             await store.close()
 
