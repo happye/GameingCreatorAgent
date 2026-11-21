@@ -852,7 +852,7 @@ window.PROGRESS_DATA = {
    "impl": "partial",
    "quality": "not_separately_assessed",
    "release": "not_released",
-   "remaining": "Mix settings, caption styling, overlay handoff, plus Final Cut/DaVinci/Premiere import and round-trip verification.",
+   "remaining": "Mix settings, caption styling, plus Final Cut/DaVinci/Premiere import, media relinking and round-trip verification.",
    "evidence": [
     "2026-11-01: FCPXML 1.9 and OTIO JSON export of saved revisions with source file URIs, frame-aligned rational times, speed time maps and crossfades as centred transitions with whole-frame trims so exported length equals the render; real 34-clip revision exported (299/30s); not import-verified in Final Cut/DaVinci/Premiere; no Premiere XML or audio/subtitle tracks",
     "docs/archive/sprints/sprint-t25-timeline-export-av-tracks.md",
@@ -863,10 +863,11 @@ window.PROGRESS_DATA = {
     "tests/test_studio_timeline_download_browser.py",
     "2026-11-21: Studio downloaded Premiere XML from saved Atom revision 3ce724c412be4aec846078f1fa0bbe4a. OpenTimelineIO FCP XML adapter reopened two audio tracks with dry BGM clips of 90, 90 and 60 frames, all referencing the registered source.",
     "2026-11-21: Studio downloaded FCPXML 1.9 and OTIO from manga gameplay revision 1b8115afc7c14f58bfe5f941de9b59a1 with local Chinese narration starting at frame 75 and seven dry BGM cuts spanning 600 frames. OpenTimelineIO read back the audio tracks, FCPXML passed the versioned DTD, and downloads with music omitted preserved the original audio and narration.",
-    "2026-11-21: Five captions from the same Comic Stars revision retained their sequence positions in native OTIO readback, FCPXML 1.9 caption elements and Premiere XML markers. The independent Studio SRT was decoded by FFprobe."
+    "2026-11-21: Five captions from the same Comic Stars revision retained their sequence positions in native OTIO readback, FCPXML 1.9 caption elements and Premiere XML markers. The independent Studio SRT was decoded by FFprobe.",
+    "2026-11-21: Studio downloaded a layer handoff ZIP twice for saved Atom revision ba4d582aaca7457786567cd0d3c3c501. Three 720x1280 ProRes 4444 clips were linked independently in all three timelines, with verified stacking, frame intervals, alpha and fades. Native OTIO readback and the FCPXML 1.9 DTD passed."
    ],
-   "done": "三种格式保留独立旁白和配乐、对齐成片字幕时钟并提供独立 SRT。漫画群星实测 OTIO 回读、FCPXML 1.9 校验及 Premiere 帧标记",
-   "todo": "补齐混音、字幕样式及图层交接，验证 Final Cut、DaVinci、Premiere 实际导入与往返",
+   "done": "三种格式保留独立音轨、字幕时钟和 SRT；图层交接包含三种时间线及透明 MOV，Atom 实测图层区间、顺序和淡入淡出",
+   "todo": "补齐混音和字幕样式，验证 Final Cut、DaVinci、Premiere 实际导入、媒体重链与往返",
    "updated": "2026-11-21",
    "sprints": [
     "sprint-timeline-export",
@@ -1679,6 +1680,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-premiere-narration-track"
     },
     {
+     "id": "P033-f",
+     "name": "透明文字和 PNG 图层交接包",
+     "status": "done",
+     "sprint": "sprint-premiere-narration-track"
+    },
+    {
      "id": "P029-a",
      "name": "Studio逐镜字幕编辑",
      "status": "done",
@@ -2415,7 +2422,7 @@ window.PROGRESS_DATA = {
   "[P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。",
   "[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)已通过，平台包可用命名路径保存到项目 `exports`。",
   "[广告配乐](docs/exec-plans/sprint-ad-rhythm-matching.md)、[团队品牌模板和配乐库](docs/exec-plans/sprint-enterprise-basics.md)已实拍出包。",
-  "[本机分析额度](docs/exec-plans/sprint-creator-plans.md)实测拦截。[专业时间线](docs/exec-plans/sprint-premiere-narration-track.md)已验证独立音轨及字幕定位。"
+  "[本机分析额度](docs/exec-plans/sprint-creator-plans.md)实测拦截。[专业时间线](docs/exec-plans/sprint-premiere-narration-track.md)已验证音轨、字幕和透明图层包。"
  ],
  "sprints": [
   {
@@ -3147,7 +3154,7 @@ window.PROGRESS_DATA = {
     "P033"
    ],
    "date": "2026-11-21",
-   "bytes": 12973
+   "bytes": 14554
   },
   {
    "file": "sprint-publication-assets",

@@ -175,14 +175,16 @@ def _fcpxml_caption_anchors(
     placed: Sequence[dict[str, Any]],
     frame: Fraction,
     captions: Sequence[ExportCaption],
+    first_lane: int = 1,
 ) -> None:
     positions = [item["offset"] for item in placed]
-    for lane, cues in enumerate(_caption_lanes(captions), 1):
-        role = "Subtitles" if lane == 1 else f"Subtitles {lane}"
-        for index, caption in enumerate(cues, 1):
+    for index, cues in enumerate(_caption_lanes(captions), 1):
+        lane = first_lane + index - 1
+        role = "Subtitles" if index == 1 else f"Subtitles {index}"
+        for cue_index, caption in enumerate(cues, 1):
             position, offset = _fcpxml_anchor(placed, positions, caption.start_frame, frame)
             duration = (caption.end_frame - caption.start_frame) * frame
-            style_id = f"caption-style-{lane}-{index}"
+            style_id = f"caption-style-{lane}-{cue_index}"
             anchors.setdefault(position, []).append(
                 f'              <caption lane="{lane}" offset="{_seconds(offset)}" start="0s" '
                 f'duration="{_seconds(duration)}" role="{role}?captionFormat=ITT.und">\n'
@@ -191,6 +193,49 @@ def _fcpxml_caption_anchors(
                 f'                <text-style-def id="{style_id}"><text-style/></text-style-def>\n'
                 "              </caption>"
             )
+
+
+@dataclass(frozen=True, slots=True)
+class ExportLayer:
+    """One full-canvas transparent video in the bundle, cut on the sequence clock."""
+
+    filename: str
+    start: int
+    end: int
+    width: int
+    height: int
+
+    @property
+    def url(self) -> str:
+        return f"layers/{self.filename}"
+
+    @property
+    def frames(self) -> int:
+        return self.end - self.start
+
+
+def _fcpxml_layers(
+    layers: Sequence[ExportLayer],
+    placed: Sequence[dict[str, Any]],
+    frame: Fraction,
+    assets: list[str],
+    anchors: dict[int, list[str]],
+) -> None:
+    positions = [item["offset"] for item in placed]
+    for lane, layer in enumerate(layers, 1):
+        asset_id = f"overlay-{lane}"
+        name = quoteattr(layer.filename)
+        duration = _seconds(layer.frames * frame)
+        assets.append(
+            f'    <asset id="{asset_id}" name={name} start="0s" duration="{duration}" '
+            'hasVideo="1" format="r1">'
+            f'<media-rep kind="original-media" src={quoteattr(layer.url)}/></asset>'
+        )
+        parent, offset = _fcpxml_anchor(placed, positions, layer.start, frame)
+        anchors.setdefault(parent, []).append(
+            f'              <asset-clip ref="{asset_id}" name={name} lane="{lane}" '
+            f'offset="{_seconds(offset)}" start="0s" duration="{duration}" srcEnable="video"/>'
+        )
 
 
 def _fcpxml_dry_audio(
@@ -272,6 +317,7 @@ def to_fcpxml(
     include_audio_track: bool = False,
     narration: ExportNarration | None = None,
     music: ExportMusic | None = None,
+    layers: Sequence[ExportLayer] = (),
 ) -> str:
     placed = layout(edl)
     fps = int(edl["fpsNumerator"])
@@ -294,7 +340,10 @@ def to_fcpxml(
         _dry_tracks(narration, music, fps, total_frames), placed, fps
     )
     assets.extend(dry_assets)
-    _fcpxml_caption_anchors(anchors, placed, frame, _normalize_captions(captions, total_frames))
+    _fcpxml_layers(layers, placed, frame, assets, anchors)
+    _fcpxml_caption_anchors(
+        anchors, placed, frame, _normalize_captions(captions, total_frames), len(layers) + 1
+    )
     spine = []
     for item in placed:
         row = item["row"]
@@ -464,6 +513,7 @@ def to_xmeml(
     include_audio_track: bool = False,
     narration: ExportNarration | None = None,
     music: ExportMusic | None = None,
+    layers: Sequence[ExportLayer] = (),
 ) -> str:
     """Final Cut Pro 7 XML (xmeml v4), which Premiere Pro often imports.
 
@@ -564,16 +614,42 @@ def to_xmeml(
             else "\n    <audio>" + tracks_xml + "</audio>"
         )
     marker_xml = ("\n" + "\n".join(markers)) if markers else ""
+    video_layers = "".join(
+        _xmeml_layer(layer, index, rate) for index, layer in enumerate(layers, 1)
+    )
+    canvas = ""
+    if layers:
+        first = layers[0]
+        canvas = (
+            f"<format><samplecharacteristics>{rate}<width>{first.width}</width>"
+            f"<height>{first.height}</height><pixelaspectratio>square</pixelaspectratio>"
+            "</samplecharacteristics></format>"
+        )
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE xmeml>\n<xmeml version="4">\n'
         f"  <sequence><name>{escape(name)}</name><duration>{total}</duration>{rate}\n"
-        "    <media><video><track>\n"
+        f"    <media><video>{canvas}<track>\n"
         + "\n".join(items)
-        + "\n    </track></video>"
+        + "\n    </track>"
+        + video_layers
+        + "</video>"
         + audio_xml
         + "</media>"
         + marker_xml
         + "\n  </sequence>\n</xmeml>\n"
+    )
+
+
+def _xmeml_layer(layer: ExportLayer, index: int, rate: str) -> str:
+    title = escape(layer.filename)
+    return (
+        f'<track><clipitem id="overlay-{index}"><name>{title}</name>{rate}'
+        f"<start>{layer.start}</start><end>{layer.end}</end><in>0</in><out>{layer.frames}</out>"
+        f"<duration>{layer.frames}</duration><alphatype>straight</alphatype>"
+        f'<file id="overlay-file-{index}"><name>{title}</name><pathurl>{escape(layer.url)}</pathurl>{rate}'
+        f"<duration>{layer.frames}</duration><media><video><samplecharacteristics>{rate}"
+        f"<width>{layer.width}</width><height>{layer.height}</height></samplecharacteristics>"
+        "<alphatype>straight</alphatype></video></media></file></clipitem></track>"
     )
 
 
@@ -739,6 +815,40 @@ def _otio_caption_track(captions: Sequence[ExportCaption], lane: int, fps: int) 
     }
 
 
+def _otio_layer(layer: ExportLayer, fps: int) -> dict[str, Any]:
+    duration = _range(Fraction(0), Fraction(layer.frames, fps), fps)
+    children = [_otio_gap(Fraction(layer.start, fps), fps)] if layer.start else []
+    children.append(
+        {
+            "OTIO_SCHEMA": "Clip.2",
+            "name": layer.filename,
+            "source_range": duration,
+            "media_references": {
+                "DEFAULT_MEDIA": {
+                    "OTIO_SCHEMA": "ExternalReference.1",
+                    "target_url": layer.url,
+                    "available_range": duration,
+                    "metadata": {},
+                }
+            },
+            "active_media_reference_key": "DEFAULT_MEDIA",
+            "effects": [],
+            "markers": [],
+            "metadata": {},
+        }
+    )
+    return {
+        "OTIO_SCHEMA": "Track.1",
+        "name": layer.filename,
+        "kind": "Video",
+        "children": children,
+        "source_range": None,
+        "effects": [],
+        "markers": [],
+        "metadata": {"gamingcreator": {"role": "overlay"}},
+    }
+
+
 def to_otio(
     edl: dict[str, Any],
     name: str,
@@ -746,6 +856,7 @@ def to_otio(
     include_audio_track: bool = False,
     narration: ExportNarration | None = None,
     music: ExportMusic | None = None,
+    layers: Sequence[ExportLayer] = (),
 ) -> str:
     placed = layout(edl)
     fps = int(edl["fpsNumerator"])
@@ -857,6 +968,7 @@ def to_otio(
     tracks.extend(
         _otio_dry_track(track, fps) for track in _dry_tracks(narration, music, fps, total)
     )
+    tracks.extend(_otio_layer(layer, fps) for layer in layers)
     caption_lanes = _caption_lanes(_normalize_captions(captions, total))
     tracks.extend(
         _otio_caption_track(cues, lane, fps) for lane, cues in enumerate(caption_lanes, 1)

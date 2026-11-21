@@ -931,12 +931,13 @@
                 "tests/test_studio_timeline_download_browser.py",
                 "2026-11-21: Studio downloaded Premiere XML from saved Atom revision 3ce724c412be4aec846078f1fa0bbe4a. OpenTimelineIO FCP XML adapter reopened two audio tracks with dry BGM clips of 90, 90 and 60 frames, all referencing the registered source.",
                 "2026-11-21: Studio downloaded FCPXML 1.9 and OTIO from manga gameplay revision 1b8115afc7c14f58bfe5f941de9b59a1 with local Chinese narration starting at frame 75 and seven dry BGM cuts spanning 600 frames. OpenTimelineIO read back the audio tracks, FCPXML passed the versioned DTD, and downloads with music omitted preserved the original audio and narration.",
-                "2026-11-21: Five captions from the same Comic Stars revision retained their sequence positions in native OTIO readback, FCPXML 1.9 caption elements and Premiere XML markers. The independent Studio SRT was decoded by FFprobe."
+                "2026-11-21: Five captions from the same Comic Stars revision retained their sequence positions in native OTIO readback, FCPXML 1.9 caption elements and Premiere XML markers. The independent Studio SRT was decoded by FFprobe.",
+                "2026-11-21: Studio downloaded a layer handoff ZIP twice for saved Atom revision ba4d582aaca7457786567cd0d3c3c501. Three 720x1280 ProRes 4444 clips were linked independently in all three timelines, with verified stacking, frame intervals, alpha and fades. Native OTIO readback and the FCPXML 1.9 DTD passed."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released",
             "implementation_status": "partial",
-            "remaining": "Mix settings, caption styling, overlay handoff, plus Final Cut/DaVinci/Premiere import and round-trip verification."
+            "remaining": "Mix settings, caption styling, plus Final Cut/DaVinci/Premiere import, media relinking and round-trip verification."
         },
         {
             "id": "P034",

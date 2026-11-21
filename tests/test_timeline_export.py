@@ -91,7 +91,10 @@ def test_http_export_from_saved_revision(revisions):
     jobs, root, _ = revisions
     child = jobs.submit("revision", payload(jobs, root))["jobId"]
     assert finish(jobs, child)["status"] == "completed"
+    from gamingcreator.ui.revision_jobs import load_chain
     from gamingcreator.ui.server import create_server
+
+    saved = load_chain(jobs, child, "hook-first", read_only=True)
 
     server = create_server("127.0.0.1", 0, jobs.repository)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -108,6 +111,28 @@ def test_http_export_from_saved_revision(revisions):
         error.value.close()
         with urllib.request.urlopen(base + "&format=otio") as response:
             assert json.loads(response.read())["OTIO_SCHEMA"] == "Timeline.1"
+        bundle_body = {
+            "projectId": saved.project_id,
+            "jobId": child,
+            "planId": "hook-first",
+            "expectedReceiptSha256": "0" * 64,
+            "size": "1280x720",
+            "includeMusic": True,
+        }
+        endpoint = f"http://127.0.0.1:{server.server_port}/api/creation/timeline-bundle"
+        headers = {"Content-Type": "application/json"}
+        request = urllib.request.Request(endpoint, json.dumps(bundle_body).encode(), headers)
+        with pytest.raises(urllib.error.HTTPError) as stale:
+            urllib.request.urlopen(request)
+        with stale.value as response:
+            assert response.code == 409
+        bundle_body["expectedReceiptSha256"] = saved.digest
+        request = urllib.request.Request(endpoint, json.dumps(bundle_body).encode(), headers)
+        with pytest.raises(urllib.error.HTTPError) as no_layers:
+            urllib.request.urlopen(request)
+        with no_layers.value as response:
+            assert response.code == 400 and "没有已保存的图层" in json.load(response)["message"]
+        assert not (jobs.root / "timeline-bundles").exists()
     finally:
         server.shutdown()
         server.server_close()

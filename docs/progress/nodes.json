@@ -270,8 +270,8 @@
    ]
   },
   "P033": {
-   "done": "三种格式保留独立旁白和配乐、对齐成片字幕时钟并提供独立 SRT。漫画群星实测 OTIO 回读、FCPXML 1.9 校验及 Premiere 帧标记",
-   "todo": "补齐混音、字幕样式及图层交接，验证 Final Cut、DaVinci、Premiere 实际导入与往返",
+   "done": "三种格式保留独立音轨、字幕时钟和 SRT；图层交接包含三种时间线及透明 MOV，Atom 实测图层区间、顺序和淡入淡出",
+   "todo": "补齐混音和字幕样式，验证 Final Cut、DaVinci、Premiere 实际导入、媒体重链与往返",
    "updated": "2026-11-21",
    "sprints": [
     "sprint-timeline-export",
@@ -725,6 +725,12 @@
     {
      "id": "P033-e",
      "name": "专业时间线字幕定位与独立 SRT",
+     "status": "done",
+     "sprint": "sprint-premiere-narration-track"
+    },
+    {
+     "id": "P033-f",
+     "name": "透明文字和 PNG 图层交接包",
      "status": "done",
      "sprint": "sprint-premiere-narration-track"
     },

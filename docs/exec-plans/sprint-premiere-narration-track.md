@@ -65,3 +65,11 @@ Studio 可从同一已保存修订下载三种时间线和 SRT。OTIO 用留白�
 漫画群星 20 秒修订 `1b8115afc7c14f58bfe5f941de9b59a1` 从 Studio 下载四份。旧 OTIO 原生回读的五句字幕均提前 75 帧，修正后起点依次为 75／156／261／332／432。OTIO 0.18.1 原生回读、FCPXML 1.9 DTD 与 Premiere 标记验证均复核了字幕文本及帧区间。FFprobe 读回 SRT 五句，首句 2.5 秒。独立音轨全部保留，原始素材和回执哈希未变。证据位于 `.cache/scratch/professional-captions-20261121/verified/`。
 
 85 帧构造案例覆盖 2× 变速、非整帧源入点、交叉淡化、字幕跨切点、重叠分轨与片尾裁切。FCPXML 通过 1.9 DTD，OTIO 原生回读保留对应区间。定向测试 43 项通过，包含旧转写中的 SRT 时间分隔符、保存修订的 SRT 及 Studio 下载入口。字幕交接中的样式、Final Cut／DaVinci／Premiere 的实际导入、混音与图层交接仍待验证。
+
+## 2026-11-21 透明图层交接包
+
+Studio 可为含已保存文字或 PNG 的修订下载 ZIP。每层生成独立的方像素、全画布 ProRes 4444 MOV，2026-11-21 的实现复用合成时的像素几何并保留淡入淡出。三种时间线按成片时钟引用 `layers/`，保留图层顺序和帧区间。包内有对应修订回执及成员 SHA256，有字幕时附 SRT。文本以已保存的栅格字样交接。原片、旁白、配乐引用本机媒体，交接时保留或重链文件。三款剪辑软件的实际导入和自动重链尚待核验。[FFmpeg ProRes 编码](https://www.ffmpeg.org/ffmpeg-codecs.html#ProRes) · [OTIO 文件引用](https://github.com/AcademySoftwareFoundation/OpenTimelineIO/blob/main/docs/tutorials/otio-filebundles.md)
+
+在隔离工作区两次下载《代号 Atom》修订 `ba4d582aaca7457786567cd0d3c3c501`。输出 720×1280、240 帧，三层区间为 `[0,240)`、`[60,180)`、`[60,180)`。中间 PNG 层的 12 帧淡入、12 帧淡出经 FFmpeg 逐点核对，透明边缘保持零 alpha。OTIO 0.18.1 原生回读、FCPXML 1.9 DTD 和 Premiere XML 结构均复核顺序和区间。两次下载的 ZIP 成员哈希一致，原片、图层素材和修订回执哈希未变，临时目录已回收。产物 `.cache/scratch/professional-layers-20261121/atom-layers.zip`，附 `evidence.json`。
+
+定向回归首轮 36 项通过，1 项新增测试引用了不存在的 fixture 字段。修正 fixture 后复测该 HTTP 用例与受画布修正影响的 3 项全部通过。Ruff、mypy 和 Studio JS 语法检查通过。

@@ -55,7 +55,6 @@ from gamingcreator.ui.revision_jobs import (
     resolve_audio,
     resolve_overrides,
     revision_receipt_schema,
-    revision_subtitles,
     save_revision,
 )
 
@@ -1598,75 +1597,9 @@ class CreationJobs:
         *,
         include_music: bool = False,
     ) -> tuple[bytes, str, str]:
-        import wave
+        from gamingcreator.ui.timeline_handoff import export_timeline
 
-        from gamingcreator.application.timeline_export import (
-            ExportMusic,
-            ExportNarration,
-            MusicTimelineError,
-            captions_from_cues,
-            to_fcpxml,
-            to_otio,
-            to_xmeml,
-        )
-        from gamingcreator.domain.creation_subtitles import serialize_srt
-
-        if fmt not in {"fcpxml", "otio", "xmeml", "srt"}:
-            raise fail("creation.input", "时间线格式只支持 fcpxml、otio、xmeml 或 srt。")
-        width, _, height = size.partition("x")
-        if not (width.isdecimal() and height.isdecimal()) or not all(
-            16 <= int(v) <= 3840 and int(v) % 2 == 0 for v in (width, height)
-        ):
-            raise fail("creation.input", "时间线尺寸须为 16–3840 之间的偶数，如 1280x720。")
-        try:
-            chain = load_chain(self, job_id, plan_id, read_only=True)
-        except (EOFError, wave.Error) as error:
-            raise ValueError("旁白 WAV 已损坏，请检查已保存的素材。") from error
-        name = f"gamingcreator-{job_id[:8]}"
-        try:
-            cues = revision_subtitles(chain, "sidecar")
-        except (KeyError, ValueError) as error:
-            raise fail("creation.input", "无法读取当前已保存版本的字幕。") from error
-        if fmt == "srt":
-            srt = serialize_srt(cues)
-            if not srt:
-                raise fail("creation.input", "当前已保存版本没有可导出的字幕。")
-            return srt.encode("utf-8"), f"{name}.srt", "application/x-subrip"
-        captions = captions_from_cues(cues, int(chain.edl["fpsNumerator"]))
-        narration = None
-        if chain.narration is not None and (asset := chain.narration_asset) is not None:
-            narration = ExportNarration(
-                str(asset.wav_path),
-                chain.narration.start_frame,
-                asset.sample_rate,
-                asset.channels,
-                asset.sample_width,
-                asset.sample_count,
-            )
-        music = None
-        if include_music and (selection := chain.audio_mix.bgm) is not None:
-            library = MusicLibrary(self.repository)
-            track = library.resolve(selection.track_id, selection.track_receipt_sha256)
-            try:
-                length, sample_rate, channels, depth = asyncio.run(
-                    library.probe_audio_stream(track)
-                )
-            except ValueError as error:
-                raise fail("creation.input", str(error)) from error
-            music = ExportMusic(str(track.path), track.title, length, sample_rate, channels, depth)
-        try:
-            if fmt == "fcpxml":
-                body = to_fcpxml(
-                    chain.edl, name, int(width), int(height), captions, True, narration, music
-                )
-                return body.encode("utf-8"), f"{name}.fcpxml", "application/xml"
-            if fmt == "otio":
-                body = to_otio(chain.edl, name, captions, True, narration, music)
-                return body.encode("utf-8"), f"{name}.otio", "application/json"
-            body = to_xmeml(chain.edl, name, captions, True, narration, music)
-        except MusicTimelineError as error:
-            raise fail("creation.input", str(error)) from error
-        return body.encode("utf-8"), f"{name}-premiere.xml", "application/xml"
+        return export_timeline(self, job_id, plan_id, fmt, size, include_music)
 
     def narration_script(self, job_id: str, plan_id: str) -> dict[str, object]:
         from gamingcreator.application.knowledge import search

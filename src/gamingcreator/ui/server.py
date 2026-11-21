@@ -5,6 +5,7 @@ import html
 import json
 import mimetypes
 import os
+import shutil
 import socket
 import sys
 from collections.abc import Sequence
@@ -626,6 +627,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     "/api/creation/publication-feedback",
                     "/api/creation/packages",
                     "/api/creation/package-export",
+                    "/api/creation/timeline-bundle",
                     "/api/creation/narrations",
                     "/api/creation/narration-cancel",
                     "/api/creation/subtitle-preview",
@@ -911,6 +913,39 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(
                     200, package_jobs.export(self.creation_jobs, value["projectId"], value["jobId"])
                 )
+                return
+            if path == "/api/creation/timeline-bundle":
+                from gamingcreator.ui.timeline_handoff import timeline_bundle
+
+                fields = {"projectId", "jobId", "planId", "expectedReceiptSha256", "size"}
+                if (
+                    urlparse(self.path).query
+                    or not isinstance(value, dict)
+                    or set(value) != fields | {"includeMusic"}
+                    or any(not isinstance(value[key], str) or not value[key] for key in fields)
+                    or type(value["includeMusic"]) is not bool
+                ):
+                    raise ValueError("Expected saved timeline and bundle settings.")
+                self._require("timelineExport")
+                with (
+                    timeline_bundle(
+                        self.creation_jobs,
+                        value["projectId"],
+                        value["jobId"],
+                        value["planId"],
+                        value["expectedReceiptSha256"],
+                        value["size"],
+                        value["includeMusic"],
+                    ) as (archive, filename),
+                    archive.open("rb") as handle,
+                ):
+                    self._headers(200, archive.stat().st_size, "application/zip")
+                    self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+                    self.end_headers()
+                    try:
+                        shutil.copyfileobj(handle, self.wfile, length=1024**2)
+                    except (ConnectionError, TimeoutError):
+                        return
                 return
             if batch_route is not None:
                 if urlparse(self.path).query:

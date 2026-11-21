@@ -375,6 +375,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     const timelineView = [project, editing.base?.jobId, editing.base?.planId, size, adoptionGuard.current.generation, timelineReason];
     const timelineSelection = JSON.stringify(timelineView.slice(0, 3));
     const hasTimelineMusic = !!editing.audio?.mix?.bgm;
+    const hasTimelineLayers = !!editing.overlays?.length && !!editing.editor?.expectedParentReceiptSha256;
     const includeTimelineMusic = hasTimelineMusic && timelineWithoutMusic !== timelineSelection;
     const timelineGuard = useRef({view: timelineView, generation: 0});
     if (timelineView.some((value, index) => value !== timelineGuard.current.view[index])) {
@@ -390,9 +391,14 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         const base = editing.base;
         setTimelineBusy(true); setTimelineMessage("");
         try {
-            const query = new URLSearchParams({planId: base.planId || planId, format, size: size.replace(",", "x")});
+            const selectedSize = size.replace(",", "x");
+            const selectedPlan = base.planId || planId;
+            const query = new URLSearchParams({planId: selectedPlan, format, size: selectedSize});
             if (format !== "srt" && includeTimelineMusic) query.set("music", "include");
-            const response = await fetch(`/api/creation/jobs/${encodeURIComponent(base.jobId)}/timeline?${query}`, {signal: controller.signal});
+            const response = format === "layers"
+                ? await fetch("/api/creation/timeline-bundle", {method: "POST", headers: {"Content-Type": "application/json"}, signal: controller.signal, body: JSON.stringify({projectId: project, jobId: base.jobId, planId: selectedPlan,
+                    expectedReceiptSha256: editing.editor.expectedParentReceiptSha256, size: selectedSize, includeMusic: includeTimelineMusic})})
+                : await fetch(`/api/creation/jobs/${encodeURIComponent(base.jobId)}/timeline?${query}`, {signal: controller.signal});
             if (!response.ok) {
                 let detail; try { detail = await response.json(); } catch { /* HTTP status remains useful. */ }
                 throw new Error(detail?.error?.message || detail?.message || `时间线下载失败（${response.status}）`);
@@ -400,13 +406,13 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
             const blob = await response.blob();
             if (!current()) return;
             const url = URL.createObjectURL(blob), link = document.createElement("a");
-            const suffix = (format === "xmeml" ? "-premiere" : "") +
+            const suffix = format === "layers" ? "-layers.zip" : (format === "xmeml" ? "-premiere" : "") +
                 (format !== "srt" && hasTimelineMusic && !includeTimelineMusic ? "-no-music" : "") +
                 (format === "xmeml" ? ".xml" : `.${format}`);
             link.href = url; link.download = `gamingcreator-${base.jobId.slice(0, 8)}${suffix}`;
             document.body.append(link); link.click(); link.remove();
             setTimeout(() => URL.revokeObjectURL(url), 0);
-            setTimelineMessage(format === "srt" ? "字幕 SRT 已下载。" : "时间线已下载，请在剪辑软件中复核。");
+            setTimelineMessage(format === "layers" ? "图层交接包已下载。" : format === "srt" ? "字幕 SRT 已下载。" : "时间线已下载，请在剪辑软件中复核。");
         } catch (error) { if (current()) setTimelineMessage(error.message); }
         finally { if (timelineWork.current === controller) { timelineWork.current = null; setTimelineBusy(false); } }
     };
@@ -587,6 +593,8 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     <p class="hint">三种格式均可交接镜头、源音和已保存的旁白与配乐。配乐按整帧循环。Premiere XML 中的字幕是定位标记，可同时下载 SRT 交接字幕轨。剪辑软件中的导入和混音需复核。</p>
                     ${hasTimelineMusic ? html`<label class="check"><input type="checkbox" checked=${includeTimelineMusic} disabled=${!!timelineReason || timelineBusy} onChange=${(event) => setTimelineWithoutMusic(event.currentTarget.checked ? "" : timelineSelection)} />包含已保存的配乐</label>` : null}
                     <div class="actions-row">${[["fcpxml", "下载 FCPXML"], ["otio", "下载 OTIO"], ["xmeml", "下载 Premiere XML"], ["srt", "下载字幕 SRT"]].map(([format, label]) => html`<button class="btn ghost" disabled=${!!timelineReason || timelineBusy} title=${timelineReason || "下载已保存版本"} onClick=${() => downloadTimeline(format)}>${label}</button>`)}</div>
+                    ${hasTimelineLayers ? html`<button class="btn ghost" disabled=${!!timelineReason || timelineBusy} onClick=${() => downloadTimeline("layers")}>下载图层交接包</button>
+                        <p class="hint">ZIP 包含三种时间线和每层透明 MOV。解压后如需重链，请选择 layers 文件夹。文字图层可移动和裁切，字样保存在透明素材中。</p>` : null}
                     <p class="hint" role="status" aria-label="时间线下载状态">${timelineReason || timelineMessage || (timelineBusy ? "正在下载…" : "下载当前已保存版本")}</p>
                 </div>
                 <div class="field">

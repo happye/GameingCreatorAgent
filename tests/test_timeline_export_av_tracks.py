@@ -12,6 +12,7 @@ from test_timeline_export import EDL
 
 from gamingcreator.application.timeline_export import (
     ExportCaption,
+    ExportLayer,
     ExportMusic,
     ExportNarration,
     captions_from_cues,
@@ -120,6 +121,54 @@ def test_xmeml_best_effort_audio_track_and_caption_markers() -> None:
     plain = ElementTree.fromstring(to_xmeml(EDL, "plain"))
     assert plain.find("./sequence/media/audio") is None
     assert plain.findall("./sequence/marker") == []
+
+
+def test_layer_bundle_documents_keep_relative_assets_stacking_and_clock() -> None:
+    layers = (
+        ExportLayer("layer-01.mov", 48, 76, 1280, 720),
+        ExportLayer("layer-02.mov", 58, 100, 1280, 720),
+    )
+    subtitle = (ExportCaption(59, 70, "字幕在图层上方"),)
+    fcpxml = ElementTree.fromstring(
+        to_fcpxml(EDL, "layers", 1280, 720, captions=subtitle, layers=layers)
+    )
+    assert [
+        element.get("src")
+        for element in fcpxml.findall("./resources/asset[@id='overlay-1']/media-rep")
+    ] == ["layers/layer-01.mov"]
+    stack = []
+    for parent in fcpxml.find(".//sequence/spine"):
+        for clip in parent.findall("asset-clip[@srcEnable='video']"):
+            start = Fraction(clip.get("offset")[:-1]) - Fraction(parent.get("start")[:-1])
+            start += Fraction(parent.get("offset")[:-1])
+            stack.append((clip.get("lane"), start * 30, Fraction(clip.get("duration")[:-1]) * 30))
+    assert stack == [("1", 48, 28), ("2", 58, 42)]
+    assert fcpxml.find(".//caption").get("lane") == "3"
+    assert fcpxml.find(".//spine/clip/asset-clip/timeMap") is not None
+
+    premiere = ElementTree.fromstring(to_xmeml(EDL, "layers", layers=layers))
+    canvas = premiere.find(".//sequence/media/video/format/samplecharacteristics")
+    assert (canvas.findtext("width"), canvas.findtext("height")) == ("1280", "720")
+    original, *extras = premiere.findall(".//sequence/media/video/track")
+    assert len(original.findall("clipitem")) == 3
+    for track, layer in zip(extras, layers, strict=True):
+        clip = track.find("clipitem")
+        assert (int(clip.findtext("start")), int(clip.findtext("end"))) == (layer.start, layer.end)
+        assert clip.findtext("alphatype") == "straight"
+        assert clip.findtext("file/pathurl") == layer.url
+
+    timeline = json.loads(to_otio(EDL, "layers", captions=subtitle, layers=layers))
+    assert [track["name"] for track in timeline["tracks"]["children"]] == [
+        "V1",
+        "layer-01.mov",
+        "layer-02.mov",
+        "Captions",
+    ]
+    for track, layer in zip(timeline["tracks"]["children"][1:3], layers, strict=True):
+        gap, clip = track["children"]
+        assert gap["source_range"]["duration"]["value"] == layer.start
+        assert clip["source_range"]["duration"]["value"] == layer.frames
+        assert clip["media_references"]["DEFAULT_MEDIA"]["target_url"] == layer.url
 
 
 def test_xmeml_music_loops_on_independent_track_to_rendered_end(tmp_path: Path) -> None:
