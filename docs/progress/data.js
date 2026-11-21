@@ -407,11 +407,12 @@ window.PROGRESS_DATA = {
     "2026-11-01: local directory batch import for txt/md (optional screenshots/PDF via existing read_rule_source OCR); CLI import-knowledge, POST /api/knowledge-import, creation-page folder path; source labels include 目录导入 + filename; no network scraping; duplicate game+text skipped; auto planner citation and web crawl still open",
     "docs/exec-plans/sprint-game-knowledge.md",
     "docs/exec-plans/sprint-studio-narration-revision.md",
-    "2026-11-08: Studio manages local knowledge and imports real PNG/PDF with OCR source warnings. Matched current knowledge is frozen into v2 planning requests/quotes and adopted citations; empty context retains v1. Fake transport and baseline-v1 disk compatibility verified; real AI and human quality remain unassessed."
+    "2026-11-08: Studio manages local knowledge and imports real PNG/PDF with OCR source warnings. Matched current knowledge is frozen into v2 planning requests/quotes and adopted citations; empty context retains v1. Fake transport and baseline-v1 disk compatibility verified; real AI and human quality remain unassessed.",
+    "2026-11-21: Studio reads public HTTPS pages on request and saves a selected continuous excerpt with the final URL, fetch time and hashes. Verified a developer announcement and publisher listing from the real Manga Allstar project, including redirect provenance, immutable prior version and current planning lookup."
    ],
-   "done": "本机知识条目带出处和版本历史，可导入文本/目录/PNG/PDF，Studio策划引用；同游戏两版补丁说明逐行对比（已合main）",
-   "todo": "联网抓取未做；真实AI引用与人评未做",
-   "updated": "2026-11-09",
+   "done": "知识条目带出处和版本历史，可导入本机文本/目录/PNG/PDF、公开 HTTPS 网页摘录；接入 Studio 策划检索和同游戏版本对比",
+   "todo": "脚本生成正文的网页、登录页面、真实 AI 引用与人评待验",
+   "updated": "2026-11-21",
    "sprints": [
     "sprint-game-knowledge",
     "sprint-studio-narration-revision",
@@ -1741,8 +1742,8 @@ window.PROGRESS_DATA = {
    "name": "智能与七模式",
    "goal": "自然语言改片、规则/知识引用、七种视频模式",
    "status": "active",
-   "done": "规则版一句话改镜头、活动规则离线提取并填需求、知识版本/出处进入策划与旁白；七模式均有真实出片+包；P018版本对比已实现",
-   "todo": "P018批次完整门禁未绿未合main；开放语义理解、八维评分画面维度、联网抓取未做",
+   "done": "规则版一句话改镜头；活动规则离线提取并填需求；知识出处进入策划与旁白，支持版本对比和公开网页摘录；七模式均有真实出片和包",
+   "todo": "开放语义理解、八维评分画面维度、脚本渲染网页与实际引用质量待验证",
    "features": [
     "P018",
     "P020",
@@ -1892,6 +1893,12 @@ window.PROGRESS_DATA = {
      "name": "补丁说明版本对比（当前）",
      "status": "done",
      "sprint": "sprint-knowledge-version-compare"
+    },
+    {
+     "id": "P018-web",
+     "name": "公开网页摘录与出处",
+     "status": "done",
+     "sprint": "sprint-game-knowledge"
     },
     {
      "id": "P041",
@@ -2418,7 +2425,7 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "Grok A01–F16 已集成，定向 99/44/3 通过，TD030 解决。代理预览、空间盘点、OCR、方案对照、逐词字幕和多轨已接入。见 [Grok 集成](docs/exec-plans/sprint-grok-repair-integration.md)。",
+  "[P018 游戏知识](docs/exec-plans/sprint-game-knowledge.md)实测公开网页摘录、出处与历史版本。[Grok A01–F16](docs/exec-plans/sprint-grok-repair-integration.md)已集成，TD030 解决。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "[抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。",
   "创作助手已实测换镜、删裁、变速、换序和[多段插入](docs/exec-plans/sprint-ai-multiple-insertions.md)。[旁白和图层随镜迁移](docs/exec-plans/sprint-ai-companion-fit.md)实测重开、成片和 B 站包。",
@@ -2870,7 +2877,7 @@ window.PROGRESS_DATA = {
     "P018"
    ],
    "date": "2026-11-08",
-   "bytes": 6753
+   "bytes": 8078
   },
   {
    "file": "sprint-grok-repair-integration",

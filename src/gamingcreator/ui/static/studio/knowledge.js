@@ -1,6 +1,6 @@
-// Local game knowledge panel for Studio sound inspector. Uses existing /api/knowledge only.
+// Local game knowledge panel for Studio sound inspector.
 import {h} from "../vendor/preact.module.js";
-import {useEffect, useRef, useState} from "../vendor/hooks.module.js";
+import {useEffect, useLayoutEffect, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import {api, copyText} from "./api.js";
 
@@ -30,6 +30,64 @@ const toBase64 = async (file) => {
     for (let i = 0; i < bytes.length; i += 32768) binary += String.fromCharCode(...bytes.subarray(i, i + 32768));
     return btoa(binary);
 };
+
+function httpsUrl(value) {
+    if (typeof value !== "string" || !value.trim()) return null;
+    try {
+        const url = new URL(value);
+        return url.protocol === "https:" && !url.username && !url.password ? url.href : null;
+    } catch { return null; }
+}
+
+function useKnowledgeWeb(project, game) {
+    const [url, setUrl] = useState("");
+    const [result, setResult] = useState(null);
+    const [text, setText] = useState("");
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState("");
+    const pending = useRef(null);
+    const scope = JSON.stringify([project, game]);
+    const latest = useRef(scope);
+    latest.current = scope;
+    const reset = (nextUrl = "") => {
+        pending.current?.abort(); pending.current = null;
+        setUrl(nextUrl); setResult(null); setText(""); setBusy(false); setError("");
+    };
+    useLayoutEffect(() => {
+        reset();
+        return () => { pending.current?.abort(); pending.current = null; };
+    }, [scope]);
+    const read = async () => {
+        if (pending.current || latest.current !== scope) return;
+        const target = url.trim();
+        reset(url);
+        if (!game || codepoints(game) > LIMITS.game) { setError("请先填写有效游戏名。"); return; }
+        if (!httpsUrl(target)) { setError("请填写公开 HTTPS 网页 URL。"); return; }
+        const controller = new AbortController();
+        pending.current = controller; setBusy(true);
+        const current = () => pending.current === controller && !controller.signal.aborted && latest.current === scope;
+        try {
+            const data = await api("/api/knowledge-web-preview", {}, {signal: controller.signal, body: {game, url: target}});
+            if (!current()) return;
+            setResult({scope, data}); setText(data.text);
+        } catch (reason) {
+            if (current()) setError(reason.message);
+        } finally {
+            if (current()) { pending.current = null; setBusy(false); }
+        }
+    };
+    return {url, preview: result?.scope === scope ? result.data : null, text, busy, error, reset, read, setText};
+}
+
+function WebSourceDetails({source, link = false}) {
+    const href = httpsUrl(source?.url);
+    if (!href) return null;
+    return html`<div class="field" style=${{overflowWrap: "anywhere"}}>
+        <div class="k">网页来源</div>
+        <div class="v">${link ? html`<a href=${href} target="_blank" rel="noopener noreferrer">${source.url}</a>` : source.url}</div>
+        ${source.retrievedAt && html`<p class="hint">读取时间 ${source.retrievedAt}</p>`}
+    </div>`;
+}
 
 function KnowledgeComparison({value, onOpen}) {
     const [showEqual, setShowEqual] = useState(false);
@@ -73,7 +131,7 @@ export function KnowledgePanel({project, game}) {
     const [comparison, setComparison] = useState(null);
     const [comparing, setComparing] = useState(false);
     const [compareNote, setCompareNote] = useState("");
-    const [mode, setMode] = useState("text"); // text | file
+    const [mode, setMode] = useState("text"); // text | file | web
     const [title, setTitle] = useState("");
     const [text, setText] = useState("");
     const [sourceKind, setSourceKind] = useState("official");
@@ -105,6 +163,9 @@ export function KnowledgePanel({project, game}) {
     const panelEpoch = useRef(0);
     const mounted = useRef(true);
     const fileInputRef = useRef(null);
+    const excerptRef = useRef(null);
+    const web = useKnowledgeWeb(project, gameName);
+    const effectiveTitle = title.trim() || (mode === "web" ? web.preview?.title?.trim() || "" : "");
 
     useEffect(() => () => {
         mounted.current = false;
@@ -210,22 +271,27 @@ export function KnowledgePanel({project, game}) {
     const validateForm = () => {
         if (!gameName) return "请先在已加载方案中填写游戏名。";
         if (codepoints(gameName) > LIMITS.game) return `游戏名超过 ${LIMITS.game} 字。`;
-        const t = title.trim();
+        const t = effectiveTitle;
         if (!t) return "请填写标题。";
         if (codepoints(t) > LIMITS.title) return `标题超过 ${LIMITS.title} 字。`;
         if (!SOURCE_KINDS.some((row) => row.value === sourceKind)) return "来源类型无效。";
-        const label = sourceLabel.trim();
-        if (!label) return "请填写来源说明。";
-        if (codepoints(label) > LIMITS.sourceLabel) return `来源说明超过 ${LIMITS.sourceLabel} 字。`;
-        if (mode === "text") {
-            if (!text.trim()) return "请填写正文。";
-            if (codepoints(text) > LIMITS.text) return `正文超过 ${LIMITS.text} 字。`;
-        } else {
+        if (mode !== "web") {
+            const label = sourceLabel.trim();
+            if (!label) return "请填写来源说明。";
+            if (codepoints(label) > LIMITS.sourceLabel) return `来源说明超过 ${LIMITS.sourceLabel} 字。`;
+        }
+        if (mode === "file") {
             if (!file) return "请选择本地文件。";
             if (file.size <= 0) return "文件不能为空（0 字节）。";
             if (file.size > FILE_MAX) return "文件不能超过 10 MiB。";
             const ext = (file.name.split(".").pop() || "").toLowerCase();
             if (!FILE_EXT.has(ext)) return "仅支持 txt/md/html/htm/png/jpg/jpeg/bmp/pdf。";
+        } else {
+            const body = mode === "web" ? web.text : text;
+            if (mode === "web" && !web.preview) return "请先读取公开网页。";
+            if (!body.trim()) return "请填写正文。";
+            if (codepoints(body) > LIMITS.text) return `正文超过 ${LIMITS.text} 字。`;
+            if (mode === "web" && !web.preview.text.includes(body.trim())) return "请选择网页中的一段连续原文作为摘录。";
         }
         return "";
     };
@@ -236,8 +302,27 @@ export function KnowledgePanel({project, game}) {
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
+    const changeMode = (next) => {
+        web.reset();
+        setMode(next);
+        if (next === "file") setText("");
+        else clearNativeFile();
+        setFormError("");
+    };
+
+    const keepExcerpt = () => {
+        const field = excerptRef.current;
+        if (!field || field.selectionStart === field.selectionEnd) {
+            setFormError("请先在正文中选中一段连续原文。");
+            return;
+        }
+        web.setText(field.value.slice(field.selectionStart, field.selectionEnd));
+        setFormError("");
+    };
+
     const save = async (event) => {
         event.preventDefault();
+        if (saving) return;
         const err = validateForm();
         if (err) {
             setFormError(err);
@@ -253,12 +338,15 @@ export function KnowledgePanel({project, game}) {
         try {
             const body = {
                 game: gameAtStart,
-                title: title.trim(),
+                title: effectiveTitle,
                 sourceKind,
-                sourceLabel: sourceLabel.trim(),
             };
+            if (mode !== "web") body.sourceLabel = sourceLabel.trim();
             if (replaces) body.replaces = replaces;
-            if (mode === "text") {
+            if (mode === "web") {
+                body.text = web.text.trim();
+                body.webPreviewId = web.preview.previewId;
+            } else if (mode === "text") {
                 body.text = text;
             } else {
                 body.fileName = keptFile.name;
@@ -274,6 +362,7 @@ export function KnowledgePanel({project, game}) {
             setSaveNote(`已保存「${saved.title}」（${saved.entryId}）`);
             setTitle("");
             setText("");
+            web.reset();
             // R02: clear file state and native input so the same file can be re-selected.
             clearNativeFile();
             setReplaces("");
@@ -332,7 +421,9 @@ export function KnowledgePanel({project, game}) {
         setText(entry.text || "");
         setSourceKind(entry.source?.kind || "official");
         setSourceLabel(entry.source?.label || "");
-        setMode("text");
+        const originalUrl = httpsUrl(entry.web?.url);
+        setMode(originalUrl ? "web" : "text");
+        web.reset(originalUrl || "");
         clearNativeFile();
         setFormError("");
         setSaveNote(`正在修改「${entry.title}」，保存将生成新版本。`);
@@ -344,6 +435,7 @@ export function KnowledgePanel({project, game}) {
         setReplaces("");
         setTitle("");
         setText("");
+        web.reset();
         clearNativeFile();
         setFormError("");
         setSaveNote("");
@@ -490,6 +582,7 @@ export function KnowledgePanel({project, game}) {
             <div class="field"><div class="k">标题</div><div class="v">${viewing.title}</div></div>
             <div class="field"><div class="k">正文</div><div class="v">${viewing.text}</div></div>
             <div class="field"><div class="k">来源</div><div class="v">${sourceLine(viewing)}</div></div>
+            <${WebSourceDetails} source=${viewing.web} link=${true} />
             <div class="field"><div class="k">创建时间</div><div class="v">${viewing.createdAt || ""}</div></div>
             <div class="field"><div class="k">条目 ID</div><div class="v" style=${{overflowWrap: "anywhere"}}>${viewing.entryId}</div></div>
             <div class="actions-row">
@@ -521,15 +614,30 @@ export function KnowledgePanel({project, game}) {
             <div class="k">${editingCurrent ? "修改并保存新版本" : "新增知识"}</div>
             <div class="actions-row" role="group" aria-label="知识输入模式">
                 <label class="check"><input type="radio" name="knowledge-mode" checked=${mode === "text"} disabled=${saving}
-                    onChange=${() => { setMode("text"); clearNativeFile(); setFormError(""); }} /> 文本</label>
+                    onChange=${() => changeMode("text")} /> 文本</label>
                 <label class="check"><input type="radio" name="knowledge-mode" checked=${mode === "file"} disabled=${saving || editingCurrent}
-                    onChange=${() => { setMode("file"); setText(""); setFormError(""); }} /> 本地文件</label>
+                    onChange=${() => changeMode("file")} /> 本地文件</label>
+                <label class="check"><input type="radio" name="knowledge-mode" checked=${mode === "web"} disabled=${saving}
+                    onChange=${() => changeMode("web")} /> 公开网页</label>
             </div>
-            <label class="form-row">标题<input class="input" value=${title} disabled=${saving} aria-label="知识标题"
+            ${mode === "web" && html`<div class="field">
+                <label class="form-row">公开网页 URL<input class="input" value=${web.url} disabled=${saving} placeholder="https://"
+                    onInput=${e => { web.reset(e.currentTarget.value); setFormError(""); }} /></label>
+                <button type="button" class="btn ghost" disabled=${saving || web.busy || !web.url.trim()}
+                    onClick=${() => { setFormError(""); void web.read(); }}>读取公开网页</button>
+                ${web.busy && html`<p class="note" role="status">正在读取网页…</p>`}
+                ${web.error && html`<p class="note warn" role="alert">${web.error}</p>`}
+                <${WebSourceDetails} source=${web.preview} />
+                ${web.preview?.truncated && html`<p class="hint">网页预览已截断，可摘录当前显示的部分。</p>`}
+            </div>`}
+            <label class="form-row">标题<input class="input" value=${title || (mode === "web" ? effectiveTitle : "")} disabled=${saving} aria-label="知识标题"
                 onInput=${(e) => setTitle(e.currentTarget.value)} /></label>
-            ${mode === "text"
-                ? html`<label class="form-row">正文<textarea class="input" rows="5" value=${text} disabled=${saving} aria-label="知识正文"
-                    onInput=${(e) => setText(e.currentTarget.value)}></textarea></label>`
+            ${mode !== "file"
+                ? html`<label class="form-row">正文<textarea class="input" rows="5" ref=${mode === "web" ? excerptRef : null}
+                    value=${mode === "web" ? web.text : text} disabled=${saving || (mode === "web" && !web.preview)} aria-label="知识正文"
+                    onInput=${(e) => { (mode === "web" ? web.setText : setText)(e.currentTarget.value); setFormError(""); }}></textarea></label>
+                    ${mode === "web" && web.preview && html`<p class="hint">可删去首尾或选中一段连续原文。自己的说明可写在单独条目中。</p>
+                    <button type="button" class="btn ghost" disabled=${saving} onClick=${keepExcerpt}>只保留所选原文</button>`}`
                 : html`<label class="form-row">本地文件<input key=${fileInputKey} ref=${fileInputRef} type="file" disabled=${saving} aria-label="知识本地文件"
                     accept=".txt,.md,.html,.htm,.png,.jpg,.jpeg,.bmp,.pdf"
                     onChange=${(e) => { setFile(e.currentTarget.files?.[0] || null); setFormError(""); }} /></label>
@@ -538,11 +646,11 @@ export function KnowledgePanel({project, game}) {
                 onChange=${(e) => setSourceKind(e.currentTarget.value)}>
                 ${SOURCE_KINDS.map((row) => html`<option value=${row.value}>${row.label}</option>`)}
             </select></label>
-            <label class="form-row">来源说明<input class="input" value=${sourceLabel} disabled=${saving} aria-label="知识来源说明"
-                onInput=${(e) => setSourceLabel(e.currentTarget.value)} /></label>
+            ${mode !== "web" && html`<label class="form-row">来源说明<input class="input" value=${sourceLabel} disabled=${saving} aria-label="知识来源说明"
+                onInput=${(e) => setSourceLabel(e.currentTarget.value)} /></label>`}
             ${formError && html`<p class="note warn" role="alert">${formError}</p>`}
             <div class="actions-row">
-                <button type="submit" class="btn" disabled=${saving}>${saving ? "正在保存…" : editingCurrent ? "保存新版本" : "保存知识"}</button>
+                <button type="submit" class="btn" disabled=${saving || (mode === "web" && !web.preview)}>${saving ? "正在保存…" : editingCurrent ? "保存新版本" : "保存知识"}</button>
                 ${editingCurrent && html`<button type="button" class="btn ghost" disabled=${saving} onClick=${cancelEdit}>取消修改</button>`}
             </div>
             <p class="note" role="status" aria-label="知识保存状态">${saveNote}</p>

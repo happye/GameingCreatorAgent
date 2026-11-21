@@ -114,6 +114,46 @@ def test_knowledge_js_asset_and_collapsed(studio_knowledge):
     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1")
 
 
+def test_web_preview_requires_explicit_read_and_saves_source(studio_knowledge, monkeypatch):
+    from gamingcreator.ui import knowledge_web
+
+    page, expect = studio_knowledge.page, studio_knowledge.expect
+    url = "https://example.com/patch"
+    monkeypatch.setattr(
+        knowledge_web,
+        "read_public_page",
+        lambda _url: {
+            "url": url,
+            "title": "双方登场",
+            "text": "前言\n武道会单人对局\n说明结束",
+            "retrievedAt": "2026-11-21T12:00:00+00:00",
+            "responseSha256": "a" * 64,
+        },
+    )
+    panel = page.locator(".knowledge-panel")
+    before = len(studio_knowledge.posts)
+    panel.get_by_role("radio", name="公开网页", exact=True).check()
+    panel.get_by_label("公开网页 URL").fill(url)
+    expect(panel.get_by_role("button", name="保存知识", exact=True)).to_be_disabled()
+    assert len(studio_knowledge.posts) == before
+    panel.get_by_role("button", name="读取公开网页", exact=True).click()
+    excerpt = panel.get_by_label("知识正文")
+    expect(excerpt).to_have_value("前言\n武道会单人对局\n说明结束")
+    excerpt.fill("武道会单人对局")
+    panel.get_by_role("button", name="保存知识", exact=True).click()
+    expect(panel.get_by_label("知识保存状态")).to_contain_text("已保存")
+    assert [item.rsplit("/", 1)[-1] for item in studio_knowledge.posts[before:]] == [
+        "knowledge-web-preview",
+        "knowledge",
+    ]
+    panel.get_by_label("知识关键词").fill("武道会")
+    panel.get_by_role("button", name="查找", exact=True).click()
+    panel.get_by_label("知识搜索结果").get_by_role("button", name="查看全文", exact=True).click()
+    expect(panel.get_by_label("知识全文详情").get_by_role("link", name=url)).to_have_attribute(
+        "href", url
+    )
+
+
 def test_add_search_detail_history_replace_copy_file(studio_knowledge):
     page, expect = studio_knowledge.page, studio_knowledge.expect
     EVIDENCE.mkdir(parents=True, exist_ok=True)

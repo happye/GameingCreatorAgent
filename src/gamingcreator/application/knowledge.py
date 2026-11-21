@@ -25,7 +25,9 @@ def _clean(value: object, field: str) -> str:
     return value.strip()
 
 
-def new_entry(value: object, created_at: str) -> dict[str, Any]:
+def new_entry(
+    value: object, created_at: str, *, web: dict[str, str] | None = None
+) -> dict[str, Any]:
     if (
         not isinstance(value, dict)
         or not {"game", "title", "text", "sourceKind", "sourceLabel"} <= set(value)
@@ -51,6 +53,8 @@ def new_entry(value: object, created_at: str) -> dict[str, Any]:
         "replaces": replaces,
         "createdAt": created_at,
     }
+    if web is not None:
+        entry["web"] = web
     entry["entryId"] = hashlib.sha256(
         json.dumps(entry, ensure_ascii=False, sort_keys=True).encode("utf-8")
     ).hexdigest()

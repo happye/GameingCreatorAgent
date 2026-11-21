@@ -32,3 +32,11 @@ Astra/low只读方案：沿用现有知识录入/检索及单次确认服务，�
 唯一task_quality_guard（Sol/high）核知识费用/冻结/来源及Studio草稿边界，通过两项真实P2修复的定向复核。4项旁白定向通过20.79秒，原失败隔离与最终细节见`sprint-studio-narration-revision.md`。完整门禁`.cache/studio-resume-final-r2-verify.log`最终5098通过/7跳过，1760.46秒，静态/CLI通过，520源码/测试冻结hash一致；更早中止及4项测试适配失败日志保留，不作绿证据。P018仍partial，真实AI与人评未提升。
 
 旧 v1 磁盘兼容补证：`.cache/scratch/legacy-v1-compat.py` 在独立目录加载 `8ea3293` 的 `creation_reasoning_service.py` 源码（其基础依赖沿用当前环境），生成无知识的真实 v1 prepared record；当前服务回读 record 不变，经明确 fake 传输执行后实际 user 逐字一致、一次发送，采用/重复采用/新 CreationJobs 实例重开均通过，保留 plan-reasoning-prompt-v1。日志 `.cache/studio-resume-legacy-v1-final.log` 退出0；基线源码hash、quote及隔离仓库路径在 `.cache/scratch/legacy-v1-compat/result.json`。这是基线服务生成的兼容夹具，不是读取或重发用户历史付费记录，也不声称对所有历史记录逐一验证。
+
+## 2026-11-21 公开网页摘录
+
+Studio 的游戏知识可按用户指定链接读取公开 HTTPS 网页，预览正文后保存一段连续原文。一次预览绑定游戏，保存时由服务端核对摘录内容，并记录跳转后的地址、读取时间、响应和提取正文的 SHA-256。新版本沿用原有知识历史及策划检索。读取器校验每次跳转和目标地址，并限制等待时间和响应大小。当前支持可匿名读取的 HTML 和纯文本。
+
+用《漫画群星：大集结》真实项目试过两条“武道会”资料。先从开发者公告录入，再用发行方页面更新同一条目。第二次请求跟随跳转，重开 Studio 后可查看最终地址及两个版本。原版本文件哈希一致，策划检索返回新版本。证据在 `.cache/scratch/knowledge-web-20261121/evidence.json` 和同目录 `knowledge-source.png`。[TapTap 开发者公告](https://www.taptap.cn/moment/702222578286071325) · [App Store 发行方说明](https://apps.apple.com/cn/app/%E6%BC%AB%E7%94%BB%E7%BE%A4%E6%98%9F-%E5%A4%A7%E9%9B%86%E7%BB%93/id6746104931)
+
+知识网页及活动规则的定向测试 60 项通过，新增 Studio 网页录入回归通过。网页读取与入库没有触发模型调用，真实模型引用及人评仍待验。P018 保持部分交付。

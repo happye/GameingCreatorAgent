@@ -619,7 +619,8 @@
                 "2026-11-01: local directory batch import for txt/md (optional screenshots/PDF via existing read_rule_source OCR); CLI import-knowledge, POST /api/knowledge-import, creation-page folder path; source labels include 目录导入 + filename; no network scraping; duplicate game+text skipped; auto planner citation and web crawl still open",
                 "docs/exec-plans/sprint-game-knowledge.md",
                 "docs/exec-plans/sprint-studio-narration-revision.md",
-                "2026-11-08: Studio manages local knowledge and imports real PNG/PDF with OCR source warnings. Matched current knowledge is frozen into v2 planning requests/quotes and adopted citations; empty context retains v1. Fake transport and baseline-v1 disk compatibility verified; real AI and human quality remain unassessed."
+                "2026-11-08: Studio manages local knowledge and imports real PNG/PDF with OCR source warnings. Matched current knowledge is frozen into v2 planning requests/quotes and adopted citations; empty context retains v1. Fake transport and baseline-v1 disk compatibility verified; real AI and human quality remain unassessed.",
+                "2026-11-21: Studio reads public HTTPS pages on request and saves a selected continuous excerpt with the final URL, fetch time and hashes. Verified a developer announcement and publisher listing from the real Manga Allstar project, including redirect provenance, immutable prior version and current planning lookup."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

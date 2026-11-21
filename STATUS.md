@@ -20,7 +20,7 @@
 
 ## 当前交付与下一步（2026-11-21）
 
-1. Grok A01–F16 已集成，定向 99/44/3 通过，TD030 解决。代理预览、空间盘点、OCR、方案对照、逐词字幕和多轨已接入。见 [Grok 集成](docs/exec-plans/sprint-grok-repair-integration.md)。
+1. [P018 游戏知识](docs/exec-plans/sprint-game-knowledge.md)实测公开网页摘录、出处与历史版本。[Grok A01–F16](docs/exec-plans/sprint-grok-repair-integration.md)已集成，TD030 解决。
 2. 真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。
 3. [抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。
 4. 创作助手已实测换镜、删裁、变速、换序和[多段插入](docs/exec-plans/sprint-ai-multiple-insertions.md)。[旁白和图层随镜迁移](docs/exec-plans/sprint-ai-companion-fit.md)实测重开、成片和 B 站包。

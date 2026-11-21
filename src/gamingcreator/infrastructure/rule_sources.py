@@ -108,6 +108,8 @@ class _Text(HTMLParser):
             self.skip -= 1
         elif tag in self.BLOCKS:
             self.parts.append("\n")
+        elif tag in ("th", "td") and not self.skip:
+            self.parts.append("\t")
 
     def handle_data(self, data: str) -> None:
         if not self.skip:

@@ -22,6 +22,7 @@ from gamingcreator.infrastructure.asr_words import load_asr_words_projection
 from gamingcreator.infrastructure.audio_peaks import audio_peaks
 from gamingcreator.infrastructure.ffmpeg_fullres import FfmpegFullResolutionFrames
 from gamingcreator.infrastructure.ffmpeg_shots import FfmpegShotDetector
+from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
 from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
 from gamingcreator.infrastructure.proxy_inventory import proxy_space_csv, proxy_space_document
@@ -40,6 +41,7 @@ from gamingcreator.ui.frame_text import (
     cached_frame_text_payload,
     scan_frame_text_payload,
 )
+from gamingcreator.ui.knowledge_web import KnowledgeWeb
 from gamingcreator.ui.media import MediaResource, VerifiedMediaCache, byte_range
 from gamingcreator.ui.media_preparation import MediaPreparationJobs
 from gamingcreator.ui.overlay_jobs import register_asset
@@ -264,6 +266,7 @@ class WorkspaceServer(ThreadingHTTPServer):
 
 class InspectionHandler(BaseHTTPRequestHandler):
     runtime_identity: dict[str, str]
+    knowledge_web: KnowledgeWeb
     # (source sha256, startUs, endUs, buckets) -> peaks; display only, bounded, per process.
     waveform_cache: ClassVar[dict[tuple[str, int, int, int], list[float] | None]] = {}
     repository = Path.cwd()
@@ -642,6 +645,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     "/api/creation/overlay-assets",
                     "/api/creation/activity-rules",
                     "/api/knowledge",
+                    "/api/knowledge-web-preview",
                     "/api/creation/publish",
                     "/api/entitlement",
                     "/api/enterprise/team",
@@ -785,13 +789,17 @@ class InspectionHandler(BaseHTTPRequestHandler):
                         raise AppError("publish.refused", str(error), ExitCode.INPUT) from error
                 self._json(200, record)
                 return
-            if path == "/api/knowledge":
-                from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
-
+            if path in {"/api/knowledge", "/api/knowledge-web-preview"}:
                 try:
-                    if isinstance(value, dict) and "dataBase64" in value:
-                        value = self._knowledge_file(value)
-                    self._json(200, KnowledgeStore(self.repository).add(value))
+                    if path == "/api/knowledge-web-preview":
+                        result = self.knowledge_web.preview(value)
+                    elif isinstance(value, dict) and "webPreviewId" in value:
+                        result = self.knowledge_web.save(value)
+                    else:
+                        if isinstance(value, dict) and "dataBase64" in value:
+                            value = self._knowledge_file(value)
+                        result = self.knowledge_web.store.add(value)
+                    self._json(200, result)
                 except ValueError as error:
                     raise AppError("knowledge.input", str(error), ExitCode.INPUT) from error
                 return
@@ -1937,6 +1945,7 @@ def create_server(host: str, port: int, repository: Path) -> ThreadingHTTPServer
         {
             "repository": repository.resolve(),
             "runtime_identity": runtime_identity(Path(__file__).resolve().parents[1]),
+            "knowledge_web": KnowledgeWeb(KnowledgeStore(repository)),
             "media_cache": VerifiedMediaCache(),
             "creation_jobs": creations,
             "creation_reasoning": reasoning,

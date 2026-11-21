@@ -116,9 +116,9 @@
    "sprints": []
   },
   "P018": {
-   "done": "本机知识条目带出处和版本历史，可导入文本/目录/PNG/PDF，Studio策划引用；同游戏两版补丁说明逐行对比（已合main）",
-   "todo": "联网抓取未做；真实AI引用与人评未做",
-   "updated": "2026-11-09",
+   "done": "知识条目带出处和版本历史，可导入本机文本/目录/PNG/PDF、公开 HTTPS 网页摘录；接入 Studio 策划检索和同游戏版本对比",
+   "todo": "脚本生成正文的网页、登录页面、真实 AI 引用与人评待验",
+   "updated": "2026-11-21",
    "sprints": [
     "sprint-game-knowledge",
     "sprint-studio-narration-revision",
@@ -789,8 +789,8 @@
    "name": "智能与七模式",
    "goal": "自然语言改片、规则/知识引用、七种视频模式",
    "status": "active",
-   "done": "规则版一句话改镜头、活动规则离线提取并填需求、知识版本/出处进入策划与旁白；七模式均有真实出片+包；P018版本对比已实现",
-   "todo": "P018批次完整门禁未绿未合main；开放语义理解、八维评分画面维度、联网抓取未做",
+   "done": "规则版一句话改镜头；活动规则离线提取并填需求；知识出处进入策划与旁白，支持版本对比和公开网页摘录；七模式均有真实出片和包",
+   "todo": "开放语义理解、八维评分画面维度、脚本渲染网页与实际引用质量待验证",
    "features": [
     "P018",
     "P020",
@@ -940,6 +940,12 @@
      "name": "补丁说明版本对比（当前）",
      "status": "done",
      "sprint": "sprint-knowledge-version-compare"
+    },
+    {
+     "id": "P018-web",
+     "name": "公开网页摘录与出处",
+     "status": "done",
+     "sprint": "sprint-game-knowledge"
     },
     {
      "id": "P041",

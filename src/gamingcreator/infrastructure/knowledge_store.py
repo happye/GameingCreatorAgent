@@ -45,8 +45,8 @@ class KnowledgeStore:
                 loaded.append(entry)
         return loaded
 
-    def add(self, value: object) -> dict[str, Any]:
-        entry = new_entry(value, datetime.now(UTC).isoformat())
+    def add(self, value: object, *, web: dict[str, str] | None = None) -> dict[str, Any]:
+        entry = new_entry(value, datetime.now(UTC).isoformat(), web=web)
         if entry["replaces"] is not None:
             entries = self.entries()
             previous = next((e for e in entries if e["entryId"] == entry["replaces"]), None)
