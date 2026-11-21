@@ -70,7 +70,10 @@ def build_subtitles(
             continue
         clip_cues: list[SubtitleCue] = []
         for segment in segments if clip_segments is None else clip_segments[index]:
-            if segment.media_id != clip.asset.media_id or not segment.text.strip():
+            if segment.media_id != clip.asset.media_id:
+                continue
+            spoken = segment.text.replace("-->", "→").replace("\x00", "")
+            if not spoken.strip():
                 continue
             start_us = max(clip.source_range.start_us, segment.source_range.start_us)
             end_us = min(clip.source_range.end_us, segment.source_range.end_us)
@@ -82,9 +85,7 @@ def build_subtitles(
             )
             if start < end:
                 clip_cues.append(
-                    SubtitleCue(
-                        offset + start, offset + end, segment.text, segment.uncertainty, index
-                    )
+                    SubtitleCue(offset + start, offset + end, spoken, segment.uncertainty, index)
                 )
         cues.extend(sorted(clip_cues, key=lambda cue: (cue.start, cue.end)))
     return tuple(sorted(cues, key=lambda cue: (cue.start, cue.end)))

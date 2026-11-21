@@ -391,7 +391,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         setTimelineBusy(true); setTimelineMessage("");
         try {
             const query = new URLSearchParams({planId: base.planId || planId, format, size: size.replace(",", "x")});
-            if (includeTimelineMusic) query.set("music", "include");
+            if (format !== "srt" && includeTimelineMusic) query.set("music", "include");
             const response = await fetch(`/api/creation/jobs/${encodeURIComponent(base.jobId)}/timeline?${query}`, {signal: controller.signal});
             if (!response.ok) {
                 let detail; try { detail = await response.json(); } catch { /* HTTP status remains useful. */ }
@@ -401,12 +401,12 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
             if (!current()) return;
             const url = URL.createObjectURL(blob), link = document.createElement("a");
             const suffix = (format === "xmeml" ? "-premiere" : "") +
-                (hasTimelineMusic && !includeTimelineMusic ? "-no-music" : "") +
+                (format !== "srt" && hasTimelineMusic && !includeTimelineMusic ? "-no-music" : "") +
                 (format === "xmeml" ? ".xml" : `.${format}`);
             link.href = url; link.download = `gamingcreator-${base.jobId.slice(0, 8)}${suffix}`;
             document.body.append(link); link.click(); link.remove();
             setTimeout(() => URL.revokeObjectURL(url), 0);
-            setTimelineMessage("时间线已下载，请在剪辑软件中复核。");
+            setTimelineMessage(format === "srt" ? "字幕 SRT 已下载。" : "时间线已下载，请在剪辑软件中复核。");
         } catch (error) { if (current()) setTimelineMessage(error.message); }
         finally { if (timelineWork.current === controller) { timelineWork.current = null; setTimelineBusy(false); } }
     };
@@ -584,9 +584,9 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     onInput=${(e) => update({workName: e.currentTarget.value})} /></label>
                 <p class="hint">导出成片时用这个名字标记作品，并作为下载文件名。</p>
                 <div class="field"><div class="k">专业时间线</div>
-                    <p class="hint">三种格式均可交接镜头、源音和已保存的旁白与配乐。配乐按整帧循环，剪辑软件中的导入、增益、闪避和淡化需复核。</p>
+                    <p class="hint">三种格式均可交接镜头、源音和已保存的旁白与配乐。配乐按整帧循环。Premiere XML 中的字幕是定位标记，可同时下载 SRT 交接字幕轨。剪辑软件中的导入和混音需复核。</p>
                     ${hasTimelineMusic ? html`<label class="check"><input type="checkbox" checked=${includeTimelineMusic} disabled=${!!timelineReason || timelineBusy} onChange=${(event) => setTimelineWithoutMusic(event.currentTarget.checked ? "" : timelineSelection)} />包含已保存的配乐</label>` : null}
-                    <div class="actions-row">${[["fcpxml", "下载 FCPXML"], ["otio", "下载 OTIO"], ["xmeml", "下载 Premiere XML"]].map(([format, label]) => html`<button class="btn ghost" disabled=${!!timelineReason || timelineBusy} title=${timelineReason || "下载已保存版本"} onClick=${() => downloadTimeline(format)}>${label}</button>`)}</div>
+                    <div class="actions-row">${[["fcpxml", "下载 FCPXML"], ["otio", "下载 OTIO"], ["xmeml", "下载 Premiere XML"], ["srt", "下载字幕 SRT"]].map(([format, label]) => html`<button class="btn ghost" disabled=${!!timelineReason || timelineBusy} title=${timelineReason || "下载已保存版本"} onClick=${() => downloadTimeline(format)}>${label}</button>`)}</div>
                     <p class="hint" role="status" aria-label="时间线下载状态">${timelineReason || timelineMessage || (timelineBusy ? "正在下载…" : "下载当前已保存版本")}</p>
                 </div>
                 <div class="field">

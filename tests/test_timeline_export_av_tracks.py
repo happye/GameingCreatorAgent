@@ -1,4 +1,4 @@
-"""Best-effort caption + stereo audio track fixtures for timeline export (NLE import unclaimed)."""
+"""Caption timing and independent audio fixtures for timeline export."""
 
 from __future__ import annotations
 
@@ -36,17 +36,18 @@ def test_captions_from_cues_quantizes_and_drops_collapsed() -> None:
     assert captions == (ExportCaption(0, 15, "半秒"),)
 
 
-def test_fcpxml_best_effort_titles_and_stereo_channels() -> None:
+def test_fcpxml_caption_nodes_and_stereo_channels() -> None:
     xml = to_fcpxml(EDL, "音字实验", captions=CAPTIONS, include_audio_track=True)
     root = ElementTree.fromstring(xml)
-    titles = root.findall(".//spine/title")
-    assert [t.findtext("text") for t in titles] == ["开场", "第二句"]
-    assert all(t.get("lane") == "1" for t in titles)
+    captions = root.findall(".//asset-clip/caption")
+    assert [c.findtext("text/text-style") for c in captions] == ["开场", "第二句"]
+    assert all(c.get("lane") == "1" for c in captions)
+    assert not root.findall(".//title")
     sources = root.findall(".//audio-channel-source")
     assert sources and all(s.get("srcCh") == "1,2" for s in sources)
     # Defaults without extras keep the legacy spine shape.
     plain = ElementTree.fromstring(to_fcpxml(EDL, "plain"))
-    assert plain.find(".//title") is None
+    assert plain.find(".//caption") is None
     assert plain.find(".//audio-channel-source") is None
 
 
@@ -57,10 +58,48 @@ def test_otio_best_effort_audio_and_caption_tracks() -> None:
     assert tracks[1]["kind"] == "Audio"
     assert tracks[1]["metadata"]["gamingcreator"]["channels"] == 2
     assert tracks[1]["metadata"]["gamingcreator"]["importVerified"] is False
-    assert [c["name"] for c in tracks[2]["children"]] == ["开场", "第二句"]
+    assert [c["name"] for c in tracks[2]["children"]] == ["开场", "", "第二句"]
     assert timeline["metadata"]["gamingcreator"]["importVerified"] is False
     plain = json.loads(to_otio(EDL, "plain"))
     assert [t["name"] for t in plain["tracks"]["children"]] == ["V1"]
+
+
+def test_caption_overlap_and_gaps_survive_cut_and_sequence_end() -> None:
+    cues = (
+        ExportCaption(131, 144, "末尾"),
+        ExportCaption(56, 63, "跨切点 & 开场"),
+        ExportCaption(58, 67, "并行"),
+        ExportCaption(137, 160, "片外"),
+    )
+    timeline = json.loads(to_otio(EDL, "重叠字幕", captions=cues))
+    tracks = timeline["tracks"]["children"][1:]
+    assert [track["name"] for track in tracks] == ["Captions", "Captions 2"]
+    found = {}
+    for track in tracks:
+        position = 0
+        for child in track["children"]:
+            time = child["source_range"]
+            assert time["start_time"]["value"] == 0
+            end = position + time["duration"]["value"]
+            if child["OTIO_SCHEMA"] == "Clip.2":
+                assert (
+                    child["media_references"]["DEFAULT_MEDIA"]["OTIO_SCHEMA"]
+                    == "MissingReference.1"
+                )
+                found[child["name"]] = (position, end)
+            position = end
+    assert found == {"跨切点 & 开场": (56, 63), "并行": (58, 67), "末尾": (131, 137)}
+    root = ElementTree.fromstring(to_fcpxml(EDL, "重叠字幕", captions=cues))
+    assert root.find(".//spine/clip/asset-clip/timeMap") is not None
+    connected = {}
+    for parent in root.find(".//spine"):
+        for cue in parent.findall("caption"):
+            offset = Fraction(parent.get("offset")[:-1]) + Fraction(cue.get("offset")[:-1])
+            offset -= Fraction(parent.get("start")[:-1])
+            end = offset + Fraction(cue.get("duration")[:-1])
+            connected[cue.findtext("text/text-style")] = (offset * 30, end * 30)
+    assert connected == found
+    assert len({node.get("role") for node in root.iter("caption")}) == 2
 
 
 def test_xmeml_best_effort_audio_track_and_caption_markers() -> None:

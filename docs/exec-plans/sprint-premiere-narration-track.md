@@ -58,4 +58,10 @@ Studio 的三种下载格式共用保存修订中的音频选择。已验证的�
 
 含 2× 变速、亚帧源入点和 5 帧交叉淡化的 85 帧案例通过 1.9 DTD 与解析器回读。旁白跨切点、配乐 30／30／25 帧。Atom 的 Premiere XML 使用同一勾选项复测通过，含配乐和省略配乐的文件哈希与上一轮一致。定向测试 33 项通过，随后对锚点校正复跑 14 项通过。
 
-Final Cut、DaVinci 和 Premiere 的实际导入仍待验证。混音、字幕时序与样式、图层交接仍待补齐。现有 OTIO 实验字幕存储了字幕源范围，首条字幕在轨道上的位置还需修正。
+## 2026-11-21 专业时间线字幕与独立 SRT
+
+Studio 可从同一已保存修订下载三种时间线和 SRT。OTIO 用留白定位文字占位，重叠时分轨。FCPXML 1.9 用带 iTT 角色的字幕节点连接到所在镜头，未知语系标记为 `und`，重叠时分角色保存。Premiere XML 保留整帧标记，独立 SRT 可放到 Premiere 序列零点建立字幕轨。时间线使用整帧向下量化，SRT 保留原字幕的毫秒精度。[Apple 字幕角色](https://developer.apple.com/documentation/professional-video-applications/roles-attribute) · [Adobe 字幕导入](https://helpx.adobe.com/premiere/desktop/add-text-images/insert-captions/import-caption-file-from-third-party-service.html)
+
+漫画群星 20 秒修订 `1b8115afc7c14f58bfe5f941de9b59a1` 从 Studio 下载四份。旧 OTIO 原生回读的五句字幕均提前 75 帧，修正后起点依次为 75／156／261／332／432。OTIO 0.18.1 原生回读、FCPXML 1.9 DTD 与 Premiere 标记验证均复核了字幕文本及帧区间。FFprobe 读回 SRT 五句，首句 2.5 秒。独立音轨全部保留，原始素材和回执哈希未变。证据位于 `.cache/scratch/professional-captions-20261121/verified/`。
+
+85 帧构造案例覆盖 2× 变速、非整帧源入点、交叉淡化、字幕跨切点、重叠分轨与片尾裁切。FCPXML 通过 1.9 DTD，OTIO 原生回读保留对应区间。定向测试 43 项通过，包含旧转写中的 SRT 时间分隔符、保存修订的 SRT 及 Studio 下载入口。字幕交接中的样式、Final Cut／DaVinci／Premiere 的实际导入、混音与图层交接仍待验证。

@@ -6,9 +6,8 @@ formats instead place clips end to end with a transition centred on the cut that
 handle media. Each clip is therefore trimmed by whole frames at the cut (N//2 on the left,
 the rest on the right), so the exported timeline has exactly the rendered length.
 
-Optional best-effort caption markers and stereo audio declarations can be included for
-experimentation. Nothing here has been verified by importing into Final Cut, DaVinci Resolve
-or Premiere — do not treat exports as NLE-certified.
+Captions use the sequence clock in each export. Audio and caption style compatibility still
+needs verification in Final Cut, DaVinci Resolve and Premiere.
 """
 
 from __future__ import annotations
@@ -58,10 +57,27 @@ def captions_from_cues(cues: Iterable[SubtitleCue], fps: int) -> tuple[ExportCap
     return tuple(captions)
 
 
-def _normalize_captions(captions: Sequence[ExportCaption] | None) -> tuple[ExportCaption, ...]:
-    if captions is None:
-        return ()
-    return tuple(ExportCaption(item.start_frame, item.end_frame, item.text) for item in captions)
+def _normalize_captions(
+    captions: Sequence[ExportCaption] | None, total_frames: int
+) -> tuple[ExportCaption, ...]:
+    return tuple(
+        ExportCaption(item.start_frame, min(item.end_frame, total_frames), item.text)
+        for item in sorted(captions or (), key=lambda item: (item.start_frame, item.end_frame))
+        if item.start_frame < total_frames
+    )
+
+
+def _caption_lanes(captions: Sequence[ExportCaption]) -> list[list[ExportCaption]]:
+    """Place overlapping speech on separate lanes while keeping each cue's interval."""
+    lanes: list[list[ExportCaption]] = []
+    for caption in captions:
+        for lane in lanes:
+            if lane[-1].end_frame <= caption.start_frame:
+                lane.append(caption)
+                break
+        else:
+            lanes.append([caption])
+    return lanes
 
 
 def _rows(edl: dict[str, Any]) -> list[dict[str, Any]]:
@@ -142,6 +158,41 @@ def _fcpxml_needs_anchor_clip(item: dict[str, Any], frame: Fraction) -> bool:
     return bool(item["speed"] != 1) or (start / frame).denominator != 1
 
 
+def _fcpxml_anchor(
+    placed: Sequence[dict[str, Any]], positions: list[int], start: int, frame: Fraction
+) -> tuple[int, Fraction]:
+    parent = placed[bisect_right(positions, start) - 1]
+    # A zero-origin wrapper isolates anchors from retiming or an off-frame source origin.
+    origin: Fraction = (
+        Fraction(0) if _fcpxml_needs_anchor_clip(parent, frame) else parent["sourceStart"]
+    )
+    position: int = parent["offset"]
+    return position, origin + (start - position) * frame
+
+
+def _fcpxml_caption_anchors(
+    anchors: dict[int, list[str]],
+    placed: Sequence[dict[str, Any]],
+    frame: Fraction,
+    captions: Sequence[ExportCaption],
+) -> None:
+    positions = [item["offset"] for item in placed]
+    for lane, cues in enumerate(_caption_lanes(captions), 1):
+        role = "Subtitles" if lane == 1 else f"Subtitles {lane}"
+        for index, caption in enumerate(cues, 1):
+            position, offset = _fcpxml_anchor(placed, positions, caption.start_frame, frame)
+            duration = (caption.end_frame - caption.start_frame) * frame
+            style_id = f"caption-style-{lane}-{index}"
+            anchors.setdefault(position, []).append(
+                f'              <caption lane="{lane}" offset="{_seconds(offset)}" start="0s" '
+                f'duration="{_seconds(duration)}" role="{role}?captionFormat=ITT.und">\n'
+                f'                <text placement="bottom"><text-style ref="{style_id}">'
+                f"{escape(_xml_text(caption.text))}</text-style></text>\n"
+                f'                <text-style-def id="{style_id}"><text-style/></text-style-def>\n'
+                "              </caption>"
+            )
+
+
 def _fcpxml_dry_audio(
     tracks: Sequence[_DryTrack], placed: Sequence[dict[str, Any]], fps: int
 ) -> tuple[list[str], dict[int, list[str]]]:
@@ -160,14 +211,8 @@ def _fcpxml_dry_audio(
             f'      <media-rep kind="original-media" src={quoteattr(_uri(track.path))}/>\n    </asset>'
         )
         for start, length in track.cuts:
-            parent = placed[bisect_right(positions, start) - 1]
-            # An unretimed zero-origin wrapper keeps offsets frame-aligned even when
-            # the host's source origin falls between output frames.
-            origin = (
-                Fraction(0) if _fcpxml_needs_anchor_clip(parent, frame) else parent["sourceStart"]
-            )
-            offset = origin + (start - parent["offset"]) * frame
-            anchors.setdefault(parent["offset"], []).append(
+            position, offset = _fcpxml_anchor(placed, positions, start, frame)
+            anchors.setdefault(position, []).append(
                 f'              <asset-clip ref="{media}" name={title} lane="{lane}" '
                 f'offset="{_seconds(offset)}" start="0s" duration="{_seconds(length)}" '
                 f'srcEnable="audio" audioRole="{track.role}"/>'
@@ -229,7 +274,6 @@ def to_fcpxml(
     music: ExportMusic | None = None,
 ) -> str:
     placed = layout(edl)
-    caption_rows = _normalize_captions(captions)
     fps = int(edl["fpsNumerator"])
     frame = Fraction(1, fps)
     sources = list(dict.fromkeys(item["row"]["sourcePath"] for item in placed))
@@ -250,6 +294,7 @@ def to_fcpxml(
         _dry_tracks(narration, music, fps, total_frames), placed, fps
     )
     assets.extend(dry_assets)
+    _fcpxml_caption_anchors(anchors, placed, frame, _normalize_captions(captions, total_frames))
     spine = []
     for item in placed:
         row = item["row"]
@@ -264,16 +309,6 @@ def to_fcpxml(
             _fcpxml_video_clip(
                 item, asset, frame, include_audio_track, anchors.get(item["offset"], [])
             )
-        )
-    for caption in caption_rows:
-        start = caption.start_frame * frame
-        duration = (caption.end_frame - caption.start_frame) * frame
-        spine.append(
-            f'            <title name={quoteattr("Basic Title")} lane="1" '
-            f'offset="{_seconds(start)}" ref="r1" duration="{_seconds(duration)}" '
-            f'start="0s">\n'
-            f"              <text>{escape(caption.text)}</text>\n"
-            "            </title>"
         )
     total = total_frames * frame
     return (
@@ -439,7 +474,6 @@ def to_xmeml(
     live Premiere import of those extras is unverified.
     """
     placed = layout(edl)
-    caption_rows = _normalize_captions(captions)
     fps = int(edl["fpsNumerator"])
     rate = f"<rate><timebase>{fps}</timebase><ntsc>FALSE</ntsc></rate>"
     sources = list(dict.fromkeys(item["row"]["sourcePath"] for item in placed))
@@ -504,9 +538,9 @@ def to_xmeml(
                 "</clipitem>"
             )
     markers = []
-    for caption in caption_rows:
+    for caption in _normalize_captions(captions, total):
         markers.append(
-            f"    <marker><name>{escape(caption.text)}</name>"
+            f"    <marker><name>{escape(_xml_text(caption.text))}</name>"
             f"<in>{caption.start_frame}</in><out>{caption.end_frame}</out>"
             f"<pproColor>4284590335</pproColor></marker>"
         )
@@ -604,22 +638,24 @@ def _dry_tracks(
     return tracks
 
 
+def _otio_gap(duration: Fraction, fps: int) -> dict[str, Any]:
+    return {
+        "OTIO_SCHEMA": "Gap.1",
+        "name": "",
+        "effects": [],
+        "markers": [],
+        "source_range": _range(Fraction(0), duration, fps),
+        "metadata": {},
+    }
+
+
 def _otio_dry_track(track: _DryTrack, fps: int) -> dict[str, Any]:
     children = []
     position = Fraction(0)
     for start, length in track.cuts:
         offset = Fraction(start, fps)
         if offset > position:
-            children.append(
-                {
-                    "OTIO_SCHEMA": "Gap.1",
-                    "name": "",
-                    "effects": [],
-                    "markers": [],
-                    "source_range": _range(Fraction(0), offset - position, fps),
-                    "metadata": {},
-                }
-            )
+            children.append(_otio_gap(offset - position, fps))
         children.append(
             {
                 "OTIO_SCHEMA": "Clip.2",
@@ -663,6 +699,46 @@ def _otio_dry_track(track: _DryTrack, fps: int) -> dict[str, Any]:
     }
 
 
+def _otio_caption_track(captions: Sequence[ExportCaption], lane: int, fps: int) -> dict[str, Any]:
+    children = []
+    end = 0
+    for caption in captions:
+        if caption.start_frame > end:
+            children.append(_otio_gap(Fraction(caption.start_frame - end, fps), fps))
+        children.append(
+            {
+                "OTIO_SCHEMA": "Clip.2",
+                "name": caption.text,
+                "source_range": _range(
+                    Fraction(0), Fraction(caption.end_frame - caption.start_frame, fps), fps
+                ),
+                "media_references": {
+                    "DEFAULT_MEDIA": {
+                        "OTIO_SCHEMA": "MissingReference.1",
+                        "name": "",
+                        "available_range": None,
+                        "metadata": {},
+                    }
+                },
+                "active_media_reference_key": "DEFAULT_MEDIA",
+                "effects": [],
+                "markers": [],
+                "metadata": {"gamingcreator": {"caption": True, "importVerified": False}},
+            }
+        )
+        end = caption.end_frame
+    return {
+        "OTIO_SCHEMA": "Track.1",
+        "name": "Captions" if lane == 1 else f"Captions {lane}",
+        "kind": "Video",
+        "children": children,
+        "source_range": None,
+        "effects": [],
+        "markers": [],
+        "metadata": {"gamingcreator": {"role": "captions", "importVerified": False}},
+    }
+
+
 def to_otio(
     edl: dict[str, Any],
     name: str,
@@ -672,7 +748,6 @@ def to_otio(
     music: ExportMusic | None = None,
 ) -> str:
     placed = layout(edl)
-    caption_rows = _normalize_captions(captions)
     fps = int(edl["fpsNumerator"])
     children: list[dict[str, Any]] = []
     for item in placed:
@@ -782,36 +857,10 @@ def to_otio(
     tracks.extend(
         _otio_dry_track(track, fps) for track in _dry_tracks(narration, music, fps, total)
     )
-    if caption_rows:
-        caption_children: list[dict[str, Any]] = [
-            {
-                "OTIO_SCHEMA": "Clip.2",
-                "name": caption.text,
-                "source_range": _range(
-                    Fraction(caption.start_frame, fps),
-                    Fraction(caption.end_frame - caption.start_frame, fps),
-                    fps,
-                ),
-                "media_references": {},
-                "active_media_reference_key": None,
-                "effects": [],
-                "markers": [],
-                "metadata": {"gamingcreator": {"caption": True, "importVerified": False}},
-            }
-            for caption in caption_rows
-        ]
-        tracks.append(
-            {
-                "OTIO_SCHEMA": "Track.1",
-                "name": "Captions",
-                "kind": "Video",
-                "children": caption_children,
-                "source_range": None,
-                "effects": [],
-                "markers": [],
-                "metadata": {"gamingcreator": {"role": "captions", "importVerified": False}},
-            }
-        )
+    caption_lanes = _caption_lanes(_normalize_captions(captions, total))
+    tracks.extend(
+        _otio_caption_track(cues, lane, fps) for lane, cues in enumerate(caption_lanes, 1)
+    )
     timeline = {
         "OTIO_SCHEMA": "Timeline.1",
         "name": name,
@@ -820,7 +869,7 @@ def to_otio(
             "gamingcreator": {
                 "fps": fps,
                 "importVerified": False,
-                "captionTrack": "best-effort",
+                "captionTrack": "timed-text" if caption_lanes else "none",
                 "audioTrack": "stereo-best-effort" if include_audio_track else "none",
             }
         },

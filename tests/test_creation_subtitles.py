@@ -81,6 +81,15 @@ def test_outside_empty_and_unsorted_transcripts() -> None:
     assert parse_srt("") == ()
 
 
+def test_asr_timing_punctuation_stays_in_the_caption_projection() -> None:
+    plan = RenderPlan((clip(0, 1_000_000, 30),), 30)
+    marker_like = speech(100_000, 300_000, "上路 --> 下路\x00")
+    empty = speech(500_000, 700_000, " \x00 ")
+    cues = build_subtitles(plan, (marker_like, empty))
+    assert [cue.text for cue in parse_srt(serialize_srt(cues))] == ["上路 → 下路"]
+    assert marker_like.text == "上路 --> 下路\x00"
+
+
 def test_multilingual_multiline_roundtrip_and_numbering() -> None:
     cue = SubtitleCue(Fraction(1, 3), Fraction(4, 3), " 中文\r\nEnglish\r\n\r\n下一句 ")
     tiny = SubtitleCue(Fraction(0), Fraction(1, 10000), "tiny")

@@ -1601,7 +1601,6 @@ class CreationJobs:
         import wave
 
         from gamingcreator.application.timeline_export import (
-            ExportCaption,
             ExportMusic,
             ExportNarration,
             MusicTimelineError,
@@ -1610,7 +1609,10 @@ class CreationJobs:
             to_otio,
             to_xmeml,
         )
+        from gamingcreator.domain.creation_subtitles import serialize_srt
 
+        if fmt not in {"fcpxml", "otio", "xmeml", "srt"}:
+            raise fail("creation.input", "时间线格式只支持 fcpxml、otio、xmeml 或 srt。")
         width, _, height = size.partition("x")
         if not (width.isdecimal() and height.isdecimal()) or not all(
             16 <= int(v) <= 3840 and int(v) % 2 == 0 for v in (width, height)
@@ -1621,15 +1623,16 @@ class CreationJobs:
         except (EOFError, wave.Error) as error:
             raise ValueError("旁白 WAV 已损坏，请检查已保存的素材。") from error
         name = f"gamingcreator-{job_id[:8]}"
-        # Best-effort AV extras; Final Cut / Resolve / Premiere import remains unverified.
-        captions: tuple[ExportCaption, ...] = ()
         try:
             cues = revision_subtitles(chain, "sidecar")
-            captions = captions_from_cues(cues, int(chain.edl["fpsNumerator"]))
-        except Exception:
-            captions = ()
-        if fmt not in {"fcpxml", "otio", "xmeml"}:
-            raise fail("creation.input", "时间线格式只支持 fcpxml、otio 或 xmeml。")
+        except (KeyError, ValueError) as error:
+            raise fail("creation.input", "无法读取当前已保存版本的字幕。") from error
+        if fmt == "srt":
+            srt = serialize_srt(cues)
+            if not srt:
+                raise fail("creation.input", "当前已保存版本没有可导出的字幕。")
+            return srt.encode("utf-8"), f"{name}.srt", "application/x-subrip"
+        captions = captions_from_cues(cues, int(chain.edl["fpsNumerator"]))
         narration = None
         if chain.narration is not None and (asset := chain.narration_asset) is not None:
             narration = ExportNarration(

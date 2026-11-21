@@ -20,7 +20,7 @@ from test_narration_jobs import engine  # noqa: F401
 from gamingcreator.application.creation_editing import validate_revision
 from gamingcreator.application.edit_decision import select_edit_decision
 from gamingcreator.application.providers import CancellationContext
-from gamingcreator.domain.creation_subtitles import parse_srt
+from gamingcreator.domain.creation_subtitles import parse_srt, serialize_srt
 from gamingcreator.infrastructure import sapi_narration
 from gamingcreator.infrastructure.ffmpeg_media import FfmpegMediaProcessor
 from gamingcreator.infrastructure.ffmpeg_render import FfmpegCreationRenderer
@@ -441,6 +441,9 @@ def test_narration_caption_samples_follow_draft_placement_and_export(
     ]
     exported, _, _ = jobs.timeline_export(revised["jobId"], "hook-first", "fcpxml")
     assert all(text.encode() in exported for text in ("开场。", "收尾。"))
+    srt, filename, media_type = jobs.timeline_export(revised["jobId"], "hook-first", "srt")
+    assert srt.decode("utf-8") == serialize_srt(revision_subtitles(chain, "sidecar"))
+    assert filename.endswith(".srt") and media_type == "application/x-subrip"
 
 
 def test_repeated_run_reorder_automatic_and_deleted_inherited_overrides(replacements):

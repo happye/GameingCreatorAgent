@@ -95,6 +95,6 @@ def test_processing_disables_timeline(timeline_view, state):
         view.get_by_role("button", name="导出成片", exact=True).evaluate("e => e.click()")
         reason = "任务正在处理"
     expect(view.get_by_label("时间线下载状态")).to_have_text(reason)
-    for name in ("下载 FCPXML", "下载 OTIO", "下载 Premiere XML"):
+    for name in ("下载 FCPXML", "下载 OTIO", "下载 Premiere XML", "下载字幕 SRT"):
         expect(view.get_by_role("button", name=name, exact=True)).to_be_disabled()
     assert page.evaluate("timelineHarness.pending.length") == 0
