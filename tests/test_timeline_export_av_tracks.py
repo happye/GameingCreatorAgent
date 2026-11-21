@@ -140,3 +140,101 @@ def test_xmeml_rejects_music_outside_loop_bounds() -> None:
             "循环太多",
             music=ExportMusic("tiny.wav", "Music", Fraction(1, 30), 48_000, 1),
         )
+
+
+def test_fcpxml_connects_dry_audio_on_sequence_clock_across_retiming(tmp_path: Path) -> None:
+    voice_path = tmp_path / "旁白.wav"
+    music_path = tmp_path / "配乐 & 歌.wav"
+    narration = ExportNarration(str(voice_path), 75, 22_050, 1, 2, 22_051)
+    music = ExportMusic(str(music_path), "首曲 & \uffff", Fraction(57, 30), 48_000, 2)
+    root = ElementTree.fromstring(
+        to_fcpxml(EDL, "干声交接", include_audio_track=True, narration=narration, music=music)
+    )
+    resources = {item.get("id"): item for item in root.findall("./resources/asset")}
+    for role, path in (("dialogue", voice_path), ("music", music_path)):
+        resource = resources[f"dry-{role}"]
+        assert resource.get("hasAudio") == "1" and resource.get("hasVideo") is None
+        assert resource.find("media-rep").get("src") == path.as_uri()
+    assert resources["dry-music"].get("name") == "首曲 & \ufffd"
+    primary = root.find(".//sequence/spine")
+    assert [clip.tag for clip in primary] == [
+        "asset-clip",
+        "transition",
+        "clip",
+        "transition",
+        "asset-clip",
+    ]
+    retimed = primary.find("./clip/asset-clip")
+    points = retimed.findall("./timeMap/timept")
+    assert points[0].get("time") == points[0].get("value") == retimed.get("start")
+    assert Fraction(points[-1].get("time")[:-1]) - Fraction(points[0].get("time")[:-1]) == Fraction(
+        53, 30
+    )
+    assert not primary.findall("./asset-clip[@lane]")
+    audio = []
+    for parent in primary:
+        for child in parent.findall("asset-clip[@lane]"):
+            offset = Fraction(parent.get("offset")[:-1]) + Fraction(child.get("offset")[:-1])
+            offset -= Fraction(parent.get("start")[:-1])
+            assert child.get("start") == "0s" and child.get("srcEnable") == "audio"
+            audio.append(
+                (
+                    child.get("audioRole"),
+                    child.get("lane"),
+                    offset * 30,
+                    Fraction(child.get("duration")[:-1]),
+                )
+            )
+    assert sorted(audio) == [
+        ("dialogue", "-1", 75, Fraction(22_051, 22_050)),
+        ("music", "-2", 0, Fraction(57, 30)),
+        ("music", "-2", 57, Fraction(57, 30)),
+        ("music", "-2", 114, Fraction(23, 30)),
+    ]
+
+    fractional_source = {**EDL["segments"][0], "startUs": 12_345}
+    unaligned = ElementTree.fromstring(
+        to_fcpxml({**EDL, "segments": [fractional_source]}, "subframe", music=music)
+    )
+    wrapper = unaligned.find(".//spine/clip")
+    assert wrapper.get("start") == "0s"
+    assert wrapper.find("asset-clip[@ref='a1']").get("start") == "2469/200000s"
+    assert wrapper.find("asset-clip[@lane='-2']").get("offset") == "0s"
+
+
+def test_otio_dry_tracks_preserve_narration_samples_and_music_frames(tmp_path: Path) -> None:
+    voice = tmp_path / "旁白.wav"
+    music = tmp_path / "配乐.wav"
+    project = json.loads(
+        to_otio(
+            EDL,
+            "干声交接",
+            include_audio_track=True,
+            narration=ExportNarration(str(voice), 75, 22_050, 1, 2, 22_051),
+            music=ExportMusic(str(music), "Music", Fraction(451, 300), 48_000, 2),
+        )
+    )
+    video, original, dialogue, bgm = project["tracks"]["children"]
+    assert [track["name"] for track in (video, original, dialogue, bgm)] == [
+        "V1",
+        "A1",
+        "Narration (dry)",
+        "Music (dry)",
+    ]
+    gap, voice_clip = dialogue["children"]
+    assert gap["OTIO_SCHEMA"] == "Gap.1" and gap["source_range"]["duration"]["value"] == 75
+    assert voice_clip["source_range"]["duration"] == {
+        "OTIO_SCHEMA": "RationalTime.1",
+        "value": 22_051,
+        "rate": 22_050,
+    }
+    assert voice_clip["media_references"]["DEFAULT_MEDIA"]["target_url"] == voice.as_uri()
+    assert [clip["source_range"]["duration"]["value"] for clip in bgm["children"]] == [
+        45,
+        45,
+        45,
+        2,
+    ]
+    assert {
+        clip["media_references"]["DEFAULT_MEDIA"]["target_url"] for clip in bgm["children"]
+    } == {music.as_uri()}

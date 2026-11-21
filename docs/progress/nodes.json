@@ -269,8 +269,8 @@
    ]
   },
   "P033": {
-   "done": "Studio 导出 FCPXML 1.9、OTIO 和 Premiere XML，Premiere 保留独立旁白与整帧循环配乐轨，已从真实 Atom 修订下载并用 OpenTimelineIO 回读",
-   "todo": "补齐其他格式配乐轨、混音和图层交接，验证 Final Cut、DaVinci、Premiere 实际导入及样式往返",
+   "done": "三种格式均保留独立旁白和整帧循环配乐。从真实 Atom 和漫画群星修订下载，Premiere XML 与 OTIO 回读，FCPXML 通过 1.9 DTD",
+   "todo": "补齐混音、字幕时序样式及图层交接，验证 Final Cut、DaVinci、Premiere 实际导入与往返",
    "updated": "2026-11-08",
    "sprints": [
     "sprint-timeline-export",
@@ -712,6 +712,12 @@
     {
      "id": "P033-c",
      "name": "Premiere 独立配乐轨",
+     "status": "done",
+     "sprint": "sprint-premiere-narration-track"
+    },
+    {
+     "id": "P033-d",
+     "name": "OTIO 与 FCPXML 独立旁白和配乐",
      "status": "done",
      "sprint": "sprint-premiere-narration-track"
     },

@@ -49,3 +49,13 @@ Studio 从已保存修订解析配乐和注册回执，核验本机音频文件�
 在隔离工作区用真实《代号 Atom》8 秒竖版保存并重开修订 `3ce724c412be4aec846078f1fa0bbe4a`，从 Studio 下载 XML。3 秒单声道测试 WAV 生成 `[0, 90)`、`[90, 180)`、`[180, 240)` 三段，三段共用同一文件引用。原始素材和保存回执的哈希核验通过。OpenTimelineIO 0.18.1 的 FCP XML adapter 1.0.0 回读原声与配乐两条轨及 90、90、60 帧的裁切长度。证据和 XML 位于 `.cache/scratch/premiere-music-track-20261121/`。Premiere 实际导入待验证，FCPXML／OTIO 的独立配乐轨待实现。 [OpenTimelineIO FCP XML adapter](https://pypi.org/project/otio-fcp-adapter/)
 
 带偏移 MP4 配乐的 Atom 修订 `2533c1b9a9654ffcbe937232664658a9` 在 Studio 显示起点差异，并可下载保留原声的 XML。定向回归 43 通过、1 跳过，日志 `.cache/test-logs/pytest-20261121-145317.log`。
+
+## 2026-11-21 OTIO 与 FCPXML 独立旁白和配乐
+
+Studio 的三种下载格式共用保存修订中的音频选择。已验证的旁白按保存帧定位，OTIO 与 FCPXML 保留精确的样本时长。OTIO 用前置留白放置旁白，配乐使用独立音轨。FCPXML 用 `dialogue` 和 `music` 角色把两条音频分别连接到对应镜头。变速或源入点跨输出帧时，连接点用独立的零起点容器，避免把变速作用到相邻音频的起点。配乐循环仍按整帧截齐。Studio 取消勾选“包含已保存的配乐”后仍可交接原声和旁白。[Apple 时钟规范](https://developer.apple.com/documentation/professional-video-applications/timing-attributes) · [OpenTimelineIO 时间范围](https://github.com/AcademySoftwareFoundation/OpenTimelineIO/blob/main/docs/tutorials/time-ranges.md)
+
+用真实漫画群星修订 `1b8115afc7c14f58bfe5f941de9b59a1` 实测 Studio 四次下载。中文旁白起点第 75 帧，保留 `341670/22050` 秒，配乐分为六段 90 帧和一段 60 帧，共 600 帧。OpenTimelineIO 0.18.1 原生回读两份 OTIO，含配乐时有三条音轨，省略配乐时有两条。两份 FCPXML 均通过 1.9 DTD。素材、修订与回执哈希未变。成套文件与证据在 `.cache/scratch/professional-dry-audio-20261121/`。[Apple 1.9 DTD 的 CommandPost 副本](https://github.com/CommandPost/CommandPost/blob/develop/src/extensions/cp/apple/fcpxml/dtd/FCPXMLv1_9.dtd)
+
+含 2× 变速、亚帧源入点和 5 帧交叉淡化的 85 帧案例通过 1.9 DTD 与解析器回读。旁白跨切点、配乐 30／30／25 帧。Atom 的 Premiere XML 使用同一勾选项复测通过，含配乐和省略配乐的文件哈希与上一轮一致。定向测试 33 项通过，随后对锚点校正复跑 14 项通过。
+
+Final Cut、DaVinci 和 Premiere 的实际导入仍待验证。混音、字幕时序与样式、图层交接仍待补齐。现有 OTIO 实验字幕存储了字幕源范围，首条字幕在轨道上的位置还需修正。

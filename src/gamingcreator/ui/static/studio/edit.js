@@ -367,18 +367,22 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
 
     const [timelineMessage, setTimelineMessage] = useState("");
     const [timelineBusy, setTimelineBusy] = useState(false);
+    const [timelineWithoutMusic, setTimelineWithoutMusic] = useState("");
     const timelineWork = useRef(null);
     const timelineReason = !plan?.ready || !editing.base || editing.status !== "ready" ? "先选择并读取已保存方案"
         : editing.dirty ? "请先保存版本" : commandPreview ? "请先应用或取消创作助手的改动"
         : busy || audioBusy || overlayBusy ? "任务正在处理" : problem;
     const timelineView = [project, editing.base?.jobId, editing.base?.planId, size, adoptionGuard.current.generation, timelineReason];
+    const timelineSelection = JSON.stringify(timelineView.slice(0, 3));
+    const hasTimelineMusic = !!editing.audio?.mix?.bgm;
+    const includeTimelineMusic = hasTimelineMusic && timelineWithoutMusic !== timelineSelection;
     const timelineGuard = useRef({view: timelineView, generation: 0});
     if (timelineView.some((value, index) => value !== timelineGuard.current.view[index])) {
         timelineWork.current?.abort();
         timelineGuard.current = {view: timelineView, generation: timelineGuard.current.generation + 1};
     }
     useEffect(() => () => { timelineWork.current?.abort(); timelineGuard.current.generation++; }, []);
-    const downloadTimeline = async (format, includeMusic = format === "xmeml") => {
+    const downloadTimeline = async (format) => {
         if (timelineReason || timelineBusy) return;
         const controller = new AbortController(); timelineWork.current = controller;
         const generation = timelineGuard.current.generation;
@@ -387,7 +391,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         setTimelineBusy(true); setTimelineMessage("");
         try {
             const query = new URLSearchParams({planId: base.planId || planId, format, size: size.replace(",", "x")});
-            if (includeMusic) query.set("music", "include");
+            if (includeTimelineMusic) query.set("music", "include");
             const response = await fetch(`/api/creation/jobs/${encodeURIComponent(base.jobId)}/timeline?${query}`, {signal: controller.signal});
             if (!response.ok) {
                 let detail; try { detail = await response.json(); } catch { /* HTTP status remains useful. */ }
@@ -396,7 +400,9 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
             const blob = await response.blob();
             if (!current()) return;
             const url = URL.createObjectURL(blob), link = document.createElement("a");
-            const suffix = format === "xmeml" ? (includeMusic ? "-premiere.xml" : "-premiere-no-music.xml") : `.${format}`;
+            const suffix = (format === "xmeml" ? "-premiere" : "") +
+                (hasTimelineMusic && !includeTimelineMusic ? "-no-music" : "") +
+                (format === "xmeml" ? ".xml" : `.${format}`);
             link.href = url; link.download = `gamingcreator-${base.jobId.slice(0, 8)}${suffix}`;
             document.body.append(link); link.click(); link.remove();
             setTimeout(() => URL.revokeObjectURL(url), 0);
@@ -578,10 +584,9 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     onInput=${(e) => update({workName: e.currentTarget.value})} /></label>
                 <p class="hint">导出成片时用这个名字标记作品，并作为下载文件名。</p>
                 <div class="field"><div class="k">专业时间线</div>
-                    <p class="hint">FCPXML / OTIO 可交接镜头、变速、实验字幕和源音轨。Premiere XML 另含已保存的独立旁白和配乐轨。配乐按整帧循环或截尾，增益、闪避及淡化需在剪辑软件中复核。导入兼容性尚未验证。</p>
-                    <div class="actions-row">${[["fcpxml", "下载 FCPXML"], ["otio", "下载 OTIO"], ["xmeml", "下载 Premiere XML"]].map(([format, label]) => html`<button class="btn ghost" disabled=${!!timelineReason || timelineBusy} title=${timelineReason || "下载已保存版本"} onClick=${() => downloadTimeline(format)}>${label}</button>`)}
-                        ${editing.audio?.mix?.bgm ? html`<button class="btn ghost" disabled=${!!timelineReason || timelineBusy} onClick=${() => downloadTimeline("xmeml", false)}>下载 Premiere XML（不含配乐）</button>` : null}
-                    </div>
+                    <p class="hint">三种格式均可交接镜头、源音和已保存的旁白与配乐。配乐按整帧循环，剪辑软件中的导入、增益、闪避和淡化需复核。</p>
+                    ${hasTimelineMusic ? html`<label class="check"><input type="checkbox" checked=${includeTimelineMusic} disabled=${!!timelineReason || timelineBusy} onChange=${(event) => setTimelineWithoutMusic(event.currentTarget.checked ? "" : timelineSelection)} />包含已保存的配乐</label>` : null}
+                    <div class="actions-row">${[["fcpxml", "下载 FCPXML"], ["otio", "下载 OTIO"], ["xmeml", "下载 Premiere XML"]].map(([format, label]) => html`<button class="btn ghost" disabled=${!!timelineReason || timelineBusy} title=${timelineReason || "下载已保存版本"} onClick=${() => downloadTimeline(format)}>${label}</button>`)}</div>
                     <p class="hint" role="status" aria-label="时间线下载状态">${timelineReason || timelineMessage || (timelineBusy ? "正在下载…" : "下载当前已保存版本")}</p>
                 </div>
                 <div class="field">

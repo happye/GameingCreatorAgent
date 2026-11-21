@@ -11,8 +11,11 @@ experimentation. Nothing here has been verified by importing into Final Cut, DaV
 or Premiere — do not treat exports as NLE-certified.
 """
 
+from __future__ import annotations
+
 import json
 import re
+from bisect import bisect_right
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from fractions import Fraction
@@ -130,6 +133,91 @@ def _uri(path: str) -> str:
     return Path(path).resolve().as_uri()
 
 
+def _xml_text(value: str) -> str:
+    return re.sub(r"[^\x09\x0a\x0d\x20-\ud7ff\ue000-\ufffd\U00010000-\U0010ffff]", "\ufffd", value)
+
+
+def _fcpxml_needs_anchor_clip(item: dict[str, Any], frame: Fraction) -> bool:
+    start: Fraction = item["sourceStart"]
+    return bool(item["speed"] != 1) or (start / frame).denominator != 1
+
+
+def _fcpxml_dry_audio(
+    tracks: Sequence[_DryTrack], placed: Sequence[dict[str, Any]], fps: int
+) -> tuple[list[str], dict[int, list[str]]]:
+    frame = Fraction(1, fps)
+    positions = [item["offset"] for item in placed]
+    assets = []
+    anchors: dict[int, list[str]] = {}
+    for track in tracks:
+        lane = -1 if track.role == "dialogue" else -2
+        media = f"dry-{track.role}"
+        title = quoteattr(_xml_text(track.title))
+        assets.append(
+            f'    <asset id="{media}" name={title} start="0s" '
+            f'duration="{_seconds(track.source_duration)}" hasAudio="1" audioSources="1" '
+            f'audioChannels="{track.channels}" audioRate="{track.sample_rate}">\n'
+            f'      <media-rep kind="original-media" src={quoteattr(_uri(track.path))}/>\n    </asset>'
+        )
+        for start, length in track.cuts:
+            parent = placed[bisect_right(positions, start) - 1]
+            # An unretimed zero-origin wrapper keeps offsets frame-aligned even when
+            # the host's source origin falls between output frames.
+            origin = (
+                Fraction(0) if _fcpxml_needs_anchor_clip(parent, frame) else parent["sourceStart"]
+            )
+            offset = origin + (start - parent["offset"]) * frame
+            anchors.setdefault(parent["offset"], []).append(
+                f'              <asset-clip ref="{media}" name={title} lane="{lane}" '
+                f'offset="{_seconds(offset)}" start="0s" duration="{_seconds(length)}" '
+                f'srcEnable="audio" audioRole="{track.role}"/>'
+            )
+    return assets, anchors
+
+
+def _fcpxml_video_clip(
+    item: dict[str, Any], asset: str, frame: Fraction, audio: bool, anchors: list[str]
+) -> str:
+    row = item["row"]
+    duration = item["frames"] * frame
+    start = item["sourceStart"]
+    offset = item["offset"] * frame
+    retimed = item["speed"] != 1
+    wrapped = bool(anchors) and _fcpxml_needs_anchor_clip(item, frame)
+    name = quoteattr(row.get("role") or Path(row["sourcePath"]).name)
+    clip = (
+        f'            <asset-clip ref="{asset}" offset="{_seconds(Fraction(0) if wrapped else offset)}" '
+        f'start="{_seconds(start)}" duration="{_seconds(duration)}" name={name}'
+    )
+    inner: list[str] = []
+    if retimed:
+        end = start + duration * item["speed"]
+        inner.append(
+            "              <timeMap>\n"
+            f'                <timept time="{_seconds(start)}" value="{_seconds(start)}" interp="linear"/>\n'
+            f'                <timept time="{_seconds(start + duration)}" value="{_seconds(end)}" interp="linear"/>\n'
+            "              </timeMap>"
+        )
+    if not wrapped:
+        inner.extend(anchors)
+    if audio:
+        inner.append('              <audio-channel-source srcCh="1,2" role="dialogue.dialogue"/>')
+    if inner:
+        clip += ">\n" + "\n".join(inner) + "\n            </asset-clip>"
+    else:
+        clip += "/>"
+    if wrapped:
+        clip = (
+            f'            <clip name={name} offset="{_seconds(offset)}" start="0s" '
+            f'duration="{_seconds(duration)}">\n'
+            + clip
+            + "\n"
+            + "\n".join(anchors)
+            + "\n            </clip>"
+        )
+    return clip
+
+
 def to_fcpxml(
     edl: dict[str, Any],
     name: str,
@@ -137,6 +225,8 @@ def to_fcpxml(
     height: int = 1080,
     captions: Sequence[ExportCaption] | None = None,
     include_audio_track: bool = False,
+    narration: ExportNarration | None = None,
+    music: ExportMusic | None = None,
 ) -> str:
     placed = layout(edl)
     caption_rows = _normalize_captions(captions)
@@ -155,6 +245,11 @@ def to_fcpxml(
             f'duration="{_seconds(duration)}" hasVideo="1" hasAudio="1" format="r1">\n'
             f'      <media-rep kind="original-media" src={quoteattr(_uri(source))}/>\n    </asset>'
         )
+    total_frames = sum(item["frames"] for item in placed)
+    dry_assets, anchors = _fcpxml_dry_audio(
+        _dry_tracks(narration, music, fps, total_frames), placed, fps
+    )
+    assets.extend(dry_assets)
     spine = []
     for item in placed:
         row = item["row"]
@@ -164,33 +259,12 @@ def to_fcpxml(
                 f'            <transition name="Cross Dissolve" offset="{_seconds(start * frame)}" '
                 f'duration="{_seconds(frames * frame)}"/>'
             )
-        duration = item["frames"] * frame
         asset = f"a{sources.index(row['sourcePath']) + 1}"
-        clip = (
-            f'            <asset-clip ref="{asset}" offset="{_seconds(item["offset"] * frame)}" '
-            f'start="{_seconds(item["sourceStart"])}" duration="{_seconds(duration)}" '
-            f"name={quoteattr(row.get('role') or Path(row['sourcePath']).name)}"
+        spine.append(
+            _fcpxml_video_clip(
+                item, asset, frame, include_audio_track, anchors.get(item["offset"], [])
+            )
         )
-        inner: list[str] = []
-        if item["speed"] != 1:
-            # timeMap maps clip-local output time to source time for a constant speed.
-            end = item["sourceStart"] + duration * item["speed"]
-            inner.append(
-                "              <timeMap>\n"
-                f'                <timept time="0s" value="{_seconds(item["sourceStart"])}" interp="linear"/>\n'
-                f'                <timept time="{_seconds(duration)}" value="{_seconds(end)}" interp="linear"/>\n'
-                "              </timeMap>"
-            )
-        if include_audio_track:
-            # Best-effort stereo declaration; not verified in Final Cut / Resolve.
-            inner.append(
-                '              <audio-channel-source srcCh="1,2" role="dialogue.dialogue"/>'
-            )
-        if inner:
-            clip += ">\n" + "\n".join(inner) + "\n            </asset-clip>"
-        else:
-            clip += "/>"
-        spine.append(clip)
     for caption in caption_rows:
         start = caption.start_frame * frame
         duration = (caption.end_frame - caption.start_frame) * frame
@@ -201,7 +275,7 @@ def to_fcpxml(
             f"              <text>{escape(caption.text)}</text>\n"
             "            </title>"
         )
-    total = sum(item["frames"] for item in placed) * frame
+    total = total_frames * frame
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE fcpxml>\n<fcpxml version="1.9">\n'
         "  <resources>\n"
@@ -274,7 +348,7 @@ class MusicTimelineError(ValueError):
     """A registered track cannot be represented on the export clock."""
 
 
-def _xmeml_narration(narration: ExportNarration, fps: int, total: int, rate: str) -> str:
+def _validate_narration(narration: ExportNarration, fps: int, total: int) -> None:
     from gamingcreator.domain.creation_narration import NarrationSelection, validate_narration_fit
 
     validate_narration_fit(
@@ -288,6 +362,10 @@ def _xmeml_narration(narration: ExportNarration, fps: int, total: int, rate: str
         raise ValueError("Narration channels must be positive.")
     if type(narration.sample_width) is not int or narration.sample_width not in (1, 2, 3, 4):
         raise ValueError("Unsupported narration sample width.")
+
+
+def _xmeml_narration(narration: ExportNarration, fps: int, total: int, rate: str) -> str:
+    _validate_narration(narration, fps, total)
     frames = -(-narration.sample_count * fps // narration.sample_rate)
     return (
         '<track><clipitem id="narration-clip"><name>Narration (dry)</name>'
@@ -304,7 +382,7 @@ def _xmeml_narration(narration: ExportNarration, fps: int, total: int, rate: str
     )
 
 
-def _xmeml_music(music: ExportMusic, fps: int, total: int, rate: str) -> str:
+def _music_source_frames(music: ExportMusic, fps: int, total: int) -> int:
     source_frames = (music.duration * fps).__floor__()
     if source_frames < 1:
         raise MusicTimelineError("配乐短于一帧。")
@@ -315,12 +393,14 @@ def _xmeml_music(music: ExportMusic, fps: int, total: int, rate: str) -> str:
     depth = music.sample_depth_bits
     if depth is not None and (type(depth) is not int or depth <= 0):
         raise ValueError("Music sample depth must be a positive integer when known.")
+    return source_frames
+
+
+def _xmeml_music(music: ExportMusic, fps: int, total: int, rate: str) -> str:
+    source_frames = _music_source_frames(music, fps, total)
+    depth = music.sample_depth_bits
     depth_xml = f"<depth>{depth}</depth>" if depth is not None else ""
-    title = escape(
-        re.sub(
-            r"[^\x09\x0a\x0d\x20-\ud7ff\ue000-\ufffd\U00010000-\U0010ffff]", "\ufffd", music.title
-        )
-    )
+    title = escape(_xml_text(music.title))
     full_file = (
         f'<file id="music-file"><name>{title}</name>'
         f"<pathurl>{escape(_uri(music.audio_path))}</pathurl>{rate}"
@@ -475,11 +555,121 @@ def _range(start: Fraction, duration: Fraction, rate: int) -> dict[str, Any]:
     }
 
 
+@dataclass(frozen=True, slots=True)
+class _DryTrack:
+    role: str
+    title: str
+    path: str
+    source_duration: Fraction
+    sample_rate: int
+    channels: int
+    # Each cut starts at media time zero. Offsets belong to the sequence clock.
+    cuts: tuple[tuple[int, Fraction], ...]
+
+
+def _dry_tracks(
+    narration: ExportNarration | None, music: ExportMusic | None, fps: int, total: int
+) -> list[_DryTrack]:
+    tracks = []
+    if narration is not None:
+        _validate_narration(narration, fps, total)
+        length = Fraction(narration.sample_count, narration.sample_rate)
+        tracks.append(
+            _DryTrack(
+                "dialogue",
+                "Narration (dry)",
+                narration.wav_path,
+                length,
+                narration.sample_rate,
+                narration.channels,
+                ((narration.start_frame, length),),
+            )
+        )
+    if music is not None:
+        loop = _music_source_frames(music, fps, total)
+        tracks.append(
+            _DryTrack(
+                "music",
+                music.title,
+                music.audio_path,
+                music.duration,
+                music.sample_rate,
+                music.channels,
+                tuple(
+                    (start, Fraction(min(loop, total - start), fps))
+                    for start in range(0, total, loop)
+                ),
+            )
+        )
+    return tracks
+
+
+def _otio_dry_track(track: _DryTrack, fps: int) -> dict[str, Any]:
+    children = []
+    position = Fraction(0)
+    for start, length in track.cuts:
+        offset = Fraction(start, fps)
+        if offset > position:
+            children.append(
+                {
+                    "OTIO_SCHEMA": "Gap.1",
+                    "name": "",
+                    "effects": [],
+                    "markers": [],
+                    "source_range": _range(Fraction(0), offset - position, fps),
+                    "metadata": {},
+                }
+            )
+        children.append(
+            {
+                "OTIO_SCHEMA": "Clip.2",
+                "name": track.title,
+                "source_range": _range(
+                    Fraction(0), length, fps if track.role == "music" else track.sample_rate
+                ),
+                "media_references": {
+                    "DEFAULT_MEDIA": {
+                        "OTIO_SCHEMA": "ExternalReference.1",
+                        "target_url": _uri(track.path),
+                        "available_range": _range(
+                            Fraction(0), track.source_duration, track.sample_rate
+                        ),
+                        "metadata": {},
+                    }
+                },
+                "active_media_reference_key": "DEFAULT_MEDIA",
+                "effects": [],
+                "markers": [],
+                "metadata": {},
+            }
+        )
+        position = offset + length
+    return {
+        "OTIO_SCHEMA": "Track.1",
+        "name": "Music (dry)" if track.role == "music" else track.title,
+        "kind": "Audio",
+        "children": children,
+        "source_range": None,
+        "effects": [],
+        "markers": [],
+        "metadata": {
+            "gamingcreator": {
+                "role": track.role,
+                "channels": track.channels,
+                "sampleRate": track.sample_rate,
+                "importVerified": False,
+            }
+        },
+    }
+
+
 def to_otio(
     edl: dict[str, Any],
     name: str,
     captions: Sequence[ExportCaption] | None = None,
     include_audio_track: bool = False,
+    narration: ExportNarration | None = None,
+    music: ExportMusic | None = None,
 ) -> str:
     placed = layout(edl)
     caption_rows = _normalize_captions(captions)
@@ -588,6 +778,10 @@ def to_otio(
                 "metadata": {"gamingcreator": {"channels": 2, "importVerified": False}},
             }
         )
+    total = sum(item["frames"] for item in placed)
+    tracks.extend(
+        _otio_dry_track(track, fps) for track in _dry_tracks(narration, music, fps, total)
+    )
     if caption_rows:
         caption_children: list[dict[str, Any]] = [
             {

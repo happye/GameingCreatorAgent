@@ -1598,10 +1598,8 @@ class InspectionHandler(BaseHTTPRequestHandler):
                         <= {"planId", "format", "size", "music"}
                     ):
                         raise ValueError("Expected plan ID and timeline format")
-                    if "music" in query and (
-                        query["format"] != "xmeml" or query["music"] != "include"
-                    ):
-                        raise ValueError("Only Premiere XML accepts music=include")
+                    if "music" in query and query["music"] != "include":
+                        raise ValueError("Expected music=include")
                     self._require("timelineExport")
                     body, filename, content_type = self.creation_jobs.timeline_export(
                         tail.removesuffix("/timeline"),

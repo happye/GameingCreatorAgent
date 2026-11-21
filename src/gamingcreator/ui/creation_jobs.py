@@ -1628,63 +1628,42 @@ class CreationJobs:
             captions = captions_from_cues(cues, int(chain.edl["fpsNumerator"]))
         except Exception:
             captions = ()
-        if fmt == "fcpxml":
-            body = to_fcpxml(
-                chain.edl,
-                name,
-                int(width),
-                int(height),
-                captions=captions,
-                include_audio_track=True,
+        if fmt not in {"fcpxml", "otio", "xmeml"}:
+            raise fail("creation.input", "时间线格式只支持 fcpxml、otio 或 xmeml。")
+        narration = None
+        if chain.narration is not None and (asset := chain.narration_asset) is not None:
+            narration = ExportNarration(
+                str(asset.wav_path),
+                chain.narration.start_frame,
+                asset.sample_rate,
+                asset.channels,
+                asset.sample_width,
+                asset.sample_count,
             )
-            return body.encode("utf-8"), f"{name}.fcpxml", "application/xml"
-        if fmt == "otio":
-            return (
-                to_otio(chain.edl, name, captions=captions, include_audio_track=True).encode(
-                    "utf-8"
-                ),
-                f"{name}.otio",
-                "application/json",
-            )
-        if fmt == "xmeml":
-            narration = None
-            music = None
-            if include_music and chain.audio_mix.bgm is not None:
-                selection = chain.audio_mix.bgm
-                library = MusicLibrary(self.repository)
-                track = library.resolve(selection.track_id, selection.track_receipt_sha256)
-                try:
-                    length, sample_rate, channels, depth = asyncio.run(
-                        library.probe_audio_stream(track)
-                    )
-                except ValueError as error:
-                    raise fail("creation.input", str(error)) from error
-                music = ExportMusic(
-                    str(track.path), track.title, length, sample_rate, channels, depth
-                )
-            if chain.narration is not None and chain.narration_asset is not None:
-                asset = chain.narration_asset
-                narration = ExportNarration(
-                    str(asset.wav_path),
-                    chain.narration.start_frame,
-                    asset.sample_rate,
-                    asset.channels,
-                    asset.sample_width,
-                    asset.sample_count,
-                )
+        music = None
+        if include_music and (selection := chain.audio_mix.bgm) is not None:
+            library = MusicLibrary(self.repository)
+            track = library.resolve(selection.track_id, selection.track_receipt_sha256)
             try:
-                body = to_xmeml(
-                    chain.edl,
-                    name,
-                    captions=captions,
-                    include_audio_track=True,
-                    narration=narration,
-                    music=music,
+                length, sample_rate, channels, depth = asyncio.run(
+                    library.probe_audio_stream(track)
                 )
-            except MusicTimelineError as error:
+            except ValueError as error:
                 raise fail("creation.input", str(error)) from error
-            return body.encode("utf-8"), f"{name}-premiere.xml", "application/xml"
-        raise fail("creation.input", "时间线格式只支持 fcpxml、otio 或 xmeml。")
+            music = ExportMusic(str(track.path), track.title, length, sample_rate, channels, depth)
+        try:
+            if fmt == "fcpxml":
+                body = to_fcpxml(
+                    chain.edl, name, int(width), int(height), captions, True, narration, music
+                )
+                return body.encode("utf-8"), f"{name}.fcpxml", "application/xml"
+            if fmt == "otio":
+                body = to_otio(chain.edl, name, captions, True, narration, music)
+                return body.encode("utf-8"), f"{name}.otio", "application/json"
+            body = to_xmeml(chain.edl, name, captions, True, narration, music)
+        except MusicTimelineError as error:
+            raise fail("creation.input", str(error)) from error
+        return body.encode("utf-8"), f"{name}-premiere.xml", "application/xml"
 
     def narration_script(self, job_id: str, plan_id: str) -> dict[str, object]:
         from gamingcreator.application.knowledge import search
