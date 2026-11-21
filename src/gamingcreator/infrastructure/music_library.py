@@ -258,6 +258,8 @@ class MusicLibrary:
         )
 
     def catalog(self) -> dict[str, Any]:
+        from gamingcreator.infrastructure.music_annotations import read_annotation
+
         tracks: list[dict[str, Any]] = []
         issues: list[dict[str, str]] = []
         root = _safe(self.root)
@@ -267,12 +269,20 @@ class MusicLibrary:
             try:
                 _hex(directory.name, 32)
                 receipt = _file(directory / "receipt.json", 65536)
-                tracks.append(self.resolve(directory.name, hash_file(receipt)).public())
+                track = self.resolve(directory.name, hash_file(receipt))
             except (OSError, ValueError, KeyError, TypeError):
                 issues.append(
                     {
                         "trackId": directory.name,
                         "message": "Music registration is incomplete or damaged.",
                     }
+                )
+                continue
+            try:
+                tracks.append({**track.public(), "annotation": read_annotation(track)})
+            except (OSError, ValueError):
+                tracks.append({**track.public(), "annotation": None, "annotationIssue": True})
+                issues.append(
+                    {"trackId": directory.name, "message": "曲目标注无法核实，原文件已保留。"}
                 )
         return {"tracks": tracks, "issues": issues}

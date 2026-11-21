@@ -11,6 +11,7 @@ import pytest
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.domain.errors import AppError
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
+from gamingcreator.infrastructure.music_annotations import read_annotation, save_annotation
 from gamingcreator.infrastructure.music_library import MusicLibrary
 
 TOOLS = Path("G:/Tools/ChatGPTRepo/GameingCreatorAgent/.tools/ffmpeg/bin")
@@ -69,6 +70,44 @@ def test_real_decode_register_resolve_catalog_and_immutable_sources(library, tmp
     second = register(library, source)
     assert second.track_id != track.track_id
     assert library.resolve(track.track_id, track.receipt_sha256) == track
+
+
+def test_annotation_is_receipt_bound_and_rejects_a_stale_editor(library, tmp_path):
+    source = tone(tmp_path / "tone.wav")
+    track = register(library, source)
+    original = track.public()
+    fields = {"moods": ["playful", "lively"], "energy": 72, "dropUs": 50_000}
+    first = save_annotation(track, fields, None)
+    assert first == read_annotation(track)
+    assert save_annotation(track, fields, None) == first
+    assert library.resolve(track.track_id, track.receipt_sha256).public() == original
+    assert library.catalog()["tracks"][0]["annotation"] == first
+    with pytest.raises(AppError, match="请刷新"):
+        save_annotation(track, {**fields, "energy": 15}, None)
+    cleared = save_annotation(
+        track, {"moods": [], "energy": None, "dropUs": None}, first["annotationSha256"]
+    )
+    assert cleared["dropUs"] is None and cleared["annotationSha256"] != first["annotationSha256"]
+    copy = register(library, source)
+    assert copy.sha256 == track.sha256 and read_annotation(copy) is None
+
+
+def test_damaged_annotation_keeps_the_music_playable_and_refuses_overwrite(library, tmp_path):
+    track = register(library, tone(tmp_path / "tone.wav"))
+    fields = {"moods": ["calm"], "energy": None, "dropUs": 0}
+    first = save_annotation(track, fields, None)
+    path = track.path.parent / "annotation.json"
+    document = json.loads(path.read_text(encoding="utf-8"))
+    document["values"]["energy"] = 40
+    path.write_text(json.dumps(document), encoding="utf-8")
+    assert library.resolve(track.track_id, track.receipt_sha256) == track
+    catalog = library.catalog()
+    assert catalog["tracks"][0]["annotationIssue"] is True
+    assert catalog["tracks"][0]["annotation"] is None and catalog["issues"]
+    with pytest.raises(ValueError, match="损坏"):
+        save_annotation(track, fields, first["annotationSha256"])
+    path.write_text("[" * 1600 + "]" * 1600, encoding="utf-8")
+    assert library.catalog()["tracks"][0]["annotationIssue"] is True
 
 
 @pytest.mark.parametrize("target", ["audio", "receipt", "evidence"])

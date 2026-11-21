@@ -635,6 +635,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     "/api/creation/brief-sentence",
                     "/api/creation/job-name",
                     "/api/creation/music",
+                    "/api/creation/music-annotations",
                     "/api/creation/overlay-assets",
                     "/api/creation/activity-rules",
                     "/api/knowledge",
@@ -840,6 +841,28 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 from gamingcreator.ui.ad_music_matches import ad_music_matches
 
                 self._json(200, asyncio.run(ad_music_matches(self.repository, value)))
+                return
+            if path == "/api/creation/music-annotations":
+                from gamingcreator.infrastructure.music_annotations import save_annotation
+
+                fields = {"moods", "energy", "dropUs"}
+                if not isinstance(value, dict) or set(value) != fields | {
+                    "trackId",
+                    "trackReceiptSha256",
+                    "expectedAnnotationSha256",
+                }:
+                    raise ValueError("需要曲目回执和完整标注字段。")
+                track = MusicLibrary(self.repository).resolve(
+                    value["trackId"], value["trackReceiptSha256"]
+                )
+                self._json(
+                    200,
+                    save_annotation(
+                        track,
+                        {key: value[key] for key in fields},
+                        value["expectedAnnotationSha256"],
+                    ),
+                )
                 return
             if path == "/api/creation/timeline-commands":
                 from gamingcreator.application.timeline_commands import (

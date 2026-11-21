@@ -2,7 +2,7 @@
 
 ## 最近一次会话（2026-11-21）
 
-当前开发分支为 `main`。先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。[P030/P049 广告节拍配乐](docs/exec-plans/sprint-ad-rhythm-matching.md)实测《代号 Atom》8 秒广告在两种偏好间改变首推，选中快拍后试听、重开并导出抖音包 `215210020b2f4315accb47d145af821d`。[广告批量](docs/exec-plans/sprint-ad-variant-batches.md)仍可混用各方案的已存修订。
+当前开发分支为 `main`。先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。[P030/P049 广告配乐](docs/exec-plans/sprint-ad-rhythm-matching.md)实测《代号 Atom》8 秒广告随情绪和高潮偏好改选慢拍，试听、重开、混音并导出抖音包 `3fdb2f649fdc45a5b08e561999b15a53`。[广告批量](docs/exec-plans/sprint-ad-variant-batches.md)可混用各方案的已存修订。
 
 ## 实证与接手入口
 
@@ -28,6 +28,6 @@
 
 ## 下一优先级与约束
 
-[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)用户确认通过。漫画群星和代号 Atom 实测通过本机命名出包，浏览器原失败未复现。下一切片补曲库情绪与高潮标注，使配乐匹配可用创作者核对过的信息。P042、P044–P049 待人评。
+[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)用户确认通过。漫画群星和代号 Atom 实测通过本机命名出包，浏览器原失败未复现。下一步核对 P047 的本机转写素材能否贯通实况精剪。P042、P044–P049 待人评。
 
 本批使用定向回归、真实浏览器和产物验证，无全量、Release、支付或上传。旧完整 verify-20261117-002506 按用户要求中断，曾见失败。J2/J3 待人评，J1 通过以第六次用户答复为证。文字月 ¥30/单条 ¥1、指定视觉月 ¥50，现有费用门禁保留。本机声音，真实平台发布或支付须另授权。

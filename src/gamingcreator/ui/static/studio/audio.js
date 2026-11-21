@@ -123,17 +123,146 @@ export function useAudioPreview(player, audio, fps, video, tracks, identity) {
 }
 
 export function useMusicCatalog() {
-    const [tracks, setTracks] = useState([]);
-    const reload = () => client.api("/api/creation/music").then((data) => setTracks(data.tracks || [])).catch(() => setTracks([]));
-    useEffect(() => { void reload(); }, []);
-    return {tracks, reload};
+    const [state, setState] = useState({tracks: [], refreshing: true, error: ""});
+    const pending = useRef(null), mounted = useRef(false), channel = useRef(null);
+    const reload = async (updatedTrack = null) => {
+        if (!mounted.current) return;
+        if (updatedTrack) channel.current?.postMessage("updated");
+        pending.current?.abort();
+        const controller = new AbortController();
+        pending.current = controller;
+        setState(source => ({
+            tracks: updatedTrack ? source.tracks.map(track => track.trackId === updatedTrack.trackId
+                && track.trackReceiptSha256 === updatedTrack.trackReceiptSha256 ? updatedTrack : track) : source.tracks,
+            refreshing: true, error: "",
+        }));
+        try {
+            const {tracks} = await client.api("/api/creation/music", {}, {signal: controller.signal});
+            if (!controller.signal.aborted) setState({tracks, refreshing: false, error: ""});
+        } catch (error) {
+            if (!controller.signal.aborted) setState(source => ({...source, refreshing: false, error: error.message}));
+        }
+    };
+    useLayoutEffect(() => {
+        mounted.current = true;
+        const updates = typeof BroadcastChannel === "function" ? new BroadcastChannel("studio-music-catalog") : null;
+        channel.current = updates;
+        if (updates) updates.onmessage = () => void reload();
+        void reload();
+        return () => { mounted.current = false; pending.current?.abort(); updates?.close(); channel.current = null; };
+    }, []);
+    return {...state, reload};
 }
 
 const MUSIC_PACES = {cuts: "按剪辑节拍", calm: "舒缓", lively: "动感", intense: "强烈"};
+const MUSIC_MOODS = {calm: "舒缓", lively: "动感", intense: "强烈", dramatic: "戏剧", playful: "俏皮", electronic: "电子"};
+function secondsUs(value) {
+    if (value === "") return null;
+    const seconds = Number(value);
+    return seconds >= 0 ? Math.round(seconds * 1e6) : NaN;
+}
+const optionalPoint = (us, limit) => us === null || (Number.isSafeInteger(us) && us >= 0 && us < limit);
+
+function annotationDraft(track) {
+    const annotation = track.annotation;
+    return {
+        receipt: track.trackReceiptSha256, expected: annotation?.annotationSha256 ?? null,
+        moods: annotation?.moods || [], energy: String(annotation?.energy ?? ""),
+        drop: annotation?.dropUs == null ? "" : String(annotation.dropUs / 1e6),
+    };
+}
+
+function MusicAnnotations({music}) {
+    const [trackId, setTrackId] = useState("");
+    const [drafts, setDrafts] = useState({});
+    const [status, setStatus] = useState(null);
+    const preview = useRef(null), pending = useRef(false), mounted = useRef(false);
+    useLayoutEffect(() => {
+        mounted.current = true;
+        return () => { mounted.current = false; };
+    }, []);
+    const track = music.tracks.find(row => row.trackId === trackId);
+    const saved = track && annotationDraft(track);
+    const draft = drafts[trackId] || saved;
+    const stale = !!(saved && draft && (saved.receipt !== draft.receipt || saved.expected !== draft.expected));
+    const blocked = !track || track.annotationIssue || stale || !!status?.busy;
+    const energy = draft?.energy === "" ? null : Number(draft?.energy);
+    const dropUs = secondsUs(draft?.drop);
+    const valid = draft && (energy === null || (Number.isInteger(energy) && energy >= 0 && energy <= 100))
+        && optionalPoint(dropUs, track?.durationUs);
+    const patch = change => setDrafts(current => ({...current, [trackId]: {...(current[trackId] || saved), ...change}}));
+    const reset = () => {
+        setDrafts(current => { const next = {...current}; delete next[trackId]; return next; });
+        setStatus(null);
+    };
+    const save = async () => {
+        if (blocked || !valid || music.refreshing || music.error || !drafts[trackId] || pending.current) return;
+        pending.current = true;
+        setStatus({trackId, busy: true});
+        try {
+            const annotation = await client.api("/api/creation/music-annotations", {}, {body: {
+                trackId, trackReceiptSha256: draft.receipt, expectedAnnotationSha256: draft.expected,
+                moods: draft.moods, energy, dropUs,
+            }});
+            if (mounted.current) {
+                reset();
+                setStatus({trackId, message: "已保存曲库标注。"});
+            }
+            await music.reload({...track, annotation});
+        } catch (error) {
+            if (mounted.current) setStatus({trackId, message: error.message});
+            await music.reload();
+        } finally {
+            pending.current = false;
+        }
+    };
+    const usePreviewTime = () => {
+        const player = preview.current;
+        const time = player?.readyState ? Math.round(player.currentTime * 1e6) : NaN;
+        if (optionalPoint(time, track.durationUs)) patch({drop: String(time / 1e6)});
+        else setStatus({trackId, message: "请先试听并将进度移到曲目中的高潮。"});
+    };
+    return html`<details class="group"><summary>曲库标注</summary>
+        <label class="form-row">标注曲目<select class="select" value=${trackId} disabled=${!!status?.busy}
+            onChange=${event => { setTrackId(event.currentTarget.value); setStatus(null); }}>
+            <option value="">选择已登记曲目</option>
+            ${trackId && !track && html`<option value=${trackId} disabled>当前曲目不可用</option>`}
+            ${music.tracks.map(row => html`<option key=${row.trackId} value=${row.trackId}>${row.title}</option>`)}
+        </select></label>
+        <button class="btn ghost" type="button" disabled=${music.refreshing || status?.busy} onClick=${() => music.reload()}>刷新曲库</button>
+        ${music.error && html`<p class="note" role="status">曲库读取失败。${music.error}</p>`}
+        ${track && html`<${MusicAnnotationFields} track=${track} draft=${draft} preview=${preview} blocked=${blocked} stale=${stale}
+            saving=${!!status?.busy} patch=${patch} reset=${reset} usePreviewTime=${usePreviewTime} />`}
+        ${track && html`<button class="btn" type="button" disabled=${blocked || !valid || music.refreshing || !!music.error || !drafts[trackId]} onClick=${save}>保存曲库标注</button>`}
+        ${track && !valid && html`<p class="note">力度须为 0–100 的整数，高潮须在曲目时长内。</p>`}
+        ${status?.trackId === trackId && html`<p role="status">${status.busy ? "正在保存曲库标注…" : status.message}</p>`}
+    </details>`;
+}
+
+function MusicAnnotationFields({track, draft, preview, blocked, stale, saving, patch, reset, usePreviewTime}) {
+    return html`<div>
+        <audio key=${track.trackReceiptSha256} ref=${preview} src=${musicUrl(track)} controls preload="none" aria-label="试听原音" style="width:100%"></audio>
+        ${track.annotationIssue && html`<p class="note" role="alert">曲库标注记录已损坏，无法覆盖。</p>`}
+        ${stale && html`<p class="note" role="status">曲目或标注已在别处更新，当前草稿已保留。</p>
+            <button class="btn ghost" type="button" disabled=${saving} onClick=${reset}>放弃草稿并载入当前标注</button>`}
+        <div role="group" aria-label="曲目情绪">
+            ${Object.entries(MUSIC_MOODS).map(([mood, label]) => html`<label class="check" key=${mood}>
+                <input type="checkbox" checked=${draft.moods.includes(mood)} disabled=${blocked}
+                    onChange=${event => patch({moods: event.currentTarget.checked ? [...draft.moods, mood] : draft.moods.filter(value => value !== mood)})} />${label}
+            </label>`)}
+        </div>
+        <label class="form-row">力度（选填）<input class="input" type="number" min="0" max="100" step="1"
+            value=${draft.energy} disabled=${blocked} onInput=${event => patch({energy: event.currentTarget.value})} /></label>
+        <label class="form-row">曲目高潮（秒，选填）<input class="input" type="number" min="0" step="0.000001"
+            value=${draft.drop} disabled=${blocked} onInput=${event => patch({drop: event.currentTarget.value})} /></label>
+        <button class="btn ghost" type="button" disabled=${blocked} onClick=${usePreviewTime}>用试听当前时刻</button>
+    </div>`;
+}
 
 function useMusicMatches(body, timeline, scope, tracks, disabled) {
     const [state, setState] = useState(null);
-    const inputs = [JSON.stringify(body), timeline, scope, JSON.stringify(tracks.map(t => [t.trackId, t.trackReceiptSha256])), disabled];
+    const inputs = [JSON.stringify(body), timeline, scope,
+        JSON.stringify(tracks.map(t => [t.trackId, t.trackReceiptSha256, t.annotation?.annotationSha256, t.annotationIssue])), disabled];
     const view = useRef({inputs, generation: 0}), request = useRef(null);
     if (inputs.some((input, i) => input !== view.current.inputs[i])) {
         view.current = {inputs, generation: view.current.generation + 1};
@@ -143,22 +272,26 @@ function useMusicMatches(body, timeline, scope, tracks, disabled) {
         request.current?.abort();
         request.current = null;
     }, [generation]);
+    const isCurrent = () => !disabled && view.current.generation === generation;
     const analyze = async () => {
-        if (disabled || view.current.generation !== generation || request.current || !body.tracks.length) return;
+        if (!isCurrent() || request.current || !body.tracks.length) return;
         const controller = new AbortController();
         request.current = controller;
         const current = () => request.current === controller && !controller.signal.aborted && view.current.generation === generation;
         setState({generation, busy: true});
         try {
             const data = await client.api("/api/creation/ad-music-matches", {}, {body, signal: controller.signal});
-            if (current()) setState({generation, suggestions: data.pace === body.pace ? data.suggestions : []});
+            if (current()) {
+                const same = data.pace === body.pace && data.mood === body.mood && data.highlightUs === body.highlightUs;
+                setState({generation, suggestions: same ? data.suggestions : []});
+            }
         } catch (error) {
             if (current()) setState({generation, error: error.message});
         } finally {
             if (request.current === controller) request.current = null;
         }
     };
-    return {...(state?.generation === generation ? state : {}), analyze};
+    return {...(state?.generation === generation ? state : {}), analyze, isCurrent};
 }
 
 function musicMatchText({bpm, nearCuts, checkedCuts, totalCuts}) {
@@ -169,42 +302,79 @@ function musicMatchText({bpm, nearCuts, checkedCuts, totalCuts}) {
     return `约 ${Math.round(bpm)} BPM · ${comparison}`;
 }
 
+function musicAnnotationText({moods, energy, dropUs, dropGapUs, moodMatch}) {
+    const facts = moods.map(mood => MUSIC_MOODS[mood]).filter(Boolean);
+    if (energy != null) facts.push(`力度 ${energy}`);
+    if (dropUs != null) facts.push(`曲目高潮 ${dropUs / 1e6} 秒`);
+    if (!facts.length) return "";
+    const match = [moodMatch === true && "情绪匹配", dropGapUs != null && `高潮相差 ${(dropGapUs / 1e6).toFixed(2)} 秒`].filter(Boolean);
+    return [`创作者标注（${facts.join("、")}）`, ...match].join(" · ");
+}
+
+function musicCandidates(durationOrdered, mood, highlightUs, durationUs) {
+    const hasMood = track => !!mood && !!track.annotation?.moods.includes(mood);
+    const hasDrop = track => highlightUs !== null && track.annotation?.dropUs != null
+        && track.annotation.dropUs < Math.min(durationUs, 45_000_000);
+    const weight = track => Number(hasMood(track)) + Number(hasDrop(track));
+    const ranked = [...durationOrdered].sort((a, b) => weight(b) - weight(a));
+    const representatives = [ranked.find(hasMood), ranked.find(hasDrop)].filter(Boolean);
+    const shortlist = [...new Set([...representatives, ...ranked])].slice(0, 6);
+    return ranked.filter(track => shortlist.includes(track));
+}
+
 function AdMusicSuggestions({tracks, durationUs, cutUs, timeline, scope, selectedId, disabled, onSelect}) {
     const [pace, setPace] = useState("cuts");
+    const [mood, setMood] = useState("");
+    const [highlight, setHighlight] = useState("");
+    const highlightUs = secondsUs(highlight);
+    const valid = optionalPoint(highlightUs, durationUs);
     const eligible = tracks.filter((track) => track.licenseStatus === "user_declared");
     const covering = eligible.filter((track) => track.durationUs >= durationUs).sort((a, b) => a.durationUs - b.durationUs);
     const looping = eligible.filter((track) => track.durationUs < durationUs).sort((a, b) => b.durationUs - a.durationUs);
-    const candidates = [...covering, ...looping].slice(0, 6);
+    const durationOrdered = [...covering, ...looping];
+    const candidates = musicCandidates(durationOrdered, mood, valid ? highlightUs : null, durationUs);
     const match = useMusicMatches({
-        durationUs, cutUs, pace,
+        durationUs, cutUs, pace, mood: mood || null, highlightUs,
         tracks: candidates.map(({trackId, trackReceiptSha256}) => ({trackId, trackReceiptSha256})),
-    }, timeline, scope, tracks, disabled || durationUs <= 0);
+    }, timeline, scope, tracks, disabled || !valid || durationUs <= 0);
     if (durationUs <= 0) return null;
     const ranked = (match.suggestions || []).flatMap(result => {
-        const track = candidates.find(t => t.trackId === result.trackId && t.trackReceiptSha256 === result.trackReceiptSha256);
+        const track = candidates.find(t => t.trackId === result.trackId && t.trackReceiptSha256 === result.trackReceiptSha256
+            && (t.annotation?.annotationSha256 ?? null) === result.annotationSha256);
         return track ? [{track, result}] : [];
     });
-    const confident = ranked.some(({result}) => Number.isFinite(result.bpm));
-    const suggestions = confident ? ranked : candidates.slice(0, 3).map(track => ({track}));
-    const select = track => { if (!disabled) onSelect(track); };
+    const catalogChanged = ranked.length !== (match.suggestions?.length || 0);
+    const matched = !catalogChanged && ranked.some(({result}) => Number.isFinite(result.bpm) || result.moodMatch === true
+        || result.dropGapUs != null || (pace !== "cuts" && Number.isFinite(result.energy)));
+    const suggestions = matched ? ranked : durationOrdered.slice(0, 3).map(track => ({track}));
+    const select = (track, result) => { if (!disabled && (!result || match.isCurrent())) onSelect(track); };
     return html`<div class="field">
         <div class="k">广告配乐建议</div>
         ${suggestions.length ? html`
-            <p class="hint">${confident ? "按节奏偏好及与剪辑的匹配排序。" : `按当前 ${(durationUs / 1e6).toFixed(1)} 秒成片匹配时长，优先选一次播完即可覆盖的音乐。`}选用后可随画面试听。</p>
+            <p class="hint">${matched ? "按节奏、情绪和高潮匹配排序。" : `按当前 ${(durationUs / 1e6).toFixed(1)} 秒成片匹配时长，优先选一次播完即可覆盖的音乐。`}选用后可随画面试听。</p>
             <label class="form-row">节奏偏好<select class="select" value=${pace} disabled=${disabled}
                 onChange=${event => setPace(event.currentTarget.value)}>
                 ${Object.entries(MUSIC_PACES).map(([value, label]) => html`<option key=${value} value=${value}>${label}</option>`)}
             </select></label>
-            <p class="hint">按时长选最多 6 首已声明使用权的音乐做本机分析。舒缓、动感和强烈按节拍速度匹配。</p>
-            <button class="btn ghost" type="button" disabled=${disabled || match.busy} onClick=${match.analyze}>分析本机配乐节拍</button>
+            <label class="form-row">情绪偏好<select class="select" value=${mood} disabled=${disabled} onChange=${event => setMood(event.currentTarget.value)}>
+                <option value="">不限</option>
+                ${Object.entries(MUSIC_MOODS).map(([value, label]) => html`<option key=${value} value=${value}>${label}</option>`)}
+            </select></label>
+            <label class="form-row">成片高潮（秒，选填）<input class="input" type="number" min="0" step="0.000001"
+                value=${highlight} disabled=${disabled} onInput=${event => setHighlight(event.currentTarget.value)} /></label>
+            ${!valid && html`<p class="note">高潮时间须在成片时长内。</p>`}
+            <p class="hint">最多分析 6 首已声明使用权的本机音乐，优先覆盖所选情绪和已标注高潮，再按时长选曲。</p>
+            <button class="btn ghost" type="button" disabled=${disabled || !valid || match.busy} onClick=${match.analyze}>分析本机配乐节拍</button>
             ${match.busy && html`<p class="note" role="status">正在分析本机配乐节拍…</p>`}
-            ${match.suggestions && !confident && html`<p class="note" role="status">没有测出可信节拍，仍按时长推荐。你也可以手工选用曲目。</p>`}
+            ${catalogChanged ? html`<p class="note" role="status">曲库标注已更新。请在「曲库标注」中刷新曲库后重新分析。</p>`
+                : match.suggestions && !matched && html`<p class="note" role="status">没有可信节拍或可用标注匹配，仍按时长推荐。你也可以手工选用曲目。</p>`}
             ${match.error && html`<p class="note" role="status">节拍分析失败，仍按时长推荐。${match.error}</p>`}
             <ul>${suggestions.map(({track, result}) => html`<li key=${track.trackId}>
                 <button class="btn ghost" type="button" style="max-width:100%;overflow-wrap:anywhere" disabled=${disabled || selectedId === track.trackId}
-                    onClick=${() => select(track)}>${selectedId === track.trackId ? "已选用" : "选用"} ${track.title}</button>
+                    onClick=${() => select(track, result)}>${selectedId === track.trackId ? "已选用" : "选用"} ${track.title}</button>
                 <span class="hint"> ${track.durationUs >= durationUs ? "单次覆盖" : "需要循环"} · ${(track.durationUs / 1e6).toFixed(1)} 秒</span>
                 ${result && html`<span class="hint"> · ${musicMatchText(result)}</span>`}
+                ${(result?.moods || track.annotation) && html`<div class="hint">${musicAnnotationText(result || track.annotation)}</div>`}
             </li>`)}</ul>` : html`<p class="hint">上传音乐并声明有权使用后，可按成片时长获得建议。</p>`}
     </div>`;
 }
@@ -688,7 +858,7 @@ export function AudioPanel({commandPreview = false, adMusicDurationUs = 0, adMus
         <div class="field audio-panel"><div class="k">配乐与原声</div>
             <${AdMusicSuggestions} tracks=${music.tracks} durationUs=${adMusicDurationUs} cutUs=${adMusicCutsUs}
                 timeline=${adMusicTimeline} scope=${adMusicScope} selectedId=${bgm?.trackId}
-                disabled=${!!working || musicSuggestionsDisabled} onSelect=${selectMusic} />
+                disabled=${!!working || musicSuggestionsDisabled || music.refreshing || !!music.error} onSelect=${selectMusic} />
             <label class="form-row">配乐<select class="select" value=${bgm?.trackId || ""} onChange=${(e) => {
                 selectMusic(music.tracks.find((track) => track.trackId === e.currentTarget.value));
             }}><option value="">不加配乐</option>${music.tracks.map((t) => html`<option value=${t.trackId}>${t.title}（${(t.durationUs / 1e6).toFixed(0)} 秒）</option>`)}</select></label>
@@ -701,6 +871,7 @@ export function AudioPanel({commandPreview = false, adMusicDurationUs = 0, adMus
             <label class="btn ghost file-btn">${working === "music" ? "正在登记…" : "上传音乐"}<input type="file" accept=".mp3,.wav,.flac,.ogg,.m4a,.aac,audio/*" hidden disabled=${!!working}
                 onChange=${(e) => { void upload(e.currentTarget.files?.[0]); e.currentTarget.value = ""; }} /></label>
             <p class="hint">音乐只存本机；版权由你声明，工具不做核验。配乐从成片开头播放，比成片短时循环。</p>
+            <${MusicAnnotations} music=${music} />
         </div>
         ${note && html`<p class="note" role="status">${note}</p>`}`;
 }

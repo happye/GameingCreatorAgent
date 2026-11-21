@@ -12,9 +12,10 @@ import numpy as np
 import pytest
 from test_music_library import library, register  # noqa: F401
 
-from gamingcreator.application.ad_music_match import match_beats
+from gamingcreator.application.ad_music_match import match_beats, match_drop, rank_matches
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.infrastructure import music_beats
+from gamingcreator.infrastructure.music_annotations import save_annotation
 from gamingcreator.infrastructure.music_beats import RATE, analyze_track, estimate_beats
 from gamingcreator.ui.ad_music_matches import ad_music_matches
 
@@ -131,9 +132,63 @@ def test_ad_match_uses_loop_phase_and_refuses_unmeasured_or_unreliable_cuts():
     assert match_beats({**grid, "confidence": 0.01}, cuts)["bpm"] is None
 
 
+def test_annotated_drop_does_not_invent_audio_outside_a_measured_window():
+    grid = {"analyzedSeconds": 4.0, "complete": False}
+    assert match_drop(grid, 1_000_000, 5_050_000, 6_000_000) is None
+    assert match_drop(grid, 6_000_000, 1_000_000, 2_000_000) is None
+    assert match_drop(grid, 1_000_000, 950_000, 2_000_000) == 50_000
+    complete = {**grid, "complete": True}
+    assert match_drop(complete, 1_000_000, 5_050_000, 6_000_000) == 50_000
+    assert match_drop(complete, 1_000_000, 4_900_000, 5_000_000) == 3_900_000
+    assert match_drop(complete, 2_000_000, 1_000_000, 2_000_000) is None
+
+
+def test_annotated_energy_can_rank_tracks_without_detected_beats():
+    weak = {"energy": 25, "bpm": None, "nearCuts": 0, "checkedCuts": 0}
+    strong = {**weak, "energy": 85}
+    assert rank_matches([weak, strong], "intense") == [strong, weak]
+
+
+def test_inflight_matching_refuses_an_updated_annotation(library, tmp_path, monkeypatch):  # noqa: F811
+    from gamingcreator.ui import ad_music_matches as endpoint
+
+    async def scenario():
+        path = write_wav(tmp_path / "beat.wav", clicks(80, 0.1, 5))
+        track = await library.register(
+            path, "验证曲", "本机合成", "user_declared", None, CancellationContext("test", 30)
+        )
+        first = save_annotation(track, {"moods": ["calm"], "energy": 20, "dropUs": None}, None)
+
+        async def analyze(*args, **kwargs):
+            save_annotation(
+                track,
+                {"moods": ["lively"], "energy": 80, "dropUs": None},
+                first["annotationSha256"],
+            )
+            return {"analyzedSeconds": 5, "confidence": 0, "beatsUs": []}
+
+        monkeypatch.setattr(endpoint, "analyze_track", analyze)
+        with pytest.raises(ValueError, match="请刷新"):
+            await ad_music_matches(
+                tmp_path,
+                {
+                    "durationUs": 3_000_000,
+                    "cutUs": [],
+                    "pace": "cuts",
+                    "mood": "calm",
+                    "tracks": [
+                        {"trackId": track.track_id, "trackReceiptSha256": track.receipt_sha256},
+                    ],
+                },
+            )
+
+    asyncio.run(scenario())
+
+
 def test_ad_match_ranks_two_real_tempos_without_promoting_silence(library, tmp_path):  # noqa: F811
     async def scenario():
         tracks = []
+        registered = []
         context = CancellationContext("test-ad-match", 50)
         for name, samples in (
             ("calm", clicks(80, 0.25, 9)),
@@ -144,6 +199,7 @@ def test_ad_match_ranks_two_real_tempos_without_promoting_silence(library, tmp_p
             track = await library.register(
                 path, name, "本机合成验证", "user_declared", None, context
             )
+            registered.append(track)
             tracks.append({"trackId": track.track_id, "trackReceiptSha256": track.receipt_sha256})
         value = {"durationUs": 8_000_000, "cutUs": [500_000, 900_000, 1_300_000], "tracks": tracks}
         for pace, expected in (("cuts", 1), ("calm", 0), ("intense", 1)):
@@ -151,6 +207,22 @@ def test_ad_match_ranks_two_real_tempos_without_promoting_silence(library, tmp_p
             suggestions = result["suggestions"]
             assert suggestions[0]["trackId"] == tracks[expected]["trackId"]
             assert suggestions[-1]["bpm"] is None
+        mark = save_annotation(
+            registered[0], {"moods": ["playful"], "energy": 25, "dropUs": 5_900_000}, None
+        )
+        save_annotation(
+            registered[1], {"moods": ["dramatic"], "energy": 90, "dropUs": 4_000_000}, None
+        )
+        selected = await ad_music_matches(
+            tmp_path, {**value, "pace": "intense", "mood": "playful", "highlightUs": 6_000_000}
+        )
+        first = selected["suggestions"][0]
+        assert first["trackId"] == tracks[0]["trackId"] and first["dropGapUs"] == 100_000
+        assert (
+            first["moodMatch"]
+            and first["energy"] == 25
+            and first["annotationSha256"] == mark["annotationSha256"]
+        )
         unavailable = await library.register(
             path, "不参与推荐", "本机合成验证", "unknown", None, context
         )

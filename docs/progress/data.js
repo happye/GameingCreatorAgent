@@ -761,7 +761,7 @@ window.PROGRESS_DATA = {
     "tests/test_creation_audio_browser.py"
    ],
    "done": "本地曲库登记/手选、音量/闪避与真实混音；本机估计配乐节拍（BPM+拍点），Studio一键预览把剪辑点对齐到拍点（只缩短镜头）；时间轴下方显示每段镜头的原声波形（随裁剪/变速/原声音量更新）；波形上可打原声音量关键帧（点线加点、拖动、双击删除，可撤销），试听与成片按同一曲线",
-   "todo": "广告可按节拍推荐；配乐情绪、高潮和响度质量待完善，人评和曲目授权待核",
+   "todo": "其他模式的配乐推荐、自动风格判断和响度质量待补，人评和曲目授权待核",
    "updated": "2026-11-21",
    "sprints": [
     "sprint-creation-audio-mix",
@@ -1266,10 +1266,11 @@ window.PROGRESS_DATA = {
     "2026-11-20: Studio suggests declared local music by actual ad edit duration. An Atom footage edit was previewed, saved and reopened, rendered and packaged for Douyin with the selected track confirmed in both audio streams. Music character and ad effectiveness are unassessed. See sprint-ad-evidence.",
     "2026-11-21: Studio durably queues ad structures and subtitle styles into separate renders, local publication drafts and platform packages. Four Comic Stars combinations completed after tab close, reopened and downloaded with verified first frames, ending subtitle differences and seven-file ZIPs. See sprint-ad-variant-batches.",
     "2026-11-21: A single Studio batch can select different saved edits per advertising plan. Two Comic Stars packages retained their own narration, a music bed for the 20-second edit and a half-speed opening for the 21-second edit. Stale revision selection blocked submission. See sprint-ad-variant-batches.",
-    "2026-11-21: Ad music suggestions rank declared local tracks by measured beat proximity to output cuts and selected pace. An Atom edit previewed and reopened the chosen 150 BPM verification track, then produced a Douyin package with the same measured audio. See sprint-ad-rhythm-matching."
+    "2026-11-21: Ad music suggestions rank declared local tracks by measured beat proximity to output cuts and selected pace. An Atom edit previewed and reopened the chosen 150 BPM verification track, then produced a Douyin package with the same measured audio. See sprint-ad-rhythm-matching.",
+    "2026-11-21: Studio persists creator mood, energy and drop markers with each local track. Mood and drop preferences moved the 80 BPM verification track to the top for the Atom edit, with a 50 ms drop gap. The chosen audio was verified in the reopened revision's render and seven-file Douyin package. See sprint-ad-rhythm-matching."
    ],
-   "done": "广告可按实际切换点和节奏偏好推荐配乐，也可批量导出各方案的已存混音、变速和字幕版本",
-   "todo": "曲目情绪标签与高潮点匹配待完善，投放效果和成片质量待人评",
+   "done": "广告可按实际切换点、节奏及创作者标注的情绪、力度和高潮匹配本机配乐，代号 Atom 已试听并出包；支持批量导出不同修订",
+   "todo": "投放效果、曲目权利与成片质量待人评",
    "updated": "2026-11-21",
    "sprints": [
     "sprint-ad-rhythm-matching",
@@ -1835,7 +1836,7 @@ window.PROGRESS_DATA = {
     },
     {
      "id": "P049-ad-rhythm-matching",
-     "name": "广告配乐节拍匹配",
+     "name": "广告配乐节拍、情绪与高潮匹配",
      "status": "done",
      "sprint": "sprint-ad-rhythm-matching"
     },
@@ -2362,7 +2363,7 @@ window.PROGRESS_DATA = {
   "P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。",
   "[P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。",
   "[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)已通过，平台包可用命名路径保存到项目 `exports`。",
-  "[广告批量](docs/exec-plans/sprint-ad-variant-batches.md)实测双修订出包。[广告节拍配乐](docs/exec-plans/sprint-ad-rhythm-matching.md)实测《代号 Atom》。下一步补曲库情绪和高潮标注。"
+  "[广告批量](docs/exec-plans/sprint-ad-variant-batches.md)实测双修订出包。[广告配乐](docs/exec-plans/sprint-ad-rhythm-matching.md)按节拍、情绪、力度和高潮匹配，已实测《代号 Atom》。"
  ],
  "sprints": [
   {
@@ -2434,8 +2435,8 @@ window.PROGRESS_DATA = {
     "P049",
     "R3"
    ],
-   "date": "",
-   "bytes": 2267
+   "date": "2026-11-21",
+   "bytes": 3736
   },
   {
    "file": "sprint-ad-variant-batches",
