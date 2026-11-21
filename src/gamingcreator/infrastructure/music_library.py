@@ -29,6 +29,10 @@ _FORMATS = {
 _LICENSES = {"unknown", "user_declared", "test_only"}
 
 
+class UnsupportedTimelineMusic(ValueError):
+    """A verified file is playable but its dry timeline clock cannot be described."""
+
+
 @dataclass(frozen=True, slots=True)
 class MusicTrack:
     track_id: str
@@ -337,13 +341,15 @@ class MusicLibrary:
             if length <= 0 or sample_rate <= 0 or channels <= 0:
                 raise ValueError
         except (KeyError, TypeError, ValueError, ZeroDivisionError) as error:
-            raise ValueError("已保存配乐的首条音轨时长或音频格式无法核对。") from error
-        if has_offset:
-            raise ValueError("首条配乐音轨的起点与 MP4／M4A 文件起点不同。")
+            raise UnsupportedTimelineMusic(
+                "已保存配乐的首条音轨时长或音频格式无法核对。"
+            ) from error
         receipt = _file(track.path.with_name("receipt.json"), MAX_RECEIPT_BYTES)
         if (
             hash_file(_file(track.path, MAX_AUDIO_BYTES)) != track.sha256
             or hash_file(receipt) != track.receipt_sha256
         ):
             raise ValueError("已保存配乐或配乐回执在读取时发生改变。")
+        if has_offset:
+            raise UnsupportedTimelineMusic("首条配乐音轨的起点与 MP4／M4A 文件起点不同。")
         return length, sample_rate, channels, depth

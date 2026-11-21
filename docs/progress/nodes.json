@@ -270,8 +270,8 @@
    ]
   },
   "P033": {
-   "done": "三种格式保留独立音轨、字幕时钟和 SRT；图层交接包含三种时间线及透明 MOV，Atom 实测图层区间、顺序和淡入淡出",
-   "todo": "补齐混音和字幕样式，验证 Final Cut、DaVinci、Premiere 实际导入、媒体重链与往返",
+   "done": "三种格式保留音轨、字幕、透明图层；支持同版成片混音交接，漫画群星参考 WAV 的 960000 个采样帧与成片解码一致",
+   "todo": "补齐独立音轨增益与闪避的可编辑交接和字幕样式，验证剪辑软件实导、重链及往返",
    "updated": "2026-11-21",
    "sprints": [
     "sprint-timeline-export",
@@ -731,6 +731,12 @@
     {
      "id": "P033-f",
      "name": "透明文字和 PNG 图层交接包",
+     "status": "done",
+     "sprint": "sprint-premiere-narration-track"
+    },
+    {
+     "id": "P033-g",
+     "name": "成片参考混音与分轨时间线交接",
      "status": "done",
      "sprint": "sprint-premiere-narration-track"
     },

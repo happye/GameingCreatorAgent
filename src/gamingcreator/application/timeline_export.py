@@ -246,27 +246,32 @@ def _fcpxml_dry_audio(
     assets = []
     anchors: dict[int, list[str]] = {}
     for track in tracks:
-        lane = -1 if track.role == "dialogue" else -2
+        lane = -2 if track.role == "music" else -1
         media = f"dry-{track.role}"
         title = quoteattr(_xml_text(track.title))
         assets.append(
             f'    <asset id="{media}" name={title} start="0s" '
             f'duration="{_seconds(track.source_duration)}" hasAudio="1" audioSources="1" '
             f'audioChannels="{track.channels}" audioRate="{track.sample_rate}">\n'
-            f'      <media-rep kind="original-media" src={quoteattr(_uri(track.path))}/>\n    </asset>'
+            f'      <media-rep kind="original-media" src={quoteattr(track.url)}/>\n    </asset>'
         )
         for start, length in track.cuts:
             position, offset = _fcpxml_anchor(placed, positions, start, frame)
             anchors.setdefault(position, []).append(
                 f'              <asset-clip ref="{media}" name={title} lane="{lane}" '
                 f'offset="{_seconds(offset)}" start="0s" duration="{_seconds(length)}" '
-                f'srcEnable="audio" audioRole="{track.role}"/>'
+                f'srcEnable="audio" audioRole="{"music" if track.role == "music" else "dialogue"}"/>'
             )
     return assets, anchors
 
 
 def _fcpxml_video_clip(
-    item: dict[str, Any], asset: str, frame: Fraction, audio: bool, anchors: list[str]
+    item: dict[str, Any],
+    asset: str,
+    frame: Fraction,
+    audio: bool,
+    anchors: list[str],
+    video_only: bool = False,
 ) -> str:
     row = item["row"]
     duration = item["frames"] * frame
@@ -279,6 +284,8 @@ def _fcpxml_video_clip(
         f'            <asset-clip ref="{asset}" offset="{_seconds(Fraction(0) if wrapped else offset)}" '
         f'start="{_seconds(start)}" duration="{_seconds(duration)}" name={name}'
     )
+    if video_only:
+        clip += ' srcEnable="video"'
     inner: list[str] = []
     if retimed:
         end = start + duration * item["speed"]
@@ -318,6 +325,7 @@ def to_fcpxml(
     narration: ExportNarration | None = None,
     music: ExportMusic | None = None,
     layers: Sequence[ExportLayer] = (),
+    reference_mix: ExportReferenceMix | None = None,
 ) -> str:
     placed = layout(edl)
     fps = int(edl["fpsNumerator"])
@@ -337,7 +345,7 @@ def to_fcpxml(
         )
     total_frames = sum(item["frames"] for item in placed)
     dry_assets, anchors = _fcpxml_dry_audio(
-        _dry_tracks(narration, music, fps, total_frames), placed, fps
+        _dry_tracks(narration, music, fps, total_frames, reference_mix), placed, fps
     )
     assets.extend(dry_assets)
     _fcpxml_layers(layers, placed, frame, assets, anchors)
@@ -356,7 +364,12 @@ def to_fcpxml(
         asset = f"a{sources.index(row['sourcePath']) + 1}"
         spine.append(
             _fcpxml_video_clip(
-                item, asset, frame, include_audio_track, anchors.get(item["offset"], [])
+                item,
+                asset,
+                frame,
+                include_audio_track and reference_mix is None,
+                anchors.get(item["offset"], []),
+                video_only=reference_mix is not None,
             )
         )
     total = total_frames * frame
@@ -430,6 +443,18 @@ class ExportMusic:
 
 class MusicTimelineError(ValueError):
     """A registered track cannot be represented on the export clock."""
+
+
+@dataclass(frozen=True, slots=True)
+class ExportReferenceMix:
+    """Stereo PCM decoded from a verified rendered instance of this sequence."""
+
+    sample_count: int
+    path = "mix-reference.wav"
+    name = "Rendered reference mix"
+    sample_rate = 48_000
+    channels = 2
+    depth = 24
 
 
 def _validate_narration(narration: ExportNarration, fps: int, total: int) -> None:
@@ -514,6 +539,8 @@ def to_xmeml(
     narration: ExportNarration | None = None,
     music: ExportMusic | None = None,
     layers: Sequence[ExportLayer] = (),
+    reference_mix: ExportReferenceMix | None = None,
+    canvas: tuple[int, int] | None = None,
 ) -> str:
     """Final Cut Pro 7 XML (xmeml v4), which Premiere Pro often imports.
 
@@ -524,6 +551,7 @@ def to_xmeml(
     live Premiere import of those extras is unverified.
     """
     placed = layout(edl)
+    include_audio_track = include_audio_track and reference_mix is None
     fps = int(edl["fpsNumerator"])
     rate = f"<rate><timebase>{fps}</timebase><ntsc>FALSE</ntsc></rate>"
     sources = list(dict.fromkeys(item["row"]["sourcePath"] for item in placed))
@@ -601,11 +629,7 @@ def to_xmeml(
         if include_audio_track
         else ""
     )
-    extra_tracks = []
-    if narration is not None:
-        extra_tracks.append(_xmeml_narration(narration, fps, total, rate))
-    if music is not None:
-        extra_tracks.append(_xmeml_music(music, fps, total, rate))
+    extra_tracks = _xmeml_extra_audio(narration, music, reference_mix, fps, total, rate)
     if extra_tracks:
         tracks_xml = "".join(extra_tracks)
         audio_xml = (
@@ -617,18 +641,13 @@ def to_xmeml(
     video_layers = "".join(
         _xmeml_layer(layer, index, rate) for index, layer in enumerate(layers, 1)
     )
-    canvas = ""
-    if layers:
-        first = layers[0]
-        canvas = (
-            f"<format><samplecharacteristics>{rate}<width>{first.width}</width>"
-            f"<height>{first.height}</height><pixelaspectratio>square</pixelaspectratio>"
-            "</samplecharacteristics></format>"
-        )
+    canvas_xml = _xmeml_canvas(
+        canvas or ((layers[0].width, layers[0].height) if layers else None), rate
+    )
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE xmeml>\n<xmeml version="4">\n'
         f"  <sequence><name>{escape(name)}</name><duration>{total}</duration>{rate}\n"
-        f"    <media><video>{canvas}<track>\n"
+        f"    <media><video>{canvas_xml}<track>\n"
         + "\n".join(items)
         + "\n    </track>"
         + video_layers
@@ -637,6 +656,47 @@ def to_xmeml(
         + "</media>"
         + marker_xml
         + "\n  </sequence>\n</xmeml>\n"
+    )
+
+
+def _xmeml_canvas(canvas: tuple[int, int] | None, rate: str) -> str:
+    if canvas is None:
+        return ""
+    width, height = canvas
+    return (
+        f"<format><samplecharacteristics>{rate}<width>{width}</width>"
+        f"<height>{height}</height><pixelaspectratio>square</pixelaspectratio>"
+        "</samplecharacteristics></format>"
+    )
+
+
+def _xmeml_extra_audio(
+    narration: ExportNarration | None,
+    music: ExportMusic | None,
+    reference_mix: ExportReferenceMix | None,
+    fps: int,
+    total: int,
+    rate: str,
+) -> list[str]:
+    if reference_mix is not None:
+        return [_xmeml_reference(reference_mix, total, rate)]
+    tracks = []
+    if narration is not None:
+        tracks.append(_xmeml_narration(narration, fps, total, rate))
+    if music is not None:
+        tracks.append(_xmeml_music(music, fps, total, rate))
+    return tracks
+
+
+def _xmeml_reference(mix: ExportReferenceMix, frames: int, rate: str) -> str:
+    return (
+        f'<track><clipitem id="mix-clip"><name>{mix.name}</name>{rate}'
+        f"<start>0</start><end>{frames}</end><in>0</in><out>{frames}</out><duration>{frames}</duration>"
+        f'<file id="mix-file"><name>{mix.path}</name><pathurl>{mix.path}</pathurl>{rate}'
+        f"<duration>{frames}</duration><media><audio><samplecharacteristics><depth>{mix.depth}</depth>"
+        f"<samplerate>{mix.sample_rate}</samplerate></samplecharacteristics><channelcount>{mix.channels}"
+        "</channelcount></audio></media></file><sourcetrack><mediatype>audio</mediatype>"
+        "<trackindex>1</trackindex></sourcetrack></clipitem></track>"
     )
 
 
@@ -675,11 +735,34 @@ class _DryTrack:
     channels: int
     # Each cut starts at media time zero. Offsets belong to the sequence clock.
     cuts: tuple[tuple[int, Fraction], ...]
+    relative: bool = False
+
+    @property
+    def url(self) -> str:
+        return self.path if self.relative else _uri(self.path)
 
 
 def _dry_tracks(
-    narration: ExportNarration | None, music: ExportMusic | None, fps: int, total: int
+    narration: ExportNarration | None,
+    music: ExportMusic | None,
+    fps: int,
+    total: int,
+    reference_mix: ExportReferenceMix | None = None,
 ) -> list[_DryTrack]:
+    if reference_mix is not None:
+        mix = reference_mix
+        return [
+            _DryTrack(
+                "mix",
+                mix.name,
+                mix.path,
+                Fraction(mix.sample_count, mix.sample_rate),
+                mix.sample_rate,
+                mix.channels,
+                ((0, Fraction(total, fps)),),
+                relative=True,
+            )
+        ]
     tracks = []
     if narration is not None:
         _validate_narration(narration, fps, total)
@@ -742,7 +825,7 @@ def _otio_dry_track(track: _DryTrack, fps: int) -> dict[str, Any]:
                 "media_references": {
                     "DEFAULT_MEDIA": {
                         "OTIO_SCHEMA": "ExternalReference.1",
-                        "target_url": _uri(track.path),
+                        "target_url": track.url,
                         "available_range": _range(
                             Fraction(0), track.source_duration, track.sample_rate
                         ),
@@ -857,8 +940,10 @@ def to_otio(
     narration: ExportNarration | None = None,
     music: ExportMusic | None = None,
     layers: Sequence[ExportLayer] = (),
+    reference_mix: ExportReferenceMix | None = None,
 ) -> str:
     placed = layout(edl)
+    include_audio_track = include_audio_track and reference_mix is None
     fps = int(edl["fpsNumerator"])
     children: list[dict[str, Any]] = []
     for item in placed:
@@ -966,7 +1051,8 @@ def to_otio(
         )
     total = sum(item["frames"] for item in placed)
     tracks.extend(
-        _otio_dry_track(track, fps) for track in _dry_tracks(narration, music, fps, total)
+        _otio_dry_track(track, fps)
+        for track in _dry_tracks(narration, music, fps, total, reference_mix)
     )
     tracks.extend(_otio_layer(layer, fps) for layer in layers)
     caption_lanes = _caption_lanes(_normalize_captions(captions, total))

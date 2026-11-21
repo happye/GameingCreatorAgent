@@ -739,6 +739,8 @@ class CreationJobs:
                 "sha256": resource.sha256,
                 "previewUrl": base,
                 "downloadUrl": base + "?download=1",
+                "planId": chain.plan_id if "revisionJobId" in request else request["planId"],
+                "receiptSha256": digest,
             }
             if receipt.get("watermark") != state.get("watermark"):
                 raise ValueError("Watermark record mismatch")

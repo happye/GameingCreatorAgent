@@ -915,17 +915,29 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 )
                 return
             if path == "/api/creation/timeline-bundle":
-                from gamingcreator.ui.timeline_handoff import timeline_bundle
+                from gamingcreator.ui.timeline_handoff import ReferenceRender, timeline_bundle
 
                 fields = {"projectId", "jobId", "planId", "expectedReceiptSha256", "size"}
                 if (
                     urlparse(self.path).query
                     or not isinstance(value, dict)
-                    or set(value) != fields | {"includeMusic"}
+                    or not fields | {"includeMusic"}
+                    <= set(value)
+                    <= fields | {"includeMusic", "render"}
                     or any(not isinstance(value[key], str) or not value[key] for key in fields)
                     or type(value["includeMusic"]) is not bool
                 ):
                     raise ValueError("Expected saved timeline and bundle settings.")
+                reference = None
+                if "render" in value:
+                    render = value["render"]
+                    if (
+                        not isinstance(render, dict)
+                        or set(render) != {"jobId", "expectedReceiptSha256"}
+                        or any(not isinstance(item, str) or not item for item in render.values())
+                    ):
+                        raise ValueError("Expected completed render and receipt identity.")
+                    reference = ReferenceRender(render["jobId"], render["expectedReceiptSha256"])
                 self._require("timelineExport")
                 with (
                     timeline_bundle(
@@ -936,6 +948,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                         value["expectedReceiptSha256"],
                         value["size"],
                         value["includeMusic"],
+                        reference,
                     ) as (archive, filename),
                     archive.open("rb") as handle,
                 ):

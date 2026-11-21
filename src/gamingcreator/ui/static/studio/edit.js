@@ -177,7 +177,8 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     if (!alive.current || parent.status !== "completed") return;
                     if (parent.kind === "revision") return reopenVersion(parent, false);
                     if (parent.kind !== "plan") return;
-                    setPlanJob(parent); setPlanId((parent.plans || []).find((p) => p.ready)?.id || "");
+                    const renderedPlan = (parent.plans || []).find((p) => p.ready && p.id === job.artifact?.planId);
+                    setPlanJob(parent); setPlanId(renderedPlan?.id || (parent.plans || []).find((p) => p.ready)?.id || "");
                 }).catch(() => {});
             }
         });
@@ -372,7 +373,10 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     const timelineReason = !plan?.ready || !editing.base || editing.status !== "ready" ? "先选择并读取已保存方案"
         : editing.dirty ? "请先保存版本" : commandPreview ? "请先应用或取消创作助手的改动"
         : busy || audioBusy || overlayBusy ? "任务正在处理" : problem;
-    const timelineView = [project, editing.base?.jobId, editing.base?.planId, size, adoptionGuard.current.generation, timelineReason];
+    const referenceRender = renderJob?.status === "completed" && renderJob?.parentJobId === editing.base?.jobId
+        && renderJob.artifact?.planId === editing.base?.planId && renderJob.artifact?.receiptSha256
+        ? {jobId: renderJob.jobId, expectedReceiptSha256: renderJob.artifact.receiptSha256} : null;
+    const timelineView = [project, editing.base?.jobId, editing.base?.planId, size, adoptionGuard.current.generation, timelineReason, referenceRender?.expectedReceiptSha256];
     const timelineSelection = JSON.stringify(timelineView.slice(0, 3));
     const hasTimelineMusic = !!editing.audio?.mix?.bgm;
     const hasTimelineLayers = !!editing.overlays?.length && !!editing.editor?.expectedParentReceiptSha256;
@@ -395,9 +399,11 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
             const selectedPlan = base.planId || planId;
             const query = new URLSearchParams({planId: selectedPlan, format, size: selectedSize});
             if (format !== "srt" && includeTimelineMusic) query.set("music", "include");
-            const response = format === "layers"
+            const bundleFormat = format === "layers" || format === "mix";
+            const response = bundleFormat
                 ? await fetch("/api/creation/timeline-bundle", {method: "POST", headers: {"Content-Type": "application/json"}, signal: controller.signal, body: JSON.stringify({projectId: project, jobId: base.jobId, planId: selectedPlan,
-                    expectedReceiptSha256: editing.editor.expectedParentReceiptSha256, size: selectedSize, includeMusic: includeTimelineMusic})})
+                    expectedReceiptSha256: editing.editor.expectedParentReceiptSha256, size: selectedSize, includeMusic: includeTimelineMusic,
+                    ...(format === "mix" ? {render: referenceRender} : {})})})
                 : await fetch(`/api/creation/jobs/${encodeURIComponent(base.jobId)}/timeline?${query}`, {signal: controller.signal});
             if (!response.ok) {
                 let detail; try { detail = await response.json(); } catch { /* HTTP status remains useful. */ }
@@ -406,13 +412,13 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
             const blob = await response.blob();
             if (!current()) return;
             const url = URL.createObjectURL(blob), link = document.createElement("a");
-            const suffix = format === "layers" ? "-layers.zip" : (format === "xmeml" ? "-premiere" : "") +
+            const suffix = bundleFormat ? `-${format}.zip` : (format === "xmeml" ? "-premiere" : "") +
                 (format !== "srt" && hasTimelineMusic && !includeTimelineMusic ? "-no-music" : "") +
                 (format === "xmeml" ? ".xml" : `.${format}`);
             link.href = url; link.download = `gamingcreator-${base.jobId.slice(0, 8)}${suffix}`;
             document.body.append(link); link.click(); link.remove();
             setTimeout(() => URL.revokeObjectURL(url), 0);
-            setTimelineMessage(format === "layers" ? "图层交接包已下载。" : format === "srt" ? "字幕 SRT 已下载。" : "时间线已下载，请在剪辑软件中复核。");
+            setTimelineMessage(format === "mix" ? "成片混音交接包已下载。" : format === "layers" ? "图层交接包已下载。" : format === "srt" ? "字幕 SRT 已下载。" : "时间线已下载，请在剪辑软件中复核。");
         } catch (error) { if (current()) setTimelineMessage(error.message); }
         finally { if (timelineWork.current === controller) { timelineWork.current = null; setTimelineBusy(false); } }
     };
@@ -595,6 +601,8 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     <div class="actions-row">${[["fcpxml", "下载 FCPXML"], ["otio", "下载 OTIO"], ["xmeml", "下载 Premiere XML"], ["srt", "下载字幕 SRT"]].map(([format, label]) => html`<button class="btn ghost" disabled=${!!timelineReason || timelineBusy} title=${timelineReason || "下载已保存版本"} onClick=${() => downloadTimeline(format)}>${label}</button>`)}</div>
                     ${hasTimelineLayers ? html`<button class="btn ghost" disabled=${!!timelineReason || timelineBusy} onClick=${() => downloadTimeline("layers")}>下载图层交接包</button>
                         <p class="hint">ZIP 包含三种时间线和每层透明 MOV。解压后如需重链，请选择 layers 文件夹。文字图层可移动和裁切，字样保存在透明素材中。</p>` : null}
+                    ${referenceRender ? html`<button class="btn ghost" disabled=${!!timelineReason || timelineBusy} onClick=${() => downloadTimeline("mix")}>下载成片混音交接包</button>
+                        <p class="hint">ZIP 同时提供分轨和成片混音两种时间线。配乐勾选只影响分轨；分轨格式无法导出配乐时，混音 WAV 仍保留成片中的声音。</p>` : null}
                     <p class="hint" role="status" aria-label="时间线下载状态">${timelineReason || timelineMessage || (timelineBusy ? "正在下载…" : "下载当前已保存版本")}</p>
                 </div>
                 <div class="field">

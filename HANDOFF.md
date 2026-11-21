@@ -6,7 +6,7 @@
 
 [P051 项目品牌资源](docs/exec-plans/sprint-enterprise-basics.md)已实测文案、视觉模板和项目配乐库。配乐移出后，Atom 旧修订重开仍输出原音轨，抖音包 `a3104f45bc9f4410a1e9e4634aff4d6d`。
 
-[P050 本机额度](docs/exec-plans/sprint-creator-plans.md)实测拦截。[P033 专业交接](docs/exec-plans/sprint-premiere-narration-track.md)已实测独立音轨、字幕和 Atom 透明图层包。
+[P050 本机额度](docs/exec-plans/sprint-creator-plans.md)实测拦截。[P033 专业交接](docs/exec-plans/sprint-premiere-narration-track.md)已实测字幕、透明图层和同版成片混音。
 
 ## 实证与接手入口
 

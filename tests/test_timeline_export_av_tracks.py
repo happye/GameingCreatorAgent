@@ -15,6 +15,7 @@ from gamingcreator.application.timeline_export import (
     ExportLayer,
     ExportMusic,
     ExportNarration,
+    ExportReferenceMix,
     captions_from_cues,
     to_fcpxml,
     to_otio,
@@ -169,6 +170,31 @@ def test_layer_bundle_documents_keep_relative_assets_stacking_and_clock() -> Non
         assert gap["source_range"]["duration"]["value"] == layer.start
         assert clip["source_range"]["duration"]["value"] == layer.frames
         assert clip["media_references"]["DEFAULT_MEDIA"]["target_url"] == layer.url
+
+
+def test_reference_mix_replaces_dry_audio_without_changing_video_duration() -> None:
+    voice = ExportNarration("voice.wav", 5, 48_000, 1, 2, 48_000)
+    music = ExportMusic("music.wav", "Tune", Fraction(2), 48_000, 2)
+    mix = ExportReferenceMix(137 * 1600)
+    options = dict(include_audio_track=True, narration=voice, music=music, reference_mix=mix)
+    fcp = ElementTree.fromstring(to_fcpxml(EDL, "mix", **options))
+    media = fcp.find("./resources/asset[@id='dry-mix']/media-rep")
+    assert media.get("src") == "mix-reference.wav"
+    assert not fcp.findall(".//audio-channel-source")
+    for clip in fcp.findall(".//asset-clip"):
+        assert clip.get("srcEnable") == ("audio" if clip.get("ref") == "dry-mix" else "video")
+    assert fcp.find(".//spine//asset-clip[@ref='dry-mix']").get("duration") == "137/30s"
+    premiere = ElementTree.fromstring(to_xmeml(EDL, "mix", **options))
+    (audio,) = premiere.findall("./sequence/media/audio/track/clipitem")
+    assert audio.findtext("start") == "0" and audio.findtext("end") == "137"
+    assert audio.findtext("file/pathurl") == "mix-reference.wav"
+    assert premiere.findtext("./sequence/duration") == "137"
+    otio = json.loads(to_otio(EDL, "mix", **options))
+    (track,) = [track for track in otio["tracks"]["children"] if track["kind"] == "Audio"]
+    (clip,) = track["children"]
+    assert clip["source_range"]["duration"]["value"] == 219_200
+    assert clip["source_range"]["duration"]["rate"] == 48_000
+    assert clip["media_references"]["DEFAULT_MEDIA"]["target_url"] == "mix-reference.wav"
 
 
 def test_xmeml_music_loops_on_independent_track_to_rendered_end(tmp_path: Path) -> None:
