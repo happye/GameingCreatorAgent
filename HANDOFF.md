@@ -4,7 +4,7 @@
 
 当前开发分支为 `main`。先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。[P030/P049 广告配乐](docs/exec-plans/sprint-ad-rhythm-matching.md)实测《代号 Atom》8 秒广告随情绪和高潮偏好改选慢拍，试听、重开、混音并导出抖音包 `3fdb2f649fdc45a5b08e561999b15a53`。[广告批量](docs/exec-plans/sprint-ad-variant-batches.md)可混用各方案的已存修订。
 
-[P051 项目品牌模板](docs/exec-plans/sprint-enterprise-basics.md)实测漫画群星的 PNG 和文字套用到 8 秒 Atom 短片，抖音包 `2ef7f6c1ccab458a8a82a7b54897a5d7`。模板清除后原修订可回读。品牌文案另有漫画群星实证。
+[P051 项目品牌资源](docs/exec-plans/sprint-enterprise-basics.md)已实测文案、视觉模板和项目配乐库。配乐移出后，Atom 旧修订重开仍输出原音轨，抖音包 `a3104f45bc9f4410a1e9e4634aff4d6d`。
 
 ## 实证与接手入口
 

@@ -383,7 +383,175 @@ function AdMusicSuggestions({tracks, durationUs, cutUs, timeline, scope, selecte
 const billedCharacters = (text) => [...text].reduce((n, c) => n + ((c >= "\u2e80" && c <= "\u9fff") || (c >= "\uf900" && c <= "\uffef") ? 2 : 1), 0);
 const costOf = (text, voice) => (voice?.paid ? Math.round(billedCharacters(text) * voice.yuanPer10kCharacters) / 10000 : 0);
 
-export function AudioPanel({commandPreview = false, adMusicDurationUs = 0, adMusicCutsUs = [], adMusicTimeline, adMusicScope, musicSuggestionsDisabled = false,
+const projectMusicPath = "/api/enterprise/brand-music-library";
+const maxProjectTracks = 50;
+const musicReceiptKey = ({trackId, trackReceiptSha256}) => `${trackId}:${trackReceiptSha256}`;
+
+function rebaseProjectTracks(base, draft, latest) {
+    const index = rows => new Map(rows.map(row => [row.trackId, row]));
+    const before = index(base), desired = index(draft), merged = index(latest);
+    const conflicts = new Map();
+    for (const id of new Set([...before.keys(), ...desired.keys()])) {
+        const original = before.get(id)?.trackReceiptSha256;
+        const local = desired.get(id);
+        if (original === local?.trackReceiptSha256) continue;
+        const remote = merged.get(id)?.trackReceiptSha256;
+        if (remote !== original && remote !== local?.trackReceiptSha256) {
+            conflicts.set(id, local?.trackReceiptSha256 ?? null);
+        } else if (local) {
+            merged.set(id, local);
+        } else {
+            merged.delete(id);
+        }
+    }
+    return {rows: [...merged.values()], conflicts};
+}
+
+function useProjectMusic(project) {
+    const [snapshot, setSnapshot] = useState(null);
+    const [state, setState] = useState({busy: false, needsRefresh: true, error: ""});
+    const controller = useRef(null), pending = useRef(false);
+    const request = async (change, received) => {
+        const signal = controller.current?.signal;
+        if (!signal || signal.aborted || pending.current || (change && state.needsRefresh)) return;
+        pending.current = true;
+        setState({busy: true, needsRefresh: true, error: ""});
+        try {
+            const result = change
+                ? await client.api(projectMusicPath, {}, {signal, body: {projectId: project, expectedTemplateSha256: snapshot.revisionSha256, ...change}})
+                : await client.api(projectMusicPath, {projectId: project}, {signal});
+            if (signal.aborted) return;
+            if (result.revisionSha256 === undefined) throw Error("未读取到项目配乐库的修订回执。");
+            setSnapshot(result);
+            setState({busy: false, needsRefresh: false, error: ""});
+            received?.(result);
+        } catch (reason) {
+            if (signal.aborted) return;
+            const conflict = reason.status === 409 || /(?:^|[._])conflict$/.test(reason.code || "");
+            setState({busy: false, needsRefresh: !change || conflict || reason.status === 404 || reason.status >= 500 || !reason.status, error: reason.message});
+        } finally {
+            pending.current = false;
+        }
+    };
+    useLayoutEffect(() => {
+        controller.current = new AbortController();
+        void request();
+        return () => controller.current.abort();
+    }, []);
+    return {...state, snapshot, request};
+}
+
+function ProjectMusicRows({rows, catalog, checking, selectedKey, savedKeys, disabled, onSelect, onRemove}) {
+    return html`<ul class="facts">${rows.map(ref => {
+        const key = musicReceiptKey(ref), track = catalog.get(key);
+        const title = track?.title || `曲目 ${ref.trackId.slice(0, 8)}`;
+        return html`<li key=${key}>
+            <strong>${title}</strong>
+            ${track && !checking ? html`
+                <audio src=${musicUrl(track)} controls preload="none" aria-label=${`试听原音 ${title}`} style="width:100%"></audio>
+                <button type="button" class="btn ghost" disabled=${disabled || !savedKeys.has(key) || selectedKey === key}
+                    onClick=${() => onSelect(track)}>${selectedKey === key ? "已用作当前配乐" : "用作当前配乐"}</button>`
+                : html`<p class="hint">${checking ? "正在核对曲目…" : "曲目或登记回执失效，可移除。"}</p>`}
+            <button type="button" class="btn ghost" aria-label=${`移除 ${title}`} onClick=${() => onRemove(ref.trackId)}>移除</button>
+        </li>`;
+    })}</ul>`;
+}
+
+function ProjectMusicConflicts({conflicts, onResolve}) {
+    if (!conflicts.size) return null;
+    return html`<div role="alert">
+        <p>同一曲目在两边被改动。请重新选择曲目，或确认沿用最新名单中的选择。</p>
+        <ul>${[...conflicts].map(([id, receipt]) => html`<li key=${id}>曲目 ${id.slice(0, 8)} ·
+            ${receipt ? `本地选择的回执 ${receipt.slice(0, 8)}` : "本地选择移除"}
+            <button type="button" class="btn ghost" onClick=${() => onResolve(id)}>保留最新名单中的选择</button>
+        </li>`)}</ul>
+    </div>`;
+}
+
+function ProjectMusicEditor({project, music, selectedKey, disabled, onSelect}) {
+    const store = useProjectMusic(project);
+    const [draft, setDraft] = useState(null), [candidateId, setCandidateId] = useState("");
+    const [actor, setActor] = useState(""), [notice, setNotice] = useState("");
+    const [conflicts, setConflicts] = useState(() => new Map());
+    const saved = store.snapshot?.template?.tracks ?? [];
+    const savedKeys = new Set(saved.map(musicReceiptKey));
+    const rows = draft ?? saved;
+    const allowed = music.tracks.filter(track => track.licenseStatus === "user_declared");
+    const catalog = new Map(allowed.map(track => [musicReceiptKey(track), track]));
+    const available = allowed.filter(track => !rows.some(row => row.trackId === track.trackId));
+    const candidate = available.find(track => track.trackId === candidateId);
+    const additions = rows.map(musicReceiptKey).filter(key => !savedKeys.has(key));
+    const save = () => {
+        if (!canSave) return;
+        setNotice("");
+        void store.request({actor: actor.trim(), template: {tracks: rows}}, result => {
+            setDraft(null);
+            setNotice(result.template ? "项目配乐库已保存。" : "项目配乐库已清空。");
+        });
+    };
+    const refresh = () => {
+        setNotice("");
+        void music.reload();
+        void store.request(undefined, result => {
+            if (!draft) return;
+            const rebased = rebaseProjectTracks(saved, draft, result.template?.tracks ?? []);
+            setDraft(rebased.rows);
+            setConflicts(current => new Map([...current, ...rebased.conflicts]));
+            setNotice("已根据最新名单合并可保留的本地增删。");
+        });
+    };
+    const resolve = id => setConflicts(current => {
+        const next = new Map(current); next.delete(id); return next;
+    });
+    const add = () => {
+        if (!candidate || rows.length >= maxProjectTracks || music.refreshing || music.error) return;
+        const {trackId, trackReceiptSha256} = candidate;
+        setDraft([...rows, {trackId, trackReceiptSha256}]); setCandidateId(""); setNotice(""); resolve(trackId);
+    };
+    const remove = id => { setDraft(rows.filter(row => row.trackId !== id)); setNotice(""); resolve(id); };
+    const canSave = !store.busy && !store.needsRefresh && draft && !!actor.trim() && !conflicts.size
+        && rows.length <= maxProjectTracks
+        && (!additions.length || (!music.refreshing && !music.error && additions.every(key => catalog.has(key))));
+    return html`<div>
+        ${store.snapshot && html`<fieldset class="enterprise-fields" disabled=${store.busy}>
+            <p class="hint">已选 ${rows.length} / ${maxProjectTracks} 首。入库须声明使用权。</p>
+            ${rows.length > maxProjectTracks && html`<p class="note" role="alert">合并后的曲目超出上限。请移除部分曲目后再保存。</p>`}
+            <${ProjectMusicConflicts} conflicts=${conflicts} onResolve=${resolve} />
+            <${ProjectMusicRows} rows=${rows} catalog=${catalog} checking=${music.refreshing} selectedKey=${selectedKey}
+                savedKeys=${savedKeys}
+                disabled=${disabled || !!music.error || store.needsRefresh} onSelect=${onSelect}
+                onRemove=${remove} />
+            <label class="form-row">选择已声明使用权的曲目<select class="select" value=${candidate?.trackId || ""}
+                onChange=${event => setCandidateId(event.currentTarget.value)}>
+                <option value="">请选择曲目</option>
+                ${available.map(track => html`<option key=${track.trackId} value=${track.trackId}>${track.title}</option>`)}
+            </select></label>
+            <button type="button" class="btn ghost" disabled=${!candidate || rows.length >= maxProjectTracks || music.refreshing || !!music.error}
+                onClick=${add}>添加到项目配乐库</button>
+            <label class="form-row">负责人姓名<input class="input" value=${actor} maxLength="50" onInput=${event => setActor(event.currentTarget.value)} /></label>
+            <button type="button" class="btn" disabled=${!canSave} onClick=${save}>保存项目配乐库</button>
+        </fieldset>`}
+        <button type="button" class="btn ghost" disabled=${store.busy} onClick=${refresh}>刷新项目配乐库</button>
+        ${store.busy && html`<p class="note" role="status">正在处理项目配乐库…</p>`}
+        ${notice && html`<p class="note" role="status">${notice}</p>`}
+        ${store.error && html`<p class="note" role="alert">${store.error}</p>`}
+        ${music.error && html`<p class="note" role="alert">本机曲库读取失败。${music.error}</p>`}
+    </div>`;
+}
+
+function ProjectMusicLibrary(props) {
+    const [visited, setVisited] = useState(false);
+    return html`<details class="group" onToggle=${event => {
+        const details = event.currentTarget;
+        if (details.open) { setVisited(true); void props.music.reload(); }
+        else for (const audio of details.querySelectorAll("audio")) audio.pause();
+    }}>
+        <summary>项目配乐库</summary>
+        ${visited && html`<${ProjectMusicEditor} ...${props} />`}
+    </details>`;
+}
+
+export function AudioPanel({commandPreview = false, adMusicDurationUs = 0, adMusicCutsUs = [], adMusicTimeline, adMusicScope, musicSuggestionsDisabled = false, projectLibraryDisabled = false,
     editing, project, game = "", fps, totalUs, music, onBusy}) {
     const {audio} = editing;
     const [voices, setVoices] = useState([]);
@@ -416,6 +584,10 @@ export function AudioPanel({commandPreview = false, adMusicDurationUs = 0, adMus
     const attachedAssetJobId = audio.narration?.assetJobId || "";
     const currentDraftKey = draftKey(project, baseJobId, planId, revisionOpen ? attachedAssetJobId : "");
     const attachedDraftKey = draftKey(project, baseJobId, planId, attachedAssetJobId || "");
+    const projectLibraryScope = JSON.stringify([project, baseJobId, planId, editing.editor?.expectedParentReceiptSha256]);
+    const libraryDisabled = projectLibraryDisabled || commandPreview || !!working || editing.status !== "ready";
+    const libraryTarget = useRef(null);
+    libraryTarget.current = {scope: projectLibraryScope, disabled: libraryDisabled || music.refreshing || !!music.error};
 
     useEffect(() => {
         mounted.current = true;
@@ -871,6 +1043,10 @@ export function AudioPanel({commandPreview = false, adMusicDurationUs = 0, adMus
             <label class="btn ghost file-btn">${working === "music" ? "正在登记…" : "上传音乐"}<input type="file" accept=".mp3,.wav,.flac,.ogg,.m4a,.aac,audio/*" hidden disabled=${!!working}
                 onChange=${(e) => { void upload(e.currentTarget.files?.[0]); e.currentTarget.value = ""; }} /></label>
             <p class="hint">音乐只存本机；版权由你声明，工具不做核验。配乐从成片开头播放，比成片短时循环。</p>
+            ${project && html`<${ProjectMusicLibrary} key=${project} project=${project} music=${music}
+                selectedKey=${bgm && musicReceiptKey(bgm)} disabled=${libraryDisabled} onSelect=${track => {
+                    if (mounted.current && !libraryTarget.current.disabled && libraryTarget.current.scope === projectLibraryScope) selectMusic(track);
+                }} />`}
             <${MusicAnnotations} music=${music} />
         </div>
         ${note && html`<p class="note" role="status">${note}</p>`}`;

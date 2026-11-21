@@ -17,6 +17,7 @@ from gamingcreator.domain.creation_overlays import CreationOverlays
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.publication import validate_copy
 from gamingcreator.infrastructure.local_files import read_bounded
+from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary, resolve_overlay_assets
 from gamingcreator.ui.overlay_jobs import public_asset
 
@@ -24,7 +25,13 @@ if TYPE_CHECKING:
     from gamingcreator.ui.creation_jobs import CreationJobs
 
 _DIGEST = re.compile(r"[a-f0-9]{64}")
-TemplateKind = Literal["copy", "visual"]
+_ASSET_ID = re.compile(r"[a-f0-9]{32}")
+TemplateKind = Literal["copy", "visual", "music"]
+TEMPLATE_ROUTES: dict[str, TemplateKind] = {
+    "/api/enterprise/brand-copy-template": "copy",
+    "/api/enterprise/brand-visual-template": "visual",
+    "/api/enterprise/brand-music-library": "music",
+}
 
 
 def _copy_fields(value: object) -> dict[str, Any]:
@@ -41,9 +48,34 @@ def _copy_fields(value: object) -> dict[str, Any]:
     }
 
 
+def _music_fields(value: object) -> dict[str, Any]:
+    if not isinstance(value, dict) or set(value) != {"tracks"}:
+        raise ValueError("项目配乐库需要曲目列表。")
+    tracks = value["tracks"]
+    if not isinstance(tracks, list) or len(tracks) > 50:
+        raise ValueError("项目配乐库最多保存 50 首曲目。")
+    seen: set[str] = set()
+    for track in tracks:
+        if not isinstance(track, dict) or set(track) != {"trackId", "trackReceiptSha256"}:
+            raise ValueError("项目曲目需要登记身份和回执。")
+        track_id, digest = track["trackId"], track["trackReceiptSha256"]
+        if (
+            not isinstance(track_id, str)
+            or _ASSET_ID.fullmatch(track_id) is None
+            or not isinstance(digest, str)
+            or _DIGEST.fullmatch(digest) is None
+            or track_id in seen
+        ):
+            raise ValueError("项目曲目身份无效或有重复。")
+        seen.add(track_id)
+    return {"tracks": tracks}
+
+
 def _normalize(kind: TemplateKind, value: object) -> dict[str, Any] | None:
     if kind == "copy":
         return _copy_fields(value)
+    if kind == "music":
+        return _music_fields(value)
     if value is None:
         return None
     if not isinstance(value, dict) or set(value) != {"timelineFrames", "overlays"}:
@@ -115,6 +147,22 @@ def _visual_assets(jobs: "CreationJobs", template: dict[str, Any]) -> list[dict[
     return [public_asset(asset) for asset in by_id.values()]
 
 
+def _check_added_tracks(
+    jobs: "CreationJobs", tracks: list[dict[str, str]], previous: list[dict[str, str]]
+) -> None:
+    registered = {row["trackId"]: row["trackReceiptSha256"] for row in previous}
+    library = MusicLibrary(jobs.repository)
+    for row in tracks:
+        if registered.get(row["trackId"]) == row["trackReceiptSha256"]:
+            continue
+        try:
+            track = library.resolve(row["trackId"], row["trackReceiptSha256"])
+        except (OSError, ValueError, RecursionError) as error:
+            raise ValueError("项目曲目或其登记回执无法核对。") from error
+        if track.license_status != "user_declared":
+            raise ValueError("项目配乐库只能添加已声明使用权的曲目。")
+
+
 def get_template(
     jobs: "CreationJobs", project_id: str, kind: TemplateKind = "copy"
 ) -> dict[str, Any]:
@@ -150,6 +198,24 @@ def _check_owner(jobs: "CreationJobs", project_id: str, actor: str) -> None:
         ) from error
 
 
+def _fields(snapshot: dict[str, Any]) -> dict[str, Any] | None:
+    template = snapshot["template"]
+    return (
+        {key: value for key, value in template.items() if key != "templateSha256"}
+        if template
+        else None
+    )
+
+
+def _require_revision(snapshot: dict[str, Any], expected: str | None) -> None:
+    if snapshot["revisionSha256"] != expected:
+        raise AppError(
+            "enterprise.template_conflict",
+            "品牌模板或项目配乐库已更新。请刷新后再保存。",
+            ExitCode.STORAGE,
+        )
+
+
 def save_template(
     jobs: "CreationJobs", request: dict[str, Any], kind: TemplateKind = "copy"
 ) -> dict[str, Any]:
@@ -170,23 +236,27 @@ def save_template(
     ):
         raise ValueError("品牌模板需要当前项目、负责人姓名和有效校对码。")
     template = _normalize(kind, request["template"])
+    updated_fields = template if template and any(template.values()) else None
     path = _path(jobs, project_id, kind)
+    if kind == "music":
+        _check_owner(jobs, project_id, actor)
+        observed = _read(path, project_id, kind)
+        previous = _fields(observed)
+        if previous != updated_fields:
+            _require_revision(observed, expected)
+            # Media hashing can take seconds; hold the workspace writer only for the commit.
+            if updated_fields:
+                _check_added_tracks(
+                    jobs, updated_fields["tracks"], previous["tracks"] if previous else []
+                )
     with jobs.root_writer():
         _check_owner(jobs, project_id, actor)
         current = _read(path, project_id, kind)
-        current_template = current["template"]
-        current_fields = (
-            {key: value for key, value in current_template.items() if key != "templateSha256"}
-            if current_template
-            else None
-        )
-        same = current_fields == (template if template and any(template.values()) else None)
-        if not same and current["revisionSha256"] != expected:
-            raise AppError(
-                "enterprise.template_conflict",
-                "品牌模板已更新。请刷新后再保存。",
-                ExitCode.STORAGE,
-            )
+        same = _fields(current) == updated_fields
+        if not same:
+            _require_revision(current, expected)
+            if kind == "music":
+                _require_revision(current, observed["revisionSha256"])
         assets = _visual_assets(jobs, template) if kind == "visual" and template else None
         if not same:
             content = {

@@ -3,6 +3,7 @@
 # ruff: noqa: F811
 import asyncio
 import json
+import shutil
 import threading
 import urllib.error
 import urllib.request
@@ -10,6 +11,7 @@ from uuid import uuid4
 
 import pytest
 from test_creation_publication import ROOT, finish, payload, rendered, service  # noqa: F401
+from test_music_library import tone
 from test_overlay_assets import png
 
 from gamingcreator.application.enterprise import (
@@ -22,7 +24,9 @@ from gamingcreator.application.enterprise import (
     review_events_as_audit,
     validate_team,
 )
+from gamingcreator.application.providers import CancellationContext
 from gamingcreator.domain.errors import AppError
+from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
 from gamingcreator.ui import brand_templates, package_jobs
 
@@ -425,3 +429,79 @@ def test_visual_brand_template_verifies_asset_history_and_can_clear_damaged_asse
         "visual",
     )
     assert cleared["template"] is None and cleared["revisionSha256"] != damaged["revisionSha256"]
+
+
+def test_project_music_library_checks_declared_rights_and_original_receipt(service, monkeypatch):
+    tools = ROOT / ".tools/ffmpeg/bin"
+    if not all((tools / name).is_file() for name in ("ffmpeg.exe", "ffprobe.exe")):
+        pytest.skip("Pinned FFmpeg tools are unavailable")
+    target = service.repository / ".tools/ffmpeg/bin"
+    target.mkdir(parents=True)
+    for name in ("ffmpeg.exe", "ffprobe.exe"):
+        shutil.copyfile(tools / name, target / name)
+    library = MusicLibrary(service.repository)
+    source = tone(service.repository / "tone.wav")
+
+    def register(status):
+        return asyncio.run(
+            library.register(
+                source, "检验音调", "本机生成", status, None, CancellationContext("music", 20)
+            )
+        )
+
+    declared = register("user_declared")
+    testing = register("test_only")
+    service.set_team(PROJECT, TEAM, "老板")
+
+    def request(track, *, actor="老板", expected=None, digest=None):
+        rows = (
+            []
+            if track is None
+            else [{"trackId": track.track_id, "trackReceiptSha256": digest or track.receipt_sha256}]
+        )
+        return {
+            "projectId": PROJECT,
+            "actor": actor,
+            "expectedTemplateSha256": expected,
+            "template": {"tracks": rows},
+        }
+
+    with pytest.raises(ValueError, match="只能添加已声明使用权"):
+        brand_templates.save_template(service, request(testing), "music")
+    with pytest.raises(ValueError, match="回执无法核对"):
+        brand_templates.save_template(service, request(declared, digest="a" * 64), "music")
+    with pytest.raises(AppError, match="负责人"):
+        brand_templates.save_template(service, request(declared, actor="小编"), "music")
+    saved = brand_templates.save_template(service, request(declared), "music")
+    assert brand_templates.get_template(service, PROJECT, "music") == saved
+    assert brand_templates.get_template(service, PROJECT)["template"] is None
+    with pytest.raises(AppError, match="已更新"):
+        brand_templates.save_template(service, request(None), "music")
+    removed = brand_templates.save_template(
+        service, request(None, expected=saved["revisionSha256"]), "music"
+    )
+    assert removed["template"] is None and removed["revisionSha256"] != saved["revisionSha256"]
+    assert library.resolve(declared.track_id, declared.receipt_sha256) == declared
+
+    resolve = MusicLibrary.resolve
+
+    def revoke_during_media_check(music, track_id, receipt_sha256):
+        service.set_team(
+            PROJECT,
+            {
+                **TEAM,
+                "members": [
+                    {"name": "新负责人", "role": "owner"},
+                    {"name": "老板", "role": "editor"},
+                ],
+            },
+            "老板",
+        )
+        return resolve(music, track_id, receipt_sha256)
+
+    monkeypatch.setattr(MusicLibrary, "resolve", revoke_during_media_check)
+    with pytest.raises(AppError, match="负责人"):
+        brand_templates.save_template(
+            service, request(declared, expected=removed["revisionSha256"]), "music"
+        )
+    assert brand_templates.get_template(service, PROJECT, "music") == removed

@@ -614,7 +614,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                 <div hidden=${inspTab !== "sound"}>
                 ${editable ? html`<${AudioPanel} commandPreview=${commandPreview} adMusicDurationUs=${adMusicDurationUs}
                     adMusicCutsUs=${adMusicCutsUs} adMusicTimeline=${items} adMusicScope=${adMusicScope}
-                    musicSuggestionsDisabled=${!!busy || !matchesAdoptedEditor} editing=${editing} project=${project}
+                    musicSuggestionsDisabled=${!!busy || !matchesAdoptedEditor} projectLibraryDisabled=${!!busy || commandPreview || !!comparePlan || !matchesAdoptedEditor} editing=${editing} project=${project}
                     game=${planJob?.brief?.game || ""} fps=${fps} totalUs=${player.totalUs} music=${music} onBusy=${setAudioBusy} />
                     <${BeatSnap} editing=${editing} blocked=${!!busy || command?.owner === "assistant" || !!commandOverlays} onPreview=${setBeatRows} />`
                     : html`<p class="note">${plan ? "这个方案还不能编辑声音（正在读取或只能导出）。" : "先在左侧选一个方案，再在这里加旁白和配乐。"}</p>`}

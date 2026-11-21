@@ -1316,10 +1316,11 @@ window.PROGRESS_DATA = {
     "2026-11-01 T10: per-project teams (sha256 path under enterprise/teams) with read-only fallback to legacy global enterprise-team.json; append-only audit jsonl plus GET /api/enterprise/audit JSON/CSV marked actorSelfReported; creation page expandable review history, audit export links, and honest self-reported operator copy; review/publish use the package project's team",
     "2026-11-20: Studio team settings, live brand checks, review history, simulation and project audit downloads. Verified a real Douyin package in an isolated workspace, including reject/resubmit, approval, cross-project denial and local completion.",
     "2026-11-21: Project owners can save optional title, description and tags as a reusable Studio draft template. Real Comic Stars footage produced a new Douyin package with the selected text. Concurrent stale edits were refused, and the previous package reopened and downloaded byte-identically.",
-    "2026-11-21: Project owners can reuse selected PNG and text layers as a visual brand template. A 20-second Comic Stars edit supplied a template for an 8-second Atom ad. Saved edits, exact output-frame timing, template removal and logo pixels were verified in a real render and seven-file Douyin package."
+    "2026-11-21: Project owners can reuse selected PNG and text layers as a visual brand template. A 20-second Comic Stars edit supplied a template for an 8-second Atom ad. Saved edits, exact output-frame timing, template removal and logo pixels were verified in a real render and seven-file Douyin package.",
+    "2026-11-21: Project owners curated a receipt-bound local music library of user-declared tracks in Studio. Concurrent additions merged on refresh. An Atom edit previewed and saved a curated track, then rendered and packaged the same audio after the track was removed from the project library."
    ],
-   "done": "Studio 支持团队审核、审计下载、品牌词检查、文案和视觉模板；实测漫画群星品牌图层跨剪辑复用到代号 Atom 竖屏成片与抖音包",
-   "todo": "企业素材库、账号认证、跨设备协作、外部 API、席位计费和真实发布待交付",
+   "done": "Studio 支持团队审核、审计、品牌模板和项目配乐库；实测品牌图层及团队配乐进入代号 Atom 成片和抖音包",
+   "todo": "账号认证、跨设备素材协作、外部 API、席位计费和真实发布待交付",
    "updated": "2026-11-21",
    "sprints": [
     "sprint-enterprise-basics"
@@ -2051,6 +2052,12 @@ window.PROGRESS_DATA = {
      "name": "项目品牌视觉模板",
      "status": "done",
      "sprint": "sprint-enterprise-basics"
+    },
+    {
+     "id": "P051-brand-music-library",
+     "name": "项目配乐库",
+     "status": "done",
+     "sprint": "sprint-enterprise-basics"
     }
    ]
   },
@@ -2377,7 +2384,7 @@ window.PROGRESS_DATA = {
   "P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。",
   "[P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。",
   "[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)已通过，平台包可用命名路径保存到项目 `exports`。",
-  "[广告配乐](docs/exec-plans/sprint-ad-rhythm-matching.md)及[团队品牌文案和图层模板](docs/exec-plans/sprint-enterprise-basics.md)已实拍出包。"
+  "[广告配乐](docs/exec-plans/sprint-ad-rhythm-matching.md)、[团队品牌模板和配乐库](docs/exec-plans/sprint-enterprise-basics.md)已实拍出包。"
  ],
  "sprints": [
   {
@@ -2798,7 +2805,7 @@ window.PROGRESS_DATA = {
     "P051"
    ],
    "date": "2026-11-21",
-   "bytes": 5765
+   "bytes": 7021
   },
   {
    "file": "sprint-full-edit-draft",
