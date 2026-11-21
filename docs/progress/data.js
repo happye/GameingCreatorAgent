@@ -33,7 +33,7 @@ window.PROGRESS_DATA = {
    "open": 5
   },
   "tdTotal": 30,
-  "humanPending": 9,
+  "humanPending": 10,
   "journeyAgentPass": 3,
   "journeyHumanUsable": 1,
   "journeyTotal": 3
@@ -2898,7 +2898,7 @@ window.PROGRESS_DATA = {
     "P047"
    ],
    "date": "2026-11-20",
-   "bytes": 1708
+   "bytes": 2414
   },
   {
    "file": "sprint-local-narration",
@@ -3560,6 +3560,12 @@ window.PROGRESS_DATA = {
    "how": "Codex先给明确来源／图片／参数／最高新增费用的具体提案，再由真人批准",
    "when": "真实模型调用前；仅提供路径、继续开发或已有pending预算都不授权",
    "state": "当前无新的具体录像发送批准，另两段仍待分析；完成证据须绑定提案和真实答复"
+  },
+  {
+   "item": "P047 含真实对白的端到端验证",
+   "how": "可提供同一录像中已完成的画面分析和本机转写结果。若选用本机既有的 Atom 录音，需要先核定并授权画面分析提案",
+   "when": "仅影响 P047 带原声对白的成片质量验收",
+   "state": "Atom 录音已有本机段级转写，尚无视觉事件。三段已用于创作的录像本机复测均未识别到语音。见[实况精剪验证](sprint-live-cut-continuity.md)"
   },
   {
    "item": "固定候选评分",
