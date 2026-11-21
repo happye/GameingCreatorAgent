@@ -759,17 +759,19 @@ window.PROGRESS_DATA = {
    "evidence": [
     "docs/exec-plans/sprint-creation-audio-mix.md",
     "docs/exec-plans/sprint-ad-rhythm-matching.md",
+    "docs/exec-plans/sprint-mode-music-recommendations.md",
     "tests/test_music_library.py",
     "tests/test_creation_audio_render.py",
     "tests/test_creation_audio_jobs.py",
     "tests/test_creation_audio_browser.py"
    ],
-   "done": "本地曲库登记/手选、音量/闪避与真实混音；本机估计配乐节拍（BPM+拍点），Studio一键预览把剪辑点对齐到拍点（只缩短镜头）；时间轴下方显示每段镜头的原声波形（随裁剪/变速/原声音量更新）；波形上可打原声音量关键帧（点线加点、拖动、双击删除，可撤销），试听与成片按同一曲线",
-   "todo": "其他模式的配乐推荐、自动风格判断和响度质量待补，人评和曲目授权待核",
+   "done": "本地曲库、音量/闪避与混音；七种模式按默认节奏、切点和手填偏好推荐曲目，攻略验证试听、重开与出包；支持拍点预览对齐、原声波形与音量关键帧",
+   "todo": "自动风格判断、响度质量、人评和商用曲目权利待核验",
    "updated": "2026-11-21",
    "sprints": [
     "sprint-creation-audio-mix",
-    "sprint-ad-rhythm-matching"
+    "sprint-ad-rhythm-matching",
+    "sprint-mode-music-recommendations"
    ]
   },
   {
@@ -1504,7 +1506,7 @@ window.PROGRESS_DATA = {
    "goal": "改镜头/字幕/配乐/比例→重渲染→发布包",
    "status": "partial",
    "done": "镜头裁剪换序替换、变速、交叉淡化、逐镜字幕编辑与预览、本地配乐混音、本机旁白、定时图层、封面文案、四平台七文件包与时间线导出均有真实产物",
-   "todo": "创意质量人评、AI文案/节拍匹配、商用曲目与声音权利、NLE真机导入未验",
+   "todo": "创意、文案、配乐适配和响度待人评，另需核验商用曲目和声音权利以及 NLE 真机导入",
    "features": [
     "P008",
     "P025",
@@ -2014,6 +2016,12 @@ window.PROGRESS_DATA = {
      "name": "配乐节拍估计与剪辑点对齐",
      "status": "done",
      "sprint": ""
+    },
+    {
+     "id": "P030-mode-music",
+     "name": "七模式按节奏推荐本机配乐",
+     "status": "done",
+     "sprint": "sprint-mode-music-recommendations"
     }
    ]
   },
@@ -2442,7 +2450,7 @@ window.PROGRESS_DATA = {
   "P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。",
   "[P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。",
   "[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)已通过，平台包可用命名路径保存到项目 `exports`。",
-  "[广告配乐](docs/exec-plans/sprint-ad-rhythm-matching.md)、[团队品牌模板和配乐库](docs/exec-plans/sprint-enterprise-basics.md)已实拍出包。",
+  "[七模式配乐](docs/exec-plans/sprint-mode-music-recommendations.md)实测 Atom 攻略试听与出包。[品牌资源](docs/exec-plans/sprint-enterprise-basics.md)已实拍出包。",
   "[本机分析额度](docs/exec-plans/sprint-creator-plans.md)实测拦截。[专业时间线](docs/exec-plans/sprint-premiere-narration-track.md)已验证字幕、透明图层及成片混音。"
  ],
  "sprints": [
@@ -2997,7 +3005,7 @@ window.PROGRESS_DATA = {
     "P023",
     "P024"
    ],
-   "date": "2026-11-01",
+   "date": "2026-11-21",
    "bytes": 3501
   },
   {
@@ -3010,6 +3018,15 @@ window.PROGRESS_DATA = {
    ],
    "date": "2026-11-18",
    "bytes": 2085
+  },
+  {
+   "file": "sprint-mode-music-recommendations",
+   "title": "七种内容模式的本机配乐建议",
+   "ids": [
+    "P030"
+   ],
+   "date": "",
+   "bytes": 1828
   },
   {
    "file": "sprint-narration-captions",

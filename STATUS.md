@@ -30,7 +30,7 @@
 8. P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。
 9. [P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。
 10. [J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)已通过，平台包可用命名路径保存到项目 `exports`。
-11. [广告配乐](docs/exec-plans/sprint-ad-rhythm-matching.md)、[团队品牌模板和配乐库](docs/exec-plans/sprint-enterprise-basics.md)已实拍出包。
+11. [七模式配乐](docs/exec-plans/sprint-mode-music-recommendations.md)实测 Atom 攻略试听与出包。[品牌资源](docs/exec-plans/sprint-enterprise-basics.md)已实拍出包。
 12. [本机分析额度](docs/exec-plans/sprint-creator-plans.md)实测拦截。[专业时间线](docs/exec-plans/sprint-premiere-narration-track.md)已验证字幕、透明图层及成片混音。
 
 ## 费用与授权

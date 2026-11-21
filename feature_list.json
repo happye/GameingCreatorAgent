@@ -859,6 +859,7 @@
             "implementation_evidence": [
                 "docs/exec-plans/sprint-creation-audio-mix.md",
                 "docs/exec-plans/sprint-ad-rhythm-matching.md",
+                "docs/exec-plans/sprint-mode-music-recommendations.md",
                 "tests/test_music_library.py",
                 "tests/test_creation_audio_render.py",
                 "tests/test_creation_audio_jobs.py",

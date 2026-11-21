@@ -25,6 +25,11 @@ const TYPES = [["feature_showcase", "玩法展示"], ["guide", "攻略"], ["camp
 const PLATFORMS = [["bilibili", "B站"], ["douyin", "抖音"], ["kuaishou", "快手"], ["xiaohongshu", "小红书"]];
 const DEFAULTS = {runIds: [], game: "", contentType: "feature_showcase", targetDuration: "60", platform: "bilibili", objective: "整理已有素材中的玩法片段", audience: "新玩家", tone: "清楚简洁", mandatoryTopics: "", exclude: "", fps: "30"};
 const SOURCE_ONLY_AUDIO = {mix: {bgm: null, sourceGainDb: 0, ducking: "off"}};
+const MUSIC_PACE_BY_TYPE = new Map([
+    ["feature_showcase", "lively"], ["campaign", "lively"], ["guide", "calm"], ["commentary", "calm"],
+    ["live_cut", "cuts"], ["ad", "cuts"], ["highlight", "intense"],
+]);
+const MAX_MUSIC_CUTS = 1000;
 
 const list = (text) => [...new Set(text.split(/[,，\n]/).map((s) => s.trim()).filter(Boolean))];
 const secondsText = (us) => `${(us / 1e6).toFixed(1)} 秒`;
@@ -96,6 +101,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     const [aiPlanFor, setAiPlanFor] = useState("");
     const [planId, setPlanId] = useState("");
     const [comparePreview, setComparePreview] = useState(null);
+    const [musicPreferences, setMusicPreferences] = useState({});
     const pendingLocate = useRef(null);
     const [renderJob, setRenderJob] = useState(null);
     const [mode, setMode] = useState("plan");
@@ -263,22 +269,37 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     }, [commandRows, editing.clips]);
     const previewProblem = (shownClips ? transitionProblem(shownClips, fps) : "") || (items.some(item => !SourceClock.clockCandidates({sourceClock: item.sourceClock}).length) ? "素材源时钟不支持即时预览，请导出成片后观看" : "");
     const totalFrames = items.length ? items.at(-1).outStartFrame + items.at(-1).outFrames : 0;
-    const adMusicDurationUs = planJob?.brief?.contentType === "ad" && !commandPreview && !comparePlan && fps
+    const matchesAdoptedEditor = editing.base?.planId === planId && (editing.base?.kind === "revision"
+        ? editing.editor?.ancestry?.some(parent => parent.kind === "plan" && parent.jobId === planJob?.jobId)
+        : editing.base?.jobId === planJob?.jobId);
+    const musicType = planJob?.brief?.contentType;
+    const defaultMusicPace = MUSIC_PACE_BY_TYPE.get(musicType);
+    const musicDurationUs = defaultMusicPace && plan && editable && matchesAdoptedEditor && !commandPreview && !comparePreview && fps
         ? Math.round(totalFrames * 1e6 / fps) : 0;
     const problem = editable ? captionProblem(editing.subtitleOverrides) || transitionProblem(editing.clips, fps) || narrationProblem(editing.audio, items.length ? items.at(-1).outStartUs + items.at(-1).outDurUs : 0, fps)
         || overlayProblem(editing.overlays, editing.overlayAssets, totalFrames, canvasWidth, canvasHeight) : "";
     const groups = useMemo(() => shots(items), [items]);
-    const adMusicCutsUs = useMemo(() => items.slice(1).flatMap((item, index) => {
-        const prior = items[index];
-        const continuous = prior.runId === item.runId && prior.endUs === item.startUs
-            && prior.rate === item.rate && !item.transitionFrames;
-        const us = Math.round(item.outStartUs);
-        return !continuous && us > 0 && us < adMusicDurationUs ? [us] : [];
-    }), [items, adMusicDurationUs]);
-    const adMusicScope = JSON.stringify([scope, planJob?.jobId, planId, editing.base?.jobId]);
-    const matchesAdoptedEditor = editing.base?.planId === planId && (editing.base?.kind === "revision"
-        ? editing.editor?.ancestry?.some(parent => parent.kind === "plan" && parent.jobId === planJob?.jobId)
-        : editing.base?.jobId === planJob?.jobId);
+    const musicCuts = useMemo(() => {
+        if (!musicDurationUs) return {cutUs: [], cutCount: 0};
+        const cuts = new Set();
+        for (let index = 1; index < items.length; index++) {
+            const item = items[index], prior = items[index - 1];
+            const continuous = prior.runId === item.runId && prior.endUs === item.startUs
+                && prior.rate === item.rate && !item.transitionFrames;
+            const us = Math.round(item.outStartUs);
+            if (!continuous && us > 0 && us < musicDurationUs) cuts.add(us);
+        }
+        const ordered = [...cuts].sort((a, b) => a - b);
+        const cutUs = ordered.length <= MAX_MUSIC_CUTS ? ordered : Array.from({length: MAX_MUSIC_CUTS},
+            (_, i) => ordered[Math.round(i * (ordered.length - 1) / (MAX_MUSIC_CUTS - 1))]);
+        return {cutUs, cutCount: ordered.length};
+    }, [items, musicDurationUs]);
+    const musicSuggestion = musicDurationUs ? {
+        ...musicCuts, durationUs: musicDurationUs, timeline: items, contentType: musicType, defaultPace: defaultMusicPace,
+        scope: JSON.stringify([scope, planJob.jobId, planId, editing.base.jobId, editing.editor?.expectedParentReceiptSha256]),
+        preferences: musicPreferences[musicType],
+        onPreference: patch => setMusicPreferences(current => ({...current, [musicType]: {...current[musicType], ...patch}})),
+    } : null;
     const [playable, setPlayable] = useState({});
     useEffect(() => {
         let live = true;
@@ -641,9 +662,8 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     : plan ? html`<p class="hint">点时间轴上的一个镜头，可以裁短、调速、换顺序或替换画面。</p><${PlanInspector} plan=${plan} groups=${groups} count=${items.length} totalUs=${player.totalUs} shot=${null} />` : html`<p class="note">选中方案后，这里显示它的时长、镜头和缺口。</p>`}
                 </div>
                 <div hidden=${inspTab !== "sound"}>
-                ${editable ? html`<${AudioPanel} commandPreview=${commandPreview} adMusicDurationUs=${adMusicDurationUs}
-                    adMusicCutsUs=${adMusicCutsUs} adMusicTimeline=${items} adMusicScope=${adMusicScope}
-                    musicSuggestionsDisabled=${!!busy || !matchesAdoptedEditor} projectLibraryDisabled=${!!busy || commandPreview || !!comparePlan || !matchesAdoptedEditor} editing=${editing} project=${project}
+                ${editable ? html`<${AudioPanel} commandPreview=${commandPreview} musicSuggestion=${musicSuggestion}
+                    musicSuggestionsDisabled=${!!busy} projectLibraryDisabled=${!!busy || commandPreview || !!comparePlan || !matchesAdoptedEditor} editing=${editing} project=${project}
                     game=${planJob?.brief?.game || ""} fps=${fps} totalUs=${player.totalUs} music=${music} onBusy=${setAudioBusy} />
                     <${BeatSnap} editing=${editing} blocked=${!!busy || command?.owner === "assistant" || !!commandOverlays} onPreview=${setBeatRows} />`
                     : html`<p class="note">${plan ? "这个方案还不能编辑声音（正在读取或只能导出）。" : "先在左侧选一个方案，再在这里加旁白和配乐。"}</p>`}

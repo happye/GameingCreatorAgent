@@ -329,10 +329,13 @@ def test_beat_snap_preview_apply_marks_draft(studio_audio):
 
     page.route("**/api/creation/beat-snap", fulfill)
     page.get_by_role("tab", name="声音").click()
+    playwright = pytest.importorskip("playwright.sync_api")
+    suggestions = page.get_by_text("配乐建议", exact=True).locator("..")
+    playwright.expect(suggestions).to_contain_text("声明有权使用")
+    playwright.expect(suggestions.get_by_role("button", name="分析本机配乐节拍")).to_have_count(0)
     button = page.get_by_role("button", name="预览对齐节拍")
     button.click()
     status = page.get_by_role("status", name="节拍对齐状态")
-    playwright = pytest.importorskip("playwright.sync_api")
     playwright.expect(status).to_contain_text("约 120 BPM")
     assert set(sent[0]) == {"fps", "clips", "sources", "trackId", "trackReceiptSha256"}
     assert len(sent[0]["sources"]) == len(sent[0]["clips"]) and all(sent[0]["sources"])
@@ -340,6 +343,6 @@ def test_beat_snap_preview_apply_marks_draft(studio_audio):
     playwright.expect(status).to_contain_text("已应用")
     # The shortened timeline is an unsaved draft; here the saved narration no longer fits after
     # the shorter first shot, so the existing guard blocks saving with its reason (no truncation).
-    save = page.get_by_role("button", name="保存版本")
+    save = page.get_by_role("button", name="保存版本", exact=True)
     playwright.expect(save).to_have_attribute("title", re.compile("旁白.*不会自动截断"))
     playwright.expect(page.locator(".timeline .clip").first).to_be_visible()

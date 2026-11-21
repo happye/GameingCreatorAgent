@@ -322,10 +322,9 @@ function musicCandidates(durationOrdered, mood, highlightUs, durationUs) {
     return ranked.filter(track => shortlist.includes(track));
 }
 
-function AdMusicSuggestions({tracks, durationUs, cutUs, timeline, scope, selectedId, disabled, onSelect}) {
-    const [pace, setPace] = useState("cuts");
-    const [mood, setMood] = useState("");
-    const [highlight, setHighlight] = useState("");
+function MusicSuggestions({tracks, durationUs, cutUs, cutCount, timeline, scope, contentType, defaultPace,
+    preferences, onPreference, selectedId, disabled, onSelect}) {
+    const {pace = defaultPace, mood = "", highlight = ""} = preferences || {};
     const highlightUs = secondsUs(highlight);
     const valid = optionalPoint(highlightUs, durationUs);
     const eligible = tracks.filter((track) => track.licenseStatus === "user_declared");
@@ -337,7 +336,6 @@ function AdMusicSuggestions({tracks, durationUs, cutUs, timeline, scope, selecte
         durationUs, cutUs, pace, mood: mood || null, highlightUs,
         tracks: candidates.map(({trackId, trackReceiptSha256}) => ({trackId, trackReceiptSha256})),
     }, timeline, scope, tracks, disabled || !valid || durationUs <= 0);
-    if (durationUs <= 0) return null;
     const ranked = (match.suggestions || []).flatMap(result => {
         const track = candidates.find(t => t.trackId === result.trackId && t.trackReceiptSha256 === result.trackReceiptSha256
             && (t.annotation?.annotationSha256 ?? null) === result.annotationSha256);
@@ -349,19 +347,21 @@ function AdMusicSuggestions({tracks, durationUs, cutUs, timeline, scope, selecte
     const suggestions = matched ? ranked : durationOrdered.slice(0, 3).map(track => ({track}));
     const select = (track, result) => { if (!disabled && (!result || match.isCurrent())) onSelect(track); };
     return html`<div class="field">
-        <div class="k">广告配乐建议</div>
+        <div class="k">${contentType === "ad" ? "广告配乐建议" : "配乐建议"}</div>
         ${suggestions.length ? html`
-            <p class="hint">${matched ? "按节奏、情绪和高潮匹配排序。" : `按当前 ${(durationUs / 1e6).toFixed(1)} 秒成片匹配时长，优先选一次播完即可覆盖的音乐。`}选用后可随画面试听。</p>
+            <p class="hint">${matched ? "按节奏和已填写的偏好排序。" : `按当前 ${(durationUs / 1e6).toFixed(1)} 秒成片匹配时长，优先选一次播完即可覆盖的音乐。`}选用后可随画面试听。</p>
+            <p class="hint">当前内容类型的默认节奏为「${MUSIC_PACES[defaultPace]}」，可以更改。情绪和高潮可手动填写。</p>
+            ${cutCount > cutUs.length && html`<p class="hint">共 ${cutCount} 个剪辑切换点，节拍分析最多抽样 ${cutUs.length} 个。</p>`}
             <label class="form-row">节奏偏好<select class="select" value=${pace} disabled=${disabled}
-                onChange=${event => setPace(event.currentTarget.value)}>
+                onChange=${event => onPreference({pace: event.currentTarget.value})}>
                 ${Object.entries(MUSIC_PACES).map(([value, label]) => html`<option key=${value} value=${value}>${label}</option>`)}
             </select></label>
-            <label class="form-row">情绪偏好<select class="select" value=${mood} disabled=${disabled} onChange=${event => setMood(event.currentTarget.value)}>
+            <label class="form-row">情绪偏好<select class="select" value=${mood} disabled=${disabled} onChange=${event => onPreference({mood: event.currentTarget.value})}>
                 <option value="">不限</option>
                 ${Object.entries(MUSIC_MOODS).map(([value, label]) => html`<option key=${value} value=${value}>${label}</option>`)}
             </select></label>
             <label class="form-row">成片高潮（秒，选填）<input class="input" type="number" min="0" step="0.000001"
-                value=${highlight} disabled=${disabled} onInput=${event => setHighlight(event.currentTarget.value)} /></label>
+                value=${highlight} disabled=${disabled} onInput=${event => onPreference({highlight: event.currentTarget.value})} /></label>
             ${!valid && html`<p class="note">高潮时间须在成片时长内。</p>`}
             <p class="hint">最多分析 6 首已声明使用权的本机音乐，优先覆盖所选情绪和已标注高潮，再按时长选曲。</p>
             <button class="btn ghost" type="button" disabled=${disabled || !valid || match.busy} onClick=${match.analyze}>分析本机配乐节拍</button>
@@ -551,7 +551,7 @@ function ProjectMusicLibrary(props) {
     </details>`;
 }
 
-export function AudioPanel({commandPreview = false, adMusicDurationUs = 0, adMusicCutsUs = [], adMusicTimeline, adMusicScope, musicSuggestionsDisabled = false, projectLibraryDisabled = false,
+export function AudioPanel({commandPreview = false, musicSuggestion, musicSuggestionsDisabled = false, projectLibraryDisabled = false,
     editing, project, game = "", fps, totalUs, music, onBusy}) {
     const {audio} = editing;
     const [voices, setVoices] = useState([]);
@@ -1028,9 +1028,8 @@ export function AudioPanel({commandPreview = false, adMusicDurationUs = 0, adMus
         </div>
         <${KnowledgePanel} key=${`${project}:${String(game || "")}`} project=${project} game=${game || ""} />
         <div class="field audio-panel"><div class="k">配乐与原声</div>
-            <${AdMusicSuggestions} tracks=${music.tracks} durationUs=${adMusicDurationUs} cutUs=${adMusicCutsUs}
-                timeline=${adMusicTimeline} scope=${adMusicScope} selectedId=${bgm?.trackId}
-                disabled=${!!working || musicSuggestionsDisabled || music.refreshing || !!music.error} onSelect=${selectMusic} />
+            ${musicSuggestion && html`<${MusicSuggestions} key=${musicSuggestion.contentType} ...${musicSuggestion} tracks=${music.tracks}
+                selectedId=${bgm?.trackId} disabled=${!!working || musicSuggestionsDisabled || music.refreshing || !!music.error} onSelect=${selectMusic} />`}
             <label class="form-row">配乐<select class="select" value=${bgm?.trackId || ""} onChange=${(e) => {
                 selectMusic(music.tracks.find((track) => track.trackId === e.currentTarget.value));
             }}><option value="">不加配乐</option>${music.tracks.map((t) => html`<option value=${t.trackId}>${t.title}（${(t.durationUs / 1e6).toFixed(0)} 秒）</option>`)}</select></label>
