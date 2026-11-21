@@ -378,7 +378,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         timelineGuard.current = {view: timelineView, generation: timelineGuard.current.generation + 1};
     }
     useEffect(() => () => { timelineWork.current?.abort(); timelineGuard.current.generation++; }, []);
-    const downloadTimeline = async (format) => {
+    const downloadTimeline = async (format, includeMusic = format === "xmeml") => {
         if (timelineReason || timelineBusy) return;
         const controller = new AbortController(); timelineWork.current = controller;
         const generation = timelineGuard.current.generation;
@@ -387,6 +387,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         setTimelineBusy(true); setTimelineMessage("");
         try {
             const query = new URLSearchParams({planId: base.planId || planId, format, size: size.replace(",", "x")});
+            if (includeMusic) query.set("music", "include");
             const response = await fetch(`/api/creation/jobs/${encodeURIComponent(base.jobId)}/timeline?${query}`, {signal: controller.signal});
             if (!response.ok) {
                 let detail; try { detail = await response.json(); } catch { /* HTTP status remains useful. */ }
@@ -395,7 +396,8 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
             const blob = await response.blob();
             if (!current()) return;
             const url = URL.createObjectURL(blob), link = document.createElement("a");
-            link.href = url; link.download = `gamingcreator-${base.jobId.slice(0, 8)}${format === "xmeml" ? "-premiere.xml" : `.${format}`}`;
+            const suffix = format === "xmeml" ? (includeMusic ? "-premiere.xml" : "-premiere-no-music.xml") : `.${format}`;
+            link.href = url; link.download = `gamingcreator-${base.jobId.slice(0, 8)}${suffix}`;
             document.body.append(link); link.click(); link.remove();
             setTimeout(() => URL.revokeObjectURL(url), 0);
             setTimelineMessage("时间线已下载，请在剪辑软件中复核。");
@@ -576,8 +578,10 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     onInput=${(e) => update({workName: e.currentTarget.value})} /></label>
                 <p class="hint">导出成片时用这个名字标记作品，并作为下载文件名。</p>
                 <div class="field"><div class="k">专业时间线</div>
-                    <p class="hint">FCPXML / OTIO：镜头、变速及实验字幕和源音轨。Premiere XML 另含已保存旁白的独立干声轨；增益、闪避、淡入淡出与配乐需在剪辑软件中复核配置。导入兼容性尚未验证。</p>
-                    <div class="actions-row">${[["fcpxml", "下载 FCPXML"], ["otio", "下载 OTIO"], ["xmeml", "下载 Premiere XML"]].map(([format, label]) => html`<button class="btn ghost" disabled=${!!timelineReason || timelineBusy} title=${timelineReason || "下载已保存版本"} onClick=${() => downloadTimeline(format)}>${label}</button>`)}</div>
+                    <p class="hint">FCPXML / OTIO 可交接镜头、变速、实验字幕和源音轨。Premiere XML 另含已保存的独立旁白和配乐轨。配乐按整帧循环或截尾，增益、闪避及淡化需在剪辑软件中复核。导入兼容性尚未验证。</p>
+                    <div class="actions-row">${[["fcpxml", "下载 FCPXML"], ["otio", "下载 OTIO"], ["xmeml", "下载 Premiere XML"]].map(([format, label]) => html`<button class="btn ghost" disabled=${!!timelineReason || timelineBusy} title=${timelineReason || "下载已保存版本"} onClick=${() => downloadTimeline(format)}>${label}</button>`)}
+                        ${editing.audio?.mix?.bgm ? html`<button class="btn ghost" disabled=${!!timelineReason || timelineBusy} onClick=${() => downloadTimeline("xmeml", false)}>下载 Premiere XML（不含配乐）</button>` : null}
+                    </div>
                     <p class="hint" role="status" aria-label="时间线下载状态">${timelineReason || timelineMessage || (timelineBusy ? "正在下载…" : "下载当前已保存版本")}</p>
                 </div>
                 <div class="field">

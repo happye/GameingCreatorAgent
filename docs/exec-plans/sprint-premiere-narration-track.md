@@ -41,3 +41,11 @@ root与字幕预览/逐镜字幕组合验证：47通过/0跳过、153.124秒（`
 首轮完整门禁`.cache/premiere-integration-full-verify.log`：1失败/5053通过/7跳过，1998.64秒；格式/Ruff/mypy209源通过，CLI未执行。唯一失败为`test_speculative_seek_does_not_freeze_music`在测试主体前启动等待超时。Sol/medium在assets树用750ms Worklet延迟确定触发旧夹具同类超时：图已就绪但模拟时钟静止；推进timeupdate即恢复。补真实graph.ready前置后，同一延迟和原断言通过；不能据此声称已取得原次全量逐事件轨迹。只改该文件夹具，不改生产音频/播放逻辑、阈值或原断言。子树文件16通过/36.265秒、相邻音频10通过/35.144秒；证据`.worktrees/j1-selected-ranges/.cache/scratch/playback_delayed_before_after.log`。父集成增加有界node/failed等待，避免未完成的初始化无限等待；root同文件16通过/35.130秒，见`.cache/playback-readiness-root.xml`。
 
 最终`.cache/premiere-readiness-full-verify.log`：5054通过/7跳过、1794.68秒，488文件格式/Ruff/mypy209源及CLI全部通过，session46005终态0。此结果证明当前组合技术门禁，不代表Premiere实导、完整混音交接或真人创作质量通过；P033保持partial，后续不以大型编辑器作为本项目成片路径依赖。业务提交排除四份规范入口与并行P020合同。
+
+## 2026-11-21 已保存配乐轨
+
+Studio 从已保存修订解析配乐和注册回执，核验本机音频文件，读取首条音轨的时长、采样率和声道数。Premiere XML 引用该文件，在原声和可选旁白之外另建配乐干声轨。每段从音频源起点播放，循环长度向下取整至输出帧，末段截到序列终点。配乐短于一帧、循环超过 10000 段或 MP4／M4A 的首条音轨起点与容器不同，Studio 会显示原因并提供不含配乐的 XML 下载。旧 API 调用沿用原版时间线，`music=include` 选择加入配乐。混音增益、原声闪避、淡化和限幅需在剪辑软件中复核。格式元素依据 [Apple XMEML 时钟规范](https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/FinalCutPro_XML/Topics/Topics.html)。
+
+在隔离工作区用真实《代号 Atom》8 秒竖版保存并重开修订 `3ce724c412be4aec846078f1fa0bbe4a`，从 Studio 下载 XML。3 秒单声道测试 WAV 生成 `[0, 90)`、`[90, 180)`、`[180, 240)` 三段，三段共用同一文件引用。原始素材和保存回执的哈希核验通过。OpenTimelineIO 0.18.1 的 FCP XML adapter 1.0.0 回读原声与配乐两条轨及 90、90、60 帧的裁切长度。证据和 XML 位于 `.cache/scratch/premiere-music-track-20261121/`。Premiere 实际导入待验证，FCPXML／OTIO 的独立配乐轨待实现。 [OpenTimelineIO FCP XML adapter](https://pypi.org/project/otio-fcp-adapter/)
+
+带偏移 MP4 配乐的 Atom 修订 `2533c1b9a9654ffcbe937232664658a9` 在 Studio 显示起点差异，并可下载保留原声的 XML。定向回归 43 通过、1 跳过，日志 `.cache/test-logs/pytest-20261121-145317.log`。

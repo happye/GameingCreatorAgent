@@ -1592,14 +1592,23 @@ class InspectionHandler(BaseHTTPRequestHandler):
                         200, self.creation_jobs.edit(tail.removesuffix("/edit"), query["planId"])
                     )
                 elif tail.endswith("/timeline"):
-                    if not {"planId", "format"} <= set(query) <= {"planId", "format", "size"}:
+                    if (
+                        not {"planId", "format"}
+                        <= set(query)
+                        <= {"planId", "format", "size", "music"}
+                    ):
                         raise ValueError("Expected plan ID and timeline format")
+                    if "music" in query and (
+                        query["format"] != "xmeml" or query["music"] != "include"
+                    ):
+                        raise ValueError("Only Premiere XML accepts music=include")
                     self._require("timelineExport")
                     body, filename, content_type = self.creation_jobs.timeline_export(
                         tail.removesuffix("/timeline"),
                         query["planId"],
                         query["format"],
                         query.get("size", "1920x1080"),
+                        include_music="music" in query,
                     )
                     self._headers(200, len(body), content_type + "; charset=utf-8")
                     self.send_header("Content-Disposition", f'attachment; filename="{filename}"')

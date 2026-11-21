@@ -16,6 +16,7 @@ from gamingcreator.infrastructure.media_process import run_media_process
 
 MAX_AUDIO_BYTES = 500 * 1024 * 1024
 MAX_EVIDENCE_BYTES = 10 * 1024 * 1024
+MAX_RECEIPT_BYTES = 65536
 _FORMATS = {
     ".wav": "wav",
     ".mp3": "mp3",
@@ -206,7 +207,7 @@ class MusicLibrary:
         _hex(track_id, 32)
         _hex(receipt_sha256, 64)
         directory = _safe(self.root / track_id)
-        receipt = _file(directory / "receipt.json", 65536)
+        receipt = _file(directory / "receipt.json", MAX_RECEIPT_BYTES)
         if hash_file(receipt) != receipt_sha256:
             raise ValueError("Music receipt identity changed.")
         metadata = json.loads(receipt.read_text(encoding="utf-8"))
@@ -268,7 +269,7 @@ class MusicLibrary:
         for directory in sorted(root.iterdir()):
             try:
                 _hex(directory.name, 32)
-                receipt = _file(directory / "receipt.json", 65536)
+                receipt = _file(directory / "receipt.json", MAX_RECEIPT_BYTES)
                 track = self.resolve(directory.name, hash_file(receipt))
             except (OSError, ValueError, KeyError, TypeError):
                 issues.append(
@@ -286,3 +287,63 @@ class MusicLibrary:
                     {"trackId": directory.name, "message": "曲目标注无法核实，原文件已保留。"}
                 )
         return {"tracks": tracks, "issues": issues}
+
+    async def probe_audio_stream(self, track: MusicTrack) -> tuple[Fraction, int, int, int | None]:
+        """Read the first audio stream used by the renderer, without making a derivative."""
+        demuxer = _FORMATS[track.path.suffix.lower()]
+        result = await run_media_process(
+            [
+                str(self.repository / ".tools/ffmpeg/bin/ffprobe.exe"),
+                "-v",
+                "error",
+                "-protocol_whitelist",
+                "file",
+                "-f",
+                demuxer,
+                "-select_streams",
+                "a:0",
+                "-show_entries",
+                "stream=start_time,duration_ts,time_base,duration,sample_rate,channels,"
+                "bits_per_sample,bits_per_raw_sample:format=start_time",
+                "-of",
+                "json",
+                "-i",
+                str(track.path),
+            ],
+            CancellationContext("music-timeline-export", 20),
+            max_stdout_bytes=32_768,
+        )
+        try:
+            document = json.loads(result.stdout)
+            (stream,) = document["streams"]
+            has_offset = demuxer == "mov" and Fraction(stream["start_time"]) != Fraction(
+                document["format"]["start_time"]
+            )
+            if "duration_ts" in stream and "time_base" in stream:
+                length = Fraction(stream["duration_ts"]) * Fraction(stream["time_base"])
+            else:
+                length = Fraction(stream["duration"])
+            sample_rate, channels = int(stream["sample_rate"]), int(stream["channels"])
+            depth = next(
+                (
+                    int(value)
+                    for key in ("bits_per_raw_sample", "bits_per_sample")
+                    if (value := str(stream.get(key, ""))).isascii()
+                    and value.isdecimal()
+                    and int(value) > 0
+                ),
+                None,
+            )
+            if length <= 0 or sample_rate <= 0 or channels <= 0:
+                raise ValueError
+        except (KeyError, TypeError, ValueError, ZeroDivisionError) as error:
+            raise ValueError("已保存配乐的首条音轨时长或音频格式无法核对。") from error
+        if has_offset:
+            raise ValueError("首条配乐音轨的起点与 MP4／M4A 文件起点不同。")
+        receipt = _file(track.path.with_name("receipt.json"), MAX_RECEIPT_BYTES)
+        if (
+            hash_file(_file(track.path, MAX_AUDIO_BYTES)) != track.sha256
+            or hash_file(receipt) != track.receipt_sha256
+        ):
+            raise ValueError("已保存配乐或配乐回执在读取时发生改变。")
+        return length, sample_rate, channels, depth

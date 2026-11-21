@@ -269,8 +269,8 @@
    ]
   },
   "P033": {
-   "done": "导出FCPXML 1.9、OTIO、Premiere XML时间线，含尽力而为的字幕/音轨和独立旁白轨",
-   "todo": "未在Final Cut/DaVinci/Premiere实际导入验证；样式往返未验证",
+   "done": "Studio 导出 FCPXML 1.9、OTIO 和 Premiere XML，Premiere 保留独立旁白与整帧循环配乐轨，已从真实 Atom 修订下载并用 OpenTimelineIO 回读",
+   "todo": "补齐其他格式配乐轨、混音和图层交接，验证 Final Cut、DaVinci、Premiere 实际导入及样式往返",
    "updated": "2026-11-08",
    "sprints": [
     "sprint-timeline-export",
@@ -706,6 +706,12 @@
     {
      "id": "P033-b",
      "name": "Studio时间线入口+Premiere旁白轨",
+     "status": "done",
+     "sprint": "sprint-premiere-narration-track"
+    },
+    {
+     "id": "P033-c",
+     "name": "Premiere 独立配乐轨",
      "status": "done",
      "sprint": "sprint-premiere-narration-track"
     },

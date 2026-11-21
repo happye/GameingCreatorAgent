@@ -31,11 +31,11 @@
 9. [P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。
 10. [J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)已通过，平台包可用命名路径保存到项目 `exports`。
 11. [广告配乐](docs/exec-plans/sprint-ad-rhythm-matching.md)、[团队品牌模板和配乐库](docs/exec-plans/sprint-enterprise-basics.md)已实拍出包。
-12. [本机分析额度](docs/exec-plans/sprint-creator-plans.md)实测新分析及续跑拦截。
+12. [本机分析额度](docs/exec-plans/sprint-creator-plans.md)实测新分析及续跑拦截。[Premiere 独立配乐](docs/exec-plans/sprint-premiere-narration-track.md)已从 Atom 下载并回读。
 
 ## 费用与授权
 
-- 2026-11-08：用户要求尽量避免PR/AE等大型软件。开发、日常验证和成片导出走项目FFmpeg/浏览器路径，专业格式为可选交接，实际导入保持未验。此前Premiere退出由用户手动关闭，不是软件故障；不转成人工待办。
+- 2026-11-08：用户要求尽量避免 PR/AE。成片和日常验证走 FFmpeg 与浏览器。专业格式为可选交接，剪辑软件实导待验。
 
 - 2026-11-09：用户先后授权2次动态策划调用，均已耗用：①估算¥0.0094516（7abf86df…，failed:validate_proposal，原输出留存）②估算¥0.0174276（成功并采用）。不得重发；之后的调用按2026-11-11月度预算规则。
 - 2026-11-05：用户要求语音暂用免费本机声音；不自动切换云端。

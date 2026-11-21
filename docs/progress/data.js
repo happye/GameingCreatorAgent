@@ -850,7 +850,7 @@ window.PROGRESS_DATA = {
    "impl": "partial",
    "quality": "not_separately_assessed",
    "release": "not_released",
-   "remaining": "Best-effort caption/stereo tracks exist in export fixtures; Final Cut/DaVinci/Premiere import is not claimed. Styling and NLE round-trip remain unverified.",
+   "remaining": "FCPXML/OTIO music tracks, mix settings, overlays and styling, plus Final Cut/DaVinci/Premiere import and round-trip verification.",
    "evidence": [
     "2026-11-01: FCPXML 1.9 and OTIO JSON export of saved revisions with source file URIs, frame-aligned rational times, speed time maps and crossfades as centred transitions with whole-frame trims so exported length equals the render; real 34-clip revision exported (299/30s); not import-verified in Final Cut/DaVinci/Premiere; no Premiere XML or audio/subtitle tracks",
     "docs/archive/sprints/sprint-t25-timeline-export-av-tracks.md",
@@ -858,10 +858,11 @@ window.PROGRESS_DATA = {
     "2026-11-01 T25: best-effort FCPXML title lane + stereo audio-channel-source, OTIO A1/Captions tracks, xmeml audio track + caption markers; NLE import still unverified",
     "docs/exec-plans/sprint-premiere-narration-track.md",
     "tests/test_premiere_narration_export.py",
-    "tests/test_studio_timeline_download_browser.py"
+    "tests/test_studio_timeline_download_browser.py",
+    "2026-11-21: Studio downloaded Premiere XML from saved Atom revision 3ce724c412be4aec846078f1fa0bbe4a. OpenTimelineIO FCP XML adapter reopened two audio tracks with dry BGM clips of 90, 90 and 60 frames, all referencing the registered source."
    ],
-   "done": "导出FCPXML 1.9、OTIO、Premiere XML时间线，含尽力而为的字幕/音轨和独立旁白轨",
-   "todo": "未在Final Cut/DaVinci/Premiere实际导入验证；样式往返未验证",
+   "done": "Studio 导出 FCPXML 1.9、OTIO 和 Premiere XML，Premiere 保留独立旁白与整帧循环配乐轨，已从真实 Atom 修订下载并用 OpenTimelineIO 回读",
+   "todo": "补齐其他格式配乐轨、混音和图层交接，验证 Final Cut、DaVinci、Premiere 实际导入及样式往返",
    "updated": "2026-11-08",
    "sprints": [
     "sprint-timeline-export",
@@ -1656,6 +1657,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-premiere-narration-track"
     },
     {
+     "id": "P033-c",
+     "name": "Premiere 独立配乐轨",
+     "status": "done",
+     "sprint": "sprint-premiere-narration-track"
+    },
+    {
      "id": "P029-a",
      "name": "Studio逐镜字幕编辑",
      "status": "done",
@@ -2373,7 +2380,7 @@ window.PROGRESS_DATA = {
   "note": "verify-20261117-002506保留；静态622文件/mypy233源通过，行为检查非通过。不主动重跑全量。真实UI已完成29秒MP4与B站包下载；历史Grok完整5486过101跳43失败1error不改绿，J1人评不提升。"
  },
  "fees": [
-  "2026-11-08：用户要求尽量避免PR/AE等大型软件。开发、日常验证和成片导出走项目FFmpeg/浏览器路径，专业格式为可选交接，实际导入保持未验。此前Premiere退出由用户手动关闭，不是软件故障；不转成人工待办。",
+  "2026-11-08：用户要求尽量避免 PR/AE。成片和日常验证走 FFmpeg 与浏览器。专业格式为可选交接，剪辑软件实导待验。",
   "2026-11-09：用户先后授权2次动态策划调用，均已耗用：①估算¥0.0094516（7abf86df…，failed:validate_proposal，原输出留存）②估算¥0.0174276（成功并采用）。不得重发；之后的调用按2026-11-11月度预算规则。",
   "2026-11-05：用户要求语音暂用免费本机声音；不自动切换云端。",
   "2026-11-11：创作环节AI文字调用每月¥30、单条视频¥1内自动调用，超出再逐次确认（application/ai_budget.py）。",
@@ -2392,7 +2399,7 @@ window.PROGRESS_DATA = {
   "[P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。",
   "[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)已通过，平台包可用命名路径保存到项目 `exports`。",
   "[广告配乐](docs/exec-plans/sprint-ad-rhythm-matching.md)、[团队品牌模板和配乐库](docs/exec-plans/sprint-enterprise-basics.md)已实拍出包。",
-  "[本机分析额度](docs/exec-plans/sprint-creator-plans.md)实测新分析及续跑拦截。"
+  "[本机分析额度](docs/exec-plans/sprint-creator-plans.md)实测新分析及续跑拦截。[Premiere 独立配乐](docs/exec-plans/sprint-premiere-narration-track.md)已从 Atom 下载并回读。"
  ],
  "sprints": [
   {
@@ -2764,7 +2771,7 @@ window.PROGRESS_DATA = {
    "ids": [
     "P050"
    ],
-   "date": "2026-11-20",
+   "date": "2026-11-21",
    "bytes": 5213
   },
   {
@@ -3124,7 +3131,7 @@ window.PROGRESS_DATA = {
     "P033"
    ],
    "date": "2026-11-08",
-   "bytes": 7831
+   "bytes": 9546
   },
   {
    "file": "sprint-publication-assets",

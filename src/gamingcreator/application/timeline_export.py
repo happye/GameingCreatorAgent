@@ -12,6 +12,7 @@ or Premiere — do not treat exports as NLE-certified.
 """
 
 import json
+import re
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from fractions import Fraction
@@ -257,6 +258,22 @@ class ExportNarration:
     sample_count: int
 
 
+@dataclass(frozen=True, slots=True)
+class ExportMusic:
+    """Verified source audio facts for a dry background music track."""
+
+    audio_path: str
+    title: str
+    duration: Fraction
+    sample_rate: int
+    channels: int
+    sample_depth_bits: int | None = None
+
+
+class MusicTimelineError(ValueError):
+    """A registered track cannot be represented on the export clock."""
+
+
 def _xmeml_narration(narration: ExportNarration, fps: int, total: int, rate: str) -> str:
     from gamingcreator.domain.creation_narration import NarrationSelection, validate_narration_fit
 
@@ -287,17 +304,57 @@ def _xmeml_narration(narration: ExportNarration, fps: int, total: int, rate: str
     )
 
 
+def _xmeml_music(music: ExportMusic, fps: int, total: int, rate: str) -> str:
+    source_frames = (music.duration * fps).__floor__()
+    if source_frames < 1:
+        raise MusicTimelineError("配乐短于一帧。")
+    if -(-total // source_frames) > 10_000:
+        raise MusicTimelineError("配乐循环超过 10000 段。")
+    if any(type(value) is not int or value <= 0 for value in (music.sample_rate, music.channels)):
+        raise ValueError("Music sample rate and channels must be positive integers.")
+    depth = music.sample_depth_bits
+    if depth is not None and (type(depth) is not int or depth <= 0):
+        raise ValueError("Music sample depth must be a positive integer when known.")
+    depth_xml = f"<depth>{depth}</depth>" if depth is not None else ""
+    title = escape(
+        re.sub(
+            r"[^\x09\x0a\x0d\x20-\ud7ff\ue000-\ufffd\U00010000-\U0010ffff]", "\ufffd", music.title
+        )
+    )
+    full_file = (
+        f'<file id="music-file"><name>{title}</name>'
+        f"<pathurl>{escape(_uri(music.audio_path))}</pathurl>{rate}"
+        f"<duration>{source_frames}</duration><media><audio><samplecharacteristics>"
+        f"{depth_xml}<samplerate>{music.sample_rate}</samplerate></samplecharacteristics>"
+        f"<channelcount>{music.channels}</channelcount></audio></media></file>"
+    )
+    clips = []
+    for index, start in enumerate(range(0, total, source_frames), 1):
+        end = min(start + source_frames, total)
+        span = end - start
+        file_xml = full_file if index == 1 else '<file id="music-file"/>'
+        clips.append(
+            f'<clipitem id="music-{index}"><name>{title}</name>{rate}'
+            f"<start>{start}</start><end>{end}</end><in>0</in><out>{span}</out>"
+            f"<duration>{span}</duration>{file_xml}<sourcetrack><mediatype>audio</mediatype>"
+            "<trackindex>1</trackindex></sourcetrack></clipitem>"
+        )
+    return "<track>" + "".join(clips) + "</track>"
+
+
 def to_xmeml(
     edl: dict[str, Any],
     name: str,
     captions: Sequence[ExportCaption] | None = None,
     include_audio_track: bool = False,
     narration: ExportNarration | None = None,
+    music: ExportMusic | None = None,
 ) -> str:
     """Final Cut Pro 7 XML (xmeml v4), which Premiere Pro often imports.
 
     Speed-changed clips keep exact timeline length and source in/out, and carry an FCP7
     Time Remap filter (effectid=timeremap, constant speed percent + linear graphdict).
+    Background music loops as whole-frame source clips on a separate dry audio track.
     Optional caption markers and a mirrored stereo audio track are best-effort only;
     live Premiere import of those extras is unverified.
     """
@@ -380,12 +437,17 @@ def to_xmeml(
         if include_audio_track
         else ""
     )
+    extra_tracks = []
     if narration is not None:
-        narration_xml = _xmeml_narration(narration, fps, total, rate)
+        extra_tracks.append(_xmeml_narration(narration, fps, total, rate))
+    if music is not None:
+        extra_tracks.append(_xmeml_music(music, fps, total, rate))
+    if extra_tracks:
+        tracks_xml = "".join(extra_tracks)
         audio_xml = (
-            audio_xml.removesuffix("</audio>") + narration_xml + "</audio>"
+            audio_xml.removesuffix("</audio>") + tracks_xml + "</audio>"
             if audio_xml
-            else "\n    <audio>" + narration_xml + "</audio>"
+            else "\n    <audio>" + tracks_xml + "</audio>"
         )
     marker_xml = ("\n" + "\n".join(markers)) if markers else ""
     return (

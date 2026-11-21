@@ -5,11 +5,15 @@ from __future__ import annotations
 import json
 import xml.etree.ElementTree as ElementTree
 from fractions import Fraction
+from pathlib import Path
 
+import pytest
 from test_timeline_export import EDL
 
 from gamingcreator.application.timeline_export import (
     ExportCaption,
+    ExportMusic,
+    ExportNarration,
     captions_from_cues,
     to_fcpxml,
     to_otio,
@@ -77,3 +81,62 @@ def test_xmeml_best_effort_audio_track_and_caption_markers() -> None:
     plain = ElementTree.fromstring(to_xmeml(EDL, "plain"))
     assert plain.find("./sequence/media/audio") is None
     assert plain.findall("./sequence/marker") == []
+
+
+def test_xmeml_music_loops_on_independent_track_to_rendered_end(tmp_path: Path) -> None:
+    path = tmp_path / "配乐 & one.wav"
+    music = ExportMusic(str(path), "配乐 <开场> & 收尾\uffff", Fraction(451, 300), 44_100, 2, 24)
+    narration = ExportNarration("voice.wav", 3, 48_000, 1, 2, 48_000)
+    root = ElementTree.fromstring(
+        to_xmeml(EDL, "独立配乐", include_audio_track=True, narration=narration, music=music)
+    )
+    original, voice, bgm = root.findall("./sequence/media/audio/track")
+    assert len(original.findall("clipitem")) == 3
+    assert voice.findtext("./clipitem/name") == "Narration (dry)"
+    clips = bgm.findall("clipitem")
+    assert [
+        tuple(clip.findtext(field) for field in ("start", "end", "in", "out")) for clip in clips
+    ] == [
+        ("0", "45", "0", "45"),
+        ("45", "90", "0", "45"),
+        ("90", "135", "0", "45"),
+        ("135", "137", "0", "2"),
+    ]
+    assert all(clip.findtext("name") == "配乐 <开场> & 收尾\ufffd" for clip in clips)
+    ids = [clip.get("id") for clip in root.findall(".//clipitem")]
+    assert len(ids) == len(set(ids))
+    source, *references = bgm.findall("./clipitem/file")
+    assert source.findtext("pathurl") == path.resolve().as_uri()
+    assert source.findtext("duration") == "45"
+    assert source.findtext("./media/audio/channelcount") == "2"
+    assert source.findtext("./media/audio/samplecharacteristics/samplerate") == "44100"
+    assert source.findtext("./media/audio/samplecharacteristics/depth") == "24"
+    assert all(ref.get("id") == source.get("id") and not len(ref) for ref in references)
+
+
+def test_xmeml_music_without_original_or_known_sample_depth() -> None:
+    music = ExportMusic("music.mp3", "Music", Fraction(10), 48_000, 1)
+    root = ElementTree.fromstring(to_xmeml(EDL, "只配乐", music=music))
+    (track,) = root.findall("./sequence/media/audio/track")
+    (clip,) = track.findall("clipitem")
+    assert clip.findtext("out") == "137"
+    assert clip.findtext("./file/duration") == "300"
+    assert clip.find("./file/media/audio/samplecharacteristics/depth") is None
+
+
+def test_xmeml_rejects_music_outside_loop_bounds() -> None:
+    with pytest.raises(ValueError, match="配乐短于一帧"):
+        to_xmeml(EDL, "短配乐", music=ExportMusic("tiny.wav", "Music", Fraction(1, 31), 48_000, 1))
+
+    row = {
+        **EDL["segments"][0],
+        "outputFrames": 10_001,
+        "endUs": 333_400_000,
+        "sourceDurationUs": 333_400_000,
+    }
+    with pytest.raises(ValueError, match="配乐循环超过 10000 段"):
+        to_xmeml(
+            {**EDL, "segments": [row]},
+            "循环太多",
+            music=ExportMusic("tiny.wav", "Music", Fraction(1, 30), 48_000, 1),
+        )

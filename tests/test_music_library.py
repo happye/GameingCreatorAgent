@@ -3,7 +3,9 @@ import json
 import math
 import shutil
 import struct
+import subprocess
 import wave
+from fractions import Fraction
 from pathlib import Path
 
 import pytest
@@ -61,6 +63,7 @@ def test_real_decode_register_resolve_catalog_and_immutable_sources(library, tmp
     assert track.duration_us == 100_000
     assert track.sha256 == before[0]
     assert library.resolve(track.track_id, track.receipt_sha256) == track
+    assert asyncio.run(library.probe_audio_stream(track)) == (Fraction(1, 10), 48000, 1, 16)
     catalog = library.catalog()
     assert catalog["issues"] == [] and len(catalog["tracks"]) == 1
     public = json.dumps(catalog)
@@ -70,6 +73,35 @@ def test_real_decode_register_resolve_catalog_and_immutable_sources(library, tmp
     second = register(library, source)
     assert second.track_id != track.track_id
     assert library.resolve(track.track_id, track.receipt_sha256) == track
+
+
+def test_timeline_probe_rejects_audio_delayed_relative_to_mp4(library, tmp_path):
+    media = tmp_path / "delayed.mp4"
+    subprocess.run(
+        [
+            str(TOOLS / "ffmpeg.exe"),
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=black:size=64x64:rate=30:duration=2",
+            "-itsoffset",
+            "1",
+            "-i",
+            str(tone(tmp_path / "tone.wav")),
+            "-c:v",
+            "libx264",
+            "-c:a",
+            "aac",
+            str(media),
+        ],
+        check=True,
+        timeout=20,
+    )
+    track = register(library, media)
+    with pytest.raises(ValueError, match="起点与 MP4／M4A 文件起点不同"):
+        asyncio.run(library.probe_audio_stream(track))
 
 
 def test_annotation_is_receipt_bound_and_rejects_a_stale_editor(library, tmp_path):
