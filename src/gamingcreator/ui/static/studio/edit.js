@@ -275,7 +275,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         return !continuous && us > 0 && us < adMusicDurationUs ? [us] : [];
     }), [items, adMusicDurationUs]);
     const adMusicScope = JSON.stringify([scope, planJob?.jobId, planId, editing.base?.jobId]);
-    const adMusicMatchesEditor = editing.base?.planId === planId && (editing.base?.kind === "revision"
+    const matchesAdoptedEditor = editing.base?.planId === planId && (editing.base?.kind === "revision"
         ? editing.editor?.ancestry?.some(parent => parent.kind === "plan" && parent.jobId === planJob?.jobId)
         : editing.base?.jobId === planJob?.jobId);
     const [playable, setPlayable] = useState({});
@@ -529,7 +529,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     <video ref=${planVideo} hidden=${mode !== "plan" || !items.length} playsinline preload="metadata" onClick=${() => { if (!previewProblem) player.toggle(); }}></video><video ref=${planVideoNext} hidden=${mode !== "plan" || !items.length} playsinline preload="auto" onClick=${() => { if (!previewProblem) player.toggle(); }}></video>${sound}
                     ${editable ? html`<div class="overlay-scale" style=${{position: "absolute", pointerEvents: "none", left: 0, top: 0, width: `${canvasWidth}px`, height: `${canvasHeight}px`, transform: `scale(${canvas.scale})`}}>
                         <${SubtitlePreview} cues=${captionPreview.cues} outUs=${player.outUs} styleName=${subtitles === "burn" ? subtitleStyle : "standard"} wordHighlights=${captionPreview.wordHighlights} subtitleSource=${captionPreview.subtitleSource} />
-                        <${OverlayPreview} items=${commandOverlays ?? command?.projection?.overlays?.items ?? editing.overlays} assets=${editing.overlayAssets} outUs=${player.outUs} fps=${fps} width=${canvasWidth} height=${canvasHeight} />
+                        ${(!comparePlan || comparePlan.id === planId) && html`<${OverlayPreview} items=${commandOverlays ?? command?.projection?.overlays?.items ?? editing.overlays} assets=${editing.overlayAssets} outUs=${player.outUs} fps=${fps} width=${canvasWidth} height=${canvasHeight} />`}
                     </div>` : null}
                     </div>
                     ${mode === "plan" && (previewProblem || player.error) ? html`<div class="empty">${previewProblem || player.error}</div>` : null}
@@ -614,13 +614,13 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                 <div hidden=${inspTab !== "sound"}>
                 ${editable ? html`<${AudioPanel} commandPreview=${commandPreview} adMusicDurationUs=${adMusicDurationUs}
                     adMusicCutsUs=${adMusicCutsUs} adMusicTimeline=${items} adMusicScope=${adMusicScope}
-                    musicSuggestionsDisabled=${!!busy || !adMusicMatchesEditor} editing=${editing} project=${project}
+                    musicSuggestionsDisabled=${!!busy || !matchesAdoptedEditor} editing=${editing} project=${project}
                     game=${planJob?.brief?.game || ""} fps=${fps} totalUs=${player.totalUs} music=${music} onBusy=${setAudioBusy} />
                     <${BeatSnap} editing=${editing} blocked=${!!busy || command?.owner === "assistant" || !!commandOverlays} onPreview=${setBeatRows} />`
                     : html`<p class="note">${plan ? "这个方案还不能编辑声音（正在读取或只能导出）。" : "先在左侧选一个方案，再在这里加旁白和配乐。"}</p>`}
                 </div>
                 <div hidden=${inspTab !== "overlay"}>
-                ${editable ? html`<${OverlayPanel} key=${`${project}:${editing.base?.jobId}:${editing.base?.planId}`} editing=${editing} fps=${fps} totalFrames=${totalFrames} canvasWidth=${canvasWidth} canvasHeight=${canvasHeight} onBusy=${setOverlayBusy} disabled=${!!busy || commandPreview} />`
+                ${editable ? html`<${OverlayPanel} key=${`${project}:${editing.base?.jobId}:${editing.base?.planId}`} editing=${editing} fps=${fps} totalFrames=${totalFrames} canvasWidth=${canvasWidth} canvasHeight=${canvasHeight} onBusy=${setOverlayBusy} disabled=${!!busy || commandPreview || !!comparePlan || !matchesAdoptedEditor} />`
                     : html`<p class="note">选中可编辑的方案后，可以添加定时文字或PNG图片。</p>`}
                 </div>
             </div>

@@ -1,6 +1,6 @@
 // Output-clock overlays; sprites and receipts are registered by the local server.
 import {h} from "../vendor/preact.module.js";
-import {useEffect, useRef, useState} from "../vendor/hooks.module.js";
+import {useEffect, useLayoutEffect, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import {api, sameOrigin} from "./api.js";
 
@@ -86,9 +86,13 @@ function retainAssets(items, assets) {
     return [...new Map(assets.filter((a) => ids.has(a.assetId)).map((a) => [a.assetId, a])).values()];
 }
 
-function newItem(asset, totalFrames, width, height) {
+function newOverlayId() {
     const bytes = crypto.getRandomValues(new Uint8Array(16));
-    const item = {overlayId: [...bytes].map((b) => b.toString(16).padStart(2, "0")).join(""),
+    return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function newItem(asset, totalFrames, width, height) {
+    const item = {overlayId: newOverlayId(),
         kind: asset.kind, startFrame: 0, endFrame: totalFrames, x: 0, y: 0, width: 3000,
         fadeInFrames: 0, fadeOutFrames: 0, assetId: asset.assetId, assetReceiptSha256: asset.assetReceiptSha256};
     if (asset.kind === "text") item.text = asset.text;
@@ -120,8 +124,144 @@ function OverlayRow({item, index, count, fps, update, move, remove, register}) {
     </div>`;
 }
 
+const templatePath = "/api/enterprise/brand-visual-template";
+
+function useVisualTemplate(projectId) {
+    const controller = useRef(null), pending = useRef(false);
+    const [snapshot, setSnapshot] = useState(null);
+    const [needsRefresh, setNeedsRefresh] = useState(true);
+    const [busy, setBusy] = useState(false);
+    const [message, setMessage] = useState("");
+    const [error, setError] = useState("");
+    const request = async (template) => {
+        const signal = controller.current?.signal;
+        if (!signal || signal.aborted || pending.current || (template !== undefined && needsRefresh)) return;
+        const loading = template === undefined;
+        pending.current = true;
+        setBusy(true); setMessage(""); setError("");
+        if (loading) setNeedsRefresh(true);
+        try {
+            const state = loading ? await api(templatePath, {projectId}, {signal})
+                : await api(templatePath, {}, {signal, body: {...template, projectId, expectedTemplateSha256: snapshot.revisionSha256}});
+            if (signal.aborted) return;
+            if (state.revisionSha256 === undefined) { setNeedsRefresh(true); throw Error("未读取到品牌视觉模板的修订回执。"); }
+            setSnapshot(state); setNeedsRefresh(false);
+            if (!loading) setMessage(state.template ? "品牌视觉模板已保存。" : "品牌视觉模板已清除。");
+        } catch (reason) {
+            if (!signal.aborted) {
+                if (reason.status === 409 || reason.code === "enterprise.template_conflict" || reason.code === "enterprise.visual_template_conflict") setNeedsRefresh(true);
+                setError(reason.message);
+            }
+        } finally {
+            if (!signal.aborted) { pending.current = false; setBusy(false); }
+        }
+    };
+    useLayoutEffect(() => {
+        controller.current = new AbortController();
+        void request();
+        return () => controller.current.abort();
+    }, []);
+    return {snapshot, needsRefresh, busy, message, error, request};
+}
+
+const overlayContent = item => JSON.stringify(Object.keys(item).filter(key => key !== "overlayId").sort().map(key => [key, item[key]]));
+
+function scaleFrames(frames, originalLength, targetLength) {
+    const denominator = BigInt(originalLength);
+    const numerator = BigInt(frames) * BigInt(targetLength);
+    return Number((2n * numerator + denominator) / (2n * denominator));
+}
+
+function mergeVisualTemplate(template, items, assets, totalFrames) {
+    const positions = new Map(), insertions = new Map();
+    items.forEach((item, index) => {
+        const content = overlayContent(item);
+        if (!positions.has(content)) positions.set(content, []);
+        positions.get(content).push(index);
+    });
+    // Match from the top so any missing lower layer is inserted beneath its match.
+    let anchor = items.length;
+    for (const item of [...template.overlays.items].reverse()) {
+        const startFrame = scaleFrames(item.startFrame, template.timelineFrames, totalFrames);
+        const endFrame = scaleFrames(item.endFrame, template.timelineFrames, totalFrames);
+        const duration = endFrame - startFrame, originalDuration = item.endFrame - item.startFrame;
+        const fadeInFrames = scaleFrames(item.fadeInFrames, originalDuration, duration);
+        const totalFades = scaleFrames(item.fadeInFrames + item.fadeOutFrames, originalDuration, duration);
+        const layer = {...item, startFrame, endFrame, fadeInFrames, fadeOutFrames: totalFades - fadeInFrames};
+        const content = overlayContent(layer);
+        const existing = positions.get(content) || [];
+        const match = existing.findLastIndex(index => index < anchor);
+        if (match >= 0) { [anchor] = existing.splice(match, 1); continue; }
+        if (existing.length) return {error: "草稿里的模板图层顺序与模板冲突，请先调整顺序后再套用。"};
+        if (!insertions.has(anchor)) insertions.set(anchor, []);
+        insertions.get(anchor).unshift({...layer, overlayId: newOverlayId()});
+    }
+    const next = items.flatMap((item, index) => [...(insertions.get(index) || []), item]);
+    next.push(...(insertions.get(items.length) || []));
+    return {items: next, assets: retainAssets(next, [...assets, ...template.assets])};
+}
+
+function BrandVisualEditor({editing, items, assets, totalFrames, width, height, disabled}) {
+    const [actor, setActor] = useState("");
+    const [selected, setSelected] = useState([]);
+    const [notice, setNotice] = useState("");
+    const issuedFrom = useRef(null);
+    const store = useVisualTemplate(editing.project);
+    const template = store.snapshot?.template;
+    const blocked = disabled || store.busy || store.needsRefresh;
+    const selectedItems = items.filter(item => selected.includes(item.overlayId));
+    const assetIssue = template?.assetIssue;
+    const save = (clear = false) => {
+        if (blocked || !actor.trim() || (clear ? !template : !selectedItems.length)) return;
+        setNotice("");
+        if (clear) { void store.request({actor: actor.trim(), template: null}); return; }
+        const problem = overlayProblem(selectedItems, assets, totalFrames, width, height);
+        if (problem) { setNotice(problem); return; }
+        void store.request({actor: actor.trim(), template: {
+            timelineFrames: totalFrames, overlays: {schemaVersion: "creation-overlays-v1", items: selectedItems},
+        }});
+    };
+    const apply = () => {
+        if (blocked || !template || assetIssue || issuedFrom.current === editing.editEpoch) return;
+        const next = mergeVisualTemplate(template, items, assets, totalFrames);
+        const problem = next.error || overlayProblem(next.items, next.assets, totalFrames, width, height);
+        if (problem) { setNotice(problem); return; }
+        const count = next.items.length - items.length;
+        if (!count) { setNotice("当前草稿已包含模板图层。"); return; }
+        issuedFrom.current = editing.editEpoch;
+        editing.ops.overlays(next.items, next.assets, editing.overlayEpoch);
+        setNotice(`已添加 ${count} 个品牌图层，可随当前剪辑一起保存。`);
+    };
+    return html`<div>
+        ${store.snapshot && html`<p class="hint">${template ? `已保存 ${template.overlays.items.length} 个图层。套用时按成片时长缩放。` : "本项目尚无品牌视觉模板。"}</p>`}
+        ${assetIssue && html`<p class="note" role="alert">${assetIssue}</p>`}
+        <fieldset disabled=${disabled || store.busy}>
+            <legend>选择当前草稿中的图层</legend>
+            ${!items.length && html`<p class="hint">添加文字或 PNG 后可保存为模板。</p>`}
+            ${items.map((item, index) => html`<label class="check" key=${item.overlayId} style=${{display: "flex", alignItems: "center"}}>
+                <input type="checkbox" style="width:auto" checked=${selected.includes(item.overlayId)}
+                    onChange=${event => {
+                        const checked = event.currentTarget.checked;
+                        setSelected(current => checked ? [...current, item.overlayId] : current.filter(id => id !== item.overlayId));
+                    }} />
+                图层 ${index + 1} · ${item.kind === "text" ? `文字 · ${item.text}` : "PNG"}
+            </label>`)}
+            <label>负责人姓名<input value=${actor} maxLength="50" onInput=${event => setActor(event.currentTarget.value)} /></label>
+            <div class="actions-row">
+                <button type="button" disabled=${blocked || !actor.trim() || !selectedItems.length} onClick=${() => save()}>保存所选图层为模板</button>
+                <button type="button" disabled=${blocked || !template || !actor.trim()} onClick=${() => save(true)}>清除品牌视觉模板</button>
+                <button type="button" disabled=${blocked || !template || !!assetIssue} onClick=${apply}>套用品牌视觉模板</button>
+            </div>
+        </fieldset>
+        <button type="button" disabled=${store.busy} onClick=${() => { setNotice(""); void store.request(); }}>刷新品牌视觉模板</button>
+        ${(notice || store.message) && html`<p role="status">${notice || store.message}</p>`}
+        ${store.error && html`<p role="alert">${store.error}</p>`}
+    </div>`;
+}
+
 export function OverlayPanel({editing, fps, totalFrames, onBusy, disabled, canvasWidth, canvasHeight}) {
     const [text, setText] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState("");
+    const [showTemplate, setShowTemplate] = useState(false);
     const latest = useRef(editing), pending = useRef(false), alive = useRef(true);
     latest.current = editing;
     useEffect(() => () => { alive.current = false; onBusy?.(false); }, []);
@@ -159,6 +299,13 @@ export function OverlayPanel({editing, fps, totalFrames, onBusy, disabled, canva
                 remove=${() => apply(items.filter((row) => row.overlayId !== item.overlayId))}
                 move=${(offset) => { const next = [...items]; [next[index], next[index + offset]] = [next[index + offset], next[index]]; apply(next); }} />`)}
         </fieldset>
+        <details class="group" onToggle=${event => setShowTemplate(event.currentTarget.open)}>
+            <summary>品牌视觉模板</summary>
+            ${showTemplate && html`<${BrandVisualEditor}
+                key=${JSON.stringify([editing.project, editing.base?.jobId, editing.base?.planId, editing.overlayEpoch])}
+                editing=${editing} items=${items} assets=${assets} totalFrames=${totalFrames} width=${canvasWidth} height=${canvasHeight}
+                disabled=${disabled || busy || !totalFrames || editing.status !== "ready"} />`}
+        </details>
         ${busy ? html`<p role="status">正在登记叠加素材…</p>` : null}
         ${error || problem ? html`<p role="alert">${error || problem}</p>` : null}
     </section>`;

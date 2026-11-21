@@ -1,6 +1,7 @@
 """Enterprise basics: roles, brand glossary, separation of duties, review-gated publishing."""
 
 # ruff: noqa: F811
+import asyncio
 import json
 import threading
 import urllib.error
@@ -9,6 +10,7 @@ from uuid import uuid4
 
 import pytest
 from test_creation_publication import ROOT, finish, payload, rendered, service  # noqa: F401
+from test_overlay_assets import png
 
 from gamingcreator.application.enterprise import (
     apply_review,
@@ -21,7 +23,8 @@ from gamingcreator.application.enterprise import (
     validate_team,
 )
 from gamingcreator.domain.errors import AppError
-from gamingcreator.ui import brand_copy_templates, package_jobs
+from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
+from gamingcreator.ui import brand_templates, package_jobs
 
 PROJECT = "artifacts/project"
 
@@ -280,38 +283,38 @@ def test_brand_copy_template_is_project_scoped_and_owner_updated(service):
         "template": copy,
     }
     with pytest.raises(AppError, match="负责人"):
-        brand_copy_templates.save_template(service, {**request, "actor": "小编"})
-    saved = brand_copy_templates.save_template(service, request)
+        brand_templates.save_template(service, {**request, "actor": "小编"})
+    saved = brand_templates.save_template(service, request)
     assert saved["template"]["title"] == copy["title"].strip()
-    assert brand_copy_templates.get_template(service, PROJECT) == saved
-    assert brand_copy_templates.get_template(service, other) == {
+    assert brand_templates.get_template(service, PROJECT) == saved
+    assert brand_templates.get_template(service, other) == {
         "template": None,
         "revisionSha256": None,
     }
-    assert brand_copy_templates.save_template(service, request) == saved
+    assert brand_templates.save_template(service, request) == saved
 
     changed = {**request, "template": {**copy, "title": "代号Atom · 新栏目"}}
     with pytest.raises(AppError, match="已更新"):
-        brand_copy_templates.save_template(service, changed)
+        brand_templates.save_template(service, changed)
     with pytest.raises(ValueError, match="标签"):
-        brand_copy_templates.save_template(
+        brand_templates.save_template(
             service, {**request, "template": {**copy, "tags": ["甲，乙"]}}
         )
-    current = brand_copy_templates.save_template(
+    current = brand_templates.save_template(
         service, {**changed, "expectedTemplateSha256": saved["revisionSha256"]}
     )
     assert current["template"]["title"] == changed["template"]["title"]
     assert current["revisionSha256"] != saved["revisionSha256"]
-    restored = brand_copy_templates.save_template(
+    restored = brand_templates.save_template(
         service, {**request, "expectedTemplateSha256": current["revisionSha256"]}
     )
     assert restored["revisionSha256"] != saved["revisionSha256"]
     with pytest.raises(AppError, match="已更新"):
-        brand_copy_templates.save_template(
+        brand_templates.save_template(
             service, {**changed, "expectedTemplateSha256": saved["revisionSha256"]}
         )
 
-    cleared = brand_copy_templates.save_template(
+    cleared = brand_templates.save_template(
         service,
         {
             **request,
@@ -320,14 +323,14 @@ def test_brand_copy_template_is_project_scoped_and_owner_updated(service):
         },
     )
     assert cleared["template"] is None and cleared["revisionSha256"]
-    assert brand_copy_templates.get_template(service, PROJECT) == cleared
+    assert brand_templates.get_template(service, PROJECT) == cleared
     with pytest.raises(AppError, match="已更新"):
-        brand_copy_templates.save_template(service, request)
+        brand_templates.save_template(service, request)
 
 
 def test_brand_copy_template_rejects_damaged_snapshot(service):
     service.set_team(PROJECT, TEAM, "老板")
-    brand_copy_templates.save_template(
+    brand_templates.save_template(
         service,
         {
             "projectId": PROJECT,
@@ -341,7 +344,7 @@ def test_brand_copy_template_rejects_damaged_snapshot(service):
     stored["template"]["description"] = "损坏的数据"
     service.save(path, stored)
     with pytest.raises(AppError, match="已损坏"):
-        brand_copy_templates.get_template(service, PROJECT)
+        brand_templates.get_template(service, PROJECT)
 
 
 def test_brand_copy_template_cannot_write_against_a_damaged_team(service):
@@ -349,7 +352,7 @@ def test_brand_copy_template_cannot_write_against_a_damaged_team(service):
     (path,) = (service.root / "enterprise" / "teams").glob("*.json")
     service.save(path, {"members": [{}]})
     with pytest.raises(AppError, match="团队设置已损坏"):
-        brand_copy_templates.save_template(
+        brand_templates.save_template(
             service,
             {
                 "projectId": PROJECT,
@@ -358,4 +361,67 @@ def test_brand_copy_template_cannot_write_against_a_damaged_team(service):
                 "template": {"title": "", "description": "栏目", "tags": []},
             },
         )
-    assert brand_copy_templates.get_template(service, PROJECT)["revisionSha256"] is None
+    assert brand_templates.get_template(service, PROJECT)["revisionSha256"] is None
+
+
+def test_visual_brand_template_verifies_asset_history_and_can_clear_damaged_assets(
+    service, monkeypatch
+):
+    tool = ROOT / ".tools/ffmpeg/bin/ffmpeg.exe"
+    if not tool.is_file():
+        pytest.skip("Pinned FFmpeg is unavailable")
+    service.set_team(PROJECT, TEAM, "老板")
+    library = OverlayAssetLibrary(service.repository)
+    monkeypatch.setattr(library, "_tool", lambda: str(tool))
+    asset = asyncio.run(library.register_png(png(), "brand.png"))
+    row = {
+        "overlayId": "b" * 32,
+        "kind": "image",
+        "startFrame": 30,
+        "endFrame": 60,
+        "x": 100,
+        "y": 200,
+        "width": 600,
+        "fadeInFrames": 2,
+        "fadeOutFrames": 3,
+        "assetId": asset.asset_id,
+        "assetReceiptSha256": asset.receipt_sha256,
+    }
+    template = {
+        "timelineFrames": 60,
+        "overlays": {"schemaVersion": "creation-overlays-v1", "items": [row]},
+    }
+    request = {
+        "projectId": PROJECT,
+        "actor": "老板",
+        "expectedTemplateSha256": None,
+        "template": template,
+    }
+    with pytest.raises(ValueError, match="duration"):
+        brand_templates.save_template(
+            service, {**request, "template": {**template, "timelineFrames": 40}}, "visual"
+        )
+    result = brand_templates.save_template(service, request, "visual")
+    assert result["template"]["assets"][0]["assetReceiptSha256"] == asset.receipt_sha256
+    assert result["template"]["overlays"] == template["overlays"]
+    assert brand_templates.get_template(service, PROJECT, "visual") == result
+    assert brand_templates.get_template(service, PROJECT)["template"] is None
+    with pytest.raises(AppError, match="已更新"):
+        brand_templates.save_template(service, {**request, "template": None}, "visual")
+
+    asset.path.write_bytes(png(3, 2))
+    damaged = brand_templates.get_template(service, PROJECT, "visual")
+    assert damaged["template"]["assets"] == [] and damaged["template"]["assetIssue"]
+    assert damaged["revisionSha256"] == result["revisionSha256"]
+    with pytest.raises(ValueError, match="changed"):
+        brand_templates.save_template(service, request, "visual")
+    cleared = brand_templates.save_template(
+        service,
+        {
+            **request,
+            "template": None,
+            "expectedTemplateSha256": damaged["revisionSha256"],
+        },
+        "visual",
+    )
+    assert cleared["template"] is None and cleared["revisionSha256"] != damaged["revisionSha256"]

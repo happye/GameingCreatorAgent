@@ -643,6 +643,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     "/api/entitlement",
                     "/api/enterprise/team",
                     "/api/enterprise/brand-copy-template",
+                    "/api/enterprise/brand-visual-template",
                     "/api/enterprise/review",
                     "/api/match-details",
                     "/api/draft-detail-query",
@@ -732,12 +733,18 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     self.creation_jobs.set_team(value["projectId"], value["team"], value["actor"]),
                 )
                 return
-            if path == "/api/enterprise/brand-copy-template":
-                from gamingcreator.ui.brand_copy_templates import save_template
+            if path in {
+                "/api/enterprise/brand-copy-template",
+                "/api/enterprise/brand-visual-template",
+            }:
+                from gamingcreator.ui.brand_templates import TemplateKind, save_template
 
                 if not isinstance(value, dict):
-                    raise ValueError("品牌文案模板请求字段无效。")
-                self._json(200, save_template(self.creation_jobs, value))
+                    raise ValueError("品牌模板请求字段无效。")
+                template_kind: TemplateKind = (
+                    "visual" if path.endswith("brand-visual-template") else "copy"
+                )
+                self._json(200, save_template(self.creation_jobs, value, template_kind))
                 return
             if path == "/api/enterprise/review":
                 if not isinstance(value, dict) or set(value) != {
@@ -1418,12 +1425,18 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     raise ValueError("Expected registered project ID")
                 self._json(200, {"team": self.creation_jobs.team(query["projectId"])})
                 return
-            if path == "/api/enterprise/brand-copy-template":
-                from gamingcreator.ui.brand_copy_templates import get_template
+            if path in {
+                "/api/enterprise/brand-copy-template",
+                "/api/enterprise/brand-visual-template",
+            }:
+                from gamingcreator.ui.brand_templates import TemplateKind, get_template
 
                 if set(query) != {"projectId"}:
                     raise ValueError("Expected registered project ID")
-                self._json(200, get_template(self.creation_jobs, query["projectId"]))
+                template_kind: TemplateKind = (
+                    "visual" if path.endswith("brand-visual-template") else "copy"
+                )
+                self._json(200, get_template(self.creation_jobs, query["projectId"], template_kind))
                 return
             if path == "/api/enterprise/review":
                 if set(query) == {"projectId", "packageJobId"}:
