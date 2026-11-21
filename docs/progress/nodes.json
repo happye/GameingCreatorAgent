@@ -453,9 +453,9 @@
    ]
   },
   "P051": {
-   "done": "Studio 发布区接通项目团队、品牌词检查、审核及审计下载，真实抖音包实测驳回、重提、批准和本机模拟发布",
-   "todo": "账号认证、跨设备协作、企业素材库、外部 API、席位计费和真实发布待交付",
-   "updated": "2026-11-20",
+   "done": "Studio 发布区支持团队审核、审计下载、品牌词检查和文案模板；漫画群星实测套用模板并生成新抖音包，旧包仍可回读",
+   "todo": "视觉品牌模板、企业素材库、账号认证、跨设备协作、外部 API、席位计费和真实发布待交付",
+   "updated": "2026-11-21",
    "sprints": [
     "sprint-enterprise-basics"
    ]
@@ -1093,6 +1093,12 @@
     {
      "id": "P051-studio-review",
      "name": "Studio 团队、审核和本机模拟发布",
+     "status": "done",
+     "sprint": "sprint-enterprise-basics"
+    },
+    {
+     "id": "P051-brand-copy-template",
+     "name": "项目品牌文案模板",
      "status": "done",
      "sprint": "sprint-enterprise-basics"
     }

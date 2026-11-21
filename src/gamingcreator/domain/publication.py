@@ -18,8 +18,8 @@ def _text_problem(item: object, minimum: int, maximum: int, multiline: bool = Fa
     return ""
 
 
-def validate_metadata(value: dict[str, Any], frames: int) -> None:
-    problem = _text_problem(value.get("title"), 1, 200)
+def validate_copy(value: dict[str, Any], *, title_optional: bool = False) -> None:
+    problem = _text_problem(value.get("title"), 0 if title_optional else 1, 200)
     if problem:
         raise ValueError(f"标题{problem}。")
     problem = _text_problem(value.get("description"), 0, 5000, multiline=True)
@@ -38,6 +38,10 @@ def validate_metadata(value: dict[str, Any], frames: int) -> None:
             )
     if len(tags) != len(set(tags)):
         raise ValueError("标签不能重复。")
+
+
+def validate_metadata(value: dict[str, Any], frames: int) -> None:
+    validate_copy(value)
     if type(value.get("coverFrame")) is not int or not 0 <= value["coverFrame"] < frames:
         raise ValueError("封面帧超出成片范围。")
 

@@ -1314,11 +1314,12 @@ window.PROGRESS_DATA = {
    "evidence": [
     "2026-11-01: local team model with owner/editor/reviewer/viewer roles, brand glossary checks on package title/description/tags, package review with separation of duties, mandatory rejection reasons and append-only history, review-gated sandbox publishing; real package submit->approve->publish test; no accounts/login, shared storage, enterprise assets, external API or seat billing; no page entry yet",
     "2026-11-01 T10: per-project teams (sha256 path under enterprise/teams) with read-only fallback to legacy global enterprise-team.json; append-only audit jsonl plus GET /api/enterprise/audit JSON/CSV marked actorSelfReported; creation page expandable review history, audit export links, and honest self-reported operator copy; review/publish use the package project's team",
-    "2026-11-20: Studio team settings, live brand checks, review history, simulation and project audit downloads. Verified a real Douyin package in an isolated workspace, including reject/resubmit, approval, cross-project denial and local completion."
+    "2026-11-20: Studio team settings, live brand checks, review history, simulation and project audit downloads. Verified a real Douyin package in an isolated workspace, including reject/resubmit, approval, cross-project denial and local completion.",
+    "2026-11-21: Project owners can save optional title, description and tags as a reusable Studio draft template. Real Comic Stars footage produced a new Douyin package with the selected text. Concurrent stale edits were refused, and the previous package reopened and downloaded byte-identically."
    ],
-   "done": "Studio 发布区接通项目团队、品牌词检查、审核及审计下载，真实抖音包实测驳回、重提、批准和本机模拟发布",
-   "todo": "账号认证、跨设备协作、企业素材库、外部 API、席位计费和真实发布待交付",
-   "updated": "2026-11-20",
+   "done": "Studio 发布区支持团队审核、审计下载、品牌词检查和文案模板；漫画群星实测套用模板并生成新抖音包，旧包仍可回读",
+   "todo": "视觉品牌模板、企业素材库、账号认证、跨设备协作、外部 API、席位计费和真实发布待交付",
+   "updated": "2026-11-21",
    "sprints": [
     "sprint-enterprise-basics"
    ]
@@ -2037,6 +2038,12 @@ window.PROGRESS_DATA = {
      "name": "Studio 团队、审核和本机模拟发布",
      "status": "done",
      "sprint": "sprint-enterprise-basics"
+    },
+    {
+     "id": "P051-brand-copy-template",
+     "name": "项目品牌文案模板",
+     "status": "done",
+     "sprint": "sprint-enterprise-basics"
     }
    ]
   },
@@ -2363,7 +2370,7 @@ window.PROGRESS_DATA = {
   "P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。",
   "[P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。",
   "[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)已通过，平台包可用命名路径保存到项目 `exports`。",
-  "[广告批量](docs/exec-plans/sprint-ad-variant-batches.md)实测双修订出包。[广告配乐](docs/exec-plans/sprint-ad-rhythm-matching.md)按节拍、情绪、力度和高潮匹配，已实测《代号 Atom》。"
+  "[广告配乐](docs/exec-plans/sprint-ad-rhythm-matching.md)和[团队品牌文案](docs/exec-plans/sprint-enterprise-basics.md)已用真实录像实测出包。"
  ],
  "sprints": [
   {
@@ -2784,7 +2791,7 @@ window.PROGRESS_DATA = {
     "P051"
    ],
    "date": "2026-11-20",
-   "bytes": 3146
+   "bytes": 4401
   },
   {
    "file": "sprint-full-edit-draft",
@@ -2897,7 +2904,7 @@ window.PROGRESS_DATA = {
    "ids": [
     "P047"
    ],
-   "date": "2026-11-20",
+   "date": "2026-11-21",
    "bytes": 2414
   },
   {

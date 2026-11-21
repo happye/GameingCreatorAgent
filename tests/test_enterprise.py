@@ -20,7 +20,8 @@ from gamingcreator.application.enterprise import (
     review_events_as_audit,
     validate_team,
 )
-from gamingcreator.ui import package_jobs
+from gamingcreator.domain.errors import AppError
+from gamingcreator.ui import brand_copy_templates, package_jobs
 
 PROJECT = "artifacts/project"
 
@@ -264,3 +265,97 @@ def test_per_project_teams_and_audit_export(service):
     assert name.endswith(".json") and "enterprise-audit-v1" in body and "不是登录账号" in body
     csv_body, csv_name, csv_mime = service.export_audit(PROJECT, "csv")
     assert csv_name.endswith(".csv") and "actorSelfReported" in csv_body
+
+
+def test_brand_copy_template_is_project_scoped_and_owner_updated(service):
+    other = "artifacts/other"
+    (service.repository / other).mkdir(parents=True)
+    (service.repository / other / "timeline.sqlite3").touch()
+    service.set_team(PROJECT, TEAM, "老板")
+    copy = {"title": "  代号Atom · 团队栏目 ", "description": "", "tags": ["实况"]}
+    request = {
+        "projectId": PROJECT,
+        "actor": "老板",
+        "expectedTemplateSha256": None,
+        "template": copy,
+    }
+    with pytest.raises(AppError, match="负责人"):
+        brand_copy_templates.save_template(service, {**request, "actor": "小编"})
+    saved = brand_copy_templates.save_template(service, request)
+    assert saved["template"]["title"] == copy["title"].strip()
+    assert brand_copy_templates.get_template(service, PROJECT) == saved
+    assert brand_copy_templates.get_template(service, other) == {
+        "template": None,
+        "revisionSha256": None,
+    }
+    assert brand_copy_templates.save_template(service, request) == saved
+
+    changed = {**request, "template": {**copy, "title": "代号Atom · 新栏目"}}
+    with pytest.raises(AppError, match="已更新"):
+        brand_copy_templates.save_template(service, changed)
+    with pytest.raises(ValueError, match="标签"):
+        brand_copy_templates.save_template(
+            service, {**request, "template": {**copy, "tags": ["甲，乙"]}}
+        )
+    current = brand_copy_templates.save_template(
+        service, {**changed, "expectedTemplateSha256": saved["revisionSha256"]}
+    )
+    assert current["template"]["title"] == changed["template"]["title"]
+    assert current["revisionSha256"] != saved["revisionSha256"]
+    restored = brand_copy_templates.save_template(
+        service, {**request, "expectedTemplateSha256": current["revisionSha256"]}
+    )
+    assert restored["revisionSha256"] != saved["revisionSha256"]
+    with pytest.raises(AppError, match="已更新"):
+        brand_copy_templates.save_template(
+            service, {**changed, "expectedTemplateSha256": saved["revisionSha256"]}
+        )
+
+    cleared = brand_copy_templates.save_template(
+        service,
+        {
+            **request,
+            "expectedTemplateSha256": restored["revisionSha256"],
+            "template": {"title": "", "description": "", "tags": []},
+        },
+    )
+    assert cleared["template"] is None and cleared["revisionSha256"]
+    assert brand_copy_templates.get_template(service, PROJECT) == cleared
+    with pytest.raises(AppError, match="已更新"):
+        brand_copy_templates.save_template(service, request)
+
+
+def test_brand_copy_template_rejects_damaged_snapshot(service):
+    service.set_team(PROJECT, TEAM, "老板")
+    brand_copy_templates.save_template(
+        service,
+        {
+            "projectId": PROJECT,
+            "actor": "老板",
+            "expectedTemplateSha256": None,
+            "template": {"title": "", "description": "团队栏目", "tags": []},
+        },
+    )
+    (path,) = (service.root / "enterprise" / "brand-copy").glob("*.json")
+    stored = service.read(path)
+    stored["template"]["description"] = "损坏的数据"
+    service.save(path, stored)
+    with pytest.raises(AppError, match="已损坏"):
+        brand_copy_templates.get_template(service, PROJECT)
+
+
+def test_brand_copy_template_cannot_write_against_a_damaged_team(service):
+    service.set_team(PROJECT, TEAM, "老板")
+    (path,) = (service.root / "enterprise" / "teams").glob("*.json")
+    service.save(path, {"members": [{}]})
+    with pytest.raises(AppError, match="团队设置已损坏"):
+        brand_copy_templates.save_template(
+            service,
+            {
+                "projectId": PROJECT,
+                "actor": "老板",
+                "expectedTemplateSha256": None,
+                "template": {"title": "", "description": "栏目", "tags": []},
+            },
+        )
+    assert brand_copy_templates.get_template(service, PROJECT)["revisionSha256"] is None

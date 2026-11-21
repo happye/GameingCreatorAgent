@@ -642,6 +642,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     "/api/creation/publish",
                     "/api/entitlement",
                     "/api/enterprise/team",
+                    "/api/enterprise/brand-copy-template",
                     "/api/enterprise/review",
                     "/api/match-details",
                     "/api/draft-detail-query",
@@ -730,6 +731,13 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     200,
                     self.creation_jobs.set_team(value["projectId"], value["team"], value["actor"]),
                 )
+                return
+            if path == "/api/enterprise/brand-copy-template":
+                from gamingcreator.ui.brand_copy_templates import save_template
+
+                if not isinstance(value, dict):
+                    raise ValueError("品牌文案模板请求字段无效。")
+                self._json(200, save_template(self.creation_jobs, value))
                 return
             if path == "/api/enterprise/review":
                 if not isinstance(value, dict) or set(value) != {
@@ -1409,6 +1417,13 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 if set(query) != {"projectId"}:
                     raise ValueError("Expected registered project ID")
                 self._json(200, {"team": self.creation_jobs.team(query["projectId"])})
+                return
+            if path == "/api/enterprise/brand-copy-template":
+                from gamingcreator.ui.brand_copy_templates import get_template
+
+                if set(query) != {"projectId"}:
+                    raise ValueError("Expected registered project ID")
+                self._json(200, get_template(self.creation_jobs, query["projectId"]))
                 return
             if path == "/api/enterprise/review":
                 if set(query) == {"projectId", "packageJobId"}:

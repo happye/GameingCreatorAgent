@@ -2,6 +2,7 @@ import {h} from "../vendor/preact.module.js";
 import {useEffect, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import {api} from "./api.js";
+import {publicationFieldErrors} from "./publication_form.js";
 
 const html = htm.bind(h);
 const ROLES = {owner: "负责人", editor: "编辑", reviewer: "审核", viewer: "只读"};
@@ -34,11 +35,10 @@ function useRequest() {
 
 const initialTeam = () => ({members: [{name: "", role: "owner"}], brandTerms: {required: [], forbidden: []}, reviewRequired: true});
 
-function TeamEditor({project, onSaved}) {
+function TeamEditor({project, actor, setActor, onSaved}) {
     const {busy, error, run} = useRequest();
     const [stored, setStored] = useState(undefined);
     const [draft, setDraft] = useState(initialTeam);
-    const [actor, setActor] = useState("");
     const [required, setRequired] = useState("");
     const [forbidden, setForbidden] = useState("");
     const [notice, setNotice] = useState("");
@@ -85,12 +85,85 @@ function TeamEditor({project, onSaved}) {
     </div>`;
 }
 
-export function EnterpriseTeam({project, onSaved}) {
+const templatePath = "/api/enterprise/brand-copy-template";
+
+function BrandCopyEditor({project, actor, onApply}) {
+    const {busy, error, run} = useRequest();
+    const [snapshot, setSnapshot] = useState(null);
+    const [draft, setDraft] = useState(null);
+    const [needsRefresh, setNeedsRefresh] = useState(false);
+    const [notice, setNotice] = useState("");
+    const stored = snapshot?.template;
+    const fields = draft || {title: stored?.title || "", description: stored?.description || "", tags: stored?.tags.join("，") || ""};
+    const template = {title: fields.title.trim(), description: fields.description, tags: terms(fields.tags)};
+    const errors = publicationFieldErrors(template);
+    if (!template.title) delete errors.title;
+    const change = (key, value) => setDraft({...fields, [key]: value});
+    const load = () => run(async signal => {
+        setNeedsRefresh(true); setNotice("");
+        const current = await api(templatePath, {projectId: project}, {signal});
+        if (signal.aborted) return;
+        if (current.revisionSha256 === undefined) throw Error("未读取到品牌文案模板的修订回执。");
+        setSnapshot(current);
+        setNeedsRefresh(false);
+        if (draft) setNotice("已刷新。本次输入已保留，可核对后再保存。");
+    });
+    useEffect(() => { void load(); }, []);
+    const save = () => run(async signal => {
+        setNotice("");
+        try {
+            const current = await api(templatePath, {}, {signal, body: {
+                projectId: project, actor: actor.trim(), expectedTemplateSha256: snapshot.revisionSha256, template,
+            }});
+            if (signal.aborted) return;
+            if (current.revisionSha256 === undefined) {
+                setNeedsRefresh(true);
+                throw Error("保存结果未返回修订回执。请刷新后核对已保存模板。");
+            }
+            setSnapshot(current); setDraft(null);
+            setNotice(current.template ? "品牌文案模板已保存。" : "品牌文案模板已清除。");
+        } catch (reason) {
+            if (!signal.aborted && (reason.status === 404 || reason.status === 409 || reason.code === "enterprise.template_conflict")) setNeedsRefresh(true);
+            if (reason.status === 404) throw Error("当前工作台未提供品牌文案模板。");
+            throw reason;
+        }
+    });
+    return html`<div class="enterprise-form">
+        <h3 class="section-label">品牌文案模板</h3>
+        ${stored !== undefined && html`<fieldset disabled=${busy} class="enterprise-fields">
+            <label class="form-row">模板标题<input class="input" value=${fields.title} maxLength="200" onInput=${e => change("title", e.currentTarget.value)} />${errors.title && html`<span class="hint">${errors.title}</span>`}</label>
+            <label class="form-row">模板简介<textarea class="input" rows="3" value=${fields.description} onInput=${e => change("description", e.currentTarget.value)} />${errors.description && html`<span class="hint">${errors.description}</span>`}</label>
+            <label class="form-row">模板标签（逗号分隔）<input class="input" value=${fields.tags} onInput=${e => change("tags", e.currentTarget.value)} />${errors.tags && html`<span class="hint">${errors.tags}</span>`}</label>
+            <p class="hint">空字段保留当前发布稿对应内容。负责人可在上方填写姓名。清空三项后保存可移除模板。</p>
+            <button type="button" class="btn" disabled=${needsRefresh || !actor.trim() || !draft || !!Object.keys(errors).length} onClick=${save}>保存品牌文案模板</button>
+            <button type="button" class="btn ghost" disabled=${needsRefresh || !stored || !onApply} onClick=${() => onApply?.(stored)}>套用到当前发布草稿</button>
+            ${draft && stored && html`<p class="hint">套用使用已保存的模板。</p>`}
+        </fieldset>`}
+        <button type="button" class="btn ghost" disabled=${busy} onClick=${load}>刷新品牌文案模板</button>
+        ${draft && notice && html`<details class="group" open>
+            <summary>当前已保存模板</summary>
+            ${stored ? html`<dl class="facts">
+                <dt>标题</dt><dd>${stored.title || "空"}</dd>
+                <dt>简介</dt><dd>${stored.description || "空"}</dd>
+                <dt>标签</dt><dd>${stored.tags.join("，") || "空"}</dd>
+            </dl>` : html`<p class="hint">当前没有已保存的模板。</p>`}
+        </details>`}
+        ${notice && html`<p role="status">${notice}</p>`}
+        ${error && html`<p role="alert">${error}</p>`}
+    </div>`;
+}
+
+export function EnterpriseTeam({project, onSaved, onApplyTemplate}) {
     const [open, setOpen] = useState(false);
-    return html`<details class="group field" aria-label="团队与品牌" onToggle=${e => setOpen(e.currentTarget.open)}>
+    const [visited, setVisited] = useState(false);
+    const [actor, setActor] = useState("");
+    return html`<details class="group field" aria-label="团队与品牌" onToggle=${e => {
+        setOpen(e.currentTarget.open); if (e.currentTarget.open) setVisited(true);
+    }}>
         <summary>团队与品牌</summary>
-        ${open && html`<${TeamEditor} project=${project} onSaved=${onSaved} />
-            <div class="actions-row"><a class="btn ghost" href=${auditLink(project, "json")}>下载审计 JSON</a>
+        ${open && html`<${TeamEditor} project=${project} actor=${actor} setActor=${setActor} onSaved=${onSaved} />`}
+        ${visited && html`<${BrandCopyEditor} key=${project} project=${project} actor=${actor} onApply=${onApplyTemplate} />`}
+        ${open && html`<div class="actions-row"><a class="btn ghost" href=${auditLink(project, "json")}>下载审计 JSON</a>
                 <a class="btn ghost" href=${auditLink(project, "csv")}>下载审计 CSV</a></div>`}
     </details>`;
 }

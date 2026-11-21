@@ -392,7 +392,10 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
     }, [project]);
 
     const fps = pub ? pub.fps.numerator / pub.fps.denominator : 30;
-    const dirty = pub && (form.title !== pub.title || form.description !== pub.description || tagList(form.tags).join("|") !== pub.tags.join("|") || form.coverFrame !== pub.coverFrame);
+    const formTags = tagList(form.tags);
+    const dirty = pub && (form.title !== pub.title || form.description !== pub.description
+        || formTags.length !== pub.tags.length || formTags.some((tag, i) => tag !== pub.tags[i])
+        || form.coverFrame !== pub.coverFrame);
     useLayoutEffect(() => { onDirtyChange(!!dirty); }, [dirty, onDirtyChange]);
     useLayoutEffect(() => () => onDirtyChange(false), [onDirtyChange]);
     const useFrame = () => {
@@ -413,7 +416,7 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
         setBusy("publication"); setMessage("正在保存发布信息并截取封面…");
         try {
             const accepted = await client.submit("publication", {renderJobId: pub.renderJobId, expectedRenderReceiptSha256: pub.expectedRenderReceiptSha256,
-                coverFrame: form.coverFrame, title: form.title.trim(), description: form.description, tags: tagList(form.tags)});
+                coverFrame: form.coverFrame, title: form.title.trim(), description: form.description, tags: formTags});
             if (!current()) return;
             const done = await client.settle(accepted.jobId);
             if (!current()) return;
@@ -601,6 +604,24 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
     const limits = profiles.find((p) => p.Platform === platform)?.Fields?.limits || {};
     const cls = `work${layout.bin ? "" : " no-bin"}${layout.insp ? "" : " no-insp"}`;
     const chooseJob = (job) => leave(() => { void show(job.jobId, job.kind); });
+    const visibleEpoch = epoch.current;
+    const canApplyTemplate = !!pub && !busy && shownProject.current === project && shownOpen.current === open;
+    const applyBrandTemplate = template => {
+        if (!canApplyTemplate || epoch.current !== visibleEpoch || activeProject.current !== project
+            || shownOpen.current !== open) return;
+        const changes = {
+            ...(template.title ? {title: template.title} : {}),
+            ...(template.description ? {description: template.description} : {}),
+            ...(template.tags.length ? {tags: campaignTags(pub.campaignRules, template.tags).join("，")} : {}),
+        };
+        setForm(current => ({...current, ...changes}));
+        setFieldError(current => {
+            const errors = {...current};
+            for (const name of Object.keys(changes)) delete errors[name];
+            return errors;
+        });
+        setMessage("已套用品牌文案模板。请核对后保存发布信息。");
+    };
     const historyRows = (rows, rowLabel, isCurrent, renderOf) => rows.map(job => {
         const source = renders.find(render => render.jobId === renderOf(job));
         return html`<button key=${job.jobId} type="button" class="row" aria-current=${isCurrent(job)} onClick=${() => chooseJob(job)}>
@@ -712,7 +733,8 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
         <aside class="panel" hidden=${!layout.insp} aria-label="发布信息">
             <div class="panel-head">发布信息</div>
             <div class="panel-body">
-                ${project && html`<${EnterpriseTeam} key=${project} project=${project} onSaved=${() => setTeamVersion(n => n + 1)} />`}
+                ${project && html`<${EnterpriseTeam} key=${project} project=${project} onSaved=${() => setTeamVersion(n => n + 1)}
+                    onApplyTemplate=${canApplyTemplate ? applyBrandTemplate : null} />`}
                 ${message && html`<p class="note" role="status">${message}</p>`}
                 ${pub ? html`
                     <p class="hint">${pub.publicationJobId ? (dirty ? "有未保存的修改" : "已保存的版本") : "按需求自动起草的模板，请改一遍再保存。"}</p>
@@ -720,8 +742,8 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
                         onCopy=${(copy) => setForm((f) => ({...f, title: copy.title, description: copy.description, tags: campaignTags(pub.campaignRules, copy.tags).join("，")}))} />
                     <label class="form-row">标题（${form.title.length} 字）<input class="input" value=${form.title} maxLength="200" onInput=${(e) => { setForm({...form, title: e.currentTarget.value}); setFieldError((cur) => ({...cur, title: ""})); }} />${fieldError.title ? html`<p class="hint" data-field="title">${fieldError.title}</p>` : null}</label>
                     <label class="form-row">简介（${form.description.length} 字）<textarea class="input" rows="6" value=${form.description} onInput=${(e) => { setForm({...form, description: e.currentTarget.value}); setFieldError((cur) => ({...cur, description: ""})); }}></textarea>${fieldError.description ? html`<p class="hint" data-field="description">${fieldError.description}</p>` : null}</label>
-                    <label class="form-row">标签（逗号分隔，${tagList(form.tags).length} 个）<input class="input" value=${form.tags} onInput=${(e) => { setForm({...form, tags: e.currentTarget.value}); setFieldError((cur) => ({...cur, tags: ""})); }} />${fieldError.tags ? html`<p class="hint" data-field="tags">${fieldError.tags}</p>` : null}</label>
-                    <${CampaignChecks} rules=${pub.campaignRules} media=${pub} tags=${tagList(form.tags)} platforms=${selected} platformNames=${PLATFORMS} title="活动要求核对" />
+                    <label class="form-row">标签（逗号分隔，${formTags.length} 个）<input class="input" value=${form.tags} onInput=${(e) => { setForm({...form, tags: e.currentTarget.value}); setFieldError((cur) => ({...cur, tags: ""})); }} />${fieldError.tags ? html`<p class="hint" data-field="tags">${fieldError.tags}</p>` : null}</label>
+                    <${CampaignChecks} rules=${pub.campaignRules} media=${pub} tags=${formTags} platforms=${selected} platformNames=${PLATFORMS} title="活动要求核对" />
                     <p class="hint">简介里可以补一句作者的话和相关链接（官网、下载、活动页）。</p>
                     <${CoverField} savedSrc=${coverSrc} preview=${coverPreview} thumbs=${thumbs} coverFrame=${form.coverFrame} fps=${fps}
                         onPick=${(frame, url) => { setForm({...form, coverFrame: frame}); setCoverPreview(url); }} />
