@@ -1048,10 +1048,11 @@ window.PROGRESS_DATA = {
    "evidence": [
     "docs/exec-plans/sprint-creation-workspace.md",
     "tests/test_creation_jobs.py",
-    "tests/test_creation_workspace_browser.py"
+    "tests/test_creation_workspace_browser.py",
+    "2026-11-22: Studio Assets prepared actual Comic Stars footage in a new local project, then reopened the persisted batch after refresh without replaying the submission. Browser regression verifies explicit same-batch resume and nested project navigation."
    ],
-   "done": "新工作台/studio可看素材、选方案、时间线剪辑、旁白音乐、字幕与导出；导出后一键去发布、禁用按钮显示原因、作品列表中文状态与失败原因、空项目三步引导；片段篮清空可恢复、渲染按本机历史显示预计耗时；时间轴上选中镜头后可拖动两端裁剪（一次拖动一步撤销）；导出时可给作品命名，作品列表与下载文件名使用该名",
-   "todo": "J1第六次试看确认漫画群星样片可发；其他游戏的创作质量和工作台剩余功能待验收",
+   "done": "Studio素材页直接导入本机录像并保存可续的准备批次；实拍验证打开新项目和刷新恢复。已分析录像可检索、入篮、选方案、剪辑、旁白配乐、字幕、导出和出包",
+   "todo": "已准备任务的后续分析仍需单独授权和CLI入口；其他游戏的创作质量待人评",
    "updated": "2026-11-22",
    "sprints": [
     "sprint-studio-workbench",
@@ -2082,6 +2083,12 @@ window.PROGRESS_DATA = {
      "name": "启动器拒绝旧运行时",
      "status": "done",
      "sprint": "sprint-workspace-runtime-identity"
+    },
+    {
+     "id": "P040-studio-preparation",
+     "name": "Studio 导入本机录像并继续原准备批次",
+     "status": "done",
+     "sprint": "sprint-studio-workbench"
     }
    ]
   },
@@ -2467,7 +2474,7 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "下一步让 Studio 首次使用可直接准备本机录像。J2 十槽评分和 J3 独立 Windows 验收留到测试阶段。",
+  "Studio 已可直接准备本机录像。下一步接通已准备任务与现有分析授权流程。J2 十槽评分与 J3 独立 Windows 验收留到测试阶段。",
   "[P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测 Atom 同稿各自出包。[P029](docs/exec-plans/sprint-creation-subtitles.md)实测青色宋体。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "[抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。",
@@ -2870,7 +2877,7 @@ window.PROGRESS_DATA = {
    "ids": [
     "P039"
    ],
-   "date": "2026-11-01",
+   "date": "2026-11-22",
    "bytes": 8996
   },
   {
@@ -3338,7 +3345,7 @@ window.PROGRESS_DATA = {
    "title": "Sprint：创作工作台（/studio）",
    "ids": [],
    "date": "2026-11-22",
-   "bytes": 15519
+   "bytes": 16100
   },
   {
    "file": "sprint-timed-overlays",

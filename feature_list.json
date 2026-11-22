@@ -1051,7 +1051,8 @@
             "implementation_evidence": [
                 "docs/exec-plans/sprint-creation-workspace.md",
                 "tests/test_creation_jobs.py",
-                "tests/test_creation_workspace_browser.py"
+                "tests/test_creation_workspace_browser.py",
+                "2026-11-22: Studio Assets prepared actual Comic Stars footage in a new local project, then reopened the persisted batch after refresh without replaying the submission. Browser regression verifies explicit same-batch resume and nested project navigation."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

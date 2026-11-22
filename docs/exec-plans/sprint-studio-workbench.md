@@ -15,6 +15,8 @@
 
 2026-11-22（J2/P014）：素材页可在关键词匹配和一句话搜索间切换。后者复用现有本机混合检索，按所选录像范围返回前十。核对到同源时间线事件的候选可回看和入篮，纯转录候选可按源区间回看。漫画群星「3V3积分争夺模式」实测按 `cb5706d5b95d4548a563fff624f50f69` 返回8条原排名，首位回看从18.500秒开始，入篮保留20.000秒的原分析时刻。零分析调用和新预留，固定十槽人评待做。真实证据 `.cache/scratch/j2-studio-20261122/`，转录回看和不可核对结果的浏览器回归见 `tests/test_studio_sentence_search_browser.py`。
 
+2026-11-22（P040）：Studio 素材页可直接导入本机录像，查看进度、停止或重新打开已保存批次，继续原批次需明确点击。隔离安装数据目录中用漫画群星录像完成批次 `c2ff5b007b1d45c09d65cb666a106705`，打开新项目并在刷新后找回批次，零模型调用和新预留。准备好的录像显示待分析，后续需原任务的分析授权。证据 `.cache/scratch/studio-preparation-20261122/`，部分失败续跑、刷新、嵌套项目和迟到导航的回归见 `tests/test_studio_media_preparation_browser.py`。
+
 ## 第 1 步结果
 
 - 前端库：`src/gamingcreator/ui/static/vendor/`（preact 10.24.3 MIT、htm 3.1.1 Apache-2.0）。已对照 npm registry 完整性哈希校验；`vendor.json` 记录 SHA-256 和一处补丁（hooks 的裸导入改为相对路径，因为 CSP `script-src 'self'` 不允许内联 import map）。许可证已纳入 `collect-third-party-notices.py`。

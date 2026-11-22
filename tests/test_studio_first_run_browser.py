@@ -64,9 +64,8 @@ def test_empty_project_shows_first_run_guide(tmp_path, recordings):
                 playwright.expect(guide).to_have_count(0)
             else:
                 playwright.expect(guide).to_be_visible()
-                playwright.expect(guide.get_by_role("link", name="素材工作台")).to_have_attribute(
-                    "href", "/"
-                )
+                guide.get_by_role("button", name="导入录像").click()
+                playwright.expect(page.get_by_role("dialog", name="导入录像")).to_be_visible()
             assert not posts  # the guide never sends anything
             assert not errors
             browser.close()

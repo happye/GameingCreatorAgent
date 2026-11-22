@@ -133,6 +133,7 @@ ASSETS = {
     "/assets/studio/narration_ai.js": ("studio/narration_ai.js", "text/javascript; charset=utf-8"),
     "/assets/studio/audio.js": ("studio/audio.js", "text/javascript; charset=utf-8"),
     "/assets/studio/basket.js": ("studio/basket.js", "text/javascript; charset=utf-8"),
+    "/assets/studio/media-preparation.js": ("studio/media-preparation.js", "text/javascript; charset=utf-8"),
     "/assets/studio/recordings.js": ("studio/recordings.js", "text/javascript; charset=utf-8"),
     "/assets/studio/publish.js": ("studio/publish.js", "text/javascript; charset=utf-8"),
     "/assets/studio/package_batches.js": (

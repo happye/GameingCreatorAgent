@@ -7,6 +7,7 @@ import * as client from "./api.js";
 import "../source-clock.js";
 import "../preview-preference.js";
 import {BasketList, ClipSearch, useBasket} from "./basket.js";
+import {ImportRecordings} from "./media-preparation.js";
 import {PublishWorkspace} from "./publish.js";
 import {confirmLeave, renderRate} from "./edit.js";
 import {WorksWorkspace} from "./works.js";
@@ -28,6 +29,13 @@ function readJobLink() {
 
 function loadPrefs() { try { return JSON.parse(localStorage.getItem(STORE) || "{}") || {}; } catch { return {}; } }
 function savePrefs(value) { try { localStorage.setItem(STORE, JSON.stringify(value)); } catch { /* Storage may be disabled. */ } }
+
+async function includeExistingProject(projects, target, signal) {
+    if (projects.some((item) => item.path === target)) return;
+    // Discovery lists direct project folders. Inspect a saved nested project by its exact path.
+    await client.runs(target, signal);
+    projects.push({path: target, name: target.split("/").filter(Boolean).at(-1)});
+}
 const seconds = (us) => us / 1e6;
 function timecode(us) {
     const total = Math.max(0, Math.floor(us / 1e3)), ms = total % 1000, s = Math.floor(total / 1000);
@@ -75,6 +83,9 @@ function App() {
     const [layout, setLayout] = useState({bin: prefs.bin !== false, insp: prefs.insp !== false});
     const [projects, setProjects] = useState([]);
     const [project, setProject] = useState("");
+    const projectNavigation = useRef(0);
+    const [importOpen, setImportOpen] = useState(false);
+    const [runsRefreshAt, setRunsRefreshAt] = useState(0);
     const [runs, setRuns] = useState([]), [runsLoaded, setRunsLoaded] = useState(false);
     const [runId, setRunId] = useState("");
     const [view, setView] = useState(null);
@@ -215,32 +226,40 @@ function App() {
 
     useEffect(() => {
         const controller = new AbortController();
+        const generation = projectNavigation.current;
+        const current = () => !controller.signal.aborted && generation === projectNavigation.current;
         const fail = (message) => {
             pendingLink.current = null;
             setLinkStatus(message);
         };
         client.projects(controller.signal).then(async ({projects: list}) => {
-            setProjects(list);
             const link = pendingLink.current;
+            const preferred = link?.project || prefs.project;
+            if (typeof preferred === "string" && preferred) {
+                try { await includeExistingProject(list, preferred, controller.signal); }
+                catch { /* The saved project may have moved. Use the discovered list. */ }
+            }
+            if (!current()) return;
+            setProjects(list);
             const linkedProject = list.find((item) => item.path === link?.project);
             const keep = linkedProject || list.find((item) => item.path === prefs.project) || list[0];
             setProject(keep?.path || "");
-            if (!list.length) { setStatus("还没有项目：先在旧版素材工作台准备素材。"); setRunsLoaded(true); }
+            if (!list.length) { setStatus("还没有项目，可导入本地录像。"); setRunsLoaded(true); }
             if (!link) return;
             if (!link.id) return fail("作品链接无效。");
             if (!linkedProject) return fail("作品链接的项目在本机不可用。");
             try {
                 const job = await client.job(link.id, controller.signal);
-                if (pendingLink.current !== link || controller.signal.aborted) return;
+                if (pendingLink.current !== link || !current()) return;
                 if (job.jobId !== link.id || job.projectId !== link.project || !canOpenWork(job)) return fail("指定作品在这个项目中不可用。");
                 pendingLink.current = null;
                 setLinkStatus("");
                 applyOpen(job, link.project);
             } catch {
-                if (pendingLink.current === link && !controller.signal.aborted) fail("无法读取链接中的指定作品。");
+                if (pendingLink.current === link && current()) fail("无法读取链接中的指定作品。");
             }
         }).catch((error) => {
-            if (controller.signal.aborted) return;
+            if (!current()) return;
             if (pendingLink.current) fail("无法读取作品链接的项目。");
             setStatus(`无法读取项目：${error.message}`);
         });
@@ -258,12 +277,12 @@ function App() {
             const list = result.value.runs;
             setRuns(list); setRunsLoaded(true);
             const usable = list.filter((r) => r.completedEligible);
-            const keep = usable.find((r) => r.id === prefs.runId) || usable[0];
-            setRunId(keep ? keep.id : "");
+            setRunId((previous) => (usable.find((r) => r.id === previous)
+                || usable.find((r) => r.id === prefs.runId) || usable[0])?.id || "");
             setStatus(usable.length ? "" : "这个项目还没有分析完成的录像。");
         });
         reloadWorks();
-    }, [project]);
+    }, [project, runsRefreshAt]);
 
     useEffect(() => {
         setView(null); setSelected(null); setTime(0);
@@ -276,7 +295,19 @@ function App() {
             if (result.value.runId !== runId) return setStatus("返回的录像与选择不一致，请重试。");
             setView(result.value); setStatus("");
         });
-    }, [project, runId]);
+    }, [project, runId, runsRefreshAt]);
+
+    const openPreparedProject = async (target) => {
+        const {projects: list} = await client.projects();
+        await includeExistingProject(list, target);
+        projectNavigation.current += 1;
+        pendingLink.current = null;
+        setLinkStatus("");
+        clearTranscript(); setPendingEvent(null);
+        setProjects(list);
+        if (target === project) setRunsRefreshAt((n) => n + 1);
+        else setProject(target);
+    };
 
     const clearTranscript = () => {
         if (!transcriptHit) return;
@@ -386,7 +417,7 @@ function App() {
 
     useEffect(() => {
         const onKey = (event) => {
-            if (event.target.closest("input, textarea, select") || workspace !== "assets") return;
+            if (importOpen || event.target.closest("input, textarea, select") || workspace !== "assets") return;
             const el = video.current, events = view?.timeline || [];
             if (event.key === " " && el && (!transcript || transcriptPlayable)) { event.preventDefault(); el.paused ? void el.play().catch(() => {}) : el.pause(); }
             else if ((event.key === "ArrowLeft" || event.key === "ArrowRight") && el) {
@@ -402,7 +433,7 @@ function App() {
             }
         };
         addEventListener("keydown", onKey); return () => removeEventListener("keydown", onKey);
-    }, [view, selected, workspace, selectEvent, basket, currentRun, clock, seek, transcript, transcriptPlayable]);
+    }, [view, selected, workspace, selectEvent, basket, currentRun, clock, seek, transcript, transcriptPlayable, importOpen]);
 
     const work = `work${layout.bin ? "" : " no-bin"}${layout.insp ? "" : " no-insp"}`;
     const catalog = workCatalog.project === project ? workCatalog.works : [];
@@ -418,10 +449,10 @@ function App() {
         </select></label>
         <p class="hint" role="status">${filterStatus || (workCatalog.project === project ? workCatalog.status : "正在读取作品目录…")}</p>`;
     return html`<div class="shell">
-        <${TopBar} ...${{workspace, setWorkspace: (w) => w !== workspace && leave(() => { clearTranscript(); setWorkspace(w); }), projects, project, setProject: (p) => p === project || leave(() => { clearTranscript(); setProject(p); }), layout, setLayout, status: linkStatus || status}} />
+        <${TopBar} ...${{workspace, setWorkspace: (w) => w !== workspace && leave(() => { clearTranscript(); setWorkspace(w); }), projects, project, setProject: (p) => p === project || leave(() => { clearTranscript(); setProject(p); }), layout, setLayout, status: linkStatus || status, onImport: () => setImportOpen(true)}} />
         ${workspace === "assets"
             ? html`<div class=${work}>
-                <${Bin} runs=${runs} runsLoaded=${runsLoaded} runId=${runId} setRunId=${(id) => { clearTranscript(); setRunId(id); }} works=${visibleJobs} onOpen=${openWork} hidden=${!layout.bin} filterControls=${filterControls}
+                <${Bin} runs=${runs} runsLoaded=${runsLoaded} runId=${runId} setRunId=${(id) => { clearTranscript(); setRunId(id); }} works=${visibleJobs} onOpen=${openWork} onImport=${() => setImportOpen(true)} hidden=${!layout.bin} filterControls=${filterControls}
                     top=${html`<${ClipSearch} project=${project} runs=${runs} runId=${runId} basket=${basket} seed=${searchSeed} onShow=${(run, event) => showEvent(run.id, event.eventId)} onShowTranscript=${showTranscript} />
                         <${BasketList} basket=${basket} onShow=${(item) => showEvent(item.runId, item.eventId, item)} onUse=${() => { setBasketAt(Date.now()); setWorkspace("edit"); }} />`} />
                 <div class="center">
@@ -435,10 +466,11 @@ function App() {
                 : html`<${PublishWorkspace} key=${scope} project=${project} workId=${workId} works=${visibleJobs} open=${open?.project === project ? open : null} leave=${leave} onWorksChanged=${reloadWorks} layout=${layout} onDirtyChange=${onDirtyChange} filterControls=${filterControls}
                     onOpenReference=${choice => openWork({jobId: choice.sourceJobId, planId: choice.sourcePlanId, status: "completed", kind: "plan"})} />`}
         ${workspace === "assets" && html`<div class="dock"><strong>提示</strong><span>左上角“搜索片段”按描述找画面，“+”或 B 键加入片段篮，再点“用片段篮生成方案”。一句话修改镜头在剪辑区底部。</span></div>`}
+        ${importOpen && html`<${ImportRecordings} project=${project} onClose=${() => setImportOpen(false)} onOpenProject=${openPreparedProject} />`}
     </div>`;
 }
 
-function TopBar({workspace, setWorkspace, projects, project, setProject, layout, setLayout, status}) {
+function TopBar({workspace, setWorkspace, projects, project, setProject, layout, setLayout, status, onImport}) {
     const [usageOpen, setUsageOpen] = useState(false);
     return html`<header class="topbar">
         <div class="brand">Gaming Creator<small>工作台预览版</small></div>
@@ -452,6 +484,7 @@ function TopBar({workspace, setWorkspace, projects, project, setProject, layout,
         <span class="status" role="status" aria-live="polite">${status}</span>
         <span class="spacer"></span>
         <div class="topbar-actions">
+            ${workspace === "assets" && html`<button class="btn" type="button" onClick=${onImport}>导入录像</button>`}
             <button class="icon-btn" aria-expanded=${usageOpen} onClick=${() => setUsageOpen(!usageOpen)}>套餐与用量</button>
             <button class="icon-btn" aria-pressed=${layout.bin} title="显示或隐藏素材箱" onClick=${() => setLayout({...layout, bin: !layout.bin})}>素材箱</button>
             <button class="icon-btn" aria-pressed=${layout.insp} title="显示或隐藏检查器" onClick=${() => setLayout({...layout, insp: !layout.insp})}>检查器</button>
@@ -532,7 +565,7 @@ function videoFacts({width, height, durationSeconds, sizeBytes}) {
     return [`${shape} ${width}×${height}`, clock, sizeBytes ? `${(sizeBytes / 1048576).toFixed(1)} MB` : null].filter(Boolean).join(" · ");
 }
 
-function Bin({runs, runsLoaded = false, runId, setRunId, works, onOpen, hidden, top, filterControls}) {
+function Bin({runs, runsLoaded = false, runId, setRunId, works, onOpen, onImport, hidden, top, filterControls}) {
     const groups = Object.keys(KIND).map((kind) => [kind, works.filter((job) => job.kind === kind)]).filter(([, list]) => list.length);
     return html`<aside class="panel" hidden=${hidden} aria-label="素材箱">
         <div class="panel-head">素材箱</div>
@@ -542,7 +575,7 @@ function Bin({runs, runsLoaded = false, runId, setRunId, works, onOpen, hidden, 
             ${groupRecordings(runs).map((group) => html`<${Recording} group=${group} runId=${runId} onSelect=${setRunId} />`)}
             ${!runs.length && (runsLoaded ? html`<div class="note first-run" role="note" aria-label="第一次使用">
                 <strong>第一次使用：三步出片</strong>
-                <ol><li>打开<a class="link" href="/">素材工作台</a>，选择本地录像并分析（会先显示费用确认，本页不会发送任何请求）。</li>
+                <ol><li><button class="btn ghost" type="button" onClick=${onImport}>导入录像</button>完成本地准备，再到<a class="link" href="/">旧版素材工作台</a>核对分析任务和费用。</li>
                 <li>回到这里，在左上角“搜索片段”挑画面放进片段篮。</li><li>到“剪辑”填需求、生成方案，再导出成片和发布包。</li></ol>
             </div>` : html`<p class="note">这里会列出项目里的录像。</p>`)}
             <div class="section-label">我的作品</div>
