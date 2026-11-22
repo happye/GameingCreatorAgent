@@ -1,6 +1,6 @@
 window.PROGRESS_DATA = {
  "schemaVersion": 1,
- "nodesUpdated": "2026-11-14",
+ "nodesUpdated": "2026-11-22",
  "groups": {
   "A": "基础架构与本地处理",
   "B": "视频理解与检索",
@@ -339,9 +339,9 @@ window.PROGRESS_DATA = {
    "release": "not_released",
    "remaining": null,
    "evidence": [],
-   "done": "可用自然语言搜索录像片段（F005技术可用），11-03修复攻击标签回归",
-   "todo": "检索质量依赖P015人工验收，尚未通过",
-   "updated": "2026-11-03",
+   "done": "本机混合检索已用漫画群星真实录像跑通，3V3查询返回8个候选",
+   "todo": "Studio素材页待接入混合检索并核对排名、原片回看和入篮；P015待十槽人评",
+   "updated": "2026-11-22",
    "sprints": []
   },
   {
@@ -1045,8 +1045,8 @@ window.PROGRESS_DATA = {
     "tests/test_creation_workspace_browser.py"
    ],
    "done": "新工作台/studio可看素材、选方案、时间线剪辑、旁白音乐、字幕与导出；导出后一键去发布、禁用按钮显示原因、作品列表中文状态与失败原因、空项目三步引导；片段篮清空可恢复、渲染按本机历史显示预计耗时；时间轴上选中镜头后可拖动两端裁剪（一次拖动一步撤销）；导出时可给作品命名，作品列表与下载文件名使用该名",
-   "todo": "J1全流程第五次试看未通过；Agent对话区与人评验收未完成",
-   "updated": "2026-11-11",
+   "todo": "J1第六次试看确认漫画群星样片可发；其他游戏的创作质量和工作台剩余功能待验收",
+   "updated": "2026-11-22",
    "sprints": [
     "sprint-studio-workbench",
     "sprint-creation-workspace",
@@ -1428,7 +1428,7 @@ window.PROGRESS_DATA = {
    "goal": "需求+素材→可选方案→真实可解码MP4",
    "status": "partial",
    "done": "结构化需求、三种离线模板方案、素材缺口与EDL已通；EDL真实渲染MP4、工作台持久任务与/studio创作页可用",
-   "todo": "J1人评第五次仍未通过；任意自然语言理解与创作质量人评未做",
+   "todo": "J1第六次人评确认漫画群星样片可发；更广的自然语言需求覆盖与其他游戏的创作质量仍待验证",
    "features": [
     "P019",
     "P021",
@@ -2461,6 +2461,7 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
+  "下一步先把 P014 已有的本机混合检索接进 Studio，验证排名、原片回看和片段篮，再准备 J2 的十槽人评。J3 还需干净 Windows 机器上的安装、升级和卸载验收。",
   "[P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测 Atom 同稿各自出包。[P029](docs/exec-plans/sprint-creation-subtitles.md)实测青色宋体。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "[抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。",
@@ -2470,9 +2471,9 @@ window.PROGRESS_DATA = {
   "漫画群星 60 秒[主题旁白](docs/exec-plans/sprint-showcase-narration.md)已补齐[句级字幕](docs/exec-plans/sprint-narration-captions.md)，试听、移动音轨、SRT 和 B 站烧入版实测通过。",
   "P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。",
   "[P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。",
-  "[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)已通过，平台包可用命名路径保存到项目 `exports`。",
-  "[七模式配乐](docs/exec-plans/sprint-mode-music-recommendations.md)实测 Atom 攻略试听与出包。[品牌资源](docs/exec-plans/sprint-enterprise-basics.md)已实拍出包。",
-  "[本机分析额度](docs/exec-plans/sprint-creator-plans.md)实测拦截。[专业时间线](docs/exec-plans/sprint-premiere-narration-track.md)已验证字幕、透明图层及成片混音。"
+  "[J1 命名出包](docs/exec-plans/sprint-j1-trial-reopen.md)已实测保存到项目 `exports`。",
+  "[配乐](docs/exec-plans/sprint-mode-music-recommendations.md)与[品牌资源](docs/exec-plans/sprint-enterprise-basics.md)已实拍出包。",
+  "[分析额度](docs/exec-plans/sprint-creator-plans.md)实测拦截。[专业时间线](docs/exec-plans/sprint-premiere-narration-track.md)实测字幕、图层和混音。"
  ],
  "sprints": [
   {
@@ -3303,7 +3304,7 @@ window.PROGRESS_DATA = {
    "file": "sprint-studio-multi-platform-packages",
    "title": "Studio 同一发布版本的多平台包",
    "ids": [],
-   "date": "2026-11-07",
+   "date": "2026-11-22",
    "bytes": 6685
   },
   {

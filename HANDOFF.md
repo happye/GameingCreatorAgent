@@ -32,6 +32,6 @@
 
 ## 下一优先级与约束
 
-[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)用户确认通过。漫画群星和代号 Atom 实测通过本机命名出包。[P047](docs/exec-plans/sprint-live-cut-continuity.md)真实中文转写样本待同源画面分析，其他工作继续。P042、P044–P049 待人评。
+J2/P014 优先：Studio 素材页 `basket.js` 仅支持字面搜索，待接入 `/api/search-project` 本机混合检索，验证原排名、回看和入篮。[J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)已通过。P047 待同源画面分析，P042、P044–P049 待人评。
 
 本批使用定向回归、真实浏览器和产物验证，无全量、Release、支付或上传。旧完整 verify-20261117-002506 按用户要求中断，曾见失败。J2/J3 待人评，J1 通过以第六次用户答复为证。文字月 ¥30/单条 ¥1、指定视觉月 ¥50，现有费用门禁保留。本机声音，真实平台发布或支付须另授权。

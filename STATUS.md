@@ -1,6 +1,6 @@
 # STATUS（唯一当前状态）
 
-里程碑或会话结束时更新一次。数字以 `python -B scripts/status.py` 为准（从源文件计算），本页只写结论和下一步。
+里程碑或会话结束时更新。计数用 `python -B scripts/status.py`。
 
 ## 目标
 
@@ -11,14 +11,14 @@
 | 流程 | agent 离线跑通 | 你亲自试过 |
 | --- | --- | --- |
 | J1 玩法展示：录像 → 约 1 分钟成片 + 发布包 | 是（2026-11-20） | **通过**（第六次，用户确认样片可发；平台包下载故障单独跟踪） |
-| J2 一句话找片段：前 10 名可用 ≥70% | 是（工具就绪） | 未做（F006 仍 false） |
-| J3 安装便携包并启动工作台 | 是（2026-11-01） | 未做 |
-
-次要计数（功能、技术债、人工待办）以 `python -B scripts/status.py` 的输出为准，本页不手抄。
+| J2 一句话找片段：前 10 名可用 ≥70% | 是（2026-11-11，离线工具） | 未做（F006 仍 false） |
+| J3 安装便携包并启动工作台 | 是（2026-11-11，开发机） | 未做 |
 
 **汇报规则**：只在主指标变化时汇报，中文不超过 150 字，附一个可以打开的产物。
 
 ## 当前交付与下一步（2026-11-22）
+
+下一步先把 P014 已有的本机混合检索接进 Studio，验证排名、原片回看和片段篮，再准备 J2 的十槽人评。J3 还需干净 Windows 机器上的安装、升级和卸载验收。
 
 1. [P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测 Atom 同稿各自出包。[P029](docs/exec-plans/sprint-creation-subtitles.md)实测青色宋体。
 2. 真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。
@@ -29,9 +29,9 @@
 7. 漫画群星 60 秒[主题旁白](docs/exec-plans/sprint-showcase-narration.md)已补齐[句级字幕](docs/exec-plans/sprint-narration-captions.md)，试听、移动音轨、SRT 和 B 站烧入版实测通过。
 8. P020/P044 已把示例活动规则接到竖屏成片、发布核对和抖音包。见[活动投稿](docs/exec-plans/sprint-campaign-submission.md)。
 9. [P045 攻略](docs/exec-plans/sprint-guide-evidence.md)和[P046 解说](docs/exec-plans/sprint-commentary-evidence.md)已实测画面引用、配音和出包。
-10. [J1 第六次试用](docs/exec-plans/sprint-j1-trial-reopen.md)已通过，平台包可用命名路径保存到项目 `exports`。
-11. [七模式配乐](docs/exec-plans/sprint-mode-music-recommendations.md)实测 Atom 攻略试听与出包。[品牌资源](docs/exec-plans/sprint-enterprise-basics.md)已实拍出包。
-12. [本机分析额度](docs/exec-plans/sprint-creator-plans.md)实测拦截。[专业时间线](docs/exec-plans/sprint-premiere-narration-track.md)已验证字幕、透明图层及成片混音。
+10. [J1 命名出包](docs/exec-plans/sprint-j1-trial-reopen.md)已实测保存到项目 `exports`。
+11. [配乐](docs/exec-plans/sprint-mode-music-recommendations.md)与[品牌资源](docs/exec-plans/sprint-enterprise-basics.md)已实拍出包。
+12. [分析额度](docs/exec-plans/sprint-creator-plans.md)实测拦截。[专业时间线](docs/exec-plans/sprint-premiere-narration-track.md)实测字幕、图层和混音。
 
 ## 费用与授权
 

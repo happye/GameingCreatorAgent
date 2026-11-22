@@ -318,7 +318,7 @@ function nowList(){
   return '<ol class="nowlist">'+D.now.map(function(t){return '<li><div class="clamp">'+esc(t)+'</div><button class="more">展开</button></li>';}).join("")+'</ol>';
 }
 function overview(){
-  return '<section id="overview" style="margin-top:22px"><h2>总览</h2><p class="sub">主指标是端到端流程：Agent 跑通 ≠ 你亲自试过。数字全部由源文件计算，节点说明更新于 '+esc(D.nodesUpdated||"—")+'。</p>'+
+  return '<section id="overview" style="margin-top:22px"><h2>总览</h2><p class="sub">端到端流程分别记录 Agent 实测和你的试用结果。功能百分比随交付状态变动，部分交付项的新产物可在节点和交付记录中查看。节点说明更新于 '+esc(D.nodesUpdated||"—")+'。</p>'+
     '<div class="hero"><div class="panel"><div class="pad" style="padding-bottom:4px"><b>主指标 · 端到端流程</b> <span class="muted small">你试过可用 '+S.journeyHumanUsable+' / '+S.journeyTotal+' · Agent 跑通 '+S.journeyAgentPass+' / '+S.journeyTotal+'</span></div>'+journeys()+'</div>'+
     '<div class="kpis">'+kpis()+'</div></div>'+ladder()+
     '<div class="grid" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);margin-top:14px">'+
