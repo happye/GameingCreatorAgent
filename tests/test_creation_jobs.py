@@ -430,9 +430,18 @@ def test_invalid_subtitle_choice_rejected_before_dispatch(service, value):
 
 
 @pytest.mark.parametrize(
-    "mode,style", [("none", "boxed"), ("sidecar", "large"), ("burn", "neon"), ("burn", None)]
+    "mode,fields",
+    [
+        ("none", {"subtitleStyle": "boxed"}),
+        ("sidecar", {"subtitleStyle": "large"}),
+        ("burn", {"subtitleStyle": "neon"}),
+        ("burn", {"subtitleStyle": None}),
+        ("none", {"subtitleFont": "yahei"}),
+        ("sidecar", {"subtitleColor": "#22ddaa"}),
+        ("burn", {"subtitleFont": None}),
+    ],
 )
-def test_subtitle_style_needs_burn_and_known_value(service, mode, style):
+def test_subtitle_style_needs_burn_and_known_value(service, mode, fields):
     with pytest.raises(AppError):
         service.submit(
             "render",
@@ -443,7 +452,7 @@ def test_subtitle_style_needs_burn_and_known_value(service, mode, style):
                 "width": 64,
                 "height": 48,
                 "subtitleMode": mode,
-                "subtitleStyle": style,
+                **fields,
             },
         )
     assert not service.threads

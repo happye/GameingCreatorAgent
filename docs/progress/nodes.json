@@ -225,9 +225,9 @@
    ]
   },
   "P029": {
-   "done": "镜头字幕编辑、逐词高亮、三种烧入样式与已保存修订的独立字幕下载。漫画群星成片、B 站包和专业时间线时钟已实测",
-   "todo": "字体/颜色自定义与字幕质量未人评",
-   "updated": "2026-11-21",
+   "done": "镜头字幕、逐词高亮、烧入样式可选中文字体和文字颜色；漫画群星自定义字幕成片、B 站包及独立 SRT 实测通过",
+   "todo": "字幕质量、不同机器的字体可用性与专业软件样式往返待验",
+   "updated": "2026-11-22",
    "sprints": [
     "sprint-narration-captions",
     "sprint-premiere-narration-track",
@@ -758,6 +758,12 @@
      "name": "Studio草稿字幕即时预览",
      "status": "done",
      "sprint": "sprint-studio-caption-preview"
+    },
+    {
+     "id": "P029-typography",
+     "name": "烧入字幕自定义字体和颜色",
+     "status": "done",
+     "sprint": "sprint-creation-subtitles"
     },
     {
      "id": "P035",

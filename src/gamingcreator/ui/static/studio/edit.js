@@ -110,6 +110,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     const [selectedShot, setSelectedShot] = useState(null);
     const [size, setSize] = useState("1280,720");
     const [subtitles, setSubtitles] = useState("none"), [subtitleStyle, setSubtitleStyle] = useState("standard");
+    const [subtitleFont, setSubtitleFont] = useState(""), [subtitleColor, setSubtitleColor] = useState("#ffffff");
     const [wordHighlight, setWordHighlight] = useState(() => wordHighlightDraft(project));
     useEffect(() => { setWordHighlight(wordHighlightDraft(project)); }, [project]);
     const [overlayBusy, setOverlayBusy] = useState(false);
@@ -491,7 +492,15 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         else if (editable && editing.base?.kind === "revision") source = {revisionJobId: editing.base.jobId};
         setBusy("render"); setMessage("正在生成成片，60 秒的视频大约需要一分钟…"); player.stop();
         try {
-            const accepted = await client.submit("render", {...source, width, height, subtitleMode: subtitles, ...(subtitles === "burn" ? {subtitleStyle} : {}), ...(subtitles !== "none" ? asrWordsPayload(wordHighlight) : {})});
+            const accepted = await client.submit("render", {
+                ...source, width, height, subtitleMode: subtitles,
+                ...(subtitles === "burn" ? {
+                    subtitleStyle,
+                    ...(subtitleFont ? {subtitleFont} : {}),
+                    ...(subtitleColor !== "#ffffff" ? {subtitleColor} : {}),
+                } : {}),
+                ...(subtitles !== "none" ? asrWordsPayload(wordHighlight) : {}),
+            });
             if (!alive.current) return;
             // Naming is a label only; a failure here never blocks the render.
             void client.api("/api/creation/job-name", {}, {body: {jobId: accepted.jobId, name: workName(draft)}}).then(onWorksChanged).catch(() => {});
@@ -572,7 +581,9 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     <div class="program-frame" hidden=${mode !== "plan" || !items.length} style=${{position: "absolute", overflow: "hidden", left: "50%", top: "50%", transform: "translate(-50%, -50%)", width: `${canvas.width}px`, height: `${canvas.height}px`}}>
                     <video ref=${planVideo} hidden=${mode !== "plan" || !items.length} playsinline preload="metadata" onClick=${() => { if (!previewProblem) player.toggle(); }}></video><video ref=${planVideoNext} hidden=${mode !== "plan" || !items.length} playsinline preload="auto" onClick=${() => { if (!previewProblem) player.toggle(); }}></video>${sound}
                     ${editable ? html`<div class="overlay-scale" style=${{position: "absolute", pointerEvents: "none", left: 0, top: 0, width: `${canvasWidth}px`, height: `${canvasHeight}px`, transform: `scale(${canvas.scale})`}}>
-                        <${SubtitlePreview} cues=${captionPreview.cues} outUs=${player.outUs} styleName=${subtitles === "burn" ? subtitleStyle : "standard"} wordHighlights=${captionPreview.wordHighlights} subtitleSource=${captionPreview.subtitleSource} />
+                        <${SubtitlePreview} cues=${captionPreview.cues} outUs=${player.outUs} styleName=${subtitles === "burn" ? subtitleStyle : "standard"}
+                            font=${subtitles === "burn" ? subtitleFont : undefined} color=${subtitles === "burn" ? subtitleColor : undefined}
+                            wordHighlights=${captionPreview.wordHighlights} subtitleSource=${captionPreview.subtitleSource} />
                         ${(!comparePlan || comparePlan.id === planId) && html`<${OverlayPreview} items=${commandOverlays ?? command?.projection?.overlays?.items ?? editing.overlays} assets=${editing.overlayAssets} outUs=${player.outUs} fps=${fps} width=${canvasWidth} height=${canvasHeight} />`}
                     </div>` : null}
                     </div>
@@ -636,7 +647,11 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                         <p role="status" aria-label="字幕预览状态">${captionPreview.status}</p>
                         <label class="form-row">字幕<select class="select" value=${subtitles} onChange=${(e) => setSubtitles(e.currentTarget.value)}><option value="none">不加字幕</option><option value="sidecar">导出 SRT</option><option value="burn">烧入并导出 SRT</option></select></label>
                         ${subtitles !== "none" ? html`<${WordHighlightSwitch} project=${project} draft=${wordHighlight} onChange=${setWordHighlight} />` : null}
-                        ${subtitles === "burn" ? html`<label class="form-row">字幕样式<select class="select" value=${subtitleStyle} onChange=${(e) => setSubtitleStyle(e.currentTarget.value)}><option value="standard">标准（白字细描边）</option><option value="large">大字（手机更清楚）</option><option value="boxed">半透明底框</option></select></label>` : null}
+                        ${subtitles === "burn" ? html`
+                            <label class="form-row">字幕样式<select class="select" value=${subtitleStyle} onChange=${(e) => setSubtitleStyle(e.currentTarget.value)}><option value="standard">标准（细描边）</option><option value="large">大字（手机更清楚）</option><option value="boxed">半透明底框</option></select></label>
+                            <label class="form-row">字幕字体<select class="select" value=${subtitleFont} onChange=${(e) => setSubtitleFont(e.currentTarget.value)}><option value="">默认</option><option value="yahei">微软雅黑</option><option value="simsun">宋体</option></select></label>
+                            <label class="form-row">字幕颜色<input type="color" value=${subtitleColor} onInput=${(e) => setSubtitleColor(e.currentTarget.value)} /></label>
+                            <button type="button" class="btn ghost" disabled=${!subtitleFont && subtitleColor === "#ffffff"} onClick=${() => { setSubtitleFont(""); setSubtitleColor("#ffffff"); }}>恢复默认字体和颜色</button>` : null}
                     </div>
                 </div>
                 </div>

@@ -1,7 +1,7 @@
 """Fixed local FFmpeg renderer, preserving source clocks and publishing receipt last."""
 
 import json
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from fractions import Fraction
 from pathlib import Path
 
@@ -13,6 +13,7 @@ from gamingcreator.domain.creation_audio import AudioMix, envelope_expression
 from gamingcreator.domain.creation_narration import NarrationSelection, validate_narration_fit
 from gamingcreator.domain.creation_overlays import CreationOverlays, overlay_pixel_geometry
 from gamingcreator.domain.creation_presentation import (
+    SUBTITLE_FONTS,
     PresentationOptions,
     safe_area_crop_filter,
 )
@@ -138,7 +139,9 @@ def _badge_ass(text: str, corner: str, width: int, height: int, duration: Fracti
     )
 
 
-def _subtitle_style_line(style: str, height: int) -> str:
+def _subtitle_style_line(
+    style: str, height: int, font: str | None = None, color: str | None = None
+) -> str:
     if style == "large":
         # Bigger bold text with a thicker outline, readable on a phone screen.
         size, rest = max(14, height // 13), "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,1"
@@ -147,11 +150,24 @@ def _subtitle_style_line(style: str, height: int) -> str:
         size, rest = max(12, height // 18), "&H60323232,&H60323232,0,0,0,0,100,100,0,0,3,6,0"
     else:
         size, rest = max(12, height // 18), "&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,1,0"
-    return f"Style: Default,Arial,{size},&H00FFFFFF,&H00FFFFFF,{rest},2,4,4,4,1\n"
+    family = SUBTITLE_FONTS[font] if font is not None else "Arial"
+    bgr = f"{color[5:7]}{color[3:5]}{color[1:3]}".upper() if color is not None else "FFFFFF"
+    fill = f"&H00{bgr}"
+    return f"Style: Default,{family},{size},{fill},{fill},{rest},2,4,4,4,1\n"
+
+
+BurnEvent = tuple[Fraction, Fraction, str, int]
 
 
 def _burn_ass(
-    cues: tuple[SubtitleCue, ...], width: int, height: int, style: str = "standard"
+    cues: tuple[SubtitleCue, ...],
+    width: int,
+    height: int,
+    style: str = "standard",
+    *,
+    font: str | None = None,
+    color: str | None = None,
+    layout: Sequence[BurnEvent] | None = None,
 ) -> str:
     # Never interpret transcript text as ASS override commands.
     header = (
@@ -159,7 +175,7 @@ def _burn_ass(
         "[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, "
         "OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, "
         "Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
-        + _subtitle_style_line(style, height)
+        + _subtitle_style_line(style, height, font, color)
         + "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
     )
 
@@ -169,15 +185,22 @@ def _burn_ass(
         hours, minute = divmod(minutes, 60)
         return f"{hours}:{minute:02d}:{sec:02d}.{cs:02d}"
 
-    for start, end, content, lane in burn_events(cues):
+    for start, end, content, lane in burn_events(cues) if layout is None else layout:
         margin = max(24, height // 8) * lane if lane else 4
         text = content.replace("\n", r"\N")
         header += f"Dialogue: 0,{clock(start)},{clock(end)},Default,,0,0,{margin},,{text}\n"
     return header
 
 
-def burn_events(cues: tuple[SubtitleCue, ...]) -> Iterator[tuple[Fraction, Fraction, str, int]]:
+def burn_events(
+    cues: tuple[SubtitleCue, ...], output_clock: tuple[int, int] | None = None
+) -> Iterator[BurnEvent]:
     for start, end, cue, lane in subtitle_layout(cues, 100):
+        if output_clock is not None:
+            fps, frames = output_clock
+            first = (Fraction(int(start * 100) * fps, 100)).__ceil__()
+            if first >= frames or 100 * first >= int(end * 100) * fps:
+                continue
         yield start, end, escape_ass_text(cue.text), lane
 
 
@@ -329,6 +352,9 @@ class FfmpegCreationRenderer:
             if subtitle_mode == "burn" and burn_cues is not None
             else saved_cues
         )
+        output_clock = (plan.fps, plan.frames)
+        burn_layout = tuple(burn_events(burned, output_clock)) if subtitle_mode == "burn" else ()
+        burned_count = len(burn_layout)
         if any(cue.end > Fraction(plan.frames, plan.fps) for cue in (*saved_cues, *burned)):
             raise ValueError("Subtitle extends beyond render output.")
         if any(
@@ -342,11 +368,9 @@ class FfmpegCreationRenderer:
             presentation = PresentationOptions()
         else:
             presentation = PresentationOptions.from_json(presentation.to_json())
-        if subtitle_mode != "burn" or not saved_cues:
+        if not burned_count:
             # A style only exists in the video when subtitles were burned; never claim it otherwise.
-            presentation = PresentationOptions.from_json(
-                {**presentation.to_json(), "subtitleStyle": "standard"}
-            )
+            presentation = presentation.without_subtitle_look()
         target = resolve_existing(output)
         if is_link(output) or any(
             target == resolve_existing(path) or target.is_relative_to(resolve_existing(path))
@@ -375,9 +399,17 @@ class FfmpegCreationRenderer:
         if subtitle_mode != "none":
             with subtitle_path.open("x", encoding="utf-8", newline="\n") as handle:
                 handle.write(subtitle_text)
-        if subtitle_mode == "burn" and burned:
+        if burned_count:
             ass_path.write_text(
-                _burn_ass(burned, width, height, presentation.subtitle_style),
+                _burn_ass(
+                    burned,
+                    width,
+                    height,
+                    presentation.subtitle_style,
+                    font=presentation.subtitle_font,
+                    color=presentation.subtitle_color,
+                    layout=burn_layout,
+                ),
                 encoding="utf-8",
             )
             video_filter += f",ass=filename={_filter_path(ass_path)}"
@@ -617,7 +649,15 @@ class FfmpegCreationRenderer:
                     "status": "completed",
                     "creationReceiptSha256": creation_digest,
                     "files": files,
-                    "subtitles": {"mode": subtitle_mode, "cueCount": len(saved_cues)},
+                    "subtitles": {
+                        "mode": subtitle_mode,
+                        "cueCount": len(saved_cues),
+                        **(
+                            {"burnedCueCount": burned_count}
+                            if subtitle_mode == "burn" and burned_count != len(saved_cues)
+                            else {}
+                        ),
+                    },
                     "watermark": watermark,
                     "frames": plan.frames,
                     "fpsNumerator": plan.fps,

@@ -821,6 +821,7 @@
             "delivery_status": "partial",
             "implementation_evidence": [
                 "docs/exec-plans/sprint-creation-subtitles.md",
+                "2026-11-22: Studio burn-in supports CJK font and RGB color. Verified real Manga Allstar MP4 and Bilibili package pixels, with legacy and independent SRT timing preserved.",
                 "tests/test_creation_subtitles.py",
                 "tests/test_creation_subtitle_render.py",
                 "tests/test_creation_workspace_http.py",

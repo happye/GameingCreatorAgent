@@ -31,6 +31,7 @@ from gamingcreator.cli.creation import execute_plan_creation
 from gamingcreator.cli.creation_render import execute_render_creation, read_creation
 from gamingcreator.domain.creation import CreativeBrief
 from gamingcreator.domain.creation_audio import AudioMix
+from gamingcreator.domain.creation_presentation import SUBTITLE_FIELDS
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.domain.publication import validate_cover_title
 from gamingcreator.infrastructure.creation_files import write_creation
@@ -93,7 +94,7 @@ def expected_presentation_receipt(request: dict[str, Any], burned: bool) -> dict
 
     options = PresentationOptions.from_request(request) or PresentationOptions()
     if not burned:
-        options = PresentationOptions.from_json({**options.to_json(), "subtitleStyle": "standard"})
+        options = options.without_subtitle_look()
     return options.receipt()
 
 
@@ -229,7 +230,7 @@ class CreationJobs:
                 "safeAreaMarginPercent",
                 "badgeText",
                 "badgeCorner",
-                "subtitleStyle",
+                *SUBTITLE_FIELDS,
                 "wordHighlights",
                 "asrWords",
                 "expectedParentReceiptSha256",
@@ -274,7 +275,7 @@ class CreationJobs:
             raise fail("creation.input", "无效字幕选项。")
         if (
             kind == "render"
-            and "subtitleStyle" in request
+            and any(field in request for field in SUBTITLE_FIELDS)
             and request.get("subtitleMode") != "burn"
         ):
             raise fail("creation.input", "字幕样式只用于烧入字幕。")
@@ -692,12 +693,12 @@ class CreationJobs:
             if mode not in ("none", "sidecar", "burn"):
                 raise ValueError("Invalid saved subtitle mode")
             subtitles = receipt.get("subtitles")
-            burned = (
-                mode == "burn"
-                and isinstance(subtitles, dict)
-                and type(subtitles.get("cueCount")) is int
-                and subtitles["cueCount"] > 0
-            )
+            burned_count = None
+            if isinstance(subtitles, dict) and mode == "burn":
+                burned_count = subtitles.get("burnedCueCount", subtitles.get("cueCount"))
+                if type(burned_count) is not int or burned_count < 0:
+                    raise ValueError("Invalid burned subtitle count")
+            burned = burned_count is not None and burned_count > 0
             if receipt.get("presentation") != expected_presentation_receipt(request, burned):
                 raise ValueError("Render presentation changed")
             expected_files = {"video.mp4"}
@@ -726,6 +727,7 @@ class CreationJobs:
                     or subtitles.get("mode") != mode
                     or type(subtitles.get("cueCount")) is not int
                     or subtitles["cueCount"] < 0
+                    or (mode != "burn" and "burnedCueCount" in subtitles)
                 ):
                     raise ValueError("Invalid subtitle receipt")
             if request.get("adCaptionFallback") is True and not burned:
@@ -771,6 +773,8 @@ class CreationJobs:
                     subtitleSha256=subtitle_hash,
                     subtitleUrl="/api/creation/jobs/" + state["jobId"] + "/subtitles",
                 )
+                if "burnedCueCount" in subtitles:
+                    state["artifact"]["subtitleBurnedCueCount"] = burned_count
         state["resultReceiptSha256"] = digest
         return state
 

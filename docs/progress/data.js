@@ -710,6 +710,7 @@ window.PROGRESS_DATA = {
    "remaining": "Local ASR probe finds no word-level timestamps (worker/store/segment-only); mapper ready only for real provider words — timings are not invented. Word styling and creative quality remain unverified.",
    "evidence": [
     "docs/exec-plans/sprint-creation-subtitles.md",
+    "2026-11-22: Studio burn-in supports CJK font and RGB color. Verified real Manga Allstar MP4 and Bilibili package pixels, with legacy and independent SRT timing preserved.",
     "tests/test_creation_subtitles.py",
     "tests/test_creation_subtitle_render.py",
     "tests/test_creation_workspace_http.py",
@@ -734,9 +735,9 @@ window.PROGRESS_DATA = {
     "2026-11-20: verified narration intervals follow draft and saved audio placement in Studio, SRT, FFmpeg burn-in and FCPXML. Four real narration captions exported on a 60-second Comic Stars video and carried into the local Bilibili package. See sprint-narration-captions.",
     "2026-11-21: Studio independently downloaded the saved Comic Stars revision's SRT and FFprobe read five cues beginning at 2.5 seconds. OTIO, FCPXML and Premiere XML retained the five corresponding frame intervals."
    ],
-   "done": "镜头字幕编辑、逐词高亮、三种烧入样式与已保存修订的独立字幕下载。漫画群星成片、B 站包和专业时间线时钟已实测",
-   "todo": "字体/颜色自定义与字幕质量未人评",
-   "updated": "2026-11-21",
+   "done": "镜头字幕、逐词高亮、烧入样式可选中文字体和文字颜色；漫画群星自定义字幕成片、B 站包及独立 SRT 实测通过",
+   "todo": "字幕质量、不同机器的字体可用性与专业软件样式往返待验",
+   "updated": "2026-11-22",
    "sprints": [
     "sprint-narration-captions",
     "sprint-premiere-narration-track",
@@ -1716,6 +1717,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-studio-caption-preview"
     },
     {
+     "id": "P029-typography",
+     "name": "烧入字幕自定义字体和颜色",
+     "status": "done",
+     "sprint": "sprint-creation-subtitles"
+    },
+    {
      "id": "P035",
      "name": "Studio同版本多平台包",
      "status": "done",
@@ -2447,7 +2454,7 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "[P031 封面标题](docs/exec-plans/sprint-publication-assets.md)已实测重开与横竖出包。[P023](docs/exec-plans/sprint-material-scoring.md)实测略过近白段。",
+  "[P029 字幕字体与颜色](docs/exec-plans/sprint-creation-subtitles.md)已实测漫画群星成片及 B 站包。[P031](docs/exec-plans/sprint-publication-assets.md)实测横竖封面。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "[抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。",
   "创作助手已实测换镜、删裁、变速、换序和[多段插入](docs/exec-plans/sprint-ai-multiple-insertions.md)。[旁白和图层随镜迁移](docs/exec-plans/sprint-ai-companion-fit.md)实测重开、成片和 B 站包。",
@@ -2815,7 +2822,7 @@ window.PROGRESS_DATA = {
    "title": "R2字幕：源语音映射到成片字幕",
    "ids": [],
    "date": "2026-10-30",
-   "bytes": 5056
+   "bytes": 6011
   },
   {
    "file": "sprint-creation-workspace",
@@ -3157,7 +3164,7 @@ window.PROGRESS_DATA = {
     "P034",
     "R2-E"
    ],
-   "date": "2026-11-18",
+   "date": "2026-11-22",
    "bytes": 5839
   },
   {
@@ -3207,7 +3214,7 @@ window.PROGRESS_DATA = {
    "ids": [
     "R2-D"
    ],
-   "date": "2026-10-31",
+   "date": "2026-11-22",
    "bytes": 4987
   },
   {

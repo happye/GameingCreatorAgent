@@ -53,9 +53,11 @@ const CUE_STYLES = {
     boxed: {fontSize: "1.25rem", background: "rgba(50, 50, 50, 0.62)", padding: "0.1em 0.45em", borderRadius: "2px"},
 };
 
-export function SubtitlePreview({cues, outUs, styleName = "standard", wordHighlights = false, subtitleSource = "segment"}) {
+const CUE_FONTS = {yahei: '"Microsoft YaHei", sans-serif', simsun: '"SimSun", serif'};
+
+export function SubtitlePreview({cues, outUs, styleName = "standard", font = "", color = "white", wordHighlights = false, subtitleSource = "segment"}) {
     const look = CUE_STYLES[styleName] || CUE_STYLES.standard;
     return html`<div aria-label="字幕预览" data-subtitle-style=${styleName} data-word-highlights=${wordHighlights ? "true" : "false"} data-subtitle-source=${subtitleSource} style=${{position: "absolute", inset: 0, pointerEvents: "none", zIndex: 4}}>
-        ${cues.filter(c => c.startUs <= outUs && outUs < c.endUs).map(c => html`<div style=${{position: "absolute", bottom: c.lifted ? (12.5 * (c.lane || 1)) + "%" : "1%", width: "100%", textAlign: "center", whiteSpace: "pre-line", color: "white"}}><span style=${{...look, display: "inline-block"}}>${c.text}</span></div>`)}
+        ${cues.filter(c => c.startUs <= outUs && outUs < c.endUs).map(c => html`<div style=${{position: "absolute", bottom: c.lifted ? (12.5 * (c.lane || 1)) + "%" : "1%", width: "100%", textAlign: "center", whiteSpace: "pre-line", color, fontFamily: CUE_FONTS[font]}}><span style=${{...look, display: "inline-block"}}>${c.text}</span></div>`)}
     </div>`;
 }

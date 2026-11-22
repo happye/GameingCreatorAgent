@@ -1132,7 +1132,11 @@
             const url = new URL(artifact.subtitleUrl, location.origin);
             if (url.origin !== location.origin || url.pathname !== `/api/creation/jobs/${encodeURIComponent(renderId)}/subtitles` || url.search || url.hash) throw new Error("字幕地址无效，请刷新任务。");
             const link = node("a", "下载 SRT 字幕"); link.id = "download-subtitles"; link.href = artifact.subtitleUrl; link.download = "subtitles.srt";
-            $("artifact").append(node("p", artifact.subtitleCueCount === 0 ? "字幕 0 条：所选片段无可用的已保存语音，SRT 为空。" : `字幕 ${artifact.subtitleCueCount} 条 · ${artifact.subtitleMode === "burn" ? "已烧入视频" : "独立导出"}`), link);
+            const burned = artifact.subtitleBurnedCueCount;
+            const note = Number.isInteger(burned) ? `SRT ${artifact.subtitleCueCount} 条 · ${burned > 0 ? `已烧入视频 ${burned} 段` : "视频无烧入字幕"}`
+                : artifact.subtitleCueCount === 0 ? "字幕 0 条：SRT 为空。"
+                : `字幕 ${artifact.subtitleCueCount} 条 · ${artifact.subtitleMode === "burn" ? "已烧入视频" : "独立导出"}`;
+            $("artifact").append(node("p", note), link);
         }
         if (artifact.narrationTextUrl) {
             const url = new URL(artifact.narrationTextUrl, location.origin);
