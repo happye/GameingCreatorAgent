@@ -876,6 +876,7 @@
             "delivery_status": "partial",
             "implementation_evidence": [
                 "docs/exec-plans/sprint-publication-assets.md",
+                "2026-11-22: independent cover headline saved and reopened in Studio; real Atom Bilibili and Douyin packages render the same chosen frame with the title after fitting to each aspect ratio.",
                 "tests/test_creation_publication.py",
                 "tests/test_creation_publication_http.py",
                 "tests/test_creation_publication_browser.py"

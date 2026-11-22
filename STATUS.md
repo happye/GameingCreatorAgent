@@ -18,9 +18,9 @@
 
 **汇报规则**：只在主指标变化时汇报，中文不超过 150 字，附一个可以打开的产物。
 
-## 当前交付与下一步（2026-11-21）
+## 当前交付与下一步（2026-11-22）
 
-1. [P023 取帧评分](docs/exec-plans/sprint-material-scoring.md)实测 Atom 高光跳过近白画面。[P018](docs/exec-plans/sprint-game-knowledge.md)实测网页摘录与版本历史。
+1. [P031 封面标题](docs/exec-plans/sprint-publication-assets.md)已实测重开与横竖出包。[P023](docs/exec-plans/sprint-material-scoring.md)实测略过近白段。
 2. 真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。
 3. [抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。
 4. 创作助手已实测换镜、删裁、变速、换序和[多段插入](docs/exec-plans/sprint-ai-multiple-insertions.md)。[旁白和图层随镜迁移](docs/exec-plans/sprint-ai-companion-fit.md)实测重开、成片和 B 站包。

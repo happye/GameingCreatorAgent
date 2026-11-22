@@ -786,13 +786,14 @@ window.PROGRESS_DATA = {
    "remaining": null,
    "evidence": [
     "docs/exec-plans/sprint-publication-assets.md",
+    "2026-11-22: independent cover headline saved and reopened in Studio; real Atom Bilibili and Douyin packages render the same chosen frame with the title after fitting to each aspect ratio.",
     "tests/test_creation_publication.py",
     "tests/test_creation_publication_http.py",
     "tests/test_creation_publication_browser.py"
    ],
-   "done": "封面在保存前可从7张候选帧或当前画面选择并预览；标题按需求结构生成（游戏｜类型：主题，不再照抄需求原句），简介为导语＋带时间点的分段；可编辑保存多版本、下载；无用的复制按钮已移除；可一键让AI写标题/简介/标签（读需求与每段镜头文字，不看画面；预算内自动，填入表单待修改保存）",
-   "todo": "AI文案质量未人评；封面设计质量未评估",
-   "updated": "2026-11-11",
+   "done": "封面可选候选帧或当前画面，独立封面标题可预览、保存和重开，B站与抖音包按画幅重排；发布标题、简介和标签可编辑或用 AI 起草，多版本可回读下载",
+   "todo": "AI 文案和封面设计质量待人评",
+   "updated": "2026-11-22",
    "sprints": [
     "sprint-publication-assets"
    ]
@@ -1561,6 +1562,12 @@ window.PROGRESS_DATA = {
     {
      "id": "R2-D",
      "name": "真实封面与可编辑文案",
+     "status": "done",
+     "sprint": "sprint-publication-assets"
+    },
+    {
+     "id": "P031-cover-title",
+     "name": "独立封面标题与横竖版重排",
      "status": "done",
      "sprint": "sprint-publication-assets"
     },
@@ -2440,7 +2447,7 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "[P023 取帧评分](docs/exec-plans/sprint-material-scoring.md)实测 Atom 高光跳过近白画面。[P018](docs/exec-plans/sprint-game-knowledge.md)实测网页摘录与版本历史。",
+  "[P031 封面标题](docs/exec-plans/sprint-publication-assets.md)已实测重开与横竖出包。[P023](docs/exec-plans/sprint-material-scoring.md)实测略过近白段。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "[抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。",
   "创作助手已实测换镜、删裁、变速、换序和[多段插入](docs/exec-plans/sprint-ai-multiple-insertions.md)。[旁白和图层随镜迁移](docs/exec-plans/sprint-ai-companion-fit.md)实测重开、成片和 B 站包。",
@@ -3025,7 +3032,7 @@ window.PROGRESS_DATA = {
    "ids": [
     "P030"
    ],
-   "date": "",
+   "date": "2026-11-21",
    "bytes": 1828
   },
   {
@@ -3151,7 +3158,7 @@ window.PROGRESS_DATA = {
     "R2-E"
    ],
    "date": "2026-11-18",
-   "bytes": 5753
+   "bytes": 5839
   },
   {
    "file": "sprint-platform-short-pack",
@@ -3201,7 +3208,7 @@ window.PROGRESS_DATA = {
     "R2-D"
    ],
    "date": "2026-10-31",
-   "bytes": 3898
+   "bytes": 4987
   },
   {
    "file": "sprint-publication-outcome-feedback",

@@ -8,7 +8,7 @@ from typing import Any
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.infrastructure.ffmpeg_render import _filter_path, _watermark_ass
 from gamingcreator.infrastructure.media_process import run_media_process
-from gamingcreator.infrastructure.publication_assets import validate_png
+from gamingcreator.infrastructure.publication_assets import extract_cover, validate_png
 
 
 def transform(value: dict[str, Any]) -> str:
@@ -66,6 +66,7 @@ async def encode(
     duration: Fraction | None = None,
     *,
     output_clock: tuple[int, Fraction] | None = None,
+    cover_card: tuple[int, str] | None = None,
 ) -> dict[str, Any]:
     """``watermark`` is redrawn after cropping/padding, so a package never loses the mark."""
     tools = repository / ".tools/ffmpeg/bin"
@@ -123,7 +124,7 @@ async def encode(
             )
         else:
             media_args = ["-map", "0:v:0", "-map", "0:a?", "-vf", video_filter, *trim_args]
-        return await _encode(tools, video, cover, target, profile, media_args)
+        return await _encode(repository, video, cover, target, profile, media_args, cover_card)
     finally:
         mark.unlink(missing_ok=True)
         if publication_text is not None:
@@ -189,13 +190,15 @@ def _range_media_args(
 
 
 async def _encode(
-    tools: Path,
+    repository: Path,
     video: Path,
     cover: Path,
     target: Path,
     profile: dict[str, Any],
     media_args: list[str],
+    cover_card: tuple[int, str] | None,
 ) -> dict[str, Any]:
+    tools = repository / ".tools/ffmpeg/bin"
     context = CancellationContext("platform-package", 1800)
     base = [
         str(tools / "ffmpeg.exe"),
@@ -227,29 +230,40 @@ async def _encode(
         ],
         context,
     )
-    await run_media_process(
-        [
-            *base,
-            "-i",
-            str(cover),
-            "-vf",
-            transform(profile["Fields"]["cover"]),
-            "-frames:v",
-            "1",
-            "-update",
-            "1",
-            "-n",
-            str(target / "cover.png"),
-        ],
-        context,
-    )
-    validate_png(
-        target / "cover.png",
-        profile["Fields"]["cover"]["width"],
-        profile["Fields"]["cover"]["height"],
-    )
-    for name in ("video.mp4", "cover.png"):
-        await run_media_process([*base, "-i", str(target / name), "-f", "null", "-"], context)
+    field = profile["Fields"]["cover"]
+    image = target / "cover.png"
+    if cover_card is not None:
+        frame, title = cover_card
+        await extract_cover(
+            repository,
+            video,
+            image,
+            frame,
+            field["width"],
+            field["height"],
+            title=title,
+            fit_filter=transform(field),
+        )
+    else:
+        await run_media_process(
+            [
+                *base,
+                "-i",
+                str(cover),
+                "-vf",
+                transform(field),
+                "-frames:v",
+                "1",
+                "-update",
+                "1",
+                "-n",
+                str(image),
+            ],
+            context,
+        )
+        validate_png(image, field["width"], field["height"])
+        await run_media_process([*base, "-i", str(image), "-f", "null", "-"], context)
+    await run_media_process([*base, "-i", str(target / "video.mp4"), "-f", "null", "-"], context)
     result = await run_media_process(
         [
             str(tools / "ffprobe.exe"),

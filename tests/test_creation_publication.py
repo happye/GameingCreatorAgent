@@ -81,8 +81,8 @@ def rendered(service, monkeypatch):  # noqa: F811
         receipt["files"]["video.mp4"] = hash_file(output / "video.mp4")
         (output / "receipt.json").write_text(json.dumps(receipt))
 
-    async def extract(repository, *args):
-        await extract_cover(ROOT, *args)
+    async def extract(repository, *args, **kwargs):
+        await extract_cover(ROOT, *args, **kwargs)
 
     monkeypatch.setattr(implementation, "execute_render_creation", renderer)
     monkeypatch.setattr(publication, "extract_cover", extract)
@@ -118,6 +118,69 @@ def payload(jobs, render):
             )
         },
     }
+
+
+def test_cover_title_is_versioned_and_burned_into_selected_frame(rendered):
+    jobs, render = rendered
+    plain = {**payload(jobs, render), "coverFrame": 2}
+    original = jobs.submit("publication", plain)["jobId"]
+    assert finish(jobs, original)["status"] == "completed"
+    titled = {**plain, "requestId": uuid4().hex, "coverTitle": "实战"}
+    version = jobs.submit("publication", titled)["jobId"]
+    assert finish(jobs, version)["status"] == "completed"
+    reopened = CreationJobs(jobs.repository)
+    assert reopened.publication(version)["coverTitle"] == "实战"
+    assert "coverTitle" not in reopened.publication(original)
+    pixels = []
+    for job in (original, version):
+        image = reopened.publication_file(job, "cover.png").path
+        pixels.append(
+            subprocess.check_output(
+                [
+                    str(FFMPEG),
+                    "-v",
+                    "error",
+                    "-i",
+                    str(image),
+                    "-f",
+                    "rawvideo",
+                    "-pix_fmt",
+                    "rgb24",
+                    "-",
+                ]
+            )
+        )
+    assert pixels[0][: 32 * 64 * 3] == pixels[1][: 32 * 64 * 3]
+    assert pixels[0] != pixels[1]
+    assert any(min(pixels[1][i : i + 3]) > 60 for i in range(32 * 64 * 3, len(pixels[1]), 3))
+
+
+@pytest.mark.parametrize(
+    "title", ["字" * 19, "两\n行", "方向\u202e", "分段\u2028", "\ud800", "{ASS}", "a\\b", None]
+)
+def test_invalid_cover_title_refused(title):
+    with pytest.raises(ValueError, match="封面标题"):
+        validate_metadata(
+            {"title": "标题", "description": "", "tags": [], "coverFrame": 0, "coverTitle": title},
+            1,
+        )
+
+
+def test_invalid_cover_title_is_rejected_before_request_digest(service):  # noqa: F811
+    with pytest.raises(AppError, match="封面标题"):
+        service.submit(
+            "publication",
+            {
+                "requestId": "a" * 32,
+                "renderJobId": "b" * 32,
+                "expectedRenderReceiptSha256": "c" * 64,
+                "coverFrame": 0,
+                "title": "标题",
+                "description": "",
+                "tags": [],
+                "coverTitle": "\ud800",
+            },
+        )
 
 
 @pytest.mark.parametrize("description", ["发布简介", "玩法\r\n\t步骤\r提示"])

@@ -44,10 +44,21 @@ def validate_metadata(value: dict[str, Any], frames: int) -> None:
     validate_copy(value)
     if type(value.get("coverFrame")) is not int or not 0 <= value["coverFrame"] < frames:
         raise ValueError("封面帧超出成片范围。")
+    validate_cover_title(value.get("coverTitle", ""))
+
+
+def validate_cover_title(title: str) -> None:
+    problem = _text_problem(title, 0, 18)
+    if problem:
+        raise ValueError(f"封面标题{problem}。")
+    if any(unicodedata.category(char) in {"Cf", "Cs", "Zl", "Zp"} for char in title):
+        raise ValueError("封面标题包含无效字符。")
+    if any(char in "{}\\" for char in title):
+        raise ValueError("封面标题不能包含半角花括号或反斜杠。")
 
 
 def user_input_message(error: BaseException) -> str:
     text = str(error).strip()
-    if text.startswith(("标题", "简介", "标签", "封面帧")):
+    if text.startswith(("标题", "简介", "标签", "封面帧", "封面标题")):
         return text
     return "无法保存发布信息。"

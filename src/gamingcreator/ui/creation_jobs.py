@@ -32,6 +32,7 @@ from gamingcreator.cli.creation_render import execute_render_creation, read_crea
 from gamingcreator.domain.creation import CreativeBrief
 from gamingcreator.domain.creation_audio import AudioMix
 from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.domain.publication import validate_cover_title
 from gamingcreator.infrastructure.creation_files import write_creation
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.infrastructure.ffmpeg_render import FfmpegCreationRenderer
@@ -248,6 +249,8 @@ class CreationJobs:
                 if kind == "revision"
                 else {"costConfirmationYuan"}
                 if kind == "narration"
+                else {"coverTitle"}
+                if kind == "publication"
                 else {
                     "eventIds",
                     "clipRanges",
@@ -290,6 +293,11 @@ class CreationJobs:
                 from gamingcreator.domain.creation_presentation import PresentationOptions
 
                 PresentationOptions.from_request(request)
+            except ValueError as error:
+                raise fail("creation.input", str(error)) from error
+        if kind == "publication" and "coverTitle" in request:
+            try:
+                validate_cover_title(request["coverTitle"])
             except ValueError as error:
                 raise fail("creation.input", str(error)) from error
         request_id = identity(request["requestId"])

@@ -14,7 +14,7 @@ profile exact `{Platform,RuleVersion,UpdatedAt,Source,Fields}`，Source=`{kind:'
 
 七文件video.mp4、cover.png、title.txt、description.txt、tags.json、platform.json、validation.json；ZIP只含七文件，不含源视频/源路径/许可附件/内部报告。receipt放ZIP外，绑定七文件、ZIP、配置canonical SHA、publication/render父身份和文件SHA，最后原子发布。父验证在异步编码中通过to_thread等合适边界，避免复现nested asyncio。
 
-视频真实scale+pad/crop→H264/yuv420p，音频保留已混音内容（可AAC copy），封面由已存PNG变换。实测probe/解码核尺寸、codec、fps、帧数/时长/字节数及文本/Tags。编码失败不登记completed；仅超本地限值仍保存报告便于修改。
+视频按配置缩放及裁切或补边，输出 H.264/yuv420p，保留已混音内容。纯画面封面变换已存 PNG。有封面标题的版本读取发布时选定的成片帧，按平台画幅调整后再排字。实测检查尺寸、编码、帧率、时长、字节数、文案和标签。编码失败会记录失败，超过本地限值会保存检查报告。
 
 状态分开：generationStatus=completed代表七文件/ZIP可用；localChecks=pass|fail比较实际产物和所选本地配置；未配置限值not_configured、未知规则unknown，不能算pass。publicationEligibility=unverified|blocked：官方规则/素材权利/真人质量未知保持unverified；test_only音乐blocked，user_declared不冒充核权利。此批不产生可商用发布资格。
 

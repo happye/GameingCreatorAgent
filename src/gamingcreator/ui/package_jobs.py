@@ -102,9 +102,11 @@ async def save_package(jobs: Any, directory: Path, request: dict[str, Any]) -> N
     frames = render["frames"] if variant is None else variant["durationFrames"]
     fps = Fraction(render["fpsNumerator"], render["fpsDenominator"])
     duration = frames / fps
-    encode_options = (
+    encode_options: dict[str, Any] = (
         {"output_clock": (frames, fps)} if variant is not None or publication_text else {}
     )
+    if title := publication.get("coverTitle", "").strip():
+        encode_options["cover_card"] = (publication["coverFrame"], title)
     facts = await encode(
         jobs.repository,
         video,

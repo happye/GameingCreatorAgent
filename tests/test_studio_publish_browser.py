@@ -6,6 +6,7 @@ Real static server; the creation APIs are answered by the test so no media is pr
 import hashlib
 import io
 import json
+import re
 import threading
 import zipfile
 
@@ -112,12 +113,30 @@ def test_publish_copy_cover_and_package(service, monkeypatch):  # noqa: F811
                 status=202, json={"jobId": PUB, "kind": "publication", "status": "pending"}
             )
         if path == f"/api/creation/jobs/{PUB}/packages":
-            return route.fulfill(json={"jobs": []})
-        if path == "/api/creation/packages":
-            posted["package"] = json.loads(request.post_data)
-            return route.fulfill(
-                status=202, json={"jobId": PKG, "kind": "package", "status": "pending"}
+            rows = [{"jobId": PKG, "status": "completed", "parentReceiptSha256": "e" * 64}]
+            return route.fulfill(json={"jobs": rows if "batch" in posted else []})
+        if path == "/api/creation/package-batches":
+            if request.method == "POST":
+                posted["batch"] = json.loads(request.post_data)
+                return route.fulfill(status=202, json={"batchId": "f" * 32})
+            batches = (
+                [
+                    {
+                        "batchId": "f" * 32,
+                        "status": "completed",
+                        "items": [
+                            {
+                                "jobId": PKG,
+                                "status": "completed",
+                                "profile": posted["batch"]["profiles"][0],
+                            },
+                        ],
+                    }
+                ]
+                if "batch" in posted
+                else []
             )
+            return route.fulfill(json={"batches": batches})
         if path in (f"/api/creation/jobs/{PUB}", f"/api/creation/jobs/{PKG}"):
             return route.fulfill(json={"jobId": path[-32:], "status": "completed"})
         if path == f"/api/creation/jobs/{RENDER}/publication":
@@ -172,11 +191,15 @@ def test_publish_copy_cover_and_package(service, monkeypatch):  # noqa: F811
             )
             playwright.expect(title).to_have_value("三分钟看懂玩法")
             assert asked
+            cover_title = page.get_by_role("textbox", name=re.compile("^封面标题"))
+            cover_title.fill("三分钟实战")
             page.get_by_role("button", name="保存发布信息").click()
             playwright.expect(page.get_by_text("已保存的版本")).to_be_visible()
             assert posted["publication"]["title"] == "三分钟看懂玩法"
             assert posted["publication"]["tags"] == ["游戏", "玩法展示"]
             assert posted["publication"]["expectedRenderReceiptSha256"] == DIGEST
+            assert posted["publication"]["coverTitle"] == "三分钟实战"
+            playwright.expect(cover_title).to_have_value("三分钟实战")
             # J1 2026-11-11: copy buttons were useless and are gone; the cover is part of the
             # publish info (saved cover shown once saved).
             playwright.expect(page.get_by_role("button", name="复制标题")).to_have_count(0)
@@ -207,8 +230,8 @@ def test_publish_copy_cover_and_package(service, monkeypatch):  # noqa: F811
             assert download.path().read_bytes() == package_bytes
             with zipfile.ZipFile(download.path()) as package:
                 assert package.read("video.mp4") == b"fixture-video"
-            assert posted["package"]["publicationJobId"] == PUB
-            assert posted["package"]["profile"]["Platform"] == "bilibili"
+            assert posted["batch"]["publicationJobId"] == PUB
+            assert posted["batch"]["profiles"][0]["Platform"] == "bilibili"
             assert not errors
             browser.close()
     finally:

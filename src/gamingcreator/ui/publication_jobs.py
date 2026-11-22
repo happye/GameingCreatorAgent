@@ -332,6 +332,7 @@ def expected_snapshot(request: dict[str, Any], receipt: dict[str, Any]) -> dict[
             )
         },
         **clock(receipt),
+        **({"coverTitle": request["coverTitle"]} if "coverTitle" in request else {}),
         "videoUrl": "/api/creation/jobs/" + request["renderJobId"] + "/video",
         "draftStatus": "editable-template-not-ai",
         "generationMode": "local_template",
@@ -350,6 +351,8 @@ async def save_publication(jobs: Any, directory: Path, request: dict[str, Any]) 
     target = jobs.safe(directory / "result")
     target.mkdir()
     video = jobs.safe(jobs.directory(request["renderJobId"]) / "result/video.mp4")
+    title = request.get("coverTitle", "").strip()
+    cover_options = {"title": title} if title else {}
     await extract_cover(
         jobs.repository,
         video,
@@ -357,6 +360,7 @@ async def save_publication(jobs: Any, directory: Path, request: dict[str, Any]) 
         request["coverFrame"],
         parent["width"],
         parent["height"],
+        **cover_options,
     )
     for name, text in (
         ("title.txt", request["title"]),
@@ -378,6 +382,7 @@ async def save_publication(jobs: Any, directory: Path, request: dict[str, Any]) 
         "parentRenderReceiptSha256": digest,
         "renderVideoSha256": parent["files"]["video.mp4"],
         "coverFrame": request["coverFrame"],
+        **({"coverTitle": request["coverTitle"]} if "coverTitle" in request else {}),
         **clock(parent),
         "files": {name: hash_file(jobs.safe(target / name)) for name in FILES},
     }
@@ -404,6 +409,8 @@ def verify_publication(
         or receipt.get("parentRenderReceiptSha256") != digest
         or receipt.get("renderVideoSha256") != parent["files"]["video.mp4"]
         or receipt.get("coverFrame") != request["coverFrame"]
+        or ("coverTitle" in receipt) != ("coverTitle" in request)
+        or receipt.get("coverTitle") != request.get("coverTitle")
         or any(receipt.get(key) != value for key, value in clock(parent).items())
         or set(receipt.get("files", {})) != set(FILES)
     ):

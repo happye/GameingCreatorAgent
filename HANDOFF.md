@@ -1,8 +1,8 @@
 # HANDOFF（覆盖快照）
 
-## 最近一次会话（2026-11-21）
+## 最近一次会话（2026-11-22）
 
-当前分支 `main`。先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。[P030 七模式配乐](docs/exec-plans/sprint-mode-music-recommendations.md)实测 Atom 攻略试听、重开和出包。[P023](docs/exec-plans/sprint-material-scoring.md)实测高光略过近白段。[P018](docs/exec-plans/sprint-game-knowledge.md)实测网页摘录。
+当前分支 `main`。先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。[P031 封面标题](docs/exec-plans/sprint-publication-assets.md)用 Atom 实测重开、清除标题和横竖出包。[P030 七模式配乐](docs/exec-plans/sprint-mode-music-recommendations.md)实测攻略试听和出包。
 
 [P051 项目品牌资源](docs/exec-plans/sprint-enterprise-basics.md)已实测文案、视觉模板和项目配乐库。配乐移出后，Atom 旧修订重开仍输出原音轨，抖音包 `a3104f45bc9f4410a1e9e4634aff4d6d`。
 

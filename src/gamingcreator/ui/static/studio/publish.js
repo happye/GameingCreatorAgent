@@ -18,6 +18,8 @@ const STATUS = {pass: "通过", fail: "未通过", unknown: "未知", not_config
 const jobPath = (id) => `/api/creation/jobs/${encodeURIComponent(id)}`;
 const when = (iso) => new Date(iso).toLocaleString("zh-CN", {hour12: false});
 const tagList = (text) => [...new Set(text.split(/[,，\n]/).map((t) => t.trim()).filter(Boolean))];
+const COVER_TITLE_LIMIT = 18;
+const COVER_TITLE_INVALID = /[\p{Cc}\p{Cf}\p{Cs}\p{Zl}\p{Zp}]/u;
 const COPY_CLOSING = {
     bilibili: "弹幕聊聊，你最想回看哪一幕？",
     douyin: "这一段，你最记得哪个画面？",
@@ -205,8 +207,12 @@ function useCoverCandidates(src, frames, fps) {
         video.muted = true; video.preload = "auto"; video.src = src;
         const seek = (frame) => new Promise((resolve, reject) => { video.onseeked = resolve; video.onerror = reject; video.currentTime = (frame + 0.5) / fps; });
         video.addEventListener("loadeddata", async () => {
-            const found = [];
-            for (const frame of [...new Set(COVER_POINTS.map((r) => Math.min(frames - 1, Math.floor(frames * r))))]) {
+            if (!live()) return;
+            const found = [{frame: 0, url: grabFrame(video), src}];
+            setThumbs((rows) => live() ? [...found] : rows);
+            const candidates = new Set(COVER_POINTS.map((r) => Math.min(frames - 1, Math.floor(frames * r))));
+            candidates.delete(0);
+            for (const frame of candidates) {
                 try { await seek(frame); } catch { return; }
                 if (!live()) return;
                 found.push({frame, url: grabFrame(video), src});
@@ -216,7 +222,7 @@ function useCoverCandidates(src, frames, fps) {
         video.addEventListener("error", () => { if (live()) setThumbs([]); });
         return () => { if (live()) generation.current++; video.removeAttribute("src"); video.load(); };
     }, [src, frames, fps]);
-    return thumbs;
+    return thumbs.filter(thumb => thumb.src === src);
 }
 
 // Stage B (2026-11-11): AI writes title, description and tags from the brief and the rendered
@@ -285,10 +291,18 @@ function AiCopy({renderJobId, disabled, onCopy}) {
         <p class="hint">AI 只读需求和每段镜头的文字描述，没有看画面；发出前请核对。</p></div>`;
 }
 
-function CoverField({savedSrc, preview, thumbs, coverFrame, fps, onPick}) {
+function CoverField({savedSrc, preview, thumbs, coverFrame, coverTitle, titleError, fps, onPick, onTitle}) {
     const shown = savedSrc || preview || thumbs.find((t) => t.frame === coverFrame)?.url;
+    const title = !savedSrc && !titleError ? coverTitle.trim() : "";
     return html`<div class="field cover-field"><div class="k">封面（保存前可选）</div>
-        ${shown ? html`<img class="cover" src=${shown} alt="封面" />` : html`<p class="hint">选下面一张，或在预览里停到想要的画面后点“用当前画面做封面”。</p>`}
+        <label class="form-row">封面标题（可选，${[...coverTitle].length}/${COVER_TITLE_LIMIT} 字）
+            <input class="input" value=${coverTitle} aria-invalid=${titleError ? "true" : "false"}
+                aria-describedby=${titleError ? "cover-title-error" : null} onInput=${e => onTitle(e.currentTarget.value)} />
+        </label>
+        ${titleError && html`<p class="hint" id="cover-title-error" data-field="coverTitle">${titleError}</p>`}
+        ${shown ? html`<div class="cover-preview"><img class="cover" src=${shown} alt="封面" />
+            ${title && html`<span class="cover-preview-title">${title}</span>`}</div>`
+            : html`<p class="hint">保存后可查看第 ${coverFrame} 帧的封面。也可以选一张候选图，或在视频里停到想要的画面后点“用当前画面做封面”。</p>`}
         <div class="cover-picks" aria-label="封面候选">${thumbs.map((t) => html`<button type="button" class="cover-pick" aria-pressed=${t.frame === coverFrame}
             data-video-src=${t.src || ""}
             title=${`第 ${t.frame} 帧（${(t.frame / fps).toFixed(1)} 秒）`} onClick=${() => onPick(t.frame, t.url)}><img src=${t.url} alt=${`封面候选 ${(t.frame / fps).toFixed(1)} 秒`} /></button>`)}</div>
@@ -324,7 +338,7 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
     const savedPackages = workId ? works.filter(job => job.kind === "package" && job.status === "completed") : [];
     const [renderId, setRenderId] = useState("");
     const [pub, setPub] = useState(null); // the snapshot shown: a draft from the render or a saved publication
-    const [form, setForm] = useState({title: "", description: "", tags: "", coverFrame: 0});
+    const [form, setForm] = useState({title: "", description: "", tags: "", coverFrame: 0, coverTitle: ""});
     const [profiles, setProfiles] = useState([]);
     const [platform, setPlatform] = useState("");
     const [packages, setPackages] = useState([]);
@@ -347,7 +361,7 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
     const video = useRef(null);
     const shortEnd = useRef(null);
     const [frameCopy, setFrameCopy] = useState(null);
-    const [coverPreview, setCoverPreview] = useState("");
+    const [coverPreview, setCoverPreview] = useState(null);
 
     useEffect(() => {
         client.api("/api/creation/platform-profiles").then((data) => { setProfiles(data.profiles || []); setPlatform(data.profiles?.[0]?.Platform || ""); setSelected([data.profiles?.[0]?.Platform].filter(Boolean)); }).catch(() => setProfiles([]));
@@ -377,7 +391,7 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
         polling.current.abort(); polling.current = new AbortController();
         const generation = ++epoch.current;
         const current = () => generation === epoch.current;
-        setMessage(""); setFieldError({}); setPackages([]); setPub(null); setBusy(""); setCoverPreview(""); setPreviewPackage("");
+        setMessage(""); setFieldError({}); setPackages([]); setPub(null); setBusy(""); setPreviewPackage("");
         try {
             const detail = kind === "package" ? await client.api(`${jobPath(id)}/package`) : null;
             if (!current()) return;
@@ -385,7 +399,8 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
             const data = await client.api(`${jobPath(publicationId)}/publication`);
             if (!current()) return;
             setRenderId(data.renderJobId); setPub(data);
-            setForm({title: data.title, description: data.description, tags: data.tags.join("，"), coverFrame: data.coverFrame});
+            setForm({title: data.title, description: data.description, tags: data.tags.join("，"),
+                coverFrame: data.coverFrame, coverTitle: data.coverTitle ?? ""});
             if (data.publicationJobId) await restore(data, generation, detail ? {id, detail} : null);
             return generation;
         } catch (error) { if (current()) setMessage(error.message); }
@@ -393,30 +408,39 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
 
     const fps = pub ? pub.fps.numerator / pub.fps.denominator : 30;
     const formTags = tagList(form.tags);
+    const coverTitle = form.coverTitle.trim() ? form.coverTitle : "";
+    const savedCoverTitle = pub?.coverTitle?.trim() ? pub.coverTitle : "";
+    const coverTitleError = COVER_TITLE_INVALID.test(form.coverTitle) ? "封面标题包含无效字符。"
+        : /[{}\\]/u.test(form.coverTitle) ? "封面标题不能包含半角花括号或反斜杠。"
+        : [...form.coverTitle].length > COVER_TITLE_LIMIT ? `封面标题不能超过 ${COVER_TITLE_LIMIT} 字。` : "";
+    const coverChanged = pub && (form.coverFrame !== pub.coverFrame || coverTitle !== savedCoverTitle || !!coverTitleError);
     const dirty = pub && (form.title !== pub.title || form.description !== pub.description
         || formTags.length !== pub.tags.length || formTags.some((tag, i) => tag !== pub.tags[i])
-        || form.coverFrame !== pub.coverFrame);
+        || coverChanged);
     useLayoutEffect(() => { onDirtyChange(!!dirty); }, [dirty, onDirtyChange]);
     useLayoutEffect(() => () => onDirtyChange(false), [onDirtyChange]);
-    const useFrame = () => {
-        const el = video.current; if (!el || !pub) return;
-        setForm({...form, coverFrame: Math.max(0, Math.min(pub.frames - 1, Math.floor(el.currentTime * fps)))});
-        try { setCoverPreview(grabFrame(el)); } catch { setCoverPreview(""); }
-    };
     const videoSrc = pub ? client.sameOrigin(pub.videoUrl, `${jobPath(pub.renderJobId)}/video`) || "" : "";
     const thumbs = useCoverCandidates(videoSrc, pub?.frames || 0, fps);
+    const useFrame = () => {
+        const el = video.current; if (!el || !pub) return;
+        const frame = Math.max(0, Math.min(pub.frames - 1, Math.floor(el.currentTime * fps)));
+        setForm(current => ({...current, coverFrame: frame}));
+        try { setCoverPreview({frame, url: grabFrame(el), src: videoSrc}); } catch { setCoverPreview(null); }
+    };
     const save = async () => {
         if (!pub) return;
         const generation = epoch.current;
         const current = () => generation === epoch.current;
         const rawTags = form.tags.split(/[,，\n]/).map((t) => t.trim()).filter(Boolean);
         const next = publicationFieldErrors({title: form.title.trim(), description: form.description, tags: rawTags});
+        if (coverTitleError) next.coverTitle = coverTitleError;
         if (Object.keys(next).length) { setFieldError(next); setMessage(""); return; }
         setFieldError({});
         setBusy("publication"); setMessage("正在保存发布信息并截取封面…");
         try {
             const accepted = await client.submit("publication", {renderJobId: pub.renderJobId, expectedRenderReceiptSha256: pub.expectedRenderReceiptSha256,
-                coverFrame: form.coverFrame, title: form.title.trim(), description: form.description, tags: formTags});
+                coverFrame: form.coverFrame, title: form.title.trim(), description: form.description, tags: formTags,
+                ...(coverTitle ? {coverTitle} : {})});
             if (!current()) return;
             const done = await client.settle(accepted.jobId);
             if (!current()) return;
@@ -424,7 +448,14 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
             client.forgetIntent("publication"); onWorksChanged();
             setBusy("");
             const shown = await show(done.jobId, "publication"); if (epoch.current !== shown) return; setMessage("已保存。可以生成平台包了。");
-        } catch (error) { if (current()) { const shown = publicationErrorFields(error.message); setFieldError(shown.fields); setMessage(shown.message); } } finally { if (current()) setBusy(""); }
+        } catch (error) {
+            if (current()) {
+                const shown = publicationErrorFields(error.message);
+                const isCoverTitle = shown.message.startsWith("封面标题");
+                setFieldError(isCoverTitle ? {coverTitle: shown.message} : shown.fields);
+                setMessage(isCoverTitle ? "" : shown.message);
+            }
+        } finally { if (current()) setBusy(""); }
     };
     const restore = async (snapshot, generation, opened = null) => {
         const data = await client.api(`${jobPath(snapshot.publicationJobId)}/packages`, {projectId: project});
@@ -600,7 +631,8 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
     };
     const queue = usePackageBatches({project, pub, profiles: chosen, selected, disabled: !!busy || !saved, startBlocked: !!variantError,
         onChanged: () => { const generation = epoch.current; if (pub?.publicationJobId) void restore(pub, generation).catch(e => { if (epoch.current === generation) setMessage(e.message); }); }});
-    const coverSrc = pub?.publicationJobId && !dirty ? `${jobPath(pub.publicationJobId)}/publication-files/cover.png` : null;
+    const coverSrc = pub?.publicationJobId && !coverChanged ? `${jobPath(pub.publicationJobId)}/publication-files/cover.png` : null;
+    const localCover = coverPreview?.src === videoSrc && coverPreview.frame === form.coverFrame ? coverPreview.url : "";
     const limits = profiles.find((p) => p.Platform === platform)?.Fields?.limits || {};
     const cls = `work${layout.bin ? "" : " no-bin"}${layout.insp ? "" : " no-insp"}`;
     const chooseJob = (job) => leave(() => { void show(job.jobId, job.kind); });
@@ -745,8 +777,16 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
                     <label class="form-row">标签（逗号分隔，${formTags.length} 个）<input class="input" value=${form.tags} onInput=${(e) => { setForm({...form, tags: e.currentTarget.value}); setFieldError((cur) => ({...cur, tags: ""})); }} />${fieldError.tags ? html`<p class="hint" data-field="tags">${fieldError.tags}</p>` : null}</label>
                     <${CampaignChecks} rules=${pub.campaignRules} media=${pub} tags=${formTags} platforms=${selected} platformNames=${PLATFORMS} title="活动要求核对" />
                     <p class="hint">简介里可以补一句作者的话和相关链接（官网、下载、活动页）。</p>
-                    <${CoverField} savedSrc=${coverSrc} preview=${coverPreview} thumbs=${thumbs} coverFrame=${form.coverFrame} fps=${fps}
-                        onPick=${(frame, url) => { setForm({...form, coverFrame: frame}); setCoverPreview(url); }} />
+                    <${CoverField} savedSrc=${coverSrc} preview=${localCover} thumbs=${thumbs} coverFrame=${form.coverFrame} fps=${fps}
+                        coverTitle=${form.coverTitle} titleError=${coverTitleError || fieldError.coverTitle}
+                        onPick=${(frame, url) => {
+                            setForm(current => ({...current, coverFrame: frame}));
+                            setCoverPreview({frame, url, src: videoSrc});
+                        }}
+                        onTitle=${value => {
+                            setForm(current => ({...current, coverTitle: value}));
+                            setFieldError(current => ({...current, coverTitle: ""}));
+                        }} />
                     <div class="actions-row"><button class="btn" disabled=${!!busy || !form.title.trim() || (pub.publicationJobId && !dirty)} onClick=${save}>${busy === "publication" ? "正在保存…" : "保存发布信息"}</button></div>`
                 : html`<p class="note">选中成片后，在这里写标题、简介和标签。</p>`}
             </div>

@@ -1,5 +1,11 @@
 # R2-D：真实封面与可编辑文案
 
+## 2026-11-22 独立封面标题
+
+Studio 发布页支持最多 18 字的单行封面标题，编辑时叠在选中帧上预览。POST `/api/creation/publications` 可选 `coverTitle`，有值时发布快照和回执同时记录，旧版本仍可读取。普通发布标题、简介和标签沿用各自字段。带标题的平台包从绑定的成片读取同一帧，按平台画幅裁切或补边后再排字。
+
+使用《代号 Atom》实拍成片 `0e69617a701a4b22a50940ef4abf30c2` 的第 115 帧，保存版本 `f60b0765ddb245dcafaa9ba9d402f06d`，重开出现已合成的 PNG 和可编辑标题。检查 B 站 1280×720 与抖音 720×1280 两个七文件 ZIP，标题在成品封面中完整可读。清空后保存同帧的纯画面版本 `50e010f3ddbc4bb69f99edb6c9921099`，两份先前封面保持原哈希。封面效果仍待用户审阅。[实测记录](../../.cache/scratch/cover-title-20261122/evidence.json) · [B 站封面](../../.cache/scratch/cover-title-20261122/bilibili-cover.png) · [抖音封面](../../.cache/scratch/cover-title-20261122/douyin-cover.png)
+
 2026-10-31恢复开发。Astra/low publication_assets_design已核P031及下述合同，无路线阻断；保留总51项/ADR-003，不等F006人评、不发模型请求。
 
 用户流程：打开已完成MP4→选输出帧→编辑标题/简介/Tags→保存新版本→预览真实PNG、下载五类文件。render的默认文案为本地可编辑模板，不能称AI生成或平台已审核；每次保存独占新publication job，旧render/旧文案不覆盖。后续另接四平台配置和七文件发布包，此批不冒称发布包完成。
