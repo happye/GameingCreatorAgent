@@ -33,6 +33,7 @@ from gamingcreator.domain.creation import CreativeBrief
 from gamingcreator.domain.creation_audio import AudioMix
 from gamingcreator.domain.creation_presentation import SUBTITLE_FIELDS
 from gamingcreator.domain.errors import AppError, ExitCode
+from gamingcreator.domain.platform_profile import validate_profile
 from gamingcreator.domain.publication import validate_cover_title
 from gamingcreator.infrastructure.creation_files import write_creation
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
@@ -299,6 +300,11 @@ class CreationJobs:
         if kind == "publication" and "coverTitle" in request:
             try:
                 validate_cover_title(request["coverTitle"])
+            except ValueError as error:
+                raise fail("creation.input", str(error)) from error
+        if kind == "package":
+            try:
+                validate_profile(request["profile"])
             except ValueError as error:
                 raise fail("creation.input", str(error)) from error
         request_id = identity(request["requestId"])

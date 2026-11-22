@@ -919,11 +919,12 @@ window.PROGRESS_DATA = {
     "tests/test_platform_package.py",
     "tests/test_platform_package_browser.py",
     "docs/exec-plans/sprint-studio-multi-platform-packages.md",
+    "2026-11-22: per-platform title, description and tags are frozen with the package profile and used for local checks, ZIP and download filename. Real Atom Bilibili and Douyin packages verified after closing and reopening Studio.",
     "tests/test_studio_multi_platform.py"
    ],
-   "done": "Studio可按主题在成片证据内本机排序，人工勾选、按原时序拼接、试听并出包。真实抖音主题短版与全长B站同批恢复",
-   "todo": "主题排序召回及真人创作质量、真实平台资格待验",
-   "updated": "2026-11-19",
+   "done": "Studio 支持主题选段、短版拼接、画面文案及每平台独立标题/简介/标签；Atom 同批 B 站和抖音包验证各自文案和关页恢复",
+   "todo": "主题排序召回、创意质量和真实平台资格待验",
+   "updated": "2026-11-22",
    "sprints": [
     "sprint-platform-theme-ranking",
     "sprint-platform-joined-cut",
@@ -1729,6 +1730,12 @@ window.PROGRESS_DATA = {
      "sprint": "sprint-studio-multi-platform-packages"
     },
     {
+     "id": "P035-platform-copy",
+     "name": "同一成片的各平台独立发布文案",
+     "status": "done",
+     "sprint": "sprint-studio-multi-platform-packages"
+    },
+    {
      "id": "P035-content",
      "name": "按成片内容选平台短版",
      "status": "done",
@@ -2454,7 +2461,7 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "[P029 字幕字体与颜色](docs/exec-plans/sprint-creation-subtitles.md)已实测漫画群星成片及 B 站包。[P031](docs/exec-plans/sprint-publication-assets.md)实测横竖封面。",
+  "[P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测 Atom 同稿各自出包。[P029](docs/exec-plans/sprint-creation-subtitles.md)实测青色宋体。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "[抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。",
   "创作助手已实测换镜、删裁、变速、换序和[多段插入](docs/exec-plans/sprint-ai-multiple-insertions.md)。[旁白和图层随镜迁移](docs/exec-plans/sprint-ai-companion-fit.md)实测重开、成片和 B 站包。",
@@ -2821,7 +2828,7 @@ window.PROGRESS_DATA = {
    "file": "sprint-creation-subtitles",
    "title": "R2字幕：源语音映射到成片字幕",
    "ids": [],
-   "date": "2026-10-30",
+   "date": "2026-11-22",
    "bytes": 6011
   },
   {
@@ -3165,7 +3172,7 @@ window.PROGRESS_DATA = {
     "R2-E"
    ],
    "date": "2026-11-22",
-   "bytes": 5839
+   "bytes": 6138
   },
   {
    "file": "sprint-platform-short-pack",
@@ -3295,11 +3302,9 @@ window.PROGRESS_DATA = {
   {
    "file": "sprint-studio-multi-platform-packages",
    "title": "Studio 同一发布版本的多平台包",
-   "ids": [
-    "R2"
-   ],
+   "ids": [],
    "date": "2026-11-07",
-   "bytes": 5712
+   "bytes": 6685
   },
   {
    "file": "sprint-studio-narration-revision",

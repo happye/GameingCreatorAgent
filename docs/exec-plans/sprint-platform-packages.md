@@ -10,6 +10,8 @@ profile exact `{Platform,RuleVersion,UpdatedAt,Source,Fields}`，Source=`{kind:'
 
 2026-11-18 扩展：[各平台可选短版](sprint-platform-short-pack.md)允许 `Fields.variant.durationFrames` 冻结一个比父成片短的前缀；省略仍走原全长合同。不会自动改写画面内 Hook/CTA。
 
+2026-11-22 扩展。`Fields.publicationCopy` 可选，包含 `title`、`description`、`tags` 三项。提供时用这份文案生成文本文件、核对本地限值并命名 ZIP。省略时沿用父发布版本的文案。`Fields.publicationText` 仍用于平台视频的开场和结尾叠字。
+
 ## 产物与真实性
 
 七文件video.mp4、cover.png、title.txt、description.txt、tags.json、platform.json、validation.json；ZIP只含七文件，不含源视频/源路径/许可附件/内部报告。receipt放ZIP外，绑定七文件、ZIP、配置canonical SHA、publication/render父身份和文件SHA，最后原子发布。父验证在异步编码中通过to_thread等合适边界，避免复现nested asyncio。

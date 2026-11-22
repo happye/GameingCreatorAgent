@@ -2,7 +2,7 @@
 
 ## 最近一次会话（2026-11-22）
 
-当前分支 `main`。先看 [STATUS](STATUS.md) 和 [看板](docs/progress/index.html)。[P029 自定义字幕](docs/exec-plans/sprint-creation-subtitles.md)实测漫画群星青色宋体成片与 B 站包。[P031](docs/exec-plans/sprint-publication-assets.md)实测横竖封面标题。
+当前分支 `main`。先看 [STATUS](STATUS.md) 与 [看板](docs/progress/index.html)。[P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测关页后出包与重开下载。[P029](docs/exec-plans/sprint-creation-subtitles.md)和[P031](docs/exec-plans/sprint-publication-assets.md)有实拍产物。
 
 [P051 项目品牌资源](docs/exec-plans/sprint-enterprise-basics.md)已实测文案、视觉模板和项目配乐库。配乐移出后，Atom 旧修订重开仍输出原音轨，抖音包 `a3104f45bc9f4410a1e9e4634aff4d6d`。
 

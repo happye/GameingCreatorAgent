@@ -6,7 +6,7 @@ const MULTILINE_OK = /[\r\n\t]/;
 
 function problem(text, minimum, maximum, multiline) {
     if (typeof text !== "string") return "格式无效";
-    if (text.length > maximum) return `不能超过 ${maximum} 字`;
+    if ([...text].length > maximum) return `不能超过 ${maximum} 字`;
     if (minimum && (text.length < minimum || !text.trim())) return "不能为空";
     if ([...text].some((ch) => CONTROL.test(ch) && !(multiline && MULTILINE_OK.test(ch)))) {
         return "包含无效字符";

@@ -17,7 +17,8 @@ const CHECKS = {width: "视频宽度", height: "视频高度", codec: "编码", 
 const STATUS = {pass: "通过", fail: "未通过", unknown: "未知", not_configured: "未配置"};
 const jobPath = (id) => `/api/creation/jobs/${encodeURIComponent(id)}`;
 const when = (iso) => new Date(iso).toLocaleString("zh-CN", {hour12: false});
-const tagList = (text) => [...new Set(text.split(/[,，\n]/).map((t) => t.trim()).filter(Boolean))];
+const parseTags = (text) => text.split(/[,，\n]/).map((tag) => tag.trim()).filter(Boolean);
+const publicationCopyDraft = (pub) => ({title: pub.title, description: pub.description, tags: pub.tags.join("\n")});
 const COVER_TITLE_LIMIT = 18;
 const COVER_TITLE_INVALID = /[\p{Cc}\p{Cf}\p{Cs}\p{Zl}\p{Zp}]/u;
 const COPY_CLOSING = {
@@ -61,12 +62,15 @@ function joinedKeywordRanges(terms, shots, cap) {
     return missing ? {error: `没有找到「${missing}」的镜头，请更换关键词。`} : mergeShotRanges(picked, cap);
 }
 
-function configuredProfiles(profiles, selected, drafts, fps, totalFrames, shots) {
+function configuredProfiles(profiles, selected, drafts, fps, pub) {
+    const totalFrames = pub?.frames || 0, shots = pub?.contentShots || [];
     let error = "";
+    let copyError = "";
     const matches = {};
     const chosen = profiles.filter(p => selected.includes(p.Platform)).map(profile => {
-        const {duration = "", content = "", opening = "", closing = "", themeCut} = drafts[profile.Platform] || {};
+        const {duration = "", content = "", opening = "", closing = "", themeCut, publicationCopy} = drafts[profile.Platform] || {};
         const fields = {...profile.Fields};
+        delete fields.publicationCopy;
         const terms = [...new Set(content.toLowerCase().split(/[、，,]/).map(term => term.trim()).filter(Boolean))];
         const joined = terms.length > 1 || !!themeCut;
         let frames = totalFrames;
@@ -120,9 +124,35 @@ function configuredProfiles(profiles, selected, drafts, fps, totalFrames, shots)
             error ||= `${PLATFORMS[profile.Platform]}时长太短，无法同时显示开场文案和结尾提示。`;
         }
         if (Object.keys(publicationText).length) fields.publicationText = publicationText;
+        if (publicationCopy) {
+            const {title, description, tags: tagText} = publicationCopy;
+            const tags = tagText.split("\n").filter(tag => tag.trim());
+            const copy = {title, description, tags};
+            const problem = Object.values(publicationFieldErrors(copy))[0]
+                || ([title, description, ...tags].some(text => /\p{Cs}/u.test(text)) ? "发布文案包含无效字符。" : "");
+            if (problem) copyError ||= `${PLATFORMS[profile.Platform]} ${problem}`;
+            fields.publicationCopy = copy;
+        }
         return {...profile, Fields: fields};
     });
-    return {chosen, error, matches};
+    return {chosen, error, copyError, matches};
+}
+
+function PlatformPublicationCopy({platform, draft, fallback, disabled, onChange}) {
+    const update = (field, value) => onChange({...draft, [field]: value});
+    return html`<div>
+        <label><input type="checkbox" checked=${!!draft} disabled=${disabled}
+            onChange=${e => onChange(e.currentTarget.checked ? fallback : null)} />${platform} 单独编辑发布文案</label>
+        ${draft && html`<div>
+            <label class="form-row">${platform} 标题<input class="input" value=${draft.title} disabled=${disabled}
+                onInput=${e => update("title", e.currentTarget.value)} /></label>
+            <label class="form-row">${platform} 简介<textarea class="input" rows="3" value=${draft.description} disabled=${disabled}
+                onInput=${e => update("description", e.currentTarget.value)}></textarea></label>
+            <label class="form-row">${platform} 标签（每行一个）<textarea class="input" rows="3" value=${draft.tags} disabled=${disabled}
+                onInput=${e => update("tags", e.currentTarget.value)}></textarea></label>
+            <button type="button" class="btn ghost" disabled=${disabled} onClick=${() => onChange(null)}>恢复使用已保存的发布文案</button>
+        </div>`}
+    </div>`;
 }
 
 function ThemeRecommendations({pub, platform, fps, disabled, applied, onApply}) {
@@ -407,7 +437,8 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
     }, [project]);
 
     const fps = pub ? pub.fps.numerator / pub.fps.denominator : 30;
-    const formTags = tagList(form.tags);
+    const rawTags = pub && form.tags === pub.tags.join("，") ? pub.tags : parseTags(form.tags);
+    const formTags = [...new Set(rawTags)];
     const coverTitle = form.coverTitle.trim() ? form.coverTitle : "";
     const savedCoverTitle = pub?.coverTitle?.trim() ? pub.coverTitle : "";
     const coverTitleError = COVER_TITLE_INVALID.test(form.coverTitle) ? "封面标题包含无效字符。"
@@ -431,7 +462,6 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
         if (!pub) return;
         const generation = epoch.current;
         const current = () => generation === epoch.current;
-        const rawTags = form.tags.split(/[,，\n]/).map((t) => t.trim()).filter(Boolean);
         const next = publicationFieldErrors({title: form.title.trim(), description: form.description, tags: rawTags});
         if (coverTitleError) next.coverTitle = coverTitleError;
         if (Object.keys(next).length) { setFieldError(next); setMessage(""); return; }
@@ -568,7 +598,8 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
             return {key: draftKey, values: {...values, [platformId]: {...values[platformId], ...patch}}};
         });
     };
-    const {chosen, error: variantError, matches} = configuredProfiles(profiles, selected, drafts, fps, pub?.frames || 0, pub?.contentShots || []);
+    const {chosen, error: variantError, copyError, matches} = configuredProfiles(profiles, selected, drafts, fps, pub);
+    const packageError = variantError || copyError;
     const updatePreview = (player, time) => {
         const range = shortEnd.current;
         if (!range || player.seeking) return;
@@ -629,7 +660,7 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
             closing: draft.closing?.trim() ? draft.closing : copy.closing,
         });
     };
-    const queue = usePackageBatches({project, pub, profiles: chosen, selected, disabled: !!busy || !saved, startBlocked: !!variantError,
+    const queue = usePackageBatches({project, pub, profiles: chosen, selected, disabled: !!busy || !saved, startBlocked: !!packageError,
         onChanged: () => { const generation = epoch.current; if (pub?.publicationJobId) void restore(pub, generation).catch(e => { if (epoch.current === generation) setMessage(e.message); }); }});
     const coverSrc = pub?.publicationJobId && !coverChanged ? `${jobPath(pub.publicationJobId)}/publication-files/cover.png` : null;
     const localCover = coverPreview?.src === videoSrc && coverPreview.frame === form.coverFrame ? coverPreview.url : "";
@@ -693,12 +724,12 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
                 <div class="track-area">
                     <div class="actions-row">
                         ${profiles.map((p) => html`<label><input type="checkbox" checked=${selected.includes(p.Platform)} disabled=${!!busy} onChange=${(e) => { setPlatform(p.Platform); setSelected(e.currentTarget.checked ? [...selected, p.Platform] : selected.filter((v) => v !== p.Platform)); }} />${PLATFORMS[p.Platform] || p.Platform}${selected.includes(p.Platform) && !packages.some((r) => r.profile?.Platform === p.Platform) ? " · 尚未提交" : ""}</label>`)}
-                        <button class="btn" disabled=${!saved || !!busy || queue.busy || queue.running || !selected.length || !!variantError} onClick=${queue.start}>${queue.busy ? "正在加入队列…" : "生成平台包"}</button>
+                        <button class="btn" disabled=${!saved || !!busy || queue.busy || queue.running || !selected.length || !!packageError} onClick=${queue.start}>${queue.busy ? "正在加入队列…" : "生成平台包"}</button>
                         ${saved && !selected.length ? html`<span class="hint" role="status" aria-label="平台包状态">至少勾选一个平台</span>` : null}
                         <span class="hint">${["titleMaxChars", "descriptionMaxChars", "tagMaxCount"].filter((k) => limits[k]).map((k) => `${CHECKS[k]}≤${limits[k]}`).join(" · ")}</span>
                     </div>
                     ${saved && selected.length > 0 && html`<details>
-                        <summary>调整各平台时长和画面文案（可选）</summary>
+                        <summary>调整各平台时长和文案（可选）</summary>
                         <p class="hint">用顿号分隔多个关键词可拼接对应镜头，时长设为上限，留空采用匹配镜头总时长。开场和结尾各最多显示 2 秒。</p>
                         ${chosen.map(profile => {
                             const {Platform: id, Fields: fields} = profile;
@@ -728,9 +759,12 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
                             <button type="button" class="btn ghost" disabled=${!canDraft} onClick=${() => suggestCopy(profile)}>起草${PLATFORMS[id]}画面文案</button>
                             ${!matches[id] && fields.publicationText && html`<button type="button" class="btn ghost" disabled=${!!variantError}
                                 onClick=${() => previewShort(fields)}>试听${PLATFORMS[id]}画面文案</button>`}
+                            <${PlatformPublicationCopy} platform=${PLATFORMS[id]} draft=${drafts[id]?.publicationCopy}
+                                fallback=${publicationCopyDraft(pub)} disabled=${!!busy || queue.busy || queue.running}
+                                onChange=${publicationCopy => updateDraft(id, {publicationCopy})} />
                         </div>`;})}
                     </details>`}
-                    ${variantError && html`<p class="hint warn" role="status">${variantError}</p>`}
+                    ${packageError && html`<p class="hint warn" role="status">${packageError}</p>`}
                     ${saved && queue.view}
                     ${packages.map((pkg) => html`<div class="pkg-result" key=${pkg.jobId}>
                         <p>${PLATFORMS[pkg.profile?.Platform] || ""}${pkg.profile?.Fields?.variant ? ` · 短版 ${(pkg.profile.Fields.variant.durationFrames / fps).toFixed(2)} 秒` : ""} · ${client.jobStatus(pkg.status)} ${pkg.error?.message || ""}</p>
@@ -741,8 +775,10 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
                         ${["failed", "interrupted"].includes(pkg.status) && html`<button class="btn ghost" disabled=${!!busy || !saved} onClick=${() => buildPackage(pkg)}>重试此平台</button>`}
                         ${pkg.generationStatus === "completed" && !pkg.error && html`<div>
                         <p class="v">${PLATFORMS[pkg.profile?.Platform] || ""}：${pkg.generationStatus === "completed" ? "已生成" : "未完成"}；本地检查${STATUS[pkg.localChecks] || "未知"}${pkg.publicationEligibility === "blocked" ? "；发布受阻（含仅供测试的音乐等）" : ""}${pkg.watermark ? "；含水印" : ""}。平台官方规则、素材权利尚未核实。</p>
+                        ${pkg.profile?.Fields?.publicationCopy && html`<p class="hint">发布标题：${pkg.profile.Fields.publicationCopy.title}</p>`}
                         <p class="hint">${Object.entries(pkg.validation?.checks || {}).map(([k, s]) => `${CHECKS[k] || k}：${STATUS[s] || "未知"}`).join("　")}</p>
-                        <${CampaignChecks} rules=${pub.campaignRules} media=${pkg.validation?.facts} tags=${pub.tags} platforms=${[pkg.profile?.Platform]} platformNames=${PLATFORMS} title="平台包活动要求" />
+                        <${CampaignChecks} rules=${pub.campaignRules} media=${pkg.validation?.facts} tags=${pkg.profile?.Fields?.publicationCopy?.tags ?? pub.tags}
+                            platforms=${[pkg.profile?.Platform]} platformNames=${PLATFORMS} title="平台包活动要求" />
                         <${LocalPackageFiles} key=${pkg.jobId} project=${project} pkg=${pkg} />
                         <div class="actions-row"><a class="btn ghost" href=${`${jobPath(pkg.jobId)}/package-files/package.zip?download=1`} download=${pkg.downloadName || "package.zip"}>下载平台包（zip）</a>
                             <a class="btn ghost" href=${`${jobPath(pkg.jobId)}/package-files/video.mp4?download=1`} download="video.mp4">只下载视频</a>
@@ -775,7 +811,10 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
                     <label class="form-row">标题（${form.title.length} 字）<input class="input" value=${form.title} maxLength="200" onInput=${(e) => { setForm({...form, title: e.currentTarget.value}); setFieldError((cur) => ({...cur, title: ""})); }} />${fieldError.title ? html`<p class="hint" data-field="title">${fieldError.title}</p>` : null}</label>
                     <label class="form-row">简介（${form.description.length} 字）<textarea class="input" rows="6" value=${form.description} onInput=${(e) => { setForm({...form, description: e.currentTarget.value}); setFieldError((cur) => ({...cur, description: ""})); }}></textarea>${fieldError.description ? html`<p class="hint" data-field="description">${fieldError.description}</p>` : null}</label>
                     <label class="form-row">标签（逗号分隔，${formTags.length} 个）<input class="input" value=${form.tags} onInput=${(e) => { setForm({...form, tags: e.currentTarget.value}); setFieldError((cur) => ({...cur, tags: ""})); }} />${fieldError.tags ? html`<p class="hint" data-field="tags">${fieldError.tags}</p>` : null}</label>
-                    <${CampaignChecks} rules=${pub.campaignRules} media=${pub} tags=${formTags} platforms=${selected} platformNames=${PLATFORMS} title="活动要求核对" />
+                    ${saved && chosen.some(profile => profile.Fields.publicationCopy)
+                        ? chosen.map(({Platform: id, Fields: fields}) => html`<${CampaignChecks} key=${id} rules=${pub.campaignRules} media=${pub}
+                            tags=${fields.publicationCopy?.tags ?? pub.tags} platforms=${[id]} platformNames=${PLATFORMS} title=${`${PLATFORMS[id]}活动要求核对`} />`)
+                        : html`<${CampaignChecks} rules=${pub.campaignRules} media=${pub} tags=${formTags} platforms=${selected} platformNames=${PLATFORMS} title="活动要求核对" />`}
                     <p class="hint">简介里可以补一句作者的话和相关链接（官网、下载、活动页）。</p>
                     <${CoverField} savedSrc=${coverSrc} preview=${localCover} thumbs=${thumbs} coverFrame=${form.coverFrame} fps=${fps}
                         coverTitle=${form.coverTitle} titleError=${coverTitleError || fieldError.coverTitle}

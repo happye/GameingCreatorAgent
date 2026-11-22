@@ -2,9 +2,11 @@
 
 import hashlib
 import json
+import unicodedata
 from typing import Any
 
 from gamingcreator.domain.creation_overlays import validate_overlay_text
+from gamingcreator.domain.publication import validate_copy
 
 
 def validate_profile(profile: Any) -> dict[str, Any]:
@@ -24,7 +26,11 @@ def validate_profile(profile: Any) -> dict[str, Any]:
     ] != {"kind": "local_preset", "label": "用户可编辑本地导出配置，非官方规则"}:
         raise ValueError("Unsupported local profile")
     fields = profile["Fields"]
-    if not isinstance(fields, dict) or set(fields) - {"variant", "publicationText"} != {
+    if not isinstance(fields, dict) or set(fields) - {
+        "variant",
+        "publicationText",
+        "publicationCopy",
+    } != {
         "video",
         "cover",
         "limits",
@@ -34,6 +40,8 @@ def validate_profile(profile: Any) -> dict[str, Any]:
         _validate_variant(fields["variant"])
     if "publicationText" in fields:
         _validate_publication_text(fields["publicationText"])
+    if "publicationCopy" in fields:
+        _validate_publication_copy(fields["publicationCopy"])
     for kind in ("video", "cover"):
         value = fields[kind]
         expected = {"width", "height", "fit"} | (
@@ -135,6 +143,15 @@ def _validate_publication_text(value: Any) -> None:
                 raise ValueError
         except ValueError:
             raise ValueError("开场和结尾文案须为 1–24 个无首尾空白的单行纯文本字符。") from None
+
+
+def _validate_publication_copy(value: Any) -> None:
+    if not isinstance(value, dict) or set(value) != {"title", "description", "tags"}:
+        raise ValueError("平台发布文案需要标题、简介和标签。")
+    validate_copy(value)
+    text = value["title"] + value["description"] + "".join(value["tags"])
+    if any(unicodedata.category(character) == "Cs" for character in text):
+        raise ValueError("平台发布文案包含无效字符。")
 
 
 def profile_digest(profile: dict[str, Any]) -> str:

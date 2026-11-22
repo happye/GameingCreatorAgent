@@ -1,6 +1,7 @@
 """Immutable single-platform packages of seven public files and a ZIP."""
 
 import asyncio
+import json
 import ntpath
 import os
 import shutil
@@ -88,6 +89,32 @@ def prepare(jobs: Any, request: dict[str, Any]) -> tuple[str, str]:
     return state["projectId"], state["resultReceiptSha256"]
 
 
+def _metadata_files(copy: dict[str, Any]) -> dict[str, bytes]:
+    return {
+        "title.txt": copy["title"].encode("utf-8"),
+        "description.txt": copy["description"].encode("utf-8"),
+        "tags.json": json.dumps(copy["tags"], ensure_ascii=False).encode("utf-8"),
+    }
+
+
+def _verify_metadata_files(jobs: Any, target: Path, copy: dict[str, Any]) -> None:
+    try:
+        with zipfile.ZipFile(jobs.safe(target / "package.zip")) as archive:
+            if sorted(archive.namelist()) != sorted(FILES):
+                raise ValueError("平台包文件清单已改变。")
+            for name, value in _metadata_files(copy).items():
+                path = jobs.safe(target / name)
+                if (
+                    path.stat().st_size != len(value)
+                    or path.read_bytes() != value
+                    or archive.getinfo(name).file_size != len(value)
+                    or archive.read(name) != value
+                ):
+                    raise ValueError("平台包文案与已保存的配置不一致。")
+    except zipfile.BadZipFile as error:
+        raise ValueError("平台 ZIP 无法读取。") from error
+
+
 async def save_package(jobs: Any, directory: Path, request: dict[str, Any]) -> None:
     profile = validate_profile(request["profile"])
     state, publication, render = await asyncio.to_thread(parent, jobs, request)
@@ -117,9 +144,10 @@ async def save_package(jobs: Any, directory: Path, request: dict[str, Any]) -> N
         duration,
         **encode_options,
     )
-    validation = _validate_output(profile, facts, publication, render)
-    for name in ("title.txt", "description.txt", "tags.json"):
-        jobs.safe(target / name).write_bytes(jobs.safe(source / name).read_bytes())
+    copy = fields.get("publicationCopy", publication)
+    validation = _validate_output(profile, facts, copy, render)
+    for name, data in _metadata_files(copy).items():
+        jobs.safe(target / name).write_bytes(data)
     jobs.save(
         target / "platform.json", {"profile": profile, "profileSha256": profile_digest(profile)}
     )
@@ -183,7 +211,10 @@ def verify(
         "profileSha256": profile_digest(profile),
     }:
         raise ValueError("Profile changed")
-    validation = _validate_output(profile, receipt["facts"], publication, render)
+    copy = profile["Fields"].get("publicationCopy", publication)
+    if "publicationCopy" in profile["Fields"]:
+        _verify_metadata_files(jobs, target, copy)
+    validation = _validate_output(profile, receipt["facts"], copy, render)
     if jobs.read(target / "validation.json") != validation:
         raise ValueError("Validation changed")
     selection = jobs.directory(publication["renderJobId"]) / "selection"
@@ -201,7 +232,7 @@ def verify(
         "watermark": receipt.get("watermark"),
         "localPath": str(jobs.safe(target / "package.zip")),
         "downloadName": _download_name(
-            publication["title"],
+            copy["title"],
             profile["Platform"],
             report["brief"]["contentType"],
             directory.name,

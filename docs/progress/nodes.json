@@ -288,9 +288,9 @@
    ]
   },
   "P035": {
-   "done": "Studio可按主题在成片证据内本机排序，人工勾选、按原时序拼接、试听并出包。真实抖音主题短版与全长B站同批恢复",
-   "todo": "主题排序召回及真人创作质量、真实平台资格待验",
-   "updated": "2026-11-19",
+   "done": "Studio 支持主题选段、短版拼接、画面文案及每平台独立标题/简介/标签；Atom 同批 B 站和抖音包验证各自文案和关页恢复",
+   "todo": "主题排序召回、创意质量和真实平台资格待验",
+   "updated": "2026-11-22",
    "sprints": [
     "sprint-platform-theme-ranking",
     "sprint-platform-joined-cut",
@@ -768,6 +768,12 @@
     {
      "id": "P035",
      "name": "Studio同版本多平台包",
+     "status": "done",
+     "sprint": "sprint-studio-multi-platform-packages"
+    },
+    {
+     "id": "P035-platform-copy",
+     "name": "同一成片的各平台独立发布文案",
      "status": "done",
      "sprint": "sprint-studio-multi-platform-packages"
     },

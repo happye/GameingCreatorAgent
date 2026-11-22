@@ -66,6 +66,68 @@ def test_platform_package_real(rendered, monkeypatch, index):  # noqa: F811
     assert jobs.get(job)["status"] == "failed"
 
 
+def test_platform_copy_controls_zip_preflight_and_reopen(rendered, monkeypatch):  # noqa: F811
+    jobs, render = rendered
+    pub_id = jobs.submit("publication", payload(jobs, render))["jobId"]
+    assert finish(jobs, pub_id)["status"] == "completed"
+    snapshot = jobs.publication(pub_id)
+    profile = package_jobs.profiles()["profiles"][0]
+    for kind in ("video", "cover"):
+        profile["Fields"][kind].update(width=64, height=48)
+    copy = {"title": "武道会专版", "description": "重点\r\n换镜", "tags": ["武道会", "版本,甲"]}
+    profile["Fields"]["publicationCopy"] = copy
+    profile["Fields"]["limits"].update(requiredTags=["武道会"], titleMaxChars=4, tagMaxCount=2)
+    original = package_jobs.encode
+
+    async def encode(repository, *args, **kwargs):
+        return await original(ROOT, *args, **kwargs)
+
+    monkeypatch.setattr(package_jobs, "encode", encode)
+    request = {
+        "requestId": uuid4().hex,
+        "publicationJobId": pub_id,
+        "expectedPublicationReceiptSha256": snapshot["publicationReceiptSha256"],
+        "profile": profile,
+    }
+    job = jobs.submit("package", request)["jobId"]
+    package = finish(jobs, job)["package"]
+    assert package["validation"]["checks"]["requiredTags"] == "pass"
+    assert package["validation"]["checks"]["titleMaxChars"] == "fail"
+    assert package["downloadName"].startswith(copy["title"])
+    assert jobs.submit("package", request)["jobId"] == job
+    assert jobs.publication(pub_id) == snapshot
+    reopened = CreationJobs(jobs.repository)
+    archive_path = reopened.package_file(job, "package.zip").path
+    with zipfile.ZipFile(archive_path) as archive:
+        files = {name: archive.read(name) for name in archive.namelist()}
+    assert files["title.txt"].decode() == copy["title"]
+    assert files["description.txt"].decode() == copy["description"]
+    assert json.loads(files["tags.json"]) == copy["tags"]
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        for name, data in files.items():
+            archive.writestr(name, b"wrong title" if name == "title.txt" else data)
+    receipt_path = archive_path.with_name("receipt.json")
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["files"]["package.zip"] = hash_file(archive_path)
+    receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+    status_path = reopened.directory(job) / "status.json"
+    status = json.loads(status_path.read_text(encoding="utf-8"))
+    status["resultReceiptSha256"] = hash_file(receipt_path)
+    status_path.write_text(json.dumps(status), encoding="utf-8")
+    error = reopened.get(job)["error"]
+    assert error["code"] == "creation.artifact_invalid"
+
+
+def test_platform_copy_allows_empty_description_and_tags_but_rejects_invalid_unicode():
+    profile = package_jobs.profiles()["profiles"][0]
+    copy = {"title": "专版", "description": "", "tags": []}
+    profile["Fields"]["publicationCopy"] = copy
+    assert package_jobs.validate_profile(profile) == profile
+    copy["description"] = "\ud800"
+    with pytest.raises(ValueError, match="平台发布文案包含无效字符"):
+        package_jobs.validate_profile(profile)
+
+
 def test_test_only_music_blocks():
     from gamingcreator.application.package_validation import validate_package
 

@@ -971,6 +971,7 @@
                 "tests/test_platform_package.py",
                 "tests/test_platform_package_browser.py",
                 "docs/exec-plans/sprint-studio-multi-platform-packages.md",
+                "2026-11-22: per-platform title, description and tags are frozen with the package profile and used for local checks, ZIP and download filename. Real Atom Bilibili and Douyin packages verified after closing and reopening Studio.",
                 "tests/test_studio_multi_platform.py"
             ],
             "quality_status": "not_separately_assessed",

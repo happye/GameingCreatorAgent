@@ -7,7 +7,44 @@ import pytest
 from test_creation_jobs import finish, service  # noqa: F401
 from test_creation_publication import payload, rendered  # noqa: F401
 
+from gamingcreator.domain.platform_profile import validate_profile
+from gamingcreator.ui import package_jobs
 from gamingcreator.ui.server import create_server
+
+
+def test_package_batch_http_accepts_four_full_length_cjk_copies(tmp_path, monkeypatch):
+    server = create_server("127.0.0.1", 0, tmp_path)
+    profiles = package_jobs.profiles()["profiles"]
+    for profile in profiles:
+        profile["Fields"]["publicationCopy"] = {
+            "title": "攻略" * 100,
+            "description": "关" * 5000,
+            "tags": ["标" * 48 + f"{i:02}" for i in range(20)],
+        }
+    body = json.dumps({"profiles": profiles}).encode()
+    assert len(body) > 65_536
+
+    def submit(request):
+        assert [validate_profile(profile) for profile in request["profiles"]] == profiles
+        return {"batchId": "d" * 32}
+
+    monkeypatch.setattr(server.creation_jobs.package_batches, "submit", submit)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    base = f"http://127.0.0.1:{server.server_port}"
+    try:
+        with urlopen(
+            Request(
+                base + "/api/creation/package-batches",
+                body,
+                {"Content-Type": "application/json", "Origin": base},
+            )
+        ) as response:
+            assert response.status == 202 and json.load(response)["batchId"] == "d" * 32
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join()
 
 
 def test_publication_http_files_head_queries_and_version(rendered):  # noqa: F811
