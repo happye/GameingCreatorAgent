@@ -153,6 +153,15 @@ export const evidenceUrl = (project, run, id) => `/api/evidence?${new URLSearchP
 export const projects = (signal) => api("/api/projects", {}, {signal});
 export const runs = (project, signal) => api("/api/runs", {project}, {signal});
 export const inspect = (project, run, signal) => api("/api/inspect", {project, run, query: "", mode: "hybrid", top: 10, detailProfile: "v1"}, {signal});
+export const searchProject = (project, runs, query, top, signal) => api("/api/search-project", {}, {signal, body: {project, runs, query, mode: "hybrid", top}});
+export function matchesInspection(view, project, run) {
+    if (view?.runId !== run.id || view.media?.id !== run.mediaId || view.media?.sha256 !== run.sourceSha256
+        || view.media?.durationUs !== run.durationUs) return false;
+    const url = sameOrigin(view.media.videoUrl, "/api/media");
+    if (!url) return false;
+    const params = new URL(url, location.origin).searchParams;
+    return params.get("project") === project && params.get("run") === run.id;
+}
 export const creationJobs = (projectId, signal, workId = "") => api("/api/creation/jobs", {projectId, workId: workId || undefined}, {signal});
 export const creationWorks = (projectId, signal) => api("/api/creation/works", {projectId}, {signal});
 

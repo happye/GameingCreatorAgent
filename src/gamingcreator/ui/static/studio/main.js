@@ -123,6 +123,7 @@ function App() {
         setWorkspace(["publication", "package"].includes(job.kind) ? "deliver" : "edit");
     }, []);
     const [pendingEvent, setPendingEvent] = useState(null);
+    const [transcriptHit, setTranscriptHit] = useState(null);
     const [basketAt, setBasketAt] = useState(0);
     const basket = useBasket(project);
     const video = useRef(null);
@@ -173,6 +174,7 @@ function App() {
                 url: result.url,
                 source: result.source,
                 reason: attempted && result.source === "original" ? result.reason : null,
+                view,
             });
         });
         return () => { active = false; pendingSeek.current?.(); };
@@ -276,13 +278,39 @@ function App() {
         });
     }, [project, runId]);
 
+    const clearTranscript = () => {
+        if (!transcriptHit) return;
+        pendingSeek.current?.();
+        video.current?.pause();
+        setTranscriptHit(null);
+    };
     // A search hit or basket item opens its recording, then selects the clip once loaded.
-    const showEvent = useCallback((runIdToShow, eventId, range = null) => { setWorkspace("assets"); setRunId(runIdToShow); setPendingEvent({runId: runIdToShow, eventId, range}); }, []);
+    const showEvent = (runIdToShow, eventId, range = null) => {
+        clearTranscript(); setWorkspace("assets"); setRunId(runIdToShow);
+        setPendingEvent({project, runId: runIdToShow, eventId, range});
+    };
+    const showTranscript = (run, candidate) => {
+        pendingSeek.current?.(); video.current?.pause();
+        setSelected(null); setPendingEvent(null); setRunId(run.id);
+        setTranscriptHit({project, run, startUs: candidate.startUs, endUs: candidate.endUs});
+    };
+    const transcript = workspace === "assets" && transcriptHit?.project === project && transcriptHit.run.id === runId ? transcriptHit : null;
+    const transcriptRange = transcript && preview.view === view && client.matchesInspection(view, project, transcript.run) ? transcript : null;
     useEffect(() => {
-        if (!pendingEvent || !view || pendingEvent.runId !== view.runId) return;
+        if (!pendingEvent || workspace !== "assets" || pendingEvent.project !== project || !view
+            || pendingEvent.runId !== runId || pendingEvent.runId !== view.runId) return;
         const event = view.timeline.find((e) => e.eventId === pendingEvent.eventId);
         if (event) { setPendingEvent(null); selectEvent(pendingEvent.range ? {...clipSelection(event, view.media?.durationUs), startUs: pendingEvent.range.startUs, endUs: pendingEvent.range.endUs} : event); }
-    }, [view, pendingEvent]);
+    }, [view, pendingEvent, project, runId, workspace]);
+    useEffect(() => {
+        if (transcriptHit && !transcript) setTranscriptHit(null);
+        else if (transcript && view && !client.matchesInspection(view, project, transcript.run)) {
+            // The former recording may still be rendered during the switch.
+            if (view.runId !== runId) return;
+            setStatus("无法核对语音转录对应的录像，请刷新项目后重试。");
+            setTranscriptHit(null);
+        }
+    }, [transcriptHit, transcript, view, project, runId]);
     const thumbOf = (event) => {
         const image = (view?.evidence || []).find((e) => e.id === event?.evidenceIds?.[0] && e.kind === "image");
         return image ? client.sameOrigin(image.url, "/api/evidence") : null;
@@ -313,19 +341,39 @@ function App() {
         const el = video.current, target = SourceClock.sourceUsToPlayerSeconds(clock, us);
         if (!el || target === null) return;
         pendingSeek.current?.(); let active = true;
-        pendingSeek.current = () => { active = false; };
+        const cancel = () => { active = false; };
+        pendingSeek.current = cancel;
         void SourceClock.settleExact(el, target, {toleranceSeconds: clock.axisToleranceUs / 1e6, isCurrent: () => active && video.current === el}).then(actual => {
             if (!active || video.current !== el || actual === null) return;
             const source = SourceClock.playerToSourceUs(clock, actual);
             if (source !== null) setTime(source);
             if (play) void el.play().catch(() => {});
         });
+        return cancel;
     }, [clock]);
     const selectEvent = useCallback((event) => {
         const selection = clipSelection(event, view?.media?.durationUs);
-        video.current?.pause(); setSelected(selection); seek(clock ? Math.max(selection.startUs, clock.videoStartUs) : selection.startUs);
-    }, [seek, view, clock]);
+        clearTranscript(); video.current?.pause(); setSelected(selection); seek(clock ? Math.max(selection.startUs, clock.videoStartUs) : selection.startUs);
+    }, [seek, view, clock, transcriptHit]);
     useEffect(() => { if (clock && selected) seek(Math.max(selected.startUs, clock.videoStartUs)); }, [clock]);
+    const transcriptPlayable = !!transcriptRange && !!clock && Math.max(transcriptRange.startUs, clock.videoStartUs) < Math.min(transcriptRange.endUs, clock.videoEndUs);
+    useEffect(() => {
+        const el = video.current;
+        if (!transcriptPlayable || !el || !preview.url) return;
+        const source = new URL(preview.url, location.href).href;
+        let cancelSeek;
+        const start = () => {
+            if (el.currentSrc === source && video.current === el) cancelSeek = seek(Math.max(transcriptRange.startUs, clock.videoStartUs), true);
+        };
+        const cancel = () => { el.removeEventListener("loadedmetadata", start); cancelSeek?.(); };
+        if (el.currentSrc === source && el.readyState >= 1) start();
+        else {
+            pendingSeek.current?.();
+            pendingSeek.current = cancel;
+            el.addEventListener("loadedmetadata", start);
+        }
+        return cancel;
+    }, [transcriptRange, transcriptPlayable, preview.url, seek]);
     const changeRange = (range) => {
         const next = {...selected, ...range};
         const point = next.analysisStartUs === next.analysisEndUs;
@@ -340,7 +388,7 @@ function App() {
         const onKey = (event) => {
             if (event.target.closest("input, textarea, select") || workspace !== "assets") return;
             const el = video.current, events = view?.timeline || [];
-            if (event.key === " " && el) { event.preventDefault(); el.paused ? void el.play().catch(() => {}) : el.pause(); }
+            if (event.key === " " && el && (!transcript || transcriptPlayable)) { event.preventDefault(); el.paused ? void el.play().catch(() => {}) : el.pause(); }
             else if ((event.key === "ArrowLeft" || event.key === "ArrowRight") && el) {
                 event.preventDefault(); const step = (event.shiftKey ? 5 : 1) * (event.key === "ArrowLeft" ? -1 : 1);
                 const source = SourceClock.playerToSourceUs(clock, el.currentTime);
@@ -354,7 +402,7 @@ function App() {
             }
         };
         addEventListener("keydown", onKey); return () => removeEventListener("keydown", onKey);
-    }, [view, selected, workspace, selectEvent, basket, currentRun, clock, seek]);
+    }, [view, selected, workspace, selectEvent, basket, currentRun, clock, seek, transcript, transcriptPlayable]);
 
     const work = `work${layout.bin ? "" : " no-bin"}${layout.insp ? "" : " no-insp"}`;
     const catalog = workCatalog.project === project ? workCatalog.works : [];
@@ -370,14 +418,14 @@ function App() {
         </select></label>
         <p class="hint" role="status">${filterStatus || (workCatalog.project === project ? workCatalog.status : "正在读取作品目录…")}</p>`;
     return html`<div class="shell">
-        <${TopBar} ...${{workspace, setWorkspace: (w) => w !== workspace && leave(() => setWorkspace(w)), projects, project, setProject: (p) => p === project || leave(() => setProject(p)), layout, setLayout, status: linkStatus || status}} />
+        <${TopBar} ...${{workspace, setWorkspace: (w) => w !== workspace && leave(() => { clearTranscript(); setWorkspace(w); }), projects, project, setProject: (p) => p === project || leave(() => { clearTranscript(); setProject(p); }), layout, setLayout, status: linkStatus || status}} />
         ${workspace === "assets"
             ? html`<div class=${work}>
-                <${Bin} runs=${runs} runsLoaded=${runsLoaded} runId=${runId} setRunId=${setRunId} works=${visibleJobs} onOpen=${openWork} hidden=${!layout.bin} filterControls=${filterControls}
-                    top=${html`<${ClipSearch} project=${project} runs=${runs} runId=${runId} basket=${basket} seed=${searchSeed} onShow=${(run, event) => showEvent(run.id, event.eventId)} />
+                <${Bin} runs=${runs} runsLoaded=${runsLoaded} runId=${runId} setRunId=${(id) => { clearTranscript(); setRunId(id); }} works=${visibleJobs} onOpen=${openWork} hidden=${!layout.bin} filterControls=${filterControls}
+                    top=${html`<${ClipSearch} project=${project} runs=${runs} runId=${runId} basket=${basket} seed=${searchSeed} onShow=${(run, event) => showEvent(run.id, event.eventId)} onShowTranscript=${showTranscript} />
                         <${BasketList} basket=${basket} onShow=${(item) => showEvent(item.runId, item.eventId, item)} onUse=${() => { setBasketAt(Date.now()); setWorkspace("edit"); }} />`} />
                 <div class="center">
-                    <${Viewer} onClockInvalid=${() => setClock(null)} clock=${clock} media=${view?.media} preview=${preview} preferProxy=${preferProxy} proxyHttpFailed=${proxyHttpFailed} proxyFailReason=${proxyFailReason.current} onPreferPreview=${(checked) => { if (view?.media?.id) { PreviewPreference.set(view.media.id, checked); if (checked) { httpFailed.current.delete(view.media.id); proxyFailReason.current = null; } } setPreviewPreferAt((n) => n + 1); }} onProxyHttpError=${(el) => { const id = view?.media?.id; if (!id || httpFailed.current.has(id)) return; httpFailed.current.add(id); proxyFailReason.current = (SourceClock.proxyLoadReason && SourceClock.proxyLoadReason(el)) || "proxy_http_failed"; setHttpFailAt((n) => n + 1); }} videoRef=${video} time=${time} setTime=${setTime} selected=${selected} onFullSource=${() => setSelected(null)} />
+                    <${Viewer} onClockInvalid=${() => setClock(null)} clock=${clock} media=${view?.media} preview=${preview} preferProxy=${preferProxy} proxyHttpFailed=${proxyHttpFailed} proxyFailReason=${proxyFailReason.current} onPreferPreview=${(checked) => { if (view?.media?.id) { PreviewPreference.set(view.media.id, checked); if (checked) { httpFailed.current.delete(view.media.id); proxyFailReason.current = null; } } setPreviewPreferAt((n) => n + 1); }} onProxyHttpError=${(el) => { const id = view?.media?.id; if (!id || httpFailed.current.has(id)) return; httpFailed.current.add(id); proxyFailReason.current = (SourceClock.proxyLoadReason && SourceClock.proxyLoadReason(el)) || "proxy_http_failed"; setHttpFailAt((n) => n + 1); }} videoRef=${video} time=${time} setTime=${setTime} selected=${transcriptRange || selected} transcript=${!!transcript} onFullSource=${() => { clearTranscript(); setSelected(null); }} />
                     <${Timeline} view=${view} time=${time} selected=${selected} onSelect=${selectEvent} inBasket=${basket.ids} />
                 </div>
                 <${Inspector} view=${view} selected=${selected} run=${currentRun} hidden=${!layout.insp} inBasket=${!!selected && basket.ids.has(selected.eventId)} onBasket=${() => toggleBasket(selected)} onRange=${changeRange} />
@@ -527,7 +575,7 @@ function Recording({group, runId, onSelect}) {
     </div>`;
 }
 
-function Viewer({onClockInvalid, clock, media, preview, preferProxy, proxyHttpFailed, proxyFailReason, onPreferPreview, onProxyHttpError, videoRef, time, setTime, selected, onFullSource}) {
+function Viewer({onClockInvalid, clock, media, preview, preferProxy, proxyHttpFailed, proxyFailReason, onPreferPreview, onProxyHttpError, videoRef, time, setTime, selected, transcript, onFullSource}) {
     const src = preview?.url || null;
     const [playing, setPlaying] = useState(false);
     const [originalError, setOriginalError] = useState("");
@@ -537,6 +585,7 @@ function Viewer({onClockInvalid, clock, media, preview, preferProxy, proxyHttpFa
         && SourceClock.sourceUsToPlayerSeconds(clock, selected.endUs) !== null;
     const playableStart = bounded ? Math.max(selected.startUs, clock.videoStartUs) : null;
     const hasPicture = bounded && playableStart < Math.min(selected.endUs, clock.videoEndUs);
+    const canPlay = src && (!transcript || hasPicture);
     useLayoutEffect(() => {
         const el = videoRef.current;
         if (!el || !bounded) return;
@@ -575,10 +624,10 @@ function Viewer({onClockInvalid, clock, media, preview, preferProxy, proxyHttpFa
                     if (preview?.source === "proxy") onProxyHttpError?.(el);
                     else setOriginalError(SourceClock.playbackErrorText(el.error));
                 }}
-                onPlay=${() => setPlaying(true)} onPause=${() => setPlaying(false)} onClick=${(e) => (e.currentTarget.paused ? void e.currentTarget.play().catch(() => {}) : e.currentTarget.pause())}></video>`
+                onPlay=${() => setPlaying(true)} onPause=${() => setPlaying(false)} onClick=${(e) => { if (canPlay) e.currentTarget.paused ? void e.currentTarget.play().catch(() => {}) : e.currentTarget.pause(); }}></video>`
             : html`<div class="empty">从左侧素材箱选择一段已分析的录像</div>`}
         <div class="transport">
-            <button class="icon-btn" disabled=${!src} onClick=${() => { const el = videoRef.current; if (el) el.paused ? void el.play().catch(() => {}) : el.pause(); }}>${playing ? "暂停" : "播放"}</button>
+            <button class="icon-btn" disabled=${!canPlay} onClick=${() => { const el = videoRef.current; if (el) el.paused ? void el.play().catch(() => {}) : el.pause(); }}>${playing ? "暂停" : "播放"}</button>
             <span class="tc">${clock ? timecode(time) : "源时间未校准"} / ${media ? timecode(media.durationUs) : "00:00.000"}</span>
             ${src ? html`<span class="preview-source" data-preview-source=${preview.source}>${preview.source === "proxy" ? "编辑代理（非原片）" : "原始素材"}</span>` : null}
             ${media?.sourceHasAudio === false ? html`<span class="hint" data-audio-status="silent">这段录像没有声音</span>` : null}
@@ -588,7 +637,7 @@ function Viewer({onClockInvalid, clock, media, preview, preferProxy, proxyHttpFa
             ${!clock && src ? html`<span class="hint">无法精确定位片段，可观看整段录像</span>` : null}
             ${bounded && !hasPicture ? html`<span class="hint">选段内没有可播放画面，不能预览；取景范围已保留</span>`
                 : bounded && selected.startUs < clock.videoStartUs ? html`<span class="hint">片段开头无画面，从首个可播放画面开始，仍在选段终点暂停</span>` : null}
-            ${selected && html`<span class="hint">${bounded ? "仅播放选中片段" : "片段寻址不可用"}</span><button class="btn ghost" onClick=${onFullSource}>查看整段录像</button>`}
+            ${(selected || transcript) && html`<span class="hint">${bounded ? (transcript ? "仅播放语音转录片段" : "仅播放选中片段") : "片段寻址不可用"}</span><button class="btn ghost" onClick=${onFullSource}>查看整段录像</button>`}
             <span class="tc">空格 播放/暂停 · ←/→ 1 秒 · J/L 上/下一段</span>
         </div>
     </section>`;

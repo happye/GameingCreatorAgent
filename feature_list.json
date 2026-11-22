@@ -574,7 +574,10 @@
             "name": "自然语言语义检索",
             "first_product": false,
             "delivery_status": "delivered",
-            "implementation_evidence": [],
+            "implementation_evidence": [
+                "docs/exec-plans/sprint-studio-workbench.md",
+                "2026-11-22: Studio Assets sentence search preserves the local hybrid ranking. Real Comic Stars 3V3 query returned eight ranked hits; the first opened the exact source event and entered the clip basket. No analysis calls or new reservations."
+            ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"
         },

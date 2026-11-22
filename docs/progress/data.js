@@ -62,9 +62,9 @@ window.PROGRESS_DATA = {
    "name": "一句话找片段：Top-10 中可用 ≥70%",
    "steps": "选已完成录像 → 输入一句话查询 → 看前10名并逐个打分",
    "agent_run": {
-    "date": "2026-11-11",
+    "date": "2026-11-22",
     "result": "pass",
-    "evidence": "Claude Code：scripts/search-project.ps1 在 artifacts/demo-phase0 的真实录像（漫画群星，run f76f5d64…）上 hybrid 检索“3V3积分争夺模式”，3.1 秒、0 次模型调用、返回8个候选（记录 artifacts/demo-phase0/project-searches/bc39275f…/result.json）；前3为“积分争夺（3V3）”画面。可用率只按人工评分计，未由Agent判定；F006仍为false。"
+    "evidence": "Studio 素材页用漫画群星真实录像（run f76f5d64…）一句话搜索“3V3积分争夺模式”，按本机混合检索顺序显示8个候选（artifacts/demo-phase0/project-searches/cb5706d5b95d4548a563fff624f50f69/result.json）。首位从原片18.500秒开始播放，入篮保留原事件和20.000秒证据时刻。无分析调用和费用预留。验证截图和明细在 .cache/scratch/j2-studio-20261122/。11月11日命令行结果 bc39275f… 保留。固定十槽可用率待人评，F006仍为false。"
    },
    "human_check": {
     "date": null,
@@ -338,11 +338,16 @@ window.PROGRESS_DATA = {
    "quality": "not_separately_assessed",
    "release": "not_released",
    "remaining": null,
-   "evidence": [],
-   "done": "本机混合检索已用漫画群星真实录像跑通，3V3查询返回8个候选",
-   "todo": "Studio素材页待接入混合检索并核对排名、原片回看和入篮；P015待十槽人评",
+   "evidence": [
+    "docs/exec-plans/sprint-studio-workbench.md",
+    "2026-11-22: Studio Assets sentence search preserves the local hybrid ranking. Real Comic Stars 3V3 query returned eight ranked hits; the first opened the exact source event and entered the clip basket. No analysis calls or new reservations."
+   ],
+   "done": "Studio素材页已接入一句话搜索，支持当前或全部录像；漫画群星实测8个候选按原排名显示，首位可回看原片并入篮",
+   "todo": "P015待用冻结评测集做十槽人评",
    "updated": "2026-11-22",
-   "sprints": []
+   "sprints": [
+    "sprint-studio-workbench"
+   ]
   },
   {
    "id": "P015",
@@ -3332,7 +3337,7 @@ window.PROGRESS_DATA = {
    "title": "Sprint：创作工作台（/studio）",
    "ids": [],
    "date": "2026-11-03",
-   "bytes": 14861
+   "bytes": 15519
   },
   {
    "file": "sprint-timed-overlays",
