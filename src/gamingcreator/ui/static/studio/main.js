@@ -9,6 +9,7 @@ import "../preview-preference.js";
 import {BasketList, ClipSearch, useBasket} from "./basket.js";
 import {ImportRecordings} from "./media-preparation.js";
 import {ShotMarkers, ShotStatus, useShotBoundaries} from "./shot-boundaries.js";
+import {FrameText} from "./frame-text.js";
 import {PublishWorkspace} from "./publish.js";
 import {confirmLeave, renderRate} from "./edit.js";
 import {WorksWorkspace} from "./works.js";
@@ -350,7 +351,7 @@ function App() {
         return image ? client.sameOrigin(image.url, "/api/evidence") : null;
     };
     const currentRun = runs.find((r) => r.id === runId);
-    const shotView = currentRun && client.matchesInspection(view, project, currentRun) ? view : null;
+    const sourceView = currentRun && client.matchesInspection(view, project, currentRun) ? view : null;
     const toggleBasket = (event) => { if (event && currentRun) basket.toggle(event, currentRun, thumbOf(event)); };
 
     // A number, not the list: passing the list re-rendered the edit page on every list refresh.
@@ -391,11 +392,11 @@ function App() {
         clearTranscript(); video.current?.pause(); setSelected(selection); seek(clock ? Math.max(selection.startUs, clock.videoStartUs) : selection.startUs);
     }, [seek, view, clock, transcriptHit]);
     useEffect(() => { if (clock && selected && selected !== unboundSelection) seek(Math.max(selected.startUs, clock.videoStartUs)); }, [clock]);
-    const shotSeekReady = !!shotView && preview.view === shotView && !!clock && !!preview.url && !!attachedPreview
+    const sourceSeekReady = !!sourceView && preview.view === sourceView && !!clock && !!preview.url && !!attachedPreview
         && attachedPreview.element === video.current && attachedPreview.url === new URL(preview.url, location.href).href;
-    const seekShot = (sourceUs) => {
+    const seekSourceMarker = (sourceUs) => {
         const el = video.current;
-        if (!shotSeekReady || !el || el.currentSrc !== new URL(preview.url, location.href).href) return;
+        if (!sourceSeekReady || !el || el.currentSrc !== new URL(preview.url, location.href).href) return;
         clearTranscript(); el.pause();
         // Release playback bounds while keeping the selected event available in the inspector and basket.
         setUnboundSelection(selected);
@@ -432,7 +433,7 @@ function App() {
     useEffect(() => {
         const onKey = (event) => {
             if (importOpen || event.target.closest("input, textarea, select") || workspace !== "assets") return;
-            if (event.key === " " && event.target.closest(".shot-boundaries button, .shot-detect")) return;
+            if (event.key === " " && event.target.closest(".shot-boundaries button, .shot-detect, .frame-text button")) return;
             const el = video.current, events = view?.timeline || [];
             if (event.key === " " && el && (!transcript || transcriptPlayable)) { event.preventDefault(); el.paused ? void el.play().catch(() => {}) : el.pause(); }
             else if ((event.key === "ArrowLeft" || event.key === "ArrowRight") && el) {
@@ -469,10 +470,11 @@ function App() {
             ? html`<div class=${work}>
                 <${Bin} runs=${runs} runsLoaded=${runsLoaded} runId=${runId} setRunId=${(id) => { clearTranscript(); setRunId(id); }} works=${visibleJobs} onOpen=${openWork} onImport=${() => setImportOpen(true)} hidden=${!layout.bin} filterControls=${filterControls}
                     top=${html`<${ClipSearch} project=${project} runs=${runs} runId=${runId} basket=${basket} seed=${searchSeed} onShow=${(run, event) => showEvent(run.id, event.eventId)} onShowTranscript=${showTranscript} />
+                        <${FrameText} project=${project} view=${sourceView} seekReady=${sourceSeekReady} onSeek=${seekSourceMarker} timecode=${timecode} />
                         <${BasketList} basket=${basket} onShow=${(item) => showEvent(item.runId, item.eventId, item)} onUse=${() => { setBasketAt(Date.now()); setWorkspace("edit"); }} />`} />
                 <div class="center">
                     <${Viewer} onClockInvalid=${() => setClock(null)} clock=${clock} media=${view?.media} preview=${preview} preferProxy=${preferProxy} proxyHttpFailed=${proxyHttpFailed} proxyFailReason=${proxyFailReason.current} onPreferPreview=${(checked) => { if (view?.media?.id) { PreviewPreference.set(view.media.id, checked); if (checked) { httpFailed.current.delete(view.media.id); proxyFailReason.current = null; } } setPreviewPreferAt((n) => n + 1); }} onProxyHttpError=${(el) => { const id = view?.media?.id; if (!id || httpFailed.current.has(id)) return; httpFailed.current.add(id); proxyFailReason.current = (SourceClock.proxyLoadReason && SourceClock.proxyLoadReason(el)) || "proxy_http_failed"; setHttpFailAt((n) => n + 1); }} videoRef=${video} onPreviewMetadata=${setAttachedPreview} time=${time} setTime=${setTime} selected=${transcriptRange || (selected === unboundSelection ? null : selected)} transcript=${!!transcript} onFullSource=${() => { clearTranscript(); setSelected(null); }} />
-                    <${Timeline} project=${project} view=${view} shotView=${shotView} shotSeekReady=${shotSeekReady} onSeekShot=${seekShot}
+                    <${Timeline} project=${project} view=${view} sourceView=${sourceView} seekReady=${sourceSeekReady} onSeekSource=${seekSourceMarker}
                         time=${time} selected=${selected} onSelect=${selectEvent} inBasket=${basket.ids} />
                 </div>
                 <${Inspector} view=${view} selected=${selected} run=${currentRun} hidden=${!layout.insp} inBasket=${!!selected && basket.ids.has(selected.eventId)} onBasket=${() => toggleBasket(selected)} onRange=${changeRange} />
@@ -693,11 +695,11 @@ function Viewer({onClockInvalid, clock, media, preview, preferProxy, proxyHttpFa
     </section>`;
 }
 
-function Timeline({project, view, shotView, shotSeekReady, onSeekShot, time, selected, onSelect, inBasket}) {
+function Timeline({project, view, sourceView, seekReady, onSeekSource, time, selected, onSelect, inBasket}) {
     const area = useRef(null);
     const [width, setWidth] = useState(800);
     const [zoom, setZoom] = useState(1);
-    const shots = useShotBoundaries(project, shotView);
+    const shots = useShotBoundaries(project, sourceView);
     useEffect(() => {
         const el = area.current; if (!el) return;
         const observer = new ResizeObserver(([entry]) => setWidth(Math.max(200, entry.contentRect.width - 24)));
@@ -712,16 +714,16 @@ function Timeline({project, view, shotView, shotSeekReady, onSeekShot, time, sel
         <div class="panel-head">时间轴
             <span class="track-label">${view ? `${view.timeline.length} 个分析片段` : ""}</span>
             <span class="spacer"></span>
-            <button class="btn ghost shot-detect" type="button" disabled=${!shotView || shots.status === "scanning"} onClick=${shots.detect}>检测镜头切换</button>
+            <button class="btn ghost shot-detect" type="button" disabled=${!sourceView || shots.status === "scanning"} onClick=${shots.detect}>检测镜头切换</button>
             <button class="icon-btn" onClick=${() => setZoom(Math.max(1, zoom / 2))} disabled=${zoom <= 1}>－</button>
             <button class="icon-btn" onClick=${() => setZoom(1)}>适配</button>
             <button class="icon-btn" onClick=${() => setZoom(Math.min(32, zoom * 2))}>＋</button>
         </div>
-        <${ShotStatus} status=${shots.status} report=${shots.report} error=${shots.error} seekReady=${shotSeekReady} />
+        <${ShotStatus} status=${shots.status} report=${shots.report} error=${shots.error} seekReady=${seekReady} />
         <div class="track-area" ref=${area}>
             ${view && html`<div style=${{width: `${width * zoom}px`, position: "relative"}}>
                 <div class="ruler">${ticks.map((s) => html`<span style=${{left: `${s * 1e6 * scale}px`}}>${timecode(s * 1e6).slice(0, 5)}</span>`)}</div>
-                ${shots.report ? html`<${ShotMarkers} report=${shots.report} scale=${scale} timecode=${timecode} seekReady=${shotSeekReady} onSeek=${onSeekShot} />` : null}
+                ${shots.report ? html`<${ShotMarkers} report=${shots.report} scale=${scale} timecode=${timecode} seekReady=${seekReady} onSeek=${onSeekSource} />` : null}
                 <div class="track">
                     ${view.timeline.map((event) => {
                         const thumb = thumbs[event.evidenceIds?.[0]];

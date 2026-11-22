@@ -243,6 +243,12 @@ details.group[open] > summary::before { content: "▾ "; }
 /* Clip search and basket in the Assets bin. */
 .clip-search { margin-bottom: 8px; }
 .clip-search .hits { max-height: 40vh; overflow: auto; margin-top: 6px; }
+.frame-text { margin-bottom: var(--s-2); }
+.frame-text-panel { display: grid; gap: var(--s-1); margin-top: var(--s-1); }
+.frame-text-panel .hint { margin: 0; }
+.frame-text-hits { display: grid; max-height: 30vh; overflow: auto; }
+.frame-text-hits .meta { flex: none; }
+.frame-text-hit-text { min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .hit { display: flex; align-items: center; gap: 4px; margin: 2px 0; }
 .hit-main { flex: 1; min-width: 0; display: flex; gap: 6px; align-items: center; border: 0; background: none; color: inherit; text-align: left; padding: 3px; border-radius: var(--r-1); cursor: pointer; }
 .hit-main:hover { background: var(--bg-2, rgba(255,255,255,.05)); }

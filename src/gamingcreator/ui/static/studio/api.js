@@ -159,6 +159,8 @@ export const cancelPreparation = (project, job, signal) => api("/api/cancel-medi
 export const preparedAnalysisTask = (project, run, signal) => api("/api/tasks", {project, run, limit: 1, handoff: 1}, {signal});
 export const shotBoundaries = (project, run, signal) => api("/api/shot-boundaries", {project, run}, {signal});
 export const detectShots = (project, run, signal) => api("/api/detect-shots", {}, {body: {project, run}, signal});
+export const frameText = (project, run, signal) => api("/api/frame-text", {project, run}, {signal});
+export const scanFrameText = (project, run, density, signal) => api("/api/ocr-frames", {}, {body: {project, run, density}, signal});
 export const inspect = (project, run, signal) => api("/api/inspect", {project, run, query: "", mode: "hybrid", top: 10, detailProfile: "v1"}, {signal});
 export const searchProject = (project, runs, query, top, signal) => api("/api/search-project", {}, {signal, body: {project, runs, query, mode: "hybrid", top}});
 export function matchesInspection(view, project, run) {

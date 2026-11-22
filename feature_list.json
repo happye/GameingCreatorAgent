@@ -516,9 +516,10 @@
             "group": "A",
             "name": "OCR",
             "first_product": false,
-            "delivery_status": "partial",
+            "delivery_status": "delivered",
             "implementation_evidence": [
-                "2026-11-01: offline hard-case fixture catalog (tests/fixtures/ocr-hard-cases) synthesizes byte-capped PNGs for plain_control / low_contrast / stylized_title; regression smokes Windows OCR without claiming accuracy, human review, or F006; retrieval integration still open"
+                "2026-11-01: offline hard-case fixture catalog (tests/fixtures/ocr-hard-cases) synthesizes byte-capped PNGs for plain_control / low_contrast / stylized_title; regression smokes Windows OCR without claiming accuracy, human review, or F006; retrieval integration still open",
+                "2026-11-22: Studio Assets scanned 48 source frames with local Chinese and English Windows OCR. The verified cache returned 17 literal JUMP/SHUEISHA matches in Comic Stars, sought to 6.000 seconds, and exported a run-bound JSON result without rerunning OCR."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

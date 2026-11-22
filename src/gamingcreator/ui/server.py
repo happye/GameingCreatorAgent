@@ -141,6 +141,7 @@ ASSETS = {
         "studio/shot-boundaries.js",
         "text/javascript; charset=utf-8",
     ),
+    "/assets/studio/frame-text.js": ("studio/frame-text.js", "text/javascript; charset=utf-8"),
     "/assets/studio/recordings.js": ("studio/recordings.js", "text/javascript; charset=utf-8"),
     "/assets/studio/publish.js": ("studio/publish.js", "text/javascript; charset=utf-8"),
     "/assets/studio/package_batches.js": (

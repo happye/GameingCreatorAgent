@@ -52,8 +52,15 @@ def test_scan_is_explicit_cached_outside_the_project_and_returns_texts_only(tmp_
     with workspace(tmp_path) as base:
         health = json.loads(get(base, "/api/health")[2])
         assert "frame-text-v1" in health["capabilities"]
-        status, _, raw = get(base, query)
-        assert status == 200 and json.loads(raw)["available"] is False and engine.seen == []
+
+        def forbid_media_reads(*_args, **_kwargs):
+            raise AssertionError("A cache miss must not read the media bundle")
+
+        with monkeypatch.context() as patch:
+            patch.setattr(frame_text, "load_saved_timeline", forbid_media_reads)
+            status, _, raw = get(base, query)
+            assert status == 200 and json.loads(raw)["available"] is False and engine.seen == []
+            assert get(base, query.replace("run-000", "missing"))[0] == 404
         status, _, raw = post(base, "/api/ocr-frames", request)
         scanned = json.loads(raw)
         assert status == 200 and len(engine.seen) == 1

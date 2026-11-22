@@ -56,9 +56,9 @@
    ]
   },
   "P009": {
-   "done": "Windows OCR文字识别与独立屏幕文字查询、定位/导出；整文件hash验证，旧报告只读，原Top10不变；Unicode原字素高亮",
-   "todo": "风格化标题与准确率未人评，旧无hash报告需显式重扫",
-   "updated": "2026-11-16",
+   "done": "Studio 画面文字支持原片本机扫描、独立文字搜索、高亮、跳转及 JSON 导出；漫画群星实拍 48 帧，查到 17 条 JUMP/SHUEISHA 并定位到第 6 秒",
+   "todo": "风格化文字识别质量待人评；旧无校验报告需显式重新识别",
+   "updated": "2026-11-22",
    "sprints": [
     "sprint-ocr-frames"
    ]
@@ -1229,7 +1229,7 @@
    "slices": [
     {
      "id": "Q-ocr",
-     "name": "本地画面文字识别",
+     "name": "Studio 画面文字识别、定位与导出",
      "status": "done",
      "sprint": "sprint-ocr-frames"
     },

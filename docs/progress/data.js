@@ -14,10 +14,10 @@ window.PROGRESS_DATA = {
  "summary": {
   "planned": 51,
   "delivery": {
-   "delivered": 11,
-   "partial": 40
+   "delivered": 12,
+   "partial": 39
   },
-  "pct": 60.8,
+  "pct": 61.8,
   "first": 22,
   "firstDelivery": {
    "partial": 22
@@ -240,17 +240,18 @@ window.PROGRESS_DATA = {
    "group": "A",
    "name": "OCR",
    "first": false,
-   "delivery": "partial",
+   "delivery": "delivered",
    "impl": null,
    "quality": "not_separately_assessed",
    "release": "not_released",
    "remaining": null,
    "evidence": [
-    "2026-11-01: offline hard-case fixture catalog (tests/fixtures/ocr-hard-cases) synthesizes byte-capped PNGs for plain_control / low_contrast / stylized_title; regression smokes Windows OCR without claiming accuracy, human review, or F006; retrieval integration still open"
+    "2026-11-01: offline hard-case fixture catalog (tests/fixtures/ocr-hard-cases) synthesizes byte-capped PNGs for plain_control / low_contrast / stylized_title; regression smokes Windows OCR without claiming accuracy, human review, or F006; retrieval integration still open",
+    "2026-11-22: Studio Assets scanned 48 source frames with local Chinese and English Windows OCR. The verified cache returned 17 literal JUMP/SHUEISHA matches in Comic Stars, sought to 6.000 seconds, and exported a run-bound JSON result without rerunning OCR."
    ],
-   "done": "Windows OCR文字识别与独立屏幕文字查询、定位/导出；整文件hash验证，旧报告只读，原Top10不变；Unicode原字素高亮",
-   "todo": "风格化标题与准确率未人评，旧无hash报告需显式重扫",
-   "updated": "2026-11-16",
+   "done": "Studio 画面文字支持原片本机扫描、独立文字搜索、高亮、跳转及 JSON 导出；漫画群星实拍 48 帧，查到 17 条 JUMP/SHUEISHA 并定位到第 6 秒",
+   "todo": "风格化文字识别质量待人评；旧无校验报告需显式重新识别",
+   "updated": "2026-11-22",
    "sprints": [
     "sprint-ocr-frames"
    ]
@@ -2196,7 +2197,7 @@ window.PROGRESS_DATA = {
    "slices": [
     {
      "id": "Q-ocr",
-     "name": "本地画面文字识别",
+     "name": "Studio 画面文字识别、定位与导出",
      "status": "done",
      "sprint": "sprint-ocr-frames"
     },
@@ -2482,7 +2483,7 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "Studio 已实拍核对待分析任务与镜头定位。下步接入屏幕文字检索。J2 十槽评分和 J3 独立 Windows 验收留到测试阶段。",
+  "Studio 已实拍通过镜头和画面文字定位。下步补齐代理空间查看与定向回收。J2 十槽评分和 J3 独立 Windows 验收留到测试阶段。",
   "[P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测 Atom 同稿各自出包。[P029](docs/exec-plans/sprint-creation-subtitles.md)实测青色宋体。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "[抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。",
@@ -3094,9 +3095,11 @@ window.PROGRESS_DATA = {
   {
    "file": "sprint-ocr-frames",
    "title": "本地画面文字识别（ocr-frames-v1，2026-10-26第四会话）",
-   "ids": [],
-   "date": "2026-11-01",
-   "bytes": 5432
+   "ids": [
+    "P009"
+   ],
+   "date": "2026-11-22",
+   "bytes": 6125
   },
   {
    "file": "sprint-one-line-mixed-replacement",
@@ -3271,7 +3274,7 @@ window.PROGRESS_DATA = {
    "ids": [
     "P010"
    ],
-   "date": "2026-11-01",
+   "date": "2026-11-22",
    "bytes": 10420
   },
   {

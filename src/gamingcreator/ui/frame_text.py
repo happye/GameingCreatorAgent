@@ -19,6 +19,7 @@ from gamingcreator.cli.ocr_frames import build_run_ocr_report
 from gamingcreator.cli.shot_boundaries import saved_frames
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.local_files import read_bounded, write_exclusive_text
+from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
 
 DENSITIES = ("quick", "full")
 # "Quick" reads about one saved frame every two seconds; "full" reads every saved frame.
@@ -164,8 +165,6 @@ async def cached_frame_text_payload(
 
     No scan: a report whose source, saved frame instants or engine changed is not shown.
     """
-    timeline = await load_saved_timeline(project, run_id)
-    asset = timeline.run.asset
     missing: dict[str, object] = {
         "available": False,
         "schemaVersion": FRAME_TEXT_VERSION,
@@ -173,16 +172,24 @@ async def cached_frame_text_payload(
         "project": project_reference,
     }
     target = frame_text_cache_path(repository, project, run_id)
+    if not target.is_file():
+        store = await SqliteTimelineStore.open(project, read_only=True)
+        try:
+            await store.load_run(run_id)
+        finally:
+            await store.close()
+        return missing
     try:
         if target.stat().st_size > MAX_CACHED_REPORT_BYTES:
             return missing
         raw = read_bounded(target, MAX_CACHED_REPORT_BYTES)
         report = json.loads(raw)
         receipt = target.with_name(target.name + ".sha256")
-        if target.name.endswith(".v2.json") and not receipt.exists():
+        verified = receipt.exists()
+        if target.name.endswith(".v2.json") and not verified:
             return missing
         if (
-            receipt.exists()
+            verified
             and read_bounded(receipt, 65).decode("ascii").strip() != hashlib.sha256(raw).hexdigest()
         ):
             return missing
@@ -190,6 +197,8 @@ async def cached_frame_text_payload(
         return missing
     if not isinstance(report, dict):
         return missing
+    timeline = await load_saved_timeline(project, run_id)
+    asset = timeline.run.asset
     every, recorded = report.get("every"), report.get("engine")
     identity = engine.identity()
     if (
@@ -206,4 +215,4 @@ async def cached_frame_text_payload(
         or recorded.get("platform") != identity.platform
     ):
         return missing
-    return _with_reference({**report, "contentVerified": receipt.exists()}, project_reference)
+    return _with_reference({**report, "contentVerified": verified}, project_reference)
