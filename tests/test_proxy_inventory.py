@@ -257,6 +257,30 @@ def test_proxy_root_junction_is_rejected_and_outside_is_untouched(tmp_path):
     assert _snapshot(outside / _sha("e") / "proxy.mp4") == before
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows junction boundary")
+def test_disposal_refuses_a_directory_replaced_after_selection(tmp_path):
+    from gamingcreator.infrastructure.proxy_media import proxy_record, unlink_proxy_record
+
+    source = tmp_path / "original.mp4"
+    source.write_bytes(b"original")
+    digest = _sha("d")
+    plant_playable_proxy(tmp_path, source, digest, 1_000_000, body=b"proxy")
+    directory = proxy_space_root(tmp_path) / digest
+    record = proxy_record(directory)
+    assert record is not None
+    moved = tmp_path / "old-proxy"
+    directory.rename(moved)
+    protected = tmp_path / "protected"
+    _write(protected / "proxy.mp4", b"keep this file")
+    _write(protected / "receipt.json", b"keep this receipt")
+    _make_junction(directory, protected)
+    with pytest.raises(OSError):
+        unlink_proxy_record(directory, record)
+    assert (protected / "proxy.mp4").read_bytes() == b"keep this file"
+    assert (protected / "receipt.json").read_bytes() == b"keep this receipt"
+    assert (moved / "proxy.mp4").read_bytes() == b"proxy"
+
+
 def test_hard_linked_proxy_is_rejected_and_outside_is_untouched(tmp_path):
     source = tmp_path / "ok.mp4"
     source.write_bytes(b"ok")

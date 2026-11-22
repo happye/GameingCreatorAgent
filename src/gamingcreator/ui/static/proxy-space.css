@@ -24,3 +24,6 @@
     vertical-align: top;
     word-break: break-all;
 }
+#inventory-table tr[data-selected] {
+    background: rgba(104, 131, 224, 0.16);
+}

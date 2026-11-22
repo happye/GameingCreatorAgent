@@ -1,6 +1,6 @@
 {
  "schemaVersion": 1,
- "updated": "2026-11-22",
+ "updated": "2026-11-23",
  "howTo": "每个节点只改 done/todo/updated/status 等字段；状态枚举 done|active|partial|todo|blocked。改完运行 python -B scripts/progress_ui.py。规则：docs/references/progress-dashboard.md",
  "features": {
   "P001": {
@@ -72,9 +72,9 @@
    ]
   },
   "P011": {
-   "done": "360p代理批量生成、自动预览及失败回原片，时钟绑定/解码回退和只读空间清单已实现",
-   "todo": "真实清理入口仍未做，不删除原片/模型/用户产物",
-   "updated": "2026-11-16",
+   "done": "Studio 可查看当前录像的代理占用、核对回执后确认回收指定条目。隔离 Windows 浏览器已验证回收和回到原片；活动传输及生成期间保护代理",
+   "todo": "外发与用户验收待后续批次",
+   "updated": "2026-11-23",
    "sprints": [
     "sprint-editing-proxy"
    ]

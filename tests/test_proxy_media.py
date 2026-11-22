@@ -137,6 +137,37 @@ def test_duration_mismatch_keeps_nothing(repository):
     assert read_proxy(repo, sha) is None
 
 
+def test_original_replaced_during_proxy_build_is_not_published(repository, monkeypatch):
+    repo, source, sha = repository
+    original_duration = proxy_media._duration_us
+
+    async def replace_source_after_decode(*args):
+        duration = await original_duration(*args)
+        source.write_bytes(source.read_bytes() + b"different source")
+        return duration
+
+    monkeypatch.setattr(proxy_media, "_duration_us", replace_source_after_decode)
+    with pytest.raises(ValueError, match="Source bytes"):
+        build(repo, source, sha)
+    assert leftovers(repo) == []
+
+
+def test_rebuilding_does_not_overwrite_an_unregistered_proxy_file(repository):
+    from gamingcreator.infrastructure.ffmpeg_media import FfmpegMediaProcessor
+
+    repo, source, sha = repository
+    unknown = proxy_directory(repo, sha) / "proxy.mp4"
+    unknown.parent.mkdir(parents=True)
+    unknown.write_bytes(b"retained user file")
+    with pytest.raises(AppError) as caught:
+        build(repo, source, sha)
+    assert caught.value.code == "storage.proxy_unsafe"
+    with pytest.raises(AppError) as invalid_source:
+        asyncio.run(FfmpegMediaProcessor(repo).probe(unknown, CancellationContext("fixture", 10)))
+    assert invalid_source.value.code == "media.proxy_not_source"
+    assert unknown.read_bytes() == b"retained user file"
+
+
 def test_stale_build_folders_are_reclaimed_but_recent_ones_kept(repository):
     import os
     import time

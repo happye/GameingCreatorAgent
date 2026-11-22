@@ -542,10 +542,11 @@
             "group": "A",
             "name": "代理文件（Proxy）",
             "first_product": false,
-            "delivery_status": "partial",
+            "delivery_status": "delivered",
             "implementation_evidence": [
                 "2026-11-01: make-proxy builds/reuses a 360p low-bitrate editing proxy per source SHA with a duration-scaled byte budget (<=1 GiB) enforced by -fs and MediaOutputLimit, duration check, temp-dir build and full cleanup on failure; /api/media?proxy=1 serves it only while its receipt matches; real 54.7s recording 25.3MB -> 4.2MB proxy; player auto-switch not done",
-                "2026-11-01: batch make-proxy queues many prepared/analyzed runs via CLI (--run repeat / --all-eligible), scripts/make-proxy.ps1 -AllEligible, POST /api/make-proxy-batch, and workbench tasks dialog; each item still uses single make_proxy byte budget/duration/temp-dir cleanup; same-SHA shared in batch; cleanup entry still open"
+                "2026-11-01: batch make-proxy queues many prepared/analyzed runs via CLI (--run repeat / --all-eligible), scripts/make-proxy.ps1 -AllEligible, POST /api/make-proxy-batch, and workbench tasks dialog; each item still uses single make_proxy byte budget/duration/temp-dir cleanup; same-SHA shared in batch; cleanup entry still open",
+                "2026-11-23: Studio links to source-scoped proxy inventory. Isolated Windows browser verified cancel, explicit reclaim of a verified proxy and return to original playback with source bytes preserved. HTTP and process tests cover stale selection, shared stream leases, missing receipts and swapped junctions."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

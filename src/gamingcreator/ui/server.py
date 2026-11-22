@@ -25,7 +25,12 @@ from gamingcreator.infrastructure.ffmpeg_shots import FfmpegShotDetector
 from gamingcreator.infrastructure.knowledge_store import KnowledgeStore
 from gamingcreator.infrastructure.music_library import MusicLibrary
 from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
-from gamingcreator.infrastructure.proxy_inventory import proxy_space_csv, proxy_space_document
+from gamingcreator.infrastructure.proxy_inventory import (
+    proxy_space_csv,
+    proxy_space_document,
+    reclaim_proxy,
+)
+from gamingcreator.infrastructure.proxy_lease import proxy_lease
 from gamingcreator.infrastructure.windows_ocr import WindowsOcrEngine
 from gamingcreator.ui import package_jobs
 from gamingcreator.ui.asr_words_jobs import AsrWordsJobs
@@ -516,9 +521,12 @@ class InspectionHandler(BaseHTTPRequestHandler):
         self, project: Path, run_id: str, evidence_id: str | None = None, proxy: bool = False
     ) -> None:
         resource = asyncio.run(registered_media(project, run_id, evidence_id))
-        if proxy:
-            from gamingcreator.infrastructure.proxy_media import load_proxy_receipt
+        if not proxy:
+            self._serve_media(resource)
+            return
+        from gamingcreator.infrastructure.proxy_media import load_proxy_receipt
 
+        with proxy_lease(self.repository, resource.sha256, write=False):
             # Preview only: a missing or stale proxy is reported, never silently replaced.
             # Byte integrity is checked by MediaResource below, not by file size alone.
             receipt = load_proxy_receipt(self.repository, resource.sha256)
@@ -528,8 +536,9 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     "这个录像还没有可用的编辑代理，请先运行 make-proxy（可批量）或工作台「批量生成编辑代理」。",
                     ExitCode.INPUT,
                 )
-            resource = MediaResource(Path(receipt["path"]), receipt["proxySha256"], "video/mp4")
-        self._serve_media(resource)
+            self._serve_media(
+                MediaResource(Path(receipt["path"]), receipt["proxySha256"], "video/mp4")
+            )
 
     def _waveform(self, project: Path, query: dict[str, str]) -> dict[str, object]:
         """Audio peaks of one registered recording range (Studio waveform lane, display only)."""
@@ -675,6 +684,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     "/api/detect-shots",
                     "/api/ocr-frames",
                     "/api/make-proxy-batch",
+                    "/api/reclaim-proxy",
                     "/api/knowledge-import",
                     "/api/asr-words",
                     "/api/asr-words-cancel",
@@ -1148,6 +1158,18 @@ class InspectionHandler(BaseHTTPRequestHandler):
                             project_reference=value["project"],
                         )
                     ),
+                )
+                return
+            if path == "/api/reclaim-proxy":
+                if (
+                    type(value) is not dict
+                    or set(value) != {"sourceSha256", "reclaimToken"}
+                    or any(type(item) is not str for item in value.values())
+                ):
+                    raise ValueError("Expected one proxy identity and its inventory token.")
+                self._json(
+                    200,
+                    reclaim_proxy(self.repository, value["sourceSha256"], value["reclaimToken"]),
                 )
                 return
             if path == "/api/make-proxy-batch":

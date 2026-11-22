@@ -1,6 +1,6 @@
 window.PROGRESS_DATA = {
  "schemaVersion": 1,
- "nodesUpdated": "2026-11-22",
+ "nodesUpdated": "2026-11-23",
  "groups": {
   "A": "基础架构与本地处理",
   "B": "视频理解与检索",
@@ -14,10 +14,10 @@ window.PROGRESS_DATA = {
  "summary": {
   "planned": 51,
   "delivery": {
-   "delivered": 12,
-   "partial": 39
+   "delivered": 13,
+   "partial": 38
   },
-  "pct": 61.8,
+  "pct": 62.7,
   "first": 22,
   "firstDelivery": {
    "partial": 22
@@ -282,18 +282,19 @@ window.PROGRESS_DATA = {
    "group": "A",
    "name": "代理文件（Proxy）",
    "first": false,
-   "delivery": "partial",
+   "delivery": "delivered",
    "impl": null,
    "quality": "not_separately_assessed",
    "release": "not_released",
    "remaining": null,
    "evidence": [
     "2026-11-01: make-proxy builds/reuses a 360p low-bitrate editing proxy per source SHA with a duration-scaled byte budget (<=1 GiB) enforced by -fs and MediaOutputLimit, duration check, temp-dir build and full cleanup on failure; /api/media?proxy=1 serves it only while its receipt matches; real 54.7s recording 25.3MB -> 4.2MB proxy; player auto-switch not done",
-    "2026-11-01: batch make-proxy queues many prepared/analyzed runs via CLI (--run repeat / --all-eligible), scripts/make-proxy.ps1 -AllEligible, POST /api/make-proxy-batch, and workbench tasks dialog; each item still uses single make_proxy byte budget/duration/temp-dir cleanup; same-SHA shared in batch; cleanup entry still open"
+    "2026-11-01: batch make-proxy queues many prepared/analyzed runs via CLI (--run repeat / --all-eligible), scripts/make-proxy.ps1 -AllEligible, POST /api/make-proxy-batch, and workbench tasks dialog; each item still uses single make_proxy byte budget/duration/temp-dir cleanup; same-SHA shared in batch; cleanup entry still open",
+    "2026-11-23: Studio links to source-scoped proxy inventory. Isolated Windows browser verified cancel, explicit reclaim of a verified proxy and return to original playback with source bytes preserved. HTTP and process tests cover stale selection, shared stream leases, missing receipts and swapped junctions."
    ],
-   "done": "360p代理批量生成、自动预览及失败回原片，时钟绑定/解码回退和只读空间清单已实现",
-   "todo": "真实清理入口仍未做，不删除原片/模型/用户产物",
-   "updated": "2026-11-16",
+   "done": "Studio 可查看当前录像的代理占用、核对回执后确认回收指定条目。隔离 Windows 浏览器已验证回收和回到原片；活动传输及生成期间保护代理",
+   "todo": "外发与用户验收待后续批次",
+   "updated": "2026-11-23",
    "sprints": [
     "sprint-editing-proxy"
    ]
@@ -2483,7 +2484,7 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "Studio 已实拍通过镜头和画面文字定位。下步补齐代理空间查看与定向回收。J2 十槽评分和 J3 独立 Windows 验收留到测试阶段。",
+  "Studio 已交付镜头、画面文字定位和单条代理回收。下一步核对 P008 缓存缺口。J2 十槽评分与 J3 独立 Windows 验收留到测试阶段。",
   "[P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测 Atom 同稿各自出包。[P029](docs/exec-plans/sprint-creation-subtitles.md)实测青色宋体。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "[抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。",
@@ -2906,8 +2907,8 @@ window.PROGRESS_DATA = {
    "ids": [
     "P011"
    ],
-   "date": "2026-11-01",
-   "bytes": 2652
+   "date": "2026-11-23",
+   "bytes": 3319
   },
   {
    "file": "sprint-enterprise-basics",

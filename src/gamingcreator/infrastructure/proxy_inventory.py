@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import os
 from collections.abc import Mapping
@@ -17,24 +18,34 @@ from typing import Any
 
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.local_paths import is_link
-from gamingcreator.infrastructure.proxy_media import SETTINGS
+from gamingcreator.infrastructure.proxy_lease import checked_directory, is_sha256, proxy_lease
+from gamingcreator.infrastructure.proxy_media import (
+    PROXY_CACHE_ROOT,
+    SETTINGS,
+    proxy_directory,
+    proxy_record,
+    proxy_stat_identity,
+    read_proxy,
+    unlink_proxy_record,
+)
 
 SCHEMA = "proxy-space-inventory-v1"
-PROXY_ROOT = Path(".cache/workspace/proxies")
 _EMPTY_COUNTS = {"valid": 0, "missing": 0, "bad_receipt": 0, "building": 0, "other": 0}
 
 
 def proxy_space_root(repository: Path) -> Path:
     """Official editing-proxy root for one project repository."""
-    return repository.resolve() / PROXY_ROOT
+    return repository.absolute() / PROXY_CACHE_ROOT
 
 
 def list_proxy_space(repository: Path) -> dict[str, Any]:
     """Read-only inventory of the official proxy root only."""
     root = proxy_space_root(repository)
-    if not root.exists():
-        return _empty()
-    _guard_root(root)
+    try:
+        if not checked_directory(root):
+            return _empty()
+    except OSError:
+        _reject("代理空间根目录或其上级是链接或不可读取。")
     items = tuple(
         _list_child(root, child) for child in sorted(root.iterdir(), key=lambda path: path.name)
     )
@@ -64,14 +75,6 @@ def _reject(message: str) -> None:
     raise AppError("storage.proxy_inventory", message, ExitCode.INPUT)
 
 
-def _is_sha(value: object) -> bool:
-    return (
-        isinstance(value, str)
-        and len(value) == 64
-        and all(character in "0123456789abcdef" for character in value)
-    )
-
-
 def _hard_linked(path: Path) -> bool:
     """True when the entry has another name, or the link count cannot be read."""
     try:
@@ -80,18 +83,6 @@ def _hard_linked(path: Path) -> bool:
         return False
     except OSError:
         return True
-
-
-def _guard_root(root: Path) -> None:
-    if any(is_link(path) for path in (root, *root.parents)):
-        _reject("代理空间根目录或其上级是链接，已拒绝盘点。")
-    try:
-        ready = root.is_dir()
-    except PermissionError:
-        _reject("没有权限读取代理空间。")
-        return
-    if not ready:
-        _reject("代理空间根目录不可用。")
 
 
 def _item(source: str, size: int, status: str, reason: str, cleanable: bool) -> dict[str, Any]:
@@ -108,7 +99,7 @@ def _list_child(root: Path, child: Path) -> dict[str, Any]:
     if is_link(child):
         _reject("代理空间里有链接，已拒绝盘点，以免跟到目录外。")
     name = child.name
-    if not child.is_dir() or not (name.startswith(".building-") or _is_sha(name)):
+    if not child.is_dir() or not (name.startswith(".building-") or is_sha256(name)):
         _reject("代理空间里有不明目录，已拒绝盘点。")
     try:
         child.resolve().relative_to(root.resolve())
@@ -117,7 +108,23 @@ def _list_child(root: Path, child: Path) -> dict[str, Any]:
     _guard_record_files(child)
     if name.startswith(".building-"):
         return _item("", _proxy_bytes(child), "building", "正在生成代理，不能当作可清理项。", False)
-    return _classify_record(child, name)
+    try:
+        before = proxy_record(child)
+        item = _classify_record(child, name)
+        after = proxy_record(child)
+    except OSError:
+        return _item(
+            name, _proxy_bytes(child), "other", "目录已变化，或含不明或不安全的条目。", False
+        )
+    if (
+        before is None
+        or after is None
+        or _reclaim_token(child, *before) != _reclaim_token(child, *after)
+    ):
+        return _item(name, item["bytes"], "other", "目录已变化，请刷新盘点。", False)
+    if item["status"] != "valid":
+        return {**item, "cleanable": False}
+    return {**item, "reclaimToken": _reclaim_token(child, *after)}
 
 
 def _guard_record_files(directory: Path) -> None:
@@ -155,8 +162,10 @@ def _receipt_problem(receipt_path: Path, proxy: Path, source_sha256: str) -> str
         return "回执不是合法的 JSON。"
     if not isinstance(receipt, dict):
         return "回执格式无效。"
-    if not _is_sha(receipt.get("proxySha256")):
+    if not is_sha256(receipt.get("proxySha256")):
         return "回执里的代理哈希无效。"
+    if receipt.get("schemaVersion") != "editing-proxy-receipt-v1":
+        return "回执格式版本无效。"
     if receipt.get("sourceSha256") != source_sha256:
         return "回执里的来源哈希与目录不一致。"
     if receipt.get("settings") != SETTINGS:
@@ -170,6 +179,51 @@ def _receipt_problem(receipt_path: Path, proxy: Path, source_sha256: str) -> str
     if receipt.get("bytes") != size:
         return "回执记录的字节数与代理文件大小不一致。"
     return None
+
+
+def _reclaim_token(directory: Path, info: os.stat_result, files: dict[str, os.stat_result]) -> str:
+    identity = [
+        str(directory),
+        proxy_stat_identity(info),
+        [(name, proxy_stat_identity(files[name])) for name in sorted(files)],
+    ]
+    return hashlib.sha256(json.dumps(identity, ensure_ascii=True).encode("ascii")).hexdigest()
+
+
+def reclaim_proxy(repository: Path, source_sha256: str, reclaim_token: str) -> dict[str, Any]:
+    """Remove the single proxy record that still matches the user's inventory snapshot."""
+    if not is_sha256(source_sha256) or not is_sha256(reclaim_token):
+        raise AppError("input.proxy_reclaim", "代理哈希或回收凭据无效。", ExitCode.INPUT)
+    directory = proxy_directory(repository, source_sha256)
+    with proxy_lease(repository, source_sha256, write=True):
+        try:
+            record = proxy_record(directory)
+        except OSError:
+            raise AppError(
+                "storage.proxy_unsafe", "代理目录或文件不安全，未回收。", ExitCode.STORAGE
+            ) from None
+        if record is None:
+            return {"sourceSha256": source_sha256, "removed": False, "releasedProxyBytes": 0}
+        directory_stat, files = record
+        if _reclaim_token(directory, directory_stat, files) != reclaim_token:
+            raise AppError(
+                "storage.proxy_stale", "代理目录已变化，请刷新盘点后重新确认。", ExitCode.STORAGE
+            )
+        receipt = read_proxy(repository, source_sha256)
+        if receipt is None or receipt.get("schemaVersion") != "editing-proxy-receipt-v1":
+            raise AppError(
+                "storage.proxy_unsafe", "代理文件与有效回执无法核对，未回收。", ExitCode.STORAGE
+            )
+        try:
+            unlink_proxy_record(directory, record)
+        except OSError:
+            raise AppError(
+                "storage.proxy_reclaim_failed",
+                "回收未完成，部分文件可能已移除，请刷新盘点。",
+                ExitCode.STORAGE,
+            ) from None
+        size = files["proxy.mp4"].st_size if "proxy.mp4" in files else 0
+        return {"sourceSha256": source_sha256, "removed": True, "releasedProxyBytes": size}
 
 
 def _proxy_bytes(directory: Path) -> int:

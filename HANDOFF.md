@@ -1,6 +1,6 @@
 # HANDOFF（覆盖快照）
 
-## 最近一次会话（2026-11-22）
+## 最近一次会话（2026-11-23）
 
 当前分支 `main`。先看 [STATUS](STATUS.md) 与 [看板](docs/progress/index.html)。[P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测关页后出包与重开下载。[P029](docs/exec-plans/sprint-creation-subtitles.md)和[P031](docs/exec-plans/sprint-publication-assets.md)有实拍产物。
 
@@ -32,6 +32,6 @@
 
 ## 下一优先级与约束
 
-P009/P010 已接 Studio 实拍，识别准确率待人评。下一步 P011 复用代理只读空间清单，补齐指定代理的回收入口，只用隔离夹具验证。J2 十槽和 J3 独立 Windows 人评待做。
+P011 已从 Studio 闭环回收指定代理，验证用隔离 Windows 夹具。下一步核对 P008 缓存容量与回收缺口。J2 十槽和 J3 独立 Windows 待人评。
 
 本批使用定向回归、真实浏览器和产物验证，无全量、Release、支付或上传。旧完整 verify-20261117-002506 按用户要求中断，曾见失败。J2/J3 待人评，J1 通过以第六次用户答复为证。文字月 ¥30/单条 ¥1、指定视觉月 ¥50，现有费用门禁保留。本机声音，真实平台发布或支付须另授权。

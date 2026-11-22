@@ -5,11 +5,15 @@ from __future__ import annotations
 import csv
 import io
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 from urllib.request import ProxyHandler, Request, build_opener
 
 from test_inspection_http import get, workspace
 from test_preview_clock_align_browser import plant_playable_proxy
+from test_shot_boundaries_http import post
 
 from gamingcreator.infrastructure.proxy_inventory import (
     NOTICE,
@@ -17,6 +21,7 @@ from gamingcreator.infrastructure.proxy_inventory import (
     proxy_space_document,
     proxy_space_root,
 )
+from gamingcreator.infrastructure.proxy_lease import proxy_lease
 
 
 def _sha(prefix: str) -> str:
@@ -62,7 +67,7 @@ def test_document_matches_inventory_and_states_read_only(tmp_path):
     assert document["counts"] == inventory["counts"]
 
 
-def test_json_and_csv_match_inventory_and_page_is_read_only(tmp_path):
+def test_proxy_space_load_and_exports_are_read_only(tmp_path):
     _plant(tmp_path)
     inventory = list_proxy_space(tmp_path)
     root = proxy_space_root(tmp_path)
@@ -112,21 +117,18 @@ def test_json_and_csv_match_inventory_and_page_is_read_only(tmp_path):
         assert page_status == 200
         html = page.decode()
         assert "只读盘点，未删除。" in html
-        assert "不会删除任何文件" in html
+        assert "确认回收" in html
         assert "/api/proxy-space.json" in html
         assert "/api/proxy-space.csv" in html
-        assert "回收" not in html
         lower = html.lower()
         assert 'type="submit"' not in lower
-        assert "<button" not in lower
         assert "<form" not in lower
         assert "delete" not in lower
         script_status, _, script = get(base, "/assets/proxy-space.js")
         assert script_status == 200
         script_text = script.decode()
         assert "只读盘点，未删除。" in script_text
-        assert "回收" not in script_text
-        assert "fetch(" not in script_text.replace('fetch("/api/proxy-space")', "")
+        assert 'fetch("/api/reclaim-proxy"' in script_text
         assert "/delete" not in script_text
         assert "/api/proxy-space" in script_text
 
@@ -156,6 +158,85 @@ def test_json_and_csv_match_inventory_and_page_is_read_only(tmp_path):
     assert sorted(path.name for path in root.iterdir()) == names_before
 
 
+def test_reclaim_rejects_stale_records_and_leased_proxies_then_removes_only_the_selected_item(
+    tmp_path,
+):
+    _plant(tmp_path)
+    source = _sha("a")
+    root = proxy_space_root(tmp_path)
+    proxy = root / source / "proxy.mp4"
+    expected_bytes = proxy.stat().st_size
+    other = _snapshot(root / _sha("b"))
+    original = (tmp_path / "one.mp4").read_bytes()
+    protected = root / _sha("b") / "notes.txt"
+    protected.write_text("keep", encoding="utf-8")
+
+    def items(base):
+        return {
+            row["sourceSha256"]: row
+            for row in json.loads(get(base, "/api/proxy-space")[2])["items"]
+        }
+
+    with workspace(tmp_path) as base:
+        row = items(base)[source]
+        assert row["cleanable"] and not items(base)[_sha("b")].get("reclaimToken")
+        route = "/api/reclaim-proxy"
+        request = {"sourceSha256": source, "reclaimToken": row["reclaimToken"]}
+        status, _, _ = get(
+            base,
+            route,
+            data=json.dumps(request).encode(),
+            method="POST",
+            headers={"Content-Type": "application/json", "Origin": "https://outside.invalid"},
+        )
+        assert status == 403 and proxy.is_file()
+        assert post(base, route, {**request, "sourceSha256": "../artifacts"})[0] == 400
+
+        stat = proxy.stat()
+        os.utime(proxy, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000_000))
+        status, _, raw = post(base, route, request)
+        assert status == 409 and json.loads(raw)["code"] == "storage.proxy_stale"
+        request["reclaimToken"] = items(base)[source]["reclaimToken"]
+
+        with proxy_lease(tmp_path, source, write=False), proxy_lease(tmp_path, source, write=False):
+            status, _, raw = post(base, route, request)
+            assert status == 409 and json.loads(raw)["code"] == "storage.proxy_busy"
+            # A separate CLI process cannot reclaim a proxy being transferred by the server.
+            script = """
+import sys
+from pathlib import Path
+from gamingcreator.domain.errors import AppError
+from gamingcreator.infrastructure.proxy_lease import proxy_lease
+try:
+    with proxy_lease(Path(sys.argv[1]), sys.argv[2], write=True):
+        raise AssertionError('acquired a held lease')
+except AppError as exc:
+    assert exc.code == 'storage.proxy_busy', exc
+"""
+            child = subprocess.run(
+                [sys.executable, "-B", "-c", script, str(tmp_path), source],
+                capture_output=True,
+                timeout=15,
+            )
+            assert child.returncode == 0, child.stderr.decode(errors="replace")
+            assert proxy.is_file()
+
+        status, _, raw = post(base, route, request)
+        assert status == 200 and json.loads(raw) == {
+            "sourceSha256": source,
+            "removed": True,
+            "releasedProxyBytes": expected_bytes,
+        }
+        assert source not in items(base)
+        status, _, raw = post(base, route, request)
+        assert status == 200 and json.loads(raw)["releasedProxyBytes"] == 0
+
+    assert (tmp_path / "one.mp4").read_bytes() == original
+    assert protected.read_text(encoding="utf-8") == "keep"
+    assert {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in other} == other
+    assert (root / ".building-in-progress" / "proxy.mp4").is_file()
+
+
 def test_json_reports_inventory_rejection_without_changing_files(tmp_path):
     _plant(tmp_path)
     loose = proxy_space_root(tmp_path) / "README.txt"
@@ -170,3 +251,26 @@ def test_json_reports_inventory_rejection_without_changing_files(tmp_path):
         assert "不明目录" in payload["message"]
     assert loose.read_bytes() == before
     assert loose.stat().st_mtime_ns == mtime
+
+
+def test_reclaim_preserves_unverified_video_even_under_the_proxy_root(tmp_path):
+    root = proxy_space_root(tmp_path)
+    bare = root / _sha("d") / "proxy.mp4"
+    _write(bare, b"user-video-without-a-receipt")
+    source = tmp_path / "registered-source.mp4"
+    _write(source, b"source")
+    suspect = _sha("e")
+    plant_playable_proxy(tmp_path, source, suspect, 1_000_000, body=b"generated")
+    different = root / suspect / "proxy.mp4"
+    different.write_bytes(b"different")  # Same size as the original cache file.
+    before = _snapshot(root)
+    with workspace(tmp_path) as base:
+        listing = json.loads(get(base, "/api/proxy-space")[2])["items"]
+        assert not listing[0]["cleanable"] and "reclaimToken" not in listing[0]
+        status, _, raw = post(
+            base,
+            "/api/reclaim-proxy",
+            {"sourceSha256": suspect, "reclaimToken": listing[1]["reclaimToken"]},
+        )
+        assert status == 409 and json.loads(raw)["code"] == "storage.proxy_unsafe"
+    assert _snapshot(root) == before

@@ -353,10 +353,14 @@ def write_manifest(result: MediaPreprocessingResult, parameters: SamplingParamet
 
 class FfmpegMediaProcessor:
     def __init__(self, repository: Path) -> None:
-        self.tool_directory = repository.resolve() / ".tools" / "ffmpeg" / "bin"
+        self.repository = repository.resolve()
+        self.tool_directory = self.repository / ".tools" / "ffmpeg" / "bin"
 
     async def probe(self, source: Path, context: CancellationContext) -> MediaAsset:
+        from gamingcreator.infrastructure.proxy_media import reject_managed_proxy_source
+
         source = LocalInputReader().validate_video(source)
+        reject_managed_proxy_source(self.repository, source)
         context.check_cancelled()
         try:
             source_hash = await hash_source(source, context)

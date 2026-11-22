@@ -7,7 +7,7 @@ place. Any failure removes the temporary directory: no partial proxy is ever kep
 """
 
 import json
-import shutil
+import os
 import time
 from contextlib import suppress
 from fractions import Fraction
@@ -19,8 +19,15 @@ from uuid import uuid4
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.domain.errors import AppError, ExitCode
 from gamingcreator.infrastructure.ffmpeg_media import hash_source
-from gamingcreator.infrastructure.local_paths import is_link
 from gamingcreator.infrastructure.media_process import MediaOutputLimit, run_media_process
+from gamingcreator.infrastructure.proxy_disposal import dispose_proxy_record
+from gamingcreator.infrastructure.proxy_disposal import proxy_stat_identity as proxy_stat_identity
+from gamingcreator.infrastructure.proxy_lease import (
+    checked_directory,
+    is_sha256,
+    proxy_lease,
+    regular_single_link,
+)
 
 HEIGHT = 360
 VIDEO_MAX_RATE = 600_000
@@ -45,18 +52,53 @@ def proxy_budget(duration_us: int) -> int:
 
 
 STALE_BUILD_SECONDS = 12 * 3600
-
-
-def _is_sha(value: object) -> bool:
-    return (
-        isinstance(value, str) and len(value) == 64 and all(c in "0123456789abcdef" for c in value)
-    )
+PROXY_CACHE_ROOT = Path(".cache/workspace/proxies")
 
 
 def proxy_directory(repository: Path, source_sha256: str) -> Path:
-    if not _is_sha(source_sha256):
+    if not is_sha256(source_sha256):
         raise ValueError("Invalid source SHA256.")
-    return repository.resolve() / ".cache/workspace/proxies" / source_sha256
+    return repository.absolute() / PROXY_CACHE_ROOT / source_sha256
+
+
+def reject_managed_proxy_source(repository: Path, source: Path) -> None:
+    if source.resolve().is_relative_to((repository / PROXY_CACHE_ROOT).resolve()):
+        raise AppError(
+            "media.proxy_not_source", "编辑代理目录中的文件不能登记为原片。", ExitCode.INPUT
+        )
+
+
+PROXY_FILES = ("proxy.mp4", "receipt.json")
+
+
+def proxy_record(directory: Path) -> tuple[os.stat_result, dict[str, os.stat_result]] | None:
+    """Snapshot only directories containing precisely known, single-link proxy artifacts."""
+    if not checked_directory(directory):
+        return None
+    before = directory.lstat()
+    files = {}
+    for path in directory.iterdir():
+        if path.name not in PROXY_FILES:
+            raise OSError("Unexpected proxy record entry")
+        info = path.lstat()
+        if not regular_single_link(info):
+            raise OSError("Unsafe proxy record file")
+        files[path.name] = info
+    if not checked_directory(directory) or not os.path.samestat(before, directory.lstat()):
+        raise OSError("Proxy directory was replaced")
+    return before, files
+
+
+def unlink_proxy_record(
+    directory: Path, record: tuple[os.stat_result, dict[str, os.stat_result]]
+) -> None:
+    """Remove known entries in order, then remove the empty directory."""
+    directory_stat, files = record
+    if files.keys() - PROXY_FILES or not checked_directory(directory):
+        raise OSError("Unknown or missing proxy record")
+    dispose_proxy_record(
+        directory, directory_stat, files, tuple(name for name in PROXY_FILES if name in files)
+    )
 
 
 def is_editing_proxy_file(path: Path) -> bool:
@@ -90,23 +132,35 @@ def _proxy_cache(cache: Any = None) -> Any:
     return _proxy_bytes
 
 
-def load_proxy_receipt(repository: Path, source_sha256: str) -> dict[str, Any] | None:
-    """Structural receipt and file, without hashing. Same-size tampers still look intact here."""
-    directory = proxy_directory(repository, source_sha256)
-    receipt_path, proxy = directory / "receipt.json", directory / "proxy.mp4"
-    if not receipt_path.is_file() or not proxy.is_file() or is_link(proxy) or is_link(directory):
-        return None
+def _receipt_metadata(directory: Path, source_sha256: str) -> dict[str, Any] | None:
+    receipt_path = directory / "receipt.json"
     try:
+        if not checked_directory(directory) or not regular_single_link(receipt_path.lstat()):
+            return None
         receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
-    if not isinstance(receipt, dict) or not _is_sha(receipt.get("proxySha256")):
+    if not isinstance(receipt, dict) or not is_sha256(receipt.get("proxySha256")):
         return None
     if (
-        receipt.get("sourceSha256") != source_sha256
+        receipt.get("schemaVersion") != "editing-proxy-receipt-v1"
+        or receipt.get("sourceSha256") != source_sha256
         or receipt.get("settings") != SETTINGS
-        or receipt.get("bytes") != proxy.stat().st_size
     ):
+        return None
+    return receipt
+
+
+def load_proxy_receipt(repository: Path, source_sha256: str) -> dict[str, Any] | None:
+    """Structural receipt and file, without hashing. Same-size tampers still look intact here."""
+    directory = proxy_directory(repository, source_sha256)
+    proxy = directory / "proxy.mp4"
+    receipt = _receipt_metadata(directory, source_sha256)
+    try:
+        info = proxy.lstat()
+    except OSError:
+        return None
+    if receipt is None or not regular_single_link(info) or receipt.get("bytes") != info.st_size:
         return None
     return {**receipt, "path": str(proxy)}
 
@@ -199,10 +253,23 @@ def _proxy_command(
     return command
 
 
+def _rebuildable_record(final: Path) -> tuple[os.stat_result, dict[str, os.stat_result]] | None:
+    try:
+        record = proxy_record(final)
+        if record is not None and record[1] and _receipt_metadata(final, final.name) is None:
+            raise OSError("Existing files are not identified by a proxy receipt")
+    except OSError:
+        raise AppError(
+            "storage.proxy_unsafe", "代理目录包含不明或不安全的内容，不能覆盖。", ExitCode.STORAGE
+        ) from None
+    return record
+
+
 def _place_proxy(temporary: Path, final: Path) -> None:
     """Move the finished proxy into place. Windows may briefly hold a handle after FFmpeg exits."""
-    if final.exists():
-        shutil.rmtree(final)
+    record = _rebuildable_record(final)
+    if record is not None:
+        unlink_proxy_record(final, record)
     delay = 0.05
     for attempt in range(5):
         try:
@@ -223,24 +290,43 @@ async def make_proxy(
     context: CancellationContext,
     tools: Path | None = None,
 ) -> dict[str, Any]:
-    existing = read_proxy(repository, source_sha256)
-    if existing is not None:
-        return {**existing, "reused": True}
+    reject_managed_proxy_source(repository, source)
+    with proxy_lease(repository, source_sha256, write=False):
+        existing = read_proxy(repository, source_sha256)
+        if existing is not None:
+            return {**existing, "reused": True}
+    with proxy_lease(repository, source_sha256, write=True):
+        existing = read_proxy(repository, source_sha256)
+        if existing is not None:
+            return {**existing, "reused": True}
+        return await _build_proxy(
+            repository, source, source_sha256, source_duration_us, context, tools
+        )
+
+
+async def _build_proxy(
+    repository: Path,
+    source: Path,
+    source_sha256: str,
+    source_duration_us: int,
+    context: CancellationContext,
+    tools: Path | None,
+) -> dict[str, Any]:
     final = proxy_directory(repository, source_sha256)
     # A file replaced at the registered path must never be served as that recording's preview.
     if await hash_source(source, context) != source_sha256:
         raise ValueError("Source bytes do not match the registered recording.")
     root = final.parent
-    root.mkdir(parents=True, exist_ok=True)
-    if any(is_link(p) for p in (root, *root.parents)):
-        raise ValueError("Proxy directory cannot use links.")
+    checked_directory(root, create=True)
+    _rebuildable_record(final)
     budget = proxy_budget(source_duration_us)
-    # A build killed outright leaves its folder; any older than the 6 h build limit is stale.
+    # A build killed outright leaves its folder; the stale threshold exceeds the build limit.
     cutoff = time.time() - STALE_BUILD_SECONDS
     for stale in root.glob(".building-*"):
         with suppress(OSError):
-            if stale.is_dir() and not is_link(stale) and stale.stat().st_mtime < cutoff:
-                shutil.rmtree(stale, ignore_errors=True)
+            record = proxy_record(stale)
+            if record is not None and record[0].st_mtime < cutoff:
+                unlink_proxy_record(stale, record)
     temporary = root / f".building-{uuid4().hex}"
     temporary.mkdir()
     try:
@@ -274,11 +360,15 @@ async def make_proxy(
         (temporary / "receipt.json").write_text(
             json.dumps(receipt, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
+        if await hash_source(source, context) != source_sha256:
+            raise ValueError("Source bytes changed during proxy generation.")
         _place_proxy(temporary, final)
         return {**receipt, "path": str(final / "proxy.mp4"), "reused": False}
     finally:
-        if temporary.exists():
-            shutil.rmtree(temporary, ignore_errors=True)
+        with suppress(OSError):
+            record = proxy_record(temporary)
+            if record is not None:
+                unlink_proxy_record(temporary, record)
 
 
 def _media_query(url: str) -> dict[str, str] | None:
