@@ -118,12 +118,104 @@ function usePreparation(project) {
     return {...current, read, write};
 }
 
-function ProgressRows({items, saved = false}) {
+function localWindowsPath(path) {
+    return typeof path === "string" && /^[A-Za-z]:[\\/]/.test(path) && !/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}"<>|?*]/u.test(path)
+        && path.slice(3).split(/[\\/]/).every((part) => part && !part.includes(":") && !/[. ]$/.test(part));
+}
+
+function quotePowerShell(word) {
+    // PowerShell recognizes typographic single quotes as delimiters, too.
+    return `'${word.replace(/['\u2018-\u201B]/gu, "$&$&")}'`;
+}
+
+function checkedHandoff(document, project, row) {
+    if (document?.schemaVersion !== "material-tasks-v2" || document.project !== project || document.limit !== 1
+        || document.offset !== 0 || document.total !== 1 || document.hasMore !== false || document.snapshotOnly !== true
+        || !Array.isArray(document.tasks) || document.tasks.length !== 1 || document.tasks[0]?.runId !== row.runId) {
+        throw new Error("返回的项目或任务身份无法核对，请重新读取批次。");
+    }
+    const [task] = document.tasks;
+    if (task.phase === "completed") throw new Error("此任务的分析已完成，可在项目中打开回看。");
+    const {result} = row;
+    const {stages, cost, progress, nextCommand: args} = task;
+    if (task.phase !== "media_prepared" || task.runStatus !== "pending" || task.nextAction !== "analyze" || task.errorCode !== null
+        || !Array.isArray(task.continuationBlockers) || task.continuationBlockers.length || task.requiresRetryConfirmation !== false
+        || !Array.isArray(stages) || stages.length !== 1 || stages[0]?.id !== "media" || stages[0]?.status !== "completed"
+        || task.eventCount !== 0 || task.transcriptCount !== 0 || cost?.remoteRequests !== 0 || cost?.unknownAttempts !== 0
+        || cost?.knownCny !== "0" || progress?.completedVisionWindows !== 0 || progress?.coverageFits !== true) {
+        throw new Error("当前任务还不能交接分析，请先核对最新任务状态。");
+    }
+    const cap = result.savedMaxCostCny;
+    const digest = (value) => typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+    const positive = (value) => Number.isSafeInteger(value) && value > 0;
+    if (!validId(row.runId) || result.runId !== row.runId || result.runStatus !== "pending" || result.modelInvocations !== 0
+        || !digest(result.sourceSha256) || result.sourceSha256 !== row.sourceSha256 || result.sourceSha256 !== task.sourceSha256
+        || !digest(result.configHash) || result.configHash !== task.configHash || row.sourceName !== task.sourceName
+        || !positive(result.durationUs) || result.durationUs !== task.durationUs || !positive(result.imageCount) || result.imageCount !== task.imageCount
+        || typeof cap !== "string" || !/^\+?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(cap)
+        || !Number.isFinite(Number(cap)) || Number(cap) <= 0 || cap !== task.configuration?.maxCostCny
+        || !positive(result.plannedWindows) || result.plannedWindows !== progress.plannedWindows
+        || !positive(result.plannedUploadFrames) || result.plannedUploadFrames !== progress.plannedUploadFrames) {
+        throw new Error("冻结的素材、分析配置或费用上限与当前任务不一致，请重新读取批次。");
+    }
+    const frozen = result.nextCommand;
+    if (!Array.isArray(args) || !Array.isArray(frozen) || args.length !== 7 || frozen.length !== args.length
+        || args.some((arg, index) => typeof arg !== "string" || arg !== frozen[index])
+        || args[0] !== "gamingcreator" || args[1] !== "analyze" || args[3] !== "--project" || args[5] !== "--resume"
+        || args[6] !== row.runId || !localWindowsPath(args[2]) || !localWindowsPath(args[4]) || args[2].split(/[\\/]/).at(-1) !== row.sourceName) {
+        throw new Error("冻结的分析命令无法核对，请重新读取批次。");
+    }
+    const command = String.raw`& {
+    $ErrorActionPreference = 'Stop'
+    . '.\scripts\env.ps1'
+    & '.\.venv\Scripts\python.exe' -B -m gamingcreator analyze ${quotePowerShell(args[2])} --project ${quotePowerShell(args[4])} --resume ${quotePowerShell(args[6])}
+}`;
+    return {command, cap, windows: progress.plannedWindows, frames: progress.plannedUploadFrames};
+}
+
+function AnalysisHandoff({project, row}) {
+    const active = useRef(null);
+    const [state, setState] = useState({});
+    useLayoutEffect(() => () => active.current?.abort(), []);
+    const check = async () => {
+        active.current?.abort();
+        const controller = new AbortController();
+        active.current = controller;
+        setState({checking: true});
+        try {
+            const document = await client.preparedAnalysisTask(project, row.runId, controller.signal);
+            if (!controller.signal.aborted) setState(checkedHandoff(document, project, row));
+        } catch (error) {
+            if (!controller.signal.aborted) setState({error: `核对分析任务失败。${error.message}`});
+        }
+    };
+    const copy = () => {
+        const {signal} = active.current;
+        const notice = (message) => { if (!signal.aborted) setState((value) => ({...value, notice: message})); };
+        void client.copyText(state.command, () => notice("已复制分析命令。"), () => notice("无法自动复制，请手动选中下方命令复制。"));
+    };
+    return html`<div class="actions-row">
+        <button type="button" class="btn ghost" disabled=${state.checking} onClick=${check}>核对分析任务</button>
+        ${state.checking ? html`<p role="status">正在核对分析任务…</p>` : null}
+        ${state.error ? html`<p role="alert">${state.error}</p>` : null}
+        ${state.command ? html`<div>
+            <p class="hint">保存的分析上限 ¥${state.cap}（实际费用以账单为准） · 计划 ${state.windows} 个窗口、${state.frames} 张上传帧。</p>
+            <p class="hint">先单独确认分析与费用授权，再在应用根目录的 PowerShell 运行命令。</p>
+            <button type="button" class="btn ghost" onClick=${copy}>复制分析命令</button>
+            <textarea class="input" aria-label="分析命令（PowerShell）" readonly rows="5" value=${state.command}></textarea>
+            ${state.notice ? html`<p role="status">${state.notice}</p>` : null}
+        </div>` : null}
+    </div>`;
+}
+
+function ProgressRows({project, items, saved = false}) {
     return html`<ul>${items.map((row) => html`<li key=${row.id} data-run=${row.runId} data-preparation-state=${row.status}>
         <strong>${row.sourceName}</strong> · ${STATES[row.status]}
         ${Number.isSafeInteger(row.result?.imageCount) ? html`<span> · ${row.result.imageCount} 张画面 · ${row.result.audioAvailable ? "已保存音轨" : "没有音轨"}</span>` : null}
         ${row.message ? html`<p class="hint">${row.message}</p>` : null}
         ${!saved && !row.verifiedThisInvocation && !["pending", "running"].includes(row.status) ? html`<span class="hint"> · 本次尚未重新核对</span>` : null}
+        ${row.status === "prepared" && row.result?.coverageFits === true && row.result.nextCommand
+            ? html`<${AnalysisHandoff} key=${JSON.stringify([project, row.runId, row.sourceSha256, row.sourceName, row.result])} project=${project} row=${row} />` : null}
     </li>`)}</ul>`;
 }
 
@@ -136,7 +228,7 @@ function PreparationHistory({catalog, job, disabled, onResume, read}) {
         ${batches.map((batch) => html`<details class="group" key=${batch.batchId} data-batch=${batch.batchId} open=${batches.length === 1 && !job}>
             <summary>批次 ${batch.batchId.slice(0, 8)} · ${batch.readable ? `${batch.items.length} 段 · ${STATES[batch.status]}` : "无法读取"}</summary>
             ${batch.readable ? html`<p class="hint">原每段后续分析上限 ¥${batch.maxCostCnyPerTask}。</p>
-                <${ProgressRows} items=${batch.items} saved=${true} />
+                <${ProgressRows} project=${catalog.project} items=${batch.items} saved=${true} />
                 <button class="btn ghost" type="button" disabled=${disabled} onClick=${() => onResume(batch.batchId)}>继续本地准备</button>`
                 : html`<p class="hint">${batch.message || "批次资料无法核对。"}</p>`}
         </details>`)}
@@ -210,7 +302,7 @@ export function ImportRecordings({project, onClose, onOpenProject}) {
         <p role="status">${writing ? "正在提交…" : checking ? "正在读取准备批次…" : job ? STATES[job.status] : "在这里查看本地准备进度。"}
             ${items.length ? ` · 已准备 ${items.filter((item) => item.status === "prepared").length}/${items.length} 段` : ""}</p>
         ${error || stateError || job?.error?.message ? html`<p role="alert">${error || stateError || job.error.message}</p>` : null}
-        ${items.length ? html`<${ProgressRows} items=${items} />` : null}
+        ${items.length ? html`<${ProgressRows} project=${scope} items=${items} />` : null}
         ${ready ? html`<button class="btn ghost" type="button" disabled=${locked || active} onClick=${openProject}>打开准备项目</button>` : null}
         <${PreparationHistory} catalog=${catalog} job=${job} disabled=${locked || active || checking} onResume=${submit} read=${read} />
     </dialog>`;

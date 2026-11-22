@@ -1,5 +1,7 @@
 """A new Studio project prepares real tasks and resumes only on a user action."""
 
+from urllib.parse import parse_qs, urlsplit
+
 import pytest
 from test_inspection_http import workspace
 from test_media_batch import batch  # noqa: F401
@@ -7,6 +9,42 @@ from test_media_preparation_jobs import preparation  # noqa: F401
 
 playwright = pytest.importorskip("playwright.sync_api")
 pytestmark = pytest.mark.browser
+
+
+def check_analysis_handoff(page, saved_batch, project, run):
+    if not saved_batch.get_attribute("open"):
+        saved_batch.locator("summary").click()
+    row = saved_batch.locator(f'[data-run="{run}"]')
+    check = row.get_by_role("button", name="核对分析任务")
+    command = row.get_by_label("分析命令（PowerShell）")
+    with page.expect_response(lambda response: "/api/tasks?" in response.url) as checked:
+        check.click()
+    assert checked.value.request.method == "GET"
+    assert parse_qs(urlsplit(checked.value.url).query) == {
+        "project": [project],
+        "run": [run],
+        "limit": ["1"],
+        "handoff": ["1"],
+    }
+    playwright.expect(command).to_be_visible()
+    lines = command.input_value().splitlines()
+    assert lines[2].strip() == r". '.\scripts\env.ps1'"
+    assert lines[-2].endswith(f"--resume '{run}'")
+
+    def change_source(route):
+        response = route.fetch()
+        payload = response.json()
+        original = payload["tasks"][0]["nextCommand"][2]
+        name = original.replace("\\", "/").split("/")[-1]
+        payload["tasks"][0]["nextCommand"][2] = rf"C:\different\{name}"
+        route.fulfill(response=response, json=payload)
+
+    pattern = "**/api/tasks?*"
+    page.route(pattern, change_source)
+    check.click()
+    playwright.expect(row.get_by_role("alert")).to_contain_text("冻结的分析命令无法核对")
+    playwright.expect(command).to_have_count(0)
+    page.unroute(pattern, change_source)
 
 
 def check_late_startup_cannot_override_import(page, open_dialog, dialog, project_select, project):
@@ -86,6 +124,7 @@ def test_studio_import_remembers_and_explicitly_resumes_nested_project(preparati
                 "rows => rows.map(r => r.dataset.run)"
             )
             assert posts[1] == {"project": project, "resume": batch_id, "timeoutSeconds": 3600}
+            check_analysis_handoff(page, batch, project, original[0])
             dialog.get_by_role("button", name="打开准备项目").click()
             playable_project = page.get_by_label("项目", exact=True)
             playwright.expect(playable_project).to_have_value(project)

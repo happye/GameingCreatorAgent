@@ -1492,22 +1492,10 @@ async def execute_tasks(
     _require_project(project)
     store = await SqliteTimelineStore.open(project, read_only=True)
     try:
-        document = await tasks_payload(store, limit=limit, offset=offset, run_id=run_id)
+        document = await tasks_payload(
+            store, limit=limit, offset=offset, run_id=run_id, include_next_command=True
+        )
         document["project"] = str(project.resolve())
-        rows = cast(list[dict[str, object]], document["tasks"])
-        for row in rows:
-            row["nextCommand"] = None
-            if row["nextAction"] is not None and not row["continuationBlockers"]:
-                run = await store.load_run(cast(str, row["runId"]))
-                row["nextCommand"] = [
-                    "gamingcreator",
-                    "prepare-media" if row["nextAction"] == "prepare_media" else "analyze",
-                    str(run.asset.source_path),
-                    "--project",
-                    str(project.resolve()),
-                    "--resume",
-                    run.run_id,
-                ]
         return document
     finally:
         await store.close()

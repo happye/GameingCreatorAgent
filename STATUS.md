@@ -18,7 +18,7 @@
 
 ## 当前交付与下一步（2026-11-22）
 
-Studio 已可直接准备本机录像。下一步接通已准备任务与现有分析授权流程。J2 十槽评分与 J3 独立 Windows 验收留到测试阶段。
+Studio 已可导入和核对待分析任务，复制原续跑命令。下步接入镜头切分和黑屏标记。J2 十槽评分与 J3 独立 Windows 验收留到测试阶段。
 
 1. [P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测 Atom 同稿各自出包。[P029](docs/exec-plans/sprint-creation-subtitles.md)实测青色宋体。
 2. 真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。

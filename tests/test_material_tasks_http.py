@@ -49,7 +49,7 @@ def refuse_work(monkeypatch):
 
 
 def test_task_http_is_paged_read_only_and_preserves_unknown_attempts(tmp_path, monkeypatch):
-    project, _ = seed_tasks(tmp_path / "artifacts", 3)
+    project, bundles = seed_tasks(tmp_path / "artifacts", 3)
     unknown_attempt(project)
     before = snapshot(project)
     refuse_work(monkeypatch)
@@ -61,6 +61,19 @@ def test_task_http_is_paged_read_only_and_preserves_unknown_attempts(tmp_path, m
         assert payload["schemaVersion"] == "material-tasks-v2" and payload["hasMore"] is True
         assert payload["project"] == str(project)
         assert [task["runId"] for task in payload["tasks"]] == ["run-002", "run-001"]
+        assert all("nextCommand" not in task for task in payload["tasks"])
+        query_ready = urlencode({"project": str(project), "run": "run-002", "handoff": 1})
+        status, _, raw = get(base, "/api/tasks?" + query_ready)
+        assert status == 200
+        assert json.loads(raw)["tasks"][0]["nextCommand"] == [
+            "gamingcreator",
+            "analyze",
+            str(bundles[2].asset.source_path),
+            "--project",
+            str(project.resolve()),
+            "--resume",
+            "run-002",
+        ]
         status, _, raw = get(
             base, "/api/tasks?" + urlencode({"project": str(project), "run": "run-000"})
         )
@@ -69,6 +82,9 @@ def test_task_http_is_paged_read_only_and_preserves_unknown_attempts(tmp_path, m
         assert task["cost"]["unknownReservationCny"] == "2" and task["cost"]["remainingCny"] == "3"
         assert task["requiresRetryConfirmation"] is True
         assert "nextCommand" not in task and "sourcePath" not in task
+        query_uncertain = urlencode({"project": str(project), "run": "run-000", "handoff": 1})
+        status, _, raw = get(base, "/api/tasks?" + query_uncertain)
+        assert status == 200 and json.loads(raw)["tasks"][0]["nextCommand"] is None
         status, head, raw = get(base, "/api/tasks?" + query, method="HEAD")
         assert status == 200 and raw == b"" and int(head["Content-Length"]) > 0
         assert (
@@ -96,6 +112,8 @@ def test_task_http_is_paged_read_only_and_preserves_unknown_attempts(tmp_path, m
         "run=",
         "run=run-000&offset=1",
         "limit=1&limit=2",
+        "handoff=1",
+        "run=run-000&handoff=0",
     ],
 )
 def test_task_http_rejects_invalid_page_and_identity(tmp_path, extra):

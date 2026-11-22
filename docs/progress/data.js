@@ -1049,10 +1049,11 @@ window.PROGRESS_DATA = {
     "docs/exec-plans/sprint-creation-workspace.md",
     "tests/test_creation_jobs.py",
     "tests/test_creation_workspace_browser.py",
-    "2026-11-22: Studio Assets prepared actual Comic Stars footage in a new local project, then reopened the persisted batch after refresh without replaying the submission. Browser regression verifies explicit same-batch resume and nested project navigation."
+    "2026-11-22: Studio Assets prepared actual Comic Stars footage in a new local project, then reopened the persisted batch after refresh without replaying the submission. Browser regression verifies explicit same-batch resume and nested project navigation.",
+    "2026-11-22: Studio verified a prepared Comic Stars run against live task metadata and copied its original CLI resume command with the app environment bootstrap. Browser handoff remained read-only and the command was not executed."
    ],
-   "done": "Studio素材页直接导入本机录像并保存可续的准备批次；实拍验证打开新项目和刷新恢复。已分析录像可检索、入篮、选方案、剪辑、旁白配乐、字幕、导出和出包",
-   "todo": "已准备任务的后续分析仍需单独授权和CLI入口；其他游戏的创作质量待人评",
+   "done": "Studio 素材页可本机导入、恢复准备批次，核对原片与预算后复制原任务分析命令；已分析录像可检索、入篮、选方案、剪辑、旁白配乐、字幕、导出和出包",
+   "todo": "付费分析须单独授权后执行已核对的命令；其他游戏的创作质量待人评",
    "updated": "2026-11-22",
    "sprints": [
     "sprint-studio-workbench",
@@ -2089,6 +2090,12 @@ window.PROGRESS_DATA = {
      "name": "Studio 导入本机录像并继续原准备批次",
      "status": "done",
      "sprint": "sprint-studio-workbench"
+    },
+    {
+     "id": "P040-analysis-handoff",
+     "name": "从待分析录像核对并复制原任务命令",
+     "status": "done",
+     "sprint": "sprint-studio-workbench"
     }
    ]
   },
@@ -2474,7 +2481,7 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "Studio 已可直接准备本机录像。下一步接通已准备任务与现有分析授权流程。J2 十槽评分与 J3 独立 Windows 验收留到测试阶段。",
+  "Studio 已可导入和核对待分析任务，复制原续跑命令。下步接入镜头切分和黑屏标记。J2 十槽评分与 J3 独立 Windows 验收留到测试阶段。",
   "[P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测 Atom 同稿各自出包。[P029](docs/exec-plans/sprint-creation-subtitles.md)实测青色宋体。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "[抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。",
@@ -3345,7 +3352,7 @@ window.PROGRESS_DATA = {
    "title": "Sprint：创作工作台（/studio）",
    "ids": [],
    "date": "2026-11-22",
-   "bytes": 16100
+   "bytes": 16663
   },
   {
    "file": "sprint-timed-overlays",

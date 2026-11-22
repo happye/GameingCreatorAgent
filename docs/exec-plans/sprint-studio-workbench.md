@@ -17,6 +17,8 @@
 
 2026-11-22（P040）：Studio 素材页可直接导入本机录像，查看进度、停止或重新打开已保存批次，继续原批次需明确点击。隔离安装数据目录中用漫画群星录像完成批次 `c2ff5b007b1d45c09d65cb666a106705`，打开新项目并在刷新后找回批次，零模型调用和新预留。准备好的录像显示待分析，后续需原任务的分析授权。证据 `.cache/scratch/studio-preparation-20261122/`，部分失败续跑、刷新、嵌套项目和迟到导航的回归见 `tests/test_studio_media_preparation_browser.py`。
 
+2026-11-22（P040 分析交接）：待分析录像可从当前或已保存批次点「核对分析任务」。Studio 只读核对当前运行、冻结原片路径、配置、窗口数和预算上限；匹配后可复制带项目隔离环境的原续跑命令。漫画群星真实运行 `b44bc030e972480eb217457b52248067` 验证剪贴板与原任务一致，未执行分析。测试覆盖同名异路径拒绝、已有不确定调用不发续跑命令、普通列表不返回原片路径。证据 `.cache/scratch/studio-analysis-handoff-20261122-verified/`。
+
 ## 第 1 步结果
 
 - 前端库：`src/gamingcreator/ui/static/vendor/`（preact 10.24.3 MIT、htm 3.1.1 Apache-2.0）。已对照 npm registry 完整性哈希校验；`vendor.json` 记录 SHA-256 和一处补丁（hooks 的裸导入改为相对路径，因为 CSP `script-src 'self'` 不允许内联 import map）。许可证已纳入 `collect-third-party-notices.py`。

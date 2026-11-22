@@ -337,8 +337,8 @@
    ]
   },
   "P040": {
-   "done": "Studio素材页直接导入本机录像并保存可续的准备批次；实拍验证打开新项目和刷新恢复。已分析录像可检索、入篮、选方案、剪辑、旁白配乐、字幕、导出和出包",
-   "todo": "已准备任务的后续分析仍需单独授权和CLI入口；其他游戏的创作质量待人评",
+   "done": "Studio 素材页可本机导入、恢复准备批次，核对原片与预算后复制原任务分析命令；已分析录像可检索、入篮、选方案、剪辑、旁白配乐、字幕、导出和出包",
+   "todo": "付费分析须单独授权后执行已核对的命令；其他游戏的创作质量待人评",
    "updated": "2026-11-22",
    "sprints": [
     "sprint-studio-workbench",
@@ -1122,6 +1122,12 @@
     {
      "id": "P040-studio-preparation",
      "name": "Studio 导入本机录像并继续原准备批次",
+     "status": "done",
+     "sprint": "sprint-studio-workbench"
+    },
+    {
+     "id": "P040-analysis-handoff",
+     "name": "从待分析录像核对并复制原任务命令",
      "status": "done",
      "sprint": "sprint-studio-workbench"
     }

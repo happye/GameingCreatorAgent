@@ -75,7 +75,9 @@ def _reservation(details: str | None) -> tuple[int, Decimal] | None:
         return None
 
 
-def task_payload(snapshot: RunTaskSnapshot, *, project: Path | None = None) -> dict[str, object]:
+def task_payload(
+    snapshot: RunTaskSnapshot, *, project: Path | None = None, include_next_command: bool = False
+) -> dict[str, object]:
     run, checkpoints = snapshot.run, snapshot.checkpoints
     config = run.configuration.analysis
     completed = {row.stage_id for row in checkpoints if row.status == StageStatus.COMPLETED}
@@ -262,6 +264,20 @@ def task_payload(snapshot: RunTaskSnapshot, *, project: Path | None = None) -> d
     }
     if coverage_gap:
         payload["coverageGapSummary"] = build_coverage_gap_task_summary(project, run.run_id)
+    if include_next_command:
+        payload["nextCommand"] = (
+            [
+                "gamingcreator",
+                "prepare-media" if next_action == "prepare_media" else "analyze",
+                str(run.asset.source_path),
+                "--project",
+                str(project.resolve()),
+                "--resume",
+                run.run_id,
+            ]
+            if project is not None and next_action is not None and not blockers
+            else None
+        )
     return payload
 
 
@@ -293,7 +309,12 @@ async def all_tasks_payload(store: TimelineStore, *, page_size: int = 200) -> di
 
 
 async def tasks_payload(
-    store: TimelineStore, *, limit: int = 100, offset: int = 0, run_id: str | None = None
+    store: TimelineStore,
+    *,
+    limit: int = 100,
+    offset: int = 0,
+    run_id: str | None = None,
+    include_next_command: bool = False,
 ) -> dict[str, object]:
     if (
         type(limit) is not int
@@ -311,7 +332,12 @@ async def tasks_payload(
     return {
         "schemaVersion": TASKS_VERSION,
         "tasks": [
-            task_payload(item, project=getattr(store, "project", None)) for item in page.tasks
+            task_payload(
+                item,
+                project=getattr(store, "project", None),
+                include_next_command=include_next_command,
+            )
+            for item in page.tasks
         ],
         "total": page.total,
         "offset": page.offset,

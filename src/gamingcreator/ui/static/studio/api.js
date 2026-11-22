@@ -156,6 +156,7 @@ export const preparationBatches = (project, limit, offset, signal) => api("/api/
 export const preparationJob = (project, job, signal) => api("/api/media-preparation", {project, job}, {signal});
 export const prepareMedia = (body, signal) => api("/api/prepare-media-batch", {}, {body, signal});
 export const cancelPreparation = (project, job, signal) => api("/api/cancel-media-preparation", {}, {body: {project, job}, signal});
+export const preparedAnalysisTask = (project, run, signal) => api("/api/tasks", {project, run, limit: 1, handoff: 1}, {signal});
 export const inspect = (project, run, signal) => api("/api/inspect", {project, run, query: "", mode: "hybrid", top: 10, detailProfile: "v1"}, {signal});
 export const searchProject = (project, runs, query, top, signal) => api("/api/search-project", {}, {signal, body: {project, runs, query, mode: "hybrid", top}});
 export function matchesInspection(view, project, run) {

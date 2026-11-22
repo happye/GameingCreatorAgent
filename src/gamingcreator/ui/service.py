@@ -369,10 +369,17 @@ async def project_tasks_payload(
     offset: int = 0,
     run_id: str | None = None,
     project_reference: str | None = None,
+    include_next_command: bool = False,
 ) -> dict[str, object]:
     store = await SqliteTimelineStore.open(project, read_only=True)
     try:
-        payload = await tasks_payload(store, limit=limit, offset=offset, run_id=run_id)
+        payload = await tasks_payload(
+            store,
+            limit=limit,
+            offset=offset,
+            run_id=run_id,
+            include_next_command=include_next_command,
+        )
         payload["project"] = project_reference if project_reference is not None else str(project)
         return payload
     finally:
