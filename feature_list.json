@@ -642,13 +642,14 @@
                 "tests/test_creation_planner.py",
                 "scripts/plan-creation.ps1",
                 "docs/exec-plans/sprint-creation-workspace.md",
+                "docs/exec-plans/sprint-live-creation-loop.md",
                 "tests/test_creation_jobs.py",
                 "tests/test_creation_workspace_browser.py"
             ],
             "quality_status": "template_draft_not_human_accepted",
             "release_status": "not_released",
             "implementation_status": "partial",
-            "remaining": "Natural-language understanding, full creative requirements and render/UI integration remain; this slice is structured-input offline template planning and source-bound EDL only."
+            "remaining": "Studio converted a real one-line showcase brief into a draft used to make a video and platform package. Broader briefs and creative quality remain to be assessed."
         },
         {
             "id": "P020",
@@ -677,13 +678,14 @@
                 "tests/test_creation_planner.py",
                 "scripts/plan-creation.ps1",
                 "docs/exec-plans/sprint-creation-workspace.md",
+                "docs/exec-plans/sprint-ai-plan-duration.md",
                 "tests/test_creation_jobs.py",
                 "tests/test_creation_workspace_browser.py"
             ],
             "quality_status": "template_draft_not_human_accepted",
             "release_status": "not_released",
             "implementation_status": "partial",
-            "remaining": "Natural-language understanding, full creative requirements and render/UI integration remain; this slice is structured-input offline template planning and source-bound EDL only."
+            "remaining": "Studio restored three AI plans for real footage, filled the selected plan locally, then rendered and packaged it. The AI plans were shorter than the brief requested. Their topic coverage and creative quality still need assessment."
         },
         {
             "id": "P022",
@@ -774,12 +776,13 @@
                 "tests/test_clip_replacement_core.py",
                 "tests/test_clip_replacement_jobs.py",
                 "tests/test_clip_replacement_http.py",
-                "tests/test_clip_replacement_browser.py"
+                "tests/test_clip_replacement_browser.py",
+                "docs/exec-plans/sprint-ai-companion-fit.md"
             ],
             "quality_status": "template_draft_not_human_accepted",
             "release_status": "not_released",
             "implementation_status": "partial",
-            "remaining": "Natural-language understanding, full creative requirements and render/UI integration remain; this slice is structured-input offline template planning and source-bound EDL only."
+            "remaining": "Studio saved and rendered an AI edit from a real instruction, with narration and overlays moved with their clips. Complex edit instruction coverage and decision quality remain to be assessed."
         },
         {
             "id": "P028",

@@ -229,8 +229,8 @@ window.PROGRESS_DATA = {
     "tests/test_window_segment_cache.py"
    ],
    "done": "窗口级片段缓存命中可跳过视觉调用；有渲染容量门、媒体回收、向量缓存和分析复用检查",
-   "todo": "缓存整体仍为部分完成；准确率与人评不在本项，未发布",
-   "updated": "2026-11-03",
+   "todo": "真实检索已验证向量命中；视觉窗口复用跳过 Provider 调用仍缺真实素材记录",
+   "updated": "2026-11-23",
    "sprints": [
     "sprint-cache-reclamation"
    ]
@@ -436,12 +436,13 @@ window.PROGRESS_DATA = {
    "impl": "partial",
    "quality": "template_draft_not_human_accepted",
    "release": "not_released",
-   "remaining": "Natural-language understanding, full creative requirements and render/UI integration remain; this slice is structured-input offline template planning and source-bound EDL only.",
+   "remaining": "Studio converted a real one-line showcase brief into a draft used to make a video and platform package. Broader briefs and creative quality remain to be assessed.",
    "evidence": [
     "docs/exec-plans/sprint-creation-planner.md",
     "tests/test_creation_planner.py",
     "scripts/plan-creation.ps1",
     "docs/exec-plans/sprint-creation-workspace.md",
+    "docs/exec-plans/sprint-live-creation-loop.md",
     "tests/test_creation_jobs.py",
     "tests/test_creation_workspace_browser.py"
    ],
@@ -488,12 +489,13 @@ window.PROGRESS_DATA = {
    "impl": "partial",
    "quality": "template_draft_not_human_accepted",
    "release": "not_released",
-   "remaining": "Natural-language understanding, full creative requirements and render/UI integration remain; this slice is structured-input offline template planning and source-bound EDL only.",
+   "remaining": "Studio restored three AI plans for real footage, filled the selected plan locally, then rendered and packaged it. The AI plans were shorter than the brief requested. Their topic coverage and creative quality still need assessment.",
    "evidence": [
     "docs/exec-plans/sprint-creation-planner.md",
     "tests/test_creation_planner.py",
     "scripts/plan-creation.ps1",
     "docs/exec-plans/sprint-creation-workspace.md",
+    "docs/exec-plans/sprint-ai-plan-duration.md",
     "tests/test_creation_jobs.py",
     "tests/test_creation_workspace_browser.py"
    ],
@@ -632,7 +634,7 @@ window.PROGRESS_DATA = {
    "impl": "partial",
    "quality": "template_draft_not_human_accepted",
    "release": "not_released",
-   "remaining": "Natural-language understanding, full creative requirements and render/UI integration remain; this slice is structured-input offline template planning and source-bound EDL only.",
+   "remaining": "Studio saved and rendered an AI edit from a real instruction, with narration and overlays moved with their clips. Complex edit instruction coverage and decision quality remain to be assessed.",
    "evidence": [
     "docs/exec-plans/sprint-creation-planner.md",
     "tests/test_creation_planner.py",
@@ -648,15 +650,17 @@ window.PROGRESS_DATA = {
     "tests/test_clip_replacement_core.py",
     "tests/test_clip_replacement_jobs.py",
     "tests/test_clip_replacement_http.py",
-    "tests/test_clip_replacement_browser.py"
+    "tests/test_clip_replacement_browser.py",
+    "docs/exec-plans/sprint-ai-companion-fit.md"
    ],
-   "done": "生成源绑定结构化剪辑决策（EDL），可保存版本、换镜头、调整并重开",
-   "todo": "自然语言驱动剪辑决策未做；决策质量为模板草稿未验收",
-   "updated": "2026-11-06",
+   "done": "生成源绑定的剪辑决策并保存版本；Studio 已用一句话提案删镜，恢复并保存随镜迁移的旁白和图层，实拍成片和 B 站包可下载",
+   "todo": "复杂修改指令的覆盖与决策质量待验证",
+   "updated": "2026-11-23",
    "sprints": [
     "sprint-creation-planner",
     "sprint-creation-editing",
-    "sprint-clip-replacements"
+    "sprint-clip-replacements",
+    "sprint-ai-companion-fit"
    ]
   },
   {
@@ -2484,7 +2488,7 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "Studio 已交付镜头、画面文字定位和单条代理回收。下一步核对 P008 缓存缺口。J2 十槽评分与 J3 独立 Windows 验收留到测试阶段。",
+  "先闭环本地制作（需求→剪辑→成片→发布包），再补七种模式与桌面缺口。P008 待查视觉窗口复用实证。J2 十槽和 J3 干净机留到验收阶段。",
   "[P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测 Atom 同稿各自出包。[P029](docs/exec-plans/sprint-creation-subtitles.md)实测青色宋体。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "[抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。",

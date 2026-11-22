@@ -49,8 +49,8 @@
   },
   "P008": {
    "done": "窗口级片段缓存命中可跳过视觉调用；有渲染容量门、媒体回收、向量缓存和分析复用检查",
-   "todo": "缓存整体仍为部分完成；准确率与人评不在本项，未发布",
-   "updated": "2026-11-03",
+   "todo": "真实检索已验证向量命中；视觉窗口复用跳过 Provider 调用仍缺真实素材记录",
+   "updated": "2026-11-23",
    "sprints": [
     "sprint-cache-reclamation"
    ]
@@ -204,13 +204,14 @@
    ]
   },
   "P027": {
-   "done": "生成源绑定结构化剪辑决策（EDL），可保存版本、换镜头、调整并重开",
-   "todo": "自然语言驱动剪辑决策未做；决策质量为模板草稿未验收",
-   "updated": "2026-11-06",
+   "done": "生成源绑定的剪辑决策并保存版本；Studio 已用一句话提案删镜，恢复并保存随镜迁移的旁白和图层，实拍成片和 B 站包可下载",
+   "todo": "复杂修改指令的覆盖与决策质量待验证",
+   "updated": "2026-11-23",
    "sprints": [
     "sprint-creation-planner",
     "sprint-creation-editing",
-    "sprint-clip-replacements"
+    "sprint-clip-replacements",
+    "sprint-ai-companion-fit"
    ]
   },
   "P028": {
