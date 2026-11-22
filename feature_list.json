@@ -528,9 +528,10 @@
             "group": "A",
             "name": "场景切分（scene detection）＋黑屏检测",
             "first_product": false,
-            "delivery_status": "partial",
+            "delivery_status": "delivered",
             "implementation_evidence": [
-                "2026-11-01: expanded synthetic black-frame/hard-cut fixture catalog (tests/fixtures/shot-hard-cases) with byte-capped MP4 regression; workbench/report copy notes 抽检未人评; humanReviewed remains false; accuracy still not human-reviewed; no F006 claim"
+                "2026-11-01: expanded synthetic black-frame/hard-cut fixture catalog (tests/fixtures/shot-hard-cases) with byte-capped MP4 regression; workbench/report copy notes 抽检未人评; humanReviewed remains false; accuracy still not human-reviewed; no F006 claim",
+                "2026-11-22: Studio Assets scans the original recording locally, draws source-clock cut and black markers, and reopens the verified cache after refresh. Real Comic Stars footage returned seven cuts and the second marker sought to 29.600 seconds. The hard-cut-plus-black browser fixture verified black marker seek."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released"

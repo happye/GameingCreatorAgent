@@ -14,10 +14,10 @@ window.PROGRESS_DATA = {
  "summary": {
   "planned": 51,
   "delivery": {
-   "delivered": 10,
-   "partial": 41
+   "delivered": 11,
+   "partial": 40
   },
-  "pct": 59.8,
+  "pct": 60.8,
   "first": 22,
   "firstDelivery": {
    "partial": 22
@@ -260,17 +260,18 @@ window.PROGRESS_DATA = {
    "group": "A",
    "name": "场景切分（scene detection）＋黑屏检测",
    "first": false,
-   "delivery": "partial",
+   "delivery": "delivered",
    "impl": null,
    "quality": "not_separately_assessed",
    "release": "not_released",
    "remaining": null,
    "evidence": [
-    "2026-11-01: expanded synthetic black-frame/hard-cut fixture catalog (tests/fixtures/shot-hard-cases) with byte-capped MP4 regression; workbench/report copy notes 抽检未人评; humanReviewed remains false; accuracy still not human-reviewed; no F006 claim"
+    "2026-11-01: expanded synthetic black-frame/hard-cut fixture catalog (tests/fixtures/shot-hard-cases) with byte-capped MP4 regression; workbench/report copy notes 抽检未人评; humanReviewed remains false; accuracy still not human-reviewed; no F006 claim",
+    "2026-11-22: Studio Assets scans the original recording locally, draws source-clock cut and black markers, and reopens the verified cache after refresh. Real Comic Stars footage returned seven cuts and the second marker sought to 29.600 seconds. The hard-cut-plus-black browser fixture verified black marker seek."
    ],
-   "done": "detect-shots本地检测镜头切换与黑场，有合成硬切/黑场夹具回归",
-   "todo": "仅抽查2处，准确率未人评",
-   "updated": "2026-11-01",
+   "done": "Studio 源时间轴可本机检测镜头切换、黑屏并点击定位，刷新复用报告；漫画群星实拍 7 处切换，合成黑屏完成定位回归",
+   "todo": "真实素材检测准确率待人评",
+   "updated": "2026-11-22",
    "sprints": [
     "sprint-shot-boundaries"
    ]
@@ -2201,7 +2202,7 @@ window.PROGRESS_DATA = {
     },
     {
      "id": "Q-shot",
-     "name": "镜头切分与黑屏检测",
+     "name": "Studio 镜头切分与黑屏定位",
      "status": "done",
      "sprint": "sprint-shot-boundaries"
     },
@@ -2481,7 +2482,7 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "Studio 已可导入和核对待分析任务，复制原续跑命令。下步接入镜头切分和黑屏标记。J2 十槽评分与 J3 独立 Windows 验收留到测试阶段。",
+  "Studio 已实拍核对待分析任务与镜头定位。下步接入屏幕文字检索。J2 十槽评分和 J3 独立 Windows 验收留到测试阶段。",
   "[P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测 Atom 同稿各自出包。[P029](docs/exec-plans/sprint-creation-subtitles.md)实测青色宋体。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "[抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。",
@@ -3267,9 +3268,11 @@ window.PROGRESS_DATA = {
   {
    "file": "sprint-shot-boundaries",
    "title": "本地镜头切分与黑屏检测（shot-boundaries-v1，2026-10-26第四会话）",
-   "ids": [],
+   "ids": [
+    "P010"
+   ],
    "date": "2026-11-01",
-   "bytes": 9709
+   "bytes": 10420
   },
   {
    "file": "sprint-shot-companion-timing",

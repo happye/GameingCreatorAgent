@@ -8,6 +8,7 @@ import "../source-clock.js";
 import "../preview-preference.js";
 import {BasketList, ClipSearch, useBasket} from "./basket.js";
 import {ImportRecordings} from "./media-preparation.js";
+import {ShotMarkers, ShotStatus, useShotBoundaries} from "./shot-boundaries.js";
 import {PublishWorkspace} from "./publish.js";
 import {confirmLeave, renderRate} from "./edit.js";
 import {WorksWorkspace} from "./works.js";
@@ -126,6 +127,8 @@ function App() {
         return () => controller.abort();
     }, [project, workId, refreshAt]);
     const [selected, setSelected] = useState(null);
+    const [unboundSelection, setUnboundSelection] = useState(null);
+    const [attachedPreview, setAttachedPreview] = useState(null);
     const [status, setStatus] = useState("正在读取项目…");
     const [time, setTime] = useState(0);
     const [open, setOpen] = useState(null);
@@ -347,6 +350,7 @@ function App() {
         return image ? client.sameOrigin(image.url, "/api/evidence") : null;
     };
     const currentRun = runs.find((r) => r.id === runId);
+    const shotView = currentRun && client.matchesInspection(view, project, currentRun) ? view : null;
     const toggleBasket = (event) => { if (event && currentRun) basket.toggle(event, currentRun, thumbOf(event)); };
 
     // A number, not the list: passing the list re-rendered the edit page on every list refresh.
@@ -386,7 +390,17 @@ function App() {
         const selection = clipSelection(event, view?.media?.durationUs);
         clearTranscript(); video.current?.pause(); setSelected(selection); seek(clock ? Math.max(selection.startUs, clock.videoStartUs) : selection.startUs);
     }, [seek, view, clock, transcriptHit]);
-    useEffect(() => { if (clock && selected) seek(Math.max(selected.startUs, clock.videoStartUs)); }, [clock]);
+    useEffect(() => { if (clock && selected && selected !== unboundSelection) seek(Math.max(selected.startUs, clock.videoStartUs)); }, [clock]);
+    const shotSeekReady = !!shotView && preview.view === shotView && !!clock && !!preview.url && !!attachedPreview
+        && attachedPreview.element === video.current && attachedPreview.url === new URL(preview.url, location.href).href;
+    const seekShot = (sourceUs) => {
+        const el = video.current;
+        if (!shotSeekReady || !el || el.currentSrc !== new URL(preview.url, location.href).href) return;
+        clearTranscript(); el.pause();
+        // Release playback bounds while keeping the selected event available in the inspector and basket.
+        setUnboundSelection(selected);
+        seek(sourceUs);
+    };
     const transcriptPlayable = !!transcriptRange && !!clock && Math.max(transcriptRange.startUs, clock.videoStartUs) < Math.min(transcriptRange.endUs, clock.videoEndUs);
     useEffect(() => {
         const el = video.current;
@@ -418,6 +432,7 @@ function App() {
     useEffect(() => {
         const onKey = (event) => {
             if (importOpen || event.target.closest("input, textarea, select") || workspace !== "assets") return;
+            if (event.key === " " && event.target.closest(".shot-boundaries button, .shot-detect")) return;
             const el = video.current, events = view?.timeline || [];
             if (event.key === " " && el && (!transcript || transcriptPlayable)) { event.preventDefault(); el.paused ? void el.play().catch(() => {}) : el.pause(); }
             else if ((event.key === "ArrowLeft" || event.key === "ArrowRight") && el) {
@@ -456,8 +471,9 @@ function App() {
                     top=${html`<${ClipSearch} project=${project} runs=${runs} runId=${runId} basket=${basket} seed=${searchSeed} onShow=${(run, event) => showEvent(run.id, event.eventId)} onShowTranscript=${showTranscript} />
                         <${BasketList} basket=${basket} onShow=${(item) => showEvent(item.runId, item.eventId, item)} onUse=${() => { setBasketAt(Date.now()); setWorkspace("edit"); }} />`} />
                 <div class="center">
-                    <${Viewer} onClockInvalid=${() => setClock(null)} clock=${clock} media=${view?.media} preview=${preview} preferProxy=${preferProxy} proxyHttpFailed=${proxyHttpFailed} proxyFailReason=${proxyFailReason.current} onPreferPreview=${(checked) => { if (view?.media?.id) { PreviewPreference.set(view.media.id, checked); if (checked) { httpFailed.current.delete(view.media.id); proxyFailReason.current = null; } } setPreviewPreferAt((n) => n + 1); }} onProxyHttpError=${(el) => { const id = view?.media?.id; if (!id || httpFailed.current.has(id)) return; httpFailed.current.add(id); proxyFailReason.current = (SourceClock.proxyLoadReason && SourceClock.proxyLoadReason(el)) || "proxy_http_failed"; setHttpFailAt((n) => n + 1); }} videoRef=${video} time=${time} setTime=${setTime} selected=${transcriptRange || selected} transcript=${!!transcript} onFullSource=${() => { clearTranscript(); setSelected(null); }} />
-                    <${Timeline} view=${view} time=${time} selected=${selected} onSelect=${selectEvent} inBasket=${basket.ids} />
+                    <${Viewer} onClockInvalid=${() => setClock(null)} clock=${clock} media=${view?.media} preview=${preview} preferProxy=${preferProxy} proxyHttpFailed=${proxyHttpFailed} proxyFailReason=${proxyFailReason.current} onPreferPreview=${(checked) => { if (view?.media?.id) { PreviewPreference.set(view.media.id, checked); if (checked) { httpFailed.current.delete(view.media.id); proxyFailReason.current = null; } } setPreviewPreferAt((n) => n + 1); }} onProxyHttpError=${(el) => { const id = view?.media?.id; if (!id || httpFailed.current.has(id)) return; httpFailed.current.add(id); proxyFailReason.current = (SourceClock.proxyLoadReason && SourceClock.proxyLoadReason(el)) || "proxy_http_failed"; setHttpFailAt((n) => n + 1); }} videoRef=${video} onPreviewMetadata=${setAttachedPreview} time=${time} setTime=${setTime} selected=${transcriptRange || (selected === unboundSelection ? null : selected)} transcript=${!!transcript} onFullSource=${() => { clearTranscript(); setSelected(null); }} />
+                    <${Timeline} project=${project} view=${view} shotView=${shotView} shotSeekReady=${shotSeekReady} onSeekShot=${seekShot}
+                        time=${time} selected=${selected} onSelect=${selectEvent} inBasket=${basket.ids} />
                 </div>
                 <${Inspector} view=${view} selected=${selected} run=${currentRun} hidden=${!layout.insp} inBasket=${!!selected && basket.ids.has(selected.eventId)} onBasket=${() => toggleBasket(selected)} onRange=${changeRange} />
             </div>`
@@ -608,7 +624,7 @@ function Recording({group, runId, onSelect}) {
     </div>`;
 }
 
-function Viewer({onClockInvalid, clock, media, preview, preferProxy, proxyHttpFailed, proxyFailReason, onPreferPreview, onProxyHttpError, videoRef, time, setTime, selected, transcript, onFullSource}) {
+function Viewer({onClockInvalid, clock, media, preview, preferProxy, proxyHttpFailed, proxyFailReason, onPreferPreview, onProxyHttpError, videoRef, onPreviewMetadata, time, setTime, selected, transcript, onFullSource}) {
     const src = preview?.url || null;
     const [playing, setPlaying] = useState(false);
     const [originalError, setOriginalError] = useState("");
@@ -646,6 +662,7 @@ function Viewer({onClockInvalid, clock, media, preview, preferProxy, proxyHttpFa
     return html`<section class="viewer" aria-label="预览窗" data-source-clock=${clock ? "ready" : "unavailable"}>
         ${src
             ? html`<video ref=${videoRef} src=${src} preload="metadata" playsinline
+                onLoadedMetadata=${(e) => onPreviewMetadata({element: e.currentTarget, url: e.currentTarget.currentSrc})}
                 onTimeUpdate=${(e) => { const source = SourceClock.playerToSourceUs(clock, e.currentTarget.currentTime); if (source !== null) setTime(source); }}
                 onDurationChange=${e => { if (clock && SourceClock.durationChangeVerdict(clock, e.currentTarget.duration, true)) onClockInvalid(); }}
                 onError=${(e) => {
@@ -676,10 +693,11 @@ function Viewer({onClockInvalid, clock, media, preview, preferProxy, proxyHttpFa
     </section>`;
 }
 
-function Timeline({view, time, selected, onSelect, inBasket}) {
+function Timeline({project, view, shotView, shotSeekReady, onSeekShot, time, selected, onSelect, inBasket}) {
     const area = useRef(null);
     const [width, setWidth] = useState(800);
     const [zoom, setZoom] = useState(1);
+    const shots = useShotBoundaries(project, shotView);
     useEffect(() => {
         const el = area.current; if (!el) return;
         const observer = new ResizeObserver(([entry]) => setWidth(Math.max(200, entry.contentRect.width - 24)));
@@ -690,17 +708,20 @@ function Timeline({view, time, selected, onSelect, inBasket}) {
     const thumbs = useMemo(() => Object.fromEntries((view?.evidence || []).filter((e) => e.kind === "image").map((e) => [e.id, client.sameOrigin(e.url, "/api/evidence")])), [view]);
     const step = duration ? [1, 2, 5, 10, 15, 30, 60, 120, 300].find((s) => s * 1e6 * scale >= 70) || 600 : 0;
     const ticks = step ? Array.from({length: Math.floor(seconds(duration) / step) + 1}, (_, i) => i * step) : [];
-    return html`<section class="timeline" aria-label="时间轴">
+    return html`<section class="timeline asset-timeline" aria-label="时间轴">
         <div class="panel-head">时间轴
             <span class="track-label">${view ? `${view.timeline.length} 个分析片段` : ""}</span>
             <span class="spacer"></span>
+            <button class="btn ghost shot-detect" type="button" disabled=${!shotView || shots.status === "scanning"} onClick=${shots.detect}>检测镜头切换</button>
             <button class="icon-btn" onClick=${() => setZoom(Math.max(1, zoom / 2))} disabled=${zoom <= 1}>－</button>
             <button class="icon-btn" onClick=${() => setZoom(1)}>适配</button>
             <button class="icon-btn" onClick=${() => setZoom(Math.min(32, zoom * 2))}>＋</button>
         </div>
+        <${ShotStatus} status=${shots.status} report=${shots.report} error=${shots.error} seekReady=${shotSeekReady} />
         <div class="track-area" ref=${area}>
             ${view && html`<div style=${{width: `${width * zoom}px`, position: "relative"}}>
                 <div class="ruler">${ticks.map((s) => html`<span style=${{left: `${s * 1e6 * scale}px`}}>${timecode(s * 1e6).slice(0, 5)}</span>`)}</div>
+                ${shots.report ? html`<${ShotMarkers} report=${shots.report} scale=${scale} timecode=${timecode} seekReady=${shotSeekReady} onSeek=${onSeekShot} />` : null}
                 <div class="track">
                     ${view.timeline.map((event) => {
                         const thumb = thumbs[event.evidenceIds?.[0]];

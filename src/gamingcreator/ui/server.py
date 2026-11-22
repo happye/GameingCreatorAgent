@@ -137,6 +137,10 @@ ASSETS = {
         "studio/media-preparation.js",
         "text/javascript; charset=utf-8",
     ),
+    "/assets/studio/shot-boundaries.js": (
+        "studio/shot-boundaries.js",
+        "text/javascript; charset=utf-8",
+    ),
     "/assets/studio/recordings.js": ("studio/recordings.js", "text/javascript; charset=utf-8"),
     "/assets/studio/publish.js": ("studio/publish.js", "text/javascript; charset=utf-8"),
     "/assets/studio/package_batches.js": (

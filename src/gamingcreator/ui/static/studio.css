@@ -96,6 +96,14 @@ details.group[open] > summary::before { content: "▾ "; }
 .transport { display: flex; align-items: center; gap: var(--s-3); padding: 0 var(--s-3); background: var(--bg-1); border-top: 1px solid var(--line); }
 .tc { font: var(--t-sm) var(--font-num); color: var(--ink-2); }
 .timeline { background: var(--bg-1); border-top: 1px solid var(--line); display: grid; grid-template-rows: 32px minmax(0, 1fr); min-height: 0; }
+.asset-timeline { grid-template-rows: 32px auto minmax(0, 1fr); }
+.shot-status { margin: 0; padding: 1px var(--s-3); color: var(--ink-2); font-size: var(--t-xs); }
+.shot-status span { margin-inline-start: 2px; }
+.shot-boundaries { position: relative; height: 25px; border-bottom: 1px solid var(--line); }
+.shot-boundaries button { position: absolute; border: 0; border-radius: 2px; padding: 0; }
+.shot-cut { top: 1px; width: 8px; height: 10px; transform: translateX(-50%); background: var(--warn); }
+.shot-black { top: 13px; height: 9px; min-width: 3px; background: repeating-linear-gradient(135deg, var(--ink-3) 0 2px, var(--bg-0) 2px 5px); }
+.shot-boundaries button:disabled { opacity: .55; cursor: default; }
 .track-area { position: relative; overflow-x: auto; overflow-y: hidden; padding: var(--s-2) var(--s-3); }
 .ruler { position: relative; height: 16px; color: var(--ink-3); font: var(--t-xs) var(--font-num); }
 .ruler span { position: absolute; top: 0; transform: translateX(-50%); }

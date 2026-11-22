@@ -71,15 +71,6 @@ async def cached_shots_payload(
 
     No scan: a report made before the analysis gained events or stages is not shown.
     """
-    store = await SqliteTimelineStore.open(project, read_only=True)
-    try:
-        timeline = await store.load_timeline(run_id, require_completed=False)
-    finally:
-        await store.close()
-    asset = timeline.run.asset
-    digest = shot_timeline_digest(
-        timeline.run, timeline.events, saved_frames(timeline), timeline.checkpoints
-    )
     missing: dict[str, object] = {
         "available": False,
         "schemaVersion": SHOT_REPORT_VERSION,
@@ -87,23 +78,37 @@ async def cached_shots_payload(
         "project": project_reference,
     }
     target = shot_cache_path(repository, project, run_id)
+    report = None
     try:
-        if target.stat().st_size > MAX_CACHED_REPORT_BYTES:
-            return missing
-        report = json.loads(target.read_text(encoding="utf-8"))
+        if target.stat().st_size <= MAX_CACHED_REPORT_BYTES:
+            report = json.loads(target.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return missing
+        pass
     detector_record = report.get("detector") if isinstance(report, dict) else None
+    store = await SqliteTimelineStore.open(project, read_only=True)
+    try:
+        if (
+            not isinstance(report, dict)
+            or report.get("schemaVersion") != SHOT_REPORT_VERSION
+            or report.get("runId") != run_id
+            or not isinstance(detector_record, dict)
+            or detector_record.get("filterGraph") != detector.identity.filter_graph
+            or detector_record.get("name") != detector.identity.detector
+        ):
+            # Keep the missing-run error without hashing the original footage for a cache miss.
+            await store.load_run(run_id)
+            return missing
+        timeline = await store.load_timeline(run_id, require_completed=False)
+    finally:
+        await store.close()
+    asset = timeline.run.asset
+    digest = shot_timeline_digest(
+        timeline.run, timeline.events, saved_frames(timeline), timeline.checkpoints
+    )
     if (
-        not isinstance(report, dict)
-        or report.get("schemaVersion") != SHOT_REPORT_VERSION
-        or report.get("runId") != run_id
-        or report.get("sourceSha256") != asset.sha256
+        report.get("sourceSha256") != asset.sha256
         or report.get("durationUs") != asset.duration_us
         or report.get("timelineDigest") != digest
-        or not isinstance(detector_record, dict)
-        or detector_record.get("filterGraph") != detector.identity.filter_graph
-        or detector_record.get("name") != detector.identity.detector
     ):
         return missing
     return _with_reference(report, project_reference)

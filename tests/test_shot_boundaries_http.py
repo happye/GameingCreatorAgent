@@ -40,8 +40,15 @@ def test_scan_is_explicit_cached_outside_the_project_and_tied_to_identity(tmp_pa
     before = snapshot(project)
     query = "/api/shot-boundaries?" + urlencode({"project": reference, "run": "run-000"})
     with workspace(tmp_path) as base:
-        status, _, raw = get(base, query)
-        assert status == 200 and json.loads(raw)["available"] is False and fake.calls == 0
+
+        def forbid_media_reads(*_args, **_kwargs):
+            raise AssertionError("Cache miss should only read run metadata")
+
+        with monkeypatch.context() as patch:
+            patch.setattr(SqliteTimelineStore, "load_timeline", forbid_media_reads)
+            status, _, raw = get(base, query)
+            assert status == 200 and json.loads(raw)["available"] is False and fake.calls == 0
+            assert get(base, query.replace("run-000", "missing"))[0] == 404
         status, _, raw = post(base, "/api/detect-shots", {"project": reference, "run": "run-000"})
         scanned = json.loads(raw)
         assert status == 200 and fake.calls == 1
