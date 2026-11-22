@@ -41,6 +41,7 @@
 - 生成可整体挪走的文件夹；内含 Python 运行时、依赖、FFmpeg、`desktop\bin\GamingCreator.exe`。
 - 打进本地 ASR／嵌入模型到 `models\`（装好后可做新录像的语音与本地检索，不必再指开发机 `.cache\models`）。
 - 生成 `licenses\`：汇总本机已有的第三方许可正文到 `THIRD-PARTY-NOTICES.md`；缺正文的记在 `gaps.json`，**不下载、不猜**。
+- 内置三种录像准备配置，安装后可从素材工作台导入本机录像并准备画面和音轨。
 - 数据日后写在该目录下的 `.cache\`。
 
 ### 不会发生什么
@@ -61,7 +62,7 @@
 
 ### 入口
 
-先有上一步的 `dist\GamingCreator`，再在仓库根执行：
+从上一步的开发仓库根，或解压后的 `GamingCreator` 便携目录执行：
 
 ```powershell
 ./scripts/install-app.ps1

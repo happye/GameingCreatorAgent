@@ -1034,7 +1034,8 @@
                 "docs/archive/sprints/sprint-t27-license-gaps-visibility.md",
                 "scripts/license_visibility.py",
                 "tests/test_license_visibility.py",
-                "2026-11-01 T27: build-app/install-app (+Smoke) print reminder to read licenses/THIRD-PARTY-NOTICES.md and licenses/gaps.json; no download to fill gaps"
+                "2026-11-01 T27: build-app/install-app (+Smoke) print reminder to read licenses/THIRD-PARTY-NOTICES.md and licenses/gaps.json; no download to fill gaps",
+                "2026-11-22: unpacked portable installer works without a source argument and preserves data on upgrade/uninstall. An installed copy with bundled preparation profiles prepared real Comic Stars footage on the development host without a model call or reservation."
             ],
             "quality_status": "not_separately_assessed",
             "release_status": "not_released",

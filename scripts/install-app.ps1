@@ -23,16 +23,34 @@ function Show-LicenseVisibility([string]$AppRoot) {
   if ($LASTEXITCODE -ne 0) { throw "license_visibility.py failed with $LASTEXITCODE" }
 }
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
-if (-not $Source) { $Source = Join-Path $repositoryRoot 'dist/GamingCreator' }
+$marker = '.gamingcreator-app.json'
+if (-not $Source) {
+  $Source = if (Test-Path -LiteralPath (Join-Path $repositoryRoot $marker) -PathType Leaf) {
+    $repositoryRoot
+  } else {
+    Join-Path $repositoryRoot 'dist/GamingCreator'
+  }
+}
 if (-not $Destination) { $Destination = Join-Path $env:LOCALAPPDATA 'Programs/GamingCreator' }
 # Relative paths mean the PowerShell location, not the process directory.
 function Resolve-UserPath([string]$Path) {
   [IO.Path]::GetFullPath($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path))
 }
+function Assert-DirectPath([string]$Path, [string[]]$AliasDrives) {
+  if ($AliasDrives -contains [IO.Path]::GetPathRoot($Path).TrimEnd('\')) {
+    throw 'Use the original path instead of a substituted drive; nothing was changed.'
+  }
+  while ($Path) {
+    $item = Get-Item -LiteralPath $Path -Force -ErrorAction SilentlyContinue
+    if ($item -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+      throw 'Use a source and destination without junctions or symbolic links; nothing was changed.'
+    }
+    $Path = [IO.Path]::GetDirectoryName($Path)
+  }
+}
 $Source = Resolve-UserPath $Source
 $Destination = Resolve-UserPath $Destination
-$programParts = @('toolchain.json', 'scripts', '.tools', '.venv', 'desktop', 'docs', 'models', 'licenses', '.gamingcreator-app.json')
-$marker = '.gamingcreator-app.json'
+$programParts = @('toolchain.json', 'scripts', '.tools', '.venv', 'desktop', 'docs', 'models', 'licenses', $marker)
 $receiptName = '.gamingcreator-install.json'
 # Left by an uninstall that kept user data, so the same folder can be installed into again.
 $dataMarker = '.gamingcreator-data.json'
@@ -156,7 +174,19 @@ if ($built.incomplete) { throw "$Source is an unfinished build; run build-app.ps
 foreach ($part in $programParts) {
   if (-not (Test-Path -LiteralPath (Join-Path $Source $part))) { throw "$Source is incomplete: $part is missing." }
 }
-if ($Source.TrimEnd('\') -eq $Destination.TrimEnd('\')) { throw 'Source and destination are the same folder.' }
+$sourcePrefix = $Source.TrimEnd('\') + '\'
+$destinationPrefix = $Destination.TrimEnd('\') + '\'
+if ($sourcePrefix -eq $destinationPrefix) { throw 'Source and destination are the same folder.' }
+if ($sourcePrefix.StartsWith($destinationPrefix, [StringComparison]::OrdinalIgnoreCase) -or
+    $destinationPrefix.StartsWith($sourcePrefix, [StringComparison]::OrdinalIgnoreCase)) {
+  throw 'Source and destination cannot be nested inside each other; nothing was changed.'
+}
+# A path alias can hide a nesting relationship from the comparison above.
+$aliasDrives = @(foreach ($line in (& (Join-Path $env:SystemRoot 'System32/subst.exe'))) {
+  if ($line -match '^([A-Z]:)\\:') { $Matches[1] }
+})
+Assert-DirectPath $Source $aliasDrives
+Assert-DirectPath $Destination $aliasDrives
 if ($installed) { Assert-NotRunning $Destination }
 $parent = Split-Path -Parent $Destination
 New-Item -ItemType Directory -Force -Path $parent | Out-Null

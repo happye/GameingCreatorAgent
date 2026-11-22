@@ -69,6 +69,11 @@ try {
   foreach ($name in @('asr-models.json', 'asr-native-toolchain.json', 'embedding-model.json')) {
     Copy-Item -LiteralPath (Join-Path $repositoryRoot "docs/references/$name") -Destination (Join-Path $references $name)
   }
+  $profiles = Join-Path $references 'media-preparation'
+  New-Item -ItemType Directory -Force -Path $profiles | Out-Null
+  foreach ($name in @('config.example.json', 'config.temporal.example.json', 'config.detailed-v6.example.json')) {
+    Copy-Item -LiteralPath (Join-Path $repositoryRoot $name) -Destination $profiles
+  }
   # Third-party notices from on-disk LICENSE/METADATA only (no downloads).
   & (Join-Path $repositoryRoot '.venv/Scripts/python.exe') -B (Join-Path $PSScriptRoot 'collect-third-party-notices.py') --repository $repositoryRoot --output (Join-Path $Output 'licenses')
   if ($LASTEXITCODE -ne 0) { throw "collect-third-party-notices.py failed with $LASTEXITCODE" }

@@ -78,6 +78,21 @@ def siblings(destination: Path) -> list[str]:
     )
 
 
+def test_installer_rejects_a_package_inside_the_installation(tmp_path):
+    destination = build(tmp_path / "installed", "old")
+    package = build(destination / "desktop/new portable", "new")
+    local = package / ".cache/local.txt"
+    local.parent.mkdir()
+    local.write_text("keep", encoding="utf-8")
+
+    result = run("-Source", str(package), "-Destination", str(destination))
+
+    assert result.returncode != 0
+    assert "cannot be nested" in result.stderr
+    assert local.read_text(encoding="utf-8") == "keep"
+    assert (destination / "desktop/bin/GamingCreator.txt").read_text(encoding="utf-8") == "old"
+
+
 def test_install_upgrade_keeps_user_data_and_uninstall_keeps_it_too(tmp_path):
     first = build(tmp_path / "first", "one")
     second = build(tmp_path / "second", "two")

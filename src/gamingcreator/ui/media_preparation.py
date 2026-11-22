@@ -203,7 +203,10 @@ class MediaPreparationJobs:
                 amount = Decimal(budget)
                 if not amount.is_finite() or amount <= 0:
                     raise ValueError
-                config_path = self.repository / PROFILES[profile]
+                config_directory = self.repository
+                if (self.repository / ".gamingcreator-app.json").is_file():
+                    config_directory /= "docs/references/media-preparation"
+                config_path = config_directory / PROFILES[profile]
                 _media_preparation_config(LocalInputReader().load_config(config_path))
                 config_bytes = config_path.read_bytes()
             except (InvalidOperation, ValueError, OSError, AppError):

@@ -33,7 +33,7 @@ window.PROGRESS_DATA = {
    "open": 5
   },
   "tdTotal": 30,
-  "humanPending": 10,
+  "humanPending": 11,
   "journeyAgentPass": 3,
   "journeyHumanUsable": 1,
   "journeyTotal": 3
@@ -80,9 +80,9 @@ window.PROGRESS_DATA = {
    "name": "安装：便携包安装后启动工作台",
    "steps": "build-app → install-app → 启动 GamingCreator.exe → 工作台可用 → 卸载",
    "agent_run": {
-    "date": "2026-11-11",
+    "date": "2026-11-22",
     "result": "pass",
-    "evidence": "Claude Code：build-app -Smoke（867 MB，READY http://127.0.0.1:18765/studio）→ install-app 到临时目录 -Smoke（READY .../studio）→ 用安装副本自带 Python 启动服务，浏览器打开 /studio 正常、无控制台错误 → install-app -Uninstall（程序移除、用户数据 .cache 保留）。实测发现全新安装无项目时只有一行状态提示，已补首次使用引导。干净机器、签名、许可证缺口（9项）未处理；人评仍以 human_check 为准。"
+    "evidence": "开发机：构建868 MB便携包，使用包内脚本全新安装和升级，自带EXE均就绪。升级和卸载后保留文件SHA-256一致。安装副本以受限PATH启动，在素材准备页导入漫画群星真实录像，批次 eb1d4f6db27645c5bc74b0cf2efcca7a 显示待分析，零模型调用和新预留。证据 .cache/scratch/j3-portable-20261122/。干净机器、签名、9项许可缺口和人评待做。"
    },
    "human_check": {
     "date": null,
@@ -1025,11 +1025,12 @@ window.PROGRESS_DATA = {
     "docs/archive/sprints/sprint-t27-license-gaps-visibility.md",
     "scripts/license_visibility.py",
     "tests/test_license_visibility.py",
-    "2026-11-01 T27: build-app/install-app (+Smoke) print reminder to read licenses/THIRD-PARTY-NOTICES.md and licenses/gaps.json; no download to fill gaps"
+    "2026-11-01 T27: build-app/install-app (+Smoke) print reminder to read licenses/THIRD-PARTY-NOTICES.md and licenses/gaps.json; no download to fill gaps",
+    "2026-11-22: unpacked portable installer works without a source argument and preserves data on upgrade/uninstall. An installed copy with bundled preparation profiles prepared real Comic Stars footage on the development host without a model call or reservation."
    ],
-   "done": "可构建便携版EXE（内嵌WebView2、自带Python/FFmpeg），可安装/升级/卸载；启动即进入Studio并沿用固定端口（片段篮/草稿重开不丢），不选WebView2禁用端口",
-   "todo": "干净机器测试、代码签名、第三方许可缺口审阅仍待完成",
-   "updated": "2026-11-10",
+   "done": "便携版可用包内脚本安装、升级、卸载；内置本地准备配置，开发机实测安装副本启动并导入真实录像，升级卸载保留用户数据",
+   "todo": "独立干净Windows上的导入、剪辑、导出及安装生命周期验收，签名、第三方许可待确认",
+   "updated": "2026-11-22",
    "sprints": [
     "sprint-desktop-host"
    ]
@@ -2056,7 +2057,7 @@ window.PROGRESS_DATA = {
    "name": "桌面产品",
    "goal": "安装Windows EXE在桌面完成全流程",
    "status": "partial",
-   "done": "EXE薄宿主+build/install脚本、许可缺口提示；360p编辑代理；启动器拒绝旧运行时",
+   "done": "EXE薄宿主、便携包可独立安装，内置本地准备配置；开发机验证真实录像导入和卸载保留数据；已有360p编辑代理",
    "todo": "干净机器安装实测、签名、许可证缺口确认、J3人评未做",
    "features": [
     "P011",
@@ -2466,7 +2467,7 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "下一步先把 P014 已有的本机混合检索接进 Studio，验证排名、原片回看和片段篮，再准备 J2 的十槽人评。J3 还需干净 Windows 机器上的安装、升级和卸载验收。",
+  "下一步让 Studio 首次使用可直接准备本机录像。J2 十槽评分和 J3 独立 Windows 验收留到测试阶段。",
   "[P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测 Atom 同稿各自出包。[P029](docs/exec-plans/sprint-creation-subtitles.md)实测青色宋体。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "[抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。",
@@ -2870,7 +2871,7 @@ window.PROGRESS_DATA = {
     "P039"
    ],
    "date": "2026-11-01",
-   "bytes": 8380
+   "bytes": 8996
   },
   {
    "file": "sprint-draft-replacements-overlays",
@@ -3336,7 +3337,7 @@ window.PROGRESS_DATA = {
    "file": "sprint-studio-workbench",
    "title": "Sprint：创作工作台（/studio）",
    "ids": [],
-   "date": "2026-11-03",
+   "date": "2026-11-22",
    "bytes": 15519
   },
   {
@@ -3712,6 +3713,12 @@ window.PROGRESS_DATA = {
    "how": "正式评测前确认时间误差、负例告警、等待时间和费用核对口径",
    "when": "相应验收指标冻结前",
    "state": "未确定项保持null；已确认零扣费不重复要求，也不把其他unknown代填0"
+  },
+  {
+   "item": "J3 独立 Windows 验收环境",
+   "how": "测试阶段用未装开发环境的 Windows 机器或已有虚拟机，走安装、导入、剪辑、导出、升级与卸载",
+   "when": "只阻断干净机器验收；本机功能继续开发",
+   "state": "开发机已通过安装和真实录像准备。本机无 Windows Sandbox，独立环境待提供。见[桌面交付记录](sprint-desktop-host.md)"
   },
   {
    "item": "各平台登录后的上传限值（可选）",
