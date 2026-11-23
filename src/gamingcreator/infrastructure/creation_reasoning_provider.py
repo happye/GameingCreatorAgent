@@ -11,7 +11,9 @@ from time import monotonic
 from typing import Any
 
 from gamingcreator.application.brief_reasoning import PROMPT_VERSION as BRIEF_PROMPT_VERSION
+from gamingcreator.application.brief_reasoning import PROMPT_VERSION_V2 as BRIEF_PROMPT_VERSION_V2
 from gamingcreator.application.brief_reasoning import SCHEMA_VERSION as BRIEF_SCHEMA_VERSION
+from gamingcreator.application.brief_reasoning import SCHEMA_VERSION_V2 as BRIEF_SCHEMA_VERSION_V2
 from gamingcreator.application.budget import BudgetLedger, InvocationRecorder
 from gamingcreator.application.creation_mixed_actions import PROMPT as MIXED_ACTIONS_PROMPT
 from gamingcreator.application.creation_mixed_actions import PROMPT_V3 as MIXED_ACTIONS_PROMPT_V3
@@ -155,6 +157,7 @@ class DeepSeekCreationReasoningProvider:
             ("plan-reasoning-prompt-v5", "plan-proposal-v4"),
             (COPY_PROMPT_VERSION, COPY_SCHEMA_VERSION),
             (BRIEF_PROMPT_VERSION, BRIEF_SCHEMA_VERSION),
+            (BRIEF_PROMPT_VERSION_V2, BRIEF_SCHEMA_VERSION_V2),
             (NARRATION_PROMPT_VERSION, NARRATION_SCHEMA_VERSION),
             (NARRATION_LEGACY_PROMPT_VERSION, NARRATION_SCHEMA_VERSION),
         }:

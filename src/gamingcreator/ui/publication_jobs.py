@@ -74,6 +74,7 @@ def snapshot(jobs: Any, job_id: str) -> dict[str, Any]:
             "publicationJobId": job_id,
             "publicationReceiptSha256": verified["resultReceiptSha256"],
             "contentShots": asyncio.run(content_shots(jobs.project(state["projectId"]), edl)),
+            "targetPlatforms": report["brief"].get("platforms", []),
             **_campaign_context(report),
         }
     _, receipt, digest = render_parent(jobs, job_id)
@@ -101,6 +102,7 @@ def snapshot(jobs: Any, job_id: str) -> dict[str, Any]:
         "renderJobId": job_id,
         "expectedRenderReceiptSha256": digest,
         "coverFrame": 0,
+        "targetPlatforms": brief.get("platforms", []),
         **copy,
         **campaign,
         **clock(receipt),

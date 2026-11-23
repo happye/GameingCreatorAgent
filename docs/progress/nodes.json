@@ -126,13 +126,14 @@
    ]
   },
   "P019": {
-   "done": "一句话需求支持DeepSeek文字理解并确认填入，真实30秒玩法需求已识别并串到导出发布包；预算内按作品调用，响应丢失只读恢复；规则兜底、活动规则与本地知识保留",
-   "todo": "一句话中的多个目标平台目前只保留一个，待从需求贯通到策划与默认出包；其他需求和成片质量待用户复测",
+   "done": "一句话可指定多个平台；真实漫画群星按抖音、B站顺序生成两个包并排除快手。草稿和发布页可恢复默认，保存同一成片保留手选。旧 AI 回执可回读",
+   "todo": "多平台 AI 输出已用模拟 Provider 验证，真实 Provider 和更多需求待复测",
    "updated": "2026-11-23",
    "sprints": [
     "sprint-creation-planner",
     "sprint-creation-workspace",
-    "sprint-j1-creation-usability"
+    "sprint-j1-creation-usability",
+    "sprint-live-creation-loop"
    ]
   },
   "P020": {

@@ -9,7 +9,7 @@ import {editTimeline, shots, timeline, usePlanPlayer} from "./preview.js";
 import {BeatSnap, ClipInspector, CommandDock, captionProblem, transitionProblem, useClipEditor} from "./clipedit.js";
 import {AudioPanel, narrationProblem, useAudioPreview, useMusicCatalog} from "./audio.js";
 import {ActivityRules} from "./activity.js";
-import {BriefSentence} from "./brief_sentence.js";
+import {BRIEF_PLATFORMS, BriefSentence, briefPlatforms} from "./brief_sentence.js";
 import {KnowledgeUses, PlanReasoningPanel, TopicCoverage} from "./planning.js";
 import {PlanCompare} from "./compare.js";
 import {ProgramTrack} from "./multitrack.js";
@@ -22,8 +22,7 @@ const html = htm.bind(h);
 const DRAFT = "studio-brief-v1";
 const LAST = "studio-last-job-v1";
 const TYPES = [["feature_showcase", "玩法展示"], ["guide", "攻略"], ["campaign", "活动投稿"], ["commentary", "游戏解说"], ["live_cut", "实况精剪"], ["highlight", "高光"], ["ad", "广告/买量"]];
-const PLATFORMS = [["bilibili", "B站"], ["douyin", "抖音"], ["kuaishou", "快手"], ["xiaohongshu", "小红书"]];
-const DEFAULTS = {runIds: [], game: "", contentType: "feature_showcase", targetDuration: "60", platform: "bilibili", objective: "整理已有素材中的玩法片段", audience: "新玩家", tone: "清楚简洁", mandatoryTopics: "", exclude: "", fps: "30"};
+const DEFAULTS = {runIds: [], game: "", contentType: "feature_showcase", targetDuration: "60", platforms: ["bilibili"], objective: "整理已有素材中的玩法片段", audience: "新玩家", tone: "清楚简洁", mandatoryTopics: "", exclude: "", fps: "30"};
 const SOURCE_ONLY_AUDIO = {mix: {bgm: null, sourceGainDb: 0, ducking: "off"}};
 const MUSIC_PACE_BY_TYPE = new Map([
     ["feature_showcase", "lively"], ["campaign", "lively"], ["guide", "calm"], ["commentary", "calm"],
@@ -42,7 +41,12 @@ const workName = (draft) => (draft.workName || "").trim() || `${draft.game.trim(
 const fileName = (name) => `${name.replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 60) || "gamingcreator"}.mp4`;
 
 function readDraft(project) {
-    try { const all = JSON.parse(localStorage.getItem(DRAFT) || "{}"); return {...DEFAULTS, ...(all[project] || {})}; } catch { return {...DEFAULTS}; }
+    try {
+        const all = JSON.parse(localStorage.getItem(DRAFT) || "{}");
+        const {platform, platforms, ...fields} = all[project] || {};
+        const targets = briefPlatforms(platforms, platform);
+        return {...DEFAULTS, ...fields, ...(targets.length ? {platforms: targets} : {})};
+    } catch { return {...DEFAULTS}; }
 }
 // The last plan or video opened per project comes back after a reload.
 // Seconds of wall clock per second of finished video on this machine: median of the last five
@@ -208,14 +212,14 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
             : recordingRuns(runs.filter((r) => draft.runIds.includes(r.id)), draft.runIds).map((r) => r.id);
         if (!runIds.length) return setMessage("先在上面勾选至少一段录像。");
         if (!draft.game.trim()) return setMessage("请填写游戏名。");
-        const brief = {game: draft.game.trim(), contentType: draft.contentType, platforms: [draft.platform], targetDuration: Number(draft.targetDuration),
+        const brief = {game: draft.game.trim(), contentType: draft.contentType, platforms: draft.platforms, targetDuration: Number(draft.targetDuration),
             objective: draft.objective, audience: draft.audience, tone: draft.tone, mandatoryTopics: list(draft.mandatoryTopics), exclude: list(draft.exclude)};
         setBusy("plan"); setMessage("正在生成方案…");
         try {
             const preferred = structureFeedback.read();
             const accepted = await client.submit("plan", {projectId: project, ...(workId ? {workId} : {}), runIds, brief, fps: Number(draft.fps),
                 ...(brief.contentType === "campaign" && draft.campaignRules ? {campaignRules: draft.campaignRules} : {}),
-                ...(matchesStructureFeedback(preferred, draft.contentType, draft.platform) ? {creatorFeedback: preferred.source} : {}), ...(eventIds ? {eventIds,
+                ...(matchesStructureFeedback(preferred, draft.contentType, draft.platforms[0]) ? {creatorFeedback: preferred.source} : {}), ...(eventIds ? {eventIds,
                 clipRanges: basket.items.map(({runId, eventId, startUs, endUs}) => ({runId, eventId, startUs, endUs}))} : {})});
             if (!alive.current) return;
             const done = await follow(accepted.jobId, () => {});
@@ -586,7 +590,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     project=${project} planJob=${planJob} selectedPlanId=${planId}
                     revisionRefreshId=${editing.base?.kind === "revision" ? editing.base.jobId : ""}
                     dirty=${editing.dirty || commandPreview} disabled=${!!busy || overlayBusy || audioBusy} onChanged=${onWorksChanged} />`}
-                <${StructureFeedback} contentType=${draft.contentType} platform=${draft.platform} saved=${structureFeedback.saved} plan=${plan} job=${planJob} disabled=${!!busy}
+                <${StructureFeedback} contentType=${draft.contentType} platform=${draft.platforms[0]} saved=${structureFeedback.saved} plan=${plan} job=${planJob} disabled=${!!busy}
                     update=${value => setSaved(structureFeedback.write(value) ? value ? "结构偏好已保存" : "结构偏好已清除" : "浏览器不允许保存结构偏好")} />
                 ${planJob && planJob.plans.length >= 2 ? html`<${PlanCompare} key=${`${scope}:${planJob.jobId}`} plans=${planJob.plans} adoptedId=${planId} fps=${planJob.fps} compareScope=${`${scope}:${planJob.jobId}`} locateBlocked=${locateBlocked} onLocate=${locateComparePreview} onClose=${() => setComparePreview(null)} />` : planJob ? html`<p class="note">至少还要有两套方案才能对照。</p>` : null}
                 ${planJob ? html`<${PlanReasoningPanel} key=${`${project}:${planJob.jobId}`} project=${project} jobId=${planJob.jobId}
@@ -749,7 +753,17 @@ function Brief({scope, runs, draft, update, busy, onGenerate, basket}) {
             <label class="form-row">类型<select class="select" value=${draft.contentType} onChange=${(e) => update({contentType: e.currentTarget.value})}>${TYPES.map(([v, l]) => html`<option value=${v}>${l}</option>`)}</select></label>
             ${field("targetDuration", "秒数", {type: "number", min: 1, max: 86400})}
         </div>
-        <label class="form-row">平台<select class="select" value=${draft.platform} onChange=${(e) => update({platform: e.currentTarget.value})}>${PLATFORMS.map(([v, l]) => html`<option value=${v}>${l}</option>`)}</select></label>
+        <label class="form-row">平台<select class="select" value=${draft.platforms[0]} onChange=${(e) => {
+            const primary = e.currentTarget.value;
+            update({platforms: [primary, ...draft.platforms.slice(1).filter(id => id !== primary)]});
+        }}>${BRIEF_PLATFORMS.map(([v, l]) => html`<option value=${v}>${l}</option>`)}</select></label>
+        <details class="group" open=${draft.platforms.length > 1 || undefined}><summary>同时出包的平台</summary>
+            ${BRIEF_PLATFORMS.filter(([key]) => key !== draft.platforms[0]).map(([key, label]) => html`<label class="check">
+                <input type="checkbox" checked=${draft.platforms.includes(key)} onChange=${(e) => update({
+                    platforms: e.currentTarget.checked ? [...draft.platforms, key] : draft.platforms.filter(id => id !== key),
+                })} /><span>${label}</span>
+            </label>`)}
+        </details>
         <${ActivityRules} key=${scope} draft=${draft} update=${update} />
         <details class="group"><summary>高级选项（可不填）</summary>
             ${field("objective", "创作目标")}${field("audience", "目标观众")}${field("tone", "表达语气")}

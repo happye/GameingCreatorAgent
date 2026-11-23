@@ -7,10 +7,18 @@ import htm from "../vendor/htm.module.js";
 import {api, budgetText} from "./api.js";
 const html = htm.bind(h);
 const split = (text) => text.split(/[,，、\n]/).map((s) => s.trim()).filter(Boolean);
+export const BRIEF_PLATFORMS = [["bilibili", "B站"], ["douyin", "抖音"], ["kuaishou", "快手"], ["xiaohongshu", "小红书"]];
+
+export function briefPlatforms(platforms, legacy = null) {
+    const choices = Array.isArray(platforms) ? platforms : [legacy];
+    return [...new Set(choices.filter(id => BRIEF_PLATFORMS.some(([key]) => key === id)))];
+}
 
 export function patchFor(fields, draft) {
     const patch = {};
-    for (const key of ["game", "contentType", "platform", "objective", "audience", "tone"]) if (fields[key] != null) patch[key] = String(fields[key]);
+    for (const key of ["game", "contentType", "objective", "audience", "tone"]) if (fields[key] != null) patch[key] = String(fields[key]);
+    const platforms = briefPlatforms(fields.platforms, fields.platform);
+    if (platforms.length) patch.platforms = platforms;
     if (fields.targetDuration != null) patch.targetDuration = String(fields.targetDuration);
     for (const key of ["mandatoryTopics", "exclude"]) {
         if (fields[key]?.length) patch[key] = [...new Set([...split(draft[key] || ""), ...fields[key]])].join(", ");

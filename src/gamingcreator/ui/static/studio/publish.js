@@ -67,7 +67,7 @@ function configuredProfiles(profiles, selected, drafts, fps, pub) {
     let error = "";
     let copyError = "";
     const matches = {};
-    const chosen = profiles.filter(p => selected.includes(p.Platform)).map(profile => {
+    const chosen = selected.map(key => profiles.find(p => p.Platform === key)).filter(Boolean).map(profile => {
         const {duration = "", content = "", opening = "", closing = "", themeCut, publicationCopy} = drafts[profile.Platform] || {};
         const fields = {...profile.Fields};
         delete fields.publicationCopy;
@@ -392,18 +392,26 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
     const shortEnd = useRef(null);
     const [frameCopy, setFrameCopy] = useState(null);
     const [coverPreview, setCoverPreview] = useState(null);
+    const selectionKey = project && pub ? JSON.stringify([project, pub.renderJobId]) : "";
+    const selectionReady = !!selectionKey && defaultedRender.current === selectionKey;
 
     useEffect(() => {
-        client.api("/api/creation/platform-profiles").then((data) => { setProfiles(data.profiles || []); setPlatform(data.profiles?.[0]?.Platform || ""); setSelected([data.profiles?.[0]?.Platform].filter(Boolean)); }).catch(() => setProfiles([]));
+        client.api("/api/creation/platform-profiles").then((data) => setProfiles(data.profiles || [])).catch(() => setProfiles([]));
     }, []);
-    useEffect(() => {
-        if (!pub || !profiles.length || defaultedRender.current === renderId) return;
-        defaultedRender.current = renderId;
-        if (!pub.campaignRules) return;
-        const allowed = pub.campaignRules.fields.platforms?.map(item => item.value) || [];
-        const preferred = [pub.campaignPlatform, ...allowed].find(key => (!allowed.length || allowed.includes(key)) && profiles.some(p => p.Platform === key));
-        if (preferred) { setPlatform(preferred); setSelected([preferred]); }
-    }, [renderId, profiles, pub]);
+    useLayoutEffect(() => {
+        if (!selectionKey || selectionReady || !profiles.length) return;
+        defaultedRender.current = selectionKey;
+        const available = profiles.map(p => p.Platform);
+        const allowed = pub.campaignRules?.fields.platforms?.map(item => item.value) || [];
+        const requested = pub.targetPlatforms?.length ? pub.targetPlatforms : [pub.campaignPlatform].filter(Boolean);
+        const picked = [...new Set(requested)].filter(key => available.includes(key) && (!allowed.length || allowed.includes(key)));
+        if (!picked.length) {
+            const fallback = allowed.length ? allowed.find(key => available.includes(key))
+                : requested.length ? undefined : available[0];
+            if (fallback) picked.push(fallback);
+        }
+        setSelected(picked); setPlatform(picked[0] || "");
+    }, [selectionKey, selectionReady, profiles, pub]);
     // Open what was asked for (a video, publication or package from the bin), else the newest video.
     useEffect(() => {
         const changedProject = shownProject.current !== null && shownProject.current !== project;
@@ -660,7 +668,7 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
             closing: draft.closing?.trim() ? draft.closing : copy.closing,
         });
     };
-    const queue = usePackageBatches({project, pub, profiles: chosen, selected, disabled: !!busy || !saved, startBlocked: !!packageError,
+    const queue = usePackageBatches({project, pub, profiles: chosen, selected, disabled: !!busy || !saved, startBlocked: !selectionReady || !!packageError,
         onChanged: () => { const generation = epoch.current; if (pub?.publicationJobId) void restore(pub, generation).catch(e => { if (epoch.current === generation) setMessage(e.message); }); }});
     const coverSrc = pub?.publicationJobId && !coverChanged ? `${jobPath(pub.publicationJobId)}/publication-files/cover.png` : null;
     const localCover = coverPreview?.src === videoSrc && coverPreview.frame === form.coverFrame ? coverPreview.url : "";
@@ -723,8 +731,8 @@ export function PublishWorkspace({project, workId, works, open, leave, onWorksCh
                 <div class="panel-head">平台包<span class="track-label">${saved ? "按平台预设转码、截封面、打包；不会自动发布" : "先保存右侧的发布信息"}</span></div>
                 <div class="track-area">
                     <div class="actions-row">
-                        ${profiles.map((p) => html`<label><input type="checkbox" checked=${selected.includes(p.Platform)} disabled=${!!busy} onChange=${(e) => { setPlatform(p.Platform); setSelected(e.currentTarget.checked ? [...selected, p.Platform] : selected.filter((v) => v !== p.Platform)); }} />${PLATFORMS[p.Platform] || p.Platform}${selected.includes(p.Platform) && !packages.some((r) => r.profile?.Platform === p.Platform) ? " · 尚未提交" : ""}</label>`)}
-                        <button class="btn" disabled=${!saved || !!busy || queue.busy || queue.running || !selected.length || !!packageError} onClick=${queue.start}>${queue.busy ? "正在加入队列…" : "生成平台包"}</button>
+                        ${profiles.map((p) => html`<label><input type="checkbox" checked=${selectionReady && selected.includes(p.Platform)} disabled=${!selectionReady || !!busy} onChange=${(e) => { setPlatform(p.Platform); setSelected(e.currentTarget.checked ? [...selected, p.Platform] : selected.filter((v) => v !== p.Platform)); }} />${PLATFORMS[p.Platform] || p.Platform}${selectionReady && selected.includes(p.Platform) && !packages.some((r) => r.profile?.Platform === p.Platform) ? " · 尚未提交" : ""}</label>`)}
+                        <button class="btn" disabled=${!selectionReady || !saved || !!busy || queue.busy || queue.running || !selected.length || !!packageError} onClick=${queue.start}>${queue.busy ? "正在加入队列…" : "生成平台包"}</button>
                         ${saved && !selected.length ? html`<span class="hint" role="status" aria-label="平台包状态">至少勾选一个平台</span>` : null}
                         <span class="hint">${["titleMaxChars", "descriptionMaxChars", "tagMaxCount"].filter((k) => limits[k]).map((k) => `${CHECKS[k]}≤${limits[k]}`).join(" · ")}</span>
                     </div>

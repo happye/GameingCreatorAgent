@@ -3,6 +3,7 @@ import {h} from "../vendor/preact.module.js";
 import {useEffect, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import {api} from "./api.js";
+import {briefPlatforms} from "./brief_sentence.js";
 const html = htm.bind(h);
 const NAMES = {name: "活动名称", period: "活动时间", platforms: "平台", minDurationSeconds: "最短时长", maxDurationSeconds: "最长时长", orientation: "画面方向", requiredTopics: "必带话题", forbidden: "禁止事项"};
 const show = (field, value) => field === "period" ? `${value.start} 至 ${value.end}` : field === "orientation" ? (value === "vertical" ? "竖屏" : "横屏") : /Seconds$/.test(field) ? `${value} 秒` : String(value);
@@ -10,8 +11,8 @@ const SUBMISSION_FIELDS = ["name", "period", "orientation", "minDurationSeconds"
 
 function mapping(fields, draft) {
     const patch = {contentType: "campaign"}, notes = [];
-    const platform = fields.platforms?.map(p => p.value).find(v => ["bilibili", "douyin", "kuaishou", "xiaohongshu"].includes(v));
-    if (platform) patch.platform = platform;
+    const platforms = briefPlatforms(fields.platforms?.map(p => p.value));
+    if (platforms.length) patch.platforms = [platforms[0]];
     else if (fields.platforms?.length) notes.push("平台无法填入，请人工核对");
     const min = fields.minDurationSeconds?.value, max = fields.maxDurationSeconds?.value;
     if (min != null || max != null) {

@@ -25,6 +25,12 @@ PLATFORMS = (
     ("kuaishou", ("快手", "kuaishou")),
     ("xiaohongshu", ("小红书", "红书")),
 )
+PLATFORM_ALIASES = {alias: (name, aliases[0]) for name, aliases in PLATFORMS for alias in aliases}
+_PLATFORM_NAME = "|".join(PLATFORM_ALIASES)
+PLATFORM_MENTION = re.compile(
+    rf"(?:不发|不要发|别发)(?:到)?\s*(?:{_PLATFORM_NAME})"
+    rf"(?:\s*(?:、|和|与|及|或)\s*(?:{_PLATFORM_NAME}))*|(?P<platform>{_PLATFORM_NAME})"
+)
 DIGITS = {
     "零": 0,
     "一": 1,
@@ -146,12 +152,16 @@ def parse_brief_sentence(text: object, games: object = None) -> dict[str, object
             fields["contentType"] = value
             notes.append(f"类型：{words[0]}")
             break
-    lower = sentence.casefold()
-    for name, aliases in PLATFORMS:
-        if any(alias in lower for alias in aliases):
-            fields["platform"] = name
-            notes.append(f"平台：{aliases[0]}")
-            break
+    platforms = {}
+    for match in PLATFORM_MENTION.finditer(sentence.casefold()):
+        if alias := match["platform"]:
+            name, label = PLATFORM_ALIASES[alias]
+            platforms[name] = label
+    if platforms:
+        fields["platform"] = next(iter(platforms))
+        if len(platforms) > 1:
+            fields["platforms"] = list(platforms)
+        notes.append(f"平台：{'、'.join(platforms.values())}")
     if topics:
         fields["mandatoryTopics"] = topics
         notes.append(f"必须主题：{'、'.join(topics)}")

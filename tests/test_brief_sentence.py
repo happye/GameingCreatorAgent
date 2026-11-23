@@ -55,6 +55,29 @@ def test_type_and_platform(text, kind, platform):
     assert result.get("platform") == platform
 
 
+@pytest.mark.parametrize(
+    "text,platforms,note",
+    [
+        ("发B站和抖音", ["bilibili", "douyin"], "平台：b站、抖音"),
+        ("发B站和抖音，不发快手和小红书", ["bilibili", "douyin"], "平台：b站、抖音"),
+        ("发B站和抖音，不要发到快手", ["bilibili", "douyin"], "平台：b站、抖音"),
+        (
+            "不发快手，发抖音和B站，也发 Bilibili 和红书",
+            ["douyin", "bilibili", "xiaohongshu"],
+            "平台：抖音、b站、小红书",
+        ),
+    ],
+)
+def test_platforms_follow_mention_order(text, platforms, note):
+    result = parse_brief_sentence(text)
+    assert result["fields"] == {
+        "objective": text,
+        "platform": platforms[0],
+        "platforms": platforms,
+    }
+    assert result["recognized"] == [note]
+
+
 def test_unstated_fields_are_not_invented():
     result = fields("随便剪一下")
     assert result == {"objective": "随便剪一下"}

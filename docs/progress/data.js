@@ -436,7 +436,7 @@ window.PROGRESS_DATA = {
    "impl": "partial",
    "quality": "template_draft_not_human_accepted",
    "release": "not_released",
-   "remaining": "Studio converted a real one-line showcase brief into a draft used to make a video and platform package. Broader briefs and creative quality remain to be assessed.",
+   "remaining": "A real one-line brief kept two ordered platforms through planning, rendering and their packages. The new AI multi-platform contract passed simulated transport checks, with live provider behavior and broader briefs still to verify.",
    "evidence": [
     "docs/exec-plans/sprint-creation-planner.md",
     "tests/test_creation_planner.py",
@@ -446,13 +446,14 @@ window.PROGRESS_DATA = {
     "tests/test_creation_jobs.py",
     "tests/test_creation_workspace_browser.py"
    ],
-   "done": "一句话需求支持DeepSeek文字理解并确认填入，真实30秒玩法需求已识别并串到导出发布包；预算内按作品调用，响应丢失只读恢复；规则兜底、活动规则与本地知识保留",
-   "todo": "一句话中的多个目标平台目前只保留一个，待从需求贯通到策划与默认出包；其他需求和成片质量待用户复测",
+   "done": "一句话可指定多个平台；真实漫画群星按抖音、B站顺序生成两个包并排除快手。草稿和发布页可恢复默认，保存同一成片保留手选。旧 AI 回执可回读",
+   "todo": "多平台 AI 输出已用模拟 Provider 验证，真实 Provider 和更多需求待复测",
    "updated": "2026-11-23",
    "sprints": [
     "sprint-creation-planner",
     "sprint-creation-workspace",
-    "sprint-j1-creation-usability"
+    "sprint-j1-creation-usability",
+    "sprint-live-creation-loop"
    ]
   },
   {
@@ -2488,7 +2489,7 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "活动日期和禁项已随方案保存，并可在抖音包核对页回看。下一步贯通一句话多平台需求。P008 待查视觉复用实证，J2 十槽和 J3 干净机留到验收阶段。",
+  "一句话多平台已实拍出抖音、B站双包。下一步补不同创作需求的主题覆盖与素材缺口。P008 待查视觉复用实证，J2 十槽和 J3 干净机留到验收阶段。",
   "[P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测 Atom 同稿各自出包。[P029](docs/exec-plans/sprint-creation-subtitles.md)实测青色宋体。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "[抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。",
@@ -3025,8 +3026,8 @@ window.PROGRESS_DATA = {
     "P040",
     "R2"
    ],
-   "date": "2026-11-17",
-   "bytes": 4318
+   "date": "2026-11-23",
+   "bytes": 5149
   },
   {
    "file": "sprint-live-cut-continuity",

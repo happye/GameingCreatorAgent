@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 from gamingcreator.application import ai_budget
+from gamingcreator.application.brief_reasoning import PROMPT_VERSION_V2 as BRIEF_PROMPT_VERSION_V2
 from gamingcreator.application.brief_reasoning import (
     BriefSnapshot,
     brief_request,
@@ -417,7 +418,7 @@ class CreationReasoningService:
         self, sentence: object, games: object, project_id: object = None, work_id: object = None
     ) -> dict[str, Any]:
         """Bind an explicit work, or retain the conservative legacy unassigned budget."""
-        snapshot = brief_snapshot(sentence, games)
+        snapshot = brief_snapshot(sentence, games, prompt_version=BRIEF_PROMPT_VERSION_V2)
         if project_id is not None or work_id is not None:
             if not isinstance(project_id, str) or not isinstance(work_id, str):
                 raise ValueError("项目与作品身份必须同时提供。")
@@ -614,10 +615,16 @@ class CreationReasoningService:
     def _current_brief(self, record: dict[str, Any]) -> BriefSnapshot:
         # The sentence is the whole input: rebuild it from the frozen request and re-bind.
         frozen = json.loads(record["request"]["user"])["snapshot"]
-        snapshot = brief_snapshot(frozen.get("sentence"), frozen.get("knownGames"))
+        snapshot = brief_snapshot(
+            frozen.get("sentence"),
+            frozen.get("knownGames"),
+            prompt_version=record["request"]["prompt_version"],
+        )
+        request = asdict(brief_request(snapshot))
         if (
             snapshot.fingerprint != record["snapshotFingerprint"]
-            or _digest(asdict(brief_request(snapshot))) != record["requestHash"]
+            or request != record["request"]
+            or _digest(request) != record["requestHash"]
         ):
             raise ValueError("Prepared brief changed; prepare again.")
         return snapshot

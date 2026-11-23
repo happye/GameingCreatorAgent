@@ -20,6 +20,8 @@ from gamingcreator.application.creation_reasoning import ReasoningRequest
 
 PROMPT_VERSION = "brief-understanding-prompt-v1"
 SCHEMA_VERSION = "brief-understanding-v1"
+PROMPT_VERSION_V2 = "brief-understanding-prompt-v2"
+SCHEMA_VERSION_V2 = "brief-understanding-v2"
 PARSER = "ai-deepseek-v1"
 GAME_LIMIT = 20
 TOPIC_COUNT = 10
@@ -76,12 +78,26 @@ KEYS = {
     "exclude",
     "notes",
 }
+SYSTEM_V2 = (
+    SYSTEM.replace(
+        f"platform: one of {', '.join(PLATFORM_NAMES)} when a platform is named.",
+        f"platforms: all explicitly requested platforms in mention order, from {', '.join(PLATFORM_NAMES)}. "
+        "Return an array of at most four distinct entries; [] when unspecified.",
+    )
+    .replace("targetDurationSeconds, platform,", "targetDurationSeconds, platforms,")
+    .replace(SCHEMA_VERSION, SCHEMA_VERSION_V2)
+)
+_VERSIONS = {
+    PROMPT_VERSION: (SYSTEM, SCHEMA_VERSION, KEYS),
+    PROMPT_VERSION_V2: (SYSTEM_V2, SCHEMA_VERSION_V2, (KEYS - {"platform"}) | {"platforms"}),
+}
 
 
 @dataclass(frozen=True)
 class BriefSnapshot:
     payload: dict[str, Any]
     fingerprint: str
+    prompt_version: str = PROMPT_VERSION
 
 
 def _text(value: object, limit: int) -> str:
@@ -91,7 +107,11 @@ def _text(value: object, limit: int) -> str:
     ]
 
 
-def brief_snapshot(sentence: object, games: object = None) -> BriefSnapshot:
+def brief_snapshot(
+    sentence: object, games: object = None, *, prompt_version: str = PROMPT_VERSION
+) -> BriefSnapshot:
+    if prompt_version not in _VERSIONS:
+        raise ValueError("Unsupported brief prompt version.")
     if not isinstance(sentence, str) or not sentence.strip() or len(sentence) > MAX_CHARS:
         raise ValueError("请输入1–500字的一句话需求。")
     known = games if isinstance(games, list) else []
@@ -100,15 +120,16 @@ def brief_snapshot(sentence: object, games: object = None) -> BriefSnapshot:
         "sentence": _text(sentence, MAX_CHARS),
         "knownGames": list(dict.fromkeys(n for n in names if n))[:GAME_LIMIT],
     }
-    return BriefSnapshot(payload, sha256(canonical(payload).encode()).hexdigest())
+    return BriefSnapshot(payload, sha256(canonical(payload).encode()).hexdigest(), prompt_version)
 
 
 def brief_request(snapshot: BriefSnapshot) -> ReasoningRequest:
+    system, schema, _ = _VERSIONS[snapshot.prompt_version]
     return ReasoningRequest(
-        SYSTEM,
+        system,
         canonical({"snapshotFingerprint": snapshot.fingerprint, "snapshot": snapshot.payload}),
-        PROMPT_VERSION,
-        SCHEMA_VERSION,
+        snapshot.prompt_version,
+        schema,
     )
 
 
@@ -156,20 +177,42 @@ def _enum(value: object, allowed: tuple[str, ...]) -> str | None:
     return str(value)
 
 
+def _platforms(value: object) -> list[str]:
+    if (
+        not isinstance(value, list)
+        or len(value) > len(PLATFORM_NAMES)
+        or any(not isinstance(item, str) or item not in PLATFORM_NAMES for item in value)
+        or len(set(value)) != len(value)
+    ):
+        raise ValueError("Platforms must be an ordered list of distinct supported platform names.")
+    return list(value)
+
+
 def validate_brief(snapshot: BriefSnapshot, output: Any) -> dict[str, Any]:
     """Exact keys, agreed enums, bounded text; the same result shape as the rule parser so
     the form applies it the same way. The echoed fingerprint is recorded, never trusted."""
-    if not isinstance(output, dict) or set(output) != KEYS:
+    _, schema, keys = _VERSIONS[snapshot.prompt_version]
+    if not isinstance(output, dict) or set(output) != keys:
         raise ValueError("Brief output must have exactly the agreed fields.")
-    if output["schemaVersion"] != SCHEMA_VERSION:
+    if output["schemaVersion"] != schema:
         raise ValueError("Unsupported brief schema.")
+    platform_key = "platform" if schema == SCHEMA_VERSION else "platforms"
+    platforms = (
+        _enum(output[platform_key], PLATFORM_NAMES)
+        if schema == SCHEMA_VERSION
+        else _platforms(output[platform_key])
+    )
     fields: dict[str, object] = {"objective": snapshot.payload["sentence"]}
+    if isinstance(platforms, list):
+        fields["platforms"] = platforms
+        if platforms:
+            fields["platform"] = platforms[0]
     notes: list[str] = []
     values: list[tuple[str, object, str]] = [
         ("game", _game(snapshot, output["game"]), "游戏"),
         ("targetDuration", _duration(output["targetDurationSeconds"]), "时长"),
         ("contentType", _enum(output["contentType"], CONTENT_TYPES), "类型"),
-        ("platform", _enum(output["platform"], PLATFORM_NAMES), "平台"),
+        (platform_key, platforms, "平台"),
         ("mandatoryTopics", _items(output["mandatoryTopics"]), "必须主题"),
         ("exclude", _items(output["exclude"]), "排除"),
         ("audience", _optional(output["audience"], SHORT_CHARS), "观众"),
@@ -185,6 +228,8 @@ def validate_brief(snapshot: BriefSnapshot, output: Any) -> dict[str, Any]:
             shown = TYPE_LABELS[str(value)]
         elif key == "platform":
             shown = PLATFORM_LABELS[str(value)]
+        elif key == "platforms" and isinstance(value, list):
+            shown = "、".join(PLATFORM_LABELS[item] for item in value)
         elif isinstance(value, list):
             shown = "、".join(value)
         else:
@@ -194,7 +239,7 @@ def validate_brief(snapshot: BriefSnapshot, output: Any) -> dict[str, Any]:
         raise ValueError("notes must be text.")
     return {
         "schemaVersion": "brief-sentence-v1",
-        "parser": PARSER,
+        "parser": PARSER if schema == SCHEMA_VERSION else "ai-deepseek-v2",
         "fields": fields,
         "recognized": notes,
         "notes": _text(output["notes"], NOTE_CHARS),
