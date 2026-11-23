@@ -9,12 +9,14 @@ from gamingcreator.application.creation_companion_timing import (
 from gamingcreator.application.creation_editing import validate_revision
 from gamingcreator.application.creation_replacements import candidate_manifest_sha
 from gamingcreator.application.edit_decision import select_edit_decision
+from gamingcreator.application.showcase_topics import candidate_topic_projector
 from gamingcreator.domain.creation_overlays import CreationOverlays
 from gamingcreator.infrastructure.overlay_assets import OverlayAssetLibrary
 from gamingcreator.ui import narration_jobs
 from gamingcreator.ui.overlay_jobs import public_asset, resolve_assets
 from gamingcreator.ui.replacement_jobs import manifest_for_chain, public_candidate
 from gamingcreator.ui.revision_jobs import (
+    attach_saved_candidate_topics,
     editable_clips,
     load_chain,
     prepare_revision,
@@ -151,8 +153,17 @@ def _move_inherited(
 
 def project_clips(jobs: Any, request: dict[str, Any], chain: Any, manifest: Any) -> dict[str, Any]:
     """Rebuild target identities only after authoritative revision validation."""
-    timelines = manifest_for_chain(jobs, chain)[1] if manifest else chain.timelines
-    parents = {c["clipId"]: c for c in editable_clips(chain.edl, chain.root_sha)}
+    timelines = chain.timelines
+    if manifest is not None:
+        verified_manifest, timelines = manifest_for_chain(jobs, chain)
+        if verified_manifest != manifest:
+            raise ValueError("Candidate manifest changed before draft projection")
+    evidence = candidate_topic_projector(
+        timelines, chain.report["brief"]["mandatoryTopics"], plan_id=chain.plan_id
+    )
+    detached = editable_clips(chain.edl, chain.root_sha)
+    attach_saved_candidate_topics(chain, detached, evidence)
+    parents = {c["clipId"]: c for c in detached}
     additions = {r["newClipId"]: r for r in request.get("insertions", [])}
     candidates = {c["candidateId"]: c for c in manifest["candidates"]} if manifest else {}
     swaps = {r["targetClipId"]: r["candidateId"] for r in request["replacements"]}
@@ -162,26 +173,39 @@ def project_clips(jobs: Any, request: dict[str, Any], chain: Any, manifest: Any)
         source = parents.get(identity)
         insertion = additions.get(identity)
         if insertion is not None:
+            candidate = candidates[insertion["candidateId"]]
             source = public_candidate(
-                candidates[insertion["candidateId"]],
+                candidate,
                 timelines,
                 request["parentJobId"],
                 chain.plan_id,
                 request["candidateManifestSha256"],
+                topic_evidence=evidence(candidate),
             )
             source.update(startUs=insertion["startUs"], endUs=insertion["endUs"])
         if identity in swaps:
+            candidate = candidates[swaps[identity]]
             source = public_candidate(
-                candidates[swaps[identity]],
+                candidate,
                 timelines,
                 request["parentJobId"],
                 chain.plan_id,
                 request["candidateManifestSha256"],
+                topic_evidence=evidence(candidate),
             )
         if source is None:
             raise ValueError("Unknown draft clip identity")
         bounds[identity] = {k: source[k] for k in ("startUs", "endUs")}
-        clips.append({**{k: v for k, v in source.items() if k != "sourcePath"}, **row})
+        projected = {**{k: v for k, v in source.items() if k != "sourcePath"}, **row}
+        topic_evidence = projected.get("candidateTopicEvidence")
+        if topic_evidence is not None and not (
+            topic_evidence["sourceStartUs"]
+            <= row["startUs"]
+            < row["endUs"]
+            <= topic_evidence["sourceEndUs"]
+        ):
+            projected.pop("candidateTopicEvidence")
+        clips.append(projected)
     return {
         "clips": clips,
         **({"insertions": request["insertions"]} if "insertions" in request else {}),

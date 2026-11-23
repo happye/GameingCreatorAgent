@@ -10,6 +10,7 @@ from gamingcreator.application.creation_replacements import (
     build_candidate_manifest,
     candidate_manifest_sha,
 )
+from gamingcreator.application.showcase_topics import candidate_topic_projector
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
@@ -52,10 +53,14 @@ def candidates(jobs: Any, job_id: str, plan_id: str) -> dict[str, Any]:
     chain = load_chain(jobs, job_id, plan_id)
     manifest, timelines = manifest_for_chain(jobs, chain)
     digest = candidate_manifest_sha(manifest)
+    evidence = candidate_topic_projector(
+        timelines, chain.report["brief"]["mandatoryTopics"], plan_id=chain.plan_id
+    )
     return {
         "candidateManifestSha256": digest,
         "candidates": [
-            public_candidate(c, timelines, job_id, plan_id, digest) for c in manifest["candidates"]
+            public_candidate(c, timelines, job_id, plan_id, digest, topic_evidence=evidence(c))
+            for c in manifest["candidates"]
         ],
     }
 
@@ -66,12 +71,16 @@ def public_candidate(
     job_id: str,
     plan_id: str,
     digest: str,
+    *,
+    topic_evidence: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Project verified footage without exposing a local path."""
     row = {k: v for k, v in candidate.items() if k != "sourcePath"}
     asset = next(t.run.asset for t in timelines if t.run.run_id == row["runId"])
     row["sourceName"] = Path(candidate["sourcePath"]).name
     row["sourceClock"] = runtime_clock_document(asset)
+    if topic_evidence is not None:
+        row["candidateTopicEvidence"] = topic_evidence
     row["previewUrl"] = (
         "/api/creation/jobs/"
         + job_id

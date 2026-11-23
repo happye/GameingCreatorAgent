@@ -253,6 +253,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                 delete clip.guideStep;
                 delete clip.role;
                 delete clip.topicUses;
+                if (!row.candidateTopicEvidence) delete clip.candidateTopicEvidence;
             }
             return clip;
         });

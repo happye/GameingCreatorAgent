@@ -1137,7 +1137,7 @@ class CreationJobs:
         return publication_jobs.resource(self, job_id, name)
 
     def edit(self, job_id: str, plan_id: str) -> dict[str, Any]:
-        return editor(load_chain(self, job_id, plan_id), job_id)
+        return editor(load_chain(self, job_id, plan_id), job_id, include_candidate_topics=True)
 
     def _enterprise_dir(self) -> Path:
         path = self.root / "enterprise"

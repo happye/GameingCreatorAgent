@@ -3,6 +3,8 @@
 import asyncio
 import hashlib
 import json
+from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -32,6 +34,10 @@ from gamingcreator.application.edit_decision import select_edit_decision
 from gamingcreator.application.narration import NarrationArtifact
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.application.rendering import RenderPlan, validate_render_plan
+from gamingcreator.application.showcase_topics import (
+    candidate_source_identity,
+    candidate_topic_projector,
+)
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.creation_audio import AudioMix
 from gamingcreator.domain.creation_narration import NarrationSelection
@@ -347,8 +353,41 @@ def load_chain(
     )
 
 
-def editor(chain: Chain, job_id: str) -> dict[str, Any]:
+def attach_saved_candidate_topics(
+    chain: Chain,
+    rows: list[dict[str, Any]],
+    project: Callable[[dict[str, Any]], dict[str, Any] | None],
+) -> None:
+    """Project evidence only onto detached rows derived from an immutable manifest."""
+    if chain.manifest is None or not chain.report["brief"]["mandatoryTopics"]:
+        return
+    root = select_edit_decision(chain.report, chain.plan_id)
+    root_ids = {row["clipId"] for row in editable_clips(root, chain.root_sha)}
+    candidates: dict[tuple[str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for candidate in chain.manifest["candidates"]:
+        candidates[candidate_source_identity(candidate)].append(candidate)
+    for row in rows:
+        if row["clipId"] in root_ids:
+            continue
+        matches = [
+            candidate
+            for candidate in candidates[candidate_source_identity(row)]
+            if candidate["startUs"] <= row["startUs"] < row["endUs"] <= candidate["endUs"]
+        ]
+        if len(matches) == 1 and (evidence := project(row)) is not None:
+            row["candidateTopicEvidence"] = evidence
+
+
+def editor(chain: Chain, job_id: str, *, include_candidate_topics: bool = False) -> dict[str, Any]:
     rows = editable_clips(chain.edl, chain.root_sha)
+    if include_candidate_topics and chain.manifest is not None:
+        attach_saved_candidate_topics(
+            chain,
+            rows,
+            candidate_topic_projector(
+                chain.timelines, chain.report["brief"]["mandatoryTopics"], plan_id=chain.plan_id
+            ),
+        )
     for row in rows:
         row.pop("sourcePath", None)
     narration_context = {}

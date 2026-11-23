@@ -1,6 +1,6 @@
 # HANDOFF（覆盖快照）
 
-## 最近一次会话（2026-11-23）
+## 最近一次会话（2026-11-24）
 
 当前分支 `main`。先看 [STATUS](STATUS.md) 与 [看板](docs/progress/index.html)。[P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测关页后出包与重开下载。[P029](docs/exec-plans/sprint-creation-subtitles.md)和[P031](docs/exec-plans/sprint-publication-assets.md)有实拍产物。
 
@@ -32,6 +32,6 @@
 
 ## 下一优先级与约束
 
-[P024](docs/exec-plans/sprint-material-scoring.md) 当前剪辑主题缺口已实拍删镜、保存重开及出片。下一步关联补选素材与主题。P008 待查视觉窗口实证，J2 十槽、J3 干净机和创作质量留到验收阶段。
+[P024](docs/exec-plans/sprint-material-scoring.md) 实拍换镜补选 1V1，保存重开可读引用并出片。候选插入走隔离用例。P008 待查视觉窗口实证，J2 十槽、J3 干净机和创作质量留到验收阶段。
 
 本批使用定向回归、真实浏览器和产物验证，无全量、Release、支付或上传。旧完整 verify-20261117-002506 按用户要求中断，曾见失败。J2/J3 待人评，J1 通过以第六次用户答复为证。文字月 ¥30/单条 ¥1、指定视觉月 ¥50，现有费用门禁保留。本机声音，真实平台发布或支付须另授权。

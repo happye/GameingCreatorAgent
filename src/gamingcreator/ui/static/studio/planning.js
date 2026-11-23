@@ -139,6 +139,15 @@ function sourceSpan(clip) {
 
 const evidenceLabels = {tag: "玩法标签", fact: "摘要原文"};
 
+function candidateTopicUse(clip, topic) {
+    const evidence = clip.candidateTopicEvidence;
+    if (!evidence || evidence.runId !== clip.runId || evidence.eventId !== clip.eventId
+        || evidence.mediaId !== clip.mediaId || evidence.sourceSha256 !== clip.sourceSha256
+        || !(evidence.sourceStartUs <= clip.startUs && clip.endUs <= evidence.sourceEndUs)) return null;
+    const use = evidence.matches?.find(item => item.topic === topic);
+    return use ? {use, trimmed: evidence.sourceStartUs !== clip.startUs || evidence.sourceEndUs !== clip.endUs} : null;
+}
+
 function currentTopicUses(plan, row, clips) {
     const originals = (row.shotIndexes || []).flatMap(index => {
         const segment = plan.segments?.[index - 1];
@@ -153,31 +162,43 @@ function currentTopicUses(plan, row, clips) {
         if (!sourceSpan(clip) || typeof clip.runId !== "string" || !clip.runId
             || typeof clip.eventId !== "string" || !clip.eventId
             || typeof clip.sourceSha256 !== "string" || !/^[a-f0-9]{64}$/.test(clip.sourceSha256)) return [];
+        const candidate = candidateTopicUse(clip, row.topic);
         const quotes = new Set((clip.topicUses || []).filter(use => use.topic === row.topic).map(use => use.observationQuote));
-        if (!quotes.size) return [];
+        if (!quotes.size) return candidate ? [{index: index + 1, clipId: clip.clipId, candidate}] : [];
         const matches = originals.filter(({segment, use}) => segment.runId === clip.runId && segment.eventId === clip.eventId
             && segment.sourceSha256 === clip.sourceSha256
             && clip.startUs < segment.endUs && clip.endUs > segment.startUs && quotes.has(use.observationQuote));
         const exact = matches.find(({segment}) => segment.startUs === clip.startUs && segment.endUs === clip.endUs);
-        return matches.length ? [{index: index + 1, clipId: clip.clipId, exact}] : [];
+        return matches.length || candidate ? [{index: index + 1, clipId: clip.clipId, exact, candidate}] : [];
     });
 }
 
 function CurrentTopicCoverage({plan, clips, preview, onFind, onSeek}) {
     const local = plan.topicCoverageBasis === "source-matched";
+    const ad = plan.id === "ad-evidence-hook" || plan.id === "ad-evidence-demo";
     const topics = useMemo(() => plan.topicCoverage.map(row => ({row, uses: currentTopicUses(plan, row, clips)})), [plan, clips]);
     return html`<details class="topic-coverage" aria-label="方案主题安排"><summary>${preview ? "待应用预览的主题安排" : "当前剪辑主题安排"}</summary>
         <p class="hint">编号对应${preview ? "待应用预览" : "当前剪辑"}的片段顺序。请回看画面核对主题。</p>
         ${topics.map(({row, uses}) => {
             const gap = row.status === "missing" ? (local ? "原方案的素材记录未匹配此主题。" : "原方案未给出此主题的画面引用。") : row.status === "available"
                 ? "素材已有记录，当前版本未排入。" : "当前版本未保留可核对的原方案主题引用。";
+            const adNeedsEvidence = ad && !uses.some(use => use.exact);
             return html`<div class="field" key=${row.topic}><div class="k">${row.topic}</div>
-                ${uses.length ? uses.map(({index, clipId, exact}) => html`<div key=${index}>
-                    <p>片段 ${index}：${exact ? exact.use.rationale : "源区间已调整，需预览核对。"}</p>
-                    ${exact ? html`<blockquote>${evidenceLabels[exact.use.evidenceKind] || "素材记录原文"}：${exact.use.observationQuote}</blockquote>
-                        ${local && exact.segment.uncertainty ? html`<p class="hint">素材分析备注：${exact.segment.uncertainty}</p>` : null}` : null}
-                    ${typeof clipId === "string" && clipId ? html`<button type="button" class="btn ghost" onClick=${() => onSeek(clipId)}>预览第 ${index} 段</button>` : null}
-                </div>`) : html`<p>${gap}</p><button type="button" class="btn ghost" onClick=${() => onFind(row.topic)}>在素材里找「${row.topic}」</button>`}
+                ${uses.map(({index, clipId, exact, candidate}) => {
+                    const use = exact?.use || candidate?.use;
+                    const detail = exact ? use.rationale : candidate
+                        ? candidate.trimmed ? "候选素材与主题匹配，已裁剪，请回看实际区间。" : "候选素材与主题匹配，请回看画面。"
+                        : "源区间已调整，需预览核对。";
+                    return html`<div key=${index}>
+                        <p>片段 ${index}：${detail}</p>
+                        ${use && html`<blockquote>${exact ? "" : "候选"}${evidenceLabels[use.evidenceKind] || "素材记录原文"}：${use.observationQuote}</blockquote>`}
+                        ${local && exact?.segment.uncertainty && html`<p class="hint">素材分析备注：${exact.segment.uncertainty}</p>`}
+                        ${typeof clipId === "string" && clipId ? html`<button type="button" class="btn ghost" onClick=${() => onSeek(clipId)}>预览第 ${index} 段</button>` : null}
+                    </div>`;
+                })}
+                ${(!uses.length || adNeedsEvidence) && html`
+                    <p>${adNeedsEvidence ? "仍需完整画面证据确认卖点。" : gap}</p>
+                    <button type="button" class="btn ghost" onClick=${() => onFind(row.topic)}>在素材里找「${row.topic}」</button>`}
             </div>`;
         })}
     </details>`;

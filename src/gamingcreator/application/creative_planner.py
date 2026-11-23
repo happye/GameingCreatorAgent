@@ -30,7 +30,11 @@ from gamingcreator.application.material_scoring import (
     score_materials,
     scoring_legend,
 )
-from gamingcreator.application.showcase_topics import showcase_coverage, visual_topic_count
+from gamingcreator.application.showcase_topics import (
+    FACTS_ONLY_PLAN_IDS,
+    showcase_coverage,
+    visual_topic_count,
+)
 from gamingcreator.application.storage import StoredTimeline
 from gamingcreator.domain.creation import CreativeBrief
 from gamingcreator.domain.media import MediaAsset
@@ -120,7 +124,7 @@ def _plan_topic_details(
             eligible,
             segments,
             step_seeds=step_seeds,
-            facts_only=identity != "showcase",
+            facts_only=identity in FACTS_ONLY_PLAN_IDS,
         )
         if step_seeds is not None:
             steps = (row for row in segments if row.get("topicUses"))

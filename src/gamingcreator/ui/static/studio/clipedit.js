@@ -97,6 +97,7 @@ function replaceClip(state, id, candidate, manifest) {
         delete next.guideStep;
         delete next.role;
         delete next.topicUses;
+        if (!candidate.candidateTopicEvidence) delete next.candidateTopicEvidence;
         return next;
     });
     const at = clips.findIndex((c) => c.clipId === id);
@@ -220,6 +221,7 @@ export function useClipEditor(project, workId = null) {
                     delete next.guideStep;
                     delete next.role;
                     delete next.topicUses;
+                    if (!row.candidateTopicEvidence) delete next.candidateTopicEvidence;
                 }
                 return next;
             });

@@ -7,12 +7,15 @@ import pytest
 from test_creation_jobs import finish, request, service  # noqa: F401
 from test_creation_render import decision
 
+from gamingcreator.application.creation_insertions import insertion_id
+from gamingcreator.application.showcase_topics import candidate_topic_projector
 from gamingcreator.domain.errors import AppError
 from gamingcreator.domain.models import EvidenceReference
 from gamingcreator.domain.time import SourceInstant, SourceRange
 from gamingcreator.infrastructure.creation_files import write_creation
 from gamingcreator.infrastructure.ffmpeg_media import hash_file
 from gamingcreator.infrastructure.sqlite_store import SqliteTimelineStore
+from gamingcreator.ui.creation_draft_restore import preview as preview_draft
 from gamingcreator.ui.creation_jobs import CreationJobs
 from gamingcreator.ui.replacement_jobs import candidate_video, candidates
 
@@ -205,6 +208,93 @@ def test_cross_run_restart_and_v4_descendant(replacements):
     assert finish(jobs, jobs.submit("revision", child)["jobId"])["status"] == "completed"
     receipt = jobs.read(jobs.directory(revision) / "result/receipt.json")
     assert set(receipt["files"]) == {"revision.json", "edit-decision.json", "candidates.json"}
+
+
+def test_replacement_topic_evidence_binds_selected_run_without_persisting_projection(replacements):
+    jobs, _, other = replacements
+    events = list(other.events)
+    events[1] = replace(events[1], modality="audio", observable_facts=events[0].observable_facts)
+    events[2] = replace(events[2], mechanic_tags=("fact 0",))
+    other.events = tuple(events)
+    req = request()
+    req.update(requestId="9" * 32, runIds=["run", "B"])
+    req["brief"].update(targetDuration=6, mandatoryTopics=["fact 0"])
+    root = jobs.submit("plan", req)["jobId"]
+    assert finish(jobs, root)["status"] == "completed"
+    candidate_view = candidates(jobs, root, "hook-first")
+    catalog = candidate_view["candidates"]
+    same_quote = [row["candidateTopicEvidence"] for row in catalog if row["eventId"] == "0"]
+    assert {row["runId"] for row in same_quote} == {"run", "B"}
+    audio_only = next(row for row in catalog if row["runId"] == "B" and row["eventId"] == "1")
+    assert "candidateTopicEvidence" not in audio_only
+    tagged = next(row for row in catalog if row["runId"] == "B" and row["eventId"] == "2")
+    assert tagged["candidateTopicEvidence"]["matches"][0]["evidenceKind"] == "tag"
+    for plan_id in ("guide-evidence", "commentary-evidence"):
+        assert candidate_topic_projector((other,), ["fact 0"], plan_id=plan_id)(tagged) is None
+    assert len({row["sourceSha256"] for row in same_quote}) == 2
+    original = jobs.edit(root, "hook-first")
+    assert all("candidateTopicEvidence" not in row for row in original["clips"])
+
+    revision = jobs.submit("revision", replacement_request(jobs, root))["jobId"]
+    assert finish(jobs, revision)["status"] == "completed"
+    path = jobs.directory(revision) / "result/edit-decision.json"
+    stored = path.read_bytes()
+    first = CreationJobs(jobs.repository).edit(revision, "hook-first")["clips"][0]
+    proof = first["candidateTopicEvidence"]
+    assert proof == next(row for row in same_quote if row["runId"] == "B")
+    assert proof["sourceStartUs"] == first["startUs"]
+    assert proof["sourceEndUs"] > first["endUs"]
+    assert b"candidateTopicEvidence" not in stored and path.read_bytes() == stored
+    assert b"candidateTopicEvidence" not in (jobs.directory(revision) / "status.json").read_bytes()
+
+    inserted_candidate = next(
+        row for row in catalog if row["runId"] == "B" and row["eventId"] == "0"
+    )
+    cut = {
+        "speed": {"numerator": 1, "denominator": 1},
+        "transitionIn": {"type": "cut", "frames": 0},
+    }
+    clips = [
+        {**cut, **{key: clip[key] for key in ("clipId", "startUs", "endUs")}}
+        for clip in original["clips"]
+    ]
+    insertion = {
+        "afterClipId": clips[0]["clipId"],
+        "candidateId": inserted_candidate["candidateId"],
+        "startUs": inserted_candidate["startUs"],
+        "endUs": inserted_candidate["startUs"] + 1_000_000,
+    }
+    parent_sha = original["expectedParentReceiptSha256"]
+    insertion["newClipId"] = insertion_id(parent_sha, insertion)
+    clips.insert(
+        1,
+        {
+            **cut,
+            "clipId": insertion["newClipId"],
+            "startUs": insertion["startUs"],
+            "endUs": insertion["endUs"],
+        },
+    )
+    draft = {
+        "projectId": req["projectId"],
+        "parentJobId": root,
+        "planId": "hook-first",
+        "expectedParentReceiptSha256": parent_sha,
+        "clips": clips,
+        "subtitleOverrides": [],
+        "audioMix": original["audioMix"],
+        "narration": None,
+        "overlays": {"schemaVersion": "creation-overlays-v1", "items": []},
+        "candidateManifestSha256": candidate_view["candidateManifestSha256"],
+        "replacements": [],
+        "insertions": [insertion],
+    }
+    assert preview_draft(jobs, draft)["clips"][1]["candidateTopicEvidence"] == proof
+    saved = {key: value for key, value in draft.items() if key != "projectId"}
+    saved["requestId"] = "8" * 32
+    insert_job = jobs.submit("revision", saved)["jobId"]
+    assert finish(jobs, insert_job)["status"] == "completed"
+    assert jobs.edit(insert_job, "hook-first")["clips"][1]["candidateTopicEvidence"] == proof
 
 
 @pytest.mark.parametrize("fault", ["sha", "candidate", "source", "status"])

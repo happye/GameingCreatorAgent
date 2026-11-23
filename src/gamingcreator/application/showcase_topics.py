@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gamingcreator.application.creative_planner import CreationClip
+    from gamingcreator.application.storage import StoredTimeline
+    from gamingcreator.domain.models import SemanticEvent
 
 _GAMEPLAY_MARKERS = (
     "技能释放",
@@ -17,6 +19,7 @@ _GAMEPLAY_MARKERS = (
     "参数变化",
     "释放技能",
 )
+FACTS_ONLY_PLAN_IDS = frozenset({"guide-evidence", "commentary-evidence"})
 
 
 def _normalize(value: str) -> str:
@@ -56,7 +59,10 @@ def mentions_gameplay(text: str) -> bool:
 
 
 def _evidence(clip: "CreationClip", topic: str, facts_only: bool) -> tuple[str, str] | None:
-    event = clip.event
+    return _event_evidence(clip.event, topic, facts_only)
+
+
+def _event_evidence(event: "SemanticEvent", topic: str, facts_only: bool) -> tuple[str, str] | None:
     if event.modality == "audio":
         return None
     fact = next((text for text in event.observable_facts if topic_matches(text, topic)), None)
@@ -71,6 +77,62 @@ def _evidence(clip: "CreationClip", topic: str, facts_only: bool) -> tuple[str, 
     if tag is not None:
         return "tag", tag
     return None
+
+
+def candidate_source_identity(row: dict[str, Any]) -> tuple[str, str, str, str]:
+    return row["runId"], row["eventId"], row["mediaId"], row["sourceSha256"]
+
+
+def candidate_topic_projector(
+    timelines: Sequence["StoredTimeline"], topics: Sequence[str], *, plan_id: str
+) -> Callable[[dict[str, Any]], dict[str, Any] | None]:
+    """Bind exact required-topic quotes to candidate intervals in verified timelines."""
+    facts_only = plan_id in FACTS_ONLY_PLAN_IDS
+    events = (
+        {
+            (
+                timeline.run.run_id,
+                event.event_id,
+                timeline.run.asset.media_id,
+                timeline.run.asset.sha256,
+            ): event
+            for timeline in timelines
+            for event in timeline.events
+            if event.run_id == timeline.run.run_id and event.media_id == timeline.run.asset.media_id
+        }
+        if topics
+        else {}
+    )
+
+    def project(row: dict[str, Any]) -> dict[str, Any] | None:
+        if not events:
+            return None
+        run, event_id, media, sha256 = candidate_source_identity(row)
+        event = events.get((run, event_id, media, sha256))
+        if event is None or event.modality == "audio":
+            return None
+        start, end = row["startUs"], row["endUs"]
+        span = event.source_range
+        if not span.start_us <= start < end <= span.end_us:
+            return None
+        matches = [
+            {"topic": topic, "evidenceKind": evidence[0], "observationQuote": evidence[1]}
+            for topic in topics
+            if (evidence := _event_evidence(event, topic, facts_only)) is not None
+        ]
+        if not matches:
+            return None
+        return {
+            "runId": run,
+            "eventId": event_id,
+            "mediaId": media,
+            "sourceSha256": sha256,
+            "sourceStartUs": span.start_us,
+            "sourceEndUs": span.end_us,
+            "matches": matches,
+        }
+
+    return project
 
 
 def gameplay_opening(clip: "CreationClip") -> bool:
