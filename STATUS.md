@@ -18,7 +18,7 @@
 
 ## 当前交付与下一步（2026-11-23）
 
-一句话多平台已实拍出抖音、B站双包。下一步补不同创作需求的主题覆盖与素材缺口。P008 待查视觉复用实证，J2 十槽和 J3 干净机留到验收阶段。
+当前剪辑可显示主题引用和删镜后的缺口。下一步将补选的新素材与主题关联。P008 待查视觉复用实证，J2 十槽和 J3 干净机留到验收阶段。
 
 1. [P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测 Atom 同稿各自出包。[P029](docs/exec-plans/sprint-creation-subtitles.md)实测青色宋体。
 2. 真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。

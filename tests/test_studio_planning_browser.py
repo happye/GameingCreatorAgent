@@ -136,10 +136,11 @@ def test_theme_preview_adoption_and_reload(studio):
                 snapshot.brief.mandatory_topics,
                 snapshot.brief.objective,
             ),
-        )
+        ),
+        mapping_version="plan-topics-v2",
     )
     value = output(snapshot, ((2, 1),))
-    value["schemaVersion"] = "plan-proposal-v3"
+    value["schemaVersion"] = "plan-proposal-v4"
     value["plans"][0]["knowledgeUses"] = []
     for shot in value["plans"][0]["shots"]:
         shot["topicUses"] = []
@@ -147,7 +148,7 @@ def test_theme_preview_adoption_and_reload(studio):
         {
             "topic": "角色介绍",
             "rationale": "这段观察适合作为角色介绍的开场",
-            "observationQuote": snapshot.payload["candidates"][1]["facts"][0],
+            "observationRef": "fact:1",
         }
     ]
     ctx.transport.content = value
@@ -164,8 +165,8 @@ def test_theme_preview_adoption_and_reload(studio):
     coverage = preview.get_by_label("方案主题安排")
     coverage.locator("summary").click()
     expect(coverage).to_contain_text("角色介绍")
-    expect(coverage).to_contain_text("缺少对应画面")
-    expect(coverage).to_contain_text("摘要原文：fact 2")
+    expect(coverage).to_contain_text("原方案未给出此主题的画面引用。")
+    expect(coverage).to_contain_text("素材记录原文：fact 2")
     expect(coverage).to_contain_text("这段观察适合作为角色介绍的开场")
     with page.expect_response(
         lambda r: r.url.split("?")[0].endswith("/edit") and ctx.root not in r.url
@@ -175,12 +176,27 @@ def test_theme_preview_adoption_and_reload(studio):
     inspector = page.get_by_label("检查器", exact=True)
     expect(inspector.get_by_label("方案主题安排")).to_be_visible()
     inspector.get_by_label("方案主题安排").locator("summary").click()
-    expect(inspector).to_contain_text("摘要原文：fact 2")
+    expect(inspector).to_contain_text("素材记录原文：fact 2")
+    expect(inspector).to_contain_text("原方案未给出此主题的画面引用。")
     page.reload()
     coverage = page.get_by_label("检查器", exact=True).get_by_label("方案主题安排")
     expect(coverage).to_be_visible()
+    expect(coverage.locator("summary")).to_contain_text("当前剪辑主题安排")
     coverage.locator("summary").click()
     expect(coverage).to_contain_text("角色介绍")
+    page.locator("button.clip").first.click()
+    page.get_by_role("button", name="删除这段", exact=True).click()
+    expect(coverage.get_by_role("button", name="在素材里找「角色介绍」", exact=True)).to_be_visible()
+    expect(coverage.locator("blockquote")).to_have_count(0)
+    page.get_by_role("button", name="撤销一步", exact=True).click()
+    expect(coverage.locator("blockquote")).to_contain_text("fact 2")
+    page.get_by_role("textbox", name="一句话修改镜头").fill("删除第1个镜头")
+    page.get_by_role("button", name="预览改动", exact=True).click()
+    expect(coverage.locator("summary")).to_contain_text("待应用预览")
+    expect(coverage.locator("blockquote")).to_have_count(0)
+    page.locator(".assistant").get_by_role("button", name="取消", exact=True).click()
+    expect(coverage.locator("summary")).to_contain_text("当前剪辑主题安排")
+    expect(coverage.locator("blockquote")).to_contain_text("fact 2")
     assert len(ctx.transport.calls) == 1
 
 

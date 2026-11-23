@@ -694,7 +694,8 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                         <button class="btn ghost" disabled=${!editing.canRedo || !!busy || commandPreview} title="Ctrl+Shift+Z" onClick=${() => editing.ops.redo()}>重做</button>
                         <button class="btn ghost" disabled=${!editing.dirty || !!busy} onClick=${() => editing.ops.reset()}>撤销修改</button></div>`}</div>`}
                 <div hidden=${inspTab !== "shot"}>
-                <${TopicCoverage} plan=${plan} />
+                <${TopicCoverage} plan=${comparePlan || plan} clips=${!comparePlan && matchesAdoptedEditor ? shownClips : null}
+                    preview=${!comparePlan && !!commandRows} onFind=${onFindMaterial} onSeek=${seekClip} />
                 ${selectedIndex >= 0 && !commandPreview ? html`<fieldset aria-label="镜头编辑" disabled=${busy === "save" || busy === "render"} style=${{border: 0, padding: 0, margin: 0, minWidth: 0}}>
                     <${CandidateVisualScore} score=${selectedScore} />
                     <${ClipInspector} editing=${editing} index=${selectedIndex} onSeek=${seekClip} basket=${basket} /></fieldset>`

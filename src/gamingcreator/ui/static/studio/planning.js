@@ -1,7 +1,7 @@
 // Dynamic alternatives use the saved brief and candidate basket. Within the monthly AI budget
 // (2026-11-11) one click sends; past it the old per-call confirmation applies.
 import {h} from "../vendor/preact.module.js";
-import {useEffect, useLayoutEffect, useRef, useState} from "../vendor/hooks.module.js";
+import {useEffect, useLayoutEffect, useMemo, useRef, useState} from "../vendor/hooks.module.js";
 import htm from "../vendor/htm.module.js";
 import * as client from "./api.js";
 
@@ -132,16 +132,68 @@ export function KnowledgeUses({uses}) {
     </div>`)}</details>`;
 }
 
-export function TopicCoverage({plan}) {
+function sourceSpan(clip) {
+    return clip && Number.isSafeInteger(clip.startUs) && Number.isSafeInteger(clip.endUs)
+        && clip.startUs >= 0 && clip.endUs > clip.startUs;
+}
+
+const evidenceLabels = {tag: "玩法标签", fact: "摘要原文"};
+
+function currentTopicUses(plan, row, clips) {
+    const originals = (row.shotIndexes || []).flatMap(index => {
+        const segment = plan.segments?.[index - 1];
+        if (!sourceSpan(segment)) return [];
+        return (segment.topicUses || []).filter(use => use.topic === row.topic
+            && typeof use.observationQuote === "string" && use.observationQuote.trim()
+            && ((use.sourceStartUs == null && use.sourceEndUs == null)
+                || (use.sourceStartUs === segment.startUs && use.sourceEndUs === segment.endUs)))
+            .map(use => ({segment, use}));
+    });
+    return clips.flatMap((clip, index) => {
+        if (!sourceSpan(clip) || typeof clip.runId !== "string" || !clip.runId
+            || typeof clip.eventId !== "string" || !clip.eventId
+            || typeof clip.sourceSha256 !== "string" || !/^[a-f0-9]{64}$/.test(clip.sourceSha256)) return [];
+        const quotes = new Set((clip.topicUses || []).filter(use => use.topic === row.topic).map(use => use.observationQuote));
+        if (!quotes.size) return [];
+        const matches = originals.filter(({segment, use}) => segment.runId === clip.runId && segment.eventId === clip.eventId
+            && segment.sourceSha256 === clip.sourceSha256
+            && clip.startUs < segment.endUs && clip.endUs > segment.startUs && quotes.has(use.observationQuote));
+        const exact = matches.find(({segment}) => segment.startUs === clip.startUs && segment.endUs === clip.endUs);
+        return matches.length ? [{index: index + 1, clipId: clip.clipId, exact}] : [];
+    });
+}
+
+function CurrentTopicCoverage({plan, clips, preview, onFind, onSeek}) {
+    const local = plan.topicCoverageBasis === "source-matched";
+    const topics = useMemo(() => plan.topicCoverage.map(row => ({row, uses: currentTopicUses(plan, row, clips)})), [plan, clips]);
+    return html`<details class="topic-coverage" aria-label="方案主题安排"><summary>${preview ? "待应用预览的主题安排" : "当前剪辑主题安排"}</summary>
+        <p class="hint">编号对应${preview ? "待应用预览" : "当前剪辑"}的片段顺序。请回看画面核对主题。</p>
+        ${topics.map(({row, uses}) => {
+            const gap = row.status === "missing" ? (local ? "原方案的素材记录未匹配此主题。" : "原方案未给出此主题的画面引用。") : row.status === "available"
+                ? "素材已有记录，当前版本未排入。" : "当前版本未保留可核对的原方案主题引用。";
+            return html`<div class="field" key=${row.topic}><div class="k">${row.topic}</div>
+                ${uses.length ? uses.map(({index, clipId, exact}) => html`<div key=${index}>
+                    <p>片段 ${index}：${exact ? exact.use.rationale : "源区间已调整，需预览核对。"}</p>
+                    ${exact ? html`<blockquote>${evidenceLabels[exact.use.evidenceKind] || "素材记录原文"}：${exact.use.observationQuote}</blockquote>
+                        ${local && exact.segment.uncertainty ? html`<p class="hint">素材分析备注：${exact.segment.uncertainty}</p>` : null}` : null}
+                    ${typeof clipId === "string" && clipId ? html`<button type="button" class="btn ghost" onClick=${() => onSeek(clipId)}>预览第 ${index} 段</button>` : null}
+                </div>`) : html`<p>${gap}</p><button type="button" class="btn ghost" onClick=${() => onFind(row.topic)}>在素材里找「${row.topic}」</button>`}
+            </div>`;
+        })}
+    </details>`;
+}
+
+export function TopicCoverage({plan, clips = null, preview = false, onFind = () => {}, onSeek = () => {}}) {
     if (!plan?.topicCoverage?.length) return null;
+    if (clips !== null) return html`<${CurrentTopicCoverage} ...${{plan, clips, preview, onFind, onSeek}} />`;
     const local = plan.topicCoverageBasis === "source-matched";
     return html`<details class="topic-coverage" aria-label="方案主题安排"><summary>方案主题安排（${local ? "本地素材匹配" : "AI 建议，需预览核对"}）</summary>
         <p class="hint">${local ? "编号对应原方案片段。引用来自素材分析区间，请预览核对裁剪后实际保留的画面。" : "以下对应原方案镜头编号。引用来自已保存的素材记录，修改镜头后请在预览中重新核对。"}</p>
         ${plan.topicCoverage.map(row => html`<div class="field"><div class="k">${row.topic}</div>
-            <p>${row.status === "missing" ? local ? "素材记录中未匹配，可补素材或调整表达" : "缺少对应画面，可补素材或调整表达" : row.status === "available" ? "素材已有记录，本版暂未排入" : `${local ? "关联原方案片段" : "建议使用镜头"} ${row.shotIndexes.join("、")}`}</p>
+            <p>${row.status === "missing" ? local ? "素材记录中未匹配，可补素材或调整表达" : "原方案未给出此主题的画面引用。" : row.status === "available" ? "素材已有记录，本版暂未排入" : `${local ? "关联原方案片段" : "建议使用镜头"} ${row.shotIndexes.join("、")}`}</p>
             ${row.shotIndexes.map(index => {
                 const segment = plan.segments[index - 1];
-                return html`<div>${(segment?.topicUses || []).filter(use => use.topic === row.topic).map(use => html`<p>${local ? "片段" : "镜头"} ${index}：${use.rationale}</p><blockquote>${use.evidenceKind === "tag" ? "玩法标签" : "摘要原文"}：${use.observationQuote}</blockquote>${local && segment.uncertainty ? html`<p class="hint">素材分析备注：${segment.uncertainty}</p>` : null}`)}</div>`;
+                return html`<div>${(segment?.topicUses || []).filter(use => use.topic === row.topic).map(use => html`<p>${local ? "片段" : "镜头"} ${index}：${use.rationale}</p><blockquote>${evidenceLabels[use.evidenceKind] || "素材记录原文"}：${use.observationQuote}</blockquote>${local && segment.uncertainty ? html`<p class="hint">素材分析备注：${segment.uncertainty}</p>` : null}`)}</div>`;
             })}
         </div>`)}
     </details>`;

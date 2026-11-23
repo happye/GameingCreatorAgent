@@ -566,9 +566,9 @@ window.PROGRESS_DATA = {
    "evidence": [
     "2026-11-01: non-blocking plan advisories (too few clips, insufficient total footage, short output, single source, single-clip topic, unknown dimensions) with suggestions alongside existing blocking gaps; real demo-phase0 single-source advisory correct"
    ],
-   "done": "方案附缺口与提醒及补素材建议；必须主题在画面摘要里找不到时只提醒、不再让方案变灰；主题缺口可一键跳到素材页并填好搜索词，挑片入篮后再生成方案",
-   "todo": "主题仍按字面匹配，语义判断待 AI 导演；缺口提示有效性未人工评估",
-   "updated": "2026-11-11",
+   "done": "检查器按当前剪辑显示主题引用，裁剪后提示回看；漫画群星删除两段 1V1 后保存重开，仍显示缺口并可跳到素材搜索",
+   "todo": "换镜或插入的新素材仍需关联主题，素材缺口提示待人评",
+   "updated": "2026-11-23",
    "sprints": [
     "sprint-material-scoring"
    ]
@@ -2489,7 +2489,7 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "一句话多平台已实拍出抖音、B站双包。下一步补不同创作需求的主题覆盖与素材缺口。P008 待查视觉复用实证，J2 十槽和 J3 干净机留到验收阶段。",
+  "当前剪辑可显示主题引用和删镜后的缺口。下一步将补选的新素材与主题关联。P008 待查视觉复用实证，J2 十槽和 J3 干净机留到验收阶段。",
   "[P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测 Atom 同稿各自出包。[P029](docs/exec-plans/sprint-creation-subtitles.md)实测青色宋体。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "[抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。",
@@ -3055,8 +3055,8 @@ window.PROGRESS_DATA = {
     "P023",
     "P024"
    ],
-   "date": "2026-11-21",
-   "bytes": 3501
+   "date": "2026-11-23",
+   "bytes": 4491
   },
   {
    "file": "sprint-mixed-timeline",
