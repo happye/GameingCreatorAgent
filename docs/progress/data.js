@@ -499,9 +499,9 @@ window.PROGRESS_DATA = {
     "tests/test_creation_jobs.py",
     "tests/test_creation_workspace_browser.py"
    ],
-   "done": "编号来源AI策划真实生成三案并只读恢复采用；新增显式本地补时，9秒AI方案保留原8段、加入21个不重叠候选达到30秒，新版本重开并接中文旁白、成片和发布包；原方案/付费结果保留",
-   "todo": "主题语义、方案内容及操作成本仍待人评；本地补时只保证时长/来源，不认证创意；不足素材保留差额，不重发旧失败",
-   "updated": "2026-11-18",
+   "done": "AI 真实生成三套可回读方案。Studio 卡片可直接补时，素材不足时保留当前选择；实测第二套从 8 秒补到 30 秒、刷新恢复并导出 B 站包",
+   "todo": "跨玩法、攻略与活动需求的主题覆盖及策划质量待验证",
+   "updated": "2026-11-23",
    "sprints": [
     "sprint-creation-planner",
     "sprint-creation-workspace",
@@ -2488,7 +2488,7 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "先闭环本地制作（需求→剪辑→成片→发布包），再补七种模式与桌面缺口。P008 待查视觉窗口复用实证。J2 十槽和 J3 干净机留到验收阶段。",
+  "Studio 实测从方案卡片补时 8→30 秒并出包。下一步补首产品需求与活动规则接入缺口。P008 待查视觉复用实证，J2 十槽和 J3 干净机留到验收阶段。",
   "[P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测 Atom 同稿各自出包。[P029](docs/exec-plans/sprint-creation-subtitles.md)实测青色宋体。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "[抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。",
@@ -2696,8 +2696,8 @@ window.PROGRESS_DATA = {
     "P040",
     "R3"
    ],
-   "date": "2026-11-18",
-   "bytes": 3100
+   "date": "2026-11-23",
+   "bytes": 3844
   },
   {
    "file": "sprint-ai-theme-planning",

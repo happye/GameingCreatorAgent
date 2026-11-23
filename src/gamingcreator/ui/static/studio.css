@@ -175,6 +175,7 @@ details.group[open] > summary::before { content: "▾ "; }
 .plan:disabled { opacity: .55; cursor: default; }
 .plan-title { font-weight: 600; }
 .plan-meta { color: var(--ink-2); font: var(--t-xs) var(--font-num); }
+.plan-duration { margin: 0 var(--s-3) var(--s-3); }
 .plan-gap { color: var(--warn); font-size: var(--t-xs); }
 .strip { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 2px; }
 .strip span { aspect-ratio: 16 / 9; border-radius: 2px; background: var(--bg-0) center / cover no-repeat; }

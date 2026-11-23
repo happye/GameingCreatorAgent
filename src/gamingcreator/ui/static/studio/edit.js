@@ -107,6 +107,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     const [mode, setMode] = useState("plan");
     const [busy, setBusy] = useState("");
     const [message, setMessage] = useState("");
+    const [durationFeedback, setDurationFeedback] = useState(null);
     const [selectedShot, setSelectedShot] = useState(null);
     const [size, setSize] = useState("1280,720");
     const [subtitles, setSubtitles] = useState("none"), [subtitleStyle, setSubtitleStyle] = useState("standard");
@@ -146,15 +147,15 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     const fromBasket = !!draft.useBasket && basket.items.length > 0;
 
     // Abort polling of a previous job when another one is opened.
-    const follow = useCallback(async (id, apply) => {
+    const follow = useCallback(async (id, apply, onError = setMessage) => {
         work.current?.abort(); const controller = new AbortController(); work.current = controller;
         try { return await client.settle(id, controller.signal, (job) => { if (alive.current) apply(job); }); }
-        catch (error) { if (!controller.signal.aborted) setMessage(error.message); return null; }
+        catch (error) { if (!controller.signal.aborted) onError(error.message); return null; }
     }, []);
 
     const showPlan = useCallback((job, selectedPlanId = null) => {
         if (!alive.current) return;
-        setPlanJob(job); setRenderJob(null); setMode("plan"); setSelectedShot(null);
+        setPlanJob(job); setRenderJob(null); setMode("plan"); setSelectedShot(null); setDurationFeedback(null);
         const first = (job.plans || []).find((p) => p.ready && p.id === selectedPlanId) || (job.plans || []).find((p) => p.ready);
         lastJob(scope, {id: job.jobId, kind: "plan", planId: first?.id || ""});
         setPlanId(first ? first.id : "");
@@ -467,18 +468,36 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
         finally { setBusy(value => value === "adopt" ? "" : value); }
     };
 
-    const completeDuration = async () => {
-        if (busy || editing.status !== "ready" || editing.dirty || commandPreview || comparePreview || audioBusy || overlayBusy) return;
+    const durationBlocked = mode !== "plan" || !!busy || editing.status !== "ready" || editing.dirty || commandPreview || !!comparePreview || audioBusy || overlayBusy;
+    const completeDuration = async (requestedPlan) => {
+        if (durationBlocked || !canCompleteDuration(requestedPlan)) return;
         const generation = adoptionGuard.current.generation;
-        setBusy("complete"); player.stop();
+        const report = (text) => {
+            if (alive.current) setDurationFeedback({planId: requestedPlan.id, text});
+        };
+        setBusy("complete"); report("正在用已保存的本地候选补足目标时长…"); player.stop();
         try {
             const job = await client.api("/api/creation/reasoning", {}, {body: {
-                action: "complete_plan_duration", jobId: planJob.jobId, planId,
+                action: "complete_plan_duration", jobId: planJob.jobId, planId: requestedPlan.id,
             }});
             if (!alive.current) return;
-            if (adoptionGuard.current.generation !== generation) { onWorksChanged(); return; }
-            await adoptPlans(job.jobId, generation);
-        } catch (error) { setMessage(error.message); }
+            if (adoptionGuard.current.generation !== generation) {
+                onWorksChanged(); report("补时任务已登记，当前编辑已保留。可在作品中查看任务进度。"); return;
+            }
+            const done = await follow(job.jobId, () => {}, report);
+            if (!alive.current || !done) return;
+            onWorksChanged();
+            if (adoptionGuard.current.generation !== generation) {
+                report("补时任务已保存在作品中，当前编辑已保留。"); return;
+            }
+            if (done.status !== "completed") throw new Error(done.error?.message || "方案补时未完成。");
+            const completed = done.plans?.find((p) => p.id === requestedPlan.id);
+            if (!completed?.ready) {
+                const gap = completed?.gaps?.join("；") || "未找到可使用的补时方案";
+                report(`补时结果：${gap}。当前方案已保留，可补选其他素材后生成方案。`); return;
+            }
+            setCommand(null); showPlan(done, completed.id); report("已使用补足目标时长的方案。");
+        } catch (error) { report(error.message); }
         finally { setBusy(value => value === "complete" ? "" : value); }
     };
 
@@ -535,7 +554,7 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                 return;
             }
             if (mode !== "plan" || !items.length) return;
-            if (event.key === " ") { event.preventDefault(); player.toggle(); }
+            if (event.key === " " && !event.target.closest("[data-duration-complete]")) { event.preventDefault(); player.toggle(); }
             if ((event.key === "Delete" || event.key === "Backspace") && editing.selectedId && editable && !commandPreview) { event.preventDefault(); editing.ops.remove(editing.selectedId); }
             if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); void player.seek(player.outUs + (event.key === "ArrowLeft" ? -1 : 1) * (event.shiftKey ? 5e6 : 1e6), player.playing); }
         };
@@ -559,6 +578,8 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                 ${planJob && planJob.candidateCountReason ? html`<p class="note">${planJob.candidateCountReason}</p>` : null}
                 ${planJob ? planJob.plans.map((p) => html`<${PlanCard} plan=${p} fps=${fps} active=${p.id === planId} thumb=${thumb} onFind=${onFindMaterial}
                     recommended=${planJob.creatorFeedback?.applied ? p.rankedByCreatorFeedback : p.mode}
+                    durationBlocked=${durationBlocked} onComplete=${() => completeDuration(p)}
+                    durationMessage=${durationFeedback?.planId === p.id ? durationFeedback.text : ""}
                     onPick=${() => { if (overlayBusy || audioBusy || busy) return; if (editing.dirty && !confirmLeave()) return; setComparePreview(null); setPlanId(p.id); setMode("plan"); setSelectedShot(null); setCommand(null); lastJob(scope, {id: planJob.jobId, kind: "plan", planId: p.id}); }} />`)
                     : html`<p class="note">填好需求后点“生成方案”。方案只是剪辑清单，生成很快；选中后可以直接预览，不用先渲染。</p>`}
                 ${adBatchPlan(planJob, project) && html`<${AdBatches} key=${JSON.stringify([scope, planJob.jobId, planJob.resultReceiptSha256])}
@@ -567,7 +588,6 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
                     dirty=${editing.dirty || commandPreview} disabled=${!!busy || overlayBusy || audioBusy} onChanged=${onWorksChanged} />`}
                 <${StructureFeedback} contentType=${draft.contentType} platform=${draft.platform} saved=${structureFeedback.saved} plan=${plan} job=${planJob} disabled=${!!busy}
                     update=${value => setSaved(structureFeedback.write(value) ? value ? "结构偏好已保存" : "结构偏好已清除" : "浏览器不允许保存结构偏好")} />
-                ${plan && mode === "plan" && plan.id.startsWith("dynamic-") && plan.actualFrames < plan.targetFrames ? html`<p class="note">保留旧方案，使用本地候选补足当前选中方案；不会调用模型。</p><button class="btn" disabled=${!!busy || editing.status !== "ready" || editing.dirty || commandPreview || comparePreview || audioBusy || overlayBusy} onClick=${completeDuration}>补足目标时长（本地）</button>` : null}
                 ${planJob && planJob.plans.length >= 2 ? html`<${PlanCompare} key=${`${scope}:${planJob.jobId}`} plans=${planJob.plans} adoptedId=${planId} fps=${planJob.fps} compareScope=${`${scope}:${planJob.jobId}`} locateBlocked=${locateBlocked} onLocate=${locateComparePreview} onClose=${() => setComparePreview(null)} />` : planJob ? html`<p class="note">至少还要有两套方案才能对照。</p>` : null}
                 ${planJob ? html`<${PlanReasoningPanel} key=${`${project}:${planJob.jobId}`} project=${project} jobId=${planJob.jobId}
                     disabled=${!!busy || editing.dirty || commandPreview || audioBusy || overlayBusy} onAdopt=${adoptPlans}
@@ -744,17 +764,25 @@ function Brief({scope, runs, draft, update, busy, onGenerate, basket}) {
 
 // P024: a topic the footage lacks gets a one-click search in the Assets workspace.
 const gapTopics = (notes = []) => notes.map((g) => /^(?:主题(?:缺少|未在)[^：]*|缺少主题映射)：([^（]+)/.exec(g)?.[1]?.trim()).filter(Boolean);
+const canCompleteDuration = (plan) => plan?.ready && plan.id.startsWith("dynamic-") && plan.actualFrames < plan.targetFrames;
 
-function PlanCard({plan, fps, active, thumb, recommended, onPick, onFind = () => {}}) {
+function PlanCard({plan, fps, active, thumb, recommended, onPick, onFind, onComplete, durationBlocked, durationMessage}) {
     const items = timeline(plan.segments || [], fps), groups = shots(items);
     const topics = gapTopics([...(plan.gaps || []), ...(plan.advisories || [])]);
     const total = items.length ? items.at(-1).outStartUs + items.at(-1).outDurUs : 0;
-    return html`<button class="plan" aria-current=${active} disabled=${!plan.ready} onClick=${onPick} title=${plan.ready ? "选中后在预览窗播放" : "方案有缺口，不能选择"}>
-        <span class="plan-title">${recommended ? html`<span class="badge rec">${plan.rankedByCreatorFeedback ? "按你的偏好推荐" : "推荐"}</span>` : null}${plan.title || plan.structure}</span>
-        <span class="plan-meta">${secondsText(total)} · ${groups.length} 个镜头${groups.length !== items.length ? `（${items.length} 段）` : ""} · 平均 ${(total / 1e6 / Math.max(1, groups.length)).toFixed(1)} 秒</span>
+    const title = plan.title || plan.structure;
+    const short = canCompleteDuration(plan);
+    return html`<article class="plan-card" data-plan-id=${plan.id}><button class="plan" aria-current=${active} disabled=${!plan.ready} onClick=${onPick} title=${plan.ready ? "选中后在预览窗播放" : "方案有缺口，不能选择"}>
+        <span class="plan-title">${recommended ? html`<span class="badge rec">${plan.rankedByCreatorFeedback ? "按你的偏好推荐" : "推荐"}</span>` : null}${title}</span>
+        <span class="plan-meta">${secondsText(total)}${short ? ` · 目标 ${(plan.targetFrames / fps).toFixed(1)} 秒` : ""} · ${groups.length} 个镜头${groups.length !== items.length ? `（${items.length} 段）` : ""} · 平均 ${(total / 1e6 / Math.max(1, groups.length)).toFixed(1)} 秒</span>
         <span class="strip">${groups.slice(0, 8).map((g) => { const src = thumb(g.items[0]); return html`<span style=${{backgroundImage: src ? `url("${src}")` : "none"}}></span>`; })}</span>
         ${!plan.ready && html`<span class="plan-gap">缺口：${(plan.gaps || []).join("；")}</span>`}
-    </button>${topics.length ? html`<div class="actions-row gap-find">${topics.map((t) => html`<button type="button" class="btn ghost" onClick=${() => onFind(t)}>在素材里找「${t}」</button>`)}</div>` : null}`;
+    </button>${short || durationMessage ? html`<div class="plan-duration">
+        ${short && html`<button type="button" class="btn ghost" data-duration-complete
+            aria-label=${`${title} · 补时后使用`} title="用已保存的本地候选补时" disabled=${durationBlocked} onClick=${onComplete}>补时后使用</button>`}
+        <div role="status">${durationMessage && html`<p class="hint">${durationMessage}</p>`}</div>
+    </div>` : null}
+    ${topics.length ? html`<div class="actions-row gap-find">${topics.map((t) => html`<button type="button" class="btn ghost" onClick=${() => onFind(t)}>在素材里找「${t}」</button>`)}</div>` : null}</article>`;
 }
 
 function StructureFeedback({contentType, platform, saved, plan, job, disabled, update}) {
