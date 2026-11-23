@@ -611,6 +611,8 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 "/api/benchmark-step": 8_388_608,
                 # A 10 MB rule file arrives base64-encoded inside JSON.
                 "/api/creation/activity-rules": 14_680_064,
+                # Campaign plans retain the checked rules and their source-line quotes.
+                "/api/creation/plans": 1_048_576,
                 "/api/creation/packages": 131_072,
                 # Four platform copies can each include a 5,000-character description.
                 "/api/creation/package-batches": 524_288,

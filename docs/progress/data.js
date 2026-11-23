@@ -447,8 +447,8 @@ window.PROGRESS_DATA = {
     "tests/test_creation_workspace_browser.py"
    ],
    "done": "一句话需求支持DeepSeek文字理解并确认填入，真实30秒玩法需求已识别并串到导出发布包；预算内按作品调用，响应丢失只读恢复；规则兜底、活动规则与本地知识保留",
-   "todo": "AI 按主题选片编排深化；新作品需求与策划共享作品预算，旧草稿保守兼容；真实需求理解与成片质量待用户复测",
-   "updated": "2026-11-17",
+   "todo": "一句话中的多个目标平台目前只保留一个，待从需求贯通到策划与默认出包；其他需求和成片质量待用户复测",
+   "updated": "2026-11-23",
    "sprints": [
     "sprint-creation-planner",
     "sprint-creation-workspace",
@@ -472,9 +472,9 @@ window.PROGRESS_DATA = {
     "2026-11-01: offline activity-rule extraction (name, period, platforms, min/max duration, orientation, required topics, forbidden items) with exact source-line citations from pasted text or local txt/md/html, screenshots via Windows OCR and PDFs via Windows.Data.Pdf page rendering + OCR; one-click brief filling; real Windows screenshot/PDF tests pass; no network fetching or model understanding",
     "2026-11-20: user-applied campaign requirements and line citations carry through saved plans and into the publishing checklist. See sprint-campaign-submission."
    ],
-   "done": "可从粘贴文字、网页、本地文件或 OCR 提取逐行出处；Studio 确认后随新方案保存投稿平台、画幅、时长和标签，并在发布页核对",
+   "done": "可从文字、网页、本机文件或 OCR 提取带出处的规则；活动名称、日期和禁止事项随方案保存，已在真实成片的发布页和平台包核对页回读",
    "todo": "需登录或脚本渲染的网页读不到正文；规则提取与创意质量未人工评审",
-   "updated": "2026-11-20",
+   "updated": "2026-11-23",
    "sprints": [
     "sprint-campaign-submission",
     "sprint-activity-rules"
@@ -1177,9 +1177,9 @@ window.PROGRESS_DATA = {
     "2026-11-01 T28: unified honesty copy on plan cards/help — 描述代理评分、非画面理解／未做人评／投放未验证; cross-linked docs/references/creation-guide.md; tests/test_mode_honesty.py + browser copy contracts; docs/archive/sprints/sprint-t28-content-mode-honesty.md",
     "2026-11-20: sample campaign rules and original Comic Stars footage reached a checked 720x1280 Douyin package with its required hashtag. See sprint-campaign-submission."
    ],
-   "done": "活动投稿按必讲主题选片，活动标签进入发布表单。示例规则与真实漫画群星录像实测竖屏、时长、标签核对与抖音包",
+   "done": "真实漫画群星已按主题生成竖屏抖音包；发布和平台包核对页显示带出处的日期及禁止事项，同时检查画幅、时长和标签",
    "todo": "成片创意质量、实际活动资格和正式投稿待核验",
-   "updated": "2026-11-20",
+   "updated": "2026-11-23",
    "sprints": [
     "sprint-campaign-submission",
     "sprint-content-modes",
@@ -2488,7 +2488,7 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "Studio 实测从方案卡片补时 8→30 秒并出包。下一步补首产品需求与活动规则接入缺口。P008 待查视觉复用实证，J2 十槽和 J3 干净机留到验收阶段。",
+  "活动日期和禁项已随方案保存，并可在抖音包核对页回看。下一步贯通一句话多平台需求。P008 待查视觉复用实证，J2 十槽和 J3 干净机留到验收阶段。",
   "[P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测 Atom 同稿各自出包。[P029](docs/exec-plans/sprint-creation-subtitles.md)实测青色宋体。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "[抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。",
@@ -2737,8 +2737,8 @@ window.PROGRESS_DATA = {
     "P044",
     "R3"
    ],
-   "date": "2026-11-20",
-   "bytes": 1677
+   "date": "2026-11-23",
+   "bytes": 2294
   },
   {
    "file": "sprint-clip-draft-recovery",

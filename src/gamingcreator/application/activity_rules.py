@@ -17,6 +17,8 @@ PLATFORMS = {
     "xiaohongshu": ("小红书", "xiaohongshu"),
 }
 MAX_TEXT = 200_000
+_MAX_CAMPAIGN_NAME = 300
+_MAX_CAMPAIGN_ROWS = 200
 _NUM = r"(\d+(?:\.\d+)?)"
 _UNIT = r"(秒钟?|s|分钟|min)"
 _NEGATION = r"禁止|不得|不允许|严禁|不可|请勿|勿|不要|不能|不接受|不支持|非|拒绝|不予|不含|除外|不包括|排除|以外"
@@ -52,9 +54,12 @@ def _stamp(year: int, month: int, day: int, hour: str | None, minute: str | None
         date(year, month, day)
     except ValueError:
         return None
-    if hour is not None and (int(hour) > 23 or minute is None or int(minute) > 59):
+    day_stamp = f"{year:04d}-{month:02d}-{day:02d}"
+    if hour is None:
+        return day_stamp
+    if int(hour) > 23 or minute is None or int(minute) > 59:
         return None
-    return f"{year:04d}-{month:02d}-{day:02d}" + (f" {int(hour):02d}:{minute}" if hour else "")
+    return f"{day_stamp} {int(hour):02d}:{int(minute):02d}"
 
 
 def _normalize_ocr(line: str) -> str:
@@ -291,6 +296,13 @@ def extract_activity_rules(text: object) -> dict[str, object]:
         "requiredTopics": topics or None,
         "forbidden": forbidden or None,
     }
+    warnings = []
+    if fields["name"] and len(fields["name"]["value"]) > _MAX_CAMPAIGN_NAME:
+        fields["name"] = None
+        warnings.append(f"活动名称超过 {_MAX_CAMPAIGN_NAME} 字，请对照原文。")
+    if len(forbidden) > _MAX_CAMPAIGN_ROWS:
+        fields["forbidden"] = None
+        warnings.append(f"禁止事项超过 {_MAX_CAMPAIGN_ROWS} 条，请对照完整原文。")
     low_field, high_field = fields["minDurationSeconds"], fields["maxDurationSeconds"]
     if low_field and high_field and low_field["value"] > high_field["value"]:
         # Contradictory limits are surfaced as unknown rather than silently clamped.
@@ -303,12 +315,16 @@ def extract_activity_rules(text: object) -> dict[str, object]:
         "knownFields": known,
         "totalFields": len(fields),
         "status": "extracted-human-check-required",
+        **({"warnings": warnings} if warnings else {}),
     }
 
 
 def validate_campaign_rules(value: object) -> None:
     """Validate the cited, user-applied rule fields carried beside a campaign brief."""
     fields = {
+        "name",
+        "period",
+        "forbidden",
         "orientation",
         "minDurationSeconds",
         "maxDurationSeconds",
@@ -325,12 +341,22 @@ def validate_campaign_rules(value: object) -> None:
     ):
         raise ValueError("活动要求无效，请重新解析并应用。")
     for key, rows in value["fields"].items():
-        if key not in ("platforms", "requiredTopics"):
+        if key not in ("platforms", "requiredTopics", "forbidden"):
             rows = [rows]
-        if not isinstance(rows, list) or not 1 <= len(rows) <= 200:
+        if not isinstance(rows, list) or not 1 <= len(rows) <= _MAX_CAMPAIGN_ROWS:
             raise ValueError("活动要求项数量无效。")
         for row in rows:
             _validate_campaign_fact(key, row)
+
+
+def _canonical_campaign_stamp(value: object) -> bool:
+    if not isinstance(value, str):
+        return False
+    match = re.fullmatch(r"([0-9]{4})-([0-9]{2})-([0-9]{2})(?: ([0-9]{2}):([0-9]{2}))?", value)
+    if not match:
+        return False
+    year, month, day, hour, minute = match.groups()
+    return _stamp(int(year), int(month), int(day), hour, minute) == value
 
 
 def _validate_campaign_fact(key: str, fact: object) -> None:
@@ -341,6 +367,7 @@ def _validate_campaign_fact(key: str, fact: object) -> None:
         or fact["line"] < 1
         or not isinstance(fact["text"], str)
         or not 1 <= len(fact["text"]) <= 300
+        or (key in ("name", "period", "forbidden") and not fact["text"].strip())
     ):
         raise ValueError("活动要求缺少原文行号或引用。")
     raw = fact["value"]
@@ -350,6 +377,17 @@ def _validate_campaign_fact(key: str, fact: object) -> None:
         valid = raw in ("horizontal", "vertical")
     elif key == "platforms":
         valid = isinstance(raw, str) and raw in PLATFORMS
+    elif key == "period":
+        valid = (
+            isinstance(raw, dict)
+            and raw.keys() == {"start", "end"}
+            and _canonical_campaign_stamp(raw["start"])
+            and _canonical_campaign_stamp(raw["end"])
+            and raw["start"] <= raw["end"]
+        )
+    elif key in ("name", "forbidden"):
+        limit = _MAX_CAMPAIGN_NAME if key == "name" else 120
+        valid = isinstance(raw, str) and bool(raw.strip()) and len(raw) <= limit
     else:
         valid = isinstance(raw, str) and 1 <= len(raw.strip()) <= 30
     if not valid:

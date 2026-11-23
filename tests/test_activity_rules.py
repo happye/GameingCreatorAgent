@@ -13,7 +13,7 @@ import urllib.request
 
 import pytest
 
-from gamingcreator.application.activity_rules import extract_activity_rules
+from gamingcreator.application.activity_rules import extract_activity_rules, validate_campaign_rules
 from gamingcreator.application.providers import CancellationContext
 from gamingcreator.domain.errors import AppError
 from gamingcreator.infrastructure.rule_sources import (
@@ -115,6 +115,65 @@ def test_fields_are_extracted_with_source_lines():
                 item["text"] in RULES
                 and RULES.splitlines()[item["line"] - 1].strip() == item["text"]
             )
+
+
+def test_campaign_rules_roundtrip_keeps_new_citations_and_existing_fields():
+    fields = extract_activity_rules(RULES)["fields"]
+    existing = (
+        "orientation",
+        "minDurationSeconds",
+        "maxDurationSeconds",
+        "platforms",
+        "requiredTopics",
+    )
+    for keys in (existing, (*existing, "name", "period", "forbidden")):
+        selected = {key: fields[key] for key in keys}
+        saved = {"schemaVersion": "campaign-submission-rules-v1", "fields": selected}
+        encoded = json.dumps(saved, ensure_ascii=False)
+        restored = json.loads(encoded)
+        validate_campaign_rules(restored)
+        assert json.dumps(restored, ensure_ascii=False) == encoded
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        {"start": "2026-02-29", "end": "2026-03-01"},
+        {"start": "2026-11-01T10:00", "end": "2026-11-30 23:59"},
+        {"start": "2026-11-01 23:59", "end": "2026-11-01 10:00"},
+        {"start": "2026-11-01", "end": "2026-11-30", "timezone": "UTC"},
+    ],
+)
+def test_campaign_rules_reject_noncanonical_or_unordered_period(value):
+    with pytest.raises(ValueError, match="活动要求值无效"):
+        validate_campaign_rules(
+            {
+                "schemaVersion": "campaign-submission-rules-v1",
+                "fields": {"period": {"value": value, "line": 3, "text": RULES.splitlines()[2]}},
+            }
+        )
+
+
+def test_campaign_extraction_reports_limits_and_normalizes_ocr_minutes():
+    text = "\n".join(
+        [
+            "活动名称：" + "甲" * 301,
+            "活动时间：2026年11月23日10:３０至2026年12月1日18:００",
+            "投稿平台：抖音",
+            *(f"禁止展示标识{index}" for index in range(201)),
+        ]
+    )
+    result = extract_activity_rules(text)
+    fields = result["fields"]
+    assert fields["name"] is None and fields["forbidden"] is None
+    assert len(result["warnings"]) == 2
+    assert fields["period"]["value"] == {"start": "2026-11-23 10:30", "end": "2026-12-01 18:00"}
+    validate_campaign_rules(
+        {
+            "schemaVersion": "campaign-submission-rules-v1",
+            "fields": {key: value for key, value in fields.items() if value is not None},
+        }
+    )
 
 
 def test_unstated_fields_stay_unknown():

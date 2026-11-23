@@ -6,7 +6,7 @@ import {api} from "./api.js";
 const html = htm.bind(h);
 const NAMES = {name: "活动名称", period: "活动时间", platforms: "平台", minDurationSeconds: "最短时长", maxDurationSeconds: "最长时长", orientation: "画面方向", requiredTopics: "必带话题", forbidden: "禁止事项"};
 const show = (field, value) => field === "period" ? `${value.start} 至 ${value.end}` : field === "orientation" ? (value === "vertical" ? "竖屏" : "横屏") : /Seconds$/.test(field) ? `${value} 秒` : String(value);
-const SUBMISSION_FIELDS = ["orientation", "minDurationSeconds", "maxDurationSeconds", "platforms", "requiredTopics"];
+const SUBMISSION_FIELDS = ["name", "period", "orientation", "minDurationSeconds", "maxDurationSeconds", "platforms", "requiredTopics", "forbidden"];
 
 function mapping(fields, draft) {
     const patch = {contentType: "campaign"}, notes = [];
@@ -55,7 +55,7 @@ export function ActivityRules({draft, update}) {
     const apply = () => {
         if (!result) return;
         const {patch, notes} = mapping(result.fields, draft); update(patch);
-        setMessage(`已填入未来创作需求。${notes.join("；")} 投稿标签及画幅会随新方案带到发布；活动时间和禁止事项请对照原文。`);
+        setMessage(`已填入未来创作需求。${notes.join("；")} 新方案会保留规则及原文，供发布前核对。`);
     };
     return html`<details class="group activity-rules"><summary>活动规则（可选）</summary>
         <p class="note">粘贴文字、填写活动网页地址，或选择本地 txt/md/html/截图/PDF（≤10MB）。只在你填写地址时读取该网页一次；提取在本机完成，不调用模型；核对后再填入未来需求。</p>
@@ -68,8 +68,9 @@ export function ActivityRules({draft, update}) {
         ${draft.campaignRules && html`<p class="hint">已应用到下一份活动投稿方案 <button type="button" class="btn ghost" onClick=${() => { update({campaignRules: null}); setMessage("已清除未来方案的活动发布要求。"); }}>清除已应用要求</button></p>`}
         ${result && html`<div class="rules-result">
             <p class="note">来源：${{pasted: "粘贴文字", text: "文本文件", html: "网页文件", image: "截图OCR", pdf: "PDF逐页OCR", web: "网页"}[result.source.sourceKind] || result.source.sourceKind}${result.source.url ? `（${result.source.url}，读取于 ${result.source.fetchedAt}）` : ""}${result.source.pagesRead ? `，读取 ${result.source.pagesRead}/${result.source.pages} 页` : ""}。行号指提取文字，截图/PDF请对照原件。</p>
+            ${result.warnings?.map(warning => html`<p class="note">${warning}</p>`)}
             ${Object.entries(NAMES).map(([field, label]) => html`<div class="field"><strong>${label}：</strong>${result.fields[field] == null ? "未识别" : html`<ul class="facts">${(Array.isArray(result.fields[field]) ? result.fields[field] : [result.fields[field]]).map(item => html`<li>${show(field, item.value)} 〔第${item.line}行：${item.text}〕</li>`)}</ul>`}</div>`)}
-            <p class="note">必带话题会加入发布标签。活动时间和禁止事项请对照原文。</p>
+            <p class="note">必带话题会加入发布标签。发布时可按规则原文核对日期和禁止事项。</p>
             <button type="button" class="btn ghost" onClick=${apply}>填入创作需求</button>
         </div>`}
     </details>`;
@@ -81,7 +82,7 @@ export const campaignTags = (rules, tags) => rules ? [...new Set([
 
 export function CampaignChecks({rules, media, tags, platforms, platformNames, title}) {
     if (!rules?.fields || !media) return null;
-    const {orientation, minDurationSeconds, maxDurationSeconds, requiredTopics, platforms: requiredPlatforms} = rules.fields;
+    const {name, period, forbidden, orientation, minDurationSeconds, maxDurationSeconds, requiredTopics, platforms: requiredPlatforms} = rules.fields;
     const seconds = media.frames * media.fps.denominator / media.fps.numerator;
     const normalize = text => text.normalize("NFKC").replace(/^#+|#+$/g, "").trim().toLowerCase();
     const tagSet = new Set(tags.map(normalize));
@@ -96,7 +97,18 @@ export function CampaignChecks({rules, media, tags, platforms, platformNames, ti
         const platformTitle = allowed.map(key => platformNames[key] || key).join("、");
         rows.push([`投稿平台 ${platformTitle}`, requiredPlatforms[0], platforms.length > 0 && platforms.every(key => allowed.includes(key))]);
     }
-    return html`<details class="group campaign-checks" aria-label=${title} open><summary>${title} · ${rows.every(([, , ok]) => ok) ? "已匹配" : "有待核对"}</summary>
-        <ul class="facts">${rows.map(([label, item, ok]) => html`<li>${label} · ${ok ? "符合" : "待调整"}<div class="hint">第${item.line}行 ${item.text}</div></li>`)}</ul>
+    const manual = [
+        ...(period ? [[`活动日期 ${show("period", period.value)}`, period]] : []),
+        ...(forbidden || []).map(item => [`禁止事项 ${item.value}`, item]),
+    ];
+    const status = rows.some(([, , ok]) => !ok) ? " · 有待核对"
+        : manual.length ? " · 待人工核对" : rows.length ? " · 已匹配" : "";
+    const citation = item => html`<div class="hint">第${item.line}行 ${item.text}</div>`;
+    return html`<details class="group campaign-checks" aria-label=${title} open><summary>${title}${status}</summary>
+        <ul class="facts">
+            ${name && html`<li>活动 ${name.value}${citation(name)}</li>`}
+            ${rows.map(([label, item, ok]) => html`<li>${label} · ${ok ? "符合" : "待调整"}${citation(item)}</li>`)}
+            ${manual.map(([label, item]) => html`<li>${label} · 待人工核对${citation(item)}</li>`)}
+        </ul>
     </details>`;
 }
