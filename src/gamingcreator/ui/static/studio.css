@@ -37,6 +37,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focu
 .brand, .tabs, .topbar-actions { flex: none; }
 .brand { font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
 .brand small { color: var(--ink-3); font-weight: 400; margin-left: 6px; }
+.topbar .project-start { flex: none; white-space: nowrap; }
 .tabs { display: flex; gap: 2px; background: var(--bg-0); padding: 3px; border-radius: var(--r-2); }
 .tabs button { border: 0; background: none; color: var(--ink-2); padding: 4px 14px; border-radius: var(--r-1); }
 .tabs button[aria-selected="true"] { background: var(--bg-3); color: var(--ink-1); }

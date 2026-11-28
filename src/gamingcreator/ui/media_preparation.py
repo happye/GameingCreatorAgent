@@ -429,6 +429,7 @@ class MediaPreparationJobs:
             )
         return {
             "schemaVersion": "media-preparation-catalog-v1",
+            "projectExists": (project / "timeline.sqlite3").is_file(),
             "project": project_reference,
             "batches": batches,
             "total": len(directories),

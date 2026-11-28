@@ -84,6 +84,11 @@ def test_studio_import_remembers_and_explicitly_resumes_nested_project(preparati
 
             def allow_local_preparation(route):
                 if route.request.method == "POST":
+                    if route.request.url == f"{base}/api/studio/local-picker":
+                        kind = route.request.post_data_json["kind"]
+                        paths = [project] if kind == "project" else document["paths"]
+                        route.fulfill(json={"paths": paths})
+                        return
                     posts.append(route.request.post_data_json)
                     if route.request.url != f"{base}/api/prepare-media-batch":
                         route.abort()
@@ -92,11 +97,17 @@ def test_studio_import_remembers_and_explicitly_resumes_nested_project(preparati
 
             page.route("**/api/**", allow_local_preparation)
             page.goto(f"{base}/studio")
-            open_dialog = page.get_by_role("button", name="导入录像", exact=True).first
+            page.get_by_role("tab", name="剪辑", exact=True).click()
+            open_dialog = page.get_by_role("button", name="新建剪辑项目", exact=True)
             dialog = page.get_by_role("dialog", name="导入录像")
             open_dialog.click()
-            dialog.get_by_label("准备项目").fill(project)
-            dialog.get_by_label("录像路径（每行一段）").fill("\n".join(document["paths"]))
+            dialog.get_by_role("button", name="选择工作目录").click()
+            playwright.expect(dialog.get_by_label("准备项目")).to_have_value(project)
+            playwright.expect(dialog.get_by_role("button", name="打开现有项目")).to_be_disabled()
+            dialog.get_by_role("button", name="选择视频").click()
+            playwright.expect(dialog.get_by_label("录像路径（每行一段）")).to_have_value(
+                "\n".join(document["paths"])
+            )
             dialog.get_by_label("准备方案").select_option("frames")
             dialog.get_by_label("以后每段分析上限（元）").fill("1.25")
             dialog.get_by_role("button", name="开始本地准备").click()
@@ -133,6 +144,11 @@ def test_studio_import_remembers_and_explicitly_resumes_nested_project(preparati
             ).to_be_visible()
             page.reload()
             playwright.expect(playable_project).to_have_value(project)
+            open_dialog.click()
+            dialog.get_by_role("button", name="打开现有项目").click()
+            playwright.expect(page.get_by_role("tab", name="剪辑", exact=True)).to_have_attribute(
+                "aria-selected", "true"
+            )
             check_late_startup_cannot_override_import(
                 page, open_dialog, dialog, playable_project, project
             )

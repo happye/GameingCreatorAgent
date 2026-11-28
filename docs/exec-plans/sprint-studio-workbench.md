@@ -19,6 +19,10 @@
 
 2026-11-22（P040 分析交接）：待分析录像可从当前或已保存批次点「核对分析任务」。Studio 只读核对当前运行、冻结原片路径、配置、窗口数和预算上限；匹配后可复制带项目隔离环境的原续跑命令。漫画群星真实运行 `b44bc030e972480eb217457b52248067` 验证剪贴板与原任务一致，未执行分析。测试覆盖同名异路径拒绝、已有不确定调用不发续跑命令、普通列表不返回原片路径。证据 `.cache/scratch/studio-analysis-handoff-20261122-verified/`。
 
+2026-11-28（P040 开始剪辑项目）：素材、剪辑、发布页共用顶栏入口。Windows 选择窗口支持多选本机视频和选择现有工作目录，应用在 `artifacts` 下按输入名称创建新目录。已有项目可直接进入剪辑。原生视频及目录窗口均在本机验证打开和取消。浏览器实测代入所选路径后，《蓝色星原：旅谣》实机片经真实准备任务提取 56 帧并重新打开项目，零模型调用。语义检索和画面选段仍须完成分析。证据 `.cache/scratch/studio-navigation-20261128/`。
+
+同批用真实漫画群星成片复验。在发布页故意选另一作品，返回剪辑后从顶栏发布，正确恢复剪辑中的作品与成片。切换到另一个项目没有旧 run 请求，B 站 ZIP 在 Chromium 下载后包含 7 项。证据 `.cache/scratch/studio-navigation-20261128/evidence.json`。
+
 ## 第 1 步结果
 
 - 前端库：`src/gamingcreator/ui/static/vendor/`（preact 10.24.3 MIT、htm 3.1.1 Apache-2.0）。已对照 npm registry 完整性哈希校验；`vendor.json` 记录 SHA-256 和一处补丁（hooks 的裸导入改为相对路径，因为 CSP `script-src 'self'` 不允许内联 import map）。许可证已纳入 `collect-third-party-notices.py`。

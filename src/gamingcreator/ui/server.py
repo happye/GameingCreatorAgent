@@ -66,6 +66,7 @@ from gamingcreator.ui.service import (
     search_detail_payload,
 )
 from gamingcreator.ui.shots import cached_shots_payload, detect_shots_payload
+from gamingcreator.ui.studio_local_picker import studio_local_picker
 
 STATIC = Path(__file__).with_name("static")
 # Largest rejected request body still read before replying, so the reply is not lost.
@@ -681,6 +682,7 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     "/api/match-search-details",
                     "/api/prepare-media-batch",
                     "/api/cancel-media-preparation",
+                    "/api/studio/local-picker",
                     "/api/benchmark-workflows",
                     "/api/benchmark-step",
                     "/api/detect-shots",
@@ -1050,6 +1052,14 @@ class InspectionHandler(BaseHTTPRequestHandler):
                     else self.benchmark_workflows.submit(value)
                 )
                 self._json(201 if path == "/api/benchmark-workflows" else 202, payload)
+                return
+            if path == "/api/studio/local-picker":
+                if self.headers.get("Origin") is None:
+                    self._json(
+                        403, {"code": "input.origin", "message": "请从本机工作台打开选择窗口。"}
+                    )
+                    return
+                self._json(200, studio_local_picker(self.repository, value))
                 return
             if path == "/api/prepare-media-batch":
                 if type(value) is not dict:

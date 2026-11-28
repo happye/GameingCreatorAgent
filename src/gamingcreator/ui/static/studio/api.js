@@ -155,6 +155,7 @@ export const runs = (project, signal) => api("/api/runs", {project}, {signal});
 export const preparationBatches = (project, limit, offset, signal) => api("/api/media-batches", {project, limit, offset}, {signal});
 export const preparationJob = (project, job, signal) => api("/api/media-preparation", {project, job}, {signal});
 export const prepareMedia = (body, signal) => api("/api/prepare-media-batch", {}, {body, signal});
+export const pickLocalPaths = (kind) => api("/api/studio/local-picker", {}, {body: {kind}});
 export const cancelPreparation = (project, job, signal) => api("/api/cancel-media-preparation", {}, {body: {project, job}, signal});
 export const preparedAnalysisTask = (project, run, signal) => api("/api/tasks", {project, run, limit: 1, handoff: 1}, {signal});
 export const shotBoundaries = (project, run, signal) => api("/api/shot-boundaries", {project, run}, {signal});

@@ -19,7 +19,7 @@ function remember(project, work, job) {
 }
 
 // Selection is only a hint until the server has verified its project membership.
-export function WorksWorkspace({project, open, leave, isOpenConsumed = () => false, onOpenConsumed = () => {}, onCatalogChanged = () => {}, ...props}) {
+export function WorksWorkspace({project, open, leave, isOpenConsumed = () => false, onOpenConsumed = () => {}, onCatalogChanged = () => {}, onEditPublication, ...props}) {
     const [items, setItems] = useState([]), [current, setCurrent] = useState(null);
     const [ready, setReady] = useState(false), [busy, setBusy] = useState(false), [message, setMessage] = useState("");
     const [target, setTarget] = useState(null);
@@ -127,6 +127,6 @@ export function WorksWorkspace({project, open, leave, isOpenConsumed = () => fal
     const mine = generation.current;
     const guarded = Object.fromEntries(Object.entries(props).map(([key, value]) => [key,
         typeof value === "function" ? (...args) => { if (mine === generation.current && externalOpen.current === open) return value(...args); } : value]));
-    return ready ? html`<${EditWorkspace} key=${`${project}:${current?.workId || "legacy"}`} ...${guarded} onPublish=${jobId => guarded.onPublish?.(jobId, current?.workId || null)} project=${project} workId=${current?.workId || null} open=${target} workControls=${controls} />`
+    return ready ? html`<${EditWorkspace} key=${`${project}:${current?.workId || "legacy"}`} ...${guarded} onPublish=${jobId => guarded.onPublish?.(jobId, current?.workId || null)} onEditPublication=${onEditPublication} project=${project} workId=${current?.workId || null} open=${target} workControls=${controls} />`
         : html`<div class="panel-body">${controls}<p role="status">${message || "正在恢复作品…"}</p></div>`;
 }

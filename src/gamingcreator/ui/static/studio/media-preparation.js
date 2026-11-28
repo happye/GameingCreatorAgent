@@ -241,7 +241,7 @@ function PreparationHistory({catalog, job, disabled, onResume, read}) {
 
 export function ImportRecordings({project, onClose, onOpenProject}) {
     const dialog = useRef(null);
-    const [target, setTarget] = useState(() => rememberedScope(project));
+    const [target, setTarget] = useState(() => project || rememberedScope(project));
     const scope = normalized(target);
     const [paths, setPaths] = useState("");
     const [profile, setProfile] = useState("detailed");
@@ -249,8 +249,9 @@ export function ImportRecordings({project, onClose, onOpenProject}) {
     const [timeout, setTimeoutSeconds] = useState("3600");
     const [error, setError] = useState("");
     const [opening, setOpening] = useState(false);
+    const [picking, setPicking] = useState("");
     const {catalog, job, checking, writing, error: stateError, read, write} = usePreparation(scope);
-    const locked = !!writing || opening;
+    const locked = !!writing || opening || !!picking;
     const active = isActive(job);
     const items = job?.progress?.items || [];
     const hasPrepared = (rows) => rows.some((row) => ["prepared", "analysis_started"].includes(row.status));
@@ -272,18 +273,52 @@ export function ImportRecordings({project, onClose, onOpenProject}) {
         const body = resume ? {project: scope, resume, timeoutSeconds} : {project: scope, paths: entries, profile, maxCostCny, timeoutSeconds};
         void write((signal) => client.prepareMedia(body, signal), null, resume);
     };
-    const openProject = async () => {
+    const pick = async (kind) => {
+        setPicking(kind); setError("");
+        try {
+            const {paths: selected} = await client.pickLocalPaths(kind);
+            if (!Array.isArray(selected) || !selected.every(path => typeof path === "string")) {
+                throw new Error("无法读取所选路径。");
+            }
+            if (!selected.length) return;
+            if (kind === "project") setTarget(selected[0]);
+            else setPaths(selected.join("\n"));
+        } catch (reason) {
+            setError(reason.message);
+        } finally {
+            setPicking("");
+        }
+    };
+    const openProject = async (destination) => {
         setOpening(true); setError("");
-        try { await onOpenProject(scope); onClose(); }
-        catch (reason) { setError(`打开项目失败。${reason.message}`); setOpening(false); }
+        try { if (await onOpenProject(scope, destination)) onClose(); }
+        catch (reason) { setError(`打开项目失败。${reason.message}`); }
+        finally { setOpening(false); }
     };
     return html`<dialog ref=${dialog} aria-label="导入录像" style=${{width: "min(640px, calc(100vw - 32px))", maxHeight: "calc(100vh - 32px)", padding: "var(--s-4)", border: "1px solid var(--line)", borderRadius: "var(--r-3)", background: "var(--bg-1)"}}
             onCancel=${(e) => { e.preventDefault(); if (!locked) onClose(); }}>
-        <div class="entitlement-head"><h2>导入录像</h2><span class="spacer"></span><button class="btn ghost" type="button" disabled=${locked} onClick=${onClose}>关闭</button></div>
-        <p class="note">本地准备会提取画面和音轨。录像分析须另行确认费用，分析完成后才可在素材页搜索。</p>
+        <div class="entitlement-head"><h2>新建剪辑项目</h2><span class="spacer"></span><button class="btn ghost" type="button" disabled=${locked} onClick=${onClose}>关闭</button></div>
+        <p class="note">选择工作目录或输入新目录名称，再选择本机视频。准备会在本机提取画面和音轨。录像分析须另行确认费用。</p>
         <form onSubmit=${(event) => { event.preventDefault(); submit(); }}>
+            <div class="actions-row">
+                <button class="btn" type="button" disabled=${locked || active} onClick=${() => void pick("project")}>选择工作目录</button>
+                <button class="btn ghost" type="button" disabled=${locked || active || catalog?.projectExists !== true} onClick=${() => void openProject("edit")}>打开现有项目</button>
+            </div>
+            <details>
+                <summary>新建工作目录</summary>
+                <label class="form-row">新目录名称<input class="input" maxLength="80" disabled=${locked || active}
+                    onInput=${(e) => {
+                        const name = e.currentTarget.value.trim();
+                        if (!name || /[\\/:*?"<>|]/u.test(name) || name.endsWith(".")) {
+                            setTarget(""); setError(name ? "请输入有效的 Windows 目录名称。" : ""); return;
+                        }
+                        setTarget(`artifacts/${name}`); setError("");
+                    }} /></label>
+                <p class="hint">开始本地准备时会在 artifacts 下创建目录。</p>
+            </details>
             <label class="form-row">准备项目<input class="input" value=${target} maxLength="8192" required disabled=${locked || active}
                 onInput=${(e) => { setTarget(e.currentTarget.value); setError(""); }} placeholder="artifacts/my-recordings" /></label>
+            <button class="btn" type="button" disabled=${locked || active} onClick=${() => void pick("videos")}>选择视频</button>
             <label class="form-row">录像路径（每行一段）<textarea class="input" rows="4" value=${paths} disabled=${locked || active} onInput=${(e) => setPaths(e.currentTarget.value)} /></label>
             <div class="pair even">
                 <label class="form-row">准备方案<select class="select" value=${profile} disabled=${locked || active} onChange=${(e) => setProfile(e.currentTarget.value)}>
@@ -299,11 +334,11 @@ export function ImportRecordings({project, onClose, onOpenProject}) {
                     onClick=${() => { setError(""); void write((signal) => client.cancelPreparation(scope, job.jobId, signal), job.jobId, job.batchId); }}>停止本地准备</button>
             </div>
         </form>
-        <p role="status">${writing ? "正在提交…" : checking ? "正在读取准备批次…" : job ? STATES[job.status] : "在这里查看本地准备进度。"}
+        <p role="status">${picking ? "请在 Windows 窗口中选择路径…" : writing ? "正在提交…" : checking ? "正在读取准备批次…" : job ? STATES[job.status] : "在这里查看本地准备进度。"}
             ${items.length ? ` · 已准备 ${items.filter((item) => item.status === "prepared").length}/${items.length} 段` : ""}</p>
         ${error || stateError || job?.error?.message ? html`<p role="alert">${error || stateError || job.error.message}</p>` : null}
         ${items.length ? html`<${ProgressRows} project=${scope} items=${items} />` : null}
-        ${ready ? html`<button class="btn ghost" type="button" disabled=${locked || active} onClick=${openProject}>打开准备项目</button>` : null}
+        ${ready ? html`<button class="btn ghost" type="button" disabled=${locked || active} onClick=${() => void openProject("assets")}>打开准备项目</button>` : null}
         <${PreparationHistory} catalog=${catalog} job=${job} disabled=${locked || active || checking} onResume=${submit} read=${read} />
     </dialog>`;
 }

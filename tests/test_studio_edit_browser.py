@@ -190,10 +190,13 @@ def test_brief_to_exported_video(service, monkeypatch):  # noqa: F811
             export = page.get_by_role("button", name="导出成片")
             playwright.expect(export).to_be_enabled()
             assert export.evaluate("e => e.getBoundingClientRect().bottom <= innerHeight")
-            # After export, "去发布" opens exactly this render in Publish.
+            # Both routes from Edit must open the displayed render.
             render_id = re.search(
                 r"jobs/([0-9a-f]{32})/video", page.locator("a[download]").get_attribute("href")
             ).group(1)
+            with page.expect_request(lambda r: f"/jobs/{render_id}/publication" in r.url):
+                page.get_by_role("tab", name="发布", exact=True).click()
+            page.get_by_role("tab", name="剪辑", exact=True).click()
             with page.expect_request(lambda r: f"/jobs/{render_id}/publication" in r.url):
                 page.get_by_role("button", name="去发布：写标题和封面").click()
             playwright.expect(page.get_by_role("tab", name="发布")).to_have_attribute(

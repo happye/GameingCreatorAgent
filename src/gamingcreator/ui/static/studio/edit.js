@@ -93,7 +93,7 @@ function useOutputCanvas(stage, width, height) {
     return {width: width * scale, height: height * scale, scale};
 }
 
-export function EditWorkspace({project, workId = null, workControls = null, runs, open, onWorksChanged, layout, basket, basketAt, onBasketSeen, onFindMaterial = () => {}, onPublish = () => {}, onDirtyChange = () => {}, renderSecondsPerSecond = null}) {
+export function EditWorkspace({project, workId = null, workControls = null, runs, open, onWorksChanged, layout, basket, basketAt, onBasketSeen, onFindMaterial = () => {}, onPublish = () => {}, onEditPublication, onDirtyChange = () => {}, renderSecondsPerSecond = null}) {
     const scope = workId ? `${project}:work:${workId}` : project;
     const alive = useRef(true);
     useEffect(() => () => { alive.current = false; work.current?.abort(); }, []);
@@ -540,6 +540,11 @@ export function EditWorkspace({project, workId = null, workControls = null, runs
     };
 
     const result = renderJob?.status === "completed" ? renderJob.artifact : null;
+    const publishJobId = result ? renderJob.jobId : null;
+    useLayoutEffect(() => {
+        onEditPublication?.({project, workId, jobId: publishJobId});
+        return () => onEditPublication?.(null);
+    }, [onEditPublication, project, workId, publishJobId]);
     const resultSrc = result ? client.sameOrigin(result.previewUrl, `/api/creation/jobs/${renderJob.jobId}/video`) : null;
     const resultDownload = result ? client.sameOrigin(result.downloadUrl, `/api/creation/jobs/${renderJob.jobId}/video`) : null;
     // Why export is unavailable, shown next to the button (not only as a tooltip).

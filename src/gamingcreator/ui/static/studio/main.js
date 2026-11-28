@@ -133,6 +133,8 @@ function App() {
     const [status, setStatus] = useState("正在读取项目…");
     const [time, setTime] = useState(0);
     const [open, setOpen] = useState(null);
+    const editPublication = useRef(null);
+    const onEditPublication = useCallback((target) => { editPublication.current = target; }, []);
     const applyOpen = useCallback((job, projectId) => {
         setOpen({id: job.jobId, kind: job.kind, planId: job.planId || job.editor?.planId, project: projectId, at: Date.now()});
         setWorkspace(["publication", "package"].includes(job.kind) ? "deliver" : "edit");
@@ -224,7 +226,7 @@ function App() {
         if (matches() && el.readyState >= 1) onReady();
         else el.addEventListener("loadedmetadata", onReady);
     }, [preview.url, clock]);
-    const latestRuns = useLatest(), latestView = useLatest(), latestWorks = useLatest();
+    const latestRuns = useLatest(), latestWorks = useLatest();
 
     useEffect(() => { savePrefs({project, runId, workspace, bin: layout.bin, insp: layout.insp}); }, [project, runId, workspace, layout]);
 
@@ -282,7 +284,7 @@ function App() {
             setRuns(list); setRunsLoaded(true);
             const usable = list.filter((r) => r.completedEligible);
             setRunId((previous) => (usable.find((r) => r.id === previous)
-                || usable.find((r) => r.id === prefs.runId) || usable[0])?.id || "");
+                || usable.find((r) => project === prefs.project && r.id === prefs.runId) || usable[0])?.id || "");
             setStatus(usable.length ? "" : "这个项目还没有分析完成的录像。");
         });
         reloadWorks();
@@ -293,24 +295,34 @@ function App() {
         pendingSeek.current?.();
         if (!project || !runId) return;
         setStatus("正在读取时间线…");
-        latestView((signal) => client.inspect(project, runId, signal)).then((result) => {
-            if (result.aborted) return;
-            if (!result.ok) return setStatus(`时间线读取失败：${result.error.message}`);
-            if (result.value.runId !== runId) return setStatus("返回的录像与选择不一致，请重试。");
-            setView(result.value); setStatus("");
+        const controller = new AbortController();
+        client.inspect(project, runId, controller.signal).then((result) => {
+            if (controller.signal.aborted) return;
+            if (result.runId !== runId) return setStatus("返回的录像与选择不一致，请重试。");
+            setView(result); setStatus("");
+        }).catch((error) => {
+            if (!controller.signal.aborted) setStatus(`时间线读取失败：${error.message}`);
         });
+        return () => controller.abort();
     }, [project, runId, runsRefreshAt]);
 
-    const openPreparedProject = async (target) => {
+    const changeProject = (target) => {
+        clearTranscript(); setPendingEvent(null);
+        setRunId(""); setProject(target);
+    };
+
+    const openPreparedProject = async (target, destination = "assets") => {
         const {projects: list} = await client.projects();
         await includeExistingProject(list, target);
-        projectNavigation.current += 1;
-        pendingLink.current = null;
-        setLinkStatus("");
-        clearTranscript(); setPendingEvent(null);
-        setProjects(list);
-        if (target === project) setRunsRefreshAt((n) => n + 1);
-        else setProject(target);
+        return leave(() => {
+            projectNavigation.current += 1;
+            setProjects(list);
+            if (target === project) {
+                clearTranscript(); setPendingEvent(null);
+                setRunsRefreshAt((n) => n + 1);
+            } else changeProject(target);
+            setWorkspace(destination);
+        });
     };
 
     const clearTranscript = () => {
@@ -368,7 +380,22 @@ function App() {
         });
     }, [project]);
     // After export, open exactly that render in Publish (not just the newest one).
-    const publishRender = useCallback((jobId, selectedWorkId) => { leave(() => { setWorkSelections(old => ({...old, [project]: selectedWorkId || ""})); reloadWorks(); setOpen({id: jobId, kind: "render", project, at: Date.now()}); setWorkspace("deliver"); }); }, [project, reloadWorks, leave]);
+    const openPublication = useCallback((jobId, selectedWorkId) => {
+        setWorkSelections(old => ({...old, [project]: selectedWorkId || ""}));
+        reloadWorks();
+        setOpen(jobId ? {id: jobId, kind: "render", project, at: Date.now()} : null);
+        setWorkspace("deliver");
+    }, [project, reloadWorks]);
+    const publishRender = useCallback((jobId, selectedWorkId) => {
+        leave(() => openPublication(jobId, selectedWorkId));
+    }, [leave, openPublication]);
+    const changeWorkspace = (target) => target !== workspace && leave(() => {
+        clearTranscript();
+        const edit = editPublication.current;
+        if (target === "deliver" && workspace === "edit" && edit?.project === project) {
+            openPublication(edit.jobId, edit.workId);
+        } else setWorkspace(target);
+    });
     const openWork = useCallback((job) => {
         if (canOpenWork(job)) leave(() => applyOpen(job, project));
     }, [project, leave, applyOpen]);
@@ -465,7 +492,7 @@ function App() {
         </select></label>
         <p class="hint" role="status">${filterStatus || (workCatalog.project === project ? workCatalog.status : "正在读取作品目录…")}</p>`;
     return html`<div class="shell">
-        <${TopBar} ...${{workspace, setWorkspace: (w) => w !== workspace && leave(() => { clearTranscript(); setWorkspace(w); }), projects, project, setProject: (p) => p === project || leave(() => { clearTranscript(); setProject(p); }), layout, setLayout, status: linkStatus || status, onImport: () => setImportOpen(true)}} />
+        <${TopBar} ...${{workspace, setWorkspace: changeWorkspace, projects, project, setProject: (p) => p === project || leave(() => changeProject(p)), layout, setLayout, status: linkStatus || status, onImport: () => setImportOpen(true)}} />
         ${workspace === "assets"
             ? html`<div class=${work}>
                 <${Bin} runs=${runs} runsLoaded=${runsLoaded} runId=${runId} setRunId=${(id) => { clearTranscript(); setRunId(id); }} works=${visibleJobs} onOpen=${openWork} onImport=${() => setImportOpen(true)} hidden=${!layout.bin} filterControls=${filterControls}
@@ -481,7 +508,7 @@ function App() {
                 <${Inspector} view=${view} selected=${selected} run=${currentRun} hidden=${!layout.insp} inBasket=${!!selected && basket.ids.has(selected.eventId)} onBasket=${() => toggleBasket(selected)} onRange=${changeRange} />
             </div>`
             : workspace === "edit"
-                ? html`<${WorksWorkspace} key=${project} onCatalogChanged=${refreshCatalog} leave=${leave} project=${project} runs=${runs} open=${open?.project === project && ["plan", "revision", "render"].includes(open.kind) ? open : null} isOpenConsumed=${intent => consumedOpen.current.has(intent)} onOpenConsumed=${intent => { if (intent) consumedOpen.current.add(intent); }} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} onFindMaterial=${findMaterial} onPublish=${publishRender} onDirtyChange=${onDirtyChange} renderSecondsPerSecond=${secondsPerSecond} />`
+                ? html`<${WorksWorkspace} key=${project} onCatalogChanged=${refreshCatalog} leave=${leave} project=${project} runs=${runs} open=${open?.project === project && ["plan", "revision", "render"].includes(open.kind) ? open : null} isOpenConsumed=${intent => consumedOpen.current.has(intent)} onOpenConsumed=${intent => { if (intent) consumedOpen.current.add(intent); }} onWorksChanged=${reloadWorks} layout=${layout} basket=${basket} basketAt=${basketAt} onBasketSeen=${() => setBasketAt(0)} onFindMaterial=${findMaterial} onPublish=${publishRender} onEditPublication=${onEditPublication} onDirtyChange=${onDirtyChange} renderSecondsPerSecond=${secondsPerSecond} />`
                 : html`<${PublishWorkspace} key=${scope} project=${project} workId=${workId} works=${visibleJobs} open=${open?.project === project ? open : null} leave=${leave} onWorksChanged=${reloadWorks} layout=${layout} onDirtyChange=${onDirtyChange} filterControls=${filterControls}
                     onOpenReference=${choice => openWork({jobId: choice.sourceJobId, planId: choice.sourcePlanId, status: "completed", kind: "plan"})} />`}
         ${workspace === "assets" && html`<div class="dock"><strong>提示</strong><span>左上角“搜索片段”按描述找画面，“+”或 B 键加入片段篮，再点“用片段篮生成方案”。一句话修改镜头在剪辑区底部。</span></div>`}
@@ -493,6 +520,7 @@ function TopBar({workspace, setWorkspace, projects, project, setProject, layout,
     const [usageOpen, setUsageOpen] = useState(false);
     return html`<header class="topbar">
         <div class="brand">Gaming Creator<small>工作台预览版</small></div>
+        <button class="btn project-start" type="button" onClick=${onImport}>新建剪辑项目</button>
         <div class="tabs" role="tablist" aria-label="工作区">
             ${WORKSPACES.map(([id, label]) => html`<button role="tab" aria-selected=${workspace === id} onClick=${() => setWorkspace(id)}>${label}</button>`)}
         </div>
@@ -503,7 +531,6 @@ function TopBar({workspace, setWorkspace, projects, project, setProject, layout,
         <span class="status" role="status" aria-live="polite">${status}</span>
         <span class="spacer"></span>
         <div class="topbar-actions">
-            ${workspace === "assets" && html`<button class="btn" type="button" onClick=${onImport}>导入录像</button>`}
             <button class="icon-btn" aria-expanded=${usageOpen} onClick=${() => setUsageOpen(!usageOpen)}>套餐与用量</button>
             <button class="icon-btn" aria-pressed=${layout.bin} title="显示或隐藏素材箱" onClick=${() => setLayout({...layout, bin: !layout.bin})}>素材箱</button>
             <button class="icon-btn" aria-pressed=${layout.insp} title="显示或隐藏检查器" onClick=${() => setLayout({...layout, insp: !layout.insp})}>检查器</button>

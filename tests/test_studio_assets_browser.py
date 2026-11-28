@@ -157,6 +157,45 @@ def assets_page(service, monkeypatch, tmp_path, request):  # noqa: F811
         server.server_close()
 
 
+def test_project_switch_does_not_inspect_previous_recording(assets_page):
+    page, _ = assets_page
+    page.route(
+        "**/api/projects",
+        lambda route: route.fulfill(
+            json={
+                "projects": [
+                    {"path": "artifacts/project", "name": "甲项目"},
+                    {"path": "artifacts/other", "name": "乙项目"},
+                ]
+            }
+        ),
+    )
+    page.route(
+        "**/api/runs?*",
+        lambda route: (
+            route.fulfill(json={"runs": []})
+            if parse_qs(urlsplit(route.request.url).query)["project"] == ["artifacts/other"]
+            else route.fallback()
+        ),
+    )
+    inspections = []
+    page.on(
+        "request",
+        lambda request: (
+            inspections.append(request.url)
+            if urlsplit(request.url).path == "/api/inspect"
+            else None
+        ),
+    )
+    with page.expect_response(lambda response: "/api/inspect?" in response.url):
+        page.reload()
+    page.get_by_label("项目", exact=True).select_option("artifacts/other")
+    page.get_by_text("这个项目还没有分析完成的录像。", exact=True).wait_for()
+    assert [parse_qs(urlsplit(url).query)["project"] for url in inspections] == [
+        ["artifacts/project"],
+    ]
+
+
 def test_recordings_deduplicate_search_scope_and_keep_selected_ranges(assets_page):
     page, posted = assets_page
     expect = pytest.importorskip("playwright.sync_api").expect
