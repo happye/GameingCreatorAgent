@@ -60,6 +60,7 @@ from gamingcreator.ui.revision_jobs import (
     revision_receipt_schema,
     save_revision,
 )
+from gamingcreator.ui.studio_local_picker import registered_creation_project
 
 
 def fail(code: str, message: str, conflict: bool = False) -> AppError:
@@ -170,13 +171,12 @@ class CreationJobs:
         return directory
 
     def project(self, project_id: object) -> Path:
-        from gamingcreator.ui.server import discover_projects
-
-        if not isinstance(project_id, str) or project_id not in {
-            item["path"] for item in discover_projects(self.repository)
-        }:
-            raise fail("creation.not_found", "找不到登记项目。")
-        project = resolve_existing(self.repository / project_id)
+        try:
+            if not isinstance(project_id, str):
+                raise ValueError("Invalid project identity.")
+            project = registered_creation_project(self.repository, project_id)
+        except (AppError, OSError, ValueError):
+            raise fail("creation.not_found", "找不到登记项目。") from None
         if self.root.is_relative_to(project):
             raise fail("creation.input", "任务输出不能位于输入项目内。")
         return project

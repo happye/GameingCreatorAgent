@@ -7,7 +7,7 @@ import * as client from "./api.js";
 import "../source-clock.js";
 import "../preview-preference.js";
 import {BasketList, ClipSearch, useBasket} from "./basket.js";
-import {ImportRecordings} from "./media-preparation.js";
+import {ImportRecordings, OpenStudioProject} from "./media-preparation.js";
 import {ShotMarkers, ShotStatus, useShotBoundaries} from "./shot-boundaries.js";
 import {FrameText} from "./frame-text.js";
 import {PublishWorkspace} from "./publish.js";
@@ -86,7 +86,7 @@ function App() {
     const [projects, setProjects] = useState([]);
     const [project, setProject] = useState("");
     const projectNavigation = useRef(0);
-    const [importOpen, setImportOpen] = useState(false);
+    const [projectDialog, setProjectDialog] = useState(null);
     const [runsRefreshAt, setRunsRefreshAt] = useState(0);
     const [runs, setRuns] = useState([]), [runsLoaded, setRunsLoaded] = useState(false);
     const [runId, setRunId] = useState("");
@@ -311,9 +311,10 @@ function App() {
         setRunId(""); setProject(target);
     };
 
-    const openPreparedProject = async (target, destination = "assets") => {
-        const {projects: list} = await client.projects();
-        await includeExistingProject(list, target);
+    const openPreparedProject = async (target, destination = "assets", signal) => {
+        const {projects: list} = await client.projects(signal);
+        await includeExistingProject(list, target, signal);
+        if (signal?.aborted) return false;
         return leave(() => {
             projectNavigation.current += 1;
             setProjects(list);
@@ -459,7 +460,7 @@ function App() {
 
     useEffect(() => {
         const onKey = (event) => {
-            if (importOpen || event.target.closest("input, textarea, select") || workspace !== "assets") return;
+            if (projectDialog || event.target.closest("input, textarea, select") || workspace !== "assets") return;
             if (event.key === " " && event.target.closest(".shot-boundaries button, .shot-detect, .frame-text button")) return;
             const el = video.current, events = view?.timeline || [];
             if (event.key === " " && el && (!transcript || transcriptPlayable)) { event.preventDefault(); el.paused ? void el.play().catch(() => {}) : el.pause(); }
@@ -476,7 +477,7 @@ function App() {
             }
         };
         addEventListener("keydown", onKey); return () => removeEventListener("keydown", onKey);
-    }, [view, selected, workspace, selectEvent, basket, currentRun, clock, seek, transcript, transcriptPlayable, importOpen]);
+    }, [view, selected, workspace, selectEvent, basket, currentRun, clock, seek, transcript, transcriptPlayable, projectDialog]);
 
     const work = `work${layout.bin ? "" : " no-bin"}${layout.insp ? "" : " no-insp"}`;
     const catalog = workCatalog.project === project ? workCatalog.works : [];
@@ -492,10 +493,10 @@ function App() {
         </select></label>
         <p class="hint" role="status">${filterStatus || (workCatalog.project === project ? workCatalog.status : "正在读取作品目录…")}</p>`;
     return html`<div class="shell">
-        <${TopBar} ...${{workspace, setWorkspace: changeWorkspace, projects, project, setProject: (p) => p === project || leave(() => changeProject(p)), layout, setLayout, status: linkStatus || status, onImport: () => setImportOpen(true)}} />
+        <${TopBar} ...${{workspace, setWorkspace: changeWorkspace, projects, project, setProject: (p) => p === project || leave(() => changeProject(p)), layout, setLayout, status: linkStatus || status, onImport: () => setProjectDialog({kind: "new"}), onOpenProject: () => setProjectDialog({kind: "open"})}} />
         ${workspace === "assets"
             ? html`<div class=${work}>
-                <${Bin} runs=${runs} runsLoaded=${runsLoaded} runId=${runId} setRunId=${(id) => { clearTranscript(); setRunId(id); }} works=${visibleJobs} onOpen=${openWork} onImport=${() => setImportOpen(true)} hidden=${!layout.bin} filterControls=${filterControls}
+                <${Bin} runs=${runs} runsLoaded=${runsLoaded} runId=${runId} setRunId=${(id) => { clearTranscript(); setRunId(id); }} works=${visibleJobs} onOpen=${openWork} onImport=${() => setProjectDialog({kind: "new"})} hidden=${!layout.bin} filterControls=${filterControls}
                     top=${html`<${ClipSearch} project=${project} runs=${runs} runId=${runId} basket=${basket} seed=${searchSeed} onShow=${(run, event) => showEvent(run.id, event.eventId)} onShowTranscript=${showTranscript} />
                         <${FrameText} project=${project} view=${sourceView} seekReady=${sourceSeekReady} onSeek=${seekSourceMarker} timecode=${timecode} />
                         <a class="link" href=${currentRun?.sourceSha256 ? `/proxy-space?${new URLSearchParams({source: currentRun.sourceSha256})}` : "/proxy-space"}>代理空间</a>
@@ -512,15 +513,22 @@ function App() {
                 : html`<${PublishWorkspace} key=${scope} project=${project} workId=${workId} works=${visibleJobs} open=${open?.project === project ? open : null} leave=${leave} onWorksChanged=${reloadWorks} layout=${layout} onDirtyChange=${onDirtyChange} filterControls=${filterControls}
                     onOpenReference=${choice => openWork({jobId: choice.sourceJobId, planId: choice.sourcePlanId, status: "completed", kind: "plan"})} />`}
         ${workspace === "assets" && html`<div class="dock"><strong>提示</strong><span>左上角“搜索片段”按描述找画面，“+”或 B 键加入片段篮，再点“用片段篮生成方案”。一句话修改镜头在剪辑区底部。</span></div>`}
-        ${importOpen && html`<${ImportRecordings} project=${project} onClose=${() => setImportOpen(false)} onOpenProject=${openPreparedProject} />`}
+        ${projectDialog?.kind === "open"
+            ? html`<${OpenStudioProject} onClose=${() => setProjectDialog(null)} onOpenProject=${openPreparedProject}
+                onHistory=${path => setProjectDialog({kind: "history", path})} />`
+            : projectDialog && html`<${ImportRecordings} historyProject=${projectDialog.path}
+                onClose=${() => setProjectDialog(null)} onOpenProject=${openPreparedProject} />`}
     </div>`;
 }
 
-function TopBar({workspace, setWorkspace, projects, project, setProject, layout, setLayout, status, onImport}) {
+function TopBar({workspace, setWorkspace, projects, project, setProject, layout, setLayout, status, onImport, onOpenProject}) {
     const [usageOpen, setUsageOpen] = useState(false);
     return html`<header class="topbar">
         <div class="brand">Gaming Creator<small>工作台预览版</small></div>
-        <button class="btn project-start" type="button" onClick=${onImport}>新建剪辑项目</button>
+        <div class="project-actions">
+            <button class="btn project-start" type="button" onClick=${onImport}>新建剪辑项目</button>
+            <button class="btn ghost" type="button" onClick=${onOpenProject}>打开已有项目</button>
+        </div>
         <div class="tabs" role="tablist" aria-label="工作区">
             ${WORKSPACES.map(([id, label]) => html`<button role="tab" aria-selected=${workspace === id} onClick=${() => setWorkspace(id)}>${label}</button>`)}
         </div>

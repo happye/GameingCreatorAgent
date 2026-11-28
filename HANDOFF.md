@@ -4,7 +4,7 @@
 
 在当前 `main` 开发。进度和现有实证入口见 [STATUS](STATUS.md) 与 [Dashboard](docs/progress/index.html)。
 
-Studio 任意工作区顶部点「新建剪辑项目」，用 Windows 选择器选多个视频和现有工作目录，或输入新目录名称（本地准备时创建）。已有项目可以直接进入剪辑。语义检索和画面选段使用已分析录像。项目目录限应用数据下的 `artifacts`。
+Studio 顶栏分开「新建剪辑项目」和「打开已有项目」。新建填名称、选视频即可创建，保存位置可在页内更改。打开项目显示名称与目录，历史批次可继续。语义选段仍用已分析录像。项目目录限应用数据下的 artifacts。
 
 已复验漫画群星作品 `1636e3e68e018e6f7d411c3743b498d2` 的成片 `e3b63f028fd148bebe1a64986d84207c`，从剪辑切到发布会覆盖旧发布过滤，切换到 `demo-visual-manga` 未请求旧运行。Chromium 成功下载 B 站包 `49799e7b3c8148eeb8b5acfb7337a8ac` 并验证 ZIP 有 7 项。证据 `.cache/scratch/studio-navigation-20261128/`。
 

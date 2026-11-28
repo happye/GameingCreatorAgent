@@ -66,7 +66,7 @@ from gamingcreator.ui.service import (
     search_detail_payload,
 )
 from gamingcreator.ui.shots import cached_shots_payload, detect_shots_payload
-from gamingcreator.ui.studio_local_picker import studio_local_picker
+from gamingcreator.ui.studio_local_picker import studio_local_picker, studio_project_locations
 
 STATIC = Path(__file__).with_name("static")
 # Largest rejected request body still read before replying, so the reply is not lost.
@@ -1443,6 +1443,13 @@ class InspectionHandler(BaseHTTPRequestHandler):
                 self._json(200, {"projects": discover_projects(self.repository)})
                 return
             query = _query(self.path)
+            if path == "/api/studio/project-locations":
+                if set(query) - {"folder"}:
+                    raise ValueError("Expected a project location.")
+                self._json(
+                    200, studio_project_locations(self.repository, query.get("folder", "artifacts"))
+                )
+                return
             if path.startswith("/api/creation/overlay-assets/") and path.endswith("/image"):
                 if set(query) != {"receipt"}:
                     raise ValueError("Expected overlay receipt.")

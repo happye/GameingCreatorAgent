@@ -1060,7 +1060,7 @@ window.PROGRESS_DATA = {
     "2026-11-22: Studio Assets prepared actual Comic Stars footage in a new local project, then reopened the persisted batch after refresh without replaying the submission. Browser regression verifies explicit same-batch resume and nested project navigation.",
     "2026-11-22: Studio verified a prepared Comic Stars run against live task metadata and copied its original CLI resume command with the app environment bootstrap. Browser handoff remained read-only and the command was not executed."
    ],
-   "done": "Studio 顶栏可新建剪辑项目，选择本机视频和 artifacts 工作目录，准备后打开项目；已分析录像可检索、入篮、选方案、剪辑、导出及生成平台包",
+   "done": "Studio 分开新建和打开项目，支持页内浏览目录及找回导入记录；已分析录像可检索、入篮、选方案、剪辑、导出及生成平台包",
    "todo": "付费分析须单独授权后执行已核对的命令；其他游戏的创作质量待人评",
    "updated": "2026-11-28",
    "sprints": [
@@ -2489,7 +2489,7 @@ window.PROGRESS_DATA = {
   "P038、P046–P051 已于 2026-11-03 由你确认解冻（J1 第三次试看“初版过得去”）。真实平台发布、支付和付费调用仍各自需要你明确授权。"
  ],
  "now": [
-  "Studio 顶栏可选择本机视频和工作目录。下一批优先连接新素材、本地选段、成片和平台包。现有语义选段仍需分析。\n\n漫画群星实测转入发布，跨项目无旧录像请求，B 站包在 Chromium 下载成功。P008 停在本机原型。见 [HANDOFF](HANDOFF.md)。",
+  "Studio 分开新建和打开项目，目录在页内选择。下一批优先连接新素材、本地选段、成片和平台包。现有语义选段仍需分析。\n\n漫画群星实测转入发布，跨项目无旧录像请求，B 站包在 Chromium 下载成功。P008 停在本机原型。见 [HANDOFF](HANDOFF.md)。",
   "[P035 平台文案](docs/exec-plans/sprint-studio-multi-platform-packages.md)实测 Atom 同稿各自出包。[P029](docs/exec-plans/sprint-creation-subtitles.md)实测青色宋体。",
   "真实漫画群星已跑通 AI 旁白和文案、本机中文合成、成片及平台包。[持久队列](docs/exec-plans/sprint-package-batches.md)覆盖关页继续完成四个平台、停止后续与服务重启后恢复。",
   "[抖音短版](docs/exec-plans/sprint-platform-theme-ranking.md)支持关键词、拼接、画面文案和本机主题选段，实测出片、队列恢复与 B 站全长包复用。",
@@ -3363,8 +3363,8 @@ window.PROGRESS_DATA = {
    "file": "sprint-studio-workbench",
    "title": "Sprint：创作工作台（/studio）",
    "ids": [],
-   "date": "2026-11-22",
-   "bytes": 17559
+   "date": "2026-11-28",
+   "bytes": 18180
   },
   {
    "file": "sprint-timed-overlays",

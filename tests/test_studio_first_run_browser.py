@@ -65,7 +65,7 @@ def test_empty_project_shows_first_run_guide(tmp_path, recordings):
             else:
                 playwright.expect(guide).to_be_visible()
                 guide.get_by_role("button", name="导入录像").click()
-                playwright.expect(page.get_by_role("dialog", name="导入录像")).to_be_visible()
+                playwright.expect(page.get_by_role("dialog", name="新建剪辑项目")).to_be_visible()
             assert not posts  # the guide never sends anything
             assert not errors
             browser.close()

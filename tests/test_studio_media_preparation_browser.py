@@ -47,7 +47,7 @@ def check_analysis_handoff(page, saved_batch, project, run):
     page.unroute(pattern, change_source)
 
 
-def check_late_startup_cannot_override_import(page, open_dialog, dialog, project_select, project):
+def check_late_startup_cannot_override_open(page, open_dialog, dialog, project_select, project):
     held = []
 
     def delay_first(route):
@@ -60,7 +60,8 @@ def check_late_startup_cannot_override_import(page, open_dialog, dialog, project
     page.route("**/api/projects", delay_first)
     page.reload(wait_until="domcontentloaded")
     open_dialog.click()
-    dialog.get_by_role("button", name="打开准备项目").click()
+    dialog.get_by_role("button", name="series 浏览文件夹").click()
+    dialog.get_by_role("button", name=f"recordings {project}").click()
     playwright.expect(project_select).to_have_value(project)
     assert len(held) == 1
     held[0].fulfill(json={"projects": [{"path": "artifacts/other", "name": "Other"}]})
@@ -72,7 +73,8 @@ def check_late_startup_cannot_override_import(page, open_dialog, dialog, project
 
 def test_studio_import_remembers_and_explicitly_resumes_nested_project(preparation):  # noqa: F811
     jobs, document, media = preparation
-    project = "./artifacts/series/recordings"
+    project = "artifacts/series/recordings"
+    (jobs.repository / "artifacts/series").mkdir(parents=True, exist_ok=True)
     bad = list(media.bundles)[1]
     media.bad.add(bad)
     with workspace(jobs.repository) as base, playwright.sync_playwright() as runtime:
@@ -85,9 +87,8 @@ def test_studio_import_remembers_and_explicitly_resumes_nested_project(preparati
             def allow_local_preparation(route):
                 if route.request.method == "POST":
                     if route.request.url == f"{base}/api/studio/local-picker":
-                        kind = route.request.post_data_json["kind"]
-                        paths = [project] if kind == "project" else document["paths"]
-                        route.fulfill(json={"paths": paths})
+                        assert route.request.post_data_json == {"kind": "videos"}
+                        route.fulfill(json={"paths": document["paths"]})
                         return
                     posts.append(route.request.post_data_json)
                     if route.request.url != f"{base}/api/prepare-media-batch":
@@ -99,19 +100,32 @@ def test_studio_import_remembers_and_explicitly_resumes_nested_project(preparati
             page.goto(f"{base}/studio")
             page.get_by_role("tab", name="剪辑", exact=True).click()
             open_dialog = page.get_by_role("button", name="新建剪辑项目", exact=True)
-            dialog = page.get_by_role("dialog", name="导入录像")
+            open_project = page.get_by_role("button", name="打开已有项目", exact=True)
+            browser_dialog = page.get_by_role("dialog", name="打开已有项目")
+            dialog = page.get_by_role("dialog", name="新建剪辑项目")
             open_dialog.click()
-            dialog.get_by_role("button", name="选择工作目录").click()
-            playwright.expect(dialog.get_by_label("准备项目")).to_have_value(project)
-            playwright.expect(dialog.get_by_role("button", name="打开现有项目")).to_be_disabled()
+            playwright.expect(dialog.get_by_label("以后每段分析上限（元）")).to_be_hidden()
+            dialog.get_by_label("项目名称").fill("recordings")
+            held = []
+            directory = "**/api/studio/project-locations?folder=artifacts"
+            page.route(directory, lambda route: held.append(route))
+            with page.expect_request(directory):
+                dialog.get_by_role("button", name="更改工作目录").click()
+            playwright.expect(dialog.get_by_text("正在读取目录…", exact=True)).to_be_visible()
+            playwright.expect(dialog.get_by_role("button", name="关闭")).to_be_enabled()
+            playwright.expect(dialog.get_by_label("项目名称")).to_be_editable()
+            assert len(held) == 1
+            held[0].fulfill(response=held[0].fetch())
+            page.unroute(directory)
+            dialog.get_by_role("button", name="series 浏览文件夹").click()
+            dialog.get_by_role("button", name="使用这个目录").click()
+            playwright.expect(dialog.get_by_text(f"保存到 {project}", exact=True)).to_be_visible()
             dialog.get_by_role("button", name="选择视频").click()
-            playwright.expect(dialog.get_by_label("录像路径（每行一段）")).to_have_value(
-                "\n".join(document["paths"])
-            )
+            playwright.expect(dialog.get_by_label("已选视频").locator("li")).to_have_count(3)
+            dialog.get_by_text("高级选项", exact=True).click()
             dialog.get_by_label("准备方案").select_option("frames")
             dialog.get_by_label("以后每段分析上限（元）").fill("1.25")
-            dialog.get_by_role("button", name="开始本地准备").click()
-
+            dialog.get_by_role("button", name="创建项目").click()
             batch = dialog.locator("[data-batch]")
             playwright.expect(batch).to_contain_text("部分准备完成", timeout=15000)
             original = batch.locator("[data-run]").evaluate_all(
@@ -121,8 +135,11 @@ def test_studio_import_remembers_and_explicitly_resumes_nested_project(preparati
             batch_id = batch.get_attribute("data-batch")
             dialog.get_by_role("button", name="关闭", exact=True).click()
             page.reload()
-            open_dialog.click()
-            playwright.expect(dialog.get_by_label("准备项目")).to_have_value(project)
+            open_project.click()
+            browser_dialog.get_by_role("button", name="series 浏览文件夹").click()
+            browser_dialog.get_by_role("button", name="查看 recordings 的导入记录").click()
+            dialog = page.get_by_role("dialog", name="导入记录")
+            batch = dialog.locator("[data-batch]")
             playwright.expect(batch).to_have_attribute("data-batch", batch_id)
             assert len(posts) == 1
 
@@ -136,7 +153,12 @@ def test_studio_import_remembers_and_explicitly_resumes_nested_project(preparati
             )
             assert posts[1] == {"project": project, "resume": batch_id, "timeoutSeconds": 3600}
             check_analysis_handoff(page, batch, project, original[0])
-            dialog.get_by_role("button", name="打开准备项目").click()
+            with page.expect_response(
+                lambda res: urlsplit(res.url).path == "/api/creation/works"
+                and parse_qs(urlsplit(res.url).query).get("projectId") == [project]
+            ) as works:
+                dialog.get_by_role("button", name="打开素材页").click()
+            assert works.value.ok
             playable_project = page.get_by_label("项目", exact=True)
             playwright.expect(playable_project).to_have_value(project)
             playwright.expect(
@@ -144,13 +166,14 @@ def test_studio_import_remembers_and_explicitly_resumes_nested_project(preparati
             ).to_be_visible()
             page.reload()
             playwright.expect(playable_project).to_have_value(project)
-            open_dialog.click()
-            dialog.get_by_role("button", name="打开现有项目").click()
+            open_project.click()
+            browser_dialog.get_by_role("button", name="series 浏览文件夹").click()
+            browser_dialog.get_by_role("button", name=f"recordings {project}").click()
             playwright.expect(page.get_by_role("tab", name="剪辑", exact=True)).to_have_attribute(
                 "aria-selected", "true"
             )
-            check_late_startup_cannot_override_import(
-                page, open_dialog, dialog, playable_project, project
+            check_late_startup_cannot_override_open(
+                page, open_project, browser_dialog, playable_project, project
             )
             assert len(posts) == 2 and not errors, (posts, errors)
         finally:

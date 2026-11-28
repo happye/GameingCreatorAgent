@@ -216,6 +216,30 @@ def test_strict_input_and_paths(service):
         service.submit("plan", bad)
 
 
+def test_nested_project_uses_canonical_scope_for_jobs_and_works(service):
+    from gamingcreator.ui.creation_works_http import works_get, works_post
+
+    project_id = "artifacts/组/剪辑"
+    directory = service.repository / project_id
+    directory.mkdir(parents=True)
+    (directory / "timeline.sqlite3").touch()
+
+    assert service.catalog(project_id)["jobs"] == []
+    work = works_post(service, {"projectId": project_id, "requestId": "a" * 32})["work"]
+    assert works_get(service, project_id)["works"] == [work]
+    assert works_get(service, "artifacts/project")["works"] == []
+
+    for alias in (
+        str(directory),
+        "artifacts/组/../组/剪辑",
+        "artifacts/组//剪辑",
+        "artifacts\\组\\剪辑",
+        "artifacts/组",
+    ):
+        with pytest.raises(AppError, match="找不到登记项目"):
+            service.catalog(alias)
+
+
 def test_lock_owned_by_second_process_is_not_interrupted(service):
     import subprocess
     import sys
